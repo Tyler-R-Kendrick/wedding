@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledMcpjsonServers": ["fal-ai", "higgsfield", "stitch", "playwright", "context7"],
+  "permissions": {
+    "allow": [
+      "Skill",
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npx impeccable *)",
+      "Bash(.claude/skills/impeccable/scripts/impeccable *)",
+      "Bash(npx design.md *)",
+      "Bash(npx designmd *)",
+      "Bash(npx skills *)",
+      "Bash(npx higgsfield *)",
+      "Bash(higgsfield *)",
+      "Bash(npx playwright *)",
+      "Bash(npx stylelint *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:impeccable.style)",
+      "WebFetch(domain:stitch.withgoogle.com)",
+      "WebFetch(domain:fal.ai)",
+      "WebFetch(domain:higgsfield.ai)",
+      "WebFetch(domain:www.awwwards.com)",
+      "WebFetch(domain:www.theknot.com)",
+      "WebFetch(domain:withjoy.com)",
+      "WebFetch(domain:www.zola.com)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "impeccable: checking UI changes"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 30,
+            "statusMessage": "impeccable: design deep pass"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Secrets — keep .env.example committed, never real keys
+.env
+.env.*
+!.env.example
+
+# Claude Code machine-local settings (impeccable writes its hook manifest here)
+.claude/settings.local.json
+
+# impeccable-ignore-start
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+**/.impeccable/hook.cache.json
+.impeccable/hook.pending.json
+.impeccable/*.png
+.impeccable/review/
+.impeccable/history/
+.impeccable/live/server.json
+.impeccable/live/codex-worker.json
+.impeccable/live/codex-worker.log
+.impeccable/live/sessions/
+.impeccable/live/previews/
+.impeccable/live/annotations/
+.impeccable/live/artifacts/
+.impeccable/live/accept-receipts/
+.impeccable/live/locks/
+.impeccable/live/cache/
+.impeccable/live/benchmarks/
+.impeccable/live/manual-edit-apply-transaction.json
+.impeccable/live/manual-edit-events.jsonl
+.impeccable/live/manual-edit-evidence/
+.impeccable/live/pending-manual-edits.json
+.impeccable/live/deferred-svelte-component-accepts.json
+# impeccable-ignore-end
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Generated design exports (regenerate with npm run design:export:*)
+design/generated/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

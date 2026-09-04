@@ -1,0 +1,40 @@
+{
+  "name": "wedding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tyler & Sara's wedding website \u2014 design tooling, skills, and quality gates",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "design:lint": "design.md lint DESIGN.md",
+    "design:lint:json": "design.md lint --format json DESIGN.md",
+    "design:spec": "design.md spec --rules",
+    "design:export:tailwind": "design.md export --format css-tailwind DESIGN.md",
+    "design:export:dtcg": "design.md export --format dtcg DESIGN.md",
+    "design:export:css": "design.md export --format css-vars DESIGN.md",
+    "design:diff": "design.md diff",
+    "slop:detect": "impeccable detect .",
+    "slop:detect:json": "impeccable detect --json .",
+    "slop:ignores": "impeccable ignores list",
+    "skills:list": "skills list -a claude-code",
+    "skills:update": "skills update -p -y",
+    "impeccable:update": "impeccable update --project --providers=claude -y",
+    "lint:css": "stylelint \"src/**/*.{css,scss}\" --allow-empty-input",
+    "test:a11y": "playwright test",
+    "quality": "npm run design:lint && npm run slop:detect && npm run lint:css",
+    "assets:fal": "node scripts/fal-generate.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@fal-ai/client": "^1.10.1",
+    "@google/design.md": "^0.4.0",
+    "@higgsfield/cli": "^1.1.24",
+    "@playwright/test": "^1.62.1",
+    "impeccable": "^4.0.0",
+    "skills": "^1.5.23",
+    "stylelint": "^17.15.0",
+    "stylelint-config-standard": "^40.0.0"
+  }
+}
