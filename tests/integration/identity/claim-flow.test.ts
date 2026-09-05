@@ -72,8 +72,10 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     const code = (await import('./harness')).latestCode(f.emails.chidi);
     const ok = await call('verify_otp', { challenge: req.data.challenge, code });
     expect(ok.ok).toBe(true);
+    // The challenge is consumed on success, so a replay is refused as a spent challenge (no session, no hint about the code).
     const replay = expectErr(await call('verify_otp', { challenge: req.data.challenge, code }), 'validation');
-    expect(replay.message).toBe(wrong.message);
+    expect(replay.details?.reason).toBe('challenge');
+    expect(wrong.message).toMatch(/didn’t work/);
     const bogus = expectErr(await call('verify_otp', { challenge: 'x'.repeat(40), code: '123456' }), 'validation');
     expect(bogus.details?.reason).toBe('challenge');
   });
