@@ -19,3 +19,5 @@ export * from './guests';
 export * from './events';
 export * from './rsvp';
 export * from './seating';
+// Level 08: travel profiles, itinerary items, hotel recommendations, travel links.
+export * from './travel';
