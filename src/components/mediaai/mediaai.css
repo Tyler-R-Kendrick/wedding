@@ -122,12 +122,14 @@
 .mi-notice {
   margin: 0;
   padding: var(--spacing-md, 16px);
-  border-inline-start: 3px solid var(--color-tertiary, var(--color-secondary));
+  border: 1px solid var(--color-outline, currentcolor);
+  border-radius: var(--rounded-sm, 2px);
   background: var(--color-neutral-variant, var(--color-neutral));
 }
 
 .mi-notice[data-tone='error'] {
-  border-inline-start-color: var(--color-error, currentcolor);
+  border-color: var(--color-error, currentcolor);
+  color: var(--color-error, inherit);
 }
 
 .mi-picker {
@@ -186,7 +188,7 @@
   inset-block-end: 0;
   inset-inline: 0;
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--color-on-primary, var(--color-neutral));
   background: var(--color-primary);
 }
@@ -235,7 +237,7 @@
 }
 
 .mi-suggestion__meta {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -261,4 +263,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm, 8px);
+}
+
+.mi-policy-block {
+  display: grid;
+  gap: var(--spacing-md, 16px);
+}
+
+.mi-panel h4 {
+  margin: 0 0 var(--spacing-xs, 4px);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.mi-panel details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
