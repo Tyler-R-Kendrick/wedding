@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { issueChallenge, readChallenge } from '@/domain/identity/challenge';
+import { CHALLENGE_TOKEN_PATTERN, issueChallenge, MemoryChallengeStore, readChallenge, consumeChallenge } from '@/domain/identity/challenge';
 import { maskEmail, normalizeEmail } from '@/domain/identity/mask';
 import { computeLockout, OTP_POLICY } from '@/domain/identity/otp';
 import { defaultInvitationExpiry, generateInvitationToken, hashInvitationToken, invitationLifecycle, invitationTokenPrefix, invitationUrl, isInvitationTokenShape } from '@/domain/identity/tokens';
@@ -35,22 +35,39 @@ describe('invitation tokens', () => {
   });
 });
 
-describe('signed OTP challenges', () => {
+describe('opaque OTP challenges', () => {
   const secret = 'challenge-test-secret-0123456789';
-  it('round-trips, expires, and rejects tampering or a different secret', () => {
+  it('hands out nonce.sig only, round-trips through the store, expires, and rejects tampering or a different secret', async () => {
+    const store = new MemoryChallengeStore();
     const now = new Date('2026-09-05T12:00:00Z');
-    const { token, expiresAt } = issueChallenge(secret, { kind: 'claim', email: 'a@b.co', guestIds: ['G1'], invitationId: 'I1', userId: null }, { now, ttlSeconds: 600 });
+    const { token, expiresAt } = await issueChallenge(store, secret, { kind: 'claim', email: 'a@b.co', guestIds: ['G1'], invitationId: 'I1', userId: null }, { now, ttlSeconds: 600 });
     expect(expiresAt).toBe('2026-09-05T12:10:00.000Z');
-    const read = readChallenge(secret, token, now);
+    expect(token).toMatch(CHALLENGE_TOKEN_PATTERN);
+    // Nothing in the token decodes to the body: it is 32 random bytes plus an HMAC.
+    const decoded = Buffer.from(token.split('.')[0]!, 'base64url').toString('utf8');
+    expect(decoded).not.toContain('@');
+    expect(decoded).not.toContain('G1');
+    expect(() => JSON.parse(decoded)).toThrow();
+    const read = await readChallenge(store, secret, token, now);
     expect(read).toMatchObject({ kind: 'claim', email: 'a@b.co', guestIds: ['G1'], invitationId: 'I1' });
-    expect(readChallenge(secret, token, new Date('2026-09-05T12:10:00Z'))).toBeNull();
-    expect(readChallenge('other-secret-0123456789abcdef', token, now)).toBeNull();
-    const [body, sig] = token.split('.');
-    const tampered = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(body!, 'base64url').toString()), guestIds: ['G2'] })).toString('base64url');
-    expect(readChallenge(secret, `${tampered}.${sig}`, now)).toBeNull();
-    expect(readChallenge(secret, 'garbage', now)).toBeNull();
-    expect(readChallenge(secret, undefined, now)).toBeNull();
-    expect(token).not.toContain('123456');
+    expect(await readChallenge(store, secret, token, new Date('2026-09-05T12:10:00Z'))).toBeNull();
+    const { token: fresh } = await issueChallenge(store, secret, { kind: 'sign_in', email: null, guestIds: [], invitationId: null, userId: null }, { now });
+    expect(await readChallenge(store, 'other-secret-0123456789abcdef', fresh, now)).toBeNull();
+    const [nonce] = fresh.split('.');
+    expect(await readChallenge(store, secret, `${nonce}.${'A'.repeat(43)}`, now)).toBeNull();
+    expect(await readChallenge(store, secret, 'garbage', now)).toBeNull();
+    expect(await readChallenge(store, secret, undefined, now)).toBeNull();
+    await consumeChallenge(store, secret, fresh);
+    expect(await readChallenge(store, secret, fresh, now)).toBeNull();
+  });
+
+  it('known and unknown recipients get byte-identical token shapes', async () => {
+    const store = new MemoryChallengeStore();
+    const a = await issueChallenge(store, secret, { kind: 'sign_in', email: 'known@example.test', guestIds: ['G1', 'G2'], invitationId: null, userId: null });
+    const b = await issueChallenge(store, secret, { kind: 'sign_in', email: null, guestIds: [], invitationId: null, userId: null });
+    expect(a.token).toHaveLength(b.token.length);
+    expect(a.token).toMatch(CHALLENGE_TOKEN_PATTERN);
+    expect(b.token).toMatch(CHALLENGE_TOKEN_PATTERN);
   });
 });
 

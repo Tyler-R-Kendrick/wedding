@@ -4,10 +4,10 @@ import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { authSessions } from '@/db/schema';
-import { readChallenge } from '@/domain/identity/challenge';
+import { consumeChallenge, readChallenge } from '@/domain/identity/challenge';
 import { getAuthSession } from '@/lib/auth';
 import { completeOtpSignIn } from './identity/signin';
-import { actorOf, authOf, callAuth, challengeSecret, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
+import { actorOf, authOf, callAuth, challengeSecret, challengeStore, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
 
 const input = z.union([
   z.object({ method: z.literal('otp'), challenge: z.string().min(16).max(4096), code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') }),
@@ -49,11 +49,13 @@ export const stepUp = defineCapability<z.infer<typeof input>, StepUpResult>({
     const { db, auth } = await authOf(ctx);
 
     if (i.method === 'otp') {
-      const challenge = readChallenge(challengeSecret(), i.challenge, ctx.now);
+      const store = challengeStore(ctx);
+      const challenge = await readChallenge(store, challengeSecret(), i.challenge, ctx.now);
       if (!challenge || challenge.kind !== 'step_up') return err(new CapabilityError('validation', EXPIRED_CODE_MESSAGE, { issues: [{ path: 'code', message: EXPIRED_CODE_MESSAGE }] }));
       if (challenge.userId !== p.authIdentityId) return err(new CapabilityError('forbidden', 'That code was not issued for this sign-in.'));
       const r = await completeOtpSignIn(ctx, challenge, i.code, transport.value);
       if (!r.ok) return err(r.error);
+      await consumeChallenge(store, challengeSecret(), i.challenge);
       return ok({ data: { status: 'fresh', method: 'otp', authenticatedAt: r.value.authenticatedAt }, sources: [] });
     }
 

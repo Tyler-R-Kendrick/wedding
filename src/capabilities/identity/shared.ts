@@ -3,6 +3,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef, type AdminPrincipal, type AdminRole, type GuestPrincipal } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
+import { DbChallengeStore, type ChallengeStore } from '@/domain/identity/challenge';
 import { hashOtpIdentifier, recordOtpAttempt } from '@/domain/identity/otp';
 import { appServices } from '@/capabilities/context';
 import { requireService } from '@/capabilities/services';
@@ -49,6 +50,8 @@ export async function authOf(ctx: CapabilityContext) {
 }
 
 export const challengeSecret = (): string => resolveAuthSecret();
+
+export const challengeStore = (ctx: CapabilityContext): ChallengeStore => new DbChallengeStore(requireService<Db>(ctx, 'db'));
 
 export const ipHashOf = (ctx: CapabilityContext): string => hashOtpIdentifier(transportOf(ctx).clientIp ?? 'unknown');
 

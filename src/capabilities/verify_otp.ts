@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
-import { readChallenge } from '@/domain/identity/challenge';
+import { consumeChallenge, readChallenge } from '@/domain/identity/challenge';
 import { completeOtpSignIn, type SignInOutcome } from './identity/signin';
-import { challengeSecret, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
+import { challengeSecret, challengeStore, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
 
 const input = z.object({ challenge: z.string().min(16).max(4096), code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') });
 
@@ -41,12 +41,14 @@ export const verifyOtp = defineCapability<z.infer<typeof input>, SignInOutcome>(
   async handler(ctx, i) {
     const transport = requireCookieTransport(ctx);
     if (!transport.ok) return err(transport.error);
-    const challenge = readChallenge(challengeSecret(), i.challenge, ctx.now);
+    const store = challengeStore(ctx);
+    const challenge = await readChallenge(store, challengeSecret(), i.challenge, ctx.now);
     if (!challenge) return err(new CapabilityError('validation', EXPIRED_CODE_MESSAGE, { issues: [{ path: 'code', message: EXPIRED_CODE_MESSAGE }], reason: 'challenge' }));
     if (challenge.kind === 'change_email') return err(new CapabilityError('validation', 'Use “update my contact” to confirm a new email address.'));
     if (challenge.kind === 'step_up') return err(new CapabilityError('validation', 'Use the confirm-it’s-you step for this code.'));
     const result = await completeOtpSignIn(ctx, challenge, i.code, transport.value);
     if (!result.ok) return err(result.error);
+    await consumeChallenge(store, challengeSecret(), i.challenge);
     return ok({ data: result.value, sources: [] });
   },
 });

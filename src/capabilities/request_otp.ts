@@ -15,7 +15,7 @@ import { findInvitationByToken } from '@/domain/invitations/repo';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { isInternalRoute } from './routes';
-import { authOf, callAuth, challengeSecret, consumeLimits, ipHashOf, logOtp, OTP_LIMITS, RECOVERY } from './identity/shared';
+import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, ipHashOf, logOtp, OTP_LIMITS, RECOVERY } from './identity/shared';
 
 const input = z.discriminatedUnion('purpose', [
   z.object({ purpose: z.literal('claim'), token: z.string().min(1).max(128), guestId: z.string().min(1).max(64), next: z.string().max(256).optional() }),
@@ -147,7 +147,7 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     } else {
       await logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' });
     }
-    const { token, expiresAt } = issueChallenge(challengeSecret(), { ...payload, email }, { now: ctx.now });
+    const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { ...payload, email }, { now: ctx.now });
     // Identical shape for known and unknown addresses; the mask is of the address the caller typed (or the one on file for claims).
     const shown = email ?? typedEmail ?? '';
     return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor }, sources: [] });

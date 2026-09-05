@@ -5,11 +5,11 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { guests } from '@/db/schema';
 import { activeBindingsForIdentity, getAuthUser } from '@/domain/identity/bindings';
-import { issueChallenge, readChallenge } from '@/domain/identity/challenge';
+import { consumeChallenge, issueChallenge, readChallenge } from '@/domain/identity/challenge';
 import { isEmailShape, maskEmail, normalizeEmail } from '@/domain/identity/mask';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
-import { actorOf, authOf, callAuth, challengeSecret, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, logOtp, OTP_LIMITS, requireCookieTransport, guestOf } from './identity/shared';
+import { actorOf, authOf, callAuth, challengeSecret, challengeStore, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, logOtp, OTP_LIMITS, requireCookieTransport, guestOf } from './identity/shared';
 
 const input = z.object({
   email: z.string().min(3).max(254),
@@ -77,11 +77,12 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
         return err(new CapabilityError('provider_unavailable', 'We couldn’t send the code just now. Please try again in a moment.'));
       }
       await logOtp(ctx, { emailHash, purpose: 'change_email', kind: 'send', outcome: 'sent' });
-      const { token, expiresAt } = issueChallenge(challengeSecret(), { kind: 'change_email', email: newEmail, guestIds: selfGuestIds, invitationId: null, userId: user.id }, { now: ctx.now });
+      const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { kind: 'change_email', email: newEmail, guestIds: selfGuestIds, invitationId: null, userId: user.id }, { now: ctx.now });
       return ok({ data: { status: 'verification_sent', challenge: token, expiresAt, deliveredTo: maskEmail(newEmail) }, sources: [] });
     }
 
-    const challenge = readChallenge(challengeSecret(), i.challenge, ctx.now);
+    const store = challengeStore(ctx);
+    const challenge = await readChallenge(store, challengeSecret(), i.challenge, ctx.now);
     if (!challenge || challenge.kind !== 'change_email' || challenge.userId !== user.id || challenge.email !== newEmail) {
       return err(new CapabilityError('validation', EXPIRED_CODE_MESSAGE, { issues: [{ path: 'code', message: EXPIRED_CODE_MESSAGE }] }));
     }
@@ -97,6 +98,7 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
       return err(new CapabilityError('validation', INVALID_CODE_MESSAGE, { issues: [{ path: 'code', message: INVALID_CODE_MESSAGE }] }));
     }
     await logOtp(ctx, { emailHash, purpose: 'change_email', kind: 'verify', outcome: 'verified' });
+    await consumeChallenge(store, challengeSecret(), i.challenge);
     await db.update(guests).set({ email: newEmail, updatedAt: ctx.now }).where(inArray(guests.id, selfGuestIds));
     await ctx.audit.record({ actor: actorOf(ctx), action: 'identity.email_changed', target: { type: 'auth_identity', id: user.id }, outcome: 'success', requestId: ctx.requestId, metadata: { guests: selfGuestIds.length } });
     return ok({ data: { status: 'updated', email: maskEmail(newEmail) }, sources: [] });
