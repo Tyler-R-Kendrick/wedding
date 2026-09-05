@@ -52,12 +52,16 @@ export const challengeSecret = (): string => resolveAuthSecret();
 
 export const ipHashOf = (ctx: CapabilityContext): string => hashOtpIdentifier(transportOf(ctx).clientIp ?? 'unknown');
 
+/**
+ * Per-email limits stop targeting one inbox; per-IP limits stop spraying. Per-IP values are
+ * NAT-friendly on purpose (a hotel or a family Wi-Fi shares one address at wedding time).
+ */
 export const OTP_LIMITS = {
   sendPerEmail: { capacity: 5, refillPerSecond: 5 / 600 },
-  sendPerIp: { capacity: 15, refillPerSecond: 15 / 600 },
+  sendPerIp: { capacity: 60, refillPerSecond: 60 / 600 },
   verifyPerEmail: { capacity: 10, refillPerSecond: 10 / 600 },
-  verifyPerIp: { capacity: 30, refillPerSecond: 30 / 600 },
-  lookupPerIp: { capacity: 30, refillPerSecond: 30 / 600 },
+  verifyPerIp: { capacity: 120, refillPerSecond: 120 / 600 },
+  lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export const RATE_LIMIT_MESSAGE = 'Too many attempts. Please wait a few minutes and try again.';
