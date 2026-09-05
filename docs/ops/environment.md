@@ -54,8 +54,11 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `DUFFEL_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /travel/webhooks/duffel` answers 404 | verifies `X-Duffel-Signature`; the only automatic path to a confirmed trip item | no |
 | `BOOKING_DEMAND_API_KEY`, `BOOKING_AFFILIATE_ID` | unset | hotels `booking` mode (bearer + `X-Affiliate-Id`); both required | no |
 | `TRANSPORT_BENEFIT_MODE` (`mock`\|`manual-code`\|`uber`) | `mock` | transport-benefit | no |
-| `TRANSPORT_MANUAL_CODES` | unset | transport-benefit manual-code (dev) | no |
-| `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET` | unset (reserved) | transport swarm | no |
+| `TRANSPORT_MANUAL_CODES` | unset | transport-benefit manual-code: dev pool used only when no DB-backed code source is installed (the app installs one at boot, so production codes come from admin uploads in `transportation_manual_codes`) | no |
+| `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET`, `UBER_ORG_ID`, `UBER_VOUCHER_PROGRAM_ID` | unset -> mock | transport-benefit `uber` mode (Uber for Business Vouchers adapter); all four required, missing names reported by `validateConfig` | no |
+| `UBER_API_BASE_URL` | `https://api.uber.com` | transport-benefit `uber` mode (partner sandbox override) | no |
+| `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
+| `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
 | `REGISTRY_LINKS_JSON`, `CASH_FUND_LINKS_JSON` | unset -> placeholders | registry, cash-fund | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
 | `JOBS_INLINE_RUNNER` | `true` | dev poller | no |
