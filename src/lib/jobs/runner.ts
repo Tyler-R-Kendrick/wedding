@@ -29,7 +29,7 @@ export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number
     const started = performance.now();
     try {
       if (!handler) throw new Error(`no handler registered for job type "${job.type}"`);
-      await handler(job.payload, job, { logger: log, principal: systemPrincipal(`job:${job.type}`), requestId, now: job.lockedAt ?? new Date() });
+      await handler(job.payload, job, { logger: log, principal: systemPrincipal(`job:${job.type}`), requestId, now: job.lockedAt ?? new Date(), db });
       await queue.complete(job.id);
       summary.succeeded++;
       metrics.histogram('job.duration_ms', Math.round(performance.now() - started), { type: job.type, outcome: 'success' });

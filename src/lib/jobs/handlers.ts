@@ -1,4 +1,5 @@
 import type { SystemPrincipal } from '@/contracts/principal';
+import type { Db } from '@/db/client';
 import type { JobRow } from '@/db/schema';
 import type { Logger } from '@/lib/logger';
 
@@ -8,6 +9,8 @@ export interface JobContext {
   requestId: string;
   /** Wall clock at claim time. */
   now: Date;
+  /** The runner's database handle (handlers never open their own). */
+  db: Db;
 }
 
 export type JobHandler<P = Record<string, unknown>> = (payload: P, job: JobRow, ctx: JobContext) => Promise<void>;

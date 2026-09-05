@@ -93,7 +93,7 @@ flowchart TB
 
 ## Jobs
 
-Durable queue in the `jobs` table (`src/lib/jobs`): `enqueue` (optional dedupe key), optimistic per-row `claim`, `complete`, `fail` with exponential backoff and a dead state, `reapStale`. Handlers register by type. Runners: the dev poller (`JOBS_INLINE_RUNNER`), `npm run jobs:run`, and `POST /api/jobs/run` behind `CRON_SECRET` for production cron.
+Durable queue in the `jobs` table (`src/lib/jobs`): `enqueue` (optional dedupe key), optimistic per-row `claim`, `complete`, `fail` with exponential backoff and a dead state, `reapStale`. Handlers register by type. Runners: the dev poller (`JOBS_INLINE_RUNNER`), `npm run jobs:run`, and `POST /api/jobs/run` behind `CRON_SECRET` for production cron. Handlers receive `ctx.db` (the runner's handle). The foundation registers one handler, `housekeeping.purge` (`src/lib/jobs/housekeeping.ts`): expired `idempotency_keys`, `rate_limits` idle for more than a day, `metrics` older than `METRICS_RETENTION_DAYS`. The cron route enqueues it with a dedupe key on every tick; at most one run per hour.
 
 ## Observability
 

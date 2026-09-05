@@ -94,6 +94,8 @@ const serverSchema = z.object({
   JOBS_INLINE_RUNNER: requiredBool(true),
   JOBS_POLL_INTERVAL_MS: intish(2_000, 100),
   JOBS_BATCH_SIZE: intish(10, 1),
+  /** housekeeping.purge keeps `metrics` rows this many days. */
+  METRICS_RETENTION_DAYS: intish(30, 1),
 });
 
 type Parsed = z.infer<typeof serverSchema>;
