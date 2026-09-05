@@ -1,6 +1,5 @@
 import { asc, count, eq } from 'drizzle-orm';
 import { newId } from '@/contracts/ids';
-import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { biometricConsents, type BiometricConsentRow } from '@/db/schema/biometrics';
 import { CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH, currentConsentPolicy } from './policy';

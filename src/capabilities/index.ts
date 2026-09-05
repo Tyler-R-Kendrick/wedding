@@ -2,7 +2,9 @@ import type { AnyCapability, CapabilityContext, CapabilityOutcome } from '@/cont
 import { CapabilityError } from '@/contracts/errors';
 import { err, type Result } from '@/contracts/result';
 import { invoke } from './invoke';
+import { biometricCapabilities } from './biometrics';
 import { mediaCapabilities } from './media';
+import { mediaAiCapabilities } from './mediaai';
 import { navigateTo } from './navigate_to';
 import { registry } from './registry';
 import { siteStatus } from './site_status';
@@ -11,7 +13,7 @@ import { siteStatus } from './site_status';
  * Registration point. Feature swarms add ONE line each importing their module's
  * capability list, e.g. `import { rsvpCapabilities } from './rsvp';` and spread it below.
  */
-export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo, ...mediaCapabilities];
+export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo, ...mediaCapabilities, ...mediaAiCapabilities, ...biometricCapabilities];
 
 registry.registerAll(BUILTIN_CAPABILITIES);
 
