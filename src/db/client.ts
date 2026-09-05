@@ -61,7 +61,10 @@ async function connect(): Promise<Db> {
 async function connectPglite(): Promise<Db> {
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle } = await import('drizzle-orm/pglite');
-  const dataDir = env.isTest || env.PGLITE_MEMORY ? 'memory://' : env.PGLITE_DATA_DIR;
+  // Serverless hosts (Vercel) mount the project read-only; only /tmp is writable and it is
+  // per-instance and ephemeral. That is acceptable for previews without DATABASE_URL.
+  const serverless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const dataDir = env.isTest || env.PGLITE_MEMORY ? 'memory://' : serverless ? '/tmp/wedding-pglite' : env.PGLITE_DATA_DIR;
   const vector = await loadPgVector();
   const client = await PGlite.create({ dataDir, ...(vector ? { extensions: { vector } } : {}) });
   const base = drizzle({ client, schema });
