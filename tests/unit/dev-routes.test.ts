@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { env } from '@/lib/env';
 import { LocalFsStorage, signDevStorage } from '@/providers/storage';
+import { devInbox, MockAuthEmail } from '@/providers/auth-email';
 import { resetProviders, setProviderOverride } from '@/providers/registry';
 
 // The routes read `env` at request time; give the tests a mutable copy so they can flip modes.
@@ -100,5 +101,52 @@ describe('/api/dev/storage', () => {
     // Oversized declared bodies are refused before reading.
     res = await PUT(new Request(part.value.url, { method: 'PUT', body: 'x', headers: { 'content-length': String(300 * 1024 * 1024) } }), params('video/v.mp4'));
     expect(res.status).toBe(413);
+  });
+});
+
+describe('/api/dev/inbox', () => {
+  const saved = { VERCEL: process.env.VERCEL, CI: process.env.CI };
+  beforeAll(() => setProviderOverride('auth-email', new MockAuthEmail()));
+  afterEach(() => {
+    setEnv({});
+    for (const k of ['VERCEL', 'CI'] as const) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  });
+  afterAll(() => resetProviders());
+
+  it('answers only on a local development server, or with DEV_INBOX_TOKEN', async () => {
+    const { GET, DELETE } = await import('@/app/api/dev/inbox/route');
+    devInbox.clear();
+    await new MockAuthEmail().sendOtp({ to: 'g@example.com', code: '123456', purpose: 'sign_in' });
+    const get = (headers: Record<string, string> = {}) => GET(new Request('http://localhost:3000/api/dev/inbox', { headers }));
+    delete process.env.VERCEL;
+    delete process.env.CI;
+    setEnv({ isDevelopment: true, isProduction: false, isTest: false, DEV_INBOX_TOKEN: undefined });
+    let res = await get();
+    expect(res.status).toBe(200);
+    expect((await res.json()).messages).toHaveLength(1);
+    process.env.CI = 'true';
+    expect((await get()).status).toBe(404);
+    delete process.env.CI;
+    process.env.VERCEL = '1';
+    expect((await get()).status).toBe(404);
+    delete process.env.VERCEL;
+    setEnv({ isDevelopment: false, isProduction: true, isTest: false });
+    expect((await get()).status).toBe(404);
+    setEnv({ isDevelopment: false, isProduction: false, isTest: true });
+    expect((await get()).status).toBe(404);
+    // A bearer unlocks it anywhere the mock mailer runs (previews), with a timing-safe compare.
+    process.env.VERCEL = '1';
+    setEnv({ isDevelopment: false, isProduction: true, isTest: false, DEV_INBOX_TOKEN: 'inbox-token-0123456789' });
+    expect((await get({ authorization: 'Bearer inbox-token-0123456789' })).status).toBe(200);
+    expect((await get({ authorization: 'Bearer inbox-token-012345678X' })).status).toBe(404);
+    expect((await get({ authorization: 'Bearer ' })).status).toBe(404);
+    expect((await get()).status).toBe(404);
+    res = await DELETE(new Request('http://localhost:3000/api/dev/inbox', { method: 'DELETE', headers: { authorization: 'Bearer inbox-token-0123456789' } }));
+    expect(res.status).toBe(200);
+    expect(devInbox.list()).toHaveLength(0);
+    expect((await DELETE(new Request('http://localhost:3000/api/dev/inbox', { method: 'DELETE' }))).status).toBe(404);
   });
 });

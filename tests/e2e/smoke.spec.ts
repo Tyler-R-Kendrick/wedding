@@ -13,15 +13,26 @@ test.describe('smoke', () => {
     expect(blocking, blocking.map((v) => `${v.id}: ${v.help}`).join('\n')).toEqual([]);
   });
 
-  test('/api/health reports ok with no secrets', async ({ request }) => {
+  test('/api/health reports ok publicly and the provider inventory only to the ops bearer', async ({ request }) => {
     const res = await request.get('/api/health');
     expect(res.status()).toBe(200);
     expect(res.headers()['cache-control']).toContain('no-store');
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.db).toBe('up');
-    expect(body.providers).toMatchObject({ storage: expect.any(String), 'ai-model': expect.any(String) });
+    expect(body.providers).toBeUndefined();
+    expect(body.driver).toBeUndefined();
     expect(JSON.stringify(body)).not.toMatch(/secret|key=|token/i);
+    const wrong = await request.get('/api/health', { headers: { authorization: 'Bearer definitely-not-the-health-token' } });
+    expect((await wrong.json()).providers).toBeUndefined();
+    // The runner exports HEALTH_TOKEN to the server it starts (playwright.config.ts / CI); with it the inventory appears.
+    if (process.env.HEALTH_TOKEN) {
+      const ops = await request.get('/api/health', { headers: { authorization: `Bearer ${process.env.HEALTH_TOKEN}` } });
+      expect(ops.status()).toBe(200);
+      const inventory = await ops.json();
+      expect(inventory.providers).toMatchObject({ storage: expect.any(String), 'ai-model': expect.any(String) });
+      expect(JSON.stringify(inventory)).not.toMatch(/secret|key=|token/i);
+    }
   });
 
   test('capability route answers site_status and rejects unknown names', async ({ request }) => {

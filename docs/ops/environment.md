@@ -34,6 +34,8 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `CRON_SECRET` | unset (route 401) | api/jobs/run | no |
 | `STORAGE_SIGNING_SECRET` | dev default (warns); required in production unless S3 is configured | storage local-fs signed URLs | no |
 | `DEV_STORAGE_SECRET` | unset | alias of `STORAGE_SIGNING_SECRET` (written by the secrets autofill); `STORAGE_SIGNING_SECRET` wins when both are set | no |
+| `DEV_INBOX_TOKEN` | unset | bearer that unlocks `GET/DELETE /api/dev/inbox` off a local dev server (e.g. previews with the mock mailer); without it the inbox answers only when `NODE_ENV=development` and neither `VERCEL` nor `CI` is set | no |
+| `HEALTH_TOKEN` | unset | bearer that unlocks the provider/driver inventory on `/api/health` (admin principals see it without a token); `{ ok, db, time }` stays public | no |
 | `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | unset | auth swarm (Better Auth) | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |

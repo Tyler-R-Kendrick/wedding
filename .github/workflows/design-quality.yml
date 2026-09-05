@@ -106,6 +106,7 @@ jobs:
           CONFIRMATION_SECRET: ci-only-confirmation-secret-not-real
           CRON_SECRET: ci-only-cron-secret-not-real-32-chars-minimum
           STORAGE_SIGNING_SECRET: ci-only-storage-signing-secret-not-real
+          HEALTH_TOKEN: ci-only-health-token-not-real
 
       - uses: actions/upload-artifact@v4
         if: failure()

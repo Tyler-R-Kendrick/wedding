@@ -1,11 +1,21 @@
 import { getDb } from '@/db/client';
 import { getLifecycle } from '@/db/repos/site';
-import { getRequestId, jsonResponse } from '@/lib/request';
+import { timingSafeEqualString } from '@/lib/crypto';
+import { env } from '@/lib/env';
+import { getPrincipal } from '@/lib/principal';
+import { bearerToken, getRequestId, jsonResponse } from '@/lib/request';
 import { describeProviders } from '@/providers/registry';
 
 export const dynamic = 'force-dynamic';
 
-/** Liveness + readiness. No secrets, no values: only modes and up/down. */
+/** Provider modes and the database driver are an inventory of the deployment: admins and the ops bearer only. */
+async function mayInspect(request: Request): Promise<boolean> {
+  const token = bearerToken(request);
+  if (env.HEALTH_TOKEN && token && timingSafeEqualString(token, env.HEALTH_TOKEN)) return true;
+  return (await getPrincipal(request)).kind === 'admin';
+}
+
+/** Liveness + readiness. Public: { ok, db, time }. Inventory (driver, vector, lifecycle, providers) is gated. */
 export async function GET(request: Request) {
   const requestId = getRequestId(request.headers);
   let db: 'up' | 'down' = 'down';
@@ -22,7 +32,9 @@ export async function GET(request: Request) {
   } catch {
     db = 'down';
   }
-  const providers = Object.fromEntries(describeProviders({ db: conn }).map((p) => [p.kind, p.mode]));
   const ok = db === 'up';
-  return jsonResponse({ ok, db, driver, vector, lifecycle, providers, time: new Date().toISOString() }, { status: ok ? 200 : 503, requestId });
+  const time = new Date().toISOString();
+  if (!(await mayInspect(request))) return jsonResponse({ ok, db, time }, { status: ok ? 200 : 503, requestId });
+  const providers = Object.fromEntries(describeProviders({ db: conn }).map((p) => [p.kind, p.mode]));
+  return jsonResponse({ ok, db, driver, vector, lifecycle, providers, time }, { status: ok ? 200 : 503, requestId });
 }

@@ -21,14 +21,15 @@ Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI)
 |---|---|---|
 | Database | PGlite `./.data/pglite` (`npm run db:migrate` / `db:seed` also work) | Postgres (`DATABASE_URL`); run `npm run db:migrate` in the deploy step or set `DB_AUTO_MIGRATE=1` on a single instance |
 | Storage | local-fs under `./.data/storage` (objects, `meta/` sidecars, `multipart/`); signed URLs at `/api/dev/storage/<key>?op=...&exp=...&sig=...` (never served in production) | S3-compatible bucket (or local-fs with an explicit `STORAGE_SIGNING_SECRET`) |
-| OTP emails | dev inbox: `GET /api/dev/inbox` (JSON, newest first), `DELETE /api/dev/inbox` to clear | Resend |
+| OTP emails | dev inbox: `GET /api/dev/inbox` (JSON, newest first), `DELETE /api/dev/inbox` to clear. Answers only on a local `NODE_ENV=development` server (not on Vercel/CI) unless `Authorization: Bearer $DEV_INBOX_TOKEN` is sent | Resend |
 | Jobs | in-process poller (`JOBS_INLINE_RUNNER=true`, every `JOBS_POLL_INTERVAL_MS`) or `npm run jobs:run` for one batch | cron hitting `POST /api/jobs/run` with `Authorization: Bearer $CRON_SECRET` |
 | AI model | `ai/test` mock (`MOCK_REPLY`) | Anthropic via `ANTHROPIC_API_KEY` |
 | Logs | pretty (pino-pretty); `LOG_FORMAT=json` to switch | JSON |
 | Metrics | console at debug level | `metrics` table |
 
-Health: `curl -s localhost:3000/api/health | jq` shows db driver, whether pgvector loaded,
-lifecycle state, and the mode of every provider.
+Health: `curl -s localhost:3000/api/health | jq` shows `{ ok, db, time }`. Add
+`-H "Authorization: Bearer $HEALTH_TOKEN"` (or be signed in as an admin) to also see the db
+driver, whether pgvector loaded, lifecycle state, and the mode of every provider.
 
 Try a capability:
 

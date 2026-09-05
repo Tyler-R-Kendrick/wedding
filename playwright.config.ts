@@ -30,7 +30,12 @@ export default defineConfig({
         url: 'http://localhost:3000/api/health',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
-        env: { PGLITE_MEMORY: process.env.PGLITE_MEMORY ?? '1', LOG_FORMAT: 'json' },
+        env: {
+          PGLITE_MEMORY: process.env.PGLITE_MEMORY ?? '1',
+          LOG_FORMAT: 'json',
+          // The smoke test presents this bearer to /api/health; the server must know the same value.
+          ...(process.env.HEALTH_TOKEN ? { HEALTH_TOKEN: process.env.HEALTH_TOKEN } : {}),
+        },
       },
   // Only Chromium is installed in CI and the sandbox, so phone/tablet profiles emulate on Chromium.
   projects: [

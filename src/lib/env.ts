@@ -57,6 +57,10 @@ const serverSchema = z.object({
   BETTER_AUTH_URL: optionalUrl,
   /** Number of trusted reverse proxies in front of the app. 0 = ignore forwarding headers. Default: 1 on Vercel, else 0. */
   TRUSTED_PROXY_HOPS: optionalInt(0, 16),
+  /** Bearer that unlocks GET/DELETE /api/dev/inbox outside local development (previews). */
+  DEV_INBOX_TOKEN: optionalSecret(16),
+  /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
+  HEALTH_TOKEN: optionalSecret(16),
 
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
