@@ -6,7 +6,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import { stableHash } from '@/lib/crypto';
 import { authorize } from '@/policy/entitlements';
-import { principalKey } from '@/policy/confirmation';
+import { principalKey, REDEEMABLE_SURFACE, type VerifiedConfirmation } from '@/policy/confirmation';
 import { requireFreshSession } from '@/policy/stepUp';
 import { pipelineServices } from './services';
 
@@ -104,14 +104,19 @@ export async function invoke<I, O>(
     if (!fresh.ok) return finish(err(fresh.error));
   }
 
-  // 5. explicit confirmation
+  // 5. explicit confirmation: a human confirms on the website; models and WebMCP can only draft
   const payloadHash = stableHash(input);
+  let confirmed: VerifiedConfirmation | undefined;
   if (descriptor.confirmation === 'explicit') {
+    if (surface !== REDEEMABLE_SURFACE) {
+      return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
+    }
     if (!services.confirmation) {
       return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('confirmation service not wired'))));
     }
     const verified = services.confirmation.verify(ctx.confirmationToken, { capability: descriptor.name, principalRef: actor, payloadHash }, ctx.now);
     if (!verified.ok) return finish(err(verified.error));
+    confirmed = verified.value;
   }
 
   // 6. idempotency: reserve first, so concurrent retries can never both run the handler
@@ -146,6 +151,25 @@ export async function invoke<I, O>(
     }
     return finish(err(error));
   };
+
+  // 6b. consume the confirmation nonce: a token is accepted once, ever (after the replay check, so an
+  //     honest retry of a completed request still replays instead of burning a second confirmation)
+  if (confirmed) {
+    if (!services.idempotency) {
+      return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('idempotency store not wired; cannot consume confirmation nonces')));
+    }
+    const nonceScope = `confirm:${descriptor.name}:${principalKey(actor)}`;
+    const ttlSeconds = Math.max(60, Math.ceil((Date.parse(confirmed.expiresAt) - ctx.now.getTime()) / 1000) + 60);
+    let claim: Awaited<ReturnType<typeof services.idempotency.reserve>>;
+    try {
+      claim = await services.idempotency.reserve(nonceScope, confirmed.nonce, payloadHash, ttlSeconds);
+    } catch (cause) {
+      return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause));
+    }
+    if (!claim.reserved) {
+      return fail(new CapabilityError('confirmation_required', 'That confirmation was already used — please review again.', { reason: 'used' }));
+    }
+  }
 
   // 7. handler
   let result: Result<CapabilityOutcome<O>, CapabilityError>;

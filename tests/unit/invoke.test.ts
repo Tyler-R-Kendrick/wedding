@@ -155,11 +155,61 @@ describe('invoke pipeline', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('confirmation_required');
 
-    const token = confirmation.issue({ capability: 'confirm_thing', principalRef: { kind: 'guest', guestId: guest.guestId, householdId: guest.householdId }, payloadHash: stableHash({ text: 'hi' }) }).token;
-    const withToken = ctx({ principal: guest, confirmationToken: token });
+    const ref = { kind: 'guest' as const, guestId: guest.guestId, householdId: guest.householdId };
+    const token = confirmation.issue({ capability: 'confirm_thing', principalRef: ref, payloadHash: stableHash({ text: 'hi' }) }).token;
+    const store = new MemoryIdempotencyStore();
+    const withToken = ctx({ principal: guest, confirmationToken: token }, { idempotency: store });
     expect((await invoke(action, withToken.c, { text: 'hi' })).ok).toBe(true);
-    const wrongPayload = ctx({ principal: guest, confirmationToken: token });
+    const wrongPayload = ctx({ principal: guest, confirmationToken: token }, { idempotency: store });
     expect((await invoke(action, wrongPayload.c, { text: 'other' })).ok).toBe(false);
+    // A token is consumed on first use: replaying it within its TTL is refused.
+    const replayed = await invoke(action, ctx({ principal: guest, confirmationToken: token }, { idempotency: store }).c, { text: 'hi' });
+    expect(replayed.ok).toBe(false);
+    if (!replayed.ok) expect(replayed.error).toMatchObject({ code: 'confirmation_required', details: { reason: 'used' } });
+    // Without a store to consume nonces the pipeline fails closed.
+    const fresh = confirmation.issue({ capability: 'confirm_thing', principalRef: ref, payloadHash: stableHash({ text: 'hi' }) }).token;
+    const noStore = await invoke(action, ctx({ principal: guest, confirmationToken: fresh }, { idempotency: undefined }).c, { text: 'hi' });
+    expect(!noStore.ok && noStore.error.code).toBe('internal');
+  });
+
+  it('only completes draft -> confirm on the ui surface, and lets an honest retry replay without burning the token', async () => {
+    let calls = 0;
+    const action = defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'confirm_ui_only',
+      kind: 'action',
+      auth: 'guest',
+      confirmation: 'explicit',
+      idempotent: true,
+      exposure: { ui: true, ai: true, webmcp: true },
+      annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
+      handler: async (_c, i) => {
+        calls++;
+        return ok({ data: { text: i.text }, sources: [] });
+      },
+    });
+    const ref = { kind: 'guest' as const, guestId: guest.guestId, householdId: guest.householdId };
+    const token = confirmation.issue({ capability: 'confirm_ui_only', principalRef: ref, payloadHash: stableHash({ text: 'hi' }) }).token;
+    const store = new MemoryIdempotencyStore();
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const r = await invoke(action, ctx({ principal: guest, confirmationToken: token, surface }, { idempotency: store }).c, { text: 'hi' });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toMatchObject({ code: 'confirmation_required', details: { reason: 'requires_ui' } });
+    }
+    // Tokens drafted by the concierge (surface 'ai') are not redeemable even from the ui.
+    const aiToken = confirmation.issue({ capability: 'confirm_ui_only', principalRef: ref, payloadHash: stableHash({ text: 'hi' }), surface: 'ai' }).token;
+    const viaUi = await invoke(action, ctx({ principal: guest, confirmationToken: aiToken, surface: 'ui' }, { idempotency: store }).c, { text: 'hi' });
+    expect(!viaUi.ok && viaUi.error.details?.reason).toBe('requires_ui');
+    expect(calls).toBe(0);
+    const key = 'idem-confirm-retry' as IdempotencyKey;
+    const first = await invoke(action, ctx({ principal: guest, confirmationToken: token, surface: 'ui', idempotencyKey: key }, { idempotency: store }).c, { text: 'hi' });
+    expect(first.ok).toBe(true);
+    const retry = await invoke(action, ctx({ principal: guest, confirmationToken: token, surface: 'ui', idempotencyKey: key }, { idempotency: store }).c, { text: 'hi' });
+    expect(retry.ok).toBe(true); // replayed from the idempotency store, nonce not re-checked
+    expect(calls).toBe(1);
+    const other = await invoke(action, ctx({ principal: guest, confirmationToken: token, surface: 'ui', idempotencyKey: 'idem-confirm-other' as IdempotencyKey }, { idempotency: store }).c, { text: 'hi' });
+    expect(!other.ok && other.error.details?.reason).toBe('used');
+    expect(await store.get('confirm_ui_only:guest:G1', 'idem-confirm-other')).toBeNull(); // the losing reservation was released
   });
 
   it('replays idempotent mutations and rejects a reused key with a different payload', async () => {

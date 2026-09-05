@@ -27,10 +27,14 @@ Implementation: `src/capabilities/{registry,invoke,context,services}.ts`.
 2  validate input       zod safeParse; issues returned as { path, message } (guest-safe)
 3  authorize            auth level (anonymous < guest < admin < system) + required entitlements
 4  step-up              descriptor.stepUp -> session must be < 5 min old (system exempt)
-5  confirmation         confirmation === 'explicit' -> token must match (capability, principal, payload hash)
+5  confirmation         confirmation === 'explicit' -> surface must be 'ui' (else confirmation_required
+                        {reason:'requires_ui'}); token must match (capability, principal, payload hash)
+                        and carry surface 'ui'; anonymous principals are refused (forbidden)
 6  idempotency          idempotent + key -> (scope, key) is RESERVED before the handler; a live reservation
                         is `conflict` (still processing), a stored outcome is replayed, a different payload
                         is `conflict`; any later failure releases the reservation so the retry re-runs
+6b consume the nonce     explicit confirmation -> the token's nonce is reserved under
+                        confirm:<capability>:<principalKey>; a second use is confirmation_required {reason:'used'}
 7  handler              exceptions become `internal` with a guest-safe message; cause is logged, never returned
 8  validate output      zod safeParse of data; maxOutputChars enforced for 'ai' and 'webmcp' surfaces
 9  audit                ALWAYS: capability.invoked | capability.denied | capability.failed
@@ -105,11 +109,25 @@ snapshots: include `retrievedAt`, never persist them as evergreen knowledge.
 
 `draft` capabilities return a proposal plus `confirmation: { token, expiresAt, summary }`
 issued by `services.confirmation.issue({ capability: '<target name>', principalRef, payloadHash })`
-where `payloadHash = stableHash(<the exact input the confirm step will receive>)`. The
-`action`/`transaction` with `confirmation: 'explicit'` must be called with that token as
-`ctx.confirmationToken`. Tokens are HMAC-signed with `CONFIRMATION_SECRET`, expire in 5
-minutes by default, and are bound to capability, principal, and payload; any mismatch is
-`confirmation_required` with a `reason` detail.
+where `payloadHash = stableHash(<the exact input the confirm step will receive>)` and
+`surface: ctx.surface`. The `action`/`transaction` with `confirmation: 'explicit'` must be
+called with that token as `ctx.confirmationToken`. Tokens are HMAC-signed with
+`CONFIRMATION_SECRET`, expire in 5 minutes by default, and are bound to capability,
+principal, payload and the issuing surface; any mismatch is `confirmation_required` with a
+`reason` detail (`missing`, `malformed`, `signature`, `capability`, `principal`, `payload`,
+`requires_ui`, `expired`, `used`).
+
+- **A human confirms, on the website.** Step 5 refuses explicit confirmation unless the
+  calling surface is `ui`, and only tokens issued on `ui` are redeemable, so the concierge
+  and WebMCP can draft but never complete a consequential change. Their proposal is shown
+  in the UI, which re-drafts and confirms.
+- **Single use.** On success the token's nonce is recorded in the idempotency store under
+  `confirm:<capability>:<principalKey>` (TTL = the token's remaining life); presenting the
+  same token again is `confirmation_required { reason: 'used' }`. The nonce is consumed
+  *after* the idempotency replay check, so an honest retry (same `idempotencyKey`, same
+  token) replays the stored outcome instead of failing. A pipeline without an idempotency
+  store cannot consume nonces and fails closed (`internal`).
+- Anonymous principals cannot confirm anything (`forbidden`).
 
 ## Idempotency
 
