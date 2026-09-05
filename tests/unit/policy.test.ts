@@ -86,4 +86,16 @@ describe('step-up', () => {
     expect(requireFreshSession(system, now).ok).toBe(true);
     expect(requireFreshSession(anonymous, now).ok).toBe(false);
   });
+
+  it('rejects sessions authenticated in the future and malformed timestamps', () => {
+    const now = new Date('2026-09-05T12:00:00Z');
+    for (const authenticatedAt of ['2026-09-05T12:00:01Z', '2026-09-05T12:04:00Z', '2099-01-01T00:00:00Z', 'not a date', '']) {
+      const r = requireFreshSession(guest({ authenticatedAt }), now);
+      expect(r.ok, authenticatedAt).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe('step_up_required');
+    }
+    expect(requireFreshSession(guest({ authenticatedAt: '2026-09-05T12:00:00Z' }), now).ok).toBe(true);
+    expect(requireFreshSession(guest({ authenticatedAt: '2026-09-05T11:55:00Z' }), now).ok).toBe(true);
+    expect(requireFreshSession(guest({ authenticatedAt: '2026-09-05T11:54:59Z' }), now).ok).toBe(false);
+  });
 });

@@ -78,7 +78,10 @@ export function isSessionFresh(p: Principal, now: Date = new Date(), maxAgeSecon
   if (p.kind === 'system') return true;
   if (p.kind === 'anonymous') return false;
   const authedAt = Date.parse(p.authenticatedAt);
-  return Number.isFinite(authedAt) && now.getTime() - authedAt <= maxAgeSeconds * 1000;
+  if (!Number.isFinite(authedAt)) return false;
+  // A timestamp in the future is not "fresh", it is forged or mis-clocked: never accept it.
+  const age = now.getTime() - authedAt;
+  return age >= 0 && age <= maxAgeSeconds * 1000;
 }
 
 /** Minimal, log-safe reference to a principal for audit rows. */

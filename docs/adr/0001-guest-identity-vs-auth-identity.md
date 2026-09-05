@@ -51,8 +51,9 @@ Rules:
 4. **Step-up for money/identity actions.** Changing the claimed email,
    redeeming a voucher, adding a delegate, viewing another guest's contact
    data, or any `transaction`/`external` capability (ADR-0002) requires a
-   fresh OTP or passkey assertion within the last 10 minutes, regardless of
-   session age.
+   fresh OTP or passkey assertion within the last 5 minutes
+   (`STEP_UP_MAX_AGE_SECONDS` in `src/contracts/principal.ts`), regardless
+   of session age. A verification timestamp in the future is never fresh.
 5. **Household managers** hold RSVP capabilities for the household;
    **individuals** hold their own benefits. A manager cannot redeem a
    guest's individual voucher; a guest cannot RSVP for a household they do
