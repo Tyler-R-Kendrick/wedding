@@ -1,15 +1,27 @@
 import { timingSafeEqualString } from '@/lib/crypto';
 import { env } from '@/lib/env';
 
+export interface DevGateEnv {
+  isProduction: boolean;
+  isDevelopment: boolean;
+  DEV_INBOX_TOKEN?: string;
+  /** Shared host (Vercel preview, CI): never open without the bearer. */
+  hosted: boolean;
+}
+
 /**
- * Gate for development-only endpoints (dev inbox, identity fixtures): open only in local
- * development (NODE_ENV=development, not on Vercel/CI) or with a `DEV_INBOX_TOKEN` bearer.
- * Never available in production without the token, and never with a mismatched one.
+ * Gate for development-only endpoints (dev inbox, identity fixtures).
+ *  - production: never, whatever the caller presents (review S5)
+ *  - otherwise a matching `DEV_INBOX_TOKEN` bearer opens them (previews, CI)
+ *  - otherwise only a local development server (NODE_ENV=development, not VERCEL/CI)
  */
+export function devEndpointAllowedFor(request: Request, e: DevGateEnv): boolean {
+  if (e.isProduction) return false;
+  const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
+  if (e.DEV_INBOX_TOKEN && bearer && timingSafeEqualString(bearer, e.DEV_INBOX_TOKEN)) return true;
+  return e.isDevelopment && !e.hosted;
+}
+
 export function devEndpointAllowed(request: Request): boolean {
-  const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
-  if (env.DEV_INBOX_TOKEN && bearer && timingSafeEqualString(bearer, env.DEV_INBOX_TOKEN)) return true;
-  if (env.isProduction) return false;
-  const hosted = !!process.env.VERCEL || !!process.env.CI;
-  return !hosted;
+  return devEndpointAllowedFor(request, { isProduction: env.isProduction, isDevelopment: env.isDevelopment, DEV_INBOX_TOKEN: env.DEV_INBOX_TOKEN, hosted: !!process.env.VERCEL || !!process.env.CI });
 }

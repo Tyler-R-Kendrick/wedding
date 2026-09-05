@@ -2,6 +2,7 @@ import type { AuditSink } from '@/contracts/audit';
 import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { adminRoles } from '@/db/schema';
+import { env } from '@/lib/env';
 import { upsertGuest } from '@/domain/guests/repo';
 import { getHousehold, upsertHousehold } from '@/domain/households/repo';
 import { issueInvitation, revokeInvitation } from '@/domain/invitations/repo';
@@ -81,7 +82,9 @@ export async function seedIdentityFixtures(db: Db, deps: { audit: AuditSink; req
   };
   const revoked = await revokeInvitation(db, { invitationId: invitations.revoked.id, reason: 'fixture', actor, requestId, audit: deps.audit, now });
   if (!revoked.ok) throw revoked.error;
-  // The fixture administrator holds the owner role (tests never rely on ADMIN_EMAILS).
-  await db.insert(adminRoles).values({ email: emails.admin, role: 'owner', grantedBy: actor, grantedAt: now }).onConflictDoNothing();
+  // The fixture administrator holds the owner role in test/development only — never on a production database (review S5).
+  if (env.isTest || env.isDevelopment) {
+    await db.insert(adminRoles).values({ email: emails.admin, role: 'owner', grantedBy: actor, grantedAt: now }).onConflictDoNothing();
+  }
   return { households, guests, invitations, emails };
 }

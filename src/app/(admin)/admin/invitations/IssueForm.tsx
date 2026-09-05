@@ -45,6 +45,12 @@ export function IssueForm({ households, rotateId }: { households: { id: string; 
       {state.error ? (
         <p className="ops-notice ops-notice-error" role="alert">
           {state.error}
+          {state.code === 'step_up_required' ? (
+            <>
+              {' '}
+              <a href="/step-up?next=%2Fadmin%2Finvitations">Confirm it’s you</a>
+            </>
+          ) : null}
         </p>
       ) : null}
       {state.ok && state.url ? (

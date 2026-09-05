@@ -83,6 +83,7 @@ export async function revokeInvitation(fd: FormData): Promise<void> {
 export interface IssuedLink {
   ok: boolean;
   error?: string;
+  code?: string;
   url?: string;
   qrSvg?: string;
   householdId?: string;
@@ -101,7 +102,7 @@ export async function issueInvitation(_prev: IssuedLink, fd: FormData): Promise<
         plusOneAllowance: Number(str(fd, 'plusOneAllowance') || 0),
         childrenAllowance: Number(str(fd, 'childrenAllowance') || 0),
       }, idem(fd));
-  if (!r.ok) return { ok: false, error: r.error.message };
+  if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
   return { ok: true, url: r.value.data.url, qrSvg: r.value.data.qrSvg, householdId: r.value.data.invitation.householdId, expiresAt: r.value.data.invitation.expiresAt };
 }
 

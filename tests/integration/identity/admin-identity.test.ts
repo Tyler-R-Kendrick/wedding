@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { like } from 'drizzle-orm';
 import { getDb } from '@/db/client';
+import { auditEvents, idempotencyKeys } from '@/db/schema';
 import { listAuditEvents } from '@/lib/audit';
 import { call, claim, expectErr, expectOk, grantAdmin, principalFor, seed, signIn } from './harness';
 
@@ -71,5 +73,15 @@ describe('admin reset, rebind, roles, CSV', () => {
     expect(issued.data.qrSvg).toContain('<svg');
     const listed = expectOk(await call<{ invitations: { id: string }[] }>('admin_list_invitations', { householdId: f.households.ruiz }, { cookie: admin.cookie }));
     expect(JSON.stringify(listed.data)).not.toContain(issued.data.token);
+    // Review S4: the plaintext token is shown once and persisted nowhere — not in idempotency replays, not in audit rows.
+    const rotated = expectOk(await call<{ token: string }>('admin_rotate_invitation', { invitationId: f.invitations.ruiz.id }, { cookie: admin.cookie }));
+    const db = await getDb();
+    const idem = JSON.stringify(await db.select().from(idempotencyKeys).where(like(idempotencyKeys.scope, 'admin_%')));
+    const audit = JSON.stringify(await db.select().from(auditEvents));
+    for (const token of [issued.data.token, rotated.data.token]) {
+      expect(idem).not.toContain(token);
+      expect(audit).not.toContain(token);
+      expect(audit).not.toContain(issued.data.url.split('/invite/')[1]!);
+    }
   });
 });

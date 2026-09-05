@@ -342,7 +342,9 @@ export const adminIssueInvitation = defineCapability({
   description: 'Creates a new invitation link (URL + QR) for a household. The token is shown once. Admin only.',
   kind: 'action',
   confirmation: 'inline',
-  idempotent: true,
+  // Never idempotent: a replayed outcome would persist the plaintext token for 24 h (review S4). Step-up: mints a bearer link (N8).
+  stepUp: true,
+  idempotent: false,
   annotations: writeAnn,
   input: z.object({ householdId: z.string().min(1).max(64), eventKeys: z.array(z.string().min(1).max(64)).max(20).optional(), plusOneAllowance: z.number().int().min(0).max(10).optional(), childrenAllowance: z.number().int().min(0).max(20).optional(), expiresAt: z.string().datetime().optional() }),
   output: issuedOut,
@@ -363,7 +365,9 @@ export const adminRotateInvitation = defineCapability({
   description: 'Revokes the current link and issues a fresh one with the same scope. Admin only.',
   kind: 'action',
   confirmation: 'inline',
-  idempotent: true,
+  // Never idempotent: a replayed outcome would persist the plaintext token for 24 h (review S4). Step-up: mints a bearer link (N8).
+  stepUp: true,
+  idempotent: false,
   annotations: writeAnn,
   input: z.object({ invitationId: z.string().min(1).max(64), expiresAt: z.string().datetime().optional() }),
   output: issuedOut,
