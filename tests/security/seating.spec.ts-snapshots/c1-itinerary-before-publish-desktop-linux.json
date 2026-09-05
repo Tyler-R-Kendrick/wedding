@@ -1,0 +1,129 @@
+{
+  "ok": true,
+  "data": {
+    "greeting": {
+      "firstName": "Fin",
+      "householdName": "Solo household"
+    },
+    "lifecycle": "TEASER",
+    "rsvp": {
+      "window": {
+        "open": true,
+        "reason": "manual_open",
+        "mode": "open",
+        "deadlineAt": null,
+        "lifecycle": "TEASER"
+      },
+      "status": "not_started",
+      "answered": 0,
+      "expected": 2
+    },
+    "events": [
+      {
+        "id": "01SDEVENTCEREMNY0000000000",
+        "slug": "ceremony",
+        "name": "Ceremony",
+        "description": "TODO(Tyler & Sara): what happens, and what to expect.",
+        "dateIso": "2027-07-17",
+        "startsAt": null,
+        "endsAt": null,
+        "timezone": "America/Chicago",
+        "venueSpaceRef": null,
+        "dressCode": null,
+        "accessibilityNote": null,
+        "placeholder": true,
+        "rsvpRequired": true,
+        "hasMeal": false,
+        "mealOptionsVersion": 0,
+        "sortOrder": 10,
+        "mealOptions": [],
+        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "dateText": "Saturday, July 17, 2027",
+        "household": [
+          {
+            "guestId": "01E2EGSTC10000000000000000",
+            "displayName": "Fin Solo",
+            "isSelf": true,
+            "status": null
+          }
+        ]
+      },
+      {
+        "id": "01SDEVENTRECEPTN0000000000",
+        "slug": "reception",
+        "name": "Reception",
+        "description": "TODO(Tyler & Sara): what happens, and what to expect.",
+        "dateIso": "2027-07-17",
+        "startsAt": null,
+        "endsAt": null,
+        "timezone": "America/Chicago",
+        "venueSpaceRef": null,
+        "dressCode": null,
+        "accessibilityNote": null,
+        "placeholder": true,
+        "rsvpRequired": true,
+        "hasMeal": true,
+        "mealOptionsVersion": 1,
+        "sortOrder": 30,
+        "mealOptions": [
+          {
+            "id": "01E2EMEABEEF00000000000000",
+            "label": "Test entrée A",
+            "description": "Fixture menu item"
+          },
+          {
+            "id": "01E2EMEAFSH000000000000000",
+            "label": "Test entrée B",
+            "description": "Fixture menu item"
+          },
+          {
+            "id": "01E2EMEAGARDEN000000000000",
+            "label": "Test entrée C (vegetarian)",
+            "description": "Fixture menu item"
+          }
+        ],
+        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "dateText": "Saturday, July 17, 2027",
+        "household": [
+          {
+            "guestId": "01E2EGSTC10000000000000000",
+            "displayName": "Fin Solo",
+            "isSelf": true,
+            "status": null
+          }
+        ]
+      }
+    ],
+    "seating": {
+      "published": false,
+      "table": null
+    },
+    "slots": {
+      "transport": {
+        "kind": "transport",
+        "status": "placeholder",
+        "placeholder": true,
+        "title": "Getting there and home",
+        "body": "Ride and valet details will appear here once they are set. TODO(Tyler & Sara)",
+        "owner": "swarm-G"
+      },
+      "trip": {
+        "kind": "trip",
+        "status": "placeholder",
+        "placeholder": true,
+        "title": "Your trip",
+        "body": "Flights, hotel, and free-time ideas will appear here once travel tools are live. TODO(Tyler & Sara)",
+        "owner": "swarm-F"
+      }
+    },
+    "notices": []
+  },
+  "sources": [
+    {
+      "sourceId": "01SEED00000000000000000101",
+      "title": "Tyler's brief 2026-09-04",
+      "url": "/the-wedding",
+      "verifiedAt": "<timestamp>"
+    }
+  ]
+}
