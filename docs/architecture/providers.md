@@ -44,7 +44,7 @@ else `provider_error`). `raw` never leaves the server.
 | `cash-fund` | `describeLinks()` (copy: "help us with our next adventures", never "cash fund") | `MockCashFund` | `ConfiguredLinks` from `CASH_FUND_LINKS_JSON` | `CASH_FUND_LINKS_JSON` | mock |
 | `reservations` | `options(place, {date?, partySize?}) -> {rung: api\|deep-link\|url\|unavailable, handoff?}` | `MockReservations`: Resy / OpenTable deep links, admin URL, else unavailable | none (API rung unimplemented) | - | deep-link |
 | `maps` | `directionsUrl(place, {mode, platform, origin})`, `staticMapUrl(place)` | `DeepLinkMaps` (Google / Apple links; no API, no keys) | same class | - | deep-link |
-| `rate-limit` | `consume(key, policy\|name, cost?) -> {allowed, remaining, retryAfterMs?}`, `reset(key)`; named policies in `RATE_LIMIT_POLICIES` | `MemoryRateLimit` | `DbRateLimit` (row-locked token bucket in `rate_limits`) | `RATE_LIMIT_BACKEND` (default db in production) | memory |
+| `rate-limit` | `consume(key, policy\|name, cost?) -> {allowed, remaining, retryAfterMs?}`, `reset(key)`; named policies in `RATE_LIMIT_POLICIES` (`capability`, `capabilityIp`, `otp`, `otpVerify`, `upload`, `concierge`). `consume` never throws: on a backend error it fails per the policy's `failMode` (`otp`/`otpVerify` closed, others open with a logged error) | `MemoryRateLimit` (single process; overflow evicts full, then least-recently-updated buckets; **refused in production**) | `DbRateLimit` (row-locked token bucket in `rate_limits`; required in production) | `RATE_LIMIT_BACKEND` (default db in production) | memory |
 | `jobs` | `enqueue`, `runDue`, `counts` | - | `DbJobs` over `src/lib/jobs` (needs `{ db }`) | `JOBS_*` | live (db) |
 
 ## Adding a concrete adapter

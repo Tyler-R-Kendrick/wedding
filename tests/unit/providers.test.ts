@@ -15,7 +15,8 @@ import { MockHotels } from '@/providers/hotels';
 import { DeepLinkMaps } from '@/providers/maps';
 import { MockMediaAi } from '@/providers/media-ai';
 import { MockAiModel, MOCK_REPLY } from '@/providers/ai-model';
-import { MemoryRateLimit } from '@/providers/rate-limit';
+import type { Db } from '@/db/client';
+import { createRateLimitProvider, DbRateLimit, MemoryRateLimit } from '@/providers/rate-limit';
 import { parseGiftLinks, MockRegistry, MockCashFund, REGISTRY_DISCLOSURE } from '@/providers/registry/index';
 import { describeProviders, getProvider, resetProviders } from '@/providers/registry';
 import { MockReservations } from '@/providers/reservations';
@@ -356,6 +357,49 @@ describe('registry and cash-fund links', () => {
     expect(links[0]?.disclosure).toBe(REGISTRY_DISCLOSURE);
     expect(rejected).toHaveLength(2);
     expect(parseGiftLinks('not json', REGISTRY_DISCLOSURE).links).toEqual([]);
+  });
+});
+
+describe('rate limit fail policy and eviction', () => {
+  it('db limiter fails closed for OTP policies and open otherwise when the database errors, never throwing', async () => {
+    const broken = { transaction: async () => { throw new Error('db down'); } } as unknown as Db;
+    const rl = new DbRateLimit(broken);
+    expect(await rl.consume('otp:a', 'otp')).toMatchObject({ allowed: false, remaining: 0, retryAfterMs: expect.any(Number) });
+    expect((await rl.consume('otp:a', 'otpVerify')).allowed).toBe(false);
+    expect((await rl.consume('cap:a', 'capability')).allowed).toBe(true);
+    expect((await rl.consume('cap:a', 'capabilityIp')).allowed).toBe(true);
+    expect((await rl.consume('x', { capacity: 1, refillPerSecond: 1, failMode: 'closed' })).allowed).toBe(false);
+    expect((await rl.consume('x', { capacity: 1, refillPerSecond: 1 })).allowed).toBe(true);
+  });
+
+  it('memory limiter evicts full then idle buckets on overflow, never resetting a hot drained one', async () => {
+    let now = 0;
+    const rl = new MemoryRateLimit(() => now, { shared: false, maxKeys: 2 });
+    const policy = { capacity: 1, refillPerSecond: 1 };
+    await rl.consume('a', policy); // drained at 0
+    now = 100;
+    await rl.consume('b', policy); // drained at 100
+    now = 200;
+    expect((await rl.consume('a', policy)).allowed).toBe(false); // 'a' is hot (touched at 200)
+    now = 300;
+    await rl.consume('c', policy); // overflow: nothing full yet -> the least recently updated ('b') goes
+    now = 350;
+    expect((await rl.consume('a', policy)).allowed).toBe(false); // 'a' kept its drained state
+    now = 5_000; // everyone has refilled: full buckets are dropped first on the next overflow
+    await rl.consume('d', policy);
+    await rl.consume('e', policy);
+    expect((await rl.health()).detail).toMatch(/^[0-2] keys$/);
+    expect((await rl.consume('a', policy)).allowed).toBe(true); // legitimately refilled by now anyway
+  });
+
+  it('refuses the memory backend (or a missing database) in production', () => {
+    expect(() => createRateLimitProvider({ RATE_LIMIT_BACKEND: 'memory', isProduction: true, FORCE_MOCK_PROVIDERS: false })).toThrow(/memory/);
+    expect(() => createRateLimitProvider({ RATE_LIMIT_BACKEND: undefined, isProduction: true, FORCE_MOCK_PROVIDERS: true })).toThrow(/memory/);
+    expect(() => createRateLimitProvider({ RATE_LIMIT_BACKEND: 'db', isProduction: true, FORCE_MOCK_PROVIDERS: false })).toThrow(/database/);
+    const fake = {} as Db;
+    expect(createRateLimitProvider({ RATE_LIMIT_BACKEND: undefined, isProduction: true, FORCE_MOCK_PROVIDERS: false }, { db: fake })).toBeInstanceOf(DbRateLimit);
+    expect(createRateLimitProvider({ RATE_LIMIT_BACKEND: 'memory', isProduction: false, FORCE_MOCK_PROVIDERS: false }, { db: fake })).toBeInstanceOf(MemoryRateLimit);
+    expect(createRateLimitProvider({ RATE_LIMIT_BACKEND: undefined, isProduction: false, FORCE_MOCK_PROVIDERS: false })).toBeInstanceOf(MemoryRateLimit);
   });
 });
 

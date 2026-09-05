@@ -5,7 +5,16 @@ export interface RateLimitPolicy {
   capacity: number;
   /** Tokens added per second. */
   refillPerSecond: number;
+  /**
+   * What `consume` answers when the backend itself fails: `open` (allow, log; availability for
+   * guest-facing traffic) or `closed` (deny; an attacker must not get unlimited tries at an OTP
+   * because the database hiccupped). Default `open`.
+   */
+  failMode?: 'open' | 'closed';
 }
+
+/** Denial returned when a fail-closed backend errors. */
+export const FAIL_CLOSED_RETRY_AFTER_MS = 30_000;
 
 export interface RateLimitDecision {
   allowed: boolean;
@@ -21,9 +30,9 @@ export const RATE_LIMIT_POLICIES = {
   /** Coarse per-IP guard applied before the body is read or the session resolved (shared NATs are generous). */
   capabilityIp: { capacity: 200, refillPerSecond: 5 },
   /** OTP sends per identifier. */
-  otp: { capacity: 5, refillPerSecond: 5 / 600 },
+  otp: { capacity: 5, refillPerSecond: 5 / 600, failMode: 'closed' },
   /** OTP verification attempts per identifier. */
-  otpVerify: { capacity: 10, refillPerSecond: 10 / 600 },
+  otpVerify: { capacity: 10, refillPerSecond: 10 / 600, failMode: 'closed' },
   /** Uploads per guest. */
   upload: { capacity: 30, refillPerSecond: 30 / 3600 },
   /** Concierge messages per principal. */
