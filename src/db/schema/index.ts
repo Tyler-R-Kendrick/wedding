@@ -21,3 +21,8 @@ export * from './rsvp';
 export * from './seating';
 // Level 08: travel profiles, itinerary items, hotel recommendations, travel links.
 export * from './travel';
+// Level 09: transport, gifts, reservations, external actions.
+export * from './transport';
+export * from './gifts';
+export * from './reservations';
+export * from './external';

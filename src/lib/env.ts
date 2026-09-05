@@ -96,8 +96,16 @@ const serverSchema = z.object({
   BOOKING_AFFILIATE_ID: optionalString,
   UBER_CLIENT_ID: optionalString,
   UBER_CLIENT_SECRET: optionalString,
+  /** Uber for Business organisation + voucher programme (level 09 transport swarm); API base is overridable for sandboxes. */
+  UBER_ORG_ID: optionalString,
+  UBER_VOUCHER_PROGRAM_ID: optionalString,
+  UBER_API_BASE_URL: optionalUrl,
   TRANSPORT_BENEFIT_MODE: z.enum(['mock', 'manual-code', 'uber']).default('mock'),
   TRANSPORT_MANUAL_CODES: optionalString,
+  /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
+  TRANSPORT_SECRETS_KEY: optionalSecret(32),
+  /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
+  DEV_TEST_PRINCIPALS: requiredBool(false),
   REGISTRY_LINKS_JSON: optionalString,
   CASH_FUND_LINKS_JSON: optionalString,
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
