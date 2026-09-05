@@ -136,6 +136,59 @@ test.describe('design switcher', () => {
     await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached();
   });
 
+  test('switches twice in one session: the second choice is not served from cache', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.site[data-theme="gilded-hour"]')).toBeAttached();
+    const pick = async (from: RegExp, to: RegExp, expectTheme: string) => {
+      const open = trigger(page, from);
+      await open.scrollIntoViewIfNeeded();
+      await open.click();
+      await page.getByRole('dialog', { name: 'Choose a design' }).getByRole('button', { name: to }).click();
+      await expect(page.locator(`.site[data-theme="${expectTheme}"]`)).toBeAttached({ timeout: 15_000 });
+      await expect(page.locator('#design-announcer')).toContainText(/Design changed to/);
+    };
+    await pick(/Design: Gilded Hour/, /Conservatory/, 'conservatory');
+    await pick(/Design: Conservatory/, /Gilded Hour/, 'gilded-hour');
+    await pick(/Design: Gilded Hour/, /Conservatory/, 'conservatory');
+    await page.reload();
+    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached();
+    // the clean public URL is never shared-cacheable: it depends on the theme cookie
+    const res = await page.request.get('/');
+    expect(res.headers()['cache-control']).toContain('no-store');
+  });
+
+  test('the phone Menu sheet opens with focus at its top, not on the design option', async ({ page }) => {
+    for (const theme of THEMES) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/?theme=${theme}`);
+      const menu = page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first();
+      await menu.click();
+      const dialog = page.getByRole('dialog').locator('visible=true').first();
+      await expect(dialog).toBeVisible();
+      const focused = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        return { text: el?.textContent?.trim() ?? '', top: el?.getBoundingClientRect().top ?? -1, inSwitcher: !!el?.closest('.switcher') };
+      });
+      expect(focused.inSwitcher, `${theme}: focus landed on the design option`).toBe(false);
+      expect(focused.top).toBeLessThan(300);
+      await page.keyboard.press('Escape');
+    }
+  });
+
+  test('Gilded Hour elevator-panel labels are whole and visible at 390', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?theme=gilded-hour');
+    const cells = page.locator('.gh-panel__cell > span');
+    await expect(cells.first()).toBeVisible();
+    const clipped = await cells.evaluateAll((spans) =>
+      spans
+        .map((el) => ({ text: el.textContent?.trim() ?? '', overflow: el.scrollWidth - el.clientWidth, ellipsis: getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).whiteSpace === 'nowrap' }))
+        .filter((s) => s.overflow > 1 || s.ellipsis),
+    );
+    expect(clipped).toEqual([]);
+    await expect(page.locator('.gh-panel__cell', { hasText: /Ask us/i })).toBeVisible();
+  });
+
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {
     for (const theme of THEMES) {
       await page.goto(`/?theme=${theme}`);

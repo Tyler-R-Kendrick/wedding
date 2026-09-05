@@ -22,7 +22,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        {/* Persistent polite live region: the design switcher announces a change here, outside the
+            themed shell that unmounts and remounts when the design swaps. */}
+        <p id="design-announcer" className="sr-only" aria-live="polite" aria-atomic="true" />
+        {children}
+      </body>
     </html>
   );
 }

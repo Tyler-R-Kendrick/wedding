@@ -258,7 +258,7 @@
   display: grid;
   place-items: center;
   gap: 2px;
-  min-height: 60px;
+  min-height: 64px;
   padding: 8px 2px;
   border: 0;
   border-block-start: 2px solid transparent;
@@ -266,22 +266,21 @@
   font-family: var(--font-text);
   font-size: var(--type-label-sm-size);
   font-weight: var(--type-label-sm-weight);
-  letter-spacing: var(--type-label-sm-tracking);
-  line-height: var(--type-label-sm-line);
+  letter-spacing: 0.03em;
+  line-height: 1.15;
   text-transform: uppercase;
   text-align: center;
   color: var(--color-primary);
   text-decoration: none;
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
+/* Labels stay whole and visible: a long one wraps to a second line, never an ellipsis. */
 .gh-panel__cell > span {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: normal;
+  text-wrap: balance;
 }
 
 .gh-panel__cell svg {

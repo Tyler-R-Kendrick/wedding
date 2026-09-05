@@ -75,8 +75,10 @@ files lands with the theme DESIGN.md files (Stage 3).
   leaves settling. Countdown in America/Chicago, hidden on the day.
 - Design switcher (server action → `navigate_to` → cookie), `FLAG_DESIGN_SWITCHER`.
 - Critiques: `docs/design/critiques/2026-09-05-home-{gilded-hour,conservatory}.md`
-  (Swarm B self-critique) and the integrator's `design-reviewer` pass (same
-  directory, `-review` suffix).
+  (Swarm B self-critique), `…-review.md` (independent round 1, six blockers,
+  fixed by Swarm B) and `…-re-review.md` (round 2, three blockers, fixed by the
+  integrator: cookie-dependent `/` is `private, no-store`, panel labels wrap,
+  Menu sheet focus, live-region announcement, Ask Us before Photos in TEASER).
 - Detector: `cream-palette` waived with reason in `.impeccable/config.json`
   (the brief pins the marble and herbarium-paper grounds); `src/themes/*/fonts.css`
   ignored (fallback face names are not DESIGN.md families).

@@ -31,7 +31,7 @@ interface StateNav {
 }
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
-  TEASER: { primary: ['story', 'adventures', 'caa'], more: ['photos', 'ask'], sticky: [] },
+  TEASER: { primary: ['story', 'adventures', 'caa'], more: ['ask', 'photos'], sticky: [] },
   SAVE_THE_DATE: { primary: ['story', 'travel', 'wedding', 'adventures'], more: ['share', 'caa', 'photos', 'ask'], sticky: [] },
   INVITATIONS_OPEN: { primary: ['wedding', 'weekend', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'transport', 'photos', 'ask'], sticky: ['claim'] },
   RSVP_OPEN: { primary: ['rsvp', 'wedding', 'travel', 'transport', 'weekend'], more: ['story', 'adventures', 'share', 'caa', 'gifts', 'photos', 'ask'], sticky: ['rsvp', 'directions'] },

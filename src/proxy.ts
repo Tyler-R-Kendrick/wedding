@@ -44,7 +44,13 @@ export function proxy(request: NextRequest) {
   if (source === 'query' && cookieTheme !== theme) {
     response.cookies.set({ name: THEME_COOKIE, value: theme, ...themeCookieOptions(url.protocol === 'https:') });
   }
-  if (preview || isPersonalizedRoute(url.pathname)) response.headers.set('Cache-Control', 'private, no-store');
+  // The response to a clean public URL depends on the theme cookie, so neither a shared cache nor the
+  // browser may reuse it across choices (a cached RSC payload defeated the second in-session switch);
+  // the rewritten `/t/<theme>` tree itself stays static and cacheable at its own URL.
+  if (preview || isPersonalizedRoute(url.pathname) || isStaticPublicRoute(url.pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store');
+    response.headers.append('Vary', 'Cookie');
+  }
   return response;
 }
 

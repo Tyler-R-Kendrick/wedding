@@ -40,6 +40,11 @@ export function DesignSwitcher({ current, themes, variant = 'trigger', id = 'des
       formRef.current?.closest('dialog')?.close();
       if (new URLSearchParams(window.location.search).has('theme')) router.replace(pathname, { scroll: false });
       router.refresh();
+      // Announce outside the themed shell (which remounts on a swap) and move focus to the content.
+      const chosen = themes.find((t) => t.id === result.theme)?.name ?? result.theme ?? 'the other design';
+      const announcer = document.getElementById('design-announcer');
+      if (announcer) announcer.textContent = `Design changed to ${chosen}.`;
+      document.getElementById('main')?.focus({ preventScroll: true });
     });
   };
 
@@ -55,7 +60,7 @@ export function DesignSwitcher({ current, themes, variant = 'trigger', id = 'des
       <ul className="switcher__options">
         {themes.map((t) => (
           <li key={t.id}>
-            <button type="submit" name="theme" value={t.id} className="switcher__option" aria-pressed={t.id === current} disabled={pending} data-autofocus={t.id === current ? '' : undefined}>
+            <button type="submit" name="theme" value={t.id} className="switcher__option" aria-pressed={t.id === current} disabled={pending} data-autofocus={variant === 'trigger' && t.id === current ? '' : undefined}>
               <span className="switcher__name">{t.name}</span>
               <span className="switcher__tagline">{t.tagline}</span>
             </button>
