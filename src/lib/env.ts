@@ -59,6 +59,8 @@ const serverSchema = z.object({
   TRUSTED_PROXY_HOPS: optionalInt(0, 16),
   /** Bearer that unlocks GET/DELETE /api/dev/inbox outside local development (previews). */
   DEV_INBOX_TOKEN: optionalSecret(16),
+  /** Test-only principal injection (x-test-principal); honoured only under NODE_ENV=test. */
+  TEST_AUTH_SECRET: optionalSecret(16),
   /** Comma-separated, case-insensitive allowlist of administrator emails (role: owner). */
   ADMIN_EMAILS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),

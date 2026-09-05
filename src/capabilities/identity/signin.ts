@@ -13,7 +13,7 @@ import { resolveAdminRoles } from '@/domain/identity/principal';
 import { getAuthSession } from '@/lib/auth';
 import { env } from '@/lib/env';
 import type { CookieSink } from '@/lib/auth';
-import { actorOf, authOf, callAuth, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets } from './shared';
+import { actorOf, authOf, callAuth, consumeLimits, discardMintedSession, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets } from './shared';
 
 export interface SignInOutcome {
   status: 'signed_in';
@@ -80,8 +80,9 @@ export async function completeOtpSignIn(
   await logOtp(ctx, { emailHash, purpose: challenge.kind, kind: 'verify', outcome: 'verified' });
   const { token: sessionToken, user } = signed.value.response;
   if (challenge.userId && challenge.userId !== user.id) {
-    // A step-up challenge for a different identity: end the new session and refuse.
+    // A step-up challenge for a different identity: end the new session, keep the browser's previous cookie, refuse.
     await db.delete(authSessions).where(eq(authSessions.token, sessionToken));
+    await discardMintedSession(transport);
     return err(new CapabilityError('forbidden', 'That code was not issued for this sign-in.'));
   }
   if (previous?.session.token && previous.session.token !== sessionToken) await db.delete(authSessions).where(eq(authSessions.token, previous.session.token));

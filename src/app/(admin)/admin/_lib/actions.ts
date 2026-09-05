@@ -10,6 +10,10 @@ const str = (fd: FormData, key: string): string => {
 };
 const opt = (fd: FormData, key: string): string | null => str(fd, key) || null;
 const bool = (fd: FormData, key: string): boolean => fd.get(key) === 'on' || fd.get(key) === '1';
+/** Present checkbox → true/false; absent from the form → undefined (keep). */
+const boolIfPresent = (fd: FormData, key: string): boolean | undefined => (fd.get(`${key}__present`) ? bool(fd, key) : undefined);
+const strIfPresent = (fd: FormData, key: string): string | undefined => (fd.has(key) ? str(fd, key) : undefined);
+const optIfPresent = (fd: FormData, key: string): string | null | undefined => (fd.has(key) ? str(fd, key) || null : undefined);
 /** Idempotent admin mutations carry a key: the form's render-time key when present (double-submit safe), else a fresh one. */
 const idem = (fd: FormData) => ({ idempotencyKey: str(fd, 'idem') || newId() });
 
@@ -22,16 +26,17 @@ function finish(page: string, r: { ok: true } | { ok: false; error: { code: stri
 }
 
 export async function saveGuest(fd: FormData): Promise<void> {
+  // Only fields present in the submitted form are sent; the capability keeps everything else (review N3).
   const r = await adminInvoke('admin_upsert_guest', {
     id: opt(fd, 'id') ?? undefined,
     householdId: str(fd, 'householdId'),
     firstName: str(fd, 'firstName'),
-    lastName: str(fd, 'lastName'),
-    email: opt(fd, 'email'),
-    kind: str(fd, 'kind') || 'adult',
-    isMinor: bool(fd, 'isMinor'),
-    managedByGuestId: opt(fd, 'managedByGuestId'),
-    notes: opt(fd, 'notes'),
+    lastName: strIfPresent(fd, 'lastName'),
+    email: optIfPresent(fd, 'email'),
+    kind: strIfPresent(fd, 'kind') || undefined,
+    isMinor: boolIfPresent(fd, 'isMinor'),
+    managedByGuestId: optIfPresent(fd, 'managedByGuestId'),
+    notes: optIfPresent(fd, 'notes'),
   }, idem(fd));
   finish('/admin/guests', r, 'Guest saved.');
 }

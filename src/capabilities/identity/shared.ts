@@ -161,3 +161,28 @@ export const RECOVERY = {
   expired: { title: 'This invitation link has expired', message: 'No problem — reach out to Sara and Tyler and they will send you a new link right away.' },
   revoked: { title: 'This invitation link is no longer active', message: 'A newer link was sent for your household. Check your latest message from Sara and Tyler, or ask them for a fresh one.' },
 } as const;
+
+/**
+ * Review N2: when a freshly minted session must be thrown away (a code issued for another
+ * identity), the browser must not be left holding a dead cookie. Drops what the sink collected,
+ * restores the previous session cookie (or expires it) — in the sink and, inside a request scope,
+ * in Next's cookie store.
+ */
+export async function discardMintedSession(transport: { headers: Headers; sink: CookieSink }): Promise<void> {
+  const previous = (transport.headers.get('cookie') ?? '')
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => /(^|\.)session_token=/.test(c.split('=')[0] + '='));
+  transport.sink.setCookies.length = 0;
+  const [name, value] = previous ? [previous.slice(0, previous.indexOf('=')), previous.slice(previous.indexOf('=') + 1)] : ['wedding.session_token', ''];
+  const attrs = `Path=/; HttpOnly; SameSite=Lax${name.startsWith('__Secure-') ? '; Secure' : ''}`;
+  transport.sink.setCookies.push(value ? `${name}=${value}; ${attrs}` : `${name}=; Max-Age=0; ${attrs}`);
+  try {
+    const { cookies } = await import('next/headers');
+    const store = await cookies();
+    if (value) store.set(name, value, { httpOnly: true, sameSite: 'lax', path: '/', secure: name.startsWith('__Secure-') });
+    else store.delete(name);
+  } catch {
+    // outside a request scope (tests / route handlers): the sink carries the restoration
+  }
+}

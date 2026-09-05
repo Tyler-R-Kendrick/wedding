@@ -137,9 +137,12 @@ describe('/api/dev/inbox', () => {
     expect((await get()).status).toBe(404);
     setEnv({ isDevelopment: false, isProduction: false, isTest: true });
     expect((await get()).status).toBe(404);
-    // A bearer unlocks it anywhere the mock mailer runs (previews), with a timing-safe compare.
+    // A bearer unlocks it on preview/CI hosts running the mock mailer, with a timing-safe compare —
+    // but never in production, whatever the caller presents (security review S5).
     process.env.VERCEL = '1';
     setEnv({ isDevelopment: false, isProduction: true, isTest: false, DEV_INBOX_TOKEN: 'inbox-token-0123456789' });
+    expect((await get({ authorization: 'Bearer inbox-token-0123456789' })).status).toBe(404);
+    setEnv({ isDevelopment: false, isProduction: false, isTest: false, DEV_INBOX_TOKEN: 'inbox-token-0123456789' });
     expect((await get({ authorization: 'Bearer inbox-token-0123456789' })).status).toBe(200);
     expect((await get({ authorization: 'Bearer inbox-token-012345678X' })).status).toBe(404);
     expect((await get({ authorization: 'Bearer ' })).status).toBe(404);

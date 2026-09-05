@@ -32,7 +32,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Input id="email" label="Email" type="email" defaultValue={editing?.email ?? ''} hint="Optional. Codes go here." />
           <Input id="kind" label="Kind" defaultValue={editing?.kind ?? 'adult'} options={[{ value: 'adult', label: 'Adult' }, { value: 'child', label: 'Child' }, { value: 'plus_one', label: 'Plus-one' }]} />
           <Input id="managedByGuestId" label="Managed by (guest id)" defaultValue={editing?.managedByGuestId ?? ''} hint="Leave blank to use the household manager." />
-          <Checkbox id="isMinor" label="Minor (never signs in)" />
+          <Checkbox id="isMinor" label="Minor (never signs in)" defaultChecked={editing?.isMinor} />
           <Input id="notes" label="Admin notes" type="textarea" defaultValue={editing?.notes ?? ''} />
           <div className="ops-form-inline">
             <Button>{editing ? 'Save guest' : 'Add guest'}</Button>

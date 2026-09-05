@@ -6,6 +6,7 @@ import type { PrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { authSessions, authUsers, guestAccessBindings, guests, type AuthUserRow, type BindingRole, type ClaimMethod, type GuestAccessBindingRow } from '@/db/schema';
+import { scrubForAudit } from './audit';
 import { isEmailShape, normalizeEmail } from './mask';
 
 /**
@@ -78,7 +79,7 @@ export async function revokeSessionsForIdentity(db: Db, authIdentityId: string, 
       target: { type: 'auth_identity', id: authIdentityId },
       outcome: 'success',
       requestId: input.requestId,
-      metadata: { count: deleted.length, reason: input.reason },
+      metadata: { count: deleted.length, reason: scrubForAudit(input.reason) },
     });
   }
   return deleted.length;
@@ -169,7 +170,7 @@ export async function resetIdentity(
       .update(guestAccessBindings)
       .set({ revokedAt: now, revokedBy: input.actor, revokedReason: input.reason })
       .where(inArray(guestAccessBindings.id, active.map((b) => b.id)));
-    for (const identity of new Set(active.map((b) => b.authIdentityId))) sessionsEnded += await revokeSessionsForIdentity(db, identity);
+    for (const identity of new Set(active.map((b) => b.authIdentityId))) sessionsEnded += await revokeSessionsForIdentity(db, identity, { actor: input.actor, requestId: input.requestId, audit: input.audit, reason: `identity reset: ${input.reason}` });
   }
   await input.audit.record({
     actor: input.actor,
@@ -177,7 +178,7 @@ export async function resetIdentity(
     target: { type: 'guest', id: input.guestId },
     outcome: 'success',
     requestId: input.requestId,
-    metadata: { revoked: active.length, sessionsEnded, reason: input.reason },
+    metadata: { revoked: active.length, sessionsEnded, reason: scrubForAudit(input.reason) },
   });
   return ok({ revoked: active.length, sessionsEnded });
 }
@@ -200,7 +201,7 @@ export async function rebindIdentity(
   if (previous && previous.authIdentityId === user.value.id) return ok(previous);
   if (previous) {
     await db.update(guestAccessBindings).set({ revokedAt: now, revokedBy: input.actor, revokedReason: `rebound: ${input.reason}` }).where(eq(guestAccessBindings.id, previous.id));
-    await revokeSessionsForIdentity(db, previous.authIdentityId);
+    await revokeSessionsForIdentity(db, previous.authIdentityId, { actor: input.actor, requestId: input.requestId, audit: input.audit, reason: `rebound: ${input.reason}` });
   }
   const [row] = await db
     .insert(guestAccessBindings)
@@ -213,7 +214,7 @@ export async function rebindIdentity(
     target: { type: 'guest', id: input.guestId },
     outcome: 'success',
     requestId: input.requestId,
-    metadata: { bindingId: row!.id, previousBindingId: previous?.id ?? null, reason: input.reason },
+    metadata: { bindingId: row!.id, previousBindingId: previous?.id ?? null, reason: scrubForAudit(input.reason) },
   });
   return ok(row!);
 }

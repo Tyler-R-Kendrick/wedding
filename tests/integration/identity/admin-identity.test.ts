@@ -3,7 +3,7 @@ import { like } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { auditEvents, idempotencyKeys } from '@/db/schema';
 import { listAuditEvents } from '@/lib/audit';
-import { call, claim, expectErr, expectOk, grantAdmin, principalFor, seed, signIn } from './harness';
+import { ageSession, call, claim, expectErr, expectOk, grantAdmin, principalFor, seed, signIn } from './harness';
 
 describe('admin reset, rebind, roles, CSV', () => {
   it('reset ends sessions and lets the guest claim again; rebind moves access and audits both', async () => {
@@ -82,6 +82,37 @@ describe('admin reset, rebind, roles, CSV', () => {
       expect(idem).not.toContain(token);
       expect(audit).not.toContain(token);
       expect(audit).not.toContain(issued.data.url.split('/invite/')[1]!);
+    }
+  });
+
+  it('admin reset / rebind / roles require a fresh admin session (step-up)', async () => {
+    const f = await seed('ad4');
+    await grantAdmin(f.emails.admin, 'owner');
+    const admin = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    await ageSession(admin.cookie, 6);
+    expect((await principalFor({ cookie: admin.cookie })).kind).toBe('admin');
+    expectErr(await call('admin_reset_identity', { guestId: f.guests.chidi, reason: 'x' }, { cookie: admin.cookie }), 'step_up_required');
+    expectErr(await call('admin_rebind_identity', { guestId: f.guests.chidi, email: 'new+ad4@example.test', reason: 'x' }, { cookie: admin.cookie }), 'step_up_required');
+    expectErr(await call('admin_set_admin_role', { email: 'p+ad4@example.test', role: 'planner' }, { cookie: admin.cookie }), 'step_up_required');
+    expectErr(await call('admin_issue_invitation', { householdId: f.households.ruiz }, { cookie: admin.cookie }), 'step_up_required');
+    // Reads still work on the aged session.
+    expect((await call('admin_list_guests', {}, { cookie: admin.cookie })).ok).toBe(true);
+  });
+
+  it('N1: audit rows for role changes, identity resets, and revocations carry no email address', async () => {
+    const f = await seed('ad5');
+    await grantAdmin(f.emails.admin, 'owner');
+    const admin = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    await claim(f.invitations.okafor.token, f.guests.chidi, f.emails.chidi);
+    expectOk(await call('admin_set_admin_role', { email: 'planner+ad5@example.test', role: 'planner' }, { cookie: admin.cookie }));
+    expectOk(await call('admin_reset_identity', { guestId: f.guests.chidi, reason: `asked by chidi ${f.emails.chidi} by phone` }, { cookie: admin.cookie }));
+    expectOk(await call('admin_revoke_invitation', { invitationId: f.invitations.okafor.id, reason: `leaked to leak+ad5@example.test` }, { cookie: admin.cookie }));
+    expectOk(await call('admin_rebind_identity', { guestId: f.guests.chidi, email: `chidi.rebound+ad5@example.test`, reason: `moved from ${f.emails.chidi}` }, { cookie: admin.cookie }));
+    const db = await getDb();
+    for (const action of ['admin.role_changed', 'identity.reset', 'invitation.revoked', 'identity.rebound', 'session.revoked'] as const) {
+      const rows = await listAuditEvents(db, { action });
+      expect(rows.length, action).toBeGreaterThan(0);
+      for (const r of rows) expect(JSON.stringify({ target: r.targetId, metadata: r.metadata, actor: r.actor }), action).not.toContain('@');
     }
   });
 });

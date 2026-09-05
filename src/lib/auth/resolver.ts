@@ -6,6 +6,7 @@ import { ANONYMOUS, type PrincipalResolver } from '@/lib/principal';
 import { isTrustedMutationRequest } from './csrf';
 import { siteOrigin } from './config';
 import { getAuthSession, toSessionFacts } from './session';
+import { readTestPrincipal } from './test-principal';
 
 /**
  * Better Auth-backed PrincipalResolver (ADR-0001). A request becomes a principal only when
@@ -17,6 +18,8 @@ import { getAuthSession, toSessionFacts } from './session';
  */
 export const betterAuthPrincipalResolver: PrincipalResolver = {
   async resolve(request: Request) {
+    const injected = readTestPrincipal(request); // null outside NODE_ENV=test + TEST_AUTH_SECRET
+    if (injected) return injected;
     if (!request.headers.get('cookie')) return ANONYMOUS;
     if (!isTrustedMutationRequest(request, [siteOrigin()])) return ANONYMOUS;
     const isRsc = request.headers.get('rsc') === '1' && !request.headers.get('next-action');

@@ -39,6 +39,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `AUDIT_HASH_KEY` | derived from `CONFIRMATION_SECRET` | HMAC key for the audit `inputHash` fingerprint | no |
 | `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | dev default / `localhost:*` (both required in production) | auth: Better Auth (`src/lib/auth`); the URL sets the passkey relying-party id and the trusted origin | no |
+| `TEST_AUTH_SECRET` | unset | `src/lib/auth/test-principal.ts`: enables `x-test-principal` injection **only** under `NODE_ENV=test`; never set on a deployed host | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |

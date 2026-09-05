@@ -7,7 +7,7 @@ import { authSessions } from '@/db/schema';
 import { consumeChallenge, readChallenge } from '@/domain/identity/challenge';
 import { getAuthSession } from '@/lib/auth';
 import { completeOtpSignIn } from './identity/signin';
-import { actorOf, authOf, callAuth, challengeSecret, challengeStore, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
+import { actorOf, authOf, callAuth, challengeSecret, challengeStore, discardMintedSession, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
 
 const input = z.union([
   z.object({ method: z.literal('otp'), challenge: z.string().min(16).max(4096), code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') }),
@@ -71,6 +71,7 @@ export const stepUp = defineCapability<z.infer<typeof input>, StepUpResult>({
     const session = verified.value.session;
     if (session.userId !== p.authIdentityId) {
       await db.delete(authSessions).where(eq(authSessions.token, session.token));
+      await discardMintedSession(transport.value);
       return err(new CapabilityError('forbidden', 'That passkey belongs to a different sign-in.'));
     }
     if (previous?.session.token && previous.session.token !== session.token) await db.delete(authSessions).where(eq(authSessions.token, previous.session.token));
