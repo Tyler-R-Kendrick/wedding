@@ -26,7 +26,7 @@ export const listItineraries = defineCapability<z.infer<typeof input>, Itinerari
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 16_000,
+  maxOutputChars: 24_000,
   async handler(ctx, i) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);

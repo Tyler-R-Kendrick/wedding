@@ -10,7 +10,7 @@ import { getProvider } from '@/providers/registry';
 import { dedupeCitations, toProvenanceView, toRecordCitation } from '@/domain/content/provenance';
 import type { ReadContext } from '@/domain/content/read-context';
 import { optionalText, textBlock, textBlocks } from '@/domain/content/text';
-import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceView, RecommendationCard } from '@/domain/content/views';
+import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceView, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
 import { filterVisible, isValidAt } from '@/domain/content/visibility';
 import { toOperationalFieldView } from '@/domain/venue/repo';
 import { ROUTES } from '@/domain/routes';
@@ -124,6 +124,23 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   };
 }
 
+export function toRecommendationSummary(row: RecommendationRow, deps: RecommendationDeps): RecommendationSummary {
+  const place = row.placeId ? deps.places.get(row.placeId) : undefined;
+  return {
+    id: row.id,
+    slug: row.slug,
+    href: `${ROUTES.share}/${row.slug}`,
+    title: row.title,
+    category: row.category,
+    what: textBlock(row.what),
+    durationMinutes: row.durationMinutes,
+    kidFriendly: row.kidFriendly,
+    draft: row.draft,
+    placeholder: row.placeholder,
+    ...(place ? { placeName: place.name } : {}),
+  };
+}
+
 export function recommendationCitation(row: RecommendationRow, ctx: ReadContext): Citation {
   return toRecordCitation(row, { route: `${ROUTES.share}/${row.slug}`, title: `Share an Adventure › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
 }
@@ -155,11 +172,12 @@ export async function findRecommendations(ctx: ReadContext, opts: FindOptions = 
     const q = opts.query.toLowerCase();
     rows = rows.filter((r) => `${r.title} ${r.what} ${r.interests.join(' ')} ${deps.places.get(r.placeId ?? '')?.name ?? ''}`.toLowerCase().includes(q));
   }
-  const cards = await Promise.all(rows.map((r) => toRecommendationCard(r, ctx, deps)));
-  const composed = opts.maxMinutes ? composeItinerary(cards, { maxMinutes: opts.maxMinutes, interests: opts.interests, kids: opts.kids }) : undefined;
-  const items = cards.slice(0, opts.limit ?? 50);
-  const sources = dedupeCitations(rows.slice(0, opts.limit ?? 50).map((r) => recommendationCitation(r, ctx)));
-  return { items, plan: composed, sources };
+  const limit = opts.limit ?? (ctx.surface === 'ui' ? 50 : 12);
+  const cards = await Promise.all(rows.slice(0, limit).map((r) => toRecommendationCard(r, ctx, deps)));
+  const composable = rows.map((r) => ({ ...toRecommendationSummary(r, deps), interests: r.interests }));
+  const composed = opts.maxMinutes ? composeItinerary(composable, { maxMinutes: opts.maxMinutes, interests: opts.interests, kids: opts.kids }) : undefined;
+  const sources = dedupeCitations(rows.slice(0, limit).map((r) => recommendationCitation(r, ctx)));
+  return { items: cards, plan: composed, sources };
 }
 
 export async function getRecommendation(ctx: ReadContext, slug: string) {
@@ -261,12 +279,12 @@ export async function getAdventure(ctx: ReadContext, slug: string): Promise<{ de
 
 // ------------------------------------------------------------------------------ itineraries
 
-export async function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, deps: RecommendationDeps, recById: Map<string, RecommendationRow>): Promise<ItineraryView> {
+export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, deps: RecommendationDeps, recById: Map<string, RecommendationRow>): ItineraryView {
   const stops: ItineraryView['stops'] = [];
   for (const s of row.stops) {
     const rec = recById.get(s.recommendationId);
     if (!rec) continue; // not visible to this principal, or removed
-    stops.push({ recommendation: await toRecommendationCard(rec, ctx, deps), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
+    stops.push({ recommendation: toRecommendationSummary(rec, deps), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
   }
   return {
     id: row.id,
@@ -291,7 +309,7 @@ export async function listItineraries(ctx: ReadContext, opts: { bucket?: Itinera
   const visible = filterVisible(rows, ctx.principal, ctx.surface, ctx.now).filter((r) => !opts.bucket || r.bucket === opts.bucket);
   const order = ['45-min', '2-3-h', 'friday-afternoon', 'saturday-morning', 'with-kids', 'architecture', 'food-drink', 'stay-inside-caa'];
   visible.sort((a, b) => order.indexOf(a.bucket) - order.indexOf(b.bucket));
-  const itineraries = await Promise.all(visible.map((r) => toItineraryView(r, ctx, deps, recById)));
+  const itineraries = visible.map((r) => toItineraryView(r, ctx, deps, recById));
   const sources = dedupeCitations(
     visible.map((r) => toRecordCitation(r, { route: `${ROUTES.share}#${r.slug}`, title: `Share an Adventure › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
   );

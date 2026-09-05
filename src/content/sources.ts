@@ -21,7 +21,7 @@ export type SourceKey = keyof typeof SOURCE_KEYS;
 /** ISO date the brief was written; authored facts are verified as of then. */
 export const BRIEF_VERIFIED_AT = '2026-09-04T00:00:00.000Z';
 /** The day the official pages were link-checked while seeding (HTTP 200 on every URL below). */
-export const LINK_CHECK_VERIFIED_AT = '2026-09-05T00:00:00.000Z';
+export const LINK_CHECK_VERIFIED_AT = '2026-09-05T13:30:00.000Z';
 /** The kit is a 2025/26 document; treat it as expired after this date unless re-verified. */
 export const KIT_VALID_UNTIL = '2026-12-31T23:59:59.000Z';
 
