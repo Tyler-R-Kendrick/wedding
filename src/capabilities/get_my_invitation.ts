@@ -7,9 +7,9 @@ import { GUEST_KINDS } from '@/db/schema';
 import { getGuest, guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests } from '@/domain/identity/bindings';
+import { guestOf } from './identity/shared';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { currentInvitationForHousehold } from '@/domain/invitations/repo';
-import { requireGuest } from '@/lib/principal';
 
 const input = z.object({}).optional();
 
@@ -55,7 +55,9 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
   output,
   maxOutputChars: 6_000,
   async handler(ctx) {
-    const p = requireGuest(ctx.principal);
+    const guard = guestOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const p = guard.value;
     const { db } = appServices(ctx);
     const [me, household] = await Promise.all([getGuest(db, p.guestId), getHousehold(db, p.householdId)]);
     if (!me || !household) return err(new CapabilityError('not_found', 'We could not find your invitation.'));

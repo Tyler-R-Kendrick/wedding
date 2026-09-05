@@ -9,7 +9,7 @@ import { getAuthSession } from '@/lib/auth';
 import { completeOtpSignIn } from './identity/signin';
 import { actorOf, authOf, callAuth, challengeSecret, EXPIRED_CODE_MESSAGE, requireCookieTransport } from './identity/shared';
 
-const input = z.discriminatedUnion('method', [
+const input = z.union([
   z.object({ method: z.literal('otp'), challenge: z.string().min(16).max(4096), code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') }),
   z.object({ method: z.literal('passkey'), step: z.literal('options') }),
   z.object({ method: z.literal('passkey'), step: z.literal('verify'), response: z.record(z.string(), z.unknown()) }),

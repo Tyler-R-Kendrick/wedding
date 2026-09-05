@@ -15,8 +15,7 @@ import { invitationLifecycle, invitationUrl } from '@/domain/identity/tokens';
 import { currentInvitationsForHouseholds, getInvitation, issueInvitation, listInvitations, revokeInvitation, rotateInvitation } from '@/domain/invitations/repo';
 import { normalizeEmail } from '@/domain/identity/mask';
 import { siteOrigin } from '@/lib/auth';
-import { requireAdmin } from '@/lib/principal';
-import { actorOf } from './identity/shared';
+import { actorOf, adminOf } from './identity/shared';
 
 /**
  * Admin guest operations (entitlement `admin_guest_ops`). UI-only; never offered to the AI or
@@ -94,7 +93,8 @@ export const adminListGuests = defineCapability({
   input: z.object({ q: z.string().max(100).optional(), householdId: z.string().max(64).optional(), includeMerged: z.boolean().optional(), limit: z.number().int().min(1).max(2000).optional(), offset: z.number().int().min(0).optional() }).optional(),
   output: z.object({ guests: z.array(guestOut) }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const rows = await listGuests(db, i ?? {});
     return ok({ data: { guests: await decorate(db, rows) }, sources: [] });
@@ -125,7 +125,8 @@ export const adminUpsertGuest = defineCapability({
   }),
   output: z.object({ guest: guestOut }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await upsertGuest(db, i);
     if (!r.ok) return err(r.error);
@@ -146,7 +147,8 @@ export const adminDeleteGuest = defineCapability({
   input: z.object({ guestId: z.string().min(1).max(64) }),
   output: z.object({ deleted: z.boolean() }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await deleteGuest(db, i.guestId);
     if (!r.ok) return err(r.error);
@@ -167,7 +169,8 @@ export const adminMergeGuests = defineCapability({
   input: z.object({ keepId: z.string().min(1).max(64), mergeId: z.string().min(1).max(64) }),
   output: z.object({ guest: guestOut }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await mergeGuests(db, { ...i, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit });
     if (!r.ok) return err(r.error);
@@ -194,7 +197,8 @@ export const adminListHouseholds = defineCapability({
   input: z.object({ q: z.string().max(100).optional(), limit: z.number().int().min(1).max(1000).optional(), offset: z.number().int().min(0).optional() }).optional(),
   output: z.object({ households: z.array(householdOut) }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const rows = await listHouseholds(db, i ?? {});
     const current = await currentInvitationsForHouseholds(db, rows.map((h) => h.id));
@@ -224,7 +228,8 @@ export const adminGetHousehold = defineCapability({
     invitations: z.array(z.object({ id: z.string(), status: z.enum(['active', 'claimed', 'expired', 'revoked']), tokenPrefix: z.string(), issuedAt: z.string(), expiresAt: z.string(), claimedAt: z.string().nullable(), revokedReason: z.string().nullable(), eventKeys: z.array(z.string()), plusOneAllowance: z.number().int(), childrenAllowance: z.number().int() })),
   }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const h = await getHousehold(db, i.householdId);
     if (!h) return err(new CapabilityError('not_found', 'That household does not exist.'));
@@ -258,7 +263,8 @@ export const adminUpsertHousehold = defineCapability({
   input: z.object({ id: z.string().max(64).optional(), name: z.string().min(1).max(200), managerGuestId: z.string().max(64).nullable().optional(), mailingAddress: address.nullable().optional(), notes: z.string().max(2000).nullable().optional() }),
   output: z.object({ household: householdOut }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await upsertHousehold(db, i);
     if (!r.ok) return err(r.error);
@@ -281,7 +287,8 @@ export const adminDeleteHousehold = defineCapability({
   input: z.object({ householdId: z.string().min(1).max(64) }),
   output: z.object({ deleted: z.boolean() }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await deleteHousehold(db, i.householdId);
     if (!r.ok) return err(r.error);
@@ -308,7 +315,8 @@ export const adminListInvitations = defineCapability({
   input: z.object({ householdId: z.string().max(64).optional(), status: z.enum(INVITATION_STATUSES).optional(), limit: z.number().int().min(1).max(2000).optional(), offset: z.number().int().min(0).optional() }).optional(),
   output: z.object({ invitations: z.array(z.object({ id: z.string(), householdId: z.string(), householdName: z.string(), tokenPrefix: z.string(), status: z.enum(INVITATION_STATUSES), lifecycle: z.enum(['active', 'claimed', 'expired', 'revoked']), issuedAt: z.string(), expiresAt: z.string(), claimedAt: z.string().nullable(), revokedAt: z.string().nullable(), revokedReason: z.string().nullable(), eventKeys: z.array(z.string()), plusOneAllowance: z.number().int(), childrenAllowance: z.number().int(), rotatedFromId: z.string().nullable() })) }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const rows = await listInvitations(db, i ?? {});
     const hh = await db.select({ id: households.id, name: households.name }).from(households).where(rows.length ? inArray(households.id, [...new Set(rows.map((r) => r.householdId))]) : eq(households.id, ''));
@@ -339,7 +347,8 @@ export const adminIssueInvitation = defineCapability({
   input: z.object({ householdId: z.string().min(1).max(64), eventKeys: z.array(z.string().min(1).max(64)).max(20).optional(), plusOneAllowance: z.number().int().min(0).max(10).optional(), childrenAllowance: z.number().int().min(0).max(20).optional(), expiresAt: z.string().datetime().optional() }),
   output: issuedOut,
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await issueInvitation(db, { ...i, expiresAt: i.expiresAt ? new Date(i.expiresAt) : undefined, issuedBy: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
     if (!r.ok) return err(r.error);
@@ -359,7 +368,8 @@ export const adminRotateInvitation = defineCapability({
   input: z.object({ invitationId: z.string().min(1).max(64), expiresAt: z.string().datetime().optional() }),
   output: issuedOut,
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await rotateInvitation(db, { invitationId: i.invitationId, expiresAt: i.expiresAt ? new Date(i.expiresAt) : undefined, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
     if (!r.ok) return err(r.error);
@@ -379,7 +389,8 @@ export const adminRevokeInvitation = defineCapability({
   input: z.object({ invitationId: z.string().min(1).max(64), reason: z.string().min(1).max(200) }),
   output: z.object({ invitationId: z.string(), status: z.literal('revoked') }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const existing = await getInvitation(db, i.invitationId);
     if (existing?.status === 'revoked') return ok({ data: { invitationId: i.invitationId, status: 'revoked' }, sources: [] });
@@ -402,7 +413,8 @@ export const adminResetIdentity = defineCapability({
   input: z.object({ guestId: z.string().min(1).max(64), reason: z.string().min(1).max(200) }),
   output: z.object({ revoked: z.number().int(), sessionsEnded: z.number().int() }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     if (!(await getGuest(db, i.guestId))) return err(new CapabilityError('not_found', 'That guest does not exist.'));
     const r = await resetIdentity(db, { ...i, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
@@ -424,7 +436,8 @@ export const adminRebindIdentity = defineCapability({
   input: z.object({ guestId: z.string().min(1).max(64), email: z.string().min(3).max(254), reason: z.string().min(1).max(200) }),
   output: z.object({ bindingId: z.string(), guestId: z.string(), email: z.string() }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const r = await rebindIdentity(db, { ...i, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
     if (!r.ok) return err(r.error);
@@ -445,7 +458,8 @@ export const adminImportGuestsCsv = defineCapability({
   input: z.object({ csv: z.string().min(1).max(1_000_000), dryRun: z.boolean().optional() }),
   output: z.object({ dryRun: z.boolean(), householdsCreated: z.number().int(), guestsCreated: z.number().int(), guestsUpdated: z.number().int(), skipped: z.number().int(), issues: z.array(z.object({ line: z.number().int(), message: z.string() })) }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const { records, issues } = parseGuestCsv(i.csv);
     const summary = { dryRun: !!i.dryRun, householdsCreated: 0, guestsCreated: 0, guestsUpdated: 0, skipped: issues.length, issues: [...issues] };
@@ -511,7 +525,8 @@ export const adminExportGuestsCsv = defineCapability({
   input: z.object({ includeNotes: z.boolean().optional(), includeAddress: z.boolean().optional() }).optional(),
   output: z.object({ csv: z.string(), rows: z.number().int(), columns: z.array(z.string()) }),
   async handler(ctx, i) {
-    requireAdmin(ctx.principal);
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     const includeNotes = !!i?.includeNotes;
     const includeAddress = !!i?.includeAddress;
@@ -550,7 +565,9 @@ export const adminSetAdminRole = defineCapability({
   input: z.object({ email: z.string().min(3).max(254), role: z.enum(ADMIN_ROLES).nullable() }),
   output: z.object({ email: z.string(), role: z.enum(ADMIN_ROLES).nullable() }),
   async handler(ctx, i) {
-    const admin = requireAdmin(ctx.principal, ['owner']);
+    const guard = adminOf(ctx, ['owner']);
+    if (!guard.ok) return err(guard.error);
+    const admin = guard.value;
     const { db } = appServices(ctx);
     const email = normalizeEmail(i.email);
     if (i.role) {

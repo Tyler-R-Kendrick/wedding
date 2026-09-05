@@ -9,8 +9,7 @@ import { issueChallenge, readChallenge } from '@/domain/identity/challenge';
 import { isEmailShape, maskEmail, normalizeEmail } from '@/domain/identity/mask';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
-import { requireGuest } from '@/lib/principal';
-import { actorOf, authOf, callAuth, challengeSecret, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, logOtp, OTP_LIMITS, requireCookieTransport } from './identity/shared';
+import { actorOf, authOf, callAuth, challengeSecret, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, logOtp, OTP_LIMITS, requireCookieTransport, guestOf } from './identity/shared';
 
 const input = z.object({
   email: z.string().min(3).max(254),
@@ -46,7 +45,9 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
   input,
   output,
   async handler(ctx, i) {
-    const p = requireGuest(ctx.principal);
+    const guard = guestOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const p = guard.value;
     const transport = requireCookieTransport(ctx);
     if (!transport.ok) return err(transport.error);
     const { db, auth } = await authOf(ctx);

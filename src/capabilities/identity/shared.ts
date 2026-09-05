@@ -1,12 +1,13 @@
 import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
-import { toPrincipalRef } from '@/contracts/principal';
+import { toPrincipalRef, type AdminPrincipal, type AdminRole, type GuestPrincipal } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { hashOtpIdentifier, recordOtpAttempt } from '@/domain/identity/otp';
 import { appServices } from '@/capabilities/context';
 import { requireService } from '@/capabilities/services';
 import { getAuth, withCookieSink, type CookieSink } from '@/lib/auth';
+import { requireAdmin, requireGuest } from '@/lib/principal';
 import { resolveAuthSecret } from '@/lib/auth/config';
 import type { RateLimitPolicy } from '@/providers/rate-limit/types';
 
@@ -100,6 +101,23 @@ export async function callAuth<T>(sink: CookieSink, fn: () => Promise<T>): Promi
 }
 
 export const actorOf = (ctx: CapabilityContext) => toPrincipalRef(ctx.principal);
+
+/** Result-returning guards: the pipeline maps thrown errors to `internal`, so handlers must not throw for expected denials. */
+export function guestOf(ctx: CapabilityContext): Result<GuestPrincipal, CapabilityError> {
+  try {
+    return ok(requireGuest(ctx.principal));
+  } catch (e) {
+    return err(e instanceof CapabilityError ? e : new CapabilityError('forbidden', 'You do not have access to that.'));
+  }
+}
+
+export function adminOf(ctx: CapabilityContext, roles?: readonly AdminRole[]): Result<AdminPrincipal, CapabilityError> {
+  try {
+    return ok(requireAdmin(ctx.principal, roles));
+  } catch (e) {
+    return err(e instanceof CapabilityError ? e : new CapabilityError('forbidden', 'You do not have access to that.'));
+  }
+}
 
 export const INVALID_CODE_MESSAGE = 'That code didn’t work. Check the digits and try again, or request a new code.';
 export const EXPIRED_CODE_MESSAGE = 'That code has expired. Request a new one and we’ll send it right away.';

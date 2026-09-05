@@ -9,8 +9,7 @@ import { getHousehold } from '@/domain/households/repo';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, getAuthUser } from '@/domain/identity/bindings';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { findInvitationByToken } from '@/domain/invitations/repo';
-import { requireGuest } from '@/lib/principal';
-import { actorOf, authOf } from './identity/shared';
+import { actorOf, authOf, guestOf } from './identity/shared';
 
 const input = z.object({
   guestId: z.string().min(1).max(64),
@@ -47,7 +46,9 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
   input,
   output,
   async handler(ctx, i) {
-    const principal = requireGuest(ctx.principal);
+    const guard = guestOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const principal = guard.value;
     const { db } = await authOf(ctx);
     const user = await getAuthUser(db, principal.authIdentityId);
     const target = await getGuest(db, i.guestId);
@@ -69,13 +70,14 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
       return err(new CapabilityError('conflict', 'That person has already claimed their invitation with another email. If that’s wrong, please get in touch with Sara and Tyler.'));
     }
     const isChild = target.kind === 'child' || target.isMinor;
-    if (!isChild && target.email && target.email === user.email) {
+    if (isChild) return err(new CapabilityError('forbidden', 'Children are included through their household, and do not sign in themselves.'));
+    if (target.email && target.email === user.email) {
       const bound = existing ? ok(existing) : await bindIdentity(db, { authIdentityId: principal.authIdentityId, guestId: target.id, role: 'self', claimMethod: 'otp', invitationId: null, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
       if (!bound.ok) return err(bound.error);
       await db.update(authSessions).set({ activeGuestId: target.id }).where(eq(authSessions.id, principal.sessionId));
       return ok({ data: { status: 'bound', guestId: target.id, displayName: guestDisplayName(target), role: 'self' }, sources: [] });
     }
-    if (target.email && target.email !== user.email && !isChild) {
+    if (target.email && target.email !== user.email) {
       return err(new CapabilityError('forbidden', 'That person has their own email on the invitation — they can sign in with it, or ask Sara and Tyler to update it.'));
     }
     // No inbox of their own: this person manages them.
