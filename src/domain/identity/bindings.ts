@@ -17,6 +17,18 @@ import { isEmailShape, normalizeEmail } from './mask';
  */
 export const activeBindingWhere = () => isNull(guestAccessBindings.revokedAt);
 
+/** Postgres unique-violation (23505) as raised by postgres-js or PGlite (nested `cause`, or message text). */
+export function isUniqueViolation(e: unknown): boolean {
+  let cur: unknown = e;
+  for (let depth = 0; cur && depth < 4; depth++) {
+    const anyErr = cur as { code?: unknown; message?: unknown; cause?: unknown };
+    if (anyErr.code === '23505') return true;
+    if (typeof anyErr.message === 'string' && /duplicate key value|unique constraint|guest_access_bindings_one_active/i.test(anyErr.message)) return true;
+    cur = anyErr.cause;
+  }
+  return false;
+}
+
 export async function activeBindingsForIdentity(db: Db, authIdentityId: string): Promise<GuestAccessBindingRow[]> {
   return db.select().from(guestAccessBindings).where(and(eq(guestAccessBindings.authIdentityId, authIdentityId), activeBindingWhere()));
 }
@@ -106,18 +118,33 @@ export async function bindIdentity(db: Db, input: BindInput): Promise<Result<Gue
     });
     return err(new CapabilityError('conflict', 'This invitation has already been claimed. If that was not you, please get in touch with Sara and Tyler.'));
   }
-  const [row] = await db
-    .insert(guestAccessBindings)
-    .values({
-      id: newId(),
-      authIdentityId: input.authIdentityId,
-      guestId: input.guestId,
-      role: input.role,
-      claimMethod: input.claimMethod,
-      invitationId: input.invitationId ?? null,
-      claimedAt: input.now ?? new Date(),
-    })
-    .returning();
+  let row: GuestAccessBindingRow | undefined;
+  try {
+    [row] = await db
+      .insert(guestAccessBindings)
+      .values({
+        id: newId(),
+        authIdentityId: input.authIdentityId,
+        guestId: input.guestId,
+        role: input.role,
+        claimMethod: input.claimMethod,
+        invitationId: input.invitationId ?? null,
+        claimedAt: input.now ?? new Date(),
+      })
+      .returning();
+  } catch (e) {
+    if (!isUniqueViolation(e)) throw e;
+    // Lost the race against a concurrent claim: the partial unique index guarantees one active binding.
+    await input.audit.record({
+      actor: input.actor,
+      action: 'identity.bound',
+      target: { type: 'guest', id: input.guestId },
+      outcome: 'denied',
+      requestId: input.requestId,
+      metadata: { reason: 'already_bound_concurrent', role: input.role, claimMethod: input.claimMethod },
+    });
+    return err(new CapabilityError('conflict', 'This invitation has already been claimed. If that was not you, please get in touch with Sara and Tyler.'));
+  }
   await input.audit.record({
     actor: input.actor,
     action: 'identity.bound',

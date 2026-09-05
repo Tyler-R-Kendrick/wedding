@@ -60,12 +60,38 @@ export const ipHashOf = (ctx: CapabilityContext): string => hashOtpIdentifier(tr
  * NAT-friendly on purpose (a hotel or a family Wi-Fi shares one address at wedding time).
  */
 export const OTP_LIMITS = {
-  sendPerEmail: { capacity: 5, refillPerSecond: 5 / 600, failMode: 'closed' },
+  /** Per (email, client): a stranger cannot exhaust a guest's own allowance (review S10). */
+  sendPerEmailIp: { capacity: 5, refillPerSecond: 5 / 600, failMode: 'closed' },
+  /** Soft per-email ceiling across all clients: bounds inbox flooding without locking the owner out. */
+  sendPerEmail: { capacity: 20, refillPerSecond: 20 / 600, failMode: 'closed' },
   sendPerIp: { capacity: 60, refillPerSecond: 60 / 600, failMode: 'closed' },
-  verifyPerEmail: { capacity: 10, refillPerSecond: 10 / 600, failMode: 'closed' },
+  verifyPerEmailIp: { capacity: 10, refillPerSecond: 10 / 600, failMode: 'closed' },
   verifyPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
   lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
+
+/** Buckets for a send or verify attempt on `emailHash` from this client. */
+export function otpBuckets(ctx: CapabilityContext, kind: 'send' | 'verify', emailHash: string): { key: string; policy: RateLimitPolicy }[] {
+  const ip = ipHashOf(ctx);
+  return kind === 'send'
+    ? [
+        { key: `otp:send:${emailHash}:${ip}`, policy: OTP_LIMITS.sendPerEmailIp },
+        { key: `otp:send:email:${emailHash}`, policy: OTP_LIMITS.sendPerEmail },
+        { key: `otp:send:ip:${ip}`, policy: OTP_LIMITS.sendPerIp },
+      ]
+    : [
+        { key: `otp:verify:${emailHash}:${ip}`, policy: OTP_LIMITS.verifyPerEmailIp },
+        { key: `otp:verify:ip:${ip}`, policy: OTP_LIMITS.verifyPerIp },
+      ];
+}
+
+/** Every request_otp answer takes at least this long, so a send (or its absence) cannot be timed (review S8). */
+export const REQUEST_OTP_FLOOR_MS = 150;
+
+export async function holdToFloor(startedMs: number, floorMs = REQUEST_OTP_FLOOR_MS): Promise<void> {
+  const remaining = floorMs - (performance.now() - startedMs);
+  if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
+}
 
 export const RATE_LIMIT_MESSAGE = 'Too many attempts. Please wait a few minutes and try again.';
 

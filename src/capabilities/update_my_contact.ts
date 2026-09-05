@@ -7,9 +7,9 @@ import { guests } from '@/db/schema';
 import { activeBindingsForIdentity, getAuthUser } from '@/domain/identity/bindings';
 import { consumeChallenge, issueChallenge, readChallenge } from '@/domain/identity/challenge';
 import { isEmailShape, maskEmail, normalizeEmail } from '@/domain/identity/mask';
-import { hashOtpIdentifier } from '@/domain/identity/otp';
+import { getOtpLockout, hashOtpIdentifier } from '@/domain/identity/otp';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
-import { actorOf, authOf, callAuth, challengeSecret, challengeStore, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, logOtp, OTP_LIMITS, requireCookieTransport, guestOf } from './identity/shared';
+import { actorOf, authOf, callAuth, challengeSecret, challengeStore, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets, requireCookieTransport, guestOf } from './identity/shared';
 
 const input = z.object({
   email: z.string().min(3).max(254),
@@ -64,10 +64,7 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
 
     const emailHash = hashOtpIdentifier(newEmail);
     if (!i.code) {
-      const limited = await consumeLimits(ctx, [
-        { key: `otp:send:email:${emailHash}`, policy: OTP_LIMITS.sendPerEmail },
-        { key: `otp:send:ip:${ipHashOf(ctx)}`, policy: OTP_LIMITS.sendPerIp },
-      ]);
+      const limited = await consumeLimits(ctx, otpBuckets(ctx, 'send', emailHash));
       if (!limited.ok) return err(limited.error);
       const headers = new Headers(transport.value.headers);
       headers.set(OTP_PURPOSE_HEADER, 'bind_identity');
@@ -86,11 +83,13 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
     if (!challenge || challenge.kind !== 'change_email' || challenge.userId !== user.id || challenge.email !== newEmail) {
       return err(new CapabilityError('validation', EXPIRED_CODE_MESSAGE, { issues: [{ path: 'code', message: EXPIRED_CODE_MESSAGE }] }));
     }
-    const limited = await consumeLimits(ctx, [
-      { key: `otp:verify:email:${emailHash}`, policy: OTP_LIMITS.verifyPerEmail },
-      { key: `otp:verify:ip:${ipHashOf(ctx)}`, policy: OTP_LIMITS.verifyPerIp },
-    ]);
+    const limited = await consumeLimits(ctx, otpBuckets(ctx, 'verify', emailHash));
     if (!limited.ok) return err(limited.error);
+    const lock = await getOtpLockout(db, emailHash, ipHashOf(ctx), ctx.now);
+    if (lock.locked) {
+      await logOtp(ctx, { emailHash, purpose: 'change_email', kind: 'verify', outcome: 'locked' });
+      return err(new CapabilityError('rate_limited', LOCKED_MESSAGE, { retryAfterMs: Math.max(1000, Date.parse(lock.until!) - ctx.now.getTime()) }));
+    }
     const changed = await callAuth(transport.value.sink, () => auth.api.changeEmailEmailOTP({ body: { newEmail, otp: i.code! }, headers: transport.value.headers }));
     if (!changed.ok) {
       await logOtp(ctx, { emailHash, purpose: 'change_email', kind: 'verify', outcome: 'failed' });

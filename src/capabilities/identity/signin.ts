@@ -13,7 +13,7 @@ import { resolveAdminRoles } from '@/domain/identity/principal';
 import { getAuthSession } from '@/lib/auth';
 import { env } from '@/lib/env';
 import type { CookieSink } from '@/lib/auth';
-import { actorOf, authOf, callAuth, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, OTP_LIMITS } from './shared';
+import { actorOf, authOf, callAuth, consumeLimits, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets } from './shared';
 
 export interface SignInOutcome {
   status: 'signed_in';
@@ -42,15 +42,12 @@ export async function completeOtpSignIn(
 ): Promise<Result<SignInOutcome, CapabilityError>> {
   const { db, auth } = await authOf(ctx);
   const emailHash = hashOtpIdentifier(challenge.email ?? 'unknown');
-  const limited = await consumeLimits(ctx, [
-    { key: `otp:verify:email:${emailHash}`, policy: OTP_LIMITS.verifyPerEmail },
-    { key: `otp:verify:ip:${ipHashOf(ctx)}`, policy: OTP_LIMITS.verifyPerIp },
-  ]);
+  const limited = await consumeLimits(ctx, otpBuckets(ctx, 'verify', emailHash));
   if (!limited.ok) {
     await logOtp(ctx, { emailHash, purpose: challenge.kind, kind: 'verify', outcome: 'rate_limited' });
     return err(limited.error);
   }
-  const lock = await getOtpLockout(db, emailHash, ctx.now);
+  const lock = await getOtpLockout(db, emailHash, ipHashOf(ctx), ctx.now);
   if (lock.locked) {
     await logOtp(ctx, { emailHash, purpose: challenge.kind, kind: 'verify', outcome: 'locked' });
     return err(new CapabilityError('rate_limited', LOCKED_MESSAGE, { retryAfterMs: Math.max(1000, Date.parse(lock.until!) - ctx.now.getTime()) }));

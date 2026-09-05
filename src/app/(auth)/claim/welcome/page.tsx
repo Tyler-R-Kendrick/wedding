@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import type { MyInvitation } from '@/capabilities/get_my_invitation';
 import { claimPerson, signOut, updateEmail } from '../../_lib/actions';
+import { readChallengeCookie } from '../../_lib/challenge-cookie';
+import { errorCopy } from '../../_lib/errors';
 import { currentPrincipal, invokeFromRequest } from '../../_lib/invoke';
 import { Actions, AuthShell, Button, CodeInput, Field, Notice } from '../../_components/kit';
 import { PasskeyEnroll } from '../passkey/PasskeyEnroll';
@@ -39,7 +41,9 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
     );
   }
   const d = r.value.data;
-  const error = sp.error ? (sp.m ?? 'Something didn’t work. Please try again.') : null;
+  const error = errorCopy(sp.error);
+  const pendingEmail = sp.contact === '1' ? await readChallengeCookie() : null;
+  const changing = pendingEmail?.kind === 'change_email' ? pendingEmail : null;
   const others = d.members.filter((m) => !m.isYou && m.kind !== 'child' && !m.isMinor);
   const firstName = d.you.displayName.split(' ')[0];
   return (
@@ -97,11 +101,9 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
         <h2 id="contact-heading" className="auth-label">
           Use a different email?
         </h2>
-        {sp.contact === '1' && sp.c ? (
+        {changing ? (
           <form action={updateEmail}>
-            <input type="hidden" name="challenge" value={sp.c} />
-            <input type="hidden" name="email" value={sp.email ?? ''} />
-            <p className="auth-hint">We sent a code to {sp.to ?? sp.email}. Enter it to confirm the change.</p>
+            <p className="auth-hint">We sent a code to {changing.to ?? changing.email}. Enter it to confirm the change.</p>
             <Field id="code" label="Six-digit code" error={sp.contact === '1' ? error : null}>
               <CodeInput error={error} />
             </Field>

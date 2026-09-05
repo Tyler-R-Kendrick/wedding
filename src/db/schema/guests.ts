@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { AdminRole, PrincipalRef } from '@/contracts/principal';
 import { authUsers } from './auth';
@@ -112,7 +113,12 @@ export const guestAccessBindings = pgTable(
     /** Binding this one replaced (admin rebind), for the audit trail. */
     reboundFromId: text('rebound_from_id'),
   },
-  (t) => [index('guest_access_bindings_identity_idx').on(t.authIdentityId), index('guest_access_bindings_guest_idx').on(t.guestId)],
+  (t) => [
+    index('guest_access_bindings_identity_idx').on(t.authIdentityId),
+    index('guest_access_bindings_guest_idx').on(t.guestId),
+    /** One active binding per guest, enforced by the database (review S9): concurrent claims cannot both win. */
+    uniqueIndex('guest_access_bindings_one_active').on(t.guestId).where(sql`${t.revokedAt} is null`),
+  ],
 );
 
 export const OTP_ATTEMPT_KINDS = ['send', 'verify'] as const;

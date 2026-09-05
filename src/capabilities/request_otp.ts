@@ -14,8 +14,8 @@ import { invitationLifecycle } from '@/domain/identity/tokens';
 import { findInvitationByToken } from '@/domain/invitations/repo';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
 import { env } from '@/lib/env';
-import { isInternalRoute } from './routes';
-import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, ipHashOf, logOtp, OTP_LIMITS, RECOVERY } from './identity/shared';
+import { isSafeReturnPath } from '@/domain/identity/routes';
+import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, holdToFloor, logOtp, otpBuckets, RECOVERY } from './identity/shared';
 
 const input = z.discriminatedUnion('purpose', [
   z.object({ purpose: z.literal('claim'), token: z.string().min(1).max(128), guestId: z.string().min(1).max(64), next: z.string().max(256).optional() }),
@@ -63,8 +63,9 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
   input,
   output,
   async handler(ctx, i) {
+    const startedMs = performance.now();
     const { db, auth } = await authOf(ctx);
-    const next = i.next && isInternalRoute(i.next) ? i.next : undefined;
+    const next = isSafeReturnPath(i.next) ? i.next : undefined;
     let email: string | null = null;
     let payload: Omit<ChallengePayload, 'email'>;
     let deliveredFor: string | null = null;
@@ -127,29 +128,30 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
 
     const limitEmail = email ?? typedEmail ?? 'unknown';
     const emailHash = hashOtpIdentifier(limitEmail);
-    const limited = await consumeLimits(ctx, [
-      { key: `otp:send:email:${emailHash}`, policy: OTP_LIMITS.sendPerEmail },
-      { key: `otp:send:ip:${ipHashOf(ctx)}`, policy: OTP_LIMITS.sendPerIp },
-    ]);
+    const limited = await consumeLimits(ctx, otpBuckets(ctx, 'send', emailHash));
     if (!limited.ok) {
       await logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'rate_limited' });
       return err(limited.error);
     }
 
+    // The send is never awaited on the request path (review S8): a known address must not answer
+    // slower than an unknown one. Delivery outcome is logged when it settles.
     if (email) {
       const headers = new Headers({ [OTP_PURPOSE_HEADER]: payload.kind === 'admin_sign_in' ? 'admin_sign_in' : payload.kind === 'step_up' ? 'step_up' : 'sign_in' });
-      const sent = await callAuth({ setCookies: [] }, () => auth.api.sendVerificationOTP({ body: { email: email!, type: 'sign-in' }, headers }));
-      if (!sent.ok) {
-        appServices(ctx).logger?.warn({ code: sent.error.code }, 'otp send failed');
-        return err(new CapabilityError('provider_unavailable', 'We couldn’t send the code just now. Please try again in a moment.'));
-      }
-      await logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'sent' });
+      const purpose = payload.kind;
+      void callAuth({ setCookies: [] }, () => auth.api.sendVerificationOTP({ body: { email: email!, type: 'sign-in' }, headers }))
+        .then(async (sent) => {
+          if (!sent.ok) appServices(ctx).logger?.warn({ code: sent.error.code, purpose }, 'otp send failed');
+          await logOtp(ctx, { emailHash, purpose, kind: 'send', outcome: sent.ok ? 'sent' : 'suppressed' });
+        })
+        .catch((e) => appServices(ctx).logger?.warn({ err: e }, 'otp send threw'));
     } else {
-      await logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' });
+      void logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' });
     }
     const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { ...payload, email }, { now: ctx.now });
     // Identical shape for known and unknown addresses; the mask is of the address the caller typed (or the one on file for claims).
     const shown = email ?? typedEmail ?? '';
+    await holdToFloor(startedMs);
     return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor }, sources: [] });
   },
 });

@@ -1,18 +1,14 @@
 import type { Metadata } from 'next';
 import type { InvitationLookup } from '@/capabilities/lookup_invitation';
+import { isSafeReturnPath } from '@/domain/identity/routes';
 import { startClaim } from '../../_lib/actions';
 import { invokeFromRequest } from '../../_lib/invoke';
+import { errorCopy } from '../../_lib/errors';
 import { Actions, AuthShell, Button, Notice, RecoveryPanel } from '../../_components/kit';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your invitation', robots: { index: false, follow: false } };
 
-const ERRORS: Record<string, string> = {
-  pick: 'Please choose your name to continue.',
-  rate_limited: 'Too many attempts. Please wait a few minutes and try again.',
-  validation: 'Please choose an adult from the list.',
-  no_email: 'We don’t have an email address for anyone in this household yet.',
-};
 
 /**
  * Discovery page (ADR-0001 rule 1): "We found your invitation" + pick yourself. Never a session.
@@ -25,7 +21,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
   if (!r.ok) {
     return (
       <AuthShell eyebrow="Your invitation" title="One moment">
-        <Notice tone="error">{r.error.code === 'rate_limited' ? ERRORS.rate_limited : 'We couldn’t open that link just now. Please try again in a moment.'}</Notice>
+        <Notice tone="error">{errorCopy(r.error.code === 'rate_limited' ? 'rate_limited' : 'internal')}</Notice>
       </AuthShell>
     );
   }
@@ -37,7 +33,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
       </AuthShell>
     );
   }
-  const error = sp.error ? (ERRORS[sp.error] ?? sp.m ?? 'Something didn’t work. Please try again.') : null;
+  const error = errorCopy(sp.error === 'validation' ? 'pick' : sp.error);
   const claimable = d.members.filter((m) => m.claimable);
   return (
     <AuthShell
@@ -53,7 +49,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
       {error ? <Notice tone="error">{error}</Notice> : null}
       <form action={startClaim} className="auth-field">
         <input type="hidden" name="token" value={token} />
-        {sp.next ? <input type="hidden" name="next" value={sp.next} /> : null}
+        {isSafeReturnPath(sp.next) ? <input type="hidden" name="next" value={sp.next} /> : null}
         <fieldset className="auth-field">
           <legend className="auth-label">Who are you?</legend>
           <ul className="auth-choices">

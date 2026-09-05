@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "guest_access_bindings_one_active" ON "guest_access_bindings" USING btree ("guest_id") WHERE "guest_access_bindings"."revoked_at" is null;
