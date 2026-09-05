@@ -1,0 +1,72 @@
+{
+  "theme": "conservatory",
+  "license": "Generated in-repo (scripts/art); no third-party rights",
+  "assets": [
+    {
+      "file": "leaf-border.svg",
+      "alt": "Repeating botanical line-art border: a waving vine with alternating leaves and a few pollen-gold berries.",
+      "width": 1200,
+      "height": 80
+    },
+    {
+      "file": "fern-divider.svg",
+      "alt": "A single fern frond drawn in line art, growing from the left and curling at the tip; used as a section divider.",
+      "width": 480,
+      "height": 48
+    },
+    {
+      "file": "moss-cluster-sm.svg",
+      "alt": "An organic cluster of moss-green dots (sm), denser at the centre; decorative.",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "file": "moss-cluster-md.svg",
+      "alt": "An organic cluster of moss-green dots (md), denser at the centre; decorative.",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "file": "moss-cluster-lg.svg",
+      "alt": "An organic cluster of moss-green dots (lg), denser at the centre; decorative.",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "file": "tendril-corner.svg",
+      "alt": "A climbing tendril in line art, spiralling out of the top-left corner with two small leaves; decorative corner ornament.",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "file": "specimen-tag.svg",
+      "alt": "A kraft-paper specimen label with a pollen-gold thread through its hole, an italic placeholder plant name reading TODO(Tyler & Sara), the line \"Chicago · 07 · 17 · 27\", and a small pressed leaf.",
+      "width": 320,
+      "height": 140
+    },
+    {
+      "file": "sky-wash.svg",
+      "alt": "A soft light-blue sky wash fading into creme paper; decorative background.",
+      "width": 1440,
+      "height": 640
+    },
+    {
+      "file": "pressed-flower-a.svg",
+      "alt": "A pressed five-petal bloom on a stem with two leaves, drawn as a stylized silhouette with a pollen-gold centre.",
+      "width": 220,
+      "height": 220
+    },
+    {
+      "file": "pressed-flower-b.svg",
+      "alt": "A pressed umbel spray: thin stalks radiating from one stem into clusters of tiny ivory florets.",
+      "width": 220,
+      "height": 220
+    },
+    {
+      "file": "pressed-flower-c.svg",
+      "alt": "A pressed bell-flower spike: eight bells staggered along a curving stem, smallest at the top.",
+      "width": 220,
+      "height": 220
+    }
+  ]
+}

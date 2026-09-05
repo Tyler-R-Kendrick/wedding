@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 640" width="1440" height="640" role="img" aria-labelledby="t" preserveAspectRatio="xMidYMin slice">
+<title id="t">Sky wash</title>
+
+<defs>
+  <radialGradient id="g1" cx="0.82" cy="0.08" r="0.9">
+    <stop offset="0" stop-color="#D4E4EC"/>
+    <stop offset="0.55" stop-color="#D4E4EC" stop-opacity="0.55"/>
+    <stop offset="1" stop-color="#F4EEDF" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#F4EEDF" stop-opacity="0"/>
+    <stop offset="1" stop-color="#F4EEDF"/>
+  </linearGradient>
+</defs>
+<rect width="1440" height="640" fill="#F4EEDF"/>
+<rect width="1440" height="640" fill="url(#g1)"/>
+<rect width="1440" height="640" fill="url(#g2)"/>
+</svg>

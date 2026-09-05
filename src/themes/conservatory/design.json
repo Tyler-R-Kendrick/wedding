@@ -1,0 +1,710 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-05T03:23:54.445Z",
+  "title": "Design System: Sara + Tyler — Conservatory",
+  "theme": {
+    "slug": "conservatory",
+    "designMd": "src/themes/conservatory/DESIGN.md",
+    "sibling": "gilded-hour",
+    "atmosphere": {
+      "density": "airy 3/10",
+      "variance": "offset asymmetric 6-7/10",
+      "motion": "fluid 4-5/10",
+      "creativity": "8/10"
+    }
+  },
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Moss Ink",
+        "canonical": "oklch(35.9% 0.047 150.8)",
+        "hex": "#2A4430",
+        "tonalRamp": [
+          "#001002",
+          "#132D1A",
+          "#324C38",
+          "#536E58",
+          "#75927B",
+          "#99B79F",
+          "#BCDAC1",
+          "#D9F8DF"
+        ]
+      },
+      "on-primary": {
+        "role": "on-primary",
+        "displayName": "Creme on Ink",
+        "canonical": "oklch(95.0% 0.021 88.7)",
+        "hex": "#F4EEDF",
+        "tonalRamp": [
+          "#0F0B03",
+          "#2B261B",
+          "#4A4538",
+          "#6B6659",
+          "#8E897B",
+          "#B3AE9F",
+          "#D6D1C2",
+          "#F4EEDF"
+        ]
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Moss",
+        "canonical": "oklch(47.2% 0.069 129.1)",
+        "hex": "#4F6338",
+        "tonalRamp": [
+          "#031000",
+          "#1B2D02",
+          "#394C22",
+          "#5A6E43",
+          "#7C9265",
+          "#A0B788",
+          "#C3DBAA",
+          "#E0F8C7"
+        ]
+      },
+      "on-secondary": {
+        "role": "on-secondary",
+        "displayName": "Creme on Moss",
+        "canonical": "oklch(95.0% 0.021 88.7)",
+        "hex": "#F4EEDF",
+        "tonalRamp": [
+          "#0F0B03",
+          "#2B261B",
+          "#4A4538",
+          "#6B6659",
+          "#8E897B",
+          "#B3AE9F",
+          "#D6D1C2",
+          "#F4EEDF"
+        ]
+      },
+      "tertiary": {
+        "role": "tertiary",
+        "displayName": "Pollen",
+        "canonical": "oklch(77.4% 0.127 90.9)",
+        "hex": "#D4B24A",
+        "tonalRamp": [
+          "#1E0200",
+          "#3D1F00",
+          "#5E3F00",
+          "#816100",
+          "#A68506",
+          "#CCAA41",
+          "#F0CE67",
+          "#FFEB85"
+        ]
+      },
+      "on-tertiary": {
+        "role": "on-tertiary",
+        "displayName": "Ink on Pollen",
+        "canonical": "oklch(35.9% 0.047 150.8)",
+        "hex": "#2A4430",
+        "tonalRamp": [
+          "#001002",
+          "#132D1A",
+          "#324C38",
+          "#536E58",
+          "#75927B",
+          "#99B79F",
+          "#BCDAC1",
+          "#D9F8DF"
+        ]
+      },
+      "neutral": {
+        "role": "neutral",
+        "displayName": "Creme",
+        "canonical": "oklch(95.0% 0.021 88.7)",
+        "hex": "#F4EEDF",
+        "tonalRamp": [
+          "#0F0B03",
+          "#2B261B",
+          "#4A4538",
+          "#6B6659",
+          "#8E897B",
+          "#B3AE9F",
+          "#D6D1C2",
+          "#F4EEDF"
+        ]
+      },
+      "neutral-variant": {
+        "role": "neutral",
+        "displayName": "Parchment",
+        "canonical": "oklch(91.4% 0.028 88.8)",
+        "hex": "#EAE2CE",
+        "tonalRamp": [
+          "#100A01",
+          "#2C2616",
+          "#4B4434",
+          "#6D6654",
+          "#908976",
+          "#B5AD9A",
+          "#D8D0BD",
+          "#F6EEDA"
+        ]
+      },
+      "surface": {
+        "role": "surface",
+        "displayName": "Ivory Sheet",
+        "canonical": "oklch(98.0% 0.010 87.5)",
+        "hex": "#FBF8F1",
+        "tonalRamp": [
+          "#0D0B07",
+          "#282621",
+          "#47453F",
+          "#686660",
+          "#8C8983",
+          "#B0AEA7",
+          "#D4D1CA",
+          "#F1EEE7"
+        ]
+      },
+      "on-surface": {
+        "role": "on-surface",
+        "displayName": "Ink on Sheet",
+        "canonical": "oklch(35.9% 0.047 150.8)",
+        "hex": "#2A4430",
+        "tonalRamp": [
+          "#001002",
+          "#132D1A",
+          "#324C38",
+          "#536E58",
+          "#75927B",
+          "#99B79F",
+          "#BCDAC1",
+          "#D9F8DF"
+        ]
+      },
+      "on-surface-muted": {
+        "role": "on-surface",
+        "displayName": "Grey-green Muted",
+        "canonical": "oklch(45.2% 0.032 133.3)",
+        "hex": "#4F5A48",
+        "tonalRamp": [
+          "#060E02",
+          "#202A1A",
+          "#3E4937",
+          "#5F6A58",
+          "#828E7A",
+          "#A6B39E",
+          "#C9D6C1",
+          "#E6F4DE"
+        ]
+      },
+      "outline": {
+        "role": "outline",
+        "displayName": "Hairline",
+        "canonical": "oklch(81.1% 0.030 91.7)",
+        "hex": "#C8C1AC",
+        "tonalRamp": [
+          "#100B00",
+          "#2C2615",
+          "#4B4533",
+          "#6C6653",
+          "#908975",
+          "#B5AE99",
+          "#D8D1BC",
+          "#F6EED9"
+        ]
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Brick Error",
+        "canonical": "oklch(45.6% 0.114 32.3)",
+        "hex": "#8B3A2B",
+        "tonalRamp": [
+          "#2C0000",
+          "#510000",
+          "#762719",
+          "#9D4A3A",
+          "#C46D5C",
+          "#ED9280",
+          "#FFB5A1",
+          "#FFD2BE"
+        ]
+      },
+      "on-error": {
+        "role": "on-error",
+        "displayName": "Blush on Error",
+        "canonical": "oklch(97.7% 0.013 48.6)",
+        "hex": "#FFF5F0",
+        "tonalRamp": [
+          "#100A07",
+          "#2C2521",
+          "#4B433F",
+          "#6D6460",
+          "#908783",
+          "#B5ACA7",
+          "#D8CFCA",
+          "#F6ECE7"
+        ]
+      },
+      "leaf": {
+        "role": "ornament",
+        "displayName": "Leaf (fill only)",
+        "canonical": "oklch(65.5% 0.092 129.9)",
+        "hex": "#7E9C5F",
+        "tonalRamp": [
+          "#001100",
+          "#162E00",
+          "#344E11",
+          "#547035",
+          "#779458",
+          "#9BBA7C",
+          "#BDDE9E",
+          "#DAFCBA"
+        ]
+      },
+      "leaf-deep": {
+        "role": "link",
+        "displayName": "Leaf Ink",
+        "canonical": "oklch(44.9% 0.078 137.6)",
+        "hex": "#3F5F33",
+        "tonalRamp": [
+          "#001100",
+          "#112F03",
+          "#2F4F23",
+          "#507144",
+          "#729566",
+          "#96BA8A",
+          "#B9DEAC",
+          "#D6FCC9"
+        ]
+      },
+      "moss-wash": {
+        "role": "wash",
+        "displayName": "Moss Wash",
+        "canonical": "oklch(91.1% 0.030 119.4)",
+        "hex": "#DFE5CF",
+        "tonalRamp": [
+          "#0A0D01",
+          "#252918",
+          "#434835",
+          "#646956",
+          "#878C78",
+          "#ABB19C",
+          "#CED4BE",
+          "#ECF2DC"
+        ]
+      },
+      "sky": {
+        "role": "wash",
+        "displayName": "Sky Wash",
+        "canonical": "oklch(90.9% 0.020 229.1)",
+        "hex": "#D4E4EC",
+        "tonalRamp": [
+          "#030D12",
+          "#1C282E",
+          "#3A474E",
+          "#5B6970",
+          "#7D8C93",
+          "#A1B1B8",
+          "#C4D4DC",
+          "#E1F1FA"
+        ]
+      },
+      "sky-ink": {
+        "role": "ink",
+        "displayName": "Sky Ink",
+        "canonical": "oklch(39.2% 0.046 232.1)",
+        "hex": "#2B4A5A",
+        "tonalRamp": [
+          "#000E1B",
+          "#0A2A39",
+          "#2A4959",
+          "#4B6B7C",
+          "#6E8FA0",
+          "#92B4C6",
+          "#B4D7EA",
+          "#D1F5FF"
+        ]
+      },
+      "kraft": {
+        "role": "tag",
+        "displayName": "Kraft",
+        "canonical": "oklch(88.0% 0.040 84.6)",
+        "hex": "#E4D6BA",
+        "tonalRamp": [
+          "#130900",
+          "#30250D",
+          "#4F432C",
+          "#71654C",
+          "#95886E",
+          "#BAAC91",
+          "#DDCFB4",
+          "#FBEDD0"
+        ]
+      },
+      "kraft-deep": {
+        "role": "rule",
+        "displayName": "Kraft Rule",
+        "canonical": "oklch(77.8% 0.059 83.4)",
+        "hex": "#C9B48C",
+        "tonalRamp": [
+          "#170700",
+          "#342300",
+          "#54421D",
+          "#76633E",
+          "#9A8660",
+          "#C0AB84",
+          "#E4CEA5",
+          "#FFECC2"
+        ]
+      },
+      "soil": {
+        "role": "caption",
+        "displayName": "Soil",
+        "canonical": "oklch(47.0% 0.055 72.9)",
+        "hex": "#6E5637",
+        "tonalRamp": [
+          "#180600",
+          "#372102",
+          "#574022",
+          "#7A6142",
+          "#9E8464",
+          "#C4A988",
+          "#E8CCAA",
+          "#FFEAC6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-xl": {
+        "displayName": "Display XL",
+        "purpose": "The names on Home only. Gloock roman, hanging punctuation, the \"+\" set in pollen.",
+        "fluid": "clamp(2.75rem, 2rem + 4vw, 4.25rem)"
+      },
+      "display-lg": {
+        "displayName": "Display LG",
+        "purpose": "Section titles on long pages.",
+        "fluid": "clamp(2rem, 1.6rem + 2.4vw, 3rem)"
+      },
+      "h1": {
+        "displayName": "Page title",
+        "purpose": "One per page."
+      },
+      "h2": {
+        "displayName": "Card title",
+        "purpose": "Pressed-card and schedule titles."
+      },
+      "h3": {
+        "displayName": "Minor title",
+        "purpose": "Spectral 500; FAQ questions, form section heads."
+      },
+      "body-lg": {
+        "displayName": "Lead",
+        "purpose": "Opening paragraph of Our Story and each Adventure."
+      },
+      "body-md": {
+        "displayName": "Body",
+        "purpose": "17px running text; the floor on mobile."
+      },
+      "body-sm": {
+        "displayName": "Small",
+        "purpose": "Captions, muted copy, input errors. Never below 15px."
+      },
+      "label-lg": {
+        "displayName": "Button / field label",
+        "purpose": "Spectral 500, 16px, line-height 1 inside flex rows."
+      },
+      "label-caps": {
+        "displayName": "Small caps label",
+        "purpose": "Eyebrows, nav tags, memory tags. font-feature smcp/c2sc; never text-transform: uppercase."
+      },
+      "specimen-label": {
+        "displayName": "Specimen label",
+        "purpose": "Cardo italic; only on kraft specimen labels and tag place/date lines. Two slots max per page.",
+        "fontStyle": "italic"
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Countdown and the 07 · 17 · 27 motif; tabular lining figures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper-rest",
+        "value": "0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35)",
+        "purpose": "The only card shadow: a sheet lifted a millimetre off the mount. card-pressed only, and card-pressed has no hairline border (edge is cut or lifted, never both)."
+      },
+      {
+        "name": "paper-lift",
+        "value": "0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42)",
+        "purpose": "card-pressed :hover / :focus-within. Pairs with a 1px translateY(-1px); never scale."
+      },
+      {
+        "name": "bar-ambient",
+        "value": "0 -8px 24px rgba(42,68,48,0.08)",
+        "purpose": "Sticky mobile action bar separation."
+      },
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "Everything else: card, section washes, inputs, nav tags rely on hairlines and overlap."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-settle",
+        "value": "cubic-bezier(0.22, 0.61, 0.36, 1)",
+        "purpose": "Leaves settling: reveals and card arrival. Ease-out, no overshoot."
+      },
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Hover/focus colour and underline changes."
+      },
+      {
+        "name": "duration-fast",
+        "value": "160ms",
+        "purpose": "Colour, underline thickness, tag tilt."
+      },
+      {
+        "name": "duration-settle",
+        "value": "700ms",
+        "purpose": "Pressed-card arrival: rotate from rest+2deg to rest, translateY 12px to 0, opacity 0 to 1."
+      },
+      {
+        "name": "stagger-settle",
+        "value": "80ms",
+        "purpose": "Between sheets in a stack; max 5 sheets animate, the rest arrive at rest."
+      },
+      {
+        "name": "parallax-sky",
+        "value": "translateY(calc(var(--scroll-progress) * -12px))",
+        "purpose": "Sky wash drifts at most 12px over its section. Off under prefers-reduced-motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) { animation: none; transition-duration: 1ms; transform: none }",
+        "purpose": "Cards render at rest angle; parallax off; countdown digits swap without motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "900px"
+      },
+      {
+        "name": "lg",
+        "value": "1200px"
+      }
+    ],
+    "ornaments": [
+      {
+        "name": "leaf-border",
+        "file": "public/assets/art/conservatory/leaf-border.svg",
+        "use": "Hero top-right edge only; nav rail thread on desktop. Never all four corners.",
+        "size": "1200x80 tile, repeat-x"
+      },
+      {
+        "name": "fern-divider",
+        "file": "public/assets/art/conservatory/fern-divider.svg",
+        "use": "Replaces the 12rem hairline divider between story chapters; grows from the left margin.",
+        "size": "480x48"
+      },
+      {
+        "name": "moss-cluster",
+        "file": "public/assets/art/conservatory/moss-cluster-{sm,md,lg}.svg",
+        "use": "Tucked under a pressed card corner or beside a memory tag; sm as a list bullet, lg behind the section-inverse title.",
+        "size": "64 / 128 / 240"
+      },
+      {
+        "name": "tendril-corner",
+        "file": "public/assets/art/conservatory/tendril-corner.svg",
+        "use": "One corner of the RSVP household card and the password gate. One per page.",
+        "size": "200x200"
+      },
+      {
+        "name": "specimen-tag",
+        "file": "public/assets/art/conservatory/specimen-tag.svg",
+        "use": "Template for the kraft label on pressed cards; the live component renders text in HTML, this SVG is the comp reference.",
+        "size": "320x140"
+      },
+      {
+        "name": "sky-wash",
+        "file": "public/assets/art/conservatory/sky-wash.svg",
+        "use": "Background of banner-sky sections and the wedding-week hero; the one soft edge in the system.",
+        "size": "1440x640, background-size cover"
+      },
+      {
+        "name": "pressed-flower",
+        "file": "public/assets/art/conservatory/pressed-flower-{a,b,c}.svg",
+        "use": "One per pressed card, anchored to a corner and partly cropped by the card edge; a = bloom, b = umbel, c = bells.",
+        "size": "220x220"
+      }
+    ],
+    "focus": {
+      "ring": "2px solid var(--color-secondary)",
+      "offset": "2px",
+      "note": "Appears instantly; no transition. On sky washes use var(--color-sky-ink)."
+    },
+    "fonts": [
+      {
+        "family": "Gloock",
+        "weights": [
+          400
+        ],
+        "license": "OFL",
+        "files": 1
+      },
+      {
+        "family": "Spectral",
+        "weights": [
+          400,
+          500
+        ],
+        "styles": [
+          "normal",
+          "italic"
+        ],
+        "license": "OFL",
+        "files": 2
+      },
+      {
+        "family": "Cardo",
+        "weights": [
+          400
+        ],
+        "styles": [
+          "italic"
+        ],
+        "license": "OFL",
+        "files": 1
+      }
+    ],
+    "cardPressed": {
+      "rotation": "±1deg to ±2deg, alternating by index; nth-child(odd) -1.2deg, nth-child(even) 1.6deg",
+      "overlap": "margin-block-start: calc(-1 * var(--spacing-lg)) on the second sheet of a stack",
+      "tagAnchor": "top: -10px; right: 12px; rotate 4deg",
+      "flowerAnchor": "bottom-right, translate(18%, 22%), clipped by the card",
+      "edge": "no border; box-shadow paper-rest only"
+    },
+    "navRail": {
+      "desktop": "left rail 72px wide; kraft tags hang from a 1px outline thread; current tag rotate(3deg) with a pollen knot",
+      "mobile": "kraft Menu tag bottom-right + sticky bottom bar (RSVP, Directions)"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "One per viewport: the action a guest most needs.",
+      "html": "<button class=\"ds-btn-primary\">Get directions</button>",
+      "css": ".ds-btn-primary{background:var(--color-primary,#2A4430);color:var(--color-on-primary,#F4EEDF);font:500 1rem/1 Spectral,Georgia,serif;letter-spacing:.02em;padding:14px 24px;border:0;border-radius:8px;min-height:44px;cursor:pointer;transition:background-color 160ms cubic-bezier(.4,0,.2,1)}.ds-btn-primary:hover{background:var(--color-leaf-deep,#3F5F33)}.ds-btn-primary:active{background:#1D3021}.ds-btn-primary:focus-visible{outline:2px solid var(--color-secondary,#4F6338);outline-offset:2px}.ds-btn-primary:disabled{background:var(--color-outline,#C8C1AC);color:var(--color-on-surface-muted,#4F5A48);cursor:not-allowed}"
+    },
+    {
+      "name": "Accent Button (RSVP)",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Pollen: reserved for RSVP.",
+      "html": "<button class=\"ds-btn-accent\">RSVP</button>",
+      "css": ".ds-btn-accent{background:var(--color-tertiary,#D4B24A);color:var(--color-on-tertiary,#2A4430);font:500 1rem/1 Spectral,Georgia,serif;letter-spacing:.02em;padding:14px 24px;border:0;border-radius:8px;min-height:44px;cursor:pointer;transition:background-color 160ms cubic-bezier(.4,0,.2,1)}.ds-btn-accent:hover{background:#C6A43C}.ds-btn-accent:active{background:#B8963A}.ds-btn-accent:focus-visible{outline:2px solid var(--color-secondary,#4F6338);outline-offset:2px}.ds-btn-accent:disabled{background:var(--color-outline,#C8C1AC);color:var(--color-on-surface-muted,#4F5A48)}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions: Add to calendar, Open in Maps.",
+      "html": "<button class=\"ds-btn-ghost\">Add to calendar</button>",
+      "css": ".ds-btn-ghost{background:var(--color-surface,#FBF8F1);color:var(--color-primary,#2A4430);font:500 1rem/1 Spectral,Georgia,serif;letter-spacing:.02em;padding:13px 23px;border:1px solid var(--color-primary,#2A4430);border-radius:8px;min-height:44px;cursor:pointer;transition:background-color 160ms cubic-bezier(.4,0,.2,1)}.ds-btn-ghost:hover{background:var(--color-moss-wash,#DFE5CF)}.ds-btn-ghost:active{background:var(--color-neutral-variant,#EAE2CE)}.ds-btn-ghost:focus-visible{outline:2px solid var(--color-secondary,#4F6338);outline-offset:2px}.ds-btn-ghost:disabled{color:var(--color-on-surface-muted,#4F5A48);border-color:var(--color-outline,#C8C1AC)}"
+    },
+    {
+      "name": "Nav Tag",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "A kraft tag on the left rail; current tag inverts and tilts.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Site\"><a class=\"ds-tag\" href=\"#\">Our Story</a><a class=\"ds-tag is-current\" href=\"#\" aria-current=\"page\">The Wedding</a><a class=\"ds-tag\" href=\"#\">Travel</a></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:8px;padding:16px 0 16px 8px;border-left:1px solid var(--color-outline,#C8C1AC);width:max-content}.ds-tag{display:inline-block;background:var(--color-kraft,#E4D6BA);color:var(--color-primary,#2A4430);font:500 .8125rem/1.2 Spectral,Georgia,serif;font-feature-settings:\"smcp\",\"c2sc\";letter-spacing:.1em;padding:10px 14px;border-radius:2px;text-decoration:none;white-space:nowrap;transition:transform 160ms cubic-bezier(.4,0,.2,1)}.ds-tag:hover{transform:rotate(1.5deg)}.ds-tag:focus-visible{outline:2px solid var(--color-secondary,#4F6338);outline-offset:2px}.ds-tag.is-current{background:var(--color-primary,#2A4430);color:var(--color-on-primary,#F4EEDF);transform:rotate(3deg)}"
+    },
+    {
+      "name": "Pressed Card",
+      "kind": "card",
+      "refersTo": "card-pressed",
+      "description": "Ivory sheet, tilted, no hairline (the paper shadow is its edge), with a kraft specimen label pinned top-right.",
+      "html": "<article class=\"ds-pressed\"><span class=\"ds-specimen\">TODO(Tyler &amp; Sara)</span><h3 class=\"ds-pressed__title\">Starved Rock</h3><p class=\"ds-pressed__body\">TODO(Tyler &amp; Sara): the trail, the date, and what was said.</p></article>",
+      "css": ".ds-pressed{position:relative;background:var(--color-surface,#FBF8F1);color:var(--color-on-surface,#2A4430);padding:24px;box-shadow:0 1px 0 rgba(42,68,48,.06),0 12px 32px -20px rgba(42,68,48,.35);transform:rotate(-1.2deg);max-width:22rem}.ds-pressed__title{font:400 1.625rem/1.2 Gloock,Georgia,serif;margin:12px 0 8px}.ds-pressed__body{font:400 1.0625rem/1.65 Spectral,Georgia,serif;margin:0}.ds-specimen{position:absolute;top:-10px;right:12px;background:var(--color-kraft,#E4D6BA);color:var(--color-soil,#6E5637);font:italic 400 1rem/1.4 Cardo,\"Times New Roman\",serif;padding:6px 10px;border-bottom:2px solid var(--color-kraft-deep,#C9B48C);transform:rotate(4deg)}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "17px so iOS never zooms; label above, error in words.",
+      "html": "<label class=\"ds-label\" for=\"n\">Your name</label><input class=\"ds-input\" id=\"n\" type=\"text\" autocomplete=\"name\"><p class=\"ds-error\">Enter the name on your invitation.</p>",
+      "css": ".ds-label{display:block;font:500 1rem/1 Spectral,Georgia,serif;color:var(--color-primary,#2A4430);margin-bottom:8px}.ds-input{display:block;width:100%;max-width:24rem;background:var(--color-surface,#FBF8F1);color:var(--color-on-surface,#2A4430);font:400 1.0625rem/1.4 Spectral,Georgia,serif;padding:12px 14px;border:1px solid var(--color-outline,#C8C1AC);border-radius:2px;min-height:44px}.ds-input:hover{border-color:var(--color-secondary,#4F6338)}.ds-input:focus-visible{outline:2px solid var(--color-secondary,#4F6338);outline-offset:2px}.ds-input[aria-invalid=true]{border-color:var(--color-error,#8B3A2B)}.ds-input:disabled{background:var(--color-neutral-variant,#EAE2CE);color:var(--color-on-surface-muted,#4F5A48)}.ds-error{font:400 .9375rem/1.55 Spectral,Georgia,serif;color:var(--color-error,#8B3A2B);margin:8px 0 0}"
+    },
+    {
+      "name": "Sky Countdown",
+      "kind": "custom",
+      "refersTo": "countdown",
+      "description": "The wedding-week sky band with the countdown in tabular Gloock figures.",
+      "html": "<div class=\"ds-sky\"><span class=\"ds-sky__num\">TODO</span><span class=\"ds-sky__unit\">days</span></div>",
+      "css": ".ds-sky{display:inline-flex;align-items:baseline;gap:12px;background:var(--color-sky,#D4E4EC);color:var(--color-sky-ink,#2B4A5A);padding:16px 24px}.ds-sky__num{font:400 2.5rem/1 Gloock,Georgia,serif;font-feature-settings:\"tnum\",\"lnum\"}.ds-sky__unit{font:500 .8125rem/1.2 Spectral,Georgia,serif;font-feature-settings:\"smcp\";letter-spacing:.1em}"
+    },
+    {
+      "name": "Memory Tag",
+      "kind": "chip",
+      "refersTo": "tag-moss",
+      "description": "\"Sara remembers\" / \"Tyler remembers\" attribution on adventure cards.",
+      "html": "<span class=\"ds-memtag\">Sara remembers</span>",
+      "css": ".ds-memtag{display:inline-block;background:var(--color-secondary,#4F6338);color:var(--color-on-secondary,#F4EEDF);font:500 .8125rem/1.2 Spectral,Georgia,serif;font-feature-settings:\"smcp\";letter-spacing:.1em;padding:4px 8px;border-radius:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Herbarium Sheet",
+    "overview": "A glasshouse in July: creme paper, a light-blue wash where the sky shows through the glazing, moss and leaf greens doing the work of ink, and one thread of pollen gold. Every page is laid out like a pressed specimen: the sheet is the page, the plant sits off-centre with room to breathe, a kraft label in italic names it, and a second sheet may overlap the first. Nothing is centred by default; things are placed.\n\nIt is Sara's taste (flowers, plants, foliage) with Tyler's moss, and the deliberate opposite of Gilded Hour: left-weighted, hand-set, layered and green where that one is symmetrical, monumental, stepped and gold.",
+    "keyCharacteristics": [
+      "Paper ground; sky, moss and parchment washes mark section changes; no gradients",
+      "Moss ink for all text; pale greens and blues are fills only",
+      "Gloock display, Spectral text with real small caps, Cardo italic only on specimen labels",
+      "Overlapping, slightly rotated pressed cards with kraft tags",
+      "In-repo botanical line art: leaf border, fern divider, moss cluster, tendril corner, pressed flowers"
+    ],
+    "rules": [
+      {
+        "name": "The Wash Rule",
+        "body": "Light blue and pale green are washes, never inks. Text on a wash is primary or sky-ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pollen Rule",
+        "body": "Pollen appears at most twice per viewport: the RSVP action and one thread or knot. More than that is gilding, which is the other theme.",
+        "section": "colors"
+      },
+      {
+        "name": "The Placement Rule",
+        "body": "Nothing is centred by default. Names, titles and prose are left-weighted; cards and tags hang in the right-hand mounting area; at most two elements on any screen share a centred axis.",
+        "section": "layout"
+      },
+      {
+        "name": "The Two-Slot Rule",
+        "body": "Cardo italic lives in two slots only: specimen labels and tag place/date lines. Headings are always roman.",
+        "section": "typography"
+      },
+      {
+        "name": "The Settle Rule",
+        "body": "Motion is a leaf settling: ease-out, 700ms or less, one orchestrated arrival per page, nothing that loops. Reduced motion renders everything at rest.",
+        "section": "motion"
+      }
+    ],
+    "dos": [
+      "Place things; let sheets overlap and tags hang",
+      "Keep pale green and light blue as washes",
+      "Generate ornament from scripts/art/conservatory.mjs",
+      "Keep every label visible and every error in words",
+      "Use TODO(Tyler & Sara) placeholders, never plausible fiction"
+    ],
+    "donts": [
+      "No centred script on blush, watercolor corners, pastel-pink gradients",
+      "No gold leaf, sunbursts, chevrons or stepped frames (Gilded Hour vocabulary)",
+      "No italic headings, no all-caps chrome, no eyebrow on every section",
+      "No bounce, no scroll-jacking, no leaves that never stop falling",
+      "No text on leaf, sky, kraft or moss-wash except primary, sky-ink or soil"
+    ]
+  }
+}
