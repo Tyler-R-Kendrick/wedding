@@ -34,4 +34,4 @@ export { betterAuthPrincipalResolver } from './resolver';
 export { withCookieSink, applyCookieSink, type CookieSink } from './cookies';
 export { getAuthSession, toSessionFacts, type AuthSession } from './session';
 export { isTrustedMutationRequest } from './csrf';
-export { OTP_PURPOSE_HEADER, siteOrigin, relyingPartyId, SESSION_FRESH_AGE_SECONDS, DISABLED_AUTH_PATHS } from './config';
+export { OTP_PURPOSE_HEADER, siteOrigin, relyingPartyId, SESSION_FRESH_AGE_SECONDS, DISABLED_AUTH_PATHS, HTTP_ALLOWED_AUTH_PATHS } from './config';

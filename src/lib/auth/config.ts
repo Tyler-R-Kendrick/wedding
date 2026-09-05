@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { passkey } from '@better-auth/passkey';
@@ -45,7 +46,48 @@ export const DISABLED_AUTH_PATHS = [
   '/delete-user',
   '/passkey/generate-register-options',
   '/passkey/verify-registration',
+  '/passkey/list-user-passkeys',
+  '/passkey/delete-passkey',
+  '/passkey/update-passkey',
+  '/forget-password/email-otp',
+  '/forget-password',
+  '/send-verification-email',
+  '/verify-email',
+  '/list-sessions',
+  '/revoke-session',
+  '/revoke-sessions',
+  '/revoke-other-sessions',
+  '/link-social',
+  '/unlink-account',
+  '/list-accounts',
+  '/get-access-token',
+  '/refresh-token',
+  '/account-info',
 ];
+
+/**
+ * The only Better Auth HTTP endpoints the site serves. Everything else answers 404 at the
+ * router, whatever the plugin set registers (deny by default; `DISABLED_AUTH_PATHS` above is
+ * documentation and defence in depth). Server-side `auth.api.*` calls are unaffected.
+ */
+export const HTTP_ALLOWED_AUTH_PATHS = ['/get-session', '/sign-out', '/passkey/generate-authenticate-options', '/passkey/verify-authentication', '/ok'] as const;
+
+export function httpAllowlist() {
+  return {
+    id: 'wedding-http-allowlist',
+    hooks: {
+      before: [
+        {
+          matcher: (ctx: { path?: string; request?: Request; _flag?: string }) =>
+            (!!ctx.request || ctx._flag === 'router') && !(HTTP_ALLOWED_AUTH_PATHS as readonly string[]).includes(ctx.path ?? ''),
+          handler: createAuthMiddleware(async () => {
+            throw APIError.fromStatus('NOT_FOUND', { message: 'Not Found' });
+          }),
+        },
+      ],
+    },
+  };
+}
 
 export function resolveAuthSecret(): string {
   if (env.BETTER_AUTH_SECRET) return env.BETTER_AUTH_SECRET;
@@ -146,6 +188,7 @@ export function createAuth(db: Db) {
         origin: env.BETTER_AUTH_URL ? [siteOrigin()] : null,
         authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
       }),
+      httpAllowlist(),
       weddingCookies(),
     ],
   });

@@ -129,7 +129,8 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
   // `next build` evaluates route modules without runtime secrets; the boot-time check still runs when the server starts.
   const isBuildPhase = source.NEXT_PHASE === 'phase-production-build';
   if (isProduction && !isBuildPhase) {
-    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL'];
+    // RESEND_API_KEY + EMAIL_FROM: production must never route one-time codes to the in-memory dev inbox (review S6).
+    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'RESEND_API_KEY', 'EMAIL_FROM'];
     const missing: string[] = required.filter((k) => !e[k]);
     // Storage must be S3 or a deliberately configured local-fs signing secret; the committed dev default is never used in production.
     if (!hasS3(e) && !e.STORAGE_SIGNING_SECRET && !e.DEV_STORAGE_SECRET) {
