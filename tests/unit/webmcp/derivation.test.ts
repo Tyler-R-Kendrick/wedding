@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { navigateTo } from '@/capabilities/navigate_to';
 import { siteStatus } from '@/capabilities/site_status';
-import { defineCapability, type AnyCapability } from '@/contracts/capability';
+import { defineCapability, type AnyCapability, type CapabilityKind } from '@/contracts/capability';
 import { ok } from '@/contracts/result';
 import {
   deriveAnnotations,
@@ -102,8 +102,10 @@ describe('annotation derivation', () => {
 
 describe('execution rules', () => {
   it('classifies mutations', () => {
-    expect(['action', 'transaction', 'external'].every(isMutation)).toBe(true);
-    expect(['read', 'navigate', 'draft'].some(isMutation)).toBe(false);
+    const mutations: CapabilityKind[] = ['action', 'transaction', 'external'];
+    const inert: CapabilityKind[] = ['read', 'navigate', 'draft'];
+    expect(mutations.every(isMutation)).toBe(true);
+    expect(inert.some(isMutation)).toBe(false);
   });
 
   it('treats transactions and external handoffs as needing a human on the page (ADR-0002 rule 4)', () => {
