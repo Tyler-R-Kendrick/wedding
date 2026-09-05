@@ -14,7 +14,7 @@ export function AdminShell({ title, principal, children }: { title: string; prin
   }
   return (
     <main id="main" className="mx-auto w-full max-w-[60rem] px-5 py-10">
-      <nav aria-label="Admin" className="flex flex-wrap gap-x-6 gap-y-2 text-[0.75rem] uppercase tracking-[0.14em]">
+      <nav aria-label="Admin" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <Link className="underline-offset-4 hover:underline" href="/admin">
           Admin
         </Link>
@@ -31,6 +31,15 @@ export function AdminShell({ title, principal, children }: { title: string; prin
       <h1 className="mt-6 text-3xl">{title}</h1>
       {children}
     </main>
+  );
+}
+
+/** Wide tables scroll inside a focusable, labelled region so keyboard users can reach the overflow (axe scrollable-region-focusable). */
+export function ScrollRegion({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" tabIndex={0} role="region" aria-label={label}>
+      {children}
+    </div>
   );
 }
 

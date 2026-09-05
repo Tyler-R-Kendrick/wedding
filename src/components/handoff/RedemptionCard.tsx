@@ -34,7 +34,7 @@ export function RedemptionCard({ benefit }: { benefit: BenefitView }) {
     <article className="border-t border-primary/20 py-6" data-benefit-status={benefit.status} data-handoff-provider="manual-code">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h3 className="text-xl">Your ride code</h3>
-        <p className="text-[0.75rem] uppercase tracking-[0.14em] text-primary/70">personal to you</p>
+        <p className="text-sm text-primary/70">personal to you</p>
       </div>
       <p className="mt-4 select-all font-mono text-2xl tracking-[0.12em]" aria-label="Your ride code">
         {r.code}

@@ -15,7 +15,7 @@ interface DraftData {
 
 type Step = { name: 'idle' } | { name: 'drafting' } | { name: 'review'; draft: DraftData; token: string; expiresAt: string } | { name: 'claiming' } | { name: 'done'; redemptionKind: 'link' | 'code' } | { name: 'error'; message: string; retry: boolean };
 
-const BUTTON = 'inline-flex min-h-11 items-center rounded-full px-7 py-3 text-[0.75rem] uppercase tracking-[0.14em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60';
+const BUTTON = 'inline-flex min-h-11 items-center rounded-full px-7 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60';
 const PRIMARY = `${BUTTON} bg-primary text-neutral`;
 const GHOST = `${BUTTON} border border-primary/40 text-primary`;
 
