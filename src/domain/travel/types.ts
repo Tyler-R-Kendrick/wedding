@@ -43,27 +43,31 @@ export const timezoneInput = z
 
 // ---------------------------------------------------------------- travel profile
 
-export const travelProfileInput = z
-  .object({
-    homeCity: z.string().trim().min(1).max(80).nullable().optional(),
-    homeRegion: z.string().trim().min(1).max(80).nullable().optional(),
-    preferredAirport: iata.nullable().optional(),
-    alternateAirports: z.array(iata).max(4).default([]),
-    adults: z.number().int().min(1).max(9).default(1),
-    children: z.number().int().min(0).max(9).default(0),
-    airlinePreference: z.string().trim().min(1).max(60).nullable().optional(),
-    nonstopPreferred: z.boolean().default(false),
-    cabin: z.enum(CABIN_CLASSES).default('economy'),
-    arriveEarliest: isoDate.nullable().optional(),
-    arriveLatest: isoDate.nullable().optional(),
-    departEarliest: isoDate.nullable().optional(),
-    departLatest: isoDate.nullable().optional(),
-  })
-  .superRefine((v, ctx) => {
-    if (v.arriveEarliest && v.arriveLatest && v.arriveLatest < v.arriveEarliest) ctx.addIssue({ code: 'custom', path: ['arriveLatest'], message: 'Latest arrival must be on or after the earliest.' });
-    if (v.departEarliest && v.departLatest && v.departLatest < v.departEarliest) ctx.addIssue({ code: 'custom', path: ['departLatest'], message: 'Latest departure must be on or after the earliest.' });
-    if (v.arriveLatest && v.departEarliest && v.departEarliest < v.arriveLatest) ctx.addIssue({ code: 'custom', path: ['departEarliest'], message: 'Departure cannot be before arrival.' });
-  });
+/** Field shape, exported so capabilities can compose it (Zod 4 refinements do not survive `.extend`). */
+export const travelProfileFields = {
+  homeCity: z.string().trim().min(1).max(80).nullable().optional(),
+  homeRegion: z.string().trim().min(1).max(80).nullable().optional(),
+  preferredAirport: iata.nullable().optional(),
+  alternateAirports: z.array(iata).max(4).default([]),
+  adults: z.number().int().min(1).max(9).default(1),
+  children: z.number().int().min(0).max(9).default(0),
+  airlinePreference: z.string().trim().min(1).max(60).nullable().optional(),
+  nonstopPreferred: z.boolean().default(false),
+  cabin: z.enum(CABIN_CLASSES).default('economy'),
+  arriveEarliest: isoDate.nullable().optional(),
+  arriveLatest: isoDate.nullable().optional(),
+  departEarliest: isoDate.nullable().optional(),
+  departLatest: isoDate.nullable().optional(),
+};
+
+type ProfileWindows = { arriveEarliest?: string | null; arriveLatest?: string | null; departEarliest?: string | null; departLatest?: string | null };
+export const refineProfileWindows = (v: ProfileWindows, ctx: z.RefinementCtx): void => {
+  if (v.arriveEarliest && v.arriveLatest && v.arriveLatest < v.arriveEarliest) ctx.addIssue({ code: 'custom', path: ['arriveLatest'], message: 'Latest arrival must be on or after the earliest.' });
+  if (v.departEarliest && v.departLatest && v.departLatest < v.departEarliest) ctx.addIssue({ code: 'custom', path: ['departLatest'], message: 'Latest departure must be on or after the earliest.' });
+  if (v.arriveLatest && v.departEarliest && v.departEarliest < v.arriveLatest) ctx.addIssue({ code: 'custom', path: ['departEarliest'], message: 'Departure cannot be before arrival.' });
+};
+
+export const travelProfileInput = z.object(travelProfileFields).superRefine(refineProfileWindows);
 export type TravelProfileInput = z.infer<typeof travelProfileInput>;
 
 export const travelProfileOutput = z.object({
@@ -97,36 +101,34 @@ export type LocationSuggestion = z.infer<typeof locationSuggestion>;
 
 // ---------------------------------------------------------------- search
 
-export const flightSearchInput = z
-  .object({
-    kind: z.literal('flights'),
-    origin: iata,
-    destination: z.enum(CHICAGO_AIRPORTS).default('ORD'),
-    departDate: isoDate,
-    returnDate: isoDate.optional(),
-    adults: z.number().int().min(1).max(9).default(1),
-    children: z.number().int().min(0).max(9).default(0),
-    cabin: z.enum(FLIGHT_CABINS).default('economy'),
-    nonstopOnly: z.boolean().default(false),
-  })
-  .superRefine((v, ctx) => {
-    if (v.returnDate && v.returnDate < v.departDate) ctx.addIssue({ code: 'custom', path: ['returnDate'], message: 'Return must be on or after departure.' });
-    if ((CHICAGO_AIRPORTS as readonly string[]).includes(v.origin)) ctx.addIssue({ code: 'custom', path: ['origin'], message: 'Choose the airport you are flying from, not Chicago.' });
-  });
+export const flightSearchFields = {
+  origin: iata,
+  destination: z.enum(CHICAGO_AIRPORTS).default('ORD'),
+  departDate: isoDate,
+  returnDate: isoDate.optional(),
+  adults: z.number().int().min(1).max(9).default(1),
+  children: z.number().int().min(0).max(9).default(0),
+  cabin: z.enum(FLIGHT_CABINS).default('economy'),
+  nonstopOnly: z.boolean().default(false),
+};
+export const refineFlightSearch = (v: { origin: string; departDate: string; returnDate?: string }, ctx: z.RefinementCtx): void => {
+  if (v.returnDate && v.returnDate < v.departDate) ctx.addIssue({ code: 'custom', path: ['returnDate'], message: 'Return must be on or after departure.' });
+  if ((CHICAGO_AIRPORTS as readonly string[]).includes(v.origin)) ctx.addIssue({ code: 'custom', path: ['origin'], message: 'Choose the airport you are flying from, not Chicago.' });
+};
+export const flightSearchInput = z.object({ kind: z.literal('flights'), ...flightSearchFields }).superRefine(refineFlightSearch);
 export type FlightSearchInput = z.infer<typeof flightSearchInput>;
 
-export const hotelSearchInput = z
-  .object({
-    kind: z.literal('hotels'),
-    checkIn: isoDate,
-    checkOut: isoDate,
-    adults: z.number().int().min(1).max(9).default(2),
-    children: z.number().int().min(0).max(9).default(0),
-    rooms: z.number().int().min(1).max(9).default(1),
-  })
-  .superRefine((v, ctx) => {
-    if (v.checkOut <= v.checkIn) ctx.addIssue({ code: 'custom', path: ['checkOut'], message: 'Check-out must be after check-in.' });
-  });
+export const hotelSearchFields = {
+  checkIn: isoDate,
+  checkOut: isoDate,
+  adults: z.number().int().min(1).max(9).default(2),
+  children: z.number().int().min(0).max(9).default(0),
+  rooms: z.number().int().min(1).max(9).default(1),
+};
+export const refineHotelSearch = (v: { checkIn: string; checkOut: string }, ctx: z.RefinementCtx): void => {
+  if (v.checkOut <= v.checkIn) ctx.addIssue({ code: 'custom', path: ['checkOut'], message: 'Check-out must be after check-in.' });
+};
+export const hotelSearchInput = z.object({ kind: z.literal('hotels'), ...hotelSearchFields }).superRefine(refineHotelSearch);
 export type HotelSearchInput = z.infer<typeof hotelSearchInput>;
 
 export const travelSearchInput = z.discriminatedUnion('kind', [flightSearchInput, hotelSearchInput]);
