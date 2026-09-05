@@ -19,7 +19,7 @@ export const AUDIT_ACTIONS = [
   'content.updated', 'content.verified',
   'provider.configured', 'flag.changed',
   'ai.grounding_failed', 'ai.security_alert',
-  'capability.denied',
+  'capability.denied', 'capability.invoked', 'capability.failed',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

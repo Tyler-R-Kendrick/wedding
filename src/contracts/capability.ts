@@ -49,6 +49,11 @@ export interface CapabilityContext {
   confirmationToken?: string;
   /** Current theme/lifecycle preview context, for navigate capabilities. */
   view?: { theme?: string; lifecycle?: string };
+  /**
+   * Which surface is calling (defaults to 'ui'). The pipeline hides capabilities whose
+   * `exposure[surface]` is false and enforces `maxOutputChars` for 'ai' and 'webmcp'.
+   */
+  surface?: keyof CapabilityExposure;
   /** Adapter registry and DB are provided by the app; typed loosely here to keep contracts dependency-free. */
   services: Record<string, unknown>;
 }
@@ -103,6 +108,7 @@ export function defineCapability<I, O>(d: CapabilityDescriptor<I, O>): Capabilit
   return d;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry storage needs the erased form
 export type AnyCapability = CapabilityDescriptor<any, any>;
 
 /** Registry contract implemented in src/capabilities/registry.ts. */

@@ -36,8 +36,10 @@ export const WEDDING_TIMEZONE = 'America/Chicago';
  */
 export function suggestedStateFor(now: Date, weddingDateIso: string = WEDDING_DATE_ISO): LifecycleState {
   const chicago = new Date(now.toLocaleString('en-US', { timeZone: WEDDING_TIMEZONE }));
+  // Compare calendar days, not instants: any time on the wedding day is WEDDING_DAY.
+  const today = new Date(chicago.getFullYear(), chicago.getMonth(), chicago.getDate());
   const wedding = new Date(`${weddingDateIso}T00:00:00`);
-  const days = Math.floor((wedding.getTime() - chicago.getTime()) / 86_400_000);
+  const days = Math.round((wedding.getTime() - today.getTime()) / 86_400_000);
   if (days < -30) return 'ARCHIVE';
   if (days < 0) return 'POST_WEDDING';
   if (days === 0) return 'WEDDING_DAY';
