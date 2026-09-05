@@ -38,6 +38,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `HEALTH_TOKEN` | unset | bearer that unlocks the provider/driver inventory on `/api/health` (admin principals see it without a token); `{ ok, db, time }` stays public | no |
 | `AUDIT_HASH_KEY` | derived from `CONFIRMATION_SECRET` | HMAC key for the audit `inputHash` fingerprint | no |
 | `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
+| `TEST_AUTH_SECRET` | unset | **Test only.** Enables the WebMCP e2e principal injector (`src/webmcp/server/test-principal.ts`): with `NODE_ENV=test` and this set (>= 16 chars), `x-test-principal: guest\|guest-fresh\|admin` plus a matching `x-test-auth` resolves to a canned principal, compared in constant time. Ignored entirely outside `NODE_ENV=test`. Delete it once Swarm D's identity layer lands. | no |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | unset | auth swarm (Better Auth) | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
