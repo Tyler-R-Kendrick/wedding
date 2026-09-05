@@ -3,14 +3,14 @@ import { CapabilityError } from '@/contracts/errors';
 import type { GuestPrincipal } from '@/contracts/principal';
 import type { Result } from '@/contracts/result';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from './db';
 import { loadHouseholdRsvpContext, type HouseholdRsvpContext } from '@/domain/rsvp';
 import { validateHouseholdRsvp, type HouseholdRsvpInput, type RsvpValidation, type RsvpValidationContext } from '@/domain/rsvp';
 import { RSVP_CLOSED_MESSAGE } from '@/domain/rsvp/validate';
 
 /** Loads the household context scoped to the principal's actsFor set. Nothing outside it is ever read. */
 export async function loadForPrincipal(ctx: CapabilityContext, p: GuestPrincipal): Promise<HouseholdRsvpContext> {
-  const { db } = appServices(ctx);
+  const db = await eDb(ctx);
   const scope = p.actsFor.includes(p.guestId) ? p.actsFor : [p.guestId, ...p.actsFor];
   return loadHouseholdRsvpContext(db, { guestIds: scope, householdId: p.householdId, now: ctx.now });
 }

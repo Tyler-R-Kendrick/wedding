@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { defineCapability } from '@/contracts/capability';
+import { defineCapability, type CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { assertActsFor } from '@/policy/entitlements';
 import { findGuestInSnapshot, getFloorPlan, getLivePublication } from '@/domain/seating';
 import { idSchema, requireGuestPrincipal } from '@/capabilities/rsvp/shared';
@@ -33,8 +33,8 @@ export type MyTable = z.infer<typeof myTableSchema>;
  * Reads ONLY the live publication snapshot. Before publication (or when the guest is not
  * in the snapshot) this is `not_found` — the draft chart never reaches any surface.
  */
-export async function readPublishedTable(ctx: Parameters<typeof appServices>[0], guestId: string) {
-  const { db } = appServices(ctx);
+export async function readPublishedTable(ctx: CapabilityContext, guestId: string) {
+  const db = await eDb(ctx);
   const live = await getLivePublication(db);
   const view = findGuestInSnapshot(live?.snapshot ?? null, guestId);
   if (!live || !view) return null;

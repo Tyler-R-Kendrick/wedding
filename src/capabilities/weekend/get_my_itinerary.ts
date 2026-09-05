@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { NOTICE_SEVERITIES, RSVP_STATUSES } from '@/db/schema';
 import { formatEventDate, formatEventWindow, listActiveNotices } from '@/domain/events';
 import { getLifecycle } from '@/db/repos/site';
@@ -58,7 +58,7 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
   async handler(ctx) {
     const p = requireGuestPrincipal(ctx);
     if (!p.ok) return err(p.error);
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const [hc, lifecycleRow, notices, slots, table] = await Promise.all([
       loadForPrincipal(ctx, p.value),
       getLifecycle(db),

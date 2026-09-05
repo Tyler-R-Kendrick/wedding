@@ -1,5 +1,6 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { registerRsvpJobs } from '@/domain/rsvp/email';
+import { installTestPrincipalResolver } from '@/domain/testing/testPrincipal';
 import { adminEventCapabilities } from '@/capabilities/events/admin_events';
 import { adminSeatingCapabilities } from '@/capabilities/seating/admin_seating';
 import { getMyTable } from '@/capabilities/seating/get_my_table';
@@ -11,7 +12,9 @@ import { getMyRsvp } from './get_my_rsvp';
 import { listMyEvents } from './list_my_events';
 import { submitRsvp } from './submit_rsvp';
 
+// Server-only module: wires the job handler and the test-only principal injector when the capability registry loads.
 registerRsvpJobs();
+installTestPrincipalResolver();
 
 /** Swarm E: events, RSVP, Your Weekend, seating — one list for src/capabilities/index.ts. */
 export const rsvpSwarmCapabilities: readonly AnyCapability[] = [
