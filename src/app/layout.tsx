@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'Sara + Tyler', template: '%s | Sara + Tyler' },
-  description: 'Sara and Tyler are getting married in Chicago on July 17, 2027.',
+  description: 'Sara and Tyler are getting married in Chicago on Saturday, July 17, 2027.',
   robots: { index: false, follow: false },
 };
 
@@ -13,10 +13,15 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Root layout. The theme attribute lives on the Shell wrapper (rendered by every recipe) because
+ * the resolved theme is a route param under /t/[theme] or a per-request header, neither of which
+ * the root layout can read without opting the whole tree into dynamic rendering. The theme layout
+ * mirrors it onto <html> before paint; suppressHydrationWarning covers that attribute.
+ */
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // data-theme is the hook the design swarm's themes key off; "gilded-hour" is the default.
   return (
-    <html lang="en" data-theme="gilded-hour">
+    <html lang="en" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

@@ -30,7 +30,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `PGLITE_DATA_DIR` | `./.data/pglite` | db client | no |
 | `DB_AUTO_MIGRATE` | on outside production | db client | no |
 | `DB_AUTO_SEED` | on outside production | db client (idempotent seed) | no |
-| `CONFIRMATION_SECRET` | dev default (warns) | policy/confirmation | no |
+| `CONFIRMATION_SECRET` | dev default (warns) | policy/confirmation; also signs admin lifecycle-preview tokens (`src/domain/lifecycle/preview.ts`) | no |
 | `CRON_SECRET` | unset (route 401) | api/jobs/run | no |
 | `STORAGE_SIGNING_SECRET` | dev default (warns); required in production unless S3 is configured | storage local-fs signed URLs | no |
 | `DEV_STORAGE_SECRET` | unset | alias of `STORAGE_SIGNING_SECRET` (written by the secrets autofill); `STORAGE_SIGNING_SECRET` wins when both are set | no |
@@ -56,8 +56,9 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `JOBS_POLL_INTERVAL_MS` | `2000` | dev poller | no |
 | `JOBS_BATCH_SIZE` | `10` | job runner / cron route | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
-| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
+| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; `FLAG_DESIGN_SWITCHER=off` removes the floating design switcher from the server render | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH | media swarm's video adapter (not read yet) | no |
+| `NEXT_TURBOPACK_ROOT` | unset | `next.config.ts`: Turbopack filesystem root for sandboxes whose `node_modules` is a symlink outside the project (set to the parent directory). Never needed in CI or normal checkouts | no |
 
 ## Public variables (inlined into the browser bundle)
 
@@ -72,6 +73,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | Variable | Purpose |
 |---|---|
 | `BASE_URL` | Playwright targets this deployed URL instead of starting the app |
+| `PORT` | Port Playwright starts the app on and targets when `BASE_URL` is unset (default 3000; parallel worktrees each pick one) |
 | `PW_CHROMIUM_PATH` | system Chromium for sandboxes without `playwright install` (auto-detects `/opt/pw-browsers/chromium`) |
 | `PW_WEB_SERVER_COMMAND` | command Playwright runs to start the app (default `npm run dev`; CI: `npm run start`) |
 | `PLAYWRIGHT_BROWSERS_PATH` | where Playwright's own browsers live |

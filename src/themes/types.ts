@@ -148,6 +148,8 @@ export type HomeAct = 'adventure' | 'place' | 'memory' | 'hospitality' | 'future
 export interface HomeSection {
   id: string;
   act: HomeAct;
+  /** Eyebrow (Gilded Hour) / specimen label (Conservatory): the five motifs in explore mode, a functional word otherwise. */
+  label: string;
   title: string;
   body: Copy;
   link?: ActionLink;

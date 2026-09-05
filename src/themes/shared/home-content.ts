@@ -26,9 +26,9 @@ const ROUTES = {
 /** The three events named in the brief; rooms and times are planner items P-01 / P-02. */
 export function placeholderTimeline(): TimelineEvent[] {
   return [
-    { id: 'ceremony', name: 'Ceremony', placeholder: true, description: [todo('room and time')] },
-    { id: 'cocktail-hour', name: 'Cocktail hour', placeholder: true, description: [todo('room and time')] },
-    { id: 'reception', name: 'Reception', placeholder: true, description: [todo('room and time; dancing')] },
+    { id: 'ceremony', name: 'Ceremony', placeholder: true },
+    { id: 'cocktail-hour', name: 'Cocktail hour', placeholder: true },
+    { id: 'reception', name: 'Reception', placeholder: true, description: ['Dinner, toasts, and dancing. ', todo('the music')] },
   ];
 }
 
@@ -41,6 +41,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
   return {
     adventure: {
       id: 'adventures',
+      label: 'Adventure',
       act: 'adventure',
       title: 'Our adventures',
       body: [
@@ -51,6 +52,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     place: {
       id: 'the-building',
+      label: 'Place',
       act: 'place',
       title: 'The building',
       body: [
@@ -62,6 +64,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     memory: {
       id: 'our-story',
+      label: 'Memory',
       act: 'memory',
       title: 'How we met',
       body: ['At Allison and Jamie’s wedding: flirty glances, and a connection that was immediate. ', todo('the rest of the story, in our words')],
@@ -69,6 +72,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     hospitality: {
       id: 'travel',
+      label: 'Hospitality',
       act: 'hospitality',
       title: 'Travelling in?',
       body: [
@@ -79,6 +83,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     future: {
       id: 'the-date',
+      label: 'Future',
       act: 'future',
       title: site.date.long,
       body: ['One date, one building, and a weekend we hope you make your own. Details will land here as they are settled.'],
@@ -86,6 +91,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     wedding: {
       id: 'the-wedding',
+      label: 'The day',
       act: 'place',
       title: 'The Wedding',
       body: [`${site.date.long} at the ${site.venue.name}. `, todo('ceremony, cocktail hour, and reception rooms and times'), ' ', todo('dress code, with an example outfit')],
@@ -95,6 +101,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     invitation: {
       id: 'your-invitation',
+      label: 'Invitation',
       act: 'future',
       title: 'Your invitation',
       body: ['Claim it with the email we have for you to see your events, RSVP when it opens, and keep your details in one place.'],
@@ -102,6 +109,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     rsvp: {
       id: 'rsvp',
+      label: 'Reply',
       act: 'future',
       title: 'RSVP',
       body: ['Two minutes on a phone: who is coming, what you would like to eat, anything we should know. Reply by ', todo('the RSVP deadline'), '.'],
@@ -109,6 +117,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     transport: {
       id: 'transportation',
+      label: 'Getting there',
       act: 'hospitality',
       title: 'Getting there and home',
       body: ['Valet, transit, parking, and rides home, with the hotel’s own directions. ', todo('event valet rate and ride vouchers')],
@@ -116,6 +125,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     gifts: {
       id: 'gifts',
+      label: 'Gifts',
       act: 'future',
       title: 'Help us with our next adventures',
       body: ['Your being there is the gift. If you would like to give something more, ', todo('registry and experience gifts'), '.'],
@@ -123,6 +133,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     weekend: {
       id: 'your-weekend',
+      label: 'Yours',
       act: 'hospitality',
       title: 'Your weekend',
       body: ['Your events, your RSVP, your table once it is published, and anything we have arranged for you.'],
@@ -130,14 +141,16 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     saturday: {
       id: 'now',
+      label: 'Today',
       act: 'now',
-      title: state === 'WEDDING_DAY' ? 'Now and next' : `Saturday`,
+      title: state === 'WEDDING_DAY' ? 'Now and next' : 'Saturday',
       body: state === 'WEDDING_DAY' ? ['Where to be, and what comes next.'] : ['The day, in order. Times and rooms will be confirmed here.'],
       timeline: placeholderTimeline(),
       link: { label: 'The Wedding', href: ROUTES.wedding },
     },
     rides: {
       id: 'rides',
+      label: 'Getting home',
       act: 'hospitality',
       title: 'A ride home',
       body: ['When you are ready to go. ', todo('ride voucher amount and how to claim it')],
@@ -145,6 +158,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     open: {
       id: 'whats-open',
+      label: 'Open now',
       act: 'place',
       title: 'What’s open in the building',
       body: ['Restaurants and bars on the property, with hours from the hotel’s own site.'],
@@ -152,6 +166,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     ask: {
       id: 'ask',
+      label: 'Ask',
       act: 'hospitality',
       title: 'Questions?',
       body: ['Ask us. If we do not have the answer, we will say so and point you to a person.'],
@@ -159,6 +174,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     photosToday: {
       id: 'photos',
+      label: 'Photos',
       act: 'memory',
       title: 'Photos',
       body: ['Share what you take today; the professional galleries follow later.'],
@@ -166,6 +182,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     photosAfter: {
       id: 'photos',
+      label: 'Photos',
       act: 'memory',
       title: 'Your photos',
       body: ['Add the ones you took. Ours will arrive as the photographers deliver them.'],
@@ -173,6 +190,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     photosArchive: {
       id: 'photos',
+      label: 'Photos',
       act: 'memory',
       title: 'Photos & Video',
       body: ['The ceremony, the toasts, the first dances, and everything you captured.'],
@@ -180,6 +198,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
     },
     thanks: {
       id: 'thank-you',
+      label: 'Thanks',
       act: 'thanks',
       title: 'Thank you',
       body: ['For travelling, for dancing, for being there. ', todo('a note from us')],
@@ -291,3 +310,14 @@ export function homeContent(site: SiteFacts, state: LifecycleState): HomeContent
     sections: SECTION_ORDER[state].map((key) => all[key]!),
   };
 }
+
+/** The five motifs (brief §4) as section eyebrows; "Today" and "Gratitude" for the operate/remember acts. */
+export const ACT_LABEL: Record<import('@/themes/types').HomeAct, string> = {
+  adventure: 'Adventure',
+  place: 'Place',
+  memory: 'Memory',
+  hospitality: 'Hospitality',
+  future: 'Future',
+  now: 'Today',
+  thanks: 'Gratitude',
+};
