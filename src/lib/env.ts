@@ -59,6 +59,11 @@ const serverSchema = z.object({
   TRUSTED_PROXY_HOPS: optionalInt(0, 16),
   /** Bearer that unlocks GET/DELETE /api/dev/inbox outside local development (previews). */
   DEV_INBOX_TOKEN: optionalSecret(16),
+  /** Comma-separated, case-insensitive allowlist of administrator emails (role: owner). */
+  ADMIN_EMAILS: z.preprocess(
+    (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
+    z.array(z.email()),
+  ),
   /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
   HEALTH_TOKEN: optionalSecret(16),
   /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */
@@ -124,7 +129,7 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
   // `next build` evaluates route modules without runtime secrets; the boot-time check still runs when the server starts.
   const isBuildPhase = source.NEXT_PHASE === 'phase-production-build';
   if (isProduction && !isBuildPhase) {
-    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET'];
+    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL'];
     const missing: string[] = required.filter((k) => !e[k]);
     // Storage must be S3 or a deliberately configured local-fs signing secret; the committed dev default is never used in production.
     if (!hasS3(e) && !e.STORAGE_SIGNING_SECRET && !e.DEV_STORAGE_SECRET) {

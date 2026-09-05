@@ -22,10 +22,11 @@ describe('server env', () => {
     }
   });
 
-  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32) };
+  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), BETTER_AUTH_URL: 'https://example.test' };
 
   it('requires the signing secrets in production', () => {
     expect(() => parseServerEnv({ NODE_ENV: 'production' })).toThrow(/CONFIRMATION_SECRET/);
+    expect(() => parseServerEnv({ NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32) })).toThrow(/BETTER_AUTH_SECRET/);
     const e = parseServerEnv({ ...prodBase, STORAGE_SIGNING_SECRET: 's'.repeat(32) });
     expect(e.isProduction).toBe(true);
   });
