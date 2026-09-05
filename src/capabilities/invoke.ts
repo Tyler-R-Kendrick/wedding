@@ -97,6 +97,16 @@ export async function invoke<I, O>(
   // 3. authorize (auth level + entitlements; handlers re-check row ownership)
   const authz = authorize(descriptor, ctx.principal);
   if (!authz.ok) return finish(err(authz.error));
+  // 3b. anonymous callers all share one identity, so they can neither hold idempotency keys
+  //     (one scope for everyone) nor confirm anything (one confirmation identity for everyone)
+  if (ctx.principal.kind === 'anonymous') {
+    if (ctx.idempotencyKey) {
+      return finish(err(new CapabilityError('validation', 'Please sign in before retrying this request.', { issues: [{ path: 'idempotencyKey', message: 'idempotency keys require a signed-in guest' }] })));
+    }
+    if (descriptor.confirmation === 'explicit') {
+      return finish(err(new CapabilityError('forbidden', 'Please sign in to confirm this.')));
+    }
+  }
 
   // 4. step-up
   if (descriptor.stepUp) {
@@ -122,6 +132,16 @@ export async function invoke<I, O>(
   // 6. idempotency: reserve first, so concurrent retries can never both run the handler
   const idemScope = `${descriptor.name}:${principalKey(actor)}`;
   let reserved = false;
+  const isMutation = descriptor.kind === 'action' || descriptor.kind === 'transaction' || descriptor.kind === 'external';
+  if (descriptor.idempotent && isMutation) {
+    // Idempotency is a guarantee, not an option: no store means we cannot make it, no key means the caller cannot retry safely.
+    if (!services.idempotency) {
+      return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('idempotency store not wired'))));
+    }
+    if (!ctx.idempotencyKey) {
+      return finish(err(new CapabilityError('validation', 'idempotencyKey required', { issues: [{ path: 'idempotencyKey', message: 'idempotencyKey required' }] })));
+    }
+  }
   if (descriptor.idempotent && ctx.idempotencyKey && services.idempotency) {
     let claim: Awaited<ReturnType<typeof services.idempotency.reserve>>;
     try {

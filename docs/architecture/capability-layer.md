@@ -25,12 +25,15 @@ Implementation: `src/capabilities/{registry,invoke,context,services}.ts`.
 1  exposure + flag      hidden on this surface -> not_found; flag off -> feature_disabled;
                         readiness-gated flags fail closed without a readiness service
 2  validate input       zod safeParse; issues returned as { path, message } (guest-safe)
-3  authorize            auth level (anonymous < guest < admin < system) + required entitlements
+3  authorize            auth level (anonymous < guest < admin < system) + required entitlements;
+                        anonymous principals may not send idempotencyKey (validation) nor confirm (forbidden)
 4  step-up              descriptor.stepUp -> session must be < 5 min old (system exempt)
 5  confirmation         confirmation === 'explicit' -> surface must be 'ui' (else confirmation_required
                         {reason:'requires_ui'}); token must match (capability, principal, payload hash)
                         and carry surface 'ui'; anonymous principals are refused (forbidden)
-6  idempotency          idempotent + key -> (scope, key) is RESERVED before the handler; a live reservation
+6  idempotency          idempotent action/transaction/external -> idempotencyKey is REQUIRED (validation
+                        "idempotencyKey required") and a store must be wired (else internal);
+                        (scope, key) is RESERVED before the handler; a live reservation
                         is `conflict` (still processing), a stored outcome is replayed, a different payload
                         is `conflict`; any later failure releases the reservation so the retry re-runs
 6b consume the nonce     explicit confirmation -> the token's nonce is reserved under
@@ -131,8 +134,12 @@ principal, payload and the issuing surface; any mismatch is `confirmation_requir
 
 ## Idempotency
 
-Set `idempotent: true` on mutations. Callers send `idempotencyKey` (8-128 chars, unique
-per intent). The pipeline scopes keys by capability + principal and **reserves** the
+Set `idempotent: true` on mutations. Callers **must** send `idempotencyKey` (8-128 chars,
+unique per intent) for an idempotent `action`/`transaction`/`external`: a missing key is
+`validation` ("idempotencyKey required") and a context without an idempotency store fails
+closed (`internal`) rather than silently running without the guarantee. Anonymous
+principals cannot send keys at all (`validation`): they would all share one scope.
+The pipeline scopes keys by capability + principal and **reserves** the
 `(scope, key)` row (`status = in_progress`, `INSERT … ON CONFLICT DO NOTHING`) before the
 handler runs, so two concurrent retries can never both execute: the loser gets `conflict`
 ("still being processed") until the winner stores its outcome (24 h, `idempotency_keys`,

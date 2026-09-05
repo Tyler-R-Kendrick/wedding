@@ -225,14 +225,56 @@ describe('invoke pipeline', () => {
     });
     const store = new MemoryIdempotencyStore();
     const key = 'idem-key-123' as IdempotencyKey;
-    const first = await invoke(mutate, ctx({ idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
-    const second = await invoke(mutate, ctx({ idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    const first = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    const second = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
     expect(first.ok && second.ok).toBe(true);
     if (first.ok && second.ok) expect(second.value.data).toEqual(first.value.data);
     expect(calls).toBe(1);
-    const conflict = await invoke(mutate, ctx({ idempotencyKey: key }, { idempotency: store }).c, { text: 'b' });
+    const conflict = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'b' });
     expect(conflict.ok).toBe(false);
     if (!conflict.ok) expect(conflict.error.code).toBe('conflict');
+  });
+
+  it('requires an idempotency key and a store for idempotent mutations (fail closed)', async () => {
+    let calls = 0;
+    const mutate = defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'required_key',
+      kind: 'action',
+      auth: 'guest',
+      idempotent: true,
+      annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
+      handler: async (_c, i) => {
+        calls++;
+        return ok({ data: { text: i.text }, sources: [] });
+      },
+    });
+    const missingKey = await invoke(mutate, ctx({ principal: guest }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'a' });
+    expect(missingKey.ok).toBe(false);
+    if (!missingKey.ok) expect(missingKey.error).toMatchObject({ code: 'validation', message: 'idempotencyKey required' });
+    const missingStore = await invoke(mutate, ctx({ principal: guest, idempotencyKey: 'idem-key-abc' as IdempotencyKey }, { idempotency: undefined }).c, { text: 'a' });
+    expect(!missingStore.ok && missingStore.error.code).toBe('internal');
+    expect(calls).toBe(0);
+    // Reads may still opt in with a key; they are never required to.
+    expect((await invoke(echo, ctx({ principal: guest }, { idempotency: undefined }).c, { text: 'a' })).ok).toBe(true);
+    for (const kind of ['transaction', 'external'] as const) {
+      const d = defineCapability<{ text: string }, { text: string }>({ ...mutate, name: `required_${kind}`, kind, stepUp: kind === 'transaction', annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true } });
+      const r = await invoke(d, ctx({ principal: guest }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'a' });
+      expect(!r.ok && r.error.message, kind).toBe('idempotencyKey required');
+    }
+  });
+
+  it('refuses idempotency keys and explicit confirmation for anonymous principals', async () => {
+    const mutate = defineCapability<{ text: string }, { text: string }>({ ...echo, name: 'anon_mutation', kind: 'action', idempotent: true, annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false } });
+    const keyed = await invoke(mutate, ctx({ idempotencyKey: 'idem-key-anon' as IdempotencyKey }).c, { text: 'a' });
+    expect(keyed.ok).toBe(false);
+    if (!keyed.ok) expect(keyed.error).toMatchObject({ code: 'validation', details: { issues: [{ path: 'idempotencyKey' }] } });
+    const confirmable = defineCapability<{ text: string }, { text: string }>({ ...echo, name: 'anon_confirm', kind: 'action', confirmation: 'explicit', annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true } });
+    const token = confirmation.issue({ capability: 'anon_confirm', principalRef: { kind: 'anonymous' }, payloadHash: stableHash({ text: 'a' }) }).token;
+    const confirmed = await invoke(confirmable, ctx({ confirmationToken: token }).c, { text: 'a' });
+    expect(!confirmed.ok && confirmed.error.code).toBe('forbidden');
+    // Anonymous reads without a key are unaffected.
+    expect((await invoke(echo, ctx().c, { text: 'a' })).ok).toBe(true);
   });
 
   it('reserves the idempotency key first: concurrent retries conflict while in progress, failures release it', async () => {
