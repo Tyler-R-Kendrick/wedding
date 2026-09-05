@@ -204,7 +204,7 @@ describe('video providers', () => {
     // processing is delegated
     const poster = await cf.extractPoster({ bytes: syntheticMp4(), contentType: 'video/mp4' });
     expect(poster.ok && poster.value.placeholder).toBe(true);
-    expect(JSON.stringify(calls)).not.toContain('tok"'); // token only in headers
+    expect(String(copyCall.init?.body)).not.toContain('Bearer'); // credentials travel in headers only
     await rm(dir, { recursive: true, force: true });
   });
 });

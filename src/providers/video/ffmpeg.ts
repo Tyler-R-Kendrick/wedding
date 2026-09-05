@@ -185,7 +185,7 @@ export function parseProbe(stderr: string): VideoProbe {
     out.width = Number(v[1]);
     out.height = Number(v[2]);
   }
-  const c = /Input #0,\s*([^,]+),/.exec(stderr);
+  const c = /Input #0,\s*(.+?),\s*from\b/.exec(stderr);
   if (c) out.container = c[1]!.trim();
   return out;
 }
