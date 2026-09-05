@@ -52,7 +52,9 @@ export function testPrincipal(kind: string, now: Date = new Date()): Principal |
         guestId: TEST_GUEST_ID,
         householdId: TEST_HOUSEHOLD_ID,
         actsFor: [TEST_GUEST_ID],
-        entitlements: new Set(['view_event', 'rsvp_self', 'view_travel_tools', 'use_concierge']),
+        // `claim_transportation_benefit` is included so the step-up fixture reaches step 4 of the
+        // pipeline (authorization runs first; without it a transaction is a plain `forbidden`).
+        entitlements: new Set(['view_event', 'rsvp_self', 'view_travel_tools', 'use_concierge', 'claim_transportation_benefit']),
         authenticatedAt: kind === 'guest-fresh' ? fresh : stale,
         sessionId: `webmcp-test-session-${kind}`,
       };
