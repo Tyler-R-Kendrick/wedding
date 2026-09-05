@@ -28,13 +28,13 @@ placeholders tracked in `docs/content/backlog.md`.
 | 01 | Design toolchain, DESIGN.md baseline, quality gates | `claude/wedding-site-design-tools-lhs4i1` | **Merged** (PR #1, squash `93aa863`) |
 | 02 | SDLC process, ADRs, brief, two theme systems, inspo boards, licensed placeholders, Secret Drop tooling | `claude/wedding-02-design-sdlc` | **Merged** (PR #2, squash `4b7843c`) |
 | 03 | Next.js 16 foundation: contracts, capability pipeline, policy, PGlite/Drizzle, 17 provider seams with mocks, jobs, audit, CI | `claude/wedding-03-foundation` (rebased onto `main`, pushed at `3f5baee`) | **PR open** ([#4](https://github.com/Tyler-R-Kendrick/wedding/pull/4) against `main`): hardening §6 done, verify + e2e green, `docs/reviews/PR-03-self-review.md` READY |
-| 04 | Theme engine, public shell, lifecycle, Home (Swarm B) | `swarm/B-themes-lifecycle` (local only, ~16 files uncommitted when interrupted) | In progress |
-| 05 | Story, adventures, recommendations, CAA docent (Swarm C) | `swarm/C-story-adventures-caa` (pushed, 3 commits incl. WIP checkpoint) | In progress |
-| 06 | Identity, Better Auth, entitlements (Swarm D) | `swarm/D-identity-auth` (pushed, 1 commit; auth layer uncommitted) | In progress |
-| 07 | Events, RSVP, Your Weekend, seating (Swarm E) | `swarm/E-rsvp-weekend-seating` (pushed, 2 commits incl. WIP) | In progress |
-| 08 | Travel & lodging (Swarm F) | `swarm/F-travel-lodging` (worktree created, not started) | Not started |
-| 09 | Transport, gifts, reservations (Swarm G) | `swarm/G-transport-gifts-reservations` | Not started |
-| 10 | Media pipeline (Swarm H) | `swarm/H-media-pipeline` (pushed, 1 WIP commit) | In progress |
+| 04 | Theme engine, public shell, lifecycle, Home (Swarm B) | `claude/wedding-04-themes-lifecycle` (from `swarm/B-themes-lifecycle` `5c475d7`, rebased on 03 `5901831`) | **Integrating**: verify + 39 e2e/axe green, design-reviewer pass, self-review, PR against `claude/wedding-03-foundation` |
+| 05 | Story, adventures, recommendations, CAA docent (Swarm C) | `swarm/C-story-adventures-caa` (resumed from checkpoint `b7deccd`, rebasing onto 03 `5901831`) | In progress |
+| 06 | Identity, Better Auth, entitlements (Swarm D) | `swarm/D-identity-auth` (pushed at `e3ae640`, rebased on 03 `5901831`, 11 commits) | **Swarm done**, awaiting integration after 05 |
+| 07 | Events, RSVP, Your Weekend, seating (Swarm E) | `swarm/E-rsvp-weekend-seating` (resumed from checkpoint `989d6f2`, rebasing onto 03 `5901831`) | In progress |
+| 08 | Travel & lodging (Swarm F) | `swarm/F-travel-lodging` (worktree reset to 03 `5901831`) | In progress |
+| 09 | Transport, gifts, reservations (Swarm G) | `swarm/G-transport-gifts-reservations` (worktree reset to 03 `5901831`) | In progress |
+| 10 | Media pipeline (Swarm H) | `swarm/H-media-pipeline` (resumed from checkpoint `d36f984`, rebasing onto 03 `5901831`) | In progress |
 | 11 | Media AI + biometric consent (Swarm I) | `swarm/I-media-ai-biometric` | Not started |
 | 12 | AI concierge + evals (Swarm J) | `swarm/J-ai-concierge` | Not started |
 | 13 | WebMCP (Swarm K) | `swarm/K-webmcp` | Not started |
