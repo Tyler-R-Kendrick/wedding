@@ -5,6 +5,7 @@ import { contentCapabilities } from './content';
 import { invoke } from './invoke';
 import { navigateTo } from './navigate_to';
 import { registry } from './registry';
+import { rsvpSwarmCapabilities } from './rsvp';
 import { siteStatus } from './site_status';
 import { identityCapabilities } from './identity';
 
@@ -12,7 +13,7 @@ import { identityCapabilities } from './identity';
  * Registration point. Feature swarms add ONE line each importing their module's
  * capability list, e.g. `import { rsvpCapabilities } from './rsvp';` and spread it below.
  */
-export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo, ...contentCapabilities, ...identityCapabilities];
+export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo, ...contentCapabilities, ...identityCapabilities, ...rsvpSwarmCapabilities];
 
 registry.registerAll(BUILTIN_CAPABILITIES);
 
