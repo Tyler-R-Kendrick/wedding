@@ -45,8 +45,12 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
-| `FLIGHTS_PROVIDER`, `HOTELS_PROVIDER` (`mock`\|`deep-link`) | mock | flights, hotels | no |
-| `DUFFEL_API_KEY` | unset (reserved) | travel swarm | no |
+| `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
+| `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`booking`\|`duffel-stays`) | mock | hotels: fixtures; unavailable + Booking.com/Hyatt links; Booking.com Demand API; Duffel Stays | no |
+| `SKYSCANNER_API_KEY` | unset | flights `skyscanner` mode (`x-api-key`) | no |
+| `DUFFEL_API_KEY` | unset | flights `duffel-links` and hotels `duffel-stays` (bearer) | no |
+| `DUFFEL_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /travel/webhooks/duffel` answers 404 | verifies `X-Duffel-Signature`; the only automatic path to a confirmed trip item | no |
+| `BOOKING_DEMAND_API_KEY`, `BOOKING_AFFILIATE_ID` | unset | hotels `booking` mode (bearer + `X-Affiliate-Id`); both required | no |
 | `TRANSPORT_BENEFIT_MODE` (`mock`\|`manual-code`\|`uber`) | `mock` | transport-benefit | no |
 | `TRANSPORT_MANUAL_CODES` | unset | transport-benefit manual-code (dev) | no |
 | `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET` | unset (reserved) | transport swarm | no |

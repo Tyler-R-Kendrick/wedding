@@ -7,3 +7,4 @@ export * from './links';
 export * from './trip';
 export * from './search';
 export * from './webhook';
+export * from './format';
