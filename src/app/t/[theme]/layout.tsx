@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { preload } from 'react-dom';
 import { DEFAULT_THEME, getThemeMeta, isThemeId, THEME_IDS } from '@/themes/registry';
 
 export const dynamicParams = false;
@@ -32,12 +33,10 @@ export default async function ThemeLayout({ children, params }: { children: Reac
   const { theme } = await params;
   if (!isThemeId(theme)) notFound();
   const meta = getThemeMeta(theme);
+  // Preload only the active theme's files (design-doc §10) as resource hints: one <link rel="preload"> each in production.
+  for (const font of meta.fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return (
     <>
-      {/* Preload only the active theme's three files (≤3 per theme, design-doc §10); React hoists these into <head>. */}
-      {meta.fonts.map((font) => (
-        <link key={font.url} rel="preload" as="font" type="font/woff2" href={font.url} crossOrigin="anonymous" />
-      ))}
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
       {children}
     </>

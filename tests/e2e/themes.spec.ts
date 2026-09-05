@@ -17,8 +17,12 @@ test.describe('theme resolution', () => {
     const html = await res.text();
     expect(html).toContain('data-theme="gilded-hour"');
     expect(html).not.toContain('data-theme="conservatory"');
-    expect(html).toMatch(/<link[^>]+rel="preload"[^>]+\/fonts\/gilded-hour\//);
-    expect(html).not.toMatch(/<link[^>]+rel="preload"[^>]+\/fonts\/conservatory\//);
+    // production SSR emits one <link rel="preload"> per file from the resource hint; dev carries the hint in the flight payload
+    const preloads = html.match(/<link[^>]+rel="preload"[^>]+\/fonts\/gilded-hour\/[^>]*>/g) ?? [];
+    const hints = html.match(/HL\[\\"\/fonts\/gilded-hour\//g) ?? [];
+    expect(preloads.length + hints.length).toBeGreaterThanOrEqual(3);
+    expect(preloads.length).toBeLessThanOrEqual(3);
+    expect(html).not.toMatch(/\/fonts\/conservatory\//);
   });
 
   test('?theme= wins, is remembered on the device, and invalid values are ignored', async ({ request }) => {
@@ -135,8 +139,10 @@ test.describe('design switcher', () => {
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {
     for (const theme of THEMES) {
       await page.goto(`/?theme=${theme}`);
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      // instant: html has scroll-behavior: smooth, and a smooth scroll would still be in flight
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
       await page.waitForTimeout(300);
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
       const overlaps = await page.evaluate(() => {
         const rects = (el: Element) => Array.from(el.getClientRects());
         const fixed = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((el) => getComputedStyle(el).position === 'fixed' && el.offsetParent !== null && el.getBoundingClientRect().height > 0);

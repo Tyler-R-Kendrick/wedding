@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { preload } from 'react-dom';
 import { getThemeMeta } from '@/themes/registry';
 import { getRequestTheme } from '@/themes/server';
 
@@ -18,11 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function PublicLayout({ children }: { children: ReactNode }) {
   const theme = await getRequestTheme();
+  for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return (
     <>
-      {getThemeMeta(theme).fonts.map((font) => (
-        <link key={font.url} rel="preload" as="font" type="font/woff2" href={font.url} crossOrigin="anonymous" />
-      ))}
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
       {children}
     </>
