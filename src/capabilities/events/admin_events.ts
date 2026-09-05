@@ -12,13 +12,14 @@ import { computeRsvpWindow, getRsvpSettings, listAllEntitlements, listAllNotices
 import { listAllGuests, listHouseholds, setRsvpWindow } from '@/domain/rsvp';
 import { upsertNotice } from '@/domain/weekend';
 import { VENUE_SPACES } from '@/domain/seating/plans';
-import { eventViewSchema, idSchema, plusOnePolicySchema, requireIdempotencyKey, toEventView, windowSchema } from '@/capabilities/rsvp/shared';
+import { eventViewSchema, idSchema, plusOnePolicySchema, toEventView, windowSchema } from '@/capabilities/rsvp/shared';
 
 const ADMIN_ANNOTATIONS = { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true } as const;
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
 const isoInstant = z.string().datetime({ offset: true });
 
 /* ------------------------------------------------------------------ list ----- */
+const listInput = z.object({}).optional();
 const listOutput = z.object({
   window: windowSchema,
   settings: z.object({ mode: z.enum(RSVP_WINDOW_MODES), deadlineAt: z.string().nullable(), note: z.string().nullable() }),
@@ -30,7 +31,7 @@ const listOutput = z.object({
 });
 export type AdminEventsView = z.infer<typeof listOutput>;
 
-export const adminListEvents = defineCapability<z.infer<typeof z.object({}).optional()>, AdminEventsView>({
+export const adminListEvents = defineCapability<z.infer<typeof listInput>, AdminEventsView>({
   name: 'admin_list_events',
   title: 'Events (admin)',
   description: 'Admin view of every event, its meal option versions, the RSVP window, every guest and their event entitlements, and Your Weekend notices.',
@@ -39,7 +40,7 @@ export const adminListEvents = defineCapability<z.infer<typeof z.object({}).opti
   requires: ['admin_content'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: ADMIN_EXPOSURE,
-  input: z.object({}).optional(),
+  input: listInput,
   output: listOutput,
   async handler(ctx) {
     const { db } = appServices(ctx);
@@ -92,8 +93,6 @@ export const adminUpsertEvent = defineCapability<z.infer<typeof upsertEventInput
   input: upsertEventInput,
   output: eventViewSchema,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     if (i.venueSpaceRef && !VENUE_SPACES.some((s) => s.ref === i.venueSpaceRef)) {
       return err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues: [{ path: 'venueSpaceRef', message: 'unknown venue space' }] }));
@@ -136,8 +135,6 @@ export const adminSetMealOptions = defineCapability<z.infer<typeof setMealsInput
   input: setMealsInput,
   output: setMealsOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const event = (await db.select().from(events).where(eq(events.id, i.eventId)).limit(1))[0];
     if (!event) return err(new CapabilityError('not_found', 'That event does not exist.'));
@@ -178,8 +175,6 @@ export const adminSetEventEntitlements = defineCapability<z.infer<typeof setEnti
   input: setEntitlementsInput,
   output: setEntitlementsOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const eventIds = [...new Set(i.changes.map((c) => c.eventId))];
     const known = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, eventIds))).map((r) => r.id));
@@ -220,8 +215,6 @@ export const adminSetRsvpWindow = defineCapability<z.infer<typeof setWindowInput
   input: setWindowInput,
   output: windowSchema,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const row = await setRsvpWindow(db, { mode: i.mode, deadlineAt: i.deadlineAt ? new Date(i.deadlineAt) : null, note: i.note ?? null, updatedBy: toPrincipalRef(ctx.principal), now: ctx.now });
     const lifecycle = (await getLifecycle(db))?.state ?? 'TEASER';
@@ -256,8 +249,6 @@ export const adminUpsertNotice = defineCapability<z.infer<typeof noticeInput>, z
   input: noticeInput,
   output: noticeOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const row = await upsertNotice(db, { id: i.id, title: i.title, body: i.body, severity: i.severity, active: i.active, startsAt: i.startsAt ? new Date(i.startsAt) : null, endsAt: i.endsAt ? new Date(i.endsAt) : null, by: toPrincipalRef(ctx.principal), now: ctx.now });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'weekend_notice', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { severity: row.severity, active: row.active } });

@@ -29,7 +29,7 @@ export const rsvpSwarmCapabilities: readonly AnyCapability[] = [
 
 export { listMyEvents, getMyRsvp, draftRsvp, submitRsvp, getMyItinerary, getMyTable, showMyTableOnFloorplan };
 export { adminListEvents, adminUpsertEvent, adminSetMealOptions, adminSetEventEntitlements, adminSetRsvpWindow, adminUpsertNotice } from '@/capabilities/events/admin_events';
-export { adminRsvpOverview, adminExportRsvp, adminOverrideRsvp, overviewToCsv } from './admin_rsvp';
+export { adminRsvpOverview, adminExportRsvp, adminExportNeeds, adminOverrideRsvp, overviewToCsv, needsToCsv } from './admin_rsvp';
 export { adminSeatingOverview, adminUpsertTable, adminDeleteTable, adminAssignSeats, adminImportSeatingCsv, adminPublishSeating, adminUnpublishSeating } from '@/capabilities/seating/admin_seating';
 export type { MyRsvp } from './get_my_rsvp';
 export type { MyEvents } from './list_my_events';

@@ -1,20 +1,19 @@
 import { defineCapability } from '@/contracts/capability';
-import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
-import { stableHash } from '@/lib/crypto';
 import { publicEnv } from '@/lib/env.public';
 import { buildConfirmationEmail, buildProposal, persistHouseholdRsvp, queueRsvpConfirmation } from '@/domain/rsvp';
 import { loadForPrincipal, namesFor, validateFor } from './context';
 import { submitInputSchema, submitOutputSchema, type SubmitRsvpInput, type SubmitRsvpOutput } from './schemas';
-import { requireGuestPrincipal, requireIdempotencyKey } from './shared';
+import { requireGuestPrincipal } from './shared';
 
 /**
- * Persists a household RSVP. Confirmation is `inline` (the review is rendered on the same page),
- * but the token issued by draft_rsvp is still required and verified here against the exact payload,
- * so no surface can submit an unreviewed answer. Idempotent by key; UI-only exposure — assistants draft,
- * the guest confirms on the website (ADR-0002 §4, design-doc decision 9).
+ * Persists a household RSVP. The review is rendered inline on the RSVP page, and the pipeline's
+ * `explicit` confirmation mode is what verifies the draft_rsvp token: bound to this principal and
+ * the exact payload, single-use, redeemable only from the `ui` surface. Idempotent by key (the
+ * pipeline reserves it before the handler). UI-only exposure: assistants draft, the guest confirms
+ * on the website (ADR-0002 §4, design-doc decision 9).
  */
 export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
   name: 'submit_rsvp',
@@ -25,7 +24,7 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
   kind: 'action',
   auth: 'guest',
   requires: ['rsvp_self'],
-  confirmation: 'inline',
+  confirmation: 'explicit',
   idempotent: true,
   annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true },
   exposure: { ui: true, ai: false, webmcp: false },
@@ -34,13 +33,8 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
   async handler(ctx, i) {
     const p = requireGuestPrincipal(ctx);
     if (!p.ok) return err(p.error);
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
-    const { db, confirmation } = appServices(ctx);
-    if (!confirmation) return err(new CapabilityError('internal', 'Something went wrong on our side. Please try again in a moment.'));
+    const { db } = appServices(ctx);
     const actor = toPrincipalRef(ctx.principal);
-    const verified = confirmation.verify(ctx.confirmationToken, { capability: 'submit_rsvp', principalRef: actor, payloadHash: stableHash(i) }, ctx.now);
-    if (!verified.ok) return err(verified.error);
 
     // Re-validate at submit time: the window may have closed or the menu changed since the draft.
     const hc = await loadForPrincipal(ctx, p.value);

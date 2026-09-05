@@ -15,6 +15,13 @@
       "when": 1788611436393,
       "tag": "0001_lethal_killraven",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788613567237,
+      "tag": "0002_rsvp_seating",
+      "breakpoints": true
     }
   ]
 }
