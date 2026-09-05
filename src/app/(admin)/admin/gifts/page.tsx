@@ -1,7 +1,7 @@
 import { adminListGiftLinks } from '@/capabilities/admin_gifts';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
-import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
+import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '@/components/handoff/AdminShell';
 
 export const dynamic = 'force-dynamic';
 
