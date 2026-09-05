@@ -95,7 +95,7 @@ WebMCP tools ───────┘        validate → authorize → step-up 
    uncommitted work in B and D exists only in the original container.
 4. Integrate in ladder order 04 → 14: `git rebase --onto <previous level>
    $(git merge-base swarm/<X>-… claude/wedding-03-foundation) swarm/<X>-…`
-   (B–E and H branched from `ee9da42`, F/G/I–L from `8d3ce99`; swarms that
+   (every swarm branched from `8d3ce99`; swarms that
    already rebased onto the hardened 03 head report their new base), merge into
    `claude/wedding-NN-<slug>`, `npm run verify`, `design-review` for UI
    levels, self-review file, PR against the previous level, subscribe.
