@@ -215,9 +215,10 @@
 }
 
 .gh-plaque--mono {
-  font-family: var(--font-display);
+  font-family: var(--font-text);
   font-size: var(--type-h3-size);
-  letter-spacing: 0.08em;
+  font-weight: var(--type-h3-weight);
+  letter-spacing: 0.1em;
 }
 
 .gh-plaque--act {
@@ -265,7 +266,7 @@
   font-family: var(--font-text);
   font-size: var(--type-label-sm-size);
   font-weight: var(--type-label-sm-weight);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--type-label-sm-tracking);
   line-height: var(--type-label-sm-line);
   text-transform: uppercase;
   text-align: center;
@@ -432,7 +433,6 @@
   background: var(--art-sunburst) no-repeat center bottom / auto 100%;
   opacity: 0.5;
   pointer-events: none;
-  animation: gh-sun var(--duration-curtain) var(--ease-engrave) both;
 }
 
 .gh-hero__curtain {
@@ -444,23 +444,14 @@
   animation: gh-curtain var(--duration-curtain) var(--ease-engrave) forwards;
 }
 
+/* Session memory (CURTAIN_SCRIPT in the Shell): the curtain rises once, later loads start still. */
+.gh[data-curtain="done"] .gh-hero__curtain {
+  display: none;
+}
+
 @keyframes gh-curtain {
   to {
     transform: translateY(-101%);
-  }
-}
-
-@keyframes gh-sun {
-  0% {
-    opacity: 0;
-  }
-
-  60% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 0.5;
   }
 }
 
@@ -516,7 +507,16 @@
   margin: var(--spacing-xs) 0 0;
   font-family: var(--font-text);
   font-size: var(--type-body-md-size);
+  color: var(--color-primary);
+}
+
+.gh-hero__note {
+  max-width: var(--gh-prose);
+  margin: var(--spacing-md) auto 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
+  text-wrap: pretty;
 }
 
 .gh-hero__lede {
@@ -628,6 +628,11 @@
     animation-timeline: view();
     animation-range: entry 0% entry 50%;
   }
+}
+
+.gh-main > .gh-section:nth-of-type(n + 3) .gh-divider {
+  animation: none;
+  clip-path: none;
 }
 
 @keyframes gh-engrave {
@@ -1128,7 +1133,7 @@
 /* ---------- footer ---------- */
 .gh-footer {
   margin-block-start: var(--spacing-2xl);
-  padding: var(--spacing-2xl) var(--gh-gutter);
+  padding: var(--spacing-2xl) var(--gh-gutter) calc(var(--spacing-2xl) + var(--bottom-bar-height, 0px));
   border-block-start: 1px solid var(--color-gold);
   text-align: center;
 }
@@ -1177,11 +1182,39 @@
   margin-block-start: var(--spacing-md);
 }
 
-/* Gilded Hour specifics for shared chrome */
+/* Gilded Hour specifics for shared chrome: the switcher is a frieze link, a Menu-sheet section, a footer plate */
 .gh .switcher__trigger,
 .gh .switcher__close,
 .gh .switcher__option {
   border-radius: var(--rounded-none);
+}
+
+.gh-frieze__switcher .switcher__trigger {
+  border: 0;
+  padding-inline: 0;
+  background: none;
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+}
+
+.gh-frieze__switcher .switcher__current {
+  color: var(--color-secondary);
+}
+
+.gh .switcher__heading {
+  font-family: var(--font-text);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.gh .gh-dialog,
+.gh .switcher__dialog {
+  overscroll-behavior: contain;
 }
 
 .gh .kit-archive {
@@ -1207,7 +1240,6 @@
     display: none;
   }
 
-  .gh-hero__sunburst,
   .gh-divider,
   .gh-dialog__panel,
   .gh-countdown__num,

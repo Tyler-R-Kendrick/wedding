@@ -12,7 +12,7 @@ function Sheet({ section, index, data }: { section: HomeSection; index: number; 
   const washes: NonNullable<Parameters<typeof Section>[0]['ground']>[] = ['default', 'alt', 'default', 'wash', 'default'];
   const ground = section.act === 'now' ? 'wash' : section.act === 'thanks' ? 'inverse' : washes[index % washes.length];
   const headingId = `${section.id}-title`;
-  const hasMount = !!(section.facts?.length || section.timeline || section.map || section.link);
+  const hasMount = !!(section.facts?.length || section.timeline || section.map);
   return (
     <Section id={section.id} ground={ground} labelledBy={headingId}>
       <div className="cv-section__text">
@@ -23,6 +23,13 @@ function Sheet({ section, index, data }: { section: HomeSection; index: number; 
           </p>
         </Prose>
       </div>
+      {!hasMount && section.link ? (
+        <p className="cv-section__hang">
+          <a className="cv-tag cv-tag--hang" href={section.link.href}>
+            <span>{section.link.label}</span>
+          </a>
+        </p>
+      ) : null}
       {hasMount ? (
         <div className="cv-section__mount">
           <Card label={section.label} featured index={index} headingLevel={3} title={section.timeline ? section.title : undefined}>

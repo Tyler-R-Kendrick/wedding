@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useRef, useState, useTransition } from 'react';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import type { ThemeId } from '@/themes/types';
 import { setThemeAction } from './actions';
@@ -9,18 +9,22 @@ import { setThemeAction } from './actions';
 export interface DesignSwitcherProps {
   current: ThemeId;
   themes: { id: ThemeId; name: string; tagline: string }[];
+  /** trigger: a quiet button that opens a dialog; menu: the options inline inside a Menu sheet. */
+  variant?: 'trigger' | 'menu';
+  id?: string;
 }
 
-const DIALOG_ID = 'design-switcher';
-
 /**
- * Floating "Design" control (ADR-0009 §5): a quiet button that opens a native dialog with the two
- * designs. Choosing one runs the server action (cookie), closes the dialog, and refreshes the
- * route so the proxy re-resolves the theme. Hidden entirely when FLAG_DESIGN_SWITCHER is off
- * (the server never renders it). Keyboard: Tab to the button, Enter opens, arrow/Tab between options, Esc closes.
+ * Design switcher (ADR-0009 §5): a quiet control in the shell, never a floating chip. Kits place a
+ * `trigger` in the frieze/rail and the footer, and a `menu` variant inside the phone Menu sheet.
+ * Choosing runs the server action (device cookie via `navigate_to`), drops a `?theme=` query
+ * (it would win over the cookie on the next request), then refreshes so the proxy re-resolves.
+ * `ThemeSync` owns `html[data-theme]`. Hidden entirely when FLAG_DESIGN_SWITCHER is off.
  */
-export function DesignSwitcher({ current, themes }: DesignSwitcherProps) {
+export function DesignSwitcher({ current, themes, variant = 'trigger', id = 'design-switcher' }: DesignSwitcherProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const currentName = themes.find((t) => t.id === current)?.name ?? current;
@@ -33,16 +37,50 @@ export function DesignSwitcher({ current, themes }: DesignSwitcherProps) {
         setError(result.message ?? 'That design is not available.');
         return;
       }
-      (document.getElementById(DIALOG_ID) as HTMLDialogElement | null)?.close();
-      if (result.theme) document.documentElement.dataset.theme = result.theme;
+      formRef.current?.closest('dialog')?.close();
+      if (new URLSearchParams(window.location.search).has('theme')) router.replace(pathname, { scroll: false });
       router.refresh();
     });
   };
 
+  const form = (
+    <form ref={formRef} action={choose} className={`switcher__form switcher__form--${variant}`} aria-labelledby={variant === 'menu' ? `${id}-label` : undefined}>
+      {variant === 'menu' ? (
+        <p className="switcher__heading" id={`${id}-label`}>
+          Design
+        </p>
+      ) : (
+        <p className="switcher__intro">Two designs, one wedding. Your choice stays on this device.</p>
+      )}
+      <ul className="switcher__options">
+        {themes.map((t) => (
+          <li key={t.id}>
+            <button type="submit" name="theme" value={t.id} className="switcher__option" aria-pressed={t.id === current} disabled={pending} data-autofocus={t.id === current ? '' : undefined}>
+              <span className="switcher__name">{t.name}</span>
+              <span className="switcher__tagline">{t.tagline}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {error ? (
+        <p className="switcher__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </form>
+  );
+
+  if (variant === 'menu') {
+    return (
+      <div className="switcher switcher--menu" data-pending={pending || undefined}>
+        {form}
+      </div>
+    );
+  }
   return (
-    <div className="switcher" data-pending={pending || undefined}>
+    <div className="switcher switcher--trigger" data-pending={pending || undefined}>
       <DialogBase
-        id={DIALOG_ID}
+        id={id}
         title="Choose a design"
         trigger={
           <>
@@ -61,24 +99,7 @@ export function DesignSwitcher({ current, themes }: DesignSwitcherProps) {
           body: 'switcher__body',
         }}
       >
-        <form action={choose}>
-          <p className="switcher__intro">Two designs, one wedding. Your choice stays on this device.</p>
-          <ul className="switcher__options">
-            {themes.map((t) => (
-              <li key={t.id}>
-                <button type="submit" name="theme" value={t.id} className="switcher__option" aria-pressed={t.id === current} disabled={pending}>
-                  <span className="switcher__name">{t.name}</span>
-                  <span className="switcher__tagline">{t.tagline}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {error ? (
-            <p className="switcher__error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </form>
+        {form}
       </DialogBase>
     </div>
   );

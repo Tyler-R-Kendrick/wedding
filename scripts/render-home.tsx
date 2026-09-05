@@ -42,7 +42,7 @@ function data(theme: ThemeId, state: LifecycleState): HomeData {
     lifecycle: { state, mode: LIFECYCLE_MODE[state], persistedState: state, preview: null, suggested: 'RSVP_OPEN', publishedAt: null, note: null },
     countdown: countdownView(NOW),
     nav: navFor(state, { venue: site.venue, currentPath: '/' }),
-    switcher: null,
+    switcherEnabled: false, // the switcher needs the app router; the harness renders the shell without it
     content: homeContent(site, state),
   };
 }

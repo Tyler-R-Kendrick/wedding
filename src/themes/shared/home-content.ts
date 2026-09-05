@@ -87,7 +87,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
       act: 'future',
       title: site.date.long,
       body: ['One date, one building, and a weekend we hope you make your own. Details will land here as they are settled.'],
-      link: state === 'TEASER' || state === 'SAVE_THE_DATE' ? undefined : { label: 'The Wedding', href: ROUTES.wedding },
+      link: state === 'TEASER' ? undefined : { label: 'The Wedding', href: ROUTES.wedding },
     },
     wedding: {
       id: 'the-wedding',
@@ -212,6 +212,7 @@ interface HeroCopy {
   primary: ActionLink;
   secondary?: ActionLink;
   deadline?: Copy;
+  note?: Copy;
 }
 
 function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
@@ -223,6 +224,7 @@ function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
         lede: ['We are inviting the people we love into the places, adventures, and memories that made us. Details as they are settled.'],
         primary: { label: 'Our Story', href: ROUTES.story, variant: 'primary' },
         secondary: { label: 'Explore the building', href: ROUTES.caa, variant: 'ghost' },
+        note: ['Many of you will be travelling in: rooms, airports, and getting around will appear here as we confirm them.'],
       };
     case 'SAVE_THE_DATE':
       return {
@@ -285,7 +287,7 @@ function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
 }
 
 const SECTION_ORDER: Record<LifecycleState, string[]> = {
-  TEASER: ['adventure', 'place', 'memory', 'hospitality', 'future'],
+  TEASER: ['adventure', 'place', 'memory'],
   SAVE_THE_DATE: ['adventure', 'place', 'memory', 'hospitality', 'future'],
   INVITATIONS_OPEN: ['wedding', 'invitation', 'hospitality', 'transport', 'memory'],
   RSVP_OPEN: ['rsvp', 'wedding', 'hospitality', 'transport', 'gifts', 'memory'],
@@ -306,6 +308,7 @@ export function homeContent(site: SiteFacts, state: LifecycleState): HomeContent
     primary: h.primary,
     secondary: h.secondary,
     deadline: h.deadline,
+    note: h.note,
     showCountdown: !['WEDDING_DAY', 'POST_WEDDING', 'ARCHIVE'].includes(state),
     sections: SECTION_ORDER[state].map((key) => all[key]!),
   };

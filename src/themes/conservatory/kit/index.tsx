@@ -1,4 +1,6 @@
+import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
+import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
@@ -26,6 +28,7 @@ const DIALOG_CLASSES = {
   body: 'cv-dialog__body',
 };
 
+const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }));
 const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.';
 const FLOWERS = ['a', 'b', 'c'] as const;
 
@@ -71,7 +74,7 @@ function Tag({ item, nav, className = 'cv-tag' }: { item: NavItem; nav: NavProps
   );
 }
 
-function Nav({ nav, siteName, homeLabel }: NavProps) {
+function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   const items: NavItem[] = [{ label: homeLabel, href: '/' }, ...allItems(nav)];
   const bar = nav.sticky.slice(0, 2);
   return (
@@ -88,6 +91,11 @@ function Nav({ nav, siteName, homeLabel }: NavProps) {
             </li>
           ))}
         </ul>
+        {switcherEnabled ? (
+          <div className="cv-rail__switcher">
+            <DesignSwitcher variant="trigger" id="design-switcher-rail" current="conservatory" themes={THEME_OPTIONS} />
+          </div>
+        ) : null}
       </nav>
       <div className="cv-menu">
         <DialogBase id="site-menu" title="Menu" trigger={<span>Menu</span>} classNames={DIALOG_CLASSES}>
@@ -98,6 +106,7 @@ function Nav({ nav, siteName, homeLabel }: NavProps) {
               </li>
             ))}
           </ul>
+          {switcherEnabled ? <DesignSwitcher variant="menu" id="design-switcher-menu" current="conservatory" themes={THEME_OPTIONS} /> : null}
         </DialogBase>
       </div>
       {bar.length ? (
@@ -157,13 +166,18 @@ function Shell({ frame, children, banner }: ShellProps) {
       {banner}
       <div className="cv-sheet">
         <header className="cv-header">
-          <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} />
+          <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
         </header>
         <main id="main" className="cv-main" tabIndex={-1}>
           {children}
         </main>
       </div>
-      <Footer site={frame.site} switcher={frame.switcher} rightsNote={RIGHTS_NOTE} printUrls={printUrls} />
+      <Footer
+        site={frame.site}
+        switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="conservatory" themes={THEME_OPTIONS} /> : null}
+        rightsNote={RIGHTS_NOTE}
+        printUrls={printUrls}
+      />
     </div>
   );
 }
@@ -468,11 +482,22 @@ function Hero({ content, site, countdown, state }: HeroProps) {
   const isToday = state === 'WEDDING_DAY';
   return (
     <section className="cv-hero" aria-labelledby="hero-title">
-      <div className="cv-hero__text">
+      <div className="cv-hero__names">
         <h1 id="hero-title" className="cv-hero__title">
           {isToday ? content.title : <Names text={content.title} />}
         </h1>
         <p className="cv-hero__status">{content.eyebrow}.</p>
+      </div>
+      <p className="cv-hero__tag">
+        <time dateTime={site.date.iso} className="cv-hero__date">
+          {site.date.long}
+        </time>
+        <span className="cv-hero__motif">{site.date.motif}</span>
+        <span className="cv-hero__place">
+          {site.venue.name}, {site.venue.city}
+        </span>
+      </p>
+      <div className="cv-hero__rest">
         <p className="cv-hero__lede">
           <Text copy={content.lede} />
         </p>
@@ -492,16 +517,12 @@ function Hero({ content, site, countdown, state }: HeroProps) {
             <Text copy={content.deadline} />
           </p>
         ) : null}
+        {content.note ? (
+          <p className="cv-hero__note">
+            <Text copy={content.note} />
+          </p>
+        ) : null}
       </div>
-      <p className="cv-hero__tag">
-        <time dateTime={site.date.iso} className="cv-hero__date">
-          {site.date.long}
-        </time>
-        <span className="cv-hero__motif">{site.date.motif}</span>
-        <span className="cv-hero__place">
-          {site.venue.name}, {site.venue.city}
-        </span>
-      </p>
     </section>
   );
 }

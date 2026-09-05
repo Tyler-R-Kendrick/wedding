@@ -1,9 +1,9 @@
 /*
  * Conservatory — self-hosted OFL faces (files + OFL.txt in public/fonts/conservatory).
- * Three files (Gloock roman, Spectral roman, Cardo italic), font-display: swap, metric-matched
- * fallbacks computed with fontTools against a Times New Roman metric clone (Liberation Serif).
- * Spectral 500 and Spectral italic are not shipped to stay within three files; the browser
- * renders those requests from Spectral 400 (weight synthesis is disabled in base.css).
+ * Four files (Gloock roman, Spectral 400, Spectral 500, Cardo italic), font-display: swap, metric-matched
+ * fallbacks computed with fontTools against a Times New Roman metric clone, then tuned at 390 px
+ * (scripts/measure-fallbacks.mjs). Spectral 500 is the one file over the three-file target: buttons,
+ * h3 and labels are 500 in DESIGN.md and weight synthesis is off. Spectral italic is not shipped.
  */
 @font-face {
   font-family: Gloock;
@@ -16,16 +16,24 @@
 @font-face {
   font-family: "Gloock Fallback";
   src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
-  size-adjust: 116.59%;
-  ascent-override: 83.63%;
-  descent-override: 19.3%;
+  size-adjust: 104.66%;
+  ascent-override: 93.16%;
+  descent-override: 21.5%;
   line-gap-override: 0%;
 }
 
 @font-face {
   font-family: Spectral;
   src: url("/fonts/conservatory/spectral-regular.woff2") format("woff2");
-  font-weight: 400 500;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Spectral;
+  src: url("/fonts/conservatory/spectral-medium.woff2") format("woff2");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
@@ -33,9 +41,9 @@
 @font-face {
   font-family: "Spectral Fallback";
   src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
-  size-adjust: 110.47%;
-  ascent-override: 95.87%;
-  descent-override: 41.91%;
+  size-adjust: 109.91%;
+  ascent-override: 96.35%;
+  descent-override: 42.13%;
   line-gap-override: 0%;
 }
 
@@ -51,8 +59,8 @@
   font-family: "Cardo Fallback";
   src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
   font-style: italic;
-  size-adjust: 96.05%;
-  ascent-override: 103.09%;
-  descent-override: 37.87%;
+  size-adjust: 95.69%;
+  ascent-override: 103.48%;
+  descent-override: 38.02%;
   line-gap-override: 0%;
 }

@@ -1,3 +1,5 @@
+import conservatoryTokens from './conservatory/tokens.generated.json';
+import gildedHourTokens from './gilded-hour/tokens.generated.json';
 import type { ThemeId, ThemeMeta } from './types';
 
 /**
@@ -17,6 +19,8 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     tagline: 'Art Deco: marble, gold leaf, one monumental axis.',
     designMd: 'src/themes/gilded-hour/DESIGN.md',
     colorScheme: 'light',
+    themeColor: gildedHourTokens.colors.neutral,
+    icon: { svg: '/icons/gilded-hour.svg', apple: '/icons/gilded-hour-180.png' },
     fonts: [
       { family: 'Cinzel', url: '/fonts/gilded-hour/cinzel-wght.woff2', weight: '400 900', style: 'normal' },
       { family: 'Josefin Sans', url: '/fonts/gilded-hour/josefin-sans-wght.woff2', weight: '100 700', style: 'normal' },
@@ -43,9 +47,12 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     tagline: 'Botanical: creme paper, moss ink, pressed cards laid by hand.',
     designMd: 'src/themes/conservatory/DESIGN.md',
     colorScheme: 'light',
+    themeColor: conservatoryTokens.colors.neutral,
+    icon: { svg: '/icons/conservatory.svg', apple: '/icons/conservatory-180.png' },
     fonts: [
       { family: 'Gloock', url: '/fonts/conservatory/gloock-regular.woff2', weight: '400', style: 'normal' },
-      { family: 'Spectral', url: '/fonts/conservatory/spectral-regular.woff2', weight: '400 500', style: 'normal' },
+      { family: 'Spectral', url: '/fonts/conservatory/spectral-regular.woff2', weight: '400', style: 'normal' },
+      { family: 'Spectral', url: '/fonts/conservatory/spectral-medium.woff2', weight: '500', style: 'normal' },
       { family: 'Cardo', url: '/fonts/conservatory/cardo-italic.woff2', weight: '400', style: 'italic' },
     ],
     structure: {

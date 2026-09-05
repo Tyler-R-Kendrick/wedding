@@ -26,10 +26,13 @@ describe('resolveTheme', () => {
 });
 
 describe('theme registry', () => {
-  it('lists both themes with three self-hosted font files each and different structures', () => {
+  it('lists both themes with self-hosted font files (3, plus Spectral Medium for Conservatory) and different structures', () => {
     expect(THEME_IDS).toEqual(['gilded-hour', 'conservatory']);
+    expect(THEME_META['gilded-hour'].fonts).toHaveLength(3);
+    expect(THEME_META.conservatory.fonts).toHaveLength(4);
     for (const t of listThemes()) {
-      expect(t.fonts).toHaveLength(3);
+      expect(t.themeColor).toMatch(/^#[0-9a-f]{6}$/);
+      expect(t.icon.svg).toMatch(/^\/icons\//);
       for (const f of t.fonts) expect(f.url).toMatch(new RegExp(`^/fonts/${t.id}/.+\\.woff2$`));
     }
     const a = THEME_META['gilded-hour'].structure;

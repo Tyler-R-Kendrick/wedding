@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
+import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
@@ -27,6 +29,11 @@ const DIALOG_CLASSES = {
   close: 'gh-btn gh-btn--ghost gh-dialog__close',
   body: 'gh-dialog__body',
 };
+
+const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }));
+
+/** Curtain rise once per session: runs before the hero paints; the attribute is outside React's props. */
+const CURTAIN_SCRIPT = "(function(){try{var s=document.currentScript,e=s&&s.parentElement;if(!e)return;if(sessionStorage.getItem('gh-curtain'))e.setAttribute('data-curtain','done');else sessionStorage.setItem('gh-curtain','1')}catch(_){}})()";
 
 const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.';
 
@@ -84,10 +91,14 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
   );
 }
 
-function Nav({ nav, siteName, homeLabel }: NavProps) {
-  const half = Math.ceil(nav.primary.length / 2);
-  const left = nav.primary.slice(0, half);
-  const right = nav.primary.slice(half);
+function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
+  // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave line.
+  const inline = nav.primary.length + nav.more.length <= 6;
+  const sideItems = inline ? allItems(nav) : nav.primary;
+  const architrave = inline ? [] : nav.more;
+  const half = Math.ceil(sideItems.length / 2);
+  const left = sideItems.slice(0, half);
+  const right = sideItems.slice(half);
   const cells = bottomCells(nav, 4);
   return (
     <>
@@ -113,15 +124,21 @@ function Nav({ nav, siteName, homeLabel }: NavProps) {
               <NavLink item={item} nav={nav} className="gh-nav__link" />
             </li>
           ))}
+          {switcherEnabled ? (
+            <li className="gh-frieze__switcher">
+              <DesignSwitcher variant="trigger" id="design-switcher-nav" current="gilded-hour" themes={THEME_OPTIONS} />
+            </li>
+          ) : null}
         </ul>
         <div className="gh-frieze__menu">
           <DialogBase id="site-menu" title="Menu" trigger={<><Icon name="menu" /><span>Menu</span></>} classNames={DIALOG_CLASSES}>
             <MenuList nav={nav} homeLabel={homeLabel} />
+            {switcherEnabled ? <DesignSwitcher variant="menu" id="design-switcher-menu" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
           </DialogBase>
         </div>
-        {nav.more.length ? (
+        {architrave.length ? (
           <ul className="gh-frieze__more">
-            {nav.more.map((item) => (
+            {architrave.map((item) => (
               <li key={item.href}>
                 <NavLink item={item} nav={nav} className="gh-nav__link gh-nav__link--more" />
               </li>
@@ -175,19 +192,25 @@ function Shell({ frame, children, banner }: ShellProps) {
     ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
   ];
   return (
-    <div className="site gh" data-theme="gilded-hour" data-bottom-bar="" data-lifecycle={frame.lifecycle.state}>
-      <ThemeSync theme={"gilded-hour"} />
+    <div className="site gh" data-theme="gilded-hour" data-bottom-bar="" data-lifecycle={frame.lifecycle.state} suppressHydrationWarning>
+      <script dangerouslySetInnerHTML={{ __html: CURTAIN_SCRIPT }} />
+      <ThemeSync theme="gilded-hour" />
       <a className="skip-link" href="#main">
         Skip to content
       </a>
       {banner}
       <header className="gh-header">
-        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} />
+        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
       </header>
       <main id="main" className="gh-main" tabIndex={-1}>
         {children}
       </main>
-      <Footer site={frame.site} switcher={frame.switcher} rightsNote={RIGHTS_NOTE} printUrls={printUrls} />
+      <Footer
+        site={frame.site}
+        switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
+        rightsNote={RIGHTS_NOTE}
+        printUrls={printUrls}
+      />
     </div>
   );
 }
@@ -528,6 +551,11 @@ function Hero({ content, site, countdown, state }: HeroProps) {
         {content.deadline ? (
           <p className="gh-hero__deadline">
             <Text copy={content.deadline} />
+          </p>
+        ) : null}
+        {content.note ? (
+          <p className="gh-hero__note">
+            <Text copy={content.note} />
           </p>
         ) : null}
       </div>
