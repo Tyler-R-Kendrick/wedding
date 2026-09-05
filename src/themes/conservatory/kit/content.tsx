@@ -212,6 +212,9 @@ function Handoffs({ handoffs, label }: { handoffs: HandoffView[]; label: string 
 
 function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCardData; headingLevel?: 2 | 3 }) {
   const H = headingLevel === 2 ? 'h2' : 'h3';
+  // On the recommendation's own page the card is the page: the way there comes before the details.
+  const leads = headingLevel === 2;
+  const handoffs = <Handoffs handoffs={handoffList(card.handoffs)} label="Go there" />;
   const place = card.place ? (
     <>
       {card.place.name}
@@ -228,16 +231,21 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
   return (
     <article className="cv-card cv-rec" data-recommendation={card.slug}>
       <span className="cv-specimen">{humanize(card.category)}</span>
-      <H className="cv-card__title">
-        <a className="cv-link" href={card.href}>
-          {card.title}
-        </a>
-      </H>
+      {leads ? (
+        <H className="sr-only">{card.title}</H>
+      ) : (
+        <H className="cv-card__title">
+          <a className="cv-link" href={card.href}>
+            {card.title}
+          </a>
+        </H>
+      )}
       <div className="cv-card__body">
         <StatusFlags draft={card.draft} placeholder={card.placeholder} />
         <p className="cv-rec__what">
           <Block block={card.what} inline />
         </p>
+        {leads ? handoffs : null}
         <MetaList
           items={[
             ...(place ? [{ label: 'Where', value: place }] : []),
@@ -262,7 +270,7 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
             <FreshnessBadge provenance={card.operational.provenance} />
           </p>
         ) : null}
-        <Handoffs handoffs={handoffList(card.handoffs)} label="Go there" />
+        {leads ? null : handoffs}
         {card.why ? (
           <details className="cv-why">
             <summary className="cv-why__summary">{CONTENT_COPY.why.summary} →</summary>
@@ -359,7 +367,7 @@ function RoomGrid({ spaces }: Parameters<ContentKit['RoomGrid']>[0]) {
 
 function CapacityTable({ capacities }: Parameters<ContentKit['CapacityTable']>[0]) {
   return (
-    <div className="cv-scroll">
+    <div className="cv-scroll" role="region" aria-label="Capacity figures" tabIndex={0}>
       <table className="cv-table">
         <caption className="cv-table__caption">{capacities.note}</caption>
         <thead>

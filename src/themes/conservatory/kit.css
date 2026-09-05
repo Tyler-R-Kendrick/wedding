@@ -11,6 +11,11 @@
 
   /* The floating Menu tag on phones: the footer keeps this much clear beneath its last line. */
   --cv-float-clearance: 4rem;
+
+  /* Provenance ink slots: pollen (`tertiary`) is an accent in this theme, never text. */
+  --prov-note-ink: var(--color-soil);
+  --prov-external-ink: var(--color-soil);
+  --prov-external-line: var(--color-kraft-deep);
 }
 
 @media (width >= 900px) {
@@ -489,6 +494,7 @@
 
 .cv-tag--hang {
   min-height: 48px;
+  white-space: normal;
   padding: 12px 18px;
   font-size: var(--type-label-lg-size);
   font-weight: var(--type-label-lg-weight);
@@ -568,7 +574,7 @@
   color: var(--color-on-primary);
 }
 
-.cv-section--inverse .placeholder {
+.cv-section--inverse .todo {
   background: color-mix(in srgb, var(--color-on-primary) 12%, transparent);
   color: var(--color-on-primary);
 }
@@ -1202,6 +1208,627 @@
 
 .cv-footer__switcher {
   margin-block-start: var(--spacing-md);
+}
+
+/* ---------- content pages (level 05): the sheet, the stem, pressed records, jar labels, field notes ---------- */
+
+/* The head of the sheet: kraft specimen label, the name in Gloock, the lede, then whatever hangs under it. */
+.cv-pagehead {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-sm);
+  max-width: var(--cv-max);
+  padding: var(--spacing-lg) var(--cv-gutter) var(--spacing-md);
+}
+
+@media (width >= 900px) {
+  .cv-pagehead {
+    padding-block: var(--spacing-2xl) var(--spacing-xl);
+  }
+}
+
+.cv-pagehead::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  width: min(52%, 520px);
+  height: 48px;
+  background: var(--art-leaf-border) no-repeat right top / auto 100%;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.cv-pagehead__tag {
+  margin: 0;
+}
+
+.cv-pagehead__title {
+  margin-block-start: var(--spacing-xs);
+  max-width: 22ch;
+}
+
+.cv-pagehead__facts {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-md);
+  width: 100%;
+  margin-block-start: var(--spacing-md);
+}
+
+.cv-pagehead__place {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+/* A specimen label that keeps its place in the flow instead of pinning to a card corner. */
+.cv-specimen--static {
+  position: static;
+  display: inline-block;
+  transform: rotate(-1.5deg);
+}
+
+.cv-muted {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.cv-list {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding-inline-start: 1.2em;
+}
+
+.cv-back {
+  margin: var(--spacing-lg) 0 0;
+}
+
+.cv-prov {
+  margin-block-start: var(--spacing-sm);
+}
+
+.cv-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-flags .cv-chip {
+  margin-inline-start: 0;
+}
+
+/* The whole width of the sheet: mounts of pressed cards span both columns. */
+.cv-section__full {
+  min-width: 0;
+}
+
+@media (width >= 900px) {
+  .cv-section__full {
+    grid-column: 1 / -1;
+  }
+}
+
+/* A mounting area that sits level with its text instead of riding up over the section above. */
+.cv-section__mount--flat {
+  padding-inline-end: 0;
+}
+
+@media (width >= 900px) {
+  .cv-section__mount--flat {
+    margin-block-start: 0;
+  }
+}
+
+/* ---------- Our Story: one dashed stem with a leaf per chapter ---------- */
+.cv-stem {
+  display: grid;
+  gap: var(--spacing-2xl);
+  margin: var(--spacing-lg) 0 0;
+  padding: 0 0 0 var(--spacing-lg);
+  list-style: none;
+  border-inline-start: 1px dashed var(--color-leaf-deep);
+}
+
+.cv-stem__node {
+  position: relative;
+  min-width: 0;
+}
+
+.cv-stem__leaf {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: calc(-1 * var(--spacing-lg) - 13px);
+  width: 26px;
+  height: 26px;
+}
+
+.cv-stem__body {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-sm);
+}
+
+.cv-stem__title {
+  margin: 0;
+}
+
+/* ---------- the memory and its two voices ---------- */
+.cv-memory {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin-block-start: var(--spacing-md);
+}
+
+.cv-memory__access {
+  margin: 0;
+  font-size: var(--type-body-md-size);
+}
+
+.cv-voices {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+@media (width >= 700px) {
+  .cv-voices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.cv-voices .cv-voice {
+  --tilt: -1.6deg;
+
+  align-content: start;
+}
+
+.cv-voices .cv-voice--second {
+  --tilt: 1.4deg;
+}
+
+@media (width >= 700px) {
+  .cv-voices .cv-voice--second {
+    margin-block-start: var(--spacing-lg);
+  }
+}
+
+.cv-voice__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h3-line);
+}
+
+.cv-voice__text {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+/* ---------- kraft filter tags ---------- */
+.cv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- label / value facts ---------- */
+@media (width >= 600px) {
+  .cv-meta .cv-stat {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--spacing-md);
+    align-items: baseline;
+  }
+}
+
+/* ---------- the mount: pressed records laid across the sheet ---------- */
+.cv-mount {
+  display: grid;
+  gap: var(--spacing-xl);
+  margin: var(--spacing-lg) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 700px) {
+  .cv-mount {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: var(--spacing-2xl) var(--spacing-xl);
+    align-items: start;
+  }
+}
+
+@media (width >= 700px) {
+  .cv-mount--rooms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cv-mount__item {
+  min-width: 0;
+  max-width: 34rem;
+}
+
+.cv-specimen-card,
+.cv-room,
+.cv-itinerary,
+.cv-rec,
+.cv-result {
+  height: 100%;
+  align-content: start;
+}
+
+/* ---------- the practical card ---------- */
+.cv-rec__what {
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
+}
+
+.cv-rec__hours {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.cv-handoffs {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: var(--spacing-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-handoffs__item {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-xs);
+}
+
+.cv-handoffs__disclosure {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+/* the memory layer, folded away under the practical part */
+.cv-why {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: var(--color-moss-wash);
+}
+
+.cv-why__summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-text);
+  font-size: var(--type-label-lg-size);
+  font-weight: var(--type-label-lg-weight);
+  letter-spacing: var(--type-label-lg-tracking);
+  color: var(--color-leaf-deep);
+  list-style: none;
+  cursor: pointer;
+}
+
+.cv-why__summary::-webkit-details-marker {
+  display: none;
+}
+
+.cv-why p {
+  margin: var(--spacing-sm) 0 0;
+}
+
+/* ---------- stops on a vine ---------- */
+.cv-vine--stops {
+  margin-block-start: var(--spacing-sm);
+}
+
+.cv-vine__meta {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.cv-plan {
+  margin-block-start: var(--spacing-md);
+}
+
+/* ---------- "look for this": a leaf checklist ---------- */
+.cv-lookfor {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: var(--spacing-lg) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-lookfor__item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: var(--spacing-md);
+  align-items: start;
+  padding-block-end: var(--spacing-md);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.cv-lookfor__item:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.cv-lookfor__leaf {
+  margin-block-start: 2px;
+}
+
+.cv-lookfor__text {
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
+}
+
+/* ---------- kit capacity figures ---------- */
+.cv-scroll {
+  margin-block-start: var(--spacing-lg);
+  overflow-x: auto;
+}
+
+.cv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cv-table__caption {
+  caption-side: top;
+  padding-block-end: var(--spacing-sm);
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: var(--type-specimen-label-size);
+  color: var(--color-soil);
+  text-align: start;
+}
+
+.cv-table th,
+.cv-table td {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 0;
+  border-block-end: 1px solid var(--color-outline);
+  text-align: start;
+}
+
+.cv-table th {
+  font-family: var(--font-text);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  font-feature-settings: var(--type-label-caps-features);
+  color: var(--color-soil);
+}
+
+.cv-table td {
+  font-family: var(--font-display);
+  font-size: var(--type-h3-size);
+  font-feature-settings: var(--type-numeral-features);
+}
+
+/* ---------- jar labels: one operational row per jar ---------- */
+.cv-jars {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-lg) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 700px) {
+  .cv-jars {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    align-items: start;
+  }
+}
+
+.cv-jar {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-sm);
+  height: 100%;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-outline);
+}
+
+.cv-jar__label {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-inline: calc(-1 * var(--spacing-lg));
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-kraft);
+  border-block-end: 2px solid var(--color-kraft-deep);
+}
+
+.cv-jar__name {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  color: var(--color-primary);
+}
+
+.cv-jar__value {
+  margin: 0;
+  font-size: var(--type-body-md-size);
+  line-height: 1.4;
+  color: var(--color-soil);
+}
+
+.cv-jar__body {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.cv-jar[data-expired="true"] .cv-jar__label {
+  background: var(--color-neutral-variant);
+}
+
+/* ---------- field notes: cited statements about the building ---------- */
+.cv-notes {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-lg) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-notes__item {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-inline-start: var(--spacing-md);
+  border-inline-start: 2px solid var(--color-leaf);
+}
+
+.cv-notes__cat {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: var(--type-specimen-label-size);
+  line-height: var(--type-specimen-label-line);
+  color: var(--color-soil);
+}
+
+.cv-notes__text {
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
+}
+
+.cv-notes__note {
+  color: var(--color-on-surface-muted);
+}
+
+/* ---------- order of the day ---------- */
+.cv-programme {
+  gap: var(--spacing-xl);
+  margin-block-start: var(--spacing-lg);
+}
+
+.cv-programme__stop {
+  align-items: start;
+}
+
+.cv-programme__name {
+  margin: 0 0 var(--spacing-sm);
+}
+
+/* ---------- the FAQ column ---------- */
+.cv-faq {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin-block-start: var(--spacing-lg);
+}
+
+.cv-faq__entry {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding-block-end: var(--spacing-lg);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.cv-faq__entry:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.cv-faq__q {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+}
+
+.cv-faq__a {
+  max-width: none;
+}
+
+/* ---------- static search results ---------- */
+.cv-results {
+  margin-block-start: var(--spacing-lg);
+}
+
+.cv-results__list {
+  display: grid;
+  gap: var(--spacing-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-result__title {
+  font-family: var(--font-text);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+}
+
+/* ---------- forms on the sheet ---------- */
+.cv-form {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-block-start: var(--spacing-lg);
+}
+
+.cv-form__actions {
+  margin: 0;
+}
+
+/* the search keeps its button beside the field at every width: on a phone the action then sits
+   in the first screen, above the floating Menu tag and the two-action bar */
+.cv-form--search {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.cv-form--search .cv-field {
+  max-width: none;
+}
+
+/* one fern rule per category of place */
+.cv-category {
+  margin-block-start: var(--spacing-2xl);
+}
+
+.cv-category:first-of-type {
+  margin-block-start: var(--spacing-lg);
+}
+
+.cv-category__title {
+  margin: 0;
+}
+
+.cv-category__title::before {
+  content: "";
+  display: block;
+  width: 12rem;
+  max-width: 100%;
+  height: 40px;
+  margin-block-end: var(--spacing-sm);
+  background: var(--art-fern-divider) no-repeat left center / contain;
+}
+
+/* the concierge slot: an empty labelled jar until the assistant lands */
+.cv-slot {
+  padding: var(--spacing-md);
+  border: 1px dashed var(--color-kraft-deep);
+  background: var(--color-neutral);
 }
 
 /* ---------- motion ---------- */

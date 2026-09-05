@@ -7,12 +7,13 @@ import { kit } from '../kit';
 const { Shell, Section, SectionHeading, Prose, Button, Form, content } = kit;
 const { PageHead, SearchResults, FaqList } = content;
 
-/** Ask Us: search on the axis, the FAQ as a ruled column, the concierge slot as an empty plaque. */
+/** Ask Us: search on the axis, the FAQ as a ruled column, the concierge slot as an empty plaque.
+ * Not numbered — these are three utilities, not one of the five acts. */
 export const GildedAskPage: ContentRecipe<AskProps> = ({ faq, search, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
     <PageHead eyebrow={CONTENT_COPY.ask.eyebrow} title={CONTENT_COPY.ask.title} lede={CONTENT_COPY.ask.lede} />
 
-    <Section id="search" number={1} labelledBy="search-title">
+    <Section id="search" labelledBy="search-title">
       <SectionHeading level={2} id="search-title" title={CONTENT_COPY.ask.search} />
       <form className="gh-form gh-form--search" method="get" action={ROUTES.ask} role="search">
         <Form.Field id="ask-q" label={CONTENT_COPY.ask.searchLabel} hint={`For example: ${CONTENT_COPY.ask.searchHint}`}>
@@ -27,12 +28,12 @@ export const GildedAskPage: ContentRecipe<AskProps> = ({ faq, search, frame }) =
       {search ? <SearchResults search={search} /> : null}
     </Section>
 
-    <Section id="faq" number={2} ground="alt" labelledBy="faq-title">
+    <Section id="faq" ground="alt" labelledBy="faq-title">
       <SectionHeading level={2} id="faq-title" title={CONTENT_COPY.ask.faq} />
       <FaqList entries={faq.entries} labelFor={labelForRoute} />
     </Section>
 
-    <Section id="concierge" number={3} labelledBy="concierge-title">
+    <Section id="concierge" labelledBy="concierge-title">
       <SectionHeading level={2} id="concierge-title" title={CONTENT_COPY.ask.concierge} />
       <div className="gh-slot" id="concierge-slot" data-slot="concierge">
         <Prose>

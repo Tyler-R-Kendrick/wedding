@@ -203,6 +203,9 @@ function Handoffs({ handoffs, label }: { handoffs: HandoffView[]; label: string 
 
 function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCardData; headingLevel?: 2 | 3 }) {
   const H = headingLevel === 2 ? 'h2' : 'h3';
+  // On the recommendation's own page the card is the page: the way there comes before the details.
+  const leads = headingLevel === 2;
+  const handoffs = <Handoffs handoffs={handoffList(card.handoffs)} label="Go there" />;
   const place = card.place ? (
     <>
       {card.place.name}
@@ -220,15 +223,20 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
     <article className="gh-rec" data-recommendation={card.slug}>
       <div className="gh-rec__inner">
         <p className="gh-eyebrow">{humanize(card.category)}</p>
-        <H className="gh-rec__title">
-          <a className="gh-link" href={card.href}>
-            {card.title}
-          </a>
-        </H>
+        {leads ? (
+          <H className="sr-only">{card.title}</H>
+        ) : (
+          <H className="gh-rec__title">
+            <a className="gh-link" href={card.href}>
+              {card.title}
+            </a>
+          </H>
+        )}
         <StatusFlags draft={card.draft} placeholder={card.placeholder} />
         <p className="gh-rec__what">
           <Block block={card.what} inline />
         </p>
+        {leads ? handoffs : null}
         <MetaList
           items={[
             ...(place ? [{ label: 'Where', value: place }] : []),
@@ -253,7 +261,7 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
             <FreshnessBadge provenance={card.operational.provenance} />
           </p>
         ) : null}
-        <Handoffs handoffs={handoffList(card.handoffs)} label="Go there" />
+        {leads ? null : handoffs}
         {card.why ? (
           <details className="gh-why">
             <summary className="gh-why__summary">{CONTENT_COPY.why.summary} →</summary>
@@ -366,7 +374,7 @@ function RoomGrid({ spaces }: Parameters<ContentKit['RoomGrid']>[0]) {
 
 function CapacityTable({ capacities }: Parameters<ContentKit['CapacityTable']>[0]) {
   return (
-    <div className="gh-scroll">
+    <div className="gh-scroll" role="region" aria-label="Capacity figures" tabIndex={0}>
       <table className="gh-table">
         <caption className="gh-table__caption">{capacities.note}</caption>
         <thead>

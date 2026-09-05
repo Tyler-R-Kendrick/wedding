@@ -35,8 +35,8 @@ const FLOWERS = ['a', 'b', 'c'] as const;
 
 function Placeholder({ todo }: PlaceholderProps) {
   return (
-    <span className="placeholder">
-      <span className="placeholder__tag">TODO(Tyler &amp; Sara):</span> {todo}
+    <span className="todo">
+      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {todo}
     </span>
   );
 }

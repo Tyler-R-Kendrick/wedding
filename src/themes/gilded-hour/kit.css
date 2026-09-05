@@ -597,7 +597,7 @@
   color: var(--color-gold);
 }
 
-.gh-section--inverse .placeholder {
+.gh-section--inverse .todo {
   background: color-mix(in srgb, var(--color-on-primary) 12%, transparent);
   color: var(--color-on-primary);
 }
@@ -1192,7 +1192,7 @@
   gap: var(--spacing-sm);
   max-width: var(--gh-max);
   margin-inline: auto;
-  padding: var(--spacing-2xl) var(--gh-gutter) var(--spacing-xl);
+  padding: var(--spacing-xl) var(--gh-gutter) var(--spacing-lg);
 }
 
 @media (width >= 900px) {
@@ -1414,7 +1414,7 @@
   font-weight: var(--type-numeral-weight);
   line-height: 0.9;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--color-gold);
+  color: var(--color-tertiary);
 }
 
 .gh-entry__body {
@@ -1752,7 +1752,7 @@
   font-family: var(--font-accent);
   font-size: var(--type-h2-size);
   font-weight: var(--type-numeral-weight);
-  color: var(--color-gold);
+  color: var(--color-tertiary);
 }
 
 .gh-room__name {
@@ -2005,19 +2005,16 @@
   margin: 0;
 }
 
-/* search: the field and its button share a row once there is width for both */
+/* search: the field keeps its button beside it at every width, so the action stays in the first
+   screen on a phone (above the elevator panel) instead of below the field's own row */
 .gh-form--search {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-sm);
   align-items: end;
 }
 
-@media (width >= 600px) {
-  .gh-form--search {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .gh-form--search .gh-field {
-    max-width: none;
-  }
+.gh-form--search .gh-field {
+  max-width: none;
 }
 
 .gh-category {

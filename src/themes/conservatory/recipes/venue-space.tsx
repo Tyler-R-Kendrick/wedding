@@ -13,11 +13,7 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
   const { space } = data;
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={space.character}>
-        <div className="cv-prose">
-          <Block block={data.roomsNotConfirmed} />
-        </div>
-      </PageHead>
+      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={space.character} />
 
       <Section id="look" labelledBy="look-title">
         <div className="cv-section__text">
@@ -38,6 +34,9 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
       <Section id="capacity" ground="alt" labelledBy="capacity-title">
         <div className="cv-section__text">
           <SectionHeading level={2} id="capacity-title" title={CONTENT_COPY.exploreCaa.roomCapacity} />
+          <Prose>
+            <Block block={data.roomsNotConfirmed} />
+          </Prose>
           <CapacityTable capacities={space.capacities} />
           <Provenance provenance={space.provenance} freshness />
           <Prose>

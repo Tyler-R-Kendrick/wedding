@@ -60,8 +60,9 @@ body {
   transform: none;
 }
 
-/* Editorial placeholder: obviously a placeholder, never plausible prose. */
-.placeholder {
+/* Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
+   provenance block placeholder (src/components/provenance), which owns `.placeholder`. */
+.todo {
   display: inline;
   padding: 0.3em 0.55em;
   box-decoration-break: clone;
@@ -108,7 +109,7 @@ body {
   }
 }
 
-.placeholder__tag {
+.todo__label {
   font-weight: 600;
 }
 
