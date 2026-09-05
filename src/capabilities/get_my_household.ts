@@ -7,7 +7,7 @@ import { GUEST_KINDS } from '@/db/schema';
 import { getGuestsByIds, guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests } from '@/domain/identity/bindings';
-import { requireGuest } from '@/lib/principal';
+import { guestOf } from './identity/shared';
 
 const input = z.object({}).optional();
 
@@ -47,7 +47,9 @@ export const getMyHousehold = defineCapability<z.infer<typeof input>, MyHousehol
   output,
   maxOutputChars: 6_000,
   async handler(ctx) {
-    const p = requireGuest(ctx.principal);
+    const guard = guestOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const p = guard.value;
     const { db } = appServices(ctx);
     const household = await getHousehold(db, p.householdId);
     if (!household) return err(new CapabilityError('not_found', 'We could not find your household.'));

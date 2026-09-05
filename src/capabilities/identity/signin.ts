@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok, type Result } from '@/contracts/result';
@@ -123,7 +123,7 @@ export async function completeOtpSignIn(
   const own = await activeBindingsForIdentity(db, user.id);
   const selfIds = own.filter((b) => b.role === 'self').map((b) => b.guestId);
   if (selfIds.length > 1) {
-    const rows = await db.select().from(guests).where(eq(guests.mergedIntoGuestId, null as never)).then((r) => r.filter((g) => selfIds.includes(g.id)));
+    const rows = await db.select().from(guests).where(and(inArray(guests.id, selfIds), isNull(guests.mergedIntoGuestId)));
     for (const g of rows) candidates.push({ guestId: g.id, displayName: guestDisplayName(g) });
   }
   const [updated] = await db.update(authSessions).set({ activeGuestId, authenticatedAt: ctx.now }).where(eq(authSessions.token, sessionToken)).returning({ authenticatedAt: authSessions.authenticatedAt });
