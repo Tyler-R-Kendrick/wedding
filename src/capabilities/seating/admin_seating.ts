@@ -113,7 +113,9 @@ export const adminUpsertTable = defineCapability<z.infer<typeof tableInput>, z.i
       if (!plan) return err(new CapabilityError('not_found', 'That floor plan does not exist.'));
       if (!plan.anchors.some((a) => a.id === i.anchorId)) return err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues: [{ path: 'anchorId', message: 'not on that floor plan' }] }));
     }
-    const existing = i.id ? (await listTables(db)).find((t) => t.id === i.id) : undefined;
+    const tables = await listTables(db);
+    const existing = i.id ? tables.find((t) => t.id === i.id) : undefined;
+    if (tables.some((t) => t.name.toLowerCase() === i.name.toLowerCase() && t.id !== i.id)) return err(new CapabilityError('conflict', `There is already a table called ${i.name}.`));
     const row = await upsertTable(db, { id: i.id, name: i.name, capacity: i.capacity, floorPlanId: i.floorPlanId ?? null, anchorId: i.anchorId ?? null, notes: i.notes ?? null, sortOrder: i.sortOrder ?? existing?.sortOrder ?? 0, now: ctx.now });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.changed', target: { type: 'seating_table', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: existing ? 'update' : 'create' } });
     return ok({ data: { id: row.id, name: row.name, capacity: row.capacity, floorPlanId: row.floorPlanId, anchorId: row.anchorId }, sources: [] });

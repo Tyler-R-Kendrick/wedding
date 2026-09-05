@@ -3,6 +3,10 @@ import AxeBuilder from '@axe-core/playwright';
 
 // Routes to audit. Add each page as it is built (see wedding-site-standards skill).
 // Runs against BASE_URL when set (preview deployment), otherwise against the local dev server.
+// PUBLIC routes only. `/rsvp` and `/your-weekend` are guest-gated as of level 06: visiting them
+// without a session redirects to /sign-in, so auditing them here would silently audit the sign-in
+// page under a test named for the RSVP page. They are audited with a real session in
+// tests/a11y-guest.spec.ts instead.
 const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
 
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
