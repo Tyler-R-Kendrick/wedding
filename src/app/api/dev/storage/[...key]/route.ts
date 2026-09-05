@@ -1,6 +1,6 @@
 import { env } from '@/lib/env';
 import { jsonResponse } from '@/lib/request';
-import { DEV_STORAGE_SIGNING_SECRET, isValidKey, LocalFsStorage, verifyDevStorage, type DevStorageSignatureInput } from '@/providers/storage';
+import { isValidKey, LocalFsStorage, type DevStorageSignatureInput } from '@/providers/storage';
 import { getProvider } from '@/providers/registry';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
 
 function local(): LocalFsStorage | null {
+  // Never in production, whatever the storage provider is.
+  if (env.isProduction) return null;
   const storage = getProvider('storage');
   return storage instanceof LocalFsStorage ? storage : null;
 }
@@ -24,12 +26,11 @@ function parse(request: Request, key: string): { input: DevStorageSignatureInput
   return { input: { op, key, exp, uploadId, partNumber, contentType }, sig };
 }
 
-function verify(request: Request, key: string, expectedOp: DevStorageSignatureInput['op'][]): DevStorageSignatureInput | Response {
+function verify(storage: LocalFsStorage, request: Request, key: string, expectedOp: DevStorageSignatureInput['op'][]): DevStorageSignatureInput | Response {
   if (!isValidKey(key)) return new Response(null, { status: 400 });
   const parsed = parse(request, key);
   if (!parsed || !expectedOp.includes(parsed.input.op)) return new Response(null, { status: 403 });
-  const secret = env.STORAGE_SIGNING_SECRET ?? DEV_STORAGE_SIGNING_SECRET;
-  if (!verifyDevStorage(secret, parsed.input, parsed.sig)) return new Response(null, { status: 403 });
+  if (!storage.verifySignedRequest(parsed.input, parsed.sig)) return new Response(null, { status: 403 });
   return parsed.input;
 }
 
@@ -38,7 +39,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ key:
   const storage = local();
   if (!storage) return new Response(null, { status: 404 });
   const key = (await params).key.join('/');
-  const verified = verify(request, key, ['get']);
+  const verified = verify(storage, request, key, ['get']);
   if (verified instanceof Response) return verified;
   const obj = await storage.getObject(key);
   if (!obj.ok || !obj.value) return new Response(null, { status: 404 });
@@ -56,7 +57,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ key:
   const storage = local();
   if (!storage) return new Response(null, { status: 404 });
   const key = (await params).key.join('/');
-  const verified = verify(request, key, ['put', 'part']);
+  const verified = verify(storage, request, key, ['put', 'part']);
   if (verified instanceof Response) return verified;
   const length = Number(request.headers.get('content-length') ?? 0);
   if (length > MAX_UPLOAD_BYTES) return jsonResponse({ ok: false, error: 'too large' }, { status: 413 });

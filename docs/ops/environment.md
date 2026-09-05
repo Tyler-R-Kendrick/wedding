@@ -11,8 +11,11 @@ running server enforces it.
 | Variable | Used by | Notes |
 |---|---|---|
 | `CONFIRMATION_SECRET` | `src/policy/confirmation.ts` | HMAC key for confirmation tokens, >= 16 chars. Dev default with a warning. |
-| `CRON_SECRET` | `POST /api/jobs/run` | Bearer token for the cron caller, >= 16 chars. Route returns 401 when unset. |
-| `DATABASE_URL` | `src/db/client.ts` | Practically required: without it production would use PGlite on local disk. |
+| `CRON_SECRET` | `POST /api/jobs/run` | Bearer token for the cron caller, >= 32 chars. Route returns a uniform 401 when unset or wrong. |
+| `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET` (the name the secrets autofill writes) is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
+| `DATABASE_URL` | `src/db/client.ts` | Required when `VERCEL_ENV=production` (boot fails without it). Vercel previews may run on ephemeral `/tmp` PGlite. Elsewhere, production without it uses PGlite on local disk. |
+
+Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per-process buckets are not a rate limit behind a load balancer).
 
 ## Server variables
 
@@ -29,7 +32,9 @@ running server enforces it.
 | `DB_AUTO_SEED` | on outside production | db client (idempotent seed) | no |
 | `CONFIRMATION_SECRET` | dev default (warns) | policy/confirmation | no |
 | `CRON_SECRET` | unset (route 401) | api/jobs/run | no |
-| `STORAGE_SIGNING_SECRET` | dev default | storage local-fs signed URLs | no |
+| `STORAGE_SIGNING_SECRET` | dev default (warns); required in production unless S3 is configured | storage local-fs signed URLs | no |
+| `DEV_STORAGE_SECRET` | unset | alias of `STORAGE_SIGNING_SECRET` (written by the secrets autofill); `STORAGE_SIGNING_SECRET` wins when both are set | no |
+| `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | unset | auth swarm (Better Auth) | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
@@ -72,7 +77,7 @@ running server enforces it.
 ## Deployer checklist
 
 1. `DATABASE_URL` (Postgres with the `vector` extension available if semantic search is wanted).
-2. `CONFIRMATION_SECRET`, `CRON_SECRET` (32+ random chars each), `STORAGE_SIGNING_SECRET` if local-fs is ever used.
+2. `CONFIRMATION_SECRET`, `CRON_SECRET` (32+ random chars each), and either the `S3_*` set or `STORAGE_SIGNING_SECRET` (boot fails with neither).
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET`.
 4. Storage: the four `S3_*` variables (+ `S3_ENDPOINT` for R2/MinIO).
 5. Email: `RESEND_API_KEY`, `EMAIL_FROM`.

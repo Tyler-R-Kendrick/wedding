@@ -76,6 +76,11 @@ export class LocalFsStorage implements StorageProvider {
   get dataDir() {
     return this.opts.dataDir;
   }
+
+  /** Verifies a signed dev URL against THIS instance's secret (the dev route never resolves the secret itself). */
+  verifySignedRequest(input: DevStorageSignatureInput, signature: string, now: Date = this.now()): boolean {
+    return verifyDevStorage(this.opts.signingSecret, input, signature, now);
+  }
   private get objectsDir() {
     return path.join(this.opts.dataDir, 'objects');
   }

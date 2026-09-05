@@ -27,6 +27,9 @@ const requiredBool = (fallback: boolean) => boolish(fallback).pipe(z.boolean());
 const intish = (fallback: number, min = 0) =>
   z.preprocess((v) => (v === undefined || v === '' ? fallback : Number(v)), z.number().int().min(min));
 
+const optionalInt = (min: number, max: number) =>
+  z.preprocess((v) => (v === undefined || v === '' ? undefined : Number(v)), z.number().int().min(min).max(max).optional());
+
 const optionalString = z.string().trim().min(1).optional().or(z.literal('').transform(() => undefined));
 const optionalSecret = (min: number) => z.string().min(min).optional().or(z.literal('').transform(() => undefined));
 const optionalUrl = z.url().optional().or(z.literal('').transform(() => undefined));
@@ -46,10 +49,14 @@ const serverSchema = z.object({
 
   // --- security ---
   CONFIRMATION_SECRET: optionalSecret(16),
-  CRON_SECRET: optionalSecret(16),
+  CRON_SECRET: optionalSecret(32),
   STORAGE_SIGNING_SECRET: optionalSecret(16),
+  /** Alias written by the secrets autofill; used as the local-fs signing secret when STORAGE_SIGNING_SECRET is unset. */
+  DEV_STORAGE_SECRET: optionalSecret(16),
   BETTER_AUTH_SECRET: optionalSecret(16),
   BETTER_AUTH_URL: optionalUrl,
+  /** Number of trusted reverse proxies in front of the app. 0 = ignore forwarding headers. Default: 1 on Vercel, else 0. */
+  TRUSTED_PROXY_HOPS: optionalInt(0, 16),
 
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
@@ -85,11 +92,17 @@ const serverSchema = z.object({
   JOBS_BATCH_SIZE: intish(10, 1),
 });
 
-export type ServerEnv = z.infer<typeof serverSchema> & {
+type Parsed = z.infer<typeof serverSchema>;
+
+export type ServerEnv = Omit<Parsed, 'TRUSTED_PROXY_HOPS'> & {
+  /** Resolved (never undefined): explicit value, else 1 on Vercel, else 0. */
+  TRUSTED_PROXY_HOPS: number;
   isProduction: boolean;
   isTest: boolean;
   isDevelopment: boolean;
 };
+
+const hasS3 = (e: Parsed) => !!(e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
 
 function load(source: NodeJS.ProcessEnv): ServerEnv {
   const parsed = serverSchema.safeParse(source);
@@ -103,11 +116,19 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
   // `next build` evaluates route modules without runtime secrets; the boot-time check still runs when the server starts.
   const isBuildPhase = source.NEXT_PHASE === 'phase-production-build';
   if (isProduction && !isBuildPhase) {
-    const required: (keyof typeof e)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET'];
-    const missing = required.filter((k) => !e[k]);
+    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET'];
+    const missing: string[] = required.filter((k) => !e[k]);
+    // Storage must be S3 or a deliberately configured local-fs signing secret; the committed dev default is never used in production.
+    if (!hasS3(e) && !e.STORAGE_SIGNING_SECRET && !e.DEV_STORAGE_SECRET) {
+      missing.push('STORAGE_SIGNING_SECRET (or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY)');
+    }
+    // Vercel production must not silently run on ephemeral /tmp PGlite; previews may.
+    if (source.VERCEL_ENV === 'production' && !e.DATABASE_URL) missing.push('DATABASE_URL (VERCEL_ENV=production)');
     if (missing.length) throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+    if (e.RATE_LIMIT_BACKEND === 'memory') throw new Error('RATE_LIMIT_BACKEND=memory is not allowed in production (per-process buckets are not a rate limit behind a load balancer)');
   }
-  return { ...e, isProduction, isTest: e.NODE_ENV === 'test', isDevelopment: e.NODE_ENV === 'development' };
+  const TRUSTED_PROXY_HOPS = e.TRUSTED_PROXY_HOPS ?? (source.VERCEL ? 1 : 0);
+  return { ...e, TRUSTED_PROXY_HOPS, isProduction, isTest: e.NODE_ENV === 'test', isDevelopment: e.NODE_ENV === 'development' };
 }
 
 export const env: ServerEnv = load(process.env);

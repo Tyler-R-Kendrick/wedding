@@ -17,7 +17,7 @@ import { MemoryRateLimit } from '@/providers/rate-limit';
 import { parseGiftLinks, MockRegistry, MockCashFund, REGISTRY_DISCLOSURE } from '@/providers/registry/index';
 import { describeProviders, getProvider, resetProviders } from '@/providers/registry';
 import { MockReservations } from '@/providers/reservations';
-import { LocalFsStorage, signDevStorage, verifyDevStorage, isValidKey } from '@/providers/storage';
+import { createStorageProvider, LocalFsStorage, S3Storage, signDevStorage, verifyDevStorage, isValidKey } from '@/providers/storage';
 import { MockTransportBenefit, ManualCodeTransportBenefit, MemoryCodeSource } from '@/providers/transport-benefit';
 import { InMemoryCosineIndex } from '@/providers/vector-index';
 import { MockVideo } from '@/providers/video';
@@ -61,6 +61,20 @@ describe('auth-email mock', () => {
     expect(r.ok).toBe(true);
     expect(devInbox.latestFor('GUEST@example.com')?.code).toBe('123456');
     expect(devInbox.list()).toHaveLength(1);
+  });
+});
+
+describe('storage provider selection', () => {
+  const base = { FORCE_MOCK_PROVIDERS: false, S3_ENDPOINT: undefined, S3_REGION: 'auto', S3_BUCKET: undefined, S3_ACCESS_KEY_ID: undefined, S3_SECRET_ACCESS_KEY: undefined, S3_FORCE_PATH_STYLE: true, STORAGE_DATA_DIR: './.data/storage', STORAGE_SIGNING_SECRET: undefined, isProduction: false };
+  it('never falls back to the committed dev signing secret in production', () => {
+    expect(() => createStorageProvider({ ...base, isProduction: true })).toThrow(/STORAGE_SIGNING_SECRET/);
+    expect(createStorageProvider({ ...base, isProduction: true, STORAGE_SIGNING_SECRET: 's'.repeat(32) })).toBeInstanceOf(LocalFsStorage);
+    expect(createStorageProvider({ ...base, isProduction: true, DEV_STORAGE_SECRET: 'd'.repeat(32) })).toBeInstanceOf(LocalFsStorage);
+    expect(createStorageProvider({ ...base, isProduction: true, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' })).toBeInstanceOf(S3Storage);
+    const warnings: string[] = [];
+    expect(createStorageProvider(base, { warn: (m) => warnings.push(m) })).toBeInstanceOf(LocalFsStorage);
+    expect(warnings.join(' ')).toMatch(/STORAGE_SIGNING_SECRET/);
+    expect(warnings.join(' ')).not.toMatch(/change-me/);
   });
 });
 
