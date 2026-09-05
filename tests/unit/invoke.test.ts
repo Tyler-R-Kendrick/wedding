@@ -9,7 +9,7 @@ import type { AuthIdentityId, GuestId, HouseholdId, IdempotencyKey } from '@/con
 import type { GuestPrincipal, Principal } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { MemoryAuditSink } from '@/lib/audit';
-import { stableHash } from '@/lib/crypto';
+import { keyedHash, stableHash } from '@/lib/crypto';
 import { ConfirmationService } from '@/policy/confirmation';
 
 const guest: GuestPrincipal = {
@@ -88,6 +88,23 @@ describe('invoke pipeline', () => {
     const e = audit.events[0]!;
     expect(e).toMatchObject({ action: 'capability.invoked', outcome: 'success', requestId: 'req-1', metadata: { surface: 'ui', kind: 'read' } });
     expect(JSON.stringify(e)).not.toContain('hello');
+    expect(e.metadata).not.toHaveProperty('inputHash'); // reads record no fingerprint at all
+  });
+
+  it('records a keyed input fingerprint for consequential capabilities only, and none without a key', async () => {
+    const action = defineCapability<{ text: string }, { text: string }>({ ...echo, name: 'hashed_action', kind: 'action', annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false } });
+    const key = 'audit-key-0123456789abcdef';
+    const keyed = ctx({}, { hashInput: (v: unknown) => keyedHash(key, v) });
+    expect((await invoke(action, keyed.c, { text: 'hello' })).ok).toBe(true);
+    const hash = keyed.audit.events[0]!.metadata?.inputHash;
+    expect(hash).toBe(keyedHash(key, { text: 'hello' }));
+    expect(hash).not.toBe(stableHash({ text: 'hello' })); // not an unkeyed digest anyone can precompute
+    const read = ctx({}, { hashInput: (v: unknown) => keyedHash(key, v) });
+    await invoke(echo, read.c, { text: 'hello' });
+    expect(read.audit.events[0]!.metadata).not.toHaveProperty('inputHash');
+    const unkeyed = ctx();
+    await invoke(action, unkeyed.c, { text: 'hello' });
+    expect(unkeyed.audit.events[0]!.metadata).not.toHaveProperty('inputHash');
   });
 
   it('caps output size for AI/WebMCP surfaces only', async () => {

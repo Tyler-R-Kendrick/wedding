@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalJson, hmacSha256, randomNumericCode, randomToken, stableHash, timingSafeEqualString } from '@/lib/crypto';
+import { canonicalJson, hmacSha256, keyedHash, randomNumericCode, randomToken, stableHash, timingSafeEqualString } from '@/lib/crypto';
 import { assertSameOriginJson, bearerToken, getClientIp, getRequestId, MAX_CLIENT_IP_CHARS, readBodyBytes } from '@/lib/request';
 import { backoffDelayMs } from '@/lib/jobs/queue';
 
@@ -8,6 +8,11 @@ describe('crypto helpers', () => {
     expect(canonicalJson({ b: 1, a: { d: 2, c: [3, { z: 1, y: 2 }] }, u: undefined })).toBe('{"a":{"c":[3,{"y":2,"z":1}],"d":2},"b":1}');
     expect(stableHash({ a: 1, b: 2 })).toBe(stableHash({ b: 2, a: 1 }));
     expect(stableHash({ a: 1 })).not.toBe(stableHash({ a: 2 }));
+  });
+  it('keyed hashes are canonical and depend on the key', () => {
+    expect(keyedHash('k', { a: 1, b: 2 })).toBe(keyedHash('k', { b: 2, a: 1 }));
+    expect(keyedHash('k', { a: 1 })).not.toBe(keyedHash('other', { a: 1 }));
+    expect(keyedHash('k', { a: 1 })).not.toBe(stableHash({ a: 1 }));
   });
   it('signs and compares in constant time', () => {
     const sig = hmacSha256('secret', 'data');

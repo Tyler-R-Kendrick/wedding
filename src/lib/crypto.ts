@@ -58,3 +58,8 @@ function sortKeys(value: unknown): unknown {
 export function stableHash(value: unknown): string {
   return sha256Hex(canonicalJson(value));
 }
+
+/** Keyed content fingerprint (HMAC-SHA256, base64url) of any JSON-serializable value: unguessable without the key. */
+export function keyedHash(key: string, value: unknown): string {
+  return hmacSha256(key, canonicalJson(value));
+}

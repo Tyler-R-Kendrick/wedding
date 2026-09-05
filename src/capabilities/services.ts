@@ -50,6 +50,8 @@ export interface LoggerLike {
 export interface PipelineServices {
   /** Legal/readiness switch lookup for READINESS_GATED flags. Absent means fail closed. */
   readiness?: (flag: FeatureFlag) => Promise<boolean>;
+  /** Keyed fingerprint for audit `inputHash` (HMAC with a server key). Absent means no hash is recorded. */
+  hashInput?: (value: unknown) => string;
   confirmation?: ConfirmationService;
   idempotency?: IdempotencyStore;
   metrics?: MetricsLike;

@@ -22,6 +22,7 @@ describe('site_status capability', () => {
     const db = await getDb();
     const rows = await listAuditEvents(db, { requestId: 'req-site-1' });
     expect(rows[0]).toMatchObject({ action: 'capability.invoked', targetId: 'site_status', metadata: { surface: 'ai' } });
+    expect(rows[0]!.metadata).not.toHaveProperty('inputHash'); // reads carry no input fingerprint
   });
 
   it('is reachable by name and unknown names are not found', async () => {

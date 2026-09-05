@@ -61,6 +61,8 @@ const serverSchema = z.object({
   DEV_INBOX_TOKEN: optionalSecret(16),
   /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
   HEALTH_TOKEN: optionalSecret(16),
+  /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */
+  AUDIT_HASH_KEY: optionalSecret(16),
 
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),

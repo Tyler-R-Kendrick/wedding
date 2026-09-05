@@ -44,9 +44,11 @@ Implementation: `src/capabilities/{registry,invoke,context,services}.ts`.
 ```
 
 Audit rows carry `requestId`, the principal ref, `{ type: 'capability', id: name }`, the
-outcome, and metadata `{ kind, surface, inputHash, durationMs, errorCode? }`. Inputs are
-never stored; `inputHash` is a SHA-256 of the canonical JSON. If the audit sink fails, a
-consequential capability (anything but read/navigate) fails too.
+outcome, and metadata `{ kind, surface, inputHash?, durationMs, errorCode? }`. Inputs are
+never stored; `inputHash` is an HMAC-SHA256 of the canonical JSON keyed with
+`AUDIT_HASH_KEY` (or a key derived from `CONFIRMATION_SECRET`), so a fingerprint cannot be
+matched against guessed inputs, and it is omitted entirely for `read`/`navigate`. If the
+audit sink fails, a consequential capability (anything but read/navigate) fails too.
 
 `ctx.surface` (`'ui' | 'ai' | 'webmcp'`, default `'ui'`) was added to `CapabilityContext`
 by this level so exposure and output caps can be enforced in one place.

@@ -31,7 +31,10 @@ export async function invoke<I, O>(
   const surface = ctx.surface ?? 'ui';
   const services = pipelineServices(ctx);
   const actor = toPrincipalRef(ctx.principal);
-  const inputHash = stableHash(rawInput ?? null);
+  // Audit fingerprint of the input: keyed (unguessable without the server key) and only for
+  // capabilities that change something; reads and navigation record no hash at all.
+  const consequential = descriptor.kind !== 'read' && descriptor.kind !== 'navigate';
+  const inputHash = consequential && services.hashInput ? services.hashInput(rawInput ?? null) : undefined;
 
   const finish = async (
     result: Result<CapabilityOutcome<O>, CapabilityError>,
@@ -53,7 +56,7 @@ export async function invoke<I, O>(
     const metadata: Record<string, unknown> = {
       kind: descriptor.kind,
       surface,
-      inputHash,
+      ...(inputHash ? { inputHash } : {}),
       durationMs,
       ...(result.ok ? {} : { errorCode: result.error.code }),
       ...extra,

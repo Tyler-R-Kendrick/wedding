@@ -4,13 +4,22 @@ import type { Principal } from '@/contracts/principal';
 import type { TrustClass } from '@/contracts/provenance';
 import { getDb, type Db } from '@/db/client';
 import { getAuditSink } from '@/lib/audit';
+import { hmacSha256, keyedHash } from '@/lib/crypto';
+import { env } from '@/lib/env';
 import { getFlags, isReady } from '@/lib/flags';
 import { DbIdempotencyStore } from '@/lib/idempotency';
 import { logger, requestLogger } from '@/lib/logger';
 import { metrics } from '@/lib/metrics';
 import { getProvider } from '@/providers/registry';
-import { getConfirmationService } from '@/policy/confirmation';
+import { DEV_CONFIRMATION_SECRET, getConfirmationService } from '@/policy/confirmation';
 import type { PipelineServices } from './services';
+
+let auditKey: string | undefined;
+/** AUDIT_HASH_KEY when set; otherwise derived from (never equal to) the confirmation secret. */
+function auditHashKey(): string {
+  return (auditKey ??= env.AUDIT_HASH_KEY ?? hmacSha256(env.CONFIRMATION_SECRET ?? DEV_CONFIRMATION_SECRET, 'audit-input-hash'));
+}
+const hashInput = (value: unknown): string => keyedHash(auditHashKey(), value);
 
 /** Everything a handler may reach through `ctx.services` in the running app. */
 export interface AppServices extends PipelineServices {
@@ -37,6 +46,7 @@ export async function createCapabilityContext(input: CreateContextInput): Promis
     db,
     providers: (kind, deps = {}) => getProvider(kind, { db, ...deps }),
     readiness: (flag) => isReady(flag, db),
+    hashInput,
     confirmation,
     idempotency: new DbIdempotencyStore(db),
     metrics,
