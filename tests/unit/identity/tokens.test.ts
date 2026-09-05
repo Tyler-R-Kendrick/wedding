@@ -43,10 +43,10 @@ describe('opaque OTP challenges', () => {
     const { token, expiresAt } = await issueChallenge(store, secret, { kind: 'claim', email: 'a@b.co', guestIds: ['G1'], invitationId: 'I1', userId: null }, { now, ttlSeconds: 600 });
     expect(expiresAt).toBe('2026-09-05T12:10:00.000Z');
     expect(token).toMatch(CHALLENGE_TOKEN_PATTERN);
-    // Nothing in the token decodes to the body: it is 32 random bytes plus an HMAC.
+    // Nothing in the token decodes to the body: it is 32 random bytes plus an HMAC (single characters may occur by chance).
     const decoded = Buffer.from(token.split('.')[0]!, 'base64url').toString('utf8');
-    expect(decoded).not.toContain('@');
-    expect(decoded).not.toContain('G1');
+    expect(decoded).not.toContain('a@b.co');
+    expect(decoded).not.toContain('"kind"');
     expect(() => JSON.parse(decoded)).toThrow();
     const read = await readChallenge(store, secret, token, now);
     expect(read).toMatchObject({ kind: 'claim', email: 'a@b.co', guestIds: ['G1'], invitationId: 'I1' });
