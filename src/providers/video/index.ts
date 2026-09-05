@@ -1,4 +1,4 @@
-import type { ServerEnv } from '@/lib/env';
+import { env as serverEnv, type ServerEnv } from '@/lib/env';
 import type { StorageProvider } from '../storage/types';
 import { CloudflareStreamVideo } from './cloudflare-stream';
 import { FfmpegVideo, resolveFfmpegBinary } from './ffmpeg';
@@ -16,10 +16,11 @@ type VideoEnv = Partial<Pick<ServerEnv, 'FORCE_MOCK_PROVIDERS' | 'FFMPEG_PATH' |
 /**
  * Selection: Cloudflare Stream (delivery) when its three variables exist, with ffmpeg or the mock
  * for local processing; otherwise ffmpeg alone when a binary exists (FFMPEG_PATH or PATH);
- * otherwise the mock. FORCE_MOCK_PROVIDERS pins the mock.
+ * otherwise the mock. FORCE_MOCK_PROVIDERS pins the mock. The registry passes no env, so the
+ * validated server environment is the default.
  */
 export function createVideoProvider(deps: { storage: StorageProvider; env?: VideoEnv }): VideoProvider {
-  const env = deps.env ?? {};
+  const env: VideoEnv = deps.env ?? serverEnv;
   if (env.FORCE_MOCK_PROVIDERS) return new MockVideo(deps.storage);
   const binary = resolveFfmpegBinary(env.FFMPEG_PATH);
   const processing: VideoProvider = binary ? new FfmpegVideo({ binary, storage: deps.storage }) : new MockVideo(deps.storage);

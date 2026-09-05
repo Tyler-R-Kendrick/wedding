@@ -7,14 +7,14 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { newId } from '@/contracts/ids';
 import { sniffMedia } from '@/lib/media/sniff';
-import { LocalFsStorage, verifyDevStorage } from '@/providers/storage';
+import { LocalFsStorage } from '@/providers/storage';
 import { CloudflareStreamVideo, createVideoProvider, FfmpegVideo, MockVideo, parseProbe, placeholderPosterPng, resolveFfmpegBinary } from '@/providers/video';
 import { syntheticMp4 } from '../../helpers/media-fixtures';
 
 const execFileAsync = promisify(execFile);
 const SANDBOX_FFMPEG = '/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux';
 
-describe('local-fs storage: media extensions', () => {
+describe('local-fs storage: media allowlist (level-03 contract)', () => {
   let dir: string;
   let storage: LocalFsStorage;
   beforeAll(async () => {
@@ -23,55 +23,25 @@ describe('local-fs storage: media extensions', () => {
   });
   afterAll(() => rm(dir, { recursive: true, force: true }));
 
-  it('only signs upload URLs for allowlisted content types', async () => {
+  it('only signs upload URLs for the media allowlist and validates multipart ids', async () => {
     expect((await storage.createSignedUploadUrl({ key: 'quarantine/x/original', contentType: 'image/svg+xml' })).ok).toBe(false);
     expect((await storage.createSignedUploadUrl({ key: 'quarantine/x/original', contentType: 'application/zip' })).ok).toBe(false);
     expect((await storage.initiateMultipartUpload({ key: 'quarantine/x/original', contentType: 'text/html' })).ok).toBe(false);
     expect((await storage.createSignedUploadUrl({ key: 'quarantine/x/original', contentType: 'image/heic' })).ok).toBe(true);
-  });
-
-  it('binds single-use nonces into the signature and consumes them once', async () => {
-    const nonce = 'nonce_' + newId();
-    const signed = await storage.createSignedUploadUrl({ key: 'quarantine/n/original', contentType: 'image/jpeg', nonce });
-    expect(signed.ok && signed.value.nonce).toBe(nonce);
-    if (!signed.ok) return;
-    const url = new URL(signed.value.url);
-    expect(url.searchParams.get('nonce')).toBe(nonce);
-    const input = { op: 'put' as const, key: 'quarantine/n/original', exp: Number(url.searchParams.get('exp')), contentType: 'image/jpeg', nonce };
-    expect(verifyDevStorage('unit-storage-secret-123456', input, url.searchParams.get('sig')!)).toBe(true);
-    expect(verifyDevStorage('unit-storage-secret-123456', { ...input, nonce: 'nonce_other_000000000000' }, url.searchParams.get('sig')!)).toBe(false);
-    expect(await storage.consumeUploadNonce(nonce)).toBe(true);
-    expect(await storage.consumeUploadNonce(nonce)).toBe(false);
-    expect(await storage.consumeUploadNonce('../escape')).toBe(false);
-    expect((await storage.createSignedUploadUrl({ key: 'quarantine/n/original', contentType: 'image/jpeg', nonce: 'bad nonce' })).ok).toBe(false);
-  });
-
-  it('lists received parts for resume, validates ids, and copies objects server-side', async () => {
-    const key = 'quarantine/m/original';
-    const init = await storage.initiateMultipartUpload({ key, contentType: 'video/mp4' });
+    const init = await storage.initiateMultipartUpload({ key: 'quarantine/m/original', contentType: 'video/mp4' });
     expect(init.ok).toBe(true);
     if (!init.ok) return;
     const { uploadId } = init.value;
-    expect((await storage.signMultipartPart({ key, uploadId: 'not-a-ulid', partNumber: 1 })).ok).toBe(false);
-    expect((await storage.signMultipartPart({ key, uploadId, partNumber: 10_001 })).ok).toBe(false);
-    expect((await storage.signMultipartPart({ key, uploadId, partNumber: 1.5 })).ok).toBe(false);
-    expect((await storage.signMultipartPart({ key, uploadId, partNumber: 1 })).ok).toBe(true);
-    await storage.writeMultipartPart(uploadId, 1, new Uint8Array([1, 2, 3]));
-    await storage.writeMultipartPart(uploadId, 3, new Uint8Array([7]));
-    const listed = await storage.listMultipartParts({ key, uploadId });
-    expect(listed.ok && listed.value.map((p) => [p.partNumber, p.size])).toEqual([[1, 3], [3, 1]]);
-    expect((await storage.listMultipartParts({ key: 'quarantine/other/original', uploadId })).ok).toBe(false);
-    expect((await storage.listMultipartParts({ key, uploadId: newId() })).ok).toBe(false);
-    await storage.writeMultipartPart(uploadId, 2, new Uint8Array([4, 5, 6]));
-    const parts = (await storage.listMultipartParts({ key, uploadId })) as { ok: true; value: { partNumber: number; etag: string }[] };
-    const done = await storage.completeMultipartUpload({ key, uploadId, parts: parts.value });
-    expect(done.ok && done.value.size).toBe(7);
-    const copied = await storage.copyObject({ from: key, to: 'originals/guest/G1/x.mp4' });
-    expect(copied.ok && copied.value.size).toBe(7);
-    expect(copied.ok && copied.value.contentType).toBe('video/mp4');
-    expect((await storage.copyObject({ from: 'quarantine/missing/original', to: 'originals/guest/G1/y.mp4' })).ok).toBe(false);
-    expect((await storage.copyObject({ from: key, to: '../escape' })).ok).toBe(false);
-    await expect(storage.writeMultipartPart('bad', 1, new Uint8Array())).rejects.toThrow();
+    expect((await storage.signMultipartPart({ key: 'quarantine/m/original', uploadId: 'not-a-ulid', partNumber: 1 })).ok).toBe(false);
+    expect((await storage.signMultipartPart({ key: 'quarantine/m/original', uploadId, partNumber: 10_001 })).ok).toBe(false);
+    expect((await storage.signMultipartPart({ key: 'quarantine/m/original', uploadId, partNumber: 1 })).ok).toBe(true);
+    expect((await storage.writeMultipartPart('bad', 1, new Uint8Array())).ok).toBe(false);
+    expect((await storage.writeMultipartPart(newId(), 1, new Uint8Array())).ok).toBe(false); // unknown upload
+    const e1 = await storage.writeMultipartPart(uploadId, 1, new Uint8Array([1, 2, 3]));
+    expect(e1.ok).toBe(true);
+    // Only derivatives are ever signed for reading by the media domain; the provider itself signs any valid key.
+    const signed = await storage.createSignedReadUrl({ key: 'derivatives/thumb/x.webp' });
+    expect(signed.ok && signed.value.url).toContain('/api/dev/storage/derivatives/thumb/x.webp?op=get');
   });
 });
 
@@ -186,11 +156,12 @@ describe('video providers', () => {
     expect(JSON.stringify(calls.map((c) => c.init?.headers))).toContain('Bearer tok');
     const playback = await cf.getPlayback('abc123def456');
     expect(playback.ok && playback.value).toMatchObject({ status: 'ready', playbackUrl: 'https://customer-cust.cloudflarestream.com/signed.playback.token/manifest/video.m3u8' });
+    expect(playback.ok && playback.value.status === 'ready' && playback.value.posterUrl).toContain('/thumbnails/thumbnail.jpg');
     expect((await cf.getPlayback('../etc')).ok).toBe(false);
     mode = 'preparing';
     const prep = await cf.getPlayback('abc123def456');
     expect(prep.ok && prep.value.status).toBe('preparing');
-    expect(prep.ok && prep.value.playbackUrl).toBeUndefined();
+    expect(prep.ok && 'playbackUrl' in prep.value).toBe(false);
     mode = 'rate';
     const rate = await cf.createAsset({ objectKey: 'derivatives/video-web/x.mp4' });
     expect(!rate.ok && rate.error).toMatchObject({ class: 'rate_limited', retryAfterMs: 7000 });

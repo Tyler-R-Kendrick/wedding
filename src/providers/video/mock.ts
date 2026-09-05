@@ -41,11 +41,11 @@ export class MockVideo implements VideoProvider {
     return ok({ assetId, status: asset.status, playbackUrl: signed.value.url, expiresInSeconds: 3600 });
   }
 
-  async extractPoster(): Promise<Result<PosterFrame, ProviderFailure>> {
+  async extractPoster(_input: { bytes: Uint8Array; contentType: string; atSeconds?: number }): Promise<Result<PosterFrame, ProviderFailure>> {
     return ok({ bytes: placeholderPosterPng(), contentType: 'image/png', placeholder: true });
   }
 
-  async probe(): Promise<Result<VideoProbe, ProviderFailure>> {
+  async probe(_input: { bytes: Uint8Array; contentType: string }): Promise<Result<VideoProbe, ProviderFailure>> {
     return ok({});
   }
 
