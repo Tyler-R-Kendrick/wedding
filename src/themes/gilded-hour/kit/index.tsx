@@ -13,6 +13,7 @@ import type {
   InputProps, LinkProps, MapHandoffProps, NavItem, NavProps, PlaceholderProps, ProseProps, SectionHeadingProps, SectionProps, SelectProps, ShellProps, SkeletonProps, StatProps,
   TextareaProps, ChoiceProps, ThemeComponentKit, TimelineProps, Copy,
 } from '@/themes/types';
+import { content } from './content';
 import { Countdown } from './Countdown';
 
 /*
@@ -588,6 +589,7 @@ export const kit: ThemeComponentKit = {
   Skeleton,
   Placeholder,
   Text,
+  content,
 };
 
 export type { ReactNode };
