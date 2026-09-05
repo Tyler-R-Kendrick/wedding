@@ -43,8 +43,11 @@ export function canonicalJson(value: unknown): string {
 
 function sortKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortKeys);
-  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
-    const out: Record<string, unknown> = {};
+  const proto = value && typeof value === 'object' ? Object.getPrototypeOf(value) : undefined;
+  if (value && typeof value === 'object' && (proto === Object.prototype || proto === null)) {
+    // A null-prototype target keeps "__proto__" / "constructor" as plain own keys (JSON.parse
+    // produces them as own properties) instead of mutating the prototype chain.
+    const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const k of Object.keys(value as Record<string, unknown>).sort()) {
       const v = (value as Record<string, unknown>)[k];
       if (v !== undefined) out[k] = sortKeys(v);

@@ -9,6 +9,15 @@ describe('crypto helpers', () => {
     expect(stableHash({ a: 1, b: 2 })).toBe(stableHash({ b: 2, a: 1 }));
     expect(stableHash({ a: 1 })).not.toBe(stableHash({ a: 2 }));
   });
+  it('treats __proto__ / constructor keys as data, never as prototype mutations', () => {
+    const hostile = JSON.parse('{"__proto__":{"polluted":true},"constructor":{"prototype":{"x":1}},"a":1}') as Record<string, unknown>;
+    const json = canonicalJson(hostile);
+    expect(json).toBe('{"__proto__":{"polluted":true},"a":1,"constructor":{"prototype":{"x":1}}}');
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(stableHash(hostile)).not.toBe(stableHash({ a: 1 }));
+    expect(canonicalJson(Object.assign(Object.create(null), { b: 1, a: 2 }))).toBe('{"a":2,"b":1}');
+  });
+
   it('keyed hashes are canonical and depend on the key', () => {
     expect(keyedHash('k', { a: 1, b: 2 })).toBe(keyedHash('k', { b: 2, a: 1 }));
     expect(keyedHash('k', { a: 1 })).not.toBe(keyedHash('other', { a: 1 }));

@@ -10,7 +10,7 @@ import { isAllowedRedirect } from '@/lib/redirects';
 import { MockAuthEmail, devInbox } from '@/providers/auth-email';
 import { MockBiometric } from '@/providers/biometric';
 import { hashedEmbedding, MockEmbeddings } from '@/providers/embeddings';
-import { MockFlights, DeepLinkOnlyFlights } from '@/providers/flights';
+import { MockFlights, DeepLinkOnlyFlights, skyscannerFlightsUrl } from '@/providers/flights';
 import { MockHotels } from '@/providers/hotels';
 import { DeepLinkMaps } from '@/providers/maps';
 import { MockMediaAi } from '@/providers/media-ai';
@@ -281,6 +281,13 @@ describe('travel providers', () => {
     const deep = new DeepLinkOnlyFlights();
     const u = await deep.search(req);
     expect(!u.ok && u.error.class).toBe('unconfigured');
+    expect(skyscannerFlightsUrl(req)).toBe('https://www.skyscanner.com/transport/flights/lax/ord/270715/270719/?adults=2&adultsv2=2&cabinclass=economy&rtn=1');
+    // The link builder only ever puts validated IATA codes and dates into the path.
+    for (const bad of [{ origin: '../x' }, { origin: 'LAXX' }, { origin: 'la' }, { destination: 'X/Y' as never }, { departDate: '2027-07-15T00' }, { departDate: '../..' }, { returnDate: 'x' }, { adults: 0 }, { adults: 1.5 }, { children: -1 }]) {
+      expect(() => skyscannerFlightsUrl({ ...req, ...bad }), JSON.stringify(bad)).toThrow(RangeError);
+      expect(() => deep.deepLink({ ...req, ...bad })).toThrow(RangeError);
+    }
+    expect(skyscannerFlightsUrl({ ...req, origin: 'lax', returnDate: undefined })).toContain('/lax/ord/270715/?');
   });
 
   it('returns the venue hotel first and allowlisted hotel links', async () => {

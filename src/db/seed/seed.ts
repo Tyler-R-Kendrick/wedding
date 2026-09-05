@@ -45,8 +45,9 @@ export async function seed(db: Db): Promise<void> {
       .onConflictDoUpdate({ target: contentSources.id, set: values });
   }
 
+  // Seeded once; afterwards the site row belongs to the admins (a reseed must never revert their edits).
   const site = { ...SEED_SITE, themes: [...SEED_SITE.themes], updatedAt: now };
-  await db.insert(siteSettings).values(site).onConflictDoUpdate({ target: siteSettings.id, set: site });
+  await db.insert(siteSettings).values(site).onConflictDoNothing();
 
   await db
     .insert(lifecycleState)

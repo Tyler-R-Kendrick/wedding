@@ -8,7 +8,10 @@ import { err, ok, type Result } from '@/contracts/result';
  */
 export interface AllowedHost {
   host: string | RegExp;
+  /** Required path prefix (compare with a trailing slash so `/maps` never matches `/mapsomething`). */
   pathPrefix?: string;
+  /** Match this hostname only, no subdomains (for pinned partner hosts like www.google.com). */
+  exact?: boolean;
 }
 
 export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
@@ -18,8 +21,11 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'theknot.com' },
   { host: 'zola.com' },
   { host: 'withjoy.com' },
-  { host: 'google.com', pathPrefix: '/maps' },
-  { host: 'apple.com', pathPrefix: '/maps' },
+  // Maps only, on the pinned hosts: never google.com/search, docs.google.com, or apple.com/iphone.
+  { host: 'www.google.com', pathPrefix: '/maps/', exact: true },
+  { host: 'maps.google.com', exact: true },
+  { host: 'www.apple.com', pathPrefix: '/maps/', exact: true },
+  { host: 'maps.apple.com', exact: true },
   { host: 'opentable.com' },
   { host: 'resy.com' },
   // skyscanner.* — country TLDs (skyscanner.com, .net, .co.uk, .de, .com.au, …)
@@ -30,6 +36,7 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
 
 function hostMatches(hostname: string, entry: AllowedHost): boolean {
   if (entry.host instanceof RegExp) return entry.host.test(hostname);
+  if (entry.exact) return hostname === entry.host;
   return hostname === entry.host || hostname.endsWith(`.${entry.host}`);
 }
 
@@ -52,8 +59,6 @@ export function assertAllowedRedirect(url: string | URL): Result<URL, Capability
     return err(new CapabilityError('forbidden', 'This link cannot be opened from this site.'));
   }
   const hostname = parsed.hostname.toLowerCase();
-  // Google/Apple maps also live on maps.google.com / maps.apple.com without the /maps prefix.
-  if (hostname === 'maps.google.com' || hostname === 'maps.apple.com') return ok(parsed);
   for (const entry of ALLOWED_REDIRECT_HOSTS) {
     if (!hostMatches(hostname, entry)) continue;
     if (entry.pathPrefix && !parsed.pathname.startsWith(entry.pathPrefix)) continue;
