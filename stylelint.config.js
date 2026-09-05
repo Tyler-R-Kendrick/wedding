@@ -1,7 +1,7 @@
 /** @type {import('stylelint').Config} */
-export default {
+const config = {
   extends: ['stylelint-config-standard'],
-  ignoreFiles: ['node_modules/**', 'dist/**', '.astro/**', '.next/**', 'design/generated/**'],
+  ignoreFiles: ['node_modules/**', 'dist/**', '.astro/**', '.next/**', '.data/**', 'coverage/**', 'design/generated/**'],
   rules: {
     // Tailwind v4 / modern CSS at-rules the standard config does not know about.
     'at-rule-no-unknown': [
@@ -24,3 +24,5 @@ export default {
     'custom-property-pattern': null,
   },
 };
+
+export default config;

@@ -16,7 +16,11 @@
       "docs/**",
       ".claude/**",
       "scripts/**",
-      "tests/**"
+      "tests/**",
+      ".next/**",
+      "src/db/migrations/**",
+      ".data/**",
+      "coverage/**"
     ],
     "ignoreValues": []
   }
