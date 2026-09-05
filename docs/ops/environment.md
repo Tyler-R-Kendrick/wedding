@@ -42,6 +42,9 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
 | `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `EMBEDDINGS_PROVIDER` (`voyage`\|`openai`) | unset -> hashed mock | embeddings | no |
+| `MEDIA_AI_PROVIDER` (`mock`\|`anthropic`) | unset -> Anthropic vision when `ANTHROPIC_API_KEY` is set, else the deterministic mock | media-ai (captions, tags, venue class) | no |
+| `BIOMETRIC_VAULT_KEY` | unset; derived from `CONFIRMATION_SECRET` outside production (with a warning). **Required in production before `FLAG_BIOMETRICS_ENABLED` can seal anything**; 32+ chars, from a secret manager | biometric vault (AES-256-GCM), separate from every other secret | no |
+| `BIOMETRIC_RETENTION_DAYS` | `365` | `biometric.sweep`: request deletion of enrolments older than this. `TODO(Tyler & Sara)`: counsel to confirm the schedule | no |
 | `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
