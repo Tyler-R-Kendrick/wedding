@@ -16,6 +16,7 @@
     "test:unit": "vitest run --project unit --project ui",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test tests/e2e",
+    "test:security": "playwright test tests/security",
     "test:a11y": "playwright test tests/a11y.spec.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --conditions=react-server --import tsx src/db/migrate.ts",
