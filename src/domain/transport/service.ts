@@ -218,7 +218,7 @@ export async function claimBenefit(d: ClaimDeps): Promise<Result<ClaimOutcome, C
     target: { type: 'transportation_claim', id: claim.id },
     outcome: 'success',
     requestId: d.requestId,
-    metadata: { entitlementId: entitlement.id, provider: d.provider.name, redemptionKind: updated.redemptionKind, providerRef: v.providerRef },
+    metadata: { entitlementId: entitlement.id, provider: d.provider.name, issuedAs: updated.redemptionKind, providerRef: v.providerRef },
   });
   await recordExternalAction(d.db, d.audit, {
     kind: 'transport_claim',
@@ -229,7 +229,7 @@ export async function claimBenefit(d: ClaimDeps): Promise<Result<ClaimOutcome, C
     url: link,
     surface: d.surface,
     requestId: d.requestId,
-    metadata: { entitlementId: entitlement.id, redemptionKind: updated.redemptionKind },
+    metadata: { entitlementId: entitlement.id, issuedAs: updated.redemptionKind },
   });
   return outcomeFor(updated, d);
 }

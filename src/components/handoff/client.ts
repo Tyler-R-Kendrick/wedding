@@ -29,10 +29,12 @@ export const newIdempotencyKey = (): string => newId();
 
 /** Records a handoff click without blocking navigation; the link itself works without JS. */
 export function recordHandoff(capability: string, input: Record<string, unknown>): void {
-  const body = JSON.stringify({ input });
-  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    navigator.sendBeacon(`/api/capabilities/${capability}`, new Blob([body], { type: 'application/json' }));
-    return;
-  }
-  void callCapability(capability, { input });
+  // keepalive lets the request finish while the new tab opens; same-origin JSON so the CSRF check passes for signed-in guests.
+  void fetch(`/api/capabilities/${capability}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    keepalive: true,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ input }),
+  }).catch(() => undefined);
 }

@@ -1,4 +1,5 @@
-import { err, ok } from '@/contracts/result';
+import type { ProviderFailure } from '@/contracts/providers';
+import { err, ok, type Result } from '@/contracts/result';
 import { randomToken } from '@/lib/crypto';
 import { failure, okConfig, upHealth } from '../base';
 import { installedManualCodeSource, type ManualCodeSource, type TransportBenefitProvider, type VoucherClaim, type VoucherClaimRequest } from './types';
@@ -18,7 +19,7 @@ export class MockTransportBenefit implements TransportBenefitProvider {
   async health() {
     return upHealth();
   }
-  async createVoucherClaim(req: VoucherClaimRequest) {
+  async createVoucherClaim(req: VoucherClaimRequest): Promise<Result<VoucherClaim, ProviderFailure>> {
     const existing = claims().get(req.claimId);
     if (existing) return ok(existing);
     const providerRef = `mockref_${randomToken(6)}`;
@@ -31,7 +32,7 @@ export class MockTransportBenefit implements TransportBenefitProvider {
     claims().set(req.claimId, claim);
     return ok(claim);
   }
-  async getRedemptionLink(input: { providerRef: string }) {
+  async getRedemptionLink(input: { providerRef: string }): Promise<Result<{ url: string; expiresAt?: string }, ProviderFailure>> {
     const claim = [...claims().values()].find((c) => c.providerRef === input.providerRef);
     if (!claim?.redemptionLink) return err(failure(this.name, 'not_found', 'Voucher not found.'));
     return ok({ url: claim.redemptionLink, expiresAt: claim.expiresAt });
@@ -61,7 +62,7 @@ export class ManualCodeTransportBenefit implements TransportBenefitProvider {
   async health() {
     return upHealth(this.source() ? 'code source installed' : 'no code source');
   }
-  async createVoucherClaim(req: VoucherClaimRequest) {
+  async createVoucherClaim(req: VoucherClaimRequest): Promise<Result<VoucherClaim, ProviderFailure>> {
     const source = this.source();
     const code = source ? await source.takeNext(req.claimId, { program: req.program, entitlementId: req.entitlementId, guestId: req.guestId }) : null;
     if (!code) return err(failure(this.name, 'not_found', 'No ride codes are available right now. Please ask us for help.'));
