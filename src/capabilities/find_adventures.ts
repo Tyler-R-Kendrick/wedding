@@ -6,7 +6,7 @@ import type { Db } from '@/db/client';
 import { RECOMMENDATION_CATEGORIES } from '@/db/schema/content';
 import { findRecommendations, getRecommendation } from '@/domain/adventures/repo';
 import { createReadContext } from '@/domain/content/read-context';
-import { recommendationCardSchema } from '@/domain/content/views';
+import { recommendationCardSchema, recommendationSummarySchema } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
 import { requireService } from './services';
 
@@ -32,7 +32,7 @@ const output = z.object({
   items: z.array(recommendationCardSchema),
   plan: z
     .object({
-      stops: z.array(z.object({ recommendation: recommendationCardSchema, minutes: z.number().int() })),
+      stops: z.array(z.object({ recommendation: recommendationSummarySchema, minutes: z.number().int() })),
       totalMinutes: z.number().int(),
       skippedForTime: z.array(z.string()),
     })
@@ -54,7 +54,7 @@ export const findAdventures = defineCapability<z.infer<typeof input>, FindAdvent
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 16_000,
+  maxOutputChars: 32_000,
   async handler(ctx, i) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
@@ -70,7 +70,7 @@ export const findAdventures = defineCapability<z.infer<typeof input>, FindAdvent
       data: {
         route: ROUTES.share,
         items,
-        ...(plan ? { plan: { stops: plan.stops.map((s) => ({ recommendation: s.item, minutes: s.minutes })), totalMinutes: plan.totalMinutes, skippedForTime: plan.skippedForTime } } : {}),
+        ...(plan ? { plan: { stops: plan.stops.map(({ item: { interests: _i, ...recommendation }, minutes }) => ({ recommendation, minutes })), totalMinutes: plan.totalMinutes, skippedForTime: plan.skippedForTime } } : {}),
       },
       sources,
     });

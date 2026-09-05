@@ -97,7 +97,7 @@ export const SEED_SOURCES: readonly SeedSource[] = [
     sourceType: 'official-web',
     title: 'Illinois DNR: Starved Rock State Park',
     canonicalUrl: 'https://dnr.illinois.gov/parks/park.starvedrock.html',
-    verifiedAt: '2026-09-05T00:00:00.000Z',
+    verifiedAt: '2026-09-05T13:30:00.000Z',
     trustClass: 'EXTERNAL_DATA',
     notes: 'Official state page for the park where the couple first said "I love you" (trail, date, wording unknown). Link-checked 2026-09-05 (HTTP 200).',
   },

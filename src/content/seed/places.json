@@ -24,7 +24,7 @@
     "sourceKey": "caa-web",
     "sourceType": "official-web",
     "sourceUrl": "https://www.chicagoathletichotel.com/chicago-neighborhoods/millennium-park/",
-    "verifiedAt": "2026-09-05T00:00:00.000Z",
+    "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
     "visibility": "public"
@@ -39,7 +39,7 @@
     "sourceKey": "starved-rock-web",
     "sourceType": "official-web",
     "sourceUrl": "https://dnr.illinois.gov/parks/park.starvedrock.html",
-    "verifiedAt": "2026-09-05T00:00:00.000Z",
+    "verifiedAt": "2026-09-05T13:30:00.000Z",
     "trustClass": "EXTERNAL_DATA",
     "editedBy": "seed:link-check-2026-09-05",
     "visibility": "public"

@@ -43,7 +43,7 @@ export const getVenueFacts = defineCapability<z.infer<typeof input>, ExploreCaaP
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 16_000,
+  maxOutputChars: 32_000,
   async handler(ctx, i) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);

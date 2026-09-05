@@ -1,0 +1,94 @@
+/*
+ * Provenance UI (ADR-0011): source badges, freshness badges, and typed placeholder blocks.
+ * Tokens only. Every color falls back to a variable the foundation already defines.
+ */
+.prov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+  margin: var(--spacing-sm, 8px) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.prov__badge {
+  display: inline-flex;
+  gap: var(--spacing-xs, 4px);
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.prov__badge--ok {
+  border-color: var(--color-secondary, var(--color-primary));
+  color: var(--color-secondary, var(--color-primary));
+}
+
+.prov__badge--warn {
+  border-color: var(--color-tertiary, var(--color-primary));
+  color: var(--color-tertiary, var(--color-primary));
+}
+
+.prov__badge--bad {
+  border-color: var(--color-error, var(--color-primary));
+  color: var(--color-error, var(--color-primary));
+}
+
+.prov__badge--muted {
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.prov__caveat {
+  flex-basis: 100%;
+}
+
+.prov a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.placeholder {
+  margin: var(--spacing-md, 16px) 0;
+  padding: var(--spacing-md, 16px);
+  border: 1px dashed var(--color-tertiary, var(--color-primary));
+  background: var(--color-neutral-variant, var(--color-neutral));
+  color: var(--color-on-surface, var(--color-primary));
+}
+
+.placeholder__label {
+  display: block;
+  margin-bottom: var(--spacing-xs, 4px);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-tertiary, var(--color-primary));
+}
+
+.placeholder__hint {
+  margin: 0;
+  font-style: italic;
+}
+
+.placeholder--inline {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 8px;
+}
+
+.placeholder--inline .placeholder__label {
+  display: inline;
+  margin: 0 var(--spacing-xs, 4px) 0 0;
+}
+
+.placeholder--inline .placeholder__hint {
+  display: inline;
+}

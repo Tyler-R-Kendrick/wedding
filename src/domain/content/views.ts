@@ -111,6 +111,22 @@ export const recommendationCardSchema = z.object({
 });
 export type RecommendationCard = z.infer<typeof recommendationCardSchema>;
 
+/** Compact card for itinerary stops and composed plans (the full card lives on the recommendation page). */
+export const recommendationSummarySchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  href: z.string(),
+  title: z.string(),
+  category: z.enum(RECOMMENDATION_CATEGORIES),
+  what: textBlockSchema,
+  durationMinutes: z.number().int().nullable(),
+  kidFriendly: z.boolean().nullable(),
+  draft: z.boolean(),
+  placeholder: z.boolean(),
+  placeName: z.string().optional(),
+});
+export type RecommendationSummary = z.infer<typeof recommendationSummarySchema>;
+
 export const adventureCardSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -142,7 +158,7 @@ export const adventureDetailSchema = adventureCardSchema.extend({
 export type AdventureDetail = z.infer<typeof adventureDetailSchema>;
 
 export const itineraryStopViewSchema = z.object({
-  recommendation: recommendationCardSchema,
+  recommendation: recommendationSummarySchema,
   minutes: z.number().int().optional(),
   note: z.string().optional(),
 });
