@@ -56,34 +56,51 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
     const household = await getHousehold(db, target.householdId);
     if (!household) return err(new CapabilityError('not_found', 'We could not find that person on the invitation.'));
 
-    // Authority over the household: same household, manager of it, or holder of its live link.
-    let householdAccess = household.id === principal.householdId || principal.actsFor.includes(target.id as never);
-    if (!householdAccess && i.token) {
+    const deny = async (reason: string, error: CapabilityError) => {
+      await ctx.audit.record({ actor: actorOf(ctx), action: 'identity.bound', target: { type: 'guest', id: target.id }, outcome: 'denied', requestId: ctx.requestId, metadata: { reason, viaToken: !!i.token } });
+      return err(error);
+    };
+    const isChild = target.kind === 'child' || target.isMinor;
+    if (isChild) return deny('child', new CapabilityError('forbidden', 'Children are included through their household, and do not sign in themselves.'));
+
+    // Household authority comes first, so an outsider learns nothing about who has claimed.
+    const sameHousehold = household.id === principal.householdId;
+    const selfBind = !!target.email && target.email === user.email;
+    let tokenAccess = false;
+    if (!sameHousehold && selfBind && i.token) {
       const invitation = await findInvitationByToken(db, i.token);
       const lifecycle = invitation ? invitationLifecycle(invitation, ctx.now) : 'revoked';
-      householdAccess = !!invitation && invitation.householdId === household.id && (lifecycle === 'active' || lifecycle === 'claimed');
+      tokenAccess = !!invitation && invitation.householdId === household.id && (lifecycle === 'active' || lifecycle === 'claimed');
     }
-    if (!householdAccess) return err(new CapabilityError('forbidden', 'That person is on a different invitation. Open their invitation link to continue.'));
+    if (!sameHousehold && !tokenAccess) return deny('foreign_household', new CapabilityError('forbidden', 'That person is on a different invitation. Open their invitation link to continue.'));
 
     const existing = await activeBindingForGuest(db, target.id);
     if (existing && existing.authIdentityId !== principal.authIdentityId) {
-      return err(new CapabilityError('conflict', 'That person has already claimed their invitation with another email. If that’s wrong, please get in touch with Sara and Tyler.'));
+      return deny('bound_elsewhere', new CapabilityError('conflict', 'That person has already claimed their invitation with another email. If that’s wrong, please get in touch with Sara and Tyler.'));
     }
-    const isChild = target.kind === 'child' || target.isMinor;
-    if (isChild) return err(new CapabilityError('forbidden', 'Children are included through their household, and do not sign in themselves.'));
-    if (target.email && target.email === user.email) {
+
+    // Self-bind (shared inbox): the member's own address is this verified inbox. A live link for
+    // their household may unlock this — and only this — across households.
+    if (selfBind) {
       const bound = existing ? ok(existing) : await bindIdentity(db, { authIdentityId: principal.authIdentityId, guestId: target.id, role: 'self', claimMethod: 'otp', invitationId: null, actor: actorOf(ctx), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
       if (!bound.ok) return err(bound.error);
       await db.update(authSessions).set({ activeGuestId: target.id }).where(eq(authSessions.id, principal.sessionId));
       return ok({ data: { status: 'bound', guestId: target.id, displayName: guestDisplayName(target), role: 'self' }, sources: [] });
     }
-    if (target.email && target.email !== user.email) {
-      return err(new CapabilityError('forbidden', 'That person has their own email on the invitation — they can sign in with it, or ask Sara and Tyler to update it.'));
+    if (target.email) {
+      return deny('own_inbox', new CapabilityError('forbidden', 'That person has their own email on the invitation — they can sign in with it, or ask Sara and Tyler to update it.'));
     }
-    // No inbox of their own: this person manages them.
+
+    // No inbox of their own: managing them is a household-manager act. A link never grants it
+    // (review B2): same household, and either you are the household manager or you already
+    // manage them explicitly (or nobody does and the household has no manager).
+    const isManager = principal.guestId === household.managerGuestId;
+    const alreadyMine = target.managedByGuestId === principal.guestId;
+    const unmanaged = target.managedByGuestId === null && household.managerGuestId === null;
+    if (!isManager && !alreadyMine && !unmanaged) return deny('not_manager', new CapabilityError('forbidden', 'Only your household manager can act for someone without their own email. Ask them, or get in touch with Sara and Tyler.'));
     const selves = (await activeBindingsForIdentity(db, principal.authIdentityId)).filter((b) => b.role === 'self').map((b) => b.guestId);
-    if (!selves.includes(principal.guestId)) return err(new CapabilityError('forbidden', 'Sign in as yourself first.'));
-    await db.update(guests).set({ managedByGuestId: principal.guestId, updatedAt: ctx.now }).where(eq(guests.id, target.id));
+    if (!selves.includes(principal.guestId)) return deny('not_self', new CapabilityError('forbidden', 'Sign in as yourself first.'));
+    if (!alreadyMine) await db.update(guests).set({ managedByGuestId: principal.guestId, updatedAt: ctx.now }).where(eq(guests.id, target.id));
     await ctx.audit.record({ actor: actorOf(ctx), action: 'identity.bound', target: { type: 'guest', id: target.id }, outcome: 'success', requestId: ctx.requestId, metadata: { role: 'managed_by', managerGuestId: principal.guestId } });
     return ok({ data: { status: 'managed', guestId: target.id, displayName: guestDisplayName(target), managerGuestId: principal.guestId }, sources: [] });
   },
