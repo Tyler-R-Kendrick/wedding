@@ -57,7 +57,8 @@ export const draftRsvp = defineCapability<DraftRsvpInput, DraftRsvpOutput>({
     if (!validated.ok) return err(validated.error);
     const submission = submitInputSchema.parse(validated.value);
     const proposal = buildProposal(submission, namesFor(hc));
-    const issued = confirmation.issue({ capability: 'submit_rsvp', principalRef: toPrincipalRef(ctx.principal), payloadHash: stableHash(submission) }, { now: ctx.now });
+    // Bound to the issuing surface: only a token drafted on the website can be redeemed there (assistants' drafts are read-only proposals).
+    const issued = confirmation.issue({ capability: 'submit_rsvp', principalRef: toPrincipalRef(ctx.principal), payloadHash: stableHash(submission), surface: ctx.surface ?? 'ui' }, { now: ctx.now });
     return ok({
       data: { proposal, submission, window: hc.window },
       sources: [],

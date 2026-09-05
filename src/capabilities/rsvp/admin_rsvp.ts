@@ -10,7 +10,7 @@ import { computeRsvpWindow, getRsvpSettings, listAllEntitlements, listEvents, li
 import { buildProposal, findResponse, listAllGuests, listAllNeeds, listAllResponses, listHouseholds, loadHouseholdRsvpContext, persistHouseholdRsvp } from '@/domain/rsvp';
 import { assertActsFor } from '@/policy/entitlements';
 import { namesFor, validateFor } from './context';
-import { idSchema, plusOnePolicySchema, requireIdempotencyKey, windowSchema } from './shared';
+import { idSchema, plusOnePolicySchema, windowSchema } from './shared';
 import type { Db } from '@/db/client';
 
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
@@ -36,12 +36,11 @@ const overviewOutput = z.object({
   window: windowSchema,
   events: z.array(z.object({ id: z.string(), name: z.string(), hasMeal: z.boolean(), mealOptionsVersion: z.number(), invited: z.number(), accepted: z.number(), declined: z.number(), pending: z.number(), plusOnes: z.number(), staleMeals: z.number() })),
   rows: z.array(rowSchema),
-  /** Present only when includeNeeds was true. */
-  needs: z.array(z.object({ guestId: z.string(), displayName: z.string(), dietary: z.string().nullable(), accessibility: z.string().nullable() })).optional(),
 });
+const needsRowSchema = z.object({ guestId: z.string(), displayName: z.string(), householdName: z.string(), dietary: z.string().nullable(), accessibility: z.string().nullable() });
 export type AdminRsvpOverview = z.infer<typeof overviewOutput>;
 
-async function buildOverview(db: Db, now: Date, includeNeeds: boolean): Promise<AdminRsvpOverview> {
+async function buildOverview(db: Db, now: Date): Promise<AdminRsvpOverview> {
   const [evs, settings, lifecycle, guests, households, ents, responses] = await Promise.all([listEvents(db), getRsvpSettings(db), getLifecycle(db), listAllGuests(db), listHouseholds(db), listAllEntitlements(db), listAllResponses(db)]);
   const meals = await listMealOptionsForEvents(db, evs.map((e) => e.id));
   const mealLabel = new Map(meals.map((m) => [m.id, m.label]));
@@ -88,20 +87,15 @@ async function buildOverview(db: Db, now: Date, includeNeeds: boolean): Promise<
       staleMeals: mine.filter((r) => r.mealStale).length,
     };
   });
-  const out: AdminRsvpOverview = { window: computeRsvpWindow(settings, lifecycle?.state ?? 'TEASER', now), events: eventsSummary, rows };
-  if (includeNeeds) {
-    const needs = await listAllNeeds(db);
-    out.needs = needs.map((n) => ({ guestId: n.guestId, displayName: guestById.get(n.guestId)?.displayName ?? 'Unknown guest', dietary: n.dietary, accessibility: n.accessibility }));
-  }
-  return out;
+  return { window: computeRsvpWindow(settings, lifecycle?.state ?? 'TEASER', now), events: eventsSummary, rows };
 }
 
-const overviewInput = z.object({ includeNeeds: z.boolean().optional() }).optional();
+const overviewInput = z.object({}).optional();
 
 export const adminRsvpOverview = defineCapability<z.infer<typeof overviewInput>, AdminRsvpOverview>({
   name: 'admin_rsvp_overview',
   title: 'RSVP overview (admin)',
-  description: 'Every invited guest × event with their answer, meal, plus-one, and freshness. Dietary/accessibility notes are included only with includeNeeds=true, which is audited.',
+  description: 'Every invited guest × event with their answer, meal, plus-one, and freshness. Never includes dietary/accessibility notes (see admin_export_needs).',
   kind: 'read',
   auth: 'admin',
   requires: ['admin_guest_ops'],
@@ -109,14 +103,9 @@ export const adminRsvpOverview = defineCapability<z.infer<typeof overviewInput>,
   exposure: ADMIN_EXPOSURE,
   input: overviewInput,
   output: overviewOutput,
-  async handler(ctx, i) {
+  async handler(ctx) {
     const { db } = appServices(ctx);
-    const includeNeeds = i?.includeNeeds === true;
-    const data = await buildOverview(db, ctx.now, includeNeeds);
-    if (includeNeeds) {
-      await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'rsvp.needs_exported', target: { type: 'guest_needs', id: 'all' }, outcome: 'success', requestId: ctx.requestId, metadata: { rows: data.needs?.length ?? 0, format: 'json' } });
-    }
-    return ok({ data, sources: [] });
+    return ok({ data: await buildOverview(db, ctx.now), sources: [] });
   },
 });
 
@@ -126,17 +115,12 @@ const csvEscape = (v: string | number | boolean | null | undefined): string => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export function overviewToCsv(o: AdminRsvpOverview, includeNeeds: boolean): string {
-  const needsByGuest = new Map((o.needs ?? []).map((n) => [n.guestId, n]));
-  const header = ['household', 'guest', 'event', 'status', 'meal', 'meal_stale', 'plus_one', 'plus_one_name', 'plus_one_meal', 'updated_at', 'via', ...(includeNeeds ? ['dietary', 'accessibility'] : [])];
+export function overviewToCsv(o: AdminRsvpOverview): string {
+  const header = ['household', 'guest', 'event', 'status', 'meal', 'meal_stale', 'plus_one', 'plus_one_name', 'plus_one_meal', 'updated_at', 'via'];
   const lines = [header.join(',')];
   for (const r of o.rows) {
-    const n = includeNeeds ? needsByGuest.get(r.guestId) : undefined;
     lines.push(
-      [
-        r.householdName, r.displayName, r.eventName, r.status ?? 'pending', r.mealLabel ?? '', r.mealStale ? 'yes' : '', r.plusOne?.attending ? 'yes' : '', r.plusOne?.name ?? '', r.plusOne?.mealLabel ?? '', r.updatedAt ?? '', r.submittedVia ?? '',
-        ...(includeNeeds ? [n?.dietary ?? '', n?.accessibility ?? ''] : []),
-      ]
+      [r.householdName, r.displayName, r.eventName, r.status ?? 'pending', r.mealLabel ?? '', r.mealStale ? 'yes' : '', r.plusOne?.attending ? 'yes' : '', r.plusOne?.name ?? '', r.plusOne?.mealLabel ?? '', r.updatedAt ?? '', r.submittedVia ?? '']
         .map(csvEscape)
         .join(','),
     );
@@ -144,29 +128,64 @@ export function overviewToCsv(o: AdminRsvpOverview, includeNeeds: boolean): stri
   return lines.join('\r\n') + '\r\n';
 }
 
-const exportInput = z.object({ includeNeeds: z.boolean().optional() }).optional();
-const exportOutput = z.object({ filename: z.string(), csv: z.string(), rows: z.number(), includesNeeds: z.boolean() });
+export function needsToCsv(rows: z.infer<typeof needsRowSchema>[]): string {
+  const lines = ['household,guest,dietary,accessibility'];
+  for (const n of rows) lines.push([n.householdName, n.displayName, n.dietary ?? '', n.accessibility ?? ''].map(csvEscape).join(','));
+  return lines.join('\r\n') + '\r\n';
+}
 
-export const adminExportRsvp = defineCapability<z.infer<typeof exportInput>, z.infer<typeof exportOutput>>({
+const exportOutput = z.object({ filename: z.string(), csv: z.string(), rows: z.number() });
+
+export const adminExportRsvp = defineCapability<z.infer<typeof overviewInput>, z.infer<typeof exportOutput>>({
   name: 'admin_export_rsvp',
   title: 'Export RSVPs as CSV (admin)',
-  description: 'Planner-friendly CSV of every guest × event answer. Dietary/accessibility columns appear only with includeNeeds=true (explicit, audited).',
+  description: 'Planner-friendly CSV of every guest × event answer. Never includes dietary/accessibility notes; use admin_export_needs for those.',
   kind: 'read',
   auth: 'admin',
   requires: ['admin_guest_ops'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: ADMIN_EXPOSURE,
-  input: exportInput,
+  input: overviewInput,
   output: exportOutput,
-  async handler(ctx, i) {
+  async handler(ctx) {
     const { db } = appServices(ctx);
-    const includeNeeds = i?.includeNeeds === true;
-    const data = await buildOverview(db, ctx.now, includeNeeds);
-    if (includeNeeds) {
-      await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'rsvp.needs_exported', target: { type: 'guest_needs', id: 'all' }, outcome: 'success', requestId: ctx.requestId, metadata: { rows: data.needs?.length ?? 0, format: 'csv' } });
-    }
+    const data = await buildOverview(db, ctx.now);
     const stamp = ctx.now.toISOString().slice(0, 10);
-    return ok({ data: { filename: `rsvp-${stamp}${includeNeeds ? '-with-needs' : ''}.csv`, csv: overviewToCsv(data, includeNeeds), rows: data.rows.length, includesNeeds: includeNeeds }, sources: [] });
+    return ok({ data: { filename: `rsvp-${stamp}.csv`, csv: overviewToCsv(data), rows: data.rows.length }, sources: [] });
+  },
+});
+
+/* --------------------------------------------------------------- needs ------ */
+/**
+ * The ONLY capability that reads guest_needs for admins. Callers must pass the explicit
+ * `includeNeeds: true` flag; every invocation is a `capability.invoked` audit row naming this
+ * capability, which is the access trail for sensitive data (no needs text in metadata).
+ */
+const needsInput = z.object({ includeNeeds: z.literal(true) });
+const needsOutput = z.object({ filename: z.string(), csv: z.string(), rows: z.array(needsRowSchema) });
+
+export const adminExportNeeds = defineCapability<z.infer<typeof needsInput>, z.infer<typeof needsOutput>>({
+  name: 'admin_export_needs',
+  title: 'Export dietary and accessibility notes (admin)',
+  description: 'Sensitive: dietary, allergy and accessibility notes per guest, for the caterer and planner only. Requires includeNeeds=true; every call is audited by name.',
+  kind: 'read',
+  auth: 'admin',
+  requires: ['admin_guest_ops'],
+  annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
+  exposure: ADMIN_EXPOSURE,
+  input: needsInput,
+  output: needsOutput,
+  async handler(ctx) {
+    const { db } = appServices(ctx);
+    const [needs, guests, households] = await Promise.all([listAllNeeds(db), listAllGuests(db), listHouseholds(db)]);
+    const guestById = new Map(guests.map((g) => [g.id, g]));
+    const hh = new Map(households.map((h) => [h.id, h.name]));
+    const rows = needs
+      .filter((n) => n.dietary || n.accessibility)
+      .map((n) => ({ guestId: n.guestId, displayName: guestById.get(n.guestId)?.displayName ?? 'Unknown guest', householdName: hh.get(guestById.get(n.guestId)?.householdId ?? '') ?? '', dietary: n.dietary, accessibility: n.accessibility }))
+      .sort((a, b) => a.householdName.localeCompare(b.householdName) || a.displayName.localeCompare(b.displayName));
+    const stamp = ctx.now.toISOString().slice(0, 10);
+    return ok({ data: { filename: `guest-needs-${stamp}.csv`, csv: needsToCsv(rows), rows }, sources: [] });
   },
 });
 
@@ -196,8 +215,6 @@ export const adminOverrideRsvp = defineCapability<z.infer<typeof overrideInput>,
   input: overrideInput,
   output: overrideOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const owns = assertActsFor(ctx.principal, i.guestId as never);
     if (!owns.ok) return err(owns.error);
     const { db } = appServices(ctx);
@@ -225,4 +242,4 @@ export const adminOverrideRsvp = defineCapability<z.infer<typeof overrideInput>,
   },
 });
 
-export const adminRsvpCapabilities = [adminRsvpOverview, adminExportRsvp, adminOverrideRsvp];
+export const adminRsvpCapabilities = [adminRsvpOverview, adminExportRsvp, adminExportNeeds, adminOverrideRsvp];

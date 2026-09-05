@@ -20,13 +20,6 @@ export function requireGuestPrincipal(ctx: CapabilityContext): Result<GuestPrinc
   return ok(p);
 }
 
-/** Mutations must carry an idempotency key (tightened pipeline rule; enforced here until the pipeline lands it). */
-export function requireIdempotencyKey(ctx: CapabilityContext): Result<string, CapabilityError> {
-  const key = ctx.idempotencyKey;
-  if (!key || key.length < 8) return err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues: [{ path: 'idempotencyKey', message: 'required' }] }));
-  return ok(key);
-}
-
 export const windowSchema = z.object({
   open: z.boolean(),
   reason: z.enum(['manual_open', 'manual_closed', 'lifecycle', 'deadline_passed', 'scheduled']),

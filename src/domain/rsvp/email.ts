@@ -52,10 +52,8 @@ export async function deliverRsvpConfirmation(db: Db, outboxId: string, now: Dat
   const sent = await provider.sendMessage({ to: recipient.email, subject: row.subject, text: row.body });
   if (!sent.ok) {
     // Provider failures carry guest-safe messages; the raw cause never reaches the row.
-    const failed = await update({ status: 'failed', lastError: `${sent.error.provider}: ${sent.error.class}`, attempts: row.attempts + 1 });
+    await update({ status: 'failed', lastError: `${sent.error.provider}: ${sent.error.class}`, attempts: row.attempts + 1 });
     throw new Error(`rsvp confirmation delivery failed (${sent.error.class})`); // lets the job queue retry with backoff
-    // eslint-disable-next-line no-unreachable
-    return failed;
   }
   return update({ status: 'sent', providerMessageId: sent.value.messageId, sentAt: now, attempts: row.attempts + 1, lastError: null });
 }
@@ -66,9 +64,7 @@ export function registerRsvpJobs(): void {
   if (registered) return;
   registered = true;
   registerJobHandler<{ outboxId: string }>(RSVP_CONFIRMATION_JOB, async (payload, _job, ctx) => {
-    const { getDb } = await import('@/db/client');
-    const db = await getDb();
-    const row = await deliverRsvpConfirmation(db, payload.outboxId, ctx.now);
+    const row = await deliverRsvpConfirmation(ctx.db, payload.outboxId, ctx.now);
     ctx.logger.info({ outboxId: payload.outboxId, status: row?.status }, 'rsvp confirmation processed');
   });
 }

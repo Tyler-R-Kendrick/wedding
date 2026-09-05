@@ -8,13 +8,14 @@ import { RSVP_STATUSES } from '@/db/schema';
 import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { listAllGuests, listAllResponses, listHouseholds } from '@/domain/rsvp';
 import { applySeatingImport, assignSeats, deleteTable, draftSnapshot, getLivePublication, listAssignments, listFloorPlans, listPublications, listTables, parseSeatingCsv, publishSeating, snapshotDiffers, unpublishSeating, upsertTable } from '@/domain/seating';
-import { idSchema, requireIdempotencyKey } from '@/capabilities/rsvp/shared';
+import { idSchema } from '@/capabilities/rsvp/shared';
 import { floorPlanViewSchema } from './get_my_table';
 
 const ADMIN_ANNOTATIONS = { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true } as const;
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
 
 /* ------------------------------------------------------------ overview ------ */
+const overviewInput = z.object({}).optional();
 const overviewOutput = z.object({
   publication: z.object({ id: z.string(), publishedAt: z.string(), note: z.string().nullable(), tables: z.number(), seated: z.number() }).nullable(),
   draftDiffers: z.boolean(),
@@ -36,7 +37,7 @@ const overviewOutput = z.object({
 });
 export type AdminSeatingOverview = z.infer<typeof overviewOutput>;
 
-export const adminSeatingOverview = defineCapability<z.infer<typeof z.object({}).optional()>, AdminSeatingOverview>({
+export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInput>, AdminSeatingOverview>({
   name: 'admin_seating_overview',
   title: 'Seating (admin)',
   description: 'The draft seating chart (tables, assignments, unassigned guests), the floor plans, whether the draft differs from the published chart, and publication history.',
@@ -45,7 +46,7 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof z.object({})
   requires: ['admin_guest_ops'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: ADMIN_EXPOSURE,
-  input: z.object({}).optional(),
+  input: overviewInput,
   output: overviewOutput,
   async handler(ctx) {
     const { db } = appServices(ctx);
@@ -106,8 +107,6 @@ export const adminUpsertTable = defineCapability<z.infer<typeof tableInput>, z.i
   input: tableInput,
   output: tableOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     if (i.floorPlanId && i.anchorId) {
       const plan = (await listFloorPlans(db)).find((p) => p.id === i.floorPlanId);
@@ -135,8 +134,6 @@ export const adminDeleteTable = defineCapability<{ id: string }, { deleted: bool
   input: z.object({ id: idSchema }),
   output: z.object({ deleted: z.boolean() }),
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const deleted = await deleteTable(db, i.id);
     if (!deleted) return err(new CapabilityError('not_found', 'That table does not exist.'));
@@ -162,8 +159,6 @@ export const adminAssignSeats = defineCapability<z.infer<typeof assignInput>, { 
   input: assignInput,
   output: z.object({ applied: z.number() }),
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const [tables, assignments, guests] = await Promise.all([listTables(db), listAssignments(db), listAllGuests(db)]);
     const guestIds = new Set(guests.map((g) => g.id));
@@ -208,8 +203,6 @@ export const adminImportSeatingCsv = defineCapability<z.infer<typeof importInput
   input: importInput,
   output: importOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const parsed = parseSeatingCsv(i.csv);
     if (parsed.errors.length) return ok({ data: { applied: 0, createdTables: [], errors: parsed.errors, unresolved: [] }, sources: [] });
@@ -238,8 +231,6 @@ export const adminPublishSeating = defineCapability<{ note?: string | null }, z.
   input: z.object({ note: z.string().max(300).nullable().optional() }),
   output: publishOutput,
   async handler(ctx, i) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const row = await publishSeating(db, { by: toPrincipalRef(ctx.principal), note: i.note ?? null, now: ctx.now });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.published', target: { type: 'seating_publication', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { tables: row.snapshot.tables.length, seated: row.snapshot.assignments.length } });
@@ -261,8 +252,6 @@ export const adminUnpublishSeating = defineCapability<Record<string, never> | un
   input: z.object({}).optional(),
   output: z.object({ unpublished: z.boolean() }),
   async handler(ctx) {
-    const key = requireIdempotencyKey(ctx);
-    if (!key.ok) return err(key.error);
     const { db } = appServices(ctx);
     const row = await unpublishSeating(db, { by: toPrincipalRef(ctx.principal), now: ctx.now });
     if (row) await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.unpublished', target: { type: 'seating_publication', id: row.id }, outcome: 'success', requestId: ctx.requestId });
