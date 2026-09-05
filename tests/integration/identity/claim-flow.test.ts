@@ -69,7 +69,7 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     const f = await seed('cf4');
     const req = expectOk(await call<{ sent: boolean; challenge: string }>('request_otp', { purpose: 'claim', token: f.invitations.okafor.token, guestId: f.guests.chidi }));
     const wrong = expectErr(await call('verify_otp', { challenge: req.data.challenge, code: '000000' }), 'validation');
-    const code = (await import('./harness')).latestCode(f.emails.chidi);
+    const code = await (await import('./harness')).latestCode(f.emails.chidi);
     const ok = await call('verify_otp', { challenge: req.data.challenge, code });
     expect(ok.ok).toBe(true);
     // The challenge is consumed on success, so a replay is refused as a spent challenge (no session, no hint about the code).

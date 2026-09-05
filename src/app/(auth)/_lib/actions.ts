@@ -1,85 +1,90 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { isInternalRoute } from '@/capabilities/routes';
+import { headers } from 'next/headers';
 import type { RegisterPasskeyResult } from '@/capabilities/register_passkey';
 import type { RequestOtpResult } from '@/capabilities/request_otp';
 import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
+import { safeReturnPath } from '@/domain/identity/routes';
 import { getAuth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { clearChallengeCookie, readChallengeCookie, setChallengeCookie } from './challenge-cookie';
+import { errorCode } from './errors';
 import { invokeFromRequest } from './invoke';
 
 /**
  * Server actions for the claim / sign-in / step-up journeys. Every action is a thin adapter:
- * parse the form, invoke the capability, redirect with a short, non-sensitive status code.
- * Progressive enhancement: each works with plain HTML forms and no JavaScript.
+ * parse the form, invoke the capability, redirect with a short error *code* (never text).
+ * The challenge rides in an HttpOnly cookie, never in the URL. Works without JavaScript.
  */
 const str = (fd: FormData, key: string): string => {
   const v = fd.get(key);
   return typeof v === 'string' ? v.trim() : '';
 };
 
-const safeNext = (value: string, fallback: string): string => (value && isInternalRoute(value) ? value : fallback);
-
-const errorParam = (code: string, message?: string) => `error=${encodeURIComponent(code)}${message ? `&m=${encodeURIComponent(message.slice(0, 200))}` : ''}`;
+const withError = (path: string, code: string) => `${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`;
 
 export async function startClaim(formData: FormData): Promise<void> {
   const token = str(formData, 'token');
   const guestId = str(formData, 'guestId');
-  const next = str(formData, 'next');
-  if (!guestId) redirect(`/invite/${encodeURIComponent(token)}?${errorParam('pick')}`);
+  const next = safeReturnPath(str(formData, 'next'), '');
+  const back = `/invite/${encodeURIComponent(token)}`;
+  if (!guestId) redirect(withError(back, 'pick'));
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: 'claim', token, guestId, next: next || undefined });
-  if (!r.ok) redirect(`/invite/${encodeURIComponent(token)}?${errorParam(r.error.code, r.error.message)}`);
-  if (!r.value.data.sent) redirect(`/invite/${encodeURIComponent(token)}?${errorParam('no_email', r.value.data.recovery.message)}`);
+  if (!r.ok) redirect(withError(back, errorCode(r.error)));
+  if (!r.value.data.sent) redirect(withError(back, 'no_email'));
   const d = r.value.data;
-  redirect(`/claim/verify?c=${encodeURIComponent(d.challenge)}&to=${encodeURIComponent(d.deliveredTo)}${d.deliveredFor ? `&for=${encodeURIComponent(d.deliveredFor)}` : ''}&back=${encodeURIComponent(`/invite/${token}`)}`);
+  await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, for: d.deliveredFor ?? undefined, back, kind: 'claim' });
+  redirect('/claim/verify');
 }
 
 export async function sendSignInCode(formData: FormData): Promise<void> {
   const email = str(formData, 'email');
   const admin = str(formData, 'admin') === '1';
-  const next = str(formData, 'next');
+  const next = safeReturnPath(str(formData, 'next'), '');
   const back = admin ? '/sign-in/admin' : '/sign-in';
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: admin ? 'admin_sign_in' : 'sign_in', email, next: next || undefined });
-  if (!r.ok) redirect(`${back}?${errorParam(r.error.code, r.error.message)}`);
-  if (!r.value.data.sent) redirect(`${back}?${errorParam('no_email', r.value.data.recovery.message)}`);
-  redirect(`/claim/verify?c=${encodeURIComponent(r.value.data.challenge)}&to=${encodeURIComponent(r.value.data.deliveredTo)}&back=${encodeURIComponent(back)}`);
+  if (!r.ok) redirect(withError(back, errorCode(r.error)));
+  if (!r.value.data.sent) redirect(withError(back, 'no_email'));
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, back, kind: admin ? 'admin_sign_in' : 'sign_in' });
+  redirect('/claim/verify');
 }
 
 export async function verifyCode(formData: FormData): Promise<void> {
-  const challenge = str(formData, 'challenge');
   const code = str(formData, 'code').replace(/\s+/g, '');
-  const to = str(formData, 'to');
-  const back = safeNext(str(formData, 'back'), '/sign-in');
-  const retry = `/claim/verify?c=${encodeURIComponent(challenge)}&to=${encodeURIComponent(to)}&back=${encodeURIComponent(back)}`;
-  const r = await invokeFromRequest<SignInOutcome>('verify_otp', { challenge, code });
-  if (!r.ok) redirect(`${retry}&${errorParam(r.error.code, r.error.message)}`);
+  const cookie = await readChallengeCookie();
+  if (!cookie || !['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind)) redirect(withError('/claim/verify', 'expired'));
+  const r = await invokeFromRequest<SignInOutcome>('verify_otp', { challenge: cookie.c, code });
+  if (!r.ok) redirect(withError('/claim/verify', errorCode(r.error)));
+  await clearChallengeCookie();
   const d = r.value.data;
-  if (d.isAdmin && !d.guestId) redirect(safeNext(d.next ?? '', '/admin'));
-  if (!d.guestId) redirect(`/sign-in?${errorParam('unlinked')}`);
-  redirect(safeNext(d.next ?? '', '/claim/welcome'));
-}
-
-export async function stepUpWithCode(formData: FormData): Promise<void> {
-  const challenge = str(formData, 'challenge');
-  const code = str(formData, 'code').replace(/\s+/g, '');
-  const next = safeNext(str(formData, 'next'), '/claim/welcome');
-  const to = str(formData, 'to');
-  const retry = `/step-up?c=${encodeURIComponent(challenge)}&to=${encodeURIComponent(to)}&next=${encodeURIComponent(next)}`;
-  const r = await invokeFromRequest<StepUpResult>('step_up', { method: 'otp', challenge, code });
-  if (!r.ok) redirect(`${retry}&${errorParam(r.error.code, r.error.message)}`);
-  redirect(next);
+  if (d.isAdmin && !d.guestId) redirect(safeReturnPath(d.next, '/admin'));
+  if (!d.guestId) redirect(withError('/sign-in', 'unlinked'));
+  redirect(safeReturnPath(d.next, '/claim/welcome'));
 }
 
 export async function requestStepUpCode(formData: FormData): Promise<void> {
-  const next = safeNext(str(formData, 'next'), '/claim/welcome');
+  const next = safeReturnPath(str(formData, 'next'), '/claim/welcome');
+  const target = `/step-up?next=${encodeURIComponent(next)}`;
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: 'step_up', next });
-  if (!r.ok) redirect(`/step-up?next=${encodeURIComponent(next)}&${errorParam(r.error.code, r.error.message)}`);
-  if (!r.value.data.sent) redirect(`/step-up?next=${encodeURIComponent(next)}&${errorParam('no_email')}`);
-  redirect(`/step-up?c=${encodeURIComponent(r.value.data.challenge)}&to=${encodeURIComponent(r.value.data.deliveredTo)}&next=${encodeURIComponent(next)}`);
+  if (!r.ok) redirect(withError(target, errorCode(r.error)));
+  if (!r.value.data.sent) redirect(withError(target, 'no_email'));
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, kind: 'step_up' });
+  redirect(target);
+}
+
+export async function stepUpWithCode(formData: FormData): Promise<void> {
+  const code = str(formData, 'code').replace(/\s+/g, '');
+  const next = safeReturnPath(str(formData, 'next'), '/claim/welcome');
+  const target = `/step-up?next=${encodeURIComponent(next)}`;
+  const cookie = await readChallengeCookie();
+  if (!cookie || cookie.kind !== 'step_up') redirect(withError(target, 'expired'));
+  const r = await invokeFromRequest<StepUpResult>('step_up', { method: 'otp', challenge: cookie.c, code });
+  if (!r.ok) redirect(withError(target, errorCode(r.error)));
+  await clearChallengeCookie();
+  redirect(next);
 }
 
 export async function claimPerson(formData: FormData): Promise<void> {
@@ -88,22 +93,34 @@ export async function claimPerson(formData: FormData): Promise<void> {
   const r = await invokeFromRequest<ClaimIdentityResult>('claim_identity', { guestId, token: token || undefined });
   if (!r.ok) {
     if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent('/claim/welcome')}`);
-    redirect(`/claim/welcome?${errorParam(r.error.code, r.error.message)}`);
+    redirect(withError('/claim/welcome', errorCode(r.error)));
   }
   redirect('/claim/welcome?switched=1');
 }
 
 export async function updateEmail(formData: FormData): Promise<void> {
-  const email = str(formData, 'email');
-  const challenge = str(formData, 'challenge');
   const code = str(formData, 'code').replace(/\s+/g, '');
-  const r = await invokeFromRequest<UpdateMyContactResult>('update_my_contact', challenge && code ? { email, challenge, code } : { email });
+  const cookie = await readChallengeCookie();
+  if (code && cookie?.kind === 'change_email' && cookie.email) {
+    const r = await invokeFromRequest<UpdateMyContactResult>('update_my_contact', { email: cookie.email, challenge: cookie.c, code });
+    if (!r.ok) {
+      if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent('/claim/welcome?contact=1')}`);
+      redirect(withError('/claim/welcome?contact=1', errorCode(r.error)));
+    }
+    await clearChallengeCookie();
+    redirect('/claim/welcome?contact=done');
+  }
+  const email = str(formData, 'email');
+  const r = await invokeFromRequest<UpdateMyContactResult>('update_my_contact', { email });
   if (!r.ok) {
     if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent('/claim/welcome?contact=1')}`);
-    redirect(`/claim/welcome?contact=1${challenge ? `&c=${encodeURIComponent(challenge)}&email=${encodeURIComponent(email)}` : ''}&${errorParam(r.error.code, r.error.message)}`);
+    redirect(withError('/claim/welcome', errorCode(r.error)));
   }
   const d = r.value.data;
-  if (d.status === 'verification_sent') redirect(`/claim/welcome?contact=1&c=${encodeURIComponent(d.challenge)}&email=${encodeURIComponent(email)}&to=${encodeURIComponent(d.deliveredTo)}`);
+  if (d.status === 'verification_sent') {
+    await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, email, kind: 'change_email' });
+    redirect('/claim/welcome?contact=1');
+  }
   redirect('/claim/welcome?contact=done');
 }
 
@@ -140,5 +157,6 @@ export async function signOut(): Promise<void> {
   } catch {
     // No session: nothing to end.
   }
+  await clearChallengeCookie();
   redirect('/');
 }

@@ -47,13 +47,17 @@ export async function recordOtpAttempt(
   await db.insert(otpAttempts).values({ id: newId(), emailHash: input.emailHash, ipHash: input.ipHash, purpose: input.purpose, kind: input.kind, outcome: input.outcome, at: input.at ?? new Date() });
 }
 
-/** Lockout state for an email hash from the persisted attempt log. */
-export async function getOtpLockout(db: Db, emailHash: string, now: Date = new Date()): Promise<LockoutDecision> {
+/**
+ * Lockout state for an (email, client) pair from the persisted attempt log. Keyed by both so a
+ * stranger cannot lock a guest out of their own inbox (review S10); the per-code attempt cap in
+ * Better Auth remains the per-email guard.
+ */
+export async function getOtpLockout(db: Db, emailHash: string, ipHash: string, now: Date = new Date()): Promise<LockoutDecision> {
   const since = new Date(now.getTime() - OTP_POLICY.lockout.windowMs);
   const rows = await db
     .select({ at: otpAttempts.at })
     .from(otpAttempts)
-    .where(and(eq(otpAttempts.emailHash, emailHash), eq(otpAttempts.kind, 'verify'), eq(otpAttempts.outcome, 'failed'), gt(otpAttempts.at, since)))
+    .where(and(eq(otpAttempts.emailHash, emailHash), eq(otpAttempts.ipHash, ipHash), eq(otpAttempts.kind, 'verify'), eq(otpAttempts.outcome, 'failed'), gt(otpAttempts.at, since)))
     .orderBy(desc(otpAttempts.at))
     .limit(OTP_POLICY.lockout.maxFailures * 2);
   return computeLockout(rows.map((r) => r.at), now);

@@ -16,7 +16,7 @@ describe('step-up', () => {
 
     const req = expectOk(await call<{ sent: boolean; challenge: string }>('request_otp', { purpose: 'step_up' }, { cookie: ana.cookie }));
     expect(req.data.sent).toBe(true);
-    const up = await call<{ status: string; authenticatedAt: string }>('step_up', { method: 'otp', challenge: req.data.challenge, code: latestCode(f.emails.ana) }, { cookie: ana.cookie });
+    const up = await call<{ status: string; authenticatedAt: string }>('step_up', { method: 'otp', challenge: req.data.challenge, code: await latestCode(f.emails.ana) }, { cookie: ana.cookie });
     const fresh = expectOk(up);
     expect(fresh.data.status).toBe('fresh');
     const rotated = cookieFrom(up.sink);
@@ -41,10 +41,10 @@ describe('step-up', () => {
     expect(first.data.status).toBe('verification_sent');
     expect(first.data.deliveredTo).toBe('c•••@e•••.test');
     expectErr(await call('update_my_contact', { email: newEmail, challenge: first.data.challenge, code: '000000' }, { cookie: chidi.cookie }), 'validation');
-    const done = expectOk(await call<{ status: string }>('update_my_contact', { email: newEmail, challenge: first.data.challenge, code: latestCode(newEmail) }, { cookie: chidi.cookie }));
+    const done = expectOk(await call<{ status: string }>('update_my_contact', { email: newEmail, challenge: first.data.challenge, code: await latestCode(newEmail) }, { cookie: chidi.cookie }));
     expect(done.data.status).toBe('updated');
     const req = expectOk(await call<{ sent: boolean; challenge: string }>('request_otp', { purpose: 'sign_in', email: newEmail }));
-    const back = await call<{ guestId: string | null }>('verify_otp', { challenge: req.data.challenge, code: latestCode(newEmail) });
+    const back = await call<{ guestId: string | null }>('verify_otp', { challenge: req.data.challenge, code: await latestCode(newEmail) });
     expect(expectOk(back).data.guestId).toBe(f.guests.chidi);
   });
 });
