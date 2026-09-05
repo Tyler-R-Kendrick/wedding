@@ -1,7 +1,7 @@
 import { adminListGiftLinks } from '@/capabilities/admin_gifts';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
-import { AdminShell, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
+import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ export default async function AdminGiftsPage() {
       ) : (
         <>
           <h2 className={SECTION_TITLE}>What guests see now</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="What guests see now">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -39,9 +39,9 @@ export default async function AdminGiftsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <h2 className={SECTION_TITLE}>Configured rows</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Configured rows">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -69,7 +69,7 @@ export default async function AdminGiftsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <div className="mt-10">
             <AdminCapabilityForm
               capability="admin_upsert_gift_link"

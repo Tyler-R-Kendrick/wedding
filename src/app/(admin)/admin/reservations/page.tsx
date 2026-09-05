@@ -1,7 +1,7 @@
 import { adminListReservationVenues } from '@/capabilities/admin_reservations';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
-import { AdminShell, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
+import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ export default async function AdminReservationsPage() {
       ) : (
         <>
           <h2 className={SECTION_TITLE}>Ladder rung per place</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Ladder rung per place">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -37,9 +37,9 @@ export default async function AdminReservationsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <h2 className={SECTION_TITLE}>Configured rows</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Configured rows">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -69,7 +69,7 @@ export default async function AdminReservationsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <div className="mt-10">
             <AdminCapabilityForm
               capability="admin_upsert_reservation_venue"

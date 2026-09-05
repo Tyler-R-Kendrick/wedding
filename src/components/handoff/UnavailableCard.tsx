@@ -15,7 +15,7 @@ export function UnavailableCard({ heading, message, contactRoute = '/ask-us', no
     <article className="border-t border-primary/20 py-6" data-handoff-rung="unavailable">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h3 className="text-xl">{heading}</h3>
-        <p className="text-[0.75rem] uppercase tracking-[0.14em] text-primary/70">not bookable here yet</p>
+        <p className="text-sm text-primary/70">not bookable here yet</p>
       </div>
       {note ? <p className="mt-2 max-w-[65ch] text-primary/80">{note}</p> : null}
       {placeholder ? (

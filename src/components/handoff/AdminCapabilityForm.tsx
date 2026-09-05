@@ -113,7 +113,7 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
         })}
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-4">
-        <button type="submit" disabled={status.kind === 'busy'} className="inline-flex min-h-11 items-center rounded-full bg-primary px-7 py-3 text-[0.75rem] uppercase tracking-[0.14em] text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60">
+        <button type="submit" disabled={status.kind === 'busy'} className="inline-flex min-h-11 items-center rounded-full bg-primary px-7 py-3 text-base text-neutral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60">
           {submitLabel}
         </button>
         {status.kind === 'ok' ? <p role="status">{status.message}</p> : null}

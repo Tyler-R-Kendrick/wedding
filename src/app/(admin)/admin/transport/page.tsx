@@ -1,7 +1,7 @@
 import { adminListTransportationEntitlements } from '@/capabilities/admin_transport';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
-import { AdminShell, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
+import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '../_shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export default async function AdminTransportPage() {
             Provider: {result.value.data.provider.name} ({result.value.data.provider.mode}). Codes and redemption links are sealed and never shown here.
           </p>
           <h2 className={SECTION_TITLE}>Entitlements and claims</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Entitlements and claims">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -50,9 +50,9 @@ export default async function AdminTransportPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <h2 className={SECTION_TITLE}>Manual code pools</h2>
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Manual code pools">
             <table className={TABLE}>
               <thead>
                 <tr>
@@ -76,7 +76,7 @@ export default async function AdminTransportPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           <div className="mt-10 grid gap-8">
             <AdminCapabilityForm
               capability="admin_assign_transportation_entitlement"

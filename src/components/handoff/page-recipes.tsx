@@ -22,7 +22,6 @@ export interface PageRecipe<D> {
 }
 
 const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
-const EYEBROW = 'text-[0.75rem] uppercase tracking-[0.14em] text-primary/70';
 
 function Paragraph({ text }: { text: string }) {
   const placeholder = text.startsWith('TODO(Tyler & Sara)');
@@ -44,15 +43,13 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
     <main id="main" className="bg-neutral text-primary">
       <HandoffClickRecorder />
       <header className={SECTION}>
-        <p className={EYEBROW}>Transportation</p>
-        <h1 className="mt-2 text-3xl leading-tight">Getting here, getting around, getting home.</h1>
+        <h1 className="text-3xl leading-tight">Getting here, getting around, getting home.</h1>
         <p className="mt-4 max-w-[65ch] text-lg">The wedding is at the Chicago Athletic Association Hotel, 12 S Michigan Ave. Everything below is meant to take the guesswork out of the day so you can relax and dance.</p>
       </header>
 
       <section className={SECTION} aria-labelledby="ride-benefit">
-        <p className={EYEBROW}>Your ride home</p>
-        <h2 id="ride-benefit" className="mt-2 text-2xl">
-          Ride benefit
+        <h2 id="ride-benefit" className="text-2xl">
+          Your ride home
         </h2>
         {!data.signedIn ? (
           <p className="mt-3 max-w-[65ch]">
@@ -91,10 +88,9 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
         ))}
       </section>
 
-      {data.topics.map((t, i) => (
+      {data.topics.map((t) => (
         <section key={t.id} className={SECTION} aria-labelledby={`topic-${t.id}`}>
-          <p className={EYEBROW}>{String(i + 1).padStart(2, '0')}</p>
-          <h2 id={`topic-${t.id}`} className="mt-2 text-2xl">
+          <h2 id={`topic-${t.id}`} className="text-2xl">
             {t.title}
           </h2>
           <div className="mt-3 space-y-3">
@@ -134,13 +130,11 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
     <main id="main" className="bg-neutral text-primary">
       <HandoffClickRecorder />
       <header className={SECTION}>
-        <p className={EYEBROW}>{data.copy.eyebrow}</p>
-        <h1 className="mt-2 text-3xl leading-tight">{data.copy.title}</h1>
+        <h1 className="text-3xl leading-tight">{data.copy.title}</h1>
         <p className="mt-4 max-w-[65ch] text-lg">{data.copy.lede}</p>
       </header>
       <section className={SECTION} aria-labelledby="gifts-registry">
-        <p className={EYEBROW}>01</p>
-        <h2 id="gifts-registry" className="mt-2 text-2xl">
+        <h2 id="gifts-registry" className="text-2xl">
           {data.copy.registryHeading}
         </h2>
         <p className="mt-3 max-w-[65ch]">{data.copy.registryIntro}</p>
@@ -151,8 +145,7 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         </div>
       </section>
       <section className={SECTION} aria-labelledby="gifts-adventures">
-        <p className={EYEBROW}>02</p>
-        <h2 id="gifts-adventures" className="mt-2 text-2xl">
+        <h2 id="gifts-adventures" className="text-2xl">
           {data.copy.adventureHeading}
         </h2>
         <p className="mt-3 max-w-[65ch]">{data.copy.adventureIntro}</p>

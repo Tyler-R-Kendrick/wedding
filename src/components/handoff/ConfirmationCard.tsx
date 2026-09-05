@@ -6,7 +6,8 @@ export interface ConfirmationRow {
 }
 
 export interface ConfirmationCardProps {
-  eyebrow?: string;
+  /** One line under the heading saying what to do ("Please review before you confirm."). */
+  lede?: string;
   title: string;
   rows: ConfirmationRow[];
   /** What the guest is agreeing to, before they press anything. */
@@ -15,13 +16,13 @@ export interface ConfirmationCardProps {
 }
 
 /** The review card a guest reads before a consequential step: what, with whom, what happens next. */
-export function ConfirmationCard({ eyebrow = 'Please review', title, rows, disclosure, children }: ConfirmationCardProps) {
+export function ConfirmationCard({ lede = 'Please review before you confirm.', title, rows, disclosure, children }: ConfirmationCardProps) {
   return (
     <section className="border border-primary/20 p-6" aria-labelledby={`confirm-${slug(title)}`}>
-      <p className="text-[0.75rem] uppercase tracking-[0.14em] text-primary/70">{eyebrow}</p>
-      <h3 id={`confirm-${slug(title)}`} className="mt-1 text-xl">
+      <h3 id={`confirm-${slug(title)}`} className="text-xl">
         {title}
       </h3>
+      <p className="mt-1 text-sm text-primary/70">{lede}</p>
       <dl className="mt-4 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
         {rows.map((r) => (
           <div key={r.label} className="contents">

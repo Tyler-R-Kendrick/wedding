@@ -44,7 +44,7 @@ test.describe('transportation', () => {
   test('public guidance renders with map handoffs and honest placeholders', async ({ page }) => {
     await page.goto('/transportation');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Getting here');
-    await expect(page.getByRole('heading', { level: 2, name: 'Ride benefit' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Your ride home' })).toBeVisible();
     await expect(page.getByText('Find your invitation')).toBeVisible();
     await expect(page.locator('[data-placeholder="true"]').first()).toBeVisible();
     for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
@@ -70,7 +70,7 @@ test.describe('transportation', () => {
     await expect(page.getByRole('heading', { level: 3, name: 'Claim your ride benefit' })).toBeVisible();
     await expect(page.getByText('Uber (test mode)')).toBeVisible();
     await page.getByRole('button', { name: 'Confirm and claim' }).click();
-    const card = page.locator('article[data-handoff-host]');
+    const card = page.locator('article[data-handoff-host="www.uber.com"]');
     await expect(card).toBeVisible({ timeout: 15_000 });
     await expect(card).toContainText('via Uber');
     const link = card.getByRole('link', { name: /Open in Uber/ });
@@ -83,7 +83,7 @@ test.describe('transportation', () => {
     await context.clearCookies();
     await context.addCookies([{ name: COOKIE, value: `guest:OTHER${Date.now()}:${householdId}`, url: base() }]);
     await page.goto('/transportation');
-    await expect(page.locator('article[data-handoff-host]')).toHaveCount(0);
+    await expect(page.locator('article[data-handoff-host="www.uber.com"]')).toHaveCount(0);
     expect(await page.content()).not.toMatch(/uber\.com\/redeem/);
   });
 });
