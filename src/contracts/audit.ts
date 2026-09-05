@@ -10,6 +10,7 @@ export const AUDIT_ACTIONS = [
   'invitation.issued', 'invitation.revoked', 'invitation.claimed',
   'identity.bound', 'identity.rebound', 'identity.reset', 'session.step_up', 'session.revoked',
   'invitation.rotated', 'guest.merged', 'guest.imported', 'guest.exported', 'admin.role_changed',
+  'passkey.registered', 'passkey.removed', 'identity.email_changed',
   'rsvp.submitted', 'rsvp.admin_override',
   'seating.published', 'seating.unpublished', 'seating.changed',
   'transport.entitlement_assigned', 'transport.claimed', 'transport.claim_failed',
