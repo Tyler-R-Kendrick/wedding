@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { POST as webhookPost } from '@/app/(public)/travel/webhooks/duffel/route';
 import { createCapabilityContext, invoke, invokeByName } from '@/capabilities';
 import {
@@ -17,11 +17,12 @@ import {
   updateMyTravelProfile,
   updateTripItemCapability,
 } from '@/capabilities/travel';
-import type { AnyCapability, CapabilityExposure } from '@/contracts/capability';
+import type { AnyCapability, CapabilityExposure, CapabilityOutcome } from '@/contracts/capability';
+import type { CapabilityError } from '@/contracts/errors';
 import { newId, type AdminId, type AuthIdentityId, type GuestId, type HouseholdId } from '@/contracts/ids';
 import type { AdminPrincipal, Entitlement, GuestPrincipal, Principal } from '@/contracts/principal';
 import type { ExternalHandoff } from '@/contracts/providers';
-import { ok } from '@/contracts/result';
+import { ok, type Result } from '@/contracts/result';
 import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID } from '@/domain/travel';
 import { getDb } from '@/db/client';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
@@ -63,10 +64,12 @@ const contentAdmin = adminPrincipal(['admin_content']);
 const fullAdmin = adminPrincipal(['admin_content', 'admin_integrations', 'admin_guest_ops', 'view_travel_tools']);
 const anonymous: Principal = { kind: 'anonymous' };
 
-async function run<I, O>(cap: { name: string } & AnyCapability, principal: Principal, input: I, opts: { key?: string; surface?: keyof CapabilityExposure; flags?: Record<string, boolean> } = {}) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test helper: outcomes are asserted structurally
+type Loose = Result<CapabilityOutcome<any>, CapabilityError>;
+async function run(cap: AnyCapability, principal: Principal, input: unknown, opts: { key?: string; surface?: keyof CapabilityExposure; flags?: Record<string, boolean> } = {}): Promise<Loose> {
   const ctx = await createCapabilityContext({ principal, requestId: `req-${cap.name}-${newId()}`, surface: opts.surface ?? 'ui', idempotencyKey: opts.key });
   if (opts.flags) ctx.flags = { ...ctx.flags, ...opts.flags } as typeof ctx.flags;
-  return invoke(cap as never, ctx, input) as Promise<Awaited<ReturnType<typeof invoke<I, O>>>>;
+  return invoke(cap, ctx, input);
 }
 const key = () => newId();
 const expectErr = (r: { ok: boolean; error?: { code: string } }, code: string) => {
