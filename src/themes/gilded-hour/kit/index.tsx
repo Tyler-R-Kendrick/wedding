@@ -510,7 +510,11 @@ function Hero({ content, site, countdown, state }: HeroProps) {
         <p className="gh-hero__lede">
           <Text copy={content.lede} />
         </p>
-        {content.showCountdown ? <Countdown {...countdown} /> : null}
+        {content.showCountdown ? (
+          <div className="gh-hero__countdown-slot">
+            <Countdown {...countdown} />
+          </div>
+        ) : null}
         <div className="gh-hero__actions">
           <Button variant={content.primary.variant ?? 'primary'} href={content.primary.href} provider={content.primary.provider}>
             {content.primary.label}

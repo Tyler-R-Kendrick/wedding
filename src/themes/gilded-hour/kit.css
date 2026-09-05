@@ -404,9 +404,24 @@
 }
 
 .gh-hero__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: var(--gh-max);
   margin-inline: auto;
-  padding: clamp(var(--spacing-xl), 6vw, var(--spacing-3xl)) var(--gh-gutter) var(--spacing-2xl);
+  padding: clamp(var(--spacing-lg), 6vw, var(--spacing-3xl)) var(--gh-gutter) var(--spacing-2xl);
+}
+
+/* Phones: the state's action stays in the first screen; the countdown follows it. */
+@media (width < 600px) {
+  .gh-hero__countdown-slot {
+    order: 2;
+  }
+
+  .gh-hero__lede {
+    font-size: var(--type-body-md-size);
+    line-height: var(--type-body-md-line);
+  }
 }
 
 .gh-hero__sunburst {
@@ -460,7 +475,7 @@
 }
 
 .gh-hero__status {
-  margin: var(--spacing-md) 0 0;
+  margin: var(--spacing-sm) 0 0;
   font-family: var(--font-text);
   font-size: var(--type-body-md-size);
   font-weight: 600;
@@ -506,7 +521,7 @@
 
 .gh-hero__lede {
   max-width: var(--gh-prose);
-  margin: var(--spacing-lg) auto 0;
+  margin: var(--spacing-md) auto 0;
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
   text-wrap: pretty;
@@ -517,7 +532,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--spacing-md);
-  margin-block-start: var(--spacing-lg);
+  margin-block-start: var(--spacing-md);
 }
 
 .gh-hero__deadline {
@@ -531,7 +546,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: var(--spacing-lg) 0 0;
+  margin: var(--spacing-md) 0 0;
 }
 
 .gh-countdown__num {
