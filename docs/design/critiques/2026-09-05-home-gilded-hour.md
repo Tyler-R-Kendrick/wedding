@@ -1,4 +1,4 @@
-# Design critique — `/` (Home) — Gilded Hour — 2026-09-05
+# Design critique — `/` (Home) — Gilded Hour — 2026-09-05 (self-review, revised after the independent review)
 
 | Field | Value |
 |---|---|
@@ -6,29 +6,28 @@
 | Theme | Gilded Hour |
 | Lifecycle state previewed | `TEASER` (live, persisted) plus `SAVE_THE_DATE … ARCHIVE` through the review harness |
 | Viewports captured | 390×844, 768×1024, 1440×900 (normal + `prefers-reduced-motion: reduce`) |
-| Reviewer | Swarm B (self-review; the `design-reviewer` subagent pass is the integrator's) |
+| Reviewer | Swarm B (self-review). Independent review: `2026-09-05-home-gilded-hour-review.md` (FIX FIRST, 7/7/7/5); this file records the fixes and re-measurement on `next start` |
 | Pipeline | full: harness screenshots, `impeccable detect` (src + live URL), design lint, hex/font grep, hallmark + design-anti-slop audit, impeccable critique/audit, motion audit, axe at three viewports, `wedding-site-standards` §8 |
 
-## Verdict: SHIP (engineering) — content gate pending the couple's backlog
+## Verdict: RE-REVIEW REQUESTED (blockers 1–4 fixed; self-score after fixes below, independent re-score pending)
 
 | Axis | Weight | Score (1–10) | One-line justification |
 |---|---|---|---|
-| Design | 40 | 8 | One axis, Cinzel monument, Big Shoulders numerals, gold as ornament and bronze as text (the two-golds rule holds on every pair); grounds alternate marble / creme / lake / ink; no photography yet, which caps the score |
-| Usability | 30 | 8 | Names, weekday date, venue, countdown and the state's action are above the fold at 390; four-cell elevator panel with visible labels; every dialog is a native `<dialog>` (Esc, focus return); skip link first; axe 0 serious/critical at 390/768/1440; body 19 px, measure ≤70ch |
-| Creativity | 20 | 7 | The acts numbered as plaques, the elevator panel, the curtain rise over the sunburst, and the chevron rule that engraves itself are theirs; the sunburst itself is the expected Deco move |
-| Content | 10 | 7 | Every sentence traces to `docs/design/brief.md` §2; every unknown is a visible `TODO(Tyler & Sara)` chip rather than plausible fiction. Guests cannot see this page until backlog items C-01, C-07, C-08, P-01, P-02, P-03 close (design-doc §10 content gate) |
+| Design | 40 | 7 | Frieze now 3/2 in one row (six links mirrored around the plaque, an architrave line only for longer states); monogram in Josefin 600 (no Cinzel below 24 px); one reveal (curtain) plus one engrave on the first act; the switcher is a frieze link / footer plate on the axis, not a floating chip. Still no photograph, so 7 stands until C-07 |
+| Usability | 30 | 8 | Switcher works from shared `?theme=` links (query dropped, then refresh; e2e); no fixed control over footer text (e2e, 76 px clearance); CLS 0.000 at 390 under 4× CPU + 1.6 Mbps (was 0.161); panel labels 13.0 px with "Explore CAA" and Ask Us in the fourth cell; hero note replaces two empty acts |
+| Creativity | 20 | 7 | Unchanged: numbered plaques, elevator panel, curtain over the stepped plinth; the sunburst is static now and no longer competes with the curtain |
+| Content | 10 | 5 | Unchanged by policy: three `TODO(Tyler & Sara)` chips remain visible (backlog C-01/C-07/C-08); acts 04/05 are gone in TEASER (the travel heads-up is one line under the hero) so nothing renders around a promise, but the content gate is still the couple's |
 
-Ship threshold: all ≥ 7 and Usability ≥ 8 — met.
+Ship threshold: all ≥ 7 and Usability ≥ 8 — Content stays below 7 until the backlog closes; everything engineering-side is fixed.
 
 ## Blockers (must fix)
 
-- none open. Fixed during this review: elevator-panel labels wrapped mid-word at 390 (fifth "Menu" cell removed; Menu stays in the frieze as DESIGN.md specifies); tracked-caps eyebrow above the h1 and an all-caps venue line (now a sentence-case status line and venue line after the names); heading rhythm (space above each act heading now exceeds the space below); `<time datetime>` duplicated in the footer (strict-locator failure in the smoke test); placeholder chips with no vertical padding.
+- none open. Independent-review blockers, fixed in `133164b` and the follow-up commit: (1) switcher from `?theme=` — `router.replace(pathname)` drops the query before `router.refresh()`, `ThemeSync` owns `html[data-theme]`, e2e "works from a shared ?theme= link"; (2) `gh-sun` deleted, live detector exit 0; (3) the floating chip is gone — trigger in the frieze and footer, options inline in the Menu sheet; footer clears the panel (e2e "no fixed control covers footer text", measured 28 px clearance at 390); (4) TEASER renders three acts and a one-line travel heads-up under the hero (`tests/unit/themes/home-content.test.ts`, `tests/ui/home.test.tsx`).
 
 ## Should fix
 
-- [impeccable critique] Desktop frieze in `WEDDING_WEEK` / `RSVP_OPEN` carries 11 items: now primary mirrored around the plaque with the rest on an architrave line beneath; revisit once the couple decides whether "More" should collapse further on desktop.
-- [hallmark] No imagery yet: the stepped frame (`ImageFrame`) is wired but Home has no photograph until C-07 lands; the sunburst carries the hero alone.
-- [design-motion-principles] The curtain rise plays on every Home load (CSS only); "once per session" needs a small client memory. Elevator-door route transitions (View Transitions) are not implemented.
+- Done: fallback `size-adjust` retuned by measuring the fold strings at 390 (`scripts/measure-fallbacks.mjs`: Cinzel 99 %, Josefin 102 %, Big Shoulders 61.7 %); frieze 3/2 in TEASER; panel 13 px + "Explore CAA" + Ask Us; curtain once per session (`sessionStorage` → `data-curtain="done"`); monogram in Josefin; one preload set (hints only; 3 links in production); favicon + apple icon per theme; `themeColor` per theme; `overscroll-behavior: contain` on dialogs; `touch-action: manipulation`; switcher initial focus on the current design.
+- Skipped: nothing from the review list. Left for later: photography (C-07) and the unused generated art tokens (stepped frame, corner bracket, marble ground) which wait for content that uses them.
 
 ## Consider
 
@@ -41,19 +40,15 @@ Ship threshold: all ≥ 7 and Usability ≥ 8 — met.
 - Structural difference from Conservatory is real, not a recolour: centred axis + numbered plaques + frieze/elevator panel vs. sheet + rail + pressed cards (`tests/ui/home.test.tsx` asserts it).
 - Reduced motion: curtain removed, chevron rule static, countdown digits swap without transition (`tests/e2e/themes.spec.ts`).
 
-## Evidence
+## Evidence (re-measured on `next start`, `133164b`+)
 
-- Screenshots: `docs/design/critiques/2026-09-05-home/gilded-hour-TEASER-390x844.png`, `…-WEDDING_DAY-390x844.png` (1440 captures live in `.impeccable/review/`); full set (9 states × 3 viewports × normal/reduced) regenerated by `node --import tsx scripts/render-home.tsx && node scripts/screenshot-home.mjs` into `.impeccable/review/`
-- `npx impeccable detect src/`: exit 0 (12 advisory type-ramp notes resolved by snapping to DESIGN.md steps and adding `label-sm`)
-- `npx impeccable detect http://localhost:3104/?theme=gilded-hour`: exit 0, 0 anti-patterns (`cream-palette` waived in `.impeccable/config.json` with reason: the brief pins the marble ground)
-- `npm run design:lint`: 0 errors / 0 warnings × 3 files; `npm run design:sync:check`: up to date
-- Raw hex / `font-family` grep over `src/themes/**/kit*.css`, `src/components`, kits: none (tokens only; generated `theme.css` is the only file with hex)
-- hallmark audit: pre-emit critique P4 H4 E4 S4 R4 V3 (variety is the brief's symmetry); no invented metrics, no re-drawn chrome, no italic headings; design-anti-slop Mode B: no new items (V/S layers clean; C-layer copy is placeholder-marked by design)
-- `/impeccable critique`: hierarchy 8, clarity 8, emotional resonance 7; `/impeccable audit`: a11y pass, responsive pass (320–1440 checked in the harness), performance: three woff2 files (35 + 27 + 46 KB) preloaded, no layout shift on font swap (metric fallbacks)
-- web-design-guidelines: n/a (no `file:line` findings after the fixes above)
-- Motion audit: one authored moment (curtain + sunburst), one section reveal (chevron rule), no stagger-spam, no bounce, reduced motion honoured
-- Axe: 0 serious / 0 critical at 390 / 768 / 1440 (`tests/e2e/themes.spec.ts`, `tests/a11y.spec.ts`)
-- `wedding-site-standards` §8: names/date/place above the fold ✓; addresses tap-to-map ✓; RSVP deadline on Home in `RSVP_OPEN` (placeholder) ✓; dress code / hotel block / FAQ: `TODO(Tyler & Sara)` by policy; `noindex` ✓; quality green ✓; TODOs remain visible on purpose until the backlog closes
+- Screenshots: `.impeccable/review/2026-09-05-home-gilded-hour-{TEASER,RSVP_OPEN,WEDDING_WEEK}-{390x844,768x1024,1440x900}.png` via `node --import ./scripts/harness-register.mjs --import tsx scripts/render-home.tsx && node scripts/screenshot-home.mjs`; committed evidence in `2026-09-05-home/`
+- `npx impeccable detect src/`: exit 0. Live URL (`IMPECCABLE_BROWSER` wrapper, production): **exit 0, 0 findings** (`cream-palette` waived with reason; the earlier self-critique wrongly reported exit 0 while `buried-raster` was open — corrected)
+- Lab performance at 390, 4× CPU + 1.6 Mbps/150 ms (`scripts/measure-cls.mjs`): **CLS 0.000** (was 0.161), LCP 1.33 s; 3 font preloads; smallest visible text **13.01 px** (panel labels)
+- Footer at 390, maximum scroll: no fixed element intersects footer text (e2e); measured clearance between the last footer line and the elevator panel **76 px**
+- `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, design:lint 0/0 ×3, design:sync:check, detector, integration, build)
+- `BASE_URL=http://localhost:3104 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **45 passed** (mobile/tablet/desktop) incl. axe 0 serious/critical ×3 viewports, `?theme=` switch, footer overlap, reduced motion, preview gating
+- hallmark / design-anti-slop / impeccable critique: as in the independent review; structural items addressed (frieze symmetry, second reveal, chip off-axis)
 
 ## Next command
 

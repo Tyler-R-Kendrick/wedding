@@ -37,9 +37,11 @@ request ──proxy.ts──▶ theme = ?theme → cookie → default        pre
 | `src/proxy.ts` | Theme + preview resolution and rewrites (Next.js 16 `proxy` convention lives at `src/proxy.ts`, not inside `app/`) |
 | `src/app/t/[theme]/` | Static theme trees: `layout.tsx` (font preload, html mirror), `page.tsx` (Home, `revalidate = 60`), `preview/[token]/page.tsx` (dynamic admin preview) |
 | `src/app/(public)/layout.tsx` | Dynamic public routes other swarms add; reads the proxy's `x-theme` |
-| `src/components/switcher/` | Floating "Design" control (client) + server action (cookie via `navigate_to`) |
+| `src/components/switcher/` | "Design" control (client; `trigger` in the frieze/rail and footer, `menu` inline in the phone Menu sheet) + server action (cookie via `navigate_to`) |
 | `scripts/design-sync.mjs` | Token generator + `--check` drift gate |
-| `scripts/render-home.tsx`, `scripts/screenshot-home.mjs` | Review harness: Home × 9 states × 2 themes as static HTML + screenshots at 390/768/1440 |
+| `scripts/render-home.tsx`, `scripts/screenshot-home.mjs`, `scripts/harness-register.mjs` | Review harness: Home × 9 states × 2 themes as static HTML + screenshots at 390/768/1440 (the register hook stubs `server-only`/`next/*`) |
+| `scripts/measure-fallbacks.mjs`, `scripts/measure-cls.mjs` | Fallback `size-adjust` tuning at 390; lab CLS/LCP under 4× CPU + 1.6 Mbps |
+| `src/themes/<id>/tokens.generated.json` | **Generated** colours (for `themeColor` and anything TypeScript needs from DESIGN.md without a literal) |
 
 ## Resolution order and persistence
 
@@ -47,7 +49,9 @@ request ──proxy.ts──▶ theme = ?theme → cookie → default        pre
 are ignored, never errors. A valid `?theme=` is remembered on the device (one-year, `SameSite=Lax`,
 `HttpOnly` cookie set by the proxy) so a shared `?theme=conservatory` link keeps its design on the
 next click. The switcher's server action sets the same cookie after validating the id through the
-`navigate_to` capability, then `router.refresh()` re-runs the proxy. The choice is never tied to a
+`navigate_to` capability; the client then drops a `?theme=` query (`router.replace(pathname)`,
+since the query would win over the cookie) and `router.refresh()` re-runs the proxy. `ThemeSync`
+mirrors the new Shell's theme onto `<html>`. The choice is never tied to a
 guest identity. Responses carry an `x-theme` header (tests and debugging).
 
 ## Static rendering
@@ -104,13 +108,13 @@ Six OFL faces, subset to Latin and converted to woff2 with fontTools (`pyftsubse
 | Theme | Files | Metric fallback (`local()`) |
 |---|---|---|
 | Gilded Hour | `cinzel-wght` (400–900), `josefin-sans-wght` (100–700), `big-shoulders-display-wght` (100–900) | Times New Roman clone for Cinzel (caps-weighted), Arial clone for Josefin Sans and Big Shoulders |
-| Conservatory | `gloock-regular`, `spectral-regular` (declared 400–500), `cardo-italic` | Times New Roman clone for all three |
+| Conservatory | `gloock-regular`, `spectral-regular` (400), `spectral-medium` (500; the one file over the three-file target, see DESIGN.md), `cardo-italic` | Times New Roman clone for all |
 
 `size-adjust` / `ascent-override` / `descent-override` were computed with fontTools against
-Liberation Serif/Sans (metric clones of Times New Roman/Arial). Only the active theme's files are
-preloaded (`<link rel="preload" as="font">` hoisted by React from the theme layout). Spectral 500
-and Spectral italic are not shipped to stay within three files; `font-synthesis: none` renders those
-requests from Spectral 400. To refetch the sources:
+Liberation Serif/Sans (metric clones of Times New Roman/Arial), then `size-adjust` was tuned by
+rendering the fold strings at 390 in both faces (`scripts/measure-fallbacks.mjs`; CLS 0.000 under
+throttling). Only the active theme's files are preloaded (`ReactDOM.preload` hints from the theme
+layout: one `<link rel="preload">` each in production). Spectral italic is not shipped. To refetch the sources:
 
 ```bash
 base=https://raw.githubusercontent.com/google/fonts/main/ofl
@@ -128,8 +132,8 @@ differ. Asserted by `tests/unit/themes/resolve.test.ts` (`ThemeStructure` differ
 | | Gilded Hour | Conservatory |
 |---|---|---|
 | Shell | marble ground, gold top rule, elevator panel reserved at the bottom on phones | creme sheet: `[rail | page]` grid on desktop; bottom bar only when the state has quick actions |
-| Nav | frieze (links mirrored around the S+T plaque) ≥ 900 px; plaque + Menu dialog and a fixed four-cell **elevator panel** below | **kraft tag rail** on a thread ≥ 900 px (current tag inverted, tilted 3°, pollen knot); floating Menu tag + two-action bar on phones |
-| Hero | monument on the axis: eyebrow, names in Cinzel caps, `07 · 17 · 27`, weekday date, place, lede, countdown, actions; curtain rise + sunburst | left-weighted names with the “+” drawn in pollen, lede, sky-band countdown, actions; kraft specimen tag with date/place hanging at the right; leaf border on one edge |
+| Nav | frieze (up to six links mirrored around the S+T plaque in one row, longer states add an architrave line; the Design trigger ends the right side) ≥ 900 px; plaque + Menu dialog (with the Design options) and a fixed four-cell **elevator panel** below | **kraft tag rail** on a thread ≥ 900 px (current tag inverted, tilted 3°, pollen knot); floating Menu tag + two-action bar on phones |
+| Hero | monument on the axis: names in Cinzel caps, `07 · 17 · 27`, weekday date, place, a sentence-case status line, lede, countdown, actions; curtain rise (once per session) over a static sunburst | left-weighted names with the “+” drawn in pollen, lede, sky-band countdown, actions; kraft specimen tag with date/place hanging at the right; leaf border on one edge |
 | Section | numbered acts (plaque `01`…), chevron rule that draws itself in, centred heading, prose left-aligned in a 42 rem column, grounds marble/creme/lake/ink | washes (creme/moss/sky/ink) with a fern rule growing from the margin; 7/5 grid: text left, one **pressed card** mounted right, tilted ±1–2°, overlapping the wash above |
 | Card / Timeline / Stat | polished marble + hairline, stepped gold frame when featured; engraved-tick vertical timeline; numeral plates | ivory sheet with paper shadow, kraft specimen label, pressed-flower silhouette cropped at a corner; winding vine with leaf stops; specimen-label stats |
 | Buttons | rectangles, engraved inset hairline; ink / bronze (RSVP) / marble ghost | 8 px corners; moss ink / pollen (RSVP) / ivory ghost |
@@ -191,14 +195,15 @@ this level.
 ```bash
 npm run design:sync            # regenerate theme.css / tailwind.theme.css from DESIGN.md
 npm run design:sync:check      # drift gate (in npm run verify)
-node --import tsx scripts/render-home.tsx && node scripts/screenshot-home.mjs [--reduced]   # review harness
+node --import ./scripts/harness-register.mjs --import tsx scripts/render-home.tsx && node scripts/screenshot-home.mjs [--reduced]   # review harness
+node scripts/measure-fallbacks.mjs; node scripts/measure-cls.mjs http://localhost:3104/?theme=gilded-hour   # font fallback + lab CLS
 PORT=3104 npm run dev          # then BASE_URL=http://localhost:3104 npm run test:e2e
 NEXT_TURBOPACK_ROOT=/home/user npm run build   # sandboxes whose node_modules is a symlink outside the project
 ```
 
 ## Known gaps
 
-- Elevator-door route transitions and the "curtain once per session" memory are not implemented (CSS only, plays on each Home load).
-- Spectral 500 / italic and Josefin Sans italic are not shipped (three-file budget); weights synthesize down to the shipped file.
+- Elevator-door route transitions are not implemented.
+- Spectral italic and Josefin Sans italic are not shipped; Conservatory ships four files (Spectral 500 added after review).
 - Admin preview positive path is integration-tested only; the e2e admin journey lands with the auth swarm.
 - Placeholder imagery (`ImageFrame`, `Gallery`) is wired but Home has no photography until the couple supplies it.

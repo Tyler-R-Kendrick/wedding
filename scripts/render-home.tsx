@@ -3,7 +3,8 @@
  * compiled stylesheet inlined, so reviewers can screenshot states that need an admin preview in
  * the running app. Not part of the build.
  *
- *   node --import tsx scripts/render-home.tsx [--out .impeccable/review/html] [--states TEASER,RSVP_OPEN]
+ *   node --import ./scripts/harness-register.mjs --import tsx scripts/render-home.tsx [--out .impeccable/review/html] [--states TEASER,RSVP_OPEN]
+ *   (the register hook stubs `server-only` and next/* so the kits, which import the switcher's server action, load outside Next)
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -42,7 +43,7 @@ function data(theme: ThemeId, state: LifecycleState): HomeData {
     lifecycle: { state, mode: LIFECYCLE_MODE[state], persistedState: state, preview: null, suggested: 'RSVP_OPEN', publishedAt: null, note: null },
     countdown: countdownView(NOW),
     nav: navFor(state, { venue: site.venue, currentPath: '/' }),
-    switcherEnabled: false, // the switcher needs the app router; the harness renders the shell without it
+    switcherEnabled: true, // next/navigation is stubbed by scripts/harness-hooks.mjs
     content: homeContent(site, state),
   };
 }

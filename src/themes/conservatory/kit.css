@@ -8,6 +8,15 @@
   --cv-prose: 42rem;
   --cv-gutter: clamp(20px, 4vw, 64px);
   --cv-rail: 15rem;
+
+  /* The floating Menu tag on phones: the footer keeps this much clear beneath its last line. */
+  --cv-float-clearance: 4rem;
+}
+
+@media (width >= 900px) {
+  .cv {
+    --cv-float-clearance: 0px;
+  }
 }
 
 /* ---------- type helpers ---------- */
@@ -330,6 +339,23 @@
 
 .cv-hero__names {
   grid-area: names;
+}
+
+/* Phones: logistics (names, tag) first, then the action; the sky band follows it. */
+@media (width < 600px) {
+  .cv-hero__rest .cv-sky {
+    order: 1;
+  }
+
+  .cv-hero__rest .cv-hero__deadline,
+  .cv-hero__rest .cv-hero__note {
+    order: 2;
+  }
+
+  .cv-hero__lede {
+    font-size: var(--type-body-md-size);
+    line-height: var(--type-body-md-line);
+  }
 }
 
 .cv-hero__rest {
@@ -1125,7 +1151,7 @@
 .cv-footer {
   position: relative;
   margin-block-start: var(--spacing-2xl);
-  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) + var(--bottom-bar-height, 0px));
+  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) + var(--bottom-bar-height, 0px) + var(--cv-float-clearance));
   background: var(--color-neutral-variant);
 }
 
@@ -1267,7 +1293,19 @@
 }
 
 .cv-rail__switcher {
-  padding-inline-start: var(--spacing-md);
+  display: none;
+  padding-inline: var(--spacing-md);
+}
+
+@media (width >= 900px) {
+  .cv-rail__switcher {
+    display: block;
+  }
+}
+
+/* The rail tag reads "Design"; the current name stays in the accessible name and in the dialog. */
+.cv-rail__switcher .switcher__current {
+  display: none;
 }
 
 .cv .switcher__heading {
