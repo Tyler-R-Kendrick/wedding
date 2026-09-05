@@ -22,12 +22,17 @@
 | 8 | Root `DESIGN.md` still carries the "Editorial Romance" name and terracotta accent while being repurposed as the admin foundation. | nit | Repurposing documented at the top of the file; retune at level 14 if the admin UI needs it |
 | 9 | Gilded Hour's "Big Shoulders Display" may be superseded by the merged "Big Shoulders" variable family on Google Fonts. | should | Level 04 picks the file to self-host and keeps the family name in sync (recorded in the board's open questions) |
 | 10 | The theme agents scored their own boards; self-scores are not a review. | should | The real gate is `design-review` on rendered pages at level 04 |
+| 11 | Secret Drop (added after the first review): the sandbox private key lives on an ephemeral container and the artifact store holds ciphertext readable by anyone who can open the private page. | should | Accepted: envelopes are AES-256-GCM + RSA-OAEP-4096, the agent is denied `.secrets/private*` and `.env`, and the durable-key flow keeps the long-lived private key in the user's environment settings only. |
+| 12 | `scripts/secrets/apply-env.mjs` writes `.env` from data the agent fetched from the artifact store; a poisoned envelope could inject an arbitrary variable name. | nit | Names are validated against `^[A-Z][A-Z0-9_]{0,63}$`, values are dotenv-quoted, existing lines are only replaced by name, and the script prints names/lengths only. |
+| 13 | `autofill.mjs` generates session secrets with `randomBytes(32)` but also sets local URLs that a deployer might forget to override. | nit | It never overwrites a non-empty value and the deployment guide lists the production-required variables. |
 
 ## 2. Authorization table
 
 No routes or actions in this level (docs, tokens, scripts, assets only). n/a: first server code lands at level 03.
 
 ## 3. Secrets and PII grep
+
+Re-run after the secrets tooling landed (`scripts/secrets/*`, `docs/ops/secrets.md`): still none. The only key material in the diff is the sandbox PUBLIC JWK (`.secrets/public.jwk.json`).
 
 ```
 $ grep -rnE "(sk_…|pk_…|BEGIN … PRIVATE|@gmail\.com|[0-9]{3}-[0-9]{3}-[0-9]{4})" src docs scripts public/assets/ATTRIBUTIONS.md public/assets/attributions.json
