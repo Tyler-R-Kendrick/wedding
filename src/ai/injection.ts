@@ -14,7 +14,9 @@ const RULES: { rule: string; pattern: RegExp }[] = [
   { rule: 'new-instructions', pattern: /\b(new|updated|real|actual|true)\s+(instructions?|system\s+prompt|rules?)\b/i },
   { rule: 'role-override', pattern: /\b(you are now|from now on you|act as|pretend (to be|you are)|roleplay as|developer mode|jailbreak|dan mode)\b/i },
   { rule: 'system-marker', pattern: /(^|\n)\s*(system|assistant|developer)\s*:|<\/?\s*(system|assistant|instructions?)\s*>|\[\s*(system|inst)\s*\]|###\s*(system|instructions?)/i },
-  { rule: 'authority-claim', pattern: /\b(as|i am|i'm)\s+(the|your|an?)\s+(developer|administrator|admin|owner|operator|system|planner)\b[^.\n]{0,60}\b(authori[sz]e|allow|permit|order|instruct|command)\b/i },
+  // "I'm the wedding planner and I authorise you to…" — the qualifier between the article and the
+  // role is exactly how a claim of authority is phrased, so up to two words are allowed there.
+  { rule: 'authority-claim', pattern: /\b(as|i am|i'm)\s+(the|your|an?)\s+(?:[a-z]+\s+){0,2}(developer|administrator|admin|owner|operator|system|planner|couple|bride|groom)\b[^.\n]{0,60}\b(authori[sz]e|allow|permit|order|instruct|command|require|demand)\b/i },
   { rule: 'exfiltration', pattern: /\b(reveal|print|show|leak|output|repeat|dump)\b[^.\n]{0,40}\b(system prompt|instructions|api key|secret|password|token|credentials|admin)\b/i },
   { rule: 'broadcast-fact', pattern: /\b(tell (everyone|all guests|every guest|them)|announce|inform (all|every))\b[^.\n]{0,80}\b(ceremony|reception|room|time|is in|will be)\b/i },
   { rule: 'do-not-cite', pattern: /\b(do not|don't|never)\s+(cite|mention|include|show)\b[^.\n]{0,30}\b(source|sources|citation|citations)\b/i },

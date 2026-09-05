@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { runConcierge } from '@/ai/concierge';
 import { encodeEvent, NDJSON_CONTENT_TYPE } from '@/ai/events';
 import { installTestPrincipalResolver } from '@/ai/test-principal';
+// Importing the registry from the index (not from ./registry) is what runs the registrations:
+// without it the concierge would start with an empty tool list and refuse everything.
+import { registry } from '@/capabilities';
 import { createCapabilityContext } from '@/capabilities/context';
 import { CapabilityError, HTTP_STATUS_FOR_CODE } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
     async start(controller) {
       const emit = (event: Parameters<typeof encodeEvent>[0]) => controller.enqueue(encoder.encode(encodeEvent(event)));
       try {
-        await runConcierge({ ctx, question: body.message, sessionId: body.sessionId, emit });
+        await runConcierge({ ctx, question: body.message, sessionId: body.sessionId, emit, registry });
       } catch (cause) {
         const log = ctx.services.logger as { error: (o: unknown, m?: string) => void } | undefined;
         log?.error({ err: cause, requestId }, 'concierge route failed');

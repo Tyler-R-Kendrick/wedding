@@ -1,0 +1,121 @@
+/*
+ * Concierge traces (swarm J admin view). Foundation tokens only, same visual language as the
+ * content editors. There is no chain-of-thought here to style: none is stored.
+ */
+.ai-main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--spacing-xl, 40px) var(--spacing-md, 16px) var(--spacing-3xl, 96px);
+}
+
+.ai-main h1 {
+  margin: 0 0 var(--spacing-md, 16px);
+  font-size: 2.25rem;
+  font-weight: 400;
+}
+
+.ai-main h2 {
+  margin: var(--spacing-xl, 40px) 0 var(--spacing-md, 16px);
+  font-size: 1.625rem;
+  font-weight: 400;
+}
+
+.ai-main h3 {
+  margin: 0 0 var(--spacing-xs, 4px);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.ai-main a {
+  color: var(--color-tertiary, var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.ai-muted {
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.ai-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md, 16px);
+  margin: 0 0 var(--spacing-lg, 24px);
+  padding: 0;
+  list-style: none;
+}
+
+.ai-totals li {
+  min-width: 8rem;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+}
+
+.ai-totals b {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 400;
+}
+
+.ai-answer {
+  margin: 0 0 var(--spacing-lg, 24px);
+  padding: var(--spacing-md, 16px);
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+}
+
+.ai-answer--refused {
+  border-left: 3px solid var(--color-tertiary, var(--color-primary));
+}
+
+.ai-answer--error {
+  border-left: 3px solid var(--color-error, var(--color-primary));
+}
+
+.ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 4px);
+  margin: 0 0 var(--spacing-sm, 8px);
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ai-tags li {
+  padding: 2px 10px;
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+}
+
+.ai-tags li.is-bad {
+  border-color: var(--color-error, var(--color-primary));
+  color: var(--color-error, var(--color-primary));
+}
+
+.ai-list {
+  margin: 0 0 var(--spacing-sm, 8px);
+  padding-left: var(--spacing-md, 16px);
+  font-size: 0.9375rem;
+}
+
+.ai-scroll {
+  overflow-x: auto;
+}
+
+.ai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.ai-table th,
+.ai-table td {
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  border-bottom: 1px solid var(--color-outline, var(--color-primary));
+  text-align: left;
+  vertical-align: top;
+}
