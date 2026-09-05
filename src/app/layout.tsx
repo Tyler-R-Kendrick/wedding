@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { WebMcpBridge } from '@/webmcp/WebMcpBridge';
+import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -17,7 +19,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // data-theme is the hook the design swarm's themes key off; "gilded-hour" is the default.
   return (
     <html lang="en" data-theme="gilded-hour">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
+        {isWebMcpEnabled() && <WebMcpBridge />}
+      </body>
     </html>
   );
 }

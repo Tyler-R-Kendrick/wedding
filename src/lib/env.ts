@@ -63,6 +63,12 @@ const serverSchema = z.object({
   HEALTH_TOKEN: optionalSecret(16),
   /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */
   AUDIT_HASH_KEY: optionalSecret(16),
+  /**
+   * Test-only principal injection for e2e (src/webmcp/server/test-principal.ts). Honoured ONLY
+   * when NODE_ENV=test; identity (Better Auth) is a later level, so until then end-to-end tests
+   * have no other way to be a signed-in guest. Never set outside a test run.
+   */
+  TEST_AUTH_SECRET: optionalSecret(16),
 
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),

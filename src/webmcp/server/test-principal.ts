@@ -26,7 +26,9 @@ export interface TestInjectionOptions {
 }
 
 export function testInjectionOptions(): TestInjectionOptions {
-  return { isTest: env.isTest, secret: process.env.TEST_AUTH_SECRET };
+  // `env` is validated at import: TEST_AUTH_SECRET is either absent or >= 16 chars, and
+  // `isTest` is derived from the validated NODE_ENV, never from a request.
+  return { isTest: env.isTest && !env.isProduction, secret: env.TEST_AUTH_SECRET };
 }
 
 export function isTestInjectionEnabled(o: TestInjectionOptions = testInjectionOptions()): boolean {
