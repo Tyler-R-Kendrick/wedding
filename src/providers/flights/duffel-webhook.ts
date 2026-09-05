@@ -3,6 +3,7 @@ import type { ProviderFailure } from '@/contracts/providers';
 import { err, ok, type Result } from '@/contracts/result';
 import { hmacSha256, timingSafeEqualString } from '@/lib/crypto';
 import { failure } from '../base';
+import type { ProviderBookingEvent } from './types';
 
 /**
  * Duffel webhook verification and event parsing (pure; no I/O). The signature header is
@@ -14,19 +15,7 @@ import { failure } from '../base';
 const PROVIDER = 'duffel';
 const DEFAULT_TOLERANCE_SECONDS = 5 * 60;
 
-export interface DuffelOrderEvent {
-  id: string;
-  type: string;
-  createdAt: string;
-  order: {
-    id: string;
-    bookingReference?: string;
-    /** The Links session reference we created (our itinerary item id), when Duffel echoes it. */
-    reference?: string;
-    metadata: Record<string, string>;
-    slices: Array<{ origin?: string; destination?: string; departAt?: string; arriveAt?: string; carrier?: string; flightNumber?: string }>;
-  };
-}
+export type DuffelOrderEvent = ProviderBookingEvent;
 
 /** Test helper + reference implementation of the signing scheme. */
 export function signDuffelPayload(secret: string, rawBody: string, timestampSeconds: number): string {
@@ -94,12 +83,10 @@ export function parseDuffelEvent(body: unknown): Result<DuffelOrderEvent, Provid
     id: parsed.data.id,
     type: parsed.data.type,
     createdAt: parsed.data.created_at ?? new Date().toISOString(),
-    order: {
-      id: o.id,
-      bookingReference: o.booking_reference,
-      reference,
-      metadata,
-      slices: (o.slices ?? []).map((s) => {
+    orderId: o.id,
+    bookingReference: o.booking_reference,
+    reference,
+    slices: (o.slices ?? []).map((s) => {
         const first = s.segments?.[0];
         const last = s.segments?.[s.segments.length - 1];
         return {
@@ -111,6 +98,5 @@ export function parseDuffelEvent(body: unknown): Result<DuffelOrderEvent, Provid
           flightNumber: first?.marketing_carrier?.iata_code && first?.marketing_carrier_flight_number ? `${first.marketing_carrier.iata_code}${first.marketing_carrier_flight_number}` : undefined,
         };
       }),
-    },
   });
 }

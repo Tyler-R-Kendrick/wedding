@@ -6,7 +6,7 @@ import type { HotelsProvider } from './types';
 
 export * from './types';
 export { MockHotels, DeepLinkOnlyHotels, type MockHotelsOptions } from './mock';
-export { bookingComUrl, hotelsHandoff, hyattSearchUrl, hyattHandoff, venueHotelHandoff, assertHotelSearchRequest, VENUE_HOTEL_URL, VENUE_SEARCH_CENTER } from './deep-link';
+export { bookingComUrl, hotelsHandoff, hyattSearchUrl, hyattHandoff, partnerHotelHandoffs, venueHotelHandoff, assertHotelSearchRequest, VENUE_HOTEL_URL, VENUE_SEARCH_CENTER } from './deep-link';
 export { BookingDemandHotels, BOOKING_DEMAND_BASE_URL, type BookingDemandOptions } from './booking-demand';
 export { DuffelStaysHotels, type DuffelStaysOptions } from './duffel-stays';
 

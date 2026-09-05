@@ -75,6 +75,24 @@ export interface HostedSessionRequest {
   adults?: number;
 }
 
+/** A provider-side booking event (order created/changed) after signature verification. */
+export interface ProviderBookingEvent {
+  id: string;
+  type: string;
+  createdAt: string;
+  /** The hosted-session reference we issued (our itinerary item id), when the provider echoes it. */
+  reference?: string;
+  orderId: string;
+  bookingReference?: string;
+  slices: Array<{ origin?: string; destination?: string; departAt?: string; arriveAt?: string; carrier?: string; flightNumber?: string }>;
+}
+
+/** Signed inbound webhooks. Only adapters with a configured secret expose this; verification never throws. */
+export interface ProviderWebhook {
+  verify(rawBody: string, signatureHeader: string | null | undefined, now?: number): Result<void, ProviderFailure>;
+  parse(body: unknown): Result<ProviderBookingEvent, ProviderFailure>;
+}
+
 export interface FlightsProvider extends ProviderDescriptor {
   kind: 'flights';
   search(request: FlightSearchRequest): Promise<Result<LiveSnapshot<FlightResult[]>, ProviderFailure>>;
@@ -82,4 +100,6 @@ export interface FlightsProvider extends ProviderDescriptor {
   deepLink(request: FlightSearchRequest): ExternalHandoff;
   /** Hosted checkout (Duffel Links). Absent when the adapter cannot create sessions. Never takes payment on our site. */
   createHostedSession?(request: HostedSessionRequest): Promise<Result<ExternalHandoff, ProviderFailure>>;
+  /** Present when the adapter can verify provider webhooks (the trusted path to "confirmed"). */
+  webhook?: ProviderWebhook;
 }

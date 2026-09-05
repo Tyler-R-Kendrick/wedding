@@ -9,7 +9,7 @@ export { MockFlights, DeepLinkOnlyFlights, type MockFlightsOptions } from './moc
 export { skyscannerFlightsUrl, flightsHandoff, assertFlightSearchRequest } from './deep-link';
 export { SkyscannerFlights, SKYSCANNER_BASE_URL, normalizeSkyscannerResults, type SkyscannerOptions } from './skyscanner';
 export { DuffelLinksFlights, DUFFEL_BASE_URL, type DuffelLinksOptions } from './duffel-links';
-export { verifyDuffelSignature, parseDuffelEvent, signDuffelPayload, type DuffelOrderEvent } from './duffel-webhook';
+export { verifyDuffelSignature, parseDuffelEvent, signDuffelPayload } from './duffel-webhook';
 export { callJson, CircuitBreaker, GUEST_MESSAGES, type FetchLike } from './http';
 
 export type FlightsProviderEnv = Pick<ServerEnv, 'FORCE_MOCK_PROVIDERS' | 'FLIGHTS_PROVIDER' | 'SKYSCANNER_API_KEY' | 'DUFFEL_API_KEY' | 'DUFFEL_WEBHOOK_SECRET'>;

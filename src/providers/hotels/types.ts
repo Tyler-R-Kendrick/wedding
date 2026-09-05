@@ -34,4 +34,6 @@ export interface HotelsProvider extends ProviderDescriptor {
   deepLink(request: HotelSearchRequest): ExternalHandoff;
   /** Handoff to the venue hotel's official site. Group-block links are admin-configured, never hard-coded. */
   venueHandoff(): ExternalHandoff;
+  /** Additional partner search links for the same request (e.g. Hyatt), all on the redirect allowlist. */
+  extraHandoffs(request: HotelSearchRequest): ExternalHandoff[];
 }
