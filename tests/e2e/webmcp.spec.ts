@@ -1,4 +1,4 @@
-import { test as base, expect, type APIRequestContext, type Page } from '@playwright/test';
+import { test as base, expect, request as playwrightRequest, type APIRequestContext, type Page } from '@playwright/test';
 
 /**
  * WebMCP progressive enhancement (docs/architecture/webmcp.md).
@@ -35,8 +35,29 @@ const test = base.extend({
   },
 });
 
-/** Registration crosses a page load, a fetch and N registerTool calls; dev compilation can be slow. */
-const REGISTERED = { timeout: 15_000 };
+/** Registration crosses a page load, a manifest fetch and N registerTool calls. */
+const REGISTERED = { timeout: 20_000 };
+
+/**
+ * Compile the routes this file touches before the first assertion.
+ *
+ * Against a `next dev` server the first request to a route compiles it, which can take tens of
+ * seconds in a cold sandbox — long enough that a registration poll would time out on the first
+ * test of the first project and nowhere else. Warming here keeps the poll windows tight enough to
+ * still catch a real regression. It is a no-op against an already-warm or prebuilt server.
+ */
+async function warmRoutes(): Promise<void> {
+  const baseURL = process.env.BASE_URL;
+  if (!baseURL) return;
+  const context = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { 'x-forwarded-for': '10.255.255.254' } });
+  try {
+    await Promise.all([context.get('/'), context.get('/travel'), context.get('/api/webmcp/manifest')]);
+  } catch {
+    // Warming is an optimisation; a failure here must not be reported as a test failure.
+  } finally {
+    await context.dispose();
+  }
+}
 
 type Kind = 'guest' | 'guest-fresh' | 'admin';
 const as = (kind: Kind): Record<string, string> => ({ 'x-test-principal': kind, 'x-test-auth': TEST_AUTH_SECRET ?? '' });
@@ -165,6 +186,8 @@ function watchForErrors(page: Page): { errors: string[] } {
 }
 
 test.describe('webmcp: a browser that supports it', () => {
+  test.beforeAll(warmRoutes);
+
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(collectErrors);
     await page.addInitScript(installModelContextPolyfill);
@@ -246,6 +269,8 @@ test.describe('webmcp: a browser that supports it', () => {
 });
 
 test.describe('webmcp: a browser that does not support it', () => {
+  test.beforeAll(warmRoutes);
+
   test('loads with zero errors, registers nothing, and never calls the bridge', async ({ page }) => {
     const { errors } = watchForErrors(page);
     const webmcpRequests: string[] = [];

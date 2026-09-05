@@ -135,6 +135,12 @@ behind the `WEBMCP` flag. It renders nothing.
 - **`navigate` capabilities really navigate**, through the router, after the server has validated
   the path against the internal route allowlist (`src/capabilities/routes.ts`).
 
+The island is mounted from a server component that reads `FLAG_WEBMCP` at render time, so on a
+statically prerendered route that value is fixed at build time. Flipping the flag off at runtime
+therefore does not unmount the island on such a route — but it does not need to: the manifest
+route checks the flag on every request and answers `feature_disabled`, the client registers
+nothing, and `buildManifest` returns an empty tool list. The kill switch is the server's.
+
 ## Threat model
 
 The agent is **not** a trusted client. It is software acting for the guest, driven by a model that

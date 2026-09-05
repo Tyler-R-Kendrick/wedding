@@ -113,7 +113,9 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
     if (stopped || outer?.aborted) return;
     const controller = new AbortController();
     generation = controller;
-    outer?.addEventListener('abort', () => controller.abort(), { once: true });
+    // No per-generation abort listener on `outer`: `stop` already aborts the current generation,
+    // and every superseded one was aborted above. Adding one per generation would only accumulate
+    // listeners on a long-lived signal.
 
     const registered: string[] = [];
     for (const tool of manifest.tools) {
