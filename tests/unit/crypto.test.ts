@@ -29,7 +29,9 @@ describe('request helpers', () => {
     expect(getRequestId()).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   });
   it('extracts the first forwarded ip', () => {
-    expect(getClientIp(new Headers({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }))).toBe('203.0.113.9');
+    // The last x-forwarded-for entry is the one the trusted proxy appended; the first is client-controllable.
+    expect(getClientIp(new Headers({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }))).toBe('10.0.0.1');
+    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }))).toBe('203.0.113.42');
     expect(getClientIp(new Headers({ 'x-real-ip': '198.51.100.2' }))).toBe('198.51.100.2');
     expect(getClientIp(new Headers())).toBe('unknown');
   });

@@ -48,7 +48,7 @@ export async function createCapabilityContext(input: CreateContextInput): Promis
     now: input.now ?? new Date(),
     flags: getFlags(),
     audit,
-    inputTrust: input.inputTrust ?? 'TRUSTED_WEDDING',
+    inputTrust: input.inputTrust ?? 'UNTRUSTED_USER_CONTENT', // only server-side callers may opt into TRUSTED_WEDDING
     idempotencyKey: input.idempotencyKey as IdempotencyKey | undefined,
     confirmationToken: input.confirmationToken,
     view: input.view,

@@ -12,10 +12,15 @@ export function getRequestId(headers?: Headers | Record<string, string | undefin
 
 /** Best-effort client IP for rate limiting. Never used for geolocation or personalization. */
 export function getClientIp(headers: Headers): string {
+  // Trust order: platform-set headers first (Vercel overwrites these), then the LAST
+  // x-forwarded-for entry (appended by the nearest trusted proxy; the first entry is
+  // client-controllable), then x-real-ip.
+  const vercel = headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim();
+  if (vercel) return vercel;
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+    const last = forwarded.split(',').pop()?.trim();
+    if (last) return last;
   }
   return headers.get('x-real-ip')?.trim() || 'unknown';
 }

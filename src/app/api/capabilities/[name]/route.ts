@@ -66,7 +66,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     surface,
     idempotencyKey: body.idempotencyKey,
     confirmationToken: body.confirmationToken,
-    inputTrust: surface === 'ui' ? 'TRUSTED_WEDDING' : 'UNTRUSTED_USER_CONTENT',
+    // Anything arriving over HTTP is caller-controlled, whatever surface it claims.
+    inputTrust: 'UNTRUSTED_USER_CONTENT',
   });
   const result = await invokeByName(name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);
