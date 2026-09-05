@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-labelledby="t d">
+<title id="t">Stepped frame</title>
+<desc id="d">Portrait photo frame with ziggurat corners; the interior is transparent.</desc>
+<path d="M54 6 H746 v24 h24 v24 h24 V946 h-24 v24 h-24 v24 H54 v-24 h-24 v-24 h-24 V54 h24 v-24 h24 Z" fill="none" stroke="#C9A648" stroke-width="3"/><path d="M68 20 H732 v24 h24 v24 h24 V932 h-24 v24 h-24 v24 H68 v-24 h-24 v-24 h-24 V68 h24 v-24 h24 Z" fill="none" stroke="#C9A648" stroke-width="1"/><path d="M378 20 v8 h8 v8 h28 v-8 h8 v-8 Z" fill="#C9A648"/><path d="M378 980 v-8 h8 v-8 h28 v8 h8 v8 Z" fill="#C9A648"/>
+</svg>

@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "design:lint": "design.md lint DESIGN.md",
+    "design:lint": "for f in DESIGN.md $(ls src/themes/*/DESIGN.md 2>/dev/null); do echo \"== $f\"; design.md lint \"$f\" || exit 1; done",
     "design:lint:json": "design.md lint --format json DESIGN.md",
     "design:spec": "design.md spec --rules",
     "design:export:tailwind": "design.md export --format css-tailwind DESIGN.md",
@@ -23,8 +23,11 @@
     "impeccable:update": "impeccable update --project --providers=claude -y",
     "lint:css": "stylelint \"src/**/*.{css,scss}\" --allow-empty-input",
     "test:a11y": "playwright test",
-    "quality": "npm run design:lint && npm run slop:detect && npm run lint:css",
-    "assets:fal": "node scripts/fal-generate.mjs"
+    "quality": "npm run design:lint && npm run slop:detect && npm run lint:css && npm run -s assets:check",
+    "assets:fal": "node scripts/fal-generate.mjs",
+    "assets:check": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --check",
+    "assets:fetch": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs",
+    "art:generate": "node scripts/generate-art.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

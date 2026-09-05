@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<!-- impeccable-disable cream-palette -- docs/design/brief.md §4 pins a creme/ivory paper ground for this theme; the tone is tinted toward moss (see DESIGN.md Colors), not the reflex warm off-white -->
+<title>Conservatory — inspo board · Sara + Tyler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital@1&family=Gloock&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* Hallmark · macrostructure: herbarium-sheet (left-weighted column + right mounting area) · tone: botanical-editorial · anchor hue: 151 (moss) · pre-emit critique: P4 H4 E4 S5 R4 V4 */
+:root{
+  --ink:#2A4430; --on-ink:#F4EEDF; --moss:#4F6338; --leaf-deep:#3F5F33; --leaf:#7E9C5F; --moss-wash:#DFE5CF;
+  --pollen:#D4B24A; --sky:#D4E4EC; --sky-ink:#2B4A5A; --creme:#F4EEDF; --parchment:#EAE2CE; --ivory:#FBF8F1;
+  --muted:#4F5A48; --outline:#C8C1AC; --error:#8B3A2B; --on-error:#FFF5F0; --kraft:#E4D6BA; --kraft-deep:#C9B48C; --soil:#6E5637;
+  --font-display:Gloock,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --font-body:Spectral,"Iowan Old Style",Georgia,"Times New Roman",serif;
+  --font-label:Cardo,"Palatino Linotype",Georgia,serif;
+  --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:40px; --space-2xl:64px; --space-3xl:96px; --space-4xl:144px;
+  --r-sm:2px; --r-md:8px;
+  --shadow-paper:0 1px 0 rgba(42,68,48,.06),0 12px 32px -20px rgba(42,68,48,.35);
+  --ease-settle:cubic-bezier(.22,.61,.36,1); --ease-standard:cubic-bezier(.4,0,.2,1);
+  --measure:42rem;
+}
+html{background:var(--creme);color:var(--ink);font:400 1.0625rem/1.65 var(--font-body);-webkit-text-size-adjust:100%}
+body{margin:0}
+*,*::before,*::after{box-sizing:border-box}
+img,svg{max-width:100%;height:auto;display:block}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;font-style:normal;margin:0;overflow-wrap:anywhere;min-width:0}
+h1{font-size:clamp(2.75rem,2rem + 4vw,4.25rem);line-height:1;letter-spacing:-.01em}
+h2{font-size:clamp(2rem,1.6rem + 2.4vw,3rem);line-height:1.05}
+h3{font-size:1.625rem;line-height:1.2}
+p{margin:0 0 var(--space-md)}
+a{color:var(--leaf-deep);text-decoration:underline;text-decoration-color:var(--pollen);text-underline-offset:.2em;text-decoration-thickness:1px;transition:text-decoration-thickness 160ms var(--ease-standard)}
+a:hover{text-decoration-thickness:2px}
+a:active{color:var(--moss)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
+.smcp{font-feature-settings:"smcp","c2sc";letter-spacing:.1em;font-weight:500;font-size:.8125rem;line-height:1.2}
+.specimen{font-family:var(--font-label);font-style:italic;font-size:1rem;line-height:1.4;letter-spacing:.01em;color:var(--soil)}
+.lede{font-size:1.25rem;line-height:1.6}
+.small{font-size:.9375rem;line-height:1.55}
+.muted{color:var(--muted)}
+.soil{color:var(--soil)}
+.measure{max-width:var(--measure)}
+.wrap{width:min(100%,1200px);margin-inline:auto}
+/* herbarium sheet: content column left, mounting area right */
+.sheet{display:grid;gap:var(--space-lg);grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.sheet{grid-template-columns:minmax(0,7fr) minmax(0,5fr);column-gap:var(--space-2xl)}}
+.mount{position:relative;min-width:0}
+section{padding:var(--space-2xl) var(--space-md) var(--space-3xl)}
+@media (min-width:900px){section{padding:var(--space-3xl) var(--space-xl) var(--space-4xl)}}
+.wash-moss{background:var(--moss-wash)}
+.wash-parchment{background:var(--parchment)}
+.wash-sky{background:var(--creme) url("../../../public/assets/art/conservatory/sky-wash.svg") top right/cover no-repeat;color:var(--ink)}
+.inverse{background:var(--ink);color:var(--on-ink)}
+.inverse a{color:var(--on-ink)}
+.inverse .muted{color:var(--moss-wash)}
+.fern{width:min(100%,480px);height:48px;margin:var(--space-md) 0 var(--space-lg);background:url("../../../public/assets/art/conservatory/fern-divider.svg") left center/contain no-repeat}
+.inverse .fern{filter:invert(.9) sepia(.2) saturate(.6) hue-rotate(60deg)}
+/* masthead */
+.mast{position:relative;padding:var(--space-2xl) var(--space-md) var(--space-3xl);overflow:clip}
+@media (min-width:900px){.mast{padding-inline:var(--space-xl)}}
+.mast::before{content:"";position:absolute;inset:0 0 auto 0;height:80px;background:url("../../../public/assets/art/conservatory/leaf-border.svg") right top/auto 80px repeat-x;opacity:.9;pointer-events:none}
+.mast .wrap{position:relative;padding-top:var(--space-2xl)}
+.tag{display:inline-block;background:var(--kraft);color:var(--soil);font-family:var(--font-label);font-style:italic;padding:6px 10px;border-bottom:2px solid var(--kraft-deep);white-space:nowrap}
+.tag--hang{position:relative;transform:rotate(4deg);margin-left:var(--space-md)}
+.tag--hang::before{content:"";position:absolute;left:-14px;top:-20px;width:1px;height:26px;background:var(--pollen);transform:rotate(-30deg)}
+.tag-nav{display:inline-block;background:var(--kraft);color:var(--ink);text-decoration:none;padding:10px 14px;border-radius:var(--r-sm);white-space:nowrap;transition:transform 160ms var(--ease-standard)}
+.tag-nav:hover{transform:rotate(1.5deg);text-decoration:none}
+.tag-nav:active{background:var(--kraft-deep)}
+.rail{display:flex;flex-wrap:wrap;gap:var(--space-sm);padding:var(--space-md) 0 0;margin:var(--space-lg) 0 0;border-top:1px solid var(--outline);list-style:none}
+.rail li{margin:0}
+/* pressed sheets */
+.pressed{position:relative;background:var(--ivory);padding:var(--space-lg);box-shadow:var(--shadow-paper);max-width:100%}
+.pressed .tag{position:absolute;top:-12px;right:12px;transform:rotate(4deg)}
+.stack{display:grid;gap:0;grid-template-columns:minmax(0,1fr)}
+.stack .pressed{transform:rotate(-1.2deg)}
+.stack .pressed:first-child{padding-bottom:calc(var(--space-lg) + var(--space-xl))}
+.stack .pressed + .pressed{margin-top:calc(-1*var(--space-lg));margin-left:var(--space-lg);width:calc(100% - var(--space-lg));transform:rotate(1.6deg)}
+@keyframes settle{from{opacity:0;transform:translateY(12px) rotate(var(--from,1deg))}to{opacity:1;transform:translateY(0) rotate(var(--to,0deg))}}
+.settle .pressed{--to:-1.2deg;--from:.8deg;animation:settle 700ms var(--ease-settle) both}
+.settle .pressed + .pressed{--to:1.6deg;--from:3.6deg;animation-delay:80ms}
+@media (prefers-reduced-motion:reduce){.settle .pressed{animation:none}.tag-nav,a{transition-duration:1ms}}
+/* palette */
+.swatches{display:grid;gap:var(--space-md);grid-template-columns:repeat(auto-fill,minmax(150px,1fr));list-style:none;padding:0;margin:var(--space-lg) 0 0}
+.sw{border:1px solid var(--outline);background:var(--ivory);padding:0;display:flex;flex-direction:column;min-width:0}
+.sw .chip{height:88px;display:flex;align-items:flex-end;padding:var(--space-sm);font-weight:500}
+.sw dl{margin:0;padding:var(--space-sm) var(--space-sm) var(--space-md);font-size:.9375rem;line-height:1.5}
+.sw dt{font-weight:500}
+.sw dd{margin:0;color:var(--muted)}
+.sw code{font-family:var(--font-body);font-feature-settings:"tnum";color:var(--ink)}
+.sw .ratio{color:var(--ink)}
+.sw .ratio.fail{color:var(--error)}
+table{border-collapse:collapse;width:100%;font-size:.9375rem;line-height:1.5}
+.scroll table{min-width:600px}
+th,td{text-align:left;vertical-align:top;padding:var(--space-sm) var(--space-sm);border-bottom:1px solid var(--outline)}
+th{font-weight:500}
+.tnum{font-feature-settings:"tnum","lnum"}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* type specimens */
+.names{font-family:var(--font-display);font-size:clamp(3rem,2rem + 6vw,6rem);line-height:.98;letter-spacing:-.01em;margin:0}
+.names .plus{color:var(--pollen)}
+.numeral{font-family:var(--font-display);font-size:2.5rem;line-height:1;font-feature-settings:"tnum","lnum"}
+.countdown{display:inline-flex;align-items:baseline;gap:var(--space-md);background:var(--sky);color:var(--sky-ink);padding:var(--space-md) var(--space-lg)}
+.countdown .unit{font-feature-settings:"smcp";letter-spacing:.1em;font-weight:500;font-size:.8125rem;line-height:1}
+.chip-moss{display:inline-block;background:var(--moss);color:var(--on-ink);padding:4px 8px;border-radius:var(--r-sm)}
+.btn{display:inline-block;font:500 1rem/1 var(--font-body);letter-spacing:.02em;padding:14px 24px;border-radius:var(--r-md);border:0;min-height:44px;cursor:pointer;white-space:nowrap;transition:background-color 160ms var(--ease-standard)}
+.btn-primary{background:var(--ink);color:var(--on-ink)}
+.btn-primary:hover{background:var(--leaf-deep)}
+.btn-accent{background:var(--pollen);color:var(--ink)}
+.btn-ghost{background:var(--ivory);color:var(--ink);border:1px solid var(--ink);padding:13px 23px}
+.btn-ghost:hover{background:var(--moss-wash)}
+.btn:active{filter:brightness(.92)}
+.btn:disabled{background:var(--outline);color:var(--muted);cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:var(--space-md);align-items:center}
+/* motifs */
+.motifs{display:grid;gap:var(--space-lg);grid-template-columns:repeat(auto-fill,minmax(220px,1fr));list-style:none;padding:0;margin:var(--space-lg) 0 0}
+.motif{background:var(--ivory);border:1px solid var(--outline);padding:var(--space-md);min-width:0}
+.motif figure{margin:0}
+.motif .art{background:var(--creme);display:grid;place-items:center;min-height:140px;padding:var(--space-sm)}
+.motif img{max-height:160px;width:auto}
+.motif figcaption{padding-top:var(--space-sm)}
+.motif.wide{grid-column:1/-1}
+.motif.wide img{max-height:80px;width:100%;object-fit:cover;object-position:left}
+/* wireframes */
+.frames{display:grid;gap:var(--space-xl) var(--space-lg);grid-template-columns:minmax(0,1fr);margin-top:var(--space-lg)}
+@media (min-width:640px){.frames{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1200px){.frames{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.frames figure{margin:0;min-width:0}
+.frames figure.wide{grid-column:1/-1}
+.frames svg{width:100%;height:auto;padding:var(--space-sm);border:1px solid var(--outline);background:var(--creme)}
+.frames figcaption{padding-top:var(--space-sm)}
+/* wireframe fills — tokens, never literals */
+.w-paper{fill:var(--creme)} .w-parch{fill:var(--parchment)} .w-sheet{fill:var(--ivory);stroke:var(--outline);stroke-width:1}
+.w-kraft{fill:var(--kraft)} .w-ink{fill:var(--ink)} .w-sky{fill:var(--sky)} .w-moss{fill:var(--moss-wash)} .w-pollen{fill:var(--pollen)}
+.w-bar{fill:var(--muted);opacity:.32} .w-bar-light{fill:var(--on-ink);opacity:.55} .w-line{stroke:var(--outline);stroke-width:1;fill:none}
+.w-leaf{fill:var(--leaf);opacity:.7;stroke:var(--leaf-deep);stroke-width:1} .w-mosscl{fill:var(--moss);opacity:.55}
+.w-text{font-family:var(--font-display);fill:var(--ink)} .w-label{font-family:var(--font-label);font-style:italic;fill:var(--soil)}
+.w-body{font-family:var(--font-body);fill:var(--ink)} .w-body-light{font-family:var(--font-body);fill:var(--on-ink)} .w-skytext{font-family:var(--font-display);fill:var(--sky-ink)}
+.w-btn-ink{fill:var(--ink)} .w-btn-ghost{fill:var(--ivory);stroke:var(--ink);stroke-width:1} .w-btn-pollen{fill:var(--pollen)}
+.w-err{fill:var(--error)}
+/* references & compare */
+.refs{list-style:none;padding:0;margin:var(--space-lg) 0 0;display:grid;gap:var(--space-md);grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.refs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ref{background:var(--ivory);border:1px solid var(--outline);padding:var(--space-lg);min-width:0}
+.ref h3{font-family:var(--font-body);font-weight:500;font-size:1.25rem;line-height:1.3}
+.ref p{margin-bottom:var(--space-sm)}
+.compare{display:grid;gap:var(--space-lg);grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.compare{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.compare .col{padding:var(--space-lg);border:1px solid var(--outline)}
+.compare .col.gilded{background:var(--parchment)}
+.compare .col.cons{background:var(--ivory)}
+.compare ul{padding-left:1.1em;margin:0}
+.words{display:flex;flex-wrap:wrap;gap:var(--space-sm);list-style:none;padding:0;margin:var(--space-md) 0 0}
+.words li{background:var(--kraft);color:var(--ink);padding:6px 10px;border-radius:var(--r-sm)}
+.words.anti li{background:var(--parchment);color:var(--soil);text-decoration:line-through;text-decoration-color:var(--error)}
+.score{display:grid;gap:var(--space-md);grid-template-columns:repeat(auto-fit,minmax(160px,1fr));list-style:none;padding:0;margin:var(--space-lg) 0 0}
+.score li{background:var(--ivory);border:1px solid var(--outline);padding:var(--space-md)}
+.score b{font-family:var(--font-display);font-weight:400;font-size:2.5rem;line-height:1;display:block;font-feature-settings:"tnum"}
+footer{padding:var(--space-xl) var(--space-md) var(--space-3xl);border-top:1px solid var(--outline)}
+@media print{.mast::before,.fern{display:none}section{padding-block:var(--space-lg)}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="small soil" style="margin-bottom:var(--space-md)">Inspo board · theme two of two</p>
+    <div class="row" style="align-items:baseline;row-gap:var(--space-lg)"><h1>Conservatory</h1><span class="tag tag--hang">Sara + Tyler · Chicago · 07 · 17 · 27</span></div>
+    <p class="lede measure" style="margin-top:var(--space-lg)">A glasshouse in July. Creme paper, a light-blue wash where the sky shows through the glazing, moss and leaf greens doing the work of ink, one thread of pollen gold. Every page is laid down like a pressed specimen: off-centre, labelled in italic, sometimes overlapping the sheet beneath.</p>
+    <p class="measure small muted">Source of truth: <code>docs/design/brief.md</code> §2 facts, §4 visual direction. Tokens: <code>src/themes/conservatory/DESIGN.md</code> (lints 0/0). Art: <code>scripts/art/conservatory.mjs</code>. Anything not in the brief reads <code>TODO(Tyler &amp; Sara)</code>.</p>
+    <ul class="rail smcp" aria-label="On this board">
+      <li><a class="tag-nav" href="#palette">Palette</a></li>
+      <li><a class="tag-nav" href="#type">Type</a></li>
+      <li><a class="tag-nav" href="#motifs">Motifs</a></li>
+      <li><a class="tag-nav" href="#wireframes">Wireframes</a></li>
+      <li><a class="tag-nav" href="#refs">References</a></li>
+      <li><a class="tag-nav" href="#versus">Versus Gilded Hour</a></li>
+      <li><a class="tag-nav" href="#score">Score</a></li>
+    </ul>
+  </div>
+</header>
+
+<section id="palette">
+  <div class="wrap">
+    <div class="sheet">
+      <div>
+        <h2>Palette: paper, sky, moss, kraft, one pollen thread</h2>
+        <div class="fern" role="presentation"></div>
+        <p class="measure">Every colour has a job. Moss ink does all the talking; the pale greens and blues are washes and may never carry text. Ratios below are computed in-page against the ground each colour actually sits on (WCAG 2.x; AA for body text is 4.5:1).</p>
+        <p class="measure small muted">The Wash Rule: text on sky is <em>sky ink</em>, text on moss-wash or kraft is <em>moss ink</em> or <em>soil</em>. The Pollen Rule: gold at most twice per viewport, or it becomes gilding, which is the other theme's job.</p>
+      </div>
+      <div class="mount">
+        <div class="stack settle" aria-hidden="true">
+          <div class="pressed"><span class="tag">TODO(Tyler &amp; Sara)</span><p class="smcp soil" style="margin:0 0 4px">Specimen sheet</p><p style="margin:0">Ivory on creme, no hairline, tilted −1.2°</p></div>
+          <div class="pressed"><span class="tag">Chicago · 07 · 17 · 27</span><p class="smcp soil" style="margin:0 0 4px">Second sheet</p><p style="margin:0">Overlaps by 24px, tilted +1.6°</p></div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="swatches" id="swatch-list">
+      <li class="sw" data-hex="#2A4430" data-on="#F4EEDF"><div class="chip" style="background:#2A4430;color:#F4EEDF">Moss ink</div><dl><dt>primary</dt><dd><code>#2A4430</code></dd><dd class="ratio">on creme <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#4F6338" data-on="#F4EEDF"><div class="chip" style="background:#4F6338;color:#F4EEDF">Moss</div><dl><dt>secondary</dt><dd><code>#4F6338</code></dd><dd class="ratio">on creme <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#3F5F33" data-on="#F4EEDF"><div class="chip" style="background:#3F5F33;color:#F4EEDF">Leaf ink</div><dl><dt>leaf-deep · links, hover</dt><dd><code>#3F5F33</code></dd><dd class="ratio">on creme <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#7E9C5F" data-on="#2A4430" data-fill="1"><div class="chip" style="background:#7E9C5F" aria-hidden="true"></div><dl><dt>leaf · ornament fill only</dt><dd><code>#7E9C5F</code></dd><dd class="ratio">ink on it <span class="tnum"></span> · no text</dd></dl></li>
+      <li class="sw" data-hex="#DFE5CF" data-on="#2A4430"><div class="chip" style="background:#DFE5CF;color:#2A4430">Moss wash</div><dl><dt>moss-wash · section fill</dt><dd><code>#DFE5CF</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#D4B24A" data-on="#2A4430"><div class="chip" style="background:#D4B24A;color:#2A4430">Pollen</div><dl><dt>tertiary · RSVP, thread</dt><dd><code>#D4B24A</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#D4E4EC" data-on="#2B4A5A"><div class="chip" style="background:#D4E4EC;color:#2B4A5A">Sky wash</div><dl><dt>sky · operational bands</dt><dd><code>#D4E4EC</code></dd><dd class="ratio">sky ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#2B4A5A" data-on="#D4E4EC"><div class="chip" style="background:#2B4A5A;color:#D4E4EC">Sky ink</div><dl><dt>sky-ink</dt><dd><code>#2B4A5A</code></dd><dd class="ratio">on sky <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#E4D6BA" data-on="#6E5637"><div class="chip" style="background:#E4D6BA;color:#6E5637">Kraft</div><dl><dt>kraft · tags, nav</dt><dd><code>#E4D6BA</code></dd><dd class="ratio">soil on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#C9B48C" data-on="#2A4430"><div class="chip" style="background:#C9B48C;color:#2A4430">Kraft rule</div><dl><dt>kraft-deep · rules, chips</dt><dd><code>#C9B48C</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#6E5637" data-on="#F4EEDF"><div class="chip" style="background:#6E5637;color:#F4EEDF">Soil</div><dl><dt>soil · captions, labels</dt><dd><code>#6E5637</code></dd><dd class="ratio">on creme <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#F4EEDF" data-on="#2A4430"><div class="chip" style="background:#F4EEDF;color:#2A4430">Creme</div><dl><dt>neutral · the page</dt><dd><code>#F4EEDF</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#EAE2CE" data-on="#2A4430"><div class="chip" style="background:#EAE2CE;color:#2A4430">Parchment</div><dl><dt>neutral-variant · RSVP ground</dt><dd><code>#EAE2CE</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#FBF8F1" data-on="#2A4430"><div class="chip" style="background:#FBF8F1;color:#2A4430">Ivory sheet</div><dl><dt>surface · cards</dt><dd><code>#FBF8F1</code></dd><dd class="ratio">ink on it <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#4F5A48" data-on="#FBF8F1"><div class="chip" style="background:#4F5A48;color:#FBF8F1">Muted</div><dl><dt>on-surface-muted</dt><dd><code>#4F5A48</code></dd><dd class="ratio">on ivory <span class="tnum"></span></dd></dl></li>
+      <li class="sw" data-hex="#C8C1AC" data-on="#F4EEDF" data-fill="1"><div class="chip" style="background:#C8C1AC;color:#2A4430">Hairline</div><dl><dt>outline · decorative</dt><dd><code>#C8C1AC</code></dd><dd class="ratio">vs creme <span class="tnum"></span> · never text</dd></dl></li>
+      <li class="sw" data-hex="#8B3A2B" data-on="#FFF5F0"><div class="chip" style="background:#8B3A2B;color:#FFF5F0">Error</div><dl><dt>error / on-error</dt><dd><code>#8B3A2B</code></dd><dd class="ratio">pair <span class="tnum"></span></dd></dl></li>
+    </ul>
+
+    <h3 style="margin-top:var(--space-2xl)">Component pairs, as the linter sees them</h3>
+    <p class="small muted measure">Every <code>backgroundColor</code>/<code>textColor</code> pair in the theme frontmatter. Lowest first. <code>npx design.md lint</code> reports 0 errors, 0 warnings.</p>
+    <div class="scroll"><table id="pairs">
+      <thead><tr><th>Component</th><th>Text</th><th>Ground</th><th class="tnum">Ratio</th></tr></thead>
+      <tbody>
+        <tr data-a="#6E5637" data-b="#E4D6BA"><td>specimen-label</td><td>soil</td><td>kraft</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#D4B24A"><td>button-accent</td><td>on-tertiary</td><td>tertiary (pollen)</td><td class="tnum"></td></tr>
+        <tr data-a="#4F6338" data-b="#F4EEDF"><td>eyebrow</td><td>secondary</td><td>neutral</td><td class="tnum"></td></tr>
+        <tr data-a="#F4EEDF" data-b="#4F6338"><td>tag-moss</td><td>on-secondary</td><td>secondary</td><td class="tnum"></td></tr>
+        <tr data-a="#6E5637" data-b="#F4EEDF"><td>caption</td><td>soil</td><td>neutral</td><td class="tnum"></td></tr>
+        <tr data-a="#F4EEDF" data-b="#3F5F33"><td>button-primary-hover</td><td>on-primary</td><td>leaf-deep</td><td class="tnum"></td></tr>
+        <tr data-a="#3F5F33" data-b="#F4EEDF"><td>link</td><td>leaf-deep</td><td>neutral</td><td class="tnum"></td></tr>
+        <tr data-a="#4F5A48" data-b="#FBF8F1"><td>card-muted-text</td><td>on-surface-muted</td><td>surface</td><td class="tnum"></td></tr>
+        <tr data-a="#FFF5F0" data-b="#8B3A2B"><td>banner-error</td><td>on-error</td><td>error</td><td class="tnum"></td></tr>
+        <tr data-a="#2B4A5A" data-b="#D4E4EC"><td>banner-sky · countdown</td><td>sky-ink</td><td>sky</td><td class="tnum"></td></tr>
+        <tr data-a="#8B3A2B" data-b="#FBF8F1"><td>input-error</td><td>error</td><td>surface</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#E4D6BA"><td>nav</td><td>primary</td><td>kraft</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#DFE5CF"><td>section-alt</td><td>on-surface</td><td>moss-wash</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#EAE2CE"><td>section-parchment</td><td>on-surface</td><td>neutral-variant</td><td class="tnum"></td></tr>
+        <tr data-a="#F4EEDF" data-b="#2A4430"><td>button-primary · nav-current · section-inverse</td><td>on-primary</td><td>primary</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#F4EEDF"><td>hero · titles · prose</td><td>primary</td><td>neutral</td><td class="tnum"></td></tr>
+        <tr data-a="#2A4430" data-b="#FBF8F1"><td>card · card-pressed · input · button-ghost</td><td>on-surface</td><td>surface</td><td class="tnum"></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section id="type" class="wash-moss">
+  <div class="wrap">
+    <h2>Type: engraved display, readable text, one italic voice</h2>
+    <div class="fern" role="presentation"></div>
+    <div class="sheet">
+      <div>
+        <p class="names">Sara <span class="plus">+</span> Tyler</p>
+        <p class="specimen" style="margin-top:var(--space-md)">Chicago Athletic Association Hotel · 12 S Michigan Ave</p>
+        <p style="margin-top:var(--space-xl)"><span class="smcp soil">The date</span><br><span class="numeral">07 · 17 · 27</span><br><span class="lede">Saturday, July 17, 2027</span></p>
+        <p class="lede measure" style="margin-top:var(--space-xl)">They met at Allison and Jamie's wedding. <span class="soil">TODO(Tyler &amp; Sara): the rest of the first chapter, in your words, about the length of this paragraph. Spectral at 20px carries the opening of Our Story; the running text below it is 17px on a 1.65 line so it stays comfortable on a phone in a car.</span></p>
+        <p class="measure">Body text, <code>body-md</code>. Gloock is a single-weight display face with a botanical curl in its terminals; it looks engraved rather than typed, so hierarchy comes from size and space, never from bolding. Spectral has a true italic and real small caps, which is why eyebrows and tags are set in <span class="smcp">small capitals</span> instead of tracked uppercase. Cardo italic speaks only from kraft labels.</p>
+        <p class="row" style="margin-top:var(--space-lg)"><button class="btn btn-accent" type="button">RSVP</button><button class="btn btn-primary" type="button">Get directions</button><button class="btn btn-ghost" type="button">Add to calendar</button></p>
+        <p class="row"><span class="countdown"><span class="numeral">TODO</span><span class="unit">days</span></span><span class="chip-moss smcp">Sara remembers</span><span class="chip-moss smcp">Tyler remembers</span></p>
+      </div>
+      <div class="mount">
+        <div class="pressed" style="transform:rotate(1.4deg)">
+          <span class="tag">TODO(Tyler &amp; Sara)</span>
+          <p class="small soil" style="margin:0 0 var(--space-sm)">Specimen labels · Cardo italic</p>
+          <p class="specimen" style="margin:0 0 var(--space-xs)">Starved Rock · first "I love you" · TODO(Tyler &amp; Sara)</p>
+          <p class="specimen" style="margin:0 0 var(--space-xs)">Richardson Farm · TODO(Tyler &amp; Sara)</p>
+          <p class="specimen" style="margin:0 0 var(--space-xs)">Madison waterfront · TODO(Tyler &amp; Sara)</p>
+          <p class="specimen" style="margin:0">Museum of Ice Cream · TODO(Tyler &amp; Sara)</p>
+          <p class="small muted" style="margin:var(--space-md) 0 0">Two slots only: the label on a pressed card and the place/date line on a tag. Never a heading, never a button.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:var(--space-2xl)">Why this pairing, and what the index offered instead</h3>
+    <p class="small muted measure">Searched with ui-ux-pro-max (<code>--domain typography</code>: "botanical garden editorial serif elegant", "wedding luxury classic invitation"; <code>--domain google-fonts</code> for each face). Licences confirmed from google/fonts <code>METADATA.pb</code>.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Option</th><th>Faces</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><b>Conservatory (chosen)</b></td><td>Gloock · Spectral · Cardo italic — all OFL (Duarte Pinto; Production Type; David Perry)</td><td>Engraved botanical display; screen serif with true italic and small caps; scholarly italic for labels. Three families, four files. Visibly different from the editorial baseline (Libre Caslon Display + Newsreader) and from Gilded Hour (Cinzel + Josefin Sans + Big Shoulders).</td></tr>
+        <tr><td>Index: "Wedding/Romance"</td><td>Great Vibes + Cormorant Infant</td><td>Rejected. Script on a serif is the centred-script-on-blush template the brief bans; Cormorant is on the anti-reference list.</td></tr>
+        <tr><td>Index: "Classic Elegant"</td><td>Playfair Display + Inter</td><td>Rejected. Both faces banned by the brief and by <code>lint:css</code>; the pairing is the most common AI-default on the web.</td></tr>
+        <tr><td>Index: "Editorial Classic"</td><td>Cormorant Garamond + Libre Baskerville</td><td>Rejected. Cormorant banned; Baskerville is fine but cooler and more bookish than a glasshouse wants.</td></tr>
+        <tr><td>Runner-up considered</td><td>Libre Caslon Display + Newsreader</td><td>Already the repo baseline; Conservatory must read as a different room. Caslon's terminals are straight where Gloock's curl.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section id="motifs">
+  <div class="wrap">
+    <div class="sheet">
+      <div>
+        <h2>Motifs: generated in-repo, license-free, deterministic</h2>
+        <div class="fern" role="presentation"></div>
+        <p class="measure"><code>node scripts/generate-art.mjs conservatory</code> writes eleven SVGs to <code>public/assets/art/conservatory/</code>. Same bytes every run (seeded PRNG), theme colours only, no external references. Line art at 1.25px in leaf ink with leaf fills; never watercolor, never clip-art.</p>
+      </div>
+      <div class="mount">
+        <img src="../../../public/assets/art/conservatory/tendril-corner.svg" width="200" height="200" alt="Tendril corner ornament: a spiral tendril with two small leaves" style="margin-left:auto">
+      </div>
+    </div>
+    <ul class="motifs">
+      <li class="motif wide"><figure><div class="art"><img src="../../../public/assets/art/conservatory/leaf-border.svg" width="1200" height="80" alt="Leaf border: a waving vine with alternating leaves and pollen berries"></div><figcaption><b>leaf-border</b> · 1200×80 tile, repeat-x. Hero top edge and the nav rail thread. One edge only, never four corners.</figcaption></figure></li>
+      <li class="motif wide"><figure><div class="art"><img src="../../../public/assets/art/conservatory/fern-divider.svg" width="480" height="48" alt="Fern divider: a single frond growing from the left and curling at the tip" style="object-position:left"></div><figcaption><b>fern-divider</b> · 480×48. Replaces the 12rem hairline between chapters; grows from the left margin and stops.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/moss-cluster-lg.svg" width="240" height="240" alt="Large moss cluster of green dots"></div><figcaption><b>moss-cluster-lg</b> · 240. Behind the after-dark section title.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/moss-cluster-md.svg" width="128" height="128" alt="Medium moss cluster"></div><figcaption><b>moss-cluster-md</b> · 128. Tucked under a pressed-card corner.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/moss-cluster-sm.svg" width="64" height="64" alt="Small moss cluster"></div><figcaption><b>moss-cluster-sm</b> · 64. List bullet beside memory tags.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/specimen-tag.svg" width="320" height="140" alt="Kraft specimen tag with pollen thread and placeholder name TODO(Tyler & Sara)"></div><figcaption><b>specimen-tag</b> · 320×140. Comp reference for the kraft label; the live component renders its text in HTML.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/pressed-flower-a.svg" width="220" height="220" alt="Pressed five-petal bloom on a stem"></div><figcaption><b>pressed-flower-a</b> · bloom. One per pressed card, cropped by a corner.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/pressed-flower-b.svg" width="220" height="220" alt="Pressed umbel spray with tiny ivory florets"></div><figcaption><b>pressed-flower-b</b> · umbel. Adventures with kids, food and drink.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art"><img src="../../../public/assets/art/conservatory/pressed-flower-c.svg" width="220" height="220" alt="Pressed bell-flower spike"></div><figcaption><b>pressed-flower-c</b> · bells. Memories and Our Story chapters.</figcaption></figure></li>
+      <li class="motif"><figure><div class="art" style="background:url('../../../public/assets/art/conservatory/sky-wash.svg') top right/cover no-repeat;min-height:160px"></div><figcaption><b>sky-wash</b> · 1440×640, SVG gradients only. Ground of the wedding-week band; the one soft edge in the system.</figcaption></figure></li>
+    </ul>
+  </div>
+</section>
+
+<section id="wireframes" class="wash-parchment">
+  <div class="wrap">
+    <h2>Layout logic: the herbarium sheet</h2>
+    <div class="fern" role="presentation"></div>
+    <p class="measure">Text lives in the left seven columns; the right five are the mounting area where pressed cards, tags and ornament hang and overlap. Sections change by wash, not by equal whitespace. Navigation is a rail of kraft tags on the left at 1440px and a single Menu tag plus a two-action bottom bar at 390px. Nothing is centred by default. Thumbnails are plain artboards, not device frames.</p>
+
+    <div class="frames">
+      <figure>
+        <svg viewBox="0 0 390 760" aria-labelledby="wf1t" role="img"><title id="wf1t">Home, teaser state, 390px wide</title>
+          <rect class="w-paper" width="390" height="760"/>
+          <path class="w-line" d="M250 0 C280 30 320 10 390 26" style="stroke:var(--leaf-deep)"/><ellipse class="w-leaf" cx="300" cy="14" rx="14" ry="5" transform="rotate(-20 300 14)"/><ellipse class="w-leaf" cx="350" cy="20" rx="12" ry="4" transform="rotate(25 350 20)"/>
+          <text class="w-text" x="24" y="120" font-size="48">Sara</text><text class="w-text" x="24" y="172" font-size="48">+ Tyler</text>
+          <circle class="w-pollen" cx="42" cy="158" r="9"/>
+          <g transform="translate(214 190) rotate(4)"><rect class="w-kraft" width="150" height="34" rx="2"/><text class="w-label" x="10" y="22" font-size="12">Chicago · 07 · 17 · 27</text></g>
+          <rect class="w-bar" x="24" y="240" width="260" height="10" rx="2"/><rect class="w-bar" x="24" y="258" width="300" height="10" rx="2"/><rect class="w-bar" x="24" y="276" width="180" height="10" rx="2"/>
+          <g transform="translate(60 320) rotate(-1.5)"><rect class="w-sheet" width="300" height="200"/><g transform="translate(236 -10) rotate(4)"><rect class="w-kraft" width="76" height="26" rx="2"/></g><rect class="w-bar" x="24" y="40" width="140" height="14" rx="2"/><rect class="w-bar" x="24" y="66" width="220" height="8" rx="2"/><rect class="w-bar" x="24" y="82" width="200" height="8" rx="2"/><circle class="w-leaf" cx="270" cy="180" r="34"/></g>
+          <text class="w-body" x="24" y="570" font-size="14">Our Story · teaser</text>
+          <rect class="w-bar" x="24" y="586" width="280" height="8" rx="2"/><rect class="w-bar" x="24" y="602" width="240" height="8" rx="2"/>
+          <g transform="translate(300 646) rotate(3)"><rect class="w-kraft" width="66" height="30" rx="2"/><text class="w-body" x="12" y="20" font-size="12">Menu</text></g>
+          <rect class="w-sheet" x="0" y="690" width="390" height="70"/>
+          <rect class="w-btn-ghost" x="24" y="704" width="160" height="44" rx="8"/><text class="w-body" x="46" y="731" font-size="13">Add to calendar</text>
+          <rect class="w-btn-ink" x="206" y="704" width="160" height="44" rx="8"/><text class="w-body-light" x="240" y="731" font-size="13">Travel &amp; Stay</text>
+        </svg>
+        <figcaption><b>Home · TEASER · 390</b>. Names left with hanging "+", date tag off-axis, the first pressed card overlapping the fold, two-action bottom bar.</figcaption>
+      </figure>
+
+      <figure>
+        <svg viewBox="0 0 390 760" aria-labelledby="wf2t" role="img"><title id="wf2t">Home, wedding-week state, 390px wide</title>
+          <rect class="w-paper" width="390" height="760"/>
+          <rect class="w-sky" width="390" height="250"/>
+          <text class="w-skytext" x="24" y="64" font-size="30">Sara + Tyler</text>
+          <text class="w-body" x="24" y="96" font-size="13" style="fill:var(--sky-ink)">Saturday, July 17, 2027</text>
+          <text class="w-skytext" x="24" y="170" font-size="56" style="font-feature-settings:'tnum'">TODO</text><text class="w-body" x="150" y="170" font-size="12" style="fill:var(--sky-ink)">days</text>
+          <g transform="translate(224 200) rotate(4)"><rect class="w-kraft" width="140" height="30" rx="2"/><text class="w-label" x="10" y="20" font-size="12">Today · TODO</text></g>
+          <g transform="translate(24 270)"><rect class="w-sheet" width="342" height="230"/><text class="w-text" x="20" y="38" font-size="22">Today</text>
+            <rect class="w-pollen" x="20" y="60" width="6" height="6"/><rect class="w-bar" x="36" y="58" width="120" height="10" rx="2"/><rect class="w-bar" x="200" y="58" width="80" height="10" rx="2"/>
+            <rect class="w-bar" x="36" y="88" width="140" height="10" rx="2"/><rect class="w-bar" x="200" y="88" width="80" height="10" rx="2"/>
+            <rect class="w-bar" x="36" y="118" width="110" height="10" rx="2"/><rect class="w-bar" x="200" y="118" width="80" height="10" rx="2"/>
+            <rect class="w-bar" x="36" y="148" width="150" height="10" rx="2"/><rect class="w-bar" x="200" y="148" width="80" height="10" rx="2"/>
+            <rect class="w-btn-ghost" x="20" y="176" width="150" height="40" rx="8"/><text class="w-body" x="44" y="201" font-size="12">Open in Maps</text></g>
+          <g transform="translate(40 520) rotate(1.2)"><rect class="w-sheet" width="310" height="120"/><g transform="translate(240 -10) rotate(4)"><rect class="w-kraft" width="76" height="26" rx="2"/></g><rect class="w-bar" x="20" y="34" width="150" height="12" rx="2"/><rect class="w-bar" x="20" y="58" width="240" height="8" rx="2"/><rect class="w-bar" x="20" y="74" width="200" height="8" rx="2"/></g>
+          <rect class="w-sheet" x="0" y="690" width="390" height="70"/>
+          <rect class="w-btn-ghost" x="24" y="704" width="160" height="44" rx="8"/><text class="w-body" x="50" y="731" font-size="13">Your Weekend</text>
+          <rect class="w-btn-ink" x="206" y="704" width="160" height="44" rx="8"/><text class="w-body-light" x="250" y="731" font-size="13">Directions</text>
+        </svg>
+        <figcaption><b>Home · WEDDING_WEEK · 390</b>. The sky band rises to the top with the countdown; today's schedule on a sheet; bar switches to Your Weekend + Directions.</figcaption>
+      </figure>
+
+      <figure>
+        <svg viewBox="0 0 390 760" aria-labelledby="wf3t" role="img"><title id="wf3t">An Adventure card, 390px wide</title>
+          <rect class="w-paper" width="390" height="760"/>
+          <text class="w-text" x="24" y="60" font-size="28">Share an Adventure</text>
+          <path class="w-line" d="M24 84 C90 80 150 78 200 80" style="stroke:var(--leaf-deep)"/>
+          <g transform="translate(20 120) rotate(-1.2)"><rect class="w-sheet" width="350" height="560"/>
+            <g transform="translate(256 -12) rotate(4)"><rect class="w-kraft" width="104" height="30" rx="2"/><text class="w-label" x="8" y="20" font-size="11">Starved Rock</text></g>
+            <text class="w-text" x="24" y="60" font-size="26">TODO(Tyler &amp; Sara)</text>
+            <text class="w-body" x="24" y="88" font-size="12" style="fill:var(--moss)">practical layer</text>
+            <rect class="w-bar" x="24" y="104" width="280" height="9" rx="2"/><rect class="w-bar" x="24" y="122" width="200" height="9" rx="2"/><rect class="w-bar" x="24" y="140" width="240" height="9" rx="2"/>
+            <rect class="w-btn-ghost" x="24" y="164" width="140" height="40" rx="8"/><text class="w-body" x="46" y="189" font-size="12">Open in Maps</text>
+            <rect class="w-btn-ghost" x="176" y="164" width="150" height="40" rx="8"/><text class="w-body" x="192" y="189" font-size="12">Continue with Uber</text>
+            <path class="w-line" d="M24 236 C80 232 120 230 180 232" style="stroke:var(--leaf-deep)"/>
+            <text class="w-body" x="24" y="268" font-size="12" style="fill:var(--moss)">why we're sharing this</text>
+            <rect class="w-ink" x="24" y="284" width="98" height="22" rx="2"/><text class="w-body-light" x="32" y="299" font-size="10">Sara remembers</text>
+            <rect class="w-bar" x="24" y="320" width="300" height="8" rx="2"/><rect class="w-bar" x="24" y="336" width="280" height="8" rx="2"/><rect class="w-bar" x="24" y="352" width="220" height="8" rx="2"/>
+            <rect class="w-ink" x="24" y="380" width="104" height="22" rx="2"/><text class="w-body-light" x="32" y="395" font-size="10">Tyler remembers</text>
+            <rect class="w-bar" x="24" y="416" width="290" height="8" rx="2"/><rect class="w-bar" x="24" y="432" width="200" height="8" rx="2"/>
+            <circle class="w-leaf" cx="330" cy="540" r="60"/><circle class="w-pollen" cx="330" cy="540" r="8"/>
+            <ellipse class="w-mosscl" cx="60" cy="560" rx="40" ry="18"/>
+          </g>
+        </svg>
+        <figcaption><b>Share an Adventure · card · 390</b>. Practical layer first, memory layer second with moss attribution tags; the bloom is cropped by the card edge.</figcaption>
+      </figure>
+
+      <figure class="wide">
+        <svg viewBox="0 0 1440 900" aria-labelledby="wf4t" role="img"><title id="wf4t">Our Story, 1440px wide</title>
+          <rect class="w-paper" width="1440" height="900"/>
+          <line class="w-line" x1="72" y1="0" x2="72" y2="900"/>
+          <g transform="translate(20 120)"><rect class="w-kraft" width="44" height="120" rx="2"/><rect class="w-ink" y="136" width="44" height="120" rx="2" transform="rotate(3 22 196)"/><circle class="w-pollen" cx="22" cy="146" r="4"/><rect class="w-kraft" y="272" width="44" height="120" rx="2"/><rect class="w-kraft" y="408" width="44" height="120" rx="2"/><rect class="w-kraft" y="544" width="44" height="120" rx="2"/></g>
+          <text class="w-text" x="160" y="150" font-size="64">Our Story</text>
+          <path class="w-line" d="M160 190 C300 184 420 180 560 184 C600 186 640 176 656 164" style="stroke:var(--leaf-deep);stroke-width:1.5"/>
+          <text class="w-text" x="160" y="260" font-size="30">How we met</text>
+          <text class="w-body" x="160" y="296" font-size="17">They met at Allison and Jamie's wedding.</text>
+          <rect class="w-bar" x="160" y="318" width="560" height="10" rx="2"/><rect class="w-bar" x="160" y="340" width="600" height="10" rx="2"/><rect class="w-bar" x="160" y="362" width="520" height="10" rx="2"/><rect class="w-bar" x="160" y="384" width="580" height="10" rx="2"/>
+          <text class="w-text" x="160" y="470" font-size="30">Becoming better together</text>
+          <rect class="w-bar" x="160" y="500" width="600" height="10" rx="2"/><rect class="w-bar" x="160" y="522" width="540" height="10" rx="2"/><rect class="w-bar" x="160" y="544" width="580" height="10" rx="2"/>
+          <path class="w-line" d="M160 600 C260 596 340 594 420 596" style="stroke:var(--leaf-deep);stroke-width:1.5"/>
+          <text class="w-text" x="160" y="660" font-size="30">The first "I love you"</text>
+          <rect class="w-bar" x="160" y="690" width="560" height="10" rx="2"/><rect class="w-bar" x="160" y="712" width="600" height="10" rx="2"/>
+          <g transform="translate(860 120) rotate(-1.5)"><rect class="w-sheet" width="420" height="300"/><g transform="translate(330 -12) rotate(4)"><rect class="w-kraft" width="110" height="30" rx="2"/></g><rect class="w-moss" x="24" y="24" width="372" height="180"/><rect class="w-bar" x="24" y="224" width="200" height="12" rx="2"/><rect class="w-bar" x="24" y="248" width="300" height="8" rx="2"/></g>
+          <g transform="translate(980 380) rotate(1.8)"><rect class="w-sheet" width="380" height="250"/><g transform="translate(290 -12) rotate(4)"><rect class="w-kraft" width="100" height="30" rx="2"/></g><rect class="w-bar" x="24" y="34" width="180" height="12" rx="2"/><rect class="w-bar" x="24" y="60" width="300" height="8" rx="2"/><rect class="w-bar" x="24" y="78" width="280" height="8" rx="2"/><circle class="w-leaf" cx="320" cy="210" r="56"/></g>
+          <ellipse class="w-mosscl" cx="960" cy="640" rx="70" ry="30"/>
+          <g transform="translate(900 660) rotate(-1)"><rect class="w-sheet" width="360" height="200"/><g transform="translate(270 -12) rotate(4)"><rect class="w-kraft" width="100" height="30" rx="2"/></g><rect class="w-bar" x="24" y="40" width="200" height="12" rx="2"/><rect class="w-bar" x="24" y="66" width="280" height="8" rx="2"/><rect class="w-bar" x="24" y="84" width="240" height="8" rx="2"/></g>
+        </svg>
+        <figcaption><b>Our Story · 1440</b>. Tag rail on the left (current tag inverted and tilted, pollen knot), chapters in columns 1–7 with fern dividers, memory sheets overlapping in the mounting area with a moss cluster tucked beneath.</figcaption>
+      </figure>
+
+      <figure>
+        <svg viewBox="0 0 390 760" aria-labelledby="wf5t" role="img"><title id="wf5t">RSVP, 390px wide</title>
+          <rect class="w-parch" width="390" height="760"/>
+          <text class="w-text" x="24" y="60" font-size="30">RSVP</text>
+          <text class="w-body" x="24" y="86" font-size="13">Reply by TODO(Tyler &amp; Sara)</text>
+          <g transform="translate(24 110)"><rect class="w-kraft" width="342" height="96" rx="2"/><path class="w-line" d="M2 2 C30 26 60 30 90 44" style="stroke:var(--leaf-deep)"/><text class="w-label" x="20" y="40" font-size="14">Household · TODO(Tyler &amp; Sara)</text><rect class="w-bar" x="20" y="56" width="200" height="8" rx="2"/><rect class="w-bar" x="20" y="72" width="140" height="8" rx="2"/></g>
+          <text class="w-body" x="24" y="246" font-size="13">Your name</text><rect class="w-sheet" x="24" y="256" width="342" height="46" rx="2"/>
+          <text class="w-body" x="24" y="330" font-size="13">TODO(Tyler &amp; Sara) · guest one</text>
+          <rect class="w-btn-ink" x="24" y="342" width="160" height="44" rx="8"/><text class="w-body-light" x="54" y="369" font-size="12">Joyfully accepts</text>
+          <rect class="w-btn-ghost" x="196" y="342" width="170" height="44" rx="8"/><text class="w-body" x="220" y="369" font-size="12">Regretfully declines</text>
+          <text class="w-body" x="24" y="416" font-size="13">Meal</text><rect class="w-sheet" x="24" y="426" width="342" height="46" rx="2"/>
+          <text class="w-body" x="24" y="504" font-size="13">Allergies or notes</text><rect class="w-sheet" x="24" y="514" width="342" height="70" rx="2"/>
+          <rect class="w-sheet" x="24" y="602" width="342" height="46" rx="2" style="stroke:var(--error)"/><text class="w-body" x="24" y="668" font-size="12" style="fill:var(--error)">Enter the name on your invitation.</text>
+          <rect class="w-btn-pollen" x="24" y="690" width="342" height="48" rx="8"/><text class="w-body" x="160" y="719" font-size="14">Send RSVP</text>
+        </svg>
+        <figcaption><b>RSVP · 390</b>. Parchment ground, kraft household card with a tendril corner, visible labels above 17px fields, errors in words, one pollen action at the end.</figcaption>
+      </figure>
+
+      <figure class="wide">
+        <svg viewBox="0 0 1440 900" aria-labelledby="wf6t" role="img"><title id="wf6t">RSVP, 1440px wide</title>
+          <rect class="w-parch" width="1440" height="900"/>
+          <line class="w-line" x1="72" y1="0" x2="72" y2="900"/>
+          <g transform="translate(20 120)"><rect class="w-kraft" width="44" height="120" rx="2"/><rect class="w-kraft" y="136" width="44" height="120" rx="2"/><rect class="w-ink" y="272" width="44" height="120" rx="2" transform="rotate(3 22 332)"/><circle class="w-pollen" cx="22" cy="282" r="4"/><rect class="w-kraft" y="408" width="44" height="120" rx="2"/></g>
+          <text class="w-text" x="160" y="150" font-size="64">RSVP</text>
+          <text class="w-body" x="160" y="190" font-size="17">Reply by TODO(Tyler &amp; Sara). One reply covers your whole household.</text>
+          <g transform="translate(160 230)"><rect class="w-kraft" width="600" height="110" rx="2"/><path class="w-line" d="M2 2 C40 30 70 40 110 60" style="stroke:var(--leaf-deep)"/><text class="w-label" x="24" y="46" font-size="18">Household · TODO(Tyler &amp; Sara)</text><rect class="w-bar" x="24" y="64" width="300" height="10" rx="2"/><rect class="w-bar" x="24" y="84" width="220" height="10" rx="2"/></g>
+          <text class="w-body" x="160" y="392" font-size="15">Guest one · TODO(Tyler &amp; Sara)</text>
+          <rect class="w-btn-ink" x="160" y="406" width="200" height="44" rx="8"/><text class="w-body-light" x="196" y="433" font-size="14">Joyfully accepts</text>
+          <rect class="w-btn-ghost" x="372" y="406" width="220" height="44" rx="8"/><text class="w-body" x="404" y="433" font-size="14">Regretfully declines</text>
+          <text class="w-body" x="160" y="490" font-size="15">Meal</text><rect class="w-sheet" x="160" y="500" width="290" height="46" rx="2"/>
+          <text class="w-body" x="470" y="490" font-size="15">Allergies or notes</text><rect class="w-sheet" x="470" y="500" width="290" height="46" rx="2"/>
+          <text class="w-body" x="160" y="590" font-size="15">Guest two · TODO(Tyler &amp; Sara)</text>
+          <rect class="w-btn-ghost" x="160" y="604" width="200" height="44" rx="8"/><text class="w-body" x="196" y="631" font-size="14">Joyfully accepts</text>
+          <rect class="w-btn-ghost" x="372" y="604" width="220" height="44" rx="8"/><text class="w-body" x="404" y="631" font-size="14">Regretfully declines</text>
+          <rect class="w-btn-pollen" x="160" y="700" width="200" height="48" rx="8"/><text class="w-body" x="212" y="729" font-size="15">Send RSVP</text>
+          <g transform="translate(900 240) rotate(1.6)"><rect class="w-sheet" width="400" height="360"/><g transform="translate(300 -12) rotate(4)"><rect class="w-kraft" width="112" height="30" rx="2"/></g><text class="w-text" x="28" y="60" font-size="26">What you're sending</text><rect class="w-bar" x="28" y="90" width="300" height="10" rx="2"/><rect class="w-bar" x="28" y="112" width="240" height="10" rx="2"/><rect class="w-bar" x="28" y="134" width="280" height="10" rx="2"/><rect class="w-ink" x="28" y="170" width="90" height="22" rx="2"/><text class="w-body-light" x="38" y="185" font-size="11">Attending</text><rect class="w-bar" x="28" y="214" width="320" height="8" rx="2"/><rect class="w-bar" x="28" y="230" width="280" height="8" rx="2"/><circle class="w-leaf" cx="350" cy="320" r="50"/></g>
+          <g transform="translate(940 620) rotate(-1.2)"><rect class="w-sheet" width="330" height="140"/><rect class="w-bar" x="24" y="34" width="200" height="10" rx="2"/><rect class="w-bar" x="24" y="56" width="260" height="8" rx="2"/><rect class="w-bar" x="24" y="74" width="220" height="8" rx="2"/><text class="w-body" x="24" y="116" font-size="13" style="fill:var(--moss)">Questions? Ask Us</text></g>
+        </svg>
+        <figcaption><b>RSVP · 1440</b>. Form in the left column, a live "What you're sending" sheet overlapping in the mounting area, the household card as a kraft tag with a tendril corner.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="refs">
+  <div class="wrap">
+    <h2>References: borrow the principle, never the pixels</h2>
+    <div class="fern" role="presentation"></div>
+    <p class="measure small muted">Awwwards entries come from the botanical tag listing fetched 2026-09-05; the listing itself only names sites and generic traits ("big background images", "parallax"). None were audited page-by-page here: run <code>hallmark study &lt;url&gt;</code> before borrowing anything specific. Herbarium references describe the format, not a particular sheet.</p>
+    <ul class="refs">
+      <li class="ref"><h3>Botanic Expo — Enrico Deiana</h3><p class="small muted"><a href="https://www.awwwards.com/websites/botanical/">Awwwards botanical tag</a> · listed as Site of the Day and Developer Award, Aug 31 2024</p><p><b>Borrow:</b> the confidence to let one botanical idea carry a whole page; restraint in colour count.</p><p><b>Avoid:</b> an experience that needs a fast GPU. Grandparents on hotel Wi-Fi are the audience.</p></li>
+      <li class="ref"><h3>Fonds de dotation botanic® — Walt</h3><p class="small muted">Awwwards botanical tag</p><p><b>Borrow:</b> institutional calm; text that reads like a foundation, not a shop.</p><p><b>Avoid:</b> full-bleed photography doing all the work. This site cannot lean on venue photography (Hyatt imagery is not reusable) and AI imagery never ships as a photo of the couple.</p></li>
+      <li class="ref"><h3>BOTANICAL REFRESH'21 — BOTANIST (dbweb-ga)</h3><p class="small muted">Awwwards botanical tag</p><p><b>Borrow:</b> product-label typography as a design device, which maps onto specimen labels.</p><p><b>Avoid:</b> campaign-site density and motion on every scroll step; our motion budget is one settle per page.</p></li>
+      <li class="ref"><h3>Clark's Botanicals — 85SIXTY</h3><p class="small muted">Awwwards botanical tag</p><p><b>Borrow:</b> an editorial e-commerce grid that tolerates asymmetry.</p><p><b>Avoid:</b> the shop macrostructure (hero, product rows, promo strip); a wedding site's job order is inform, act, celebrate.</p></li>
+      <li class="ref"><h3>Herbarium sheets</h3><p class="small muted">Digitised specimen sheets at institutional herbaria (Harvard University Herbaria, Kew, the Field Museum in Chicago); Emily Dickinson's herbarium at Houghton Library as the pressed-flower album.</p><p><b>Borrow:</b> the format itself: specimen mounted off-centre with breathing room, label bottom-right, accession stamp, the sheet's own hairline. Overlap when two specimens share a sheet.</p><p><b>Avoid:</b> literal brown-paper textures and faux-aged filters; paper here is a flat colour.</p></li>
+      <li class="ref"><h3>Chicago conservatories (verified context)</h3><p class="small muted"><a href="https://www.chicagoparkdistrict.com/parks-facilities/lincoln-park-conservatory">Lincoln Park Conservatory</a>: built in phases 1890–1895, designed by Joseph Lyman Silsbee with M.E. Bell; four display houses (Palm House, Fern Room, Orchid House, Show House). <a href="https://garfieldconservatory.org/about/">Garfield Park Conservatory</a>: opened 1908; run by the Garfield Park Conservatory Alliance (formed 1998) with the Chicago Park District.</p><p><b>Borrow:</b> the room names as a mental model for sections (palm court, fern room, show house); glass-and-iron light as the sky wash.</p><p><b>Avoid:</b> claiming any event happens there. The venue is the Chicago Athletic Association Hotel; the conservatories are a possible "Share an Adventure" card, curated later.</p></li>
+    </ul>
+
+    <h3 style="margin-top:var(--space-2xl)">Mood words</h3>
+    <ul class="words"><li>glasshouse in July</li><li>pressed, not printed</li><li>moss on limestone</li><li>hand-set label</li><li>sky through glazing</li><li>unhurried</li><li>sunlit paper</li><li>layered sheets</li><li>happy, relaxed people</li><li>dancing</li></ul>
+    <h3 style="margin-top:var(--space-xl)">Anti-references</h3>
+    <ul class="words anti"><li>centred script on blush</li><li>watercolor corner florals</li><li>pastel-pink gradient</li><li>Mr. &amp; Mrs. clip-art</li><li>hero + three cards</li><li>bento grid</li><li>glassmorphism</li><li>purple gradient</li><li>bouncy easing</li><li>Playfair / Cormorant / Fraunces</li><li>Inter / Space Grotesk</li><li>falling-petal loop</li><li>faux-aged paper texture</li></ul>
+  </div>
+</section>
+
+<section id="versus" class="inverse">
+  <div class="wrap">
+    <h2>How this differs from Gilded Hour</h2>
+    <div class="fern" role="presentation"></div>
+    <p class="measure" style="color:var(--moss-wash)">Two complete, switchable designs for the same building. The test: with colour removed, a guest should still tell them apart from the layout alone.</p>
+    <div class="compare">
+      <div class="col gilded" style="color:var(--ink)">
+        <p class="small soil" style="margin:0 0 var(--space-sm)">Gilded Hour · Art Deco (per brief §4)</p>
+        <ul>
+          <li><b>Layout:</b> symmetrical, monumental, centred axis; stepped frames.</li>
+          <li><b>Rhythm:</b> numbered sections, one grand reveal per room.</li>
+          <li><b>Nav:</b> centred bar, engraved labels.</li>
+          <li><b>Ornament:</b> gold leaf, sunburst and chevron geometry.</li>
+          <li><b>Type:</b> Cinzel, Josefin Sans, Big Shoulders Display.</li>
+          <li><b>Colour:</b> white marble ground, gold.</li>
+          <li><b>Motion:</b> curtains, elevator doors, engraved reveals.</li>
+          <li><b>Metaphor:</b> the ballroom.</li>
+        </ul>
+      </div>
+      <div class="col cons" style="color:var(--ink)">
+        <p class="small soil" style="margin:0 0 var(--space-sm)">Conservatory · Botanical</p>
+        <ul>
+          <li><b>Layout:</b> left-weighted herbarium sheet; cards overlap and tilt; nothing centred by default.</li>
+          <li><b>Rhythm:</b> washes (sky, moss, parchment) and fern dividers that grow from the margin; no numbering.</li>
+          <li><b>Nav:</b> kraft tag rail on the left; Menu tag + two-action bar on phones.</li>
+          <li><b>Ornament:</b> line-art leaves, ferns, tendrils, moss clusters, pressed blooms; gold only as a pollen thread.</li>
+          <li><b>Type:</b> Gloock, Spectral, Cardo italic; small caps instead of tracked uppercase.</li>
+          <li><b>Colour:</b> creme paper, moss ink, sky and moss washes, kraft and soil.</li>
+          <li><b>Motion:</b> leaves settling, soft parallax, slow reveals; one arrival per page.</li>
+          <li><b>Metaphor:</b> the palm court.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="score" class="wash-sky">
+  <div class="wrap">
+    <h2>Self-score on the Awwwards axes</h2>
+    <div class="fern" role="presentation"></div>
+    <p class="measure small muted">Scored against <code>wedding-site-standards</code> §5 for this board and the token system it documents, not for a shipped page. Ship gate: every axis ≥ 7 and Usability ≥ 8.</p>
+    <ul class="score">
+      <li><b class="tnum">8</b>Design · 40% — one idea (the herbarium sheet) carried through tokens, ornament and layout; the risk is over-tilting cards.</li>
+      <li><b class="tnum">8</b>Usability · 30% — moss ink ≥ 5.7:1 everywhere text sits, 17px body, visible labels, two-action bar; unproven until a real RSVP is built.</li>
+      <li><b class="tnum">8</b>Creativity · 20% — pressed-specimen cards with memory tags and a tag-rail nav are theirs; not yet a signature interaction.</li>
+      <li><b class="tnum">6</b>Content · 10% — facts only from the brief; most copy is still <code>TODO(Tyler &amp; Sara)</code>.</li>
+    </ul>
+    <p class="measure" style="margin-top:var(--space-lg)"><b>Open questions for Tyler and Sara:</b> which plants belong on the specimen labels (a flower from the bouquet, moss from Starved Rock); whether the "+" in pollen is the monogram; whether the tag rail should show room names from the CAA or page names; and whether the wedding-week sky band should show weather.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap small muted">
+    <p>Conservatory inspo board · generated in-repo · fonts via Google Fonts (OFL) with system fallbacks · art from <code>scripts/art/conservatory.mjs</code> · no third-party imagery. Contrast ratios are computed in this page from the hex values shown; if scripting is off the cells stay blank and the table in <code>docs/design/inspo/conservatory.md</code> carries the same numbers.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function lum(h){var c=h.replace('#','');var v=[0,2,4].map(function(i){var x=parseInt(c.substr(i,2),16)/255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)});return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]}
+  function cr(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)}
+  function fmt(r){return (Math.round(r*100)/100).toFixed(2)+':1'}
+  document.querySelectorAll('#swatch-list .sw').forEach(function(li){
+    var r=cr(li.dataset.hex,li.dataset.on),span=li.querySelector('.ratio span'),cell=li.querySelector('.ratio');
+    span.textContent=fmt(r);
+    if(!li.dataset.fill && r<4.5) cell.classList.add('fail');
+  });
+  document.querySelectorAll('#pairs tbody tr').forEach(function(tr){tr.lastElementChild.textContent=fmt(cr(tr.dataset.a,tr.dataset.b))});
+})();
+</script>
+</body>
+</html>

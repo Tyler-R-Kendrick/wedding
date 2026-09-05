@@ -1,0 +1,484 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-05T00:00:00Z",
+  "title": "Design System: Gilded Hour",
+  "source": "src/themes/gilded-hour/DESIGN.md",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Lacquer Ink",
+        "canonical": "#1C1B18",
+        "tonalRamp": [
+          "#D7D5D0",
+          "#A09E9A",
+          "#5E5D59",
+          "#1C1B18",
+          "#1C1B18",
+          "#1C1B18"
+        ]
+      },
+      "on-primary": {
+        "role": "on-primary",
+        "displayName": "Marble on Ink",
+        "canonical": "#F8F6F1"
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Lake Blue",
+        "canonical": "#2E5B7B",
+        "tonalRamp": [
+          "#DADFDF",
+          "#A7B8C2",
+          "#6B8A9E",
+          "#2E5B7B",
+          "#2A4B62",
+          "#253B4A"
+        ]
+      },
+      "on-secondary": {
+        "role": "on-secondary",
+        "displayName": "Marble on Lake",
+        "canonical": "#F8F6F1"
+      },
+      "tertiary": {
+        "role": "tertiary",
+        "displayName": "Bronze (readable gold)",
+        "canonical": "#7A5A16",
+        "tonalRamp": [
+          "#E5DFD0",
+          "#C6B899",
+          "#A08958",
+          "#7A5A16",
+          "#634A17",
+          "#4B3B17"
+        ],
+        "usage": "Every gold that has words in it on a light ground. 5.89:1 on marble, 5.08:1 on creme."
+      },
+      "on-tertiary": {
+        "role": "on-tertiary",
+        "displayName": "Marble on Bronze",
+        "canonical": "#FBF9F4"
+      },
+      "gold": {
+        "role": "ornament",
+        "displayName": "Gold Leaf",
+        "canonical": "#C9A648",
+        "tonalRamp": [
+          "#F1EAD8",
+          "#E5D6AD",
+          "#D7BE7B",
+          "#C9A648",
+          "#9E833C",
+          "#736130"
+        ],
+        "usage": "Ornament and headings on Lacquer Ink only. 2.15:1 on marble: never text, never a meaningful icon, on light grounds."
+      },
+      "gold-wash": {
+        "role": "container",
+        "displayName": "Gold Wash",
+        "canonical": "#F3EAD0"
+      },
+      "lake-wash": {
+        "role": "container",
+        "displayName": "Lake Wash",
+        "canonical": "#CFE0EB"
+      },
+      "moss": {
+        "role": "accent-note",
+        "displayName": "Moss",
+        "canonical": "#4F5F3F",
+        "tonalRamp": [
+          "#DFDFD6",
+          "#B4BAAA",
+          "#828C74",
+          "#4F5F3F",
+          "#424E35",
+          "#363D2C"
+        ],
+        "usage": "Labels and small marks on foliage content only (farm, trail, garden). Never a fill larger than a tag."
+      },
+      "neutral": {
+        "role": "neutral",
+        "displayName": "Carrara Marble",
+        "canonical": "#F8F6F1"
+      },
+      "neutral-variant": {
+        "role": "neutral",
+        "displayName": "Creme",
+        "canonical": "#EDE5D6",
+        "tonalRamp": [
+          "#F6F3ED",
+          "#F4EFE6",
+          "#F0EADE",
+          "#EDE5D6",
+          "#B9B3A7",
+          "#858077"
+        ]
+      },
+      "surface": {
+        "role": "surface",
+        "displayName": "Polished Marble",
+        "canonical": "#FDFCFA"
+      },
+      "on-surface": {
+        "role": "on-surface",
+        "displayName": "Engraved Ink",
+        "canonical": "#1C1B18"
+      },
+      "on-surface-muted": {
+        "role": "on-surface",
+        "displayName": "Muted Stone",
+        "canonical": "#5E5A52"
+      },
+      "outline": {
+        "role": "outline",
+        "displayName": "Hairline",
+        "canonical": "#D8CFBF"
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Oxblood",
+        "canonical": "#8E2E22",
+        "tonalRamp": [
+          "#E8D8D2",
+          "#CEA69E",
+          "#AE6A60",
+          "#8E2E22",
+          "#722920",
+          "#55251D"
+        ]
+      },
+      "on-error": {
+        "role": "on-error",
+        "displayName": "Marble on Oxblood",
+        "canonical": "#FFF5F2"
+      }
+    },
+    "typographyMeta": {
+      "display-xl": {
+        "displayName": "Display XL",
+        "purpose": "Names on the home hero only. Capitals, tracked 0.04em, on the axis."
+      },
+      "display-lg": {
+        "displayName": "Display LG",
+        "purpose": "Page titles and inverse-section headings (Gold Leaf on ink)."
+      },
+      "h1": {
+        "displayName": "H1",
+        "purpose": "Section headings; always paired with an eyebrow and a chevron divider."
+      },
+      "h2": {
+        "displayName": "H2",
+        "purpose": "Sub-sections and card titles on featured cards."
+      },
+      "h3": {
+        "displayName": "H3",
+        "purpose": "Josefin uppercase; list and form group headings."
+      },
+      "body-lg": {
+        "displayName": "Body LG",
+        "purpose": "Lead paragraphs (Our Story opening, hero sub-line)."
+      },
+      "body-md": {
+        "displayName": "Body MD",
+        "purpose": "Default running text. 18px because Josefin has a small x-height; 17px is the floor."
+      },
+      "body-sm": {
+        "displayName": "Body SM",
+        "purpose": "Captions, helper text, muted card text. Never below 17px."
+      },
+      "label-caps": {
+        "displayName": "Label Caps",
+        "purpose": "Structural labels only: nav, eyebrows, form labels, section numbers. Not decoration above every heading."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Dates (07 · 17 · 27), section numerals, table numbers. Tabular lining figures."
+      },
+      "numeral-xl": {
+        "displayName": "Numeral XL",
+        "purpose": "Countdown digits. Crossfade on change; never flip or bounce."
+      }
+    },
+    "fonts": [
+      {
+        "family": "Cinzel",
+        "license": "OFL",
+        "designer": "Natanael Gama",
+        "axes": "wght 400..900",
+        "use": "display",
+        "verified": "2026-09-05 via fonts.googleapis.com css2 endpoint"
+      },
+      {
+        "family": "Josefin Sans",
+        "license": "OFL",
+        "designer": "Santiago Orozco",
+        "axes": "wght 100..700, italic",
+        "use": "text, labels, nav, forms",
+        "verified": "2026-09-05"
+      },
+      {
+        "family": "Big Shoulders Display",
+        "license": "OFL",
+        "designer": "Patric King",
+        "axes": "wght 100..900",
+        "use": "numerals only",
+        "verified": "2026-09-05 (v24 still served); the current catalog lists the merged variable family \"Big Shoulders\" with opsz 10..72; when self-hosting, either is acceptable, set opsz=72 on the merged family"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "panel-lift",
+        "value": "0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08)",
+        "purpose": "The fixed mobile elevator panel only. The single shadow in the system."
+      },
+      {
+        "name": "engraved-inset",
+        "value": "inset 0 0 0 1px rgba(248,246,241,0.3)",
+        "purpose": "Inner hairline on primary and accent buttons; reads as an engraved edge, not elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-fast",
+        "value": "160ms",
+        "purpose": "Hover, focus, underline weight."
+      },
+      {
+        "name": "duration-base",
+        "value": "280ms",
+        "purpose": "Countdown digit crossfade, panel open/close, input focus tint."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "700ms",
+        "purpose": "Engraved reveal: a gold hairline draws itself in when a section enters (once)."
+      },
+      {
+        "name": "duration-curtain",
+        "value": "1100ms",
+        "purpose": "Curtain rise on the home hero, once per session."
+      },
+      {
+        "name": "ease-engrave",
+        "value": "cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Default easing: decisive start, settled end. No overshoot ever."
+      },
+      {
+        "name": "ease-doors",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Symmetric ease for the elevator-doors route transition (two panels part from the axis)."
+      },
+      {
+        "name": "ease-settle",
+        "value": "cubic-bezier(0.33, 1, 0.68, 1)",
+        "purpose": "Digit crossfade and small state changes."
+      },
+      {
+        "name": "choreography.curtain-rise",
+        "value": "hero: marble panel translates up 100% over duration-curtain with ease-engrave; sunburst opacity 0→0.9 over the last 40%; names fade in 120ms after the panel clears",
+        "purpose": "One orchestrated moment per page. Home only, first visit per session."
+      },
+      {
+        "name": "choreography.elevator-doors",
+        "value": "route change: two ink panels close from the left and right edges to the axis (ease-doors, 420ms), then part again over the new page (ease-doors, 480ms); a gold hairline marks the seam",
+        "purpose": "Route transitions (View Transitions API). Moving through a building, not a tech product."
+      },
+      {
+        "name": "choreography.engraved-reveal",
+        "value": "section enter: chevron divider stroke-dashoffset 1→0 over duration-reveal; heading opacity 0→1 over 240ms starting at 60%",
+        "purpose": "Section entrances. Each fires once; no re-trigger on scroll-up."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all choreography replaced by a 120ms opacity fade; countdown digits swap without transition; elevator doors become a crossfade",
+        "purpose": "prefers-reduced-motion: reduce is honored everywhere."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "390px",
+        "purpose": "Design canvas (iPhone-class). Single column, elevator panel nav."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Two mirrored columns allowed for schedule and adventure grids."
+      },
+      {
+        "name": "lg",
+        "value": "1200px",
+        "purpose": "Max content width; frieze nav with monogram centered."
+      },
+      {
+        "name": "xl",
+        "value": "1440px",
+        "purpose": "Showcase width; margins grow, content does not."
+      }
+    ],
+    "ornaments": [
+      {
+        "name": "sunburst",
+        "file": "public/assets/art/gilded-hour/sunburst-hero.svg",
+        "use": "Home hero background behind the names, opacity 0.35–0.9. One per site; never repeated on inner pages."
+      },
+      {
+        "name": "chevron-rule",
+        "file": "public/assets/art/gilded-hour/chevron-divider.svg",
+        "use": "Between major sections, centered on the axis. Draws itself in on first entrance."
+      },
+      {
+        "name": "stepped-frame",
+        "file": "public/assets/art/gilded-hour/stepped-frame.svg",
+        "use": "Around photographs on the axis (Our Story, Adventures). Never around text."
+      },
+      {
+        "name": "corner-bracket",
+        "file": "public/assets/art/gilded-hour/corner-bracket.svg",
+        "use": "Four corners (CSS-rotated) of quotes and \"Sara remembers / Tyler remembers\" panels."
+      },
+      {
+        "name": "monogram-plaque",
+        "file": "public/assets/art/gilded-hour/monogram-frame.svg",
+        "use": "Nav center, password gate, RSVP confirmation, footer. The date 07 · 17 · 27 is a fact from the brief."
+      },
+      {
+        "name": "marble-ground",
+        "file": "public/assets/art/gilded-hour/marble-texture.svg",
+        "use": "Optional page ground at ≤ 6% vein opacity; disabled on print and on data-saver."
+      },
+      {
+        "name": "numeral-plaques",
+        "file": "public/assets/art/gilded-hour/numeral-badge-01.svg … 05",
+        "use": "Section numbers for the five acts (Adventure, Place, Memory, Hospitality, Future) and the weekend schedule. Only where content is a sequence."
+      }
+    ],
+    "themeContrast": {
+      "sibling": "conservatory",
+      "layoutLogic": "Gilded Hour: one centered axis, mirrored margins, monumental plinths. Conservatory: organic asymmetry, offset images, hanging captions.",
+      "navPattern": "Gilded Hour: a frieze (monogram centered, 3+3 links) on desktop and a fixed bottom elevator panel on mobile. Conservatory: a botanical index / hanging list.",
+      "ornament": "Gilded Hour: geometric gold (sunburst, chevron, stepped frame, octagon). Conservatory: botanical line-art borders, pressed-flower cards.",
+      "rhythm": "Gilded Hour: numbered acts, chevron rules, identical section openings. Conservatory: leaves settling, soft parallax, irregular spacing.",
+      "type": "Gilded Hour: Cinzel / Josefin Sans / Big Shoulders Display. Conservatory: Gloock / Spectral / Cardo italic.",
+      "sharedPaletteFamily": "white/ivory, gold, light blue, creme/light brown, moss. Gilded Hour leads with marble + gold + lake; Conservatory leads with sky washes over creme + foliage."
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Lacquer Ink rectangle with an engraved inner hairline; hover turns Bronze.",
+      "html": "<button class=\"gh-btn\">Add to calendar</button>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-btn{font-family:var(--font-text);font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;background:var(--color-primary);color:var(--color-on-primary);border:0;border-radius:0;padding:16px 32px;min-height:48px;box-shadow:inset 0 0 0 1px rgba(248,246,241,.3);cursor:pointer;transition:background var(--duration-fast) var(--ease-engrave)}.gh-btn:hover{background:var(--color-tertiary);color:var(--color-on-tertiary)}.gh-btn:focus-visible{outline:2px solid var(--color-secondary);outline-offset:2px}.gh-btn:active{box-shadow:inset 0 0 0 2px rgba(248,246,241,.4)}.gh-btn[disabled]{background:var(--color-outline);color:var(--color-on-surface-muted);cursor:not-allowed}"
+    },
+    {
+      "name": "Accent Button (RSVP)",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Bronze; reserved for RSVP and the single most important action on a page.",
+      "html": "<button class=\"gh-btn-accent\">RSVP</button>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-btn-accent{font-family:var(--font-text);font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;background:var(--color-tertiary);color:var(--color-on-tertiary);border:0;border-radius:0;padding:16px 32px;min-height:48px;box-shadow:inset 0 0 0 1px rgba(248,246,241,.3);cursor:pointer;transition:background var(--duration-fast) var(--ease-engrave)}.gh-btn-accent:hover{background:var(--color-primary);color:var(--color-on-primary)}.gh-btn-accent:focus-visible{outline:2px solid var(--color-secondary);outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Marble with a 1px ink border; secondary actions and explicit external handoffs.",
+      "html": "<button class=\"gh-btn-ghost\">Continue securely with Uber</button>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-btn-ghost{font-family:var(--font-text);font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;background:var(--color-neutral);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:0;padding:15px 31px;min-height:48px;cursor:pointer;transition:background var(--duration-fast) var(--ease-engrave)}.gh-btn-ghost:hover{background:var(--color-gold-wash)}.gh-btn-ghost:focus-visible{outline:2px solid var(--color-secondary);outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Visible label above, hairline border, lake-wash focus tint, inline text error.",
+      "html": "<label class=\"gh-field\"><span class=\"gh-label\">Your name</span><input class=\"gh-input\" type=\"text\" name=\"name\" autocomplete=\"name\"><span class=\"gh-error\">Enter the name on your invitation.</span></label>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-field{display:grid;gap:8px;font-family:var(--font-text);max-width:28rem}.gh-label{font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--color-on-surface)}.gh-input{font:inherit;font-size:18px;line-height:1.4;padding:14px 16px;border:1px solid var(--color-outline);border-radius:2px;background:var(--color-surface);color:var(--color-on-surface);min-height:48px;transition:background var(--duration-base) var(--ease-engrave)}.gh-input:focus{background:var(--color-lake-wash);outline:2px solid var(--color-secondary);outline-offset:2px}.gh-input[aria-invalid=true]{border-color:var(--color-error)}.gh-error{font-size:17px;color:var(--color-error)}"
+    },
+    {
+      "name": "Elevator Panel (mobile nav)",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "Fixed bottom bar with four equal cells and visible labels; the only element with a shadow.",
+      "html": "<nav class=\"gh-panel\" aria-label=\"Primary\"><a href=\"#\" aria-current=\"page\">Weekend</a><a href=\"#\">Travel</a><a href=\"#\" class=\"is-rsvp\">RSVP</a><a href=\"#\">Ask us</a></nav>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-panel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--color-neutral);box-shadow:0 -1px 0 var(--color-outline),0 -8px 24px rgba(28,27,24,.08);font-family:var(--font-text)}.gh-panel a{display:grid;place-items:center;min-height:56px;padding:8px 4px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--color-primary);text-decoration:none;border-top:2px solid transparent}.gh-panel a[aria-current=page]{color:var(--color-secondary);border-top-color:var(--color-gold)}.gh-panel a.is-rsvp{color:var(--color-tertiary)}.gh-panel a:focus-visible{outline:2px solid var(--color-secondary);outline-offset:-4px}"
+    },
+    {
+      "name": "Numeral Plaque",
+      "kind": "custom",
+      "refersTo": "numeral-badge",
+      "description": "Octagonal gold-wash plaque with a Big Shoulders numeral; only for real sequences.",
+      "html": "<span class=\"gh-plaque\" aria-hidden=\"true\">01</span>",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-plaque{display:inline-grid;place-items:center;width:56px;height:56px;background:var(--color-gold-wash);color:var(--color-primary);font-family:var(--font-numeral);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);box-shadow:inset 0 0 0 1px var(--color-gold)}"
+    },
+    {
+      "name": "Chevron Divider",
+      "kind": "custom",
+      "refersTo": "divider",
+      "description": "Gold hairlines meeting three nested chevrons; draws in once on entrance.",
+      "html": "<hr class=\"gh-divider\" aria-hidden=\"true\">",
+      "css": ":host{--color-primary:#1C1B18;--color-on-primary:#F8F6F1;--color-secondary:#2E5B7B;--color-on-secondary:#F8F6F1;--color-tertiary:#7A5A16;--color-on-tertiary:#FBF9F4;--color-gold:#C9A648;--color-gold-wash:#F3EAD0;--color-lake-wash:#CFE0EB;--color-moss:#4F5F3F;--color-neutral:#F8F6F1;--color-neutral-variant:#EDE5D6;--color-surface:#FDFCFA;--color-on-surface:#1C1B18;--color-on-surface-muted:#5E5A52;--color-outline:#D8CFBF;--color-error:#8E2E22;--color-on-error:#FFF5F2;--font-display:Cinzel,Georgia,serif;--font-text:'Josefin Sans',sans-serif;--font-numeral:'Big Shoulders Display','Josefin Sans',sans-serif;--ease-engrave:cubic-bezier(0.2,0,0,1);--duration-fast:160ms;--duration-base:280ms} .gh-divider{border:0;height:40px;margin:64px auto;max-width:1200px;background:no-repeat center/contain url(\"/assets/art/gilded-hour/chevron-divider.svg\")}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Gilded Hour",
+    "overview": "The hour when the late sun comes across Michigan Avenue and turns a marble room gold. An 1893 private club at the height of Chicago's Deco confidence, set for 2027. A plaque, not a poster: engraved, symmetrical, unhurried. Monumentality lives in the frame, never in the effort: big axis, big margins, few things per screen. Ornament reassures; it does not impress.",
+    "keyCharacteristics": [
+      "White marble ground; gold leaf as ornament; bronze as the gold you can read.",
+      "One vertical axis on every page; symmetry is the default.",
+      "Numbered sections, stepped frames, chevron rules, corner brackets, one sunburst.",
+      "Cinzel for words carved in stone, Josefin Sans for words you read, Big Shoulders Display for every number.",
+      "Nothing bounces, nothing glows, nothing is rounded past 2px."
+    ],
+    "rules": [
+      {
+        "name": "The Two Golds Rule",
+        "body": "Gold Leaf decorates; Bronze speaks. Any gold with words in it on a light ground is Bronze. Lines, rays, frames, and headings on ink are Gold Leaf. No third gold.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Blue Rule",
+        "body": "Lake Blue is a label or a wash, never a button. The only button colors are Lacquer Ink and Bronze.",
+        "section": "colors"
+      },
+      {
+        "name": "The Axis Rule",
+        "body": "Everything that matters sits on the page's vertical axis. Body copy is left-aligned inside a centered column; nothing hangs into the gutter.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Reveal Rule",
+        "body": "One choreographed moment per page (curtain, elevator doors, or engraved reveal), then stillness. No per-card hover theatre, no scroll-jacking, no parallax.",
+        "section": "motion"
+      },
+      {
+        "name": "The Real Sequence Rule",
+        "body": "Section numerals appear only where the content is a sequence: the five acts, the schedule, the story timeline. FAQ and travel are not numbered.",
+        "section": "typography"
+      },
+      {
+        "name": "The Engraved Rule",
+        "body": "Depth is a line cut into a surface: hairlines, inset frames, tonal steps. The mobile elevator panel is the only element with a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Put everything that matters on the axis; let symmetry do the reassuring.",
+      "Use Gold Leaf for lines and Bronze for words; check contrast on every pair.",
+      "Number only real sequences; open each numbered section the same way.",
+      "Keep one choreographed reveal per page and honor prefers-reduced-motion.",
+      "Use real facts from Sara and Tyler; mark unknowns TODO(Tyler & Sara)."
+    ],
+    "donts": [
+      "No gold text on marble, no gold buttons, no gold icons that carry meaning.",
+      "No pills, no radius above 2px, no shadows on cards, no gradients.",
+      "No Inter/Roboto/Arial/Helvetica/Space Grotesk/Fraunces/Playfair/Cormorant; no script faces; no Poiret One.",
+      "No purple, no glass, no glow, no bento grid, no hero + three cards.",
+      "No bounce or elastic easing; no scroll-jacking; no parallax.",
+      "No brochure clone: never the venue's photography, never \"timeless elegance\"."
+    ]
+  }
+}

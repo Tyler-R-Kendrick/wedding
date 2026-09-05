@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-labelledby="t d">
+<title id="t">Section 05</title>
+<desc id="d">Numbered octagonal plaque for a section heading.</desc>
+<path d="M38 4 H162 L196 38 V162 L162 196 H38 L4 162 V38 Z" fill="#F3EAD0" stroke="#C9A648" stroke-width="2.5"/><path d="M44 14 H156 L186 44 V156 L156 186 H44 L14 156 V44 Z" fill="none" stroke="#C9A648" stroke-width="1"/><text x="100" y="128" text-anchor="middle" font-family="'Big Shoulders Display', 'Josefin Sans', sans-serif" font-size="88" font-weight="600" letter-spacing="0.04em" fill="#1C1B18">05</text><line x1="70" y1="148" x2="130" y2="148" stroke="#C9A648" stroke-width="1.5"/>
+</svg>

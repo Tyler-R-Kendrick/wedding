@@ -18,7 +18,7 @@ export default {
     'color-named': 'never',
     'declaration-property-value-disallowed-list': {
       // Ban the "AI slop" default stacks; DESIGN.md defines the real fonts.
-      'font-family': [/\bInter\b/, /\bRoboto\b/, /\bArial\b/, /\bHelvetica\b/, /\bSpace Grotesk\b/, /\bFraunces\b/, /\bGeist\b/, /\bPlus Jakarta Sans\b/, /\bPlayfair Display\b/, /\bCormorant\b/],
+      'font-family': [/\bInter\b/, /\bRoboto\b/, /\bArial\b/, /\bHelvetica\b/, /\bSpace Grotesk\b/, /\bFraunces\b/, /\bGeist\b/, /\bPlus Jakarta Sans\b/, /\bPlayfair Display\b/, /\bCormorant\b/, /\bInstrument Serif\b/, /\b(Pinyon Script|Great Vibes|Dancing Script|Pacifico|Allura|Parisienne|Alex Brush|Sacramento|Mrs Saint Delafield)\b/],
     },
     'selector-class-pattern': null,
     'custom-property-pattern': null,

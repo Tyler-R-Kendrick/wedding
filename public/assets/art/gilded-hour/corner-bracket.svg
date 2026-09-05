@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-labelledby="t d">
+<title id="t">Corner bracket</title>
+<desc id="d">Top-left stepped corner ornament.</desc>
+<path d="M0 160 V0 H160" fill="none" stroke="#C9A648" stroke-width="3"/><path d="M14 160 V14 H160" fill="none" stroke="#C9A648" stroke-width="1"/><path d="M26 92 V26 H92 V38 H38 V92 Z" fill="#C9A648" opacity="0.9"/><path d="M48 64 V48 H64 V64 Z" fill="#C9A648"/>
+</svg>
