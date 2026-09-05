@@ -4,13 +4,14 @@ import { err, type Result } from '@/contracts/result';
 import { invoke } from './invoke';
 import { navigateTo } from './navigate_to';
 import { registry } from './registry';
+import { rsvpSwarmCapabilities } from './rsvp';
 import { siteStatus } from './site_status';
 
 /**
  * Registration point. Feature swarms add ONE line each importing their module's
  * capability list, e.g. `import { rsvpCapabilities } from './rsvp';` and spread it below.
  */
-export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo];
+export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [siteStatus, navigateTo, ...rsvpSwarmCapabilities];
 
 registry.registerAll(BUILTIN_CAPABILITIES);
 
