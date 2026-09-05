@@ -76,14 +76,49 @@ export function queryTerms(query: string): string[] {
   return [...new Set(tokenize(query).filter((w) => !STOP.has(w)))];
 }
 
-/** Fraction of meaningful query terms that appear in the text (prefix-tolerant: "dance" matches "dancing"). */
+/**
+ * A very small English suffix stripper so "dance" and "dancing", "toast" and "toasts",
+ * "flower" and "flowers" are the same term. Deliberately conservative: it only removes
+ * -ing / -ed / -es / -s / trailing -e, and never shortens a word below three characters.
+ * This is a search nicety, not linguistics; it must stay deterministic (search results and
+ * the guest-visible "why it matched" list are both derived from it).
+ */
+export function stem(word: string): string {
+  const w = word.toLowerCase();
+  if (w.length > 5 && w.endsWith('ing')) return trimE(w.slice(0, -3));
+  if (w.length > 4 && w.endsWith('ed')) return trimE(w.slice(0, -2));
+  if (w.length > 4 && w.endsWith('es')) return trimE(w.slice(0, -2));
+  if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) return trimE(w.slice(0, -1));
+  return trimE(w);
+}
+
+function trimE(w: string): string {
+  return w.length > 3 && w.endsWith('e') ? w.slice(0, -1) : w;
+}
+
+/** Does one indexed word answer this query term? Exact, stem-equal, or one is a >=4-char prefix of the other. */
+export function termMatches(term: string, word: string): boolean {
+  if (term === word) return true;
+  if (stem(term) === stem(word)) return true;
+  if (term.length >= 4 && word.startsWith(term)) return true;
+  if (word.length >= 4 && term.startsWith(word)) return true;
+  return false;
+}
+
+/** The query's meaningful words that actually appear in the text; the honest basis for "why it matched". */
+export function matchedQueryTerms(query: string, text: string): string[] {
+  const words = tokenize(text);
+  return queryTerms(query).filter((term) => words.some((w) => termMatches(term, w)));
+}
+
+/** Fraction of meaningful query terms that appear in the text (prefix- and stem-tolerant: "dance" matches "dancing"). */
 export function lexicalOverlap(query: string, text: string): number {
   const terms = queryTerms(query);
   if (terms.length === 0) return 0;
   const words = tokenize(text);
   let hits = 0;
   for (const term of terms) {
-    if (words.some((w) => w === term || (term.length >= 4 && w.startsWith(term)) || (w.length >= 4 && term.startsWith(w)))) hits++;
+    if (words.some((w) => termMatches(term, w))) hits++;
   }
   return hits / terms.length;
 }

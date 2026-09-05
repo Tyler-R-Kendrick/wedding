@@ -7,7 +7,7 @@ import { canViewPublishedAsset } from '@/domain/media/acl';
 import type { EmbeddingsProvider } from '@/providers/embeddings/types';
 import type { VectorIndexProvider, VectorMetadata } from '@/providers/vector-index/types';
 import { getAnnotationsFor, MEDIA_INDEX_NAMESPACE } from './indexer';
-import { blendScore, lexicalOverlap, queryTerms } from './text';
+import { blendScore, lexicalOverlap, matchedQueryTerms } from './text';
 
 export interface SearchDeps {
   db: Db;
@@ -55,7 +55,6 @@ export async function searchMedia(deps: SearchDeps, principal: Principal, query:
   const rows = await deps.db.select({ asset: mediaAssets, collection: mediaCollections }).from(mediaAssets).innerJoin(mediaCollections, eq(mediaCollections.id, mediaAssets.collectionId)).where(inArray(mediaAssets.id, ids));
   const byId = new Map(rows.map((r) => [r.asset.id, r]));
   const annotations = await getAnnotationsFor(deps.db, ids);
-  const terms = queryTerms(query);
 
   const hits: SearchHit[] = [];
   for (const m of matches.value) {
@@ -71,9 +70,8 @@ export async function searchMedia(deps: SearchDeps, principal: Principal, query:
     const overlap = lexicalOverlap(query, text);
     const score = blendScore(m.score, overlap);
     if (score < SEARCH_MIN_SCORE) continue;
-    const words = text.toLowerCase();
-    const matchedTerms = terms.filter((t) => words.includes(t));
-    hits.push({ asset, collection, annotation, score, matchedTerms });
+    // Same matcher as the score, so the guest-visible "why" can never claim a term the score did not use.
+    hits.push({ asset, collection, annotation, score, matchedTerms: matchedQueryTerms(query, text) });
   }
   hits.sort((a, b) => b.score - a.score || (b.asset.capturedAt?.getTime() ?? 0) - (a.asset.capturedAt?.getTime() ?? 0));
   return hits.slice(0, limit);
