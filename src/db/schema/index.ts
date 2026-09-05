@@ -10,3 +10,8 @@ export * from './metrics';
 export * from './content';
 export * from './idempotency';
 export * from './rateLimits';
+// Level 09 (transport, gifts, reservations, external actions).
+export * from './transport';
+export * from './gifts';
+export * from './reservations';
+export * from './external';
