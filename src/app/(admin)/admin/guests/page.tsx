@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Checkbox, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
+import { Button, Checkbox, IdemKey, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -24,6 +24,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
     <OpsPage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
         <form action={saveGuest} className="ops-form">
+          <IdemKey />
           {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
           <Input id="householdId" label="Household" defaultValue={editing?.householdId ?? sp.householdId} required options={households.map((h) => ({ value: h.id, label: h.name }))} />
           <Input id="firstName" label="First name" defaultValue={editing?.firstName} required />
