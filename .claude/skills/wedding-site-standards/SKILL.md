@@ -20,27 +20,33 @@ lives in `DESIGN.md`; product truth lives in `PRODUCT.md`.
 
 If a design choice makes 3 better and 1 or 2 worse, it loses.
 
-## 2. Pages guests expect (industry IA)
+## 2. Pages guests expect (industry IA, mapped to this site)
 
-Synthesized from The Knot, Zola, and Joy builders plus 2026 comparisons.
-Names are the guests' vocabulary; keep them.
+Synthesized from The Knot, Zola, and Joy builders plus 2026 comparisons,
+then mapped onto the twelve surfaces in `docs/design/brief.md` §5. Guests'
+vocabulary wins in navigation labels; our surfaces carry the concept.
 
-| Page | Must contain | Nice to have |
-|---|---|---|
-| **Home** | Both names, date (with weekday), city/venue, countdown, RSVP CTA, RSVP deadline | Short story teaser, hero photo, "add to calendar" |
-| **Schedule** (or *Events*) | Every event a guest is invited to: name, date, start/end, venue name + address (tap-to-map), dress code per event, what happens ("ceremony, then dinner under the oaks") | Shuttle times, parking note, "what to bring" (wrap, flat shoes for grass) |
-| **Travel & Stay** | Nearest airport(s), hotel block(s) with booking code + cutoff date, distance to venue, transport options, parking | Things to do, restaurants, weather expectations, rideshare notes |
-| **RSVP** | Name look-up (household-aware), accept/decline per event, meal choice, dietary notes, +1 handling per invitation, deadline, confirmation screen + email | Song request, message to the couple, edit-your-response link |
-| **Registry** | Links to each registry; cash fund framing that is gracious ("your presence is the present; if you'd like…") | Honeymoon fund, charity option |
-| **FAQ** | Dress code (with examples), kids policy, plus-one policy, timeline, parking, weather/indoor-outdoor, photo policy (unplugged ceremony?), accessibility of venue, contact for questions | Local tips, "what does the venue look like", late RSVP guidance |
-| **Our Story** | How you met, proposal, a few photos with captions | Timeline, "fun facts" |
-| **Wedding Party** | Name, role, one warm line each, photo | How they know the couple |
-| **Photos** | Engagement gallery; post-wedding album later | Guest upload / shared album link |
-| **Password gate** (`/enter`) | Simple shared password, friendly copy, remembers device | — |
+| Surface (route) | Industry equivalent | Must contain | Nice to have |
+|---|---|---|---|
+| **Home** (`/`) | Home | Both names, date with weekday, city/venue, countdown, primary action for the lifecycle state (Save the date → RSVP → Today), RSVP deadline once open | Story teaser, hero image, add-to-calendar |
+| **Our Story** (`/story`) | Our Story | Short authored narrative: met → connection → love → future → engagement → what marriage means | Timeline, fun facts |
+| **Our Adventures** (`/adventures`) | Photos / "About us" | Browsable memory archive (AdventureMemory records) with optional "Sara remembers / Tyler remembers" | Map view, seasons |
+| **Share an Adventure** (`/share-an-adventure`) | Things to do | Recommendations with a practical layer (what, where, duration, distance from CAA, cost, accessibility, booking/directions) and a "Why we're sharing this" memory layer; itineraries by time available and interest (with kids, architecture, food, stay inside CAA) | Post-wedding guest contributions |
+| **The Wedding** (`/wedding`) | Schedule / Events | Every event a guest is invited to: name, date, start/end, venue space + address (tap-to-map), dress code per event, what happens | Shuttle times, parking note, what to bring |
+| **Explore CAA** (`/explore-caa`) | Venue | Building overview, spaces, history with provenance and `lastVerifiedAt`, on-property outlets as live links, parking/valet/accessibility fields, "look for this" details | Floor plan with the guest's table when published |
+| **Your Weekend** (`/your-weekend`, claimed guests) | (none) | Personal schedule, household, RSVP status, table once published, transport benefit, trip items, urgent updates | Free-time suggestions |
+| **Travel & Stay** (`/travel`) | Travel & Accommodations | Airports (ORD/MDW), CAA block first (code + cutoff once known), hand-vetted alternatives with the couple's reasons, transport options, parking | Things to do, weather |
+| **Transportation** (`/transportation`) | (part of Travel) | Airport→hotel, "do I need a car", getting home after the reception, voucher claim when eligible, CTA/taxi/accessible transit | — |
+| **Gifts** (`/gifts`) | Registry | Provider handoff (The Knot / Zola / Joy), "help us with our next adventures" framing, gracious cash-fund language | Thank-you tracking |
+| **Photos & Video** (`/photos`) | Photos | Engagement gallery now; guest uploads + professional chapters after (Full Ceremony · Toasts · First Dances · Guest Videos · Professional Films) | Semantic search, opt-in find-me |
+| **Ask Us** (`/ask`) | FAQ | FAQ content (dress code with examples, kids, plus-ones, parking, weather, photo policy, venue accessibility, contact) plus the grounded concierge | — |
 
-Zola, Joy, and Minted all offer password protection and photo galleries as
-core features; guests treat these as normal. Default to a password gate +
-`noindex`.
+Identity model: no visible accounts. A high-entropy invitation link identifies
+the household (discovery only); the guest picks who they are and claims with
+an email OTP; a persistent session and optional passkey handle returns.
+Guests treat this as normal because The Knot / Zola / Joy already gate
+private details behind a similar "find your invitation" step. Default to
+`noindex` for guest surfaces.
 
 ## 3. RSVP flow rules (the highest-stakes UI)
 
@@ -133,7 +139,7 @@ gradients, bouncy scroll animations. See `PRODUCT.md › Anti-references`.
 - [ ] Dress code explained with an example
 - [ ] Hotel block: code + cutoff date
 - [ ] FAQ covers kids, plus-ones, parking, weather, photos, accessibility
-- [ ] Password gate + `noindex` in place
+- [ ] Invitation-claim flow + `noindex` on guest surfaces in place
 - [ ] `design-review` skill run: score ≥ 7/7/7/7 and Usability ≥ 8
 - [ ] `npm run quality` green; `npm run test:a11y` green against preview
 - [ ] No `TODO(Tyler & Sara)` left on a shipped page

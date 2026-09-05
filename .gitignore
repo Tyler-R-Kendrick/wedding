@@ -48,3 +48,6 @@ design/generated/
 .DS_Store
 Thumbs.db
 *.log
+
+# Python caches from skill scripts
+__pycache__/
