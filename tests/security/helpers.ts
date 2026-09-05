@@ -77,9 +77,11 @@ export async function sessionCookie(page: Page): Promise<string> {
 /** Each spec file behaves like a different network: distinct forwarded IPs keep per-IP buckets apart. */
 export const forwardedFor = (seed: string): Record<string, string> => ({ 'x-forwarded-for': `203.0.113.${(Array.from(seed).reduce((a, c) => a + c.charCodeAt(0), 0) % 200) + 1}` });
 
-export async function cap(request: APIRequestContext, name: string, input: unknown, opts: { cookie?: string; origin?: string } = {}) {
+export async function cap(request: APIRequestContext, name: string, input: unknown, opts: { cookie?: string; origin?: string; idempotencyKey?: string } = {}) {
   const headers: Record<string, string> = { 'content-type': 'application/json', ...forwardedFor(`${name}${Math.random()}`) };
   if (opts.cookie) headers.cookie = opts.cookie;
-  if (opts.origin) headers.origin = opts.origin;
-  return request.post(`/api/capabilities/${name}`, { data: { input }, headers });
+  // Authenticated POSTs must be same-origin JSON (assertSameOriginJson): send the site origin unless a test overrides it.
+  const origin = opts.origin ?? (opts.cookie ? (process.env.BASE_URL ?? 'http://localhost:3000') : undefined);
+  if (origin) headers.origin = origin;
+  return request.post(`/api/capabilities/${name}`, { data: { input, ...(opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : {}) }, headers });
 }

@@ -25,7 +25,7 @@ describe('OTP abuse controls', () => {
     expectErr(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.99' }), 'rate_limited');
     const ip = '10.9.3.3';
     let denied = 0;
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 61; i++) {
       const r = await call('request_otp', { purpose: 'sign_in', email: `spray${i}+ab2@example.test` }, { ip });
       if (!r.ok && r.error.code === 'rate_limited') denied++;
     }

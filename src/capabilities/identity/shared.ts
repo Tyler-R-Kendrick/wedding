@@ -57,11 +57,11 @@ export const ipHashOf = (ctx: CapabilityContext): string => hashOtpIdentifier(tr
  * NAT-friendly on purpose (a hotel or a family Wi-Fi shares one address at wedding time).
  */
 export const OTP_LIMITS = {
-  sendPerEmail: { capacity: 5, refillPerSecond: 5 / 600 },
-  sendPerIp: { capacity: 60, refillPerSecond: 60 / 600 },
-  verifyPerEmail: { capacity: 10, refillPerSecond: 10 / 600 },
-  verifyPerIp: { capacity: 120, refillPerSecond: 120 / 600 },
-  lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600 },
+  sendPerEmail: { capacity: 5, refillPerSecond: 5 / 600, failMode: 'closed' },
+  sendPerIp: { capacity: 60, refillPerSecond: 60 / 600, failMode: 'closed' },
+  verifyPerEmail: { capacity: 10, refillPerSecond: 10 / 600, failMode: 'closed' },
+  verifyPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
+  lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export const RATE_LIMIT_MESSAGE = 'Too many attempts. Please wait a few minutes and try again.';

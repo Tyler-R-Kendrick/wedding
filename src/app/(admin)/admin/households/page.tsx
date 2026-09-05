@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { deleteHousehold, saveHousehold } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
+import { Button, IdemKey, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Households', robots: { index: false, follow: false } };
@@ -21,6 +21,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
     <OpsPage title="Households" lede="The RSVP unit. One manager per household; children and guests without email are managed by them." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       <Section title={editing ? `Edit ${editing.household.name}` : 'Add a household'}>
         <form action={saveHousehold} className="ops-form">
+          <IdemKey />
           {editing ? <input type="hidden" name="id" value={editing.household.id} /> : null}
           <Input id="name" label="Name as printed" defaultValue={editing?.household.name} required />
           <Input

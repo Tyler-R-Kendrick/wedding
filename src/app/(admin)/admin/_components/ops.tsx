@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { newId } from '@/contracts/ids';
 import type { ReactNode } from 'react';
 import './ops.css';
 
@@ -88,4 +89,9 @@ export function Button({ children, variant = 'primary' }: { children: ReactNode;
       {children}
     </button>
   );
+}
+
+/** Render-time idempotency key so a double-submitted admin form replays instead of repeating. */
+export function IdemKey() {
+  return <input type="hidden" name="idem" value={newId()} />;
 }

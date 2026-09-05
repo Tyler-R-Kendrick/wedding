@@ -5,6 +5,7 @@ import type { CapabilityOutcome } from '@/contracts/capability';
 import type { CapabilityError } from '@/contracts/errors';
 import type { Principal } from '@/contracts/principal';
 import type { Result } from '@/contracts/result';
+import { newId } from '@/contracts/ids';
 import { getDb } from '@/db/client';
 import { adminRoles, authSessions } from '@/db/schema';
 import { seedIdentityFixtures, type IdentityFixtures } from '@/domain/identity/fixtures';
@@ -42,7 +43,8 @@ export async function call<T = unknown>(name: string, input: unknown, t: Transpo
   const headers = requestHeaders(t);
   const principal = await principalFor(t);
   const sink: CookieSink = { setCookies: [] };
-  const ctx = await createCapabilityContext({ principal, requestId: `req-${Math.random().toString(36).slice(2, 10)}`, surface: 'ui' });
+  // Idempotent mutations require a key from signed-in callers; anonymous callers may not hold one.
+  const ctx = await createCapabilityContext({ principal, requestId: `req-${Math.random().toString(36).slice(2, 10)}`, surface: 'ui', idempotencyKey: principal.kind === 'anonymous' ? undefined : newId() });
   Object.assign(ctx.services, { requestHeaders: headers, clientIp: t.ip ?? `10.0.${++ipCounter % 250}.${(ipCounter * 7) % 250}`, cookieSink: sink });
   const result = (await invokeByName(name, ctx, input)) as Result<CapabilityOutcome<T>, CapabilityError>;
   return Object.assign(result, { sink, principal });
