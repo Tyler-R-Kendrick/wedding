@@ -72,6 +72,12 @@ const serverSchema = z.object({
   OPENAI_API_KEY: optionalString,
   VOYAGE_API_KEY: optionalString,
   EMBEDDINGS_PROVIDER: z.enum(['openai', 'voyage']).optional(),
+  /** Media intelligence (Swarm I): force the deterministic caption mock even when ANTHROPIC_API_KEY exists. */
+  MEDIA_AI_PROVIDER: z.enum(['mock', 'anthropic']).optional(),
+  /** Biometric vault key (32+ chars, base64/hex). Required in production when FLAG_BIOMETRICS_ENABLED is on; dev derives one with a warning. */
+  BIOMETRIC_VAULT_KEY: optionalSecret(32),
+  /** Biometric templates are deleted at the latest this many days after enrolment (TODO(Tyler & Sara): confirm with counsel). */
+  BIOMETRIC_RETENTION_DAYS: intish(365, 1),
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalString,
   S3_ENDPOINT: optionalUrl,

@@ -69,7 +69,7 @@ const factories: Factories = {
   'auth-email': () => createAuthEmailProvider(env),
   storage: () => createStorageProvider(env, { warn: (m) => logger.warn(m) }),
   video: (d) => createVideoProvider({ storage: resolve('storage', d) }),
-  'media-ai': () => createMediaAiProvider(),
+  'media-ai': (d) => createMediaAiProvider(env, { languageModel: () => resolve('ai-model', d).getLanguageModel('caption') }),
   embeddings: () => createEmbeddingsProvider(env),
   'vector-index': (d) => createVectorIndexProvider({ dims: resolve('embeddings', d).dims, db: d.db, forceMock: env.FORCE_MOCK_PROVIDERS }),
   biometric: (d) => createBiometricProvider({ readiness: () => isEnabled('BIOMETRICS_ENABLED', { db: d.db }) }),

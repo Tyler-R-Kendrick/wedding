@@ -11,3 +11,5 @@ export * from './content';
 export * from './idempotency';
 export * from './rateLimits';
 export * from './media';
+export * from './media_ai';
+export * from './biometrics';
