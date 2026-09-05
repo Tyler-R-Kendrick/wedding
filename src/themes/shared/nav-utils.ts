@@ -10,7 +10,6 @@ const SHORT: Record<string, string> = {
   'Share an Adventure': 'Share',
   'Our Adventures': 'Adventures',
   'Our Story': 'Story',
-  'Explore CAA': 'Explore',
   'Travel & Stay': 'Travel',
   'The Wedding': 'Wedding',
   'Ask Us': 'Ask us',
@@ -29,7 +28,7 @@ export function isCurrent(item: NavItem, nav: NavModel): boolean {
 export function bottomCells(nav: NavModel, max: number): NavItem[] {
   const out: NavItem[] = [];
   const seen = new Set<string>();
-  for (const item of [...nav.sticky, ...nav.primary]) {
+  for (const item of [...nav.sticky, ...nav.primary, ...nav.more]) {
     if (seen.has(item.href) || item.href === '/') continue;
     seen.add(item.href);
     out.push(item);

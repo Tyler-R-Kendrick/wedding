@@ -1,0 +1,28 @@
+{
+  "generated": "scripts/design-sync.mjs",
+  "source": "src/themes/conservatory/DESIGN.md",
+  "colors": {
+    "primary": "#2a4430",
+    "on-primary": "#f4eedf",
+    "secondary": "#4f6338",
+    "on-secondary": "#f4eedf",
+    "tertiary": "#d4b24a",
+    "on-tertiary": "#2a4430",
+    "neutral": "#f4eedf",
+    "neutral-variant": "#eae2ce",
+    "surface": "#fbf8f1",
+    "on-surface": "#2a4430",
+    "on-surface-muted": "#4f5a48",
+    "outline": "#c8c1ac",
+    "error": "#8b3a2b",
+    "on-error": "#fff5f0",
+    "leaf": "#7e9c5f",
+    "leaf-deep": "#3f5f33",
+    "moss-wash": "#dfe5cf",
+    "sky": "#d4e4ec",
+    "sky-ink": "#2b4a5a",
+    "kraft": "#e4d6ba",
+    "kraft-deep": "#c9b48c",
+    "soil": "#6e5637"
+  }
+}

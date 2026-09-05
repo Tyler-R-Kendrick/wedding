@@ -27,6 +27,7 @@ export function DialogBase({ id, title, trigger, triggerLabel, children, closeLa
     const el = ref.current;
     if (!el) return;
     if (!el.open) el.showModal();
+    el.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     setOpen(true);
   }, []);
   const hide = useCallback(() => {

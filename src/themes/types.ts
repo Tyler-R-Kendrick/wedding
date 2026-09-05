@@ -41,6 +41,9 @@ export interface ThemeMeta {
   designMd: string;
   fonts: ThemeFontFile[];
   colorScheme: 'light';
+  /** DESIGN.md `neutral`, read from the generated tokens JSON (never a literal in TS). */
+  themeColor: string;
+  icon: { svg: string; apple: string };
   structure: ThemeStructure;
   motion: MotionSpec;
 }
@@ -135,8 +138,8 @@ export interface PageFrame {
   lifecycle: LifecycleView;
   countdown: CountdownView;
   nav: NavModel;
-  /** Rendered switcher control (null when FLAG_DESIGN_SWITCHER is off). */
-  switcher: ReactNode;
+  /** FLAG_DESIGN_SWITCHER: kits render the switcher in the shell (nav, Menu sheet, footer) when true. */
+  switcherEnabled: boolean;
 }
 
 export interface HomeData extends PageFrame {
@@ -169,6 +172,8 @@ export interface HomeContent {
   secondary?: ActionLink;
   /** RSVP deadline etc. shown beside the primary action. */
   deadline?: Copy;
+  /** One quiet line under the actions (e.g. the travel heads-up in TEASER). */
+  note?: Copy;
   showCountdown: boolean;
   sections: HomeSection[];
 }
@@ -258,6 +263,7 @@ export interface ShellProps {
 export interface NavProps {
   nav: NavModel;
   siteName: string;
+  switcherEnabled: boolean;
   /** "Today" replaces "Home" on WEDDING_DAY. */
   homeLabel: string;
 }

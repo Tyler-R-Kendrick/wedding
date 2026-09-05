@@ -12,7 +12,7 @@ describe('home content by lifecycle state', () => {
     const c = homeContent(site, state);
     expect(c.title).toBe(state === 'WEDDING_DAY' ? 'Today' : 'Sara + Tyler');
     expect(c.primary.href).toMatch(/^(\/|#)/);
-    expect(c.sections.length).toBeGreaterThanOrEqual(4);
+    expect(c.sections.length).toBeGreaterThanOrEqual(3);
     expect(c.sections.length).toBeLessThanOrEqual(6);
     expect(new Set(c.sections.map((s) => s.id)).size).toBe(c.sections.length);
   });
@@ -29,7 +29,9 @@ describe('home content by lifecycle state', () => {
   });
 
   it('follows the state machine: explore → act → operate → remember', () => {
-    expect(homeContent(site, 'TEASER').sections.map((s) => s.act)).toEqual(['adventure', 'place', 'memory', 'hospitality', 'future']);
+    expect(homeContent(site, 'TEASER').sections.map((s) => s.act)).toEqual(['adventure', 'place', 'memory']);
+    expect(homeContent(site, 'TEASER').note).toBeDefined();
+    expect(homeContent(site, 'SAVE_THE_DATE').sections.map((s) => s.act)).toEqual(['adventure', 'place', 'memory', 'hospitality', 'future']);
     expect(homeContent(site, 'TEASER').showCountdown).toBe(true);
     expect(homeContent(site, 'RSVP_OPEN').sections[0]?.id).toBe('rsvp');
     expect(homeContent(site, 'RSVP_OPEN').primary).toMatchObject({ href: '/rsvp', variant: 'accent' });

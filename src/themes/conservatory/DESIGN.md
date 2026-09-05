@@ -68,7 +68,7 @@ typography:
     lineHeight: 1.65
   body-sm:
     fontFamily: Spectral
-    fontSize: 0.9375rem
+    fontSize: 1.0625rem
     fontWeight: 400
     lineHeight: 1.55
   label-lg:
@@ -369,8 +369,10 @@ gradient).
 
 ## Typography
 
-Three open-licence families from Google Fonts (all OFL): four files,
-self-hosted, `font-display: swap`.
+Three open-licence families from Google Fonts (all OFL): four files
+(Gloock, Spectral 400, Spectral 500, Cardo italic), self-hosted,
+`font-display: swap`. Spectral 500 is the one file over the three-file
+target; buttons, `h3` and labels depend on it and synthesis is off.
 
 - **Gloock** (`display-xl`, `display-lg`, `h1`, `h2`, `numeral`). A
   high-contrast, single-weight display serif with a botanical curl in its

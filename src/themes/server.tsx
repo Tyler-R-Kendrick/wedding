@@ -1,11 +1,10 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import type { ReactNode } from 'react';
-import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { getCountdown, getLifecycleView, getSiteFacts, navFor, type LifecycleOptions } from '@/domain/lifecycle';
 import { getFlags } from '@/lib/flags';
 import { getTheme } from './index';
-import { isThemeId, listThemes } from './registry';
+import { isThemeId } from './registry';
 import { resolveTheme, THEME_COOKIE } from './resolve';
 import { THEME_HEADER } from './routes';
 import { homeContent } from './shared/home-content';
@@ -34,8 +33,7 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   const [site, lifecycle, countdown] = await Promise.all([getSiteFacts(), getLifecycleView(input.lifecycle), getCountdown()]);
   const claimed = input.lifecycle?.principal?.kind === 'guest';
   const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, claimed });
-  const switcher = getFlags().DESIGN_SWITCHER ? <DesignSwitcher current={input.theme} themes={listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }))} /> : null;
-  return { theme: input.theme, site, lifecycle, countdown, nav, switcher };
+  return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 
 export async function renderHome(input: Omit<FrameInput, 'currentPath'>): Promise<ReactNode> {

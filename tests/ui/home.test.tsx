@@ -20,7 +20,7 @@ function homeData(theme: ThemeId, state: LifecycleState): HomeData {
     lifecycle: { state, mode: LIFECYCLE_MODE[state], persistedState: state, preview: null, suggested: 'RSVP_OPEN', publishedAt: null, note: null },
     countdown: countdownView(NOW),
     nav: navFor(state, { venue: site.venue, currentPath: '/' }),
-    switcher: null,
+    switcherEnabled: false,
     content: homeContent(site, state),
   };
 }
@@ -73,7 +73,7 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
 describe('the two themes are structurally different', () => {
   it('Gilded Hour numbers its acts on one axis with an elevator panel; Conservatory mounts pressed cards on a tag rail', () => {
     const gh = render(<>{getTheme('gilded-hour').recipes.home(homeData('gilded-hour', 'TEASER'))}</>);
-    expect(gh.container.querySelectorAll('.gh-plaque--act').length).toBe(5);
+    expect(gh.container.querySelectorAll('.gh-plaque--act').length).toBe(3);
     expect(gh.container.querySelector('.gh-panel')).not.toBeNull();
     expect(gh.container.querySelector('.gh-frieze')).not.toBeNull();
     expect(gh.container.querySelector('[class^="cv-"], [class*=" cv-"]')).toBeNull();
@@ -81,6 +81,7 @@ describe('the two themes are structurally different', () => {
     const cv = render(<>{getTheme('conservatory').recipes.home(homeData('conservatory', 'TEASER'))}</>);
     expect(cv.container.querySelector('.cv-rail')).not.toBeNull();
     expect(cv.container.querySelectorAll('.cv-pressed').length).toBeGreaterThan(0);
+    expect(cv.container.querySelectorAll('.cv-tag--hang').length).toBe(2); // link-only sections hang a tag, never an empty sheet
     expect(cv.container.querySelector('.cv-plaque, .gh-plaque--act, .gh-panel')).toBeNull();
     expect(cv.container.querySelector('[class^="gh-"], [class*=" gh-"]')).toBeNull();
     cv.unmount();

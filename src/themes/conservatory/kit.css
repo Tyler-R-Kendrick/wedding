@@ -285,9 +285,13 @@
 .cv-hero {
   position: relative;
   display: grid;
-  gap: var(--spacing-lg);
+  grid-template-areas:
+    "names"
+    "tag"
+    "rest";
+  gap: var(--spacing-md);
   max-width: var(--cv-max);
-  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) * 1.3);
+  padding: var(--spacing-xl) var(--cv-gutter) calc(var(--spacing-2xl) * 1.3);
 }
 
 .cv-hero::before {
@@ -305,18 +309,31 @@
 @media (width >= 900px) {
   .cv-hero {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas:
+      "names tag"
+      "rest tag";
     align-items: start;
     column-gap: var(--spacing-2xl);
+    padding-block-start: var(--spacing-2xl);
   }
 }
 
-.cv-hero__text {
+.cv-hero__names,
+.cv-hero__rest {
   display: grid;
   gap: var(--spacing-md);
   justify-items: start;
   max-width: 36rem;
   min-width: 0;
   animation: cv-settle var(--duration-settle) var(--ease-settle) both;
+}
+
+.cv-hero__names {
+  grid-area: names;
+}
+
+.cv-hero__rest {
+  grid-area: rest;
 }
 
 .cv-hero__status {
@@ -368,13 +385,14 @@
 }
 
 .cv-hero__tag {
+  grid-area: tag;
   position: relative;
   display: grid;
   gap: 4px;
   place-self: start start;
   max-width: 22rem;
   margin: 0;
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md) calc(var(--spacing-lg) + 12px);
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) calc(var(--spacing-lg) + 12px);
   background: var(--color-kraft);
   color: var(--color-primary);
   border-block-end: 2px solid var(--color-kraft-deep);
@@ -419,7 +437,39 @@
   font-family: var(--font-accent);
   font-style: italic;
   font-size: var(--type-specimen-label-size);
-  color: var(--color-soil);
+  color: var(--color-primary);
+}
+
+.cv-hero__note {
+  margin: 0;
+  max-width: 56ch;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+/* A link-only section hangs its link as a kraft tag in the mounting area instead of an empty sheet. */
+.cv-section__hang {
+  margin: 0;
+}
+
+@media (width >= 900px) {
+  .cv-section__hang {
+    justify-self: end;
+    margin-block-start: var(--spacing-xl);
+  }
+}
+
+.cv-tag--hang {
+  min-height: 48px;
+  padding: 12px 18px;
+  font-size: var(--type-label-lg-size);
+  font-weight: var(--type-label-lg-weight);
+  font-feature-settings: normal;
+  letter-spacing: var(--type-label-lg-tracking);
+  box-shadow: var(--shadow-paper-rest);
+  transform: rotate(-2deg);
 }
 
 /* the sky band (countdown) */
@@ -687,9 +737,9 @@
 }
 
 .cv-stat__label {
-  font-family: var(--font-accent);
-  font-style: italic;
-  font-size: var(--type-specimen-label-size);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: var(--type-label-lg-weight);
   color: var(--color-soil);
 }
 
@@ -920,8 +970,6 @@
 
 .cv-frame__caption {
   margin-block-start: var(--spacing-sm);
-  font-family: var(--font-accent);
-  font-style: italic;
   font-size: var(--type-body-sm-size);
   color: var(--color-soil);
 }
@@ -1077,7 +1125,7 @@
 .cv-footer {
   position: relative;
   margin-block-start: var(--spacing-2xl);
-  padding: var(--spacing-2xl) var(--cv-gutter);
+  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) + var(--bottom-bar-height, 0px));
   background: var(--color-neutral-variant);
 }
 
@@ -1109,10 +1157,8 @@
 
 .cv-footer__specimen {
   max-width: 60ch;
-  font-family: var(--font-accent);
-  font-style: italic;
-  font-size: var(--type-specimen-label-size);
-  color: var(--color-soil);
+  font-size: var(--type-body-md-size);
+  color: var(--color-primary);
 }
 
 .cv-footer__rights {
@@ -1179,7 +1225,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cv-pressed,
-  .cv-hero__text,
+  .cv-hero__names,
+  .cv-hero__rest,
   .cv-hero__tag,
   .cv-dialog__panel,
   .cv-section--wash::before {
@@ -1197,11 +1244,40 @@
   }
 }
 
-/* Conservatory specifics for shared chrome */
-.cv .switcher__trigger,
+/* Conservatory specifics for shared chrome: the switcher is a kraft tag in the rail, a Menu-sheet section, a footer tag */
 .cv .switcher__close,
 .cv .switcher__option {
   border-radius: var(--rounded-md);
+}
+
+.cv .switcher__trigger {
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: var(--color-kraft);
+  color: var(--color-primary);
+  font-feature-settings: var(--type-label-caps-features);
+  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+}
+
+.cv .switcher__trigger:hover {
+  background: var(--color-kraft);
+  transform: rotate(1.5deg);
+}
+
+.cv-rail__switcher {
+  padding-inline-start: var(--spacing-md);
+}
+
+.cv .switcher__heading {
+  font-family: var(--font-display);
+  font-size: var(--type-h3-size);
+}
+
+.cv .cv-dialog,
+.cv .switcher__dialog {
+  overscroll-behavior: contain;
 }
 
 .cv .kit-archive {

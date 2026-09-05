@@ -194,7 +194,7 @@
       },
       "label-sm": {
         "displayName": "Label SM",
-        "purpose": "Elevator-panel cell labels: 12px under line icons, 0.1em tracking, one line only."
+        "purpose": "Elevator-panel cell labels: 13px under line icons, 0.04em tracking, one line only."
       },
       "numeral": {
         "displayName": "Numeral",

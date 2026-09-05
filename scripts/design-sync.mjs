@@ -166,6 +166,14 @@ function generateTheme(themeId) {
   return lines.join('\n');
 }
 
+/** Colours as JSON so TypeScript (viewport themeColor, icons) can read a token without a literal. */
+function generateTokensJson(themeId) {
+  const designPath = path.join(ROOT, 'src', 'themes', themeId, 'DESIGN.md');
+  const cssVars = designMd(['export', '--format', 'css-vars', designPath]);
+  const colors = Object.fromEntries([...cssVars.matchAll(/--color-([a-z0-9-]+):\s*(#[0-9a-f]{3,8});/g)].map((m) => [m[1], m[2]]));
+  return JSON.stringify({ generated: 'scripts/design-sync.mjs', source: `src/themes/${themeId}/DESIGN.md`, colors }, null, 2) + '\n';
+}
+
 function generateTailwindTheme(themeId) {
   const designPath = path.join(ROOT, 'src', 'themes', themeId, 'DESIGN.md');
   const css = designMd(['export', '--format', 'css-tailwind', designPath]);
@@ -178,7 +186,10 @@ function generateTailwindTheme(themeId) {
 }
 
 const outputs = [];
-for (const id of THEMES) outputs.push({ file: path.join(ROOT, 'src', 'themes', id, 'theme.css'), content: generateTheme(id) });
+for (const id of THEMES) {
+  outputs.push({ file: path.join(ROOT, 'src', 'themes', id, 'theme.css'), content: generateTheme(id) });
+  outputs.push({ file: path.join(ROOT, 'src', 'themes', id, 'tokens.generated.json'), content: generateTokensJson(id) });
+}
 outputs.push({ file: path.join(ROOT, 'src', 'themes', DEFAULT_THEME, 'tailwind.theme.css'), content: generateTailwindTheme(DEFAULT_THEME) });
 
 let stale = 0;
