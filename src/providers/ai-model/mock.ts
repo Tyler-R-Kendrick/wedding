@@ -1,6 +1,5 @@
 import { MockLanguageModelV4 } from 'ai/test';
 import { okConfig, upHealth } from '../base';
-import { createExtractiveMockModel, createMockVerifierModel } from './concierge-mock';
 import type { AiModelProvider, ModelRole } from './types';
 
 export const MOCK_REPLY = 'This is the mock concierge. Configure ANTHROPIC_API_KEY to talk to a real model.';
@@ -49,14 +48,7 @@ export class MockAiModel implements AiModelProvider {
   modelIdFor(role: ModelRole) {
     return `mock-${role}`;
   }
-  /**
-   * Chat and verifier roles are the deterministic extractive models (src/providers/ai-model/concierge-mock.ts):
-   * they only quote the evidence blocks they are given, so evals exercise the real grounding pipeline.
-   * Caption keeps the fixed-reply stub.
-   */
   getLanguageModel(role: ModelRole) {
-    if (role === 'chat') return createExtractiveMockModel(this.modelIdFor(role));
-    if (role === 'verifier') return createMockVerifierModel(this.modelIdFor(role));
     return mockLanguageModel(this.modelIdFor(role));
   }
 }
