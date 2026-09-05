@@ -16,6 +16,7 @@ export const INTERNAL_ROUTES = [
   '/photos',
   '/ask-us',
   '/rsvp',
+  '/trip',
 ] as const;
 
 export type InternalRoute = (typeof INTERNAL_ROUTES)[number];
