@@ -51,3 +51,8 @@ Thumbs.db
 
 # Python caches from skill scripts
 __pycache__/
+
+# Secret Drop: private recipient key + decrypted material (public.jwk.json may be committed)
+.secrets/*
+!.secrets/public.jwk.json
+!.secrets/env.enc.json

@@ -1,6 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "enabledMcpjsonServers": ["fal-ai", "higgsfield", "stitch", "playwright", "context7"],
+  "enabledMcpjsonServers": [
+    "fal-ai",
+    "higgsfield",
+    "stitch",
+    "playwright",
+    "context7"
+  ],
   "permissions": {
     "allow": [
       "Skill",
@@ -23,11 +29,15 @@
       "WebFetch(domain:www.awwwards.com)",
       "WebFetch(domain:www.theknot.com)",
       "WebFetch(domain:withjoy.com)",
-      "WebFetch(domain:www.zola.com)"
+      "WebFetch(domain:www.zola.com)",
+      "Bash(node scripts/secrets/*)"
     ],
     "deny": [
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.secrets/private*)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./.env.*.local)"
     ]
   },
   "hooks": {
@@ -52,6 +62,18 @@
             "command": "[ ! -x \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
             "timeout": 30,
             "statusMessage": "impeccable: design deep pass"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$SECRETS_PRIVATE_KEY\" ] && [ -f \"${CLAUDE_PROJECT_DIR}/.secrets/env.enc.json\" ] && (cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/secrets/apply-env.mjs .secrets/env.enc.json >/dev/null 2>&1 || true) || true",
+            "timeout": 30,
+            "statusMessage": "Secret Drop: applying sealed .env bundle"
           }
         ]
       }
