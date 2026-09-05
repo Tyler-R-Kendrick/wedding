@@ -185,6 +185,48 @@ describe('invoke pipeline', () => {
     if (!conflict.ok) expect(conflict.error.code).toBe('conflict');
   });
 
+  it('reserves the idempotency key first: concurrent retries conflict while in progress, failures release it', async () => {
+    let calls = 0;
+    let failNext = true;
+    const mutate = defineCapability<{ text: string }, { text: string; n: number }>({
+      ...echo,
+      name: 'reserved_thing',
+      kind: 'action',
+      auth: 'guest',
+      idempotent: true,
+      annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
+      output: z.object({ text: z.string(), n: z.number() }),
+      handler: async (_c, i) => {
+        calls++;
+        if (failNext) {
+          failNext = false;
+          throw new Error('transient');
+        }
+        return ok({ data: { text: i.text, n: calls }, sources: [] });
+      },
+    });
+    const store = new MemoryIdempotencyStore();
+    const key = 'idem-key-reserved' as IdempotencyKey;
+    const scope = 'reserved_thing:guest:G1';
+    await store.reserve(scope, key, stableHash({ text: 'a' }));
+    const busy = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    expect(busy.ok).toBe(false);
+    if (!busy.ok) expect(busy.error.code).toBe('conflict');
+    expect(calls).toBe(0);
+    await store.release(scope, key);
+
+    const failed = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    expect(failed.ok).toBe(false);
+    expect(await store.get(scope, key)).toBeNull(); // released, not left "in progress"
+    const retried = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    expect(retried.ok).toBe(true);
+    expect(calls).toBe(2);
+    expect(await store.get(scope, key)).toMatchObject({ status: 'complete' });
+    const replay = await invoke(mutate, ctx({ principal: guest, idempotencyKey: key }, { idempotency: store }).c, { text: 'a' });
+    expect(replay.ok && retried.ok && replay.value.data).toEqual(retried.ok && retried.value.data);
+    expect(calls).toBe(2);
+  });
+
   it('converts thrown handler errors into guest-safe internal errors and audits them', async () => {
     const boom = defineCapability<{ text: string }, { text: string }>({
       ...echo,

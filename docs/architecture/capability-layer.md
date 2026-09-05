@@ -28,7 +28,9 @@ Implementation: `src/capabilities/{registry,invoke,context,services}.ts`.
 3  authorize            auth level (anonymous < guest < admin < system) + required entitlements
 4  step-up              descriptor.stepUp -> session must be < 5 min old (system exempt)
 5  confirmation         confirmation === 'explicit' -> token must match (capability, principal, payload hash)
-6  idempotency replay   idempotent + key -> stored response replayed; same key + different payload -> conflict
+6  idempotency          idempotent + key -> (scope, key) is RESERVED before the handler; a live reservation
+                        is `conflict` (still processing), a stored outcome is replayed, a different payload
+                        is `conflict`; any later failure releases the reservation so the retry re-runs
 7  handler              exceptions become `internal` with a guest-safe message; cause is logged, never returned
 8  validate output      zod safeParse of data; maxOutputChars enforced for 'ai' and 'webmcp' surfaces
 9  audit                ALWAYS: capability.invoked | capability.denied | capability.failed
@@ -112,9 +114,13 @@ minutes by default, and are bound to capability, principal, and payload; any mis
 ## Idempotency
 
 Set `idempotent: true` on mutations. Callers send `idempotencyKey` (8-128 chars, unique
-per intent). The pipeline scopes keys by capability + principal, stores successful
-outcomes for 24 h (`idempotency_keys`), replays them on retry, and returns `conflict` if
-the same key arrives with a different payload. Failures are not stored, so retries re-run.
+per intent). The pipeline scopes keys by capability + principal and **reserves** the
+`(scope, key)` row (`status = in_progress`, `INSERT … ON CONFLICT DO NOTHING`) before the
+handler runs, so two concurrent retries can never both execute: the loser gets `conflict`
+("still being processed") until the winner stores its outcome (24 h, `idempotency_keys`,
+`status = complete`) or fails. Stored outcomes are replayed; the same key with a different
+payload is `conflict`. Failures (handler error, thrown, bad output) release the reservation
+so a retry re-runs; a reservation that is never completed expires after 10 minutes.
 
 ## Step-up
 

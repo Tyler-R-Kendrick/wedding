@@ -8,14 +8,31 @@ import type { ConfirmationService } from '@/policy/confirmation';
  * The app-level factory in `./context.ts` supplies real implementations; tests
  * supply in-memory ones.
  */
+export type IdempotencyStatus = 'in_progress' | 'complete';
+
 export interface IdempotencyRecord {
   payloadHash: string;
+  /** Present once `status` is `complete`. */
   response: unknown;
+  status: IdempotencyStatus;
 }
+
+export type IdempotencyReservation = { reserved: true } | { reserved: false; existing: IdempotencyRecord };
+
+/** How long a reservation without an outcome blocks retries (a handler never runs longer than a request). */
+export const IDEMPOTENCY_RESERVATION_TTL_SECONDS = 10 * 60;
 
 export interface IdempotencyStore {
   get(scope: string, key: string): Promise<IdempotencyRecord | null>;
+  /** Records a completed outcome (upsert); replayed until the TTL passes. */
   set(scope: string, key: string, payloadHash: string, response: unknown, ttlSeconds?: number): Promise<void>;
+  /**
+   * Atomically claims (scope, key) before the handler runs. Not reserved when a live row already
+   * exists, whether still in progress or complete; the caller decides replay vs. conflict.
+   */
+  reserve(scope: string, key: string, payloadHash: string, ttlSeconds?: number): Promise<IdempotencyReservation>;
+  /** Drops a reservation whose handler failed, so a retry re-runs instead of replaying nothing. */
+  release(scope: string, key: string): Promise<void>;
 }
 
 export interface MetricsLike {
@@ -50,20 +67,33 @@ export function requireService<T>(ctx: CapabilityContext, name: string): T {
   return value as T;
 }
 
-/** In-memory idempotency store for tests and the dev runner. */
+/** In-memory idempotency store for tests and the dev runner. Same reserve-first semantics as the DB store. */
 export class MemoryIdempotencyStore implements IdempotencyStore {
   private readonly rows = new Map<string, IdempotencyRecord & { expiresAt: number }>();
   constructor(private readonly now: () => number = () => Date.now()) {}
-  async get(scope: string, key: string): Promise<IdempotencyRecord | null> {
+  private live(scope: string, key: string): (IdempotencyRecord & { expiresAt: number }) | null {
     const row = this.rows.get(`${scope} ${key}`);
     if (!row) return null;
     if (row.expiresAt <= this.now()) {
       this.rows.delete(`${scope} ${key}`);
       return null;
     }
-    return { payloadHash: row.payloadHash, response: row.response };
+    return row;
+  }
+  async get(scope: string, key: string): Promise<IdempotencyRecord | null> {
+    const row = this.live(scope, key);
+    return row ? { payloadHash: row.payloadHash, response: row.response, status: row.status } : null;
   }
   async set(scope: string, key: string, payloadHash: string, response: unknown, ttlSeconds = 86_400): Promise<void> {
-    this.rows.set(`${scope} ${key}`, { payloadHash, response, expiresAt: this.now() + ttlSeconds * 1000 });
+    this.rows.set(`${scope} ${key}`, { payloadHash, response, status: 'complete', expiresAt: this.now() + ttlSeconds * 1000 });
+  }
+  async reserve(scope: string, key: string, payloadHash: string, ttlSeconds = IDEMPOTENCY_RESERVATION_TTL_SECONDS): Promise<IdempotencyReservation> {
+    const row = this.live(scope, key);
+    if (row) return { reserved: false, existing: { payloadHash: row.payloadHash, response: row.response, status: row.status } };
+    this.rows.set(`${scope} ${key}`, { payloadHash, response: null, status: 'in_progress', expiresAt: this.now() + ttlSeconds * 1000 });
+    return { reserved: true };
+  }
+  async release(scope: string, key: string): Promise<void> {
+    this.rows.delete(`${scope} ${key}`);
   }
 }

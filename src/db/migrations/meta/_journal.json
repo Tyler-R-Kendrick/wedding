@@ -8,6 +8,13 @@
       "when": 1788580211890,
       "tag": "0000_nifty_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788611436393,
+      "tag": "0001_lethal_killraven",
+      "breakpoints": true
     }
   ]
 }

@@ -114,17 +114,38 @@ export async function invoke<I, O>(
     if (!verified.ok) return finish(err(verified.error));
   }
 
-  // 6. idempotency replay
+  // 6. idempotency: reserve first, so concurrent retries can never both run the handler
   const idemScope = `${descriptor.name}:${principalKey(actor)}`;
+  let reserved = false;
   if (descriptor.idempotent && ctx.idempotencyKey && services.idempotency) {
-    const stored = await services.idempotency.get(idemScope, ctx.idempotencyKey);
-    if (stored) {
-      if (stored.payloadHash !== payloadHash) {
+    let claim: Awaited<ReturnType<typeof services.idempotency.reserve>>;
+    try {
+      claim = await services.idempotency.reserve(idemScope, ctx.idempotencyKey, payloadHash);
+    } catch (cause) {
+      return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause)));
+    }
+    if (!claim.reserved) {
+      if (claim.existing.status === 'in_progress') {
+        return finish(err(new CapabilityError('conflict', 'That request is still being processed. Please wait a moment before retrying.')));
+      }
+      if (claim.existing.payloadHash !== payloadHash) {
         return finish(err(new CapabilityError('conflict', 'That request was already made with different details.')));
       }
-      return finish(ok(stored.response as CapabilityOutcome<O>), { replay: true });
+      return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
     }
+    reserved = true;
   }
+  /** A failure after the reservation must release it, so a retry re-runs instead of seeing "in progress". */
+  const fail = async (error: CapabilityError) => {
+    if (reserved && ctx.idempotencyKey && services.idempotency) {
+      try {
+        await services.idempotency.release(idemScope, ctx.idempotencyKey);
+      } catch (cause) {
+        services.logger?.error({ err: cause, capability: descriptor.name, requestId: ctx.requestId }, 'idempotency reservation could not be released');
+      }
+    }
+    return finish(err(error));
+  };
 
   // 7. handler
   let result: Result<CapabilityOutcome<O>, CapabilityError>;
@@ -132,27 +153,32 @@ export async function invoke<I, O>(
     result = await descriptor.handler(ctx, input);
   } catch (cause) {
     services.logger?.error({ err: cause, capability: descriptor.name, requestId: ctx.requestId }, 'capability handler threw');
-    return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause)));
+    return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause));
   }
-  if (!result.ok) return finish(err(result.error));
+  if (!result.ok) return fail(result.error);
 
   // 8. validate output, cap size
   const outParsed = descriptor.output.safeParse(result.value.data);
   if (!outParsed.success) {
     services.logger?.error({ capability: descriptor.name, requestId: ctx.requestId, issues: outParsed.error.issues.length }, 'capability output failed schema');
-    return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE)));
+    return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE));
   }
   const outcome: CapabilityOutcome<O> = { ...result.value, data: outParsed.data, sources: result.value.sources ?? [] };
   if (surface === 'ai' || surface === 'webmcp') {
     const max = descriptor.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
     const size = JSON.stringify(outcome.data).length;
     if (size > max) {
-      return finish(err(new CapabilityError('validation', 'That result is too large to show here. Try a narrower request.', { maxOutputChars: max, size })));
+      return fail(new CapabilityError('validation', 'That result is too large to show here. Try a narrower request.', { maxOutputChars: max, size }));
     }
   }
 
-  if (descriptor.idempotent && ctx.idempotencyKey && services.idempotency) {
-    await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
+  if (reserved && ctx.idempotencyKey && services.idempotency) {
+    try {
+      await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
+    } catch (cause) {
+      // The action happened; a retry within the reservation TTL sees "in progress" and then re-runs. Never hide the outcome.
+      services.logger?.error({ err: cause, capability: descriptor.name, requestId: ctx.requestId }, 'idempotency outcome could not be stored');
+    }
   }
 
   // 9. audit success
