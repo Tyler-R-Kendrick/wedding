@@ -1,9 +1,11 @@
 import type { ExternalHandoff } from '@/contracts/providers';
-import type { FlightSearchRequest } from './types';
+import { FLIGHT_CABINS, type FlightCabin, type FlightSearchRequest } from './types';
 
 const IATA = /^[A-Za-z]{3}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const yymmdd = (iso: string) => iso.replaceAll('-', '').slice(2);
+
+const SKYSCANNER_CABIN: Record<FlightCabin, string> = { economy: 'economy', premium_economy: 'premiumeconomy', business: 'business', first: 'first' };
 
 /**
  * Only well-formed codes and dates ever reach the URL path: anything else is a programming error
@@ -16,6 +18,7 @@ export function assertFlightSearchRequest(req: FlightSearchRequest): void {
   if (req.returnDate !== undefined && !DATE.test(req.returnDate)) throw new RangeError('flights: returnDate must be YYYY-MM-DD');
   if (!Number.isInteger(req.adults) || req.adults < 1 || req.adults > 9) throw new RangeError('flights: adults must be 1-9');
   if (req.children !== undefined && (!Number.isInteger(req.children) || req.children < 0 || req.children > 9)) throw new RangeError('flights: children must be 0-9');
+  if (req.cabin !== undefined && !(FLIGHT_CABINS as readonly string[]).includes(req.cabin)) throw new RangeError('flights: unknown cabin');
 }
 
 /** Skyscanner search deep link (on the redirect allowlist). No API key, no tracking parameters. */
@@ -24,8 +27,14 @@ export function skyscannerFlightsUrl(req: FlightSearchRequest): string {
   const from = req.origin.toLowerCase();
   const to = (req.destination ?? 'ORD').toLowerCase();
   const path = req.returnDate ? `${from}/${to}/${yymmdd(req.departDate)}/${yymmdd(req.returnDate)}/` : `${from}/${to}/${yymmdd(req.departDate)}/`;
-  const params = new URLSearchParams({ adults: String(req.adults), adultsv2: String(req.adults), cabinclass: 'economy', rtn: req.returnDate ? '1' : '0' });
+  const params = new URLSearchParams({
+    adults: String(req.adults),
+    adultsv2: String(req.adults),
+    cabinclass: SKYSCANNER_CABIN[req.cabin ?? 'economy'],
+    rtn: req.returnDate ? '1' : '0',
+  });
   if (req.children) params.set('children', String(req.children));
+  if (req.nonstopOnly) params.set('stops', '!oneStop,!twoPlusStops');
   return `https://www.skyscanner.com/transport/flights/${path}?${params.toString()}`;
 }
 
