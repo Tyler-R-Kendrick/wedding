@@ -10,3 +10,5 @@ export * from './metrics';
 export * from './content';
 export * from './idempotency';
 export * from './rateLimits';
+export * from './auth';
+export * from './guests';
