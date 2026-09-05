@@ -3,7 +3,7 @@ import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { RSVP_STATUSES } from '@/db/schema';
 import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { listAllGuests, listAllResponses, listHouseholds } from '@/domain/rsvp';
@@ -49,7 +49,7 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
   input: overviewInput,
   output: overviewOutput,
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const [tables, assignments, plans, live, history, guests, households, responses] = await Promise.all([listTables(db), listAssignments(db), listFloorPlans(db), getLivePublication(db), listPublications(db), listAllGuests(db), listHouseholds(db), listAllResponses(db)]);
     const hh = new Map(households.map((h) => [h.id, h.name]));
     const guestById = new Map(guests.map((g) => [g.id, g]));
@@ -107,7 +107,7 @@ export const adminUpsertTable = defineCapability<z.infer<typeof tableInput>, z.i
   input: tableInput,
   output: tableOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     if (i.floorPlanId && i.anchorId) {
       const plan = (await listFloorPlans(db)).find((p) => p.id === i.floorPlanId);
       if (!plan) return err(new CapabilityError('not_found', 'That floor plan does not exist.'));
@@ -136,7 +136,7 @@ export const adminDeleteTable = defineCapability<{ id: string }, { deleted: bool
   input: z.object({ id: idSchema }),
   output: z.object({ deleted: z.boolean() }),
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const deleted = await deleteTable(db, i.id);
     if (!deleted) return err(new CapabilityError('not_found', 'That table does not exist.'));
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.changed', target: { type: 'seating_table', id: i.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: 'delete' } });
@@ -161,7 +161,7 @@ export const adminAssignSeats = defineCapability<z.infer<typeof assignInput>, { 
   input: assignInput,
   output: z.object({ applied: z.number() }),
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const [tables, assignments, guests] = await Promise.all([listTables(db), listAssignments(db), listAllGuests(db)]);
     const guestIds = new Set(guests.map((g) => g.id));
     const tableById = new Map(tables.map((t) => [t.id, t]));
@@ -205,7 +205,7 @@ export const adminImportSeatingCsv = defineCapability<z.infer<typeof importInput
   input: importInput,
   output: importOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const parsed = parseSeatingCsv(i.csv);
     if (parsed.errors.length) return ok({ data: { applied: 0, createdTables: [], errors: parsed.errors, unresolved: [] }, sources: [] });
     const result = await applySeatingImport(db, parsed.rows, { now: ctx.now, replace: i.replace ?? false, defaultCapacity: i.defaultCapacity ?? 10 });
@@ -233,7 +233,7 @@ export const adminPublishSeating = defineCapability<{ note?: string | null }, z.
   input: z.object({ note: z.string().max(300).nullable().optional() }),
   output: publishOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const row = await publishSeating(db, { by: toPrincipalRef(ctx.principal), note: i.note ?? null, now: ctx.now });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.published', target: { type: 'seating_publication', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { tables: row.snapshot.tables.length, seated: row.snapshot.assignments.length } });
     return ok({ data: { publicationId: row.id, publishedAt: row.publishedAt.toISOString(), tables: row.snapshot.tables.length, seated: row.snapshot.assignments.length }, sources: [] });
@@ -254,7 +254,7 @@ export const adminUnpublishSeating = defineCapability<Record<string, never> | un
   input: z.object({}).optional(),
   output: z.object({ unpublished: z.boolean() }),
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const row = await unpublishSeating(db, { by: toPrincipalRef(ctx.principal), now: ctx.now });
     if (row) await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.unpublished', target: { type: 'seating_publication', id: row.id }, outcome: 'success', requestId: ctx.requestId });
     return ok({ data: { unpublished: !!row }, sources: [] });

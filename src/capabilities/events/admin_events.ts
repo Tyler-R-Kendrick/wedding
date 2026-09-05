@@ -5,7 +5,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { newId } from '@/contracts/ids';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { eventEntitlements, events, mealOptions, NOTICE_SEVERITIES, RSVP_WINDOW_MODES } from '@/db/schema';
 import { getLifecycle } from '@/db/repos/site';
 import { computeRsvpWindow, getRsvpSettings, listAllEntitlements, listAllNotices, listEvents, listMealOptionsForEvents } from '@/domain/events';
@@ -43,7 +43,7 @@ export const adminListEvents = defineCapability<z.infer<typeof listInput>, Admin
   input: listInput,
   output: listOutput,
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const [evs, settings, lifecycle, guests, households, ents, notices] = await Promise.all([listEvents(db), getRsvpSettings(db), getLifecycle(db), listAllGuests(db), listHouseholds(db), listAllEntitlements(db), listAllNotices(db)]);
     const meals = await listMealOptionsForEvents(db, evs.map((e) => e.id));
     const hh = new Map(households.map((h) => [h.id, h.name]));
@@ -93,7 +93,7 @@ export const adminUpsertEvent = defineCapability<z.infer<typeof upsertEventInput
   input: upsertEventInput,
   output: eventViewSchema,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     if (i.venueSpaceRef && !VENUE_SPACES.some((s) => s.ref === i.venueSpaceRef)) {
       return err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues: [{ path: 'venueSpaceRef', message: 'unknown venue space' }] }));
     }
@@ -135,7 +135,7 @@ export const adminSetMealOptions = defineCapability<z.infer<typeof setMealsInput
   input: setMealsInput,
   output: setMealsOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const event = (await db.select().from(events).where(eq(events.id, i.eventId)).limit(1))[0];
     if (!event) return err(new CapabilityError('not_found', 'That event does not exist.'));
     const version = event.mealOptionsVersion + 1;
@@ -175,7 +175,7 @@ export const adminSetEventEntitlements = defineCapability<z.infer<typeof setEnti
   input: setEntitlementsInput,
   output: setEntitlementsOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const eventIds = [...new Set(i.changes.map((c) => c.eventId))];
     const known = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, eventIds))).map((r) => r.id));
     const missing = eventIds.filter((id) => !known.has(id));
@@ -215,7 +215,7 @@ export const adminSetRsvpWindow = defineCapability<z.infer<typeof setWindowInput
   input: setWindowInput,
   output: windowSchema,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const row = await setRsvpWindow(db, { mode: i.mode, deadlineAt: i.deadlineAt ? new Date(i.deadlineAt) : null, note: i.note ?? null, updatedBy: toPrincipalRef(ctx.principal), now: ctx.now });
     const lifecycle = (await getLifecycle(db))?.state ?? 'TEASER';
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'rsvp_settings', id: 'current' }, outcome: 'success', requestId: ctx.requestId, metadata: { mode: i.mode, deadlineAt: row.deadlineAt?.toISOString() ?? null } });
@@ -249,7 +249,7 @@ export const adminUpsertNotice = defineCapability<z.infer<typeof noticeInput>, z
   input: noticeInput,
   output: noticeOutput,
   async handler(ctx, i) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const row = await upsertNotice(db, { id: i.id, title: i.title, body: i.body, severity: i.severity, active: i.active, startsAt: i.startsAt ? new Date(i.startsAt) : null, endsAt: i.endsAt ? new Date(i.endsAt) : null, by: toPrincipalRef(ctx.principal), now: ctx.now });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'weekend_notice', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { severity: row.severity, active: row.active } });
     return ok({ data: { id: row.id, title: row.title, body: row.body, severity: row.severity, active: row.active }, sources: [] });

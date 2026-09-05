@@ -3,7 +3,7 @@ import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { RSVP_CHANNELS, RSVP_STATUSES } from '@/db/schema';
 import { getLifecycle } from '@/db/repos/site';
 import { computeRsvpWindow, getRsvpSettings, listAllEntitlements, listEvents, listMealOptionsForEvents } from '@/domain/events';
@@ -104,7 +104,7 @@ export const adminRsvpOverview = defineCapability<z.infer<typeof overviewInput>,
   input: overviewInput,
   output: overviewOutput,
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     return ok({ data: await buildOverview(db, ctx.now), sources: [] });
   },
 });
@@ -148,7 +148,7 @@ export const adminExportRsvp = defineCapability<z.infer<typeof overviewInput>, z
   input: overviewInput,
   output: exportOutput,
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const data = await buildOverview(db, ctx.now);
     const stamp = ctx.now.toISOString().slice(0, 10);
     return ok({ data: { filename: `rsvp-${stamp}.csv`, csv: overviewToCsv(data), rows: data.rows.length }, sources: [] });
@@ -176,7 +176,7 @@ export const adminExportNeeds = defineCapability<z.infer<typeof needsInput>, z.i
   input: needsInput,
   output: needsOutput,
   async handler(ctx) {
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const [needs, guests, households] = await Promise.all([listAllNeeds(db), listAllGuests(db), listHouseholds(db)]);
     const guestById = new Map(guests.map((g) => [g.id, g]));
     const hh = new Map(households.map((h) => [h.id, h.name]));
@@ -217,7 +217,7 @@ export const adminOverrideRsvp = defineCapability<z.infer<typeof overrideInput>,
   async handler(ctx, i) {
     const owns = assertActsFor(ctx.principal, i.guestId as never);
     if (!owns.ok) return err(owns.error);
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const hc = await loadHouseholdRsvpContext(db, { guestIds: [i.guestId], now: ctx.now });
     if (hc.guests.length === 0) return err(new CapabilityError('not_found', 'That guest does not exist.'));
     const previous = await findResponse(db, i.guestId, i.eventId);

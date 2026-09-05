@@ -1,7 +1,7 @@
 import { defineCapability } from '@/contracts/capability';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
-import { appServices } from '@/capabilities/context';
+import { eDb } from '@/capabilities/rsvp/db';
 import { publicEnv } from '@/lib/env.public';
 import { buildConfirmationEmail, buildProposal, persistHouseholdRsvp, queueRsvpConfirmation } from '@/domain/rsvp';
 import { loadForPrincipal, namesFor, validateFor } from './context';
@@ -33,7 +33,7 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
   async handler(ctx, i) {
     const p = requireGuestPrincipal(ctx);
     if (!p.ok) return err(p.error);
-    const { db } = appServices(ctx);
+    const db = await eDb(ctx);
     const actor = toPrincipalRef(ctx.principal);
 
     // Re-validate at submit time: the window may have closed or the menu changed since the draft.

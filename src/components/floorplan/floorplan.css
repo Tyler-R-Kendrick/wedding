@@ -34,7 +34,7 @@
 
 .fp__label {
   font-family: var(--font-label-caps, inherit);
-  font-size: 18px;
+  font-size: var(--text-body-md, 1.0625rem);
   fill: var(--color-on-surface);
 }
 
@@ -45,7 +45,7 @@
 
 .fp__you {
   font-family: var(--font-label-caps, inherit);
-  font-size: 14px;
+  font-size: var(--text-label-caps, 0.75rem);
   letter-spacing: var(--tracking-label-caps, 0.1em);
   text-transform: uppercase;
   fill: var(--color-tertiary);
