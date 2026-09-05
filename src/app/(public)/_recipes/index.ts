@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { ConciergeSlot, type ConciergeSlotProps } from '@/components/concierge';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
@@ -30,6 +31,8 @@ export interface PageRecipes {
   VenueSpacePage: ComponentType<{ data: VenueRoomData }>;
   WeddingPage: ComponentType<{ data: WeddingPageData }>;
   AskPage: ComponentType<AskRecipeProps>;
+  /** The concierge island. A theme swaps the chrome here; the pipeline behind it never changes. */
+  Concierge: ComponentType<ConciergeSlotProps>;
 }
 
 export const placeholderRecipes: PageRecipes = {
@@ -42,9 +45,10 @@ export const placeholderRecipes: PageRecipes = {
   VenueSpacePage,
   WeddingPage,
   AskPage,
+  Concierge: ConciergeSlot,
 };
 
 /** Swap point: `export const recipes = themeRecipes` once the theme kit lands. */
 export const recipes: PageRecipes = placeholderRecipes;
 
-export type { AdventuresRecipeProps, AskRecipeProps, GuideRecipeProps };
+export type { AdventuresRecipeProps, AskRecipeProps, ConciergeSlotProps, GuideRecipeProps };

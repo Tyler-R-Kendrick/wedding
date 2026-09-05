@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Text } from '@/components/provenance';
 import type { FaqPageData } from '@/capabilities/get_faq';
 import type { StaticSearchData } from '@/capabilities/search_wedding_information_static';
@@ -9,9 +10,11 @@ import { DraftBadge, PageIntro, Section, Shell } from './kit';
 export interface AskRecipeProps {
   faq: FaqPageData;
   search?: StaticSearchData;
+  /** Swarm J's concierge island, passed in by the page so this recipe stays theme-agnostic. */
+  concierge?: ReactNode;
 }
 
-export function AskPage({ faq, search }: AskRecipeProps) {
+export function AskPage({ faq, search, concierge }: AskRecipeProps) {
   return (
     <Shell current={ROUTES.ask}>
       <PageIntro eyebrow="Ask Us" title="Questions, answered" lede="The essentials first. Anything we have not decided yet says so, instead of guessing." />
@@ -73,7 +76,7 @@ export function AskPage({ faq, search }: AskRecipeProps) {
 
       <Section id="concierge" number="03" title="Ask a question">
         <div className="wp-slot" id="concierge-slot" data-slot="concierge">
-          <p className="wp-prose">The concierge is on its way. It will answer only from what this site knows, with a source for every fact, and it will say when it does not know.</p>
+          {concierge ?? <p className="wp-prose">The concierge is on its way. It will answer only from what this site knows, with a source for every fact, and it will say when it does not know.</p>}
         </div>
       </Section>
     </Shell>

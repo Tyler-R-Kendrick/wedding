@@ -19,7 +19,7 @@ import { redactForStorage } from './redact';
 import { allAiTools, planRoute, PROTECTED_FACT_WORDS, toolsFor, type RoutePlan, type RouterTool } from './router';
 import { appendTurns, enqueueAiPurge, loadOrCreateSession } from './session';
 import { truncate } from './text';
-import { citationToAnswerSource, dedupeSources, renderContext, renderQuestion, renderSourceBlock, sortByTrust } from './trust';
+import { dedupeSources, renderContext, renderQuestion, renderSourceBlock, sortByTrust } from './trust';
 import type { AnswerSource, ConciergeResult, ConfirmationCard, SpotlightedSource } from './types';
 import { isRefusalSentinel, summarise, verifySentence, verifyWithModel, type VerifiedSentence } from './verifier';
 

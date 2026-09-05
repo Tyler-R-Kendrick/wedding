@@ -78,7 +78,8 @@ export async function POST(request: Request) {
       try {
         await runConcierge({ ctx, question: body.message, sessionId: body.sessionId, emit });
       } catch (cause) {
-        ctx.services.logger && (ctx.services.logger as { error: (o: unknown, m?: string) => void }).error({ err: cause, requestId }, 'concierge route failed');
+        const log = ctx.services.logger as { error: (o: unknown, m?: string) => void } | undefined;
+        log?.error({ err: cause, requestId }, 'concierge route failed');
         emit({ type: 'error', code: 'internal', message: 'Something went wrong on our side. Please try again in a moment.' });
       } finally {
         controller.close();

@@ -1,0 +1,165 @@
+/*
+ * Concierge panel (swarm J). Tokens only: every value is a DESIGN.md variable with a fallback to
+ * one the foundation already defines, so the theme kit can restyle the panel without touching it.
+ * Mobile first at 390px, 17px body inherited from the document, 44px targets, one column.
+ */
+.cq {
+  margin: 0;
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-surface, var(--color-neutral));
+  color: var(--color-on-surface, var(--color-primary));
+}
+
+.cq__intro {
+  margin: 0;
+  padding: var(--spacing-md, 16px);
+}
+
+.cq__start {
+  margin: 0 var(--spacing-md, 16px) var(--spacing-md, 16px);
+}
+
+.cq__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-md, 16px);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-primary);
+  color: var(--color-on-primary, var(--color-neutral));
+  font: inherit;
+  cursor: pointer;
+}
+
+.cq__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cq__button--quiet {
+  border-color: var(--color-outline, var(--color-primary));
+  background: transparent;
+  color: inherit;
+}
+
+.cq__log {
+  margin: 0;
+  padding: var(--spacing-md, 16px);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md, 16px);
+}
+
+.cq__turn {
+  margin: 0;
+}
+
+.cq__who {
+  display: block;
+  margin-bottom: var(--spacing-xs, 4px);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.cq__bubble {
+  margin: 0;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  border-left: 2px solid var(--color-outline, var(--color-primary));
+}
+
+.cq__turn--guest .cq__bubble {
+  border-left-color: var(--color-secondary, var(--color-primary));
+}
+
+.cq__sources {
+  margin: var(--spacing-sm, 8px) 0 0;
+  padding: 0 0 0 var(--spacing-md, 16px);
+  font-size: 0.9375rem;
+}
+
+.cq__sources li {
+  margin: 0 0 var(--spacing-xs, 4px);
+}
+
+.cq__sources a {
+  color: var(--color-tertiary, var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.cq__meta {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.cq__card {
+  margin: var(--spacing-sm, 8px) 0 0;
+  padding: var(--spacing-md, 16px);
+  border: 1px dashed var(--color-tertiary, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+}
+
+.cq__card h4 {
+  margin: 0 0 var(--spacing-xs, 4px);
+  font-size: 1.25rem;
+}
+
+.cq__card p {
+  margin: 0 0 var(--spacing-sm, 8px);
+}
+
+.cq__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-md, 16px);
+  border-top: 1px solid var(--color-outline, var(--color-primary));
+}
+
+.cq__label {
+  font-weight: 600;
+}
+
+.cq__input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-sm, 8px);
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-neutral);
+  color: inherit;
+  font: inherit;
+}
+
+.cq__hint {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.cq__error {
+  margin: 0;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  color: var(--color-error, var(--color-primary));
+}
+
+@media (width >= 40rem) {
+  .cq__form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    column-gap: var(--spacing-md, 16px);
+  }
+
+  .cq__label,
+  .cq__hint {
+    grid-column: 1 / -1;
+  }
+}
