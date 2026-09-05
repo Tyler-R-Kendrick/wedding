@@ -1,0 +1,111 @@
+/*
+ * Shared base for both themes: rhythm, accessibility, reduced motion. Everything visual is a token
+ * from the active theme (see src/themes/<id>/theme.css); nothing here names a colour or a font.
+ */
+html {
+  font-size: 17px;
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: clip;
+  font-family: var(--font-text);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.site {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  accent-color: var(--color-secondary);
+  caret-color: var(--color-secondary);
+}
+
+.site ::selection {
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+
+.site main {
+  flex: 1 0 auto;
+}
+
+.site :focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* Skip link: first focusable element; visible on focus only. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: var(--spacing-md);
+  inset-block-start: var(--spacing-md);
+  z-index: 100;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* Editorial placeholder: obviously a placeholder, never plausible prose. */
+.placeholder {
+  display: inline;
+  padding: 0 0.3em;
+  background: var(--color-neutral-variant);
+  color: var(--color-on-surface-muted);
+  outline: 1px dashed var(--color-outline);
+  outline-offset: -1px;
+  font-style: normal;
+}
+
+.placeholder::before {
+  content: "TODO(Tyler & Sara): ";
+  font-weight: 600;
+}
+
+/* Fixed bars must never obscure focus (WCAG 2.2 2.4.11): reserve their height. */
+.site[data-bottom-bar] {
+  --bottom-bar-height: 4.25rem;
+  scroll-padding-block-end: var(--bottom-bar-height);
+}
+
+.site[data-bottom-bar] main {
+  padding-block-end: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 900px) {
+  .site[data-bottom-bar] main {
+    padding-block-end: 0;
+  }
+}
+
+/* Reduced motion: opacity-only, <= 200 ms, no transforms, no parallax, static skeletons. */
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.12s !important;
+    animation-iteration-count: 1 !important;
+    animation-timeline: auto !important;
+    transition-duration: 0.12s !important;
+    transition-property: opacity, background-color, color, border-color, outline-color !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

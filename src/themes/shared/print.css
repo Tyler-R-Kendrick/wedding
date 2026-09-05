@@ -1,0 +1,28 @@
+/* Print: logistics pages print in black and white with full URLs (design-doc §8). Theme-neutral. */
+@media print {
+  .site {
+    background: none;
+    color: currentcolor;
+  }
+
+  .site nav,
+  .site .switcher,
+  .site [data-print="hide"],
+  .site dialog,
+  .skip-link {
+    display: none !important;
+  }
+
+  .site a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  .site * {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}

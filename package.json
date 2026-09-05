@@ -2,7 +2,7 @@
   "name": "wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "Tyler & Sara's wedding website \u2014 design tooling, skills, and quality gates",
+  "description": "Tyler & Sara's wedding website — design tooling, skills, and quality gates",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -22,7 +22,7 @@
     "db:seed": "node --conditions=react-server --import tsx src/db/seed/seed.ts",
     "jobs:run": "node --conditions=react-server --import tsx src/lib/jobs/cli.ts",
     "check": "npm run typecheck && npm run lint && npm run test:unit",
-    "verify": "npm run check && npm run lint:css && npm run design:lint && npm run slop:detect && npm run test:integration && npm run build",
+    "verify": "npm run check && npm run lint:css && npm run design:lint && npm run design:sync:check && npm run slop:detect && npm run test:integration && npm run build",
     "design:lint": "for f in DESIGN.md $(ls src/themes/*/DESIGN.md 2>/dev/null); do echo \"== $f\"; design.md lint \"$f\" || exit 1; done",
     "design:lint:json": "design.md lint --format json DESIGN.md",
     "design:spec": "design.md spec --rules",
@@ -41,7 +41,9 @@
     "assets:fal": "node scripts/fal-generate.mjs",
     "assets:check": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --check",
     "assets:fetch": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs",
-    "art:generate": "node scripts/generate-art.mjs"
+    "art:generate": "node scripts/generate-art.mjs",
+    "design:sync": "node scripts/design-sync.mjs",
+    "design:sync:check": "node scripts/design-sync.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
