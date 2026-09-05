@@ -246,7 +246,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     refusedBySentinel = isRefusalSentinel(raw);
     if (!refusedBySentinel && raw.trim()) {
       for (const s of citedSentences(raw)) {
-        const v = verifySentence(s, sources, { allowSmallTalk: true });
+        const v = verifySentence(s, sources, { allowSmallTalk: true, question });
         verified.push(v);
         if (v.verdict === 'supported') accept(v);
       }

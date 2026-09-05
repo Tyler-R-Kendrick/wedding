@@ -30,6 +30,59 @@ export function hardTokens(text: string): string[] {
   return [...out];
 }
 
+/**
+ * Word pairs a competent reader treats as the same question: "kids"/"children", "met"/"meet",
+ * "attire"/"dress". Used only where a match WIDENS what counts as relevant or quotable — never in
+ * the support check, which stays literal.
+ */
+export const SYNONYMS: Readonly<Record<string, string>> = {
+  met: 'meet', meeting: 'meet', children: 'kid', child: 'kid', kids: 'kid', kid: 'kid',
+  attire: 'dress', wear: 'dress', wearing: 'dress', outfit: 'dress', dresscode: 'dress',
+  begin: 'start', begins: 'start', starts: 'start', starting: 'start', commence: 'start',
+  auto: 'car', vehicle: 'car', driving: 'drive', park: 'parking',
+  lodging: 'hotel', accommodation: 'hotel', stay: 'hotel', rooms: 'room',
+  seated: 'seat', sitting: 'seat', sit: 'seat', seating: 'seat',
+  present: 'gift', presents: 'gift', registry: 'gift', gifts: 'gift',
+  eat: 'food', dining: 'food', dinner: 'food', menu: 'food', meal: 'food',
+  wheelchair: 'accessible', accessibility: 'accessible', ada: 'accessible',
+  photograph: 'photo', photos: 'photo', pictures: 'photo', picture: 'photo', camera: 'photo',
+  nearby: 'near', close: 'near', around: 'near', walk: 'near',
+  // "Where is it held / located?" is a question about the venue, and a venue line answers it.
+  held: 'venue', hold: 'venue', located: 'venue', location: 'venue', address: 'venue', situated: 'venue', place: 'venue',
+};
+
+/**
+ * Words that describe the whole site rather than any one question. Keeping them in a relevance
+ * check would let "Sara and Tyler" match every page, so they carry no weight when deciding whether
+ * a sentence is about what was asked.
+ */
+export const SITE_WORDS = new Set(['sara', 'tyler', 'wedding', 'couple', 'website', 'site', 'page', 'pages', 'invitation', 'invite', 'weekend', 'day']);
+
+/** Widened token set: the token, its stem, and its synonym's stem. */
+export function relevanceTokens(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const t of contentTokens(text)) {
+    out.add(t);
+    out.add(stem(t));
+    const synonym = SYNONYMS[t];
+    if (synonym) {
+      out.add(synonym);
+      out.add(stem(synonym));
+    }
+  }
+  return out;
+}
+
+/** The question's distinctive tokens: content words that are not true of every page on the site. */
+export function questionTokens(question: string): Set<string> {
+  const out = new Set<string>();
+  for (const t of contentTokens(question)) {
+    if (SITE_WORDS.has(t) || SITE_WORDS.has(stem(t))) continue;
+    out.add(SYNONYMS[t] ?? t);
+  }
+  return out;
+}
+
 /** Light stemming so "flights" supports "flight" and "restored" supports "restoration". */
 export function stem(token: string): string {
   return token.replace(/(ations?|ings?|ers?|ies|ed|es|s)$/u, (m) => (token.length - m.length >= 3 ? '' : m));

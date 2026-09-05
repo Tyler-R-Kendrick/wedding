@@ -1,5 +1,6 @@
 import type { LanguageModelV4CallOptions, LanguageModelV4GenerateResult, LanguageModelV4Prompt, LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
 import { MockLanguageModelV4 } from 'ai/test';
+import { SYNONYMS } from '@/ai/text';
 
 /**
  * Deterministic, extractive stand-in for the concierge model (CI, previews, evals).
@@ -23,22 +24,10 @@ const stem = (t: string) => t.replace(/(ations?|ings?|ers?|ies|ed|es|s)$/u, (m) 
 
 /**
  * A real grounded model knows that "kids" and "children" are the same question and that "met" is
- * "meet". The stand-in needs the same tolerance or it refuses on vocabulary rather than on evidence,
- * which would make the eval numbers a measure of this file instead of the pipeline. It is only ever
- * a widening of matching: nothing here invents a fact, and every line returned is still verbatim.
+ * "meet"; the stand-in borrows the pipeline's synonym map for the same reason, or it would refuse on
+ * vocabulary rather than on evidence and the eval numbers would measure this file. Matching only
+ * ever widens: nothing here invents a fact, and every line returned is still verbatim.
  */
-const SYNONYMS: Record<string, string> = {
-  met: 'meet', meeting: 'meet', children: 'kid', child: 'kid', kids: 'kid', kid: 'kid',
-  attire: 'dress', wear: 'dress', wearing: 'dress', outfit: 'dress', dresscode: 'dress',
-  begin: 'start', begins: 'start', starts: 'start', starting: 'start', commence: 'start',
-  auto: 'car', vehicle: 'car', driving: 'drive', park: 'parking',
-  lodging: 'hotel', accommodation: 'hotel', stay: 'hotel', room: 'room', rooms: 'room',
-  present: 'gift', presents: 'gift', registry: 'gift', gifts: 'gift',
-  eat: 'food', dining: 'food', dinner: 'food', menu: 'food', meal: 'food',
-  wheelchair: 'accessible', accessibility: 'accessible', ada: 'accessible',
-  photograph: 'photo', photos: 'photo', pictures: 'photo', picture: 'photo', camera: 'photo',
-};
-
 function tokens(text: string): Set<string> {
   const out = new Set<string>();
   for (const raw of text.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/)) {

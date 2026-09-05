@@ -2,7 +2,7 @@ import { generateText, type LanguageModel } from 'ai';
 import type { TrustClass } from '@/contracts/provenance';
 import type { AiVerifierSummary } from '@/db/schema/ai';
 import { citedSentences, type CitedSentence } from './citations';
-import { contentTokens, hardTokens, overlap, stemmedSet } from './text';
+import { contentTokens, hardTokens, overlap, questionTokens, relevanceTokens, stem, stemmedSet } from './text';
 import type { SpotlightedSource } from './types';
 
 /**
@@ -19,7 +19,7 @@ import type { SpotlightedSource } from './types';
 export const SUPPORT_RATIO = 0.5;
 export const NO_SOURCE_SENTINEL = 'NO_SOURCE';
 
-export type Verdict = 'supported' | 'uncited' | 'unknown-marker' | 'untrusted-only' | 'unsupported' | 'model-rejected';
+export type Verdict = 'supported' | 'uncited' | 'unknown-marker' | 'untrusted-only' | 'unsupported' | 'off-topic' | 'model-rejected';
 
 export interface VerifiedSentence extends CitedSentence {
   verdict: Verdict;
@@ -30,6 +30,23 @@ export interface VerifyOptions {
   allowUntrusted?: boolean;
   /** Sentences that are pure conversation ("Happy to help.") carry no fact and pass without citations. */
   allowSmallTalk?: boolean;
+  /**
+   * The guest's question. A sentence can be perfectly faithful to a source and still not be an
+   * answer — "Saturday, July 17, 2027, at the Chicago Athletic Association Hotel" is true, cited,
+   * and not what "what is the weather like in Paris?" asked. Relevance is checked against the
+   * sentence plus the titles of the sources it cites.
+   */
+  question?: string;
+}
+
+/**
+ * How many of the question's distinctive words a sentence must touch. A one- or two-word question
+ * ("which table?") is satisfied by a single match; anything longer needs two, which is what stops a
+ * true-but-unrelated fact from being served as an answer.
+ */
+export function requiredRelevance(distinctiveTokens: number): number {
+  if (distinctiveTokens === 0) return 0;
+  return distinctiveTokens <= 2 ? 1 : 2;
 }
 
 const SMALL_TALK = /^(happy to help|of course|sure|certainly|you're welcome|glad to help|hello|hi there|thanks)[!. ]*$/i;
@@ -64,7 +81,18 @@ export function verifySentence(sentence: CitedSentence, sources: readonly Spotli
   const trusted: TrustClass[] = ['TRUSTED_WEDDING', 'EXTERNAL_DATA'];
   if (!opts.allowUntrusted && !cited.some((s) => trusted.includes(s.trust))) return { ...sentence, verdict: 'untrusted-only', support: 0 };
   const support = supportScore(sentence, cited);
-  return { ...sentence, verdict: support >= SUPPORT_RATIO ? 'supported' : 'unsupported', support };
+  if (support < SUPPORT_RATIO) return { ...sentence, verdict: 'unsupported', support };
+  if (opts.question !== undefined) {
+    const asked = questionTokens(opts.question);
+    const required = requiredRelevance(asked.size);
+    if (required > 0) {
+      const haystack = relevanceTokens([sentence.plain, ...cited.map((c) => c.citation.title)].join(' '));
+      let matched = 0;
+      for (const t of asked) if (haystack.has(t) || haystack.has(stem(t))) matched++;
+      if (matched < required) return { ...sentence, verdict: 'off-topic', support };
+    }
+  }
+  return { ...sentence, verdict: 'supported', support };
 }
 
 export interface VerificationResult {

@@ -30,6 +30,20 @@ export default defineConfig({
         },
       },
       {
+        resolve: { alias },
+        test: {
+          name: 'evals',
+          include: ['tests/evals/**/*.eval.test.ts'],
+          environment: 'node',
+          env: baseEnv,
+          // The per-case report is the deliverable, so it must reach the CI log on a pass too.
+          disableConsoleIntercept: true,
+          setupFiles: ['tests/evals/setup.ts'],
+          testTimeout: 300_000,
+          hookTimeout: 60_000,
+        },
+      },
+      {
         plugins: [react()],
         resolve: { alias },
         test: { name: 'ui', include: ['tests/ui/**/*.test.tsx'], environment: 'jsdom', env: baseEnv, css: false },

@@ -88,7 +88,9 @@ const ROUTE_WORDS: [RegExp, string][] = [
 ];
 
 const PROTECTED: [RegExp, ProtectedFact][] = [
-  [/(which|what)\s+(room|space|ballroom|hall)|(ceremony|reception|cocktail\s*hour|wedding)[^.?]{0,40}\b(room|space|held|take place|happen|located|where)\b|\bwhere\b[^.?]{0,30}\b(ceremony|reception|cocktail\s*hour)\b/i, 'room'],
+  // "Which room / what space" and "where is the ceremony" are room questions. "Where is the wedding"
+  // is a venue question and is answerable from site_status, so it must not be gated here.
+  [/(which|what)\s+(room|space|ballroom|hall)\b|(ceremony|reception|cocktail\s*hour)[^.?]{0,40}\b(room|space|held|take place|happen|located)\b|\bwhere\b[^.?]{0,30}\b(ceremony|reception|cocktail\s*hour)\b/i, 'room'],
   [/(what|which)\s+time|start time|\bstarts?\b|\bbegins?\b|o'?clock|\bschedule\b|\btimeline\b|how long|end time|\bends?\b/i, 'time'],
   [/dress\s*code|what (should|do|can|to) (i|we) wear|\battire\b|black[- ]tie|cocktail attire|formal|\bsuit\b|\bgown\b|\bheels\b/i, 'dress'],
   [/\bmenu\b|what('s| is) (for )?(dinner|lunch|food)|\bvegan\b|\bvegetarian\b|gluten|\bcater/i, 'menu'],
