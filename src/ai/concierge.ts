@@ -8,7 +8,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { aiAnswerSources, aiAnswers, capabilityInvocations, type AiAnswerStatus, type AiInvocationOutcome, type AiToolSelector, type AiVerifierSummary } from '@/db/schema/ai';
 import { pipelineServices } from '@/capabilities/services';
-import { citedSentences } from './citations';
+import { citedSentences, dropNearDuplicates, finaliseCitations } from './citations';
 import { aiConfig, type AiConfig } from './config';
 import { CONTACT_LINK, REFUSAL, confirmationCardFor, labelForRoute, refusalLinks, systemPromptFor } from './contract';
 import type { ConciergeEvent } from './events';
@@ -16,10 +16,10 @@ import { factsFromOutcome } from './facts';
 import { scanForInjection } from './injection';
 import { conciergeModels, type ConciergeModels } from './model';
 import { redactForStorage } from './redact';
-import { allAiTools, planRoute, toolsFor, type RoutePlan, type RouterTool } from './router';
+import { allAiTools, planRoute, PROTECTED_FACT_WORDS, toolsFor, type RoutePlan, type RouterTool } from './router';
 import { appendTurns, enqueueAiPurge, loadOrCreateSession } from './session';
-import { splitSentences, truncate } from './text';
-import { citationToAnswerSource, renderContext, renderQuestion, renderSourceBlock, sortByTrust } from './trust';
+import { truncate } from './text';
+import { citationToAnswerSource, dedupeSources, renderContext, renderQuestion, renderSourceBlock, sortByTrust } from './trust';
 import type { AnswerSource, ConciergeResult, ConfirmationCard, SpotlightedSource } from './types';
 import { isRefusalSentinel, summarise, verifySentence, verifyWithModel, type VerifiedSentence } from './verifier';
 
@@ -46,6 +46,8 @@ export interface ConciergeInput {
 }
 
 export const MAX_STORED_ANSWER_CHARS = 2_000;
+/** Splits the finished answer back into sentences for the `text` events (display order preserved). */
+const SENTENCE_EMIT_SPLIT = /(?<=[.!?](?:\s*\[S\d+(?:\s*,\s*S\d+)*\])?)\s+(?=[A-Z0-9"'(\[])/;
 const SIGN_IN_ROUTE = '/your-weekend';
 const DENIED_CODES = new Set(['unauthenticated', 'forbidden', 'step_up_required', 'feature_disabled', 'not_found', 'rate_limited', 'validation']);
 
@@ -72,6 +74,10 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   const models = input.models ?? conciergeModels();
   const actor = toPrincipalRef(ctx.principal);
   const answerId = newId();
+  // Hoisted: `finish` runs on the early exits too (sign-in refusal, provider failure), before the
+  // verifier has produced anything, and an answer row without a verdict is not a trace.
+  let summary: AiVerifierSummary = { method: 'deterministic', claims: 0, supported: 0, dropped: 0, reasons: [] };
+  let navigate: ConciergeResult['navigate'];
 
   const { session } = await loadOrCreateSession(db, { sessionId: input.sessionId, principal: ctx.principal, now: ctx.now, retentionDays: cfg.AI_SESSION_RETENTION_DAYS });
   await emit({ type: 'session', sessionId: session.id, answerId });
@@ -98,13 +104,22 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   const toolsDenied = new Set<string>(plan.denied);
   const runs: ToolRun[] = [];
 
-  const recordInvocation = async (run: ToolRun) => {
+  /**
+   * Invocation rows are buffered, not written here: `capability_invocations.answer_id` references
+   * `ai_answers`, which only exists once the answer is finished. `finish` writes the answer and then
+   * the buffer. The independent audit trail inside `invoke` already records every call as it happens.
+   */
+  const pendingInvocations: (typeof capabilityInvocations.$inferInsert)[] = [];
+  const recordInvocation = (run: ToolRun, rawInput: unknown) => {
     let outcome: AiInvocationOutcome;
     if (run.outcome) outcome = 'success';
     else if (run.error?.code === 'confirmation_required') outcome = 'confirmation_required';
     else if (run.error && DENIED_CODES.has(run.error.code)) outcome = 'denied';
     else outcome = 'failed';
-    await db.insert(capabilityInvocations).values({
+    // Same policy as `invoke`: fingerprint only what changes something, and only with the server key.
+    const consequential = run.descriptor.kind !== 'read' && run.descriptor.kind !== 'navigate';
+    const inputHash = consequential && services.hashInput ? services.hashInput(rawInput ?? null) : null;
+    pendingInvocations.push({
       id: newId(),
       sessionId: session.id,
       answerId,
@@ -115,7 +130,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
       selectedBy: run.selectedBy,
       outcome,
       errorCode: run.error?.code ?? null,
-      inputHash: null,
+      inputHash,
       outputChars: run.outcome ? JSON.stringify(run.outcome.data).length : 0,
       durationMs: run.durationMs,
       at: ctx.now,
@@ -129,7 +144,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     const result = await invoke(descriptor, ctx, rawInput);
     const run: ToolRun = { name, descriptor, selectedBy, durationMs: Math.round(performance.now() - t0), ...(result.ok ? { outcome: result.value } : { error: result.error }) };
     runs.push(run);
-    await recordInvocation(run);
+    recordInvocation(run, rawInput);
     if (!result.ok) {
       const e = result.error;
       if (e.code === 'confirmation_required') confirmations.push(confirmationCardFor(name, descriptor.title, 'This needs your confirmation on the website before anything changes.', { reason: 'requires_ui' }));
@@ -157,7 +172,6 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
 
   for (const call of plan.calls) await runTool(call.name, call.input, 'router');
 
-  let navigate: ConciergeResult['navigate'];
   if (plan.navigate) {
     const nav = await runTool('navigate_to', plan.navigate, 'router');
     const navDescriptor = reg.get('navigate_to');
@@ -175,7 +189,10 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   await emit({ type: 'status', stage: 'retrieving' });
   if (reg.get('search_wedding_information')) await runTool('search_wedding_information', { query: question.slice(0, 200), limit: cfg.AI_RETRIEVAL_LIMIT }, 'router');
 
-  // --- trust: quarantine injected blocks, order evidence by trust, renumber markers
+  // --- trust: collapse duplicate records, quarantine injected blocks, order by trust, renumber
+  const deduped = dedupeSources(sources);
+  sources.length = 0;
+  sources.push(...deduped);
   for (const s of sources) {
     const findings = scanForInjection(`${s.citation.title}\n${s.lines.join('\n')}`);
     if (findings.length) {
@@ -209,10 +226,11 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   const kept: VerifiedSentence[] = [];
   let raw = '';
   let refusedBySentinel = false;
-  const incremental = !models.live;
-  const accept = async (s: VerifiedSentence) => {
+  // Sentences are verified as they arrive but never emitted here: the protected-fact gate, the
+  // model verifier pass and the "As of" stamping all run afterwards and can still drop or rewrite a
+  // sentence. The guest sees `status` events while that happens, never an unverified draft.
+  const accept = (s: VerifiedSentence) => {
     kept.push(s);
-    if (incremental) await emit({ type: 'text', text: s.text });
   };
   try {
     const result = streamText({
@@ -224,29 +242,13 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
       maxOutputTokens: 600,
       abortSignal: AbortSignal.timeout(45_000),
     });
-    let buffer = '';
-    for await (const delta of result.textStream) {
-      raw += delta;
-      buffer += delta;
-      if (isRefusalSentinel(raw)) {
-        refusedBySentinel = true;
-        continue;
-      }
-      const parts = splitSentences(buffer);
-      if (parts.length > 1) {
-        for (const complete of parts.slice(0, -1)) {
-          const v = verifySentence(citedSentences(complete)[0]!, sources, { allowSmallTalk: true });
-          verified.push(v);
-          if (v.verdict === 'supported') await accept(v);
-        }
-        buffer = parts[parts.length - 1]!;
-      }
-    }
-    if (!refusedBySentinel && buffer.trim()) {
-      for (const s of citedSentences(buffer)) {
+    for await (const delta of result.textStream) raw += delta;
+    refusedBySentinel = isRefusalSentinel(raw);
+    if (!refusedBySentinel && raw.trim()) {
+      for (const s of citedSentences(raw)) {
         const v = verifySentence(s, sources, { allowSmallTalk: true });
         verified.push(v);
-        if (v.verdict === 'supported') await accept(v);
+        if (v.verdict === 'supported') accept(v);
       }
     }
   } catch (cause) {
@@ -267,9 +269,18 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   }
   const byMarker = new Map(sources.map((s) => [s.marker, s]));
   const trustOf = (s: VerifiedSentence) => s.markers.map((m) => byMarker.get(m)?.trust).filter(Boolean);
-  if (plan.protectedFact && !survivors.some((s) => trustOf(s).includes('TRUSTED_WEDDING'))) {
-    survivors = [];
-    verified.push({ text: `[gate:${plan.protectedFact}]`, plain: '', markers: [], verdict: 'unsupported', support: 0 });
+  // Protected facts (room, time, dress, menu, music) are the ones a guest would act on and the ones a
+  // model is most tempted to invent. A surviving sentence has to be BOTH couple-authored and about
+  // the fact that was asked about; otherwise the whole answer becomes the honest "not yet decided".
+  if (plan.protectedFact) {
+    const words = PROTECTED_FACT_WORDS[plan.protectedFact];
+    const onTopic = survivors.filter((s) => trustOf(s).includes('TRUSTED_WEDDING') && words.test(s.plain));
+    if (onTopic.length === 0) {
+      survivors = [];
+      verified.push({ text: `[gate:${plan.protectedFact}]`, plain: '', markers: [], verdict: 'unsupported', support: 0 });
+    } else {
+      survivors = onTopic;
+    }
   }
   survivors = survivors.map((s) => {
     const external = s.markers.map((m) => byMarker.get(m)).find((src) => src?.trust === 'EXTERNAL_DATA' && src.retrievedAt);
@@ -279,9 +290,14 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     }
     return s;
   });
-  const summary = summarise(verified, method).summary;
+  // One block often says the same thing twice; keep the first phrasing. A restatement is not a
+  // grounding failure, so it is excluded from `dropped` and never audited as one.
+  const beforeDedupe = survivors.length;
+  survivors = dropNearDuplicates(survivors);
+  const duplicates = beforeDedupe - survivors.length;
+  summary = summarise(verified, method).summary;
   summary.supported = survivors.length;
-  summary.dropped = Math.max(0, summary.claims - survivors.length);
+  summary.dropped = Math.max(0, summary.claims - survivors.length - duplicates);
 
   // --- assemble
   const routes = ordered.filter((s) => !s.flagged?.length).map((s) => s.citation.url ?? '').filter((u) => u.startsWith('/'));
@@ -299,16 +315,12 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   if (summary.dropped > 0) {
     await ctx.audit.record({ actor, action: 'ai.grounding_failed', target: { type: 'ai_answer', id: answerId }, outcome: 'failed', requestId: ctx.requestId, metadata: { claims: summary.claims, dropped: summary.dropped, reasons: summary.reasons.join(','), intent: plan.intent, partial: true } });
   }
-  if (!incremental) for (const s of survivors) await emit({ type: 'text', text: s.text });
-  const citedMarkers: string[] = [];
-  for (const s of survivors) for (const m of s.markers) if (byMarker.has(m) && !citedMarkers.includes(m)) citedMarkers.push(m);
-  const answerSources: AnswerSource[] = citedMarkers.map((m) => {
-    const src = byMarker.get(m)!;
-    return citationToAnswerSource(m, src.citation, src.trust, src.retrievedAt);
-  });
+  // Markers are renumbered densely (S1..Sn) over the sentences that survived, so the guest sees
+  // "[S1] [S2]" and not the internal block numbers — and never learns how much was withheld.
+  const { text, sources: answerSources } = finaliseCitations(survivors, ordered);
+  for (const sentence of text.split(SENTENCE_EMIT_SPLIT).filter(Boolean)) await emit({ type: 'text', text: sentence.trim() });
   await emit({ type: 'sources', sources: answerSources });
   for (const card of confirmations) await emit({ type: 'confirmation', card });
-  const text = survivors.map((s) => s.text).join(' ');
   const status: AiAnswerStatus = confirmations.length ? 'confirmation' : summary.dropped > 0 ? 'partial' : 'grounded';
   return finish({ status, text, sources: answerSources });
 
@@ -332,6 +344,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
       latencyMs,
       createdAt: ctx.now,
     });
+    if (pendingInvocations.length) await db.insert(capabilityInvocations).values(pendingInvocations);
     if (partial.sources.length) {
       await db.insert(aiAnswerSources).values(
         partial.sources.map((s) => ({
@@ -357,7 +370,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     } catch (cause) {
       services.logger?.warn({ err: cause }, 'could not enqueue ai purge');
     }
-    await emit({ type: 'done', status: partial.status, dropped: summary?.dropped ?? 0, latencyMs });
+    await emit({ type: 'done', status: partial.status, dropped: summary.dropped, latencyMs });
     return {
       sessionId: session.id,
       answerId,
@@ -370,7 +383,7 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
       intent: plan.intent,
       toolsSelected: runs.map((r) => r.name),
       toolsDenied: [...toolsDenied],
-      dropped: summary?.dropped ?? 0,
+      dropped: summary.dropped,
       securityAlerts,
       latencyMs,
     };

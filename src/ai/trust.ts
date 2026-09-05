@@ -91,3 +91,32 @@ export function citationToAnswerSource(marker: string, c: Citation, trust: Trust
     ...(c.recordRef ? { recordRef: c.recordRef } : {}),
   };
 }
+
+/**
+ * Identity of the underlying record, so the same FAQ entry retrieved by a deterministic tool and by
+ * the search tool is one source with one marker, not two the guest has to reconcile.
+ */
+function evidenceKey(s: SpotlightedSource): string {
+  const ref = s.citation.recordRef;
+  return ref ? `${ref.type}:${ref.id}` : `${String(s.citation.sourceId)}|${s.citation.url ?? ''}|${s.citation.title}`;
+}
+
+/** Collapses blocks that describe the same record, keeping the fullest (and, on ties, the first). */
+export function dedupeSources(sources: readonly SpotlightedSource[]): SpotlightedSource[] {
+  const byKey = new Map<string, SpotlightedSource>();
+  for (const s of sources) {
+    const key = evidenceKey(s);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, s);
+      continue;
+    }
+    // Merge the lines the other block had, so nothing quotable is lost by collapsing.
+    const merged = [...existing.lines];
+    for (const line of s.lines) if (!merged.includes(line)) merged.push(line);
+    existing.lines = merged;
+    if (TRUST_ORDER[s.trust] < TRUST_ORDER[existing.trust]) existing.trust = s.trust;
+    if (!existing.citation.verifiedAt && s.citation.verifiedAt) existing.citation = { ...existing.citation, verifiedAt: s.citation.verifiedAt };
+  }
+  return [...byKey.values()];
+}

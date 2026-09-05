@@ -95,6 +95,20 @@ const PROTECTED: [RegExp, ProtectedFact][] = [
   [/\bmusic\b|\bband\b|\bdj\b|playlist|first dance|song/i, 'music'],
 ];
 
+/**
+ * Words that an answer about a protected fact MUST contain. An answer may be perfectly faithful to a
+ * source and still not be about the question ("accessible rooms are described on the hotel's FAQ" is
+ * not an answer to "which room is the ceremony in?"). For the five facts a guest would act on, an
+ * on-topic sentence is required or the concierge says the fact is not yet decided.
+ */
+export const PROTECTED_FACT_WORDS: Record<ProtectedFact, RegExp> = {
+  room: /\broom\b|\bballroom\b|\bspace\b|\bvenue\b|\bhall\b|\bcourt\b|not yet decided/i,
+  time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|not yet decided/i,
+  dress: /\bdress\b|\battire\b|\bwear\b|black[- ]tie|\bformal\b|\bsuit\b|\bgown\b|not yet decided/i,
+  menu: /\bmenu\b|\bfood\b|\bdinner\b|\bdietary\b|\bmeal\b|\bcater/i,
+  music: /\bmusic\b|\bband\b|\bdj\b|\bplaylist\b|\bdance\b|\bsong\b|not yet decided/i,
+};
+
 interface Rule {
   intent: string;
   pattern: RegExp;
@@ -115,7 +129,11 @@ const RULES: Rule[] = [
   { intent: 'venue.history', pattern: /\bbuilt\b|architect|\bhistor|\b1893\b|\bgothic\b|\bbuilding\b|landmark|\bcobb\b|\bmullgardt\b|athletic association|stained glass|marble|\bclub\b|\brestor|columbian|look for/i, calls: () => [{ name: 'get_venue_facts', input: {}, reason: 'venue docent' }] },
   { intent: 'venue.space', pattern: /white\s*city|madison\s*ballroom|stagg|\bthe\s+tank\b|ballroom|gymnasium|swimming pool|basketball/i, calls: (q) => ROOM_SLUGS.filter(([re]) => re.test(q)).map(([, slug]) => ({ name: 'show_venue_room', input: { slug }, reason: 'named space' })) },
   { intent: 'venue.outlets', pattern: /cindy|rooftop|\bbar\b|restaurant|\bdrinks?\b|coffee|breakfast|shake shack|game room|drawing room|milk room|cherry circle|\beat\b|dining|\bhours\b|midosuji|midōsuji|fairgrounds|the ives|topgolf|amenit/i, calls: () => [{ name: 'get_venue_facts', input: {}, reason: 'outlets and amenities' }] },
-  { intent: 'story', pattern: /how (did|do) (you|they|sara|tyler|the couple)( two| both)? meet|\bmet\b|\bstory\b|propos|engage|first .{0,20}love|love story|relationship|together/i, calls: () => [{ name: 'get_story', input: {}, reason: 'authored story' }] },
+  {
+    intent: 'story',
+    pattern: /\bhow\b[^.?]{0,40}\b(meet|met)\b|\bmeet\b[^.?]{0,20}\b(each other|sara|tyler)\b|\bmet\b|\bstory\b|propos|engage|first .{0,20}love|love story|relationship|\bhow long\b[^.?]{0,20}\btogether\b/i,
+    calls: () => [{ name: 'get_story', input: {}, reason: 'authored story' }],
+  },
   {
     intent: 'adventures',
     pattern: /adventure|memor|starved rock|museum of ice cream|richardson|steakhouse|madison waterfront|garden/i,

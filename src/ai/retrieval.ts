@@ -20,8 +20,12 @@ import { getProvider } from '@/providers/registry';
  */
 export type RetrievalMode = 'static' | 'hybrid';
 
-/** A search hit plus the record's full text (capped), so the model quotes whole sentences, not snippets. */
-export type RetrievedResult = SearchResult & { content: string };
+/**
+ * A search hit plus the record's full text (capped), so the model quotes whole sentences, not
+ * snippets, and the record's own provenance so each hit becomes its own citable evidence block.
+ * `url` is the public route or the official source URL — never a repository path.
+ */
+export type RetrievedResult = SearchResult & { content: string; sourceId: string; url: string };
 
 export interface RetrievalResult {
   results: RetrievedResult[];
@@ -32,9 +36,18 @@ export interface RetrievalResult {
 export const MAX_CONTENT_CHARS = 1_200;
 
 function withContent(results: readonly SearchResult[], byId: ReadonlyMap<string, KnowledgeRecordRow>): RetrievedResult[] {
-  return results.map((r) => {
-    const content = byId.get(r.id)?.content ?? r.snippet;
-    return { ...r, content: content.length > MAX_CONTENT_CHARS ? `${content.slice(0, MAX_CONTENT_CHARS - 1)}…` : content };
+  return results.flatMap((r) => {
+    const row = byId.get(r.id);
+    if (!row) return [];
+    const content = row.content;
+    return [
+      {
+        ...r,
+        content: content.length > MAX_CONTENT_CHARS ? `${content.slice(0, MAX_CONTENT_CHARS - 1)}…` : content,
+        sourceId: row.sourceId,
+        url: publicUrlFor(row, row.route),
+      },
+    ];
   });
 }
 

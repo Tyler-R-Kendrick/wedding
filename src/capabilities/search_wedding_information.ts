@@ -15,6 +15,10 @@ const input = z.object({
 const resultSchema = searchResultSchema.extend({
   /** Full record text (capped) so an answer can quote whole sentences; the snippet is for lists. */
   content: z.string(),
+  /** The record's own content source, so each hit is cited individually rather than as one blob. */
+  sourceId: z.string(),
+  /** Public route or official source URL for the citation. Never a repository path. */
+  url: z.string(),
 });
 const output = z.object({ query: z.string(), mode: z.enum(['static', 'hybrid']), results: z.array(resultSchema) });
 export type SearchWeddingInformationData = z.infer<typeof output>;
