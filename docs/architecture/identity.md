@@ -38,7 +38,7 @@ Guest ──< Household ──< Invitation (token hash, status, expiry, rotation
 
 ## Principal resolution (`src/lib/auth/resolver.ts`, installed by `src/instrumentation.ts`)
 
-1. No cookie → anonymous. Non-GET request whose `Origin` / `Sec-Fetch-Site` is not same-origin → anonymous (CSRF guard for every cookie-authenticated mutation, including `/api/capabilities/*` and server actions).
+1. Under `NODE_ENV=test` with `TEST_AUTH_SECRET` set, a request presenting `x-test-principal-secret` + `x-test-principal` (guest or admin JSON; never `system`) is that principal (`src/lib/auth/test-principal.ts`, the canonical injector for every swarm's tests). Otherwise: no cookie → anonymous. Non-GET request whose `Origin` / `Sec-Fetch-Site` is not same-origin → anonymous (CSRF guard for every cookie-authenticated mutation, including `/api/capabilities/*` and server actions). **Accepted exception:** a cookie-bearing POST that carries *neither* header (legacy browsers, non-browser clients) is trusted here — browsers always send at least one of them on cross-site requests — and the capabilities route additionally requires same-origin JSON (`assertSameOriginJson`) for authenticated POSTs.
 2. Better Auth session lookup (`disableRefresh` during RSC renders).
 3. Email in `ADMIN_EMAILS` or `admin_roles` → `AdminPrincipal` with role-derived entitlements (`src/policy/derive.ts`). Admins are never guests.
 4. Otherwise `buildGuestPrincipal` (`src/domain/identity/principal.ts`): active bindings → guest, household, current invitation, fact sources → `deriveGuestEntitlements` + `deriveActsFor`. An identity with no active binding is anonymous.

@@ -14,6 +14,7 @@ import { qrSvg } from '@/domain/identity/qr';
 import { invitationLifecycle, invitationUrl } from '@/domain/identity/tokens';
 import { currentInvitationsForHouseholds, getInvitation, issueInvitation, listInvitations, revokeInvitation, rotateInvitation } from '@/domain/invitations/repo';
 import { normalizeEmail } from '@/domain/identity/mask';
+import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { siteOrigin } from '@/lib/auth';
 import { actorOf, adminOf } from './identity/shared';
 
@@ -579,7 +580,8 @@ export const adminSetAdminRole = defineCapability({
     } else {
       await db.delete(adminRoles).where(eq(adminRoles.email, email));
     }
-    await ctx.audit.record({ actor: actorOf(ctx), action: 'admin.role_changed', target: { type: 'admin_role', id: email }, outcome: 'success', requestId: ctx.requestId, metadata: { role: i.role, by: admin.adminId } });
+    // Review N1: the audit target is the hashed address, never the email itself.
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'admin.role_changed', target: { type: 'admin_role', id: hashOtpIdentifier(email).slice(0, 32) }, outcome: 'success', requestId: ctx.requestId, metadata: { role: i.role, by: admin.adminId } });
     return ok({ data: { email, role: i.role }, sources: [] });
   },
 });

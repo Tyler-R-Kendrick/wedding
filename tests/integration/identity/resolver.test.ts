@@ -24,6 +24,8 @@ describe('principal resolver', () => {
     expect((await principalFor({ cookie: ana.cookie })).kind).toBe('guest');
     expect((await principalFor({ cookie: ana.cookie, origin: 'https://evil.example' })).kind).toBe('anonymous');
     expect((await principalFor({ cookie: ana.cookie, origin: 'https://evil.example', method: 'GET' })).kind).toBe('guest');
+    // Accepted exception (review N10): a cookie POST with neither Origin nor Sec-Fetch-Site (legacy browsers, API clients)
+    // is trusted by the resolver; the capabilities route additionally requires same-origin JSON for authenticated POSTs.
     expect((await principalFor({ cookie: ana.cookie, origin: null })).kind).toBe('guest');
     expectErr(await call('get_my_invitation', {}, { cookie: ana.cookie, origin: 'https://evil.example' }), 'unauthenticated');
   });

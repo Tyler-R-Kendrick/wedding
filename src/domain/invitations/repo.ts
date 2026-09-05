@@ -6,6 +6,7 @@ import type { PrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { households, invitations, type InvitationRow, type InvitationStatus } from '@/db/schema';
+import { scrubForAudit } from '@/domain/identity/audit';
 import { defaultInvitationExpiry, generateInvitationToken, hashInvitationToken, invitationTokenPrefix, isInvitationTokenShape } from '@/domain/identity/tokens';
 
 export interface IssueInvitationInput {
@@ -124,7 +125,7 @@ export async function revokeInvitation(
     target: { type: 'invitation', id: row.id },
     outcome: 'success',
     requestId: input.requestId,
-    metadata: { householdId: row.householdId, reason: input.reason },
+    metadata: { householdId: row.householdId, reason: scrubForAudit(input.reason) },
   });
   return ok(row);
 }

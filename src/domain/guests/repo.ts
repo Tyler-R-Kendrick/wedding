@@ -87,25 +87,35 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
   }
   const household = (await db.select({ id: households.id }).from(households).where(eq(households.id, input.householdId)).limit(1))[0];
   if (!household) return err(new CapabilityError('not_found', 'That household does not exist.'));
-  const isMinor = input.isMinor ?? kind === 'child';
+  if (input.id) {
+    // Review N3: an edit changes only the fields it carries; absent fields keep their stored value.
+    const patch: Partial<typeof guests.$inferInsert> = { householdId: input.householdId, firstName, updatedAt: new Date() };
+    if (input.lastName !== undefined) patch.lastName = input.lastName.trim();
+    if (input.email !== undefined) patch.email = email;
+    if (input.kind !== undefined) patch.kind = kind;
+    if (input.isMinor !== undefined) patch.isMinor = input.isMinor;
+    else if (input.kind === 'child') patch.isMinor = true;
+    if (input.isNamed !== undefined) patch.isNamed = input.isNamed;
+    if (input.plusOneOfGuestId !== undefined) patch.plusOneOfGuestId = input.plusOneOfGuestId;
+    if (input.managedByGuestId !== undefined) patch.managedByGuestId = input.managedByGuestId;
+    if (input.notes !== undefined) patch.notes = input.notes;
+    const [row] = await db.update(guests).set(patch).where(eq(guests.id, input.id)).returning();
+    if (!row) return err(new CapabilityError('not_found', 'That guest does not exist.'));
+    return ok(row);
+  }
   const values = {
     householdId: input.householdId,
     firstName,
     lastName: (input.lastName ?? '').trim(),
     email,
     kind,
-    isMinor,
+    isMinor: input.isMinor ?? kind === 'child',
     isNamed: input.isNamed ?? true,
     plusOneOfGuestId: input.plusOneOfGuestId ?? null,
     managedByGuestId: input.managedByGuestId ?? null,
     notes: input.notes ?? null,
     updatedAt: new Date(),
   };
-  if (input.id) {
-    const [row] = await db.update(guests).set(values).where(eq(guests.id, input.id)).returning();
-    if (!row) return err(new CapabilityError('not_found', 'That guest does not exist.'));
-    return ok(row);
-  }
   const [row] = await db.insert(guests).values({ id: newId<GuestId>(), ...values, createdAt: new Date() }).returning();
   return ok(row!);
 }

@@ -74,10 +74,12 @@ export function Input({ id, label, type = 'text', name, defaultValue, required, 
   );
 }
 
-export function Checkbox({ id, label, name }: { id: string; label: string; name?: string }) {
+/** A checkbox that reports its presence, so an unchecked box means "false" and an absent one means "keep" (review N3). */
+export function Checkbox({ id, label, name, defaultChecked }: { id: string; label: string; name?: string; defaultChecked?: boolean }) {
   return (
     <div className="ops-check">
-      <input id={id} name={name ?? id} type="checkbox" />
+      <input type="hidden" name={`${name ?? id}__present`} value="1" />
+      <input id={id} name={name ?? id} type="checkbox" defaultChecked={defaultChecked} />
       <label htmlFor={id}>{label}</label>
     </div>
   );
