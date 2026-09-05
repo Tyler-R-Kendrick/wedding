@@ -1,6 +1,6 @@
 import { err, ok } from '@/contracts/result';
 import { failure, okConfig, upHealth } from '../base';
-import { isValidKey, type MultipartPart, type ObjectMeta, type StorageProvider } from './types';
+import { isAllowedUploadContentType, isValidKey, type MultipartPart, type ObjectMeta, type StorageProvider } from './types';
 
 export interface S3StorageOptions {
   endpoint?: string;
@@ -100,6 +100,7 @@ export class S3Storage implements StorageProvider {
   }
 
   async deleteObject(key: string) {
+    if (!isValidKey(key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {
       const { s3, client } = await this.sdk();
       await client.send(new s3.DeleteObjectCommand({ Bucket: this.opts.bucket, Key: key }));
@@ -110,6 +111,7 @@ export class S3Storage implements StorageProvider {
   }
 
   async head(key: string) {
+    if (!isValidKey(key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {
       const { s3, client } = await this.sdk();
       const res = await client.send(new s3.HeadObjectCommand({ Bucket: this.opts.bucket, Key: key }));
@@ -128,6 +130,7 @@ export class S3Storage implements StorageProvider {
 
   async createSignedUploadUrl(input: { key: string; contentType: string; expiresInSeconds?: number; maxBytes?: number }) {
     if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
+    if (!isAllowedUploadContentType(input.contentType)) return err(failure(this.name, 'bad_request', 'That file type is not supported.'));
     try {
       const { s3, presign, client } = await this.sdk();
       const expiresIn = input.expiresInSeconds ?? 900;
@@ -151,6 +154,8 @@ export class S3Storage implements StorageProvider {
   }
 
   async initiateMultipartUpload(input: { key: string; contentType: string }) {
+    if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
+    if (!isAllowedUploadContentType(input.contentType)) return err(failure(this.name, 'bad_request', 'That file type is not supported.'));
     try {
       const { s3, client } = await this.sdk();
       const res = await client.send(new s3.CreateMultipartUploadCommand({ Bucket: this.opts.bucket, Key: input.key, ContentType: input.contentType }));
@@ -162,6 +167,7 @@ export class S3Storage implements StorageProvider {
   }
 
   async signMultipartPart(input: { key: string; uploadId: string; partNumber: number; expiresInSeconds?: number }) {
+    if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {
       const { s3, presign, client } = await this.sdk();
       const expiresIn = input.expiresInSeconds ?? 900;
@@ -173,6 +179,7 @@ export class S3Storage implements StorageProvider {
   }
 
   async completeMultipartUpload(input: { key: string; uploadId: string; parts: MultipartPart[] }) {
+    if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {
       const { s3, client } = await this.sdk();
       await client.send(new s3.CompleteMultipartUploadCommand({
@@ -191,6 +198,7 @@ export class S3Storage implements StorageProvider {
   }
 
   async abortMultipartUpload(input: { key: string; uploadId: string }) {
+    if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {
       const { s3, client } = await this.sdk();
       await client.send(new s3.AbortMultipartUploadCommand({ Bucket: this.opts.bucket, Key: input.key, UploadId: input.uploadId }));

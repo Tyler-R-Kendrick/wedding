@@ -1,11 +1,22 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { newId } from '@/contracts/ids';
+import { isId, newId } from '@/contracts/ids';
 import { err, ok } from '@/contracts/result';
-import { hmacSha256, timingSafeEqualString } from '@/lib/crypto';
+import { hmacSha256, sha256Hex, timingSafeEqualString } from '@/lib/crypto';
 import { failure, okConfig, upHealth } from '../base';
-import { isValidKey, MAX_PART_NUMBER, type MultipartPart, type ObjectMeta, type SignedUrl, type StorageProvider } from './types';
+import {
+  DEFAULT_DEV_READ_TTL_SECONDS,
+  isAllowedUploadContentType,
+  isValidKey,
+  isValidPartNumber,
+  MULTIPART_MANIFEST,
+  type MultipartPart,
+  type ObjectMeta,
+  type SignedUrl,
+  type StorageProvider,
+  type StorageResult,
+} from './types';
 
 export interface LocalFsStorageOptions {
   dataDir: string;
@@ -27,7 +38,6 @@ export interface DevStorageSignatureInput {
 }
 
 const NAME = 'local-fs';
-const META_SUFFIX = '.meta.json';
 
 function signatureBase(i: DevStorageSignatureInput): string {
   return [i.op, i.key, String(i.exp), i.uploadId ?? '', i.partNumber !== undefined ? String(i.partNumber) : '', i.contentType ?? ''].join('\n');
@@ -43,9 +53,11 @@ export function verifyDevStorage(secret: string, input: DevStorageSignatureInput
 }
 
 /**
- * Local filesystem storage for development. Objects live under `<dataDir>/objects/<key>`
- * with a sidecar `.meta.json`; multipart parts under `<dataDir>/multipart/<uploadId>/`.
- * Signed URLs point at /api/dev/storage/<key> and carry an HMAC + expiry.
+ * Local filesystem storage for development. Objects live under `<dataDir>/objects/<key>`;
+ * their metadata under `<dataDir>/meta/<sha256(key)>.json` (never next to the object, so no
+ * key can name or shadow a sidecar); multipart parts under `<dataDir>/multipart/<uploadId>/`
+ * where `uploadId` is always one of our ULIDs. Signed URLs point at /api/dev/storage/<key>
+ * and carry an HMAC + expiry.
  */
 export class LocalFsStorage implements StorageProvider {
   readonly kind = 'storage' as const;
@@ -81,8 +93,12 @@ export class LocalFsStorage implements StorageProvider {
   verifySignedRequest(input: DevStorageSignatureInput, signature: string, now: Date = this.now()): boolean {
     return verifyDevStorage(this.opts.signingSecret, input, signature, now);
   }
+
   private get objectsDir() {
     return path.join(this.opts.dataDir, 'objects');
+  }
+  private get metaDir() {
+    return path.join(this.opts.dataDir, 'meta');
   }
   private get multipartDir() {
     return path.join(this.opts.dataDir, 'multipart');
@@ -90,15 +106,32 @@ export class LocalFsStorage implements StorageProvider {
   private objectPath(key: string) {
     return path.join(this.objectsDir, key);
   }
+  private metaPath(key: string) {
+    return path.join(this.metaDir, `${sha256Hex(key)}.json`);
+  }
+  /** Only ever called with an `isId`-validated upload id, so the path cannot leave `multipartDir`. */
+  private uploadDir(uploadId: string) {
+    return path.join(this.multipartDir, uploadId);
+  }
 
   private invalidKey(key: string) {
     return failure(NAME, 'bad_request', 'Invalid storage key.', { raw: { key } });
+  }
+  private invalidUploadId() {
+    return failure(NAME, 'bad_request', 'Invalid upload id.');
+  }
+  private invalidPartNumber() {
+    return failure(NAME, 'bad_request', 'Invalid part number.');
+  }
+  private unsupportedType() {
+    return failure(NAME, 'bad_request', 'That file type is not supported.');
   }
 
   async putObject(key: string, body: Uint8Array, opts: { contentType: string }) {
     if (!isValidKey(key)) return err(this.invalidKey(key));
     const p = this.objectPath(key);
     await fs.mkdir(path.dirname(p), { recursive: true });
+    await fs.mkdir(this.metaDir, { recursive: true });
     await fs.writeFile(p, body);
     const meta: ObjectMeta = {
       key,
@@ -107,15 +140,16 @@ export class LocalFsStorage implements StorageProvider {
       etag: createHash('md5').update(body).digest('hex'),
       lastModified: this.now().toISOString(),
     };
-    await fs.writeFile(p + META_SUFFIX, JSON.stringify(meta));
+    await fs.writeFile(this.metaPath(key), JSON.stringify(meta));
     return ok(meta);
   }
 
   async head(key: string) {
     if (!isValidKey(key)) return err(this.invalidKey(key));
     try {
-      const raw = await fs.readFile(this.objectPath(key) + META_SUFFIX, 'utf8');
-      return ok(JSON.parse(raw) as ObjectMeta);
+      const raw = await fs.readFile(this.metaPath(key), 'utf8');
+      const meta = JSON.parse(raw) as ObjectMeta;
+      return ok(meta.key === key ? meta : null);
     } catch {
       return ok(null);
     }
@@ -136,7 +170,7 @@ export class LocalFsStorage implements StorageProvider {
   async deleteObject(key: string) {
     if (!isValidKey(key)) return err(this.invalidKey(key));
     await fs.rm(this.objectPath(key), { force: true });
-    await fs.rm(this.objectPath(key) + META_SUFFIX, { force: true });
+    await fs.rm(this.metaPath(key), { force: true });
     return ok(undefined);
   }
 
@@ -157,45 +191,54 @@ export class LocalFsStorage implements StorageProvider {
 
   async createSignedUploadUrl(input: { key: string; contentType: string; expiresInSeconds?: number }) {
     if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
+    if (!isAllowedUploadContentType(input.contentType)) return err(this.unsupportedType());
     return ok(this.signed({ op: 'put', key: input.key, contentType: input.contentType }, input.expiresInSeconds ?? 900, 'PUT'));
   }
 
   async createSignedReadUrl(input: { key: string; expiresInSeconds?: number }) {
     if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
-    return ok(this.signed({ op: 'get', key: input.key }, input.expiresInSeconds ?? 3600, 'GET'));
+    return ok(this.signed({ op: 'get', key: input.key }, input.expiresInSeconds ?? DEFAULT_DEV_READ_TTL_SECONDS, 'GET'));
   }
 
   async initiateMultipartUpload(input: { key: string; contentType: string }) {
     if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
+    if (!isAllowedUploadContentType(input.contentType)) return err(this.unsupportedType());
     const uploadId = newId();
-    const dir = path.join(this.multipartDir, uploadId);
+    const dir = this.uploadDir(uploadId);
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, 'upload.json'), JSON.stringify({ key: input.key, contentType: input.contentType, startedAt: this.now().toISOString() }));
+    await fs.writeFile(path.join(dir, MULTIPART_MANIFEST), JSON.stringify({ key: input.key, contentType: input.contentType, startedAt: this.now().toISOString() }));
     return ok({ uploadId });
   }
 
   async signMultipartPart(input: { key: string; uploadId: string; partNumber: number; expiresInSeconds?: number }) {
     if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
-    if (!Number.isInteger(input.partNumber) || input.partNumber < 1 || input.partNumber > MAX_PART_NUMBER) {
-      return err(failure(NAME, 'bad_request', 'Invalid part number.'));
-    }
+    if (!isId(input.uploadId)) return err(this.invalidUploadId());
+    if (!isValidPartNumber(input.partNumber)) return err(this.invalidPartNumber());
     return ok(this.signed({ op: 'part', key: input.key, uploadId: input.uploadId, partNumber: input.partNumber }, input.expiresInSeconds ?? 900, 'PUT'));
   }
 
-  /** Called by the dev route to persist an uploaded part. */
-  async writeMultipartPart(uploadId: string, partNumber: number, body: Uint8Array): Promise<string> {
-    const dir = path.join(this.multipartDir, uploadId);
-    await fs.mkdir(dir, { recursive: true });
+  /** Called by the dev route to persist an uploaded part. Returns the part's etag. */
+  async writeMultipartPart(uploadId: string, partNumber: number, body: Uint8Array): StorageResult<string> {
+    if (!isId(uploadId)) return err(this.invalidUploadId());
+    if (!isValidPartNumber(partNumber)) return err(this.invalidPartNumber());
+    const dir = this.uploadDir(uploadId);
+    try {
+      await fs.access(path.join(dir, MULTIPART_MANIFEST));
+    } catch {
+      return err(failure(NAME, 'not_found', 'Upload not found.'));
+    }
     await fs.writeFile(path.join(dir, `part-${partNumber}`), body);
-    return createHash('md5').update(body).digest('hex');
+    return ok(createHash('md5').update(body).digest('hex'));
   }
 
   async completeMultipartUpload(input: { key: string; uploadId: string; parts: MultipartPart[] }) {
     if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
-    const dir = path.join(this.multipartDir, input.uploadId);
+    if (!isId(input.uploadId)) return err(this.invalidUploadId());
+    if (!input.parts.every((p) => isValidPartNumber(p.partNumber))) return err(this.invalidPartNumber());
+    const dir = this.uploadDir(input.uploadId);
     let info: { key: string; contentType: string };
     try {
-      info = JSON.parse(await fs.readFile(path.join(dir, 'upload.json'), 'utf8')) as { key: string; contentType: string };
+      info = JSON.parse(await fs.readFile(path.join(dir, MULTIPART_MANIFEST), 'utf8')) as { key: string; contentType: string };
     } catch {
       return err(failure(NAME, 'not_found', 'Upload not found.'));
     }
@@ -221,7 +264,9 @@ export class LocalFsStorage implements StorageProvider {
   }
 
   async abortMultipartUpload(input: { key: string; uploadId: string }) {
-    await fs.rm(path.join(this.multipartDir, input.uploadId), { recursive: true, force: true });
+    if (!isValidKey(input.key)) return err(this.invalidKey(input.key));
+    if (!isId(input.uploadId)) return err(this.invalidUploadId());
+    await fs.rm(this.uploadDir(input.uploadId), { recursive: true, force: true });
     return ok(undefined);
   }
 }

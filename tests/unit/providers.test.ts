@@ -1,9 +1,11 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { generateText } from 'ai';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PROVIDER_KINDS } from '@/contracts/providers';
+import { sha256Hex } from '@/lib/crypto';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { MockAuthEmail, devInbox } from '@/providers/auth-email';
 import { MockBiometric } from '@/providers/biometric';
@@ -95,12 +97,55 @@ describe('local-fs storage', () => {
     const got = await storage.getObject('media/a/b.txt');
     expect(got.ok && got.value && new TextDecoder().decode(got.value.body)).toBe('hello');
     expect((await storage.getObject('media/missing.txt')).ok).toBe(true);
-    for (const bad of ['../etc/passwd', '/abs', 'a//b', 'a/', 'sp ace']) {
+    for (const bad of ['../etc/passwd', '/abs', 'a//b', 'a/', 'sp ace', 'a/.hidden', 'media/x.meta.json', 'a/upload.json', 'upload.json', 'a/./b']) {
       expect(isValidKey(bad), bad).toBe(false);
       expect((await storage.putObject(bad, new Uint8Array(), { contentType: 'x' })).ok).toBe(false);
     }
+    expect(isValidKey('media/a.b/c-d_e.jpg')).toBe(true);
+    // Sidecars live under <dataDir>/meta/<sha256(key)>.json, never next to the object.
+    expect(existsSync(path.join(dir, 'objects', 'media', 'a', 'b.txt.meta.json'))).toBe(false);
+    expect(existsSync(path.join(dir, 'meta', `${sha256Hex('media/a/b.txt')}.json`))).toBe(true);
     await storage.deleteObject('media/a/b.txt');
     expect((await storage.head('media/a/b.txt')).ok && (await storage.head('media/a/b.txt'))).toMatchObject({ value: null });
+    expect(existsSync(path.join(dir, 'meta', `${sha256Hex('media/a/b.txt')}.json`))).toBe(false);
+  });
+
+  it('only signs uploads for allowlisted media types and keeps dev read URLs short-lived', async () => {
+    for (const ct of ['text/html', 'application/octet-stream', 'image/svg+xml', '']) {
+      expect((await storage.createSignedUploadUrl({ key: 'uploads/x', contentType: ct })).ok, ct).toBe(false);
+      expect((await storage.initiateMultipartUpload({ key: 'uploads/x', contentType: ct })).ok, ct).toBe(false);
+    }
+    expect((await storage.createSignedUploadUrl({ key: 'uploads/x.mov', contentType: 'video/quicktime' })).ok).toBe(true);
+    const read = await storage.createSignedReadUrl({ key: 'uploads/x.mov' });
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    const ttl = Date.parse(read.value.expiresAt) - Date.now();
+    expect(ttl).toBeLessThanOrEqual(5 * 60_000);
+    expect(ttl).toBeGreaterThan(4 * 60_000);
+  });
+
+  it('refuses multipart upload ids and part numbers that are not ours (no path traversal)', async () => {
+    const init = await storage.initiateMultipartUpload({ key: 'video/t.mp4', contentType: 'video/mp4' });
+    expect(init.ok).toBe(true);
+    if (!init.ok) return;
+    const { uploadId } = init.value;
+    for (const bad of ['../../escape', '..', '.', 'abc', `${uploadId}/..`, '']) {
+      expect((await storage.writeMultipartPart(bad, 1, new Uint8Array([1]))).ok, bad).toBe(false);
+      expect((await storage.signMultipartPart({ key: 'video/t.mp4', uploadId: bad, partNumber: 1 })).ok, bad).toBe(false);
+      expect((await storage.completeMultipartUpload({ key: 'video/t.mp4', uploadId: bad, parts: [] })).ok, bad).toBe(false);
+      expect((await storage.abortMultipartUpload({ key: 'video/t.mp4', uploadId: bad })).ok, bad).toBe(false);
+    }
+    // Aborting with '..' used to rm -rf the data directory itself.
+    expect(existsSync(path.join(dir, 'multipart', uploadId))).toBe(true);
+    expect(existsSync(path.join(dir, '..', 'escape'))).toBe(false);
+    for (const badPart of [0, -1, 1.5, 10_001, Number.NaN]) {
+      expect((await storage.writeMultipartPart(uploadId, badPart, new Uint8Array([1]))).ok, String(badPart)).toBe(false);
+      expect((await storage.completeMultipartUpload({ key: 'video/t.mp4', uploadId, parts: [{ partNumber: badPart, etag: 'x' }] })).ok, String(badPart)).toBe(false);
+    }
+    // Parts can only be written to an upload that was initiated.
+    expect((await storage.writeMultipartPart('01ARZ3NDEKTSV4RRFFQ69G5FAV', 1, new Uint8Array([1]))).ok).toBe(false);
+    expect((await storage.abortMultipartUpload({ key: 'video/t.mp4', uploadId })).ok).toBe(true);
+    expect(existsSync(path.join(dir, 'multipart', uploadId))).toBe(false);
   });
 
   it('signs upload/read URLs that verify and expire', async () => {
@@ -118,14 +163,16 @@ describe('local-fs storage', () => {
   });
 
   it('assembles multipart uploads in part order', async () => {
-    const init = await storage.initiateMultipartUpload({ key: 'video/big.bin', contentType: 'application/octet-stream' });
+    const init = await storage.initiateMultipartUpload({ key: 'video/big.bin', contentType: 'video/mp4' });
     expect(init.ok).toBe(true);
     if (!init.ok) return;
     const { uploadId } = init.value;
     const e2 = await storage.writeMultipartPart(uploadId, 2, new TextEncoder().encode('world'));
     const e1 = await storage.writeMultipartPart(uploadId, 1, new TextEncoder().encode('hello '));
+    expect(e1.ok && e2.ok).toBe(true);
+    if (!e1.ok || !e2.ok) return;
     expect((await storage.signMultipartPart({ key: 'video/big.bin', uploadId, partNumber: 0 })).ok).toBe(false);
-    const done = await storage.completeMultipartUpload({ key: 'video/big.bin', uploadId, parts: [{ partNumber: 2, etag: e2 }, { partNumber: 1, etag: e1 }] });
+    const done = await storage.completeMultipartUpload({ key: 'video/big.bin', uploadId, parts: [{ partNumber: 2, etag: e2.value }, { partNumber: 1, etag: e1.value }] });
     expect(done.ok && done.value.size).toBe(11);
     const got = await storage.getObject('video/big.bin');
     expect(got.ok && got.value && new TextDecoder().decode(got.value.body)).toBe('hello world');
@@ -135,6 +182,28 @@ describe('local-fs storage', () => {
     if (!asset.ok) return;
     const playback = await video.getPlayback(asset.value.assetId);
     expect(playback.ok && playback.value.playbackUrl).toContain('/api/dev/storage/video/big.bin');
+  });
+});
+
+describe('s3 storage', () => {
+  it('rejects invalid keys and unsupported upload types before touching the SDK', async () => {
+    const s3 = new S3Storage({ region: 'auto', bucket: 'b', accessKeyId: 'k', secretAccessKey: 's', endpoint: 'http://127.0.0.1:9' });
+    const bad = '../escape';
+    const results = await Promise.all([
+      s3.putObject(bad, new Uint8Array(), { contentType: 'image/png' }),
+      s3.getObject(bad),
+      s3.deleteObject(bad),
+      s3.head(bad),
+      s3.createSignedUploadUrl({ key: bad, contentType: 'image/png' }),
+      s3.createSignedReadUrl({ key: bad }),
+      s3.initiateMultipartUpload({ key: bad, contentType: 'image/png' }),
+      s3.signMultipartPart({ key: bad, uploadId: 'u', partNumber: 1 }),
+      s3.completeMultipartUpload({ key: bad, uploadId: 'u', parts: [] }),
+      s3.abortMultipartUpload({ key: bad, uploadId: 'u' }),
+      s3.createSignedUploadUrl({ key: 'ok/x', contentType: 'text/html' }),
+      s3.initiateMultipartUpload({ key: 'ok/x', contentType: 'application/octet-stream' }),
+    ]);
+    for (const r of results) expect(!r.ok && r.error.class).toBe('bad_request');
   });
 });
 

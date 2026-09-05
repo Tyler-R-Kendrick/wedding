@@ -46,11 +46,34 @@ export interface StorageProvider extends ProviderDescriptor {
 }
 
 const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._\-/]{0,511}$/;
+/** Legacy sidecar suffix; keys may never end with it even though sidecars now live under <dataDir>/meta. */
+export const META_SIDECAR_SUFFIX = '.meta.json';
+/** Multipart bookkeeping file name; never a valid object key segment. */
+export const MULTIPART_MANIFEST = 'upload.json';
 
+/**
+ * POSIX-like object keys: no traversal, no empty/dot segments, no reserved bookkeeping names.
+ * Both adapters call this on every key they receive.
+ */
 export function isValidKey(key: string): boolean {
   if (!KEY_PATTERN.test(key)) return false;
   if (key.includes('..') || key.includes('//') || key.endsWith('/')) return false;
+  if (key.endsWith(META_SIDECAR_SUFFIX)) return false;
+  const segments = key.split('/');
+  if (segments.some((s) => s.startsWith('.'))) return false;
+  if (segments[segments.length - 1] === MULTIPART_MANIFEST) return false;
   return true;
 }
 
 export const MAX_PART_NUMBER = 10_000;
+export const isValidPartNumber = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_PART_NUMBER;
+
+/** Signed dev read URLs are short-lived; S3 presigned reads keep their own default. */
+export const DEFAULT_DEV_READ_TTL_SECONDS = 5 * 60;
+
+/** Only guest media types may be uploaded through signed URLs (both adapters enforce this at sign time). */
+export const ALLOWED_UPLOAD_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime'] as const;
+export type AllowedUploadContentType = (typeof ALLOWED_UPLOAD_CONTENT_TYPES)[number];
+export function isAllowedUploadContentType(contentType: string): contentType is AllowedUploadContentType {
+  return (ALLOWED_UPLOAD_CONTENT_TYPES as readonly string[]).includes(contentType.trim().toLowerCase());
+}
