@@ -1,6 +1,6 @@
 import type { ProviderErrorClass } from '@/contracts/providers';
 import { err, ok } from '@/contracts/result';
-import { failure, okConfig, seededRandom, snapshot, upHealth } from '../base';
+import { failure, okConfig, seededRandom, upHealth } from '../base';
 import { flightsHandoff } from './deep-link';
 import { GUEST_MESSAGES } from './http';
 import type { FlightResult, FlightSearchRequest, FlightSegment, FlightsProvider, TransferKind } from './types';
@@ -93,7 +93,8 @@ export class MockFlights implements FlightsProvider {
       });
     }
     results.sort((a, b) => (a.priceCents ?? 0) - (b.priceCents ?? 0));
-    return ok(snapshot(this.name, results, this.options.ttlSeconds ?? 600));
+    // One clock read: every price carries exactly the snapshot's timestamp.
+    return ok({ provider: this.name, retrievedAt: pricedAt, ttlSeconds: this.options.ttlSeconds ?? 600, data: results });
   }
 }
 

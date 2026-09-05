@@ -47,6 +47,17 @@ export function zonedToUtc(local: string, timeZone: string): Date {
   return new Date(guess - (asIfUtc - guess));
 }
 
+/** `Date.UTC` rolls invalid components over (month 13 -> next year); a wall time must be a real calendar time. */
+function isValidWallTime(local: string): boolean {
+  const [datePart, timePart = '00:00'] = local.split('T');
+  const [y, m, d] = datePart!.split('-').map(Number);
+  const [hh, mm, ss = 0] = timePart.split(':').map(Number);
+  if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) return false;
+  if (hh! < 0 || hh! > 23 || mm! < 0 || mm! > 59 || ss < 0 || ss > 59) return false;
+  const probe = new Date(Date.UTC(y, m - 1, d));
+  return probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+}
+
 /** Accepts an ISO instant, a wall time ("YYYY-MM-DDTHH:mm") in `timeZone`, or a date (midnight in `timeZone`). */
 export function parseWhen(input: string, timeZone: string): Date | null {
   const s = input.trim();
@@ -54,7 +65,7 @@ export function parseWhen(input: string, timeZone: string): Date | null {
     const d = new Date(s);
     return Number.isFinite(d.getTime()) ? d : null;
   }
-  if (LOCAL.test(s) || DATE_ONLY.test(s)) {
+  if ((LOCAL.test(s) || DATE_ONLY.test(s)) && isValidWallTime(s)) {
     const d = zonedToUtc(s, timeZone);
     return Number.isFinite(d.getTime()) ? d : null;
   }
