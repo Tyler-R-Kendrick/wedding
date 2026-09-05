@@ -1,0 +1,72 @@
+{
+  "theme": "gilded-hour",
+  "license": "Generated in-repo (scripts/art); no third-party rights",
+  "assets": [
+    {
+      "file": "sunburst-hero.svg",
+      "alt": "Gold Art Deco sunburst: hairline rays fanning upward from a stepped half-sun at the bottom centre, on a transparent ground.",
+      "width": 1440,
+      "height": 720
+    },
+    {
+      "file": "chevron-divider.svg",
+      "alt": "Gold hairline section divider with a centred cluster of three nested chevrons and small diamonds.",
+      "width": 1200,
+      "height": 40
+    },
+    {
+      "file": "stepped-frame.svg",
+      "alt": "Gold Art Deco photo frame with stepped corners: a heavy outer line and a hairline inner line, open in the middle for a photograph.",
+      "width": 800,
+      "height": 1000
+    },
+    {
+      "file": "corner-bracket.svg",
+      "alt": "Gold stepped corner bracket for the top-left of a framed block.",
+      "width": 160,
+      "height": 160
+    },
+    {
+      "file": "monogram-frame.svg",
+      "alt": "Monogram plaque: the letters S and T joined by an ampersand inside a double gold octagon, with the date 07 · 17 · 27 beneath.",
+      "width": 600,
+      "height": 600
+    },
+    {
+      "file": "marble-texture.svg",
+      "alt": "Pale marble texture: warm white ground with faint diagonal grey veins.",
+      "width": 800,
+      "height": 800
+    },
+    {
+      "file": "numeral-badge-01.svg",
+      "alt": "Octagonal gold-edged plaque with the section number 01.",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "file": "numeral-badge-02.svg",
+      "alt": "Octagonal gold-edged plaque with the section number 02.",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "file": "numeral-badge-03.svg",
+      "alt": "Octagonal gold-edged plaque with the section number 03.",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "file": "numeral-badge-04.svg",
+      "alt": "Octagonal gold-edged plaque with the section number 04.",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "file": "numeral-badge-05.svg",
+      "alt": "Octagonal gold-edged plaque with the section number 05.",
+      "width": 200,
+      "height": 200
+    }
+  ]
+}
