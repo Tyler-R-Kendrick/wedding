@@ -18,6 +18,8 @@ export interface ChallengePayload {
   invitationId: string | null;
   /** Auth user the challenge belongs to (step-up / change-email). */
   userId: string | null;
+  /** Guests without their own inbox that the bound guest will manage after this claim. */
+  managedGuestIds?: string[];
   /** Free-form, non-sensitive continuation (e.g. an internal returnTo path). */
   next?: string;
 }
