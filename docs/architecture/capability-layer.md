@@ -165,11 +165,24 @@ The UI receives `step_up_required` and starts the re-verification flow, then ret
 ## Calling capabilities
 
 - **UI (server)**: `const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui' }); await invoke(descriptor, ctx, input);`
-- **UI (browser) / AI / WebMCP**: `POST /api/capabilities/<name>` with
-  `{ input, idempotencyKey?, confirmationToken? }` and optional header
-  `x-capability-surface: ai | webmcp`. Response `{ ok: true, data, sources, ... }` or
+- **UI (browser)**: `POST /api/capabilities/<name>` with
+  `{ input, idempotencyKey?, confirmationToken? }` as `application/json`. Every request
+  through this route is surface `ui`; the surface is never client-claimed (there is no
+  header for it). Response `{ ok: true, data, sources, ... }` or
   `{ ok: false, error: { code, message, details? } }` with the HTTP status from
   `HTTP_STATUS_FOR_CODE`, `Cache-Control: private, no-store`, and `x-request-id`.
+  `details.missing` (entitlement names) is stripped before the response leaves.
+  The route runs, in order: a coarse per-IP limiter (`capabilityIp`, keyed by
+  `getClientIp(headers, TRUSTED_PROXY_HOPS)`) before anything is read; principal
+  resolution; for signed-in principals the CSRF check `assertSameOriginJson`
+  (`Content-Type: application/json` and `Sec-Fetch-Site: same-origin|none` or
+  `Origin === NEXT_PUBLIC_SITE_URL`, else 403); the per-principal limiter (`capability`);
+  then the body, streamed with a hard 256 KB cap. Any future mutation route must reuse
+  `assertSameOriginJson` from `src/lib/request.ts`.
+- **AI concierge / WebMCP bridge**: never through the HTTP route. They run server-side and
+  build their own context with `createCapabilityContext({ principal, requestId, surface: 'ai' | 'webmcp' })`,
+  which is what gates exposure, output caps, and (for `explicit` confirmation) the
+  ui-only rule.
 - **Jobs**: handlers receive a `system` principal; construct contexts with it only inside
   `src/lib/jobs` handlers, never from a request.
 

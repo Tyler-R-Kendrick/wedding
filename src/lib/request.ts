@@ -1,6 +1,7 @@
 import { CapabilityError } from '@/contracts/errors';
 import { newId } from '@/contracts/ids';
 import { err, ok, type Result } from '@/contracts/result';
+import { publicEnv } from './env.public';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{8,128}$/;
 export const REQUEST_ID_HEADER = 'x-request-id';
@@ -12,19 +13,57 @@ export function getRequestId(headers?: Headers | Record<string, string | undefin
   return newId();
 }
 
-/** Best-effort client IP for rate limiting. Never used for geolocation or personalization. */
-export function getClientIp(headers: Headers): string {
-  // Trust order: platform-set headers first (Vercel overwrites these), then the LAST
-  // x-forwarded-for entry (appended by the nearest trusted proxy; the first entry is
-  // client-controllable), then x-real-ip.
+/** Longest rate-limit key fragment we will derive from a header (IPv6 + zone fits comfortably). */
+export const MAX_CLIENT_IP_CHARS = 128;
+
+/**
+ * Best-effort client IP for rate limiting. Never used for geolocation or personalization.
+ * `trustedProxyHops` is the number of reverse proxies in front of the app (env
+ * `TRUSTED_PROXY_HOPS`): each trusted hop appends one `x-forwarded-for` entry, so the client
+ * is the Nth entry from the right. With 0 hops every forwarding header is attacker-controlled
+ * and is ignored: all callers share the `direct` bucket.
+ */
+export function getClientIp(headers: Headers, trustedProxyHops = 0): string {
+  if (!Number.isInteger(trustedProxyHops) || trustedProxyHops <= 0) return 'direct';
+  const clamp = (s: string) => s.slice(0, MAX_CLIENT_IP_CHARS);
+  // Platform-set headers first (Vercel overwrites these; a client cannot inject them).
   const vercel = headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim();
-  if (vercel) return vercel;
+  if (vercel) return clamp(vercel);
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
-    const last = forwarded.split(',').pop()?.trim();
-    if (last) return last;
+    const entries = forwarded.split(',').map((e) => e.trim()).filter(Boolean);
+    const index = entries.length - trustedProxyHops;
+    const candidate = index >= 0 ? entries[index] : undefined;
+    if (candidate) return clamp(candidate);
   }
-  return headers.get('x-real-ip')?.trim() || 'unknown';
+  const real = headers.get('x-real-ip')?.trim();
+  return real ? clamp(real) : 'unknown';
+}
+
+/** `Authorization: Bearer <token>` value, or undefined. */
+export function bearerToken(request: Request): string | undefined {
+  const header = request.headers.get('authorization') ?? '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  return token.length > 0 ? token : undefined;
+}
+
+export const SAME_ORIGIN_MESSAGE = 'This request must come from the wedding site.';
+
+/**
+ * CSRF defence for cookie-authenticated mutation routes: the body must be JSON (a form cannot
+ * send it cross-site without CORS) AND the browser must vouch for the origin, either via
+ * `Sec-Fetch-Site: same-origin|none` or an `Origin` equal to the public site URL.
+ * Apply to every route that mutates on behalf of a signed-in principal.
+ */
+export function assertSameOriginJson(request: Request, opts: { siteUrl?: string } = {}): Result<void, CapabilityError> {
+  const contentType = (request.headers.get('content-type') ?? '').trim().toLowerCase();
+  if (!contentType.startsWith('application/json')) return err(new CapabilityError('forbidden', SAME_ORIGIN_MESSAGE, { reason: 'content_type' }));
+  const site = request.headers.get('sec-fetch-site')?.trim().toLowerCase();
+  if (site === 'same-origin' || site === 'none') return ok(undefined);
+  const origin = request.headers.get('origin')?.trim().replace(/\/+$/, '').toLowerCase();
+  const expected = (opts.siteUrl ?? publicEnv.siteUrl).replace(/\/+$/, '').toLowerCase();
+  if (origin && origin === expected) return ok(undefined);
+  return err(new CapabilityError('forbidden', SAME_ORIGIN_MESSAGE, { reason: 'origin' }));
 }
 
 export const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store' } as const;

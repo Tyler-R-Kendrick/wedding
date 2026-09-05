@@ -79,7 +79,7 @@ flowchart TB
 
 1. `getRequestId` reads/creates a correlation id; every log line and audit row carries it.
 2. `getPrincipal(request)` resolves anonymous / guest / admin through the installed `PrincipalResolver` (Better Auth, auth swarm). System principals are never derived from a request.
-3. The capability route rate-limits per principal (or IP for anonymous) with the `rate-limit` provider.
+3. The capability route rate-limits per IP (`capabilityIp`, from `TRUSTED_PROXY_HOPS`-aware `getClientIp`) before reading anything, then resolves the principal, applies the CSRF check for signed-in callers (`assertSameOriginJson`), rate-limits per principal (or per IP for anonymous), and only then streams the body under a hard cap. The surface is always `ui` here; the concierge and WebMCP bridge build contexts server-side.
 4. `createCapabilityContext` wires the database, audit sink, providers, readiness lookup, confirmation service, idempotency store, logger and metrics into `ctx.services`.
 5. `invoke` runs the nine-step pipeline (see `capability-layer.md`) and always writes an audit row.
 6. The route maps `CapabilityErrorCode` to HTTP via `HTTP_STATUS_FOR_CODE`, sets `Cache-Control: private, no-store`, and returns `{ ok, data | error, sources }`.

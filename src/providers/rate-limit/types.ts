@@ -16,8 +16,10 @@ export interface RateLimitDecision {
 
 /** Named policies shared across surfaces. Keys are namespaced by the caller (e.g. `cap:<principal>`). */
 export const RATE_LIMIT_POLICIES = {
-  /** Capability calls per principal/IP. */
+  /** Capability calls per principal (or per IP for anonymous callers). */
   capability: { capacity: 60, refillPerSecond: 1 },
+  /** Coarse per-IP guard applied before the body is read or the session resolved (shared NATs are generous). */
+  capabilityIp: { capacity: 200, refillPerSecond: 5 },
   /** OTP sends per identifier. */
   otp: { capacity: 5, refillPerSecond: 5 / 600 },
   /** OTP verification attempts per identifier. */
