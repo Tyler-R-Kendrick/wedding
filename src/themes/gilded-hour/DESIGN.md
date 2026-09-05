@@ -78,6 +78,12 @@ typography:
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: 0.18em
+  label-sm:
+    fontFamily: Josefin Sans
+    fontSize: 0.75rem
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: 0.1em
   numeral:
     fontFamily: Big Shoulders Display
     fontSize: 3.5rem

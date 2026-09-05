@@ -11,7 +11,8 @@ export interface ResolveLifecycleInput {
   principal: Principal;
   /** Raw `?preview=` / cookie value, if any. */
   preview?: { value: string; source: 'query' | 'cookie' } | null;
-  secret: string;
+  /** Resolved lazily: only needed when a preview value is present. */
+  secret: string | (() => string);
   now: Date;
   weddingDateIso?: string;
 }
@@ -33,7 +34,8 @@ export function resolveLifecycle(input: ResolveLifecycleInput): LifecycleView {
       admin = false;
     }
     if (admin) {
-      const parsed = parsePreviewValue(input.preview.value, input.secret, input.now);
+      const secret = typeof input.secret === 'function' ? input.secret() : input.secret;
+      const parsed = parsePreviewValue(input.preview.value, secret, input.now);
       if (parsed.ok) preview = { state: parsed.value.state, source: input.preview.source, expiresAt: parsed.value.expiresAt || null };
     }
   }

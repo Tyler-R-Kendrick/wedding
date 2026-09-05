@@ -85,7 +85,7 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
       note: lifecycleRow?.note ?? null,
       principal: ctx.principal,
       preview: ctx.view?.lifecycle ? { value: ctx.view.lifecycle, source: 'query' } : null,
-      secret: getPreviewSecret(),
+      secret: getPreviewSecret,
       now: ctx.now,
       weddingDateIso: site.weddingDate,
     });

@@ -5,7 +5,7 @@
  * (Liberation Serif) and Arial (Liberation Sans); see docs/architecture/theme-engine.md.
  */
 @font-face {
-  font-family: "Cinzel";
+  font-family: Cinzel;
   src: url("/fonts/gilded-hour/cinzel-wght.woff2") format("woff2");
   font-weight: 400 900;
   font-style: normal;

@@ -6,7 +6,7 @@
  * renders those requests from Spectral 400 (weight synthesis is disabled in base.css).
  */
 @font-face {
-  font-family: "Gloock";
+  font-family: Gloock;
   src: url("/fonts/conservatory/gloock-regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
@@ -23,7 +23,7 @@
 }
 
 @font-face {
-  font-family: "Spectral";
+  font-family: Spectral;
   src: url("/fonts/conservatory/spectral-regular.woff2") format("woff2");
   font-weight: 400 500;
   font-style: normal;
@@ -40,7 +40,7 @@
 }
 
 @font-face {
-  font-family: "Cardo";
+  font-family: Cardo;
   src: url("/fonts/conservatory/cardo-italic.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;

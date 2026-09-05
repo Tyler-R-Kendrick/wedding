@@ -192,6 +192,10 @@
         "displayName": "Label Caps",
         "purpose": "Structural labels only: nav, eyebrows, form labels, section numbers. Not decoration above every heading."
       },
+      "label-sm": {
+        "displayName": "Label SM",
+        "purpose": "Elevator-panel cell labels: 12px under line icons, 0.1em tracking, one line only."
+      },
       "numeral": {
         "displayName": "Numeral",
         "purpose": "Dates (07 · 17 · 27), section numerals, table numbers. Tabular lining figures."
