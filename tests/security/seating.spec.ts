@@ -37,7 +37,7 @@ test('before publication: not_found everywhere, and no draft table id or name in
   expect(all).not.toContain('seatNumber');
   const itinerary = responses[0]!.body;
   expect(itinerary.data!.seating).toEqual({ published: false, table: null });
-  expect(stabilize(itinerary)).toMatchSnapshot('c1-itinerary-before-publish.json');
+  expect(JSON.stringify(stabilize(itinerary), null, 2)).toMatchSnapshot('c1-itinerary-before-publish.json');
 
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();

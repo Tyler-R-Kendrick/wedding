@@ -99,9 +99,21 @@ clear `lastError`; nothing is faked as sent.
 ## Test-only principal injection
 
 `src/domain/testing/testPrincipal.ts` wraps the installed `PrincipalResolver` and honors `x-test-principal` (JSON) +
-`x-test-auth` only when `NODE_ENV=test` **and** `TEST_AUTH_SECRET` (≥ 16 chars) matches (constant-time). Installed from
-`src/instrumentation.ts`; the fixture households (`src/db/seed/fixtures.ts`, fictional names) are seeded when
-`SEED_TEST_FIXTURES=1` under `NODE_ENV=test`. Never active in development or production.
+`x-test-auth` only when `NODE_ENV=test` **and** `TEST_AUTH_SECRET` (≥ 16 chars) matches (constant-time). It is installed
+when the server-only capability barrel (`src/capabilities/rsvp/index.ts`) loads, i.e. before any route resolves a
+principal. The fixture households (`src/db/seed/fixtures.ts`, fictional names) are seeded lazily by
+`ensureSwarmESeeded(db)` when `SEED_TEST_FIXTURES=1` under `NODE_ENV=test`. Never active in development or production.
+
+## Boot and seeding
+
+There is no instrumentation hook (webpack bundles `instrumentation.ts` for the edge runtime and cannot resolve
+`node:crypto` behind it). Instead every Swarm E handler awaits `ensureSwarmESeeded(db)` (`src/domain/events/boot.ts`):
+memoized per database handle, idempotent, and a no-op in production unless `DB_AUTO_SEED` is on. The integrator is
+asked to add the one-line `await seedEventsAndPlans(db, now)` to the shared `seed()` so `npm run db:seed` covers it too.
+
+Job handlers register when the capability barrel loads (`registerRsvpJobs()`); the cron route
+(`/api/jobs/run`) only imports `@/lib/jobs`, so the integrator should import the capability registry (or a handler
+barrel) there for `rsvp.send_confirmation` to run under cron. The dev poller and `npm run jobs:run` have the same gap.
 
 ## Not in this level
 

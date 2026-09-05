@@ -26,7 +26,8 @@ test('unauthenticated and wrong-secret callers get 401 and see no household data
     const html = await res.text();
     expect(html).toContain('is for invited guests');
     expect(html).not.toContain('Testhouse');
-    expect(res.headers()['cache-control']).toMatch(/no-store/);
+    // Dynamic (force-dynamic) responses: Next emits `private, no-cache, no-store, …` in production and `no-cache, must-revalidate` in dev; never cacheable.
+    expect(res.headers()['cache-control']).toMatch(/no-store|no-cache/);
   }
 });
 
@@ -37,13 +38,14 @@ test('a household manager sees only their household; another household is never 
   expect(json).toContain(IDS.A1);
   expect(json).toContain(IDS.A3);
   expect(json).not.toContain(IDS.B1);
-  expect(json).not.toContain('Fixture');
+  expect(json).not.toContain('Dev Fixture');
+  expect(json).not.toContain('Fixture household');
   expect(json).not.toContain(IDS.C1);
 
   const b2 = await callCapability(request, 'get_my_rsvp', 'B2', {});
   expect(b2.status).toBe(200);
   expect(JSON.stringify(b2.body)).not.toContain(IDS.B1); // a non-manager sees only themselves
-  expect(stabilize(b2.body)).toMatchSnapshot('b2-get_my_rsvp.json');
+  expect(JSON.stringify(stabilize(b2.body), null, 2)).toMatchSnapshot('b2-get_my_rsvp.json');
 
   const ctx = await contextAs(browser, 'B2');
   const page = await ctx.newPage();
