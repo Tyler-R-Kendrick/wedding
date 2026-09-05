@@ -40,6 +40,16 @@ export type DerivativeVariant = (typeof DERIVATIVE_VARIANTS)[number];
 export const MODERATION_ACTIONS = ['approve', 'reject', 'hide', 'unhide', 'report', 'reprocess', 'delete', 'restore'] as const;
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
 
+export interface ProfessionalRightsDraft {
+  vendorName: string;
+  provenance: string;
+  copyrightHolder: string;
+  usageNotes?: string;
+  licenseNote: string;
+  allowAiProcessing: boolean;
+  aiProcessingConfirmationRef?: string;
+}
+
 export interface UploadPartRecord {
   partNumber: number;
   etag: string;
@@ -86,7 +96,12 @@ export const mediaUploads = pgTable(
     /** Who started it (log-safe ref). Guests upload their own; admins import professional media. */
     uploader: jsonb('uploader').$type<PrincipalRef>().notNull(),
     ownerGuestId: text('owner_guest_id'),
+    ownerHouseholdId: text('owner_household_id'),
     source: text('source').$type<MediaSource>().notNull(),
+    /** Vendor slug for professional imports (originals/professional/<vendor>/...). */
+    vendor: text('vendor'),
+    /** Rights declared at import time; materialised into professional_media_rights when the asset exists. */
+    rightsDraft: jsonb('rights_draft').$type<ProfessionalRightsDraft>(),
     collectionId: text('collection_id').notNull(),
     status: text('status').$type<UploadStatus>().notNull().default('pending'),
     /** Sanitized original file name (display only; never a storage path). */
@@ -127,6 +142,8 @@ export const mediaAssets = pgTable(
     uploadId: text('upload_id'),
     source: text('source').$type<MediaSource>().notNull(),
     ownerGuestId: text('owner_guest_id'),
+    ownerHouseholdId: text('owner_household_id'),
+    vendor: text('vendor'),
     /** Log-safe ref of whoever created it (uploader / importing admin). */
     createdBy: jsonb('created_by').$type<PrincipalRef>().notNull(),
     collectionId: text('collection_id').notNull(),

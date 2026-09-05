@@ -1,5 +1,5 @@
 {
-  "id": "8bb583fd-9a1d-47d8-b489-08d641ace1f8",
+  "id": "f6189448-db3a-4f19-b05c-5254b099e0c6",
   "prevId": "e695a509-dfc8-4428-80bb-49968af70ea4",
   "version": "7",
   "dialect": "postgresql",
@@ -760,6 +760,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "owner_household_id": {
+          "name": "owner_household_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vendor": {
+          "name": "vendor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_by": {
           "name": "created_by",
           "type": "jsonb",
@@ -1414,11 +1426,29 @@
           "primaryKey": false,
           "notNull": false
         },
+        "owner_household_id": {
+          "name": "owner_household_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "source": {
           "name": "source",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "vendor": {
+          "name": "vendor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rights_draft": {
+          "name": "rights_draft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "collection_id": {
           "name": "collection_id",

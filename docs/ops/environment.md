@@ -57,7 +57,13 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `JOBS_BATCH_SIZE` | `10` | job runner / cron route | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
-| `FFMPEG_PATH` | `ffmpeg` on PATH | media swarm's video adapter (not read yet) | no |
+| `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_API_TOKEN`, `CLOUDFLARE_STREAM_CUSTOMER_CODE` | unset -> ffmpeg/mock | video delivery via Cloudflare Stream (skeleton); all three required | no |
+| `MEDIA_MAX_IMAGE_MB` | `40` | media: per-file cap for images | no |
+| `MEDIA_MAX_VIDEO_MB` | `512` | media: per-file cap for videos | no |
+| `MEDIA_PART_SIZE_MB` | `8` | media: multipart part size (S3/R2 require >= 5) | no |
+| `MEDIA_MULTIPART_THRESHOLD_MB` | `8` | media: files above this use multipart | no |
+| `TEST_AUTH_SECRET` | unset | test-only principal injection (`x-test-principal` header); honoured only when `NODE_ENV=test` | no |
 
 ## Public variables (inlined into the browser bundle)
 
