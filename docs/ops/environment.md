@@ -58,6 +58,14 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH | media swarm's video adapter (not read yet) | no |
+| `AI_SESSION_RETENTION_DAYS` | `7` (1–90) | `src/ai/config.ts`: how long a concierge session and its answers, sources and invocations live before `ai.purge_sessions` deletes them | no |
+| `AI_SESSION_TURNS` | `10` (2–40) | redacted turns kept per session so a follow-up has context | no |
+| `AI_MAX_TOOL_CALLS` | `4` (1–8) | most capabilities the deterministic router runs for one question (retrieval excluded) | no |
+| `AI_MAX_QUESTION_CHARS` | `2000` (100–8000) | longest question accepted; the route caps the body at 16 KB independently | no |
+| `AI_RETRIEVAL_MODE` (`static`\|`hybrid`) | `static` | keyword ranking only, or keyword first and then the embeddings + vector-index providers | no |
+| `AI_RETRIEVAL_LIMIT` | `6` (1–20) | retrieved records offered to the model per question | no |
+| `TEST_AUTH_SECRET` | unset | **test only**: with `NODE_ENV=test`, lets `x-test-principal` + `x-test-auth` select a fixed guest/admin for e2e. Ignored in every other environment | no |
+| `EVALS_LIVE` | unset | `npm run evals` opts into the configured live model instead of the deterministic mock. Never set in CI | no |
 
 ## Public variables (inlined into the browser bundle)
 
@@ -85,7 +93,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET`.
 4. Storage: the four `S3_*` variables (+ `S3_ENDPOINT` for R2/MinIO).
 5. Email: `RESEND_API_KEY`, `EMAIL_FROM`.
-6. AI: `ANTHROPIC_API_KEY`; embeddings key if semantic media search is enabled.
+6. AI: `ANTHROPIC_API_KEY`; embeddings key if semantic media search is enabled. Without a key the concierge runs the deterministic extractive mock — it stays grounded and cited, it is just terse. `AI_*` all have production-safe defaults; the concierge fails fast at boot on a malformed one.
 7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
 9. Keep `FLAG_BIOMETRICS_ENABLED` and `FLAG_PRO_MEDIA_AI_PROCESSING` off until counsel/vendor sign-off; the readiness switch is a second, persisted gate.
