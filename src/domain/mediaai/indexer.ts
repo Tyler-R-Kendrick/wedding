@@ -216,20 +216,20 @@ export async function indexAsset(deps: IndexerDeps, assetId: string): Promise<In
  * Assets that need (re)indexing: processed assets without an annotation, or whose asset row
  * changed after the last index pass (caption edits, moderation), plus indexed rows whose asset
  * has since left the indexable states.
+ *
+ * `full` ignores the "changed since last pass" watermark and returns every indexable asset. It is
+ * for the rebuilds where nothing about the assets changed but everything about the index did:
+ * a new embeddings model, a different vector backend, or a flag that changes what may be sent to
+ * a provider at all.
  */
-export async function listIndexBacklog(db: Db, limit = 50): Promise<string[]> {
+export async function listIndexBacklog(db: Db, limit = 50, opts: { full?: boolean } = {}): Promise<string[]> {
   const indexable = [...INDEXABLE_STATUSES];
+  const changed = or(isNull(mediaAiAnnotations.id), sql`${mediaAssets.updatedAt} > coalesce(${mediaAiAnnotations.indexedAt}, ${mediaAiAnnotations.updatedAt})`);
   const fresh = await db
     .select({ id: mediaAssets.id })
     .from(mediaAssets)
     .leftJoin(mediaAiAnnotations, eq(mediaAiAnnotations.assetId, mediaAssets.id))
-    .where(
-      and(
-        isNull(mediaAssets.deletedAt),
-        inArray(mediaAssets.status, indexable),
-        or(isNull(mediaAiAnnotations.id), sql`${mediaAssets.updatedAt} > coalesce(${mediaAiAnnotations.indexedAt}, ${mediaAiAnnotations.updatedAt})`),
-      ),
-    )
+    .where(and(isNull(mediaAssets.deletedAt), inArray(mediaAssets.status, indexable), ...(opts.full ? [] : [changed])))
     .limit(limit);
   const stale = await db
     .select({ id: mediaAiAnnotations.assetId })

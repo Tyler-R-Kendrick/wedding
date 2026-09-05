@@ -34,18 +34,23 @@ export async function enqueueIndex(db: Db, assetId: string, now: Date = new Date
   await new JobQueue(db, () => now).enqueue({ type: MEDIA_INDEX_JOB, payload: { assetId }, dedupeKey: `${MEDIA_INDEX_JOB}:${assetId}`, maxAttempts: 4 });
 }
 
-/** Keeps one backlog scan and one cluster pass queued (deduped); called from the cron alias and the admin reindex. */
-export async function enqueueIndexScan(db: Db, now: Date = new Date()): Promise<void> {
+/**
+ * Keeps one backlog scan and one cluster pass queued (deduped); called from the cron alias and the
+ * admin reindex. `full` rebuilds every indexable asset rather than only what changed since the
+ * last pass (new embeddings model, different vector backend, flag change).
+ */
+export async function enqueueIndexScan(db: Db, now: Date = new Date(), opts: { full?: boolean } = {}): Promise<void> {
   const queue = new JobQueue(db, () => now);
-  await queue.enqueue({ type: MEDIA_INDEX_JOB, payload: { scan: true }, dedupeKey: `${MEDIA_INDEX_JOB}:scan`, maxAttempts: 3 });
+  const scan = opts.full ? 'scan:full' : 'scan';
+  await queue.enqueue({ type: MEDIA_INDEX_JOB, payload: { scan: true, full: !!opts.full }, dedupeKey: `${MEDIA_INDEX_JOB}:${scan}`, maxAttempts: 3 });
   await queue.enqueue({ type: MEDIA_CLUSTER_JOB, dedupeKey: MEDIA_CLUSTER_JOB, maxAttempts: 3 });
 }
 
-const index: JobHandler<{ assetId?: string; scan?: boolean }> = async (payload, _job, ctx) => {
+const index: JobHandler<{ assetId?: string; scan?: boolean; full?: boolean }> = async (payload, _job, ctx) => {
   if (payload.scan) {
-    const ids = await listIndexBacklog(ctx.db, env.JOBS_BATCH_SIZE * 5 || INDEX_SCAN_BATCH);
+    const ids = await listIndexBacklog(ctx.db, env.JOBS_BATCH_SIZE * 5 || INDEX_SCAN_BATCH, { full: !!payload.full });
     for (const assetId of ids) await enqueueIndex(ctx.db, assetId, ctx.now);
-    ctx.logger.info({ enqueued: ids.length }, 'media.index scan');
+    ctx.logger.info({ enqueued: ids.length, full: !!payload.full }, 'media.index scan');
     return;
   }
   if (typeof payload.assetId !== 'string') throw new Error('media.index: assetId or scan required');

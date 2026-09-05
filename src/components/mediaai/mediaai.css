@@ -1,0 +1,264 @@
+/*
+ * Media intelligence surfaces (Swarm I): search, opt-in face matching, admin AI + biometrics.
+ * Extends Swarm H's media.css vocabulary; token-only (DESIGN.md variables with token fallbacks).
+ * Mobile (390px) first; 17px body inherited; 44px targets; reduced motion respected via media.css.
+ */
+
+.mi-search {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+}
+
+.mi-search__row {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+}
+
+@media (width >= 640px) {
+  .mi-search__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}
+
+.mi-search__filters {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+}
+
+@media (width >= 640px) {
+  .mi-search__filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mi-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 4px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mi-why {
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+  margin: var(--spacing-md, 16px) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.mi-why li {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: var(--spacing-sm, 8px);
+  align-items: baseline;
+}
+
+.mi-why__n {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-tertiary, var(--color-secondary));
+}
+
+.mi-panel {
+  display: grid;
+  gap: var(--spacing-md, 16px);
+  padding: var(--spacing-lg, 24px);
+  border: 1px solid var(--color-outline, currentcolor);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-surface, var(--color-neutral));
+}
+
+.mi-panel > h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.mi-policy {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  margin: 0;
+}
+
+.mi-policy dt {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-tertiary, var(--color-secondary));
+}
+
+.mi-policy dd {
+  margin: 0 0 var(--spacing-xs, 4px);
+  max-width: 70ch;
+}
+
+.mi-policy__text {
+  white-space: pre-wrap;
+  max-width: 70ch;
+  margin: 0;
+  padding: var(--spacing-md, 16px);
+  border-inline-start: 2px solid var(--color-outline, currentcolor);
+  font-size: 0.9375rem;
+}
+
+.mi-check {
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  align-items: flex-start;
+  min-height: 44px;
+}
+
+.mi-check input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin-block-start: 0.2rem;
+  accent-color: var(--color-primary);
+}
+
+.mi-notice {
+  margin: 0;
+  padding: var(--spacing-md, 16px);
+  border-inline-start: 3px solid var(--color-tertiary, var(--color-secondary));
+  background: var(--color-neutral-variant, var(--color-neutral));
+}
+
+.mi-notice[data-tone='error'] {
+  border-inline-start-color: var(--color-error, currentcolor);
+}
+
+.mi-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 640px) {
+  .mi-picker {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.mi-picker label {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-neutral-variant, var(--color-neutral));
+  cursor: pointer;
+}
+
+.mi-picker label:has(input:checked) {
+  border-color: var(--color-primary);
+}
+
+.mi-picker label:has(input:focus-visible) {
+  outline: 3px solid var(--color-tertiary, var(--color-secondary));
+  outline-offset: 2px;
+}
+
+.mi-picker img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.mi-picker input {
+  position: absolute;
+  inset-block-start: var(--spacing-xs, 4px);
+  inset-inline-start: var(--spacing-xs, 4px);
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  accent-color: var(--color-primary);
+}
+
+.mi-picker__label {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  font-size: 0.8125rem;
+  color: var(--color-on-primary, var(--color-neutral));
+  background: var(--color-primary);
+}
+
+.mi-checklist {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mi-checklist li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: var(--spacing-sm, 8px);
+}
+
+.mi-checklist__mark {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-tertiary, var(--color-secondary));
+}
+
+.mi-checklist small {
+  display: block;
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.mi-suggestion {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  padding-block: var(--spacing-md, 16px);
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+}
+
+@media (width >= 640px) {
+  .mi-suggestion {
+    grid-template-columns: 8rem minmax(0, 1fr);
+  }
+}
+
+.mi-suggestion img {
+  display: block;
+  inline-size: 100%;
+  border-radius: var(--rounded-sm, 2px);
+}
+
+.mi-suggestion__meta {
+  font-size: 0.875rem;
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.mi-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.mi-table th,
+.mi-table td {
+  padding: var(--spacing-sm, 8px);
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+  text-align: start;
+  vertical-align: top;
+}
+
+.mi-table-wrap {
+  overflow-x: auto;
+}
+
+.mi-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+}

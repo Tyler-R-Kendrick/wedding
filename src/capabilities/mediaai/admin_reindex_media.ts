@@ -7,13 +7,19 @@ import { getAssetWithCollection } from '@/domain/media';
 import { enqueueIndex, enqueueIndexScan } from '@/domain/mediaai';
 import { ID, dbOf } from './_shared';
 
-const input = z.object({ assetId: ID.optional() }).optional();
-const output = z.object({ enqueued: z.enum(['scan', 'asset']), assetId: z.string().optional() });
+const input = z
+  .object({
+    assetId: ID.optional(),
+    /** Rebuild every indexable item, not only what changed since the last pass (new model, new vector backend, flag change). */
+    full: z.boolean().optional(),
+  })
+  .optional();
+const output = z.object({ enqueued: z.enum(['scan', 'full_scan', 'asset']), assetId: z.string().optional() });
 
 export const adminReindexMedia = defineCapability<z.infer<typeof input>, z.infer<typeof output>>({
   name: 'admin_reindex_media',
   title: 'Re-index media',
-  description: 'Queues a backlog scan plus a cluster pass (no input) or re-indexes one item. Jobs run on the media-ai cron. Admins only.',
+  description: 'Queues a backlog scan plus a cluster pass (no input), a full rebuild of every indexable item (full), or re-indexes one item (assetId). Jobs run on the media-ai cron. Admins only.',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_ai'],
@@ -31,8 +37,9 @@ export const adminReindexMedia = defineCapability<z.infer<typeof input>, z.infer
       await enqueueIndex(db, i.assetId, ctx.now);
       return ok({ data: { enqueued: 'asset', assetId: i.assetId }, sources: [] });
     }
-    await enqueueIndexScan(db, ctx.now);
-    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'media_index', id: 'scan' }, outcome: 'success', requestId: ctx.requestId });
-    return ok({ data: { enqueued: 'scan' }, sources: [] });
+    const full = i?.full === true;
+    await enqueueIndexScan(db, ctx.now, { full });
+    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'media_index', id: full ? 'full_scan' : 'scan' }, outcome: 'success', requestId: ctx.requestId });
+    return ok({ data: { enqueued: full ? 'full_scan' : 'scan' }, sources: [] });
   },
 });

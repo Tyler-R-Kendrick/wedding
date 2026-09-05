@@ -33,7 +33,15 @@ export interface SearchHit {
 export const SEARCH_DEFAULT_LIMIT = 24;
 export const SEARCH_MAX_LIMIT = 60;
 /** Below this blended score a hit is noise, not a result. */
-export const SEARCH_MIN_SCORE = 0.12;
+export const SEARCH_MIN_SCORE = 0.2;
+/**
+ * A hit that shares no word with the query has to earn its place on similarity alone. Every
+ * indexed document carries the same boilerplate ("album: ...", "photo"), so an unrelated item
+ * still scores a moderate cosine against any query; without this floor the gallery would answer
+ * "a helicopter landing on the roof" with whatever happened to be closest. Returning nothing is
+ * the correct answer when nothing matches.
+ */
+export const SEARCH_MIN_COSINE_WITHOUT_TERMS = 0.6;
 
 /**
  * Semantic search over the generic media index. The vector index only pre-filters (published +
@@ -71,7 +79,9 @@ export async function searchMedia(deps: SearchDeps, principal: Principal, query:
     const score = blendScore(m.score, overlap);
     if (score < SEARCH_MIN_SCORE) continue;
     // Same matcher as the score, so the guest-visible "why" can never claim a term the score did not use.
-    hits.push({ asset, collection, annotation, score, matchedTerms: matchedQueryTerms(query, text) });
+    const matchedTerms = matchedQueryTerms(query, text);
+    if (matchedTerms.length === 0 && m.score < SEARCH_MIN_COSINE_WITHOUT_TERMS) continue;
+    hits.push({ asset, collection, annotation, score, matchedTerms });
   }
   hits.sort((a, b) => b.score - a.score || (b.asset.capturedAt?.getTime() ?? 0) - (a.asset.capturedAt?.getTime() ?? 0));
   return hits.slice(0, limit);
