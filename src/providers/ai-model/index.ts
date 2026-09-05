@@ -6,6 +6,7 @@ import type { AiModelProvider } from './types';
 
 export * from './types';
 export { MockAiModel, mockLanguageModel, MOCK_REPLY } from './mock';
+export { createExtractiveMockModel, createMockVerifierModel, extractiveAnswer, extractiveVerdicts, parseBlocks, NO_SOURCE } from './concierge-mock';
 export { AnthropicAiModel, ANTHROPIC_MODELS } from './anthropic';
 
 export function createAiModelProvider(env: Pick<ServerEnv, 'FORCE_MOCK_PROVIDERS' | 'ANTHROPIC_API_KEY'>): AiModelProvider {
