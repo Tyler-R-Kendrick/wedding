@@ -1,0 +1,23 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "buildPath": "comp",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [
+      "node_modules/**",
+      "dist/**",
+      ".impeccable/**",
+      "docs/**",
+      ".claude/**",
+      "scripts/**",
+      "tests/**"
+    ],
+    "ignoreValues": []
+  }
+}

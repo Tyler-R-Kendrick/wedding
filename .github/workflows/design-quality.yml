@@ -1,0 +1,58 @@
+name: design-quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: DESIGN.md lint · anti-slop detect · stylelint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint DESIGN.md (Google design.md spec + WCAG contrast)
+        run: npm run design:lint
+
+      - name: Check DESIGN.md exports cleanly to Tailwind v4 @theme
+        run: npm run design:export:tailwind > /dev/null
+
+      - name: impeccable detect (61 deterministic anti-slop rules)
+        # Exit 2 = findings, 1 = operational failure. Findings fail the job once
+        # src/ exists; before that only operational failures do.
+        run: |
+          set +e; npm run -s slop:detect; code=$?; set -e
+          if [ "$code" = "1" ]; then exit 1; fi
+          if [ "$code" = "2" ] && [ -d src ]; then exit 2; fi
+          exit 0
+
+      - name: stylelint
+        run: npm run lint:css
+
+  a11y:
+    name: axe-core accessibility (skips until BASE_URL is configured)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          # Set a repository variable BASE_URL (e.g. a preview deployment) to
+          # activate this suite. Empty → tests skip, job stays green.
+          BASE_URL: ${{ vars.BASE_URL }}
