@@ -43,3 +43,14 @@ legal gates.
 
 **No tokens shipped yet.** First `design.md diff` between the two theme
 files lands with the theme DESIGN.md files (Stage 3).
+
+## 2026-09-05 — Level 02: two theme systems committed
+
+- `src/themes/gilded-hour/DESIGN.md` and `src/themes/conservatory/DESIGN.md`
+  both lint clean (0 errors, 0 warnings). Token diff Gilded Hour → Conservatory:
+  colors: +8 −4 ~0; typography: +2 −1 ~0; rounded: +1 −0 ~0; spacing: +0 −1 ~0; components: +14 −8 ~0.
+- Inspo boards: `docs/design/inspo/gilded-hour.html`, `docs/design/inspo/conservatory.html`
+  (screenshot-verified at 390 and 1440; fonts load from Google Fonts until
+  level 04 self-hosts them).
+- Procedural art: 11 SVGs per theme under `public/assets/art/<theme>/`.
+- Licensed placeholder photography: 4 Wikimedia Commons files with ledger.
