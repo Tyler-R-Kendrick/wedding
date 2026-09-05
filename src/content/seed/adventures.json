@@ -1,0 +1,143 @@
+[
+  {
+    "slug": "starved-rock",
+    "title": "Starved Rock",
+    "summary": "Where we first said \"I love you.\"",
+    "memory": [
+      "TODO(Tyler & Sara): which trail, what day, and who said it first are yours to tell."
+    ],
+    "saraMemory": "TODO(Tyler & Sara): Sara remembers…",
+    "tylerMemory": "TODO(Tyler & Sara): Tyler remembers…",
+    "placeSlug": "starved-rock-state-park",
+    "tags": ["adventure", "place", "memory"],
+    "relatedRecommendationSlugs": ["starved-rock-state-park"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "allison-and-jamies-wedding",
+    "title": "Allison and Jamie's wedding",
+    "summary": "Where it started: flirty glances and an immediate connection.",
+    "memory": [
+      "TODO(Tyler & Sara): the evening you met, as you each remember it."
+    ],
+    "tags": ["memory", "hospitality"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "museum-of-ice-cream",
+    "title": "Museum of Ice Cream",
+    "summary": "TODO(Tyler & Sara): one line about the visit.",
+    "memory": [
+      "TODO(Tyler & Sara): the memory, if you want to share it."
+    ],
+    "placeSlug": "museum-of-ice-cream",
+    "tags": ["adventure", "place"],
+    "relatedRecommendationSlugs": ["museum-of-ice-cream"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "richardson-farm",
+    "title": "Richardson Farm",
+    "summary": "TODO(Tyler & Sara): one line about the day at the farm.",
+    "memory": [
+      "TODO(Tyler & Sara): the memory, if you want to share it."
+    ],
+    "placeSlug": "richardson-farm",
+    "tags": ["adventure", "place"],
+    "relatedRecommendationSlugs": ["richardson-farm"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "michael-jordans-steakhouse",
+    "title": "Michael Jordan's Steakhouse",
+    "summary": "TODO(Tyler & Sara): one line about the dinner.",
+    "memory": [
+      "TODO(Tyler & Sara): the memory, if you want to share it."
+    ],
+    "placeSlug": "michael-jordans-steakhouse",
+    "tags": ["hospitality", "memory"],
+    "relatedRecommendationSlugs": ["michael-jordans-steakhouse"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "food-tastings",
+    "title": "Food tastings",
+    "summary": "TODO(Tyler & Sara): one line about the tastings.",
+    "memory": [
+      "TODO(Tyler & Sara): where, what you tasted, and what you argued about."
+    ],
+    "locationLabel": "TODO(Tyler & Sara): where",
+    "tags": ["hospitality", "adventure"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "gardening-together",
+    "title": "Gardening together",
+    "summary": "TODO(Tyler & Sara): one line about the garden.",
+    "memory": [
+      "TODO(Tyler & Sara): what you grow, and what keeps dying."
+    ],
+    "placeSlug": "our-garden",
+    "tags": ["memory", "future"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "madison-waterfront",
+    "title": "Madison waterfront",
+    "summary": "TODO(Tyler & Sara): one line about the waterfront.",
+    "memory": [
+      "TODO(Tyler & Sara): the memory, if you want to share it."
+    ],
+    "placeSlug": "madison-waterfront",
+    "tags": ["place", "memory"],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  }
+]
