@@ -22,7 +22,7 @@ Ship threshold: all ≥ 7 and Usability ≥ 8 — Content stays below 7 until th
 
 ## Blockers (must fix)
 
-- none open. Independent-review blockers, fixed in `133164b` and the follow-up commit: (1) switcher from `?theme=` — `router.replace(pathname)` drops the query before `router.refresh()`, `ThemeSync` owns `html[data-theme]`, e2e "works from a shared ?theme= link"; (2) `gh-sun` deleted, live detector exit 0; (3) the floating chip is gone — trigger in the frieze and footer, options inline in the Menu sheet; footer clears the panel (e2e "no fixed control covers footer text", measured 28 px clearance at 390); (4) TEASER renders three acts and a one-line travel heads-up under the hero (`tests/unit/themes/home-content.test.ts`, `tests/ui/home.test.tsx`).
+- none open. Independent-review blockers, fixed in `133164b` and the follow-up commit: (1) switcher from `?theme=` — `router.replace(pathname)` drops the query before `router.refresh()`, `ThemeSync` owns `html[data-theme]`, e2e "works from a shared ?theme= link"; (2) `gh-sun` deleted, live detector exit 0; (3) the floating chip is gone — trigger in the frieze and footer, options inline in the Menu sheet; footer clears the panel (e2e "no fixed control covers footer text", measured 76 px clearance at 390); (4) TEASER renders three acts and a one-line travel heads-up under the hero (`tests/unit/themes/home-content.test.ts`, `tests/ui/home.test.tsx`).
 
 ## Should fix
 
