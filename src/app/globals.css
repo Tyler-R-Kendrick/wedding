@@ -1,0 +1,19 @@
+/*
+ * Foundation placeholder only. The design swarm (Swarm B) replaces this file with the
+ * DESIGN.md export (`npm run design:export:tailwind`) and the Gilded Hour / Conservatory themes.
+ */
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1f2a24;
+  --color-neutral: #f6f1e9;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.5;
+}
