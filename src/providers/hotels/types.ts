@@ -19,7 +19,10 @@ export interface HotelResult {
   /** Walking minutes to the venue when known. */
   walkMinutesToVenue?: number;
   nightlyCents?: number;
+  totalCents?: number;
   currency?: string;
+  /** When this rate was observed. Guests are told to refresh before booking. */
+  pricedAt?: string;
   bookingUrl?: string;
   /** True for the venue hotel itself (room block guidance comes from the planner). */
   isVenue?: boolean;

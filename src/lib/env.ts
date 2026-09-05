@@ -79,10 +79,14 @@ const serverSchema = z.object({
   S3_SECRET_ACCESS_KEY: optionalString,
   S3_FORCE_PATH_STYLE: requiredBool(true),
   STORAGE_DATA_DIR: z.string().default('./.data/storage'),
-  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link']).optional(),
-  HOTELS_PROVIDER: z.enum(['mock', 'deep-link']).optional(),
-  /** Reserved for the travel swarm's live adapter; unused at level 03. */
+  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'skyscanner', 'duffel-links']).optional(),
+  HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'booking', 'duffel-stays']).optional(),
+  /** Travel (level 08): Skyscanner Live Prices, Duffel Links/Stays + signed webhooks, Booking.com Demand API. */
+  SKYSCANNER_API_KEY: optionalString,
   DUFFEL_API_KEY: optionalString,
+  DUFFEL_WEBHOOK_SECRET: optionalSecret(16),
+  BOOKING_DEMAND_API_KEY: optionalString,
+  BOOKING_AFFILIATE_ID: optionalString,
   UBER_CLIENT_ID: optionalString,
   UBER_CLIENT_SECRET: optionalString,
   TRANSPORT_BENEFIT_MODE: z.enum(['mock', 'manual-code', 'uber']).default('mock'),
