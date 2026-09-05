@@ -2,7 +2,7 @@ import type { ProviderErrorClass } from '@/contracts/providers';
 import { err, ok } from '@/contracts/result';
 import { failure, okConfig, seededRandom, snapshot, upHealth } from '../base';
 import { GUEST_MESSAGES } from '../flights/http';
-import { bookingComUrl, hotelsHandoff, venueHotelHandoff, VENUE_HOTEL_URL } from './deep-link';
+import { bookingComUrl, hotelsHandoff, venueHotelHandoff, partnerHotelHandoffs, VENUE_HOTEL_URL } from './deep-link';
 import type { HotelResult, HotelSearchRequest, HotelsProvider } from './types';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,6 +34,9 @@ export class MockHotels implements HotelsProvider {
   }
   venueHandoff() {
     return venueHotelHandoff();
+  }
+  extraHandoffs(req: HotelSearchRequest) {
+    return partnerHotelHandoffs(req);
   }
   async search(req: HotelSearchRequest) {
     this.calls.push(req);
@@ -88,6 +91,9 @@ export class DeepLinkOnlyHotels implements HotelsProvider {
   }
   venueHandoff() {
     return venueHotelHandoff();
+  }
+  extraHandoffs(req: HotelSearchRequest) {
+    return partnerHotelHandoffs(req);
   }
   async search(_request: HotelSearchRequest) {
     return err(failure(this.name, 'unconfigured', 'Live hotel search is not available; use the link to search directly.'));

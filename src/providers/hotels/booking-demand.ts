@@ -3,7 +3,7 @@ import type { LiveSnapshot, ProviderFailure } from '@/contracts/providers';
 import { err, ok, type Result } from '@/contracts/result';
 import { failure, missingConfig, okConfig, unconfiguredHealth, upHealth } from '../base';
 import { callJson, CircuitBreaker, GUEST_MESSAGES, toCents, type FetchLike } from '../flights/http';
-import { assertHotelSearchRequest, bookingComUrl, hotelsHandoff, venueHotelHandoff, VENUE_SEARCH_CENTER } from './deep-link';
+import { assertHotelSearchRequest, bookingComUrl, hotelsHandoff, venueHotelHandoff, partnerHotelHandoffs, VENUE_SEARCH_CENTER } from './deep-link';
 import type { HotelResult, HotelSearchRequest, HotelsProvider } from './types';
 
 /**
@@ -64,6 +64,9 @@ export class BookingDemandHotels implements HotelsProvider {
 
   venueHandoff() {
     return venueHotelHandoff();
+  }
+  extraHandoffs(req: HotelSearchRequest) {
+    return partnerHotelHandoffs(req);
   }
 
   async search(req: HotelSearchRequest): Promise<Result<LiveSnapshot<HotelResult[]>, ProviderFailure>> {

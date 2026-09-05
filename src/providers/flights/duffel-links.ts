@@ -4,8 +4,9 @@ import { err, ok, type Result } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { failure, missingConfig, okConfig, unconfiguredHealth, upHealth } from '../base';
 import { flightsHandoff } from './deep-link';
+import { parseDuffelEvent, verifyDuffelSignature } from './duffel-webhook';
 import { callJson, CircuitBreaker, GUEST_MESSAGES, type FetchLike } from './http';
-import type { FlightResult, FlightSearchRequest, FlightsProvider, HostedSessionRequest } from './types';
+import type { FlightResult, FlightSearchRequest, FlightsProvider, HostedSessionRequest, ProviderWebhook } from './types';
 
 /**
  * Duffel Links: a hosted search-and-checkout page Duffel serves under links.duffel.com. We
@@ -38,11 +39,20 @@ export class DuffelLinksFlights implements FlightsProvider {
   readonly capabilities: Record<string, boolean>;
   private readonly breaker = new CircuitBreaker();
   private readonly baseUrl: string;
+  /** Only present with a configured secret: an unconfigured webhook cannot confirm anything. */
+  readonly webhook?: ProviderWebhook;
 
   constructor(private readonly options: DuffelLinksOptions = {}) {
     this.mode = options.apiKey ? 'live' : 'unavailable';
     this.capabilities = { search: false, deepLink: true, book: false, hostedSession: !!options.apiKey, webhook: !!options.webhookSecret };
     this.baseUrl = (options.baseUrl ?? DUFFEL_BASE_URL).replace(/\/+$/, '');
+    const secret = options.webhookSecret;
+    if (secret) {
+      this.webhook = {
+        verify: (rawBody, header, now) => verifyDuffelSignature(rawBody, header, secret, now),
+        parse: (body) => parseDuffelEvent(body),
+      };
+    }
   }
 
   validateConfig() {

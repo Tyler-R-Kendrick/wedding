@@ -77,3 +77,8 @@ export function venueHotelHandoff(): ExternalHandoff {
     disclosure: 'Opens the hotel website in a new tab. TODO(Tyler & Sara): add the courtesy room-block link from the planner.',
   };
 }
+
+/** Partner links every hotel adapter offers next to its own search: Hyatt (the venue is a Hyatt property). */
+export function partnerHotelHandoffs(req: HotelSearchRequest): ExternalHandoff[] {
+  return [hyattHandoff(req)];
+}
