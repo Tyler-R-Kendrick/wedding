@@ -1,0 +1,421 @@
+/*
+ * Recipe styles for Swarm E surfaces (RSVP, Your Weekend, admin events/RSVP/seating).
+ * Token-only: every colour, size and font comes from the DESIGN.md custom properties
+ * (src/components/tokens/foundation.css now; the theme engine's theme.css at merge).
+ */
+
+.page {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: var(--spacing-lg) var(--spacing-md) var(--spacing-3xl);
+  font-size: var(--text-body-md, 1.0625rem);
+  line-height: 1.6;
+  color: var(--color-on-surface);
+}
+
+.page--wide {
+  max-width: 110ch;
+}
+
+.page__eyebrow {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-label-caps, inherit);
+  font-size: var(--text-label-caps, 0.75rem);
+  letter-spacing: var(--tracking-label-caps, 0.14em);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.page__title {
+  margin: 0 0 var(--spacing-md);
+  font-family: var(--font-h1, inherit);
+  font-size: var(--text-h1, 2.25rem);
+  font-weight: var(--font-weight-h1, 400);
+  line-height: 1.1;
+}
+
+.page__lede {
+  margin: 0 0 var(--spacing-xl);
+  font-size: var(--text-body-lg, 1.25rem);
+  color: var(--color-on-surface-muted);
+}
+
+.sec {
+  margin: 0 0 var(--spacing-2xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-outline);
+}
+
+.sec__title {
+  margin: 0 0 var(--spacing-sm);
+  font-family: var(--font-h2, inherit);
+  font-size: var(--text-h2, 1.625rem);
+  font-weight: var(--font-weight-h2, 400);
+  line-height: 1.2;
+}
+
+.sec__title--sm {
+  font-family: var(--font-h3, inherit);
+  font-size: var(--text-h3, 1.25rem);
+}
+
+.card {
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-surface);
+}
+
+.card__title {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-h3, inherit);
+  font-size: var(--text-h3, 1.25rem);
+  font-weight: var(--font-weight-h3, 500);
+}
+
+.card__meta {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.placeholder {
+  color: var(--color-on-surface-muted);
+  font-style: italic;
+}
+
+.fld {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.fld + .fld {
+  margin-top: var(--spacing-md);
+}
+
+.fld__label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 600;
+}
+
+.fld__req {
+  font-weight: 400;
+  color: var(--color-on-surface-muted);
+}
+
+.fld__hint {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--text-body-sm, 0.9375rem);
+  color: var(--color-on-surface-muted);
+}
+
+.fld__error {
+  margin: 0 0 var(--spacing-xs);
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.fld--error .inp {
+  border-color: var(--color-error);
+  border-width: 2px;
+}
+
+.inp {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
+  line-height: 1.4;
+  color: var(--color-on-surface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.inp--area {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.inp:focus-visible,
+.btn:focus-visible,
+.choice__opt input:focus-visible,
+a:focus-visible,
+.errsum:focus-visible {
+  outline: 3px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.choice__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+  padding: 0 var(--spacing-md) 0 var(--spacing-sm);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.choice__opt input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.choice__opt:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-neutral-variant);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-family: var(--font-label-caps, inherit);
+  font-size: max(15px, var(--text-label-caps, 0.75rem));
+  font-weight: 600;
+  letter-spacing: var(--tracking-label-caps, 0.1em);
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-pill, 999px);
+  cursor: pointer;
+}
+
+.btn--primary {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
+.btn--secondary {
+  color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.btn--ghost {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: transparent;
+  text-decoration: underline;
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.errsum {
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-error);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-surface);
+}
+
+.errsum__title {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-h3, inherit);
+  font-size: var(--text-h3, 1.25rem);
+  color: var(--color-error);
+}
+
+.errsum__list {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.errsum__list a {
+  color: var(--color-error);
+}
+
+.notice {
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-md);
+  border-left: 4px solid var(--color-secondary);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-neutral-variant);
+}
+
+.notice--urgent {
+  border-left-color: var(--color-error);
+}
+
+.notice--success {
+  border-left-color: var(--color-primary);
+}
+
+.notice__title {
+  margin: 0 0 var(--spacing-xs);
+  font-weight: 700;
+}
+
+.notice__body > :last-child {
+  margin-bottom: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: var(--text-body-sm, 0.9375rem);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface);
+}
+
+.badge--yes {
+  border-color: var(--color-primary);
+}
+
+.badge--no {
+  color: var(--color-on-surface-muted);
+}
+
+.badge--stale {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.list {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.list--plain {
+  padding: 0;
+  list-style: none;
+}
+
+.list--plain > li + li {
+  margin-top: var(--spacing-sm);
+}
+
+.review {
+  margin: 0;
+}
+
+.review__row {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.review__who {
+  font-weight: 600;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm, 0.9375rem);
+}
+
+.tbl th,
+.tbl td {
+  padding: var(--spacing-sm);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.tbl th {
+  font-family: var(--font-label-caps, inherit);
+  font-size: var(--text-label-caps, 0.75rem);
+  letter-spacing: var(--tracking-label-caps, 0.1em);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.tbl-wrap {
+  overflow-x: auto;
+}
+
+.grid-2 {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 720px) {
+  .grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.stat {
+  display: inline-block;
+  margin: 0 var(--spacing-md) var(--spacing-sm) 0;
+}
+
+.stat__value {
+  display: block;
+  font-family: var(--font-numeral, inherit);
+  font-size: var(--text-numeral, 2.5rem);
+  line-height: 1;
+}
+
+.stat__label {
+  font-size: var(--text-body-sm, 0.9375rem);
+  color: var(--color-on-surface-muted);
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 0;
+}
+
+.skip:focus {
+  left: var(--spacing-md);
+  top: var(--spacing-md);
+  z-index: 10;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  outline: 3px solid var(--color-secondary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card,
+  .choice__opt {
+    transition: border-color 200ms ease-out;
+  }
+}
+
+@media print {
+  .btn,
+  .actions,
+  .skip {
+    display: none;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+}

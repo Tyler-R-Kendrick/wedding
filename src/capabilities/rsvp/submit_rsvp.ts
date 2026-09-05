@@ -53,7 +53,7 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
       target: { type: 'household', id: householdId },
       outcome: 'success',
       requestId: ctx.requestId,
-      metadata: { responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, needsRows: validated.value.needs.length, via: 'guest' },
+      metadata: { responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, noteRows: validated.value.needs.length, via: 'guest' },
     });
 
     const self = hc.guests.find((g) => g.id === p.value.guestId);

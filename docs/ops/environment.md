@@ -71,6 +71,8 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 
 | Variable | Purpose |
 |---|---|
+| `TEST_AUTH_SECRET` | Swarm E test-only principal injection (`src/domain/testing/testPrincipal.ts`): with `NODE_ENV=test` and this secret (≥ 16 chars) in `x-test-auth`, a JSON `x-test-principal` header selects a guest/admin principal. Never honored outside `NODE_ENV=test`. |
+| `SEED_TEST_FIXTURES` | `1` seeds the fictional fixture households (`src/db/seed/fixtures.ts`) at boot; only under `NODE_ENV=test`. |
 | `BASE_URL` | Playwright targets this deployed URL instead of starting the app |
 | `PW_CHROMIUM_PATH` | system Chromium for sandboxes without `playwright install` (auto-detects `/opt/pw-browsers/chromium`) |
 | `PW_WEB_SERVER_COMMAND` | command Playwright runs to start the app (default `npm run dev`; CI: `npm run start`) |

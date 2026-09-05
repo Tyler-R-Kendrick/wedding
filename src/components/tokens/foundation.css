@@ -1,0 +1,68 @@
+/*
+ * GENERATED from the root DESIGN.md by `npm run design:export:tailwind` (converted to :root custom
+ * properties). Fallback tokens for Swarm E's guest/admin surfaces at level 03 only: the theme engine
+ * (Swarm B, src/themes/<id>/theme.css) defines the same names per theme and supersedes this file at
+ * merge. Never hand-edit values here; edit DESIGN.md and regenerate.
+ */
+:root {
+  --color-primary: #1f2a24;
+  --color-on-primary: #f6f1e9;
+  --color-secondary: #5c6b57;
+  --color-on-secondary: #f6f1e9;
+  --color-tertiary: #a94a34;
+  --color-on-tertiary: #fbf7f1;
+  --color-neutral: #f6f1e9;
+  --color-neutral-variant: #e8dfd2;
+  --color-surface: #fbf8f3;
+  --color-on-surface: #1f2a24;
+  --color-on-surface-muted: #5a5e58;
+  --color-outline: #cfc5b6;
+  --color-error: #8f2f24;
+  --color-on-error: #fff6f3;
+  --font-display-xl: "Libre Caslon Display";
+  --font-display-lg: "Libre Caslon Display";
+  --font-h1: "Libre Caslon Display";
+  --font-h2: "Libre Caslon Display";
+  --font-h3: "Libre Caslon Display";
+  --font-body-lg: "Newsreader";
+  --font-body-md: "Newsreader";
+  --font-body-sm: "Newsreader";
+  --font-label-caps: "Newsreader";
+  --font-numeral: "Libre Caslon Display";
+  --text-display-xl: 4.5rem;
+  --text-display-lg: 3rem;
+  --text-h1: 2.25rem;
+  --text-h2: 1.625rem;
+  --text-h3: 1.25rem;
+  --text-body-lg: 1.25rem;
+  --text-body-md: 1.0625rem;
+  --text-body-sm: 0.9375rem;
+  --text-label-caps: 0.75rem;
+  --text-numeral: 2.5rem;
+  --tracking-display-xl: -0.02em;
+  --tracking-display-lg: -0.015em;
+  --tracking-h1: -0.01em;
+  --tracking-label-caps: 0.14em;
+  --font-weight-display-xl: 400;
+  --font-weight-display-lg: 400;
+  --font-weight-h1: 400;
+  --font-weight-h2: 400;
+  --font-weight-h3: 500;
+  --font-weight-body-lg: 400;
+  --font-weight-body-md: 400;
+  --font-weight-body-sm: 400;
+  --font-weight-label-caps: 500;
+  --font-weight-numeral: 400;
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-pill: 999px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+}

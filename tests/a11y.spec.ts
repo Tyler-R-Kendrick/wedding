@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 // Routes to audit. Add each page as it is built (see wedding-site-standards skill).
 // Runs against BASE_URL when set (preview deployment), otherwise against the local dev server.
-const ROUTES = ['/'];
+const ROUTES = ['/', '/rsvp', '/your-weekend'];
 
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
   for (const route of ROUTES) {

@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`draft seating never reaches guests > answers not_found before publication and leaks no draft ids or names anywhere 1`] = `
+{
+  "published": false,
+  "table": null,
+}
+`;

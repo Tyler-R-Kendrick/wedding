@@ -46,6 +46,7 @@ export const eventViewSchema = z.object({
   rsvpRequired: z.boolean(),
   hasMeal: z.boolean(),
   mealOptionsVersion: z.number(),
+  sortOrder: z.number(),
   mealOptions: z.array(mealOptionSchema),
 });
 export type EventView = z.infer<typeof eventViewSchema>;
@@ -67,6 +68,7 @@ export function toEventView(e: EventRow, allMeals: readonly MealOptionRow[]): Ev
     rsvpRequired: e.rsvpRequired,
     hasMeal: e.hasMeal,
     mealOptionsVersion: e.mealOptionsVersion,
+    sortOrder: e.sortOrder,
     mealOptions: currentMealOptions(e, allMeals).map((m) => ({ id: m.id, label: m.label, description: m.description })),
   };
 }

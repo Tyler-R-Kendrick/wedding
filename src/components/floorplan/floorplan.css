@@ -1,0 +1,69 @@
+/* Floor plan — token-only; the theme kit restyles by overriding these custom properties. */
+.fp {
+  margin: 0;
+  max-width: 100%;
+}
+
+.fp__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+}
+
+.fp__outline {
+  fill: none;
+  stroke: var(--color-on-surface-muted);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+
+.fp__seat {
+  fill: var(--color-neutral-variant);
+  stroke: var(--color-outline);
+  stroke-width: 2;
+}
+
+.fp__table--mine .fp__seat {
+  fill: var(--color-primary);
+  stroke: var(--color-tertiary);
+  stroke-width: 4;
+}
+
+.fp__label {
+  font-family: var(--font-label-caps, inherit);
+  font-size: 18px;
+  fill: var(--color-on-surface);
+}
+
+.fp__table--mine .fp__label {
+  fill: var(--color-on-primary);
+  font-weight: 700;
+}
+
+.fp__you {
+  font-family: var(--font-label-caps, inherit);
+  font-size: 14px;
+  letter-spacing: var(--tracking-label-caps, 0.1em);
+  text-transform: uppercase;
+  fill: var(--color-tertiary);
+}
+
+.fp__caption {
+  margin-top: var(--spacing-sm);
+  font-size: var(--text-body-sm, 1rem);
+  color: var(--color-on-surface-muted);
+}
+
+.fp__caption strong {
+  color: var(--color-on-surface);
+}
+
+@media print {
+  .fp__svg {
+    max-height: none;
+    border-color: currentcolor;
+  }
+}
