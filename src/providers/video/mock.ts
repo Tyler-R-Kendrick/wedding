@@ -1,17 +1,22 @@
-import { err, ok } from '@/contracts/result';
+import type { ProviderFailure } from '@/contracts/providers';
+import { err, ok, type Result } from '@/contracts/result';
 import { failure, fnv1a, okConfig, upHealth } from '../base';
 import type { StorageProvider } from '../storage/types';
-import type { VideoAsset, VideoProvider } from './types';
+import { placeholderPosterPng } from './placeholder';
+import type { PosterFrame, VideoAsset, VideoProbe, VideoProvider } from './types';
 
 const g = globalThis as unknown as { __weddingMockVideo?: Map<string, VideoAsset> };
 const assets = (): Map<string, VideoAsset> => (g.__weddingMockVideo ??= new Map());
 
-/** Mock: "transcodes" instantly; playback is a signed read URL of the original object. */
+/**
+ * Mock: "transcodes" instantly; playback is a signed read URL of the (stripped) object; posters are
+ * a generated placeholder frame; probing knows nothing (the pipeline reads MP4 headers itself).
+ */
 export class MockVideo implements VideoProvider {
   readonly kind = 'video' as const;
   readonly name = 'mock';
   readonly mode = 'mock' as const;
-  readonly capabilities = { createAsset: true, getPlayback: true, hls: false };
+  readonly capabilities = { createAsset: true, getPlayback: true, hls: false, poster: false, probe: false };
   constructor(private readonly storage: StorageProvider) {}
 
   validateConfig() {
@@ -34,6 +39,14 @@ export class MockVideo implements VideoProvider {
     const signed = await this.storage.createSignedReadUrl({ key: asset.sourceKey, expiresInSeconds: 3600 });
     if (!signed.ok) return err(signed.error);
     return ok({ assetId, status: asset.status, playbackUrl: signed.value.url, expiresInSeconds: 3600 });
+  }
+
+  async extractPoster(): Promise<Result<PosterFrame, ProviderFailure>> {
+    return ok({ bytes: placeholderPosterPng(), contentType: 'image/png', placeholder: true });
+  }
+
+  async probe(): Promise<Result<VideoProbe, ProviderFailure>> {
+    return ok({});
   }
 
   /** Tests only. */
