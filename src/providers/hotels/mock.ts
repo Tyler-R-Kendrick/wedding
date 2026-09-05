@@ -1,6 +1,6 @@
 import type { ProviderErrorClass } from '@/contracts/providers';
 import { err, ok } from '@/contracts/result';
-import { failure, okConfig, seededRandom, snapshot, upHealth } from '../base';
+import { failure, okConfig, seededRandom, upHealth } from '../base';
 import { GUEST_MESSAGES } from '../flights/http';
 import { bookingComUrl, hotelsHandoff, venueHotelHandoff, partnerHotelHandoffs, VENUE_HOTEL_URL } from './deep-link';
 import type { HotelResult, HotelSearchRequest, HotelsProvider } from './types';
@@ -71,7 +71,7 @@ export class MockHotels implements HotelsProvider {
         bookingUrl: bookingComUrl(req),
       });
     }
-    return ok(snapshot(this.name, results, this.options.ttlSeconds ?? 900));
+    return ok({ provider: this.name, retrievedAt: pricedAt, ttlSeconds: this.options.ttlSeconds ?? 900, data: results });
   }
 }
 

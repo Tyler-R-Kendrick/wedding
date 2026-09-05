@@ -15,7 +15,7 @@ export default defineConfig({
     projects: [
       {
         resolve: { alias },
-        test: { name: 'unit', include: ['tests/unit/**/*.test.ts'], environment: 'node', env: baseEnv },
+        test: { name: 'unit', include: ['tests/unit/**/*.test.ts', 'tests/contract/**/*.test.ts'], environment: 'node', env: baseEnv },
       },
       {
         resolve: { alias },
