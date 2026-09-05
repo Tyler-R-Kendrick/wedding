@@ -19,6 +19,43 @@ that key is wrapped with RSA-OAEP (SHA-256, 4096-bit) for every recipient
 public key; all binary fields base64url. Both sides use WebCrypto, so the
 browser and Node produce interchangeable envelopes.
 
+## What the sandbox fills in by itself
+
+`node scripts/secrets/autofill.mjs` writes every value that needs no account:
+random `CONFIRMATION_SECRET`, `CRON_SECRET`, `BETTER_AUTH_SECRET`,
+`TEST_AUTH_SECRET`, `DEV_STORAGE_SECRET`; local URLs (`NEXT_PUBLIC_SITE_URL`,
+`BETTER_AUTH_URL`, `EMAIL_FROM`); detected binaries (`PW_CHROMIUM_PATH`,
+`FFMPEG_PATH`); the assets user agent. It never overwrites a non-empty value
+and prints names only. Run it first in any fresh sandbox; the Secret Drop page
+does not ask for these.
+
+### auth.md (agent self-registration)
+
+`NODE_USE_ENV_PROXY=1 node scripts/secrets/authmd-discover.mjs` probes each
+provider for the [auth.md protocol](https://github.com/workos/auth.md)
+(`/auth.md`, `/.well-known/auth.md`, and the `agent_auth` block in
+`/.well-known/oauth-authorization-server`). Findings on 2026-09-05:
+
+| Provider | auth.md | Anonymous registration |
+|---|---|---|
+| Resend | yes | no ("does not support agentic registration"; asks for `RESEND_API_KEY` out of band, which is exactly what Secret Drop does) |
+| WorkOS | yes | yes (one-shot environments), not used: auth is Better Auth (ADR-0008) |
+| fal.ai, Higgsfield, Openverse, Stitch, Duffel, Skyscanner, Booking.com, Uber, Voyage, OpenAI, Anthropic, Supabase, Vercel, Cloudflare | no protocol file | n/a |
+
+Re-run the probe periodically; when a provider we use adds anonymous
+registration, add its flow next to `autofill.mjs` and drop the field from the
+page.
+
+### Provisioned services (connected MCPs)
+
+Supabase and Vercel are connected to the Claude session as MCP servers, so a
+project can be created from the chat once the cost is acknowledged (Supabase
+quoted $10/month for a new project in Tyler's org on 2026-09-05; Vercel
+Hobby linking is free). Connection strings they return are written to `.env`
+by the agent; rotate the database password from the Supabase dashboard
+before real guest data exists, because that first value passed through the
+chat transcript.
+
 ## Session flow (works today)
 
 1. Open the Secret Drop page, fill in any keys, press **Encrypt and send**.
