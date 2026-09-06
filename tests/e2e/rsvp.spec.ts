@@ -134,6 +134,24 @@ test.describe('the guest surfaces are themed', () => {
     });
   }
 
+  test('every header link meets the 44px target', async ({ browser }) => {
+    // The guest layout uses the same class names as the public tree, which styles them in a
+    // stylesheet guest routes do not import; borrowing the names alone left these links 17px tall.
+    const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    for (const route of ['/rsvp', '/your-weekend']) {
+      await page.goto(route);
+      const links = page.locator('header a');
+      const count = await links.count();
+      expect(count).toBeGreaterThan(0);
+      for (let i = 0; i < count; i++) {
+        const box = await links.nth(i).boundingBox();
+        expect(Math.round(box?.height ?? 0), `${route} header link ${i} is under the tap target`).toBeGreaterThanOrEqual(44);
+      }
+    }
+    await ctx.close();
+  });
+
   test('the authoring marker never reaches a guest', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();

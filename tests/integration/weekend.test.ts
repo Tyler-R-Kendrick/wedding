@@ -23,9 +23,15 @@ describe('get_my_itinerary', () => {
     expect(it0.data.rsvp).toMatchObject({ status: 'not_started', answered: 0, expected: 2 });
     expect(it0.data.slots.transport).toMatchObject({ status: 'placeholder', placeholder: true, owner: 'swarm-G' });
     expect(it0.data.slots.trip).toMatchObject({ status: 'placeholder', placeholder: true, owner: 'swarm-F' });
-    expect(it0.data.slots.transport).toHaveProperty('body', expect.stringContaining('TODO(Tyler & Sara)'));
+    // A gap is signalled by the TYPED flag above (`status: 'placeholder'`), never by the authoring
+    // marker appearing in the payload. These two assertions used to require the opposite — that the
+    // literal `TODO(Tyler & Sara)` reached the output — which made the marker part of the contract:
+    // it then rendered verbatim to guests, and, since this capability is exposed to `ai` and
+    // `webmcp`, would have gone into assistant transcripts too. Inverted deliberately.
+    expect(it0.data.slots.transport).toHaveProperty('body', expect.not.stringContaining('TODO('));
     expect(it0.data.seating).toEqual({ published: false, table: null });
-    expect(it0.data.events[0]?.whenText).toContain('TODO(Tyler & Sara)');
+    expect(it0.data.events[0]?.whenText).toBe('Time to be confirmed');
+    expect(it0.data.events[0]?.whenText).not.toContain('TODO(');
     expect(it0.data.events[0]?.dateText).toBe('Saturday, July 17, 2027');
     expect(it0.sources[0]?.title).toContain('brief');
   });

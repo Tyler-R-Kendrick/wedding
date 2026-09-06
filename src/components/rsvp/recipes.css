@@ -430,3 +430,72 @@ a:focus-visible,
     content: " (" attr(href) ")";
   }
 }
+
+/*
+ * Guest header, skip link and footer.
+ *
+ * These carry the same class names the public tree uses, but that tree styles them in
+ * `(public)/_recipes/placeholder.css`, which guest routes never import — borrowing the names alone
+ * left the header unpadded and its links 17px tall. Declared here, in the stylesheet the guest
+ * layout does import, with the 44px target the wedding-site standard requires: a grandparent on a
+ * phone has to be able to hit "RSVP".
+ */
+.wp-skip {
+  position: absolute;
+  left: -9999px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.wp-skip:focus {
+  left: var(--spacing-md);
+  top: var(--spacing-md);
+  z-index: 10;
+}
+
+.wp-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--spacing-md) var(--spacing-md) 0;
+}
+
+.wp-brand {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: var(--text-h3, 1.25rem);
+}
+
+.wp-nav {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wp-nav a,
+.wp-brand a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
+}
+
+.wp-brand a {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.wp-footer {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-md) var(--spacing-xl);
+  color: var(--color-on-surface-muted);
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
+}

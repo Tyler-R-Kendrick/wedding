@@ -37,7 +37,11 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
         ) : (
           <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details.</Placeholder></p>
         )}
-        {data.rsvp.window.deadlineAt ? <p className="card__meta">Deadline: {formatDeadline(data.rsvp.window.deadlineAt)}.</p> : null}
+        {/* Says the same thing /rsvp says, including when there is no deadline yet: a guest who reads
+            one page and not the other should not come away with a different understanding. */}
+        <p className="card__meta">
+          {data.rsvp.window.deadlineAt ? `Deadline: ${formatDeadline(data.rsvp.window.deadlineAt)}.` : 'You can change your answers any time while RSVPs are open.'}
+        </p>
       </section>
 
       <section className="sec" aria-labelledby="events-title">
