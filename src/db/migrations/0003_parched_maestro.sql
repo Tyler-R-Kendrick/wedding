@@ -154,6 +154,7 @@ CREATE UNIQUE INDEX "auth_users_email_idx" ON "auth_users" USING btree ("email")
 CREATE INDEX "auth_verifications_identifier_idx" ON "auth_verifications" USING btree ("identifier");--> statement-breakpoint
 CREATE INDEX "guest_access_bindings_identity_idx" ON "guest_access_bindings" USING btree ("auth_identity_id");--> statement-breakpoint
 CREATE INDEX "guest_access_bindings_guest_idx" ON "guest_access_bindings" USING btree ("guest_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "guest_access_bindings_one_active" ON "guest_access_bindings" USING btree ("guest_id") WHERE "guest_access_bindings"."revoked_at" is null;--> statement-breakpoint
 CREATE INDEX "guests_household_idx" ON "guests" USING btree ("household_id");--> statement-breakpoint
 CREATE INDEX "guests_email_idx" ON "guests" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "guests_managed_by_idx" ON "guests" USING btree ("managed_by_guest_id");--> statement-breakpoint
