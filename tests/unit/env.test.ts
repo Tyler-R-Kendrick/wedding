@@ -62,8 +62,11 @@ describe('server env', () => {
 
   it('resolves TRUSTED_PROXY_HOPS: explicit value, else 1 on Vercel, else 0', () => {
     expect(parseServerEnv({ NODE_ENV: 'test' }).TRUSTED_PROXY_HOPS).toBe(0);
-    expect(parseServerEnv({ NODE_ENV: 'test', VERCEL: '1' }).TRUSTED_PROXY_HOPS).toBe(1);
-    expect(parseServerEnv({ NODE_ENV: 'test', VERCEL: '1', TRUSTED_PROXY_HOPS: '2' }).TRUSTED_PROXY_HOPS).toBe(2);
+    // The Vercel cases use `development`: NODE_ENV=test alongside a deploy marker is refused
+    // outright (see "refuses NODE_ENV=test on a deployed app"), and hop resolution does not
+    // depend on NODE_ENV anyway.
+    expect(parseServerEnv({ NODE_ENV: 'development', VERCEL: '1' }).TRUSTED_PROXY_HOPS).toBe(1);
+    expect(parseServerEnv({ NODE_ENV: 'development', VERCEL: '1', TRUSTED_PROXY_HOPS: '2' }).TRUSTED_PROXY_HOPS).toBe(2);
     expect(parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: '0' }).TRUSTED_PROXY_HOPS).toBe(0);
     expect(() => parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: '-1' })).toThrow(/TRUSTED_PROXY_HOPS/);
     expect(() => parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: 'many' })).toThrow(/TRUSTED_PROXY_HOPS/);
