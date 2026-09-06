@@ -59,8 +59,10 @@ export interface RoomBlock {
   checkOut: string | null;
   /** YYYY-MM-DD: last day to book at the block rate. */
   cutoff: string | null;
-  /** From the CAA kit: "courtesy block up to 20 rooms subject to availability". */
+  /** From the CAA kit: "courtesy block up to 20 rooms subject to availability". A confirmed fact. */
   note: string | null;
+  /** What is still to be confirmed, in the guest's words. Rendered as an editorial placeholder. */
+  pending: string | null;
   placeholder: boolean;
 }
 

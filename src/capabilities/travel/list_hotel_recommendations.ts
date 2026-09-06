@@ -11,7 +11,7 @@ const output = z.object({
   /** Curated alternatives with the couple’s objective reasons (walk time, staffed desk, family suites, price band, accessible route, transit). */
   alternatives: z.array(hotelRecommendationOutput),
   facts: z.object({
-    venue: z.object({ name: z.string(), address: z.string(), url: z.string(), faqUrl: z.string(), valetEntrance: z.string(), valetNote: z.string() }),
+    venue: z.object({ name: z.string(), address: z.string(), url: z.string(), faqUrl: z.string(), valetEntrance: z.string(), valetNote: z.string(), valetPending: z.string().nullable() }),
     airports: z.array(airportOutput),
   }),
 });
@@ -38,7 +38,7 @@ export const listHotelRecommendations = defineCapability<z.infer<typeof input>, 
       data: {
         venue,
         alternatives: hotels.filter((h) => !h.isVenue),
-        facts: { venue: { name: VENUE.name, address: VENUE.address, url: VENUE.url, faqUrl: VENUE.faqUrl, valetEntrance: VENUE.valetEntrance, valetNote: VENUE.valetNote }, airports: AIRPORTS.map((a) => ({ ...a })) },
+        facts: { venue: { name: VENUE.name, address: VENUE.address, url: VENUE.url, faqUrl: VENUE.faqUrl, valetEntrance: VENUE.valetEntrance, valetNote: VENUE.valetNote, valetPending: VENUE.valetPending }, airports: AIRPORTS.map((a) => ({ ...a })) },
       },
       sources: [CAA_KIT_CITATION, CAA_SITE_CITATION, BRIEF_CITATION],
     });

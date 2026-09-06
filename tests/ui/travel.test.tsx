@@ -6,7 +6,7 @@ import { AIRPORTS, BRIEF_CITATION, synthesizedVenueHotel, VENUE } from '@/domain
 const data: TravelPageData = {
   venue: synthesizedVenueHotel(new Date('2026-09-05T00:00:00Z')),
   alternatives: [],
-  facts: { venue: { name: VENUE.name, address: VENUE.address, url: VENUE.url, faqUrl: VENUE.faqUrl, valetEntrance: VENUE.valetEntrance, valetNote: VENUE.valetNote }, airports: AIRPORTS.map((a) => ({ ...a })) },
+  facts: { venue: { name: VENUE.name, address: VENUE.address, url: VENUE.url, faqUrl: VENUE.faqUrl, valetEntrance: VENUE.valetEntrance, valetNote: VENUE.valetNote, valetPending: VENUE.valetPending }, airports: AIRPORTS.map((a) => ({ ...a })) },
   sources: [BRIEF_CITATION],
   viewer: { kind: 'anonymous', hasProfile: false },
 };
@@ -22,8 +22,14 @@ describe('Travel & Stay recipe', () => {
     expect(screen.getByText('ORD')).toBeTruthy();
     expect(screen.getByText('MDW')).toBeTruthy();
     const text = document.body.textContent ?? '';
-    expect(text).toContain('TODO(Tyler & Sara): rate from the planner');
-    expect(text).toContain('TODO(Tyler & Sara): cutoff date');
+    // The gaps are still visible — that is the point of a placeholder — but as the editorial
+    // treatment the rest of the site uses, never as the raw authoring marker. This page is PUBLIC,
+    // and it used to print `TODO(Tyler & Sara): …` including an internal backlog id.
+    expect(text).toContain('the group rate');
+    expect(text).toContain('the date to book by');
+    expect(text).not.toContain('TODO(');
+    expect(text).not.toMatch(/backlog [A-Z]-\d/);
+    expect(document.querySelectorAll('[data-placeholder="true"]').length).toBeGreaterThan(0);
     expect(text).toContain('up to 20 rooms');
     expect(text).not.toMatch(/\$\d/); // no invented prices
     expect(text).not.toMatch(/safe(st)?\b/i); // no safety claims

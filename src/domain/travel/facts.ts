@@ -20,12 +20,25 @@ export const VENUE = {
   /** Accessibility and transit directions live on the official FAQ (operational: link, never copy). */
   faqUrl: 'https://www.chicagoathletichotel.com/about/faq/',
   valetEntrance: '71 E Madison',
-  valetNote: 'A special event valet rate is part of the CAA package. TODO(Tyler & Sara): confirm the rate and whether it may be published (backlog X-06).',
+  /**
+   * A confirmed fact and a still-unknown one are two fields, not one string.
+   *
+   * These carried `TODO(Tyler & Sara): … (backlog X-06)` inline, and the travel page printed the
+   * whole thing — so a visitor read the authoring marker and an internal backlog id. The marker is
+   * how a record says "not a fact yet"; `pending` below is the signal a renderer reads, and the
+   * backlog id lives in this comment where it belongs. The same records are returned by
+   * `list_hotel_recommendations`, which is exposed to the concierge and WebMCP, so the marker would
+   * have reached assistant transcripts too.
+   */
+  valetNote: 'A special event valet rate is part of the CAA package.',
+  /** Backlog X-06. */
+  valetPending: 'the valet rate, and whether we can publish it',
 } as const;
 
+/** `note` is a confirmed fact; `pending` names what the couple has still to decide (backlog X-02). */
 export const AIRPORTS = [
-  { code: 'ORD', name: "O'Hare International Airport", note: 'TODO(Tyler & Sara): which airport to recommend and any shuttle (backlog X-02).' },
-  { code: 'MDW', name: 'Chicago Midway International Airport', note: 'TODO(Tyler & Sara): which airport to recommend and any shuttle (backlog X-02).' },
+  { code: 'ORD', name: "O'Hare International Airport", note: null, pending: 'which airport we recommend, and whether there is a shuttle' },
+  { code: 'MDW', name: 'Chicago Midway International Airport', note: null, pending: 'which airport we recommend, and whether there is a shuttle' },
 ] as const;
 
 /** From the CAA kit (2025/26 edition, verify): a courtesy block up to 20 rooms subject to availability. Everything else is unknown. */
@@ -36,7 +49,9 @@ export const DEFAULT_VENUE_BLOCK: RoomBlock = {
   checkIn: null,
   checkOut: null,
   cutoff: null,
-  note: 'The CAA offers a courtesy block of up to 20 rooms, subject to availability (2025/26 kit; to verify). TODO(Tyler & Sara): booking link, rate, dates and cutoff from the planner (backlog P-03).',
+  note: 'The CAA offers a courtesy block of up to 20 rooms, subject to availability (2025/26 kit; to verify).',
+  /** Backlog P-03: the planner supplies these. */
+  pending: 'the booking link, rate, dates and cutoff',
   placeholder: true,
 };
 

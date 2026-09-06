@@ -20,8 +20,12 @@ test.describe('Travel & Stay', () => {
     await page.goto('/travel');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Getting to Chicago');
     await expect(page.getByRole('heading', { level: 3, name: 'Chicago Athletic Association Hotel' })).toBeVisible();
-    await expect(page.getByText('TODO(Tyler & Sara): rate from the planner')).toBeVisible();
-    await expect(page.getByText('TODO(Tyler & Sara): cutoff date')).toBeVisible();
+    // The gaps stay visible; the authoring marker does not. This page is public, and it used to
+    // print `TODO(Tyler & Sara): …` with an internal backlog id next to it.
+    await expect(page.getByText('the group rate')).toBeVisible();
+    await expect(page.getByText('the date to book by')).toBeVisible();
+    await expect(page.locator('body')).not.toContainText('TODO(');
+    await expect(page.locator('body')).not.toContainText(/backlog [A-Z]-\d/);
     await expect(page.getByText('ORD', { exact: true })).toBeVisible();
     await expect(page.getByText('MDW', { exact: true })).toBeVisible();
     await expect(page.getByText(/Prices as of/)).toHaveCount(0);

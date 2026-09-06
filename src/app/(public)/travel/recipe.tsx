@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
 import type { Citation } from '@/contracts/provenance';
+import { Placeholder } from '@/components/provenance/Placeholder';
 import { formatLongDate, type HotelRecommendation } from '@/domain/travel';
 import type { PageRecipe } from './_shared/recipe';
 import { HandoffLink } from './handoff';
@@ -9,8 +10,8 @@ export interface TravelPageData {
   venue: HotelRecommendation;
   alternatives: HotelRecommendation[];
   facts: {
-    venue: { name: string; address: string; url: string; faqUrl: string; valetEntrance: string; valetNote: string };
-    airports: { code: string; name: string; note: string }[];
+    venue: { name: string; address: string; url: string; faqUrl: string; valetEntrance: string; valetNote: string; valetPending: string | null };
+    airports: { code: string; name: string; note: string | null; pending: string | null }[];
   };
   sources: Citation[];
   viewer: { kind: 'anonymous' | 'guest' | 'admin' | 'system'; hasProfile: boolean };
@@ -21,11 +22,27 @@ export interface TravelPageSlots {
   hotelSearch: ReactNode;
 }
 
+/*
+ * Widths are explicit rem values, not `max-w-3xl` / `max-w-4xl`.
+ *
+ * Tailwind v4 resolves `max-w-<name>` against `--container-<name>`, and this project's generated
+ * `@theme` block (from DESIGN.md) defines no container scale — so those utilities fell through to
+ * the SPACING scale, and `max-w-3xl` computed to `--spacing-3xl`, 96px. The whole public travel
+ * page rendered 96px wide at every viewport. Swarm F wrote these pages against stock Tailwind
+ * before level 04 generated the token scale, so the class names looked right and meant something
+ * else. 46rem is the measure `recipes.css` uses for a page; 60rem is the wider admin measure.
+ */
 const mapsUrl = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-/** Placeholder copy is deliberately visible: the couple fills it in, we never guess. */
+/**
+ * A gap is deliberately visible — the couple fills it in, we never guess — but it reads as
+ * editorial, not as a bug with `TODO(...)` printed on it. This used to render the raw authoring
+ * marker on a PUBLIC page, and to reach it the recipe was doing string surgery on the record
+ * (`note.replace(/TODO\(Tyler & Sara\):.*$/, '')`). The split between a confirmed fact and a
+ * pending one now lives in the record (`domain/travel/facts.ts`), so this just renders it.
+ */
 function Todo({ children }: { children: ReactNode }) {
-  return <span className="rounded-sm border border-dashed border-primary/50 px-1 text-sm text-primary/80">{children}</span>;
+  return <Placeholder inline>{children}</Placeholder>;
 }
 
 function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: ReactNode }) {
@@ -57,23 +74,23 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
         </p>
       ) : null}
       <p className="mt-3">The wedding is here, so staying here means no travel on the day.</p>
-      {block?.note ? <p className="mt-2">{block.note.replace(/\s*TODO\(Tyler & Sara\):.*$/, '')}</p> : null}
+      {block?.note ? <p className="mt-2">{block.note}</p> : null}
       <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <dt className="text-sm text-primary/70">Group rate</dt>
-          <dd>{block?.rateText ?? <Todo>TODO(Tyler &amp; Sara): rate from the planner</Todo>}</dd>
+          <dd>{block?.rateText ?? <Todo>the group rate</Todo>}</dd>
         </div>
         <div>
           <dt className="text-sm text-primary/70">Book by</dt>
-          <dd>{block?.cutoff ? formatLongDate(block.cutoff) : <Todo>TODO(Tyler &amp; Sara): cutoff date</Todo>}</dd>
+          <dd>{block?.cutoff ? formatLongDate(block.cutoff) : <Todo>the date to book by</Todo>}</dd>
         </div>
         <div>
           <dt className="text-sm text-primary/70">Block dates</dt>
-          <dd>{block?.checkIn && block?.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Todo>TODO(Tyler &amp; Sara): dates</Todo>}</dd>
+          <dd>{block?.checkIn && block?.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Todo>the block dates</Todo>}</dd>
         </div>
         <div>
           <dt className="text-sm text-primary/70">Booking code</dt>
-          <dd>{block?.code ?? <Todo>TODO(Tyler &amp; Sara): code or link</Todo>}</dd>
+          <dd>{block?.code ?? <Todo>the booking code or link</Todo>}</dd>
         </div>
       </dl>
       <div className="mt-4 flex flex-col gap-2">
@@ -118,7 +135,7 @@ function HotelCard({ hotel }: { hotel: HotelRecommendation }) {
       ) : null}
       {hotel.placeholder ? (
         <p className="mt-3">
-          <Todo>TODO(Tyler &amp; Sara): details to confirm</Todo>
+          <Todo>the details for this one</Todo>
         </p>
       ) : null}
       {link ? (
@@ -133,7 +150,7 @@ function HotelCard({ hotel }: { hotel: HotelRecommendation }) {
 export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ data, slots }) => {
   const { venue, alternatives, facts, viewer } = data;
   return (
-    <main id="main" className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+    <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <header>
         <p className="text-sm uppercase tracking-wide text-primary/70">Travel &amp; Stay</p>
         <h1 className="mt-1 text-4xl font-semibold">Getting to Chicago</h1>
@@ -161,7 +178,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
           ))}
         </ul>
         <p>
-          <Todo>{facts.airports[0]?.note}</Todo>
+          <Todo>{facts.airports[0]?.pending}</Todo>
         </p>
       </Section>
 
@@ -176,7 +193,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
           </ul>
         ) : (
           <p>
-            We are still confirming a few nearby options at different prices. <Todo>TODO(Tyler &amp; Sara): final alternative hotels (backlog P-04)</Todo>
+            We are still confirming a few nearby options at different prices. <Todo>which hotels we recommend nearby</Todo>
           </p>
         )}
         <p className="text-sm text-primary/80">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p>
@@ -192,7 +209,8 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
 
       <Section id="getting-around" eyebrow="Arrive" title="Getting around">
         <p>
-          Valet entrance: {facts.venue.valetEntrance}. <Todo>{facts.venue.valetNote.replace(/^.*?TODO/, 'TODO')}</Todo>
+          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}{' '}
+          {facts.venue.valetPending ? <Todo>{facts.venue.valetPending}</Todo> : null}
         </p>
         <p>
           Accessibility and transit directions are on the{' '}

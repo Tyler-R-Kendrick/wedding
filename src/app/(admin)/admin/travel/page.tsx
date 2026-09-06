@@ -133,7 +133,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
   const { principal } = await currentPrincipal();
   if (principal.kind !== 'admin') {
     return (
-      <main id="main" className="mx-auto max-w-4xl px-4 py-10">
+      <main id="main" className="mx-auto max-w-[60rem] px-4 py-10">
         <h1 className="text-3xl font-semibold">Travel (admin)</h1>
         <p className="mt-3">Administrator sign-in is required.</p>
       </main>
@@ -142,7 +142,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
   const config = await runAsUi(adminGetTravelConfig, {});
   if (!config.ok) {
     return (
-      <main id="main" className="mx-auto max-w-4xl px-4 py-10">
+      <main id="main" className="mx-auto max-w-[60rem] px-4 py-10">
         <h1 className="text-3xl font-semibold">Travel (admin)</h1>
         <p className="mt-3">{config.error.message}</p>
       </main>
@@ -151,7 +151,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
   const { providers, hotels, links, allowedHosts } = config.value.data;
   const notice = noticeFor(sp.notice);
   return (
-    <main id="main" className="mx-auto max-w-4xl px-4 pb-16 pt-10">
+    <main id="main" className="mx-auto max-w-[60rem] px-4 pb-16 pt-10">
       <h1 className="text-3xl font-semibold">Travel (admin)</h1>
       <p className="mt-2 text-primary/80">Provider status, the room block, curated hotels, and partner links. Links must point at: {allowedHosts.join(', ')}.</p>
       {notice ? (

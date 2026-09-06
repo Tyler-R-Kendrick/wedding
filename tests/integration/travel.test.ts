@@ -208,8 +208,15 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.venue).toMatchObject({ id: VENUE_HOTEL_ID, isVenue: true, placeholder: true, synthesized: true, name: 'Chicago Athletic Association Hotel', block: { placeholder: true, url: null, rateText: null, cutoff: null } });
+    // `note` is the confirmed fact and `pending` is what is still to come. They used to be one
+    // string carrying `TODO(Tyler & Sara): … (backlog P-03)`, which the public travel page printed
+    // verbatim — and this capability is exposed to the concierge and WebMCP, so the marker and the
+    // backlog id would have reached assistant transcripts as well.
     expect(r.value.data.venue.block.note).toMatch(/up to 20 rooms/);
-    expect(r.value.data.venue.block.note).toMatch(/TODO\(Tyler & Sara\)/);
+    expect(r.value.data.venue.block.pending).toMatch(/booking link, rate, dates and cutoff/);
+    const payload = JSON.stringify(r.value);
+    expect(payload).not.toContain('TODO(');
+    expect(payload).not.toMatch(/backlog [A-Z]-\d/);
     expect(r.value.data.alternatives).toEqual([]);
     expect(r.value.data.facts.venue.valetEntrance).toBe('71 E Madison');
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['CAA Wedding Kit 2027', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);

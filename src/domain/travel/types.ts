@@ -183,7 +183,7 @@ export const flightSearchOutput = z.object({
   mode: searchMode,
   provider: z.string(),
   request: z.object({ origin: z.string(), destination: z.string(), departDate: z.string(), returnDate: z.string().optional(), adults: z.number().int(), children: z.number().int(), cabin: z.enum(FLIGHT_CABINS), nonstopOnly: z.boolean() }),
-  airports: z.array(z.object({ code: z.string(), name: z.string(), note: z.string() })),
+  airports: z.array(z.object({ code: z.string(), name: z.string(), note: z.string().nullable(), pending: z.string().nullable() })),
   snapshot: z.object({ ...snapshotMeta, results: z.array(flightOptionOutput) }).optional(),
   handoffs: z.array(externalHandoffOutput),
   /** Guest-safe reason when `mode` is not `live`. */
@@ -237,6 +237,7 @@ export const roomBlockSchema = z.object({
   checkOut: isoDate.nullable().default(null),
   cutoff: isoDate.nullable().default(null),
   note: z.string().trim().max(300).nullable().default(null),
+  pending: z.string().trim().max(300).nullable().default(null),
   placeholder: z.boolean().default(true),
 });
 export type RoomBlockInput = z.infer<typeof roomBlockSchema>;

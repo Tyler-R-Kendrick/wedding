@@ -111,7 +111,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
   const { trip, returned, notice } = data;
   const block = trip.block.block;
   return (
-    <main id="main" className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+    <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <header>
         <p className="text-sm uppercase tracking-wide text-primary/70">Your Weekend</p>
         <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
@@ -236,7 +236,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
 
 export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
   return (
-    <main id="main" className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+    <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <p className="text-sm uppercase tracking-wide text-primary/70">Your Weekend</p>
       <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
       <p className="mt-3 max-w-prose">

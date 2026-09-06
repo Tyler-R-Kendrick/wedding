@@ -28,7 +28,8 @@ export function travelServices(ctx: CapabilityContext): TravelServices {
   };
 }
 
-export const airportOutput = z.object({ code: z.string(), name: z.string(), note: z.string() });
+/** `note` is a confirmed fact; `pending` is what is still to be decided, in the guest's words. */
+export const airportOutput = z.object({ code: z.string(), name: z.string(), note: z.string().nullable(), pending: z.string().nullable() });
 
 const SIGN_IN = 'Please sign in to continue.';
 
