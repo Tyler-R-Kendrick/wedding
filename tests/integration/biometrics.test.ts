@@ -90,11 +90,24 @@ let storage: LocalFsStorage;
 let spy: SpyBiometric;
 let corpus: Map<string, PlacedItem>;
 
-async function call<T>(principal: Principal, name: string, input?: unknown, opts: { idempotencyKey?: string } = {}) {
+async function call<T>(principal: Principal, name: string, input?: unknown, opts: { idempotencyKey?: string; confirmationToken?: string } = {}) {
   const key = opts.idempotencyKey ?? (principal.kind === 'anonymous' ? undefined : newId());
-  const ctx = await createCapabilityContext({ principal, requestId: newId(), surface: 'ui', ...(key ? { idempotencyKey: key } : {}) });
+  const ctx = await createCapabilityContext({
+    principal,
+    requestId: newId(),
+    surface: 'ui',
+    ...(key ? { idempotencyKey: key } : {}),
+    ...(opts.confirmationToken ? { confirmationToken: opts.confirmationToken } : {}),
+  });
   const r = await invokeByName(name, ctx, input);
   return r.ok ? { ok: true as const, data: r.value.data as T } : { ok: false as const, error: r.error };
+}
+
+/** A draft capability, keeping the confirmation it issues. */
+async function draftCall<T>(principal: Principal, name: string, input?: unknown) {
+  const ctx = await createCapabilityContext({ principal, requestId: newId(), surface: 'ui' });
+  const r = await invokeByName(name, ctx, input);
+  return r.ok ? { ok: true as const, data: r.value.data as T, confirmation: r.value.confirmation } : { ok: false as const, error: r.error };
 }
 
 /** POST /api/biometrics/<action> exactly as the opt-in page does it. */
@@ -240,15 +253,61 @@ describe('biometric subsystem (gated off by default)', () => {
       expect(view.ok && view.data).toMatchObject({ available: false, unavailableReason: 'readiness_off', policy: null });
     });
 
-    it('the readiness switch needs an admin, a fresh session and a counsel reference', async () => {
-      expect((await call(guestA, 'admin_set_biometric_readiness', { ready: true, counselReviewRef: 'x' })).ok).toBe(false);
-      const noRef = await call(admin, 'admin_set_biometric_readiness', { ready: true });
-      expect(noRef.ok).toBe(false);
-      if (!noRef.ok) expect(noRef.error.code).toBe('validation');
+    it('switching readiness on needs an admin, a fresh session, a real reference and a confirmation', async () => {
+      const REF = 'ADR-0006 §7 addendum, counsel memo of 2027-01-14';
+      // Not an admin.
+      expect((await call(guestA, 'draft_biometric_readiness', { counselReviewRef: REF })).ok).toBe(false);
+      expect((await call(guestA, 'admin_enable_biometric_readiness', { counselReviewRef: REF })).ok).toBe(false);
+      // A placeholder is not a reference.
+      for (const bad of ['asd', '', '   ', 'placeholder!!']) {
+        const r = await call(admin, 'draft_biometric_readiness', { counselReviewRef: bad });
+        expect(r.ok, bad).toBe(false);
+        if (!r.ok) expect(r.error.code).toBe('validation');
+      }
+      // A stale session cannot even draft.
       const stale: AdminPrincipal = { ...admin, authenticatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() };
-      const old = await call(stale, 'admin_set_biometric_readiness', { ready: true, counselReviewRef: 'ADR-0006 review' });
+      const old = await call(stale, 'draft_biometric_readiness', { counselReviewRef: REF });
       expect(old.ok).toBe(false);
       if (!old.ok) expect(old.error.code).toBe('step_up_required');
+      // And without the token from the draft, the switch refuses.
+      const noToken = await call(admin, 'admin_enable_biometric_readiness', { counselReviewRef: REF });
+      expect(noToken.ok).toBe(false);
+      if (!noToken.ok) expect(noToken.error.code).toBe('confirmation_required');
+    });
+
+    it('switching readiness off is always allowed: no token, no reference, no flag', async () => {
+      const db = await getDb();
+      const { featureFlags } = await import('@/db/schema');
+      await setReady(true);
+      await db.update(featureFlags).set({ note: 'a stale reference' }).where(eq(featureFlags.name, 'BIOMETRICS_ENABLED'));
+      invalidateReadinessCache();
+      const off = await call<{ readiness: boolean }>(admin, 'admin_disable_biometric_readiness', {});
+      expect(off.ok, JSON.stringify(off)).toBe(true);
+      expect(off.ok && off.data.readiness).toBe(false);
+      // The recorded reference goes with it: it must never look like it justifies a live gate.
+      const row = (await db.select().from(featureFlags).where(eq(featureFlags.name, 'BIOMETRICS_ENABLED')))[0];
+      expect(row?.note ?? null).toBeNull();
+      await setReady(false);
+    });
+
+    it('a drafted readiness token is single-use and bound to the reference it was drafted for', async () => {
+      const REF = 'ADR-0006 §7 addendum, counsel memo of 2027-01-14';
+      process.env.FLAG_BIOMETRICS_ENABLED = 'on';
+      const drafted = await draftCall<{ readiness: { counselReviewRef: string }; consequences: string[] }>(admin, 'draft_biometric_readiness', { counselReviewRef: REF });
+      expect(drafted.ok, JSON.stringify(drafted)).toBe(true);
+      if (!drafted.ok) return;
+      expect(drafted.data.consequences.join(' ')).toMatch(/durable record of which photographs/);
+      const token = drafted.confirmation!.token;
+      // The token is bound to the payload: a different reference cannot ride it.
+      const swapped = await call(admin, 'admin_enable_biometric_readiness', { counselReviewRef: 'LEGAL-9999 something else' }, { confirmationToken: token });
+      expect(swapped.ok).toBe(false);
+      // Used once...
+      expect((await call(admin, 'admin_enable_biometric_readiness', { counselReviewRef: REF }, { confirmationToken: token })).ok).toBe(true);
+      // ...and never again.
+      const replay = await call(admin, 'admin_enable_biometric_readiness', { counselReviewRef: REF }, { confirmationToken: token });
+      expect(replay.ok).toBe(false);
+      expect((await call(admin, 'admin_disable_biometric_readiness', {})).ok).toBe(true);
+      await setReady(false);
     });
 
     it('shows an honest readiness checklist to admins', async () => {

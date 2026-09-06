@@ -91,13 +91,23 @@ export async function buildRig(): Promise<Rig> {
   return { storage, spy, corpus, dir };
 }
 
-export async function call<T>(principal: Principal, name: string, input?: unknown, opts: { idempotencyKey?: string } = {}) {
+export async function call<T>(principal: Principal, name: string, input?: unknown, opts: { idempotencyKey?: string; confirmationToken?: string } = {}) {
   const ctx = await createCapabilityContext({
     principal, requestId: newId(), surface: 'ui',
     ...(principal.kind === 'anonymous' ? {} : { idempotencyKey: opts.idempotencyKey ?? newId() }),
+    ...(opts.confirmationToken ? { confirmationToken: opts.confirmationToken } : {}),
   });
   const r = await invokeByName(name, ctx, input);
   return r.ok ? { ok: true as const, data: r.value.data as T } : { ok: false as const, error: r.error };
+}
+
+/** A draft capability: returns the outcome plus the confirmation it issued. */
+export async function draft<T>(principal: Principal, name: string, input?: unknown) {
+  const ctx = await createCapabilityContext({ principal, requestId: newId(), surface: 'ui' });
+  const r = await invokeByName(name, ctx, input);
+  return r.ok
+    ? { ok: true as const, data: r.value.data as T, confirmation: r.value.confirmation }
+    : { ok: false as const, error: r.error };
 }
 
 export async function callOn<T>(principal: Principal, surface: 'ui' | 'ai' | 'webmcp', name: string, input?: unknown) {

@@ -4,6 +4,7 @@ import type { Db } from '@/db/client';
 import { biometricConsents, biometricDeletions, biometricIdentityRefs, biometricMatches } from '@/db/schema/biometrics';
 import { countConsents, consentState } from './consent';
 import { countDeletions } from './deletion';
+import { readinessNote } from '@/lib/flags';
 import { CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH } from './policy';
 
 export interface BiometricStatus {
@@ -18,12 +19,15 @@ export interface BiometricStatus {
   deletions: Record<string, number>;
   provider: { name: string; mode: string };
   vaultKeySource: 'env' | 'derived' | 'missing';
+  /** What the live readiness switch rests on, as recorded when it was flipped. */
+  counselReviewRef: string | null;
 }
 
 /** Counts for the admin biometrics page. Never returns a template, a hash of one, or an IP hash. */
 export async function computeBiometricStatus(db: Db, input: { flags: FlagValues; readiness: (flag: FeatureFlag) => Promise<boolean>; provider: { name: string; mode: string }; vaultKeySource: BiometricStatus['vaultKeySource'] }): Promise<BiometricStatus> {
   const flag = input.flags.BIOMETRICS_ENABLED;
   const readiness = await input.readiness('BIOMETRICS_ENABLED');
+  const counselReviewRef = await readinessNote('BIOMETRICS_ENABLED', db);
   const totals = await countConsents(db);
   const rows = await db.select().from(biometricConsents).orderBy(desc(biometricConsents.createdAt));
   const byGuest = new Map<string, typeof rows>();
@@ -49,6 +53,7 @@ export async function computeBiometricStatus(db: Db, input: { flags: FlagValues;
     deletions,
     provider: input.provider,
     vaultKeySource: input.vaultKeySource,
+    counselReviewRef,
   };
 }
 

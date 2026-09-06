@@ -17,6 +17,7 @@ const output = z.object({
   deletions: z.record(z.string(), z.number()),
   provider: z.object({ name: z.string(), mode: z.string() }),
   vaultKeySource: z.enum(['env', 'derived', 'missing']),
+  counselReviewRef: z.string().nullable(),
   /** Recent deletion records (guest ids are opaque ULIDs; no templates, no IP hashes). */
   recentDeletions: z.array(z.object({ id: z.string(), guestId: z.string(), reason: z.enum(DELETION_REASONS), status: z.enum(DELETION_STATUSES), requestedAt: z.string(), completedAt: z.string().nullable(), proof: z.object({ identityRefsDeleted: z.number(), matchesDeleted: z.number(), providerSubjectsDeleted: z.number(), vectorEntriesDeleted: z.number(), vectorEntriesRemaining: z.number(), cachedResponsesDeleted: z.number() }).nullable() })),
   checklist: z.array(z.object({ item: z.string(), done: z.boolean(), note: z.string() })),
@@ -45,7 +46,7 @@ export const adminBiometricStatus = defineCapability<z.infer<typeof input>, Biom
       { item: 'A real provider with a data processing agreement (or on-device / in-VPC processing) is selected', done: status.provider.mode !== 'mock', note: `Current provider: ${status.provider.name} (${status.provider.mode}).` },
       { item: 'BIOMETRIC_VAULT_KEY is set from a secret manager', done: status.vaultKeySource === 'env', note: `Vault key source: ${status.vaultKeySource}.` },
       { item: 'FLAG_BIOMETRICS_ENABLED is on in the environment', done: status.flag, note: 'Second gate: the readiness switch below.' },
-      { item: 'Readiness switch (counsel sign-off recorded) is on', done: status.readiness, note: 'Flip with admin_set_biometric_readiness once the review is linked.' },
+      { item: 'Readiness switch (counsel sign-off recorded) is on', done: status.readiness, note: status.counselReviewRef ? `Linked review: ${status.counselReviewRef}` : 'Flip with admin_set_biometric_readiness once the review is linked; the reference is stored on the flag row.' },
     ];
     return ok({
       data: {

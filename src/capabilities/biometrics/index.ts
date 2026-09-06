@@ -1,8 +1,10 @@
 import type { AnyCapability } from '@/contracts/capability';
 import '@/domain/biometrics/jobs';
 import { adminBiometricStatus } from './admin_biometric_status';
-import { adminSetBiometricReadiness } from './admin_set_biometric_readiness';
+import { adminDisableBiometricReadiness } from './admin_disable_biometric_readiness';
+import { adminEnableBiometricReadiness } from './admin_enable_biometric_readiness';
 import { draftBiometricConsent } from './draft_biometric_consent';
+import { draftBiometricReadiness } from './draft_biometric_readiness';
 import { enrollBiometricReference } from './enroll_biometric_reference';
 import { findPhotosOfMe } from './find_photos_of_me';
 import { getMyBiometricConsent } from './get_my_biometric_consent';
@@ -24,10 +26,12 @@ export const biometricCapabilities: readonly AnyCapability[] = [
   enrollBiometricReference,
   findPhotosOfMe,
   adminBiometricStatus,
-  adminSetBiometricReadiness,
+  draftBiometricReadiness,
+  adminEnableBiometricReadiness,
+  adminDisableBiometricReadiness,
 ];
 
-export { getMyBiometricConsent, draftBiometricConsent, grantBiometricConsent, revokeBiometricConsent, requestBiometricDeletion, enrollBiometricReference, findPhotosOfMe, adminBiometricStatus, adminSetBiometricReadiness };
+export { getMyBiometricConsent, draftBiometricConsent, grantBiometricConsent, revokeBiometricConsent, requestBiometricDeletion, enrollBiometricReference, findPhotosOfMe, adminBiometricStatus, draftBiometricReadiness, adminEnableBiometricReadiness, adminDisableBiometricReadiness };
 export type { MyBiometricConsent } from './get_my_biometric_consent';
 export type { FindPhotosOfMeResult } from './find_photos_of_me';
 export type { BiometricStatusView } from './admin_biometric_status';
