@@ -1,4 +1,5 @@
-import { boolean, index, jsonb, pgSchema, real, text, timestamp } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { boolean, index, jsonb, pgSchema, real, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
 
 /**
@@ -51,7 +52,25 @@ export const biometricConsents = biometricSchema.table(
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [index('biometric_consents_guest_idx').on(t.guestId, t.createdAt), index('biometric_consents_grant_idx').on(t.grantId)],
+  (t) => [
+    index('biometric_consents_guest_idx').on(t.guestId, t.createdAt),
+    index('biometric_consents_grant_idx').on(t.grantId),
+    /**
+     * At most one OPEN grant per guest. Two flows racing (two browser tabs, two valid draft
+     * tokens, two idempotency keys) could both read "no consent yet" and both append a grant,
+     * leaving the ledger — whose whole purpose is to be reliable evidence — holding two
+     * simultaneous grants, and after one withdrawal a grant that could never be withdrawn.
+     *
+     * Scoped to `revoked_at IS NULL` rather than to the policy version, so a guest who withdraws
+     * and later changes their mind can grant again for the same wording. `revokeConsent` stamps
+     * `revoked_at` on the grant row it closes; the append-only `revoke` ENTRY beside it still
+     * carries the full provenance (who, where, when, which request), and `consentState` still
+     * derives status from the entries alone. The stamp is a closure marker, not the evidence.
+     */
+    uniqueIndex('biometric_consents_one_open_grant_idx')
+      .on(t.guestId)
+      .where(sql`${t.entry} = 'grant' and ${t.revokedAt} is null`),
+  ],
 );
 
 /** One enrolled reference per guest per consent: the provider handle plus the sealed template. */

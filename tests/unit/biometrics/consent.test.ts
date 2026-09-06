@@ -81,6 +81,14 @@ describe('consent state machine', () => {
     expect(consentState([b, a], POLICY).grant!.id).toBe('C901');
   });
 
+  it('treats a grant closed by its own stamp as revoked, so the ledger and the index agree', () => {
+    const closed = row({ revokedAt: new Date('2027-02-01T00:00:00Z') });
+    const s = consentState([closed], POLICY);
+    expect(s.status).toBe('revoked');
+    expect(s.revokedAt).toBe('2027-02-01T00:00:00.000Z');
+    expect(hasCurrentConsent(s)).toBe(false);
+  });
+
   it('a revoke naming an older grant does not revoke the current one', () => {
     const first = row({ createdAt: new Date('2027-01-01T00:00:00Z') });
     const second = row({ createdAt: new Date('2027-02-01T00:00:00Z') });

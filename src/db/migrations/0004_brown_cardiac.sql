@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "biometric_consents_one_open_grant_idx" ON "biometric"."consents" USING btree ("guest_id") WHERE "biometric"."consents"."entry" = 'grant' and "biometric"."consents"."revoked_at" is null;
