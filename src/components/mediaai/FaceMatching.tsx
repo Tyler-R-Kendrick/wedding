@@ -155,6 +155,8 @@ function ConsentForm({
         <dd>{policy.term}</dd>
         <dt>Deletion</dt>
         <dd>{policy.retention}</dd>
+        <dt>What we keep afterwards</dt>
+        <dd>{policy.results}</dd>
         <dt>Who processes it</dt>
         <dd>{policy.providerDisclosure}</dd>
       </dl>

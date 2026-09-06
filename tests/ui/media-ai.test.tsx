@@ -49,7 +49,7 @@ describe('the face-matching panel with the feature available', () => {
   it('shows purpose, term, retention, provider and the exact recorded wording before anything is collected', () => {
     render(<FaceMatching initial={available} candidates={[]} />);
     const terms = screen.getAllByRole('term').map((t) => t.textContent);
-    expect(terms).toEqual(['What it does', 'For how long', 'Deletion', 'Who processes it']);
+    expect(terms).toEqual(['What it does', 'For how long', 'Deletion', 'What we keep afterwards', 'Who processes it']);
     expect(document.body.textContent).toContain(CONSENT_POLICY_VERSION);
     expect(document.querySelector('.mi-policy__text')?.textContent).toBe(CONSENT_TEXT);
     expect(CONSENT_TEXT_HASH).toMatch(/^[a-f0-9]{64}$/);

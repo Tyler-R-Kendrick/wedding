@@ -65,6 +65,7 @@ export const consentPolicySchema = z.object({
   purpose: z.string(),
   term: z.string(),
   retention: z.string(),
+  results: z.string(),
   providerDisclosure: z.string(),
   minors: z.string(),
   counselReviewed: z.literal(false),

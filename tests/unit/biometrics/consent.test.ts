@@ -127,3 +127,48 @@ describe('guest-facing projection', () => {
     expect(JSON.stringify(described)).not.toContain('iphash');
   });
 });
+
+describe('what the consent text promises', () => {
+  const policy = currentConsentPolicy();
+
+  it('does not claim absolutes the code cannot hold', () => {
+    // The old wording said "never used to identify anyone who has not opted in" and "never shared".
+    // The first is now stated as what is actually guaranteed (no template for anyone else, and no
+    // "who is this?" query exists); the second names the one party the template does go to.
+    expect(policy.purpose).not.toMatch(/never shared\b/);
+    expect(policy.purpose).toMatch(/never build or keep a face template for anyone but you/);
+    expect(policy.purpose).toMatch(/no way in this website to run a face against everyone/);
+    expect(policy.purpose).toMatch(/shared with that processor, and with nobody else/);
+  });
+
+  it('warns that the software looks at the whole photo, including other people', () => {
+    expect(policy.purpose).toMatch(/including other people in it/);
+    expect(policy.purpose).toMatch(/forbids it from keeping or reusing/);
+  });
+
+  it('says the match list exists, who can see it, and that it is deleted too', () => {
+    expect(policy.results).toMatch(/list of which photos matched you/);
+    expect(policy.results).toMatch(/Only you and the couple's administrators/);
+    expect(policy.results).toMatch(/deleted together with everything else/);
+    expect(policy.text).toContain(policy.results);
+  });
+
+  it('anchors retention where the sweep actually measures it', () => {
+    // The sweep runs BIOMETRIC_RETENTION_DAYS from enrolment; the copy used to say "after the
+    // archive opens", which is a different date nobody could reconcile.
+    expect(policy.retention).toMatch(/12 months after you add your reference photos/);
+    expect(policy.retention).not.toMatch(/after the archive opens/);
+  });
+
+  it('promises only deletion triggers that have an implementation', () => {
+    expect(policy.retention).toMatch(/when your guest record is deleted/);
+    expect(policy.retention).toMatch(/ask the couple to delete it for you/);
+    // Supersession now deletes rather than retains, and the term clause says so.
+    expect(policy.term).toMatch(/deleted rather than carried over/);
+  });
+
+  it('is a new version, so every grant given for the old wording must be given again', () => {
+    expect(policy.version).toBe('2026-09-06.draft-2');
+    expect(consentState([row({ policyVersion: '2026-09-05.draft-1' })], POLICY).status).toBe('superseded');
+  });
+});
