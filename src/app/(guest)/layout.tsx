@@ -36,7 +36,13 @@ export default async function GuestLayout({ children }: { children: ReactNode })
   const theme = await getRequestTheme();
   for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return (
-    <>
+    // `data-theme` is on a server-rendered wrapper, not only mirrored onto <html> by the script
+    // below: the theme token blocks are attribute-scoped, so they cascade from any element that
+    // carries it. Set by script alone, these pages arrived unthemed with JavaScript disabled and for
+    // the first paint before hydration — the review measured Times New Roman in exactly that window.
+    // The root layout cannot resolve it instead: reading headers there would make every static
+    // public route dynamic.
+    <div data-theme={theme}>
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
       <a className="wp-skip" href="#main">
         Skip to content
@@ -64,6 +70,6 @@ export default async function GuestLayout({ children }: { children: ReactNode })
             backlog), never in what a guest reads. */}
         <Placeholder inline>how to reach us with a question</Placeholder>
       </footer>
-    </>
+    </div>
   );
 }

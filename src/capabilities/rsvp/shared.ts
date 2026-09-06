@@ -1,3 +1,4 @@
+import { placeholderHint } from '@/components/provenance/Placeholder';
 import { z } from 'zod';
 import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -51,12 +52,23 @@ export const eventViewSchema = z.object({
 });
 export type EventView = z.infer<typeof eventViewSchema>;
 
+/**
+ * The guest-facing view of an event.
+ *
+ * `description` is scrubbed of the authoring marker here, at the boundary, rather than in the
+ * component that happens to render it. `TODO(Tyler & Sara)` is how a content record says "not a
+ * fact yet" — `placeholder: true` below is the signal a caller should read — and it has no business
+ * leaving the server on a guest surface. It was reaching the RSC payload of a page that does not
+ * even render the field, and these capabilities are exposed to `ai` and `webmcp`, so it would have
+ * reached assistant transcripts too. Admin surfaces build their own view and still see the record
+ * verbatim, which is where the marker is useful.
+ */
 export function toEventView(e: EventRow, allMeals: readonly MealOptionRow[]): EventView {
   return {
     id: e.id,
     slug: e.slug,
     name: e.name,
-    description: e.description,
+    description: e.description ? placeholderHint(e.description) : e.description,
     dateIso: e.dateIso,
     startsAt: e.startsAt ? e.startsAt.toISOString() : null,
     endsAt: e.endsAt ? e.endsAt.toISOString() : null,
