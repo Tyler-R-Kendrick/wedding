@@ -129,6 +129,16 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
   const isProduction = e.NODE_ENV === 'production';
   // `next build` evaluates route modules without runtime secrets; the boot-time check still runs when the server starts.
   const isBuildPhase = source.NEXT_PHASE === 'phase-production-build';
+  /**
+   * A deployed app is never a test run. `NODE_ENV=test` is a plausible thing to set on a stage
+   * called "test", and it disables every production secret check below, silently falls back to the
+   * committed confirmation secret, and opens the test-principal gate. Refuse to boot instead.
+   * CI is deliberately not a marker here: CI runs the test suite, and that is exactly what
+   * NODE_ENV=test is for.
+   */
+  if (e.NODE_ENV === 'test' && (source.VERCEL || source.VERCEL_ENV)) {
+    throw new Error('NODE_ENV=test is not allowed on a deployed app (VERCEL is set). Use development or production.');
+  }
   if (isProduction && !isBuildPhase) {
     const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET'];
     const missing: string[] = required.filter((k) => !e[k]);

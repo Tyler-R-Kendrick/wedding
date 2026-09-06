@@ -1,21 +1,25 @@
 import 'server-only';
 import { z } from 'zod';
-import { registry } from '@/capabilities';
 import { pipelineServices } from '@/capabilities/services';
 import { defineCapability, type AnyCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { stableHash } from '@/lib/crypto';
-import { isTestInjectionEnabled, testInjectionOptions, type TestInjectionOptions } from './test-principal';
 
 /**
  * Synthetic capabilities for the WebMCP test suites. Only two real capabilities exist at this
  * level (both anonymous reads), which cannot prove authorization filtering, idempotency keys,
  * the explicit-confirmation handshake, step-up, or output caps. These descriptors cover the
  * read / draft / action / explicit / transaction / admin / untrusted-output / hidden / oversized
- * cases and are registered ONLY under the same gate as the test principal injector
- * (`NODE_ENV=test` + `TEST_AUTH_SECRET`). They touch no database and persist nothing.
+ * cases and are installed ONLY under the same gate as the test principal injector
+ * (`NODE_ENV=test` + `TEST_AUTH_SECRET`), once, at module load, into the bridge's own registry
+ * (`./registry.ts`) — never into the process-wide one, and never as a side effect of a request.
+ *
+ * Every one of them is `exposure: { ui: false, ai: false, webmcp: true }`. `ui` is the surface
+ * where an explicit confirmation is redeemable and where `webmcp_test_draft` would mint a real
+ * token, so even if the gate were opened by mistake on a deployed app, these cannot be reached
+ * through `/api/capabilities/*`. They touch no database and persist nothing.
  */
 const none = z.object({}).optional();
 const explicitInput = z.object({ value: z.string().min(1).max(40) });
@@ -30,7 +34,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'guest',
     requires: ['view_event'],
     annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: none,
     output: z.object({ note: z.string(), guestId: z.string() }),
     maxOutputChars: 500,
@@ -44,7 +48,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'admin',
     requires: ['admin_audit'],
     annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
-    exposure: { ui: true, ai: false, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: none,
     output: z.object({ note: z.string() }),
     maxOutputChars: 500,
@@ -58,7 +62,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'guest',
     requires: ['view_event'],
     annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: none,
     output: z.object({ message: z.string() }),
     maxOutputChars: 500,
@@ -73,7 +77,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'guest',
     requires: ['rsvp_self'],
     annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: explicitInput,
     output: z.object({ proposal: z.object({ value: z.string() }) }),
     maxOutputChars: 500,
@@ -97,7 +101,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     confirmation: 'inline',
     idempotent: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: explicitInput,
     output: explicitOutput,
     maxOutputChars: 500,
@@ -113,7 +117,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     confirmation: 'explicit',
     idempotent: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: explicitInput,
     output: explicitOutput,
     maxOutputChars: 500,
@@ -130,7 +134,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     confirmation: 'explicit',
     idempotent: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: explicitInput,
     output: explicitOutput,
     maxOutputChars: 500,
@@ -146,7 +150,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     confirmation: 'inline',
     idempotent: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: explicitInput,
     output: z.object({ url: z.string() }),
     maxOutputChars: 500,
@@ -160,7 +164,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'anonymous',
     requires: [],
     annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
-    exposure: { ui: true, ai: false, webmcp: false },
+    exposure: { ui: false, ai: false, webmcp: false },
     input: none,
     output: z.object({ note: z.string() }),
     handler: async () => ok({ data: { note: 'ui-only' }, sources: [] }),
@@ -173,7 +177,7 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     auth: 'anonymous',
     requires: [],
     annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
-    exposure: { ui: true, ai: true, webmcp: true },
+    exposure: { ui: false, ai: false, webmcp: true },
     input: none,
     output: z.object({ text: z.string() }),
     maxOutputChars: 50,
@@ -181,9 +185,3 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
   }),
 ];
 
-/** Registers the fixtures once, only under the test gate. Returns whether they are installed. */
-export function installWebMcpTestFixtures(o: TestInjectionOptions = testInjectionOptions()): boolean {
-  if (!isTestInjectionEnabled(o)) return false;
-  for (const c of WEBMCP_TEST_CAPABILITIES) if (!registry.has(c.name)) registry.register(c);
-  return true;
-}

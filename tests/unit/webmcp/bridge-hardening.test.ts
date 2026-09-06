@@ -166,3 +166,45 @@ describe('finding 7: idempotency keys really are the ULIDs the docs promise', ()
     expect(WEBMCP_BODY_SCHEMA.safeParse({ input: {} }).success).toBe(true);
   });
 });
+
+describe('finding 5: the test fixtures cannot escape the WebMCP surface', () => {
+  it('never enters the process-wide registry, so the UI route cannot see them', async () => {
+    const { registry: appRegistry } = await import('@/capabilities');
+    const { WEBMCP_TEST_CAPABILITIES } = await import('@/webmcp/server/fixtures');
+    // Importing the bridge registry is what installs them (once, at module load, under the gate).
+    const { webMcpRegistry } = await import('@/webmcp/server/registry');
+    expect(webMcpRegistry).toBeTruthy();
+    for (const fixture of WEBMCP_TEST_CAPABILITIES) {
+      expect(appRegistry.has(fixture.name), `${fixture.name} must not be in the app registry`).toBe(false);
+    }
+  });
+
+  it('is exposed to no surface but webmcp, so a gate slip cannot reach where confirmations redeem', async () => {
+    const { WEBMCP_TEST_CAPABILITIES } = await import('@/webmcp/server/fixtures');
+    expect(WEBMCP_TEST_CAPABILITIES.length).toBeGreaterThan(0);
+    for (const fixture of WEBMCP_TEST_CAPABILITIES) {
+      // `ui` is the one surface where an explicit confirmation is redeemable, and one fixture
+      // mints a real token for another.
+      expect(fixture.exposure.ui, fixture.name).toBe(false);
+      expect(fixture.exposure.ai, fixture.name).toBe(false);
+    }
+  });
+
+  it('installs at module load rather than as a side effect of serving a request', async () => {
+    const fixtures = await import('@/webmcp/server/fixtures');
+    // The registry-mutating installer is gone; there is nothing a request could call.
+    expect((fixtures as Record<string, unknown>).installWebMcpTestFixtures).toBeUndefined();
+  });
+});
+
+describe('finding 5: a deployed app is never a test run', () => {
+  it('refuses to boot with NODE_ENV=test on a deploy marker', async () => {
+    const { parseServerEnv } = await import('@/lib/env');
+    const base = { NODE_ENV: 'test', PGLITE_MEMORY: '1' };
+    expect(() => parseServerEnv({ ...base, VERCEL: '1' })).toThrow(/NODE_ENV=test is not allowed on a deployed app/);
+    expect(() => parseServerEnv({ ...base, VERCEL_ENV: 'preview' })).toThrow(/not allowed on a deployed app/);
+    // CI is not a deploy marker: CI is exactly where NODE_ENV=test belongs.
+    expect(() => parseServerEnv({ ...base, CI: 'true' })).not.toThrow();
+    expect(() => parseServerEnv(base)).not.toThrow();
+  });
+});

@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { createCapabilityContext, registry } from '@/capabilities';
+import { createCapabilityContext } from '@/capabilities';
 import { CapabilityError } from '@/contracts/errors';
 import { ID_PATTERN } from '@/contracts/ids';
 import { toPrincipalRef, type Principal } from '@/contracts/principal';
@@ -12,9 +12,9 @@ import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBody
 import { principalKey } from '@/policy/confirmation';
 import { getProvider } from '@/providers/registry';
 import { buildManifest } from '../manifest';
-import { installWebMcpTestFixtures } from './fixtures';
 import { assertSameOriginFetch, errorResponse, featureDisabled, outcomeResponse, rateLimited } from './http';
 import { invokeForWebMcp } from './invoke';
+import { webMcpRegistry } from './registry';
 import { testPrincipalFromRequest } from './test-principal';
 
 export const WEBMCP_NAME = /^[a-z][a-z0-9_]{2,63}$/;
@@ -32,9 +32,12 @@ export const WEBMCP_BODY_SCHEMA = z.object({
   idempotencyKey: z.string().regex(ID_PATTERN, 'idempotencyKey must be a ULID').optional(),
 });
 
-/** Test principal (gated) first, else the installed resolver. Fixtures install under the same gate. */
+/**
+ * Test principal (gated) first, else the installed resolver. Nothing is registered here: the
+ * synthetic fixtures live in the bridge's own registry and are installed once at module load
+ * (`./registry.ts`), so serving a request can never change what the app can do.
+ */
 async function resolvePrincipal(request: Request): Promise<Principal> {
-  installWebMcpTestFixtures();
   return testPrincipalFromRequest(request) ?? (await getPrincipal(request));
 }
 
@@ -66,7 +69,7 @@ export async function handleManifest(request: Request): Promise<Response> {
   const decision = await limiter.consume(limiterKeyFor(principal, ip), 'capability');
   if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
 
-  return jsonResponse({ ok: true, data: buildManifest({ registry, principal, flags }) }, { requestId });
+  return jsonResponse({ ok: true, data: buildManifest({ registry: webMcpRegistry, principal, flags }) }, { requestId });
 }
 
 /**
@@ -111,7 +114,7 @@ export async function handleInvoke(request: Request, name: string): Promise<Resp
     idempotencyKey: body.idempotencyKey,
     inputTrust: 'UNTRUSTED_USER_CONTENT',
   });
-  const result = await invokeForWebMcp(registry, name, ctx, body.input);
+  const result = await invokeForWebMcp(webMcpRegistry, name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);
   return outcomeResponse(result.value, requestId);
 }
