@@ -55,6 +55,41 @@ files lands with the theme DESIGN.md files (Stage 3).
 - Procedural art: 11 SVGs per theme under `public/assets/art/<theme>/`.
 - Licensed placeholder photography: 4 Wikimedia Commons files with ledger.
 
+## 2026-09-05 — Level 05: the content pages in both designs
+
+- Every level-05 page (Our Story, Our Adventures + one adventure, Share an
+  Adventure + one recommendation, Explore CAA + one space, The Wedding, Ask Us)
+  renders through `theme.content[page]`. `src/themes/content-types.ts` carries the
+  `ContentKit` / `ContentRecipes` contracts; `src/app/(public)/_recipes` resolves
+  the request's design, builds the page frame and falls back to Swarm C's plain
+  recipes for an unknown design.
+- Gilded Hour adds: the gold spine (Our Story), the ledger (the archive and the
+  outlets), the diptych (the two voices), the floor plan with corner brackets
+  (the four spaces), docent numerals ("look for this"), the programme on the
+  spine, the FAQ column. Conservatory adds: the dashed stem with a leaf per
+  chapter, the mount of pressed specimen cards, kraft filter tags, the two-voice
+  pair, jar labels for operational rows, field notes for cited statements, the
+  leaf checklist and the vine programme.
+- Typography correction in Gilded Hour: sentences are set as sentences. External
+  handoffs, outlet names and itinerary titles lose the deco caps and the display
+  tracking that came with their type role; short labels, plaques, room and
+  recommendation names keep them. Conservatory status chips drop the small-caps
+  tracking for the same reason.
+- 390-first: every content page's primary action now sits inside the first screen
+  above the fixed bottom chrome. Page heads are tighter on phones, the search
+  keeps its button beside its field at every width, the recommendation page leads
+  with its handoff, and Ask Us and a room page are no longer numbered acts.
+- Shared provenance UI: `.placeholder` was claimed by both the kits' inline
+  editorial marker and Swarm C's placeholder block, and the unlayered component
+  stylesheet silently won — the kits' marker is now `.todo`. The block exposes
+  `--prov-note-ink` / `--prov-external-ink` / `--prov-external-line`, which
+  Conservatory fills with soil because pollen is an accent there and never text.
+- Evidence: live `impeccable detect` exit 0 on all nine pages × both designs (and
+  Home); axe-core WCAG 2.2 AA clean at 390 / 768 / 1440 on all eighteen;
+  `tests/e2e/content-themes.spec.ts` covers landmarks, one H1, each design's own
+  structure with the other's absent, and the phone fold. Critiques:
+  `docs/design/critiques/2026-09-05-<page>-<design>.md` (eighteen files).
+
 ## 2026-09-05 — Level 04: theme engine, both kits, Home per lifecycle state
 
 - Theme engine (`src/themes/{types,registry,resolve,routes,server}`): `?theme=` →
