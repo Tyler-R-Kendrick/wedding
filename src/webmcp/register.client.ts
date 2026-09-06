@@ -78,14 +78,17 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
   };
   outer?.addEventListener('abort', stop, { once: true });
 
-  const post = async (name: string, body: { input: unknown; idempotencyKey?: string }): Promise<BridgeResponse> => {
+  const post = async (name: string, body: { input: unknown; idempotencyKey?: string }, signal?: AbortSignal): Promise<BridgeResponse> => {
     // `credentials: 'same-origin'` carries the session cookie; the JSON content type and the
-    // browser's own `Sec-Fetch-Site: same-origin` satisfy the route's CSRF check.
+    // browser's own `Sec-Fetch-Site: same-origin` satisfy the route's CSRF check. The signal is the
+    // user agent's: when the guest cancels, the request is actually cancelled rather than left to
+    // land after they asked it to stop.
     const response = await fetchImpl(webMcpInvokePath(name), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
+      ...(signal ? { signal } : {}),
     });
     let parsed: Record<string, unknown> | undefined;
     try {

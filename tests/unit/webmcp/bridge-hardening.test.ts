@@ -154,3 +154,15 @@ describe('finding 2: the bridge is not an oracle for the registry', () => {
     if (!bad.ok) expect(bad.error.code).toBe('validation');
   });
 });
+
+describe('finding 7: idempotency keys really are the ULIDs the docs promise', () => {
+  it('accepts a ULID and refuses a caller-chosen string', async () => {
+    const { WEBMCP_BODY_SCHEMA } = await import('@/webmcp/server/handlers');
+    expect(WEBMCP_BODY_SCHEMA.safeParse({ idempotencyKey: '01JABCDEFGHJKMNPQRSTVWXYZ0' }).success).toBe(true);
+    for (const bad of ['aaaaaaaa', 'not-a-ulid', '01JABCDEFGHJKMNPQRSTVWXYZ', 'ilou-are-excluded-from-crockf']) {
+      expect(WEBMCP_BODY_SCHEMA.safeParse({ idempotencyKey: bad }).success, bad).toBe(false);
+    }
+    // Absent is still fine: only idempotent mutations need one, and the pipeline enforces that.
+    expect(WEBMCP_BODY_SCHEMA.safeParse({ input: {} }).success).toBe(true);
+  });
+});
