@@ -16,6 +16,9 @@ import { test as base, expect, request as playwrightRequest, type APIRequestCont
 
 const TEST_AUTH_SECRET = process.env.TEST_AUTH_SECRET;
 
+/** What a browser sends for a same-origin `fetch`; the bridge demands it from every caller. */
+const SAME_ORIGIN = { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' } as const;
+
 /**
  * Every test gets its own client IP.
  *
@@ -51,7 +54,15 @@ async function warmRoutes(): Promise<void> {
   if (!baseURL) return;
   const context = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { 'x-forwarded-for': '10.255.255.254' } });
   try {
-    await Promise.all([context.get('/'), context.get('/travel'), context.get('/api/webmcp/manifest')]);
+    await Promise.all([
+      context.get('/'),
+      context.get('/travel'),
+      context.get('/api/webmcp/manifest'),
+      // The invoke route too: a cold `next dev` compile of it has been seen to surface as a
+      // transient 500 on the very first request, which has nothing to do with what any test asserts.
+      context.post('/api/webmcp/invoke/site_status', { headers: SAME_ORIGIN, data: { input: {} } }),
+      context.post('/api/capabilities/site_status', { data: { input: {} } }),
+    ]);
   } catch {
     // Warming is an optimisation; a failure here must not be reported as a test failure.
   } finally {
@@ -61,8 +72,6 @@ async function warmRoutes(): Promise<void> {
 
 type Kind = 'guest' | 'guest-fresh' | 'admin';
 const as = (kind: Kind): Record<string, string> => ({ 'x-test-principal': kind, 'x-test-auth': TEST_AUTH_SECRET ?? '' });
-/** What a browser sends for a same-origin `fetch`; the bridge requires it from every caller. */
-const SAME_ORIGIN = { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' } as const;
 
 interface ToolShape {
   name: string;
