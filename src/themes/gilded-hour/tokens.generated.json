@@ -1,0 +1,24 @@
+{
+  "generated": "scripts/design-sync.mjs",
+  "source": "src/themes/gilded-hour/DESIGN.md",
+  "colors": {
+    "primary": "#1c1b18",
+    "on-primary": "#f8f6f1",
+    "secondary": "#2e5b7b",
+    "on-secondary": "#f8f6f1",
+    "tertiary": "#7a5a16",
+    "on-tertiary": "#fbf9f4",
+    "gold": "#c9a648",
+    "gold-wash": "#f3ead0",
+    "lake-wash": "#cfe0eb",
+    "moss": "#4f5f3f",
+    "neutral": "#f8f6f1",
+    "neutral-variant": "#ede5d6",
+    "surface": "#fdfcfa",
+    "on-surface": "#1c1b18",
+    "on-surface-muted": "#5e5a52",
+    "outline": "#d8cfbf",
+    "error": "#8e2e22",
+    "on-error": "#fff5f2"
+  }
+}

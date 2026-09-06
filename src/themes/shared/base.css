@@ -1,0 +1,314 @@
+/*
+ * Shared base for both themes: rhythm, accessibility, reduced motion. Everything visual is a token
+ * from the active theme (see src/themes/<id>/theme.css); nothing here names a colour or a font.
+ */
+html {
+  font-size: 17px;
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: clip;
+  font-family: var(--font-text);
+  font-synthesis: none;
+  text-rendering: optimizelegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.site {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  accent-color: var(--color-secondary);
+  caret-color: var(--color-secondary);
+}
+
+.site ::selection {
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+
+.site main {
+  flex: 1 0 auto;
+}
+
+.site :focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* Skip link: first focusable element; visible on focus only. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: var(--spacing-md);
+  inset-block-start: var(--spacing-md);
+  z-index: 100;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* Editorial placeholder: obviously a placeholder, never plausible prose. */
+.placeholder {
+  display: inline;
+  padding: 0.3em 0.55em;
+  box-decoration-break: clone;
+  background: var(--color-neutral-variant);
+  color: var(--color-on-surface-muted);
+  outline: 1px dashed var(--color-outline);
+  outline-offset: -1px;
+  font-style: normal;
+}
+
+
+/* Fixed bars must never obscure focus (WCAG 2.2 2.4.11): reserve their height. */
+.site[data-bottom-bar] {
+  --bottom-bar-height: 4.25rem;
+
+  scroll-padding-block-end: var(--bottom-bar-height);
+}
+
+.site[data-bottom-bar] main {
+  padding-block-end: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (width >= 900px) {
+  .site[data-bottom-bar] {
+    --bottom-bar-height: 0px;
+  }
+}
+
+/* Reduced motion: opacity-only, <= 200 ms, no transforms, no parallax, static skeletons. */
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.12s !important;
+    animation-iteration-count: 1 !important;
+    animation-timeline: auto !important;
+    transition-duration: 0.12s !important;
+    transition-property: opacity, background-color, color, border-color, outline-color !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.placeholder__tag {
+  font-weight: 600;
+}
+
+/* Admin preview band (ADR-0012 §3): always visible, never cached. */
+.preview-band {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 60;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+  text-align: center;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+/* Floating design switcher: theme-neutral chrome coloured by the active theme's tokens. */
+.switcher--trigger {
+  display: inline-block;
+}
+
+.switcher--menu {
+  margin-block-start: var(--spacing-lg);
+  padding-block-start: var(--spacing-md);
+  border-block-start: 1px solid var(--color-outline);
+}
+
+.switcher__heading {
+  margin: 0 0 var(--spacing-sm);
+  font-weight: 600;
+}
+
+.switcher__intro {
+  margin: 0 0 var(--spacing-md);
+}
+
+/* Taps respond immediately (no double-tap zoom delay). */
+.site a,
+.site button,
+.site input,
+.site select,
+.site textarea {
+  touch-action: manipulation;
+}
+
+.switcher__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  cursor: pointer;
+}
+
+.switcher__trigger:hover {
+  background: var(--color-neutral-variant);
+}
+
+.switcher__dialog {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: min(92vw, 30rem);  overscroll-behavior: contain;
+}
+
+.switcher__dialog::backdrop {
+  background: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.switcher__panel {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1px solid var(--color-outline);
+  padding: var(--spacing-lg);
+}
+
+.switcher__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spacing-md);
+  margin-block-end: var(--spacing-md);
+}
+
+.switcher__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--type-h2-weight);
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+}
+
+.switcher__close {
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  cursor: pointer;
+}
+
+.switcher__options {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.switcher__option {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.switcher__option:hover {
+  background: var(--color-neutral-variant);
+}
+
+.switcher__option[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.switcher__name {
+  font-weight: 600;
+}
+
+.switcher__tagline {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.switcher__error {
+  margin: var(--spacing-sm) 0 0;
+  color: var(--color-error);
+}
+
+/* Layout helpers used by the generic recipes; each theme refines them. */
+.kit-stats {
+  margin: 0;
+}
+
+.kit-archive {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.kit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.kit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.kit-form-layout {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+@media (width >= 900px) {
+  .kit-form-layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: start;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

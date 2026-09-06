@@ -8,7 +8,9 @@
   },
   "buildPath": "comp",
   "detector": {
-    "ignoreRules": [],
+    "ignoreRules": [
+      "cream-palette"
+    ],
     "ignoreFiles": [
       "node_modules/**",
       "dist/**",
@@ -20,8 +22,13 @@
       ".next/**",
       "src/db/migrations/**",
       ".data/**",
-      "coverage/**"
+      "coverage/**",
+      "src/themes/*/fonts.css"
     ],
-    "ignoreValues": []
+    "ignoreValues": [],
+    "waivers": {
+      "cream-palette": "docs/design/brief.md \u00a74 pins the grounds: Gilded Hour is white Carrara marble (#F8F6F1), Conservatory is creme herbarium paper (#F4EEDF). The brief wins over the saturated-pattern warning (impeccable SKILL.md: 'The brief wins').",
+      "src/themes/*/fonts.css": "Metric-matched fallback faces ('Cinzel Fallback' etc.) are @font-face names for local() fallbacks, not DESIGN.md families; stylelint still bans the anti-reference fonts there."
+    }
   }
 }

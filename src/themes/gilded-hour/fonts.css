@@ -1,0 +1,56 @@
+/*
+ * Gilded Hour — self-hosted OFL faces (files + OFL.txt in public/fonts/gilded-hour).
+ * Three files, font-display: swap, metric-matched fallbacks so the swap does not shift layout.
+ * Fallback overrides: fontTools metrics against Times New Roman / Arial clones, then size-adjust tuned by
+ * rendering the fold-critical strings at 390 px in both faces (scripts/measure-fallbacks.mjs).
+ */
+@font-face {
+  font-family: Cinzel;
+  src: url("/fonts/gilded-hour/cinzel-wght.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cinzel Fallback";
+  src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
+  size-adjust: 99%;
+  ascent-override: 98.59%;
+  descent-override: 37.58%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("/fonts/gilded-hour/josefin-sans-wght.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Josefin Sans Fallback";
+  src: local("Arial"), local("Liberation Sans"), local("Arimo"), local("Helvetica Neue");
+  size-adjust: 102%;
+  ascent-override: 73.53%;
+  descent-override: 24.51%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("/fonts/gilded-hour/big-shoulders-display-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Big Shoulders Display Fallback";
+  src: local("Arial"), local("Liberation Sans"), local("Arimo"), local("Helvetica Neue");
+  size-adjust: 61.74%;
+  ascent-override: 159.38%;
+  descent-override: 34.5%;
+  line-gap-override: 0%;
+}

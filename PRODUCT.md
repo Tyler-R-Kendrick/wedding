@@ -148,7 +148,7 @@ Memory, Hospitality, Future.
   visible labels, keyboard-complete RSVP and claim flows,
   `prefers-reduced-motion` respected. Grandparents are a primary audience.
 - **Fast on hotel Wi-Fi:** LCP under 2.5s on a mid-range phone; images are
-  responsive and lazy; fonts self-hosted, ≤ 3 files per theme,
+  responsive and lazy; fonts self-hosted, ≤ 4 files (≤ 120 KB) per theme,
   `font-display: swap` with tuned fallbacks.
 - **Printable:** The Wedding, Travel & Stay, Transportation, and Your
   Weekend print legibly in black and white.

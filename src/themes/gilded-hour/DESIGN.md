@@ -78,6 +78,12 @@ typography:
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: 0.18em
+  label-sm:
+    fontFamily: Josefin Sans
+    fontSize: 0.765rem
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: 0.04em
   numeral:
     fontFamily: Big Shoulders Display
     fontSize: 3.5rem
@@ -404,7 +410,7 @@ watercolored.
   the underline becomes Bronze and 2px. Never changes to blue.
 - **nav / nav-current**: uppercase Josefin labels on marble; the current
   page is Lake Blue with a 1px gold underline. The mobile elevator panel
-  uses the same labels at 12px under simple line icons.
+  uses `label-sm` (13px, 0.04em) under simple line icons.
 - **hero**: names in Cinzel `display-xl` on the axis, the sunburst behind
   them at low opacity, the date in `numeral` (07 · 17 · 27) and the place in
   `label-caps`, the countdown in `numeral-xl`, one Bronze RSVP button.

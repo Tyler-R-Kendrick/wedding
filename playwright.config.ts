@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
-// BASE_URL points at a deployed preview when set; otherwise Playwright starts the local app.
+// BASE_URL points at a deployed preview (or a dev server you started) when set; otherwise Playwright
+// starts the local app on PORT (default 3000) so parallel worktrees can each own a port.
 const external = process.env.BASE_URL;
-const baseURL = external || 'http://localhost:3000';
+const port = process.env.PORT ?? '3000';
+const baseURL = external || `http://localhost:${port}`;
 
 // Sandboxes without `playwright install` may ship a system Chromium; CI keeps Playwright's own.
 const chromiumPath = process.env.PW_CHROMIUM_PATH ?? (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
@@ -26,11 +28,12 @@ export default defineConfig({
   webServer: external
     ? undefined
     : {
-        command: process.env.PW_WEB_SERVER_COMMAND ?? 'npm run dev',
-        url: 'http://localhost:3000/api/health',
+        command: process.env.PW_WEB_SERVER_COMMAND ?? `npm run dev -- -p ${port}`,
+        url: `http://localhost:${port}/api/health`,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
         env: {
+          PORT: port,
           PGLITE_MEMORY: process.env.PGLITE_MEMORY ?? '1',
           LOG_FORMAT: 'json',
           // The smoke test presents this bearer to /api/health; the server must know the same value.

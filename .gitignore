@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+node_modules
 
 # Secrets — keep .env.example committed, never real keys
 .env

@@ -401,7 +401,7 @@
       },
       "body-sm": {
         "displayName": "Small",
-        "purpose": "Captions, muted copy, input errors. Never below 15px."
+        "purpose": "Captions, muted copy, input errors. 17px: the body floor, never below."
       },
       "label-lg": {
         "displayName": "Button / field label",

@@ -54,3 +54,31 @@ files lands with the theme DESIGN.md files (Stage 3).
   level 04 self-hosts them).
 - Procedural art: 11 SVGs per theme under `public/assets/art/<theme>/`.
 - Licensed placeholder photography: 4 Wikimedia Commons files with ledger.
+
+## 2026-09-05 — Level 04: theme engine, both kits, Home per lifecycle state
+
+- Theme engine (`src/themes/{types,registry,resolve,routes,server}`): `?theme=` →
+  cookie → default, resolved in `src/proxy.ts`; public Home is statically rendered
+  per theme under `/t/<theme>` (SSG), previews and personalized routes are
+  `private, no-store`. `data-theme` is set server-side (no flash); only the
+  active theme's three fonts are preloaded.
+- Tokens: `npm run design:sync` generates `src/themes/<id>/theme.css` and the
+  Tailwind `@theme` block from each theme's `DESIGN.md`; `design:sync:check` is
+  part of `verify`. Gilded Hour `DESIGN.md` gained the `label-sm` (12px) step
+  its prose already specified.
+- Fonts self-hosted (Latin subsets, OFL texts alongside): Cinzel, Josefin Sans,
+  Big Shoulders Display; Gloock, Spectral, Cardo italic. 180 KB total, three
+  files per theme, metric-matched `local()` fallbacks.
+- Kits and Home recipes for both themes across all nine lifecycle states;
+  Gilded Hour = numbered acts on one axis, elevator panel, curtain reveal;
+  Conservatory = pressed-flower cards on a kraft tag rail, sky washes,
+  leaves settling. Countdown in America/Chicago, hidden on the day.
+- Design switcher (server action → `navigate_to` → cookie), `FLAG_DESIGN_SWITCHER`.
+- Critiques: `docs/design/critiques/2026-09-05-home-{gilded-hour,conservatory}.md`
+  (Swarm B self-critique), `…-review.md` (independent round 1, six blockers,
+  fixed by Swarm B) and `…-re-review.md` (round 2, three blockers, fixed by the
+  integrator: cookie-dependent `/` is `private, no-store`, panel labels wrap,
+  Menu sheet focus, live-region announcement, Ask Us before Photos in TEASER).
+- Detector: `cream-palette` waived with reason in `.impeccable/config.json`
+  (the brief pins the marble and herbarium-paper grounds); `src/themes/*/fonts.css`
+  ignored (fallback face names are not DESIGN.md families).
