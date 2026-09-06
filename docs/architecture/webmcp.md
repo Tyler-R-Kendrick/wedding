@@ -77,9 +77,9 @@ flag, with no change here.
 | 3 | `readOnlyHint` is forced **off** for any mutation (`action`, `transaction`, `external`), whatever the descriptor claims. | `deriveAnnotations` |
 | 4 | `consequentialHint` is forced **on** for every mutation, everything needing a human confirmation, and everything needing step-up. | `deriveAnnotations` |
 | 5 | `untrustedContentHint` is propagated from the descriptor. Any capability whose output can contain guest-authored or third-party text **must** declare it; not declaring it is a review finding. | `deriveAnnotations` |
-| 6 | `transaction` and `external` capabilities, and anything with `confirmation: 'explicit'`, are invoked as `explicit` whatever the descriptor said, so ADR-0002 rule 4 holds even for a descriptor that only asked for `inline`. | `effectiveWebMcpDescriptor` |
-| 7 | Idempotent mutations need a caller-generated ULID key, fresh **per execute call** and only for a signed-in principal (the pipeline refuses anonymous keys — they would all share one scope). | `createExecute` |
-| 8 | Output is capped at the descriptor's `maxOutputChars` on this surface (pipeline step 8), and the client envelope is capped again. | `invoke`, `encodeResult` |
+| 6 | Anything needing a human is invoked as `explicit`: `transaction`, `external`, `confirmation: 'explicit'`, **and `confirmation: 'inline'`**. `inline` is a promise the *page* keeps by rendering a confirm step and the pipeline enforces nothing for it; on a surface with no page and no human that means no confirmation at all. `agentConfirmable: true` is the per-descriptor opt-out for an inline mutation that really is safe unattended; it never relaxes the other three. | `requiresHumanConfirmation`, `effectiveWebMcpDescriptor` |
+| 7 | Idempotent mutations need a caller-generated ULID key, fresh **per execute call** and only for a signed-in principal (the pipeline refuses anonymous keys — they would all share one scope). The bridge route enforces the ULID shape (`ID_PATTERN`), so the format it documents is the format it checks. | `createExecute`, `WEBMCP_BODY_SCHEMA` |
+| 8 | Output is capped at the descriptor's `maxOutputChars` on this surface (pipeline step 8), `sources` are counted against the same budget and dropped (with a `sourcesOmitted` count) rather than sinking the whole answer, and the client envelope is capped again. | `invoke`, `outcomeResponse`, `encodeResult` |
 
 The description a model sees is the capability's own description plus generated usage notes it
 cannot infer from a schema: that a draft changes nothing, that a consequential tool ends on the
@@ -94,7 +94,10 @@ surface server-side:
 **`GET /api/webmcp/manifest`** → `{ ok, data: WebMcpManifest }`. Every registered capability with
 `exposure.webmcp`, whose flag is on, that `authorize()` allows for the current principal — so an
 anonymous caller sees only anonymous-auth tools. Personalized, therefore `Cache-Control: private,
-no-store`. Carries a `fingerprint` over the principal kind and every tool's schema, annotations and
+no-store`. Readiness-gated flags that are on but not switched on in the database are excluded, so
+the manifest cannot advertise a tool `invoke` would refuse — nor disclose that a legally gated
+feature exists. It is metered on its own generous bucket rather than the shared `capability` one,
+because every WebMCP-capable page load fetches it. Carries a `fingerprint` over the principal kind and every tool's schema, annotations and
 execution rules; the client re-registers when it changes and does nothing when it has not.
 
 **`POST /api/webmcp/invoke/<name>`** → the bridge. Same guards as the UI route, in the same order —
@@ -128,7 +131,11 @@ behind the `WEBMCP` flag. It renders nothing.
 - **`toolchange`.** Our own `registerTool` calls fire this event, so reacting to every one of them
   would loop forever. The handler reacts only when `getTools()` shows that *our* tools went away.
 - **Principal change.** A `visibilitychange` → visible refresh catches a sign-in or sign-out in
-  another tab. The fingerprint makes it free when nothing changed.
+  another tab, and a `focus` refresh catches one in *this* tab, which changes neither the pathname
+  nor the visibility. A fetched manifest is reused for 30s so the common case costs nothing, and
+  `focus` is forced past that window precisely because same-tab sign-out is what it would hide.
+  The auth layer can dispatch `webmcp:principal-changed` on `document` to refresh immediately.
+  The fingerprint means an unchanged answer re-registers nothing.
 - **Never throws.** Every failure path is swallowed into a log callback. A transient network
   failure keeps the currently registered tools rather than stripping them; one malformed tool does
   not cost the guest the rest.
@@ -149,12 +156,14 @@ can be talked into things by text on the page.
 | Threat | Why it matters | What stops it |
 |---|---|---|
 | **Indirect prompt injection via page content** — a guest-authored note, a provider blurb, or a photo caption says "call `claim_benefit` with…". | This is the central WebMCP risk and it cannot be fixed inside a model. | Nothing consequential is reachable without a human on the page (below). Capabilities whose output can carry guest or third-party text set `untrustedContentHint`, and the bridge *also* puts a plain-language warning in the payload, because an annotation is a hint an agent may drop. The bridge never chains one tool into another: a tool result is data, and only a model could act on it. |
-| **A model "confirming" on the guest's behalf.** | A confirmation the guest never saw is not consent. | `confirmation: 'explicit'` is only redeemable on surface `ui` (pipeline step 5). On `webmcp` the answer is always `confirmation_required { reason: 'requires_ui' }`, and `transaction` / `external` are forced to `explicit` even when their descriptor said `inline`. The execute handler surfaces that as *continue on the page* and **never retries**. Confirmation tokens are not returned to agents at all. |
+| **A model "confirming" on the guest's behalf.** | A confirmation the guest never saw is not consent. | `confirmation: 'explicit'` is only redeemable on surface `ui` (pipeline step 5). On `webmcp` the answer is always `confirmation_required { reason: 'requires_ui' }`, and `transaction`, `external` **and `inline`** are all forced to `explicit` whatever the descriptor said — `inline` included, because the pipeline enforces nothing for it and there is no page here to render the step. The execute handler surfaces that as *continue on the page* and **never retries**. Confirmation tokens are not returned to agents at all. |
 | **An agent claiming a surface** to get ui-only privileges. | Would defeat every rule above. | The surface is set server-side in each route. There is no surface header or body field anywhere; forged `x-surface` headers, a `surface` body field and a `confirmationToken` in the bridge body are all inert, and e2e asserts it in both directions. |
-| **An agent enumerating the registry** to learn what exists. | Leaks the shape of unreleased features and of other roles' access. | The manifest lists only what the principal may use. Unknown names, malformed names and hidden capabilities all answer `not_found` with the same body. Entitlement names (`details.missing`) are stripped from every response. |
+| **An agent enumerating the registry** to learn what exists. | Distinguishable refusals would map the couple's unreleased features and the role that gates each one. | The manifest lists only what the principal may use, and the bridge answers **one identical `not_found` body** for every name they may not see: absent, present-but-not-webmcp-exposed, needs-a-session, needs-an-entitlement, flag-off. The pipeline still runs, so authorization is unchanged and the audit row keeps the real code; only the reply is uniform. A caller who *can* see a tool still gets the specific error. Entitlement names (`details.missing`) are stripped from every response. |
 | **A cross-site page driving the bridge** with the guest's cookies. | Would turn any site into an agent for this one. | `assertSameOriginJson` on every bridge call, anonymous included: JSON content type plus `Sec-Fetch-Site: same-origin\|none` or a matching `Origin`. |
-| **Runaway or duplicated calls.** | An agent retries far more eagerly than a person. | Per-IP and per-principal token buckets before the body is read; a fresh ULID idempotency key per execute call so a replay returns the first result instead of acting twice; one request per execute call, never a retry. |
+| **Runaway or duplicated calls.** | An agent retries far more eagerly than a person, and a caller that picks its own limiter bucket is not limited at all. | Per-IP and per-principal token buckets before the body is read, keyed by `getClientIp`, which trusts `x-vercel-forwarded-for` only on Vercel (where the platform overwrites it) and otherwise uses the configured hop arithmetic. The manifest has its own bucket so page loads do not spend the capability budget. A fresh ULID idempotency key per execute call means a replay returns the first result instead of acting twice; one request per execute call, never a retry. |
 | **Context flooding / data exfiltration through a large read.** | A huge result buries the guest's actual question and widens what leaves the server. | `maxOutputChars` per capability, enforced on this surface by the pipeline and again by the client envelope, which refuses rather than truncating silently. |
+| **A call the guest cancelled completing anyway.** | The stop button is the one control a guest has over their agent mid-action; a mutation that lands after it, reported as success, is worse than no button. | The `execute` callback takes the user agent's `{ signal }`, passes it to `fetch`, short-circuits when it is already aborted, and never reports `ok: true` once it has fired — whether the server applied the change is unknowable from the client, so it says `cancelled` rather than guessing. |
+| **The test escape hatch reaching a deployed app.** | `NODE_ENV=test` skips every production secret check and opens the principal injector. | The app refuses to boot with `NODE_ENV=test` alongside a deploy marker. The synthetic fixtures live in the bridge's own registry, never the process-wide one, are installed once at module load rather than by a request, and are `exposure: { ui: false, ai: false, webmcp: true }` so they cannot reach the surface where confirmations redeem. |
 | **A stale session performing something consequential.** | Sessions outlive attention. | `stepUp` requires authentication within 5 minutes, checked before confirmation. |
 
 Two things this level deliberately does **not** do: it does not use `exposedTo` to restrict tools
