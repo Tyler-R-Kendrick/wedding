@@ -1,3 +1,5 @@
+import { stripBacklogRefs } from '@/components/provenance';
+import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
@@ -36,7 +38,7 @@ const FLOWERS = ['a', 'b', 'c'] as const;
 function Placeholder({ todo }: PlaceholderProps) {
   return (
     <span className="todo">
-      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {todo}
+      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {stripBacklogRefs(todo)}
     </span>
   );
 }
@@ -60,7 +62,7 @@ function ExternalMark({ provider }: { provider?: string }) {
       <svg className="cv-external" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
         <path d="M14 4h6v6M20 4l-9 9M18 13v7H4V6h7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="sr-only">{provider ? `, opens ${provider}` : ', opens in a new site'}</span>
+      <span className="sr-only">{`, opens ${provider ? providerLabel(provider) : 'in a new tab'}`}</span>
     </>
   );
 }
@@ -159,7 +161,7 @@ function Shell({ frame, children, banner }: ShellProps) {
     ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
   ];
   return (
-    <div className="site cv" data-theme="conservatory" data-bottom-bar={frame.nav.sticky.length ? '' : undefined} data-lifecycle={frame.lifecycle.state}>
+    <div className="site cv" data-theme="conservatory" data-bottom-bar={frame.nav.sticky.length ? '' : undefined} data-floating-menu="" data-lifecycle={frame.lifecycle.state}>
       <ThemeSync theme={"conservatory"} />
       <a className="skip-link" href="#main">
         Skip to content

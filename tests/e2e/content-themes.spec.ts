@@ -55,7 +55,8 @@ const PAGES: PageCase[] = [
     key: 'share-an-adventure',
     path: '/share-an-adventure',
     h1: 'Borrow a few of ours',
-    primary: (p) => p.locator('main').getByRole('link', { name: 'All', exact: true }),
+    // 22,600 px at 390: the page's first action is the jump list, not the itinerary filter below it
+    primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
     control: true,
     signature: { 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
   },
@@ -134,7 +135,15 @@ for (const theme of THEMES) {
         const other = THEMES.find((t) => t !== theme)!;
         await expect(page.locator(c.signature[other])).toHaveCount(0);
         // placeholders stay visibly marked and the raw marker never reaches a guest
-        expect(await page.locator('main').innerText()).not.toContain('TODO(Tyler & Sara)');
+        const text = await page.locator('main').innerText();
+        expect(text).not.toContain('TODO(Tyler & Sara)');
+        // BL-1: internal ticket references live in the content record, never on a guest page
+        expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key} (${theme}): internal backlog identifiers are visible to guests`).toEqual([]);
+        // every placeholder says who is writing it, visibly, and that text is its accessible name
+        for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
+          await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
+          await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
+        }
       });
 
       test('the primary action is in the first screen at 390', async ({ page }, testInfo) => {
@@ -182,4 +191,101 @@ test.describe('content pages keep their structure across a design switch', () =>
       expect(html, c.key).not.toContain('data-theme="gilded-hour"');
     }
   });
+});
+
+
+/**
+ * BL-2 · Fixed bottom chrome must be paid for in layout. Gilded Hour reserved 72.25 px for its
+ * elevator panel and Conservatory reserved nothing for its floating Menu tag, so the tag landed on
+ * the line-ends of the measure. Both designs now declare what they pin and reserve its height.
+ */
+test.describe('bottom chrome is reserved in both designs', () => {
+  for (const theme of THEMES) {
+    test(`${theme}: main reserves at least the height of its fixed bottom control`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', 'phone chrome only');
+      await page.setViewportSize(PHONE);
+      await page.goto(`/our-story?theme=${theme}`);
+      const r = await page.evaluate(() => {
+        const main = document.querySelector('main')!;
+        const pad = parseFloat(getComputedStyle(main).paddingBlockEnd);
+        const bottom = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((el) => {
+          const cs = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return cs.position === 'fixed' && cs.display !== 'none' && cs.visibility !== 'hidden' && rect.height > 0 && rect.bottom >= window.innerHeight - 32;
+        });
+        // the control's height plus whatever it floats above the viewport edge
+        const needed = bottom.reduce((h, el) => Math.max(h, el.getBoundingClientRect().height + (window.innerHeight - el.getBoundingClientRect().bottom)), 0);
+        return { pad, needed, names: bottom.map((el) => el.className) };
+      });
+      expect(r.names.length, `${theme}: no fixed bottom control found — the probe needs updating`).toBeGreaterThan(0);
+      expect(r.pad, `${theme}: main reserves ${r.pad}px for ${r.needed}px of fixed chrome (${r.names.join(', ')})`).toBeGreaterThanOrEqual(r.needed);
+    });
+  }
+});
+
+/**
+ * BL-3 · The longest page on the site (≈22,600 px at 390) has to be navigable by heading and by
+ * jump link: a category sits one level above the places it groups, and no two headings share a name.
+ */
+test.describe('the guide is navigable', () => {
+  for (const theme of THEMES) {
+    test(`${theme}: heading outline is valid and the jump list reaches every group`, async ({ page }) => {
+      await page.goto(`/share-an-adventure?theme=${theme}`);
+      const r = await page.evaluate(() => {
+        const hs = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => ({ lvl: Number(h.tagName[1]), txt: (h.textContent ?? '').replace(/\s+/g, ' ').trim() }));
+        const names = hs.map((h) => h.txt);
+        const jump = Array.from(document.querySelectorAll('main nav[aria-label="On this page"] a')).map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '');
+        const categories = Array.from(document.querySelectorAll('main section[id^="category-"]')).map((sec) => ({
+          id: sec.id,
+          headingLevel: Number((sec.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
+          placeLevels: Array.from(sec.querySelectorAll('[data-recommendation]')).map((a) => Number((a.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1])),
+        }));
+        return {
+          skips: hs.slice(1).filter((h, i) => h.lvl - (hs[i]?.lvl ?? h.lvl) > 1).length,
+          duplicates: [...new Set(names.filter((n, i) => names.indexOf(n) !== i))],
+          jump,
+          categories,
+          h1: hs.filter((h) => h.lvl === 1).length,
+        };
+      });
+      expect(r.h1).toBe(1);
+      expect(r.skips, `${theme}: the outline skips a heading level`).toBe(0);
+      expect(r.duplicates, `${theme}: two headings share a name, so heading navigation cannot tell them apart`).toEqual([]);
+      expect(r.categories.length).toBeGreaterThan(0);
+      for (const cat of r.categories) {
+        expect(cat.placeLevels.length, `${cat.id} has no places`).toBeGreaterThan(0);
+        for (const lvl of cat.placeLevels) expect(lvl, `${cat.id}: a place is not one level below its category`).toBe(cat.headingLevel + 1);
+        expect(r.jump, `${cat.id} is not reachable from the jump list`).toContain(`#${cat.id}`);
+      }
+      // every jump target exists
+      for (const href of r.jump) await expect(page.locator(href)).toHaveCount(1);
+    });
+  }
+});
+
+/**
+ * BL-6 · The Wedding's first screen used to end on ornament: a bare octagonal "01" under a
+ * three-line centred address. It now carries the question a guest actually has and the start of
+ * its answer, above the fixed chrome.
+ */
+test.describe('The Wedding opens with content, not ornament', () => {
+  for (const theme of THEMES) {
+    test(`${theme}: "What to wear" and the start of its answer are in the first screen at 390`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
+      await page.setViewportSize(PHONE);
+      await page.goto(`/the-wedding?theme=${theme}`);
+      const fold = await foldHeight(page);
+      const heading = page.locator('#dress-title');
+      await expect(heading).toBeVisible();
+      const hb = (await heading.boundingBox())!;
+      expect(hb.y + hb.height, `${theme}: the dress-code heading is below the first screen`).toBeLessThanOrEqual(fold);
+      const answer = page.locator('#dress-code').locator('.placeholder, p').first();
+      const ab = (await answer.boundingBox())!;
+      expect(ab.y, `${theme}: the answer does not start in the first screen`).toBeLessThan(fold);
+      // and the directions handoff — the page's one action — is still fully tappable up there
+      const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
+      const db = (await directions.boundingBox())!;
+      expect(db.y + db.height, `${theme}: the directions handoff is not fully in the first screen`).toBeLessThanOrEqual(fold);
+    });
+  }
 });

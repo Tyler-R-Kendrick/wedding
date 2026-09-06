@@ -72,11 +72,14 @@
   line-height: var(--type-h3-line);
 }
 
+/* DESIGN.md: headings are centred on the axis, body copy is left-aligned inside a centred column. */
 .gh-lede {
   margin: var(--spacing-sm) auto 0;
   max-width: var(--gh-prose);
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
+  text-align: start;
+  text-wrap: pretty;
 }
 
 .gh-external {
@@ -224,6 +227,7 @@
 .gh-plaque--act {
   margin-block-end: var(--spacing-sm);
 }
+
 
 .gh-plaque--label {
   width: auto;
@@ -1034,7 +1038,15 @@
   text-align: start;
 }
 
+/*
+ * SF-5: `label-caps` is 13.8 px, and PRODUCT.md sets a 17 px floor for anything a guest has to read
+ * — grandparents are a primary audience. A form label is read; it takes the body size.
+ */
 .gh-label {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--color-on-surface);
 }
 
@@ -1171,6 +1183,7 @@
   max-width: var(--gh-prose);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
+  text-align: start;
 }
 
 .gh-footer__print {
@@ -1225,6 +1238,7 @@
   margin: 0;
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
+  text-align: start;
 }
 
 .gh-muted {
@@ -1239,6 +1253,27 @@
 .gh-back {
   margin: var(--spacing-lg) 0 0;
   text-align: center;
+}
+
+/*
+ * SF-4: a link that stands on its own line is a touch target. `wedding-site-standards` §7 asks for
+ * 44 px; these are 44 px tall with the icon on the same line as the last word.
+ */
+.gh-back .gh-link,
+.gh-outlet__link .gh-link,
+.gh-section__action .gh-link,
+.gh-room__name .gh-link,
+.gh-faq__a p > .gh-link,
+.gh-why p > .gh-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: 44px;
+  padding-block: 10px;
+}
+
+.gh-outlet__link {
+  margin: 0;
 }
 
 .gh-prov {
@@ -1311,6 +1346,13 @@
   margin-block-start: var(--spacing-sm);
 }
 
+/* the in-page jump list on the long page: chamfered plaques, one row per screen width */
+.gh-jump {
+  width: 100%;
+  max-width: var(--gh-max);
+  margin-block-start: var(--spacing-md);
+}
+
 /* filters as chamfered plaques */
 .gh-chips {
   display: flex;
@@ -1348,6 +1390,13 @@
   background: var(--color-primary);
   color: var(--color-on-primary);
   box-shadow: none;
+}
+
+/* a jump label is a phrase ("Food and drink · 4 places"), so it drops the deco caps and tracking */
+.gh-jump .gh-chip {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  white-space: normal;
 }
 
 /* label / value ledger */
@@ -1612,9 +1661,11 @@
 
 .gh-handoffs__disclosure {
   margin: 0;
+  max-width: 46ch;
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
+  text-align: start;
 }
 
 /* numbered stops */
@@ -2054,6 +2105,45 @@
 .gh-section--wash .gh-card,
 .gh-section--alt .gh-rec {
   box-shadow: inset 0 0 0 1px var(--color-gold);
+}
+
+/*
+ * BL-6 / SF-6: on a phone the act apparatus (56 px octagon + 40 px chevron rule + its gaps) cost
+ * ~250 px of an 844 px fold before a word of content. The ornament stays — it is this design — but
+ * it is sized for the screen it is on.
+ */
+@media (width < 600px) {
+  .gh-plaque {
+    width: 44px;
+    height: 44px;
+    font-size: var(--type-h3-size);
+  }
+
+  .gh-divider {
+    height: 24px;
+  }
+
+  /* The plaque already announces the act; the chevron rule under it is a second mark for one job. */
+  .gh-section[data-number] .gh-section__head .gh-divider {
+    display: none;
+  }
+
+  .gh-section__head .gh-h {
+    margin-block-start: var(--spacing-lg);
+  }
+
+  .gh-section__inner {
+    padding-block: var(--spacing-xl);
+  }
+
+  .gh-pagehead__inner {
+    padding-block: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .gh-pagehead__facts {
+    margin-block-start: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
 }
 
 /* Gilded Hour specifics for shared chrome: the switcher is a frieze link, a Menu-sheet section, a footer plate */

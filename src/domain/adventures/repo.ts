@@ -64,7 +64,9 @@ export async function bookingHandoff(place: PlaceRow, rec: RecommendationRow): P
 /** "Details on the official page" when the official site is on the allowlist (CAA pages are). */
 export function officialHandoff(url: string | null | undefined, name: string): HandoffView | undefined {
   if (!url) return undefined;
-  return toHandoffView({ provider: 'official-site', label: `Details on ${name}'s official page`, url, opensNewTab: true, disclosure: `You will leave our site for ${name}'s official page.` });
+  // A name that already ends in "s" takes a bare apostrophe, so "Cindy's" never becomes "Cindy's's".
+  const possessive = `${name}${name.endsWith('s') ? "'" : "'s"}`;
+  return toHandoffView({ provider: 'official-site', label: `Details on ${possessive} official page`, url, opensNewTab: true, disclosure: `You will leave our site for ${possessive} official page.` });
 }
 
 // ------------------------------------------------------------------------- recommendations

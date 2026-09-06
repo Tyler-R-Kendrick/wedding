@@ -11,8 +11,21 @@ export interface TextBlock {
   placeholder: boolean;
 }
 
+/**
+ * Internal ticket references ("(backlog C-01)", "(content backlog C-07)", a bare "backlog P-02")
+ * are editorial metadata. They stay in the content record and in `docs/content/backlog.md`; they
+ * never reach a guest, an export, or the AI corpus.
+ */
+const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi;
+
+/** Scrubs ticket references from any string that is about to be shown to a guest. */
+export function guestText(text: string): string {
+  return text.replace(BACKLOG_REF, '').replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+}
+
 export function textBlock(text: string, forcePlaceholder = false): TextBlock {
-  return { text, placeholder: forcePlaceholder || isPlaceholderText(text) };
+  // `isPlaceholderText` reads the original: scrubbing a ticket id never changes what a placeholder is.
+  return { text: guestText(text), placeholder: forcePlaceholder || isPlaceholderText(text) };
 }
 
 export function textBlocks(texts: readonly string[], forcePlaceholder = false): TextBlock[] {

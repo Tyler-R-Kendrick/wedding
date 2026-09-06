@@ -1,4 +1,5 @@
 import { Text as Block } from '@/components/provenance';
+import { guestText } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, ExploreCaaProps } from '@/themes/content-types';
 import { CONTENT_COPY } from '@/themes/shared/content';
@@ -16,7 +17,7 @@ export const GildedExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ data, fra
   const hook = data.history[0];
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={data.venueName} lede={hook ? hook.statement : undefined} />
+      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={data.venueName} lede={hook ? guestText(hook.statement) : undefined} />
 
       <Section id="history" number={1} labelledBy="history-title">
         <SectionHeading level={2} id="history-title" title={CONTENT_COPY.exploreCaa.building} />

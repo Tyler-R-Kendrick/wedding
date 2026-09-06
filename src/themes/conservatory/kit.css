@@ -9,19 +9,10 @@
   --cv-gutter: clamp(20px, 4vw, 64px);
   --cv-rail: 15rem;
 
-  /* The floating Menu tag on phones: the footer keeps this much clear beneath its last line. */
-  --cv-float-clearance: 4rem;
-
   /* Provenance ink slots: pollen (`tertiary`) is an accent in this theme, never text. */
   --prov-note-ink: var(--color-soil);
   --prov-external-ink: var(--color-soil);
   --prov-external-line: var(--color-kraft-deep);
-}
-
-@media (width >= 900px) {
-  .cv {
-    --cv-float-clearance: 0px;
-  }
 }
 
 /* ---------- type helpers ---------- */
@@ -532,7 +523,13 @@
 .cv-section {
   position: relative;
   isolation: isolate;
-  padding: var(--spacing-2xl) var(--cv-gutter);
+  padding: var(--spacing-xl) var(--cv-gutter);
+}
+
+@media (width >= 600px) {
+  .cv-section {
+    padding-block: var(--spacing-2xl);
+  }
 }
 
 @media (width >= 900px) {
@@ -1160,7 +1157,9 @@
 .cv-footer {
   position: relative;
   margin-block-start: var(--spacing-2xl);
-  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) + var(--bottom-bar-height, 0px) + var(--cv-float-clearance));
+
+  /* `--bottom-chrome` already covers the two-action bar and the floating Menu tag (base.css). */
+  padding: var(--spacing-2xl) var(--cv-gutter) calc(var(--spacing-2xl) + var(--bottom-chrome, 0px));
   background: var(--color-neutral-variant);
 }
 
@@ -1415,6 +1414,19 @@
   margin: var(--spacing-sm) 0 0;
   font-size: var(--type-body-md-size);
   line-height: var(--type-body-md-line);
+}
+
+/* the in-page jump list on the long page: the same kraft tags as a filter rail */
+.cv-jump {
+  width: 100%;
+  margin-block-start: var(--spacing-sm);
+}
+
+/* a jump label is a phrase ("Food and drink · 4 places"), so it drops the small-caps tracking */
+.cv-jump .cv-tag {
+  letter-spacing: 0.02em;
+  font-feature-settings: normal;
+  white-space: normal;
 }
 
 /* ---------- kraft filter tags ---------- */
@@ -1678,6 +1690,27 @@
 .cv-jar__body {
   display: grid;
   gap: var(--spacing-xs);
+  justify-items: start;
+}
+
+/* The link is its own control below the label, never part of the heading's name. */
+.cv-jar__link {
+  margin: 0;
+}
+
+/*
+ * SF-4: a link that stands alone on its line is a touch target, not a word in a sentence.
+ * `wedding-site-standards` §7 asks for 44 px.
+ */
+.cv-jar__link .cv-link,
+.cv-back .cv-tag--hang,
+.cv-faq__a p > .cv-link,
+.cv-why p > .cv-link,
+.cv-room .cv-card__title .cv-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: 44px;
 }
 
 .cv-jar[data-expired="true"] .cv-jar__label {

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { stripBacklogRefs } from '@/components/provenance';
+import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
@@ -41,7 +43,7 @@ const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakho
 function Placeholder({ todo }: PlaceholderProps) {
   return (
     <span className="todo">
-      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {todo}
+      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {stripBacklogRefs(todo)}
     </span>
   );
 }
@@ -54,7 +56,7 @@ function ExternalMark({ provider }: { provider?: string }) {
   return (
     <>
       <Icon name="external" className="gh-external" />
-      <span className="sr-only">{provider ? `, opens ${provider}` : ', opens in a new site'}</span>
+      <span className="sr-only">{`, opens ${provider ? providerLabel(provider) : 'in a new tab'}`}</span>
     </>
   );
 }
@@ -100,7 +102,6 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   const half = Math.ceil(sideItems.length / 2);
   const left = sideItems.slice(0, half);
   const right = sideItems.slice(half);
-  const cells = bottomCells(nav, 4);
   return (
     <>
       <nav className="gh-frieze" aria-label="Site">
@@ -147,12 +148,23 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
           </ul>
         ) : null}
       </nav>
-      <nav className="gh-panel" aria-label="Quick actions" style={{ ['--cells' as string]: cells.length }}>
-        {cells.map((item) => (
-          <NavLink key={item.href} item={item} nav={nav} className={`gh-panel__cell${item.label === 'RSVP' || item.label === 'Add photos' ? ' gh-panel__cell--accent' : ''}`} short />
-        ))}
-      </nav>
     </>
+  );
+}
+
+/**
+ * The elevator panel: fixed to the bottom of the viewport, so it is emitted after `</main>`. A
+ * keyboard or screen-reader user reaches the page in three stops instead of walking the whole bar.
+ */
+function Panel({ nav }: { nav: NavProps['nav'] }) {
+  const cells = bottomCells(nav, 4);
+  if (!cells.length) return null;
+  return (
+    <nav className="gh-panel" aria-label="Quick actions" style={{ ['--cells' as string]: cells.length }}>
+      {cells.map((item) => (
+        <NavLink key={item.href} item={item} nav={nav} className={`gh-panel__cell${item.label === 'RSVP' || item.label === 'Add photos' ? ' gh-panel__cell--accent' : ''}`} short />
+      ))}
+    </nav>
   );
 }
 
@@ -206,6 +218,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <main id="main" className="gh-main" tabIndex={-1}>
         {children}
       </main>
+      <Panel nav={frame.nav} />
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
@@ -273,7 +286,7 @@ function SectionHeading({ level, title, eyebrow, lede, id }: SectionHeadingProps
 
 function Section({ id, number, ground = 'default', children, labelledBy }: SectionProps) {
   return (
-    <section id={id} className={`gh-section gh-section--${ground}`} aria-labelledby={labelledBy}>
+    <section id={id} className={`gh-section gh-section--${ground}`} aria-labelledby={labelledBy} data-number={number}>
       <div className="gh-section__inner">
         {number ? (
           <span className="gh-plaque gh-plaque--act" aria-hidden="true">

@@ -35,6 +35,7 @@ export const CONTENT_COPY = {
     eyebrow: 'Share an Adventure',
     title: 'Borrow a few of ours',
     lede: 'Every card has the practical part first: what, where, how long, and how to get there. Open the memory behind it if you want to know why it matters to us.',
+    jump: 'On this page',
     time: 'Pick your time',
     filter: 'Itineraries by time and interest',
     plan: 'Plan around the time you have',
@@ -119,6 +120,24 @@ export function groupByCategory(items: FindAdventuresData['items']): [string, Re
   return [...by.entries()];
 }
 
+/**
+ * Three recommendation categories share their wording with an itinerary title ("Food and drink",
+ * "With kids", "Stay inside the CAA"), so a category heading carries its count. That makes every
+ * heading on the page unique and tells a guest how much is in the group before they scroll into it.
+ */
+export function categoryHeading(category: string, count: number): string {
+  return `${humanize(category)} · ${count} ${count === 1 ? 'place' : 'places'}`;
+}
+
+/** The in-page jump list for the guide: the long page's only way to reach a group without scrolling. */
+export function guideJumpItems(groups: [string, RecommendationCard[]][]): ChipItem[] {
+  return [
+    { href: '#itineraries', label: CONTENT_COPY.guide.time },
+    { href: '#plan', label: CONTENT_COPY.guide.plan },
+    ...groups.map(([category, items]) => ({ href: `#category-${category}`, label: categoryHeading(category, items.length) })),
+  ];
+}
+
 export function handoffList(handoffs: RecommendationCard['handoffs']): HandoffView[] {
   return [handoffs.directions, handoffs.booking, handoffs.official].filter((h): h is HandoffView => !!h);
 }
@@ -129,6 +148,34 @@ export function handoffAttrs(h: HandoffView): { href: string; target?: '_blank';
 }
 
 export const OFFICIAL_LINK_ATTRS = { rel: 'noopener noreferrer external', target: '_blank' } as const;
+
+/** Display name for a handoff provider slug ("google-maps" -> "Google Maps"), never the slug itself. */
+const PROVIDER_NAMES: Record<string, string> = {
+  'google-maps': 'Google Maps',
+  'apple-maps': 'Apple Maps',
+  'official-site': 'the official site',
+  opentable: 'OpenTable',
+  resy: 'Resy',
+  tock: 'Tock',
+  uber: 'Uber',
+  lyft: 'Lyft',
+};
+
+export function providerLabel(provider: string): string {
+  return PROVIDER_NAMES[provider] ?? humanize(provider);
+}
+
+/**
+ * Where a bare URL goes, named for a guest: the registrable host without `www.`. Used when a link
+ * has no provider of its own, so "opens in a new site" never has to stand alone.
+ */
+export function destinationLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'the official page';
+  }
+}
 
 /** Compact stop line text pieces: place · minutes · note. */
 export function stopMeta(stop: StopItem): string[] {

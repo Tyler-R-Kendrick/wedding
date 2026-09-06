@@ -1,4 +1,5 @@
 import { Text as Block } from '@/components/provenance';
+import { guestText } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, VenueSpaceProps } from '@/themes/content-types';
 import { CONTENT_COPY } from '@/themes/shared/content';
@@ -13,7 +14,7 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
   const { space } = data;
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={space.character} />
+      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={guestText(space.character)} />
 
       <Section id="look" labelledBy="look-title">
         <div className="cv-section__text">
@@ -24,7 +25,7 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
           <Card label="In the room" featured index={1} headingLevel={2} title={CONTENT_COPY.exploreCaa.roomFeatures}>
             <ul className="cv-list">
               {space.features.map((f, i) => (
-                <li key={i}>{f}</li>
+                <li key={i}>{guestText(f)}</li>
               ))}
             </ul>
           </Card>

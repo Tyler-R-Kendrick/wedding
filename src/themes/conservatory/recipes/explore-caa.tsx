@@ -1,4 +1,5 @@
 import { Text as Block } from '@/components/provenance';
+import { guestText } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, ExploreCaaProps } from '@/themes/content-types';
 import { CONTENT_COPY } from '@/themes/shared/content';
@@ -16,7 +17,7 @@ export const ConservatoryExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ dat
   const hook = data.history[0];
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={data.venueName} lede={hook ? hook.statement : undefined} />
+      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={data.venueName} lede={hook ? guestText(hook.statement) : undefined} />
 
       <Section id="history" labelledBy="history-title">
         <div className="cv-section__text">

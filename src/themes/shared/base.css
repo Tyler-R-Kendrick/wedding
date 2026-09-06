@@ -20,6 +20,10 @@ body {
 }
 
 .site {
+  --bottom-bar-height: 0px;
+  --floating-menu-height: 0px;
+  --bottom-chrome: calc(var(--bottom-bar-height) + var(--floating-menu-height));
+
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -27,6 +31,7 @@ body {
   color: var(--color-primary);
   accent-color: var(--color-secondary);
   caret-color: var(--color-secondary);
+  scroll-padding-block-end: var(--bottom-chrome);
 }
 
 .site ::selection {
@@ -74,20 +79,32 @@ body {
 }
 
 
-/* Fixed bars must never obscure focus (WCAG 2.2 2.4.11): reserve their height. */
+/*
+ * Fixed bottom chrome must never obscure focus or the end of the measure (WCAG 2.2 2.4.11): every
+ * design reserves the height of whatever it pins to the bottom of the viewport. `data-bottom-bar`
+ * is a full-width action bar / elevator panel; `data-floating-menu` is a floating Menu control.
+ * A design may carry both, and the reservations add.
+ */
 .site[data-bottom-bar] {
   --bottom-bar-height: 4.25rem;
-
-  scroll-padding-block-end: var(--bottom-bar-height);
 }
 
-.site[data-bottom-bar] main {
-  padding-block-end: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
+.site[data-floating-menu] {
+  --floating-menu-height: 5.25rem;
+}
+
+.site[data-bottom-bar] main,
+.site[data-floating-menu] main {
+  padding-block-end: calc(var(--bottom-chrome) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (width >= 900px) {
   .site[data-bottom-bar] {
     --bottom-bar-height: 0px;
+  }
+
+  .site[data-floating-menu] {
+    --floating-menu-height: 0px;
   }
 }
 

@@ -26,7 +26,13 @@ function assertPlaceholdersMarked(container: HTMLElement, hints: string[], expec
   expect(blocks.length).toBe(expectedBlocks);
   for (const b of blocks) {
     expect(b.getAttribute('role')).toBe('note');
-    expect(b.getAttribute('aria-label')).toMatch(/placeholder/i);
+    // The stamp names who is writing, and it is *visible*: a gap must read as editorial, not broken.
+    // No aria-label / aria-hidden pair — the visible text is the accessible name (review SF-1).
+    const stamp = b.querySelector('.placeholder__label');
+    expect(stamp, 'placeholder block has no visible stamp').not.toBeNull();
+    expect(stamp!.textContent).toMatch(/Sara \+ Tyler are still writing this/i);
+    expect(stamp!.getAttribute('aria-hidden')).toBeNull();
+    expect(b.getAttribute('aria-label')).toBeNull();
   }
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {

@@ -70,24 +70,38 @@
   color: var(--color-on-surface, var(--color-primary));
 }
 
+/*
+ * The stamp names who is writing, at body size and in sentence case: a gap must read as editorial.
+ * It is the accessible name too — there is no aria-hidden duplicate.
+ */
 .placeholder__label {
   display: block;
   margin-bottom: var(--spacing-xs, 4px);
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  font-weight: 500;
   color: var(--prov-note-ink, var(--color-tertiary, var(--color-primary)));
 }
 
+/*
+ * No italic here: `font-synthesis: none` is set on body and neither design ships an italic text
+ * face, so `font-style: italic` rendered upright and the rule was dead. The box and the stamp
+ * already say "this is a note".
+ */
 .placeholder__hint {
   margin: 0;
-  font-style: italic;
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  max-width: 68ch;
 }
 
 .placeholder--inline {
   display: inline-block;
   margin: 0;
-  padding: 2px 8px;
+
+  /* the stamp is body-sized now, so the box needs real inset above and below its first line */
+  padding: 6px 10px;
+  line-height: var(--type-body-sm-line, 1.55);
 }
 
 .placeholder--inline .placeholder__label {

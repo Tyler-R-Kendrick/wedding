@@ -11,7 +11,8 @@ const { PageHead, Handoffs, Programme, Provenance } = content;
 
 /**
  * The Wedding: the date and the venue are facts on the title plaque; every time and room is a marked
- * placeholder. Dress code is act 01, the order of the day follows as numbered acts on the spine.
+ * placeholder. What to wear sits straight under the head — it is the first thing a guest wants and it
+ * belongs in the phone's first screen — and the order of the day owns the numbered spine from 01.
  */
 export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
@@ -24,7 +25,7 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
       {data.directions ? <Handoffs handoffs={[data.directions]} label="Directions" /> : null}
     </PageHead>
 
-    <Section id="dress-code" number={1} labelledBy="dress-title">
+    <Section id="dress-code" labelledBy="dress-title">
       <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
       <Prose>
         <Block block={data.dressCode} />
@@ -32,7 +33,7 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
     </Section>
 
     <Section id="programme" ground="alt">
-      <Programme events={data.events} venueName={data.venueName} startNumber={2} />
+      <Programme events={data.events} venueName={data.venueName} startNumber={1} />
     </Section>
 
     <Section id="rooms" labelledBy="rooms-title">

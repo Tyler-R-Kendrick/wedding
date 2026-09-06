@@ -106,8 +106,12 @@ export interface ContentKit {
   MetaList: (p: { items: { label: string; value: ReactNode }[] }) => ReactNode;
   /** Our Adventures archive entries (`article[data-adventure]`). */
   AdventureList: (p: { items: AdventureCard[] }) => ReactNode;
-  /** The practical card (`article[data-recommendation]`) with handoffs and the memory layer. */
-  RecommendationCard: (p: { card: RecommendationCard; headingLevel?: 2 | 3 }) => ReactNode;
+  /**
+   * The practical card (`article[data-recommendation]`) with handoffs and the memory layer.
+   * `headingLevel` places the card in the page's outline: 2 when the card is the page's subject,
+   * 3 on its own, 4 when it sits inside a category heading.
+   */
+  RecommendationCard: (p: { card: RecommendationCard; headingLevel?: 2 | 3 | 4 }) => ReactNode;
   /** Explicit external handoffs: provider named, new tab, disclosure printed. */
   Handoffs: (p: { handoffs: HandoffView[]; label: string }) => ReactNode;
   /** Stops of an itinerary or a composed plan, in order. */

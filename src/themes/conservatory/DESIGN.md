@@ -380,9 +380,12 @@ target; buttons, `h3` and labels depend on it and synthesis is off.
   herbarium register. One weight means hierarchy comes from size and space,
   never from bolding. Always roman: no italic headings.
 - **Spectral** (`h3`, `body-*`, `label-*`). A screen-tuned text serif with
-  a true italic and real small caps, so eyebrows and nav tags can be set in
-  `smcp` small capitals instead of shouting uppercase. `body-md` is 17px on
-  a 1.65 line, which keeps long "Our Story" reading comfortable on a phone.
+  real small caps, so eyebrows and nav tags can be set in `smcp` small
+  capitals instead of shouting uppercase. `body-md` is 17px on a 1.65 line,
+  which keeps long "Our Story" reading comfortable on a phone. **Only the
+  two roman weights (400, 500) are self-hosted**, and `font-synthesis` is
+  off, so nothing in this theme may ask Spectral for an italic — Cardo
+  italic below is the only italic voice on the sheet.
 - **Cardo italic** (`specimen-label`). Cardo is a scholarly Bembo-style
   face; its italic is the voice of the handwritten Latin on a specimen
   label. It is used in exactly two slots: specimen labels on pressed cards

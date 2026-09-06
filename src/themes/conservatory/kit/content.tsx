@@ -2,9 +2,10 @@ import type { CSSProperties, ReactNode } from 'react';
 import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, ProvenanceLine, Text as Block, placeholderHint } from '@/components/provenance';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
+import { guestText } from '@/domain/content/text';
 import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
 import type { ContentKit, StopItem } from '@/themes/content-types';
-import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, handoffAttrs, handoffList, stopMeta } from '@/themes/shared/content';
+import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
 
 /*
  * Conservatory content primitives. Everything is mounted on the herbarium sheet: a dashed stem
@@ -25,12 +26,17 @@ function Leaf({ className = 'cv-leaf' }: { className?: string }) {
   );
 }
 
-const ExternalMark = ({ provider }: { provider?: string }) => (
+/**
+ * The visible link text names the destination ("… on chicagoathletichotel.com", "Open directions in
+ * Google Maps"), so the mark only announces that the link leaves the site. `opens` is a display
+ * name for the cases where the text cannot carry it — never a raw provider slug.
+ */
+const ExternalMark = ({ opens }: { opens?: string }) => (
   <>
     <svg className="cv-external" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
       <path d="M14 4h6v6M20 4l-9 9M18 13v7H4V6h7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-    <span className="sr-only">{provider ? `, opens ${provider}` : ', opens in a new site'}</span>
+    <span className="sr-only">{`, opens ${opens ?? 'in a new tab'}`}</span>
   </>
 );
 
@@ -201,7 +207,7 @@ function Handoffs({ handoffs, label }: { handoffs: HandoffView[]; label: string 
         <li key={h.url} className="cv-handoffs__item">
           <a className="cv-btn cv-btn--external" {...handoffAttrs(h)}>
             <span>{h.label}</span>
-            <ExternalMark provider={h.provider} />
+            <ExternalMark opens={providerLabel(h.provider)} />
           </a>
           <p className="cv-handoffs__disclosure">{h.disclosure}</p>
         </li>
@@ -210,8 +216,8 @@ function Handoffs({ handoffs, label }: { handoffs: HandoffView[]; label: string 
   );
 }
 
-function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCardData; headingLevel?: 2 | 3 }) {
-  const H = headingLevel === 2 ? 'h2' : 'h3';
+function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCardData; headingLevel?: 2 | 3 | 4 }) {
+  const H = headingLevel === 2 ? 'h2' : headingLevel === 4 ? 'h4' : 'h3';
   // On the recommendation's own page the card is the page: the way there comes before the details.
   const leads = headingLevel === 2;
   const handoffs = <Handoffs handoffs={handoffList(card.handoffs)} label="Go there" />;
@@ -261,7 +267,7 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
             Hours and menus:{' '}
             {card.operational.url ? (
               <a className="cv-link" href={card.operational.url} {...OFFICIAL_LINK_ATTRS}>
-                {card.operational.label} on the official page
+                {`${card.operational.label} on ${destinationLabel(card.operational.url)}`}
                 <ExternalMark />
               </a>
             ) : (
@@ -335,7 +341,7 @@ function LookForList({ items, label }: Parameters<ContentKit['LookForList']>[0])
       {items.map((i) => (
         <li key={i.id} className="cv-lookfor__item">
           <Leaf className="cv-leaf cv-lookfor__leaf" />
-          <span className="cv-lookfor__text">{i.text}</span>
+          <span className="cv-lookfor__text">{guestText(i.text)}</span>
         </li>
       ))}
     </ol>
@@ -355,8 +361,8 @@ function RoomGrid({ spaces }: Parameters<ContentKit['RoomGrid']>[0]) {
               </a>
             </h3>
             <div className="cv-card__body">
-              <p>{s.character}</p>
-              <p className="cv-muted">{s.capacities.note}</p>
+              <p>{guestText(s.character)}</p>
+              <p className="cv-muted">{guestText(s.capacities.note)}</p>
             </div>
           </article>
         </li>
@@ -369,7 +375,7 @@ function CapacityTable({ capacities }: Parameters<ContentKit['CapacityTable']>[0
   return (
     <div className="cv-scroll" role="region" aria-label="Capacity figures" tabIndex={0}>
       <table className="cv-table">
-        <caption className="cv-table__caption">{capacities.note}</caption>
+        <caption className="cv-table__caption">{guestText(capacities.note)}</caption>
         <thead>
           <tr>
             <th scope="col">Ceremony</th>
@@ -390,25 +396,26 @@ function CapacityTable({ capacities }: Parameters<ContentKit['CapacityTable']>[0
 }
 
 function JarRow({ field }: { field: OperationalFieldView }) {
+  const open = field.url && !field.expired ? field.url : null;
   return (
     <li className="cv-jar" data-key={field.key} data-expired={field.expired ? 'true' : undefined}>
       <div className="cv-jar__label">
-        <h3 className="cv-jar__name">
-          {field.url && !field.expired ? (
-            <a className="cv-link" href={field.url} {...OFFICIAL_LINK_ATTRS}>
-              {field.label}
-              <ExternalMark />
-            </a>
-          ) : (
-            field.label
-          )}
-        </h3>
-        {field.value ? <p className="cv-jar__value">{field.value}</p> : null}
+        {/* The heading is the name. The link is its own control, so "opens …" never enters a heading's accessible name. */}
+        <h3 className="cv-jar__name">{guestText(field.label)}</h3>
+        {field.value ? <p className="cv-jar__value">{guestText(field.value)}</p> : null}
       </div>
       <div className="cv-jar__body">
         {field.note ? (
           <p className="cv-muted">
             <Block block={field.note} inline />
+          </p>
+        ) : null}
+        {open ? (
+          <p className="cv-jar__link">
+            <a className="cv-link" href={open} {...OFFICIAL_LINK_ATTRS}>
+              {`${field.label} on ${destinationLabel(open)}`}
+              <ExternalMark />
+            </a>
           </p>
         ) : null}
         <ProvenanceLine provenance={field.provenance}>
@@ -436,8 +443,8 @@ function FactList({ facts, label }: Parameters<ContentKit['FactList']>[0]) {
         <li key={f.id} id={`fact-${f.slug}`} className="cv-notes__item">
           <span className="cv-notes__cat">{humanize(f.category)}</span>
           <span className="cv-notes__text">
-            {f.statement}
-            {f.note ? <span className="cv-notes__note"> {f.note}</span> : null}
+            {guestText(f.statement)}
+            {f.note ? <span className="cv-notes__note"> {guestText(f.note)}</span> : null}
           </span>
         </li>
       ))}
@@ -491,7 +498,7 @@ function FaqList({ entries, labelFor }: Parameters<ContentKit['FaqList']>[0]) {
       {entries.map((e) => (
         <article key={e.id} id={e.slug} className="cv-faq__entry" aria-labelledby={`faq-${e.slug}`}>
           <h3 id={`faq-${e.slug}`} className="cv-faq__q">
-            {e.question}
+            {guestText(e.question)}
           </h3>
           <StatusFlags placeholder={e.placeholder} />
           <div className="cv-prose cv-faq__a">
@@ -531,7 +538,7 @@ function SearchResults({ search }: Parameters<ContentKit['SearchResults']>[0]) {
                 </a>
               </h3>
               <div className="cv-card__body">
-                <p>{r.snippet}</p>
+                <p>{guestText(r.snippet)}</p>
                 <p className="cv-muted">
                   {humanize(r.kind)} · checked <time dateTime={r.verifiedAt}>{formatDate(r.verifiedAt)}</time>
                   {r.caveat ? ` · ${r.caveat}` : ''}

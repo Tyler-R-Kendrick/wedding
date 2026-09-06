@@ -1,4 +1,5 @@
 import { Text as Block } from '@/components/provenance';
+import { guestText } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, VenueSpaceProps } from '@/themes/content-types';
 import { CONTENT_COPY } from '@/themes/shared/content';
@@ -14,7 +15,7 @@ export const GildedVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ data, fra
   const { space } = data;
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={space.character} />
+      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={guestText(space.character)} />
 
       <Section id="look" labelledBy="look-title">
         <SectionHeading level={2} id="look-title" title={CONTENT_COPY.exploreCaa.roomLookFor} />
@@ -26,7 +27,7 @@ export const GildedVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ data, fra
         <Prose>
           <ul className="gh-list">
             {space.features.map((f, i) => (
-              <li key={i}>{f}</li>
+              <li key={i}>{guestText(f)}</li>
             ))}
           </ul>
         </Prose>
