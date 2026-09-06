@@ -282,3 +282,8 @@
   align-items: center;
   cursor: pointer;
 }
+
+.mi-table-wrap:focus-visible {
+  outline: 3px solid var(--color-tertiary, var(--color-secondary));
+  outline-offset: 2px;
+}

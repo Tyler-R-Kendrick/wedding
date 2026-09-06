@@ -5,6 +5,7 @@ import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { AdminAiNav } from '@/components/mediaai/AdminAiNav';
 import { BiometricReadiness } from '@/components/mediaai/BiometricReadiness';
+import { ScrollableTable } from '@/components/mediaai/ScrollableTable';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Face matching', robots: { index: false, follow: false } };
@@ -53,7 +54,7 @@ export default async function AdminBiometricsPage() {
       </MediaSection>
 
       <MediaSection id="ledger" title="Consent ledger">
-        <div className="mi-table-wrap">
+        <ScrollableTable label="Consent ledger totals">
           <table className="mi-table">
             <tbody>
               <tr>
@@ -86,14 +87,14 @@ export default async function AdminBiometricsPage() {
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollableTable>
       </MediaSection>
 
       <MediaSection id="deletions" title="Deletion records">
         {s.recentDeletions.length === 0 ? (
           <p className="media-lede">No deletion has been requested.</p>
         ) : (
-          <div className="mi-table-wrap">
+          <ScrollableTable label="Deletion records">
             <table className="mi-table">
               <thead>
                 <tr>
@@ -116,7 +117,7 @@ export default async function AdminBiometricsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTable>
         )}
       </MediaSection>
     </MediaPage>

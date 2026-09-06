@@ -4,6 +4,7 @@ import { AdminGate } from '@/components/media/AdminMediaNav';
 import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { AdminAiNav } from '@/components/mediaai/AdminAiNav';
+import { ScrollableTable } from '@/components/mediaai/ScrollableTable';
 import { SuggestionReview } from '@/components/mediaai/SuggestionReview';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export default async function AdminAiPage() {
       actions={<AdminAiNav current="ai" />}
     >
       <MediaSection id="coverage" title="Coverage">
-        <div className="mi-table-wrap">
+        <ScrollableTable label="Index coverage">
           <table className="mi-table">
             <caption className="media-lede">Counts at {counts.lastIndexedAt ? new Date(counts.lastIndexedAt).toLocaleString() : 'no index run yet'}.</caption>
             <tbody>
@@ -69,7 +70,7 @@ export default async function AdminAiPage() {
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollableTable>
       </MediaSection>
 
       <MediaSection id="providers" title="What is switched on">
