@@ -1,45 +1,43 @@
-# Design critique — `/our-story` (Our Story) — Gilded Hour — 2026-09-05 (self-review)
+# Design critique — `/our-story` (Our Story) — Gilded Hour — 2026-09-05
 
 | Field | Value |
 |---|---|
 | Target | `/our-story` rendered through `theme.content.story` |
 | Design | Gilded Hour (`?theme=gilded-hour`) |
 | Viewports | 390×844, 768×1024, 1440×900 |
-| Reviewer | Swarm C level-05 (self-review); no independent review yet |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
 | Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
 
-## Scores (Awwwards axes)
+## Scores of record (independent, pre-fix)
 
-| Axis | Weight | Score (1–10) | Justification |
-|---|---|---|---|
-| Design | 40 | 8 | Every chapter is an act on one gold spine: an octagonal plaque numeral, the chapter word as an eyebrow, the title in Cinzel, then the copy left-aligned under a centred axis so a paragraph is still read as a paragraph. The hairline runs plaque to plaque, so the page is one column of engraved stone rather than a stack of cards. |
-| Usability | 30 | 8 | The chapters are an ordered list with a screen-reader-only "Chapter n" before each title, so the sequence survives the plaque being decorative. The 'keep going' act is the page's only action and it sits at the end, where a reader arrives. |
-| Creativity | 20 | 7 | The spine is the Home act-numbering carried into a narrative; it is the same vocabulary, not a new one — which is the point, but it means Our Story does not add an idea of its own. |
-| Content | 10 | 4 | Two of the five chapters are `TODO(Tyler & Sara)` blocks (backlog C-01). They are visibly marked and never dressed as prose, but half the page is still a promise. |
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 6 |
+| Usability | 30 | 7 |
+| Creativity | 20 | 6 |
+| Content | 10 | 4 |
 
-**Weighted: 7.4 / 10.** Ship threshold is every axis ≥ 7 with Usability ≥ 8; Content stays below that until the couple's backlog closes, which is a content gate, not an engineering one.
+**Weighted: 6.1 / 10 — FIX FIRST.** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
 
-## Blockers
+## What changed since that review
 
-- none open.
+- **BL-1** — one ticket reference (`content backlog C-07`) was printed in the first chapter's placeholder. `guestText()` now scrubs ticket references as copy becomes a view; **0** identifiers render on any page in either design.
+- **BL-5** — `.gh-lede` was centred at 25 characters over 5 lines at 390, against this design's own DESIGN.md (*headings centred on the axis, body copy left-aligned inside a centred column*). The lede, the handoff disclosure, the venue address and the footer rights are now `text-align: start`; **0** centred multi-line leaf paragraphs remain.
+- **SF-1** — the stamp said `NOT WRITTEN YET` at 12.75 px with the attribution visible only to screen readers. It now reads “Sara + Tyler are still writing this” at 18.06 px, and that visible text *is* the accessible name (no `aria-label`/`aria-hidden` pair).
+- **SF-6** — the phone act apparatus (56 px plaque + two 40 px chevron rules) is sized for the screen: 44 px plaque, no second rule under a numbered plaque, tighter section rhythm below 600 px.
 
-## Should fix
-
-- The gap between the engraved rule and each act title is now 40 px (heading-rhythm fix); at 1440 the plaque can read as floating above the rule rather than crowning it. Watch it once a photograph lands in the first act.
-
-## Consider
-
-- Once C-01 lands, the first act deserves a stepped-frame photograph — the frame tokens exist and are still unused.
-
-## Keep (what is working)
-
-- The plaque + hairline sequence reads as one monument, not five cards.
-- Placeholder blocks sit inside the measure, so the column edge never breaks.
-
-## Evidence
+## Verified after the fixes (measured, not asserted)
 
 - `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
-- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **192 passed**, 0 failed
-- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/our-story?theme=gilded-hour"` on `next start`: **exit 0**
-- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** (`tests/e2e/content-themes.spec.ts`, plus a standalone sweep of all 9 pages × 2 designs × 3 widths)
-- Phone fold measured at 390×844 minus the fixed bottom chrome: the first chapter heading "How we met" starts at 549 px
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/our-story?theme=gilded-hour"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.

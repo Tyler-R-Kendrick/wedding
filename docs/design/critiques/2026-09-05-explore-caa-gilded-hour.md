@@ -1,45 +1,43 @@
-# Design critique — `/explore-caa` (Explore CAA) — Gilded Hour — 2026-09-05 (self-review)
+# Design critique — `/explore-caa` (Explore CAA) — Gilded Hour — 2026-09-05
 
 | Field | Value |
 |---|---|
 | Target | `/explore-caa` rendered through `theme.content.exploreCaa` |
 | Design | Gilded Hour (`?theme=gilded-hour`) |
 | Viewports | 390×844, 768×1024, 1440×900 |
-| Reviewer | Swarm C level-05 (self-review); no independent review yet |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
 | Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
 
-## Scores (Awwwards axes)
+## Scores of record (independent, pre-fix)
 
-| Axis | Weight | Score (1–10) | Justification |
-|---|---|---|---|
-| Design | 40 | 8 | Five numbered acts — the building, the spaces, look for this, the outlets, getting here. The spaces are a floor plan of four plates with corner brackets; the docent list is a column of octagonal numerals; the outlets are a ruled ledger. |
-| Usability | 30 | 8 | Every operational row carries its own freshness badge and the date it was last checked, and every external link names its provider. Outlet names are set in sentence case now, because a 30-character name in deco caps is not readable. |
-| Creativity | 20 | 8 | The floor plan with corner brackets and the docent numerals are the strongest reuse of the deco vocabulary anywhere on the site — the building's own idiom. |
-| Content | 10 | 7 | The richest page on the site: dated venue facts, four kit spaces, live outlets with the closed ones suppressed, valet and accessibility rows. One placeholder about which rooms the wedding uses (backlog P-01). |
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 6 |
+| Usability | 30 | 5 |
+| Creativity | 20 | 8 |
+| Content | 10 | 7 |
 
-**Weighted: 7.9 / 10.** Ship threshold is every axis ≥ 7 with Usability ≥ 8; Content stays below that until the couple's backlog closes, which is a content gate, not an engineering one.
+**Weighted: 6.2 / 10 — FIX FIRST.** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
 
-## Blockers
+## What changed since that review
 
-- none open.
+- **BL-4** — 13 `<h3>` accessible names carried “, opens in a new site” and the provider was never named. The heading is now the outlet's name alone; the link is its own 44 px control below the value and names its destination (“Cindy's (rooftop) on chicagoathletichotel.com”). Measured: **0** polluted heading names, **0** generic announcements.
+- **BL-1** — 4 ticket references (`P-01`, `X-06`) were printed; **0** remain.
+- **BL-5** — the outlet names also lost the deco caps and the 0.1 em display tracking they inherited from the `h3` role: they are sentences, so they are set as sentences.
+- **SF-10** — the external icon no longer orphans onto its own line: the link is an `inline-flex` row.
 
-## Should fix
-
-- Five acts make a long page; the outlets act is the one guests will want directly and it is fourth.
-
-## Consider
-
-- An anchor from Home or the nav straight to `#outlets`.
-
-## Keep (what is working)
-
-- Freshness on every operational row, with the caveat spelled out above the list.
-- Closed outlets never render; the seed's expiry does the work, not a hand-edited list.
-
-## Evidence
+## Verified after the fixes (measured, not asserted)
 
 - `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
-- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **192 passed**, 0 failed
-- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/explore-caa?theme=gilded-hour"` on `next start`: **exit 0**
-- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** (`tests/e2e/content-themes.spec.ts`, plus a standalone sweep of all 9 pages × 2 designs × 3 widths)
-- Phone fold measured at 390×844 minus the fixed bottom chrome: the first cited fact starts at 690 px
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/explore-caa?theme=gilded-hour"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.

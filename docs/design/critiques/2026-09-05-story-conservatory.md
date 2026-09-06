@@ -1,45 +1,43 @@
-# Design critique — `/our-story` (Our Story) — Conservatory — 2026-09-05 (self-review)
+# Design critique — `/our-story` (Our Story) — Conservatory — 2026-09-05
 
 | Field | Value |
 |---|---|
 | Target | `/our-story` rendered through `theme.content.story` |
 | Design | Conservatory (`?theme=conservatory`) |
 | Viewports | 390×844, 768×1024, 1440×900 |
-| Reviewer | Swarm C level-05 (self-review); no independent review yet |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
 | Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
 
-## Scores (Awwwards axes)
+## Scores of record (independent, pre-fix)
 
-| Axis | Weight | Score (1–10) | Justification |
-|---|---|---|---|
-| Design | 40 | 8 | One dashed stem runs down the left of the sheet with a leaf at every chapter and the chapter word on a kraft specimen tag. The text column keeps its 42 rem measure; the mounting area stays empty through the chapters, which is what a herbarium sheet looks like. |
-| Usability | 30 | 8 | The chapters are an ordered list; the specimen tag is a label, not a control, so nothing invites a tap that does nothing. The 'keep going' link is its own short section with the link on a hanging kraft tag. |
-| Creativity | 20 | 8 | The stem is the strongest single idea in either design on this page: the leaf marks the chapter the way a mount pin marks a specimen, and it needs no numerals to say 'in order'. |
-| Content | 10 | 4 | Same two `TODO(Tyler & Sara)` chapters as Gilded Hour (backlog C-01); the kraft placeholder block reads as a curator's note, which suits the sheet but does not fill it. |
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 8 |
+| Usability | 30 | 6 |
+| Creativity | 20 | 8 |
+| Content | 10 | 4 |
 
-**Weighted: 7.6 / 10.** Ship threshold is every axis ≥ 7 with Usability ≥ 8; Content stays below that until the couple's backlog closes, which is a content gate, not an engineering one.
+**Weighted: 7.0 / 10 — FIX FIRST.** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
 
-## Blockers
+## What changed since that review
 
-- none open.
+- **BL-2** — the opaque kraft Menu tag covered the line-end of the first placeholder **at scroll 0**, and `main` reserved 0 px for it. `base.css` now has one reservation mechanism (`data-bottom-bar` + `data-floating-menu`, additive); this design reserves **89.25 px** against 60 px of fixed chrome.
+- **BL-1** — the same `content backlog C-07` reference; scrubbed at the view boundary.
+- **SF-1** — the same visible attribution at 18.06 px.
+- Still open (Consider): the mounting area is empty for the whole scroll at 1440. It needs a pressed card or a photograph, not a CSS change — backlog C-01 / C-07.
 
-## Should fix
-
-- The chapters leave the mounting area empty for the whole scroll at 1440. That is deliberate, but a pressed card with a date or a place would earn the column.
-
-## Consider
-
-- A pressed photograph per chapter is the obvious next move once C-01 and C-07 land.
-
-## Keep (what is working)
-
-- The dashed stem plus leaves gives sequence without numbering — structurally different from Gilded Hour, not a recolour.
-- The lone hanging tag now has its own section, so the chapters no longer run several screens beside a sliver of a sibling column.
-
-## Evidence
+## Verified after the fixes (measured, not asserted)
 
 - `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
-- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **192 passed**, 0 failed
-- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/our-story?theme=conservatory"` on `next start`: **exit 0**
-- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** (`tests/e2e/content-themes.spec.ts`, plus a standalone sweep of all 9 pages × 2 designs × 3 widths)
-- Phone fold measured at 390×844 minus the fixed bottom chrome: the first chapter heading "How we met" starts at 524 px
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/our-story?theme=conservatory"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.

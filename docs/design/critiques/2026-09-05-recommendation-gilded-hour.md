@@ -1,45 +1,42 @@
-# Design critique — `/share-an-adventure/starved-rock-state-park` (one recommendation) — Gilded Hour — 2026-09-05 (self-review)
+# Design critique — `/share-an-adventure/starved-rock-state-park` (one recommendation) — Gilded Hour — 2026-09-05
 
 | Field | Value |
 |---|---|
 | Target | `/share-an-adventure/starved-rock-state-park` rendered through `theme.content.recommendation` |
 | Design | Gilded Hour (`?theme=gilded-hour`) |
 | Viewports | 390×844, 768×1024, 1440×900 |
-| Reviewer | Swarm C level-05 (self-review); no independent review yet |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
 | Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
 
-## Scores (Awwwards axes)
+## Scores of record (independent, pre-fix)
 
-| Axis | Weight | Score (1–10) | Justification |
-|---|---|---|---|
-| Design | 40 | 8 | The card is the page: a title plaque, then the practical card at full measure on the axis. On its own page the card no longer repeats the title as a link — the H1 above it names the place — and the way there comes straight after the summary. |
-| Usability | 30 | 9 | The primary action is the directions handoff and it is fully inside the first screen at 390, above the elevator panel; its disclosure sits under it, and the source badge names the external source and the date it was checked. |
-| Creativity | 20 | 7 | Deliberately plain: this is a page a guest lands on from a map or a plan, so it is one card and one action. |
-| Content | 10 | 6 | Written from the CAA and Illinois DNR sources with dates; the memory link is present because the linked adventure is public. |
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 7 |
+| Usability | 30 | 6 |
+| Creativity | 20 | 6 |
+| Content | 10 | 6 |
 
-**Weighted: 7.9 / 10.** Ship threshold is every axis ≥ 7 with Usability ≥ 8; Content stays below that until the couple's backlog closes, which is a content gate, not an engineering one.
+**Weighted: 6.4 / 10 — FIX FIRST.** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
 
-## Blockers
+## What changed since that review
 
-- none open.
+- **SF-4** — “← All recommendations and itineraries” and the place links were under 24 px; standalone links are now 44 px.
+- **BL-5** — the handoff disclosure is left-aligned and capped at 46 characters.
+- **SF-7** — the handoff announces “Google Maps”, never `google-maps`; the label “Details on Cindy's's official page” is now “Cindy's official page”.
 
-## Should fix
-
-- Nothing open.
-
-## Consider
-
-- A static map thumbnail would make the handoff more obviously a map, at the cost of a raster on the axis.
-
-## Keep (what is working)
-
-- Action before detail on the page whose subject is the place.
-- No duplicated heading, so the first screen is the place and the way there.
-
-## Evidence
+## Verified after the fixes (measured, not asserted)
 
 - `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
-- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **192 passed**, 0 failed
-- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/share-an-adventure/starved-rock-state-park?theme=gilded-hour"` on `next start`: **exit 0**
-- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** (`tests/e2e/content-themes.spec.ts`, plus a standalone sweep of all 9 pages × 2 designs × 3 widths)
-- Phone fold measured at 390×844 minus the fixed bottom chrome: "Open directions in Google Maps" ends at 681 px
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/share-an-adventure/starved-rock-state-park?theme=gilded-hour"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.

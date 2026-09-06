@@ -55,6 +55,44 @@ files lands with the theme DESIGN.md files (Stage 3).
 - Procedural art: 11 SVGs per theme under `public/assets/art/<theme>/`.
 - Licensed placeholder photography: 4 Wikimedia Commons files with ledger.
 
+## 2026-09-06 — Level 05 review round 1: six blockers fixed
+
+Independent review (`.data/review/findings.md` @ `b00f063`, 54 axe scans, 18
+detector runs, computed-contrast sampling, keyboard walks, scroll-occlusion
+sweep) failed the level: no page reached Usability ≥ 7.5, and Conservatory was
+the stronger implementation on 8 of 9 pages. The swarm's own critiques scored
+the two designs within 0.2 of each other on every page; those numbers are
+withdrawn and the independent scores are the baseline.
+
+- **Ticket references never reach a guest.** `guestText()` scrubs
+  "(backlog C-01)" / "(content backlog C-07)" / bare "backlog P-02" as copy
+  becomes a view. 24 visible instances → 0 across all 18 page/design combinations.
+- **One reservation mechanism for fixed bottom chrome.** `data-bottom-bar` (a
+  full-width bar) and `data-floating-menu` (a floating control) each reserve
+  their height in `base.css` and add. Conservatory reserved 0 px for its opaque
+  Menu tag and now reserves 89.25 px against 60 px of chrome.
+- **The 22,600 px guide is navigable.** Categories sit one heading level above
+  their places, carry their count so no two headings share a name, and both
+  designs open with a jump list reaching every group.
+- **The external affordance left the heading.** An outlet's `<h3>` is its name;
+  the link is its own 44 px control naming its destination. 13 polluted heading
+  names → 0.
+- **Gilded Hour honours its own DESIGN.md**: body copy is left-aligned inside
+  the centred column, and sentences (outlet names, itinerary titles, external
+  handoffs) are set as sentences.
+- **The phone fold carries content, not ornament.** The act apparatus is sized
+  for a phone (44 px plaque, one rule per act, tighter rhythm); The Wedding
+  lifts "What to wear" above the numbered spine.
+- Also: the placeholder stamp names who is writing, visibly, at 18 px, and that
+  text is its accessible name; the dead `font-style: italic` is gone and
+  Conservatory's DESIGN.md no longer claims Spectral ships an italic; the
+  elevator panel is emitted after `</main>` (3 chrome tab stops, was 7);
+  standalone links are 44 px and Gilded Hour form labels 18 px; no provider slug
+  reaches a screen reader.
+
+Regression tests for the four named blockers live in
+`tests/e2e/content-themes.spec.ts`. Awaiting independent re-review.
+
 ## 2026-09-05 — Level 05: the content pages in both designs
 
 - Every level-05 page (Our Story, Our Adventures + one adventure, Share an

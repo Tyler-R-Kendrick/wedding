@@ -1,45 +1,43 @@
-# Design critique — `/the-wedding` (The Wedding) — Gilded Hour — 2026-09-05 (self-review)
+# Design critique — `/the-wedding` (The Wedding) — Gilded Hour — 2026-09-05
 
 | Field | Value |
 |---|---|
 | Target | `/the-wedding` rendered through `theme.content.wedding` |
 | Design | Gilded Hour (`?theme=gilded-hour`) |
 | Viewports | 390×844, 768×1024, 1440×900 |
-| Reviewer | Swarm C level-05 (self-review); no independent review yet |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
 | Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
 
-## Scores (Awwwards axes)
+## Scores of record (independent, pre-fix)
 
-| Axis | Weight | Score (1–10) | Justification |
-|---|---|---|---|
-| Design | 40 | 8 | The date and the venue are facts on the title plaque with the directions handoff under them; dress code is act 01 and the order of the day follows as acts 02–04 on the spine. |
-| Usability | 30 | 8 | Directions are the page's action and they are in the first screen at 390. Every time and every room renders as a marked placeholder rather than a guess, and each event's date is a real `<time>` element. |
-| Creativity | 20 | 7 | The programme reuses the story spine, which is correct but not new. |
-| Content | 10 | 3 | Weakest content on the site by design: the date and the venue are the only settled facts; times, rooms and dress code are all `TODO(Tyler & Sara)` (backlog P-01, P-02, C-01). Seven placeholders, all visible. |
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 5 |
+| Usability | 30 | 5 |
+| Creativity | 20 | 6 |
+| Content | 10 | 3 |
 
-**Weighted: 7.3 / 10.** Ship threshold is every axis ≥ 7 with Usability ≥ 8; Content stays below that until the couple's backlog closes, which is a content gate, not an engineering one.
+**Weighted: 5.0 / 10 — REDESIGN (phone fold).** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
 
-## Blockers
+## What changed since that review
 
-- none open.
+- **BL-6**, the verdict that made this page a REDESIGN — the 844 px first screen held a title, a three-line centred address, a button, a three-line centred disclosure, ~80 px of nothing and a bare octagonal “01”. “What to wear” is now lifted above the numbered spine (the programme owns it from 01), the address and disclosure are left-aligned, and the phone act apparatus is sized for the screen. Measured at 390: the heading sits **619→648** and the start of its answer at **664**, inside a **772 px** fold — with the directions handoff still fully tappable above it.
+- **BL-1** — 11 ticket references, the worst page on the site for it (`C-01`, `C-03`, `P-01`, `P-02`, `V-01`). **0** remain.
+- **BL-5** — the three-line centred address and the three-line centred disclosure are left-aligned.
+- Content still gates this page: seven placeholders remain, all visibly attributed. Backlog P-01, P-02, C-01.
 
-## Should fix
-
-- With this many placeholders the page reads as a form waiting to be filled; that is honest but it is not yet a wedding page.
-
-## Consider
-
-- Once P-02 lands, the programme should carry a 'now' marker on the day itself, as Home's timeline does.
-
-## Keep (what is working)
-
-- Nothing is invented. The page would rather show seven marked gaps than one plausible time.
-- The date is a fact and it is stated once, at the top, as a `<time>`.
-
-## Evidence
+## Verified after the fixes (measured, not asserted)
 
 - `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
-- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **192 passed**, 0 failed
-- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/the-wedding?theme=gilded-hour"` on `next start`: **exit 0**
-- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** (`tests/e2e/content-themes.spec.ts`, plus a standalone sweep of all 9 pages × 2 designs × 3 widths)
-- Phone fold measured at 390×844 minus the fixed bottom chrome: "Open directions in Google Maps" ends at 489 px
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/the-wedding?theme=gilded-hour"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.
