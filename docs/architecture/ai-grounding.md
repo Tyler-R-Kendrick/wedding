@@ -130,6 +130,17 @@ neither idempotency keys nor confirmations (they share one identity), so they ar
   answers, sources and invocations. The chat route keeps that job queued at most once an hour.
 - Answers are `Cache-Control: private, no-store`.
 
+Two limits worth naming rather than hiding. Anonymous callers share one principal key, so an
+anonymous session is protected only by its id — a ULID with 80 bits of CSPRNG randomness, which is
+the standard guarantee for an anonymous session and the reason the stored tail is redacted and short.
+And with `TRUSTED_PROXY_HOPS=0` every anonymous caller shares the `direct` rate-limit bucket; behind
+a proxy, set the hop count so the per-IP limiter can tell callers apart.
+
+`src/ai/test-principal.ts` is an e2e affordance, not a feature: it selects a fixed guest or admin
+from `x-test-principal` + `x-test-auth`, and only when `NODE_ENV=test`, `TEST_AUTH_SECRET` is set,
+the secret matches in constant time, and neither `VERCEL` nor `CI` is set. Its unit test exists to
+prove it is off in every other combination.
+
 ## 8. The transport
 
 `POST /api/ai/chat` streams newline-delimited `ConciergeEvent`s (`src/ai/events.ts`). The route sets

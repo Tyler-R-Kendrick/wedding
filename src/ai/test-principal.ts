@@ -41,12 +41,25 @@ function admin(adminId: string, entitlements: Entitlement[]): AdminPrincipal {
   return { kind: 'admin', authIdentityId: `auth-${adminId}` as AuthIdentityId, adminId: adminId as AdminId, roles: new Set(['owner']), entitlements: new Set(entitlements), authenticatedAt: new Date().toISOString(), sessionId: `test-${adminId}` };
 }
 
-export function testPrincipalEnabled(env: { NODE_ENV?: string; TEST_AUTH_SECRET?: string } = { NODE_ENV: process.env.NODE_ENV, TEST_AUTH_SECRET: aiConfig.TEST_AUTH_SECRET }): boolean {
+export function testPrincipalEnabled(
+  env: { NODE_ENV?: string; TEST_AUTH_SECRET?: string; VERCEL?: string; CI?: string } = {
+    NODE_ENV: process.env.NODE_ENV,
+    TEST_AUTH_SECRET: aiConfig.TEST_AUTH_SECRET,
+    VERCEL: process.env.VERCEL,
+    CI: process.env.CI,
+  },
+): boolean {
+  // Three independent conditions, and never on a deployed environment: NODE_ENV alone is one
+  // mistake away from being wrong, so a deploy marker disables the injector outright.
+  if (env.VERCEL || env.CI) return false;
   return env.NODE_ENV === 'test' && !!env.TEST_AUTH_SECRET;
 }
 
 /** Resolves a preset from the headers when (and only when) the injector is enabled and the secret matches. */
-export function resolveTestPrincipal(request: Request, env = { NODE_ENV: process.env.NODE_ENV, TEST_AUTH_SECRET: aiConfig.TEST_AUTH_SECRET }): Principal | undefined {
+export function resolveTestPrincipal(
+  request: Request,
+  env = { NODE_ENV: process.env.NODE_ENV, TEST_AUTH_SECRET: aiConfig.TEST_AUTH_SECRET, VERCEL: process.env.VERCEL, CI: process.env.CI },
+): Principal | undefined {
   if (!testPrincipalEnabled(env)) return undefined;
   const auth = request.headers.get(TEST_AUTH_HEADER) ?? '';
   const preset = request.headers.get(TEST_PRINCIPAL_HEADER) ?? '';
