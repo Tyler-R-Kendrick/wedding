@@ -42,15 +42,22 @@ describe('principal resolver', () => {
   it('describe/list snapshots per role: anonymous, guest, household manager, admin', async () => {
     const f = await seed('rs4');
     const names = (p: Parameters<typeof registry.list>[0]) => registry.list(p).map((c) => c.name).filter((n) => !n.startsWith('site_') && n !== 'navigate_to');
-    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['lookup_invitation', 'request_otp', 'verify_otp']);
+    // Exact lists on purpose: this is the guard that a capability never becomes visible to a
+    // lesser principal by accident. When a level adds one, update these deliberately and say why.
+    // Level 05 added the public content reads (story, adventures, itineraries, venue, FAQ, static
+    // search) — anonymous by design, since those are public pages, and agent-exposed so the
+    // concierge can answer from them.
+    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_faq', 'get_story', 'get_venue_facts', 'list_adventures', 'list_itineraries', 'lookup_invitation', 'request_otp', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
     const amara = await signIn(f.emails.amara);
     const guest = await principalFor({ cookie: amara.cookie });
-    expect(names({ principal: guest })).toEqual(['claim_identity', 'get_my_household', 'get_my_invitation', 'lookup_invitation', 'register_passkey', 'request_otp', 'step_up', 'update_my_contact', 'verify_otp']);
-    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['get_my_household', 'get_my_invitation']);
-    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['get_my_household', 'get_my_invitation']);
+    expect(names({ principal: guest })).toEqual(['claim_identity', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_story', 'get_venue_facts', 'list_adventures', 'list_itineraries', 'lookup_invitation', 'register_passkey', 'request_otp', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'update_my_contact', 'verify_otp']);
+    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_story', 'get_venue_facts', 'list_adventures', 'list_itineraries', 'search_wedding_information_static', 'show_adventure', 'show_venue_room']);
+    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_story', 'get_venue_facts', 'list_adventures', 'list_itineraries', 'search_wedding_information_static', 'show_adventure', 'show_venue_room']);
     await grantAdmin(`owner+rs4@example.test`, 'owner');
     const admin = await signIn(`owner+rs4@example.test`, {}, 'admin_sign_in');
     const ap = await principalFor({ cookie: admin.cookie });
+    // Identity's admin surface only: level 05's content editors are named without the prefix
+    // (list_content_records, save_content_record, ...) and are covered by their own level's tests.
     expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(17);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
