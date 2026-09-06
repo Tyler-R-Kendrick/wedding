@@ -11,6 +11,7 @@ import { getPrincipal } from '@/lib/principal';
 import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
 import { principalKey } from '@/policy/confirmation';
 import { getProvider } from '@/providers/registry';
+import type { RateLimitPolicy } from '@/providers/rate-limit/types';
 import { buildManifest } from '../manifest';
 import { assertSameOriginFetch, errorResponse, featureDisabled, outcomeResponse, rateLimited } from './http';
 import { invokeForWebMcp } from './invoke';
@@ -45,6 +46,20 @@ const limiterKeyFor = (principal: Principal, ip: string) =>
   principal.kind === 'anonymous' ? `webmcp:anon:${ip}` : `webmcp:${principalKey(toPrincipalRef(principal))}`;
 
 /**
+ * The manifest gets its own bucket, separate from the shared `capability` one.
+ *
+ * Before this level a page view cost zero capability-limiter tokens. Now every WebMCP-capable page
+ * load fetches the manifest, and it refreshes on client-side navigation and on returning to the
+ * tab — so charging it to the same 60-token bucket that `/api/capabilities` uses would let ordinary
+ * wedding-weekend traffic 429 the capability layer for everyone. This is a cheap authenticated
+ * read of data the caller is allowed to see, so it is metered generously and separately: a flood
+ * still hits the coarse per-IP guard first.
+ */
+const MANIFEST_POLICY: RateLimitPolicy = { capacity: 240, refillPerSecond: 4 };
+const manifestKeyFor = (principal: Principal, ip: string) =>
+  principal.kind === 'anonymous' ? `webmcp:manifest:anon:${ip}` : `webmcp:manifest:${principalKey(toPrincipalRef(principal))}`;
+
+/**
  * GET /api/webmcp/manifest -> { ok: true, data: WebMcpManifest }
  * Only descriptors with `exposure.webmcp` that `authorize()` allows for the current principal.
  * Personalized, so `Cache-Control: private, no-store`. Omission is UX minimisation; the bridge
@@ -66,7 +81,7 @@ export async function handleManifest(request: Request): Promise<Response> {
     const sameOrigin = assertSameOriginFetch(request);
     if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
   }
-  const decision = await limiter.consume(limiterKeyFor(principal, ip), 'capability');
+  const decision = await limiter.consume(manifestKeyFor(principal, ip), MANIFEST_POLICY);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
 
   return jsonResponse({ ok: true, data: buildManifest({ registry: webMcpRegistry, principal, flags }) }, { requestId });

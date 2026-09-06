@@ -108,6 +108,26 @@ export const WEBMCP_TEST_CAPABILITIES: readonly AnyCapability[] = [
     handler: async (_ctx, input) => ok({ data: { saved: true, value: input.value }, sources: [] }),
   }),
   defineCapability<z.infer<typeof explicitInput>, z.infer<typeof explicitOutput>>({
+    name: 'webmcp_test_agent_action',
+    title: 'Test: save a value (agent-confirmable)',
+    description: 'Test fixture. An inline mutation the couple decided is safe to complete unattended.',
+    kind: 'action',
+    auth: 'guest',
+    requires: ['rsvp_self'],
+    confirmation: 'inline',
+    // The deliberate opt-out: without it an inline mutation is upgraded to `explicit` on this
+    // surface. Exists so the opt-out has a live example and so the idempotency semantics
+    // (replay, conflict, per-principal scoping) can be exercised end to end from an agent.
+    agentConfirmable: true,
+    idempotent: true,
+    annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
+    exposure: { ui: false, ai: false, webmcp: true },
+    input: explicitInput,
+    output: explicitOutput,
+    maxOutputChars: 500,
+    handler: async (_ctx, input) => ok({ data: { saved: true, value: input.value }, sources: [] }),
+  }),
+  defineCapability<z.infer<typeof explicitInput>, z.infer<typeof explicitOutput>>({
     name: 'webmcp_test_explicit',
     title: 'Test: save a value (explicit confirmation)',
     description: 'Test fixture. Saves a value after the guest confirms.',

@@ -152,6 +152,18 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
     if (e.RATE_LIMIT_BACKEND === 'memory') throw new Error('RATE_LIMIT_BACKEND=memory is not allowed in production (per-process buckets are not a rate limit behind a load balancer)');
   }
   const TRUSTED_PROXY_HOPS = e.TRUSTED_PROXY_HOPS ?? (source.VERCEL ? 1 : 0);
+  /**
+   * With 0 hops every forwarding header is ignored (correctly — nothing overwrites them), so every
+   * client collapses to the single `direct` rate-limit bucket and one visitor can hold the whole
+   * site's anonymous budget down. That is the right default when nothing is in front of the app,
+   * and the wrong one behind nginx/Cloudflare, so say so out loud rather than failing quietly.
+   * console, not the logger: this runs at first import, before anything is configured.
+   */
+  if (TRUSTED_PROXY_HOPS === 0 && isProduction && !isBuildPhase) {
+    console.warn(
+      '[env] TRUSTED_PROXY_HOPS=0: forwarding headers are ignored and every client shares one rate-limit bucket. Set it to the number of proxies in front of this app.',
+    );
+  }
   return { ...e, TRUSTED_PROXY_HOPS, isProduction, isTest: e.NODE_ENV === 'test', isDevelopment: e.NODE_ENV === 'development' };
 }
 

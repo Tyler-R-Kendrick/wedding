@@ -23,11 +23,13 @@ export const MAX_CLIENT_IP_CHARS = 128;
  * is the Nth entry from the right. With 0 hops every forwarding header is attacker-controlled
  * and is ignored: all callers share the `direct` bucket.
  */
-export function getClientIp(headers: Headers, trustedProxyHops = 0): string {
+export function getClientIp(headers: Headers, trustedProxyHops = 0, onVercel = !!process.env.VERCEL): string {
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops <= 0) return 'direct';
   const clamp = (s: string) => s.slice(0, MAX_CLIENT_IP_CHARS);
-  // Platform-set headers first (Vercel overwrites these; a client cannot inject them).
-  const vercel = headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim();
+  // Vercel overwrites `x-vercel-forwarded-for`, so on Vercel a client cannot inject it. Anywhere
+  // else it is an ordinary request header and nothing overwrites it, which would let a caller pick
+  // its own rate-limit bucket per request. Off Vercel we ignore it and use the hop arithmetic below.
+  const vercel = onVercel ? headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim() : undefined;
   if (vercel) return clamp(vercel);
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {

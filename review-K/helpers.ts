@@ -2,6 +2,7 @@
 import { POST as INVOKE } from '@/app/api/webmcp/invoke/[name]/route';
 import { GET as MANIFEST } from '@/app/api/webmcp/manifest/route';
 import { POST as CAPABILITY } from '@/app/api/capabilities/[name]/route';
+import { newId } from '@/contracts/ids';
 
 export const TEST_AUTH_SECRET = 'review-k-test-auth-secret-0123456789';
 export const CONFIRMATION_SECRET = 'review-k-confirmation-secret-0123456789';
@@ -49,4 +50,6 @@ export async function jsonOf(response: Response): Promise<{ status: number; body
   return { status: response.status, body: (await response.json()) as Record<string, unknown> };
 }
 
-export const key = () => `01JREVIEWK${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
+// A real ULID. The bridge enforces `ID_PATTERN` on idempotency keys as of the finding-7 fix, and
+// the old literal ('01JREVIEWK' + 10 random chars) was neither 26 characters nor Crockford base32.
+export const key = () => newId();

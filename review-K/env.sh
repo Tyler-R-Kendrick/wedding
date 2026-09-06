@@ -1,0 +1,12 @@
+export NODE_ENV=test
+export BASE_URL=http://localhost:3113
+export HEALTH_TOKEN=review-k-health-token-0123456789
+export CRON_SECRET=review-k-cron-secret-0123456789-abcdefghij
+export CONFIRMATION_SECRET=review-k-confirmation-secret-0123456789
+export STORAGE_SIGNING_SECRET=review-k-storage-signing-secret-0123
+export TEST_AUTH_SECRET=review-k-test-auth-secret-0123456789
+export TRUSTED_PROXY_HOPS=1
+export PGLITE_MEMORY=1
+export LOG_LEVEL=silent
+export METRICS_SINK=none
+export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium

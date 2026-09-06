@@ -1,0 +1,235 @@
+{
+  "anonTools": [
+    "navigate_to",
+    "site_status",
+    "webmcp_test_big",
+    "webmcp_test_external"
+  ],
+  "anonManifest": [
+    {
+      "name": "navigate_to",
+      "title": "Go to a page",
+      "description": "Navigate to a page on this wedding site by its internal path (for example \"/travel\" or \"/rsvp\"). Use it when a guest asks where something is. It only opens pages on this site, never external links, and it changes nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "route": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "highlight": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,64}$"
+          }
+        },
+        "required": [
+          "route"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "untrustedContentHint": false,
+        "consequentialHint": false
+      },
+      "kind": "navigate",
+      "execution": {
+        "auth": "anonymous",
+        "idempotent": false,
+        "confirmation": "none",
+        "stepUp": false,
+        "maxOutputChars": 500
+      }
+    },
+    {
+      "name": "site_status",
+      "title": "Site status",
+      "description": "Returns what stage the wedding site is in (teaser, RSVP open, wedding week, archive...), the wedding date and time zone, the venue, and the available visual themes. Use it to orient before answering questions about timing. It reads only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "untrustedContentHint": false,
+        "consequentialHint": false
+      },
+      "kind": "read",
+      "execution": {
+        "auth": "anonymous",
+        "idempotent": false,
+        "confirmation": "none",
+        "stepUp": false,
+        "maxOutputChars": 2000
+      }
+    },
+    {
+      "name": "webmcp_test_big",
+      "title": "Test: oversized output",
+      "description": "Test fixture. Returns more than its maxOutputChars.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "untrustedContentHint": false,
+        "consequentialHint": false
+      },
+      "kind": "read",
+      "execution": {
+        "auth": "anonymous",
+        "idempotent": false,
+        "confirmation": "none",
+        "stepUp": false,
+        "maxOutputChars": 50
+      }
+    },
+    {
+      "name": "webmcp_test_external",
+      "title": "Test: open a partner site",
+      "description": "Test fixture. Hands off to a partner (inline confirmation in the UI). Consequential: the website asks the guest to confirm before anything happens. When the result says confirmation is required, tell the guest to continue on the page; do not retry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "untrustedContentHint": false,
+        "consequentialHint": true
+      },
+      "kind": "external",
+      "execution": {
+        "auth": "anonymous",
+        "idempotent": true,
+        "confirmation": "explicit",
+        "stepUp": false,
+        "maxOutputChars": 500
+      }
+    }
+  ],
+  "guestKind": "guest",
+  "guestTools": [
+    "navigate_to",
+    "site_status",
+    "webmcp_test_action",
+    "webmcp_test_agent_action",
+    "webmcp_test_big",
+    "webmcp_test_draft",
+    "webmcp_test_explicit",
+    "webmcp_test_external",
+    "webmcp_test_guest_read",
+    "webmcp_test_guest_text",
+    "webmcp_test_transaction"
+  ],
+  "adminTools": [
+    "navigate_to",
+    "site_status",
+    "webmcp_test_admin_read",
+    "webmcp_test_big",
+    "webmcp_test_external"
+  ],
+  "probes": {
+    "unknown-name": {
+      "name": "does_not_exist",
+      "status": 404,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "not_found",
+          "message": "That action is not available."
+        }
+      }
+    },
+    "malformed-name": {
+      "name": "NotSnakeCase",
+      "status": 404,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "not_found",
+          "message": "That action is not available."
+        }
+      }
+    },
+    "exists-but-not-webmcp-exposed": {
+      "name": "webmcp_test_hidden",
+      "status": 404,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "not_found",
+          "message": "That action is not available."
+        }
+      }
+    },
+    "exists-guest-only-called-anon": {
+      "name": "webmcp_test_guest_read",
+      "status": 404,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "not_found",
+          "message": "That action is not available."
+        }
+      }
+    },
+    "exists-admin-only-called-guest": {
+      "name": "webmcp_test_admin_read",
+      "status": 404,
+      "body": {
+        "ok": false,
+        "error": {
+          "code": "not_found",
+          "message": "That action is not available."
+        }
+      }
+    },
+    "public": {
+      "name": "site_status",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "data": {
+          "lifecycle": {
+            "state": "TEASER",
+            "mode": "explore",
+            "publishedAt": "2026-09-06T00:46:56.068Z",
+            "note": "Initial seed",
+            "suggested": "RSVP_OPEN"
+          },
+          "wedding": {
+            "coupleDisplayName": "Sara + Tyler",
+            "date": "2027-07-17",
+            "timezone": "America/Chicago",
+            "venueName": "Chicago Athletic Association Hotel",
+            "venueAddress": "12 S Michigan Ave, Chicago, IL 60603",
+            "venueUrl": "https://www.chicagoathletichotel.com/"
+          },
+          "themes": [
+            "gilded-hour",
+            "conservatory"
+          ],
+          "defaultTheme": "gilded-hour"
+        },
+        "sources": [
+          {
+            "sourceId": "01SEED00000000000000000101",
+            "title": "Tyler's brief 2026-09-04",
+            "url": "/the-wedding",
+            "verifiedAt": "2026-09-04T00:00:00.000Z"
+          }
+        ]
+      }
+    }
+  }
+}

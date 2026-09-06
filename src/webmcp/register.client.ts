@@ -22,6 +22,16 @@ import type { WebMcpManifest } from './manifest';
  */
 
 export const WEBMCP_MANIFEST_PATH = '/api/webmcp/manifest';
+
+/**
+ * Dispatch this on `document` when the signed-in principal changes (sign-in, sign-out, step-up)
+ * and the bridge re-reads the manifest immediately. The auth layer owns the dispatch; until it
+ * exists, `focus` and `visibilitychange` cover the same ground a little later.
+ */
+export const WEBMCP_REFRESH_EVENT = 'webmcp:principal-changed';
+
+/** How long a fetched manifest is reused before another trigger is allowed to refetch it. */
+export const MANIFEST_TTL_MS = 30_000;
 export const webMcpInvokePath = (name: string): string => `/api/webmcp/invoke/${encodeURIComponent(name)}`;
 
 export interface WebMcpBridgeOptions {
@@ -68,6 +78,7 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
   let generation: AbortController | undefined;
   let busy = false;
   let stopped = false;
+  let lastFetchedAt = 0;
 
   const stop = (): void => {
     stopped = true;
@@ -75,6 +86,7 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
     generation = undefined;
     names = [];
     fingerprint = undefined;
+    lastFetchedAt = 0;
   };
   outer?.addEventListener('abort', stop, { once: true });
 
@@ -150,11 +162,19 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
     fingerprint = manifest.fingerprint;
   }
 
-  async function refresh(): Promise<void> {
+  /**
+   * The manifest is refetched on navigation, on returning to the tab and on regaining focus, which
+   * for an ordinary browsing session is far more often than the answer can change. Each fetch costs
+   * the guest a rate-limit token, so a short TTL makes the common case free; `force` is for the
+   * moments where the answer really might have changed (a sign-out, tools disappearing).
+   */
+  async function refresh(options: { force?: boolean } = {}): Promise<void> {
     if (stopped || busy) return;
+    if (!options.force && lastFetchedAt && Date.now() - lastFetchedAt < MANIFEST_TTL_MS) return;
     busy = true;
     try {
       const manifest = await fetchManifest();
+      lastFetchedAt = Date.now();
       if (!manifest || stopped) return;
       // The fingerprint covers the principal kind and every tool's schema, annotations and
       // execution rules, so an unchanged fingerprint means there is genuinely nothing to do.
@@ -190,7 +210,7 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
       void (async () => {
         if (await toolsMissing()) {
           fingerprint = undefined;
-          await refresh();
+          await refresh({ force: true });
         }
       })();
     },
@@ -206,6 +226,18 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
     },
     listenerOptions,
   );
+
+  // A sign-out in the SAME tab changes neither the pathname nor the visibility, so neither trigger
+  // above fires and the agent keeps holding the previous principal's tool list. Every call would
+  // fail closed, but an agent should not be told it can still do things this session cannot.
+  // `focus` covers the ordinary case; `WEBMCP_REFRESH_EVENT` is the explicit hook for the auth
+  // layer to dispatch the moment a session changes.
+  // `focus` is forced past the TTL: it is the backstop for a sign-out in this very tab, which is
+  // the case the TTL would otherwise hide for up to its whole window. Becoming visible fires both
+  // events, so this is at most one extra fetch per tab activation, against the manifest's own
+  // generous bucket.
+  (doc.defaultView ?? (doc as unknown as EventTarget)).addEventListener('focus', () => void refresh({ force: true }), listenerOptions);
+  doc.addEventListener(WEBMCP_REFRESH_EVENT, () => void refresh({ force: true }), listenerOptions);
 
   return {
     supported: true,

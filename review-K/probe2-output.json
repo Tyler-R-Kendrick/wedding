@@ -1,0 +1,98 @@
+{
+  "ip": {
+    "hops0_xff": "direct",
+    "hops0_none": "direct",
+    "hops1_xff": "1.2.3.4",
+    "hops1_xff_chain": "5.6.7.8",
+    "hops1_vercel": "5.6.7.8",
+    "hops1_vercel_list": "unknown",
+    "hops1_none": "unknown"
+  },
+  "overCap": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "validation",
+        "message": "That request is too large.",
+        "details": {
+          "maxBytes": 65536
+        }
+      }
+    }
+  },
+  "tokenIssued": {
+    "expiresAt": "2026-09-06T00:51:53.000Z",
+    "len": 306
+  },
+  "explicitWithValidUiToken": {
+    "status": 409,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "confirmation_required",
+        "message": "Please confirm this on the website.",
+        "details": {
+          "reason": "requires_ui"
+        }
+      }
+    }
+  },
+  "manifestCrossSiteGuest": {
+    "status": 403,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "forbidden",
+        "message": "This request must come from the wedding site.",
+        "details": {
+          "reason": "origin"
+        }
+      }
+    }
+  },
+  "manifestCrossSiteAnon": {
+    "status": 200,
+    "headers": {
+      "cache-control": "private, no-store",
+      "content-type": "application/json; charset=utf-8",
+      "x-request-id": "01M1T2XD519GKYF0ZE6VY0SGF2"
+    },
+    "tools": [
+      "navigate_to",
+      "site_status",
+      "webmcp_test_big",
+      "webmcp_test_external"
+    ]
+  },
+  "inlineAction": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "validation",
+        "message": "The request body must be JSON with an \"input\" field."
+      }
+    }
+  },
+  "inlineActionReplay": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "validation",
+        "message": "The request body must be JSON with an \"input\" field."
+      }
+    }
+  },
+  "inlineActionConflict": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "error": {
+        "code": "validation",
+        "message": "The request body must be JSON with an \"input\" field."
+      }
+    }
+  }
+}

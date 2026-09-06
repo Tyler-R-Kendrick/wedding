@@ -45,7 +45,12 @@ describe('request helpers', () => {
   it('derives the client ip from the trusted proxy hops only', () => {
     // One trusted hop: the last x-forwarded-for entry is the one the proxy appended; the first is client-controllable.
     expect(getClientIp(new Headers({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }), 1)).toBe('10.0.0.1');
-    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1)).toBe('203.0.113.42');
+    // `x-vercel-forwarded-for` is only trusted ON Vercel, where the platform overwrites it.
+    // Anywhere else it is an ordinary request header a caller can set to pick its own rate-limit
+    // bucket, so it is ignored and the hop arithmetic decides.
+    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1, true)).toBe('203.0.113.42');
+    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1, false)).toBe('198.51.100.7');
+    expect(getClientIp(new Headers({ 'x-vercel-forwarded-for': 'attacker-chosen' }), 1, false)).toBe('unknown');
     expect(getClientIp(new Headers({ 'x-real-ip': '198.51.100.2' }), 1)).toBe('198.51.100.2');
     expect(getClientIp(new Headers(), 1)).toBe('unknown');
     // Two trusted hops: second entry from the right.
