@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { PLACEHOLDER_LABEL } from '@/components/provenance';
 import { LIFECYCLE_MODE, LIFECYCLE_STATES, type LifecycleState } from '@/contracts/lifecycle';
 import { SEED_SITE } from '@/db/seed/seed';
 import { countdownView } from '@/domain/lifecycle/countdown';
@@ -44,8 +45,13 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
     // the state's one primary action is a real link
     const primary = screen.getAllByRole('link', { name: new RegExp(`^${data.content.primary.label}`) });
     expect(primary.length).toBeGreaterThan(0);
-    // unknown facts are typed placeholders, never prose
-    expect(container.textContent).toContain('TODO(Tyler & Sara)');
+    // Unknown facts are typed placeholders, never prose. The assertion is on the marked element and
+    // the editorial label a guest actually reads — it used to be on the literal `TODO(Tyler & Sara)`
+    // string, which the theme kit printed to visitors on this very page, so the test was pinning the
+    // bug in place. The raw authoring marker must now be absent.
+    expect(container.querySelectorAll('.todo, [data-placeholder="true"]').length).toBeGreaterThan(0);
+    expect(container.textContent).toContain(PLACEHOLDER_LABEL);
+    expect(container.textContent).not.toContain('TODO(');
     unmount();
   });
 

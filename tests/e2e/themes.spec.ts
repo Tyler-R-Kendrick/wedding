@@ -88,6 +88,19 @@ for (const theme of THEMES) {
       );
       expect(animated).toEqual([]);
     });
+
+    // The theme kit's own placeholder printed `TODO(Tyler & Sara):` as its label, so the home page
+    // showed the authoring marker four times from level 04 until level 08. Level 07 added the same
+    // assertion for the guest routes, but those use the shared component and never touched this
+    // path; level 05's content pages use the content kit, which was already correct. This covers
+    // the themed public pages, where nobody was looking.
+    test('the authoring marker never reaches a visitor', async ({ page }) => {
+      for (const route of ['/', '/travel']) {
+        await page.goto(`${route}?theme=${theme}`);
+        await expect(page.locator('body')).not.toContainText('TODO(');
+        await expect(page.locator('body')).not.toContainText(/backlog [A-Z]-\d/);
+      }
+    });
   });
 }
 

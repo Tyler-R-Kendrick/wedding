@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
 import { currentPrincipal, runAsUi } from './_shared/server';
-import { TravelPageRecipe, type TravelPageData } from './recipe';
+import { recipes } from '../_recipes';
 import { FlightSearchForm, HotelSearchForm } from './search-form';
 
 export const dynamic = 'force-dynamic';
@@ -38,8 +38,20 @@ export default async function TravelPage() {
         returnDate: profile.departLatest ?? '',
       }
     : {};
-  const data: TravelPageData = { ...hotels.value.data, sources: hotels.value.sources, viewer: { kind: principal.kind, hasProfile: profile !== null } };
-  // Theme kit seam: at integration this becomes `theme.recipes.travel ?? TravelPageRecipe`.
-  const Recipe = TravelPageRecipe;
-  return <Recipe data={data} slots={{ flightSearch: <FlightSearchForm defaults={flightDefaults} />, hotelSearch: <HotelSearchForm defaults={{ adults: String(profile?.adults ?? 2) }} /> }} />;
+  // Swarm F left this seam open ("at integration this becomes `theme.recipes.travel ?? …`"), and
+  // this is that integration: the page goes through the same themed dispatch every other public
+  // page uses, so it renders inside the active theme's Shell — nav, footer, tokens and all — and
+  // Gilded Hour and Conservatory each express it. Rendering its own <main> outside the Shell is
+  // what left this page wearing neither design, and what let its raw Tailwind widths resolve
+  // against the DESIGN.md spacing scale.
+  return (
+    <recipes.TravelPage
+      venue={hotels.value.data.venue}
+      alternatives={hotels.value.data.alternatives}
+      facts={hotels.value.data.facts}
+      sources={hotels.value.sources}
+      tripHref="/trip"
+      slots={{ flightSearch: <FlightSearchForm defaults={flightDefaults} />, hotelSearch: <HotelSearchForm defaults={{ adults: String(profile?.adults ?? 2) }} /> }}
+    />
+  );
 }

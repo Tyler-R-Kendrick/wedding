@@ -1,4 +1,4 @@
-import { stripBacklogRefs } from '@/components/provenance';
+import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
@@ -35,10 +35,19 @@ const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline
 const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.';
 const FLOWERS = ['a', 'b', 'c'] as const;
 
+/**
+ * The label is the editorial one the rest of the site uses, not the authoring marker.
+ *
+ * This printed `TODO(Tyler & Sara):` verbatim — on the home page, four times, since level 04. The
+ * marker is how a content record says "not a fact yet"; a guest should read that a person is still
+ * writing, which is what `PLACEHOLDER_LABEL` says and what level 05's content kit and level 07's
+ * guest pages already said. The level-07 regression test covers the guest routes only, so this
+ * path was never asserted; `tests/e2e/themes.spec.ts` now covers the themed public pages.
+ */
 function Placeholder({ todo }: PlaceholderProps) {
   return (
     <span className="todo">
-      <span className="todo__label">TODO(Tyler &amp; Sara):</span> {stripBacklogRefs(todo)}
+      <span className="todo__label">{PLACEHOLDER_LABEL}:</span> {stripBacklogRefs(todo)}
     </span>
   );
 }

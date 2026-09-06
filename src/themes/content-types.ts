@@ -12,6 +12,8 @@ import type {
   AdventureCard, FaqView, HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary, StorySectionView, TextBlockView, VenueFactView,
   VenueSpaceView, WeddingEventView,
 } from '@/domain/content/views';
+import type { Citation } from '@/contracts/provenance';
+import type { HotelRecommendation } from '@/domain/travel';
 import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import type { PageFrame } from './types';
 
@@ -54,6 +56,25 @@ export interface AskProps {
   faq: FaqPageData;
   search?: StaticSearchData;
 }
+/**
+ * Travel & Stay (level 08). The search forms are client components the route owns, so they arrive
+ * as slots: a recipe decides where they sit, never what they are.
+ *
+ * Facts carry `note` (confirmed) and `pending` (still to be decided, in the guest's words) as two
+ * fields; a recipe renders `pending` as a marked placeholder and never as prose.
+ */
+export interface TravelProps {
+  venue: HotelRecommendation;
+  alternatives: HotelRecommendation[];
+  facts: {
+    venue: { name: string; address: string; url: string; faqUrl: string; valetEntrance: string; valetNote: string; valetPending: string | null };
+    airports: { code: string; name: string; note: string | null; pending: string | null }[];
+  };
+  /** The capability's own citations, rendered as the page's source line. */
+  sources: Citation[];
+  slots: { flightSearch: ReactNode; hotelSearch: ReactNode };
+  tripHref: string;
+}
 
 export type Framed<P> = P & { frame: PageFrame };
 export type ContentRecipe<P> = (props: Framed<P>) => ReactNode;
@@ -68,6 +89,7 @@ export interface ContentRecipes {
   venueSpace: ContentRecipe<VenueSpaceProps>;
   wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;
+  travel: ContentRecipe<TravelProps>;
 }
 export type ContentRecipeKey = keyof ContentRecipes;
 

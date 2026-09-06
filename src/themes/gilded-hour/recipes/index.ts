@@ -10,6 +10,7 @@ import { GildedGuidePage } from './guide';
 import { GildedHomePage } from './home';
 import { GildedRecommendationPage } from './recommendation';
 import { GildedStoryPage } from './story';
+import { GildedTravelPage } from './travel';
 import { GildedVenueSpacePage } from './venue-space';
 import { GildedWeddingPage } from './wedding';
 
@@ -28,5 +29,6 @@ export const content: ContentRecipes = {
   exploreCaa: GildedExploreCaaPage,
   venueSpace: GildedVenueSpacePage,
   wedding: GildedWeddingPage,
+  travel: GildedTravelPage,
   ask: GildedAskPage,
 };
