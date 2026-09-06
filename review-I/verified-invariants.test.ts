@@ -134,7 +134,13 @@ describe('verified invariants', () => {
 
   describe('I4/I9 — the vault stays sealed and out of every output', () => {
     it('a missing BIOMETRIC_VAULT_KEY fails closed in production and never falls back to plaintext', () => {
-      expect(resolveVaultKey({ isProduction: true })).toEqual({ ok: false, reason: 'missing_in_production' });
+      // (F9 fixed: the refusal reason is now `missing_key`, because the refusal is no longer only
+      // about production — the two cases below are the finding's point.)
+      expect(resolveVaultKey({ isProduction: true })).toEqual({ ok: false, reason: 'missing_key' });
+      // ...and anywhere the feature could actually run: staging, a preview, a local copy with real
+      // data. Only NODE_ENV=test may seal a fixture template under a derived key.
+      expect(resolveVaultKey({ isProduction: false, biometricsEnabled: true, CONFIRMATION_SECRET: 'x'.repeat(32) })).toEqual({ ok: false, reason: 'missing_key' });
+      expect(resolveVaultKey({ isProduction: false, biometricsEnabled: true, isTest: true, CONFIRMATION_SECRET: 'x'.repeat(32) }).ok).toBe(true);
       const dev = resolveVaultKey({ isProduction: false, CONFIRMATION_SECRET: 'x'.repeat(32) });
       expect(dev.ok).toBe(true);
       if (!dev.ok) return;

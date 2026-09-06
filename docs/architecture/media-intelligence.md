@@ -53,10 +53,24 @@ Human text comes first because it is the truth; suggestions are drafts. Every st
    video, and only when it is metadata-stripped. `isServableKey` is asserted a second time in the
    indexer, so an original or a quarantine key cannot reach a provider even by mistake.
 3. With `MEDIA_SEMANTIC_SEARCH` off, nothing is sent anywhere and existing vectors are removed.
-4. **Professional media** (Brooke Alaina Photography, Oakhouse Visuals) reaches a provider only when
-   `PRO_MEDIA_AI_PROCESSING` is on **and** its readiness switch is on **and** the rights row carries
-   written confirmation (brief §7). Otherwise it is still indexed — from its own metadata, with no
-   AI call and no suggested caption — so search stays complete without stretching the licence.
+4. **Professional media** (Brooke Alaina Photography, Oakhouse Visuals) reaches the *vision*
+   provider only when `PRO_MEDIA_AI_PROCESSING` is on **and** its readiness switch is on **and** the
+   rights row carries written confirmation (brief §7). Otherwise the image is never sent and no
+   caption is suggested.
+
+   It is still indexed from its own metadata, and — being precise, because an earlier version of
+   this document was not — **that metadata is embedded, and the embeddings provider is a live
+   third-party API when `VOYAGE_API_KEY` or `OPENAI_API_KEY` is set.** What goes is our own text:
+   the album and chapter, the admin-written caption and alt text, the kind, and the fact that the
+   item is professional. What does not go is the image and **the photographer's name**, which is
+   withheld from the embedded document precisely because naming the vendor beside a description of
+   their frame is the same disclosure in text that withholding the picture avoids. Search stays
+   complete; the licence is not stretched.
+
+   If even that is judged too much for a particular vendor, the next step is to skip
+   `embeddings.embed` for `pro_media_ai_off` assets entirely and let the lexical half of the blend
+   carry them — weaker recall, no third-party call at all. That is a couple-and-vendor decision,
+   not an engineering one.
 
 An asset that is not eligible still gets an annotation row with a `skip_reason`, so
 `/admin/ai` can show what is not being described and why.

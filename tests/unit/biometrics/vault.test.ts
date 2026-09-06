@@ -12,14 +12,30 @@ describe('vault key', () => {
     expect(r.ok && r.key.id.startsWith('env-')).toBe(true);
   });
 
-  it('derives a development key, and refuses to invent one in production', () => {
+  it('derives a development key only where nothing real can be sealed', () => {
     const dev = resolveVaultKey(devEnv);
     expect(dev.ok && dev.key.source).toBe('derived');
     const prod = resolveVaultKey({ ...devEnv, isProduction: true });
     expect(prod.ok).toBe(false);
-    if (!prod.ok) expect(prod.reason).toBe('missing_in_production');
+    if (!prod.ok) expect(prod.reason).toBe('missing_key');
     // In production an explicit key is enough.
     expect(resolveVaultKey({ ...devEnv, isProduction: true, BIOMETRIC_VAULT_KEY: 'k'.repeat(40) }).ok).toBe(true);
+  });
+
+  it('refuses a derived key wherever the feature could actually run, not only in production', () => {
+    // Staging, a preview deploy, or a local copy with real data: NODE_ENV is not "production",
+    // but the flag is on, so a real template could be sealed. A derived key is not acceptable.
+    const staging = resolveVaultKey({ ...devEnv, biometricsEnabled: true });
+    expect(staging.ok).toBe(false);
+    if (!staging.ok) expect(staging.reason).toBe('missing_key');
+    // With an explicit key it is fine anywhere.
+    expect(resolveVaultKey({ ...devEnv, biometricsEnabled: true, BIOMETRIC_VAULT_KEY: 'k'.repeat(40) }).ok).toBe(true);
+    // With the feature off, the derived key is still allowed outside production.
+    expect(resolveVaultKey({ ...devEnv, biometricsEnabled: false }).ok).toBe(true);
+    // ...and in the test environment, where the only templates are fixtures.
+    expect(resolveVaultKey({ ...devEnv, biometricsEnabled: true, isTest: true }).ok).toBe(true);
+    // Never in production, whatever else is true.
+    expect(resolveVaultKey({ ...devEnv, biometricsEnabled: true, isTest: true, isProduction: true }).ok).toBe(false);
   });
 
   it('is separate from every other secret: a different confirmation secret gives a different key', () => {

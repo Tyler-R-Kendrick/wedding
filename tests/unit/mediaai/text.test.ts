@@ -101,6 +101,37 @@ describe('index text', () => {
   });
 });
 
+describe('what leaves for the embeddings provider', () => {
+  const pro = {
+    caption: 'The processional',
+    altText: null,
+    suggestedCaption: null,
+    suggestedAltText: null,
+    tags: [] as string[],
+    collectionTitle: 'Full Ceremony',
+    chapter: 'full_ceremony',
+    kind: 'image' as const,
+    source: 'professional' as const,
+    venueClass: 'unknown' as const,
+    scheduleSlot: 'unknown' as const,
+    vendorName: 'Brooke Alaina Photography',
+  };
+
+  it('names the photographer only when their written confirmation is on file', () => {
+    expect(buildIndexText({ ...pro, attributeVendor: true })).toContain('professional by Brooke Alaina Photography');
+    const withheld = buildIndexText({ ...pro, attributeVendor: false });
+    expect(withheld).not.toContain('Brooke Alaina Photography');
+    // The item stays findable: it is still marked professional, and our own text still goes.
+    expect(withheld).toContain('professional');
+    expect(withheld).toContain('The processional');
+    expect(withheld).toContain('album: Full Ceremony');
+  });
+
+  it('defaults to attributing, so only an explicit gate withholds it', () => {
+    expect(buildIndexText(pro)).toContain('professional by Brooke Alaina Photography');
+  });
+});
+
 describe('lexical scoring', () => {
   it('drops stop words and the query framing', () => {
     expect(queryTerms('show me photos of the first dance')).toEqual(['first', 'dance']);

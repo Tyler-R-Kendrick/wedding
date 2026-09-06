@@ -133,7 +133,9 @@ export async function indexAsset(deps: IndexerDeps, assetId: string): Promise<In
       }
     }
   } else {
-    // Metadata-only: nothing is sent anywhere. Any earlier AI suggestion for professional media is dropped.
+    // Metadata-only: no vision call, and no vendor-supplied description. The album/caption text is
+    // still embedded so the item stays findable — see the vendor-attribution note below and
+    // docs/architecture/media-intelligence.md. Any earlier AI suggestion is dropped.
     if (asset.source === 'professional' || eligibility.reason === 'search_disabled') {
       suggestedCaption = null;
       suggestedAltText = null;
@@ -161,6 +163,8 @@ export async function indexAsset(deps: IndexerDeps, assetId: string): Promise<In
     venueClass,
     scheduleSlot,
     vendorName: rights?.vendorName ?? null,
+    // Without written confirmation the photographer is not named to the embeddings provider.
+    attributeVendor: eligibility.ai || asset.source !== 'professional',
   });
 
   let status: 'indexed' | 'failed' = 'indexed';

@@ -713,69 +713,139 @@ describe('biometric subsystem (gated off by default)', () => {
       expect(queued.length).toBeLessThanOrEqual(1);
     });
   });
-});
 
-describe('the consent ledger cannot hold two open grants', () => {
-  beforeAll(async () => {
-    await setFlag(true);
-    await setReady(true);
-    const db = await getDb();
-    await db.delete(biometricConsents);
-  });
-  afterAll(async () => {
-    await setFlag(false);
-    await setReady(false);
+  describe('the consent ledger cannot hold two open grants', () => {
+    beforeAll(async () => {
+      await setFlag(true);
+      await setReady(true);
+      const db = await getDb();
+      await db.delete(biometricConsents);
+    });
+    afterAll(async () => {
+      await setFlag(false);
+      await setReady(false);
+    });
+
+    it('two flows racing produce exactly one grant, and the loser is told it already exists', async () => {
+      const db = await getDb();
+      await db.delete(biometricConsents);
+      const base = { guestId: 'RACEGUEST', householdId: 'RACEHOUSE', policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true, ipHash: 'h', surface: 'ui' };
+      const [one, two] = await Promise.all([
+        grantConsent(db, { ...base, requestId: newId(), now: new Date() }),
+        grantConsent(db, { ...base, requestId: newId(), now: new Date(Date.now() + 1) }),
+      ]);
+      const outcomes = [one, two];
+      expect(outcomes.filter((o) => o.ok)).toHaveLength(1);
+      expect(outcomes.filter((o) => !o.ok)[0]).toMatchObject({ reason: 'already_active' });
+      const grants = (await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, 'RACEGUEST'))).filter((r) => r.entry === 'grant');
+      expect(grants).toHaveLength(1);
+      expect((await getConsentState(db, 'RACEGUEST')).status).toBe('active');
+    });
+
+    it('two tabs racing through the public endpoint also produce exactly one grant', async () => {
+      const db = await getDb();
+      await db.delete(biometricConsents);
+      const [d1, d2] = await Promise.all([
+        post<unknown>('draft', { input: { adultAttested: true } }, 'guestB'),
+        post<unknown>('draft', { input: { adultAttested: true } }, 'guestB'),
+      ]);
+      expect(d1.ok && d2.ok).toBe(true);
+      const input = { policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true };
+      const [g1, g2] = await Promise.all([
+        post('grant', { input, confirmationToken: d1.confirmation!.token, idempotencyKey: newId() }, 'guestB'),
+        post('grant', { input, confirmationToken: d2.confirmation!.token, idempotencyKey: newId() }, 'guestB'),
+      ]);
+      expect([g1.ok, g2.ok].filter(Boolean)).toHaveLength(1);
+      const grants = (await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, 'GUESTB'))).filter((r) => r.entry === 'grant');
+      expect(grants).toHaveLength(1);
+    });
+
+    it('withdrawing leaves no grant un-withdrawn, and the guest can agree again afterwards', async () => {
+      const db = await getDb();
+      await db.delete(biometricConsents);
+      await grantConsentThroughEndpoint();
+      const revoked = await revokeConsent(db, { guestId: GUEST_A, ipHash: null, surface: 'ui', requestId: newId(), now: new Date() });
+      expect(revoked.revoked).toBe(true);
+      const rows = await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, GUEST_A));
+      const grants = rows.filter((r) => r.entry === 'grant');
+      const revokes = rows.filter((r) => r.entry === 'revoke');
+      expect(grants.filter((g) => !revokes.some((r) => r.grantId === g.id))).toHaveLength(0);
+      expect(grants.every((g) => g.revokedAt !== null)).toBe(true);
+      expect((await getConsentState(db, GUEST_A)).status).toBe('revoked');
+      // Changing their mind must work: the index is scoped to OPEN grants, not to the wording.
+      await grantConsentThroughEndpoint();
+      expect((await getConsentState(db, GUEST_A)).status).toBe('active');
+      expect((await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, GUEST_A))).filter((r) => r.entry === 'grant')).toHaveLength(2);
+    });
   });
 
-  it('two flows racing produce exactly one grant, and the loser is told it already exists', async () => {
-    const db = await getDb();
-    await db.delete(biometricConsents);
-    const base = { guestId: 'RACEGUEST', householdId: 'RACEHOUSE', policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true, ipHash: 'h', surface: 'ui' };
-    const [one, two] = await Promise.all([
-      grantConsent(db, { ...base, requestId: newId(), now: new Date() }),
-      grantConsent(db, { ...base, requestId: newId(), now: new Date(Date.now() + 1) }),
-    ]);
-    const outcomes = [one, two];
-    expect(outcomes.filter((o) => o.ok)).toHaveLength(1);
-    expect(outcomes.filter((o) => !o.ok)[0]).toMatchObject({ reason: 'already_active' });
-    const grants = (await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, 'RACEGUEST'))).filter((r) => r.entry === 'grant');
-    expect(grants).toHaveLength(1);
-    expect((await getConsentState(db, 'RACEGUEST')).status).toBe('active');
-  });
+  describe('deleting a guest\'s facial data on their behalf', () => {
+    const guestOps: AdminPrincipal = { ...admin, entitlements: new Set(['admin_media', 'admin_ai', 'admin_lifecycle', 'admin_guest_ops']) };
 
-  it('two tabs racing through the public endpoint also produce exactly one grant', async () => {
-    const db = await getDb();
-    await db.delete(biometricConsents);
-    const [d1, d2] = await Promise.all([
-      post<unknown>('draft', { input: { adultAttested: true } }, 'guestB'),
-      post<unknown>('draft', { input: { adultAttested: true } }, 'guestB'),
-    ]);
-    expect(d1.ok && d2.ok).toBe(true);
-    const input = { policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true };
-    const [g1, g2] = await Promise.all([
-      post('grant', { input, confirmationToken: d1.confirmation!.token, idempotencyKey: newId() }, 'guestB'),
-      post('grant', { input, confirmationToken: d2.confirmation!.token, idempotencyKey: newId() }, 'guestB'),
-    ]);
-    expect([g1.ok, g2.ok].filter(Boolean)).toHaveLength(1);
-    const grants = (await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, 'GUESTB'))).filter((r) => r.entry === 'grant');
-    expect(grants).toHaveLength(1);
-  });
+    beforeAll(async () => {
+      await setFlag(true);
+      await setReady(true);
+      const db = await getDb();
+      await db.delete(biometricConsents);
+      await db.delete(biometricIdentityRefs);
+      await db.delete(biometricDeletions);
+      await grantConsentThroughEndpoint();
+      expect((await call(guestA, 'enroll_biometric_reference', { assetIds: [corpus.get('mine-1')!.assetId] })).ok).toBe(true);
+    });
+    afterAll(async () => {
+      await setFlag(false);
+      await setReady(false);
+    });
 
-  it('withdrawing leaves no grant un-withdrawn, and the guest can agree again afterwards', async () => {
-    const db = await getDb();
-    await db.delete(biometricConsents);
-    await grantConsentThroughEndpoint();
-    const revoked = await revokeConsent(db, { guestId: GUEST_A, ipHash: null, surface: 'ui', requestId: newId(), now: new Date() });
-    expect(revoked.revoked).toBe(true);
-    const rows = await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, GUEST_A));
-    const grants = rows.filter((r) => r.entry === 'grant');
-    const revokes = rows.filter((r) => r.entry === 'revoke');
-    expect(grants.filter((g) => !revokes.some((r) => r.grantId === g.id))).toHaveLength(0);
-    expect(grants.every((g) => g.revokedAt !== null)).toBe(true);
-    expect((await getConsentState(db, GUEST_A)).status).toBe('revoked');
-    // Changing their mind must work: the index is scoped to OPEN grants, not to the wording.
-    await grantConsentThroughEndpoint();
-    expect((await getConsentState(db, GUEST_A)).status).toBe('active');
-    expect((await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, GUEST_A))).filter((r) => r.entry === 'grant')).toHaveLength(2);
+    it('needs the guest-ops entitlement, a fresh session and a note saying how the request arrived', async () => {
+      const input = { guestId: GUEST_A, reason: 'admin' as const, note: 'emailed the couple on 2027-08-02' };
+      expect((await call(admin, 'admin_delete_biometric_data', input)).ok).toBe(false); // no admin_guest_ops
+      expect((await call(guestA, 'admin_delete_biometric_data', input)).ok).toBe(false);
+      const stale: AdminPrincipal = { ...guestOps, authenticatedAt: new Date(Date.now() - 3_600_000).toISOString() };
+      const old = await call(stale, 'admin_delete_biometric_data', input);
+      expect(old.ok).toBe(false);
+      if (!old.ok) expect(old.error.code).toBe('step_up_required');
+      const noNote = await call(guestOps, 'admin_delete_biometric_data', { guestId: GUEST_A, reason: 'admin' });
+      expect(noNote.ok).toBe(false);
+      if (!noNote.ok) expect(noNote.error.code).toBe('validation');
+    });
+
+    it('withdraws the consent and destroys the data, and says so in the audit trail', async () => {
+      const db = await getDb();
+      const r = await call<{ deletion: { id: string; reason: string }; consentRevoked: boolean; hadData: boolean }>(guestOps, 'admin_delete_biometric_data', {
+        guestId: GUEST_A,
+        reason: 'guest_deleted',
+        note: 'guest record removed at their request, 2027-08-02',
+      });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      if (!r.ok) return;
+      expect(r.data).toMatchObject({ consentRevoked: true, hadData: true });
+      expect(r.data.deletion.reason).toBe('guest_deleted');
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A))).toHaveLength(0);
+      expect((await getConsentState(db, GUEST_A)).status).toBe('revoked');
+      const audit = await listAuditEvents(db, { limit: 300 });
+      const onBehalf = audit.find((e) => e.action === 'biometric.deleted' && JSON.stringify(e.metadata ?? {}).includes('guest record removed'));
+      expect(onBehalf, 'the note explaining how the request arrived must be in the audit trail').toBeTruthy();
+      expect(onBehalf!.actor).toMatchObject({ kind: 'admin' });
+    });
+
+    it('refuses a guest who has nothing, rather than writing an empty deletion record', async () => {
+      const r = await call(guestOps, 'admin_delete_biometric_data', { guestId: 'NOBODYATALL', reason: 'admin', note: 'checking' });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe('not_found');
+    });
+
+    it('works with the feature switched off, like every other deletion route', async () => {
+      const db = await getDb();
+      await grantConsentThroughEndpoint();
+      expect((await call(guestA, 'enroll_biometric_reference', { assetIds: [corpus.get('mine-1')!.assetId] })).ok).toBe(true);
+      await setFlag(false);
+      await setReady(false);
+      const r = await call<{ hadData: boolean }>(guestOps, 'admin_delete_biometric_data', { guestId: GUEST_A, reason: 'admin', note: 'off-site request while the feature is off' });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A))).toHaveLength(0);
+    });
   });
 });

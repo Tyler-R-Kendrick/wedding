@@ -30,8 +30,8 @@ export const enrollBiometricReference = defineCapability<z.infer<typeof input>, 
     const services = biometricServices(ctx);
     const gate = await biometricGate(gateDepsFrom(ctx, services.db), ctx.principal);
     if (!gate.ok) return err(gateError(gate.error));
-    const key = vaultKey();
-    if (!key.ok) return err(new CapabilityError('provider_unavailable', 'Face matching is not configured.', { reason: key.reason }));
+    const key = vaultKey(ctx.flags);
+    if (!key.ok) return err(new CapabilityError('provider_unavailable', 'Face matching is not configured on this site.', { reason: key.reason }));
     const result = await enrollFromOwnAssets({ db: services.db, storage: services.storage, biometric: services.biometric, vaultKey: key.key, flags: ctx.flags, readiness: services.readiness, now: ctx.now, requestId: ctx.requestId }, gate.value.guest, gate.value.consentId, i.assetIds);
     if (!result.ok) return err(result.error);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'identity.bound', target: { type: 'biometric_identity_ref', id: result.value.identityRefId }, outcome: 'success', requestId: ctx.requestId, metadata: { references: result.value.references, consentId: gate.value.consentId } });

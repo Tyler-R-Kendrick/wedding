@@ -45,8 +45,8 @@ export const findPhotosOfMe = defineCapability<z.infer<typeof input>, FindPhotos
     const services = biometricServices(ctx);
     const gate = await biometricGate(gateDepsFrom(ctx, services.db), ctx.principal);
     if (!gate.ok) return err(gateError(gate.error));
-    const key = vaultKey();
-    if (!key.ok) return err(new CapabilityError('provider_unavailable', 'Face matching is not configured.', { reason: key.reason }));
+    const key = vaultKey(ctx.flags);
+    if (!key.ok) return err(new CapabilityError('provider_unavailable', 'Face matching is not configured on this site.', { reason: key.reason }));
     const result = await findPhotosOfGuest({ db: services.db, storage: services.storage, biometric: services.biometric, vaultKey: key.key, flags: ctx.flags, readiness: services.readiness, now: ctx.now, requestId: ctx.requestId }, gate.value.guest, i.candidateAssetIds);
     if (!result.ok) return err(result.error);
     const assets = await getAssets(services.db, result.value.matched.map((m) => m.assetId));

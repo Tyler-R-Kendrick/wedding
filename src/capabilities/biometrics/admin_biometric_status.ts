@@ -37,7 +37,7 @@ export const adminBiometricStatus = defineCapability<z.infer<typeof input>, Biom
   output,
   async handler(ctx) {
     const services = biometricServices(ctx);
-    const key = vaultKey();
+    const key = vaultKey(ctx.flags);
     const status = await computeBiometricStatus(services.db, { flags: ctx.flags, readiness: services.readiness, provider: { name: services.biometric.name, mode: services.biometric.mode }, vaultKeySource: key.ok ? key.key.source : 'missing' });
     const recent = await latestDeletions(services.db, 20);
     const checklist = [

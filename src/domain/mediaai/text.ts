@@ -126,6 +126,12 @@ export function lexicalOverlap(query: string, text: string): number {
 export interface IndexTextInput {
   /** Guest/admin-written caption (UNTRUSTED_USER_CONTENT). */
   caption: string | null;
+  /**
+   * The vendor's name is withheld from the embedded document when their written confirmation for
+   * third-party AI processing is not on file: the picture is already withheld, and naming the
+   * photographer alongside a description of their frame is the same disclosure in text.
+   */
+  attributeVendor?: boolean;
   altText: string | null;
   suggestedCaption: string | null;
   suggestedAltText: string | null;
@@ -162,7 +168,7 @@ export function buildIndexText(i: IndexTextInput): string {
   parts.push(`album: ${i.collectionTitle}`);
   if (i.chapter) parts.push(`chapter: ${CHAPTER_WORDS[i.chapter] ?? i.chapter.replaceAll('_', ' ')}`);
   parts.push(i.kind === 'video' ? 'video clip' : 'photo');
-  if (i.source === 'professional') parts.push(`professional${i.vendorName ? ` by ${i.vendorName}` : ''}`);
+  if (i.source === 'professional') parts.push(`professional${i.vendorName && i.attributeVendor !== false ? ` by ${i.vendorName}` : ''}`);
   if (i.venueClass !== 'unknown') parts.push(`setting: ${i.venueClass}`);
   if (i.scheduleSlot !== 'unknown') parts.push(`when: ${SCHEDULE_SLOT_LABELS[i.scheduleSlot].toLowerCase()}`);
   return parts.join('. ').replace(/\s+/g, ' ').trim().slice(0, 2000);

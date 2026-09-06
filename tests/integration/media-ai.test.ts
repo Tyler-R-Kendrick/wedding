@@ -111,6 +111,9 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
     // It is still findable from its own metadata: the album and chapter, never an invented caption.
     expect(annotation!.indexText).toContain('Full Ceremony');
     expect(annotation!.indexText).not.toContain('THIS MUST NEVER BE INDEXED');
+    // ...and the photographer is not named in the text that goes to the embeddings provider.
+    expect(annotation!.indexText).not.toContain('Brooke Alaina Photography');
+    expect(annotation!.indexText).toContain('professional');
   });
 
   it('only ever hands a metadata-stripped derivative to the provider', () => {
@@ -266,7 +269,10 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
       await call(admin, 'admin_reindex_media', { assetId: pro.assetId });
       await runJobs();
       expect(mediaAi.calls).toContain(pro.derivativeKey);
-      expect((await getAnnotation(db, pro.assetId))).toMatchObject({ captionSource: 'ai', skipReason: null });
+      const confirmed = await getAnnotation(db, pro.assetId);
+      expect(confirmed).toMatchObject({ captionSource: 'ai', skipReason: null });
+      // With confirmation on file the credit goes back into the indexed text.
+      expect(confirmed!.indexText).toContain('Brooke Alaina Photography');
     } finally {
       delete process.env.FLAG_PRO_MEDIA_AI_PROCESSING;
       await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: false, actor: { kind: 'system', component: 'test' }, requestId: newId(), audit: await getAuditSink() });

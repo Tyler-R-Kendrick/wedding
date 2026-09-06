@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import type { CapabilityContext } from '@/contracts/capability';
-import type { FeatureFlag } from '@/contracts/flags';
+import type { FeatureFlag, FlagValues } from '@/contracts/flags';
 import type { Db } from '@/db/client';
 import { DELETION_REASONS, DELETION_STATUSES } from '@/db/schema/biometrics';
 import { resolveVaultKey, type VaultKey } from '@/domain/biometrics/vault';
 import { env } from '@/lib/env';
+import { getFlags } from '@/lib/flags';
 import { hmacSha256, keyedHash } from '@/lib/crypto';
 import { DEV_CONFIRMATION_SECRET } from '@/policy/confirmation';
 import type { BiometricProvider } from '@/providers/biometric/types';
@@ -34,10 +35,17 @@ export function biometricServices(ctx: CapabilityContext): BiometricServices {
   };
 }
 
-export type VaultResolution = { ok: true; key: VaultKey } | { ok: false; reason: 'missing_in_production' };
+export type VaultResolution = { ok: true; key: VaultKey } | { ok: false; reason: 'missing_key' };
 
-export function vaultKey(): VaultResolution {
-  return resolveVaultKey({ BIOMETRIC_VAULT_KEY: env.BIOMETRIC_VAULT_KEY, CONFIRMATION_SECRET: env.CONFIRMATION_SECRET, isProduction: env.isProduction });
+/** A derived key is refused wherever the feature could actually run, not only in production. */
+export function vaultKey(flags: Pick<FlagValues, 'BIOMETRICS_ENABLED'> = getFlags()): VaultResolution {
+  return resolveVaultKey({
+    BIOMETRIC_VAULT_KEY: env.BIOMETRIC_VAULT_KEY,
+    CONFIRMATION_SECRET: env.CONFIRMATION_SECRET,
+    isProduction: env.isProduction,
+    biometricsEnabled: flags.BIOMETRICS_ENABLED,
+    isTest: env.isTest,
+  });
 }
 
 let ipKey: string | undefined;
