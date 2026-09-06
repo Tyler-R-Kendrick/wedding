@@ -65,13 +65,15 @@
   border-radius: var(--rounded-sm, 2px);
 }
 
+/* Status shows in the answer's own outline and in its status tag, not as an accent stripe. */
 .ai-answer--refused {
-  border-left: 3px solid var(--color-tertiary, var(--color-primary));
+  border-color: var(--color-tertiary, var(--color-primary));
 }
 
 .ai-answer--error {
-  border-left: 3px solid var(--color-error, var(--color-primary));
+  border-color: var(--color-error, var(--color-primary));
 }
+
 
 .ai-tags {
   display: flex;
@@ -92,6 +94,11 @@
 }
 
 .ai-tags li.is-bad {
+  border-color: var(--color-error, var(--color-primary));
+  color: var(--color-error, var(--color-primary));
+}
+
+.ai-answer--error .ai-tags li:first-child {
   border-color: var(--color-error, var(--color-primary));
   color: var(--color-error, var(--color-primary));
 }

@@ -63,6 +63,9 @@ jobs:
       - name: Integration tests (vitest + PGlite)
         run: npm run test:integration
 
+      - name: Concierge evals (mock model; thresholds in docs/sdlc/evals.md)
+        run: npm run evals
+
       - name: Migrations are committed and current
         run: |
           npm run db:generate
