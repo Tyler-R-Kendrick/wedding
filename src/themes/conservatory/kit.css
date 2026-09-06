@@ -9,7 +9,17 @@
   --cv-gutter: clamp(20px, 4vw, 64px);
   --cv-rail: 15rem;
 
-  /* Provenance ink slots: pollen (`tertiary`) is an accent in this theme, never text. */
+}
+
+/*
+ * Provenance ink slots, on the THEME and not on `.cv`.
+ *
+ * `.cv` is this kit's shell class; guest surfaces (RSVP, Your Weekend) render provenance notes
+ * without it, so scoped here these slots never applied and `provenance.css` fell through to
+ * `--color-tertiary` — pollen, which the line below says is an accent and never text. On the creme
+ * ground that measured 1.58:1, a serious axe failure on nine nodes. Soil is the text-safe ink.
+ */
+[data-theme="conservatory"] {
   --prov-note-ink: var(--color-soil);
   --prov-external-ink: var(--color-soil);
   --prov-external-line: var(--color-kraft-deep);

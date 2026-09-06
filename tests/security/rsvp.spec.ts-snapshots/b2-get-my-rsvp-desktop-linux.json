@@ -1,0 +1,108 @@
+{
+  "ok": true,
+  "data": {
+    "window": {
+      "open": true,
+      "reason": "manual_open",
+      "mode": "open",
+      "deadlineAt": null,
+      "lifecycle": "TEASER"
+    },
+    "household": {
+      "id": "01E2EHHB000000000000000000",
+      "name": "Fixture household"
+    },
+    "guests": [
+      {
+        "guestId": "01E2EGSTB20000000000000000",
+        "displayName": "Eve Fixture",
+        "firstName": "Eve",
+        "isMinor": false,
+        "isSelf": true
+      }
+    ],
+    "events": [
+      {
+        "id": "01SDEVENTCCKTAS00000000000",
+        "slug": "cocktail-hour",
+        "name": "Cocktail hour",
+        "description": "what happens, and what to expect.",
+        "dateIso": "2027-07-17",
+        "startsAt": null,
+        "endsAt": null,
+        "timezone": "America/Chicago",
+        "venueSpaceRef": null,
+        "dressCode": null,
+        "accessibilityNote": null,
+        "placeholder": true,
+        "rsvpRequired": true,
+        "hasMeal": false,
+        "mealOptionsVersion": 0,
+        "sortOrder": 20,
+        "mealOptions": [],
+        "whenText": "Time to be confirmed",
+        "dateText": "Saturday, July 17, 2027",
+        "invited": [
+          {
+            "guestId": "01E2EGSTB20000000000000000",
+            "plusOnePolicy": "none"
+          }
+        ]
+      },
+      {
+        "id": "01SDEVENTRECEPTN0000000000",
+        "slug": "reception",
+        "name": "Reception",
+        "description": "what happens, and what to expect.",
+        "dateIso": "2027-07-17",
+        "startsAt": null,
+        "endsAt": null,
+        "timezone": "America/Chicago",
+        "venueSpaceRef": null,
+        "dressCode": null,
+        "accessibilityNote": null,
+        "placeholder": true,
+        "rsvpRequired": true,
+        "hasMeal": true,
+        "mealOptionsVersion": 1,
+        "sortOrder": 30,
+        "mealOptions": [
+          {
+            "id": "01E2EMEABEEF00000000000000",
+            "label": "Test entrée A",
+            "description": "Fixture menu item"
+          },
+          {
+            "id": "01E2EMEAFSH000000000000000",
+            "label": "Test entrée B",
+            "description": "Fixture menu item"
+          },
+          {
+            "id": "01E2EMEAGARDEN000000000000",
+            "label": "Test entrée C (vegetarian)",
+            "description": "Fixture menu item"
+          }
+        ],
+        "whenText": "Time to be confirmed",
+        "dateText": "Saturday, July 17, 2027",
+        "invited": [
+          {
+            "guestId": "01E2EGSTB20000000000000000",
+            "plusOnePolicy": "none"
+          }
+        ]
+      }
+    ],
+    "responses": [],
+    "needs": [],
+    "lastSubmittedAt": null
+  },
+  "sources": [
+    {
+      "sourceId": "01SEED00000000000000000101",
+      "title": "Tyler's brief 2026-09-04",
+      "url": "/the-wedding",
+      "verifiedAt": "<timestamp>"
+    }
+  ]
+}

@@ -6,6 +6,14 @@ import { expect } from '@playwright/test';
  * (POST /api/dev/identity) and codes from the dev inbox (GET /api/dev/inbox); both accept
  * `Authorization: Bearer $DEV_INBOX_TOKEN` when the environment requires it.
  */
+/**
+ * The origin the running server believes it is serving, resolved exactly as playwright.config.ts
+ * resolves its baseURL. `assertSameOriginJson` compares against it, so a literal here that disagrees
+ * with the server turns an authenticated POST into a 401 — which silently inverts a CSRF test's
+ * positive control from "our own origin is accepted" into "anything is rejected".
+ */
+export const SITE_ORIGIN = (process.env.BASE_URL ?? `http://localhost:${process.env.PORT ?? '3000'}`).replace(/\/+$/, '');
+
 export const devHeaders = (): Record<string, string> => (process.env.DEV_INBOX_TOKEN ? { authorization: `Bearer ${process.env.DEV_INBOX_TOKEN}` } : {});
 
 export interface Fixtures {
@@ -32,10 +40,6 @@ export async function readOtp(request: APIRequestContext, email: string): Promis
     await new Promise((r) => setTimeout(r, 150));
   }
   throw new Error(`no OTP for ${email}`);
-}
-
-export async function clearInbox(request: APIRequestContext): Promise<void> {
-  await request.delete('/api/dev/inbox', { headers: devHeaders() });
 }
 
 /** Drives the real claim UI (invite -> pick -> code -> welcome). Returns the session cookie value. */
@@ -81,7 +85,7 @@ export async function cap(request: APIRequestContext, name: string, input: unkno
   const headers: Record<string, string> = { 'content-type': 'application/json', ...forwardedFor(`${name}${Math.random()}`) };
   if (opts.cookie) headers.cookie = opts.cookie;
   // Authenticated POSTs must be same-origin JSON (assertSameOriginJson): send the site origin unless a test overrides it.
-  const origin = opts.origin ?? (opts.cookie ? (process.env.BASE_URL ?? 'http://localhost:3000') : undefined);
+  const origin = opts.origin ?? (opts.cookie ? SITE_ORIGIN : undefined);
   if (origin) headers.origin = origin;
   return request.post(`/api/capabilities/${name}`, { data: { input, ...(opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : {}) }, headers });
 }

@@ -37,6 +37,12 @@ export interface CreateContextInput {
   inputTrust?: TrustClass;
   view?: { theme?: string; lifecycle?: string };
   now?: Date;
+  /**
+   * Wire the per-principal rate limiter. Set by callers that front a real request — the JSON
+   * capability route and the guest/admin server actions — so the pipeline enforces one budget for
+   * all of them. Left off for in-process callers such as tests and seeding.
+   */
+  rateLimit?: boolean;
 }
 
 /** Builds a context wired to the real database, audit sink, providers, and policy services. */
@@ -51,6 +57,7 @@ export async function createCapabilityContext(input: CreateContextInput): Promis
     idempotency: new DbIdempotencyStore(db),
     metrics,
     logger: input.requestId ? requestLogger(input.requestId) : logger,
+    ...(input.rateLimit ? { limiter: getProvider('rate-limit', { db }) } : {}),
   };
   return {
     principal: input.principal,

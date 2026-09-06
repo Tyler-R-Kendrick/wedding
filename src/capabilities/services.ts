@@ -47,7 +47,18 @@ export interface LoggerLike {
   error(obj: unknown, msg?: string): void;
 }
 
+export interface RateLimiterLike {
+  consume(key: string, budget: 'capability'): Promise<{ allowed: boolean; retryAfterMs?: number }>;
+}
+
 export interface PipelineServices {
+  /**
+   * Per-principal capability budget. Consumed inside `invoke`, so every entry point that wires it is
+   * limited the same way — the JSON route, server actions, and anything later levels add. Absent
+   * means no limiting: fixture contexts in tests opt out, and the budget (60 tokens, 1/s) is far
+   * below what a test file spends against one principal.
+   */
+  limiter?: RateLimiterLike;
   /** Legal/readiness switch lookup for READINESS_GATED flags. Absent means fail closed. */
   readiness?: (flag: FeatureFlag) => Promise<boolean>;
   /** Keyed fingerprint for audit `inputHash` (HMAC with a server key). Absent means no hash is recorded. */

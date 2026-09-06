@@ -40,7 +40,10 @@ export function Placeholder({ children, inline = false, label = PLACEHOLDER_LABE
   const Tag = inline ? 'span' : 'div';
   return (
     <Tag className={inline ? 'placeholder placeholder--inline' : 'placeholder'} data-placeholder="true" role="note">
-      <span className="placeholder__label">{label}</span>{' '}
+      {/* Inline, the label leads into the hint and needs punctuation, or the two run together:
+          "Sara + Tyler are still writing this the room is still to be confirmed." As a block the
+          hint is its own paragraph, so the colon would be noise there. */}
+      <span className="placeholder__label">{inline ? `${label}:` : label}</span>{' '}
       {inline ? <span className="placeholder__hint">{children}</span> : <p className="placeholder__hint">{children}</p>}
     </Tag>
   );

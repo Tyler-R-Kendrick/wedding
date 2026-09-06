@@ -93,11 +93,15 @@ jobs:
         env:
           PGLITE_MEMORY: '1'
 
-      - name: Smoke tests against `next start`
-        # The identity journeys cannot run against a production build: /api/dev/inbox is 404 whenever
-        # NODE_ENV=production, whatever the caller presents (security review S5), and the claim spec
-        # reads one-time codes from it. They run against a dev server in the next step.
-        run: npx playwright test tests/e2e --grep-invert "claim journey"
+      - name: Every spec runs in exactly one arrangement
+        run: node scripts/check-spec-coverage.mjs
+
+      - name: Production-build specs against `next start`
+        # These assert production behaviour, including the proxy's `private, no-store` on
+        # cookie-resolved public URLs — `next dev` replaces that header, so they only mean
+        # anything here. The list lives in scripts/check-spec-coverage.mjs, which fails the
+        # build if a spec belongs to neither step.
+        run: npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.PRODUCTION_SPECS.join(' ')))")
         env:
           CI: 'true'
           PW_WEB_SERVER_COMMAND: npm run start
@@ -110,48 +114,49 @@ jobs:
           CRON_SECRET: ci-only-cron-secret-not-real-32-chars-minimum
           STORAGE_SIGNING_SECRET: ci-only-storage-signing-secret-not-real
           HEALTH_TOKEN: ci-only-health-token-not-real
-          # Level 06 made these production-required so real one-time codes can never reach the
-          # in-memory dev inbox. Nothing in this step sends mail; the values are placeholders.
           BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-real
           BETTER_AUTH_URL: http://localhost:3000
           RESEND_API_KEY: ci-only-resend-key-not-real
           EMAIL_FROM: Sara + Tyler <ci@example.invalid>
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
-          # A production build refuses per-process rate-limit buckets; use the same DB backend
-          # production uses, which here is PGlite.
+          # A production build refuses per-process rate-limit buckets; use the DB backend.
           RATE_LIMIT_BACKEND: db
-          TEST_AUTH_SECRET: ci-only-test-auth-secret-not-real
           TRUSTED_PROXY_HOPS: '1'
 
-      - name: Playwright identity journeys (dev server)
-        # These journeys need BOTH halves of the dev gate (src/lib/auth/dev-gate.ts):
-        #   * NODE_ENV must not be production — there the dev routes are 404 whatever the caller
-        #     presents (security review S5), which is why they cannot run in the step above; and
-        #   * on a hosted runner (CI or Vercel) the caller must present DEV_INBOX_TOKEN, because a
-        #     shared host never opens them on NODE_ENV alone. `devHeaders()` sends it.
-        # The server is started here rather than by Playwright's `webServer` so the warm-up below
-        # runs against a server that is actually up: a dev server compiles each route on first
-        # request, and a cold compile can outlast a navigation timeout even though /api/health
-        # already answers. Playwright's single CI retry is the backstop, not the plan.
+      - name: Identity, RSVP and security specs against a NODE_ENV=test server
+        # Two things exist only here, and both are deliberate:
+        #   * the dev inbox and fixtures route — refused outright under NODE_ENV=production
+        #     (security review S5), and on any hosted runner (CI/VERCEL) they additionally
+        #     require the DEV_INBOX_TOKEN bearer, which must be set on the SERVER as well as
+        #     on the test runner;
+        #   * the test-principal injector, which needs NODE_ENV=test exactly.
+        # tests/security/** never ran in CI before this step existed, which is how a
+        # cross-origin sign-out reached main with a passing suite asserting it was blocked.
         run: |
-          npm run dev -- -p 3000 > "$RUNNER_TEMP/dev-server.log" 2>&1 &
+          npm run dev -- -p 3000 > "$RUNNER_TEMP/test-server.log" 2>&1 &
           for _ in $(seq 1 60); do
             curl -fsS -o /dev/null "http://localhost:3000/api/health" && break
             sleep 2
           done
           curl -fsS -o /dev/null "http://localhost:3000/api/health" \
-            || { echo "::error::dev server did not become ready"; cat "$RUNNER_TEMP/dev-server.log"; exit 1; }
-          for path in / /sign-in /claim /claim/verify /claim/welcome /claim/passkey /step-up \
-                      /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/dev/identity; do
+            || { echo "::error::test server did not become ready"; cat "$RUNNER_TEMP/test-server.log"; exit 1; }
+          # A dev server compiles each route on first request; warm the journeys' routes so a cold
+          # compile cannot outlast a navigation timeout.
+          for path in / /sign-in /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
+                      /your-weekend /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
-          npx playwright test tests/e2e/claim.spec.ts
+          npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")
         env:
           CI: 'true'
-          # Set, so Playwright treats the server above as external and does not start its own.
+          NODE_ENV: test
+          # Playwright treats the server above as external and does not start its own.
           BASE_URL: http://localhost:3000
-          # CI-only placeholder; opens the dev routes on this runner only (>= 16 chars per env.ts).
+          SEED_TEST_FIXTURES: '1'
+          # CI-only placeholders. The dev bearer opens the dev routes on this runner only, and the
+          # test-auth secret enables the principal injector; both are refused on a production host.
           DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real
+          TEST_AUTH_SECRET: ci-only-test-auth-secret-not-real
           PGLITE_MEMORY: '1'
           DB_AUTO_MIGRATE: '1'
           DB_AUTO_SEED: '1'
@@ -163,7 +168,6 @@ jobs:
           HEALTH_TOKEN: ci-only-health-token-not-real
           BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-real
           BETTER_AUTH_URL: http://localhost:3000
-          TEST_AUTH_SECRET: ci-only-test-auth-secret-not-real
           TRUSTED_PROXY_HOPS: '1'
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
