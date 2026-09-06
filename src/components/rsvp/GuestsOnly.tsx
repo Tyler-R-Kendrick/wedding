@@ -12,7 +12,7 @@ export function GuestsOnly({ what }: { what: string }) {
           Find your invitation
         </Link>
       </p>
-      <p className="card__meta">Lost the link? <Placeholder inline>how to reach the couple.</Placeholder></p>
+      <p className="card__meta">Lost the link? <Placeholder inline>how to reach them</Placeholder></p>
     </main>
   );
 }
@@ -22,7 +22,7 @@ export function FriendlyFailure({ what }: { what: string }) {
     <main id="main" className="page">
       <h1 className="page__title">{what} is taking a moment</h1>
       <p className="page__lede">Something went wrong on our side. Please try again in a minute.</p>
-      <p>If it keeps happening, reach Sara and Tyler directly. <Placeholder inline>their contact details.</Placeholder></p>
+      <p>If it keeps happening, reach Sara and Tyler directly. <Placeholder inline>their contact details</Placeholder></p>
     </main>
   );
 }

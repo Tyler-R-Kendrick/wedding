@@ -40,7 +40,7 @@
         "mealOptionsVersion": 0,
         "sortOrder": 20,
         "mealOptions": [],
-        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "whenText": "Time to be confirmed",
         "dateText": "Saturday, July 17, 2027",
         "invited": [
           {
@@ -83,7 +83,7 @@
             "description": "Fixture menu item"
           }
         ],
-        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "whenText": "Time to be confirmed",
         "dateText": "Saturday, July 17, 2027",
         "invited": [
           {

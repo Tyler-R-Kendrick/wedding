@@ -55,7 +55,7 @@ export function RsvpForm({ data, action, idempotencyKey }: RsvpFormProps) {
           </h2>
           <p className="card__meta">
             {event.dateText} · {event.whenText}
-            {event.placeholder ? <span className="placeholder"> · details to come</span> : null}
+            {event.placeholder ? <span className="card__meta"> · details to come</span> : null}
           </p>
           {event.invited.map(({ guestId, plusOnePolicy }) => {
             const guest = guestById.get(guestId);
@@ -181,7 +181,7 @@ function RsvpClosed({ data }: { data: MyRsvp }) {
       <Notice tone="info" title="RSVPs are closed">
         <p>
           Thank you — the guest list has gone to the venue. If something has changed, reach Sara and Tyler and they will update it for you.{' '}
-          <Placeholder inline>their contact details.</Placeholder>
+          <Placeholder inline>their contact details</Placeholder>
         </p>
       </Notice>
       {answered ? (

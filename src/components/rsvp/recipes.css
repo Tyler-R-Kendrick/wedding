@@ -443,6 +443,9 @@ a:focus-visible,
 .wp-skip {
   position: absolute;
   left: -9999px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-surface);
   color: var(--color-primary);

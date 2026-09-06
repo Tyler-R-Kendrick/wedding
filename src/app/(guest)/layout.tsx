@@ -62,7 +62,7 @@ export default async function GuestLayout({ children }: { children: ReactNode })
         {/* The shared Placeholder names who is still writing, so a gap reads as editorial rather than
             as a bug with `TODO(...)` printed on it. The marker belongs in the content record (content
             backlog), never in what a guest reads. */}
-        <Placeholder inline>how to reach us with a question.</Placeholder>
+        <Placeholder inline>how to reach us with a question</Placeholder>
       </footer>
     </>
   );

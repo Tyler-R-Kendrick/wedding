@@ -37,7 +37,7 @@
         "mealOptionsVersion": 0,
         "sortOrder": 10,
         "mealOptions": [],
-        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "whenText": "Time to be confirmed",
         "dateText": "Saturday, July 17, 2027",
         "household": [
           {
@@ -82,7 +82,7 @@
             "description": "Fixture menu item"
           }
         ],
-        "whenText": "Time to be confirmed — TODO(Tyler & Sara)",
+        "whenText": "Time to be confirmed",
         "dateText": "Saturday, July 17, 2027",
         "household": [
           {
@@ -104,7 +104,7 @@
         "status": "placeholder",
         "placeholder": true,
         "title": "Getting there and home",
-        "body": "Ride and valet details will appear here once they are set. TODO(Tyler & Sara)",
+        "body": "Ride and valet details will appear here once they are set.",
         "owner": "swarm-G"
       },
       "trip": {
@@ -112,7 +112,7 @@
         "status": "placeholder",
         "placeholder": true,
         "title": "Your trip",
-        "body": "Flights, hotel, and free-time ideas will appear here once travel tools are live. TODO(Tyler & Sara)",
+        "body": "Flights, hotel, and free-time ideas will appear here once travel tools are live.",
         "owner": "swarm-F"
       }
     },

@@ -35,13 +35,18 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
             </Link>
           </p>
         ) : (
-          <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details.</Placeholder></p>
+          <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details</Placeholder></p>
         )}
         {/* Says the same thing /rsvp says, including when there is no deadline yet: a guest who reads
             one page and not the other should not come away with a different understanding. */}
-        <p className="card__meta">
-          {data.rsvp.window.deadlineAt ? `Deadline: ${formatDeadline(data.rsvp.window.deadlineAt)}.` : 'You can change your answers any time while RSVPs are open.'}
-        </p>
+        {data.rsvp.window.deadlineAt ? (
+          <p className="card__meta">Deadline: {formatDeadline(data.rsvp.window.deadlineAt)}.</p>
+        ) : data.rsvp.window.open ? (
+          // Every other unknown on this page is named; the deadline was the one being papered over.
+          <p className="card__meta">
+            <Placeholder inline>the date answers are needed by</Placeholder>
+          </p>
+        ) : null}
       </section>
 
       <section className="sec" aria-labelledby="events-title">
@@ -56,9 +61,9 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
                 {e.dateText} · {e.whenText}
               </p>
               <p className="card__meta">
-                Where: {e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : <Placeholder inline>the room is still to be confirmed.</Placeholder>}
+                Where: {e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : <Placeholder inline>the room</Placeholder>}
                 {' · '}
-                Dress: {e.dressCode ?? <Placeholder inline>still to be confirmed.</Placeholder>}
+                Dress: {e.dressCode ?? <Placeholder inline>the dress code</Placeholder>}
               </p>
               {e.accessibilityNote ? <p>{e.accessibilityNote}</p> : null}
               <ul className="list list--plain">
