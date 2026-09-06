@@ -101,6 +101,15 @@ export interface DeletionProof {
   providerSubjectsDeleted: number;
   matchesDeleted: number;
   vectorEntriesDeleted: number;
+  /**
+   * Stored capability responses purged from the public `idempotency_keys` table. A biometric
+   * result cached there is a copy of the answer outside this schema, so a deletion that did not
+   * remove it would be reporting a destruction it had not performed. (Confirmation nonces are not
+   * touched: they hold no body and are what keeps a consent token single-use.)
+   */
+  cachedResponsesDeleted: number;
+  /** Vectors left in this guest's biometric namespace afterwards; the index is asked, not assumed. */
+  vectorEntriesRemaining: number;
   consentIds: string[];
   completedBy: string;
 }

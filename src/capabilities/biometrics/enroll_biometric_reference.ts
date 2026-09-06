@@ -20,6 +20,8 @@ export const enrollBiometricReference = defineCapability<z.infer<typeof input>, 
   flag: 'BIOMETRICS_ENABLED',
   confirmation: 'inline',
   idempotent: true,
+  // Never cache the response: a replay after deletion would report a destroyed reference as live.
+  replayable: false,
   annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
   exposure: { ui: true, ai: false, webmcp: false },
   input,

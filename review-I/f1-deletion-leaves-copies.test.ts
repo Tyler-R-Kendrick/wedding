@@ -65,7 +65,9 @@ describe('F1: biometric match results survive a completed deletion', () => {
 
     // 4. ATTACK/HARM A: the biometric result is still sitting in the public schema.
     const cached = await db.select().from(idempotencyKeys).where(and(like(idempotencyKeys.scope, 'find_photos_of_me:%'), eq(idempotencyKeys.key, KEY)));
-    console.info('[F1] surviving idempotency rows:', cached.length, JSON.stringify(cached[0]?.response).slice(0, 300));
+    // (null-safe: with the finding fixed there is no row to stringify, and the diagnostic must not
+    // throw before the assertions below get to run. The assertions themselves are unchanged.)
+    console.info('[F1] surviving idempotency rows:', cached.length, (JSON.stringify(cached[0]?.response) ?? 'none').slice(0, 300));
 
     // 5. ATTACK/HARM B: replaying the original request returns the deleted results verbatim.
     const replay = await call<{ matched: { id: string }[] }>(guestA, 'find_photos_of_me', { candidateAssetIds: [mineId] }, { idempotencyKey: KEY });

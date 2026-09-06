@@ -77,7 +77,7 @@ export const deletionRecordSchema = z.object({
   status: z.enum(DELETION_STATUSES),
   requestedAt: z.string(),
   completedAt: z.string().nullable(),
-  proof: z.object({ identityRefsDeleted: z.number(), matchesDeleted: z.number(), providerSubjectsDeleted: z.number() }).nullable(),
+  proof: z.object({ identityRefsDeleted: z.number(), matchesDeleted: z.number(), providerSubjectsDeleted: z.number(), cachedResponsesDeleted: z.number() }).nullable(),
 });
 
 /** The grant payload the draft step binds the confirmation token to. */

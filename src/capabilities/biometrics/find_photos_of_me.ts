@@ -33,6 +33,10 @@ export const findPhotosOfMe = defineCapability<z.infer<typeof input>, FindPhotos
   flag: 'BIOMETRICS_ENABLED',
   confirmation: 'inline',
   idempotent: true,
+  // The result IS biometric data: which photographs this identified guest appears in. Reserving the
+  // key stops two clicks racing; storing the answer would put a copy in the public idempotency
+  // table, outside the vault, replayable at pipeline step 6 without ever reaching this gate again.
+  replayable: false,
   annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
   exposure: { ui: true, ai: false, webmcp: false },
   input,

@@ -29,6 +29,11 @@ export interface VectorIndexProvider extends ProviderDescriptor {
   upsert(namespace: string, items: VectorItem[]): Promise<Result<{ count: number }, ProviderFailure>>;
   query(namespace: string, q: VectorQuery): Promise<Result<VectorMatch[], ProviderFailure>>;
   delete(namespace: string, ids: string[]): Promise<Result<{ count: number }, ProviderFailure>>;
+  /**
+   * How many vectors a namespace holds. `delete` can only report "the ids I named are gone"; this
+   * is how a deletion proof can say "and the namespace is empty" without assuming it.
+   */
+  count(namespace: string): Promise<Result<{ count: number }, ProviderFailure>>;
 }
 
 export function cosine(a: number[], b: number[]): number {

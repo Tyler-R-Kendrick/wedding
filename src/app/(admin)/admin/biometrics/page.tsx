@@ -112,7 +112,7 @@ export default async function AdminBiometricsPage() {
                     <td>{d.guestId}</td>
                     <td>{d.reason.replaceAll('_', ' ')}</td>
                     <td>{d.status}</td>
-                    <td>{d.proof ? `${d.proof.identityRefsDeleted} reference(s), ${d.proof.matchesDeleted} match(es), ${d.proof.providerSubjectsDeleted} provider record(s), ${d.proof.vectorEntriesDeleted} index entries` : '—'}</td>
+                    <td>{d.proof ? `${d.proof.identityRefsDeleted} reference(s), ${d.proof.matchesDeleted} match(es), ${d.proof.providerSubjectsDeleted} provider record(s), ${d.proof.cachedResponsesDeleted} cached response(s); ${d.proof.vectorEntriesRemaining} vectors left in the index` : '—'}</td>
                   </tr>
                 ))}
               </tbody>

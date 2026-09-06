@@ -14,8 +14,9 @@ import { newId } from '@/contracts/ids';
 import type { AdminPrincipal, GuestPrincipal, Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
 import { biometricConsents, biometricDeletions, biometricIdentityRefs, biometricMatches } from '@/db/schema/biometrics';
+import { idempotencyKeys } from '@/db/schema/idempotency';
 import { ensureDefaultCollections } from '@/domain/media';
-import { BIOMETRIC_SWEEP_JOB, CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH, enqueueBiometricSweep, getConsentState, sweepRetention } from '@/domain/biometrics';
+import { BIOMETRIC_SWEEP_JOB, CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH, enqueueBiometricSweep, getConsentState, guestScopeKey, sweepRetention } from '@/domain/biometrics';
 import { listAuditEvents } from '@/lib/audit';
 import { getAuditSink } from '@/lib/audit';
 import { invalidateReadinessCache, setReadiness } from '@/lib/flags';
@@ -123,11 +124,11 @@ async function setReady(ready: boolean) {
 }
 
 /** Draft + grant through the consent endpoint, the only path that can write the ledger. */
-async function grantConsentThroughEndpoint() {
-  const draft = await post<{ policy: { version: string; textHash: string } }>('draft', { input: { adultAttested: true } });
+async function grantConsentThroughEndpoint(who: 'guestA' | 'guestB' = 'guestA') {
+  const draft = await post<{ policy: { version: string; textHash: string } }>('draft', { input: { adultAttested: true } }, who);
   expect(draft.ok, JSON.stringify(draft)).toBe(true);
   const token = draft.confirmation!.token;
-  const granted = await post('grant', { input: { policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true }, confirmationToken: token, idempotencyKey: newId() });
+  const granted = await post('grant', { input: { policyVersion: CONSENT_POLICY_VERSION, textHash: CONSENT_TEXT_HASH, adultAttested: true }, confirmationToken: token, idempotencyKey: newId() }, who);
   expect(granted.ok, JSON.stringify(granted)).toBe(true);
   return granted;
 }
@@ -407,6 +408,74 @@ describe('biometric subsystem (gated off by default)', () => {
       expect(theirs.ok && theirs.data.enrolment).toBeNull();
       expect(theirs.ok && theirs.data.matches).toEqual([]);
       expect(mine.ok && JSON.stringify(mine.data)).not.toContain('ipHash');
+    });
+  });
+
+  describe('what a deletion has to reach', () => {
+    // A separate guest throughout, so this block's deletions cannot disturb the state the
+    // withdrawal tests below depend on.
+    const mine = () => corpus.get('theirs')!.assetId; // owned by GUESTB
+
+    beforeAll(async () => {
+      await setFlag(true);
+      await setReady(true);
+      await grantConsentThroughEndpoint('guestB');
+      expect((await call(guestB, 'enroll_biometric_reference', { assetIds: [mine()] })).ok).toBe(true);
+    });
+
+    it('never leaves the biometric result in the public idempotency table', async () => {
+      const db = await getDb();
+      const key = newId();
+      const found = await call<{ matched: { id: string }[] }>(guestB, 'find_photos_of_me', { candidateAssetIds: [mine()] }, { idempotencyKey: key });
+      expect(found.ok, JSON.stringify(found)).toBe(true);
+      if (!found.ok) return;
+      expect(found.data.matched).toHaveLength(1);
+      // The result IS biometric data; the pipeline reserves the key but stores no body.
+      expect(await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.scope, `find_photos_of_me:${guestScopeKey('GUESTB')}`))).toHaveLength(0);
+      const everything = await db.select().from(idempotencyKeys);
+      expect(JSON.stringify(everything)).not.toContain(mine());
+    });
+
+    it('re-runs rather than replaying, so a withdrawn consent stops a repeat of the same request', async () => {
+      const db = await getDb();
+      const key = newId();
+      const input = { candidateAssetIds: [mine()] };
+      expect((await call(guestB, 'find_photos_of_me', input, { idempotencyKey: key })).ok).toBe(true);
+      // Same key, same payload. Before the fix this replayed a stored answer without re-gating.
+      expect((await call(guestB, 'find_photos_of_me', input, { idempotencyKey: key })).ok).toBe(true);
+      expect((await post('revoke', { input: {}, idempotencyKey: newId() }, 'guestB')).ok).toBe(true);
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      const replay = await call(guestB, 'find_photos_of_me', input, { idempotencyKey: key });
+      expect(replay.ok, 'a repeat after withdrawal must be refused, not served from a cache').toBe(false);
+      if (!replay.ok) expect(replay.error.code).toBe('conflict');
+    });
+
+    it('purges a cached response written before the opt-out existed, and proves the index is empty', async () => {
+      const db = await getDb();
+      await grantConsentThroughEndpoint('guestB');
+      expect((await call(guestB, 'enroll_biometric_reference', { assetIds: [mine()] })).ok).toBe(true);
+      // A row of the shape the pipeline used to write (or that a future capability forgets to opt out of).
+      await db.insert(idempotencyKeys).values({
+        scope: `find_photos_of_me:${guestScopeKey('GUESTB')}`,
+        key: 'legacy-cached-result',
+        payloadHash: 'h',
+        status: 'complete',
+        response: { data: { matched: [{ id: mine(), score: 1 }] } },
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 3_600_000),
+      });
+      const deletion = await call<{ deletion: { id: string } }>(guestB, 'request_biometric_deletion', {});
+      expect(deletion.ok).toBe(true);
+      if (!deletion.ok) return;
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      const row = (await db.select().from(biometricDeletions).where(eq(biometricDeletions.id, deletion.data.deletion.id)))[0]!;
+      expect(row.status).toBe('completed');
+      expect(row.proof!.cachedResponsesDeleted).toBeGreaterThanOrEqual(1);
+      expect(row.proof!.vectorEntriesRemaining).toBe(0);
+      expect(await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, 'legacy-cached-result'))).toHaveLength(0);
+      // The confirmation nonce is NOT purged: a used grant token must stay used.
+      const nonces = await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.scope, `confirm:grant_biometric_consent:${guestScopeKey('GUESTB')}`));
+      expect(nonces.length).toBeGreaterThan(0);
     });
   });
 

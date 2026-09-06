@@ -18,7 +18,7 @@ const output = z.object({
   provider: z.object({ name: z.string(), mode: z.string() }),
   vaultKeySource: z.enum(['env', 'derived', 'missing']),
   /** Recent deletion records (guest ids are opaque ULIDs; no templates, no IP hashes). */
-  recentDeletions: z.array(z.object({ id: z.string(), guestId: z.string(), reason: z.enum(DELETION_REASONS), status: z.enum(DELETION_STATUSES), requestedAt: z.string(), completedAt: z.string().nullable(), proof: z.object({ identityRefsDeleted: z.number(), matchesDeleted: z.number(), providerSubjectsDeleted: z.number(), vectorEntriesDeleted: z.number() }).nullable() })),
+  recentDeletions: z.array(z.object({ id: z.string(), guestId: z.string(), reason: z.enum(DELETION_REASONS), status: z.enum(DELETION_STATUSES), requestedAt: z.string(), completedAt: z.string().nullable(), proof: z.object({ identityRefsDeleted: z.number(), matchesDeleted: z.number(), providerSubjectsDeleted: z.number(), vectorEntriesDeleted: z.number(), vectorEntriesRemaining: z.number(), cachedResponsesDeleted: z.number() }).nullable() })),
   checklist: z.array(z.object({ item: z.string(), done: z.boolean(), note: z.string() })),
 });
 export type BiometricStatusView = z.infer<typeof output>;
@@ -50,7 +50,7 @@ export const adminBiometricStatus = defineCapability<z.infer<typeof input>, Biom
     return ok({
       data: {
         ...status,
-        recentDeletions: recent.map((d) => ({ id: d.id, guestId: d.guestId, reason: d.reason, status: d.status, requestedAt: d.requestedAt.toISOString(), completedAt: d.completedAt?.toISOString() ?? null, proof: d.proof ? { identityRefsDeleted: d.proof.identityRefsDeleted, matchesDeleted: d.proof.matchesDeleted, providerSubjectsDeleted: d.proof.providerSubjectsDeleted, vectorEntriesDeleted: d.proof.vectorEntriesDeleted } : null })),
+        recentDeletions: recent.map((d) => ({ id: d.id, guestId: d.guestId, reason: d.reason, status: d.status, requestedAt: d.requestedAt.toISOString(), completedAt: d.completedAt?.toISOString() ?? null, proof: d.proof ? { identityRefsDeleted: d.proof.identityRefsDeleted, matchesDeleted: d.proof.matchesDeleted, providerSubjectsDeleted: d.proof.providerSubjectsDeleted, vectorEntriesDeleted: d.proof.vectorEntriesDeleted, vectorEntriesRemaining: d.proof.vectorEntriesRemaining ?? 0, cachedResponsesDeleted: d.proof.cachedResponsesDeleted ?? 0 } : null })),
         checklist,
       },
       sources: [],

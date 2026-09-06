@@ -159,7 +159,22 @@ export async function invoke<I, O>(
       if (claim.existing.payloadHash !== payloadHash) {
         return finish(err(new CapabilityError('conflict', 'That request was already made with different details.')));
       }
-      return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
+      if (descriptor.replayable === false) {
+        // Nothing was stored to replay. Take the key over and run again, so the handler's own
+        // authorization decides — a result whose preconditions have since been withdrawn must not
+        // come back from a cache.
+        try {
+          await services.idempotency.release(idemScope, ctx.idempotencyKey);
+          claim = await services.idempotency.reserve(idemScope, ctx.idempotencyKey, payloadHash);
+        } catch (cause) {
+          return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause)));
+        }
+        if (!claim.reserved) {
+          return finish(err(new CapabilityError('conflict', 'That request is still being processed. Please wait a moment before retrying.')));
+        }
+      } else {
+        return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
+      }
     }
     reserved = true;
   }
@@ -221,7 +236,10 @@ export async function invoke<I, O>(
 
   if (reserved && ctx.idempotencyKey && services.idempotency) {
     try {
-      await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
+      // `replayable: false` never persists the body: releasing the reservation leaves nothing at
+      // all in the public idempotency table, and a later repeat re-runs under every gate.
+      if (descriptor.replayable === false) await services.idempotency.release(idemScope, ctx.idempotencyKey);
+      else await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
     } catch (cause) {
       // The action happened; a retry within the reservation TTL sees "in progress" and then re-runs. Never hide the outcome.
       services.logger?.error({ err: cause, capability: descriptor.name, requestId: ctx.requestId }, 'idempotency outcome could not be stored');

@@ -1,10 +1,13 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import type { AuditSink } from '@/contracts/audit';
 import { newId } from '@/contracts/ids';
+import type { GuestId, HouseholdId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { biometricDeletions, biometricIdentityRefs, biometricMatches, type BiometricDeletionRow, type DeletionProof, type DeletionReason } from '@/db/schema/biometrics';
+import { idempotencyKeys } from '@/db/schema/idempotency';
 import { JobQueue } from '@/lib/jobs';
+import { principalKey } from '@/policy/confirmation';
 import type { BiometricProvider } from '@/providers/biometric/types';
 import type { VectorIndexProvider } from '@/providers/vector-index/types';
 import { listConsentEntries } from './consent';
@@ -22,6 +25,46 @@ export const BIOMETRIC_SWEEP_JOB = 'biometric.sweep';
 
 /** Namespace a biometric vector would live in if anyone ever indexed one; the job proves it is empty. */
 export const biometricNamespaceFor = (guestId: string) => `biometric:${guestId}`;
+
+/**
+ * Capabilities whose stored response would be, or would reveal, biometric data. The invoke
+ * pipeline keys stored responses by `<capability>:<principalKey>`, so deleting these scopes for one
+ * guest removes every cached copy of their results from the public `idempotency_keys` table.
+ *
+ * `find_photos_of_me` and `enroll_biometric_reference` are `replayable: false` and so store nothing
+ * today; this sweep is the belt to that braces. It also catches rows written before that flag
+ * existed, and any capability added later that forgets it.
+ */
+export const BIOMETRIC_RESPONSE_SCOPES = [
+  'find_photos_of_me',
+  'enroll_biometric_reference',
+  'revoke_biometric_consent',
+  'request_biometric_deletion',
+  'grant_biometric_consent',
+] as const;
+
+/**
+ * The idempotency scope suffix the pipeline uses for this guest. `principalKey` keys a guest on
+ * their guest id alone; the household is required by the type and ignored by the function, and
+ * `tests/unit/biometrics/deletion.test.ts` pins that agreement so this cannot silently drift.
+ */
+export function guestScopeKey(guestId: string): string {
+  return principalKey({ kind: 'guest', guestId: guestId as GuestId, householdId: '' as HouseholdId });
+}
+
+/**
+ * Removes every cached capability response for this guest's biometric capabilities.
+ *
+ * Deliberately NOT the `confirm:` nonce scopes for the same capabilities: those rows hold no
+ * response body (they are reserve-only), and they are what makes a confirmation token single-use.
+ * Deleting them would let an unexpired grant token be redeemed a second time.
+ */
+export async function purgeCachedBiometricResponses(db: Db, guestId: string): Promise<number> {
+  const key = guestScopeKey(guestId);
+  const scopes = BIOMETRIC_RESPONSE_SCOPES.map((name) => `${name}:${key}`);
+  const deleted = await db.delete(idempotencyKeys).where(inArray(idempotencyKeys.scope, scopes)).returning({ key: idempotencyKeys.key });
+  return deleted.length;
+}
 
 export async function requestDeletion(db: Db, input: { guestId: string; reason: DeletionReason; requestedBy: PrincipalRef; requestId: string; now: Date }): Promise<BiometricDeletionRow> {
   const open = (await db.select().from(biometricDeletions).where(and(eq(biometricDeletions.guestId, input.guestId), eq(biometricDeletions.status, 'requested'))).limit(1))[0];
@@ -65,13 +108,22 @@ export async function runDeletion(deps: DeletionDeps, deletionId: string): Promi
     if (direct.ok && direct.value.deleted) providerSubjectsDeleted++;
     const matches = await deps.db.delete(biometricMatches).where(eq(biometricMatches.guestId, row.guestId)).returning({ id: biometricMatches.id });
     const deletedRefs = await deps.db.delete(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, row.guestId)).returning({ id: biometricIdentityRefs.id });
-    const vectors = await deps.vectorIndex.delete(biometricNamespaceFor(row.guestId), refs.map((r) => r.id).concat(row.guestId));
+    const namespace = biometricNamespaceFor(row.guestId);
+    const vectors = await deps.vectorIndex.delete(namespace, refs.map((r) => r.id).concat(row.guestId));
+    // Ask the index what is left rather than assuming the ids we named were all there was.
+    const remaining = await deps.vectorIndex.count(namespace);
+    if (!remaining.ok) throw new Error(`search index could not confirm the namespace is empty: ${remaining.error.class}`);
+    if (remaining.value.count > 0) throw new Error(`biometric vectors remain in ${namespace} after deletion: ${remaining.value.count}`);
+    // The result of a biometric operation, cached by the pipeline, is a copy outside this schema.
+    const cachedResponsesDeleted = await purgeCachedBiometricResponses(deps.db, row.guestId);
     const consents = await listConsentEntries(deps.db, row.guestId);
     const proof: DeletionProof = {
       identityRefsDeleted: deletedRefs.length,
       providerSubjectsDeleted,
       matchesDeleted: matches.length,
       vectorEntriesDeleted: vectors.ok ? vectors.value.count : 0,
+      vectorEntriesRemaining: remaining.value.count,
+      cachedResponsesDeleted,
       consentIds: consents.filter((c) => c.entry === 'grant').map((c) => c.id),
       completedBy: deps.component,
     };
@@ -102,7 +154,14 @@ export function describeDeletion(row: BiometricDeletionRow) {
     status: row.status,
     requestedAt: row.requestedAt.toISOString(),
     completedAt: row.completedAt?.toISOString() ?? null,
-    proof: row.proof ? { identityRefsDeleted: row.proof.identityRefsDeleted, matchesDeleted: row.proof.matchesDeleted, providerSubjectsDeleted: row.proof.providerSubjectsDeleted } : null,
+    proof: row.proof
+      ? {
+          identityRefsDeleted: row.proof.identityRefsDeleted,
+          matchesDeleted: row.proof.matchesDeleted,
+          providerSubjectsDeleted: row.proof.providerSubjectsDeleted,
+          cachedResponsesDeleted: row.proof.cachedResponsesDeleted ?? 0,
+        }
+      : null,
   };
 }
 

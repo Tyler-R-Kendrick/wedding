@@ -96,7 +96,7 @@ export function FaceMatching({ initial, candidates }: { initial: MyBiometricCons
                 </span>
                 <span>
                   Requested {formatDate(d.requestedAt)} ({d.reason.replaceAll('_', ' ')}) — {d.status}
-                  {d.proof ? <small>{d.proof.identityRefsDeleted} reference(s), {d.proof.matchesDeleted} match(es) and {d.proof.providerSubjectsDeleted} provider record(s) deleted.</small> : null}
+                  {d.proof ? <small>{d.proof.identityRefsDeleted} reference(s), {d.proof.matchesDeleted} match(es), {d.proof.providerSubjectsDeleted} provider record(s) and {d.proof.cachedResponsesDeleted} saved result(s) deleted.</small> : null}
                 </span>
               </li>
             ))}
