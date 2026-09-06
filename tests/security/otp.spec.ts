@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cap, forwardedFor, clearInbox, devHeaders, readOtp, seedFixtures } from './helpers';
+import { cap, forwardedFor, clearInbox, devHeaders, readOtp, seedFixtures, SITE_ORIGIN } from './helpers';
 
 test.use({ extraHTTPHeaders: forwardedFor('otp-' + String(Date.now())) });
 
@@ -47,7 +47,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     let last = 200;
     let retryAfter: string | undefined;
     for (let i = 0; i < 7; i++) {
-      const res = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: 'http://localhost:3106' });
+      const res = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN });
       last = res.status();
       retryAfter = res.headers()['retry-after'];
       if (last === 429) break;
@@ -86,7 +86,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     const cookie = `${c.name}=${c.value}`;
     expect((await cap(request, 'get_my_invitation', {}, { cookie, origin: 'https://evil.example' })).status()).toBe(401);
     expect((await cap(request, 'update_my_contact', { email: 'evil@example.test' }, { cookie, origin: 'https://evil.example' })).status()).toBe(401);
-    expect((await cap(request, 'get_my_invitation', {}, { cookie, origin: 'http://localhost:3106' })).status()).toBe(200);
+    expect((await cap(request, 'get_my_invitation', {}, { cookie })).status()).toBe(200);
     const signOut = await request.post('/api/auth/sign-out', { headers: { cookie, origin: 'https://evil.example', 'content-type': 'application/json' }, data: {} });
     expect([403, 401]).toContain(signOut.status());
     expect((await cap(request, 'get_my_invitation', {}, { cookie })).status()).toBe(200); // still signed in

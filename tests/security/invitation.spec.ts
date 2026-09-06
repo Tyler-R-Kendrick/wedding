@@ -50,9 +50,9 @@ test.describe('invitation tokens', () => {
     const adminCtx = await browser.newContext();
     const adminPage = await adminCtx.newPage();
     const admin = await signInViaUi(adminPage, request, f.emails.admin!, true);
-    const revoke = await cap(request, 'admin_revoke_invitation', { invitationId: f.invitations.okafor!.id, reason: 'leaked' }, { cookie: admin, origin: 'http://localhost:3106', idempotencyKey: `revoke-${f.suffix}-${Date.now()}` });
+    const revoke = await cap(request, 'admin_revoke_invitation', { invitationId: f.invitations.okafor!.id, reason: 'leaked' }, { cookie: admin, idempotencyKey: `revoke-${f.suffix}-${Date.now()}` });
     expect(revoke.status()).toBe(200);
-    const listed = await cap(request, 'admin_list_invitations', { householdId: f.households.okafor }, { cookie: admin, origin: 'http://localhost:3106' });
+    const listed = await cap(request, 'admin_list_invitations', { householdId: f.households.okafor }, { cookie: admin });
     expect(JSON.stringify(await listed.json())).not.toContain(f.invitations.okafor!.token);
     await adminCtx.close();
     await page.goto(`/invite/${f.invitations.okafor!.token}`);

@@ -1,6 +1,5 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { registerRsvpJobs } from '@/domain/rsvp/email';
-import { installTestPrincipalResolver } from '@/domain/testing/testPrincipal';
 import { adminEventCapabilities } from '@/capabilities/events/admin_events';
 import { adminSeatingCapabilities } from '@/capabilities/seating/admin_seating';
 import { getMyTable } from '@/capabilities/seating/get_my_table';
@@ -12,9 +11,12 @@ import { getMyRsvp } from './get_my_rsvp';
 import { listMyEvents } from './list_my_events';
 import { submitRsvp } from './submit_rsvp';
 
-// Server-only module: wires the job handler and the test-only principal injector when the capability registry loads.
+// Server-only module: registers this level's job handler when the capability registry loads.
+// The test-only principal injector deliberately does NOT live here — installing a header-driven
+// auth bypass as a side effect of importing the production capability barrel made its position in
+// the resolver chain depend on module load order. It is installed from src/instrumentation.ts,
+// after level 06's real resolver, which it wraps and falls through to.
 registerRsvpJobs();
-installTestPrincipalResolver();
 
 /** Swarm E: events, RSVP, Your Weekend, seating — one list for src/capabilities/index.ts. */
 export const rsvpSwarmCapabilities: readonly AnyCapability[] = [

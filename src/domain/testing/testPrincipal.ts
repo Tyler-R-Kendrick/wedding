@@ -112,8 +112,18 @@ export function createTestPrincipalResolver(fallback: PrincipalResolver, e: Test
   return resolver;
 }
 
-/** Idempotent; no-op unless enabled. Called from src/instrumentation.ts. */
+/**
+ * Idempotent; no-op unless enabled. Called from src/instrumentation.ts (never as an import side
+ * effect of the capability barrel, so the wrap order against the real resolver is deterministic).
+ *
+ * A `TEST_AUTH_SECRET` on a production host is refused loudly rather than ignored: this resolver
+ * turns two request headers into any principal, so a secret reaching production is a
+ * misconfiguration whose safe outcome is a server that does not start.
+ */
 export function installTestPrincipalResolver(): boolean {
+  if (env.isProduction && readTestPrincipalEnv().secret) {
+    throw new Error('TEST_AUTH_SECRET is set on a production host: the test principal resolver is a header-driven auth bypass and must never be reachable there.');
+  }
   if (!isTestPrincipalEnabled()) return false;
   const current = getPrincipalResolver() as PrincipalResolver & { [MARK]?: true };
   if (current[MARK]) return true;
