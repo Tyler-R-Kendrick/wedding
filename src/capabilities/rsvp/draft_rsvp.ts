@@ -59,8 +59,13 @@ export const draftRsvp = defineCapability<DraftRsvpInput, DraftRsvpOutput>({
     const proposal = buildProposal(submission, namesFor(hc));
     // Bound to the issuing surface: only a token drafted on the website can be redeemed there (assistants' drafts are read-only proposals).
     const issued = confirmation.issue({ capability: 'submit_rsvp', principalRef: toPrincipalRef(ctx.principal), payloadHash: stableHash(submission), surface: ctx.surface ?? 'ui' }, { now: ctx.now });
+    // The token is hashed over the full submission (needs included) so nothing can be altered between
+    // draft and submit — but the *echo* is trimmed off the website, the same rule get_my_rsvp applies:
+    // dietary and accessibility text never enters an assistant transcript, even as a repeat of what
+    // the guest just typed. Off `ui` the token cannot be redeemed anyway, so nothing is lost.
+    const echoed = (ctx.surface ?? 'ui') === 'ui' ? submission : { ...submission, needs: [] };
     return ok({
-      data: { proposal, submission, window: hc.window },
+      data: { proposal, submission: echoed, window: hc.window },
       sources: [],
       confirmation: { token: issued.token, expiresAt: issued.expiresAt, summary: proposal.summary },
     });

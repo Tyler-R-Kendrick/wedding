@@ -38,7 +38,11 @@ export const adminListEvents = defineCapability<z.infer<typeof listInput>, Admin
   description: 'Admin view of every event, its meal option versions, the RSVP window, every guest and their event entitlements, and Your Weekend notices.',
   kind: 'read',
   auth: 'admin',
-  requires: ['admin_content'],
+  // The output carries every guest's name, household and event entitlements, so this is a roster read
+  // as much as a content read. Every other roster capability (admin_rsvp_overview, admin_export_rsvp,
+  // admin_set_event_entitlements, admin_seating_overview) requires admin_guest_ops; a content-only
+  // planner must not reach the roster through the events screen.
+  requires: ['admin_content', 'admin_guest_ops'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: ADMIN_EXPOSURE,
   input: listInput,

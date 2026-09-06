@@ -14,9 +14,16 @@ import { myTableSchema, readPublishedTable } from '@/capabilities/seating/get_my
 
 const input = z.object({}).optional();
 
+/**
+ * A slot item's href is rendered straight into `<a href>`. Slots are filled by provider adapters
+ * (levels 08 and 09), so this output schema is the last boundary before render: allow only a
+ * site-relative path or an https URL, never `javascript:` or `data:`.
+ */
+const SLOT_HREF = z.string().regex(/^(\/[^\s]*|https:\/\/[^\s]+)$/, 'href must be a site-relative path or an https URL');
+
 const slotSchema = z.discriminatedUnion('status', [
   z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('placeholder'), placeholder: z.literal(true), title: z.string(), body: z.string(), owner: z.string() }),
-  z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('ready'), placeholder: z.literal(false), title: z.string(), items: z.array(z.object({ label: z.string(), detail: z.string().optional(), href: z.string().optional() })), retrievedAt: z.string().optional() }),
+  z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('ready'), placeholder: z.literal(false), title: z.string(), items: z.array(z.object({ label: z.string(), detail: z.string().optional(), href: SLOT_HREF.optional() })), retrievedAt: z.string().optional() }),
   z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('unavailable'), placeholder: z.literal(false), title: z.string(), body: z.string() }),
 ]);
 

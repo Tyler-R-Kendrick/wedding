@@ -66,7 +66,9 @@ describe('get_my_itinerary', () => {
 
   it('is private: anonymous and admin principals are refused, and a guest without the entitlement too', async () => {
     expect(expectErr(await run(getMyItinerary, { kind: 'anonymous' }, {})).code).toBe('unauthenticated');
-    expect(expectErr(await run(getMyItinerary, admin, {})).code).toBe('forbidden');
+    // The admin must HOLD view_private_schedule here, or authorize() refuses first and the handler's
+    // own requireGuestPrincipal never runs — the guard would be deletable with this test still green.
+    expect(expectErr(await run(getMyItinerary, fixtureAdmin({ entitlements: new Set(['view_private_schedule']) }), {})).code).toBe('forbidden');
     expect(expectErr(await run(getMyItinerary, fixturePrincipal('A1', { entitlements: new Set(['view_event']) }), {})).code).toBe('forbidden');
   });
 });

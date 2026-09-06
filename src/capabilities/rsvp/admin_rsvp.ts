@@ -115,8 +115,20 @@ export const adminRsvpOverview = defineCapability<z.infer<typeof overviewInput>,
 });
 
 /* -------------------------------------------------------------- export ------ */
+/**
+ * CSV escaping for a file a human opens in Excel, Sheets or Numbers.
+ *
+ * Two separate jobs. Quoting keeps the *file* well formed. Neutralising a leading `=`, `+`, `-`, `@`,
+ * tab or CR keeps the *spreadsheet* from treating the cell as a formula — guests write `dietary`,
+ * `accessibility` and their plus-one's name themselves, and those columns land in the planner's
+ * download verbatim. Quoting alone is not a defence: Excel strips CSV quotes before deciding a cell
+ * is a formula, so `"=HYPERLINK(...)"` still executes. A leading apostrophe is the standard fix and
+ * is displayed by the spreadsheet as the literal text the guest typed.
+ */
+const FORMULA_LEAD = /^[=+\-@\t\r]/;
 const csvEscape = (v: string | number | boolean | null | undefined): string => {
-  const s = v === null || v === undefined ? '' : String(v);
+  const raw = v === null || v === undefined ? '' : String(v);
+  const s = FORMULA_LEAD.test(raw) ? `'${raw}` : raw;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

@@ -138,13 +138,28 @@ describe('household RSVP through draft -> confirm -> submit', () => {
     expect(a3).toMatchObject({ status: 'accepted', mealLabel: FIXTURE_MEALS[2].label, version: 2 });
   });
 
-  it('delivers the confirmation e-mail through the auth-email provider when it can send messages, else leaves it pending', async () => {
+  // Level 06 added `sendMessage` to AuthEmailProvider, which is the contract this level asked for, so
+  // the shipped mock now delivers. Both halves below therefore install the provider they are testing
+  // rather than relying on the default's capabilities — otherwise "cannot send" would quietly stop
+  // being exercised the moment a provider gained the method, which is exactly what happened here.
+  it('leaves the row pending when the auth-email provider cannot send messages', async () => {
     const [row] = await db.select().from(rsvpConfirmationEmails);
-    await runDueJobs(db, { worker: 'test' });
-    const pending = (await db.select().from(rsvpConfirmationEmails))[0]!;
-    expect(pending.status).toBe('pending');
-    expect(pending.lastError).toMatch(/sendMessage/);
+    const capable = getProvider('auth-email', { db });
+    const { sendMessage: _omitted, ...withoutSendMessage } = capable as unknown as Record<string, unknown>;
+    setProviderOverride('auth-email', withoutSendMessage as never);
+    try {
+      await runDueJobs(db, { worker: 'test' });
+      const pending = (await db.select().from(rsvpConfirmationEmails))[0]!;
+      expect(pending.id).toBe(row!.id);
+      expect(pending.status).toBe('pending');
+      expect(pending.lastError).toMatch(/sendMessage/);
+    } finally {
+      resetProviders();
+    }
+  });
 
+  it('delivers the confirmation e-mail through the auth-email provider, without the needs text', async () => {
+    const [row] = await db.select().from(rsvpConfirmationEmails);
     const sent: Array<{ to: string; subject: string; text: string }> = [];
     const mock = getProvider('auth-email', { db });
     setProviderOverride('auth-email', Object.assign(Object.create(Object.getPrototypeOf(mock)), mock, { sendMessage: async (m: { to: string; subject: string; text: string }) => (sent.push(m), ok({ messageId: 'msg-1' })) }));
@@ -182,7 +197,9 @@ describe('authorization: only your own household, only entitled events', () => {
     expect(JSON.stringify(ai.data)).not.toContain('NEEDS-SECRET');
     expect(expectErr(await run(submitRsvp, A1, {}, { surface: 'ai', idempotencyKey: newId() })).code).toBe('not_found');
     expect(expectErr(await run(getMyRsvp, { kind: 'anonymous' }, {})).code).toBe('unauthenticated');
-    expect(expectErr(await run(getMyRsvp, admin, {})).code).toBe('forbidden');
+    // Entitled on purpose: otherwise authorize() refuses before getMyRsvp's own guest-only guard runs,
+    // and that guard — the only thing stopping an entitled admin reading a household's RSVP — is untested.
+    expect(expectErr(await run(getMyRsvp, fixtureAdmin({ entitlements: new Set(['rsvp_self']) }), {})).code).toBe('forbidden');
     const events = expectOk(await run(listMyEvents, B1, {}));
     expect(events.data.events.map((e) => e.id).sort()).toEqual([E.ceremony, E.cocktailHour, E.reception].sort());
     expect(events.data.events.find((e) => e.id === E.ceremony)?.invited.map((i) => i.guestId)).toEqual([FX.guestB1]);

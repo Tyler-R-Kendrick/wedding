@@ -17,9 +17,13 @@ export interface TransactionalEmail {
 }
 
 /**
- * Contract change requested from Swarm D (owner of src/providers/auth-email): add
- * `sendMessage(message: TransactionalEmail)` to `AuthEmailProvider` (mock -> dev inbox, Resend -> API).
- * Until it lands the outbox keeps rows `pending` with a clear `lastError`; nothing is lost or faked.
+ * The contract this level asked level 06 for landed: `sendMessage` is now part of `AuthEmailProvider`
+ * itself (mock -> dev inbox, Resend -> API), so both shipped providers can deliver.
+ *
+ * The runtime check below is kept anyway, because a provider is a seam a test or a future adapter can
+ * replace with something that does not implement it. In that case the outbox keeps the row `pending`
+ * with a clear `lastError` and the job retries — nothing is lost, and nothing is reported as sent
+ * that was not sent.
  */
 export interface TransactionalEmailCapable {
   sendMessage?: (message: TransactionalEmail) => Promise<Result<{ messageId: string }, ProviderFailure>>;
@@ -47,7 +51,7 @@ export async function deliverRsvpConfirmation(db: Db, outboxId: string, now: Dat
   if (!recipient?.email) return update({ status: 'skipped', lastError: 'recipient has no e-mail on file', attempts: row.attempts + 1 });
   const provider = getProvider('auth-email', { db }) as AuthEmailProvider & TransactionalEmailCapable;
   if (typeof provider.sendMessage !== 'function') {
-    return update({ status: 'pending', lastError: 'auth-email provider has no sendMessage (contract change requested from Swarm D)', attempts: row.attempts + 1 });
+    return update({ status: 'pending', lastError: 'auth-email provider has no sendMessage', attempts: row.attempts + 1 });
   }
   const sent = await provider.sendMessage({ to: recipient.email, subject: row.subject, text: row.body });
   if (!sent.ok) {

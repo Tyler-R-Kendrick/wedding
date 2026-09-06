@@ -38,6 +38,10 @@ function splitCsvLine(line: string): string[] {
   return out.map((c) => c.trim());
 }
 
+/** Matches the caps `admin_upsert_table` enforces, so an import cannot write what the form refuses. */
+const MAX_TABLE_NAME = 60;
+const MAX_GUEST_CELL = 160;
+
 export function parseSeatingCsv(text: string, opts: { maxRows?: number } = {}): SeatingCsvParse {
   const rows: SeatingCsvRow[] = [];
   const errors: SeatingCsvParse['errors'] = [];
@@ -59,6 +63,16 @@ export function parseSeatingCsv(text: string, opts: { maxRows?: number } = {}): 
     const [table, seatRaw, guest] = cells as [string, string, string];
     if (!table) {
       errors.push({ line, message: 'Table name is empty.' });
+      return;
+    }
+    // Same cap admin_upsert_table applies to this column. Without it one long line creates a name
+    // that can overflow the table-name index and, once published, reaches guests in the snapshot.
+    if (table.length > MAX_TABLE_NAME) {
+      errors.push({ line, message: `Table name is longer than ${MAX_TABLE_NAME} characters.` });
+      return;
+    }
+    if (guest.length > MAX_GUEST_CELL) {
+      errors.push({ line, message: `Guest is longer than ${MAX_GUEST_CELL} characters.` });
       return;
     }
     if (!guest) {
