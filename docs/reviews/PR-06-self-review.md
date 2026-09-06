@@ -76,6 +76,24 @@ warmed anything. The step now starts the dev server itself, polls `/api/health` 
 (failing loudly with the server log if it never does), warms the journey's routes against a server
 that is actually up, and points Playwright at it with `BASE_URL`.
 
+**A fourth cause, and the one I nearly hid from myself.** With the bearer in place three of the six
+journeys passed and the passkey journey still failed, `expected 422, received 401`. The cause was in
+the test, not the product: `tests/e2e/claim.spec.ts:52` overrode the request origin with a hardcoded
+`http://localhost:3106` — this worktree's port. `assertSameOriginJson` compares the Origin against
+the site's own URL, so on any other port the request was rejected before the capability ran, and the
+assertion silently changed meaning from *"a valid session still cannot register a passkey through
+the JSON door"* to *"an unauthenticated request is 401"*. It only ever passed on port 3106.
+
+I had reproduced on port 3106 myself, which is why my local run showed 6/6 while CI showed 0/6. The
+override is gone; `cap()` already defaults the origin to `BASE_URL`, which is correct on any port.
+Re-verified deliberately on **port 3211** — chosen because it is not 3106 — `6 passed (17.3s)`.
+
+The general lesson, now true three times on this branch: a local reproduction is only evidence if it
+differs from CI in nothing the failure could depend on. Twice I chose an environment that could not
+fail. Grepped the rest of the suite for the same coupling: the other 26 `localhost:3NNN` literals are
+unit and integration tests building synthetic `Request` objects whose host and origin are set
+together, so they are self-consistent and carry no port dependency.
+
 ## 2. Migrations — the part that would have failed silently
 
 Level 05 and level 06 each generated a `0002`. Taking either ledger alone leaves the other's SQL on disk unreferenced while a later migration still runs against tables that were never created.

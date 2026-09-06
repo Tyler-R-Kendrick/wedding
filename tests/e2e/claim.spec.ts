@@ -49,7 +49,11 @@ test.describe('claim journey', () => {
     const rotated = (await page.context().cookies()).find((c) => c.name.endsWith('session_token'))!;
     expect(rotated.value).not.toBe(cookie.value);
     expect((await cap(request, 'get_my_invitation', {}, { cookie: `${cookie.name}=${cookie.value}` })).status()).toBe(401);
-    expect((await cap(request, 'register_passkey', { step: 'list' }, { cookie: `${rotated.name}=${rotated.value}`, origin: 'http://localhost:3106' })).status()).toBe(422); // no cookie transport on the JSON door; UI path only
+    // A *valid* rotated session on the JSON door still cannot register a passkey: there is no cookie
+    // transport there, so the capability refuses with 422. The origin must be the site's own, or the
+    // same-origin check rejects the request first and this asserts 401 instead — which is what a
+    // hardcoded origin here used to do on every port but one.
+    expect((await cap(request, 'register_passkey', { step: 'list' }, { cookie: `${rotated.name}=${rotated.value}` })).status()).toBe(422);
 
     // Sign out ends the session.
     await page.goto('/sign-out');
