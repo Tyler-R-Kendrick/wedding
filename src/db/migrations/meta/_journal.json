@@ -43,6 +43,13 @@
       "when": 1788715583668,
       "tag": "0005_nice_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788722750007,
+      "tag": "0006_lyrical_logan",
+      "breakpoints": true
     }
   ]
 }

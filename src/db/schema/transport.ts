@@ -1,5 +1,8 @@
 import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
+// Level 06 owns these. Swarm G built before they existed, so its guest and household columns were
+// plain text; they are real foreign keys as of this integration rather than debt deferred to 15.
+import { guests, households } from './guests';
 
 export const ENTITLEMENT_STATUSES = ['active', 'revoked'] as const;
 export type EntitlementStatus = (typeof ENTITLEMENT_STATUSES)[number];
@@ -13,8 +16,15 @@ export const transportationEntitlements = pgTable(
   'transportation_entitlements',
   {
     id: text('id').primaryKey(),
-    guestId: text('guest_id').notNull(),
-    householdId: text('household_id').notNull(),
+    // Cascade on the guest: a transportation entitlement and a claim are personal records about one
+    // guest, so deleting the guest must delete them. Same deletion story as `guest_needs` (level 07)
+    // and `guest_travel_profiles` (level 08).
+    guestId: text('guest_id')
+      .notNull()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
     /** Admin-chosen programme key (e.g. "reception-ride-home"); one entitlement per guest per programme. */
     program: text('program').notNull().default('reception-ride-home'),
     /** Provider-side programme/campaign reference (Uber voucher programme id), never a secret. */
@@ -55,8 +65,15 @@ export const transportationClaims = pgTable(
   {
     id: text('id').primaryKey(),
     entitlementId: text('entitlement_id').notNull(),
-    guestId: text('guest_id').notNull(),
-    householdId: text('household_id').notNull(),
+    // Cascade on the guest: a transportation entitlement and a claim are personal records about one
+    // guest, so deleting the guest must delete them. Same deletion story as `guest_needs` (level 07)
+    // and `guest_travel_profiles` (level 08).
+    guestId: text('guest_id')
+      .notNull()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
     status: text('status').$type<ClaimStatus>().notNull().default('pending'),
     providerName: text('provider_name').notNull(),
     /** Provider-side reference (voucher id), never the redemption secret. */

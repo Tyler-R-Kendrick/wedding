@@ -1,7 +1,7 @@
 import type { BenefitView } from '@/domain/transport/service';
 import { ExternalHandoffCard } from './ExternalHandoffCard';
 
-/** What a guest sees once their ride benefit is claimed: an "Open in Uber" handoff or their personal code. */
+/** What a guest sees once their ride benefit is claimed: an"Open in Uber" handoff or their personal code. */
 export function RedemptionCard({ benefit }: { benefit: BenefitView }) {
   const r = benefit.redemption;
   const claimedAt = benefit.claim?.claimedAt ? new Date(benefit.claim.claimedAt) : undefined;
@@ -34,13 +34,13 @@ export function RedemptionCard({ benefit }: { benefit: BenefitView }) {
     <article className="border-t border-primary/20 py-6" data-benefit-status={benefit.status} data-handoff-provider="manual-code">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h3 className="text-xl">Your ride code</h3>
-        <p className="text-sm text-primary/70">personal to you</p>
+        <p className="hint">personal to you</p>
       </div>
       <p className="mt-4 select-all font-mono text-2xl tracking-[0.12em]" aria-label="Your ride code">
         {r.code}
       </p>
-      <p className="mt-3 max-w-[65ch] text-sm text-primary/70">{r.instructions}</p>
-      {meta ? <p className="mt-2 text-sm text-primary/70">{meta}</p> : null}
+      <p className="mt-3 max-w-[65ch] hint">{r.instructions}</p>
+      {meta ? <p className="mt-2 hint">{meta}</p> : null}
     </article>
   );
 }

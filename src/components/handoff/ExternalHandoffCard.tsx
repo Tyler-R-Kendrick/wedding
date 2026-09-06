@@ -25,16 +25,16 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
     <article className="border-t border-primary/20 py-6" data-handoff-provider={handoff.provider} data-handoff-host={handoff.host}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h3 className="text-xl">{heading}</h3>
-        <p className="text-sm text-primary/70">via {handoff.providerDisplayName}</p>
+        <p className="hint">via {handoff.providerDisplayName}</p>
       </div>
-      {note ? <p className="mt-2 max-w-[65ch] text-primary/80">{note}</p> : null}
+      {note ? <p className="mt-2 max-w-[65ch] text-primary">{note}</p> : null}
       {placeholder ? (
-        <p className="mt-2 max-w-[65ch] italic text-primary/70">
+        <p className="mt-2 max-w-[65ch] italic text-primary">
           <span className="sr-only">Placeholder: </span>Not final yet: this link goes to the provider’s home page until Sara and Tyler add the real one.
         </p>
       ) : null}
-      {testMode ? <p className="mt-2 text-sm text-primary/70">Test mode: this credit is not real.</p> : null}
-      {meta ? <div className="mt-2 text-sm text-primary/70">{meta}</div> : null}
+      {testMode ? <p className="mt-2 hint">Test mode: this credit is not real.</p> : null}
+      {meta ? <div className="mt-2 hint">{meta}</div> : null}
       <p className="mt-4">
         <a
           className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-7 py-3 text-base text-neutral no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -49,8 +49,8 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
           <span className="sr-only">(opens {handoff.providerDisplayName} in a new tab)</span>
         </a>
       </p>
-      <p className="mt-3 max-w-[65ch] text-sm text-primary/70">{handoff.disclosure}</p>
-      <p className="hidden text-sm print:block">{handoff.url}</p>
+      <p className="mt-3 max-w-[65ch] hint">{handoff.disclosure}</p>
+      <p className="hidden print:block">{handoff.url}</p>
     </article>
   );
 }

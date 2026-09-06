@@ -62,7 +62,17 @@ describe('principal resolver', () => {
     //     fail, which was checked rather than assumed.
     // Nothing guest-specific joined this list: profiles, the trip bridge and every admin travel
     // capability require a signed-in principal and an entitlement.
-    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_faq', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
+        // Level 09 (transport, gifts, reservations) adds five, each checked rather than accepted:
+    //   * `list_gift_links`, `open_gift_link`, `get_reservation_options`, `open_reservation_link` —
+    //     the public /gifts page and its partner hand-offs. Curated, admin-entered links that pass
+    //     the redirect allowlist; no guest data in any of them.
+    //   * `get_my_transportation_options` — the name says "my", so this is the one that mattered.
+    //     Its handler returns `benefits: []` unless the principal is a guest, and that is not merely
+    //     a runtime check: `benefitViewsFor` takes a `GuestPrincipal`, so passing an anonymous
+    //     principal does not compile. Asserted at `transport-claims.test.ts` ("signedIn: false,
+    //     benefits: []") as well. The public part is valet, transit and parking, which is public.
+    // Every claim capability stays `auth: 'guest'` behind `claim_transportation_benefit`.
+    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_faq', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
     const amara = await signIn(f.emails.amara);
     // Level 08 (travel) adds 7 guest capabilities, all `auth: 'guest'` behind `view_travel_tools`,
     // and every mutating one carries `confirmation: 'inline'`. `update_trip_item` is the one absent
@@ -74,10 +84,17 @@ describe('principal resolver', () => {
     // absent from the ai/webmcp lists because it is a UI-only transaction, and `get_my_table` /
     // `show_my_table_on_floorplan` are absent from the guest list because this fixture guest has no
     // `view_table_assignment` — both are the entitlement gate working, not an omission.
+    // Level 09 adds 8 guest capabilities. All are `auth: 'guest'`; the two that issue anything are
+    // behind `claim_transportation_benefit`, and `claim_my_transportation_benefit` additionally
+    // carries `stepUp: true` and `confirmation: 'explicit'`. It is exposed to ai/webmcp, which looks
+    // wrong for a money-adjacent action until you follow the pipeline: `invoke` refuses an explicit
+    // confirmation on any surface but `ui` ("models and WebMCP can only draft"), so an assistant can
+    // describe and draft a claim but can never redeem one. That is the same guarantee level 07
+    // relied on to leave `submit_rsvp` off the agent lists, reached a different way.
     const guest = await principalFor({ cookie: amara.cookie });
-    expect(names({ principal: guest })).toEqual(['add_trip_item', 'claim_identity', 'delete_my_travel_profile', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_travel_profile', 'get_my_trip', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'lookup_invitation', 'open_booking_link', 'register_passkey', 'remove_trip_item', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
-    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['add_trip_item', 'delete_my_travel_profile', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_travel_profile', 'get_my_trip', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
-    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['add_trip_item', 'delete_my_travel_profile', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_travel_profile', 'get_my_trip', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
+    expect(names({ principal: guest })).toEqual(['add_trip_item', 'claim_identity', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
+    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
+    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
     await grantAdmin(`owner+rs4@example.test`, 'owner');
     const admin = await signIn(`owner+rs4@example.test`, {}, 'admin_sign_in');
     const ap = await principalFor({ cookie: admin.cookie });
@@ -85,7 +102,11 @@ describe('principal resolver', () => {
     // (list_content_records, save_content_record, ...) and are covered by their own level's tests.
     // 34 → 39: level 08's five travel editors (hotels and partner links), all `admin_content`,
     // all website-only. No travel capability is exposed to an assistant on the admin surface.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(39);
+    // 39 -> 48: level 09's nine admin capabilities, each behind the entitlement that matches what it
+    // touches rather than a blanket one — guest records under `admin_guest_ops` (assign, revoke and
+    // list transportation entitlements), the voucher code pool under `admin_integrations` (it holds
+    // provider secrets), and the curated gift and reservation links under `admin_content`.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(48);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);

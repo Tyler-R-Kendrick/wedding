@@ -26,7 +26,7 @@ const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
 function Paragraph({ text }: { text: string }) {
   const placeholder = text.startsWith('TODO(Tyler & Sara)');
   return placeholder ? (
-    <p className="max-w-[65ch] italic text-primary/70" data-placeholder="true">
+    <p className="max-w-[65ch] italic text-primary" data-placeholder="true">
       <span className="sr-only">Still to be confirmed: </span>
       {text}
     </p>
@@ -69,11 +69,11 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
           <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
             <h3 className="text-xl">A ride benefit is waiting for you</h3>
             <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1">
-              <dt className="text-primary/70">Amount</dt>
+              <dt className="text-primary">Amount</dt>
               <dd>{b.amountNote ?? 'To be confirmed'}</dd>
-              <dt className="text-primary/70">Valid</dt>
+              <dt className="text-primary">Valid</dt>
               <dd>{b.validityNote ?? 'To be confirmed'}</dd>
-              <dt className="text-primary/70">Area</dt>
+              <dt className="text-primary">Area</dt>
               <dd>{b.geofenceNote ?? 'To be confirmed'}</dd>
             </dl>
             <p className="mt-3 max-w-[65ch]">{b.statusMessage}</p>
@@ -114,7 +114,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
         </section>
       ))}
       <footer className={SECTION}>
-        <p className="text-sm text-primary/70">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
+        <p className="hint">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
       </footer>
     </main>
   );
@@ -156,9 +156,9 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         </div>
       </section>
       <footer className={SECTION}>
-        <p className="max-w-[65ch] text-sm text-primary/70">{data.copy.handoffNote}</p>
+        <p className="max-w-[65ch] hint">{data.copy.handoffNote}</p>
         {anyPlaceholder ? (
-          <p className="mt-2 max-w-[65ch] text-sm italic text-primary/70" data-placeholder="true">
+          <p className="mt-2 max-w-[65ch] italic text-primary" data-placeholder="true">
             {data.copy.placeholderNote}
           </p>
         ) : null}

@@ -14,7 +14,7 @@ export function AdminShell({ title, principal, children }: { title: string; prin
   }
   return (
     <main id="main" className="mx-auto w-full max-w-[60rem] px-5 py-10">
-      <nav aria-label="Admin" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      <nav aria-label="Admin" className="flex flex-wrap gap-x-6 gap-y-2">
         <Link className="underline-offset-4 hover:underline" href="/admin">
           Admin
         </Link>
@@ -43,7 +43,7 @@ export function ScrollRegion({ label, children }: { label: string; children: Rea
   );
 }
 
-export const TABLE = 'mt-4 w-full border-collapse text-sm';
+export const TABLE = 'mt-4 w-full border-collapse ';
 export const TH = 'border-b border-primary/30 py-2 pr-4 text-left font-medium';
 export const TD = 'border-b border-primary/10 py-2 pr-4 align-top';
 export const SECTION_TITLE = 'mt-10 text-2xl';

@@ -47,6 +47,15 @@ export const PRINCIPALS = {
 } as const;
 export type PrincipalName = keyof typeof PRINCIPALS;
 
+/**
+ * Headers for a principal the named set does not cover — a session older than the step-up window, or
+ * a guest deliberately missing one entitlement. The injector takes the whole spec, so a test never
+ * needs its own principal mechanism to express these.
+ */
+export function customPrincipalHeaders(spec: Record<string, unknown>, secret: string = TEST_AUTH_SECRET): Record<string, string> {
+  return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify(spec) };
+}
+
 export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET): Record<string, string> {
   if (!name) return {};
   return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify(PRINCIPALS[name]) };

@@ -50,7 +50,7 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
       <div className="mt-4 grid gap-4">
         {fields.map((f) => {
           const fid = `${id}-${f.name}`;
-          const help = f.help ? <p id={`${fid}-help`} className="mt-1 text-sm text-primary/70">{f.help}</p> : null;
+          const help = f.help ? <p id={`${fid}-help`} className="mt-1 hint">{f.help}</p> : null;
           const describedBy = f.help ? `${fid}-help` : undefined;
           if (f.type === 'checkbox') {
             return (
@@ -121,7 +121,7 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
           <div role="alert">
             <p>{status.message}</p>
             {status.issues?.length ? (
-              <ul className="mt-1 list-disc pl-5 text-sm">
+              <ul className="mt-1 list-disc pl-5">
                 {status.issues.map((i) => (
                   <li key={`${i.path}-${i.message}`}>
                     {i.path}: {i.message}

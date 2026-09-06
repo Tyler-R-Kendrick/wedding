@@ -1,7 +1,19 @@
 import type { AnyCapability } from '@/contracts/capability';
-import { installDevPrincipalResolver } from '@/domain/external/dev-principals';
 import { installDbManualCodeSource } from '@/domain/transport/manual-codes';
-import { env } from '@/lib/env';
+/*
+ * Swarm G shipped a second principal resolver here — a `wedding-dev-principal` cookie behind
+ * `DEV_TEST_PRINCIPALS`, installed as an import side effect of this production barrel. Its own doc
+ * comment called it a stand-in "until the identity swarm's Better Auth resolver is wired", and that
+ * resolver is wired as of level 06, so it is deleted rather than carried.
+ *
+ * Two reasons beyond it being redundant. Level 07 deliberately moved the identity injector OUT of a
+ * capability barrel because installing a resolver as an import side effect makes the wrap order
+ * against the real one depend on module load timing; re-introducing that here would undo it. And a
+ * cookie-named principal is a far worse shape than a header plus a >=16-char secret gated on
+ * NODE_ENV=test: cookies travel automatically. The three specs that used it now use identity's
+ * injector, which expresses everything they needed (`entitlements` for `noclaim`,
+ * `authenticatedAt` for `stale`).
+ */
 import { adminListExternalActions } from './admin_external_actions';
 import { adminGiftCapabilities } from './admin_gifts';
 import { adminReservationCapabilities } from './admin_reservations';
@@ -22,7 +34,6 @@ import { prepareReservation } from './prepare_reservation';
  * principal resolver used by e2e until the identity swarm's resolver lands.
  */
 installDbManualCodeSource();
-installDevPrincipalResolver({ enabled: env.DEV_TEST_PRINCIPALS, isProduction: env.isProduction });
 
 export const transportGiftsReservationsCapabilities: readonly AnyCapability[] = [
   getMyTransportationOptions,

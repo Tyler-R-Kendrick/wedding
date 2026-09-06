@@ -9,7 +9,8 @@ import { newId } from '@/contracts/ids';
 import { toPrincipalRef, type AdminPrincipal, type GuestPrincipal, type Principal } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { getDb } from '@/db/client';
-import { externalActionRecords, transportationClaims, transportationManualCodes } from '@/db/schema';
+import { FX } from '@/db/seed/fixtures';
+import { externalActionRecords, guests, transportationClaims, transportationManualCodes } from '@/db/schema';
 import { DbManualCodeSource } from '@/domain/transport/manual-codes';
 import { getTransportVault } from '@/domain/external/vault';
 import { listAuditEvents } from '@/lib/audit';
@@ -17,16 +18,24 @@ import { stableHash } from '@/lib/crypto';
 import { getConfirmationService } from '@/policy/confirmation';
 import { failure } from '@/providers/base';
 import { resetProviders, setProviderOverride } from '@/providers/registry';
+import { seedSwarmE } from './helpers/swarm-e';
 import { ManualCodeTransportBenefit, MockTransportBenefit } from '@/providers/transport-benefit';
 import type { VoucherClaimRequest } from '@/providers/transport-benefit/types';
 
-const H1 = newId<HouseholdId>();
-const H2 = newId<HouseholdId>();
-const G1 = newId<GuestId>(); // household 1, adult
-const G2 = newId<GuestId>(); // household 1, manager who acts for G1 (RSVP), still may not claim G1's benefit
-const G3 = newId<GuestId>(); // household 1, minor
-const G4 = newId<GuestId>(); // household 2
-const G5 = newId<GuestId>(); // household 2, manual-code pool exhausted
+/*
+ * Seeded fixture guests, not freshly minted ids. `transportation_entitlements` and
+ * `transportation_claims` carry real foreign keys to `guests` as of this integration, so a synthetic
+ * id is refused by the database before any guard under test runs — which is exactly what happened
+ * when the constraints went on. The fixture households already provide the shape these cases need,
+ * including a real minor (Cleo, `isMinor: true`) rather than one asserted into existence.
+ */
+const H1 = FX.householdA;
+const H2 = FX.householdB;
+const G1 = FX.guestA2; // household 1, adult
+const G2 = FX.guestA1; // household 1, manager who acts for G1 (RSVP), still may not claim G1's benefit
+const G3 = FX.guestA3; // household 1, minor
+const G4 = FX.guestB1; // household 2
+const G5 = FX.guestB2; // household 2, manual-code pool exhausted
 
 function guest(guestId: GuestId, householdId: HouseholdId, over: Partial<GuestPrincipal> = {}): GuestPrincipal {
   return {
@@ -85,7 +94,17 @@ let E4: string;
 let E5: string;
 let redemptionUrl: string;
 
+/** Inserts a real guest row so a foreign key can point at it. */
+async function makeGuest(firstName: string, householdId: HouseholdId): Promise<GuestId> {
+  const id = newId<GuestId>();
+  await (await getDb()).insert(guests).values({ id, householdId, firstName, lastName: 'Fixture' }).onConflictDoNothing();
+  return id;
+}
+
 beforeAll(async () => {
+  // Seeds events then the fixture households; `event_entitlements` references `events`, so the
+  // order matters.
+  await seedSwarmE();
   MockTransportBenefit.reset();
   counting = new CountingMock();
   setProviderOverride('transport-benefit', counting);
@@ -288,8 +307,12 @@ describe('ride benefit claims', () => {
     expect(overview.ok && overview.value.data.entitlements.find((e) => e.id === E5)?.claim).toMatchObject({ status: 'issued', redemptionKind: 'code' });
 
     // Exhaust the pool: the last code goes to a fresh entitlement, the next guest is told honestly.
-    const G6 = newId<GuestId>();
-    const G7 = newId<GuestId>();
+    // Two extra bodies in household 2, created rather than asserted into existence: the foreign key
+    // on `transportation_entitlements.guest_id` means a guest must actually exist, and the fixtures
+    // supply only two in this household. What this case tests is pool exhaustion, not household
+    // semantics, so a plain row each is the right shape.
+    const G6 = await makeGuest('Pool', H2);
+    const G7 = await makeGuest('Empty', H2);
     const e6 = await run(adminAssignTransportationEntitlement, admin, { guestId: G6, householdId: H2 }, { idempotencyKey: key() });
     const e7 = await run(adminAssignTransportationEntitlement, admin, { guestId: G7, householdId: H2 }, { idempotencyKey: key() });
     const E6 = e6.ok ? e6.value.data.id : '';

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GuestId, HouseholdId } from '@/contracts/ids';
-import { anonymousResolver, getPrincipalResolver, setPrincipalResolver } from '@/lib/principal';
 import { isAllowedRedirect } from '@/lib/redirects';
-import { DEV_PRINCIPAL_COOKIE, devPrincipalFromValue, devPrincipalResolver, installDevPrincipalResolver } from '@/domain/external/dev-principals';
 import { providerDisplayName, toGuestHandoff } from '@/domain/external/handoff';
 import { Vault } from '@/domain/external/vault';
 import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY } from '@/domain/gifts/copy';
@@ -111,36 +109,18 @@ describe('eligibility fact source seam', () => {
   });
 });
 
-describe('dev principals', () => {
-  it('parses guest/admin cookies, flags, and rejects malformed values', () => {
-    const g = devPrincipalFromValue('guest:G1:H1');
-    expect(g).toMatchObject({ kind: 'guest', guestId: 'G1', householdId: 'H1', actsFor: ['G1'] });
-    expect(g?.kind === 'guest' && g.entitlements.has('claim_transportation_benefit')).toBe(true);
-    const noclaim = devPrincipalFromValue('guest:G1:H1:noclaim');
-    expect(noclaim?.kind === 'guest' && noclaim.entitlements.has('claim_transportation_benefit')).toBe(false);
-    const stale = devPrincipalFromValue('guest:G1:H1:stale', new Date('2026-09-05T12:00:00Z'));
-    expect(stale?.kind === 'guest' && Date.parse(stale.authenticatedAt)).toBeLessThan(Date.parse('2026-09-05T11:30:00Z'));
-    expect(devPrincipalFromValue('admin:A1')).toMatchObject({ kind: 'admin', adminId: 'A1' });
-    for (const bad of ['', 'system:x', 'guest:G1', 'guest:G1:H1:../x', 'admin:', 'admin:A1:x:y', 'guest:G 1:H1']) expect(devPrincipalFromValue(bad), bad).toBeUndefined();
-  });
-
-  it('resolves from the cookie, is never installed in production, and yields to a real resolver', async () => {
-    const req = new Request('http://x/', { headers: { cookie: `a=b; ${DEV_PRINCIPAL_COOKIE}=guest:G9:H9` } });
-    expect((await devPrincipalResolver.resolve(req)).kind).toBe('guest');
-    expect((await devPrincipalResolver.resolve(new Request('http://x/'))).kind).toBe('anonymous');
-    expect(installDevPrincipalResolver({ enabled: true, isProduction: true })).toBe(false);
-    expect(installDevPrincipalResolver({ enabled: false, isProduction: false })).toBe(false);
-    expect(getPrincipalResolver()).toBe(anonymousResolver);
-    const real = { resolve: async () => ({ kind: 'anonymous' as const }) };
-    setPrincipalResolver(real);
-    expect(installDevPrincipalResolver({ enabled: true, isProduction: false })).toBe(false);
-    expect(getPrincipalResolver()).toBe(real);
-    setPrincipalResolver(anonymousResolver);
-    expect(installDevPrincipalResolver({ enabled: true, isProduction: false })).toBe(true);
-    expect(getPrincipalResolver()).toBe(devPrincipalResolver);
-    setPrincipalResolver(anonymousResolver);
-  });
-});
+/*
+ * `describe('dev principals')` lived here and is gone with the module it tested. Swarm G's
+ * cookie-named principal resolver was a stand-in "until the identity swarm's Better Auth resolver
+ * is wired" (its own words); that resolver landed at level 06, so the stand-in is deleted rather
+ * than carried, and the three specs that drove it now use identity's header+secret injector.
+ * Nothing is left untested by the removal. `tests/unit/test-principal-gate.test.ts` covers the same
+ * properties for the injector that survives: "is disabled outside NODE_ENV=test, whatever headers
+ * arrive" (never active in production), "is disabled without a secret, and without one long enough
+ * to be a secret", "falls through on a wrong secret, a missing header, and unparseable JSON"
+ * (rejection of malformed values, and yielding to the real resolver), and "injects only when
+ * everything lines up".
+ */
 
 describe('transport-benefit provider selection', () => {
   const base = { FORCE_MOCK_PROVIDERS: false, TRANSPORT_BENEFIT_MODE: 'mock' as const, TRANSPORT_MANUAL_CODES: undefined, UBER_CLIENT_ID: undefined, UBER_CLIENT_SECRET: undefined, UBER_ORG_ID: undefined, UBER_VOUCHER_PROGRAM_ID: undefined, UBER_API_BASE_URL: undefined };

@@ -15,11 +15,11 @@ export function UnavailableCard({ heading, message, contactRoute = '/ask-us', no
     <article className="border-t border-primary/20 py-6" data-handoff-rung="unavailable">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h3 className="text-xl">{heading}</h3>
-        <p className="text-sm text-primary/70">not bookable here yet</p>
+        <p className="hint">not bookable here yet</p>
       </div>
-      {note ? <p className="mt-2 max-w-[65ch] text-primary/80">{note}</p> : null}
+      {note ? <p className="mt-2 max-w-[65ch] text-primary">{note}</p> : null}
       {placeholder ? (
-        <p className="mt-2 max-w-[65ch] italic text-primary/70">
+        <p className="mt-2 max-w-[65ch] italic text-primary">
           <span className="sr-only">Placeholder: </span>Sara and Tyler still have to add this one.
         </p>
       ) : null}

@@ -105,7 +105,6 @@ const serverSchema = z.object({
   /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
   TRANSPORT_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
-  DEV_TEST_PRINCIPALS: requiredBool(false),
   REGISTRY_LINKS_JSON: optionalString,
   CASH_FUND_LINKS_JSON: optionalString,
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),

@@ -22,16 +22,16 @@ export function ConfirmationCard({ lede = 'Please review before you confirm.', t
       <h3 id={`confirm-${slug(title)}`} className="text-xl">
         {title}
       </h3>
-      <p className="mt-1 text-sm text-primary/70">{lede}</p>
+      <p className="mt-1 hint">{lede}</p>
       <dl className="mt-4 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
         {rows.map((r) => (
           <div key={r.label} className="contents">
-            <dt className="text-primary/70">{r.label}</dt>
+            <dt className="text-primary">{r.label}</dt>
             <dd>{r.value}</dd>
           </div>
         ))}
       </dl>
-      {disclosure ? <p className="mt-4 max-w-[65ch] text-sm text-primary/70">{disclosure}</p> : null}
+      {disclosure ? <p className="mt-4 max-w-[65ch] hint">{disclosure}</p> : null}
       {children ? <div className="mt-5 flex flex-wrap gap-3">{children}</div> : null}
     </section>
   );
