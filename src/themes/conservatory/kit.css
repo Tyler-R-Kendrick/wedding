@@ -952,6 +952,9 @@
 
 .cv-chip {
   display: inline-block;
+
+  /* a chip carries a phrase ("Draft — not yet curated"), so it drops the small-caps tracking */
+  letter-spacing: 0.02em;
   margin-inline-start: var(--spacing-xs);
   padding: 4px 8px;
   border-radius: var(--rounded-sm);

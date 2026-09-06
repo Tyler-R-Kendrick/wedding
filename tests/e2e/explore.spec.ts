@@ -9,6 +9,22 @@ async function axe(page: Page) {
 
 const MARKER = 'TODO(Tyler & Sara)';
 
+/**
+ * Follow a site link. On a phone both kits keep the full list in the Menu sheet and leave only the
+ * wordmark and the sheet trigger in the Site landmark, so fall back to the sheet when it is not there.
+ */
+async function follow(page: Page, name: string) {
+  const inNav = page.getByRole('navigation', { name: 'Site' }).getByRole('link', { name });
+  if (await inNav.isVisible().catch(() => false)) {
+    await inNav.click();
+    return;
+  }
+  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
+  const sheet = page.getByRole('dialog').locator('visible=true').first();
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('link', { name }).click();
+}
+
 test.describe('explore journey', () => {
   test('story → adventure → linked recommendation → directions handoff', async ({ page }) => {
     await page.goto('/our-story');
@@ -18,7 +34,7 @@ test.describe('explore journey', () => {
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
 
-    await page.getByRole('navigation', { name: 'Site' }).getByRole('link', { name: 'Our Adventures' }).click();
+    await follow(page, 'Our Adventures');
     await expect(page).toHaveURL(/\/our-adventures$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // Only the public memory is listed; the private drafts never render.
@@ -29,7 +45,8 @@ test.describe('explore journey', () => {
     await page.getByRole('link', { name: 'Starved Rock', exact: true }).click();
     await expect(page).toHaveURL(/\/our-adventures\/starved-rock$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Starved Rock');
-    await expect(page.locator('.wp-lede')).toContainText('Where we first said');
+    // the lede is the page head's own summary line, whichever kit rendered it
+    await expect(page.locator('main header').first()).toContainText('Where we first said');
     await expect(page.getByRole('heading', { name: 'Sara remembers' })).toBeVisible();
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
@@ -88,8 +105,9 @@ test.describe('explore journey', () => {
 
   test('the wedding shows the date and venue as facts and times/rooms only as placeholders', async ({ page }) => {
     await page.goto('/the-wedding');
-    await expect(page.locator('header.wp-intro time[datetime="2027-07-17"]')).toHaveText('Saturday, July 17, 2027');
-    await expect(page.locator('header.wp-intro')).toContainText('12 S Michigan Ave');
+    const head = page.locator('main header').first();
+    await expect(head.locator('time[datetime="2027-07-17"]')).toHaveText('Saturday, July 17, 2027');
+    await expect(head).toContainText('12 S Michigan Ave');
     const placeholders = page.locator('[data-placeholder="true"]');
     expect(await placeholders.count()).toBeGreaterThanOrEqual(7);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);

@@ -4,6 +4,8 @@ import type { TextBlockView } from '@/domain/content/views';
 import './provenance.css';
 
 export const PLACEHOLDER_LABEL = 'Placeholder — Sara + Tyler are still writing this';
+/** The stamp printed on the block. Short on purpose: it is set in caps, and long caps runs do not read. */
+export const PLACEHOLDER_BADGE = 'Not written yet';
 
 /** The hint after the marker, for display ("TODO(Tyler & Sara): the trail" -> "the trail"). */
 export function placeholderHint(text: string): string {
@@ -20,7 +22,7 @@ export function Placeholder({ children, inline = false, label = PLACEHOLDER_LABE
   return (
     <Tag className={inline ? 'placeholder placeholder--inline' : 'placeholder'} data-placeholder="true" role="note" aria-label={label}>
       <span className="placeholder__label" aria-hidden="true">
-        {label}
+        {label === PLACEHOLDER_LABEL ? PLACEHOLDER_BADGE : label}
       </span>
       {inline ? <span className="placeholder__hint">{children}</span> : <p className="placeholder__hint">{children}</p>}
     </Tag>

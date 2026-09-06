@@ -567,10 +567,11 @@
   text-align: center;
 }
 
+/* 48px between acts on a phone; the full 96 returns once the axis has room (>= 900px). */
 .gh-section__inner {
   max-width: var(--gh-max);
   margin-inline: auto;
-  padding: var(--spacing-2xl) var(--gh-gutter);
+  padding: 48px var(--gh-gutter);
 }
 
 @media (width >= 900px) {
@@ -606,11 +607,11 @@
   display: grid;
   justify-items: center;
   gap: var(--spacing-sm);
-  margin-block-end: var(--spacing-md);
+  margin-block-end: var(--spacing-sm);
 }
 
 .gh-section__head .gh-h {
-  margin-block-start: var(--spacing-md);
+  margin-block-start: var(--spacing-xl);
 }
 
 .gh-divider {
@@ -925,6 +926,8 @@
   background: var(--color-neutral);
   color: var(--color-primary);
   box-shadow: inset 0 0 0 1px var(--color-primary);
+  text-transform: none;
+  letter-spacing: 0.01em;
 }
 
 .gh-btn--secondary:hover,
@@ -1565,9 +1568,8 @@
 }
 
 .gh-why {
-  padding: var(--spacing-md);
-  background: var(--color-gold-wash);
-  box-shadow: inset 0 0 0 1px var(--color-gold);
+  padding-inline-start: var(--spacing-md);
+  border-inline-start: 1px solid var(--color-gold);
 }
 
 .gh-why__summary {
@@ -1649,6 +1651,13 @@
 
 .gh-itinerary .gh-plaque--label {
   justify-self: start;
+}
+
+/* An itinerary is titled with a sentence, so it is set as one — no caps, no display tracking; the
+   kraft plate above it keeps the deco label. */
+.gh-itinerary .gh-card__title {
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .gh-plan-result {
@@ -1844,13 +1853,14 @@
   gap: var(--spacing-xs);
 }
 
+/* Outlet names read as sentences ("Special event valet rate"), so they carry neither the caps nor
+   the wide display tracking that the h3 role assumes. */
 .gh-outlet__label {
   margin: 0;
   font-family: var(--font-text);
   font-size: var(--type-h3-size);
   font-weight: var(--type-h3-weight);
-  letter-spacing: var(--type-h3-tracking);
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
 .gh-outlet p {

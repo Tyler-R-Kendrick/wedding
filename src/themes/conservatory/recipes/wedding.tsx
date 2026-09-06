@@ -10,8 +10,9 @@ const { Shell, Section, SectionHeading, Prose, Card, content } = kit;
 const { PageHead, Handoffs, Programme, Provenance } = content;
 
 /**
- * The Wedding on the sheet: date and venue as facts under the title, directions as a handoff; the
- * order of the day is a vine with a leaf per event, times and rooms still marked placeholders.
+ * The Wedding on the sheet: date and venue as facts under the title, directions as a handoff. What
+ * to wear is a pressed card in the mount; the order of the day then runs the full width of the sheet
+ * as a vine with a leaf per event, times and rooms still marked placeholders.
  */
 export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
@@ -24,17 +25,23 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
       {data.directions ? <Handoffs handoffs={[data.directions]} label="Directions" /> : null}
     </PageHead>
 
-    <Section id="programme" labelledBy="programme-title">
+    <Section id="dress-code" labelledBy="dress-title">
       <div className="cv-section__text">
+        <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
+      </div>
+      <div className="cv-section__mount">
+        <Card label="Wear" featured index={1}>
+          <Block block={data.dressCode} />
+        </Card>
+      </div>
+    </Section>
+
+    <Section id="programme" labelledBy="programme-title">
+      <div className="cv-section__full">
         <h2 id="programme-title" className="sr-only">
           Order of the day
         </h2>
         <Programme events={data.events} venueName={data.venueName} startNumber={1} />
-      </div>
-      <div className="cv-section__mount">
-        <Card label="Wear" featured index={1} headingLevel={2} title={CONTENT_COPY.wedding.dress}>
-          <Block block={data.dressCode} />
-        </Card>
       </div>
     </Section>
 
