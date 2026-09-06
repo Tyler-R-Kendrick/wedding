@@ -8,7 +8,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { aiAnswerSources, aiAnswers, capabilityInvocations, type AiAnswerStatus, type AiInvocationOutcome, type AiToolSelector, type AiVerifierSummary } from '@/db/schema/ai';
 import { pipelineServices } from '@/capabilities/services';
-import { citedSentences, dropNearDuplicates, finaliseCitations } from './citations';
+import { citedSentences, dropNearDuplicates, finaliseCitations, stripMarkers } from './citations';
 import { aiConfig, type AiConfig } from './config';
 import { CONTACT_LINK, REFUSAL, confirmationCardFor, labelForRoute, refusalLinks, systemPromptFor } from './contract';
 import type { ConciergeEvent } from './events';
@@ -207,7 +207,9 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
 
   // --- generate
   await emit({ type: 'status', stage: 'generating' });
-  const history: ModelMessage[] = session.turns.slice(-6).map((t) => ({ role: t.role, content: t.text }));
+  // Markers are stripped from replayed turns: "[S1]" in a previous answer refers to a block that no
+  // longer exists, and a model copying it would attach an old citation to a new source.
+  const history: ModelMessage[] = session.turns.slice(-6).map((t) => ({ role: t.role, content: t.role === 'assistant' ? stripMarkers(t.text) : t.text }));
   const userTurn = `${renderQuestion(question)}\n\n${renderContext(ordered)}`;
   const modelTools = modelToolsFor(available, async (name, rawInput) => {
     const blocks = await runTool(name, rawInput, 'model');
@@ -264,7 +266,11 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   if (models.live && survivors.length) {
     method = 'deterministic+model';
     const checked = await verifyWithModel(models.verifier, survivors, sources, AbortSignal.timeout(20_000));
-    for (const c of checked) if (c.verdict !== 'supported') verified[verified.indexOf(survivors.find((s) => s.text === c.text)!)] = c;
+    for (const c of checked) {
+      if (c.verdict === 'supported') continue;
+      const at = verified.findIndex((v) => v.text === c.text && v.verdict === 'supported');
+      if (at >= 0) verified[at] = c;
+    }
     survivors = checked.filter((c) => c.verdict === 'supported');
   }
   const byMarker = new Map(sources.map((s) => [s.marker, s]));
@@ -317,7 +323,8 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   }
   // Markers are renumbered densely (S1..Sn) over the sentences that survived, so the guest sees
   // "[S1] [S2]" and not the internal block numbers — and never learns how much was withheld.
-  const { text, sources: answerSources } = finaliseCitations(survivors, ordered);
+  // `sources` (not `ordered`) because a live model may have added blocks after the ordering pass.
+  const { text, sources: answerSources } = finaliseCitations(survivors, sources);
   for (const sentence of text.split(SENTENCE_EMIT_SPLIT).filter(Boolean)) await emit({ type: 'text', text: sentence.trim() });
   await emit({ type: 'sources', sources: answerSources });
   for (const card of confirmations) await emit({ type: 'confirmation', card });

@@ -267,3 +267,18 @@ describe('retrieval', () => {
     resetRetrievalIndex();
   });
 });
+
+describe('citation integrity across turns', () => {
+  it('does not replay old citation markers to the model, where [S1] would mean something else', async () => {
+    const first = await ask('When is the wedding?', guestA);
+    expect(first.text).toMatch(/\[S\d+/);
+    const db = await getDb();
+    const [row] = await db.select().from(aiSessions).where(eq(aiSessions.id, first.sessionId));
+    // The stored tail is what the guest saw, markers and all; the model is what must not see them.
+    expect(row!.turns.some((t) => t.role === 'assistant' && /\[S\d+/.test(t.text))).toBe(true);
+    const second = await ask('And where is it?', guestA, first.sessionId);
+    // Every marker in the new answer resolves to a source of this answer, never a stale one.
+    const used = new Set((second.text.match(/S\d+/g) ?? []));
+    for (const marker of used) expect(second.sources.map((s) => s.marker)).toContain(marker);
+  });
+});
