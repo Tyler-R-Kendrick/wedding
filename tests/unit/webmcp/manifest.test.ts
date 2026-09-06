@@ -135,3 +135,27 @@ describe('manifest envelope', () => {
     expect(manifestFingerprint('anonymous', tampered)).not.toBe(a.fingerprint);
   });
 });
+
+describe('review extras: the manifest cannot disagree with invoke', () => {
+  const gated = cap({ name: 'face_match', flag: 'BIOMETRICS_ENABLED' });
+  const reg = new CapabilityRegistryImpl();
+  reg.registerAll([siteStatus, gated]);
+
+  it('hides a readiness-gated capability whose readiness switch is off, even with the flag on', () => {
+    const on = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on' });
+    // registry.list only checks the env flag, so without the readiness set the tool is advertised...
+    expect(buildManifest({ registry: reg, principal: anonymous, flags: on }).tools.map((t) => t.name)).toContain('face_match');
+    // ... and `invoke` would then always answer feature_disabled. Passing the unready set keeps the
+    // two in step, and stops the manifest disclosing that a legally gated feature exists.
+    const manifest = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set(['BIOMETRICS_ENABLED']) });
+    expect(manifest.tools.map((t) => t.name)).not.toContain('face_match');
+  });
+
+  it('leaves a ready gated capability listed, and never touches ungated ones', () => {
+    const on = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on' });
+    const ready = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set() });
+    expect(ready.tools.map((t) => t.name)).toEqual(['face_match', 'site_status']);
+    const noneReady = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set(['BIOMETRICS_ENABLED']) });
+    expect(noneReady.tools.map((t) => t.name)).toEqual(['site_status']);
+  });
+});

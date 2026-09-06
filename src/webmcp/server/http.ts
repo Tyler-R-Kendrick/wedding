@@ -1,5 +1,6 @@
 import 'server-only';
 import type { CapabilityOutcome } from '@/contracts/capability';
+import { DEFAULT_MAX_OUTPUT_CHARS } from '@/capabilities/invoke';
 import { CapabilityError, HTTP_STATUS_FOR_CODE } from '@/contracts/errors';
 import { err, ok, type Result } from '@/contracts/result';
 import { jsonResponse, SAME_ORIGIN_MESSAGE } from '@/lib/request';
@@ -25,13 +26,24 @@ export const featureDisabled = (requestId: string): Response =>
  * TOKEN is dropped: tokens issued on the webmcp surface are never redeemable (policy/confirmation),
  * and a model has no use for one; it only needs the summary and the instruction to continue on the page.
  */
-export function outcomeResponse(outcome: CapabilityOutcome<unknown>, requestId: string): Response {
-  const { data, sources, confirmation, handoffUrl, retrievedAt } = outcome;
+export function outcomeResponse(outcome: CapabilityOutcome<unknown>, requestId: string, maxOutputChars = DEFAULT_MAX_OUTPUT_CHARS): Response {
+  const { data, confirmation, handoffUrl, retrievedAt } = outcome;
+  /**
+   * The pipeline caps `data` (step 8) but not `sources`, so a citation-heavy result could still
+   * blow the agent's budget — and the client would then discard the whole thing as
+   * `output_too_large`, making the capability silently unusable rather than merely less cited.
+   * Citations are the droppable part: keep the answer, drop the provenance, and say so. The guest
+   * can always see the sources on the page.
+   */
+  const dataChars = JSON.stringify(data ?? null).length;
+  const sources = outcome.sources ?? [];
+  const withinBudget = dataChars + JSON.stringify(sources).length <= maxOutputChars;
   return jsonResponse(
     {
       ok: true,
       data,
-      sources,
+      sources: withinBudget ? sources : [],
+      ...(withinBudget ? {} : { sourcesOmitted: sources.length }),
       ...(confirmation ? { confirmation: { expiresAt: confirmation.expiresAt, summary: confirmation.summary, requiresUi: true } } : {}),
       ...(handoffUrl ? { handoffUrl } : {}),
       ...(retrievedAt ? { retrievedAt } : {}),

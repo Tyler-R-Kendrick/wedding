@@ -4,10 +4,12 @@ import { CapabilityRegistryImpl } from '@/capabilities/registry';
 import { MemoryIdempotencyStore } from '@/capabilities/services';
 import { defineCapability, type AnyCapability, type CapabilityContext } from '@/contracts/capability';
 import { readFlags } from '@/contracts/flags';
-import type { AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
+import type { AuthIdentityId, ContentSourceId, GuestId, HouseholdId } from '@/contracts/ids';
+import type { Citation } from '@/contracts/provenance';
 import type { Entitlement, Principal } from '@/contracts/principal';
 import { ok } from '@/contracts/result';
 import { MemoryAuditSink } from '@/lib/audit';
+import { outcomeResponse } from '@/webmcp/server/http';
 import { effectiveWebMcpDescriptor, invokeForWebMcp } from '@/webmcp/server/invoke';
 
 /**
@@ -206,5 +208,27 @@ describe('finding 5: a deployed app is never a test run', () => {
     // CI is not a deploy marker: CI is exactly where NODE_ENV=test belongs.
     expect(() => parseServerEnv({ ...base, CI: 'true' })).not.toThrow();
     expect(() => parseServerEnv(base)).not.toThrow();
+  });
+});
+
+describe('review extras: sources are inside the output budget', () => {
+  const citation = (i: number): Citation => ({ sourceId: `source-${i}` as ContentSourceId, title: 'x'.repeat(80), url: `https://example.test/${i}`, verifiedAt: '2026-09-01T00:00:00.000Z' });
+
+  it('keeps citations when they fit', async () => {
+    const response = outcomeResponse({ data: { note: 'hi' }, sources: [citation(1)] }, 'r', 2_000);
+    const body = await response.json();
+    expect(body.sources).toHaveLength(1);
+    expect(body.sourcesOmitted).toBeUndefined();
+  });
+
+  it('drops citations rather than letting the client discard the whole answer', async () => {
+    // `data` is inside the cap (the pipeline guarantees that); the citations are what overflow.
+    const sources = Array.from({ length: 40 }, (_, i) => citation(i));
+    const response = outcomeResponse({ data: { note: 'the answer the guest asked for' }, sources }, 'r', 500);
+    const body = await response.json();
+    expect(body.data).toEqual({ note: 'the answer the guest asked for' });
+    expect(body.sources).toEqual([]);
+    // Announced, never silent — and the guest can still see provenance on the page.
+    expect(body.sourcesOmitted).toBe(40);
   });
 });

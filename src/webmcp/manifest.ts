@@ -1,5 +1,5 @@
 import type { CapabilityRegistry } from '@/contracts/capability';
-import type { FlagValues } from '@/contracts/flags';
+import type { FeatureFlag, FlagValues } from '@/contracts/flags';
 import type { Principal } from '@/contracts/principal';
 import { stableHash } from '@/lib/crypto';
 import { toWebMcpTool, type WebMcpToolDescriptor } from './descriptors';
@@ -29,6 +29,14 @@ export interface BuildManifestInput {
   registry: Pick<CapabilityRegistry, 'list'>;
   principal: Principal;
   flags: FlagValues;
+  /**
+   * Readiness-gated flags (`READINESS_GATED`) that are on in the environment but whose persisted
+   * readiness switch is off. `registry.list` only checks the env flag, while `invoke` checks both,
+   * so without this the manifest would advertise a tool that always answers `feature_disabled` —
+   * and advertise that a legally gated feature exists at all. Readiness is an async DB read and
+   * `list` is sync, so the caller resolves it and passes the answer in.
+   */
+  unreadyFlags?: ReadonlySet<FeatureFlag>;
   now?: Date;
 }
 
@@ -39,7 +47,10 @@ export interface BuildManifestInput {
  */
 export function buildManifest(input: BuildManifestInput): WebMcpManifest {
   const tools = input.flags.WEBMCP
-    ? input.registry.list({ exposure: 'webmcp', principal: input.principal, flags: input.flags }).map(toWebMcpTool)
+    ? input.registry
+        .list({ exposure: 'webmcp', principal: input.principal, flags: input.flags })
+        .filter((c) => !(c.flag && input.unreadyFlags?.has(c.flag)))
+        .map(toWebMcpTool)
     : [];
   return {
     version: WEBMCP_MANIFEST_VERSION,

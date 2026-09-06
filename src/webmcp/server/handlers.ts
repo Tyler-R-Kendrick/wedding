@@ -2,11 +2,12 @@ import 'server-only';
 import { z } from 'zod';
 import { createCapabilityContext } from '@/capabilities';
 import { CapabilityError } from '@/contracts/errors';
+import { READINESS_GATED, type FeatureFlag, type FlagValues } from '@/contracts/flags';
 import { ID_PATTERN } from '@/contracts/ids';
 import { toPrincipalRef, type Principal } from '@/contracts/principal';
-import { getDb } from '@/db/client';
+import { getDb, type Db } from '@/db/client';
 import { env } from '@/lib/env';
-import { getFlags } from '@/lib/flags';
+import { getFlags, isReady } from '@/lib/flags';
 import { getPrincipal } from '@/lib/principal';
 import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
 import { principalKey } from '@/policy/confirmation';
@@ -60,6 +61,21 @@ const manifestKeyFor = (principal: Principal, ip: string) =>
   principal.kind === 'anonymous' ? `webmcp:manifest:anon:${ip}` : `webmcp:manifest:${principalKey(toPrincipalRef(principal))}`;
 
 /**
+ * Which readiness-gated flags are on in the environment but not switched on in the database?
+ * `invoke` fails those closed (step 1), so the manifest must not advertise them: a tool that
+ * always answers `feature_disabled` is noise, and its presence discloses that a legally gated
+ * feature (BIPA face matching, third-party media processing) exists at all.
+ */
+async function unreadyGatedFlags(flags: FlagValues, db: Db): Promise<ReadonlySet<FeatureFlag>> {
+  const unready = new Set<FeatureFlag>();
+  for (const flag of READINESS_GATED) {
+    if (!flags[flag]) continue; // already excluded by the plain flag filter
+    if (!(await isReady(flag, db))) unready.add(flag);
+  }
+  return unready;
+}
+
+/**
  * GET /api/webmcp/manifest -> { ok: true, data: WebMcpManifest }
  * Only descriptors with `exposure.webmcp` that `authorize()` allows for the current principal.
  * Personalized, so `Cache-Control: private, no-store`. Omission is UX minimisation; the bridge
@@ -84,7 +100,8 @@ export async function handleManifest(request: Request): Promise<Response> {
   const decision = await limiter.consume(manifestKeyFor(principal, ip), MANIFEST_POLICY);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
 
-  return jsonResponse({ ok: true, data: buildManifest({ registry: webMcpRegistry, principal, flags }) }, { requestId });
+  const unreadyFlags = await unreadyGatedFlags(flags, db);
+  return jsonResponse({ ok: true, data: buildManifest({ registry: webMcpRegistry, principal, flags, unreadyFlags }) }, { requestId });
 }
 
 /**
@@ -131,5 +148,6 @@ export async function handleInvoke(request: Request, name: string): Promise<Resp
   });
   const result = await invokeForWebMcp(webMcpRegistry, name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);
-  return outcomeResponse(result.value, requestId);
+  // Success means the capability exists and was visible, so looking it up here leaks nothing.
+  return outcomeResponse(result.value, requestId, webMcpRegistry.get(name)?.maxOutputChars);
 }
