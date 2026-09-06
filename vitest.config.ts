@@ -32,7 +32,7 @@ export default defineConfig({
       {
         plugins: [react()],
         resolve: { alias },
-        test: { name: 'ui', include: ['tests/ui/**/*.test.tsx'], environment: 'jsdom', env: baseEnv, css: false },
+        test: { name: 'ui', include: ['tests/ui/**/*.test.tsx'], environment: 'jsdom', env: baseEnv, css: false, setupFiles: ['tests/ui/setup.ts'] },
       },
     ],
   },

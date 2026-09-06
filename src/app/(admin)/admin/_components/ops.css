@@ -1,0 +1,180 @@
+/* Admin guest operations: shared foundation tokens only (root DESIGN.md), never the guest themes. */
+.ops {
+  --ops-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
+  --ops-muted: var(--color-on-surface-muted, color-mix(in oklab, var(--color-primary) 70%, var(--color-neutral)));
+  --ops-error: var(--color-error, var(--color-primary));
+  --ops-accent: var(--color-tertiary, var(--color-primary));
+
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: 1.5rem 1rem 4rem;
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--color-primary);
+}
+
+.ops-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ops-outline);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ops-title {
+  margin: 1.5rem 0 0.25rem;
+  font-family: var(--font-display, var(--font-sans));
+  font-weight: 400;
+  font-size: 2.25rem;
+  line-height: 1.1;
+}
+
+.ops-lede {
+  margin: 0 0 1.5rem;
+  color: var(--ops-muted);
+}
+
+.ops-section {
+  margin-block: 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ops-h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.ops-notice {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ops-outline);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-neutral);
+}
+
+.ops-notice-error {
+  border-color: var(--ops-error);
+  color: var(--ops-error);
+}
+
+.ops-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: end;
+}
+
+.ops-form-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.ops-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ops-field label {
+  font-weight: 500;
+}
+
+.ops-hint {
+  font-size: 0.9375rem;
+  color: var(--ops-muted);
+}
+
+.ops-input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: var(--color-neutral);
+  border: 1px solid var(--ops-outline);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.ops-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ops-button {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.ops-button-primary {
+  color: var(--color-neutral);
+  background: var(--color-primary);
+}
+
+.ops-button-ghost {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: var(--ops-outline);
+}
+
+.ops-button-danger {
+  color: var(--ops-error);
+  background: transparent;
+  border-color: var(--ops-error);
+}
+
+.ops-input:focus-visible,
+.ops-button:focus-visible,
+.ops a:focus-visible {
+  outline: 3px solid var(--ops-accent);
+  outline-offset: 2px;
+}
+
+.ops-table-wrap {
+  overflow-x: auto;
+}
+
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.ops-table th,
+.ops-table td {
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ops-outline);
+}
+
+.ops-table th {
+  font-weight: 500;
+  color: var(--ops-muted);
+}
+
+.ops-qr {
+  width: min(16rem, 100%);
+  height: auto;
+  color: var(--color-primary);
+  background: var(--color-neutral);
+}
+
+.ops-code {
+  word-break: break-all;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9375rem;
+}

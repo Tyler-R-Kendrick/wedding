@@ -1,6 +1,5 @@
-import { timingSafeEqualString } from '@/lib/crypto';
-import { env } from '@/lib/env';
-import { bearerToken, jsonResponse } from '@/lib/request';
+import { devEndpointAllowed } from '@/lib/auth/dev-gate';
+import { jsonResponse } from '@/lib/request';
 import { devInbox } from '@/providers/auth-email/mock';
 import { getProvider } from '@/providers/registry';
 
@@ -13,9 +12,8 @@ export const dynamic = 'force-dynamic';
  */
 function available(request: Request): boolean {
   if (getProvider('auth-email').name !== 'mock') return false;
-  const token = bearerToken(request);
-  if (env.DEV_INBOX_TOKEN && token && timingSafeEqualString(token, env.DEV_INBOX_TOKEN)) return true;
-  return env.isDevelopment && !process.env.VERCEL && !process.env.CI;
+  // Shared gate with /api/dev/identity: never in production, bearer for previews/CI, else local dev only.
+  return devEndpointAllowed(request);
 }
 
 export async function GET(request: Request) {
