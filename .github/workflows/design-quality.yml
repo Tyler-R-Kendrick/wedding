@@ -8,14 +8,18 @@ on:
 permissions:
   contents: read
 
+env:
+  # Node's http client does not read HTTPS_PROXY by itself; harmless on GitHub runners.
+  NODE_USE_ENV_PROXY: '1'
+
 jobs:
   quality:
     name: DESIGN.md lint · anti-slop detect · stylelint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -28,31 +32,102 @@ jobs:
       - name: Check DESIGN.md exports cleanly to Tailwind v4 @theme
         run: npm run design:export:tailwind > /dev/null
 
-      - name: impeccable detect (61 deterministic anti-slop rules)
-        # Exit 2 = findings, 1 = operational failure. Findings fail the job once
-        # src/ exists; before that only operational failures do.
-        run: |
-          set +e; npm run -s slop:detect; code=$?; set -e
-          if [ "$code" = "1" ]; then exit 1; fi
-          if [ "$code" = "2" ] && [ -d src ]; then exit 2; fi
-          exit 0
+      - name: impeccable detect (deterministic anti-slop rules over src/, the version in package-lock)
+        run: npx --no-install impeccable detect src/
 
       - name: stylelint
         run: npm run lint:css
 
-  a11y:
-    name: axe-core accessibility (skips until BASE_URL is configured)
+  verify:
+    name: typecheck · lint · unit · integration · build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit tests (vitest)
+        run: npm run test:unit
+
+      - name: Integration tests (vitest + PGlite)
+        run: npm run test:integration
+
+      - name: Migrations are committed and current
+        run: |
+          npm run db:generate
+          git diff --exit-code -- src/db/migrations || { echo "::error::run npm run db:generate and commit the result"; exit 1; }
+
+      - name: Build (Next.js)
+        run: npm run build
+        env:
+          PGLITE_MEMORY: '1'
+
+  e2e:
+    name: Playwright smoke (production build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+        env:
+          PGLITE_MEMORY: '1'
+
+      - name: Smoke tests against `next start`
+        run: npx playwright test tests/e2e
+        env:
+          CI: 'true'
+          PW_WEB_SERVER_COMMAND: npm run start
+          PGLITE_MEMORY: '1'
+          DB_AUTO_MIGRATE: '1'
+          DB_AUTO_SEED: '1'
+          LOG_FORMAT: json
+          # CI-only placeholders so the production env check passes; never real secrets.
+          CONFIRMATION_SECRET: ci-only-confirmation-secret-not-real
+          CRON_SECRET: ci-only-cron-secret-not-real-32-chars-minimum
+          STORAGE_SIGNING_SECRET: ci-only-storage-signing-secret-not-real
+          HEALTH_TOKEN: ci-only-health-token-not-real
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  a11y:
+    name: axe-core accessibility against a deployed preview (BASE_URL)
+    # Runs only when a repository variable BASE_URL (e.g. a preview deployment) is configured.
+    if: ${{ vars.BASE_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+      - run: npx playwright test tests/a11y.spec.ts
         env:
-          # Set a repository variable BASE_URL (e.g. a preview deployment) to
-          # activate this suite. Empty → tests skip, job stays green.
           BASE_URL: ${{ vars.BASE_URL }}

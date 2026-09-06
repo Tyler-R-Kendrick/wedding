@@ -56,3 +56,9 @@ __pycache__/
 .secrets/*
 !.secrets/public.jwk.json
 !.secrets/env.enc.json
+# Next.js / app data / test artifacts
+.next/
+.data/
+coverage/
+*.tsbuildinfo
+next-env.d.ts

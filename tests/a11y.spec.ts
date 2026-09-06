@@ -2,13 +2,10 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 // Routes to audit. Add each page as it is built (see wedding-site-standards skill).
+// Runs against BASE_URL when set (preview deployment), otherwise against the local dev server.
 const ROUTES = ['/'];
 
-const hasSite = !!process.env.BASE_URL;
-
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
-  test.skip(!hasSite, 'BASE_URL not set — no site to audit yet');
-
   for (const route of ROUTES) {
     test(`${route} has no serious or critical axe violations`, async ({ page }) => {
       await page.goto(route);

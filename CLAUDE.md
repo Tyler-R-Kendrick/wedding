@@ -82,13 +82,32 @@ Inside Claude Code: `/impeccable <cmd> <target>`, `hallmark audit <target>`,
 - Before calling a page done: run `design-review`, then `npm run quality`.
 - Placeholder facts use `TODO(Tyler & Sara)`; never plausible fiction.
 
-## Stack (not chosen yet)
+## Stack (chosen; level 03 foundation)
 
-Recommended: **Astro** (static, image-first, view transitions) or
-**Next.js**, with **Tailwind v4**, because `npm run design:export:tailwind`
-emits a Tailwind v4 `@theme` block directly from `DESIGN.md`. Put source in
-`src/`; the detector, stylelint, and CI already target it. RSVP backend:
-a form service or Supabase (an MCP is available), decided at build time.
+**Next.js 16 (App Router, Turbopack) + React 19 + Tailwind v4 + TypeScript 6**,
+**Drizzle ORM** on **PGlite** locally (`./.data/pglite`, `memory://` in tests)
+or **Postgres** when `DATABASE_URL` is set, **Better Auth** (auth swarm),
+**Vercel AI SDK** (`ai`, Anthropic/OpenAI/Voyage adapters), **pino** logs,
+**vitest** + **Playwright**. Every product feature is a *capability*
+(`src/capabilities`) invoked through one pipeline; every external system is a
+*provider* (`src/providers`) with a mock. Read `docs/architecture/*.md` and
+`docs/ops/*.md` before adding anything. Packages are fixed: feature swarms do
+not add dependencies.
+
+```bash
+npm run dev                # http://localhost:3000 (auto-migrates + seeds PGlite)
+npm run typecheck · lint · test:unit · test:integration · test:e2e · build
+npm run check              # typecheck + lint + unit
+npm run verify             # check + lint:css + design:lint + slop:detect + integration + build
+npm run db:generate        # drizzle-kit: schema -> src/db/migrations (commit them)
+npm run db:migrate · db:seed · jobs:run
+```
+
+Layout: `src/app` (routes only), `src/contracts` (shared types, read-only),
+`src/capabilities`, `src/policy`, `src/lib`, `src/db` (schema/, migrations/,
+seed/, repos/), `src/providers/<kind>/{types,mock,index}.ts`, `tests/{unit,
+integration,ui,e2e}`. The Tailwind `@theme` in `src/app/globals.css` is a
+placeholder until the design swarm exports `DESIGN.md`.
 
 ## Maintenance
 
@@ -102,3 +121,13 @@ a form service or Supabase (an MCP is available), decided at build time.
 - The impeccable hook lives in the committed `.claude/settings.json`; if
   `impeccable hooks on` also writes `.claude/settings.local.json`, delete
   the local copy to avoid running it twice.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

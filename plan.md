@@ -27,7 +27,7 @@ placeholders tracked in `docs/content/backlog.md`.
 |---|---|---|---|
 | 01 | Design toolchain, DESIGN.md baseline, quality gates | `claude/wedding-site-design-tools-lhs4i1` | **Merged** (PR #1, squash `93aa863`) |
 | 02 | SDLC process, ADRs, brief, two theme systems, inspo boards, licensed placeholders, Secret Drop tooling | `claude/wedding-02-design-sdlc` | **Merged** (PR #2, squash `4b7843c`) |
-| 03 | Next.js 16 foundation: contracts, capability pipeline, policy, PGlite/Drizzle, 17 provider seams with mocks, jobs, audit, CI | `claude/wedding-03-foundation` (pushed at `ee9da42`) | **Built and green; hardening in progress** (security review findings, see §6). Must be rebased onto `main` with `git rebase --onto origin/main ad4a937` before its PR opens (its history still contains the pre-squash level-02 commits). |
+| 03 | Next.js 16 foundation: contracts, capability pipeline, policy, PGlite/Drizzle, 17 provider seams with mocks, jobs, audit, CI | `claude/wedding-03-foundation` (rebased onto `main`, pushed at `3f5baee`) | **PR open** ([#4](https://github.com/Tyler-R-Kendrick/wedding/pull/4) against `main`): hardening §6 done, verify + e2e green, `docs/reviews/PR-03-self-review.md` READY |
 | 04 | Theme engine, public shell, lifecycle, Home (Swarm B) | `swarm/B-themes-lifecycle` (local only, ~16 files uncommitted when interrupted) | In progress |
 | 05 | Story, adventures, recommendations, CAA docent (Swarm C) | `swarm/C-story-adventures-caa` (pushed, 3 commits incl. WIP checkpoint) | In progress |
 | 06 | Identity, Better Auth, entitlements (Swarm D) | `swarm/D-identity-auth` (pushed, 1 commit; auth layer uncommitted) | In progress |
@@ -84,18 +84,19 @@ WebMCP tools ───────┘        validate → authorize → step-up 
    Secret Drop envelopes (`docs/ops/secrets.md`). Chromium for Playwright is
    at `PW_CHROMIUM_PATH` when preinstalled; never run `playwright install` in
    the cloud sandbox.
-2. Level 03: check out `claude/wedding-03-foundation`, finish the hardening
-   list in §6 (each fix with a failing-then-passing test), rebase onto `main`
-   (`git rebase --onto origin/main ad4a937`), run `npm run verify` + e2e,
-   write `docs/reviews/PR-03-self-review.md` from
-   `docs/sdlc/templates/self-review.md`, open the PR against `main`.
+2. Level 03: done. `claude/wedding-03-foundation` is rebased onto `main`
+   (head `3f5baee`), hardened per §6, verified, self-reviewed, and open as
+   PR #4 against `main`. Once #4 is squash-merged, rebase level 04 with
+   `git rebase --onto origin/main 3f5baee`.
 3. Swarms: create a worktree per branch (`git worktree add ../wedding-<X>
    swarm/<X>-…`, symlink `node_modules`), give the agent
    `docs/sdlc/swarms/README.md` + its brief, its own `PORT`, and the contract
    updates in §7. Partially built swarms resume from their pushed branch;
    uncommitted work in B and D exists only in the original container.
 4. Integrate in ladder order 04 → 14: `git rebase --onto <previous level>
-   ee9da42 swarm/<X>-…` (swarms branched from `ee9da42`), merge into
+   $(git merge-base swarm/<X>-… claude/wedding-03-foundation) swarm/<X>-…`
+   (every swarm branched from `8d3ce99`; swarms that
+   already rebased onto the hardened 03 head report their new base), merge into
    `claude/wedding-NN-<slug>`, `npm run verify`, `design-review` for UI
    levels, self-review file, PR against the previous level, subscribe.
 5. Then swarms M/N/O (levels 15–17) on the level-14 head; final evidence in
