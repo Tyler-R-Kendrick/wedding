@@ -57,6 +57,25 @@ identity journeys **6 passed** warm, 5 of 6 on a cold dev server, which the rout
 Playwright's single CI retry absorb. The cold-start flakiness is dev-server compile latency, not a
 product defect: the same run is deterministic once the routes are compiled.
 
+**And the split still failed, for a third reason I had verified my way past.** The dev-server step
+went red on the same six journeys: `POST /api/dev/identity` answered 404. The gate has two halves
+(`src/lib/auth/dev-gate.ts`), and I had only reasoned about one. Production is refused outright; a
+*hosted* runner — anything with `CI` or `VERCEL` set — is refused as well unless the caller presents
+`DEV_INBOX_TOKEN`, because a shared host must never open these routes on `NODE_ENV` alone. My local
+run had `CI` unset, so `hosted` was false and the gate opened on development alone. I verified in the
+one configuration that could not reproduce the failure.
+
+The fix is the escape hatch the gate was designed for, not a change to it: the step sets a CI-only
+`DEV_INBOX_TOKEN`, which `devHeaders()` presents. Re-measured under CI conditions (`CI=true`, dev
+server, port 3106): without the bearer `404`, with it `200`, with a wrong bearer `404` — the gate
+holds — and the six journeys that failed in CI then passed, `6 passed (22.3s)`.
+
+One more thing that reading the step revealed: the route warm-up ran *before* Playwright started the
+server, so every `curl` hit a closed port and silently succeeded through `|| true`. It had never
+warmed anything. The step now starts the dev server itself, polls `/api/health` until it answers
+(failing loudly with the server log if it never does), warms the journey's routes against a server
+that is actually up, and points Playwright at it with `BASE_URL`.
+
 ## 2. Migrations — the part that would have failed silently
 
 Level 05 and level 06 each generated a `0002`. Taking either ledger alone leaves the other's SQL on disk unreferenced while a later migration still runs against tables that were never created.

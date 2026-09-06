@@ -124,11 +124,23 @@ jobs:
           TRUSTED_PROXY_HOPS: '1'
 
       - name: Playwright identity journeys (dev server)
-        # NODE_ENV=development: the mock mailer and the dev inbox are available here and nowhere else.
-        # A dev server compiles each route on first request, which can outlast a navigation timeout
-        # even though /api/health already answers. Warm every route the journey walks before running;
-        # Playwright's single CI retry is the backstop, not the plan.
+        # These journeys need BOTH halves of the dev gate (src/lib/auth/dev-gate.ts):
+        #   * NODE_ENV must not be production — there the dev routes are 404 whatever the caller
+        #     presents (security review S5), which is why they cannot run in the step above; and
+        #   * on a hosted runner (CI or Vercel) the caller must present DEV_INBOX_TOKEN, because a
+        #     shared host never opens them on NODE_ENV alone. `devHeaders()` sends it.
+        # The server is started here rather than by Playwright's `webServer` so the warm-up below
+        # runs against a server that is actually up: a dev server compiles each route on first
+        # request, and a cold compile can outlast a navigation timeout even though /api/health
+        # already answers. Playwright's single CI retry is the backstop, not the plan.
         run: |
+          npm run dev -- -p 3000 > "$RUNNER_TEMP/dev-server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null "http://localhost:3000/api/health" && break
+            sleep 2
+          done
+          curl -fsS -o /dev/null "http://localhost:3000/api/health" \
+            || { echo "::error::dev server did not become ready"; cat "$RUNNER_TEMP/dev-server.log"; exit 1; }
           for path in / /sign-in /claim /claim/verify /claim/welcome /claim/passkey /step-up \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/dev/identity; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
@@ -136,7 +148,10 @@ jobs:
           npx playwright test tests/e2e/claim.spec.ts
         env:
           CI: 'true'
-          PW_WEB_SERVER_COMMAND: npm run dev
+          # Set, so Playwright treats the server above as external and does not start its own.
+          BASE_URL: http://localhost:3000
+          # CI-only placeholder; opens the dev routes on this runner only (>= 16 chars per env.ts).
+          DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real
           PGLITE_MEMORY: '1'
           DB_AUTO_MIGRATE: '1'
           DB_AUTO_SEED: '1'
