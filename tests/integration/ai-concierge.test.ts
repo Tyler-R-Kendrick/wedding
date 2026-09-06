@@ -234,3 +234,36 @@ describe('session retention', () => {
     expect(second).toBeNull();
   });
 });
+
+describe('retrieval', () => {
+  it('applies the caller’s visibility, never returns placeholder text, and cites public targets', async () => {
+    const { retrieve, resetRetrievalIndex } = await import('@/ai/retrieval');
+    const { createReadContext } = await import('@/domain/content/read-context');
+    const db = await getDb();
+    const rctx = await createReadContext(db, anonymous, 'ai', new Date());
+    const result = await retrieve(rctx, 'ballroom marble', 6, 'static');
+    expect(result.mode).toBe('static');
+    expect(result.results.length).toBeGreaterThan(0);
+    for (const hit of result.results) {
+      expect(hit.content).not.toContain('TODO(Tyler & Sara)');
+      expect(hit.url.startsWith('/') || hit.url.startsWith('https://')).toBe(true);
+      expect(hit.sourceId.length).toBeGreaterThan(0);
+    }
+    expect(result.sources.every((s) => s.url && (s.url.startsWith('/') || s.url.startsWith('https://')))).toBe(true);
+    resetRetrievalIndex();
+  });
+
+  it('falls through to the embeddings + vector-index seam in hybrid mode without a key', async () => {
+    const { retrieve, resetRetrievalIndex } = await import('@/ai/retrieval');
+    const { createReadContext } = await import('@/domain/content/read-context');
+    const db = await getDb();
+    resetRetrievalIndex();
+    const rctx = await createReadContext(db, anonymous, 'ai', new Date());
+    // A query with no keyword overlap leaves slots for the vector pass to fill; the hashed mock
+    // provider stands in for a real embedding model, so this exercises the seam, not the ranking.
+    const hybrid = await retrieve(rctx, 'dancing under the illuminated ceiling', 6, 'hybrid');
+    expect(hybrid.mode).toBe('hybrid');
+    for (const hit of hybrid.results) expect(hit.url.startsWith('/') || hit.url.startsWith('https://')).toBe(true);
+    resetRetrievalIndex();
+  });
+});

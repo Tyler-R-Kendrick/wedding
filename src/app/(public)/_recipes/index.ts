@@ -5,7 +5,6 @@ import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import { AdventureDetailPage } from './AdventureDetailPage';
 import { AdventuresPage, type AdventuresRecipeProps } from './AdventuresPage';
 import { AskPage, type AskRecipeProps } from './AskPage';
@@ -14,7 +13,7 @@ import { GuidePage, type GuideRecipeProps } from './GuidePage';
 import { RecommendationPage } from './RecommendationPage';
 import { StoryPage } from './StoryPage';
 import { VenueSpacePage } from './VenueSpacePage';
-import { WeddingPage } from './WeddingPage';
+import { WeddingPage, type WeddingRecipeProps } from './WeddingPage';
 
 /**
  * The recipe seam. Pages fetch theme-agnostic data through capabilities and render
@@ -29,7 +28,7 @@ export interface PageRecipes {
   RecommendationPage: ComponentType<{ card: RecommendationCard }>;
   ExploreCaaPage: ComponentType<{ data: ExploreCaaPageData }>;
   VenueSpacePage: ComponentType<{ data: VenueRoomData }>;
-  WeddingPage: ComponentType<{ data: WeddingPageData }>;
+  WeddingPage: ComponentType<WeddingRecipeProps>;
   AskPage: ComponentType<AskRecipeProps>;
   /** The concierge island. A theme swaps the chrome here; the pipeline behind it never changes. */
   Concierge: ComponentType<ConciergeSlotProps>;
@@ -51,4 +50,4 @@ export const placeholderRecipes: PageRecipes = {
 /** Swap point: `export const recipes = themeRecipes` once the theme kit lands. */
 export const recipes: PageRecipes = placeholderRecipes;
 
-export type { AdventuresRecipeProps, AskRecipeProps, ConciergeSlotProps, GuideRecipeProps };
+export type { AdventuresRecipeProps, AskRecipeProps, ConciergeSlotProps, GuideRecipeProps, WeddingRecipeProps };

@@ -1,11 +1,18 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Paragraphs, Text } from '@/components/provenance';
 import { formatDateWithWeekday } from '@/domain/content/format';
 import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import { ROUTES } from '@/domain/routes';
 import { Handoff, PageIntro, Provenance, Section, Shell } from './kit';
 
-export function WeddingPage({ data }: { data: WeddingPageData }) {
+export interface WeddingRecipeProps {
+  data: WeddingPageData;
+  /** Swarm J's concierge island, passed in by the page so this recipe stays theme-agnostic. */
+  concierge?: ReactNode;
+}
+
+export function WeddingPage({ data, concierge }: WeddingRecipeProps) {
   return (
     <Shell current={ROUTES.wedding}>
       <PageIntro eyebrow="The Wedding" title={data.coupleDisplayName} lede={<time dateTime={data.dateIso}>{formatDateWithWeekday(data.dateIso)}</time>}>
@@ -56,6 +63,14 @@ export function WeddingPage({ data }: { data: WeddingPageData }) {
           <Provenance provenance={data.provenance} />
         </div>
       </Section>
+
+      {concierge ? (
+        <Section id="concierge" title="Still have a question?">
+          <div className="wp-slot" id="concierge-slot" data-slot="concierge">
+            {concierge}
+          </div>
+        </Section>
+      ) : null}
     </Shell>
   );
 }

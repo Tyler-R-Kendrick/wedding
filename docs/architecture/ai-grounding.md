@@ -142,7 +142,21 @@ same-origin JSON for signed-in callers (CSRF) and a JSON content type for everyo
 deliberately **not** exposed to the model (`exposure.ai: false`): a model must not recurse into the
 concierge.
 
-## 9. What is deliberately not here
+## 9. Mounting the panel on another page
+
+`src/components/concierge` exports `ConciergeSlot`, and the recipe seam exposes it as
+`recipes.Concierge`. A page renders it in one line and stays theme-agnostic:
+
+```tsx
+<recipes.AskPage faq={faq} concierge={getFlags().AI_CONCIERGE ? <recipes.Concierge /> : undefined} />
+```
+
+It is mounted on **Ask Us** and on **The Wedding** today. Any page that fetches its data through
+capabilities can add it the same way; the recipe takes an optional `concierge` node and renders it in
+a `.wp-slot`, so the theme kit decides how the slot looks without touching the pipeline. Nothing is
+downloaded until a guest presses "Ask the concierge".
+
+## 10. What is deliberately not here
 
 - No web browsing or general search. The stale venue kit and third-party blogs are exactly what a
   closed world exists to keep out.
