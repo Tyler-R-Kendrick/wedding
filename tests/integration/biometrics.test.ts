@@ -16,7 +16,7 @@ import { getDb } from '@/db/client';
 import { biometricConsents, biometricDeletions, biometricIdentityRefs, biometricMatches } from '@/db/schema/biometrics';
 import { idempotencyKeys } from '@/db/schema/idempotency';
 import { ensureDefaultCollections } from '@/domain/media';
-import { BIOMETRIC_SWEEP_JOB, CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH, enqueueBiometricSweep, getConsentState, guestScopeKey, sweepRetention } from '@/domain/biometrics';
+import { BIOMETRIC_SWEEP_JOB, CONSENT_POLICY_VERSION, CONSENT_TEXT_HASH, enqueueBiometricSweep, getConsentState, guestScopeKey, sweepRetention, sweepRetentionDetailed } from '@/domain/biometrics';
 import { listAuditEvents } from '@/lib/audit';
 import { getAuditSink } from '@/lib/audit';
 import { invalidateReadinessCache, setReadiness } from '@/lib/flags';
@@ -90,8 +90,9 @@ let storage: LocalFsStorage;
 let spy: SpyBiometric;
 let corpus: Map<string, PlacedItem>;
 
-async function call<T>(principal: Principal, name: string, input?: unknown) {
-  const ctx = await createCapabilityContext({ principal, requestId: newId(), surface: 'ui', ...(principal.kind === 'anonymous' ? {} : { idempotencyKey: newId() }) });
+async function call<T>(principal: Principal, name: string, input?: unknown, opts: { idempotencyKey?: string } = {}) {
+  const key = opts.idempotencyKey ?? (principal.kind === 'anonymous' ? undefined : newId());
+  const ctx = await createCapabilityContext({ principal, requestId: newId(), surface: 'ui', ...(key ? { idempotencyKey: key } : {}) });
   const r = await invokeByName(name, ctx, input);
   return r.ok ? { ok: true as const, data: r.value.data as T } : { ok: false as const, error: r.error };
 }
@@ -500,6 +501,25 @@ describe('biometric subsystem (gated off by default)', () => {
       expect(audit.some((e) => e.action === 'biometric.deleted' && e.outcome === 'success')).toBe(true);
     });
 
+    it('withdrawing again after a failed deletion still queues one, rather than doing nothing', async () => {
+      const db = await getDb();
+      // Consent is already revoked at this point; leave some data behind as a failed job would.
+      await db.insert(biometricIdentityRefs).values({
+        id: newId(), guestId: GUEST_A, consentId: 'STALE', providerName: 'mock', subjectId: GUEST_A,
+        templateSealed: 'sealed', templateKeyId: 'k', sourceAssetIds: [], enrolledAt: new Date(), createdAt: new Date(),
+      });
+      const again = await call<{ revoked: boolean; deletion: { id: string } | null }>(guestA, 'revoke_biometric_consent', {});
+      expect(again.ok, JSON.stringify(again)).toBe(true);
+      if (!again.ok) return;
+      expect(again.data.revoked).toBe(false); // there was nothing left to withdraw...
+      expect(again.data.deletion, 'but the surviving data must still be queued for deletion').not.toBeNull();
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A))).toHaveLength(0);
+      // With nothing left at all it is a genuine no-op again.
+      const noop = await call<{ revoked: boolean; deletion: unknown }>(guestA, 'revoke_biometric_consent', {});
+      expect(noop.ok && noop.data).toMatchObject({ revoked: false, deletion: null });
+    });
+
     it('matching stops the moment consent is withdrawn', async () => {
       spy.reset();
       const r = await call(guestA, 'find_photos_of_me', { candidateAssetIds: [corpus.get('mine-1')!.assetId] });
@@ -541,6 +561,88 @@ describe('biometric subsystem (gated off by default)', () => {
       for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
       expect((await db.select().from(biometricDeletions).where(eq(biometricDeletions.guestId, 'GUESTOLD')))[0]!.status).toBe('completed');
       expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, 'GUESTOLD'))).toHaveLength(0);
+    });
+
+    it('sweeps a template whose consent is superseded, not only one that has aged out', async () => {
+      const db = await getDb();
+      await db.delete(biometricDeletions);
+      await db.delete(biometricIdentityRefs);
+      // A guest enrolled yesterday: nowhere near the retention window.
+      await db.insert(biometricIdentityRefs).values({
+        id: newId(),
+        guestId: 'GUESTSUPER',
+        consentId: 'CONSENTSUPER',
+        providerName: 'mock',
+        subjectId: 'GUESTSUPER',
+        templateSealed: 'sealed',
+        templateKeyId: 'k',
+        sourceAssetIds: [],
+        enrolledAt: new Date(Date.now() - 86_400_000),
+        createdAt: new Date(),
+      });
+      // ...whose grant was for an older version of the consent copy.
+      await db.insert(biometricConsents).values({
+        id: newId(),
+        guestId: 'GUESTSUPER',
+        householdId: 'HOUSESUPER',
+        entry: 'grant',
+        grantId: null,
+        policyVersion: '2020-01-01.superseded',
+        textHash: 'a'.repeat(64),
+        text: 'an older wording',
+        purpose: 'p',
+        term: 't',
+        retention: 'r',
+        providerDisclosure: 'd',
+        scope: 'self_match',
+        adultAttested: true,
+        ipHash: null,
+        surface: 'ui',
+        requestId: newId(),
+        grantedAt: new Date(Date.now() - 86_400_000),
+        revokedAt: null,
+        createdAt: new Date(Date.now() - 86_400_000),
+      });
+      expect((await getConsentState(db, 'GUESTSUPER')).status).toBe('superseded');
+
+      const swept = await sweepRetentionDetailed(db, { retentionDays: 365, now: new Date(), requestId: newId() });
+      expect(swept).toEqual([{ guestId: 'GUESTSUPER', reason: 'consent_not_active' }]);
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, 'GUESTSUPER'))).toHaveLength(0);
+      // The consent history itself survives as evidence.
+      expect((await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, 'GUESTSUPER'))).length).toBeGreaterThan(0);
+    });
+
+    it('leaves an active, recent enrolment completely alone', async () => {
+      const db = await getDb();
+      await db.delete(biometricDeletions);
+      await db.delete(biometricIdentityRefs);
+      await db.delete(biometricConsents);
+      await grantConsentThroughEndpoint();
+      expect((await call(guestA, 'enroll_biometric_reference', { assetIds: [corpus.get('mine-1')!.assetId] })).ok).toBe(true);
+      expect(await sweepRetentionDetailed(db, { retentionDays: 365, now: new Date(), requestId: newId() })).toEqual([]);
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A))).toHaveLength(1);
+    });
+
+    it('sweeps data left behind by a deletion that failed, once consent is gone', async () => {
+      const db = await getDb();
+      const { jobs } = await import('@/db/schema/jobs');
+      expect((await post('revoke', { input: {}, idempotencyKey: newId() })).ok).toBe(true);
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect((await getConsentState(db, GUEST_A)).status).toBe('revoked');
+
+      // A reference that survived — the shape a deletion job leaves after exhausting its attempts.
+      await db.insert(biometricIdentityRefs).values({
+        id: newId(), guestId: GUEST_A, consentId: 'STALE', providerName: 'mock', subjectId: GUEST_A,
+        templateSealed: 'sealed', templateKeyId: 'k', sourceAssetIds: [], enrolledAt: new Date(), createdAt: new Date(),
+      });
+      await db.delete(biometricDeletions);
+      await db.delete(jobs);
+
+      const swept = await sweepRetentionDetailed(db, { retentionDays: 365, now: new Date(), requestId: newId() });
+      expect(swept).toEqual([{ guestId: GUEST_A, reason: 'consent_not_active' }]);
+      for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'test', limit: 50 });
+      expect(await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A))).toHaveLength(0);
     });
 
     it('the sweep is enqueued once, deduped, by the cron alias', async () => {

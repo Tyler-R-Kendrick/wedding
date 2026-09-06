@@ -3,7 +3,7 @@ import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
-import { describeDeletion, requestDeletion, revokeConsent } from '@/domain/biometrics';
+import { describeDeletion, guestHasBiometricData, requestDeletion, revokeConsent } from '@/domain/biometrics';
 import { biometricServices, deletionRecordSchema } from './_shared';
 
 const input = z.object({}).optional();
@@ -31,8 +31,13 @@ export const revokeBiometricConsent = defineCapability<z.infer<typeof input>, z.
     const services = biometricServices(ctx);
     const guestId = ctx.principal.guestId;
     const revoked = await revokeConsent(services.db, { guestId, ipHash: services.clientIpHash, surface: ctx.surface ?? 'ui', requestId: ctx.requestId, now: ctx.now });
-    if (!revoked.revoked) return ok({ data: { revoked: false, revokedAt: null, deletion: null }, sources: [] });
+    // Withdrawing again after a deletion that failed used to be a no-op, because the ledger was
+    // already revoked. Any surviving data re-queues deletion: the button must always do something.
+    if (!revoked.revoked && !(await guestHasBiometricData(services.db, guestId))) {
+      return ok({ data: { revoked: false, revokedAt: null, deletion: null }, sources: [] });
+    }
     const deletion = await requestDeletion(services.db, { guestId, reason: 'revocation', requestedBy: toPrincipalRef(ctx.principal), requestId: ctx.requestId, now: ctx.now });
+    if (!revoked.revoked) return ok({ data: { revoked: false, revokedAt: null, deletion: describeDeletion(deletion) }, sources: [] });
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'biometric.consent_revoked', target: { type: 'guest', id: guestId }, outcome: 'success', requestId: ctx.requestId, metadata: { consentId: revoked.grant?.id, deletionId: deletion.id } });
     return ok({ data: { revoked: true, revokedAt: ctx.now.toISOString(), deletion: describeDeletion(deletion) }, sources: [] });
   },

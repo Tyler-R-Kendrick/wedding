@@ -50,8 +50,13 @@ describe('F2: superseded consent leaves the face template in the vault', () => {
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) expect(blocked.error.details?.reason).toBe('consent_superseded');
 
-    // ...but the retention sweep, which the docstring says covers this case, requests nothing.
+    // ...and the retention sweep, which the docstring says covers this case, must act on it.
     const requested = await sweepRetention(db, { retentionDays: 365, now: new Date(), requestId: newId() });
+    // The sweep queues a deletion rather than deleting inline (same audited, idempotent path as a
+    // guest's own request), so drain the queue before asking whether the template survived. Before
+    // the fix this drained an empty queue and changed nothing; the assertions below are unchanged.
+    const { runDueJobs } = await import('@/lib/jobs');
+    for (let i = 0; i < 3; i++) await runDueJobs(db, { worker: 'review-I', limit: 50 });
     const queued = await db.select().from(biometricDeletions).where(eq(biometricDeletions.guestId, GUEST_A));
     const refs = await db.select().from(biometricIdentityRefs).where(eq(biometricIdentityRefs.guestId, GUEST_A));
     const matches = await db.select().from(biometricMatches).where(eq(biometricMatches.guestId, GUEST_A));

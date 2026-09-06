@@ -10,7 +10,7 @@ import { JobQueue } from '@/lib/jobs';
 import { principalKey } from '@/policy/confirmation';
 import type { BiometricProvider } from '@/providers/biometric/types';
 import type { VectorIndexProvider } from '@/providers/vector-index/types';
-import { listConsentEntries } from './consent';
+import { getConsentState, hasCurrentConsent, listConsentEntries } from './consent';
 
 /**
  * Deletion (ADR-0006 §5). A request writes a `biometric.deletions` row and enqueues one deduped
@@ -165,19 +165,44 @@ export function describeDeletion(row: BiometricDeletionRow) {
   };
 }
 
+export type SweepReason = 'aged_out' | 'consent_not_active';
+
 /**
- * Retention sweep: guests whose enrolment is older than the retention window, or whose latest
- * consent is revoked/superseded but still have data, get a deletion request. Returns how many.
+ * Retention sweep. Two independent reasons a stored template must go:
+ *
+ *  1. **Age.** The enrolment is older than the retention window. The window runs from enrolment,
+ *     which is what the consent text now promises ("12 months after you add your reference
+ *     photos") — the two anchors used to disagree.
+ *  2. **Consent is no longer active.** Revoked, or superseded because the consent copy changed.
+ *     Processing stops the moment a grant stops being current, but storage did not: a guest's
+ *     sealed template could sit in the vault for up to a year under a text the site itself
+ *     declares superseded. That is the case this loop exists for, and the case its docstring
+ *     always claimed to cover while the body only compared timestamps.
+ *
+ * `requestDeletion` is deduped per guest, so running this every pass is safe and cheap.
  */
 export async function sweepRetention(db: Db, opts: { retentionDays: number; now: Date; requestId: string }): Promise<number> {
+  return (await sweepRetentionDetailed(db, opts)).length;
+}
+
+/** The same sweep, reporting who was swept and why (for the job log and for tests). */
+export async function sweepRetentionDetailed(
+  db: Db,
+  opts: { retentionDays: number; now: Date; requestId: string },
+): Promise<{ guestId: string; reason: SweepReason }[]> {
   const cutoff = new Date(opts.now.getTime() - opts.retentionDays * 86_400_000);
   const refs = await db.select().from(biometricIdentityRefs);
-  let n = 0;
+  const swept: { guestId: string; reason: SweepReason }[] = [];
+  const seen = new Set<string>();
   for (const ref of refs) {
-    if (ref.enrolledAt.getTime() <= cutoff.getTime()) {
-      await requestDeletion(db, { guestId: ref.guestId, reason: 'retention', requestedBy: { kind: 'system', component: BIOMETRIC_SWEEP_JOB }, requestId: opts.requestId, now: opts.now });
-      n++;
-    }
+    if (seen.has(ref.guestId)) continue;
+    const agedOut = ref.enrolledAt.getTime() <= cutoff.getTime();
+    // Age is checked first because it needs no query; consent only when the age check passes it.
+    const reason: SweepReason | null = agedOut ? 'aged_out' : hasCurrentConsent(await getConsentState(db, ref.guestId)) ? null : 'consent_not_active';
+    if (!reason) continue;
+    seen.add(ref.guestId);
+    await requestDeletion(db, { guestId: ref.guestId, reason: 'retention', requestedBy: { kind: 'system', component: BIOMETRIC_SWEEP_JOB }, requestId: opts.requestId, now: opts.now });
+    swept.push({ guestId: ref.guestId, reason });
   }
-  return n;
+  return swept;
 }

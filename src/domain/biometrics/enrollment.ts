@@ -123,6 +123,10 @@ export async function findPhotosOfGuest(deps: EnrollmentDeps, guest: GuestPrinci
   const proReady = { PRO_MEDIA_AI_PROCESSING: await deps.readiness('PRO_MEDIA_AI_PROCESSING') } as Partial<Record<FeatureFlag, boolean>>;
   const outcome: MatchOutcome = { matched: [], checked: 0, skipped: [] };
   const matchedRows: (typeof biometricMatches.$inferInsert)[] = [];
+  // An id that matched no row at all is reported exactly like one the guest may not see, so the
+  // skip list cannot be used to ask "does this asset exist?".
+  const found = new Set(rows.map((r) => r.asset.id));
+  for (const id of ids) if (!found.has(id)) outcome.skipped.push({ assetId: id, reason: 'not_visible' });
   for (const { asset, collection } of rows) {
     if (asset.kind !== 'image' || !canViewPublishedAsset(guest, asset, collection)) {
       outcome.skipped.push({ assetId: asset.id, reason: 'not_visible' });

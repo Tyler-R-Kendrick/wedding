@@ -4,7 +4,7 @@ import { getAuditSink } from '@/lib/audit';
 import { env } from '@/lib/env';
 import { JobQueue, registerJobHandler, type JobHandler } from '@/lib/jobs';
 import { getProvider } from '@/providers/registry';
-import { BIOMETRIC_DELETE_JOB, BIOMETRIC_SWEEP_JOB, runDeletion, sweepRetention } from './deletion';
+import { BIOMETRIC_DELETE_JOB, BIOMETRIC_SWEEP_JOB, runDeletion, sweepRetentionDetailed } from './deletion';
 import { installBiometricConsentLookup } from './gate';
 
 /**
@@ -30,8 +30,9 @@ const del: JobHandler<{ deletionId: string; guestId: string }> = async (payload,
 };
 
 const sweep: JobHandler = async (_payload, _job, ctx) => {
-  const n = await sweepRetention(ctx.db, { retentionDays: env.BIOMETRIC_RETENTION_DAYS, now: ctx.now, requestId: ctx.requestId });
-  ctx.logger.info({ requested: n }, 'biometric.sweep');
+  const swept = await sweepRetentionDetailed(ctx.db, { retentionDays: env.BIOMETRIC_RETENTION_DAYS, now: ctx.now, requestId: ctx.requestId });
+  const byReason = swept.reduce<Record<string, number>>((acc, s) => ({ ...acc, [s.reason]: (acc[s.reason] ?? 0) + 1 }), {});
+  ctx.logger.info({ requested: swept.length, ...byReason }, 'biometric.sweep');
 };
 
 export function registerBiometricJobs(): void {

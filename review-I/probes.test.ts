@@ -48,16 +48,29 @@ describe('extra probes', () => {
     expect(await db.select().from(biometricConsents).where(eq(biometricConsents.guestId, GUEST_A))).toHaveLength(0);
   });
 
-  it('NIT: find_photos_of_me distinguishes "asset does not exist" from "asset exists but is not yours"', async () => {
+  /**
+   * NIT 12 (fixed) — `find_photos_of_me` used to distinguish "asset does not exist" from
+   * "asset exists but is not yours": `skipped` was built only from rows the query found, so an
+   * unknown id was silently absent while a real-but-invisible id came back as `not_visible`.
+   *
+   * ORIGINAL ASSERTION: `expect(r.data.skipped.map((s) => s.assetId)).toEqual([hiddenFromMe])` —
+   * i.e. it pinned the leak, asserting the non-existent id was NOT reported. That assertion
+   * inverts by construction once the oracle is closed, so it now asserts the property the nit
+   * asked for: both ids come back, with the same reason, indistinguishable from each other.
+   */
+  it('NIT (fixed): find_photos_of_me cannot be used to ask whether an asset exists', async () => {
     await grantThroughEndpoint('guestA');
     expect((await call(guestA, 'enroll_biometric_reference', { assetIds: [rig.corpus.get('mine-1')!.assetId] })).ok).toBe(true);
+    const hidden = rig.corpus.get('hidden-from-me')!.assetId;
+    const nonexistent = '00000000000000000000000000';
     const r = await call<{ skipped: { assetId: string; reason: string }[] }>(guestA, 'find_photos_of_me', {
-      candidateAssetIds: [rig.corpus.get('hidden-from-me')!.assetId, '00000000000000000000000000'],
+      candidateAssetIds: [hidden, nonexistent],
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     console.info('[probe] skipped=%s', JSON.stringify(r.data.skipped));
-    expect(r.data.skipped.map((s) => s.assetId)).toEqual([rig.corpus.get('hidden-from-me')!.assetId]);
+    expect(r.data.skipped.map((s) => s.assetId).sort()).toEqual([hidden, nonexistent].sort());
+    expect(new Set(r.data.skipped.map((s) => s.reason))).toEqual(new Set(['not_visible']));
   });
 
   it('FINDING 1b: enrolment outcomes are cached and replayable after deletion, same as matches', async () => {
