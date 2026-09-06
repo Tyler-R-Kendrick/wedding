@@ -32,12 +32,12 @@ export const FX = {
 } as const;
 
 export const FIXTURE_GUESTS = [
-  { id: FX.guestA1, householdId: FX.householdA, firstName: 'Ada', lastName: 'Testhouse', displayName: 'Ada Testhouse', email: 'ada.testhouse@example.test', isMinor: false },
-  { id: FX.guestA2, householdId: FX.householdA, firstName: 'Ben', lastName: 'Testhouse', displayName: 'Ben Testhouse', email: null, isMinor: false },
-  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', displayName: 'Cleo Testhouse', email: null, isMinor: true },
-  { id: FX.guestB1, householdId: FX.householdB, firstName: 'Dev', lastName: 'Fixture', displayName: 'Dev Fixture', email: 'dev.fixture@example.test', isMinor: false },
-  { id: FX.guestB2, householdId: FX.householdB, firstName: 'Eve', lastName: 'Fixture', displayName: 'Eve Fixture', email: null, isMinor: false },
-  { id: FX.guestC1, householdId: FX.householdC, firstName: 'Fin', lastName: 'Solo', displayName: 'Fin Solo', email: 'fin.solo@example.test', isMinor: false },
+  { id: FX.guestA1, householdId: FX.householdA, firstName: 'Ada', lastName: 'Testhouse', email: 'ada.testhouse@example.test', isMinor: false },
+  { id: FX.guestA2, householdId: FX.householdA, firstName: 'Ben', lastName: 'Testhouse', email: null, isMinor: false },
+  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', email: null, isMinor: true },
+  { id: FX.guestB1, householdId: FX.householdB, firstName: 'Dev', lastName: 'Fixture', email: 'dev.fixture@example.test', isMinor: false },
+  { id: FX.guestB2, householdId: FX.householdB, firstName: 'Eve', lastName: 'Fixture', email: null, isMinor: false },
+  { id: FX.guestC1, householdId: FX.householdC, firstName: 'Fin', lastName: 'Solo', email: 'fin.solo@example.test', isMinor: false },
 ] as const;
 
 export const FIXTURE_HOUSEHOLDS = [

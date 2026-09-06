@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
@@ -71,7 +72,7 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
     const expectedPairs = hc.entitlements.filter((en) => hc.entitledEvents.some((e) => e.id === en.eventId && e.rsvpRequired));
     const answered = expectedPairs.filter((en) => responseKey.has(`${en.guestId}::${en.eventId}`)).length;
     const status = answered === 0 ? 'not_started' : answered < expectedPairs.length ? 'partial' : 'complete';
-    const guestName = new Map(hc.guests.map((g) => [g.id, g.displayName]));
+    const guestName = new Map(hc.guests.map((g) => [g.id, guestDisplayName(g)]));
     return ok({
       data: {
         greeting: { firstName: self?.firstName ?? 'there', householdName: hc.household?.name ?? 'Your household' },

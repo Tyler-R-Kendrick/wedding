@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { err, ok } from '@/contracts/result';
@@ -35,7 +36,7 @@ export const listMyEvents = defineCapability<z.infer<typeof input>, MyEvents>({
     const p = requireGuestPrincipal(ctx);
     if (!p.ok) return err(p.error);
     const hc = await loadForPrincipal(ctx, p.value);
-    const guestName = new Map(hc.guests.map((g) => [g.id, g.displayName]));
+    const guestName = new Map(hc.guests.map((g) => [g.id, guestDisplayName(g)]));
     const events = hc.entitledEvents.map((e) => ({
       ...toEventView(e, hc.mealOptions),
       whenText: formatEventWindow(e.startsAt, e.endsAt, e.timezone),

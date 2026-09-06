@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -10,6 +11,10 @@ import { listAllGuests, listAllResponses, listHouseholds } from '@/domain/rsvp';
 import { applySeatingImport, assignSeats, deleteTable, draftSnapshot, getLivePublication, listAssignments, listFloorPlans, listPublications, listTables, parseSeatingCsv, publishSeating, snapshotDiffers, unpublishSeating, upsertTable } from '@/domain/seating';
 import { idSchema } from '@/capabilities/rsvp/shared';
 import { floorPlanViewSchema } from './get_my_table';
+
+/** A guest row's printed name, or `fallback` when the row is missing (a merged or deleted guest). */
+const nameOf = (g: Parameters<typeof guestDisplayName>[0] | undefined, fallback: string): string => (g ? guestDisplayName(g) : fallback);
+
 
 const ADMIN_ANNOTATIONS = { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true } as const;
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
@@ -71,9 +76,9 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
           sortOrder: t.sortOrder,
           assignments: assignments
             .filter((a) => a.tableId === t.id)
-            .map((a) => ({ guestId: a.guestId, displayName: guestById.get(a.guestId)?.displayName ?? 'Unknown', householdName: hh.get(guestById.get(a.guestId)?.householdId ?? '') ?? '', seatNumber: a.seatNumber })),
+            .map((a) => ({ guestId: a.guestId, displayName: nameOf(guestById.get(a.guestId), 'Unknown'), householdName: hh.get(guestById.get(a.guestId)?.householdId ?? '') ?? '', seatNumber: a.seatNumber })),
         })),
-        unassigned: guests.filter((g) => !seated.has(g.id)).map((g) => ({ guestId: g.id, displayName: g.displayName, householdName: hh.get(g.householdId) ?? '', receptionRsvp: reception.get(g.id) ?? null })),
+        unassigned: guests.filter((g) => !seated.has(g.id)).map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), householdName: hh.get(g.householdId) ?? '', receptionRsvp: reception.get(g.id) ?? null })),
         history: history.map((h) => ({ id: h.id, publishedAt: h.publishedAt.toISOString(), unpublishedAt: h.unpublishedAt?.toISOString() ?? null, note: h.note })),
       },
       sources: [],

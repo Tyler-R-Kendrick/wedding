@@ -1,6 +1,6 @@
 import { boolean, date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
-import { guests } from './guests.stub';
+import { guests } from './guests';
 
 /** Plus-one policy per guest × event. `named`: a name is required; `unnamed`: "and guest" is fine. */
 export const PLUS_ONE_POLICIES = ['none', 'named', 'unnamed'] as const;

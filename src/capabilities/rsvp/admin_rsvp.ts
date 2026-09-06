@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -12,6 +13,10 @@ import { assertActsFor } from '@/policy/entitlements';
 import { namesFor, validateFor } from './context';
 import { idSchema, plusOnePolicySchema, windowSchema } from './shared';
 import type { Db } from '@/db/client';
+
+/** A guest row's printed name, or `fallback` when the row is missing (a merged or deleted guest). */
+const nameOf = (g: Parameters<typeof guestDisplayName>[0] | undefined, fallback: string): string => (g ? guestDisplayName(g) : fallback);
+
 
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
 
@@ -56,7 +61,7 @@ async function buildOverview(db: Db, now: Date): Promise<AdminRsvpOverview> {
       const r = respKey.get(`${en.guestId}::${en.eventId}`);
       return {
         guestId: g.id,
-        displayName: g.displayName,
+        displayName: guestDisplayName(g),
         householdId: g.householdId,
         householdName: hh.get(g.householdId) ?? '',
         eventId: e.id,
@@ -182,7 +187,7 @@ export const adminExportNeeds = defineCapability<z.infer<typeof needsInput>, z.i
     const hh = new Map(households.map((h) => [h.id, h.name]));
     const rows = needs
       .filter((n) => n.dietary || n.accessibility)
-      .map((n) => ({ guestId: n.guestId, displayName: guestById.get(n.guestId)?.displayName ?? 'Unknown guest', householdName: hh.get(guestById.get(n.guestId)?.householdId ?? '') ?? '', dietary: n.dietary, accessibility: n.accessibility }))
+      .map((n) => ({ guestId: n.guestId, displayName: nameOf(guestById.get(n.guestId), 'Unknown guest'), householdName: hh.get(guestById.get(n.guestId)?.householdId ?? '') ?? '', dietary: n.dietary, accessibility: n.accessibility }))
       .sort((a, b) => a.householdName.localeCompare(b.householdName) || a.displayName.localeCompare(b.displayName));
     const stamp = ctx.now.toISOString().slice(0, 10);
     return ok({ data: { filename: `guest-needs-${stamp}.csv`, csv: needsToCsv(rows), rows }, sources: [] });

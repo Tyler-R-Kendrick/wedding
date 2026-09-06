@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import type { GuestPrincipal } from '@/contracts/principal';
@@ -38,7 +39,7 @@ export const validateFor = (hc: HouseholdRsvpContext, actsFor: readonly string[]
   toCapabilityResult(validateHouseholdRsvp(input, validationContext(hc, actsFor, mode)));
 
 export function namesFor(hc: HouseholdRsvpContext) {
-  const guestName = new Map(hc.guests.map((g) => [g.id, g.displayName]));
+  const guestName = new Map(hc.guests.map((g) => [g.id, guestDisplayName(g)]));
   const eventName = new Map(hc.events.map((e) => [e.id, e.name]));
   const mealLabel = new Map(hc.mealOptions.map((m) => [m.id, m.label]));
   return {

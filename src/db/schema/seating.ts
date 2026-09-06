@@ -1,6 +1,6 @@
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
-import { guests } from './guests.stub';
+import { guests } from './guests';
 
 /** One anchor per table position on a floor plan (SVG user units within `viewBox`). */
 export interface FloorPlanAnchor {

@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { err, ok } from '@/contracts/result';
@@ -71,7 +72,7 @@ export const getMyRsvp = defineCapability<z.infer<typeof input>, MyRsvp>({
       data: {
         window: hc.window,
         household: { id: hc.household?.id ?? p.value.householdId, name: hc.household?.name ?? 'Your household' },
-        guests: hc.guests.map((g) => ({ guestId: g.id, displayName: g.displayName, firstName: g.firstName, isMinor: g.isMinor, isSelf: g.id === p.value.guestId })),
+        guests: hc.guests.map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), firstName: g.firstName, isMinor: g.isMinor, isSelf: g.id === p.value.guestId })),
         events: hc.entitledEvents.map((e) => ({
           ...toEventView(e, hc.mealOptions),
           whenText: formatEventWindow(e.startsAt, e.endsAt, e.timezone),

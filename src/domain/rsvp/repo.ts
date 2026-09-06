@@ -26,7 +26,7 @@ export interface HouseholdRsvpContext {
 
 export async function listGuestsByIds(db: Db, ids: readonly string[]): Promise<GuestRow[]> {
   if (ids.length === 0) return [];
-  return db.select().from(guests).where(inArray(guests.id, [...ids])).orderBy(asc(guests.createdAt), asc(guests.displayName));
+  return db.select().from(guests).where(inArray(guests.id, [...ids])).orderBy(asc(guests.createdAt), asc(guests.lastName), asc(guests.firstName));
 }
 
 export async function listAllGuests(db: Db): Promise<GuestRow[]> {

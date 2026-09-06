@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
@@ -53,7 +54,7 @@ export const adminListEvents = defineCapability<z.infer<typeof listInput>, Admin
         settings: { mode: settings.mode, deadlineAt: settings.deadlineAt?.toISOString() ?? null, note: settings.note },
         venueSpaces: VENUE_SPACES,
         events: evs.map((e) => ({ ...toEventView(e, meals), invitedCount: ents.filter((en) => en.eventId === e.id).length, allVersions: meals.filter((m) => m.eventId === e.id).map((m) => ({ id: m.id, version: m.version, label: m.label })) })),
-        guests: guests.map((g) => ({ guestId: g.id, displayName: g.displayName, householdId: g.householdId, householdName: hh.get(g.householdId) ?? '', isMinor: g.isMinor })),
+        guests: guests.map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), householdId: g.householdId, householdName: hh.get(g.householdId) ?? '', isMinor: g.isMinor })),
         entitlements: ents.map((en) => ({ guestId: en.guestId, eventId: en.eventId, plusOnePolicy: en.plusOnePolicy })),
         notices: notices.map((n) => ({ id: n.id, title: n.title, body: n.body, severity: n.severity, active: n.active, startsAt: n.startsAt?.toISOString() ?? null, endsAt: n.endsAt?.toISOString() ?? null })),
       },

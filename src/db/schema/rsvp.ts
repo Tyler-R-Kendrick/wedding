@@ -1,7 +1,7 @@
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
 import { events, mealOptions } from './events';
-import { guests, households } from './guests.stub';
+import { guests, households } from './guests';
 
 export const RSVP_STATUSES = ['accepted', 'declined'] as const;
 export type RsvpStatus = (typeof RSVP_STATUSES)[number];

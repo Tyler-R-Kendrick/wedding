@@ -1,3 +1,4 @@
+import { guestDisplayName } from '@/domain/guests/repo';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { newId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
@@ -68,7 +69,10 @@ export async function applySeatingImport(
   rows: ReadonlyArray<{ line: number; table: string; seat: number | null; guest: string }>,
   opts: { now: Date; replace: boolean; defaultCapacity: number },
 ): Promise<{ applied: number; createdTables: string[]; unresolved: Array<{ line: number; guest: string }> }> {
-  const allGuests = await db.select({ id: guests.id, displayName: guests.displayName }).from(guests);
+  // `guests` has no display_name column: the printed name is derived (level 06, ADR-0001), and an
+  // unnamed plus-one deliberately has no name to match a planner's CSV against.
+  const guestRows = await db.select({ id: guests.id, firstName: guests.firstName, lastName: guests.lastName, kind: guests.kind, isNamed: guests.isNamed }).from(guests);
+  const allGuests = guestRows.map((g) => ({ id: g.id, displayName: guestDisplayName(g) }));
   const byId = new Map(allGuests.map((g) => [g.id, g]));
   const byName = new Map<string, { id: string; displayName: string }[]>();
   for (const g of allGuests) byName.set(g.displayName.toLowerCase(), [...(byName.get(g.displayName.toLowerCase()) ?? []), g]);
@@ -112,8 +116,8 @@ export async function applySeatingImport(
 export async function draftSnapshot(db: Db): Promise<SeatingSnapshot> {
   const [tables, assignments] = await Promise.all([listTables(db), listAssignments(db)]);
   const ids = assignments.map((a) => a.guestId);
-  const names = ids.length ? await db.select({ id: guests.id, displayName: guests.displayName }).from(guests).where(inArray(guests.id, ids)) : [];
-  return buildSnapshot(tables, assignments, new Map(names.map((n) => [n.id, n.displayName])));
+  const names = ids.length ? await db.select({ id: guests.id, firstName: guests.firstName, lastName: guests.lastName, kind: guests.kind, isNamed: guests.isNamed }).from(guests).where(inArray(guests.id, ids)) : [];
+  return buildSnapshot(tables, assignments, new Map(names.map((n) => [n.id, guestDisplayName(n)])));
 }
 
 /** Freezes the draft into a new live publication (any previous live row is closed first). */
