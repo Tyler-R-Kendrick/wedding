@@ -53,8 +53,14 @@ export type TestPrincipalSpec = z.infer<typeof testPrincipalSchema>;
  * NO e2e or axe coverage at all, while the spec that visits /trip asserted the signed-out state and
  * passed. Production was never affected (`policy/derive.ts` grants it from the real entitlement
  * source); this list is the test-only mirror that had drifted from it.
+ *
+ * `claim_transportation_benefit` (level 09) is here for the same reason and was caught the same
+ * way — the voucher security spec's draft step answered 403 the first time it was ever allowed to
+ * run. A spec that needs a guest WITHOUT an entitlement states that explicitly by passing its own
+ * `entitlements` list, as `tests/security/voucher.spec.ts` does; the default is the permissive one
+ * so that a missing entitlement shows up as a deliberate case rather than as a silent 403.
  */
-export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools'] as const;
+export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools', 'claim_transportation_benefit'] as const;
 export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle'] as const;
 
 export interface TestPrincipalEnv {

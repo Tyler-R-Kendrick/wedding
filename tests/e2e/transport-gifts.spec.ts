@@ -57,7 +57,11 @@ test.describe('transportation', () => {
     await noBlockingAxe(page);
   });
 
-  test('an eligible guest reviews, confirms, and gets an "Open in Uber" handoff card', async ({ page, request, context }) => {
+  test('an eligible guest reviews, confirms, and gets an "Open in Uber" handoff card', async ({ page, request, context }, testInfo) => {
+    // Runs once, on the phone: it is the primary device, and a ride benefit is claimable exactly
+    // once, so three viewports racing for one guest's entitlement makes the two that lose look like
+    // a broken guard. Household A is this spec's; `tests/security/voucher.spec.ts` owns household B.
+    test.skip(testInfo.project.name !== 'mobile', 'the claim journey is a phone journey and claims once');
     const guestId = IDS.A1;
     const householdId = IDS.householdA;
     const assigned = await request.post('/api/capabilities/admin_assign_transportation_entitlement', {
