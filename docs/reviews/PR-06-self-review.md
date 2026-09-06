@@ -29,6 +29,34 @@
 
 Deferred to level 15 with the rest of the security debt: CSP and HSTS headers, and the `client.ipHash` attachment moving into the capability route.
 
+## 1b. CI, and one fix I made and then reverted
+
+The first CI run on this branch failed every end-to-end test. The cause was this level's own doing:
+it makes four variables production-required (so real one-time codes can never reach the in-memory
+dev inbox) and makes the rate limiter load-bearing on the capability route. The CI job ran a
+production server without any of them, so the server refused to boot.
+
+Two findings came out of fixing it.
+
+**The claim journey cannot run against a production build at all.** `/api/dev/inbox` is 404 whenever
+`NODE_ENV=production`, whatever the caller presents — that is security fix S5 working — and the spec
+reads its codes from there. So the job is now split: smoke tests keep running against `next start`
+with the identity variables and `RATE_LIMIT_BACKEND=db`, and the identity journeys run against
+`npm run dev`, where the mock mailer and the dev inbox exist by design. Neither guard was relaxed.
+
+**My first attempt was worse than the problem.** I exempted the mail requirement when
+`FORCE_MOCK_PROVIDERS` was set, guarded that flag against deploy markers, and wrote tests for it.
+Then the production run still failed, because the rate limiter independently refuses production
+whenever that same flag is set. The right answer was simpler: the production step excludes the claim
+journey, so it never needs a mock mailer at all — placeholder mail credentials suffice. I reverted
+the code changes entirely and fixed only the workflow. Worth recording because the reverted version
+would have shipped a real loosening of a security check to solve a configuration problem.
+
+Verified locally against both configurations before pushing: production smoke **172 passed**;
+identity journeys **6 passed** warm, 5 of 6 on a cold dev server, which the route warm-up and
+Playwright's single CI retry absorb. The cold-start flakiness is dev-server compile latency, not a
+product defect: the same run is deterministic once the routes are compiled.
+
 ## 2. Migrations — the part that would have failed silently
 
 Level 05 and level 06 each generated a `0002`. Taking either ledger alone leaves the other's SQL on disk unreferenced while a later migration still runs against tables that were never created.
