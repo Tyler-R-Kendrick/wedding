@@ -7,7 +7,7 @@ import { ID_PATTERN, newId } from '@/contracts/ids';
 import { fieldNames, type RsvpFormState } from '@/components/rsvp/types';
 import { uiContext } from '../_shared/principal';
 
-const RETRY = 'We could not save that just now. Please try again in a moment — and if it keeps happening, reach Sara and Tyler directly (TODO(Tyler & Sara): contact details).';
+const RETRY = 'We could not save that just now. Please try again in a moment — and if it keeps happening, reach Sara and Tyler directly.';
 
 const str = (fd: FormData, key: string): string | null => {
   const v = fd.get(key);

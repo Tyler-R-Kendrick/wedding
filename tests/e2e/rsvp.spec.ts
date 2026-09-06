@@ -105,3 +105,68 @@ test('errors are inline text, summarised, and focused; nothing is saved until co
   await expect(page.locator('#main')).toContainText('Not answered yet');
   await ctx.close();
 });
+
+/**
+ * The guest pages must wear the guest's chosen design.
+ *
+ * They shipped unthemed and nothing caught it: the layout kept a level-03 fallback stylesheet whose
+ * own header said the theme engine supersedes it at merge, so both designs rendered the admin
+ * foundation in Times New Roman and the switcher changed nothing. Every assertion in this file
+ * passed throughout — axe was clean, the journey worked — because none of them looked at what the
+ * page was wearing.
+ */
+test.describe('the guest surfaces are themed', () => {
+  for (const route of ['/rsvp', '/your-weekend']) {
+    test(`${route} carries the requested theme and renders it differently per design`, async ({ browser }) => {
+      const ctx = await contextAs(browser, 'A1');
+      const page = await ctx.newPage();
+      const seen: Record<string, string> = {};
+      for (const theme of ['gilded-hour', 'conservatory']) {
+        await page.goto(`${route}?theme=${theme}`);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        // The heading resolves to a real, theme-specific face — not the browser's serif default.
+        const font = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
+        expect(font, `${route} @ ${theme} fell back to a default face`).not.toMatch(/^(Times|serif|-apple-system)/i);
+        seen[theme] = font;
+      }
+      expect(seen['gilded-hour'], 'both designs resolved to the same heading face').not.toBe(seen['conservatory']);
+      await ctx.close();
+    });
+  }
+
+  test('the authoring marker never reaches a guest', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    for (const route of ['/rsvp', '/your-weekend']) {
+      await page.goto(route);
+      // The editorial treatment ("Sara + Tyler are still writing this") is intended; the raw
+      // `TODO(Tyler & Sara)` syntax is an authoring detail and reads as a bug on the page.
+      await expect(page.locator('body')).not.toContainText('TODO(');
+    }
+    await ctx.close();
+  });
+});
+
+test.describe('a closed RSVP window', () => {
+  test.afterAll(async ({ request }) => {
+    const open = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'open', deadlineAt: null }, { idempotencyKey: key() });
+    expect(open.status, JSON.stringify(open.body)).toBe(200);
+  });
+
+  test('shows the answers on file read-only instead of a form nobody can submit', async ({ browser, request }) => {
+    const closed = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'closed', deadlineAt: null }, { idempotencyKey: key() });
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    await page.goto('/rsvp');
+    await expect(page.locator('#main')).toContainText('RSVPs are closed');
+    // The point of the fix: no editable controls at all, so nobody answers for three people and
+    // only discovers at the bottom that the submit button is dead (and disabled buttons are not
+    // focusable, so a keyboard user was told nothing).
+    await expect(page.locator('#main input, #main select, #main textarea')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Review your answers' })).toHaveCount(0);
+    await axeClean(page);
+    await ctx.close();
+  });
+});

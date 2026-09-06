@@ -63,3 +63,6 @@ __pycache__/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+
+# Design-review screenshots are regenerable evidence, not source (plan: "screenshot artifacts, not committed").
+docs/design/critiques/screens/

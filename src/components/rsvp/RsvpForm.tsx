@@ -1,5 +1,6 @@
 'use client';
 
+import { Placeholder } from '@/components/provenance/Placeholder';
 import { useActionState, useEffect } from 'react';
 import type { MyRsvp } from '@/capabilities/rsvp';
 import { formatDeadline } from '@/domain/events/format';
@@ -31,6 +32,12 @@ export function RsvpForm({ data, action, idempotencyKey }: RsvpFormProps) {
   if (state.stage === 'done') return <RsvpConfirmation result={state.result} />;
   if (state.stage === 'review') return <RsvpReview state={state} formAction={formAction} pending={pending} />;
 
+  // A closed window is answered before the guest spends any effort, not after. Leaving 23 editable
+  // fields behind a disabled submit button let someone answer for a whole household and only find
+  // out at the bottom — and a disabled button is not focusable, so a keyboard or screen-reader user
+  // reached the end and was told nothing at all.
+  if (!data.window.open) return <RsvpClosed data={data} />;
+
   const values = state.values;
   const existing = (g: string, e: string) => data.responses.find((r) => r.guestId === g && r.eventId === e);
   const valued = (g: string, e: string) => values?.responses.find((r) => r.guestId === g && r.eventId === e);
@@ -41,11 +48,6 @@ export function RsvpForm({ data, action, idempotencyKey }: RsvpFormProps) {
     <form action={formAction} noValidate>
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <ErrorSummary errors={errorList} />
-      {!data.window.open ? (
-        <Notice tone="info" title="RSVPs are closed">
-          <p>If something has changed, reach Sara and Tyler and they will update it for you. TODO(Tyler &amp; Sara): contact details.</p>
-        </Notice>
-      ) : null}
       {data.events.map((event) => (
         <section key={event.id} className="sec" aria-labelledby={`ev-${event.id}`}>
           <h2 className="sec__title" id={`ev-${event.id}`}>
@@ -150,10 +152,10 @@ export function RsvpForm({ data, action, idempotencyKey }: RsvpFormProps) {
       </section>
 
       <p className="card__meta">
-        {data.window.deadlineAt ? `Please answer by ${formatDeadline(data.window.deadlineAt)}. You can change your answers until then.` : 'You can change your answers any time while RSVPs are open. Deadline TODO(Tyler & Sara).'}
+        {data.window.deadlineAt ? `Please answer by ${formatDeadline(data.window.deadlineAt)}. You can change your answers until then.` : 'You can change your answers any time while RSVPs are open.'}
       </p>
       <div className="actions">
-        <Button type="submit" name="intent" value="draft" pending={pending} disabled={!data.window.open}>
+        <Button type="submit" name="intent" value="draft" pending={pending}>
           Review your answers
         </Button>
       </div>
@@ -165,3 +167,52 @@ export function RsvpForm({ data, action, idempotencyKey }: RsvpFormProps) {
 export function cssId(name: string): string {
   return name.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
+
+/**
+ * What a guest sees once RSVPs close: the answers already on file, read-only, and who to ask if
+ * something has changed. No form controls at all — nothing here can be edited, so nothing here
+ * pretends to be editable.
+ */
+function RsvpClosed({ data }: { data: MyRsvp }) {
+  const guestById = new Map(data.guests.map((g) => [g.guestId, g]));
+  const answered = data.responses.length > 0;
+  return (
+    <>
+      <Notice tone="info" title="RSVPs are closed">
+        <p>
+          Thank you — the guest list has gone to the venue. If something has changed, reach Sara and Tyler and they will update it for you.{' '}
+          <Placeholder inline>their contact details.</Placeholder>
+        </p>
+      </Notice>
+      {answered ? (
+        data.events.map((event) => {
+          const rows = data.responses.filter((r) => r.eventId === event.id);
+          if (!rows.length) return null;
+          return (
+            <section key={event.id} className="sec" aria-labelledby={`closed-${event.id}`}>
+              <h2 className="sec__title" id={`closed-${event.id}`}>
+                {event.name}
+              </h2>
+              <p className="card__meta">
+                {event.dateText} · {event.whenText}
+              </p>
+              <ul className="list list--plain">
+                {rows.map((r) => (
+                  <li key={`${r.guestId}-${r.eventId}`}>
+                    <strong>{guestById.get(r.guestId)?.displayName ?? 'Guest'}</strong>: {STATUS_TEXT[r.status]}
+                    {r.mealLabel ? ` · ${r.mealLabel}` : ''}
+                    {r.plusOne?.attending ? ` · with ${r.plusOne.name ?? 'a guest'}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
+      ) : (
+        <p>We have no answer on file for your household.</p>
+      )}
+    </>
+  );
+}
+
+const STATUS_TEXT: Record<string, string> = { accepted: 'coming', declined: 'not coming', pending: 'no answer yet' };

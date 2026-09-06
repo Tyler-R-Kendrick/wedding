@@ -1,9 +1,14 @@
 /*
- * Recipe styles for Swarm E surfaces (RSVP, Your Weekend, admin events/RSVP/seating).
- * Token-only: every colour, size and font comes from the DESIGN.md custom properties
- * (src/components/tokens/foundation.css now; the theme engine's theme.css at merge).
+ * Guest surfaces (RSVP, Your Weekend).
+ *
+ * Fonts come from the theme's ROLE tokens — `--font-display` / `--font-text` / `--font-accent` —
+ * which each theme defines with a full fallback stack. The level-03 names (`--font-h1`,
+ * `--font-label-caps`, `--font-numeral`) are declared only by `components/tokens/foundation.css`,
+ * the admin fallback: under the theme engine `--font-h1` stays "Cinzel" whatever `[data-theme]`
+ * says, and it carries no fallback stack, so these pages rendered Gilded Hour's face under both
+ * designs and Times New Roman whenever it had not loaded. Colours already resolve per theme —
+ * every `--color-*` name below is defined in both `theme.css` files.
  */
-
 .page {
   max-width: 72ch;
   margin: 0 auto;
@@ -19,7 +24,7 @@
 
 .page__eyebrow {
   margin: 0 0 var(--spacing-xs);
-  font-family: var(--font-label-caps, inherit);
+  font-family: var(--font-text, inherit);
   font-size: var(--text-label-caps, 0.75rem);
   letter-spacing: var(--tracking-label-caps, 0.14em);
   text-transform: uppercase;
@@ -28,7 +33,7 @@
 
 .page__title {
   margin: 0 0 var(--spacing-md);
-  font-family: var(--font-h1, inherit);
+  font-family: var(--font-display, inherit);
   font-size: var(--text-h1, 2.25rem);
   font-weight: var(--font-weight-h1, 400);
   line-height: 1.1;
@@ -48,14 +53,14 @@
 
 .sec__title {
   margin: 0 0 var(--spacing-sm);
-  font-family: var(--font-h2, inherit);
+  font-family: var(--font-display, inherit);
   font-size: var(--text-h2, 1.625rem);
   font-weight: var(--font-weight-h2, 400);
   line-height: 1.2;
 }
 
 .sec__title--sm {
-  font-family: var(--font-h3, inherit);
+  font-family: var(--font-display, inherit);
   font-size: var(--text-h3, 1.25rem);
 }
 
@@ -69,7 +74,7 @@
 
 .card__title {
   margin: 0 0 var(--spacing-xs);
-  font-family: var(--font-h3, inherit);
+  font-family: var(--font-display, inherit);
   font-size: var(--text-h3, 1.25rem);
   font-weight: var(--font-weight-h3, 500);
 }
@@ -108,7 +113,7 @@
 
 .fld__hint {
   margin: 0 0 var(--spacing-xs);
-  font-size: var(--text-body-sm, 0.9375rem);
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
   color: var(--color-on-surface-muted);
 }
 
@@ -178,8 +183,8 @@
   justify-content: center;
   min-height: 48px;
   padding: 12px 28px;
-  font-family: var(--font-label-caps, inherit);
-  font-size: max(15px, var(--text-label-caps, 0.75rem));
+  font-family: var(--font-text, inherit);
+  font-size: max(17px, var(--text-label-caps, 0.75rem));
   font-weight: 600;
   letter-spacing: var(--tracking-label-caps, 0.1em);
   text-transform: uppercase;
@@ -228,7 +233,7 @@
 
 .errsum__title {
   margin: 0 0 var(--spacing-xs);
-  font-family: var(--font-h3, inherit);
+  font-family: var(--font-display, inherit);
   font-size: var(--text-h3, 1.25rem);
   color: var(--color-error);
 }
@@ -285,7 +290,7 @@ a:focus-visible,
 .badge {
   display: inline-block;
   padding: 2px 10px;
-  font-size: var(--text-body-sm, 0.9375rem);
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
   border: 1px solid var(--color-outline);
   border-radius: var(--radius-pill, 999px);
   background: var(--color-surface);
@@ -336,7 +341,7 @@ a:focus-visible,
 .tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-body-sm, 0.9375rem);
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
 }
 
 .tbl th,
@@ -348,7 +353,7 @@ a:focus-visible,
 }
 
 .tbl th {
-  font-family: var(--font-label-caps, inherit);
+  font-family: var(--font-text, inherit);
   font-size: var(--text-label-caps, 0.75rem);
   letter-spacing: var(--tracking-label-caps, 0.1em);
   text-transform: uppercase;
@@ -377,13 +382,13 @@ a:focus-visible,
 
 .stat__value {
   display: block;
-  font-family: var(--font-numeral, inherit);
+  font-family: var(--font-accent, inherit);
   font-size: var(--text-numeral, 2.5rem);
   line-height: 1;
 }
 
 .stat__label {
-  font-size: var(--text-body-sm, 0.9375rem);
+  font-size: max(17px, var(--text-body-md, 1.0625rem));
   color: var(--color-on-surface-muted);
 }
 

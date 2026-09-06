@@ -17,7 +17,7 @@ export function formatEventTime(at: Date | string | null | undefined, timezone: 
 export function formatEventWindow(startsAt: Date | string | null | undefined, endsAt: Date | string | null | undefined, timezone: string): string {
   const start = formatEventTime(startsAt, timezone);
   const end = formatEventTime(endsAt, timezone);
-  if (!start) return 'Time to be confirmed — TODO(Tyler & Sara)';
+  if (!start) return 'Time to be confirmed';
   return end ? `${start} – ${end}` : start;
 }
 

@@ -36,7 +36,7 @@ const PLACEHOLDERS: Record<WeekendSlotKind, Extract<WeekendSlot, { status: 'plac
     status: 'placeholder',
     placeholder: true,
     title: 'Getting there and home',
-    body: 'Ride and valet details will appear here once they are set. TODO(Tyler & Sara)',
+    body: 'Ride and valet details will appear here once they are set.',
     owner: 'swarm-G',
   },
   trip: {
@@ -44,7 +44,7 @@ const PLACEHOLDERS: Record<WeekendSlotKind, Extract<WeekendSlot, { status: 'plac
     status: 'placeholder',
     placeholder: true,
     title: 'Your trip',
-    body: 'Flights, hotel, and free-time ideas will appear here once travel tools are live. TODO(Tyler & Sara)',
+    body: 'Flights, hotel, and free-time ideas will appear here once travel tools are live.',
     owner: 'swarm-F',
   },
 };

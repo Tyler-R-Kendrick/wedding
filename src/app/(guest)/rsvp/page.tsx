@@ -24,11 +24,10 @@ export default async function RsvpPage() {
   const self = data.guests.find((g) => g.isSelf);
   return (
     <main id="main" className="page">
-      <p className="page__eyebrow">RSVP</p>
       <h1 className="page__title">{data.guests.length > 1 ? `${data.household.name}, will you join us?` : `${self?.firstName ?? 'Hello'}, will you join us?`}</h1>
       <p className="page__lede">
         Saturday, July 17, 2027, at the Chicago Athletic Association Hotel.{' '}
-        {data.window.deadlineAt ? `Please answer by ${formatDeadline(data.window.deadlineAt)}.` : 'Deadline TODO(Tyler & Sara).'}
+        {data.window.deadlineAt ? `Please answer by ${formatDeadline(data.window.deadlineAt)}.` : 'You can change your answers any time while RSVPs are open.'}
       </p>
       <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} />
     </main>

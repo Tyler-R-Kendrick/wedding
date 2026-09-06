@@ -1,26 +1,52 @@
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import '@/components/tokens/foundation.css';
+import { preload } from 'react-dom';
+import { Placeholder } from '@/components/provenance/Placeholder';
+import { getThemeMeta } from '@/themes/registry';
+import { getRequestTheme } from '@/themes/server';
 import '@/components/rsvp/recipes.css';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateViewport(): Promise<Viewport> {
+  return { width: 'device-width', initialScale: 1, themeColor: getThemeMeta(await getRequestTheme()).themeColor };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const meta = getThemeMeta(await getRequestTheme());
+  return { icons: { icon: [{ url: meta.icon.svg, type: 'image/svg+xml' }], apple: [{ url: meta.icon.apple, sizes: '180x180' }] } };
+}
+
 /**
  * Guest surfaces (Your Weekend, RSVP). Personalized: never cached (force-dynamic => no-store).
- * The shell below is a minimal landmark scaffold; Swarm B's theme Shell/Nav replace it at merge.
+ *
+ * These pages wear the guest's chosen design, exactly as the public tree does: both themes' token
+ * blocks already ship in `globals.css` scoped by `[data-theme]`, so setting that attribute here is
+ * what makes `recipes.css` resolve its `var(--color-*)` and `var(--font-*)` against the theme.
+ *
+ * This file previously imported `@/components/tokens/foundation.css` instead. That file describes
+ * itself as a level-03 fallback which "the theme engine … supersedes at merge", and DESIGN.md scopes
+ * it to admin screens, the dev inbox, error pages, e-mail and print. Left imported it redefined the
+ * same token names at `:root` with faces that have no `@font-face` on these routes, so the two most
+ * important guest pages rendered entirely in Times New Roman and the design switcher changed nothing
+ * about them.
  */
-export default function GuestLayout({ children }: { children: ReactNode }) {
+export default async function GuestLayout({ children }: { children: ReactNode }) {
+  const theme = await getRequestTheme();
+  for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return (
     <>
-      <a className="skip" href="#main">
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
+      <a className="wp-skip" href="#main">
         Skip to content
       </a>
-      <header className="page" style={{ paddingBottom: 0 }}>
+      <header className="wp-header">
+        <p className="wp-brand">
+          <Link href="/">Sara + Tyler</Link>
+        </p>
         <nav aria-label="Primary">
-          <ul className="list list--plain" style={{ display: 'flex', gap: 'var(--spacing-lg)', margin: 0 }}>
-            <li>
-              <Link href="/">Sara + Tyler</Link>
-            </li>
+          <ul className="wp-nav">
             <li>
               <Link href="/your-weekend">Your Weekend</Link>
             </li>
@@ -31,8 +57,12 @@ export default function GuestLayout({ children }: { children: ReactNode }) {
         </nav>
       </header>
       {children}
-      <footer className="page" style={{ paddingTop: 0 }}>
-        <p className="card__meta">Sara + Tyler, Saturday, July 17, 2027, Chicago. Questions? TODO(Tyler &amp; Sara): contact details.</p>
+      <footer className="wp-footer">
+        <p>Sara + Tyler · Saturday, July 17, 2027 · Chicago</p>
+        {/* The shared Placeholder names who is still writing, so a gap reads as editorial rather than
+            as a bug with `TODO(...)` printed on it. The marker belongs in the content record (content
+            backlog), never in what a guest reads. */}
+        <Placeholder inline>how to reach us with a question.</Placeholder>
       </footer>
     </>
   );

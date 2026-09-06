@@ -1,3 +1,4 @@
+import { Placeholder } from '@/components/provenance/Placeholder';
 import Link from 'next/link';
 import type { MyItinerary } from '@/capabilities/rsvp';
 import { highlightIdFor } from '@/capabilities/seating/show_my_table_on_floorplan';
@@ -11,7 +12,6 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
   const table = data.seating.table;
   return (
     <main id="main" className="page">
-      <p className="page__eyebrow">Your Weekend</p>
       <h1 className="page__title">Your weekend, {data.greeting.firstName}</h1>
       <p className="page__lede">Saturday, July 17, 2027 · Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
 
@@ -35,7 +35,7 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
             </Link>
           </p>
         ) : (
-          <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. TODO(Tyler &amp; Sara): contact details.</p>
+          <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details.</Placeholder></p>
         )}
         {data.rsvp.window.deadlineAt ? <p className="card__meta">Deadline: {formatDeadline(data.rsvp.window.deadlineAt)}.</p> : null}
       </section>
@@ -52,9 +52,9 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
                 {e.dateText} · {e.whenText}
               </p>
               <p className="card__meta">
-                Where: {e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : <span className="placeholder">room to be confirmed — TODO(Tyler &amp; Sara)</span>}
+                Where: {e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : <Placeholder inline>the room is still to be confirmed.</Placeholder>}
                 {' · '}
-                Dress: {e.dressCode ?? <span className="placeholder">to be confirmed — TODO(Tyler &amp; Sara)</span>}
+                Dress: {e.dressCode ?? <Placeholder inline>still to be confirmed.</Placeholder>}
               </p>
               {e.accessibilityNote ? <p>{e.accessibilityNote}</p> : null}
               <ul className="list list--plain">
@@ -118,7 +118,7 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
                   ))}
                 </ul>
               ) : (
-                <p className={slot.status === 'placeholder' ? 'placeholder' : 'card__meta'}>{slot.body}</p>
+                slot.status === 'placeholder' ? <Placeholder>{slot.body}</Placeholder> : <p className="card__meta">{slot.body}</p>
               )}
             </div>
           ))}
