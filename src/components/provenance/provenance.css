@@ -1,0 +1,114 @@
+/*
+ * Provenance UI (ADR-0011): source badges, freshness badges, and typed placeholder blocks.
+ * Tokens only. Every color falls back to a variable the foundation already defines.
+ *
+ * These rules are unlayered, so they outrank anything a theme puts in layer(components). The two
+ * inks a theme may need to repaint (the placeholder annotation and the external-source badge) are
+ * therefore exposed as slots: a theme sets `--prov-note-ink` / `--prov-external-ink|line` on its
+ * root and the value flows in by inheritance instead of by a losing override.
+ */
+.prov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+  margin: var(--spacing-sm, 8px) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.prov__badge {
+  display: inline-flex;
+  gap: var(--spacing-xs, 4px);
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--color-outline, var(--color-primary));
+  border-radius: var(--rounded-sm, 2px);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.prov__badge--ok {
+  border-color: var(--color-secondary, var(--color-primary));
+  color: var(--color-secondary, var(--color-primary));
+}
+
+.prov__badge--warn {
+  border-color: var(--prov-external-line, var(--color-tertiary, var(--color-primary)));
+  color: var(--prov-external-ink, var(--color-tertiary, var(--color-primary)));
+}
+
+.prov__badge--bad {
+  border-color: var(--color-error, var(--color-primary));
+  color: var(--color-error, var(--color-primary));
+}
+
+.prov__badge--muted {
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.prov__caveat {
+  flex-basis: 100%;
+}
+
+.prov a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.placeholder {
+  display: block;
+  margin: var(--spacing-md, 16px) 0;
+  padding: var(--spacing-md, 16px);
+  border: 1px dashed var(--color-tertiary, var(--color-primary));
+  background: var(--color-neutral-variant, var(--color-neutral));
+  color: var(--color-on-surface, var(--color-primary));
+}
+
+/*
+ * The stamp names who is writing, at body size and in sentence case: a gap must read as editorial.
+ * It is the accessible name too — there is no aria-hidden duplicate.
+ */
+.placeholder__label {
+  display: block;
+  margin-bottom: var(--spacing-xs, 4px);
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  font-weight: 500;
+  color: var(--prov-note-ink, var(--color-tertiary, var(--color-primary)));
+}
+
+/*
+ * No italic here: `font-synthesis: none` is set on body and neither design ships an italic text
+ * face, so `font-style: italic` rendered upright and the rule was dead. The box and the stamp
+ * already say "this is a note".
+ */
+.placeholder__hint {
+  margin: 0;
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  max-width: 68ch;
+}
+
+.placeholder--inline {
+  display: inline-block;
+  margin: 0;
+
+  /* the stamp is body-sized now, so the box needs real inset above and below its first line */
+  padding: 6px 10px;
+  line-height: var(--type-body-sm-line, 1.55);
+}
+
+.placeholder--inline .placeholder__label {
+  display: inline;
+  margin: 0 var(--spacing-xs, 4px) 0 0;
+}
+
+.placeholder--inline .placeholder__hint {
+  display: inline;
+}

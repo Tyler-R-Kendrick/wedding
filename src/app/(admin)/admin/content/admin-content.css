@@ -1,0 +1,192 @@
+/*
+ * Admin content editors (swarm C). Uses the shared foundation tokens (root DESIGN.md), not the
+ * guest themes. Token-only; every value falls back to a foundation variable.
+ */
+.ac-main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--spacing-xl, 40px) var(--spacing-md, 16px) var(--spacing-3xl, 96px);
+}
+
+.ac-main h1 {
+  margin: 0 0 var(--spacing-md, 16px);
+  font-size: 2.25rem;
+  font-weight: 400;
+}
+
+.ac-main h2 {
+  margin: var(--spacing-xl, 40px) 0 var(--spacing-md, 16px);
+  font-size: 1.625rem;
+  font-weight: 400;
+}
+
+.ac-crumbs {
+  margin: 0 0 var(--spacing-lg, 24px);
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+.ac-crumbs li {
+  display: inline;
+}
+
+.ac-crumbs li + li::before {
+  content: " / ";
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.ac-main a {
+  color: var(--color-tertiary, var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.ac-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ac-table th,
+.ac-table td {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px) var(--spacing-sm, 8px) 0;
+  border-bottom: 1px solid var(--color-outline, var(--color-primary));
+  text-align: left;
+  vertical-align: top;
+}
+
+.ac-table th {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ac-scroll {
+  overflow-x: auto;
+}
+
+.ac-warn {
+  margin: var(--spacing-md, 16px) 0;
+  padding: var(--spacing-md, 16px);
+  border: 1px solid var(--color-error, var(--color-primary));
+  background: var(--color-neutral-variant, var(--color-neutral));
+}
+
+.ac-ok {
+  margin: var(--spacing-md, 16px) 0;
+  padding: var(--spacing-md, 16px);
+  border: 1px solid var(--color-secondary, var(--color-primary));
+  background: var(--color-surface, var(--color-neutral));
+}
+
+.ac-form {
+  display: grid;
+  gap: var(--spacing-md, 16px);
+  max-width: 48rem;
+}
+
+.ac-field {
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+}
+
+.ac-field label {
+  font-weight: 500;
+}
+
+.ac-field input,
+.ac-field select,
+.ac-field textarea {
+  min-height: 44px;
+  padding: var(--spacing-sm, 8px);
+  border: 1px solid var(--color-outline, var(--color-primary));
+  background: var(--color-surface, var(--color-neutral));
+  color: inherit;
+  font: inherit;
+  font-size: 1.0625rem;
+}
+
+.ac-field textarea {
+  min-height: 7rem;
+  font-family: var(--font-mono, monospace);
+}
+
+.ac-field [aria-invalid="true"] {
+  border-color: var(--color-error, var(--color-primary));
+}
+
+.ac-help {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.ac-error {
+  margin: 0;
+  color: var(--color-error, var(--color-primary));
+}
+
+.ac-check {
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+  min-height: 44px;
+}
+
+.ac-check input {
+  width: 24px;
+  height: 24px;
+}
+
+.ac-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+}
+
+.ac-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-lg, 24px);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary, var(--color-neutral));
+  font: inherit;
+  cursor: pointer;
+}
+
+.ac-button--ghost {
+  background: var(--color-surface, var(--color-neutral));
+  color: var(--color-primary);
+}
+
+.ac-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--color-outline, var(--color-primary));
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ac-badge--bad {
+  border-color: var(--color-error, var(--color-primary));
+  color: var(--color-error, var(--color-primary));
+}
+
+.ac-badge--warn {
+  border-color: var(--color-tertiary, var(--color-primary));
+  color: var(--color-tertiary, var(--color-primary));
+}
+
+.ac-badge--ok {
+  border-color: var(--color-secondary, var(--color-primary));
+  color: var(--color-secondary, var(--color-primary));
+}
+
+.ac-muted {
+  color: var(--color-on-surface-muted, var(--color-primary));
+}

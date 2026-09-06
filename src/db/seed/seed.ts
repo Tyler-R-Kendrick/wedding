@@ -3,6 +3,7 @@ import { READINESS_GATED } from '@/contracts/flags';
 import { WEDDING_DATE_ISO, WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import type { Db } from '../client';
 import { contentSources, featureFlags, lifecycleState, siteSettings } from '../schema';
+import { seedContent } from './content';
 import { BRIEF_SOURCE_ID, SEED_SITE_ID, SEED_SOURCES } from './sources';
 
 /** Facts from docs/design/brief.md section 2. Anything else is a TODO(Tyler & Sara), never invented. */
@@ -60,6 +61,9 @@ export async function seed(db: Db): Promise<void> {
       .values({ name: flag, readiness: false, updatedBy: { kind: 'system', component: 'seed' }, updatedAt: now })
       .onConflictDoNothing();
   }
+
+  // Story, adventures, recommendations, venue docent, operational fields, FAQ, and the AI corpus (swarm C).
+  await seedContent(db, now);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

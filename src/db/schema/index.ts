@@ -8,5 +8,6 @@ export * from './audit';
 export * from './jobs';
 export * from './metrics';
 export * from './content';
+export * from './knowledge';
 export * from './idempotency';
 export * from './rateLimits';

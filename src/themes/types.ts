@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import type { LifecycleState } from '@/contracts/lifecycle';
+import type { ContentKit, ContentRecipes } from './content-types';
 
 /**
  * Theme engine contracts (ADR-0009). One domain, two themes: routes, data, capabilities and
@@ -493,6 +494,8 @@ export interface ThemeComponentKit {
   Placeholder: (p: PlaceholderProps) => ReactNode;
   /** Renders Copy (strings + placeholders). */
   Text: (p: { copy: Copy }) => ReactNode;
+  /** Level-05 content primitives (story timeline, memory card, docent list, room frame, outlet list, prose block, ...). */
+  content: ContentKit;
 }
 
 export type PageRecipe<D> = (data: D) => ReactNode;
@@ -510,4 +513,6 @@ export interface ThemeRecipes {
 export interface ThemeDefinition extends ThemeMeta {
   kit: ThemeComponentKit;
   recipes: ThemeRecipes;
+  /** Content-page recipes (Our Story … Ask Us), dispatched per request by `src/app/(public)/_recipes`. */
+  content: ContentRecipes;
 }

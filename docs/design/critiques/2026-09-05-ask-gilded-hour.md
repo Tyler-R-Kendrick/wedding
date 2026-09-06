@@ -1,0 +1,43 @@
+# Design critique — `/ask-us` (Ask Us) — Gilded Hour — 2026-09-05
+
+| Field | Value |
+|---|---|
+| Target | `/ask-us` rendered through `theme.content.ask` |
+| Design | Gilded Hour (`?theme=gilded-hour`) |
+| Viewports | 390×844, 768×1024, 1440×900 |
+| Scores of record | **Independent review, 2026-09-06**, `.data/review/findings.md` @ `b00f063`. The swarm's own numbers are withdrawn: they scored the two designs within 0.2 of each other on every page, which the review identified as the largest single error in the eighteen self-critiques. |
+| Status | Blockers fixed in `dc6045b`; **awaiting independent re-review** — the scores below are the pre-fix baseline, not a claim about the current state |
+| Pipeline | live `impeccable detect`, axe-core WCAG 2.2 AA ×3 widths, `tests/e2e/content-themes.spec.ts`, phone-fold measurement, `npm run verify` |
+
+## Scores of record (independent, pre-fix)
+
+| Axis | Weight | Score (1–10) |
+|---|---|---|
+| Design | 40 | 6 |
+| Usability | 30 | 6 |
+| Creativity | 20 | 6 |
+| Content | 10 | 7 |
+
+**Weighted: 6.1 / 10 — FIX FIRST.** Ship threshold: every axis ≥ 7 with Usability ≥ 8.
+No page on this level met it before the fixes; none of these numbers has been re-scored.
+
+## What changed since that review
+
+- **BL-1** — 7 ticket references (`C-01`, `C-05`, `P-01`, `P-02`, `P-03`, `X-01`, `X-04`); **0** remain.
+- **SF-5** — form labels were 13.81 px uppercase at 0.18 em against PRODUCT.md's 17 px floor. They are now **18.06 px** sentence case; grandparents are a primary audience and the accessibility floor beats the theme token.
+- **SF-4** — the eight “See … →” links were 177×19; standalone links are now 44 px.
+- **SF-3** — the elevator panel is emitted after `</main>`, so this page reaches its first content control in **3** chrome tab stops instead of **7**.
+
+## Verified after the fixes (measured, not asserted)
+
+- `npm run verify`: exit 0 (typecheck, eslint, unit+ui, stylelint, `design:lint` 0 errors ×3, `design:sync:check`, source detector, integration, build)
+- `BASE_URL=http://localhost:3105 npx playwright test tests/e2e tests/a11y.spec.ts` on `next start`: **202 passed**, 0 failed
+- `IMPECCABLE_BROWSER=… npx impeccable detect "http://localhost:3105/ask-us?theme=gilded-hour"`: **exit 0** (all 20 URLs including Home)
+- axe-core WCAG 2.2 AA at 390 / 768 / 1440: **0 serious or critical** — the review's 54 clean scans are not regressed
+- Blocker probes: `.data/level05-fix/blockers.mjs`, `.data/level05-fix/shouldfix.mjs`
+
+## Still open
+
+- Content. The couple's backlog (C-01, C-02, C-07, P-01, P-02) gates the Content axis on this page;
+  every gap renders as a visibly attributed placeholder and nothing is invented.
+- The independent re-review. These scores stand until someone other than the author re-runs them.

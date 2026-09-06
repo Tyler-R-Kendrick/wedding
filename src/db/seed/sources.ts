@@ -92,6 +92,15 @@ export const SEED_SOURCES: readonly SeedSource[] = [
     trustClass: 'TRUSTED_WEDDING',
     notes: 'Hair and makeup services and previews.',
   },
+  {
+    id: seedId<ContentSourceId>(108),
+    sourceType: 'official-web',
+    title: 'Illinois DNR: Starved Rock State Park',
+    canonicalUrl: 'https://dnr.illinois.gov/parks/park.starvedrock.html',
+    verifiedAt: '2026-09-05T13:30:00.000Z',
+    trustClass: 'EXTERNAL_DATA',
+    notes: 'Official state page for the park where the couple first said "I love you" (trail, date, wording unknown). Link-checked 2026-09-05 (HTTP 200).',
+  },
 ];
 
 export const BRIEF_SOURCE_ID = SEED_SOURCES[0]!.id;

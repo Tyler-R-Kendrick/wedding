@@ -1,0 +1,122 @@
+[
+  {
+    "slug": "how-we-met",
+    "chapter": "met",
+    "order": 1,
+    "title": "How we met",
+    "paragraphs": [
+      "We met at Allison and Jamie's wedding.",
+      "Flirty glances across the room, and an immediate connection.",
+      "TODO(Tyler & Sara): the rest of the story — who noticed whom first, what was said, and what happened after the last dance."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "the-connection",
+    "chapter": "connection",
+    "order": 2,
+    "title": "The connection",
+    "paragraphs": [
+      "Best friendship. Peace. Becoming better together.",
+      "Those are Tyler's words for what this is, and they are the seed of everything on this page.",
+      "TODO(Tyler & Sara): the story of how the connection became a relationship, in your own words."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "our-life-together",
+    "chapter": "relationship",
+    "order": 3,
+    "title": "Our life together",
+    "paragraphs": [
+      "The places that shaped us: the Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, the Madison waterfront, and Starved Rock.",
+      "You can wander through them on Our Adventures, and borrow a few for your own weekend on Share an Adventure.",
+      "TODO(Tyler & Sara): which adventures to tell in full, and the photos to go with them."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "love",
+    "chapter": "love",
+    "order": 4,
+    "title": "Love",
+    "paragraphs": [
+      "We said \"I love you\" for the first time at Starved Rock.",
+      "TODO(Tyler & Sara): which trail, what day, and who said it first are yours to tell."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "greater-together",
+    "chapter": "future",
+    "order": 5,
+    "title": "Greater together than alone",
+    "paragraphs": [
+      "Mutual support. Being each other's rock. Home. Gratitude. A deliberate partnership.",
+      "TODO(Tyler & Sara): what the next chapter looks like, in your words."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "the-proposal",
+    "chapter": "engagement",
+    "order": 6,
+    "title": "The proposal",
+    "paragraphs": [
+      "TODO(Tyler & Sara): the engagement story and photos (content backlog C-07)."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "what-marriage-means",
+    "chapter": "marriage",
+    "order": 7,
+    "title": "What marriage means to us",
+    "paragraphs": [
+      "TODO(Tyler & Sara): what marriage means to you, and what you hope this weekend is for the people you love."
+    ],
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  }
+]

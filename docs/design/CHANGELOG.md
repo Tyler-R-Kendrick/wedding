@@ -55,6 +55,79 @@ files lands with the theme DESIGN.md files (Stage 3).
 - Procedural art: 11 SVGs per theme under `public/assets/art/<theme>/`.
 - Licensed placeholder photography: 4 Wikimedia Commons files with ledger.
 
+## 2026-09-06 — Level 05 review round 1: six blockers fixed
+
+Independent review (`.data/review/findings.md` @ `b00f063`, 54 axe scans, 18
+detector runs, computed-contrast sampling, keyboard walks, scroll-occlusion
+sweep) failed the level: no page reached Usability ≥ 7.5, and Conservatory was
+the stronger implementation on 8 of 9 pages. The swarm's own critiques scored
+the two designs within 0.2 of each other on every page; those numbers are
+withdrawn and the independent scores are the baseline.
+
+- **Ticket references never reach a guest.** `guestText()` scrubs
+  "(backlog C-01)" / "(content backlog C-07)" / bare "backlog P-02" as copy
+  becomes a view. 24 visible instances → 0 across all 18 page/design combinations.
+- **One reservation mechanism for fixed bottom chrome.** `data-bottom-bar` (a
+  full-width bar) and `data-floating-menu` (a floating control) each reserve
+  their height in `base.css` and add. Conservatory reserved 0 px for its opaque
+  Menu tag and now reserves 89.25 px against 60 px of chrome.
+- **The 22,600 px guide is navigable.** Categories sit one heading level above
+  their places, carry their count so no two headings share a name, and both
+  designs open with a jump list reaching every group.
+- **The external affordance left the heading.** An outlet's `<h3>` is its name;
+  the link is its own 44 px control naming its destination. 13 polluted heading
+  names → 0.
+- **Gilded Hour honours its own DESIGN.md**: body copy is left-aligned inside
+  the centred column, and sentences (outlet names, itinerary titles, external
+  handoffs) are set as sentences.
+- **The phone fold carries content, not ornament.** The act apparatus is sized
+  for a phone (44 px plaque, one rule per act, tighter rhythm); The Wedding
+  lifts "What to wear" above the numbered spine.
+- Also: the placeholder stamp names who is writing, visibly, at 18 px, and that
+  text is its accessible name; the dead `font-style: italic` is gone and
+  Conservatory's DESIGN.md no longer claims Spectral ships an italic; the
+  elevator panel is emitted after `</main>` (3 chrome tab stops, was 7);
+  standalone links are 44 px and Gilded Hour form labels 18 px; no provider slug
+  reaches a screen reader.
+
+Regression tests for the four named blockers live in
+`tests/e2e/content-themes.spec.ts`. Awaiting independent re-review.
+
+## 2026-09-05 — Level 05: the content pages in both designs
+
+- Every level-05 page (Our Story, Our Adventures + one adventure, Share an
+  Adventure + one recommendation, Explore CAA + one space, The Wedding, Ask Us)
+  renders through `theme.content[page]`. `src/themes/content-types.ts` carries the
+  `ContentKit` / `ContentRecipes` contracts; `src/app/(public)/_recipes` resolves
+  the request's design, builds the page frame and falls back to Swarm C's plain
+  recipes for an unknown design.
+- Gilded Hour adds: the gold spine (Our Story), the ledger (the archive and the
+  outlets), the diptych (the two voices), the floor plan with corner brackets
+  (the four spaces), docent numerals ("look for this"), the programme on the
+  spine, the FAQ column. Conservatory adds: the dashed stem with a leaf per
+  chapter, the mount of pressed specimen cards, kraft filter tags, the two-voice
+  pair, jar labels for operational rows, field notes for cited statements, the
+  leaf checklist and the vine programme.
+- Typography correction in Gilded Hour: sentences are set as sentences. External
+  handoffs, outlet names and itinerary titles lose the deco caps and the display
+  tracking that came with their type role; short labels, plaques, room and
+  recommendation names keep them. Conservatory status chips drop the small-caps
+  tracking for the same reason.
+- 390-first: every content page's primary action now sits inside the first screen
+  above the fixed bottom chrome. Page heads are tighter on phones, the search
+  keeps its button beside its field at every width, the recommendation page leads
+  with its handoff, and Ask Us and a room page are no longer numbered acts.
+- Shared provenance UI: `.placeholder` was claimed by both the kits' inline
+  editorial marker and Swarm C's placeholder block, and the unlayered component
+  stylesheet silently won — the kits' marker is now `.todo`. The block exposes
+  `--prov-note-ink` / `--prov-external-ink` / `--prov-external-line`, which
+  Conservatory fills with soil because pollen is an accent there and never text.
+- Evidence: live `impeccable detect` exit 0 on all nine pages × both designs (and
+  Home); axe-core WCAG 2.2 AA clean at 390 / 768 / 1440 on all eighteen;
+  `tests/e2e/content-themes.spec.ts` covers landmarks, one H1, each design's own
+  structure with the other's absent, and the phone fold. Critiques:
+  `docs/design/critiques/2026-09-05-<page>-<design>.md` (eighteen files).
+
 ## 2026-09-05 — Level 04: theme engine, both kits, Home per lifecycle state
 
 - Theme engine (`src/themes/{types,registry,resolve,routes,server}`): `?theme=` →
