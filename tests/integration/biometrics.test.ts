@@ -74,7 +74,7 @@ class SpyBiometric implements BiometricProvider {
     this.calls.enroll++;
     return this.inner.enroll(input);
   }
-  match(input: { vector: number[]; k?: number; threshold?: number; subjectId?: string }) {
+  match(input: { vector: number[]; k?: number; threshold?: number; subjectId: string }) {
     this.calls.match++;
     return this.inner.match(input);
   }

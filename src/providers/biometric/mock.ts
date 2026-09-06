@@ -62,16 +62,15 @@ export class MockBiometric implements BiometricProvider {
     return ok({ subjectId: input.subjectId, enrolledAt });
   }
 
-  async match(input: { vector: number[]; k?: number; threshold?: number; subjectId?: string }) {
+  async match(input: { vector: number[]; k?: number; threshold?: number; subjectId: string }) {
     await this.assertReady(input.subjectId);
     const threshold = input.threshold ?? 0.8;
-    const scored = [...this.vault.entries()]
-      // Consent-scoped: when a subject is named, only that subject's own enrolment is compared.
-      .filter(([subjectId]) => !input.subjectId || subjectId === input.subjectId)
-      .map(([subjectId, v]) => ({ subjectId, score: cosine(input.vector, v.vector) }))
-      .filter((m) => m.score >= threshold)
-      .sort((a, b) => b.score - a.score);
-    return ok(scored.slice(0, input.k ?? 5));
+    // Consent-scoped by construction: only the named subject's own enrolment is ever compared,
+    // so this can answer "is it you?" and can never answer "who is this?".
+    const own = this.vault.get(input.subjectId);
+    if (!own) return ok([]);
+    const score = cosine(input.vector, own.vector);
+    return ok(score >= threshold ? [{ subjectId: input.subjectId, score }].slice(0, Math.max(1, input.k ?? 1)) : []);
   }
 
   async delete(subjectId: string) {

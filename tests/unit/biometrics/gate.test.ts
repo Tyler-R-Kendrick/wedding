@@ -63,6 +63,33 @@ describe('the biometric seam refuses work unless flag AND readiness AND consent 
     expect(mine.ok && mine.value.map((m) => m.subjectId)).toEqual([subject]);
   });
 
+  it('has no way to ask "who is this?" — an unscoped match fails closed even with everything else on', async () => {
+    // `subjectId` is required by the type, so a caller can only reach this through a cast; that is
+    // the shape a mis-wired adapter or a debug route would take. It must refuse, not identify.
+    const { provider, consent } = harness({ readiness: true, consent: true });
+    await provider.enroll({ subjectId: subject, vector: mockTemplate(bytes) });
+    const unscoped = provider.match as unknown as (i: { vector: number[]; threshold?: number }) => Promise<unknown>;
+    await expect(unscoped.call(provider, { vector: mockTemplate(bytes), threshold: 0.1 })).rejects.toMatchObject({ code: 'feature_disabled' });
+    for (const empty of [undefined, '']) {
+      await expect(provider.assertReady(empty)).rejects.toMatchObject({ code: 'feature_disabled' });
+    }
+    // The consent lookup is never even reached: there is no subject whose consent could be checked.
+    expect(consent).not.toHaveBeenCalledWith(undefined);
+  });
+
+  it('a guest matching their own face never sees anyone else, whatever the vault holds', async () => {
+    const { provider } = harness({ readiness: true, consent: true });
+    const mine = mockTemplate(bytes);
+    await provider.enroll({ subjectId: subject, vector: mine });
+    // Another guest enrolled with an identical template: a 1:N search would return them too.
+    await provider.enroll({ subjectId: 'GUESTB', vector: mine });
+    const r = await provider.match({ vector: mine, subjectId: subject, threshold: 0.5, k: 10 });
+    expect(r.ok && r.value.map((m) => m.subjectId)).toEqual([subject]);
+    // A guest with no enrolment gets nothing rather than the nearest stranger.
+    const none = await provider.match({ vector: mine, subjectId: 'GUESTC', threshold: 0.1, k: 10 });
+    expect(none.ok && none.value).toEqual([]);
+  });
+
   it('deletes even when the feature is switched off (retention obligations outlive it)', async () => {
     const on = harness({ readiness: true, consent: true });
     await on.provider.enroll({ subjectId: subject, vector: mockTemplate(bytes) });

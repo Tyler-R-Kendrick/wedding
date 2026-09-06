@@ -24,11 +24,15 @@ export function getBiometricConsentLookup(): ConsentLookup | undefined {
 /**
  * Mock only. `readiness` combines FLAG BIOMETRICS_ENABLED with the persisted readiness row; the
  * subject's consent is added here so `assertReady(subjectId)` means flag AND readiness AND consent.
+ *
+ * A call with no subject fails closed. It used to pass — the consent half was skipped when no
+ * subject was named — which made `match({ vector })` a 1:N "who is this?" query answerable with
+ * nobody's consent. There is no operation on this seam that legitimately has no subject.
  */
 export function createBiometricProvider(deps: { readiness: () => Promise<boolean>; consent?: ConsentLookup }): BiometricProvider {
   const gate: ReadinessCheck = async (subjectId) => {
     if (!(await deps.readiness())) return false;
-    if (subjectId === undefined) return true;
+    if (!subjectId) return false;
     const lookup = deps.consent ?? getBiometricConsentLookup();
     if (!lookup) return false;
     return lookup(subjectId);
