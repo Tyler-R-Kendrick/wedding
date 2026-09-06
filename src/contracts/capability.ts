@@ -82,6 +82,15 @@ export interface CapabilityDescriptor<I, O> {
   /** Fresh authentication required (money, identity, external commitments). */
   stepUp?: boolean;
   confirmation?: ConfirmationMode;
+  /**
+   * Opt out of the agent-surface upgrade of `confirmation: 'inline'` to `'explicit'`.
+   *
+   * `inline` is a promise the page keeps by rendering a confirm step; the pipeline enforces
+   * nothing for it. Agent surfaces have no page and no human, so they treat `inline` as `explicit`
+   * (`src/webmcp/descriptors.ts`). Set this only for an `inline` mutation that is genuinely safe
+   * to complete unattended. It never relaxes `explicit`, `transaction` or `external`.
+   */
+  agentConfirmable?: boolean;
   /** Mutations must be idempotent: the same key replays the first result. */
   idempotent?: boolean;
   /** Feature flag that must be on. */

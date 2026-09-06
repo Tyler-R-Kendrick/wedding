@@ -304,10 +304,11 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
     // Every anonymous tool really is anonymous-auth; omission is UX, but the list must be honest.
     for (const tool of anonymous.tools) expect(tool.execution.auth, tool.name).toBe('anonymous');
 
-    // Not listed is not the check. Calling it anyway is refused by the pipeline.
+    // Not listed is not the check. Calling it anyway is refused — and the refusal says only
+    // "not available", so it does not confirm that the capability exists (review finding 2).
     const denied = await request.post('/api/webmcp/invoke/webmcp_test_guest_read', { headers: SAME_ORIGIN, data: { input: {} } });
-    expect(denied.status()).toBe(401);
-    expect((await denied.json()).error.code).toBe('unauthenticated');
+    expect(denied.status()).toBe(404);
+    expect((await denied.json()).error.code).toBe('not_found');
 
     const guest = await manifestFor(request, as('guest'));
     const guestNames = guest.tools.map((t) => t.name);
@@ -315,9 +316,9 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
     expect(guestNames).not.toContain('webmcp_test_admin_read');
 
     const forbidden = await request.post('/api/webmcp/invoke/webmcp_test_admin_read', { headers: { ...SAME_ORIGIN, ...as('guest') }, data: { input: {} } });
-    expect(forbidden.status()).toBe(403);
+    expect(forbidden.status()).toBe(404);
     const body = await forbidden.json();
-    expect(body.error.code).toBe('forbidden');
+    expect(body.error.code).toBe('not_found');
     // Entitlement names are internal vocabulary and must never leak.
     expect(JSON.stringify(body)).not.toContain('admin_audit');
 
@@ -429,11 +430,22 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
     const response = await request.get('/api/webmcp/manifest', { headers: as('guest') });
     expect(response.headers()['cache-control']).toContain('no-store');
 
-    const unknown = await request.post('/api/webmcp/invoke/does_not_exist', { headers: SAME_ORIGIN, data: { input: {} } });
-    expect(unknown.status()).toBe(404);
-    const malformed = await request.post('/api/webmcp/invoke/NotSnakeCase', { headers: SAME_ORIGIN, data: { input: {} } });
-    expect(malformed.status()).toBe(404);
-    // Both answer identically, so probing cannot distinguish "exists but hidden" from "no such tool".
-    expect(await unknown.json()).toEqual(await malformed.json());
+    // Every one of these takes a DIFFERENT internal branch — a registry miss, a name the route
+    // rejects before lookup, a real capability not exposed to WebMCP, one that needs a session,
+    // and one that needs an entitlement the caller lacks. They must be indistinguishable from
+    // outside, or the bridge is an oracle for the couple's unreleased features (review finding 2).
+    const probes = {
+      absent: await request.post('/api/webmcp/invoke/does_not_exist', { headers: SAME_ORIGIN, data: { input: {} } }),
+      malformedName: await request.post('/api/webmcp/invoke/NotSnakeCase', { headers: SAME_ORIGIN, data: { input: {} } }),
+      notExposed: await request.post('/api/webmcp/invoke/webmcp_test_hidden', { headers: SAME_ORIGIN, data: { input: {} } }),
+      needsSignIn: await request.post('/api/webmcp/invoke/webmcp_test_guest_read', { headers: SAME_ORIGIN, data: { input: {} } }),
+      needsEntitlement: await request.post('/api/webmcp/invoke/webmcp_test_admin_read', { headers: { ...SAME_ORIGIN, ...as('guest') }, data: { input: {} } }),
+    };
+    const answers = new Set<string>();
+    for (const [label, response] of Object.entries(probes)) {
+      expect(response.status(), label).toBe(404);
+      answers.add(`${response.status()}:${JSON.stringify(await response.json())}`);
+    }
+    expect(answers.size, `distinguishable answers: ${[...answers].join(' | ')}`).toBe(1);
   });
 });

@@ -55,9 +55,24 @@ const MUTATIONS: ReadonlySet<CapabilityKind> = new Set(['action', 'transaction',
 
 export const isMutation = (kind: CapabilityKind): boolean => MUTATIONS.has(kind);
 
-/** ADR-0002 rule 4: transactions and external handoffs never run from an agent without a human confirming in the UI. */
-export function requiresHumanConfirmation(d: Pick<AnyCapability, 'kind' | 'confirmation'>): boolean {
-  return d.confirmation === 'explicit' || d.kind === 'transaction' || d.kind === 'external';
+/**
+ * Does a human have to agree on the website before this runs from an agent?
+ *
+ * ADR-0002 rule 4 covers `transaction` and `external`, and `explicit` says so itself. `inline` is
+ * the subtle one: it is a promise the *page* keeps by rendering a confirm step, and the pipeline
+ * enforces nothing for it on any surface. On `ui` that is fine — a human is present by
+ * construction and sees the step. On `webmcp` there is no page and no human, so an `inline`
+ * mutation would simply run and the descriptor author who asked for confirmation would be wrong
+ * about what happened. On this surface `inline` is therefore treated as `explicit`.
+ *
+ * `agentConfirmable: true` is the deliberate opt-out for an `inline` mutation that really is safe
+ * to complete unattended. It is per descriptor, it never relaxes `explicit`, `transaction` or
+ * `external`, and the default is the safe one.
+ */
+export function requiresHumanConfirmation(d: Pick<AnyCapability, 'kind' | 'confirmation' | 'agentConfirmable'>): boolean {
+  if (d.confirmation === 'explicit' || d.kind === 'transaction' || d.kind === 'external') return true;
+  if (d.confirmation === 'inline') return d.agentConfirmable !== true;
+  return false;
 }
 
 const schemaCache = new WeakMap<object, Record<string, unknown>>();
