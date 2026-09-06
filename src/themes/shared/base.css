@@ -9,11 +9,11 @@ html {
   text-size-adjust: 100%;
 }
 
+/* No font-family here: `--font-text` is not defined at this scope (see globals.css). */
 body {
   min-height: 100dvh;
   margin: 0;
   overflow-x: clip;
-  font-family: var(--font-text);
   font-synthesis: none;
   text-rendering: optimizelegibility;
   -webkit-font-smoothing: antialiased;

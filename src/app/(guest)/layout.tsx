@@ -42,7 +42,11 @@ export default async function GuestLayout({ children }: { children: ReactNode })
     // the first paint before hydration — the review measured Times New Roman in exactly that window.
     // The root layout cannot resolve it instead: reading headers there would make every static
     // public route dynamic.
-    <div data-theme={theme}>
+    // `site` is the same ground class the public shell uses (themes/<id>/kit/index.tsx): it makes
+    // this the full-height flex column the header/main/footer expect, paints the themed background,
+    // and — the reason it is not optional — `print.css` scopes every one of its rules to `.site`,
+    // so without it the guest nav printed on every page.
+    <div className="site" data-theme={theme}>
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
       <a className="wp-skip" href="#main">
         Skip to content

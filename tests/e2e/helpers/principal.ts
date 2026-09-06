@@ -75,10 +75,19 @@ export function key(): string {
   return `${t}${c}${Math.random().toString(36).slice(2, 12).toUpperCase()}`.replace(/[^0-9A-Z]/g, '0').slice(0, 26).padEnd(26, '0');
 }
 
-export async function contextAs(browser: Browser, name: PrincipalName | null, opts: { viewport?: { width: number; height: number } } = {}): Promise<BrowserContext> {
+export async function contextAs(
+  browser: Browser,
+  name: PrincipalName | null,
+  opts: { viewport?: { width: number; height: number }; javaScriptEnabled?: boolean } = {},
+): Promise<BrowserContext> {
   // `browser.newContext()` does not inherit the config's `use.baseURL`, so pass it: specs navigate
   // with relative paths and must land on the server Playwright actually started.
-  return browser.newContext({ baseURL: BASE_URL, extraHTTPHeaders: principalHeaders(name), ...(opts.viewport ? { viewport: opts.viewport } : {}) });
+  return browser.newContext({
+    baseURL: BASE_URL,
+    extraHTTPHeaders: principalHeaders(name),
+    ...(opts.viewport ? { viewport: opts.viewport } : {}),
+    ...(opts.javaScriptEnabled === undefined ? {} : { javaScriptEnabled: opts.javaScriptEnabled }),
+  });
 }
 
 /** Replaces volatile values so JSON can be snapshot-tested. */

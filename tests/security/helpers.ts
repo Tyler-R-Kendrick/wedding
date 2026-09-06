@@ -42,10 +42,6 @@ export async function readOtp(request: APIRequestContext, email: string): Promis
   throw new Error(`no OTP for ${email}`);
 }
 
-export async function clearInbox(request: APIRequestContext): Promise<void> {
-  await request.delete('/api/dev/inbox', { headers: devHeaders() });
-}
-
 /** Drives the real claim UI (invite -> pick -> code -> welcome). Returns the session cookie value. */
 export async function claimViaUi(page: Page, request: APIRequestContext, token: string, guestId: string, inboxEmail: string): Promise<string> {
   await page.goto(`/invite/${token}`);

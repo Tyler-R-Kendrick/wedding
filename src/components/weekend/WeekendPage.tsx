@@ -60,11 +60,13 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
               <p className="card__meta">
                 {e.dateText} · {e.whenText}
               </p>
+              {/* One fact per line rather than joined by a middot: when either side is a placeholder
+                  the run is long enough to wrap at 390px, and the separator was landing alone on a
+                  line of its own between them. */}
               <p className="card__meta">
                 Where: {e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : <Placeholder inline>the room</Placeholder>}
-                {' · '}
-                Dress: {e.dressCode ?? <Placeholder inline>the dress code</Placeholder>}
               </p>
+              <p className="card__meta">Dress: {e.dressCode ?? <Placeholder inline>the dress code</Placeholder>}</p>
               {e.accessibilityNote ? <p>{e.accessibilityNote}</p> : null}
               <ul className="list list--plain">
                 {e.household.map((h) => (

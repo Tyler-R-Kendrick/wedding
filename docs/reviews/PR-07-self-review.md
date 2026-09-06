@@ -93,6 +93,15 @@ itinerary.
 **Deliberately not covered:** cross-browser (Chromium only, as configured); the tablet viewport for
 the RSVP journey (skipped by the spec's own guard, phone and desktop are the review viewports).
 
+**One flake chased to a real cause.** `tests/security/invitation.spec.ts` failed once with
+`no OTP for chidi+…` and passed on retry. It is not a flake to re-run: the dev inbox is one
+process-global array, `clearInbox` empties it for **every** address, and `tests/security/otp.spec.ts`
+called it while `fullyParallel` runs both files at once — so one file was deleting another worker's
+one-time code between its "Send me a code" click and its inbox poll. Reproduced at 1 in 3 runs. The
+clear is gone; the assertion it protected now names this run's own ghost address, which is strictly
+more precise than the `startsWith('ghost+')` scan it replaces. Four runs since without recurrence,
+which is evidence but not proof, so it is stated as that.
+
 ## 5. Independent security review, and what I re-measured
 
 An adversarial reviewer read this level's diff. One blocker, eight should-fixes. I re-verified each
@@ -117,8 +126,36 @@ a product decision, not to me. Raised in the content backlog rather than silentl
 
 ## 6. Design verdict per theme
 
-Deferred to the design-review round on the two new guest surfaces (`/rsvp`, `/your-weekend`) in both
-themes; not claimed here.
+Three review rounds ran on `/rsvp` and `/your-weekend` in both designs. Round 3
+(`docs/design/critiques/2026-09-06-rsvp-your-weekend-round3.md`) returned **FIX FIRST** — Design 5,
+Usability 6, Creativity 4, Content 5, identical in both designs — with three blockers. All three are
+fixed, each measured in the condition that could fail:
+
+| Blocker | What it was | Fixed by | Proof it was real |
+|---|---|---|---|
+| Running copy unthemed without script | `globals.css` declared `background`/`color`/`font-family` on `html` alone, but **no element carrying `[data-theme]` is at or above `html`** — the public shell and the guest layout both put it on a div inside `<body>`, and `theme.css` scopes `--font-text` to `[data-theme="<id>"]`. The declaration had been invalid at computed-value time on every route since the theme engine landed; the public pages hid it because each theme kit sets fonts on its own elements | selector widened to `html, [data-theme]`, and the dead duplicate dropped from `body` | With the old selector, **12 of 14** text elements on `/rsvp` and **55 of 66** on `/your-weekend` compute to Times New Roman with script disabled, both designs; with the fix, 0 of 80 across 8 route × design × script combinations |
+| `/rsvp` contradicted itself when closed | the lede branched on `deadlineAt` alone, printing "…while RSVPs are open" directly above the form's "RSVPs are closed" | branch on `window.open`, exactly as `WeekendPage` already did | A **fresh boot seeds this state** (`mode: 'auto'` under lifecycle TEASER → `open:false, deadlineAt:null`), verified against a restarted server — it was the first thing a guest read, not an edge case |
+| `/rsvp` never named the deadline, and printed the fallback twice | route and `RsvpForm` both emitted it | the route names the gap with `<Placeholder inline>`; the form keeps only the sentence that is true while open | asserted at exactly one occurrence per page, and that both pages now say the same thing |
+
+Also fixed, from the same round and beyond it: the orphaned `·` separator on `/your-weekend`
+(one fact per line instead of a middot that landed alone on a phone line), and — not reported, found
+while reading the closed state — the heading asking "Ada, will you join us?" above "RSVPs are
+closed", the same defect as the lede one element up.
+
+Two of the round's other findings landed as collateral repairs rather than as design changes: giving
+the guest wrapper the shared `site` class restored the themed background and closed a **print** gap
+the reviewer noticed in passing (`print.css` scopes every rule to `.site`, so the guest nav had been
+printing on every page).
+
+Three regression tests were added and **each was proved to fail without its fix**, not merely to
+pass with it: the script-disabled theming test reports 74 unthemed elements when the selector is
+reverted; the closed-window test's own failure output contains the contradiction verbatim; the
+deadline test finds 0 occurrences instead of 1.
+
+**Not fixed, recorded instead:** `/rsvp` in its closed state shows two placeholders for the same
+missing fact — the closed notice's "their contact details" and the footer's "how to reach us with a
+question". Each is correct alone; together they read as one gap reported twice. It belongs to the
+content backlog (one contact fact), not to a component change made on my own judgement.
 
 ## 7. Accessibility and performance
 
@@ -141,9 +178,38 @@ Unchanged in kind: event names, descriptions and the RSVP deadline remain `TODO(
 placeholders with `placeholder: true`. No invented wedding facts. The content backlog gains the
 tablemate-visibility question.
 
+## 9b. Two things I got wrong this round, and how they were caught
+
+Both were caught by measuring rather than by reasoning, and both are recorded because the reasoning
+was confident and wrong.
+
+1. **A "66 of 66 unthemed" reading that was an artifact.** My first script-disabled probe reported
+   `/your-weekend` fully unthemed while `/rsvp` was clean — from one layout. The difference was that
+   `/your-weekend` was the first navigation in each browser context and `domcontentloaded` does not
+   wait for stylesheets. Re-measured with the routes warmed, on `load`, and with a fresh context per
+   measurement, it was 0. Had I trusted it I would have "fixed" a second, non-existent bug.
+
+2. **A rate-limit defect I reported to myself and then disproved.** Chasing repeated `429`s I found
+   `principalKey` collapses every anonymous caller to the literal `anonymous`, and concluded that
+   moving the limiter into `invoke()` (finding S5) had given the whole public site one shared
+   budget — a denial of service anyone could trigger. I wrote the guard and a test. **The test
+   passed without the guard**, which is the tell: `src/app/api/capabilities/[name]/route.ts` already
+   sets `rateLimit: principal.kind !== 'anonymous'` and meters anonymous callers per client IP, with
+   that same reasoning in a comment. Both the change and its unfalsifiable test were reverted. The
+   real cause of the `429`s was my own measurement environment: `forwardedFor` maps every seed into
+   200 synthetic addresses, and a dozen repeated runs against one long-lived dev server drained
+   buckets that refill at 60 per ten minutes. CI starts a fresh server and runs each list once.
+
+That 200-address space is a latent flake source as the suites grow, and widening it is a one-line
+change — but the per-email-limit test reaches its `429` within seven calls by way of the buckets that
+space produces, so widening it without re-deriving that test's arithmetic would trade a hypothetical
+flake for a real one. Left alone deliberately, and written down here for the level that has cause to
+touch it.
+
 ## 10. Verdict
 
-**READY**, with the design review on the two new guest surfaces still to run before merge.
+**READY.** The design review on the two new guest surfaces has run three rounds; round 3's three
+blockers are fixed and each fix is proved by a test that fails without it.
 
 `npm run verify` green in its log; both CI arrangements verified locally before pushing rather than
 discovered in CI. The migration was regenerated from the merged schema (`0004`), creates no identity

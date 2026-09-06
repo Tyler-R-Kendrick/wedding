@@ -152,6 +152,35 @@ test.describe('the guest surfaces are themed', () => {
     await ctx.close();
   });
 
+  // The theme fonts are declared on `[data-theme]`, and only the script mirrors that attribute onto
+  // <html>. Every assertion above runs with script enabled, so all of them passed while the guest
+  // pages rendered their running copy in the browser's default serif for the whole pre-hydration
+  // window — and permanently for a guest browsing without JavaScript. Measured before this test
+  // existed: 12 of 14 text elements on /rsvp and 55 of 66 on /your-weekend, in both designs.
+  for (const theme of ['gilded-hour', 'conservatory']) {
+    test(`${theme} styles the running copy with script disabled, not only the headings`, async ({ browser }) => {
+      const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
+      const page = await ctx.newPage();
+      for (const route of ['/rsvp', '/your-weekend']) {
+        await page.goto(`${route}?theme=${theme}`, { waitUntil: 'load' });
+        // Not `html`: without script nothing carries the attribute there, and that is the point.
+        await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
+        const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
+          const themed = /Cinzel|Josefin|Spectral|Gloock|Cardo|Big Shoulders/i;
+          const holdsText = (e: Element) =>
+            !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
+            [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());
+          return [root, ...root.querySelectorAll('*')]
+            .filter(holdsText)
+            .filter((e) => !themed.test(getComputedStyle(e).fontFamily))
+            .map((e) => `${e.tagName}.${e.className}: ${getComputedStyle(e).fontFamily}`);
+        });
+        expect(unthemed, `${route} @ ${theme} fell back to a default face without script`).toEqual([]);
+      }
+      await ctx.close();
+    });
+  }
+
   test('the authoring marker never reaches a guest', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
@@ -184,7 +213,31 @@ test.describe('a closed RSVP window', () => {
     // focusable, so a keyboard user was told nothing).
     await expect(page.locator('#main input, #main select, #main textarea')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Review your answers' })).toHaveCount(0);
+
+    // The page must not contradict itself. Both of these shipped: the lede branched on
+    // `deadlineAt` alone, so it printed "…while RSVPs are open" directly above "RSVPs are
+    // closed"; and the heading asked "will you join us?" above the notice saying it would not
+    // take an answer. A closed window with no deadline is the seeded default (events seed
+    // `mode: 'auto'` under lifecycle TEASER), so this was the first thing a guest read.
+    await expect(page.locator('#main')).not.toContainText('while RSVPs are open');
+    await expect(page.getByRole('heading', { level: 1 })).not.toContainText('will you join us');
+
     await axeClean(page);
+    await ctx.close();
+  });
+
+  test('names the deadline gap once, and says the same thing as /your-weekend', async ({ browser, request }) => {
+    const open = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'open', deadlineAt: null }, { idempotencyKey: key() });
+    expect(open.status, JSON.stringify(open.body)).toBe(200);
+
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    for (const route of ['/rsvp', '/your-weekend']) {
+      await page.goto(route);
+      // Once, not zero times (the deadline was the one unknown the page papered over) and not
+      // twice (the fallback sentence was printed by both the route and the form).
+      await expect(page.getByText('the date answers are needed by')).toHaveCount(1);
+    }
     await ctx.close();
   });
 });

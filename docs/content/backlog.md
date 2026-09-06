@@ -66,3 +66,5 @@ in which the fact first renders to guests.
 | [ ] | X-04 | Plus-one policy wording (9 plus-ones in universe) | Couple | INVITATIONS_OPEN |
 | [ ] | X-05 | Biometric retention period and counsel name (ADR-0006) | Couple + counsel | before `BIOMETRICS_ENABLED=true`, if ever |
 | [ ] | X-06 | Special event valet rate and whether it is publishable | Planner / CAA | INVITATIONS_OPEN |
+| [ ] | X-07 | How a guest reaches you with a question (one contact fact: address, number, or form). Named twice on a closed `/rsvp` — the closed notice and the site footer both mark the same gap | Couple | any lifecycle state; both guest pages show it today |
+| [ ] | X-08 | Whether a guest may see who else is seated at their table. Tablemate names cross household lines by design, and that is what a seating chart is, but it is the one place a guest learns another household's placement | Couple | before seating is published |

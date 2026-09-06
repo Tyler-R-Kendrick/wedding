@@ -1,14 +1,20 @@
 import { expect, test } from '@playwright/test';
-import { cap, forwardedFor, clearInbox, devHeaders, readOtp, seedFixtures, SITE_ORIGIN } from './helpers';
+import { cap, forwardedFor, devHeaders, readOtp, seedFixtures, SITE_ORIGIN } from './helpers';
 
 test.use({ extraHTTPHeaders: forwardedFor('otp-' + String(Date.now())) });
 
 test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', () => {
   test('known and unknown emails get byte-identical response shapes; only the known inbox receives mail', async ({ request }) => {
     const f = await seedFixtures(request);
-    await clearInbox(request);
+    // Deliberately NOT clearing the inbox. It is one process-global array shared by every worker
+    // and every project, and `fullyParallel` runs this file beside the invitation journeys: the
+    // clear that used to be here deleted another worker's one-time code between its "Send me a
+    // code" click and its inbox poll, which surfaced as `no OTP for chidi+…` roughly once in
+    // three runs. Both assertions below name this run's own addresses, so a shared inbox holding
+    // other runs' mail cannot make them pass or fail either way.
+    const ghost = `ghost+${f.suffix}@example.test`;
     const known = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.amara });
-    const unknown = await cap(request, 'request_otp', { purpose: 'sign_in', email: `ghost+${f.suffix}@example.test` });
+    const unknown = await cap(request, 'request_otp', { purpose: 'sign_in', email: ghost });
     expect(known.status()).toBe(200);
     expect(unknown.status()).toBe(200);
     const a = await known.json();
@@ -19,7 +25,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     expect(b.data.challenge).not.toContain('@');
     const inbox = await request.get('/api/dev/inbox', { headers: devHeaders() });
     const { messages } = (await inbox.json()) as { messages: { to: string }[] };
-    expect(messages.some((m) => m.to.startsWith('ghost+'))).toBe(false);
+    expect(messages.some((m) => m.to === ghost), 'an unknown address must never be sent mail').toBe(false);
     expect(messages.some((m) => m.to === f.emails.amara)).toBe(true);
   });
 

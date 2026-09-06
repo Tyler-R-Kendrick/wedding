@@ -18,7 +18,24 @@
 @import "../themes/shared/print.css";
 
 @layer base {
-  html {
+  /*
+   * The themed ground goes on the element that carries `[data-theme]`, because that is the only
+   * element where these variables exist. `theme.css` scopes every role token to
+   * `[data-theme="<id>"]`, and the Tailwind `@theme` block at `:root` declares the level-03
+   * foundation names (`--font-body-md`, `--color-*`), never `--font-text`.
+   *
+   * These three declarations were on `html` alone — above every element that carries the
+   * attribute, since both the public shell (`themes/<id>/kit/index.tsx`) and the guest layout put
+   * it on a div inside <body>. `var(--font-text)` was therefore invalid at computed-value time and
+   * the property fell back to the browser default, on every route, since the theme engine landed.
+   * The public pages hid it because each theme kit sets fonts on its own elements; the guest pages
+   * inherit, so they rendered in Times New Roman whenever script had not yet mirrored the
+   * attribute onto <html> — with JavaScript off, permanently.
+   *
+   * `html` stays in the selector so the over-scroll canvas is themed once that mirror runs.
+   */
+  html,
+  [data-theme] {
     background: var(--color-neutral);
     color: var(--color-primary);
     font-family: var(--font-text);
