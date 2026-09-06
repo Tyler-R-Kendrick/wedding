@@ -27,13 +27,13 @@ function Field({ label, hint, issue, children }: { label: string; hint?: string;
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-sm text-primary/70">
+        <p id={hintId} className="hint">
           {hint}
         </p>
       ) : null}
       {children({ id, describedBy, invalid: !!issue })}
       {issue ? (
-        <p id={errId} role="alert" className="mt-1 text-sm font-medium">
+        <p id={errId} role="alert" className="mt-1 font-medium">
           {issue}
         </p>
       ) : null}
@@ -47,7 +47,7 @@ function Summary({ state }: { state: { status: string; error?: { message: string
     <div role="alert" className="rounded-sm border border-primary p-3">
       <p className="font-medium">{state.error.message}</p>
       {state.error.issues.length ? (
-        <ul className="mt-1 list-disc pl-5 text-sm">
+        <ul className="mt-1 list-disc pl-5">
           {state.error.issues.map((i) => (
             <li key={i.path}>
               {i.path}: {i.message}
@@ -69,7 +69,7 @@ export function ProfileForm({ profile, suggestion }: { profile: TravelProfile | 
   return (
     <form action={action} onSubmit={() => refreshKey(keyRef)} aria-describedby={helpId} className="flex flex-col gap-4">
       <input ref={keyRef} type="hidden" name="idempotencyKey" defaultValue="" />
-      <p id={helpId} className="text-sm text-primary/80">
+      <p id={helpId} className="hint">
         Optional. Saving tells us you want flight and hotel searches pre-filled. We never guess where you are; you can delete this any time.
       </p>
       {suggestion && !current ? (
@@ -153,7 +153,7 @@ export function AddItemForm() {
   return (
     <form action={action} onSubmit={() => refreshKey(keyRef)} aria-describedby={helpId} className="flex flex-col gap-4">
       <input ref={keyRef} type="hidden" name="idempotencyKey" defaultValue="" />
-      <p id={helpId} className="text-sm text-primary/80">
+      <p id={helpId} className="hint">
         Add what you have booked or plan to book. Times are in the time zone you pick. Adding an item does not book anything.
       </p>
       {state.status === 'added' ? (

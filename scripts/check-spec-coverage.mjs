@@ -30,6 +30,8 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/claim.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',
+  // Level 08: the signed-in trip page needs the test-principal injector.
+  'tests/e2e/trip.spec.ts',
   'tests/security/idor.spec.ts',
   'tests/security/invitation.spec.ts',
   'tests/security/otp.spec.ts',

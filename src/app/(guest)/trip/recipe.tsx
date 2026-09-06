@@ -34,7 +34,7 @@ const KIND_LABEL: Record<TripItem['kind'], string> = { flight: 'Flight', hotel: 
 function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="border-t border-primary/20 py-10">
-      {eyebrow ? <p className="text-sm uppercase tracking-wide text-primary/70">{eyebrow}</p> : null}
+      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
       <h2 id={`${id}-title`} className="mt-1 text-2xl font-semibold">
         {title}
       </h2>
@@ -52,7 +52,7 @@ function ItemForm({ item, op, label, withReference }: { item: TripItem; op: 'con
       <input type="hidden" name="idempotencyKey" value={newId()} />
       {withReference ? (
         <div>
-          <label htmlFor={refId} className="block text-sm font-medium">
+          <label htmlFor={refId} className="block font-medium">
             Booking reference (optional)
           </label>
           <input id={refId} name="providerRef" maxLength={64} className={INPUT} defaultValue={item.providerRef ?? ''} />
@@ -70,7 +70,7 @@ function ItemCard({ item, highlighted }: { item: TripItem; highlighted: boolean 
   const detailLine = [d.carrier && d.flightNumber ? `${d.carrier} ${d.flightNumber}` : d.carrier, d.origin && d.destination ? `${d.origin} → ${d.destination}` : null, d.hotelName, d.address].filter(Boolean).join(' · ');
   return (
     <li className={`rounded-sm border p-5 ${highlighted ? 'border-primary' : 'border-primary/20'}`} aria-current={highlighted ? 'true' : undefined}>
-      <p className="text-sm uppercase tracking-wide text-primary/70">
+      <p className="eyebrow">
         {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
         {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
       </p>
@@ -79,9 +79,9 @@ function ItemCard({ item, highlighted }: { item: TripItem; highlighted: boolean 
         {formatChicagoDateTime(item.startAt)}
         {item.endAt ? ` → ${formatChicagoDateTime(item.endAt)}` : ''}
       </p>
-      {detailLine ? <p className="mt-1 text-primary/80">{detailLine}</p> : null}
-      {item.providerRef ? <p className="mt-1 text-sm">Reference {item.providerRef}</p> : null}
-      {d.note ? <p className="mt-2 text-sm">{d.note}</p> : null}
+      {detailLine ? <p className="mt-1 hint">{detailLine}</p> : null}
+      {item.providerRef ? <p className="mt-1">Reference {item.providerRef}</p> : null}
+      {d.note ? <p className="mt-2">{d.note}</p> : null}
       <div className="mt-4 flex flex-col gap-3">
         {item.status === 'planned' ? <ItemForm item={item} op="confirm" label="I booked this" withReference /> : null}
         <div className="flex flex-wrap gap-2">
@@ -113,7 +113,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
   return (
     <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <header>
-        <p className="text-sm uppercase tracking-wide text-primary/70">Your Weekend</p>
+        <p className="eyebrow">Your Weekend</p>
         <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
         <p className="mt-3 max-w-prose">Flights, where you are staying, and the free time in between. Only you and your household can see this.</p>
       </header>
@@ -137,22 +137,22 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         {trip.hostedBookingAvailable ? (
           <form action={hostedFlightsAction} className="rounded-sm border border-primary/30 p-4">
             <h3 className="text-lg font-semibold">Book flights through our partner</h3>
-            <p className="mt-1 text-sm text-primary/80">Opens Duffel&rsquo;s secure booking page. We never see your payment details; come back here to confirm afterwards.</p>
+            <p className="mt-1 hint">Opens Duffel&rsquo;s secure booking page. We never see your payment details; come back here to confirm afterwards.</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
-                <label htmlFor="hosted-origin" className="block text-sm font-medium">
+                <label htmlFor="hosted-origin" className="block font-medium">
                   From airport
                 </label>
                 <input id="hosted-origin" name="origin" maxLength={3} className={`${INPUT} w-full`} defaultValue={data.profile?.preferredAirport ?? ''} />
               </div>
               <div>
-                <label htmlFor="hosted-depart" className="block text-sm font-medium">
+                <label htmlFor="hosted-depart" className="block font-medium">
                   Depart
                 </label>
                 <input id="hosted-depart" type="date" name="departDate" className={`${INPUT} w-full`} defaultValue={data.profile?.arriveEarliest ?? ''} />
               </div>
               <div>
-                <label htmlFor="hosted-adults" className="block text-sm font-medium">
+                <label htmlFor="hosted-adults" className="block font-medium">
                   Adults
                 </label>
                 <input id="hosted-adults" type="number" name="adults" min={1} max={9} className={`${INPUT} w-full`} defaultValue={data.profile?.adults ?? 1} />
@@ -171,10 +171,10 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
             {trip.freeTime.map((w) => (
               <li key={w.startAt} className="rounded-sm border border-primary/20 p-3">
                 <p className="font-medium">{w.label}</p>
-                <p className="text-sm text-primary/80 tabular-nums">
+                <p className="hint tabular-nums">
                   {formatChicagoDateTime(w.startAt)} → {formatChicagoDateTime(w.endAt)}
                 </p>
-                <p className="mt-1 text-sm">
+                <p className="mt-1">
                   {/* `Link` since level 05 merged: /share-an-adventure is a real route now, so this
                       is client-side navigation and gets prefetched, not a full document load. */}
                   <Link className="underline underline-offset-4" href="/share-an-adventure">
@@ -193,15 +193,15 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         {block && !block.placeholder ? (
           <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
-              <dt className="text-sm text-primary/70">Rate</dt>
+              <dt className="text-primary">Rate</dt>
               <dd>{block.rateText ?? 'See the hotel'}</dd>
             </div>
             <div>
-              <dt className="text-sm text-primary/70">Book by</dt>
+              <dt className="text-primary">Book by</dt>
               <dd>{block.cutoff ? formatLongDate(block.cutoff) : 'See the hotel'}</dd>
             </div>
             <div>
-              <dt className="text-sm text-primary/70">Code</dt>
+              <dt className="text-primary">Code</dt>
               <dd>{block.code ?? 'None needed'}</dd>
             </div>
           </dl>
@@ -237,7 +237,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
 export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
   return (
     <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
-      <p className="text-sm uppercase tracking-wide text-primary/70">Your Weekend</p>
+      <p className="eyebrow">Your Weekend</p>
       <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
       <p className="mt-3 max-w-prose">
         {reason === 'anonymous' ? 'Open the link from your invitation to see and plan your trip. Until then, everything about getting here is on ' : 'This page is for invited guests. Everything about getting here is on '}

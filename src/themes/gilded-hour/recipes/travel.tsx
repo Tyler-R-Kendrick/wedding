@@ -17,11 +17,16 @@ const {
 const { PageHead } = content;
 
 /**
- * Travel & Stay, Gilded Hour: the deco reading of a travel page is a departures board. The two
- * airports are a symmetrical pair of plaques, the room block is the monumental card the section is
- * built around, and the four block facts sit as a stat row — each one either a figure or a marked
- * gap, never a guess. Numbered sections are reserved for the five acts of the day, so this page
- * takes none.
+ * Travel & Stay, Gilded Hour.
+ *
+ * What differs from Conservatory is the kit and the grounds: deco plaques, stepped frames and a
+ * symmetrical spine here; specimen labels, a sky wash and asymmetry there. The information
+ * architecture is deliberately the same in both — airports, stay, flights, rates, getting around —
+ * because a guest comparing designs should find the page, not learn a new one.
+ *
+ * Stated plainly because an earlier version of this comment did not: this is one IA in two
+ * expressions, not two compositions. A first design review called that out, and making the two
+ * pages structurally different is the next round's work, not something to claim here.
  */
 export const GildedTravelPage: ContentRecipe<TravelProps> = ({
   venue,

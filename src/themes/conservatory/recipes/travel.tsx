@@ -17,11 +17,12 @@ const {
 const { PageHead } = content;
 
 /**
- * Travel & Stay, Conservatory: the botanical reading is a field guide to arriving. The airports are
- * two specimen cards, the room block is the pressed sheet the page opens onto, and the block facts
- * are jar labels — a figure, or a marked gap, never a guess. Where Gilded Hour alternates grounds to
- * step down the page, this one keeps a single washed sheet and lets the cards sit on it, so the two
- * designs read differently before a word is compared.
+ * Travel & Stay, Conservatory.
+ *
+ * Same information architecture as Gilded Hour by design (see the note there); what differs is the
+ * kit — specimen cards, kraft labels, a single washed sheet rather than alternating plates — and the
+ * ground each section sits on. The two pages are one composition in two expressions, and the
+ * distinction between those is the open item from this level's design review.
  */
 export const ConservatoryTravelPage: ContentRecipe<TravelProps> = ({
   venue,

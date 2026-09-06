@@ -29,7 +29,7 @@ export function HandoffList({ handoffs, heading }: { handoffs: ExternalHandoff[]
         {handoffs.map((h) => (
           <li key={`${h.provider}-${h.url}`} className="flex flex-col gap-1">
             <HandoffLink handoff={h} />
-            <p className="text-sm text-primary/80">{h.disclosure}</p>
+            <p className="hint">{h.disclosure}</p>
           </li>
         ))}
       </ul>

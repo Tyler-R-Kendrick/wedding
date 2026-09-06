@@ -47,7 +47,14 @@ export const testPrincipalSchema = z.discriminatedUnion('kind', [
 ]);
 export type TestPrincipalSpec = z.infer<typeof testPrincipalSchema>;
 
-export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge'] as const;
+/*
+ * What a seeded test guest can reach. `view_travel_tools` was missing, so every test principal was
+ * refused at /trip with "This page is for invited guests" — which meant the signed-in trip page had
+ * NO e2e or axe coverage at all, while the spec that visits /trip asserted the signed-out state and
+ * passed. Production was never affected (`policy/derive.ts` grants it from the real entitlement
+ * source); this list is the test-only mirror that had drifted from it.
+ */
+export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools'] as const;
 export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle'] as const;
 
 export interface TestPrincipalEnv {

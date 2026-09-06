@@ -43,6 +43,28 @@ body {
   flex: 1 0 auto;
 }
 
+/*
+ * Secondary copy: field hints, price timestamps, walk times.
+ *
+ * Both properties are the point. `text-sm` put this copy at 14.875px, under the 17px floor this
+ * site sets because grandparents are a primary audience; and `text-primary/70` — a raw opacity on a
+ * token — computed to 4.12:1 on Conservatory's creme ground, under the 4.5:1 minimum. Axe caught
+ * the second only after the travel spec was made to run in both designs; before that it had only
+ * ever visited the default one.
+ */
+.hint {
+  color: var(--color-on-surface-muted);
+  font-size: max(17px, 0.95rem);
+}
+
+/* Section kicker above a heading. Same reason as `.hint`: a token colour, not an opacity on one. */
+.eyebrow {
+  color: var(--color-on-surface-muted);
+  font-size: max(17px, 0.95rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .site :focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 2px;

@@ -48,7 +48,7 @@ function Todo({ children }: { children: ReactNode }) {
 function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="border-t border-primary/20 py-10">
-      {eyebrow ? <p className="text-sm uppercase tracking-wide text-primary/70">{eyebrow}</p> : null}
+      {eyebrow ? <p className="uppercase tracking-wide text-primary">{eyebrow}</p> : null}
       <h2 id={`${id}-title`} className="mt-1 text-2xl font-semibold">
         {title}
       </h2>
@@ -77,19 +77,19 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
       {block?.note ? <p className="mt-2">{block.note}</p> : null}
       <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
-          <dt className="text-sm text-primary/70">Group rate</dt>
+          <dt className="hint">Group rate</dt>
           <dd>{block?.rateText ?? <Todo>the group rate</Todo>}</dd>
         </div>
         <div>
-          <dt className="text-sm text-primary/70">Book by</dt>
+          <dt className="hint">Book by</dt>
           <dd>{block?.cutoff ? formatLongDate(block.cutoff) : <Todo>the date to book by</Todo>}</dd>
         </div>
         <div>
-          <dt className="text-sm text-primary/70">Block dates</dt>
+          <dt className="hint">Block dates</dt>
           <dd>{block?.checkIn && block?.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Todo>the block dates</Todo>}</dd>
         </div>
         <div>
-          <dt className="text-sm text-primary/70">Booking code</dt>
+          <dt className="hint">Booking code</dt>
           <dd>{block?.code ?? <Todo>the booking code or link</Todo>}</dd>
         </div>
       </dl>
@@ -99,11 +99,11 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
         ) : venue.websiteUrl ? (
           <HandoffLink handoff={{ provider: 'chicagoathletichotel.com', label: 'Visit the hotel website', url: venue.websiteUrl, opensNewTab: true, disclosure: '' }} />
         ) : null}
-        <p className="text-sm text-primary/80">
+        <p className="hint">
           {placeholder ? 'The block link is not live yet; the hotel website shows standard rates. We never see your payment details.' : 'You will book directly with the hotel. We never see your payment details.'}
         </p>
       </div>
-      <p className="mt-3 text-sm text-primary/70">Last checked {formatLongDate(venue.verifiedAt.slice(0, 10))}.</p>
+      <p className="mt-3 hint">Last checked {formatLongDate(venue.verifiedAt.slice(0, 10))}.</p>
     </article>
   );
 }
@@ -114,14 +114,14 @@ function HotelCard({ hotel }: { hotel: HotelRecommendation }) {
     <li className="rounded-sm border border-primary/20 p-5">
       <h3 className="text-lg font-semibold">{hotel.name}</h3>
       {hotel.address ? (
-        <p className="mt-1 text-primary/80">
+        <p className="mt-1 text-primary">
           <a className="underline underline-offset-4" href={mapsUrl(hotel.address)} target="_blank" rel="noopener noreferrer external">
             {hotel.address}
             <span className="sr-only"> (opens in Google Maps, new tab)</span>
           </a>
         </p>
       ) : null}
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
         {hotel.walkMinutesToVenue !== null ? <span>{hotel.walkMinutesToVenue} min walk to the CAA</span> : null}
         {hotel.priceBand ? <span>Price band {hotel.priceBand}</span> : null}
         {hotel.freshness !== 'fresh' ? <span>Last checked {formatLongDate(hotel.verifiedAt.slice(0, 10))}</span> : null}
@@ -152,7 +152,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
   return (
     <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <header>
-        <p className="text-sm uppercase tracking-wide text-primary/70">Travel &amp; Stay</p>
+        <p className="uppercase tracking-wide text-primary">Travel &amp; Stay</p>
         <h1 className="mt-1 text-4xl font-semibold">Getting to Chicago</h1>
         <p className="mt-3 max-w-prose">
           We are getting married on {formatLongDate(WEDDING_DATE_ISO)} at the {facts.venue.name}. Here is how to get here and where to sleep, with links that always take you to the airline or hotel to book. We never handle payments.
@@ -196,7 +196,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
             We are still confirming a few nearby options at different prices. <Todo>which hotels we recommend nearby</Todo>
           </p>
         )}
-        <p className="text-sm text-primary/80">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p>
+        <p className="hint">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p>
       </Section>
 
       <Section id="flights" eyebrow="Compare" title="Search flights">
@@ -235,7 +235,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
         )}
       </Section>
 
-      <footer className="border-t border-primary/20 pt-6 text-sm text-primary/70">
+      <footer className="border-t border-primary/20 pt-6 hint">
         <p>Based on: {data.sources.map((s) => s.title).join(' · ')}.</p>
       </footer>
     </main>

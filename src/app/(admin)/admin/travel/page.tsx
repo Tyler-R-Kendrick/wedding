@@ -19,10 +19,10 @@ function Text({ name, label, value, type = 'text', hint }: { name: string; label
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium">
+      <label htmlFor={id} className="block font-medium">
         {label}
       </label>
-      {hint ? <p className="text-sm text-primary/70">{hint}</p> : null}
+      {hint ? <p className="hint">{hint}</p> : null}
       <input id={id} name={name} type={type} defaultValue={value ?? ''} className={INPUT} />
     </div>
   );
@@ -50,7 +50,7 @@ function HotelForm({ hotel }: { hotel?: HotelRecommendation }) {
       <Text name="sortOrder" label="Sort order" type="number" value={hotel?.sortOrder ?? 100} />
       <Text name="walkMinutesToVenue" label="Walk minutes to the CAA" type="number" value={hotel?.walkMinutesToVenue} />
       <div>
-        <label htmlFor={`band-${hotel?.id ?? 'new'}`} className="block text-sm font-medium">
+        <label htmlFor={`band-${hotel?.id ?? 'new'}`} className="block font-medium">
           Price band
         </label>
         <select id={`band-${hotel?.id ?? 'new'}`} name="priceBand" defaultValue={hotel?.priceBand ?? ''} className={INPUT}>
@@ -66,10 +66,10 @@ function HotelForm({ hotel }: { hotel?: HotelRecommendation }) {
       <Text name="websiteUrl" label="Website URL (allowlisted host)" value={hotel?.websiteUrl} />
       <Text name="bookingUrl" label="Booking URL (allowlisted host)" value={hotel?.bookingUrl} />
       <div className="sm:col-span-2">
-        <label htmlFor={`reasons-${hotel?.id ?? 'new'}`} className="block text-sm font-medium">
+        <label htmlFor={`reasons-${hotel?.id ?? 'new'}`} className="block font-medium">
           Reasons, one per line: kind | text | value
         </label>
-        <p className="text-sm text-primary/70">Kinds: {HOTEL_REASON_KINDS.join(', ')}. Objective only; never safety claims.</p>
+        <p className="hint">Kinds: {HOTEL_REASON_KINDS.join(', ')}. Objective only; never safety claims.</p>
         <textarea id={`reasons-${hotel?.id ?? 'new'}`} name="reasons" rows={4} defaultValue={(hotel?.reasons ?? []).map((r) => [r.kind, r.text, r.value ?? ''].join(' | ')).join('\n')} className={INPUT} />
       </div>
       <div className="flex flex-wrap gap-4 sm:col-span-2">
@@ -104,9 +104,9 @@ function LinkRow({ link }: { link: TravelLink }) {
     <li className="flex flex-col gap-2 rounded-sm border border-primary/20 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="font-medium">
-          {link.label} <span className="text-sm text-primary/70">({link.category} · {link.provider}{link.active ? '' : ' · hidden'})</span>
+          {link.label} <span className="hint">({link.category} · {link.provider}{link.active ? '' : ' · hidden'})</span>
         </p>
-        <p className="break-all text-sm">{link.url}</p>
+        <p className="break-all">{link.url}</p>
       </div>
       <form action={removeLinkAction}>
         <input type="hidden" name="id" value={link.id} />
@@ -153,7 +153,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
   return (
     <main id="main" className="mx-auto max-w-[60rem] px-4 pb-16 pt-10">
       <h1 className="text-3xl font-semibold">Travel (admin)</h1>
-      <p className="mt-2 text-primary/80">Provider status, the room block, curated hotels, and partner links. Links must point at: {allowedHosts.join(', ')}.</p>
+      <p className="mt-2 text-primary">Provider status, the room block, curated hotels, and partner links. Links must point at: {allowedHosts.join(', ')}.</p>
       {notice ? (
         <p role="status" className="mt-4 rounded-sm border border-primary/40 p-3">
           {notice}
@@ -168,7 +168,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
               return (
                 <div key={kind} className="rounded-sm border border-primary/20 p-4">
                   <dt className="font-semibold capitalize">{kind}</dt>
-                  <dd className="mt-1 text-sm">
+                  <dd className="mt-1">
                     <p>
                       {p.name} · mode {p.mode}
                     </p>
@@ -219,7 +219,7 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
           <input type="hidden" name="idempotencyKey" value={newId()} />
           <h3 className="text-lg font-semibold sm:col-span-2">Add a link</h3>
           <div>
-            <label htmlFor="link-category" className="block text-sm font-medium">
+            <label htmlFor="link-category" className="block font-medium">
               Category
             </label>
             <select id="link-category" name="category" className={INPUT} defaultValue="airline">

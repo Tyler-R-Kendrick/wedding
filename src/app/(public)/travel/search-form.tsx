@@ -30,13 +30,13 @@ function Field({ label, name, issue, children, hint }: { label: string; name: st
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-sm text-primary/70">
+        <p id={hintId} className="hint">
           {hint}
         </p>
       ) : null}
       {children({ id, describedBy, invalid: !!issue })}
       {issue ? (
-        <p id={errId} className="mt-1 text-sm font-medium text-primary" role="alert">
+        <p id={errId} className="mt-1 font-medium text-primary" role="alert">
           {issue}
         </p>
       ) : null}
@@ -51,7 +51,7 @@ function ErrorSummary({ state }: { state: SearchFormState }) {
     <div role="alert" className="rounded-sm border border-primary p-3">
       <p className="font-medium">{state.error.message}</p>
       {state.error.issues.length ? (
-        <ul className="mt-1 list-disc pl-5 text-sm">
+        <ul className="mt-1 list-disc pl-5">
           {state.error.issues.map((i) => (
             <li key={i.path}>{i.message}</li>
           ))}
@@ -63,7 +63,7 @@ function ErrorSummary({ state }: { state: SearchFormState }) {
 
 function SnapshotNote({ retrievedAt }: { retrievedAt: string }) {
   return (
-    <p className="text-sm text-primary/80">
+    <p className="hint">
       Prices as of {formatChicagoTime(retrievedAt)}. {REFRESH_BEFORE_BOOKING}
     </p>
   );
@@ -95,11 +95,11 @@ function FlightResults({ outcome }: { outcome: FlightSearchOutcome }) {
             <p className="mt-1 tabular-nums">
               {formatLocalDay(f.departAt)} · {formatLocalClock(f.departAt)} {f.origin} → {formatLocalClock(f.arriveAt)} {f.destination} (local times) · {formatDuration(f.durationMinutes)}
             </p>
-            <p className="mt-1 text-sm">
+            <p className="mt-1">
               <span className="font-medium">{f.transferLabel}</span>
               {f.transferCaution ? <span> — {f.transferCaution}</span> : null}
             </p>
-            {f.pricedAt ? <p className="text-sm text-primary/70">Price seen at {formatChicagoTime(f.pricedAt)}</p> : null}
+            {f.pricedAt ? <p className="hint">Price seen at {formatChicagoTime(f.pricedAt)}</p> : null}
             {f.bookingUrl ? (
               <p className="mt-2">
                 <a className="underline underline-offset-4" href={f.bookingUrl} target="_blank" rel="noopener noreferrer external">
@@ -137,8 +137,8 @@ function HotelResults({ outcome }: { outcome: HotelSearchOutcome }) {
               <span className="font-semibold">{h.name}</span>
               <span className="text-xl font-semibold tabular-nums">{h.nightlyCents !== undefined ? `${formatMoney(h.nightlyCents, h.currency)} / night` : h.isVenue ? 'Rates on the hotel site' : 'Rate on partner site'}</span>
             </p>
-            {h.address ? <p className="mt-1 text-primary/80">{h.address}</p> : null}
-            {h.walkMinutesToVenue !== undefined ? <p className="mt-1 text-sm">{h.walkMinutesToVenue} min walk to the CAA</p> : null}
+            {h.address ? <p className="mt-1 hint">{h.address}</p> : null}
+            {h.walkMinutesToVenue !== undefined ? <p className="mt-1">{h.walkMinutesToVenue} min walk to the CAA</p> : null}
             {h.bookingUrl ? (
               <p className="mt-2">
                 <a className="underline underline-offset-4" href={h.bookingUrl} target="_blank" rel="noopener noreferrer external">
@@ -162,7 +162,7 @@ export function FlightSearchForm({ defaults = {} }: { defaults?: Defaults }) {
   return (
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="flights" />
-      <p id={helpId} className="text-sm text-primary/80">
+      <p id={helpId} className="hint">
         We only search when you press the button, and nothing is booked or charged here. Prices come from the partner and change often.
       </p>
       <ErrorSummary state={state} />
@@ -226,7 +226,7 @@ export function HotelSearchForm({ defaults = {} }: { defaults?: Defaults }) {
   return (
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="hotels" />
-      <p id={helpId} className="text-sm text-primary/80">
+      <p id={helpId} className="hint">
         Live rates near the venue, only when you ask. The wedding block above has its own link once the planner confirms it.
       </p>
       <ErrorSummary state={state} />
