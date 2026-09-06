@@ -76,10 +76,24 @@ ADR's compliance check should be restated as "the tables exist and are empty", a
 **contract-change request** for whoever next edits ADR-0006.
 
 The ADR's other compliance check — `grep -rn "biometrics" dist/` over client bundles is empty — is
-also not literally satisfied: `/media/me` is a built route, so its client chunk exists whether or
-not the flag is on. What the tests do assert is the property the check was aiming at: with the flag
-off the page renders no consent copy, no policy version and no opt-in control, only the statement
-that the feature is off (`tests/ui/media-ai.test.tsx`).
+also not literally satisfied: `/media/me` and `/admin/biometrics` are built routes, so their client
+chunks exist whether or not the flag is on, and they contain the word (endpoint paths, button
+labels). Measured on a production build:
+
+```
+$ grep -rlI "biometric" .next/static
+.next/static/chunks/app/(guest)/media/me/page-*.js
+.next/static/chunks/app/(admin)/admin/biometrics/page-*.js
+
+$ grep -rlI "biometric identifier" .next/static     # the consent text itself
+(no matches)
+```
+
+The consent policy is never bundled: the server sends it only when the feature is actually
+available. That is the property the ADR's check was aiming at, and the one the tests assert — with
+the flag off the page renders no consent copy, no policy version and no opt-in control, only the
+statement that the feature is off (`tests/ui/media-ai.test.tsx`, and again in the browser in
+`tests/e2e/media-ai.spec.ts`).
 
 ## No bystander extraction
 
