@@ -10,6 +10,7 @@ import { ConservatoryGuidePage } from './guide';
 import { ConservatoryHomePage } from './home';
 import { ConservatoryRecommendationPage } from './recommendation';
 import { ConservatoryStoryPage } from './story';
+import { ConservatoryTravelPage } from './travel';
 import { ConservatoryVenueSpacePage } from './venue-space';
 import { ConservatoryWeddingPage } from './wedding';
 
@@ -28,5 +29,6 @@ export const content: ContentRecipes = {
   exploreCaa: ConservatoryExploreCaaPage,
   venueSpace: ConservatoryVenueSpacePage,
   wedding: ConservatoryWeddingPage,
+  travel: ConservatoryTravelPage,
   ask: ConservatoryAskPage,
 };

@@ -18,6 +18,11 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/explore.spec.ts',
   'tests/e2e/smoke.spec.ts',
   'tests/e2e/themes.spec.ts',
+  // Level 08: /travel and /trip are public and guest-gated respectively, and the spec only needs an
+  // anonymous visitor — it asserts that /trip and /admin/travel turn one away, rather than signing
+  // one in. It also reads the flights provider mode from /api/health, so the runner exports
+  // HEALTH_TOKEN alongside the server's.
+  'tests/e2e/travel.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
@@ -25,6 +30,8 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/claim.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',
+  // Level 08: the signed-in trip page needs the test-principal injector.
+  'tests/e2e/trip.spec.ts',
   'tests/security/idor.spec.ts',
   'tests/security/invitation.spec.ts',
   'tests/security/otp.spec.ts',

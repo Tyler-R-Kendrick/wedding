@@ -805,6 +805,12 @@
 
 .gh-card__inner {
   display: grid;
+
+  /* A grid item's default `min-width: auto` is its content's minimum, so a long unbroken heading
+     ("Chicago Athletic Association Hotel") widened the implicit track past its container: at 390px
+     the card's children measured 609px and ran to x=670. `body { overflow-x: clip }` hid the
+     overflow rather than the truncation, so the title simply read "CHICAGO ATHLETIC A". */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-md);
   padding: var(--spacing-xl);
 }

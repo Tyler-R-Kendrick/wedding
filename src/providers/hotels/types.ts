@@ -19,7 +19,10 @@ export interface HotelResult {
   /** Walking minutes to the venue when known. */
   walkMinutesToVenue?: number;
   nightlyCents?: number;
+  totalCents?: number;
   currency?: string;
+  /** When this rate was observed. Guests are told to refresh before booking. */
+  pricedAt?: string;
   bookingUrl?: string;
   /** True for the venue hotel itself (room block guidance comes from the planner). */
   isVenue?: boolean;
@@ -31,4 +34,6 @@ export interface HotelsProvider extends ProviderDescriptor {
   deepLink(request: HotelSearchRequest): ExternalHandoff;
   /** Handoff to the venue hotel's official site. Group-block links are admin-configured, never hard-coded. */
   venueHandoff(): ExternalHandoff;
+  /** Additional partner search links for the same request (e.g. Hyatt), all on the redirect allowlist. */
+  extraHandoffs(request: HotelSearchRequest): ExternalHandoff[];
 }
