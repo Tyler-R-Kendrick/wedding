@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
 import { formatChicagoDateTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
@@ -174,9 +175,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
                   {formatChicagoDateTime(w.startAt)} → {formatChicagoDateTime(w.endAt)}
                 </p>
                 <p className="mt-1 text-sm">
-                  <a className="underline underline-offset-4" href="/share-an-adventure">
+                  {/* `Link` since level 05 merged: /share-an-adventure is a real route now, so this
+                      is client-side navigation and gets prefetched, not a full document load. */}
+                  <Link className="underline underline-offset-4" href="/share-an-adventure">
                     See what we suggest for this window
-                  </a>
+                  </Link>
                 </p>
               </li>
             ))}

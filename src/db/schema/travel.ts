@@ -1,6 +1,9 @@
 import { boolean, date, index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import type { GuestId, HouseholdId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
+// Level 06 owns these. Swarm F built before they existed, so its guest and household columns were
+// plain text; they are real foreign keys as of this integration rather than debt deferred to 15.
+import { guests, households } from './guests';
 
 /**
  * Travel & Stay (level 08). Guest-owned rows carry `guest_id` + `household_id` so every
@@ -77,8 +80,17 @@ export interface ItineraryDetails {
 export const guestTravelProfiles = pgTable(
   'guest_travel_profiles',
   {
-    guestId: text('guest_id').$type<GuestId>().primaryKey(),
-    householdId: text('household_id').$type<HouseholdId>().notNull(),
+    // Cascade: a travel profile is opt-in personal data about one guest (home city, airport,
+    // travel dates), so deleting the guest must delete it. The household column matches what
+    // level 07 chose for `guest_needs`, so there is one deletion story, not two.
+    guestId: text('guest_id')
+      .$type<GuestId>()
+      .primaryKey()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .$type<HouseholdId>()
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
     homeCity: text('home_city'),
     homeRegion: text('home_region'),
     /** IATA code the guest prefers to fly from. */
@@ -106,8 +118,14 @@ export const guestItineraryItems = pgTable(
   'guest_itinerary_items',
   {
     id: text('id').primaryKey(),
-    guestId: text('guest_id').$type<GuestId>().notNull(),
-    householdId: text('household_id').$type<HouseholdId>().notNull(),
+    guestId: text('guest_id')
+      .$type<GuestId>()
+      .notNull()
+      .references(() => guests.id, { onDelete: 'cascade' }),
+    householdId: text('household_id')
+      .$type<HouseholdId>()
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
     kind: text('kind').$type<ItineraryKind>().notNull(),
     status: text('status').$type<ItineraryStatus>().notNull().default('planned'),
     title: text('title').notNull(),

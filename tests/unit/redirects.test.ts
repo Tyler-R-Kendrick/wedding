@@ -47,6 +47,12 @@ describe('redirect allowlist', () => {
       'https://x.maps.apple.com/',
       'https://user:pw@www.hyatt.com/',
       'https://skyscanner.evil.com/',
+      // The allowlist's only regex entry, so the shapes a regex host matcher usually leaks on.
+      // Each of these ends in a domain the attacker controls, or borrows the brand as a substring.
+      'https://skyscanner.com.evil.com/',
+      'https://notskyscanner.com/',
+      'https://attacker-skyscanner.com/',
+      'https://skyscanner.com.attacker-skyscanner.com/',
       'javascript:alert(1)',
       'not a url',
     ]) {

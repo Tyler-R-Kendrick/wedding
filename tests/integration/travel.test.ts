@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { POST as webhookPost } from '@/app/(public)/travel/webhooks/duffel/route';
 import { createCapabilityContext, invoke, invokeByName } from '@/capabilities';
 import {
@@ -25,11 +25,13 @@ import type { ExternalHandoff } from '@/contracts/providers';
 import { ok, type Result } from '@/contracts/result';
 import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID } from '@/domain/travel';
 import { getDb } from '@/db/client';
+import { FX } from '@/db/seed/fixtures';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { DeepLinkOnlyFlights, MockFlights, parseDuffelEvent, signDuffelPayload, verifyDuffelSignature, type FlightsProvider } from '@/providers/flights';
 import { DeepLinkOnlyHotels } from '@/providers/hotels';
 import { setProviderOverride } from '@/providers/registry';
+import { seedSwarmE } from './helpers/swarm-e';
 
 const guestPrincipal = (over: Partial<GuestPrincipal> = {}): GuestPrincipal => {
   const guestId = over.guestId ?? newId<GuestId>();
@@ -54,11 +56,21 @@ const adminPrincipal = (entitlements: Entitlement[]): AdminPrincipal => ({
   sessionId: 'a',
 });
 
-const guestA = guestPrincipal();
-const managerA = guestPrincipal({ householdId: guestA.householdId, actsFor: [] });
-managerA.actsFor = [managerA.guestId, guestA.guestId];
-const guestB = guestPrincipal();
-const guestNoEntitlement = guestPrincipal({ entitlements: new Set() });
+/**
+ * These principals name the seeded fixture households rather than freshly minted ids.
+ *
+ * `guest_travel_profiles` and `guest_itinerary_items` carry real foreign keys to `guests` and
+ * `households` as of this level's integration — Swarm F built before those tables existed, so its
+ * columns were plain text and these tests were writing rows for guests that did not exist. With the
+ * constraint in place the writes are refused, which is the constraint working: a travel profile
+ * belongs to a guest, and orphaned personal data is exactly what "delete the guest" must not leave
+ * behind. Household A gives a member (A2) and its manager (A1, who acts for the household);
+ * household B gives an unrelated guest for the IDOR cases.
+ */
+const guestA = guestPrincipal({ guestId: FX.guestA2, householdId: FX.householdA, actsFor: [FX.guestA2] });
+const managerA = guestPrincipal({ guestId: FX.guestA1, householdId: FX.householdA, actsFor: [FX.guestA1, FX.guestA2] });
+const guestB = guestPrincipal({ guestId: FX.guestB1, householdId: FX.householdB, actsFor: [FX.guestB1] });
+const guestNoEntitlement = guestPrincipal({ guestId: FX.guestC1, householdId: FX.householdC, actsFor: [FX.guestC1], entitlements: new Set() });
 const contentAdmin = adminPrincipal(['admin_content']);
 // Admin support reads still need the guest-tool entitlement plus admin_guest_ops (the identity swarm derives both).
 const fullAdmin = adminPrincipal(['admin_content', 'admin_integrations', 'admin_guest_ops', 'view_travel_tools']);
@@ -76,6 +88,12 @@ const expectErr = (r: { ok: boolean; error?: { code: string } }, code: string) =
   expect(r.ok, `expected ${code}`).toBe(false);
   if (!r.ok) expect(r.error!.code).toBe(code);
 };
+
+beforeAll(async () => {
+  // `seedSwarmE` seeds the events first and then the fixture households: `event_entitlements`
+  // references `events`, so the two cannot be seeded the other way round.
+  await seedSwarmE();
+});
 
 afterEach(() => {
   setProviderOverride('flights', undefined);
