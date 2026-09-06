@@ -94,6 +94,25 @@ fail. Grepped the rest of the suite for the same coupling: the other 26 `localho
 unit and integration tests building synthetic `Request` objects whose host and origin are set
 together, so they are self-consistent and carry no port dependency.
 
+**A fifth: the unit job failed with every test passing.** `Tests 217 passed`, then `Errors 4 errors`
+and exit 1 — four uncaught `ReferenceError: window is not defined` thrown from React's scheduler
+after `tests/ui/placeholders.test.tsx`. The count is the tell: that file makes exactly four
+`render()` calls and no `unmount()` calls, while its sibling `tests/ui/home.test.tsx` unmounts every
+render and is never implicated. Testing Library registers its own cleanup only under
+`globals: true`, which this project does not set, so those four React roots stay live, keep
+scheduler work queued, and can fire a callback after Vitest tears the jsdom environment down.
+
+It would have been easy to call this a flake and press re-run — it had passed on the previous head
+minutes earlier. It is not one. Measured before changing anything: **0 failures in 12 unloaded
+runs**, then **2 failures in 8 runs** of the exact CI command under eight-way CPU contention, each
+with exactly four errors. The unloaded sandbox simply could not lose the race a shared runner loses.
+
+Fixed at the cause and one level up from the symptom: `tests/ui/setup.ts` registers
+`afterEach(cleanup)` for the whole `ui` project rather than patching the one spec, so the UI tests
+later levels add are covered without their authors having to know to unmount by hand. Re-measured
+under the identical eight-way contention: **0 failures in 8 runs**, `217 passed` in every one — the
+test count is unchanged, so nothing was skipped or disabled to get there.
+
 ## 2. Migrations — the part that would have failed silently
 
 Level 05 and level 06 each generated a `0002`. Taking either ledger alone leaves the other's SQL on disk unreferenced while a later migration still runs against tables that were never created.
