@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { BASE_URL, callCapability, contextAs, IDS, key } from './helpers/principal';
+import { callCapability, contextAs, IDS, key } from './helpers/principal';
 
 /** Seating reveal: admin publishes, the guest's Your Weekend shows the table on the floor plan. */
 test.describe.configure({ mode: 'serial' });
@@ -23,7 +23,7 @@ test('the table appears only after the couple publishes seating, and disappears 
 
   const ctx = await contextAs(browser, 'A1');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/your-weekend`);
+  await page.goto('/your-weekend');
   await expect(page.locator('#main')).toContainText('Your table will appear here once seating is published.');
   expect(await page.content()).not.toContain(TABLE_NAME);
 

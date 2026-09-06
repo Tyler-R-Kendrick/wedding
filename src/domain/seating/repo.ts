@@ -47,9 +47,43 @@ export async function deleteTable(db: Db, id: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** Assigns (or moves) guests; `tableId: null` unassigns. One seat per guest is enforced by the unique index. */
-export async function assignSeats(db: Db, changes: ReadonlyArray<{ guestId: string; tableId: string | null; seatNumber: number | null }>, now: Date): Promise<void> {
-  await db.transaction(async (tx) => {
+export interface SeatingCapacityConflict {
+  tableId: string;
+  name: string;
+  capacity: number;
+  requested: number;
+}
+
+/**
+ * Assigns (or moves) guests; `tableId: null` unassigns. One seat per guest is enforced by the unique
+ * index, and capacity is enforced *inside the transaction* — read outside it, two planners saving at
+ * once could each see room for the last seat and both be allowed to take it.
+ */
+export async function assignSeats(
+  db: Db,
+  changes: ReadonlyArray<{ guestId: string; tableId: string | null; seatNumber: number | null }>,
+  now: Date,
+): Promise<{ ok: true } | { ok: false; conflict: SeatingCapacityConflict }> {
+  return db.transaction(async (tx) => {
+    const [tables, current] = await Promise.all([
+      tx.select().from(seatingTables),
+      tx.select({ guestId: seatAssignments.guestId, tableId: seatAssignments.tableId }).from(seatAssignments),
+    ]);
+    const tableById = new Map(tables.map((t) => [t.id, t]));
+    const next = new Map(current.map((a) => [a.guestId, a.tableId]));
+    for (const c of changes) {
+      if (c.tableId) next.set(c.guestId, c.tableId);
+      else next.delete(c.guestId);
+    }
+    const counts = new Map<string, number>();
+    for (const t of next.values()) counts.set(t, (counts.get(t) ?? 0) + 1);
+    for (const [tableId, n] of counts) {
+      const t = tableById.get(tableId);
+      // Return, do not `tx.rollback()`: rollback throws to abort the transaction, which would surface
+      // as an `internal` error instead of the conflict. Nothing has been written yet at this point,
+      // so returning leaves the transaction with no effect either way.
+      if (t && n > t.capacity) return { ok: false as const, conflict: { tableId, name: t.name, capacity: t.capacity, requested: n } };
+    }
     for (const c of changes) {
       if (!c.tableId) {
         await tx.delete(seatAssignments).where(eq(seatAssignments.guestId, c.guestId));
@@ -60,6 +94,7 @@ export async function assignSeats(db: Db, changes: ReadonlyArray<{ guestId: stri
         .values({ id: newId(), guestId: c.guestId, tableId: c.tableId, seatNumber: c.seatNumber, createdAt: now, updatedAt: now })
         .onConflictDoUpdate({ target: seatAssignments.guestId, set: { tableId: c.tableId, seatNumber: c.seatNumber, updatedAt: now } });
     }
+    return { ok: true as const };
   });
 }
 
@@ -122,8 +157,16 @@ export async function draftSnapshot(db: Db): Promise<SeatingSnapshot> {
 
 /** Freezes the draft into a new live publication (any previous live row is closed first). */
 export async function publishSeating(db: Db, input: { by: PrincipalRef; note: string | null; now: Date }): Promise<SeatingPublicationRow> {
-  const snapshot = await draftSnapshot(db);
   return db.transaction(async (tx) => {
+    // Built inside the transaction: read before it opened, a concurrent draft edit could land between
+    // the read and the insert and be half-included in what guests then see as published.
+    const [tables, assignments] = await Promise.all([
+      tx.select().from(seatingTables).orderBy(asc(seatingTables.sortOrder), asc(seatingTables.name)),
+      tx.select().from(seatAssignments),
+    ]);
+    const ids = assignments.map((a) => a.guestId);
+    const names = ids.length ? await tx.select({ id: guests.id, firstName: guests.firstName, lastName: guests.lastName, kind: guests.kind, isNamed: guests.isNamed }).from(guests).where(inArray(guests.id, ids)) : [];
+    const snapshot = buildSnapshot(tables, assignments, new Map(names.map((n) => [n.id, guestDisplayName(n)])));
     await tx.update(seatingPublications).set({ unpublishedAt: input.now, unpublishedBy: input.by }).where(isNull(seatingPublications.unpublishedAt));
     const [row] = await tx.insert(seatingPublications).values({ id: newId(), snapshot, publishedAt: input.now, publishedBy: input.by, note: input.note }).returning();
     return row!;

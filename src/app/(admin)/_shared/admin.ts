@@ -14,7 +14,9 @@ export async function adminPrincipal(): Promise<{ principal: Principal; requestI
 /** Runs a capability for the current request's principal (authorization stays inside the pipeline). */
 export async function adminInvoke<I, O>(cap: CapabilityDescriptor<I, O>, input: unknown, extra: { idempotencyKey?: string } = {}) {
   const { principal, requestId } = await adminPrincipal();
-  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: extra.idempotencyKey });
+  // Same reason as the guest path: admin server actions reach invoke() directly, so the
+  // per-principal budget is wired here rather than left to the JSON capability route.
+  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: extra.idempotencyKey, rateLimit: true });
   return invoke(cap, ctx, input);
 }
 

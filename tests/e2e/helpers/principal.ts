@@ -6,7 +6,16 @@ import { fixtureId, seedId } from '../../../src/db/seed/ids';
  * NODE_ENV=test, TEST_AUTH_SECRET=<this>, SEED_TEST_FIXTURES=1 and NEXT_PUBLIC_SITE_URL=<BASE_URL>.
  */
 export const TEST_AUTH_SECRET = process.env.TEST_AUTH_SECRET ?? 'e2e-test-secret-0123456789';
-export const BASE_URL = (process.env.BASE_URL ?? 'http://localhost:3107').replace(/\/+$/, '');
+
+/**
+ * Resolved exactly as playwright.config.ts resolves its own `baseURL`, and for the same reason: the
+ * origin these tests send must be the origin the server believes it is serving. `assertSameOriginJson`
+ * compares the request's Origin against the site URL, so a base that disagrees with the running
+ * server turns every authenticated POST into a 401 and quietly changes what the assertions mean —
+ * a hardcoded port default did exactly that to the level-06 passkey journey.
+ */
+const PORT = process.env.PORT ?? '3000';
+export const BASE_URL = (process.env.BASE_URL ?? `http://localhost:${PORT}`).replace(/\/+$/, '');
 
 export const IDS = {
   householdA: fixtureId('HHA'),
@@ -54,7 +63,7 @@ export interface ApiResult {
 }
 
 export async function callCapability(request: APIRequestContext, name: string, as: PrincipalName | null, input: unknown, extra: { idempotencyKey?: string; confirmationToken?: string; secret?: string } = {}): Promise<ApiResult> {
-  const res = await request.post(`${BASE_URL}/api/capabilities/${name}`, { headers: apiHeaders(as, extra.secret), data: { input, ...(extra.idempotencyKey ? { idempotencyKey: extra.idempotencyKey } : {}), ...(extra.confirmationToken ? { confirmationToken: extra.confirmationToken } : {}) } });
+  const res = await request.post(`/api/capabilities/${name}`, { headers: apiHeaders(as, extra.secret), data: { input, ...(extra.idempotencyKey ? { idempotencyKey: extra.idempotencyKey } : {}), ...(extra.confirmationToken ? { confirmationToken: extra.confirmationToken } : {}) } });
   return { status: res.status(), body: (await res.json()) as ApiResult['body'] };
 }
 
@@ -67,7 +76,9 @@ export function key(): string {
 }
 
 export async function contextAs(browser: Browser, name: PrincipalName | null, opts: { viewport?: { width: number; height: number } } = {}): Promise<BrowserContext> {
-  return browser.newContext({ extraHTTPHeaders: principalHeaders(name), ...(opts.viewport ? { viewport: opts.viewport } : {}) });
+  // `browser.newContext()` does not inherit the config's `use.baseURL`, so pass it: specs navigate
+  // with relative paths and must land on the server Playwright actually started.
+  return browser.newContext({ baseURL: BASE_URL, extraHTTPHeaders: principalHeaders(name), ...(opts.viewport ? { viewport: opts.viewport } : {}) });
 }
 
 /** Replaces volatile values so JSON can be snapshot-tested. */

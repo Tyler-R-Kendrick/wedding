@@ -111,6 +111,17 @@ export async function invoke<I, O>(
     }
   }
 
+  // 3c. per-principal rate limit, inside the pipeline so every entry point shares one budget. The
+  //     JSON route additionally limits by IP before a principal exists; this is the authenticated
+  //     bucket, and it is what stops a signed-in guest driving unbounded writes (and outbox rows and
+  //     e-mail jobs) through a server action, which reaches `invoke` without passing that route.
+  if (services.limiter) {
+    const decision = await services.limiter.consume(`cap:${principalKey(actor)}`, 'capability');
+    if (!decision.allowed) {
+      return finish(err(new CapabilityError('rate_limited', 'You have tried that a few times. Please wait a moment and try again.', { retryAfterMs: decision.retryAfterMs })));
+    }
+  }
+
   // 4. step-up
   if (descriptor.stepUp) {
     const fresh = requireFreshSession(ctx.principal, ctx.now);

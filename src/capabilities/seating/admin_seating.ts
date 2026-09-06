@@ -167,26 +167,21 @@ export const adminAssignSeats = defineCapability<z.infer<typeof assignInput>, { 
   output: z.object({ applied: z.number() }),
   async handler(ctx, i) {
     const db = await eDb(ctx);
-    const [tables, assignments, guests] = await Promise.all([listTables(db), listAssignments(db), listAllGuests(db)]);
+    // Existence is checked here for a clear message; capacity is checked in the transaction below.
+    const [tables, guests] = await Promise.all([listTables(db), listAllGuests(db)]);
     const guestIds = new Set(guests.map((g) => g.id));
     const tableById = new Map(tables.map((t) => [t.id, t]));
     for (const c of i.changes) {
       if (!guestIds.has(c.guestId)) return err(new CapabilityError('not_found', 'One of those guests does not exist.'));
       if (c.tableId && !tableById.has(c.tableId)) return err(new CapabilityError('not_found', 'One of those tables does not exist.'));
     }
-    // Capacity check against the resulting chart.
-    const next = new Map(assignments.map((a) => [a.guestId, a.tableId]));
-    for (const c of i.changes) {
-      if (c.tableId) next.set(c.guestId, c.tableId);
-      else next.delete(c.guestId);
+    // Capacity is enforced inside assignSeats' transaction, so two planners saving at once cannot
+    // both be told there is room for the last seat. The message comes from there for the same reason.
+    const seated = await assignSeats(db, i.changes.map((c) => ({ guestId: c.guestId, tableId: c.tableId, seatNumber: c.seatNumber ?? null })), ctx.now);
+    if (!seated.ok) {
+      const { tableId, name, capacity, requested } = seated.conflict;
+      return err(new CapabilityError('conflict', `${name} seats ${capacity}; that would make ${requested}.`, { tableId, capacity, requested }));
     }
-    const counts = new Map<string, number>();
-    for (const t of next.values()) counts.set(t, (counts.get(t) ?? 0) + 1);
-    for (const [tableId, n] of counts) {
-      const t = tableById.get(tableId)!;
-      if (n > t.capacity) return err(new CapabilityError('conflict', `${t.name} seats ${t.capacity}; that would make ${n}.`, { tableId, capacity: t.capacity, requested: n }));
-    }
-    await assignSeats(db, i.changes.map((c) => ({ guestId: c.guestId, tableId: c.tableId, seatNumber: c.seatNumber ?? null })), ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'seating.changed', target: { type: 'seat_assignments', id: 'batch' }, outcome: 'success', requestId: ctx.requestId, metadata: { changes: i.changes.length } });
     return ok({ data: { applied: i.changes.length }, sources: [] });
   },

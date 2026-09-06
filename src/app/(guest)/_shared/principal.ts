@@ -16,6 +16,8 @@ export async function requestPrincipal(): Promise<{ principal: Principal; reques
 /** Context for in-process capability calls from server components and server actions (always surface `ui`). */
 export async function uiContext(extra: { idempotencyKey?: string; confirmationToken?: string; surface?: keyof CapabilityExposure } = {}) {
   const { principal, requestId } = await requestPrincipal();
-  const ctx = await createCapabilityContext({ principal, requestId, surface: extra.surface ?? 'ui', idempotencyKey: extra.idempotencyKey, confirmationToken: extra.confirmationToken });
+  // rateLimit: this path reaches invoke() without going through the JSON capability route, so the
+  // per-principal budget has to be wired here or server actions are unlimited.
+  const ctx = await createCapabilityContext({ principal, requestId, surface: extra.surface ?? 'ui', idempotencyKey: extra.idempotencyKey, confirmationToken: extra.confirmationToken, rateLimit: true });
   return { ctx, principal, requestId };
 }

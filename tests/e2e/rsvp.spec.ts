@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { BASE_URL, callCapability, contextAs, key } from './helpers/principal';
+import { callCapability, contextAs, key } from './helpers/principal';
 
 /** Multi-user RSVP journey on a 390px phone and a 1440px desktop (tablet skipped). */
 test.describe.configure({ mode: 'serial' });
@@ -22,7 +22,7 @@ test.beforeAll(async ({ request }) => {
 test('a household manager answers for the whole household, reviews inline, confirms, and gets a restated confirmation', async ({ browser }) => {
   const ctx = await contextAs(browser, 'A1');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/rsvp`);
+  await page.goto('/rsvp');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('will you join us');
   await axeClean(page);
 
@@ -62,7 +62,7 @@ test('a household manager answers for the whole household, reviews inline, confi
   await axeClean(page);
 
   // A second visit shows what is on file and the weekend reflects it.
-  await page.goto(`${BASE_URL}/your-weekend`);
+  await page.goto('/your-weekend');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Ada');
   await expect(page.locator('#main')).toContainText('Review or change your RSVP');
   await axeClean(page);
@@ -72,7 +72,7 @@ test('a household manager answers for the whole household, reviews inline, confi
 test('another household member sees only themselves; another household sees nothing of the first', async ({ browser }) => {
   const a2 = await contextAs(browser, 'A2');
   const page = await a2.newPage();
-  await page.goto(`${BASE_URL}/rsvp`);
+  await page.goto('/rsvp');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Ben');
   await expect(page.locator('#main')).toContainText('On file: attending');
   await expect(page.locator('#main')).not.toContainText('Ada Testhouse');
@@ -81,7 +81,7 @@ test('another household member sees only themselves; another household sees noth
 
   const b1 = await contextAs(browser, 'B1');
   const page2 = await b1.newPage();
-  await page2.goto(`${BASE_URL}/your-weekend`);
+  await page2.goto('/your-weekend');
   await expect(page2.getByRole('heading', { level: 1 })).toContainText('Dev');
   await expect(page2.locator('#main')).not.toContainText('Testhouse');
   await expect(page2.locator('#main')).toContainText('Not answered yet');
@@ -91,7 +91,7 @@ test('another household member sees only themselves; another household sees noth
 test('errors are inline text, summarised, and focused; nothing is saved until confirmed', async ({ browser }) => {
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/rsvp`);
+  await page.goto('/rsvp');
   await page.getByRole('group', { name: 'Will Fin attend the reception?' }).getByLabel('Yes, attending').check();
   await page.getByLabel('Fin is bringing a guest').check();
   await page.getByRole('button', { name: 'Review your answers' }).click();
@@ -101,7 +101,7 @@ test('errors are inline text, summarised, and focused; nothing is saved until co
   await expect(summary).toContainText('Please choose a meal');
   await expect(page.getByLabel('Meal for Fin', { exact: true })).toHaveAttribute('aria-invalid', 'true');
   await axeClean(page);
-  await page.goto(`${BASE_URL}/your-weekend`);
+  await page.goto('/your-weekend');
   await expect(page.locator('#main')).toContainText('Not answered yet');
   await ctx.close();
 });

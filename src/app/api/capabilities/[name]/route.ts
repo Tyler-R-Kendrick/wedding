@@ -1,12 +1,10 @@
 import { z } from 'zod';
 import { invokeByName, createCapabilityContext } from '@/capabilities';
 import { CapabilityError, HTTP_STATUS_FOR_CODE } from '@/contracts/errors';
-import { toPrincipalRef } from '@/contracts/principal';
 import { getDb } from '@/db/client';
 import { env } from '@/lib/env';
 import { getPrincipal } from '@/lib/principal';
 import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
-import { principalKey } from '@/policy/confirmation';
 import { getProvider } from '@/providers/registry';
 
 export const dynamic = 'force-dynamic';
@@ -57,9 +55,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     const sameOrigin = assertSameOriginJson(request);
     if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
   }
-  const limiterKey = principal.kind === 'anonymous' ? `cap:anon:${ip}` : `cap:${principalKey(toPrincipalRef(principal))}`;
-  const decision = await limiter.consume(limiterKey, 'capability');
-  if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
+  // Anonymous callers all share one principal key, so their authenticated bucket would be global;
+  // they are limited by client instead. Signed-in callers are limited inside invoke() (one budget
+  // for this route and for server actions alike), so there is no second consume here.
+  if (principal.kind === 'anonymous') {
+    const anonDecision = await limiter.consume(`cap:anon:${ip}`, 'capability');
+    if (!anonDecision.allowed) return rateLimited(anonDecision.retryAfterMs, requestId);
+  }
 
   const raw = await readBodyText(request, MAX_BODY_BYTES);
   if (!raw.ok) return errorResponse(raw.error, requestId);
@@ -80,6 +82,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     confirmationToken: body.confirmationToken,
     // Anything arriving over HTTP is caller-controlled.
     inputTrust: 'UNTRUSTED_USER_CONTENT',
+    // Signed-in callers are limited inside the pipeline; anonymous ones were limited by client above.
+    rateLimit: principal.kind !== 'anonymous',
   });
   const result = await invokeByName(name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);
