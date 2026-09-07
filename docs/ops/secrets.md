@@ -6,6 +6,10 @@ into chat sends them through the model. This repo answers that twice over:
 1. **Don't ask.** Most variables never need a human. The sandbox mints them, derives them,
    finds them on disk, provisions them through a connected MCP server, or registers itself
    with the provider. A field on a form is the *last* resort, not the first.
+   That includes not asking *which features the site has*: `src/lib/env.ts` already declares
+   what production refuses to start without, and `PRODUCT.md` already lists the planned
+   surfaces. The plan is derived from the repo — `npm run secrets:acquire` takes no
+   arguments and goes after everything the site needs.
 2. **When you must ask, ask for a click, not a key.** A delegated authorization — an
    auth.md claim, an RFC 8628 device link, an OAuth redirect this page catches — leaves the
    secret between you and the provider. When a value really does have to be typed, it is
@@ -55,29 +59,48 @@ endpoint that can mint a key — those are honestly marked `paste`, and the page
 ## Commands
 
 ```bash
-npm run secrets:autofill                      # everything that needs no account
-npm run secrets:plan -- --capability email    # what would happen, and what you'd have to do
-npm run secrets:acquire -- --capability email # actually do it
-npm run secrets:resume                        # finish ceremonies you have since approved
-npm run secrets:verify                        # is what landed actually accepted by the provider?
-npm run secrets:authmd                        # which providers publish agent registration today
-npm run secrets:page                          # rebuild the artifact HTML after a registry change
+npm run secrets:autofill                        # everything that needs no account
+npm run secrets:plan                            # what it will do, and what (if anything) you'd click
+npm run secrets:acquire                         # do it — no arguments; the repo says what is needed
+npm run secrets:acquire -- --credential resend  # narrow it to one
+npm run secrets:acquire -- --all                # include the optional tooling (fal, Stitch, Openverse)
+npm run secrets:resume                          # finish ceremonies you have since approved
+npm run secrets:verify                          # is what landed actually accepted by the provider?
+npm run secrets:authmd                          # which providers publish agent registration today
+npm run secrets:page                            # rebuild the artifact HTML after a registry change
 ```
+
+### How the plan is derived
+
+| `need` | Meaning | Members |
+|---|---|---|
+| `launch` | `src/lib/env.ts` refuses to boot production without it, or it powers a planned surface | Resend, S3 storage, Anthropic |
+| `feature` | A shipped page degrades honestly without it | Postgres, Cloudflare Stream, embeddings, travel, Uber |
+| `optional` | Tooling for us, invisible to guests — needs `--all` | fal.ai, Stitch, Openverse |
+
+`alternateOf` groups mean **one is enough**: any embeddings provider, any travel provider.
+The queue shows the group once and stops asking as soon as one member lands.
 
 ## The loop, end to end
 
-1. **Open the page** and tick outcomes — "send real e-mails to guests", "keep guest photos
-   safely". You are choosing what the site does, not naming variables.
-2. **Tell Claude "apply the secret drop".** It reads `plan/current` from the page's store,
-   writes `.secrets/plan.json`, and runs `npm run secrets:acquire`.
-3. **Claude mirrors `.secrets/outbox.json` back into the store.** Pending ceremonies become
-   Authorize buttons on the page; every credential gets a live status chip.
-4. **You click any links waiting for you.** Device links complete on their own. An
-   authorization-code provider redirects back to the page, which seals the one-time code
-   with the sandbox's public key — the code is worthless without the PKCE verifier that
-   never left the sandbox.
-5. **Claude runs `npm run secrets:resume`**, exchanges the code, writes `.env`, and reports
-   the variable *names* that landed.
+The page is a work queue, not a form to complete. It is useful with **zero** actions: the
+sandbox is already walking the list.
+
+1. **Claude runs `npm run secrets:acquire`** — no plan needed, no question asked — and
+   mirrors `.secrets/outbox.json` into the page's store, so every credential carries a live
+   status chip and anything needing a human carries an **Authorize** button.
+2. **You do nothing, or one of two things:**
+   - *Have a key already?* Type it in the field on its row and press **Seal and send** once.
+     Every value typed anywhere on the page is sealed in that single press. Dropping a
+     `.env` does the same for all of them at once.
+   - *See an Authorize button?* Press it. The link carries the code inside it
+     (`verification_uri_complete`), so nothing is ever typed on the provider's site either.
+3. **Claude runs `npm run secrets:resume`**, exchanges anything you approved, writes `.env`,
+   and reports the variable *names* that landed.
+
+An authorization-code provider redirects back to the page, which seals the one-time code
+with the sandbox's public key — worthless without the PKCE verifier that never left the
+sandbox. Typed values survive a status update arriving mid-keystroke.
 
 `npm run secrets:verify` closes the loop: a key that is present but refused is worse than a
 missing one, because the app would take the live path and fail in front of guests.

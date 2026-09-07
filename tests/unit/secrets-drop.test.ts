@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 // The Secret Drop tooling is plain ESM under scripts/ so it can run in a bare sandbox
 // (no build, no tsx) — the tests import it the same way the scripts do.
 import { mergeEnv, parseDotenv, presentNames, quote } from '../../scripts/secrets/env-file.mjs';
-import { AUTOFILL, CAPABILITIES, CREDENTIALS, METHOD_RANK, clientRegistry, resolveLadderOrder, varIndex } from '../../scripts/secrets/registry.mjs';
+import { AUTOFILL, CREDENTIALS, METHOD_RANK, NEED, clientRegistry, resolveLadderOrder, varIndex } from '../../scripts/secrets/registry.mjs';
 
 describe('dotenv parsing', () => {
   it('reads export prefixes, comments and both quote styles', () => {
@@ -90,11 +90,20 @@ describe('credential registry', () => {
     }
   });
 
-  it('resolves every capability to credentials that exist', () => {
-    const ids = new Set(CREDENTIALS.map((c) => c.id));
-    for (const cap of CAPABILITIES) {
-      for (const need of cap.needs) expect(ids.has(need), `capability ${cap.id} needs unknown credential ${need}`).toBe(true);
+  it('states its own need, so nobody has to be asked what the site is for', () => {
+    for (const cred of CREDENTIALS) {
+      expect(Object.keys(NEED), `${cred.id} has need "${cred.need}"`).toContain(cred.need);
     }
+  });
+
+  it('groups alternates so one member satisfies the group', () => {
+    const groups = new Map<string, string[]>();
+    for (const cred of CREDENTIALS) {
+      if (!cred.alternateOf) continue;
+      groups.set(cred.alternateOf, [...(groups.get(cred.alternateOf) ?? []), cred.id]);
+    }
+    expect([...groups.keys()].sort()).toEqual(['embeddings', 'travel']);
+    for (const [group, members] of groups) expect(members.length, `${group} is not a choice`).toBeGreaterThan(1);
   });
 
   it('marks a variable as paste-only exactly when no rung can obtain it', () => {
@@ -124,4 +133,42 @@ describe('credential registry', () => {
   it('sorts a ladder by how little it asks of a person', () => {
     expect(resolveLadderOrder(['manual', 'device', 'generate'])).toEqual(['generate', 'device', 'manual']);
   });
+});
+
+describe('planning without asking', () => {
+  it('plans the whole required set with no arguments at all', async () => {
+    const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
+    const ids = resolvePlan().map((p) => p.cred.id);
+    expect(ids).toContain('resend');
+    expect(ids).toContain('storage');
+    expect(ids).toContain('anthropic');
+    // Tooling stays out of the default plan; --all opts into it.
+    expect(ids).not.toContain('fal');
+    expect(resolvePlan({ all: true }).map((p) => p.cred.id)).toContain('fal');
+  });
+
+  it('asks for only one member of an alternate group', () => {
+    const plan = resolvePlanSync();
+    const embeddings = plan.filter((id) => id === 'openai' || id === 'voyage');
+    const travel = plan.filter((id) => ['duffel', 'skyscanner', 'booking'].includes(id));
+    expect(embeddings).toHaveLength(1);
+    expect(travel).toHaveLength(1);
+  });
+
+  it('stops asking for a group once one member is already set', async () => {
+    const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
+    const withVoyage = resolvePlan({ alreadySet: new Set(['VOYAGE_API_KEY']) }).map((p) => p.cred.id);
+    expect(withVoyage).not.toContain('openai');
+    expect(withVoyage).not.toContain('voyage');
+  });
+});
+
+/** The default plan's credential ids, resolved eagerly for the synchronous assertions above. */
+function resolvePlanSync(): string[] {
+  return planIds;
+}
+let planIds: string[] = [];
+beforeAll(async () => {
+  const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
+  planIds = resolvePlan().map((p) => p.cred.id);
 });

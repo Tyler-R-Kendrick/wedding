@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { webcrypto, randomBytes } from 'node:crypto';
-import { CREDENTIALS, CAPABILITIES, AUTOFILL, METHOD_LABELS } from './registry.mjs';
+import { CREDENTIALS, AUTOFILL, METHOD_LABELS, NEED } from './registry.mjs';
 import { applyEnv, readEnv, presentNames, describe } from './env-file.mjs';
 import * as authmd from './authmd.mjs';
 import * as oauth from './oauth.mjs';
@@ -43,22 +43,37 @@ const gitConfig = (key) => { try { return execFileSync('git', ['config', '--get'
 
 /* --------------------------------------------------------------------- plan */
 
-/** Which credentials a set of capability ids implies. `anyOf` groups need only one. */
-export function resolvePlan({ capabilities = [], credentials = [] }) {
-  const want = new Map();
-  for (const id of capabilities) {
-    const cap = CAPABILITIES.find((c) => c.id === id);
-    if (!cap) continue;
-    for (const credId of cap.needs) {
-      const cred = byId.get(credId);
-      if (cred) want.set(credId, { cred, via: cap.id, optional: !!cap.anyOf });
+/**
+ * What to go and get. There is no question to ask: the registry already knows which
+ * credentials this site needs, so the default plan is "everything that is not just tooling".
+ * `--credential a,b` narrows it; `--all` adds the optional tooling too.
+ *
+ * An `alternateOf` group is satisfied by its first member — one embeddings provider is
+ * enough, one travel provider is enough — so the ladder stops asking once one lands.
+ */
+export function resolvePlan({ credentials = [], all = false, alreadySet = new Set() } = {}) {
+  if (credentials.length) {
+    const named = [];
+    for (const id of credentials) {
+      const cred = byId.get(id);
+      if (cred) named.push({ cred, why: 'asked for by name' });
     }
+    return named;
   }
-  for (const id of credentials) {
-    const cred = byId.get(id);
-    if (cred) want.set(id, { cred, via: 'direct', optional: false });
+  const satisfied = new Set();
+  for (const cred of CREDENTIALS) {
+    if (cred.alternateOf && cred.vars.every((v) => alreadySet.has(v))) satisfied.add(cred.alternateOf);
   }
-  return [...want.values()];
+  const plan = [];
+  for (const cred of CREDENTIALS) {
+    if (cred.need === 'optional' && !all) continue;
+    if (cred.alternateOf) {
+      if (satisfied.has(cred.alternateOf)) continue;
+      satisfied.add(cred.alternateOf); // take the first (cheapest ladder) member of the group
+    }
+    plan.push({ cred, why: NEED[cred.need] });
+  }
+  return plan;
 }
 
 /* ---------------------------------------------------------------- autofill */
@@ -226,16 +241,14 @@ async function runLadder(entry, ctx) {
 }
 
 async function commandRun({ dryRun }) {
-  const planFile = opt('plan', join(DIR, 'plan.json'));
-  const stored = await readJson(planFile, null);
-  const plan = resolvePlan({
-    capabilities: (opt('capability', '') || (stored?.capabilities || []).join(',')).split(',').filter(Boolean),
-    credentials: (opt('credential', '') || (stored?.credentials || []).join(',')).split(',').filter(Boolean),
-  });
-
   const autofilled = await runAutofill({ dryRun });
   const envText = await readEnv(envPath);
   const already = presentNames(envText);
+  const plan = resolvePlan({
+    credentials: (opt('credential', '')).split(',').filter(Boolean),
+    all: flag('all'),
+    alreadySet: already,
+  });
   // The Secret Drop page is the OAuth redirect target: its URL lives in .secrets/page.json,
   // written by build-page.mjs, so a redeploy to a new artifact URL updates the ceremonies too.
   const page = await readJson(join(DIR, 'page.json'), {});
@@ -309,7 +322,7 @@ async function writeOutbox({ autofilled, results }) {
       vars: cred.vars,
       set: set.length,
       of: cred.vars.length,
-      state: r?.state || (set.length === cred.vars.length ? 'already-set' : 'not-requested'),
+      state: r?.state || (set.length === cred.vars.length ? 'already-set' : 'queued'),
       method: r?.method || null,
       detail: r?.detail || r?.attempts?.map((a) => `${a.method}: ${a.outcome}`).join(' · ') || null,
       at: new Date().toISOString(),
@@ -336,22 +349,28 @@ function report({ autofilled, results }) {
 }
 
 async function commandPlan() {
+  const already = presentNames(await readEnv(envPath));
   const plan = resolvePlan({
-    capabilities: (opt('capability', '')).split(',').filter(Boolean),
     credentials: (opt('credential', '')).split(',').filter(Boolean),
+    all: flag('all'),
+    alreadySet: already,
   });
-  console.log('credential'.padEnd(20), 'best method'.padEnd(12), 'you do'.padEnd(30), 'unlocks');
+  console.log('credential'.padEnd(20), 'need'.padEnd(9), 'best method'.padEnd(12), 'you do'.padEnd(24), 'unlocks');
   for (const { cred } of plan) {
     const m = cred.ladder[0].method;
-    console.log(cred.id.padEnd(20), m.padEnd(12), (METHOD_LABELS[m]?.human || '').padEnd(30), cred.unlocks);
+    console.log(cred.id.padEnd(20), (cred.need || '').padEnd(9), m.padEnd(12), (METHOD_LABELS[m]?.human || '').padEnd(24), cred.unlocks);
   }
-  if (!plan.length) console.log('(nothing requested — pass --capability or --credential)');
+  console.log(`\n${plan.filter((p) => ['device', 'oauth', 'browser'].includes(p.cred.ladder[0].method)).length} of these can need a click from you; the rest are the sandbox's job.`);
 }
 
-switch (cmd) {
-  case 'plan': await commandPlan(); break;
-  case 'run': await commandRun({ dryRun: flag('dry-run') }); break;
-  case 'resume': await commandResume(); break;
-  case 'report': await writeOutbox({ autofilled: [], results: [] }).then(async () => console.log(await readFile(OUTBOX, 'utf8'))); break;
-  default: console.error('usage: acquire.mjs plan|run|resume|report [--capability a,b] [--credential x] [--wait 300] [--dry-run]'); process.exit(2);
+// Only dispatch when run as a command; `resolvePlan` is imported by the page build and tests,
+// and importing a module must never write files or exit the process.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  switch (cmd) {
+    case 'plan': await commandPlan(); break;
+    case 'run': await commandRun({ dryRun: flag('dry-run') }); break;
+    case 'resume': await commandResume(); break;
+    case 'report': await writeOutbox({ autofilled: [], results: [] }).then(async () => console.log(await readFile(OUTBOX, 'utf8'))); break;
+    default: console.error('usage: acquire.mjs plan|run|resume|report [--credential x,y] [--all] [--wait 300] [--dry-run]'); process.exit(2);
+  }
 }
