@@ -9,25 +9,31 @@
   var widthOut = document.getElementById('device-w');
   var notes = document.getElementById('notes-body');
 
-  function pressGroup(name, value) {
-    var buttons = document.querySelectorAll('[data-' + name + ']');
+  /* attr is the literal attribute (data-lab-theme); prop is its dataset key.
+     Querying by the camelCase dataset name matches nothing — the two are not
+     the same attribute. */
+  function pressGroup(attr, prop, value) {
+    var buttons = document.querySelectorAll('[' + attr + ']');
     for (var i = 0; i < buttons.length; i++) {
-      var b = buttons[i];
-      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+      buttons[i].setAttribute('aria-pressed', String(buttons[i].dataset[prop] === value));
     }
   }
 
   /* Theme: the device carries data-theme, so every token under it resolves
-     from the chosen kit's generated block. */
+     from the chosen kit's generated block. The chrome borrows the active
+     kit's signature colour so the frame belongs to what it is framing. */
+  var ACCENT = { 'gilded-hour': '#c9a648', conservatory: '#7e9c5f' };
+
   function setTheme(id) {
     if (device) device.setAttribute('data-theme', id);
-    pressGroup('labTheme', id);
+    document.documentElement.style.setProperty('--accent', ACCENT[id] || ACCENT['gilded-hour']);
+    pressGroup('data-lab-theme', 'labTheme', id);
   }
 
   function setWidth(px) {
     if (device) device.style.setProperty('--device-w', px + 'px');
     if (widthOut) widthOut.textContent = px + '×';
-    pressGroup('labWidth', px);
+    pressGroup('data-lab-width', 'labWidth', px);
   }
 
   function setScene(id) {

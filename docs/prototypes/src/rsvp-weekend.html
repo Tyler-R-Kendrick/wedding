@@ -1,6 +1,6 @@
 <title>Household RSVP &amp; Seating</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
@@ -36,15 +36,17 @@
 .count span { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-on-surface-muted); }
 </style>
 
-<header class="lab-head">
-  <div class="lab-head-main">
-    <p class="lab-kicker">Feature lab · level 07</p>
-    <h1 class="lab-title">Household RSVP, Your Weekend &amp; seating</h1>
-    <p class="lab-sub">One person answers for everyone under their roof — including a guest invited to the reception but not the ceremony, a named plus-one and an unnamed one. Draft, review, submit; then the weekend page and, on the day, a table.</p>
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 07</p>
+    <h1 class="mast-title">Household RSVP, Your Weekend &amp; seating</h1>
+    <p class="mast-sub">One person answers for everyone under their roof — including a guest invited to the reception but not the ceremony, a named plus-one and an unnamed one. Draft, review, submit; then the weekend page and, on the day, a table.</p>
   </div>
 </header>
 
-<div class="lab-controls">
+<div class="controls">
   <div class="ctl">
     <span class="ctl-label" id="lbl-theme">Design</span>
     <div class="seg" role="group" aria-labelledby="lbl-theme">
@@ -62,18 +64,18 @@
   </div>
 </div>
 
-<div class="lab-body">
+<div class="body">
   <nav class="rail" aria-label="RSVP surfaces">
     <h2>The RSVP</h2>
     <div class="rail-group">
       <button type="button" data-scene="form" data-url="/rsvp">Household form<small>3 guests, 3 events</small></button>
-      <button type="button" data-scene="partial" data-url="/rsvp — household B">Partial invitation<small>reception only + plus-one</small></button>
-      <button type="button" data-scene="closed" data-url="/rsvp — RSVP_CLOSED">Window closed<small>read-only</small></button>
+      <button type="button" data-scene="partial" data-url="/rsvp · household B">Partial invitation<small>reception only + plus-one</small></button>
+      <button type="button" data-scene="closed" data-url="/rsvp · RSVP_CLOSED">Window closed<small>read-only</small></button>
     </div>
     <h2>After</h2>
     <div class="rail-group">
       <button type="button" data-scene="weekend" data-url="/your-weekend">Your Weekend<small>private schedule</small></button>
-      <button type="button" data-scene="table" data-url="/your-weekend — table">Your table<small>floor plan</small></button>
+      <button type="button" data-scene="table" data-url="/your-weekend · table">Your table<small>floor plan</small></button>
     </div>
     <h2>Admin</h2>
     <div class="rail-group">
@@ -84,16 +86,16 @@
 
   <main class="stage">
     <div class="device" id="device" data-theme="gilded-hour">
-      <div class="device-bar">
-        <span class="device-dot" aria-hidden="true"></span>
-        <span class="device-url" id="device-url">/rsvp</span>
-        <span class="device-w" id="device-w">390×</span>
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/rsvp</b>
+        <span id="device-w">390×</span>
       </div>
       <div class="viewport">
 
         <!-- RSVP FORM (household A) -->
         <div class="site" data-scene-panel="form" hidden data-flow="rsvp">
-          <div class="w-wrap" data-step="1">
+          <div class="band" data-step="1">
             <div class="w-stack-sm">
               <p class="w-eyebrow">RSVP · Testhouse household</p>
               <h1 class="w-h1">You're answering for three people</h1>
@@ -190,7 +192,7 @@
             <p class="w-small w-muted">Nothing is sent yet. You'll see everything written out before it counts.</p>
           </div>
 
-          <div class="w-wrap" data-step="2" hidden>
+          <div class="band" data-step="2" hidden>
             <div class="w-stack-sm">
               <p class="w-eyebrow">Review</p>
               <h1 class="w-h1">Does this look right?</h1>
@@ -211,7 +213,7 @@
             <p class="w-small w-muted">The review is a signed proposal: submitting sends exactly what you see, and a changed payload is rejected rather than quietly accepted.</p>
           </div>
 
-          <div class="w-wrap" data-step="3" hidden>
+          <div class="band" data-step="3" hidden>
             <div class="w-stack-sm">
               <p class="w-eyebrow">RSVP received</p>
               <h1 class="w-h1">Thank you — you are all set</h1>
@@ -230,7 +232,7 @@
 
         <!-- PARTIAL INVITATION -->
         <div class="site" data-scene-panel="partial" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">RSVP · Fixture household</p>
               <h1 class="w-h1">You're answering for two people</h1>
@@ -301,7 +303,7 @@
 
         <!-- CLOSED -->
         <div class="site" data-scene-panel="closed" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">RSVP</p>
               <h1 class="w-h1">RSVPs are closed</h1>
@@ -323,7 +325,7 @@
         <!-- YOUR WEEKEND -->
         <div class="site" data-scene-panel="weekend" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Your weekend</a><a href="#">Travel</a><a href="#">Photos</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Your weekend</p>
               <h1 class="w-h1">Hello, Ada</h1>
@@ -366,7 +368,7 @@
         <!-- TABLE -->
         <div class="site" data-scene-panel="table" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Your weekend</a><a href="#">Travel</a><a href="#">Photos</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">On the day</p>
               <h1 class="w-h1">You're at table 7</h1>
@@ -402,7 +404,7 @@
 
         <!-- ADMIN RSVP -->
         <div class="site" data-scene-panel="admin" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Admin · RSVP</p>
               <h1 class="w-h1">What the venue needs</h1>
@@ -434,7 +436,7 @@
 
         <!-- SEATING -->
         <div class="site" data-scene-panel="seating" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Admin · seating</p>
               <h1 class="w-h1">The seating board</h1>
@@ -467,7 +469,7 @@
       </div>
     </div>
 
-    <section class="notes" aria-label="What this scene exercises">
+    <section class="label" aria-label="What this scene exercises">
       <div id="notes-body"></div>
     </section>
   </main>
@@ -481,7 +483,7 @@
     <li><strong>Check:</strong> the review step writes out every line before anything is sent.</li>
     <li><strong>Check:</strong> the meal question only appears for the reception, the one event with a meal.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">draft_rsvp</span><span class="chip chip-cap">submit_rsvp</span><span class="chip">manage_household_rsvp</span><span class="chip chip-pass">idempotent</span></div>
+  <div class="label-meta"><span class="is-cap">draft_rsvp</span><span class="is-cap">submit_rsvp</span><span>manage_household_rsvp</span><span class="is-ok">idempotent</span></div>
 </template>
 
 <template data-notes="partial">
@@ -492,7 +494,7 @@
     <li><strong>Check:</strong> the plus-one name is capped at 200 characters and the meal is asked separately.</li>
     <li><strong>Check:</strong> an unnamed plus-one is a valid answer (Fin Solo's household).</li>
   </ul>
-  <div class="meta"><span class="chip">eventEntitlements</span><span class="chip chip-warn">reception only</span><span class="chip">named + unnamed +1</span></div>
+  <div class="label-meta"><span>eventEntitlements</span><span class="is-warn">reception only</span><span>named + unnamed +1</span></div>
 </template>
 
 <template data-notes="closed">
@@ -502,7 +504,7 @@
     <li><strong>Check:</strong> no editable control survives — a form that can't submit is worse than no form.</li>
     <li><strong>Check:</strong> the guest can still see exactly what they told you.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">get_my_rsvp</span><span class="chip chip-block">window closed</span><span class="chip">route /rsvp</span></div>
+  <div class="label-meta"><span class="is-cap">get_my_rsvp</span><span class="is-off">window closed</span><span>route /rsvp</span></div>
 </template>
 
 <template data-notes="weekend">
@@ -512,7 +514,7 @@
     <li><strong>Check:</strong> unknown times are em dashes with a visible TODO, never invented.</li>
     <li><strong>Check:</strong> a not-yet-released table says so, rather than rendering an empty state that looks broken.</li>
   </ul>
-  <div class="meta"><span class="chip">route /your-weekend</span><span class="chip chip-cap">get_my_itinerary</span><span class="chip">view_private_schedule</span></div>
+  <div class="label-meta"><span>route /your-weekend</span><span class="is-cap">get_my_itinerary</span><span>view_private_schedule</span></div>
 </template>
 
 <template data-notes="table">
@@ -522,7 +524,7 @@
     <li><strong>Check:</strong> the highlighted table is findable at 390px without pinch-zooming.</li>
     <li><strong>Check:</strong> the SVG's accessible name locates the table in words, not just in pixels.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">show_my_table_on_floorplan</span><span class="chip">view_table_assignment</span><span class="chip chip-warn">backlog X-09</span></div>
+  <div class="label-meta"><span class="is-cap">show_my_table_on_floorplan</span><span>view_table_assignment</span><span class="is-warn">backlog X-09</span></div>
 </template>
 
 <template data-notes="admin">
@@ -532,7 +534,7 @@
     <li><strong>Check:</strong> counts reconcile — invited equals accepted plus declined plus awaiting.</li>
     <li><strong>Check:</strong> free-text needs never appear on any public surface.</li>
   </ul>
-  <div class="meta"><span class="chip">route /admin/rsvp</span><span class="chip chip-cap">admin_rsvp</span><span class="chip chip-pass">fixtures only</span></div>
+  <div class="label-meta"><span>route /admin/rsvp</span><span class="is-cap">admin_rsvp</span><span class="is-ok">fixtures only</span></div>
 </template>
 
 <template data-notes="seating">
@@ -542,7 +544,7 @@
     <li><strong>Check:</strong> households stay together by default when assigned.</li>
     <li><strong>Check:</strong> release is a deliberate, step-up-protected action, not a side effect of saving.</li>
   </ul>
-  <div class="meta"><span class="chip">route /admin/seating</span><span class="chip chip-cap">admin_seating</span><span class="chip chip-warn">held until released</span></div>
+  <div class="label-meta"><span>route /admin/seating</span><span class="is-cap">admin_seating</span><span class="is-warn">held until released</span></div>
 </template>
 
 <script>

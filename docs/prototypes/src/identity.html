@@ -1,6 +1,6 @@
 <title>Invitation Claim Flow</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
@@ -8,7 +8,7 @@
 .auth { padding: var(--spacing-xl) var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-lg); min-height: 420px; }
 
 .code-input {
-  font-family: var(--wb-mono);
+  font-family: var(--mono);
   font-size: 28px;
   letter-spacing: 0.36em;
   text-align: center;
@@ -27,7 +27,7 @@
 .ent { width: 100%; border-collapse: collapse; font-size: 14px; }
 .ent th, .ent td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--color-outline); }
 .ent th { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-on-surface-muted); font-weight: 600; }
-.ent td:first-child { font-family: var(--wb-mono); font-size: 12px; }
+.ent td:first-child { font-family: var(--mono); font-size: 12px; }
 .ent .yes { color: var(--color-secondary); font-weight: 700; }
 .ent .no { color: var(--color-on-surface-muted); }
 [data-theme="conservatory"] .ent .yes { color: var(--color-leaf-deep); }
@@ -43,18 +43,20 @@
 .member b { font-weight: 600; font-size: 17px; }
 .member small { color: var(--color-on-surface-muted); font-size: 14px; }
 
-.clock { display: inline-flex; align-items: center; gap: 6px; font-family: var(--wb-mono); font-size: 13px; color: var(--color-error); }
+.clock { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 13px; color: var(--color-error); }
 </style>
 
-<header class="lab-head">
-  <div class="lab-head-main">
-    <p class="lab-kicker">Feature lab · level 06</p>
-    <h1 class="lab-title">Invitation claim, codes &amp; entitlements</h1>
-    <p class="lab-sub">No passwords and no accounts. An invitation link is <em>discovery only</em> — it says which household you're looking at, never who you are. Possession is proved with a six-digit code or a passkey, and everything sensitive re-asks.</p>
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 06</p>
+    <h1 class="mast-title">Invitation claim, codes &amp; entitlements</h1>
+    <p class="mast-sub">No passwords and no accounts. An invitation link is <em>discovery only</em> — it says which household you're looking at, never who you are. Possession is proved with a six-digit code or a passkey, and everything sensitive re-asks.</p>
   </div>
 </header>
 
-<div class="lab-controls">
+<div class="controls">
   <div class="ctl">
     <span class="ctl-label" id="lbl-theme">Design</span>
     <div class="seg" role="group" aria-labelledby="lbl-theme">
@@ -72,7 +74,7 @@
   </div>
 </div>
 
-<div class="lab-body">
+<div class="body">
   <nav class="rail" aria-label="Identity surfaces">
     <h2>The happy path</h2>
     <div class="rail-group">
@@ -97,10 +99,10 @@
 
   <main class="stage">
     <div class="device" id="device" data-theme="gilded-hour">
-      <div class="device-bar">
-        <span class="device-dot" aria-hidden="true"></span>
-        <span class="device-url" id="device-url">/i/01JQ8F…</span>
-        <span class="device-w" id="device-w">390×</span>
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/i/01JQ8F…</b>
+        <span id="device-w">390×</span>
       </div>
       <div class="viewport">
 
@@ -282,7 +284,7 @@
 
         <!-- ENTITLEMENTS -->
         <div class="site" data-scene-panel="entitlements" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Authorization</p>
               <h1 class="w-h1">Nineteen capabilities, four kinds of caller</h1>
@@ -318,7 +320,7 @@
 
         <!-- GUEST OPS -->
         <div class="site" data-scene-panel="guestops" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Admin · guest operations</p>
               <h1 class="w-h1">Who may act for whom</h1>
@@ -357,7 +359,7 @@
       </div>
     </div>
 
-    <section class="notes" aria-label="What this scene exercises">
+    <section class="label" aria-label="What this scene exercises">
       <div id="notes-body"></div>
     </section>
   </main>
@@ -371,7 +373,7 @@
     <li><strong>Check:</strong> the code screen states the ten-minute expiry and the five-attempt limit before you fail, not after.</li>
     <li><strong>Check:</strong> the passkey offer is skippable in one tap and never blocks the weekend.</li>
   </ul>
-  <div class="meta"><span class="chip">route /i/&lt;token&gt;</span><span class="chip chip-cap">claim_person</span><span class="chip">6 digits · 10 min · 5 tries</span></div>
+  <div class="label-meta"><span>route /i/&lt;token&gt;</span><span class="is-cap">claim_person</span><span>6 digits · 10 min · 5 tries</span></div>
 </template>
 
 <template data-notes="signin">
@@ -381,7 +383,7 @@
     <li><strong>Check:</strong> a linked and an unlinked address produce the same visible outcome.</li>
     <li><strong>Check:</strong> the field is a real <code>type="email"</code> with <code>autocomplete</code>, so a phone keyboard does the right thing.</li>
   </ul>
-  <div class="meta"><span class="chip">route /sign-in</span><span class="chip chip-cap">emailOTP</span><span class="chip chip-pass">no enumeration</span></div>
+  <div class="label-meta"><span>route /sign-in</span><span class="is-cap">emailOTP</span><span class="is-ok">no enumeration</span></div>
 </template>
 
 <template data-notes="passkey">
@@ -391,7 +393,7 @@
     <li><strong>Check:</strong> "Not now" is as prominent as the primary action.</li>
     <li><strong>Check:</strong> an enrolled passkey can be removed from the same screen it was added on.</li>
   </ul>
-  <div class="meta"><span class="chip">route /claim/passkey</span><span class="chip chip-cap">@better-auth/passkey</span><span class="chip">WebAuthn</span></div>
+  <div class="label-meta"><span>route /claim/passkey</span><span class="is-cap">@better-auth/passkey</span><span>WebAuthn</span></div>
 </template>
 
 <template data-notes="errors">
@@ -401,7 +403,7 @@
     <li><strong>Check:</strong> each message says what happened <em>and</em> what to do next.</li>
     <li><strong>Check:</strong> the lockout message states the wait (15 minutes) rather than leaving a guest guessing.</li>
   </ul>
-  <div class="meta"><span class="chip">ERROR_COPY</span><span class="chip chip-pass">no reflected text</span><span class="chip">15 codes</span></div>
+  <div class="label-meta"><span>ERROR_COPY</span><span class="is-ok">no reflected text</span><span>15 codes</span></div>
 </template>
 
 <template data-notes="stepup">
@@ -411,7 +413,7 @@
     <li><strong>Check:</strong> the screen names the specific action being protected, not "for security reasons".</li>
     <li><strong>Check:</strong> a passkey satisfies step-up as well as a code.</li>
   </ul>
-  <div class="meta"><span class="chip">route /step-up</span><span class="chip chip-cap">authenticatedAt</span><span class="chip chip-warn">300s window</span></div>
+  <div class="label-meta"><span>route /step-up</span><span class="is-cap">authenticatedAt</span><span class="is-warn">300s window</span></div>
 </template>
 
 <template data-notes="entitlements">
@@ -422,7 +424,7 @@
     <li><strong>Check:</strong> <code>manage_household_rsvp</code> separates a manager from an ordinary guest.</li>
     <li><strong>Check:</strong> <code>use_face_matching</code> is gated for every principal including admin.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">src/contracts/principal.ts</span><span class="chip chip-block">BIPA gate</span><span class="chip">server-side only</span></div>
+  <div class="label-meta"><span class="is-cap">src/contracts/principal.ts</span><span class="is-off">BIPA gate</span><span>server-side only</span></div>
 </template>
 
 <template data-notes="guestops">
@@ -432,7 +434,7 @@
     <li><strong>Check:</strong> Eve's reception-only entitlement is visible here, and drives what her RSVP renders.</li>
     <li><strong>Check:</strong> names are obviously fictional — real guest data is never committed.</li>
   </ul>
-  <div class="meta"><span class="chip">route /admin/guests</span><span class="chip chip-cap">admin_guest_ops</span><span class="chip chip-pass">fixtures only</span></div>
+  <div class="label-meta"><span>route /admin/guests</span><span class="is-cap">admin_guest_ops</span><span class="is-ok">fixtures only</span></div>
 </template>
 
 <script>

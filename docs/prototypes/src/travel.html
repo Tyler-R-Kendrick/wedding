@@ -1,6 +1,6 @@
 <title>Travel, Stay &amp; the Trip Bridge</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
@@ -24,22 +24,24 @@
 .trip li { list-style: none; display: grid; grid-template-columns: 62px 1fr auto; gap: var(--spacing-sm); align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--color-outline); }
 .trip li:last-child { border-bottom: 0; }
 .trip time { font-family: var(--type-label-caps-family); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
-.trip .who { font-size: 12px; color: var(--color-on-surface-muted); font-family: var(--wb-mono); }
+.trip .who { font-size: 12px; color: var(--color-on-surface-muted); font-family: var(--mono); }
 
 .warn-block { border: 1px solid var(--color-error); padding: var(--spacing-sm) var(--spacing-md); background: var(--color-surface); }
 [data-theme="conservatory"] .warn-block { border-radius: var(--rounded-md); }
 .warn-block strong { color: var(--color-error); }
 </style>
 
-<header class="lab-head">
-  <div class="lab-head-main">
-    <p class="lab-kicker">Feature lab · level 08</p>
-    <h1 class="lab-title">Travel &amp; Stay, and the trip bridge</h1>
-    <p class="lab-sub">Many guests fly in from California and Nevada. The site orchestrates the trip and hands the transaction to whoever owns it — every price is a dated snapshot, every outbound link is on an allowlist, and the booking itself happens on the provider's own site.</p>
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 08</p>
+    <h1 class="mast-title">Travel &amp; Stay, and the trip bridge</h1>
+    <p class="mast-sub">Many guests fly in from California and Nevada. The site orchestrates the trip and hands the transaction to whoever owns it — every price is a dated snapshot, every outbound link is on an allowlist, and the booking itself happens on the provider's own site.</p>
   </div>
 </header>
 
-<div class="lab-controls">
+<div class="controls">
   <div class="ctl">
     <span class="ctl-label" id="lbl-theme">Design</span>
     <div class="seg" role="group" aria-labelledby="lbl-theme">
@@ -57,7 +59,7 @@
   </div>
 </div>
 
-<div class="lab-body">
+<div class="body">
   <nav class="rail" aria-label="Travel surfaces">
     <h2>Where to stay</h2>
     <div class="rail-group">
@@ -65,14 +67,14 @@
     </div>
     <h2>Getting here</h2>
     <div class="rail-group">
-      <button type="button" data-scene="flights" data-url="/travel — flights">Flight search<small>snapshots, not prices</small></button>
-      <button type="button" data-scene="risk" data-url="/travel — connections">Connection risk<small>one ticket or two</small></button>
-      <button type="button" data-scene="unconfigured" data-url="/travel — no provider">Provider missing<small>degrade to links</small></button>
+      <button type="button" data-scene="flights" data-url="/travel · flights">Flight search<small>snapshots, not prices</small></button>
+      <button type="button" data-scene="risk" data-url="/travel · connections">Connection risk<small>one ticket or two</small></button>
+      <button type="button" data-scene="unconfigured" data-url="/travel · no provider">Provider missing<small>degrade to links</small></button>
     </div>
     <h2>Your trip</h2>
     <div class="rail-group">
       <button type="button" data-scene="trip" data-url="/trip">The trip bridge<small>one timeline</small></button>
-      <button type="button" data-scene="privacy" data-url="/trip — profile">Profile &amp; deletion<small>step-up protected</small></button>
+      <button type="button" data-scene="privacy" data-url="/trip · profile">Profile &amp; deletion<small>step-up protected</small></button>
     </div>
     <h2>Admin</h2>
     <div class="rail-group">
@@ -82,24 +84,25 @@
 
   <main class="stage">
     <div class="device" id="device" data-theme="gilded-hour">
-      <div class="device-bar">
-        <span class="device-dot" aria-hidden="true"></span>
-        <span class="device-url" id="device-url">/travel</span>
-        <span class="device-w" id="device-w">390×</span>
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/travel</b>
+        <span id="device-w">390×</span>
       </div>
       <div class="viewport">
 
         <!-- TRAVEL & STAY -->
         <div class="site" data-scene-panel="stay" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Travel</a><a href="#">Your weekend</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Travel &amp; stay</p>
-              <h1 class="w-h1">Where to sleep, and how to get here</h1>
-              <p class="w-lede">Many of you are travelling in. Here's the shortest version.</p>
-            </div>
+          <div class="hero">
+            <p class="w-eyebrow">Travel &amp; stay</p>
+            <h1 class="w-display-sm">Where to sleep, and how to get here</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Many of you are travelling in. Here's the shortest version.</p>
+          </div>
+          <div class="band">
 
-            <div class="w-card">
+            <div class="w-card w-card-key">
               <div class="w-between"><h2 class="w-h3">Chicago Athletic Association Hotel</h2><span class="w-badge w-badge-on">The venue</span></div>
               <p class="w-small"><strong>The wedding is here: no travel on the day.</strong></p>
               <p class="w-small">12 S Michigan Ave, Chicago, IL 60603</p>
@@ -134,7 +137,7 @@
 
         <!-- FLIGHTS -->
         <div class="site" data-scene-panel="flights" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Flights</p>
               <h1 class="w-h1">Getting to Chicago</h1>
@@ -175,7 +178,7 @@
 
         <!-- CONNECTION RISK -->
         <div class="site" data-scene-panel="risk" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Before you book</p>
               <h1 class="w-h1">One ticket, or two?</h1>
@@ -198,7 +201,7 @@
 
         <!-- UNCONFIGURED PROVIDER -->
         <div class="site" data-scene-panel="unconfigured" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Flights</p>
               <h1 class="w-h1">Getting to Chicago</h1>
@@ -221,7 +224,7 @@
         <!-- TRIP BRIDGE -->
         <div class="site" data-scene-panel="trip" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Travel</a><a href="#" aria-current="page">Your trip</a><a href="#">Your weekend</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Your trip</p>
               <h1 class="w-h1">Chicago, 16–18 July</h1>
@@ -264,7 +267,7 @@
 
         <!-- PRIVACY -->
         <div class="site" data-scene-panel="privacy" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Your travel profile</p>
               <h1 class="w-h1">What we keep, and how to remove it</h1>
@@ -295,7 +298,7 @@
 
         <!-- ADMIN -->
         <div class="site" data-scene-panel="admin" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Admin · travel</p>
               <h1 class="w-h1">Hotels and the link allowlist</h1>
@@ -325,7 +328,7 @@
       </div>
     </div>
 
-    <section class="notes" aria-label="What this scene exercises">
+    <section class="label" aria-label="What this scene exercises">
       <div id="notes-body"></div>
     </section>
   </main>
@@ -338,7 +341,7 @@
     <li><strong>Check:</strong> the 20-room courtesy block is labelled as an unverified kit figure, not stated as fact.</li>
     <li><strong>Check:</strong> no alternative hotel is named until the couple pick them — an invented hotel with a live link is a fact the site has no right to state.</li>
   </ul>
-  <div class="meta"><span class="chip">route /travel</span><span class="chip chip-cap">list_hotel_recommendations</span><span class="chip chip-warn">backlog X-01, X-03</span></div>
+  <div class="label-meta"><span>route /travel</span><span class="is-cap">list_hotel_recommendations</span><span class="is-warn">backlog X-01, X-03</span></div>
 </template>
 
 <template data-notes="flights">
@@ -348,7 +351,7 @@
     <li><strong>Check:</strong> every result carries how old its snapshot is.</li>
     <li><strong>Check:</strong> the refresh-before-you-book line is present before the first result, not buried under them.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">search_travel_options</span><span class="chip">FLAG_TRAVEL_LIVE_SEARCH</span><span class="chip chip-pass">no payment</span></div>
+  <div class="label-meta"><span class="is-cap">search_travel_options</span><span>FLAG_TRAVEL_LIVE_SEARCH</span><span class="is-ok">no payment</span></div>
 </template>
 
 <template data-notes="risk">
@@ -358,7 +361,7 @@
     <li><strong>Check:</strong> the riskier option is visually distinct, not just labelled.</li>
     <li><strong>Check:</strong> the explanation says what happens to <em>you</em>, not what the fare rules are called.</li>
   </ul>
-  <div class="meta"><span class="chip">travel/snapshot.ts</span><span class="chip chip-warn">self-transfer</span><span class="chip">one ticket vs two</span></div>
+  <div class="label-meta"><span>travel/snapshot.ts</span><span class="is-warn">self-transfer</span><span>one ticket vs two</span></div>
 </template>
 
 <template data-notes="unconfigured">
@@ -368,7 +371,7 @@
     <li><strong>Check:</strong> the page still answers the question with guidance and links.</li>
     <li><strong>Check:</strong> it says search is unavailable rather than showing an empty result list.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">providers/flights</span><span class="chip chip-warn">degraded mode</span><span class="chip chip-pass">mock default</span></div>
+  <div class="label-meta"><span class="is-cap">providers/flights</span><span class="is-warn">degraded mode</span><span class="is-ok">mock default</span></div>
 </template>
 
 <template data-notes="trip">
@@ -378,7 +381,7 @@
     <li><strong>Check:</strong> couple-owned items can't be edited by the guest, and guest items are invisible to everyone else.</li>
     <li><strong>Check:</strong> date validation rejects an end before its start with a specific message.</li>
   </ul>
-  <div class="meta"><span class="chip">route /trip</span><span class="chip chip-cap">add_trip_item</span><span class="chip chip-cap">get_my_trip</span></div>
+  <div class="label-meta"><span>route /trip</span><span class="is-cap">add_trip_item</span><span class="is-cap">get_my_trip</span></div>
 </template>
 
 <template data-notes="privacy">
@@ -388,7 +391,7 @@
     <li><strong>Check:</strong> deletion explains exactly what goes and what stays.</li>
     <li><strong>Check:</strong> it requires step-up and explicit UI confirmation — an agent can't trigger it.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">delete_my_travel_profile</span><span class="chip chip-warn">step-up</span><span class="chip chip-block">requires_ui</span></div>
+  <div class="label-meta"><span class="is-cap">delete_my_travel_profile</span><span class="is-warn">step-up</span><span class="is-off">requires_ui</span></div>
 </template>
 
 <template data-notes="admin">
@@ -398,7 +401,7 @@
     <li><strong>Check:</strong> an unlisted host is refused with a fixed first-party message.</li>
     <li><strong>Check:</strong> each trusted entry records what it is and when it was added.</li>
   </ul>
-  <div class="meta"><span class="chip">route /admin/travel</span><span class="chip chip-cap">admin_save_travel_link</span><span class="chip chip-pass">allowlist enforced</span></div>
+  <div class="label-meta"><span>route /admin/travel</span><span class="is-cap">admin_save_travel_link</span><span class="is-ok">allowlist enforced</span></div>
 </template>
 
 <script>

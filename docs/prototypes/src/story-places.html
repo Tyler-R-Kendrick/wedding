@@ -1,22 +1,20 @@
 <title>Adventure Graph &amp; CAA Docent</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
 
 /* A chapter reads as a chapter: the numeral is the structure, because the
    story genuinely is ordered. */
-.chapter { display: grid; grid-template-columns: 34px 1fr; gap: var(--spacing-md); padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-outline); }
+.chapter { display: grid; grid-template-columns: 46px 1fr; gap: var(--spacing-md); padding: var(--spacing-lg) 0; border-bottom: 1px solid var(--color-outline); }
 .chapter:last-child { border-bottom: 0; }
-.chapter-n { font-family: var(--type-numeral-family); font-size: 1.5rem; font-weight: 600; line-height: 1; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
-[data-theme="conservatory"] .chapter-n { font-family: var(--font-accent); }
 
 /* Adventures are a graph, so the card carries its edges. */
 .adv { display: flex; flex-direction: column; gap: 6px; padding: var(--spacing-md); border: 1px solid var(--color-outline); background: var(--color-neutral); }
 [data-theme="conservatory"] .adv { border-radius: var(--rounded-md); }
 .adv-edges { display: flex; flex-wrap: wrap; gap: 5px; }
-.edge { font-family: var(--wb-mono); font-size: 10.5px; padding: 2px 6px; border: 1px solid var(--color-outline); color: var(--color-on-surface-muted); background: var(--color-surface); }
+.edge { font-family: var(--mono); font-size: 10.5px; padding: 2px 6px; border: 1px solid var(--color-outline); color: var(--color-on-surface-muted); background: var(--color-surface); }
 
 .memory-pair { display: grid; gap: var(--spacing-sm); }
 .memory { border-left: 3px solid var(--color-secondary); padding: var(--spacing-sm) var(--spacing-md); background: var(--color-neutral); }
@@ -34,25 +32,27 @@
 .facts li:last-child { border-bottom: 0; }
 
 .look { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; }
-.look-mark { flex: none; width: 20px; height: 20px; border: 1px solid var(--color-tertiary); display: grid; place-items: center; font-size: 11px; color: var(--color-tertiary); font-family: var(--wb-mono); margin-top: 2px; }
+.look-mark { flex: none; width: 20px; height: 20px; border: 1px solid var(--color-tertiary); display: grid; place-items: center; font-size: 11px; color: var(--color-tertiary); font-family: var(--mono); margin-top: 2px; }
 [data-theme="conservatory"] .look-mark { border-color: var(--color-leaf-deep); color: var(--color-leaf-deep); border-radius: 50%; }
 
 .faq-q { width: 100%; text-align: left; appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-outline); padding: 14px 0; cursor: pointer; font-family: var(--font-text); font-size: 17px; line-height: 1.4; color: var(--color-on-surface); display: flex; justify-content: space-between; gap: var(--spacing-sm); align-items: baseline; }
 .faq-q:hover { color: var(--color-secondary); }
-.faq-q::after { content: "+"; font-family: var(--wb-mono); color: var(--color-on-surface-muted); flex: none; }
+.faq-q::after { content: "+"; font-family: var(--mono); color: var(--color-on-surface-muted); flex: none; }
 .faq-q[aria-expanded="true"]::after { content: "−"; }
 .faq-a { padding: 12px 0 16px; border-bottom: 1px solid var(--color-outline); display: flex; flex-direction: column; gap: 8px; }
 </style>
 
-<header class="lab-head">
-  <div class="lab-head-main">
-    <p class="lab-kicker">Feature lab · level 05</p>
-    <h1 class="lab-title">Story, adventures &amp; the CAA docent</h1>
-    <p class="lab-sub">The celebrate half of the site: seven story chapters, an adventure graph the couple's places hang off, a guest-facing "borrow one of ours" layer, a docent guide to an 1893 building, and the FAQ. Every fact carries where it came from and when it was last checked.</p>
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 05</p>
+    <h1 class="mast-title">Story, adventures &amp; the CAA docent</h1>
+    <p class="mast-sub">The celebrate half of the site: seven story chapters, an adventure graph the couple's places hang off, a guest-facing "borrow one of ours" layer, a docent guide to an 1893 building, and the FAQ. Every fact carries where it came from and when it was last checked.</p>
   </div>
 </header>
 
-<div class="lab-controls">
+<div class="controls">
   <div class="ctl">
     <span class="ctl-label" id="lbl-theme">Design</span>
     <div class="seg" role="group" aria-labelledby="lbl-theme">
@@ -70,7 +70,7 @@
   </div>
 </div>
 
-<div class="lab-body">
+<div class="body">
   <nav class="rail" aria-label="Surfaces">
     <h2>Story</h2>
     <div class="rail-group">
@@ -95,25 +95,26 @@
 
   <main class="stage">
     <div class="device" id="device" data-theme="gilded-hour">
-      <div class="device-bar">
-        <span class="device-dot" aria-hidden="true"></span>
-        <span class="device-url" id="device-url">/our-story</span>
-        <span class="device-w" id="device-w">390×</span>
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/our-story</b>
+        <span id="device-w">390×</span>
       </div>
       <div class="viewport">
 
         <!-- OUR STORY -->
         <div class="site" data-scene-panel="story" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Our story</p>
-              <h1 class="w-h1">Best friendship. Peace. Becoming better together.</h1>
-              <p class="w-lede">Seven chapters, in order. Four of them are still ours to write.</p>
-            </div>
+          <div class="hero">
+            <p class="w-eyebrow">Our story</p>
+            <h1 class="w-display-sm">Best friendship.<br>Peace.<br>Becoming better together.</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Seven chapters, in order. Four of them are still ours to write.</p>
+          </div>
+          <div class="band">
             <div>
               <article class="chapter">
-                <span class="chapter-n">01</span>
+                <span class="w-plaque">01</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">How we met</h2>
                   <p class="w-body">We met at Allison and Jamie's wedding.</p>
@@ -122,7 +123,7 @@
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">02</span>
+                <span class="w-plaque">02</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">The connection</h2>
                   <p class="w-body">Best friendship. Peace. Becoming better together.</p>
@@ -131,7 +132,7 @@
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">03</span>
+                <span class="w-plaque">03</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">Our life together</h2>
                   <p class="w-body">The places that shaped us: the Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, the Madison waterfront.</p>
@@ -139,7 +140,7 @@
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">04</span>
+                <span class="w-plaque">04</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">Love</h2>
                   <p class="w-body">We said "I love you" for the first time at Starved Rock.</p>
@@ -147,7 +148,7 @@
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">05</span>
+                <span class="w-plaque">05</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">Greater together than alone</h2>
                   <p class="w-body">Mutual support. Being each other's rock. Home. Gratitude. A deliberate partnership.</p>
@@ -155,14 +156,14 @@
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">06</span>
+                <span class="w-plaque">06</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">The proposal</h2>
                   <span class="w-todo">TODO(Tyler &amp; Sara): the engagement story and photos (content backlog C-07).</span>
                 </div>
               </article>
               <article class="chapter">
-                <span class="chapter-n">07</span>
+                <span class="w-plaque">07</span>
                 <div class="w-stack-sm">
                   <h2 class="w-h3">What marriage means to us</h2>
                   <span class="w-todo">TODO(Tyler &amp; Sara): what marriage means to you, and what you hope this weekend is for the people you love.</span>
@@ -175,12 +176,13 @@
         <!-- OUR ADVENTURES -->
         <div class="site" data-scene-panel="adventures" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Our adventures</p>
-              <h1 class="w-h1">Eight places, and what happened at them</h1>
-              <p class="w-lede">Each one links to a story chapter, a place, and — where it makes sense — something you could do yourself.</p>
-            </div>
+          <div class="hero">
+            <p class="w-eyebrow">Our adventures</p>
+            <h1 class="w-display-sm">Eight places, and what happened at them</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Each links to a chapter, a place, and sometimes something you could do yourself.</p>
+          </div>
+          <div class="band">
             <div class="w-stack">
               <article class="adv">
                 <h2 class="w-h3">Starved Rock</h2>
@@ -229,7 +231,7 @@
         <!-- ADVENTURE DETAIL -->
         <div class="site" data-scene-panel="adventure" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">An adventure</p>
               <h1 class="w-h1">Starved Rock</h1>
@@ -246,7 +248,7 @@
                 <span class="w-todo">TODO(Tyler &amp; Sara): Tyler remembers…</span>
               </div>
             </div>
-            <div class="w-card">
+            <div class="w-card w-card-key">
               <h2 class="w-h3">You could go too</h2>
               <p class="w-small">An Illinois state park near Utica. Trail conditions, hours, and visitor-center details are on the park's official page.</p>
               <p class="w-small"><em>Why we share this:</em> it's where we first said "I love you." If you have a free day, we'd love for you to walk it too.</p>
@@ -265,7 +267,7 @@
         <!-- SHARE AN ADVENTURE -->
         <div class="site" data-scene-panel="share" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Share an adventure</p>
               <h1 class="w-h1">Borrow one of ours</h1>
@@ -301,14 +303,15 @@
         <!-- EXPLORE CAA -->
         <div class="site" data-scene-panel="caa" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
-          <div class="w-wrap">
+          <div class="hero">
+            <p class="w-eyebrow">Explore CAA</p>
+            <h1 class="w-display-sm">A building worth arriving early for</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">12 S Michigan Ave, built 1893 — and the reason we chose it.</p>
+          </div>
+          <div class="band band-marble">
             <div class="w-stack-sm">
-              <p class="w-eyebrow">Explore CAA</p>
-              <h1 class="w-h1">A building worth arriving early for</h1>
-              <p class="w-lede">The Chicago Athletic Association Hotel, 12 S Michigan Ave — built 1893, and the reason we chose it.</p>
-            </div>
-            <div class="w-card">
-              <h2 class="w-h3">The short history</h2>
+              <h2 class="w-h2">The short history</h2>
               <ul class="facts">
                 <li>Built in 1893 for the private Chicago Athletic Association.</li>
                 <li>Designed by Henry Ives Cobb, with a facade by Louis Christian Mullgardt.</li>
@@ -356,7 +359,7 @@
         <!-- VENUE SPACE -->
         <div class="site" data-scene-panel="space" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">A room in the building</p>
               <h1 class="w-h1">White City Ballroom</h1>
@@ -382,7 +385,7 @@
         <!-- ASK US -->
         <div class="site" data-scene-panel="ask" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Ask us</p>
               <h1 class="w-h1">Thirteen things people ask</h1>
@@ -448,7 +451,7 @@
       </div>
     </div>
 
-    <section class="notes" aria-label="What this scene exercises">
+    <section class="label" aria-label="What this scene exercises">
       <div id="notes-body"></div>
     </section>
   </main>
@@ -461,7 +464,7 @@
     <li><strong>Check:</strong> every sentence of real copy traces to <code>src/content/seed/story.json</code>; nothing plausible has been invented around it.</li>
     <li><strong>Check:</strong> a hatched <code>TODO(Tyler &amp; Sara)</code> block can never be mistaken for finished prose.</li>
   </ul>
-  <div class="meta"><span class="chip">route /our-story</span><span class="chip chip-cap">story.json</span><span class="chip chip-warn">4 of 7 placeholder</span></div>
+  <div class="label-meta"><span>route /our-story</span><span class="is-cap">story.json</span><span class="is-warn">4 of 7 placeholder</span></div>
 </template>
 
 <template data-notes="adventures">
@@ -471,7 +474,7 @@
     <li><strong>Check:</strong> six of eight summaries are placeholders — the graph still reads as a graph without them.</li>
     <li><strong>Check:</strong> "you can go" only appears where a real recommendation exists behind it.</li>
   </ul>
-  <div class="meta"><span class="chip">route /our-adventures</span><span class="chip chip-cap">adventures.json</span><span class="chip">8 nodes</span></div>
+  <div class="label-meta"><span>route /our-adventures</span><span class="is-cap">adventures.json</span><span>8 nodes</span></div>
 </template>
 
 <template data-notes="adventure">
@@ -481,7 +484,7 @@
     <li><strong>Check:</strong> the external fact carries source and check date; the memory carries neither, because it isn't external.</li>
     <li><strong>Check:</strong> the Draft badge is visible — this recommendation is not approved for publication yet.</li>
   </ul>
-  <div class="meta"><span class="chip">route /our-adventures/starved-rock</span><span class="chip chip-cap">trustClass: EXTERNAL_DATA</span><span class="chip chip-warn">draft</span></div>
+  <div class="label-meta"><span>route /our-adventures/starved-rock</span><span class="is-cap">trustClass: EXTERNAL_DATA</span><span class="is-warn">draft</span></div>
 </template>
 
 <template data-notes="share">
@@ -491,7 +494,7 @@
     <li><strong>Check:</strong> pick a different duration — the itinerary bucket changes, the provenance line stays.</li>
     <li><strong>Check:</strong> nothing here recommends a place without an official link behind it.</li>
   </ul>
-  <div class="meta"><span class="chip">route /share-an-adventure</span><span class="chip chip-cap">itineraries.json</span><span class="chip">45-min · half-day · full-day</span></div>
+  <div class="label-meta"><span>route /share-an-adventure</span><span class="is-cap">itineraries.json</span><span>45-min · half-day · full-day</span></div>
 </template>
 
 <template data-notes="caa">
@@ -501,7 +504,7 @@
     <li><strong>Check:</strong> restaurant cards link out and show a check date instead of restating hours that go stale.</li>
     <li><strong>Check:</strong> the page never claims which room the wedding is in.</li>
   </ul>
-  <div class="meta"><span class="chip">route /explore-caa</span><span class="chip chip-cap">venue-facts.json</span><span class="chip chip-warn">backlog P-03</span></div>
+  <div class="label-meta"><span>route /explore-caa</span><span class="is-cap">venue-facts.json</span><span class="is-warn">backlog P-03</span></div>
 </template>
 
 <template data-notes="space">
@@ -511,7 +514,7 @@
     <li><strong>Check:</strong> the 167 ceiling embellishments appear as a thing to look for, which is what makes a docent a docent.</li>
     <li><strong>Check:</strong> trust class is visible in the provenance line, not buried.</li>
   </ul>
-  <div class="meta"><span class="chip">route /explore-caa/white-city-ballroom</span><span class="chip chip-warn">kit figure, unverified</span></div>
+  <div class="label-meta"><span>route /explore-caa/white-city-ballroom</span><span class="is-warn">kit figure, unverified</span></div>
 </template>
 
 <template data-notes="ask">
@@ -521,7 +524,7 @@
     <li><strong>Check:</strong> open and close several — the disclosure is keyboard-operable and the +/− state matches <code>aria-expanded</code>.</li>
     <li><strong>Check:</strong> the registry answer never says "cash fund" or "donate", and shows no amount.</li>
   </ul>
-  <div class="meta"><span class="chip">route /ask-us</span><span class="chip chip-cap">faq.json</span><span class="chip chip-warn">8 of 13 placeholder</span></div>
+  <div class="label-meta"><span>route /ask-us</span><span class="is-cap">faq.json</span><span class="is-warn">8 of 13 placeholder</span></div>
 </template>
 
 <script>

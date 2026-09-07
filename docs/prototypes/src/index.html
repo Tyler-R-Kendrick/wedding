@@ -1,217 +1,266 @@
 <title>Wedding Platform Feature Labs</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cinzel:wght@500;600&family=Big+Shoulders+Display:wght@600;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
 
-.page { max-width: 940px; margin: 0 auto; padding: 30px 22px 56px; display: flex; flex-direction: column; gap: 34px; }
+.page { max-width: 1080px; margin: 0 auto; padding: 0 30px 80px; }
 
-.intro { display: flex; flex-direction: column; gap: 12px; }
-.intro h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
-.intro p { margin: 0; max-width: 66ch; color: var(--wb-muted); font-size: 15.5px; line-height: 1.6; }
-.intro strong { color: var(--wb-ink); font-weight: 600; }
-
-.section-label {
-  font-family: var(--wb-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--wb-muted);
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--wb-rule);
-}
-
-.labs { display: grid; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); gap: 12px; }
-
-/* The level number is real structure: these shipped in order, each stacked on
-   the one before it. */
-.lab-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 14px;
-  align-items: baseline;
-  border: 1px solid var(--wb-rule);
-  background: var(--wb-panel);
-  padding: 16px 18px 18px;
-  border-radius: 10px;
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 160ms ease, transform 160ms ease;
-}
-
-.lab-card:hover { border-color: var(--wb-accent); transform: translateY(-1px); }
-
-.lab-card .lv {
-  grid-row: 1 / 3;
-  font-family: var(--wb-mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--wb-accent);
-  font-variant-numeric: tabular-nums;
-  padding-top: 2px;
-}
-
-.lab-card h3 { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -0.005em; }
-.lab-card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--wb-muted); }
-.lab-card .try { grid-column: 2; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
-
-.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-
-.card {
-  border: 1px solid var(--wb-rule);
-  background: var(--wb-panel);
-  border-radius: 10px;
-  padding: 16px 18px;
+/* The opener is a title page, not a hero: the date motif is the project's
+   own, set in the Gilded Hour numeral face. */
+.opener {
+  padding: 64px 0 44px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 18px;
+  border-bottom: 1px solid var(--rule);
 }
 
-.card h3 { margin: 0; font-size: 15px; font-weight: 600; }
-.card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--wb-muted); }
-.card code { font-family: var(--wb-mono); font-size: 12.5px; color: var(--wb-ink); }
+.opener-date {
+  font-family: "Big Shoulders Display", var(--sans);
+  font-size: clamp(3.4rem, 11vw, 7rem);
+  font-weight: 700;
+  line-height: 0.86;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  margin: 0;
+}
 
-.pending { display: flex; flex-direction: column; gap: 0; }
-.pending div { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--wb-rule); }
-.pending div:last-child { border-bottom: 0; }
-.pending .n { font-family: var(--wb-mono); font-size: 12px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
-.pending .t { font-size: 14px; }
-.pending .s { font-family: var(--wb-mono); font-size: 10.5px; color: var(--wb-muted); }
+.opener h1 {
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(1.7rem, 4.4vw, 2.7rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+  max-width: 20ch;
+}
+
+.opener p:not(.opener-date):not(.mast-tag) { margin: 0; color: var(--ink-dim); font-size: 16px; line-height: 1.65; max-width: 62ch; }
+.opener p strong { color: var(--ink); font-weight: 500; }
+
+.sec { padding-top: 46px; }
+
+.sec > h2 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 4px;
+  font-weight: 400;
+}
+
+/* The labs are a numbered index. The numeral is real structure — these
+   shipped in order, each stacked on the one before it — so it gets the
+   weight, and no box is needed around anything. */
+.labs { display: flex; flex-direction: column; }
+
+.lab {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  gap: 4px 22px;
+  align-items: baseline;
+  padding: 24px 4px;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+  transition: background 180ms ease, padding 180ms ease;
+}
+
+.lab:hover { background: var(--wall-2); padding-inline: 14px; }
+.lab:hover .lab-n { color: var(--accent); }
+.lab:hover .lab-go { transform: translateX(3px); opacity: 1; }
+
+.lab-n {
+  grid-row: 1 / 4;
+  font-family: "Big Shoulders Display", var(--sans);
+  font-size: 2.7rem;
+  font-weight: 600;
+  line-height: 0.8;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  transition: color 180ms ease;
+}
+
+.lab h3 { grid-column: 2; margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.012em; }
+.lab p { grid-column: 2; margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-dim); max-width: 60ch; }
+
+.lab-go {
+  grid-column: 3;
+  grid-row: 1 / 4;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.45;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.tags { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 7px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.tags span { display: inline-flex; align-items: center; gap: 6px; }
+.tags span::before { content: ""; width: 3px; height: 3px; background: currentColor; flex: none; }
+.tags .is-cap { color: var(--accent); }
+.tags .is-warn { color: #d8b04a; }
+.tags .is-off { color: #e08171; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 30px 34px; padding-top: 14px; }
+.note h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.note p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-dim); }
+.note code, .page code { font-family: var(--mono); font-size: 0.92em; color: var(--ink); }
+
+.pending { display: flex; flex-direction: column; padding-top: 10px; }
+
+.pending div {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pending .n { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pending .t { font-size: 14.5px; color: var(--ink-dim); }
+.pending .s { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
 
 pre {
-  margin: 0;
-  padding: 12px 14px;
-  background: var(--wb-panel-2);
-  border: 1px solid var(--wb-rule);
-  border-radius: 8px;
+  margin: 12px 0 0;
+  padding: 16px 18px;
+  background: var(--wall-2);
+  border-left: 2px solid var(--accent);
   overflow-x: auto;
-  font-family: var(--wb-mono);
+  font-family: var(--mono);
   font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--wb-ink);
+  line-height: 1.7;
+  color: var(--ink);
 }
 
-.foot { color: var(--wb-muted); font-size: 13px; line-height: 1.6; max-width: 68ch; }
+.foot { margin: 46px 0 0; padding-top: 22px; border-top: 1px solid var(--rule); color: var(--ink-faint); font-size: 13px; line-height: 1.65; max-width: 70ch; }
 </style>
 
 <div class="page">
-  <div class="intro">
-    <p class="lab-kicker">Sara + Tyler · Chicago · 17 July 2027</p>
+  <header class="opener">
+    <p class="mast-tag">Sara + Tyler · Chicago Athletic Association</p>
+    <p class="opener-date">07 · 17 · 27</p>
     <h1>Seven feature labs, one per shipped level</h1>
-    <p>The platform is built through level 10 and has no public deployment yet, so each lab is a standalone harness for one feature area. Every lab renders the real seed content inside a device frame you can resize, and the wedding tokens are inlined <strong>verbatim from <code>src/themes/&lt;id&gt;/theme.css</code></strong> — so switching between Gilded Hour and Conservatory shows you the two design systems as they actually ship, not an approximation of them.</p>
-    <p>Each lab opens on a 390px phone, because that is what the site is built for. Every scene carries a note strip naming the route, the capability behind it, and what is worth checking.</p>
-  </div>
+    <p>The platform is built through level 10 with no public deployment, so each lab is a standalone harness for one feature area — the real seed content inside a device frame you can resize, in either of the two design systems.</p>
+    <p><strong>Both the tokens and the procedural ornament are inlined from the shipped kits</strong>, so the sunburst, chevron rules, fern dividers and specimen tags you see are the real generated art from <code>public/assets/art/</code> — not stand-ins.</p>
+  </header>
 
-  <section>
-    <h2 class="section-label">Built and testable</h2>
+  <section class="sec">
+    <h2>Built and testable</h2>
     <div class="labs">
-      <a class="lab-card" href="https://claude.ai/code/artifact/a1ed6d0c-a1e0-48a5-8e4f-49abcdbbf305">
-        <span class="lv">04</span>
+      <a class="lab" href="https://claude.ai/code/artifact/a1ed6d0c-a1e0-48a5-8e4f-49abcdbbf305">
+        <span class="lab-n">04</span>
         <h3>Gilded Hour vs Conservatory</h3>
         <p>Home reconfigured across all nine lifecycle states, from teaser to archive, in both design systems.</p>
-        <div class="try"><span class="chip">9 states</span><span class="chip">live countdown</span><span class="chip chip-cap">theme engine</span></div>
+        <div class="tags"><span>9 states</span><span>live countdown</span><span class="is-cap">theme engine</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/f06d7654-3962-4ee2-801c-2dadf62351b2">
-        <span class="lv">05</span>
+      <a class="lab" href="https://claude.ai/code/artifact/f06d7654-3962-4ee2-801c-2dadf62351b2">
+        <span class="lab-n">05</span>
         <h3>Adventure Graph &amp; CAA Docent</h3>
         <p>Seven story chapters, eight adventures with their edges, the 1893 building's docent guide, and the FAQ.</p>
-        <div class="try"><span class="chip">7 surfaces</span><span class="chip">provenance</span><span class="chip chip-warn">many TODOs</span></div>
+        <div class="tags"><span>7 surfaces</span><span>provenance</span><span class="is-warn">many placeholders</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/9e061f4b-341b-4ec5-8bf3-9848f176a26d">
-        <span class="lv">06</span>
+      <a class="lab" href="https://claude.ai/code/artifact/9e061f4b-341b-4ec5-8bf3-9848f176a26d">
+        <span class="lab-n">06</span>
         <h3>Invitation Claim Flow</h3>
-        <p>Four-step claim you can click through, plus passkeys, step-up, every error string, and the entitlement matrix.</p>
-        <div class="try"><span class="chip">clickable flow</span><span class="chip">19 entitlements</span><span class="chip chip-block">BIPA gate</span></div>
+        <p>A four-step claim you can click through, plus passkeys, step-up, every error string, and the entitlement matrix.</p>
+        <div class="tags"><span>clickable flow</span><span>19 entitlements</span><span class="is-off">BIPA gate</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/a5618404-c0b0-4382-9e2d-53a35359e54a">
-        <span class="lv">07</span>
+      <a class="lab" href="https://claude.ai/code/artifact/a5618404-c0b0-4382-9e2d-53a35359e54a">
+        <span class="lab-n">07</span>
         <h3>Household RSVP &amp; Seating</h3>
-        <p>Draft, review, submit for three guests; a partial invitation with a plus-one; the weekend hub and the floor plan.</p>
-        <div class="try"><span class="chip">clickable flow</span><span class="chip">3 household shapes</span><span class="chip">floor plan</span></div>
+        <p>Draft, review and submit for three guests; a partial invitation with a plus-one; the weekend hub and the floor plan.</p>
+        <div class="tags"><span>clickable flow</span><span>3 household shapes</span><span>floor plan</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/61790123-89af-4c3f-90cf-dfe840cbf1a8">
-        <span class="lv">08</span>
+      <a class="lab" href="https://claude.ai/code/artifact/61790123-89af-4c3f-90cf-dfe840cbf1a8">
+        <span class="lab-n">08</span>
         <h3>Travel, Stay &amp; the Trip Bridge</h3>
         <p>Room block, flight snapshots, the one-ticket-or-two warning, the trip timeline, and the unconfigured-provider fallback.</p>
-        <div class="try"><span class="chip">degraded mode</span><span class="chip">allowlist</span><span class="chip chip-warn">step-up delete</span></div>
+        <div class="tags"><span>degraded mode</span><span>link allowlist</span><span class="is-warn">step-up delete</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/fd2dd429-41e7-4dd5-8449-926bc6a9a16d">
-        <span class="lv">09</span>
+      <a class="lab" href="https://claude.ai/code/artifact/fd2dd429-41e7-4dd5-8449-926bc6a9a16d">
+        <span class="lab-n">09</span>
         <h3>Ride Benefits &amp; Gift Handoffs</h3>
         <p>Getting to Michigan Avenue, ride eligibility and claim, the gifts page in both states, delegated reservations.</p>
-        <div class="try"><span class="chip">clickable flow</span><span class="chip chip-block">3 forbidden words</span><span class="chip">handoffs</span></div>
+        <div class="tags"><span>clickable flow</span><span class="is-off">3 forbidden words</span><span>provider handoffs</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
 
-      <a class="lab-card" href="https://claude.ai/code/artifact/d5745699-7e2a-4908-a785-146468827ec6">
-        <span class="lv">10</span>
+      <a class="lab" href="https://claude.ai/code/artifact/d5745699-7e2a-4908-a785-146468827ec6">
+        <span class="lab-n">10</span>
         <h3>Guest Media Pipeline</h3>
         <p>Resumable uploads on bad wifi, the nine-state asset machine, EXIF and GPS rules, moderation and duplicates.</p>
-        <div class="try"><span class="chip">9 asset states</span><span class="chip">EXIF stripped</span><span class="chip chip-block">2 legal gates</span></div>
+        <div class="tags"><span>9 asset states</span><span>EXIF stripped</span><span class="is-off">2 legal gates</span></div>
+        <svg class="lab-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
     </div>
   </section>
 
-  <section>
-    <h2 class="section-label">How to read a lab</h2>
-    <div class="two">
-      <div class="card">
-        <h3>Design</h3>
-        <p>Switches which kit's token block the device resolves against. Nothing about the markup changes — that is the point of the theme engine. Try it on any scene.</p>
+  <section class="sec">
+    <h2>How to read a lab</h2>
+    <div class="grid">
+      <div class="note">
+        <h4>Design</h4>
+        <p>Switches which kit's tokens and ornament the frame resolves against. Nothing in the markup changes — that is the point of the theme engine.</p>
       </div>
-      <div class="card">
-        <h3>Viewport</h3>
-        <p><code>390</code> is the phone the site is designed for and where most guests will be. <code>768</code> and <code>1240</code> check that nothing collapses on the way up.</p>
+      <div class="note">
+        <h4>Viewport</h4>
+        <p><code>390</code> is the phone the site is designed for. The type ramps with the frame, not the browser window, so 768 and 1240 show the real scale change.</p>
       </div>
-      <div class="card">
-        <h3>The note strip</h3>
-        <p>Under each device: the route, the capability, the entitlement, and two or three specific things worth checking on that scene.</p>
+      <div class="note">
+        <h4>The wall label</h4>
+        <p>Under each frame: the route, the capability, the entitlement, and two or three specific things worth checking on that scene.</p>
       </div>
-      <div class="card">
-        <h3>Hatched blocks</h3>
-        <p>Every <code>TODO(Tyler &amp; Sara)</code> is a fact only the couple can supply. They are drawn as placeholders on purpose — nothing plausible is ever invented to fill one.</p>
+      <div class="note">
+        <h4>Placeholders</h4>
+        <p>Every <code>TODO(Tyler &amp; Sara)</code> is a fact only the couple can supply — an engraved blank plate in Gilded Hour, an unfilled specimen tag in Conservatory. Never invented copy.</p>
       </div>
     </div>
   </section>
 
-  <section>
-    <h2 class="section-label">Not built yet</h2>
-    <div class="card">
-      <div class="pending">
-        <div><span class="n">11</span><span class="t">Media AI and biometric consent</span><span class="s">not started</span></div>
-        <div><span class="n">12</span><span class="t">Closed-world AI concierge and evals</span><span class="s">not started</span></div>
-        <div><span class="n">13</span><span class="t">WebMCP progressive enhancement</span><span class="s">not started</span></div>
-        <div><span class="n">14</span><span class="t">Admin operations</span><span class="s">not started</span></div>
-        <div><span class="n">15</span><span class="t">Security hardening and threat model</span><span class="s">not started</span></div>
-        <div><span class="n">16</span><span class="t">E2E, accessibility, performance, resilience</span><span class="s">not started</span></div>
-        <div><span class="n">17</span><span class="t">Docs, activation matrix, release evidence</span><span class="s">not started</span></div>
-      </div>
-      <p>Admin screens appear inside the labs above where a level shipped them; level 14 is the dedicated console. Levels 11–17 have no lab because there is nothing built to render.</p>
+  <section class="sec">
+    <h2>Not built yet</h2>
+    <div class="pending">
+      <div><span class="n">11</span><span class="t">Media AI and biometric consent</span><span class="s">not started</span></div>
+      <div><span class="n">12</span><span class="t">Closed-world AI concierge and evals</span><span class="s">not started</span></div>
+      <div><span class="n">13</span><span class="t">WebMCP progressive enhancement</span><span class="s">not started</span></div>
+      <div><span class="n">14</span><span class="t">Admin operations</span><span class="s">not started</span></div>
+      <div><span class="n">15</span><span class="t">Security hardening and threat model</span><span class="s">not started</span></div>
+      <div><span class="n">16</span><span class="t">E2E, accessibility, performance, resilience</span><span class="s">not started</span></div>
+      <div><span class="n">17</span><span class="t">Docs, activation matrix, release evidence</span><span class="s">not started</span></div>
     </div>
   </section>
 
-  <section>
-    <h2 class="section-label">Testing the real thing</h2>
-    <div class="card">
-      <p>These labs are static harnesses: no database, no capability pipeline, no server-side authorization. They are for judging the interface. To exercise the actual system:</p>
+  <section class="sec">
+    <h2>Testing the real thing</h2>
+    <div class="note">
+      <p>These labs are static harnesses — no database, no capability pipeline, no server-side authorization. They are for judging the interface. To exercise the actual system:</p>
       <pre>npm run dev          # localhost:3000, auto-migrates and seeds PGlite
 npm run verify       # typecheck, lint, unit, stylelint, design lint,
                      # detector, integration on PGlite, build
 npm run test:e2e     # Playwright, needs BASE_URL</pre>
-      <p>The labs are regenerated from the shipped tokens, so they cannot drift silently:</p>
-      <pre>npm run design:sync && node docs/prototypes/build.mjs</pre>
+      <p style="margin-top:16px">The labs are regenerated from the shipped tokens and art, so they cannot drift silently:</p>
+      <pre>npm run design:sync &amp;&amp; node docs/prototypes/build.mjs</pre>
     </div>
   </section>
 
-  <p class="foot">Facts on every lab come from <code>docs/design/brief.md</code> and <code>src/content/seed/*</code>. Guest fixtures are the committed fictional households — Testhouse, Fixture and Solo — because real guest data never enters the repository.</p>
+  <p class="foot">Facts on every lab come from <code>docs/design/brief.md</code> and <code>src/content/seed/*</code>. Guest data is the committed fictional fixtures — Testhouse, Fixture and Solo — because real guest data never enters the repository.</p>
 </div>
-
-<script>
-/*@SHELL_JS@*/
-</script>

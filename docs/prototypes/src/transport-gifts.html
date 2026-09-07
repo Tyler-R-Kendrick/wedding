@@ -1,6 +1,6 @@
 <title>Ride Benefits &amp; Gift Handoffs</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
 <style>
 /*@THEME_TOKENS@*/
 /*@SHELL_CSS@*/
@@ -19,7 +19,7 @@
 [data-theme="conservatory"] .voucher { border-radius: var(--rounded-md); }
 
 .code {
-  font-family: var(--wb-mono);
+  font-family: var(--mono);
   font-size: 22px;
   letter-spacing: 0.22em;
   padding: 12px 16px;
@@ -34,24 +34,26 @@
 .handoff { border: 1px solid var(--color-outline); background: var(--color-surface); padding: var(--spacing-md); display: flex; flex-direction: column; gap: 9px; }
 [data-theme="conservatory"] .handoff { border-radius: var(--rounded-md); }
 .handoff-edge { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-on-surface-muted); padding-top: 8px; border-top: 1px dashed var(--color-outline); }
-.handoff-edge::before { content: "↗"; font-family: var(--wb-mono); color: var(--color-tertiary); }
+.handoff-edge::before { content: ""; width: 6px; height: 6px; border-top: 1.5px solid var(--color-tertiary); border-right: 1.5px solid var(--color-tertiary); transform: rotate(45deg); flex: none; }
 
 .topic { padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-outline); display: flex; flex-direction: column; gap: 9px; }
 .topic:last-child { border-bottom: 0; }
 
 .ban { display: flex; flex-direction: column; gap: 6px; }
-.ban code { font-family: var(--wb-mono); font-size: 13px; color: var(--color-error); }
+.ban code { font-family: var(--mono); font-size: 13px; color: var(--color-error); }
 </style>
 
-<header class="lab-head">
-  <div class="lab-head-main">
-    <p class="lab-kicker">Feature lab · level 09</p>
-    <h1 class="lab-title">Getting there, ride benefits &amp; gifts</h1>
-    <p class="lab-sub">Three features that all end at someone else's checkout. The site explains, decides eligibility and hands off; Uber, the registry and the restaurant own the transaction. Gift copy is constrained by tests — "cash fund", "donate" and any dollar amount are forbidden strings.</p>
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 09</p>
+    <h1 class="mast-title">Getting there, ride benefits &amp; gifts</h1>
+    <p class="mast-sub">Three features that all end at someone else's checkout. The site explains, decides eligibility and hands off; Uber, the registry and the restaurant own the transaction. Gift copy is constrained by tests — "cash fund", "donate" and any dollar amount are forbidden strings.</p>
   </div>
 </header>
 
-<div class="lab-controls">
+<div class="controls">
   <div class="ctl">
     <span class="ctl-label" id="lbl-theme">Design</span>
     <div class="seg" role="group" aria-labelledby="lbl-theme">
@@ -69,7 +71,7 @@
   </div>
 </div>
 
-<div class="lab-body">
+<div class="body">
   <nav class="rail" aria-label="Surfaces">
     <h2>Getting there</h2>
     <div class="rail-group">
@@ -77,40 +79,41 @@
     </div>
     <h2>Ride benefits</h2>
     <div class="rail-group">
-      <button type="button" data-scene="claim" data-url="/transportation — claim">Claim a ride<small>eligible adult</small></button>
-      <button type="button" data-scene="ineligible" data-url="/transportation — refused">Refused<small>3 reasons</small></button>
+      <button type="button" data-scene="claim" data-url="/transportation · claim">Claim a ride<small>eligible adult</small></button>
+      <button type="button" data-scene="ineligible" data-url="/transportation · refused">Refused<small>3 reasons</small></button>
     </div>
     <h2>Gifts</h2>
     <div class="rail-group">
       <button type="button" data-scene="gifts" data-url="/gifts">Gifts<small>nothing chosen yet</small></button>
-      <button type="button" data-scene="gifts-live" data-url="/gifts — configured">Gifts, configured<small>the handoff</small></button>
+      <button type="button" data-scene="gifts-live" data-url="/gifts · configured">Gifts, configured<small>the handoff</small></button>
       <button type="button" data-scene="words" data-url="FORBIDDEN_GIFT_WORDS">Forbidden words<small>what tests assert</small></button>
     </div>
     <h2>Reservations</h2>
     <div class="rail-group">
-      <button type="button" data-scene="reservations" data-url="/explore-caa — book">Reservations<small>delegated</small></button>
+      <button type="button" data-scene="reservations" data-url="/explore-caa · book">Reservations<small>delegated</small></button>
     </div>
   </nav>
 
   <main class="stage">
     <div class="device" id="device" data-theme="gilded-hour">
-      <div class="device-bar">
-        <span class="device-dot" aria-hidden="true"></span>
-        <span class="device-url" id="device-url">/transportation</span>
-        <span class="device-w" id="device-w">390×</span>
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/transportation</b>
+        <span id="device-w">390×</span>
       </div>
       <div class="viewport">
 
         <!-- TRANSPORTATION -->
         <div class="site" data-scene-panel="transportation" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Getting there</a><a href="#">Travel</a><a href="#">CAA</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Getting there</p>
-              <h1 class="w-h1">Michigan Avenue, across from the park</h1>
-              <p class="w-lede">Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
-              <a class="w-btn w-btn-sm" href="#">Directions to the venue</a>
-            </div>
+          <div class="hero">
+            <p class="w-eyebrow">Getting there</p>
+            <h1 class="w-display-sm">Michigan Avenue, across from the park</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">12 S Michigan Ave, Chicago, IL 60603</p>
+            <a class="w-btn w-btn-sm" href="#"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg> Directions to the venue</a>
+          </div>
+          <div class="band">
 
             <div>
               <div class="topic">
@@ -146,7 +149,7 @@
 
         <!-- CLAIM -->
         <div class="site" data-scene-panel="claim" hidden data-flow="ride">
-          <div class="w-wrap" data-step="1">
+          <div class="band" data-step="1">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Your ride home</p>
               <h1 class="w-h1">We've set aside a ride for you</h1>
@@ -165,7 +168,7 @@
             <p class="w-small w-muted">We'll ask you to confirm it's you before releasing the code.</p>
           </div>
 
-          <div class="w-wrap" data-step="2" hidden>
+          <div class="band" data-step="2" hidden>
             <div class="w-stack-sm">
               <p class="w-eyebrow">Your ride home</p>
               <h1 class="w-h1">Here's your code</h1>
@@ -186,7 +189,7 @@
 
         <!-- INELIGIBLE -->
         <div class="site" data-scene-panel="ineligible" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Ride benefits</p>
               <h1 class="w-h1">When we can't release one</h1>
@@ -208,12 +211,14 @@
         <!-- GIFTS (pending) -->
         <div class="site" data-scene-panel="gifts" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Getting there</a><a href="#" aria-current="page">Gifts</a><a href="#">Ask us</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Gifts</p>
-              <h1 class="w-h1">Help us with our next adventures</h1>
-              <p class="w-lede">Having you with us in Chicago is the gift. If you would like to give something more, here is where to find our wishlist and a way to send us on our next adventure.</p>
-            </div>
+          <div class="hero">
+            <p class="w-eyebrow">Gifts</p>
+            <h1 class="w-display-sm">Help us with our next adventures</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Having you with us in Chicago is the gift.</p>
+          </div>
+          <div class="band">
+            <p class="w-body">If you would like to give something more, here is where to find our wishlist and a way to send us on our next adventure.</p>
 
             <div class="w-card">
               <h2 class="w-h3">Our wishlist</h2>
@@ -231,7 +236,7 @@
               <p class="w-small" style="margin:0">In the meantime, if you would like to give something and cannot wait for us to decide, <a class="w-link" href="#">ask us</a>.</p>
             </div>
 
-            <p class="w-body" style="text-align:center">Thank you. Truly.</p>
+            <p class="w-display-sm" style="text-align:center">Thank you. Truly.</p>
             <p class="w-small w-muted">No provider has been chosen, so none is named. A card reading "via Zola" with a <code>placeholder</code> flag would still be a fact the site has no right to state.</p>
           </div>
         </div>
@@ -239,13 +244,13 @@
         <!-- GIFTS (configured) -->
         <div class="site" data-scene-panel="gifts-live" hidden>
           <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Getting there</a><a href="#" aria-current="page">Gifts</a><a href="#">Ask us</a></nav>
-          <div class="w-wrap">
-            <div class="w-stack-sm">
-              <p class="w-eyebrow">Gifts</p>
-              <h1 class="w-h1">Help us with our next adventures</h1>
-              <p class="w-lede">Having you with us in Chicago is the gift. If you would like to give something more, here is where to find our wishlist and a way to send us on our next adventure.</p>
-            </div>
-
+          <div class="hero">
+            <p class="w-eyebrow">Gifts</p>
+            <h1 class="w-display-sm">Help us with our next adventures</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Having you with us in Chicago is the gift.</p>
+          </div>
+          <div class="band">
             <div class="handoff">
               <h2 class="w-h3">Our wishlist</h2>
               <p class="w-small">A conventional list of things for our home, kept with a registry provider.</p>
@@ -264,14 +269,14 @@
               <p class="w-small" style="margin:0">Each link opens the provider's own site in a new tab. Anything you choose there is handled by them; we never see payment details.</p>
             </div>
 
-            <p class="w-body" style="text-align:center">Thank you. Truly.</p>
+            <p class="w-display-sm" style="text-align:center">Thank you. Truly.</p>
             <p class="w-small w-muted">This is the same page with two configured links. Note what is still absent: any amount, any suggestion, any nudge.</p>
           </div>
         </div>
 
         <!-- FORBIDDEN WORDS -->
         <div class="site" data-scene-panel="words" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Copy constraints</p>
               <h1 class="w-h1">Three things the gifts page may never say</h1>
@@ -303,7 +308,7 @@
 
         <!-- RESERVATIONS -->
         <div class="site" data-scene-panel="reservations" hidden>
-          <div class="w-wrap">
+          <div class="band">
             <div class="w-stack-sm">
               <p class="w-eyebrow">Eating in the building</p>
               <h1 class="w-h1">Book a table</h1>
@@ -336,7 +341,7 @@
       </div>
     </div>
 
-    <section class="notes" aria-label="What this scene exercises">
+    <section class="label" aria-label="What this scene exercises">
       <div id="notes-body"></div>
     </section>
   </main>
@@ -349,7 +354,7 @@
     <li><strong>Check:</strong> the valet entrance address (71 E Madison) differs from the venue address — both are correct, and the page distinguishes them.</li>
     <li><strong>Check:</strong> accessibility directions link to the hotel's page with a check date rather than being restated here where they'd go stale.</li>
   </ul>
-  <div class="meta"><span class="chip">route /transportation</span><span class="chip chip-cap">TRANSPORTATION_TOPICS</span><span class="chip chip-warn">backlog X-02, X-06, P-05</span></div>
+  <div class="label-meta"><span>route /transportation</span><span class="is-cap">TRANSPORTATION_TOPICS</span><span class="is-warn">backlog X-02, X-06, P-05</span></div>
 </template>
 
 <template data-notes="claim">
@@ -360,7 +365,7 @@
     <li><strong>Check:</strong> re-claiming returns the same code — the action is idempotent, not a second voucher.</li>
     <li><strong>Check:</strong> the code is scoped to one guest and never rendered into a household-wide view.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">claim_transportation_benefit</span><span class="chip">FLAG_TRANSPORT_BENEFITS</span><span class="chip chip-warn">step-up</span></div>
+  <div class="label-meta"><span class="is-cap">claim_transportation_benefit</span><span>FLAG_TRANSPORT_BENEFITS</span><span class="is-warn">step-up</span></div>
 </template>
 
 <template data-notes="ineligible">
@@ -370,7 +375,7 @@
     <li><strong>Check:</strong> the minor message routes to a parent instead of dead-ending.</li>
     <li><strong>Check:</strong> no message reveals whether some other guest holds a benefit.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">ELIGIBILITY_MESSAGES</span><span class="chip">minor · unknown_guest · not_in_household</span></div>
+  <div class="label-meta"><span class="is-cap">ELIGIBILITY_MESSAGES</span><span>minor · unknown_guest · not_in_household</span></div>
 </template>
 
 <template data-notes="gifts">
@@ -380,7 +385,7 @@
     <li><strong>Check:</strong> "Thank you. Truly." carries more weight than either card.</li>
     <li><strong>Check:</strong> the one available action is to reach the couple.</li>
   </ul>
-  <div class="meta"><span class="chip">route /gifts</span><span class="chip chip-cap">GIFTS_COPY</span><span class="chip chip-warn">provider not chosen</span></div>
+  <div class="label-meta"><span>route /gifts</span><span class="is-cap">GIFTS_COPY</span><span class="is-warn">provider not chosen</span></div>
 </template>
 
 <template data-notes="gifts-live">
@@ -390,7 +395,7 @@
     <li><strong>Check:</strong> the handoff boundary is explicit on each card — the provider's site, their checkout, no payment details here.</li>
     <li><strong>Check:</strong> still no amount, no suggestion, no default tier.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">providers/registry</span><span class="chip chip-cap">providers/cash-fund</span><span class="chip chip-pass">ADR-0004 delegation</span></div>
+  <div class="label-meta"><span class="is-cap">providers/registry</span><span class="is-cap">providers/cash-fund</span><span class="is-ok">ADR-0004 delegation</span></div>
 </template>
 
 <template data-notes="words">
@@ -400,7 +405,7 @@
     <li><strong>Check:</strong> neither gifts scene contains any of the three patterns.</li>
     <li><strong>Check:</strong> the replacement phrasing still tells a guest what the section is for.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">FORBIDDEN_GIFT_WORDS</span><span class="chip chip-pass">asserted in tests</span></div>
+  <div class="label-meta"><span class="is-cap">FORBIDDEN_GIFT_WORDS</span><span class="is-ok">asserted in tests</span></div>
 </template>
 
 <template data-notes="reservations">
@@ -410,7 +415,7 @@
     <li><strong>Check:</strong> a place without a link says so and offers a human route.</li>
     <li><strong>Check:</strong> hours and menus are never copied into the page — only linked, with a check date.</li>
   </ul>
-  <div class="meta"><span class="chip chip-cap">providers/reservations</span><span class="chip">ADR-0004</span><span class="chip chip-pass">no card, no policy</span></div>
+  <div class="label-meta"><span class="is-cap">providers/reservations</span><span>ADR-0004</span><span class="is-ok">no card, no policy</span></div>
 </template>
 
 <script>
