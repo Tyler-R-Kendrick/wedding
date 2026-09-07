@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { WebMcpBridge } from '@/webmcp/WebMcpBridge';
+import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,6 +29,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             themed shell that unmounts and remounts when the design swaps. */}
         <p id="design-announcer" className="sr-only" aria-live="polite" aria-atomic="true" />
         {children}
+        {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
+        {isWebMcpEnabled() && <WebMcpBridge />}
       </body>
     </html>
   );

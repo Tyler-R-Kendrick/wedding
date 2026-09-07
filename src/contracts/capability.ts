@@ -82,6 +82,21 @@ export interface CapabilityDescriptor<I, O> {
   /** Fresh authentication required (money, identity, external commitments). */
   stepUp?: boolean;
   confirmation?: ConfirmationMode;
+  /**
+   * Opt out of the agent-surface upgrade of `confirmation: 'inline'` to `'explicit'`.
+   *
+   * Approved contract addition for level 13. `inline` is a promise the PAGE keeps by rendering a
+   * confirm step, so an agent surface with no page and no human treats it as `explicit`
+   * (`src/webmcp/server/invoke.ts`). Set this only for an `inline` mutation that is genuinely safe
+   * to complete unattended. It never relaxes `explicit`, `transaction` or `external`.
+   *
+   * Note that since level 12 the pipeline itself refuses `inline` off the `ui` surface for
+   * `action` and `transaction` kinds (`src/capabilities/invoke.ts` step 5) — swarm K found the same
+   * hole from the WebMCP side and swarm J's evals found it from the concierge side. This flag is
+   * the deliberate, per-descriptor way out of that, and the WebMCP layer's own upgrade is a second
+   * belt over the top.
+   */
+  agentConfirmable?: boolean;
   /** Mutations must be idempotent: the same key replays the first result. */
   idempotent?: boolean;
   /**

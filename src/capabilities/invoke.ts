@@ -147,8 +147,16 @@ export async function invoke<I, O>(
   // gets an answer, and the guest's own click on the link is the commitment.
   const payloadHash = stableHash(input);
   let confirmed: VerifiedConfirmation | undefined;
+  //
+  // Level 13 adds the one documented way out: `agentConfirmable: true` is a descriptor stating that
+  // this particular `inline` mutation really is safe to complete unattended (contract addition,
+  // src/contracts/capability.ts). Without it honoured here the flag would be dead API — the WebMCP
+  // layer would offer an opt-out the pipeline then refused anyway. It cannot relax `explicit`, and
+  // `transaction` keeps its own upgrade in src/webmcp/server/invoke.ts as a second belt. Nothing
+  // that ships sets it today; only the WebMCP test fixtures do, behind the test gate.
   const changesOurState = descriptor.kind === 'action' || descriptor.kind === 'transaction';
-  if (descriptor.confirmation === 'explicit' || (descriptor.confirmation === 'inline' && changesOurState)) {
+  const inlineNeedsAPage = descriptor.confirmation === 'inline' && changesOurState && descriptor.agentConfirmable !== true;
+  if (descriptor.confirmation === 'explicit' || inlineNeedsAPage) {
     if (surface !== REDEEMABLE_SURFACE) {
       return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
     }

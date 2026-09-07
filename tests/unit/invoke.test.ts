@@ -178,6 +178,15 @@ describe('invoke pipeline', () => {
     // On the website `inline` still needs no token — the form is the confirmation.
     expect((await invoke(inline, ctx({ principal: guest }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' })).ok).toBe(true);
 
+    // The opt-out is opt-IN: a descriptor that says nothing is still refused. This is the security
+    // property — `agentConfirmable` has to be typed out deliberately, per capability, by someone
+    // who has thought about an agent completing it with nobody watching.
+    const optedOut = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'opted_out_thing', confirmation: 'inline', agentConfirmable: true });
+    expect((await invoke(optedOut, ctx({ principal: guest, surface: 'ai' }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' })).ok).toBe(true);
+    const explicitOptOut = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'explicit_opt_out', confirmation: 'explicit', agentConfirmable: true });
+    const stillRefused = await invoke(explicitOptOut, ctx({ principal: guest, surface: 'ai' }).c, { text: 'hi' });
+    expect(stillRefused.ok, 'agentConfirmable must never relax explicit confirmation').toBe(false);
+
     // An `external` handoff commits nothing: it returns a provider URL and logs that it did, and
     // level 09 exposes the gift and reservation links to an assistant on purpose. The guest's own
     // click is the commitment, so `inline` there is a UI affordance, not a safety gate.

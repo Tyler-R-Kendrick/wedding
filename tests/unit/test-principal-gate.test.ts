@@ -53,4 +53,27 @@ describe('the test principal resolver is unreachable unless deliberately enabled
     expect(await r.resolve(as({ kind: 'system', component: 'seed' }))).toEqual(anonymous);
     expect(await r.resolve(as({ kind: 'guest', guestId: '0'.repeat(26), householdId: '1'.repeat(26), entitlements: ['root'] }))).toEqual(anonymous);
   });
+
+  it('can mint a stale principal and a fresh one, so step-up is testable in both directions', async () => {
+    // Ported from swarm K's own gate test (`guest` stale vs `guest-fresh`), which is the one case
+    // main's version did not already cover. K expressed it as two canned kinds; the canonical
+    // resolver takes a spec, so the same guarantee is that `authenticatedAt` survives the round
+    // trip. If it were dropped and defaulted to "now", every principal would be fresh and every
+    // step-up test would pass without exercising the gate at all — a whole security control
+    // silently untested.
+    const stale = '2020-01-01T00:00:00.000Z';
+    const guest = { kind: 'guest' as const, guestId: '0'.repeat(26), householdId: '1'.repeat(26) };
+
+    const staleP = principalFromSpec({ ...guest, authenticatedAt: stale });
+    expect(staleP.kind === 'guest' && staleP.authenticatedAt).toBe(stale);
+    // Omitted means "now", which requireFreshSession accepts.
+    const freshP = principalFromSpec(guest);
+    const fresh = freshP.kind === 'guest' ? freshP.authenticatedAt : '';
+    expect(Date.now() - Date.parse(fresh)).toBeLessThan(5_000);
+
+    // And it survives the resolver, not just the constructor.
+    const r = createTestPrincipalResolver(fallback, { isTest: true, secret: SECRET });
+    const viaHeaders = await r.resolve(req({ 'x-test-auth': SECRET, 'x-test-principal': JSON.stringify({ ...guest, authenticatedAt: stale }) }));
+    expect(viaHeaders.kind === 'guest' && viaHeaders.authenticatedAt).toBe(stale);
+  });
 });
