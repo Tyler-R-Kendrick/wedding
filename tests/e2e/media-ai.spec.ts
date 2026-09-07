@@ -15,11 +15,15 @@ const execFileAsync = promisify(execFile);
 // this from the database rather than from the test.
 // `use_face_matching` is passed explicitly because it is deliberately NOT a default entitlement —
 // policy grants it only to an invited guest while BIOMETRICS_ENABLED is on.
+// Household C, NOT A1. Both this journey and level 10's `media-upload.spec.ts` run against the same
+// NODE_ENV=test server and the same database, so a guest's upload list is shared state between
+// them: on A1 this spec's upload appeared in that spec's "my uploads" and it failed asserting 4
+// items having found 5. Nothing was wrong with either journey — they were the same person.
 const guest = customPrincipalHeaders({
   kind: 'guest',
-  guestId: IDS.A1,
-  householdId: IDS.householdA,
-  actsFor: [IDS.A1],
+  guestId: IDS.C1,
+  householdId: IDS.householdC,
+  actsFor: [IDS.C1],
   entitlements: ['upload_media', 'view_private_media', 'use_face_matching'],
 });
 const aiAdmin = customPrincipalHeaders({ kind: 'admin', adminId: IDS.admin, entitlements: ['admin_media', 'admin_ai', 'admin_lifecycle', 'upload_media'] });
@@ -230,6 +234,12 @@ test.describe('semantic search and the face-matching opt-in', () => {
     // Turning it on is impossible without a counsel reference.
     const switchOn = page.getByRole('button', { name: 'Switch readiness on' });
     await expect(switchOn).toBeDisabled();
+
+    // Wait for the title before scanning. This arrived at the page through a client-side navigation
+    // (the "Face matching" link above), and axe run mid-navigation reported `document-title`
+    // serious — "Documents must have <title>" — on a page that does define one. Asserting the title
+    // is both the fix for the race and a stronger check than the one axe was making.
+    await expect(page).toHaveTitle(/Face matching/);
 
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     const blocking = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
