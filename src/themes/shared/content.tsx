@@ -79,7 +79,12 @@ export const CONTENT_COPY = {
     reach: 'reach us',
     faq: 'Frequently asked',
     concierge: 'Ask a question',
-    conciergeNote: 'The concierge is on its way. It will answer only from what this site knows, with a source for every fact, and it will say when it does not know.',
+    // Shown only when AI_CONCIERGE is off. The live invitation copy lives with the island itself
+    // (src/components/concierge/ConciergeSlot.tsx), which is what a guest reads when it is on.
+    conciergeNote: 'The concierge is not switched on right now. The search above and the questions below cover the essentials.',
+    /** Conservatory's kraft tag on the concierge card: descriptive when live, 'Soon' when off. */
+    conciergeTag: 'In your own words',
+    conciergeTagOff: 'Soon',
   },
   flags: { draft: 'Draft — not yet curated', placeholder: 'Details to come' },
   why: { summary: 'Why we’re sharing this', read: 'Read the memory' },

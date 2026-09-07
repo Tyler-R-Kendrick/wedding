@@ -23,6 +23,14 @@ export const floorPlanViewSchema = z.object({
 
 export const myTableSchema = z.object({
   guestId: z.string(),
+  /**
+   * The one sentence a person would say. Every AI-exposed capability owes the concierge a readable
+   * statement, because the flattener can otherwise only render the structured fields — and this
+   * capability's answer came out as "Table › Seat number: 2", which drops the table name (the whole
+   * answer) and reads like a form. The structured fields below stay exactly as they are for the UI,
+   * which is what /your-weekend renders; this is additive.
+   */
+  summary: z.string(),
   publishedAt: z.string(),
   table: z.object({ id: z.string(), name: z.string(), seatNumber: z.number().nullable(), anchorId: z.string().nullable(), tablemates: z.array(z.string()) }),
   floorPlan: floorPlanViewSchema.nullable(),
@@ -39,8 +47,11 @@ export async function readPublishedTable(ctx: CapabilityContext, guestId: string
   const view = findGuestInSnapshot(live?.snapshot ?? null, guestId);
   if (!live || !view) return null;
   const plan = view.floorPlanId ? await getFloorPlan(db, view.floorPlanId) : null;
+  const seat = view.seatNumber === null ? '' : `, seat ${view.seatNumber}`;
+  const withYou = view.tablemates.length ? ` You are with ${view.tablemates.join(', ')}.` : '';
   const data: MyTable = {
     guestId,
+    summary: `You are seated at ${view.tableName}${seat}.${withYou}`,
     publishedAt: live.publishedAt.toISOString(),
     table: { id: view.tableId, name: view.tableName, seatNumber: view.seatNumber, anchorId: view.anchorId, tablemates: view.tablemates },
     floorPlan: plan ? { id: plan.id, venueSpaceRef: plan.venueSpaceRef, name: plan.name, viewBox: plan.viewBox, outline: plan.outline, anchors: plan.anchors, placeholder: plan.placeholder } : null,

@@ -91,3 +91,23 @@ Both proposed moving them under Photos and renaming to the action:
 **This is a naming decision, not an engineering one**, which is why it is here rather than done.
 The pages are reachable and their purposes are stated where a guest meets them; what is left is what
 the couple want them called. Tell us the two names and the change is mechanical.
+
+---
+
+## X-10 — how the concierge should say a date and a time
+*(raised by two independent design reviews, level 12)*
+
+The concierge now answers guests' questions in their own words, and it repeats the site's own
+values back verbatim. Both reviewers flagged the same two, on both designs:
+
+| Shown today | What §4 of the brief asks for |
+|---|---|
+| `(time zone America/Chicago)` | a time a person would say — "4:00 pm CT" |
+| `checked 2026-09-04` | a weekday and a year — "checked Friday, 4 September 2026" |
+
+The first is an IANA identifier leaking out of the data layer; the second is an ISO date where the
+voice guide asks for prose. Neither is wrong, and neither is something to guess at: a date format is
+a voice decision, and it will appear on every answer the concierge gives.
+
+**What we need:** confirmation of the two formats. The change is one formatter and is mechanical
+once the wording is settled.
