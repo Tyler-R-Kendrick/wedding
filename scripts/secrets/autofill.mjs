@@ -1,47 +1,66 @@
 #!/usr/bin/env node
-// Fill .env with every value the sandbox can produce on its own (random secrets, local paths,
-// detected binaries). Never prints values; never overwrites an existing non-empty value.
-//   node scripts/secrets/autofill.mjs [--env .env] [--dry-run]
-import { readFile, writeFile } from 'node:fs/promises';
+/**
+ * Fill .env with everything the sandbox can produce on its own — random secrets, values
+ * derived from the repo and git identity, binaries found on this machine. No account is
+ * involved, so none of this belongs on the Secret Drop page.
+ *
+ *   node scripts/secrets/autofill.mjs [--env .env] [--dry-run] [--force]
+ *
+ * The list lives in scripts/secrets/registry.mjs (AUTOFILL) so the page, the ladder and
+ * this command always agree on what a human is never asked for. Existing non-empty values
+ * are left alone unless --force. Prints names, never values.
+ */
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
+import { AUTOFILL } from './registry.mjs';
+import { readEnv, parseDotenv, presentNames, applyEnv } from './env-file.mjs';
+
 const args = process.argv.slice(2);
-const envPath = (() => { const i = args.indexOf('--env'); return i >= 0 ? args[i + 1] : '.env'; })();
+const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
+const envPath = opt('env', '.env');
 const dry = args.includes('--dry-run');
-const rand = (bytes = 32) => randomBytes(bytes).toString('base64url');
-const firstExisting = (...paths) => paths.find((p) => p && existsSync(p)) || '';
+const force = args.includes('--force');
 
-/** name → { value, why } — only when the value can be produced without any account. */
-const AUTO = {
-  CONFIRMATION_SECRET: { value: () => rand(32), why: 'HMAC secret for confirmation tokens' },
-  CRON_SECRET: { value: () => rand(32), why: 'bearer for /api/jobs/run' },
-  BETTER_AUTH_SECRET: { value: () => rand(32), why: 'Better Auth session signing' },
-  TEST_AUTH_SECRET: { value: () => rand(24), why: 'test-only principal injector' },
-  DEV_STORAGE_SECRET: { value: () => rand(32), why: 'HMAC for local signed storage URLs' },
-  NEXT_PUBLIC_SITE_URL: { value: () => 'http://localhost:3000', why: 'local site origin' },
-  BETTER_AUTH_URL: { value: () => 'http://localhost:3000', why: 'Better Auth base URL (local)' },
-  EMAIL_FROM: { value: () => 'Sara + Tyler <no-reply@localhost>', why: 'dev inbox sender' },
-  PW_CHROMIUM_PATH: { value: () => firstExisting('/opt/pw-browsers/chromium'), why: 'preinstalled Chromium for Playwright' },
-  FFMPEG_PATH: { value: () => firstExisting('/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux', '/usr/bin/ffmpeg'), why: 'ffmpeg for video keyframes' },
-  ASSETS_USER_AGENT: { value: () => 'sara-tyler-wedding-site/0.1 (+https://github.com/Tyler-R-Kendrick/wedding)', why: 'Wikimedia/Openverse client UA' },
-};
+const gitConfig = (key) => { try { return execFileSync('git', ['config', '--get', key], { encoding: 'utf8' }).trim(); } catch { return ''; } };
 
-const existing = existsSync(envPath) ? await readFile(envPath, 'utf8') : '';
-const present = new Map();
-for (const line of existing.split('\n')) { const m = /^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=\s*(.*)$/.exec(line); if (m) present.set(m[1], m[2].trim()); }
-const added = [], skipped = [];
-const lines = [];
-for (const [name, spec] of Object.entries(AUTO)) {
-  if (present.has(name) && present.get(name) !== '' && present.get(name) !== '""') { skipped.push(name); continue; }
-  const v = spec.value();
-  if (!v) { skipped.push(name + ' (not detectable here)'); continue; }
-  lines.push(`${name}=${/^[A-Za-z0-9_./:@+=,-]*$/.test(v) ? v : JSON.stringify(v)}`);
-  added.push(name);
+const text = await readEnv(envPath);
+const current = parseDotenv(text);
+const present = presentNames(text);
+const values = new Map();
+const skipped = [];
+
+for (const [name, spec] of Object.entries(AUTOFILL)) {
+  if (present.has(name) && !force) { skipped.push(name); continue; }
+  let value = '';
+  switch (spec.method) {
+    case 'generate':
+      value = randomBytes(spec.bytes || 32).toString('base64url');
+      break;
+    case 'detect':
+      value = spec.paths.find((p) => existsSync(p)) || '';
+      break;
+    case 'derive':
+      if (spec.from) value = values.get(spec.from) || current.get(spec.from) || spec.value || '';
+      else if (spec.git) value = gitConfig(spec.git);
+      else value = spec.value || '';
+      break;
+    default:
+      value = '';
+  }
+  if (value) values.set(name, value);
+  else skipped.push(`${name} (not available here)`);
 }
-if (dry) { console.log('Would add:', added.join(', ') || '(nothing)'); if (skipped.length) console.log('Already set / skipped:', skipped.join(', ')); process.exit(0); }
-if (lines.length) {
-  const text = existing.replace(/\n*$/, existing ? '\n' : '') + `\n# auto-filled by scripts/secrets/autofill.mjs ${new Date().toISOString()} (generated locally, no accounts)\n` + lines.join('\n') + '\n';
-  await writeFile(envPath, text, { mode: 0o600 });
+
+if (dry) {
+  console.log('Would set:', [...values.keys()].join(', ') || '(nothing)');
+  if (skipped.length) console.log('Already set or unavailable:', skipped.join(', '));
+  process.exit(0);
 }
-console.log(`Auto-filled ${added.length} variable(s) in ${envPath}: ${added.join(', ') || '(nothing)'}`);
-if (skipped.length) console.log(`Already set or not detectable: ${skipped.join(', ')}`);
+
+const { updated, added } = values.size
+  ? await applyEnv(values, { path: envPath, note: 'scripts/secrets/autofill.mjs (generated locally, no accounts)' })
+  : { updated: [], added: [] };
+
+console.log(`Auto-filled ${values.size} variable(s) in ${envPath}: added=[${added.join(', ')}] updated=[${updated.join(', ')}]`);
+if (skipped.length) console.log(`Already set or unavailable: ${skipped.join(', ')}`);

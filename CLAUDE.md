@@ -65,10 +65,26 @@ Inside Claude Code: `/impeccable <cmd> <target>`, `hallmark audit <target>`,
 
 ## Secrets & accounts
 
-- Copy `.env.example` → `.env` and export vars before launching `claude`
-  (`.mcp.json` expands `${FAL_KEY}` and `${STITCH_API_KEY}`).
+Credentials come through the **Secret Drop** ladder, not through chat. Ask for an outcome,
+not a key: `npm run secrets:acquire -- --capability email` mints, derives, self-registers
+(auth.md / WorkOS) or delegates each credential, and only falls back to asking a human.
+Full protocol: `docs/ops/secrets.md`.
+
+```bash
+npm run secrets:autofill   # 19 variables that need no account at all — run first in a fresh sandbox
+npm run secrets:plan       # what a request would do, and what a human would have to click
+npm run secrets:acquire    # run the ladder; writes .env, emits .secrets/outbox.json
+npm run secrets:resume     # finish delegated ceremonies the couple has since approved
+npm run secrets:verify     # probe what landed: live / rejected / unreachable
+npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
+```
+
+- The agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
+  `ceremonies/*`) so pending links become buttons, and drop sealed OAuth codes into
+  `.secrets/inbox/` before `secrets:resume`.
 - Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.
-- Never read, print, or commit `.env`; `.claude/settings.json` denies it.
+- Never read, print, or commit `.env` or `.secrets/private*`; `.claude/settings.json` denies
+  both. Report variable *names* and lengths, never values.
 
 ## Rules for UI work in this repo
 

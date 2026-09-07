@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+/**
+ * Render the Secret Drop page from the template plus this sandbox's public key and the
+ * live credential registry, so the page can never describe a ladder the sandbox does not run.
+ *
+ *   node scripts/secrets/build-page.mjs                      → .secrets/secret-drop.html
+ *   node scripts/secrets/build-page.mjs --url https://…      → also records the artifact URL,
+ *                                                              which is the OAuth redirect target
+ *
+ * Rebuild and republish whenever the registry changes or a new sandbox generates a keypair
+ * (the baked key is what the browser seals for; a stale one leaves envelopes only a dead
+ * sandbox could open — the durable recipient in the page's store is the safety net).
+ */
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { clientRegistry } from './registry.mjs';
+
+const args = process.argv.slice(2);
+const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
+const out = opt('out', '.secrets/secret-drop.html');
+const templatePath = new URL('./page/template.html', import.meta.url);
+
+const template = await readFile(templatePath, 'utf8');
+let sandboxKey = null;
+if (existsSync('.secrets/public.jwk.json')) {
+  const jwk = JSON.parse(await readFile('.secrets/public.jwk.json', 'utf8'));
+  sandboxKey = { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RSA-OAEP-256', kid: jwk.kid, label: jwk.label || 'sandbox session key', createdAt: jwk.createdAt };
+} else {
+  console.error('No .secrets/public.jwk.json — run scripts/secrets/keygen.mjs first, or the page will have nothing to seal for.');
+}
+
+const registry = clientRegistry();
+const html = template
+  .replace('/*__REGISTRY__*/ null', JSON.stringify(registry))
+  .replace('/*__SANDBOX_KEY__*/ null', JSON.stringify(sandboxKey));
+
+if (html.includes('__REGISTRY__') || html.includes('__SANDBOX_KEY__')) {
+  console.error('Template placeholders did not substitute — check scripts/secrets/page/template.html');
+  process.exit(1);
+}
+
+await mkdir('.secrets', { recursive: true });
+await writeFile(out, html);
+
+const pageMeta = existsSync('.secrets/page.json') ? JSON.parse(await readFile('.secrets/page.json', 'utf8')) : {};
+const url = opt('url', pageMeta.url || null);
+await writeFile('.secrets/page.json', JSON.stringify({ url, builtAt: new Date().toISOString(), key: sandboxKey?.kid || null, credentials: registry.credentials.length }, null, 2) + '\n');
+
+console.log(`Built ${out} (${(html.length / 1024).toFixed(1)} KB) for key ${sandboxKey?.kid || '(none)'} with ${registry.credentials.length} credentials.`);
+console.log(url ? `Redirect target for delegated OAuth: ${url}` : 'No artifact URL recorded yet — pass --url after publishing so OAuth redirects come back to the page.');

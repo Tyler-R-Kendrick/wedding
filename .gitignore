@@ -57,6 +57,8 @@ __pycache__/
 .secrets/*
 !.secrets/public.jwk.json
 !.secrets/env.enc.json
+# Which artifact the page was published to (the OAuth redirect target) — no secret in it.
+!.secrets/page.json
 # Next.js / app data / test artifacts
 .next/
 .data/
