@@ -42,6 +42,10 @@ export const TEST_SERVER_SPECS = [
   'tests/security/voucher.spec.ts',
   'tests/security/idor.spec.ts',
   'tests/security/invitation.spec.ts',
+  // Level 10: the upload journey and the upload security suite both drive signed-in principals
+  // through identity's injector, and the journey needs the dev storage route, so both belong here.
+  'tests/e2e/media-upload.spec.ts',
+  'tests/security/uploads.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

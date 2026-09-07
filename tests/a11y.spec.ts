@@ -11,7 +11,11 @@ import AxeBuilder from '@axe-core/playwright';
 // Level 09 adds `/gifts` here because it is public. `/transportation` is NOT added: it is
 // guest-gated, so it belongs with the other authenticated audits, not in this list — swarm G
 // proposed it here because it built before that gating existed.
-const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/gifts', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
+//
+// Level 10 adds `/photos` for the same reason `/gifts` qualified: it is public. `/media/upload` and
+// `/media/mine` are NOT added — swarm H proposed `/media/upload` here, and it is guest-gated, so it
+// would have audited the sign-in page under the upload page's name. Third time this has come up.
+const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/gifts', '/photos', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
 
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
   for (const route of ROUTES) {

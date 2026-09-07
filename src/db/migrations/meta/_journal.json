@@ -50,6 +50,13 @@
       "when": 1788722750007,
       "tag": "0006_lyrical_logan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788750940958,
+      "tag": "0007_far_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }
