@@ -90,6 +90,14 @@ because a missing citation or an absent confirmation card moves none of the five
 thresholds have slack so a **live** model's variance does not fail the build; against the
 deterministic mock there is no variance, so any failing case now fails the run.
 
+**The eval gate did not run in CI, and now does.** `npm run test:evals` is inside `npm run verify`,
+but the CI job runs the vitest projects one at a time and never calls `verify` — so the gate that
+decides whether the concierge is grounded and safe executed on my machine and nowhere else. This is
+the level-06 defect ("three security suites skipped and reported green") one layer down, and
+`scripts/check-spec-coverage.mjs` only guards Playwright specs. Fixed with the step, plus
+`scripts/check-vitest-coverage.mjs`, which fails the build when any vitest project is run by no CI
+step. Verified by deleting the step: the guard reports `vitest projects run by no CI step: evals`.
+
 **Deliberately not covered.** Live-model behaviour: `EVALS_LIVE=1` is opt-in and CI never sets it.
 Every number in this document comes from the deterministic extractive mock.
 

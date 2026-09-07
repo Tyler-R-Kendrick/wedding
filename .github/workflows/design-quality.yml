@@ -63,6 +63,18 @@ jobs:
       - name: Integration tests (vitest + PGlite)
         run: npm run test:integration
 
+      # The concierge eval gate: 26 questions through the real pipeline against the deterministic
+      # mock model, scored on grounding, tool selection, refusal correctness and authorization
+      # violations. It is inside `npm run verify`, but this job runs the vitest projects one by one
+      # and never calls `verify` — so without this line the gate ran on a developer's machine and
+      # nowhere else. Same defect class as a Playwright spec belonging to no arrangement, which is
+      # what `scripts/check-spec-coverage.mjs` exists to stop; the step below now stops this one.
+      - name: Concierge evals (vitest, deterministic mock model)
+        run: npm run test:evals
+
+      - name: Every vitest project runs in CI
+        run: node scripts/check-vitest-coverage.mjs
+
       - name: Migrations are committed and current
         run: |
           npm run db:generate
