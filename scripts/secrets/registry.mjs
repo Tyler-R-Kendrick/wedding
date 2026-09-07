@@ -29,9 +29,9 @@ export const CEREMONY = {
 };
 
 /** Internal ladder rungs, mapped to the ceremony a person experiences. */
-export const METHOD_RANK = { generate: 0, derive: 1, detect: 2, mcp: 3, authmd: 4, register: 5, device: 6, oauth: 7, browser: 8, manual: 9 };
+export const METHOD_RANK = { generate: 0, derive: 1, detect: 2, harness: 3, mcp: 4, authmd: 5, register: 6, device: 7, oauth: 8, browser: 9, manual: 10 };
 export const METHOD_CEREMONY = {
-  generate: 'agent', derive: 'agent', detect: 'agent', mcp: 'agent', authmd: 'agent', register: 'agent',
+  generate: 'agent', derive: 'agent', detect: 'agent', harness: 'agent', mcp: 'agent', authmd: 'agent', register: 'agent',
   device: 'link', oauth: 'link', browser: 'signin', manual: 'paste',
 };
 
@@ -193,9 +193,22 @@ const RAW_SLOTS = [
     // is the OpenAI chat API pointed at a different base URL — so the choice below is real,
     // and adds no dependency. `fills` carry that base URL and the model ids per vendor.
     options: [
+      // The best answer to "which model" is often "none of them". Chrome ships a language model
+      // behind the W3C Prompt API; when a guest's browser has it, their question is answered on
+      // their own device — no key exists, nothing is billed, nothing leaves the phone. The
+      // hosted options below are the fallback for browsers without it, not the other way round.
+      { id: 'browser', name: 'The guest\'s own browser', recommended: true, note: 'On-device model, no key, nothing billed, nothing leaves their phone', host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }],
+        secrets: [], fills: { NEXT_PUBLIC_AI_BROWSER_MODEL: 'on' },
+        note2: 'Needs a browser with the Prompt API; the site falls back to whichever option is set below.' },
+      // Ambient auth: a session this machine already holds, borrowed rather than issued.
+      { id: 'harness', name: 'A harness you\'re signed in to', note: 'Borrows Claude Code, Codex, Copilot or Ollama — no new key at all', host: null, ceremony: 'agent',
+        ladder: [{ method: 'harness' }, { method: 'manual' }],
+        secrets: [], fills: {},
+        warn: 'A borrowed session is the harness operator\'s identity, for local development. Production still wants its own key.' },
       // Verified 2026-09-07: no RFC 8414/9728 metadata at api.anthropic.com, console.anthropic.com
       // or claude.ai — nothing to register against, so this is an honest sign-in.
-      { id: 'anthropic', name: 'Anthropic', recommended: true, note: 'What the site is written against', host: 'console.anthropic.com', ceremony: 'signin',
+      { id: 'anthropic', name: 'Anthropic', note: 'What the site is written against', host: 'console.anthropic.com', ceremony: 'signin',
         ladder: [{ method: 'authmd', origin: 'https://console.anthropic.com' }, { method: 'browser', recipe: 'anthropic-console' }, { method: 'manual' }],
         secrets: ['ANTHROPIC_API_KEY'], fills: {},
         probe: { url: 'https://api.anthropic.com/v1/models?limit=1', headers: { 'x-api-key': '{value}', 'anthropic-version': '2023-06-01' } } },

@@ -13,7 +13,8 @@ export { OpenAiCompatibleModel, OPENAI_MODELS } from './openai-compatible';
 
 type AiModelEnv = Pick<
   ServerEnv,
-  'FORCE_MOCK_PROVIDERS' | 'ANTHROPIC_API_KEY' | 'OPENAI_API_KEY' | 'AI_BASE_URL' | 'AI_CHAT_MODEL' | 'AI_FAST_MODEL'
+  | 'FORCE_MOCK_PROVIDERS' | 'ANTHROPIC_API_KEY' | 'ANTHROPIC_AUTH_TOKEN' | 'ANTHROPIC_BASE_URL'
+  | 'OPENAI_API_KEY' | 'AI_BASE_URL' | 'AI_CHAT_MODEL' | 'AI_FAST_MODEL' | 'AI_HARNESS'
 >;
 
 /**
@@ -24,7 +25,17 @@ type AiModelEnv = Pick<
 export function createAiModelProvider(env: AiModelEnv): AiModelProvider {
   if (env.FORCE_MOCK_PROVIDERS) return new MockAiModel();
   if (env.ANTHROPIC_API_KEY) {
-    return new AnthropicAiModel(env.ANTHROPIC_API_KEY, (apiKey) => createAnthropic({ apiKey }));
+    return new AnthropicAiModel(
+      { apiKey: env.ANTHROPIC_API_KEY, ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {}) },
+      (options) => createAnthropic(options),
+    );
+  }
+  // A session borrowed from a signed-in Claude Code CLI — no key was ever issued to the site.
+  if (env.ANTHROPIC_AUTH_TOKEN) {
+    return new AnthropicAiModel(
+      { authToken: env.ANTHROPIC_AUTH_TOKEN, ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {}) },
+      (options) => createAnthropic(options),
+    );
   }
   if (env.OPENAI_API_KEY) {
     const models = {
@@ -35,7 +46,7 @@ export function createAiModelProvider(env: AiModelEnv): AiModelProvider {
       apiKey: env.OPENAI_API_KEY,
       baseURL: env.AI_BASE_URL,
       // The host names the vendor in health output, so an operator can see which one answered.
-      label: env.AI_BASE_URL ? new URL(env.AI_BASE_URL).host : 'openai',
+      label: env.AI_HARNESS ? `${env.AI_HARNESS} (borrowed session)` : env.AI_BASE_URL ? new URL(env.AI_BASE_URL).host : 'openai',
       models,
       createProvider: ({ apiKey, baseURL }) => createOpenAI({ apiKey, baseURL }),
     });

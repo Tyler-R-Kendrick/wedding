@@ -74,7 +74,12 @@ const serverSchema = z.object({
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
   ANTHROPIC_API_KEY: optionalString,
+  /** OAuth bearer borrowed from a signed-in Claude Code session; sent as Authorization, not x-api-key. */
+  ANTHROPIC_AUTH_TOKEN: optionalString,
+  ANTHROPIC_BASE_URL: optionalUrl,
   OPENAI_API_KEY: optionalString,
+  /** Which local harness the credential came from, when it was borrowed rather than issued to the site. */
+  AI_HARNESS: z.enum(['claude-code', 'codex', 'copilot', 'ollama']).optional(),
   /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
   AI_BASE_URL: optionalUrl,
   /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */

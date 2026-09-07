@@ -63,3 +63,26 @@ describe('choosing a language-model provider', () => {
     expect((await p.health()).status).toBe('up');
   });
 });
+
+describe('borrowed sessions', () => {
+  it('uses an OAuth bearer from a signed-in Claude Code session when no key was issued', () => {
+    const p = createAiModelProvider(env({ ANTHROPIC_AUTH_TOKEN: 'sk-ant-oat-test' } as Partial<ServerEnv>));
+    expect(p.name).toBe('anthropic (borrowed session)');
+    expect(p.mode).toBe('live');
+    expect(p.modelIdFor('chat')).toBe('claude-sonnet-5');
+  });
+
+  it('prefers a key issued to the site over a borrowed session', () => {
+    const p = createAiModelProvider(env({ ANTHROPIC_API_KEY: 'sk-ant-real', ANTHROPIC_AUTH_TOKEN: 'sk-ant-oat' } as Partial<ServerEnv>));
+    expect(p.name).toBe('anthropic');
+  });
+
+  it('names the harness it borrowed from, so health output says whose identity is answering', () => {
+    const p = createAiModelProvider(env({
+      OPENAI_API_KEY: 'tid_test',
+      AI_BASE_URL: 'https://api.githubcopilot.com',
+      AI_HARNESS: 'copilot',
+    } as Partial<ServerEnv>));
+    expect(p.name).toBe('copilot (borrowed session)');
+  });
+});

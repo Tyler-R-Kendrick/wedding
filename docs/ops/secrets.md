@@ -31,7 +31,7 @@ page lets Tyler & Sara switch between them with one press.
 | Guest email | Resend · Postmark · Amazon SES |
 | Photo & video storage | Cloudflare R2 · Amazon S3 · Backblaze B2 · Supabase Storage · your own MinIO |
 | Database | Supabase · Neon · Vercel Postgres · a Postgres you already have |
-| AI concierge | Anthropic · OpenRouter · OpenAI · Groq · Together · Mistral · DeepSeek · your own Ollama |
+| AI concierge | **the guest's own browser** · a harness you're signed in to · Anthropic · OpenRouter · OpenAI · Groq · Together · Mistral · DeepSeek · your own Ollama |
 | Photo & story search | Voyage AI · OpenAI |
 | Video playback | Cloudflare Stream · skip it |
 | Flights & hotels | Duffel · Skyscanner · Booking.com · just link out |
@@ -90,6 +90,7 @@ npm run secrets:resume                          # finish ceremonies you have sin
 npm run secrets:verify                          # is what landed actually accepted by the provider?
 npm run secrets:authmd                          # which providers publish agent registration today
 npm run secrets:page                            # rebuild the artifact HTML after a registry change
+npm run secrets:harness                         # AI sessions this machine already holds (--apply to borrow)
 npm run secrets:probe                           # which providers let an agent register itself
 npm run secrets:probe -- --register             # ...and prove the advertised endpoints work
 ```
@@ -198,6 +199,35 @@ Every inference provider except Anthropic and OpenRouter runs through
 `src/providers/ai-model/openai-compatible.ts` — the OpenAI chat API with `AI_BASE_URL`
 pointed elsewhere — so adding one is a registry entry and a base URL, not a dependency.
 Browser auth is their default, because none of them publishes anything to register against.
+
+### The concierge asks for nothing, twice over
+
+The two options above every account are the point of the slot:
+
+1. **The guest's own browser.** Chrome ships a language model behind the W3C Prompt API — a
+   global `LanguageModel` with `availability()` and `create()`. `src/lib/ai/browser-model.ts`
+   wraps it: no key exists, nothing is billed, and a guest's question never leaves their
+   device. It is the recommended option, and the hosted providers are the fallback for
+   browsers without it — not the other way round. `NEXT_PUBLIC_AI_BROWSER_MODEL=off` disables it.
+
+2. **A harness you're already signed in to.** `npm run secrets:harness` looks for Claude Code,
+   Codex, GitHub Copilot and Ollama and reports what it finds; `--apply` borrows the first
+   usable session into `.env`:
+
+   | Harness | Where it looks | What it wires |
+   |---|---|---|
+   | Claude Code | `~/.claude/.credentials.json` | `ANTHROPIC_AUTH_TOKEN` (an OAuth bearer, not `x-api-key`) |
+   | Codex | `~/.codex/auth.json` | `OPENAI_API_KEY` |
+   | GitHub Copilot | `~/.config/github-copilot/apps.json` | exchanges the GitHub token, then `AI_BASE_URL=https://api.githubcopilot.com` |
+   | Ollama | `OLLAMA_HOST` or `~/.ollama` | `AI_BASE_URL` and the first installed model |
+
+   Presence is not a session: this repo's own sandbox has a `~/.claude/.credentials.json`
+   holding only MCP OAuth state, so the report distinguishes **usable** from
+   **present, none in it** by reading key *names* — never a value. Without `--apply` nothing
+   is copied anywhere.
+
+   A borrowed session carries the harness operator's identity, not the site's, so it is for
+   local development; production still wants its own key.
 
 Two lessons are baked into the code as a result:
 

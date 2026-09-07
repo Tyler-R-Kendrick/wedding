@@ -79,6 +79,7 @@ npm run secrets:resume     # finish delegated ceremonies the couple has since ap
 npm run secrets:verify     # probe what landed: live / rejected / unreachable
 npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
 npm run secrets:probe      # which providers let an agent register itself (--register to prove it)
+npm run secrets:harness    # AI sessions this machine already holds (--apply to borrow one)
 ```
 
 - Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
@@ -91,6 +92,10 @@ npm run secrets:probe      # which providers let an agent register itself (--reg
   `kind: link` → start that option's OAuth or device ceremony.
 - Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
   resort, for someone who already holds a key and would rather not wait.
+- The concierge's default is **no account at all**: the guest's own browser via the Prompt API
+  (`src/lib/ai/browser-model.ts`), then a harness this machine is already signed in to
+  (`secrets:harness`), and only then a hosted provider. A borrowed session is the operator's
+  identity — local development only.
 - **Never assert what a provider supports — probe it.** `npm run secrets:probe` checks RFC
   9728/8414 metadata and RFC 7591 registration; `--register` proves an advertised endpoint
   honours a request. Cloudflare, Neon, Supabase, Resend and Vercel all register an agent

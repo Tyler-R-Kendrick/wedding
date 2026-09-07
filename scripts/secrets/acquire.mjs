@@ -207,7 +207,22 @@ async function rungBrowser(cred, step, ctx) {
   return capture(cred, step, ctx);
 }
 
-const RUNGS = { authmd: rungAuthmd, register: rungRegister, device: rungDelegated, oauth: rungDelegated, mcp: rungMcp, browser: rungBrowser };
+/** Borrow a session this machine already holds — Claude Code, Codex, Copilot, Ollama. */
+async function rungHarness(cred, step, ctx) {
+  const { borrow, detect } = await import('./detect-harness.mjs');
+  const found = detect();
+  if (!found.length) {
+    const err = new Error('no signed-in AI harness on this machine');
+    err.code = 'NO_HARNESS';
+    throw err;
+  }
+  const borrowed = await borrow({ path: ctx.envPath || '.env' });
+  if (!borrowed) throw new Error(`found ${found.map((f) => f.name).join(', ')}, but none held a usable credential`);
+  // borrow() has already written .env, so hand back no values — only what happened.
+  return { values: new Map(), method: 'harness', detail: `borrowed the ${borrowed.harness} session (${borrowed.added.concat(borrowed.updated).join(', ')})` };
+}
+
+const RUNGS = { harness: rungHarness, authmd: rungAuthmd, register: rungRegister, device: rungDelegated, oauth: rungDelegated, mcp: rungMcp, browser: rungBrowser };
 
 /* -------------------------------------------------------------------- run */
 
@@ -250,6 +265,7 @@ async function commandRun({ dryRun }) {
     redirectUri: opt('redirect', page.url || null),
     waitSeconds: Number(opt('wait', 0)) || 0,
     tokens: await readJson(join(DIR, 'tokens.json'), {}),
+    envPath,
   };
 
   const results = [];

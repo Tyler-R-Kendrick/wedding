@@ -66,6 +66,39 @@ describe('env file writing', () => {
   });
 });
 
+describe('the concierge defaults to nobody\'s account', () => {
+  const concierge = SLOTS.find((s) => s.id === 'concierge')!;
+
+  it('offers the guest\'s own browser first, and recommends it', () => {
+    // Cheapest possible answer to "which model": none. No key exists, nothing is billed, and
+    // the question never leaves the guest's device.
+    expect(concierge.options[0]?.id).toBe('browser');
+    expect(concierge.options[0]?.recommended).toBe(true);
+    expect(concierge.options[0]?.secrets).toEqual([]);
+    expect(ceremonyOf(concierge.options[0]!)).toBe('agent');
+  });
+
+  it('offers a harness you are already signed in to before any account is asked for', () => {
+    const ids = concierge.options.map((o) => o.id);
+    expect(ids[1]).toBe('harness');
+    expect(ids.indexOf('harness')).toBeLessThan(ids.indexOf('anthropic'));
+    const harness = concierge.options[1]!;
+    expect(harness.secrets, 'borrowing asks for nothing').toEqual([]);
+    expect(ceremonyOf(harness)).toBe('agent');
+  });
+
+  it('lists OpenRouter among the hosted options', () => {
+    expect(concierge.options.map((o) => o.id)).toContain('openrouter');
+  });
+
+  it('ranks borrowing above every rung that needs an account', () => {
+    expect(METHOD_RANK.harness).toBeLessThan(METHOD_RANK.authmd);
+    expect(METHOD_RANK.harness).toBeLessThan(METHOD_RANK.oauth);
+    expect(METHOD_RANK.harness).toBeLessThan(METHOD_RANK.browser);
+    expect(METHOD_CEREMONY.harness).toBe('agent');
+  });
+});
+
 describe('slots and their provider options', () => {
   it('offers a real choice wherever one exists, with exactly one recommendation', () => {
     for (const slot of SLOTS) {
@@ -103,14 +136,18 @@ describe('slots and their provider options', () => {
     }
   });
 
-  it('ends every ladder in a human fallback, ordered cheapest rung first', () => {
+  it('ends in a human fallback exactly when there is something a human could supply', () => {
     for (const slot of SLOTS) {
       for (const option of slot.options) {
         expect(option.ladder.length, `${option.id} has no ladder`).toBeGreaterThan(0);
         const ranks = option.ladder.map((step: { method: string }) => METHOD_RANK[step.method as keyof typeof METHOD_RANK]);
         expect(ranks, `${option.id} ladder is out of order`).toEqual([...ranks].sort((a, b) => a - b));
         const last = option.ladder.at(-1)?.method;
-        expect(option.isOptOut ? ['derive', 'generate'] : ['manual'], `${option.id} ends at ${last}`).toContain(last);
+        // An option that asks for no secret — the on-device model, an opt-out — has nothing to
+        // paste, so ending at a hands-free rung is correct. Anything that asks for one must
+        // leave a way for a person to provide it.
+        const expected = option.secrets.length ? ['manual'] : ['derive', 'generate', 'manual'];
+        expect(expected, `${slot.id}/${option.id} ends at ${last}`).toContain(last);
       }
     }
   });
@@ -227,7 +264,8 @@ describe('what a ceremony promises, the ladder can deliver', () => {
   });
 
   it('never advertises "automatic" unless a rung needs no human at all', () => {
-    const handsFree = new Set(['generate', 'derive', 'detect', 'mcp', 'authmd', 'register']);
+    // `harness` borrows a session this machine already holds — no human, no new account.
+    const handsFree = new Set(['generate', 'derive', 'detect', 'harness', 'mcp', 'authmd', 'register']);
     for (const slot of SLOTS) {
       for (const option of slot.options) {
         if (ceremonyOf(option) !== 'agent') continue;
