@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
-import { GiftsPageRecipe } from '@/components/handoff/page-recipes';
+import { recipes } from '../_recipes';
 import { invokeForPage } from '@/components/handoff/server';
 
 export const dynamic = 'force-dynamic';
@@ -18,5 +18,9 @@ export default async function GiftsPage() {
       </main>
     );
   }
-  return <GiftsPageRecipe data={result.value.data} />;
+  // Swarm G left the same seam comment swarm F did ("the theme engine supplies themed recipes with
+  // the same PageData props and replaces these plain server components at integration"). This is
+  // that integration: /gifts now renders inside the active design's Shell, with nav and footer,
+  // instead of its own bare <main>.
+  return <recipes.GiftsPage data={result.value.data} />;
 }

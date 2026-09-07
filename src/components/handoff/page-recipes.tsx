@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { TransportationOptions } from '@/capabilities/get_my_transportation_options';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
+import { Placeholder, placeholderHint } from '@/components/provenance/Placeholder';
+import { PLACEHOLDER_MARKER } from '@/content/schemas';
 import { ClaimBenefitFlow } from './ClaimBenefitFlow';
 import { ExternalHandoffCard } from './ExternalHandoffCard';
 import { GiftLinkCard } from './GiftLinkCard';
@@ -23,15 +25,28 @@ export interface PageRecipe<D> {
 
 const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
 
+/**
+ * A topic paragraph, which may be a fact, a placeholder, or a fact that trails off into one.
+ *
+ * This used to print the authoring marker to the guest — literally `TODO(Tyler & Sara): which
+ * airport we recommend` on /transportation — behind an `sr-only` "Still to be confirmed", so a
+ * sighted guest got the marker with no label at all. It also tested `startsWith`, and two of the
+ * seeded topics carry the marker mid-sentence ("the valet entrance is at 71 E Madison.
+ * TODO(Tyler & Sara): the special event valet rate…"), which therefore rendered as plain fact.
+ *
+ * The marker is a split point, not text: everything before it is what the couple have confirmed and
+ * stays a paragraph; everything after is the hint, handed to the shared `Placeholder` that names
+ * who is still writing, visibly and to assistive tech alike.
+ */
 function Paragraph({ text }: { text: string }) {
-  const placeholder = text.startsWith('TODO(Tyler & Sara)');
-  return placeholder ? (
-    <p className="max-w-[65ch] italic text-primary" data-placeholder="true">
-      <span className="sr-only">Still to be confirmed: </span>
-      {text}
-    </p>
-  ) : (
-    <p className="max-w-[65ch]">{text}</p>
+  const at = text.indexOf(PLACEHOLDER_MARKER);
+  if (at < 0) return <p className="max-w-[65ch]">{text}</p>;
+  const fact = text.slice(0, at).trim();
+  return (
+    <>
+      {fact ? <p className="max-w-[65ch]">{fact}</p> : null}
+      <Placeholder>{placeholderHint(text.slice(at))}</Placeholder>
+    </>
   );
 }
 
@@ -39,16 +54,21 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
   const claimable = data.benefits.filter((b) => b.status === 'eligible' || b.status === 'failed');
   const claimed = data.benefits.filter((b) => b.status === 'claimed');
   const other = data.benefits.filter((b) => !claimable.includes(b) && !claimed.includes(b));
+  // `page`, `page__title`, `sec` and `sec__title` are the guest kit from `components/rsvp/recipes.css`,
+  // which the (guest) layout already imports: they take the active design's DISPLAY face and its
+  // 72ch measure. Before this the headings rendered in the theme's text face at a fixed `text-3xl`
+  // and `main` ran the full viewport width — the page sat on the themed ground without being
+  // composed by the design. Same treatment as /rsvp and /your-weekend at level 07.
   return (
-    <main id="main" className="bg-neutral text-primary">
+    <main id="main" className="page">
       <HandoffClickRecorder />
-      <header className={SECTION}>
-        <h1 className="text-3xl leading-tight">Getting here, getting around, getting home.</h1>
-        <p className="mt-4 max-w-[65ch] text-lg">The wedding is at the Chicago Athletic Association Hotel, 12 S Michigan Ave. Everything below is meant to take the guesswork out of the day so you can relax and dance.</p>
+      <header>
+        <h1 className="page__title">Getting here, getting around, getting home.</h1>
+        <p className="page__lede">The wedding is at the Chicago Athletic Association Hotel, 12 S Michigan Ave. Everything below is meant to take the guesswork out of the day so you can relax and dance.</p>
       </header>
 
-      <section className={SECTION} aria-labelledby="ride-benefit">
-        <h2 id="ride-benefit" className="text-2xl">
+      <section className="sec" aria-labelledby="ride-benefit">
+        <h2 id="ride-benefit" className="sec__title">
           Your ride home
         </h2>
         {!data.signedIn ? (
@@ -67,7 +87,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
         ))}
         {claimable.map((b) => (
           <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
-            <h3 className="text-xl">A ride benefit is waiting for you</h3>
+            <h3 className="sec__title sec__title--sm">A ride benefit is waiting for you</h3>
             <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1">
               <dt className="text-primary">Amount</dt>
               <dd>{b.amountNote ?? 'To be confirmed'}</dd>
@@ -82,20 +102,24 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
         ))}
         {other.map((b) => (
           <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
-            <h3 className="text-xl">Ride benefit</h3>
+            <h3 className="sec__title sec__title--sm">Ride benefit</h3>
             <p className="mt-2 max-w-[65ch]">{b.statusMessage}</p>
           </article>
         ))}
       </section>
 
       {data.topics.map((t) => (
-        <section key={t.id} className={SECTION} aria-labelledby={`topic-${t.id}`}>
-          <h2 id={`topic-${t.id}`} className="text-2xl">
+        <section key={t.id} className="sec" aria-labelledby={`topic-${t.id}`}>
+          <h2 id={`topic-${t.id}`} className="sec__title">
             {t.title}
           </h2>
           <div className="mt-3 space-y-3">
-            {t.paragraphs.map((p) => (
-              <Paragraph key={p} text={p} />
+            {/* Keyed by position, not by the text: a paragraph's text is the authoring string, so
+                keying on it wrote `TODO(Tyler & Sara): …` into the RSC payload as a React key —
+                invisible on the page but sitting in view-source. The list is a fixed, ordered
+                array from the content record, so the index is a stable key. */}
+            {t.paragraphs.map((p, i) => (
+              <Paragraph key={`${t.id}-${i}`} text={p} />
             ))}
           </div>
           {t.directions ? (
@@ -113,7 +137,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
           {t.official ? <ExternalHandoffCard heading="On the hotel’s site" handoff={t.official} meta={<span>Checked <time dateTime={t.verifiedAt}>{new Date(t.verifiedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</time></span>} /> : null}
         </section>
       ))}
-      <footer className={SECTION}>
+      <footer className="sec">
         <p className="hint">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
       </footer>
     </main>
@@ -158,9 +182,9 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
       <footer className={SECTION}>
         <p className="max-w-[65ch] hint">{data.copy.handoffNote}</p>
         {anyPlaceholder ? (
-          <p className="mt-2 max-w-[65ch] italic text-primary" data-placeholder="true">
-            {data.copy.placeholderNote}
-          </p>
+          <div className="mt-2 max-w-[65ch]">
+            <Placeholder>{data.copy.placeholderNote}</Placeholder>
+          </div>
         ) : null}
         <p className="mt-6 text-lg">{data.copy.thanks}</p>
       </footer>

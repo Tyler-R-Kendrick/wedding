@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from 'react';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
-import type { TravelProps } from '@/themes/content-types';
+import type { GiftsProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
@@ -24,6 +24,7 @@ import { StoryPage } from './StoryPage';
 import { VenueSpacePage } from './VenueSpacePage';
 import { WeddingPage } from './WeddingPage';
 import { TravelPage } from './TravelPage';
+import { GiftsPage } from './GiftsPage';
 
 /**
  * The recipe seam. Pages fetch theme-agnostic data through capabilities and render
@@ -42,6 +43,8 @@ export interface PageRecipes {
   AskPage: ComponentType<AskRecipeProps>;
   /** Level 08. The fallback is swarm F's single recipe; both themes now supply their own. */
   TravelPage: ComponentType<Omit<TravelProps, 'frame'>>;
+  /** Level 09. Fallback is swarm G's plain recipe; both themes supply their own. */
+  GiftsPage: ComponentType<Omit<GiftsProps, 'frame'>>;
 }
 type VenueSpaceData = VenueRoomData;
 
@@ -56,6 +59,7 @@ export const placeholderRecipes: PageRecipes = {
   WeddingPage,
   AskPage,
   TravelPage,
+  GiftsPage,
 };
 
 type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0], 'frame'>;
@@ -97,6 +101,7 @@ export const themedRecipes: PageRecipes = {
   WeddingPage: themed('wedding', ROUTES.wedding, WeddingPage),
   AskPage: themed('ask', ROUTES.ask, AskPage),
   TravelPage: themed('travel', ROUTES.travel, TravelPage),
+  GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage),
 };
 
 /** Swap point: the theme kit's recipes, with the placeholders as the fallback for unknown themes. */
