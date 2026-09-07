@@ -1,8 +1,19 @@
 /*
- * Media surfaces (Swarm H): upload page, My uploads, Photos & Video, admin moderation.
+ * Media surfaces (level 10): upload page, My uploads, Photos & Video, admin moderation.
  * Token-only: every color, space and radius is a DESIGN.md variable. Fallbacks reference other
  * tokens so the surfaces render before the theme kit's full variable set lands.
- * Mobile (390px) first; 17px body inherited from the shell; 44px targets; reduced motion respected.
+ * Mobile (390px) first; 44px targets; reduced motion respected. Secondary copy is
+ * `max(17px, 0.9375rem)`, not a bare `0.9375rem`: 15.94px is under the 17px floor this site sets
+ * because grandparents are a primary audience, and it is the same `max()` the shared `.hint` has
+ * used since level 09. The uppercase micro-labels stay at `0.75rem`, which is the open
+ * `--type-label-caps-size` question DESIGN.md carries for every surface, not a media one.
+ *
+ * Headings read the `--type-*` role tokens both designs publish under `[data-theme]`, not a literal
+ * scale. Written with a bare `font-size` and no family they inherited `--font-text`, so the h1 on
+ * /media/upload and /media/mine rendered in Josefin Sans / Spectral — the BODY face — at the same
+ * 38.25px in both designs, where the guest kit next door gives Cinzel 34→46.75 uppercase and Gloock
+ * 38.25→51. Case and tracking come from the same per-design role tokens the guest kit uses, because
+ * Gilded Hour ties its wide tracking to capitals and Conservatory sets Gloock in sentence case.
  */
 
 .media-page {
@@ -22,21 +33,32 @@
 }
 
 .media-eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
+  font-family: var(--type-label-caps-family, inherit);
+  font-size: max(13px, var(--type-label-caps-size, 0.75rem));
+  font-weight: var(--type-label-caps-weight, 600);
+  letter-spacing: var(--type-label-caps-tracking, 0.12em);
   text-transform: uppercase;
-  color: var(--color-tertiary, var(--color-secondary));
+
+  /* `--color-tertiary` is Conservatory's gold: #d4b24a on its #f4eedf creme is 1.76:1, an axe
+     serious violation on /media/upload and /media/mine in that design (Gilded Hour's tertiary is
+     dark enough to pass, which is why it only showed in one). `--color-secondary` is what the guest
+     kit's own `.page__eyebrow` uses, and it is a token colour rather than gold-as-text. Level 09
+     found the same shape in Conservatory's hint colour at 4.12:1. */
+  color: var(--color-secondary, var(--color-on-surface));
 }
 
 .media-page__head h1 {
   margin: 0;
-  font-size: clamp(1.625rem, 1.25rem + 2vw, 2.25rem);
-  line-height: 1.15;
-  font-weight: 500;
+  font-family: var(--type-h1-family, inherit);
+  font-size: clamp(var(--type-h1-size, 2.25rem), 1.25rem + 2.2vw, var(--type-display-lg-size, 3rem));
+  font-weight: var(--type-h1-weight, 400);
+  line-height: var(--type-h1-line, 1.15);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
 }
 
 .media-lede {
-  max-width: 60ch;
+  max-width: var(--wp-measure, 33rem);
   margin: 0;
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
@@ -47,8 +69,12 @@
 
 .media-section > h2 {
   margin: 0 0 var(--spacing-sm, 8px);
-  font-size: 1.625rem;
-  font-weight: 500;
+  font-family: var(--type-h2-family, inherit);
+  font-size: clamp(var(--type-h2-size, 1.625rem), 1.2rem + 1.4vw, var(--type-h1-size, 2.25rem));
+  font-weight: var(--type-h2-weight, 400);
+  line-height: var(--type-h2-line, 1.2);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
 }
 
 .media-actions {
@@ -133,7 +159,7 @@
 
 .media-dropzone__hint {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -178,7 +204,7 @@
 
 .media-upload-row__meta {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -227,7 +253,7 @@
 
 .media-field > span,
 .media-caption-field > span {
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .media-summary {
@@ -282,7 +308,7 @@
 }
 
 .media-album__count {
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -346,7 +372,7 @@
   display: grid;
   place-items: center;
   min-height: 8rem;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -424,7 +450,7 @@
 
 .media-lightbox__caption {
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px) var(--spacing-md, 16px);
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .media-lightbox__caption p {
@@ -500,7 +526,7 @@
   grid-template-columns: max-content 1fr;
   gap: 2px var(--spacing-sm, 8px);
   margin: var(--spacing-xs, 4px) 0 0;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .media-queue-row dt {
@@ -540,7 +566,7 @@
 
 .media-note {
   max-width: 60ch;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 

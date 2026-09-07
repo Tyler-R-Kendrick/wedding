@@ -7,6 +7,7 @@ import { GildedAdventuresPage } from './adventures';
 import { GildedAskPage } from './ask';
 import { GildedExploreCaaPage } from './explore-caa';
 import { GildedGiftsPage } from './gifts';
+import { GildedPhotoAlbumPage, GildedPhotosPage } from './photos';
 import { GildedGuidePage } from './guide';
 import { GildedHomePage } from './home';
 import { GildedRecommendationPage } from './recommendation';
@@ -32,5 +33,7 @@ export const content: ContentRecipes = {
   wedding: GildedWeddingPage,
   travel: GildedTravelPage,
   gifts: GildedGiftsPage,
+  photos: GildedPhotosPage,
+  photoAlbum: GildedPhotoAlbumPage,
   ask: GildedAskPage,
 };

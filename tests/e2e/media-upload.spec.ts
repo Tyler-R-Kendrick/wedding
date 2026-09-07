@@ -166,7 +166,11 @@ test.describe('guest QR upload → resume → admin approve → gallery', () => 
     await expect(adminPage.getByText('location removed').first()).toBeVisible();
     await adminPage.getByLabel('Select all').check();
     await adminPage.getByRole('button', { name: 'Approve and publish' }).click();
-    await expect(adminPage.getByRole('status')).toContainText('Approve and publish: 4 done');
+    // The RESULT note specifically, not "the only status on the page". Approving the last item
+    // empties the queue, and the empty state is itself a `role="status"` — so whether this assertion
+    // saw one element or two came down to whether the list had re-rendered yet. It failed as a
+    // strict-mode violation, which reads like a broken selector rather than the race it is.
+    await expect(adminPage.locator('.media-note[role="status"]')).toContainText('Approve and publish: 4 done');
     await expect(items).toHaveCount(0);
     const metrics = await adminCtx.request.post('/api/capabilities/admin_media_metrics', { headers: apiHeaders(admin, baseURL!), data: { input: {} } });
     expect(metrics.status()).toBe(200);

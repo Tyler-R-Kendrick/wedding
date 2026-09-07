@@ -1,14 +1,13 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { GalleryPage } from '@/capabilities/media';
-import { GalleryGrid } from '@/components/media/GalleryGrid';
-import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
+import { recipes } from '../../_recipes';
 
 export const dynamic = 'force-dynamic';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
+const COPY = { eyebrow: 'Photos & Video', empty: 'Nothing here yet.', allAlbums: 'All albums', showMore: 'Show more' };
 
 export async function generateMetadata({ params }: { params: Promise<{ collection: string }> }): Promise<Metadata> {
   const { collection } = await params;
@@ -22,36 +21,18 @@ export default async function CollectionPage({ params, searchParams }: { params:
   if (!SLUG.test(collection)) notFound();
   const principal = await currentPrincipal();
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', { collection, ...(cursor && /^[A-Za-z0-9_-]{1,256}$/.test(cursor) ? { cursor } : {}) }, principal);
-  if (!gallery.ok) {
-    if (gallery.error.code === 'not_found') notFound();
-    return (
-      <MediaPage eyebrow="Photos & Video" title="Album">
-        <p className="media-lede">{gallery.error.message}</p>
-      </MediaPage>
-    );
-  }
+  // A collection the caller may not see is indistinguishable from one that does not exist: no
+  // enumeration of admin-only albums, which is the same answer `list_gallery` gives.
+  if (!gallery.ok) notFound();
   const { collection: album, items, nextCursor } = gallery.data;
   return (
-    <MediaPage
-      eyebrow="Photos & Video"
+    <recipes.PhotoAlbumPage
+      slug={collection}
       title={album?.title ?? 'Album'}
-      lede={album?.description ?? undefined}
-      actions={
-        <Link className="media-button media-button--secondary" href="/photos">
-          All albums
-        </Link>
-      }
-    >
-      <MediaSection id="grid">
-        <GalleryGrid items={items} emptyMessage="Nothing here yet." />
-        {nextCursor ? (
-          <div className="media-pager">
-            <Link className="media-button media-button--secondary" href={`/photos/${collection}?cursor=${encodeURIComponent(nextCursor)}`} rel="next">
-              Show more
-            </Link>
-          </div>
-        ) : null}
-      </MediaSection>
-    </MediaPage>
+      description={album?.description ?? null}
+      items={items}
+      nextCursor={nextCursor ?? null}
+      copy={COPY}
+    />
   );
 }
