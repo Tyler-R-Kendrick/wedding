@@ -19,9 +19,23 @@ export default async function PhotosOfMePage() {
   if (principal.kind !== 'guest') {
     return (
       <MediaPage title="Photos of me" lede="Open the link from your invitation to sign in, then come back here.">
-        <MediaSection id="signin">
+        {/* A heading and a way onward, the shape /media/mine took at level 10. Signed out this page
+            was an h1 and two sentences — outline `["H1: Photos of me"]`, nothing else — and its only
+            control was a 135x17px inline link to search. It also said nothing about what the page is
+            for, so a guest who arrived here learned neither that face matching exists nor that it is
+            off; the words "face", "consent" and "delete" appeared zero times. */}
+        <MediaSection title="Please sign in first" id="signin">
           <p className="media-lede">
-            You can still <Link className="media-link" href="/media/search">search the photos</Link> without signing in.
+            Open the link from your invitation to sign in. This page is where you would ask us to look for you in the photos — it is switched off at the
+            moment, and if it is ever switched on it is opt-in, one photo set at a time, and you can withdraw or ask us to delete everything at any point.
+          </p>
+          <p>
+            <Link className="media-button" href="/">
+              Go to the site
+            </Link>{' '}
+            <Link className="media-button media-button--secondary" href="/media/search">
+              Search the photos
+            </Link>
           </p>
         </MediaSection>
       </MediaPage>

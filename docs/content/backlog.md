@@ -68,3 +68,26 @@ in which the fact first renders to guests.
 | [ ] | X-06 | Special event valet rate and whether it is publishable | Planner / CAA | INVITATIONS_OPEN |
 | [ ] | X-07 | How a guest reaches you with a question (one contact fact: address, number, or form). Named twice on a closed `/rsvp` — the closed notice and the site footer both mark the same gap | Couple | any lifecycle state; both guest pages show it today |
 | [ ] | X-08 | Whether a guest may see who else is seated at their table. Tablemate names cross household lines by design, and that is what a seating chart is, but it is the one place a guest learns another household's placement | Couple | before seating is published |
+
+## X-09 — What the two "my photos" pages should be called *(raised by two independent design reviews, level 11)*
+
+The site now has two guest pages whose URLs differ by two characters and whose names both mean
+"mine":
+
+| URL | Current name | What it does |
+|---|---|---|
+| `/media/mine` | My uploads | The photos and videos **you added**, and where each one is in review |
+| `/media/me` | Photos of me | Asks us to **look for you** in the archive. Off by default, opt-in, withdrawable |
+
+Two design reviewers, working independently on the two designs, both called this a wayfinding
+defect without being asked to compare them: the URLs are homophones aloud, share the `/media/m`
+autocomplete prefix, and "Photos of me" is what most people would call their own uploads.
+
+Both proposed moving them under Photos and renaming to the action:
+
+- `/media/mine` → **"Photos you added"** *(both reviewers agreed on this wording)*
+- `/media/me` → **"Find photos of you"** or **"Find me in the photos"** *(they differed here)*
+
+**This is a naming decision, not an engineering one**, which is why it is here rather than done.
+The pages are reachable and their purposes are stated where a guest meets them; what is left is what
+the couple want them called. Tell us the two names and the change is mechanical.

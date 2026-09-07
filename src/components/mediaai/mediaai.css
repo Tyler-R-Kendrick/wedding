@@ -1,4 +1,8 @@
 /*
+ * Body copy is `max(17px, …)`, matching media.css: 0.9375rem is 15.94px at this site's 17px root,
+ * under the floor set because grandparents are a primary audience. The uppercase micro-labels stay
+ * at 0.75rem, as they do on every other surface.
+ *
  * Media intelligence surfaces (Swarm I): search, opt-in face matching, admin AI + biometrics.
  * Extends Swarm H's media.css vocabulary; token-only (DESIGN.md variables with token fallbacks).
  * Mobile (390px) first; 17px body inherited; 44px targets; reduced motion respected via media.css.
@@ -47,7 +51,7 @@
   margin: var(--spacing-md, 16px) 0 0;
   padding: 0;
   list-style: none;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -60,7 +64,7 @@
 
 .mi-why__n {
   font-variant-numeric: tabular-nums;
-  color: var(--color-tertiary, var(--color-secondary));
+  color: var(--color-on-surface-muted, var(--color-on-surface));
 }
 
 .mi-panel {
@@ -88,7 +92,7 @@
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-tertiary, var(--color-secondary));
+  color: var(--color-on-surface-muted, var(--color-on-surface));
 }
 
 .mi-policy dd {
@@ -102,7 +106,7 @@
   margin: 0;
   padding: var(--spacing-md, 16px);
   border-inline-start: 2px solid var(--color-outline, currentcolor);
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .mi-check {
@@ -163,7 +167,7 @@
 }
 
 .mi-picker label:has(input:focus-visible) {
-  outline: 3px solid var(--color-tertiary, var(--color-secondary));
+  outline: 3px solid var(--color-secondary, var(--color-on-surface));
   outline-offset: 2px;
 }
 
@@ -188,7 +192,9 @@
   inset-block-end: 0;
   inset-inline: 0;
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  font-size: 0.75rem;
+
+  /* Not an uppercase micro-label — a caption on a control, so it takes the floor like body copy. */
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-primary, var(--color-neutral));
   background: var(--color-primary);
 }
@@ -209,11 +215,15 @@
 
 .mi-checklist__mark {
   font-variant-numeric: tabular-nums;
-  color: var(--color-tertiary, var(--color-secondary));
+  color: var(--color-on-surface-muted, var(--color-on-surface));
 }
 
 .mi-checklist small {
   display: block;
+
+  /* `<small>` is 0.8em by default, which is 13.6px at this site's 17px root. The element is a
+     second line of explanation, not a chip, so it takes the floor rather than the default. */
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -237,14 +247,14 @@
 }
 
 .mi-suggestion__meta {
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
 .mi-table {
   inline-size: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .mi-table th,
@@ -284,6 +294,6 @@
 }
 
 .mi-table-wrap:focus-visible {
-  outline: 3px solid var(--color-tertiary, var(--color-secondary));
+  outline: 3px solid var(--color-secondary, var(--color-on-surface));
   outline-offset: 2px;
 }

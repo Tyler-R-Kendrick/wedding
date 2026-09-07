@@ -89,3 +89,81 @@ behind the counsel review, and the ADR now says so rather than implying an enfor
 `review-I/` — 13 files of adversarial-review scaffolding — was committed at the repository root by
 the swarm. The findings are now `docs/reviews/2026-09-07-adversarial-review-biometrics-media-ai.md`;
 the probes are `tests/integration/biometrics-review/`, where CI runs them.
+
+## 6. Design verdict
+
+Two independent `design-reviewer` rounds ran on `/media/search` and `/media/me`, one per design.
+**Both returned FIX FIRST** — Gilded Hour 5/5/6/5, Conservatory 5/4/4/5, against a gate of >=7
+everywhere and >=8 on Usability. They converged, from opposite directions, on the same defects.
+Every blocker below is closed and **re-measured by me** with my own probe after the fix.
+
+| # | Blocker (who raised it) | Re-measured after |
+|---|---|---|
+| 1 | **Both pages are orphans** — zero inbound links to `/media/me` in all of `src`; `/media/search` linked only from `/media/me`, itself unreachable. Neither in `INTERNAL_ROUTES` (both) | `/photos` links both, in both designs, outside the `canUpload` gate; both added to `INTERNAL_ROUTES` and `ROUTES` |
+| 2 | **Search error invisible and silent** — 469-477px below the input, off-screen at `scrollY: 0`, `role: null`, `aria-live: null`, and the page's only live region rendered `''` in the error branch. WCAG 4.1.3 + 3.3.1 (both) | moved under the field, `role="alert"`, `aria-invalid` + `aria-describedby` wired, and the status region now speaks on failure |
+| 3 | **The column shrink-wraps** — `.media-page` has `margin-inline: auto` and no `width: 100%` inside the flex `.site`, so sibling pages sat at different left edges: 1440 `search` x=352.5 w=735 against `me` x=423.5 w=593 (both, measured independently) | both pages x=0 w=390 at 390, x=108 w=1224 at 1440 — **identical**, in both designs |
+| 4 | **Links render Lake Blue** where Gilded Hour's DESIGN.md says "link: Bronze … never changes to blue" and reserves blue for focus; its Bronze went unused (Gilded Hour) | `rgb(122,90,22)` `#7A5A16` Bronze text with a `rgb(201,166,72)` `#C9A648` gold underline |
+| 5 | **Pollen used as ink and as a focus ring** — `#D4B24A` at **1.77:1** on creme, and a focus ring needing 3:1 (Conservatory) | ink is `--color-on-surface-muted`; rings are `--color-secondary`; the link underline keeps pollen, which is where its DESIGN.md wants it |
+| 6 | **17px floor broken** — `.mi-why`, result descriptions, `.mi-suggestion__meta`, `.mi-table`, `.mi-policy__text` at 15.94px; `.mi-checklist small` 13.6px; `.mi-picker__label` 12.75px (both) | smallest rendered font in `main` is **17px** on both pages in both designs |
+| 7 | **`/media/me` signed out is the defect level 10 fixed next door** — outline `["H1: Photos of me"]` and nothing else, its only control a 135x17px link to search (Gilded Hour) | outline is `["H1: Photos of me", "H2: Please sign in first"]`, with a way to the site and to search, and copy that says what the page is for |
+| 8 | **`--wp-measure` is defined nowhere** — five call sites, all silently taking the `33rem` fallback: a 53-character measure against DESIGN.md's 55-72 (Conservatory) | defined at `:root` as 42rem, with `--wp-frame`; **this one is mine, introduced at level 10** |
+
+**One root cause, opposite symptoms — again.** Blockers 4 and 5 are the same line of shared CSS:
+`mediaai.css` and `media.css` picking a colour that each design owns. In Gilded Hour that produced
+blue links its DESIGN.md forbids; in Conservatory, 1.77:1 gold as body ink. That is the level-10
+lesson repeating one level later in a new file, which is why the fix is role tokens
+(`--media-link-color`, `--media-link-underline`) rather than a corrected literal.
+
+**A correction to my own brief.** I told both reviewers that `/media/me` renders its feature-off
+state when signed out and keeps withdrawal and deletion reachable. That is true for a signed-in
+guest and **false for an anonymous visitor**: the page returns early, and the strings `face`,
+`biometric`, `consent` and `delet` appeared zero times. The Gilded Hour reviewer said so plainly
+rather than reviewing the state I had asserted, which is the second time in two levels that a claim
+of mine has not survived contact with a reviewer.
+
+**Deferred, named rather than buried.**
+
+- **The `/media/mine` vs `/media/me` pair.** Both reviewers independently call it a wayfinding
+  defect: two URLs differing by two characters, homophones aloud, sharing an autocomplete prefix,
+  and both meaning "mine". Both propose renaming under `/photos/…`. I have fixed the part that is
+  unambiguously mine — the pages are reachable and their purposes are now stated where a guest meets
+  them — and left the **rename** to the couple, because page names are their voice and the two
+  reviewers proposed different wordings ("Find photos of you" / "Find me in the photos"). It is
+  recorded in `docs/content/backlog.md`, not silently dropped.
+- **`prefers-reduced-motion` is inverted** in shared chrome: `base.css`'s reduce block sets
+  `transition-property` on every element with `!important`, so a reduced-motion user gets a 120ms
+  `outline-color` fade on focus rings that a no-preference user does not. Measured 0 transitions
+  under no-preference, 91 under reduce. Level-04 chrome, not this level's, and fixing global motion
+  CSS here would widen the PR — level 15/16.
+- **No no-JS path and no shareable URL for search**: `?q=` fills the box but runs nothing, and the
+  form has no `action`. I added `name="q"` to the input so the query at least survives a submit;
+  the round trip is a feature, not a defect fix, and belongs with the concierge work at level 12.
+
+## 7. Accessibility and performance
+
+- **axe 0 serious/critical across 12 combinations** (3 routes x 2 designs x 390/1440), re-measured
+  after the fixes rather than carried over. Both reviewers independently measured **0 violations at
+  any impact**, including best-practice, which is stronger than the gate asks.
+- **No horizontal overflow**: `scrollWidth === clientWidth` at both widths in both designs.
+- **Smallest rendered font in `main` is 17px** on both new pages in both designs.
+- `impeccable detect` **exit 0** on `/photos`, `/media/search` and `/media/me` in both designs.
+  Both reviewers proved the detector live with a canary first (one returned 9 findings on an
+  injected `Inter`), so the zeroes are from a tool that was working.
+
+## 9. TODO inventory
+
+Counted by occurrence: unchanged from level 10 apart from swarm I's own seed and policy copy. The
+rendered sweep — 18 routes x 2 designs, rendered HTML **and** RSC payload — is clean.
+
+## 10. Verdict
+
+**READY**, once the gate re-runs green after the design fixes.
+
+Two independent design reviews, both FIX FIRST, eight blockers closed and re-measured. Three genuine
+defects found by me before them: a legal gate any string opened, a security invariant that had
+stopped verifying, and the foreign keys the checklist wanted that ADR-0006 says must not exist.
+
+The honest note is the same one as level 10, one level on: **a claim of mine did not survive the
+review** — I briefed both reviewers that `/media/me` shows its feature-off state to anonymous
+visitors, and it does not. The measurements in this document are mine, and mine have now been wrong
+in each of the last two levels; that is the argument for the round, not against it.

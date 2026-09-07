@@ -22,9 +22,17 @@
  */
 
 .media-page {
+  /* `width: 100%` is not redundant, and its absence was measurable: these are flex items of
+     `.site`, so without it the column shrink-wraps its content and every media page sits at a
+     different left edge. Measured at 1440 before this line: /media/search main at x=352.5 w=735,
+     /media/me at x=423.5 w=593 — a 71px drift between two sibling pages, with four different left
+     edges visible on one screen once the chrome is counted. `src/components/rsvp/recipes.css`
+     documents and fixes exactly this for the guest tree; this is the same fix for the media tree. */
+  width: 100%;
   max-width: 72rem;
   margin-inline: auto;
-  padding: var(--spacing-lg, 24px) var(--spacing-md, 16px) var(--spacing-3xl, 96px);
+  padding-block: var(--spacing-lg, 24px) var(--spacing-3xl, 96px);
+  padding-inline: max(var(--spacing-md, 16px), calc((100% - var(--wp-frame, 46rem)) / 2));
   color: var(--color-on-surface, var(--color-primary));
   font-family: inherit;
 }
@@ -112,8 +120,9 @@
 .media-button--quiet {
   border-color: transparent;
   background: transparent;
-  color: var(--color-secondary, var(--color-primary));
+  color: var(--media-link-color, var(--color-secondary, var(--color-primary)));
   text-decoration: underline;
+  text-decoration-color: var(--media-link-underline, currentcolor);
   text-underline-offset: 0.2em;
 }
 
@@ -123,9 +132,15 @@
   color: var(--color-error, var(--color-primary));
 }
 
+/* Each design says what a link looks like, and neither says `--color-secondary`. Gilded Hour's
+   DESIGN.md is explicit — "link: Bronze … never changes to blue" and the One Blue Rule — yet these
+   rendered Lake Blue #2E5B7B while its Bronze `--color-tertiary` went unused; Conservatory asks for
+   leaf-deep text with a pollen underline. Same class of defect as `.media-album a` at level 10:
+   shared CSS deciding something a design owns. The role tokens are in themes/shared/base.css. */
 .media-link {
-  color: var(--color-secondary, var(--color-primary));
+  color: var(--media-link-color, var(--color-secondary, var(--color-primary)));
   text-decoration: underline;
+  text-decoration-color: var(--media-link-underline, currentcolor);
   text-underline-offset: 0.2em;
 }
 

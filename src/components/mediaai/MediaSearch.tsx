@@ -65,12 +65,32 @@ export function MediaSearch({ collections, initialQuery = '' }: { collections: C
         <div className="mi-search__row">
           <label className="media-field" htmlFor={`${id}-q`}>
             <span>What are you looking for?</span>
-            <input id={`${id}-q`} type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={200} autoComplete="off" enterKeyHint="search" />
+            <input
+              id={`${id}-q`}
+              type="search"
+              name="q"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              maxLength={200}
+              autoComplete="off"
+              enterKeyHint="search"
+              {...(state.status === 'error' ? { 'aria-invalid': true, 'aria-describedby': `${id}-error` } : {})}
+            />
           </label>
           <button type="submit" className="media-button" disabled={state.status === 'searching'}>
             {state.status === 'searching' ? 'Searching…' : 'Search'}
           </button>
         </div>
+        {/* Under the field it is about, and announced. It used to render after the examples list and
+            the status paragraph: measured 469px below the input at 390x844 with `scrollY: 0`, so it
+            was off-screen, and it carried no `role` and no `aria-live` while the page's only live
+            region rendered an empty string in the error branch. Nothing told anyone the search had
+            failed — WCAG 4.1.3 and 3.3.1. */}
+        {state.status === 'error' ? (
+          <p className="mi-notice" data-tone="error" id={`${id}-error`} role="alert">
+            {state.message}
+          </p>
+        ) : null}
         <div className="mi-search__filters">
           <label className="media-field" htmlFor={`${id}-album`}>
             <span>Album</span>
@@ -122,10 +142,9 @@ export function MediaSearch({ collections, initialQuery = '' }: { collections: C
       </ul>
 
       <p role="status" aria-live="polite" className="media-lede">
-        {state.status === 'searching' ? 'Searching…' : state.status === 'done' ? `${state.result.items.length} ${state.result.items.length === 1 ? 'result' : 'results'} for “${state.result.query}”.` : ''}
+        {state.status === 'searching' ? 'Searching…' : state.status === 'done' ? `${state.result.items.length} ${state.result.items.length === 1 ? 'result' : 'results'} for “${state.result.query}”.` : state.status === 'error' ? 'The search could not run.' : ''}
       </p>
 
-      {state.status === 'error' ? <p className="mi-notice" data-tone="error">{state.message}</p> : null}
       {state.status === 'done' ? <Results result={state.result} /> : null}
     </div>
   );
