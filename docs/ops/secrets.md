@@ -217,7 +217,8 @@ The two options above every account are the point of the slot:
    retrieval runs again, and every sentence faces the same verifier: a device that invents a
    time or a room has that sentence dropped, exactly as a hosted model would.
    See `docs/architecture/ai-grounding.md` §8a. Answers stay cited either way, and any failure
-   — no Prompt API, a declined download, a prompt that throws — falls through to the server.
+   — no Prompt API, a model still downloading, a prompt that throws or times out — falls through
+   to the server, so the option is never a worse experience than not having it.
 
 2. **A harness you're already signed in to.** `npm run secrets:harness` looks for Claude Code,
    Codex, GitHub Copilot and Ollama and reports what it finds; `--apply` borrows the first

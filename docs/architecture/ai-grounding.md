@@ -186,8 +186,13 @@ rather than asking twice.
 The cost is honest and worth naming: the on-device path runs routing and retrieval twice and spends
 two `concierge` rate-limiter tokens per question. It spends no model tokens at all.
 
-Everything falls back. No Prompt API, a model the browser declines to download, a prompt that
-throws — each ends in phase 2 with no `draft`, and the server writes the answer itself.
+Only a model the browser reports as `available` is used. One that is merely `downloadable` is worth
+having but not worth making someone wait minutes for, so the download is started in the background
+and *this* question goes to the server; the next one is answered on the device. Generation itself is
+bounded at 20s, because a stalled device must not become a hung concierge.
+
+Everything falls back. No Prompt API, a model still downloading, a prompt that throws or times out —
+each ends in phase 2 with no `draft`, and the server writes the answer itself.
 
 `ask_concierge` is the same pipeline as a non-streaming capability for the UI and WebMCP. It is
 deliberately **not** exposed to the model (`exposure.ai: false`): a model must not recurse into the

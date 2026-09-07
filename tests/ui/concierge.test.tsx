@@ -292,6 +292,25 @@ describe('the concierge on the guest\'s own device', () => {
     expect(bodies).toHaveLength(1);
   });
 
+  it('does not make a guest wait for a model download — the server answers, the download starts', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    const created: string[] = [];
+    vi.stubGlobal('LanguageModel', {
+      availability: async () => 'downloadable',
+      create: async () => { created.push('create'); return { prompt: async () => 'never used', destroy: () => {} }; },
+    });
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    // One request, straight to the server: no evidence round-trip for a model that is not there yet.
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).not.toHaveProperty('mode');
+    expect(bodies[0]).not.toHaveProperty('draft');
+    // …but the download was kicked off, so the next question can be answered on the device.
+    await waitFor(() => expect(created).toHaveLength(1));
+  });
+
   it('uses the server alone on a browser with no Prompt API', async () => {
     const fetch = stubStream(grounded);
     vi.stubGlobal('fetch', fetch);

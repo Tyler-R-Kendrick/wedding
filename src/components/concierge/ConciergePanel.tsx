@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { askOnDevice, isSupported } from "@/lib/ai/browser-model";
+import { askOnDevice, isSupported, openSession, probe } from "@/lib/ai/browser-model";
 import { publicEnv } from "@/lib/env.public";
 import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS } from "./constants";
 import "./concierge.css";
@@ -43,7 +43,25 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 const ON_DEVICE_STAGE = "Writing an answer on your device\u2026";
-const ON_DEVICE_DOWNLOAD = "Getting your browser's model ready\u2026";
+/** Generation only — the model is already downloaded before this path is taken. */
+const ON_DEVICE_TIMEOUT_MS = 20_000;
+
+/**
+ * Whether to answer this question on the device. Only `available` counts: a model the browser has
+ * offered but not yet downloaded is worth having, but not worth making someone wait minutes for,
+ * so the download is started in the background and this question goes to the server. The next one
+ * is on-device.
+ */
+async function readyOnDevice(): Promise<boolean> {
+  if (!isSupported()) return false;
+  const state = await probe();
+  if (state === "available") return true;
+  if (state === "downloadable" || state === "downloading") {
+    // Fire and forget: nothing here awaits the download, and a failure is not this turn's problem.
+    void openSession().then((session) => session?.destroy?.()).catch(() => {});
+  }
+  return false;
+}
 
 let turnCounter = 0;
 const nextTurnId = () => `t${++turnCounter}`;
@@ -172,7 +190,7 @@ export default function ConciergePanel({
         // here, on their device. The draft then goes back for the same verification every answer
         // gets. Any failure at all falls through to the server writing the answer itself.
         let draft: string | null = null;
-        if (publicEnv.browserModel && isSupported()) {
+        if (publicEnv.browserModel && (await readyOnDevice())) {
           let evidence: { system: string; userTurn: string } | null = null;
           await streamTurn(
             chatRoute,
@@ -189,10 +207,11 @@ export default function ConciergePanel({
           if (!evidence) return;
           const { system, userTurn } = evidence;
           setStage(ON_DEVICE_STAGE);
+          // A deadline, because a stalled device must not become a hung concierge. The model is
+          // already downloaded by this point (`readyOnDevice`), so this bounds generation only.
           draft = await askOnDevice(userTurn, {
             systemPrompt: system,
-            onProgress: (fraction) =>
-              setStage(fraction < 1 ? `${ON_DEVICE_DOWNLOAD} ${Math.round(fraction * 100)}%` : ON_DEVICE_STAGE),
+            signal: AbortSignal.timeout(ON_DEVICE_TIMEOUT_MS),
           });
           setStage(STAGE_LABEL.verifying!);
         }
