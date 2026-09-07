@@ -1,3 +1,4 @@
+import { isPlaceholderText } from '@/content/schemas';
 import type { AuditSink } from '@/contracts/audit';
 import type { CapabilityExposure } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -88,6 +89,16 @@ export function redemptionFor(claim: TransportationClaimRow, vault: Vault, surfa
   return { kind: 'code', code: secret.value, instructions: CODE_INSTRUCTIONS, expiresAt };
 }
 
+/**
+ * The three benefit notes are admin free text shown to the guest verbatim (see the help on the
+ * admin form), and "verbatim" must stop at the authoring marker. An admin who types
+ * `TODO(Tyler & Sara): amount` is saying the planner has not confirmed it — the honest render of
+ * that is the "To be confirmed" the UI already shows for an unset note, not `TODO(...)` printed on
+ * a guest's ride card. Nulling it here keeps that one decision in one place: `ClaimBenefitFlow`,
+ * `RedemptionCard` and the plain page recipe all fall back to the same wording.
+ */
+const guestNote = (note: string | null) => (note && isPlaceholderText(note) ? null : note);
+
 export async function benefitViewsFor(db: Db, vault: Vault, principal: GuestPrincipal, now: Date, surface: keyof CapabilityExposure): Promise<BenefitView[]> {
   const rows = await listEntitlementsForGuest(db, principal.guestId);
   const facts = getTransportEligibilityFactSource();
@@ -100,9 +111,9 @@ export async function benefitViewsFor(db: Db, vault: Vault, principal: GuestPrin
       program: e.program,
       status: 'eligible',
       statusMessage: STATUS_MESSAGES.eligible,
-      amountNote: e.amountNote,
-      validityNote: e.validityNote,
-      geofenceNote: e.geofenceNote,
+      amountNote: guestNote(e.amountNote),
+      validityNote: guestNote(e.validityNote),
+      geofenceNote: guestNote(e.geofenceNote),
       verifiedAt: e.verifiedAt?.toISOString() ?? null,
     };
     const claim = await getClaimForEntitlement(db, e.id);

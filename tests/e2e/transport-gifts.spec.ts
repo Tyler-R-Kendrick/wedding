@@ -15,6 +15,8 @@ import { BASE_URL, IDS, principalHeaders } from './helpers/principal';
  */
 const PARTNER_HOSTS = /(^|\.)(uber\.com|zola\.com|theknot\.com|withjoy\.com|google\.com|apple\.com|opentable\.com|resy\.com|chicagoathletichotel\.com|hyatt\.com)$/;
 
+const THEMES = ['gilded-hour', 'conservatory'] as const;
+
 const apiAs = (name: 'A1' | 'A2' | 'admin') => ({ ...principalHeaders(name), origin: BASE_URL, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' });
 
 async function noBlockingAxe(page: import('@playwright/test').Page) {
@@ -24,24 +26,36 @@ async function noBlockingAxe(page: import('@playwright/test').Page) {
 }
 
 test.describe('gifts', () => {
-  test('frames "next adventures" and hands off with the provider named, on partner hosts only', async ({ page }) => {
-    await page.goto('/gifts');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
-    const cards = page.locator('article[data-handoff-provider]');
-    await expect(cards).toHaveCount(2);
-    await expect(cards.first()).toContainText('via Zola');
-    const link = cards.first().getByRole('link');
-    await expect(link).toHaveAttribute('target', '_blank');
-    await expect(link).toHaveAttribute('rel', /noopener/);
-    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
-      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
-      expect(href.startsWith('https://')).toBe(true);
-    }
-    const text = await page.locator('main').innerText();
-    expect(text).not.toMatch(/cash\s*fund|donat/i);
-    expect(await page.locator('input, iframe, form').count()).toBe(0);
-    await noBlockingAxe(page);
-  });
+  // Parameterised by design, as the travel spec is and for the same reason: /gifts now renders
+  // through the theme engine, so a `goto('/gifts')` with no `?theme=` would exercise Gilded Hour
+  // only and leave Conservatory's recipe — and its axe pass — entirely unvisited.
+  for (const theme of THEMES) {
+    test(`frames "next adventures" and hands off with the provider named, on partner hosts only (${theme})`, async ({ page }) => {
+      await page.goto(`/gifts?theme=${theme}`);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
+      const cards = page.locator('article[data-handoff-provider]');
+      await expect(cards).toHaveCount(2);
+      await expect(cards.first()).toContainText('via Zola');
+      const link = cards.first().getByRole('link');
+      await expect(link).toHaveAttribute('target', '_blank');
+      await expect(link).toHaveAttribute('rel', /noopener/);
+      for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
+        expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
+        expect(href.startsWith('https://')).toBe(true);
+      }
+      const text = await page.locator('main').innerText();
+      expect(text).not.toMatch(/cash\s*fund|donat/i);
+      // The site is never the merchant of record: gifts are a hand-off, never a checkout. This
+      // used to count `input, iframe, form` across the whole document, which held only because
+      // /gifts rendered a bare <main> with no site chrome. Now that it renders inside the active
+      // design's Shell it has a header and footer like every other public page, and the design
+      // switcher's own <form> lives there — chrome this rule was never about. The guarantee
+      // restated: the page's own content collects nothing, and no embedded frame appears on it.
+      expect(await page.locator('main input, main textarea, main select, main form').count()).toBe(0);
+      expect(await page.locator('iframe, object, embed').count()).toBe(0);
+      await noBlockingAxe(page);
+    });
+  }
 });
 
 test.describe('transportation', () => {
@@ -66,6 +80,9 @@ test.describe('transportation', () => {
     const householdId = IDS.householdA;
     const assigned = await request.post('/api/capabilities/admin_assign_transportation_entitlement', {
       headers: apiAs('admin'),
+      // The amount is deliberately left as the authoring marker: the planner has not confirmed it
+      // (backlog P-05). A guest must never read `TODO(...)` — the page owes them the same
+      // "To be confirmed" it shows for a note nobody has written yet.
       data: { input: { guestId, householdId, amountNote: 'TODO(Tyler & Sara): amount', validityNote: 'Wedding night', geofenceNote: 'Chicago' }, idempotencyKey: `e2e-assign-${Date.now()}` },
     });
     expect(assigned.status(), await assigned.text()).toBe(200);
@@ -73,6 +90,7 @@ test.describe('transportation', () => {
     await context.setExtraHTTPHeaders(principalHeaders('A1'));
     await page.goto('/transportation');
     await expect(page.locator('[data-benefit-status="eligible"]')).toBeVisible();
+    expect(await page.locator('main').innerText()).not.toContain('TODO(');
     await page.getByRole('button', { name: 'Review and claim' }).click();
     await expect(page.getByRole('heading', { level: 3, name: 'Claim your ride benefit' })).toBeVisible();
     await expect(page.getByText('Uber (test mode)')).toBeVisible();

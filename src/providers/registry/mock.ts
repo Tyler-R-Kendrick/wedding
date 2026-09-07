@@ -2,12 +2,21 @@ import { okConfig, upHealth } from '../base';
 import { CASH_FUND_DISCLOSURE, REGISTRY_DISCLOSURE } from './links';
 import type { CashFundProvider, GiftLink, RegistryProvider } from './types';
 
-/** Placeholders only: real links come from the couple (TODO(Tyler & Sara)). */
+/**
+ * Placeholders only: the real links come from the couple.
+ *
+ * The labels are plain category names, not `TODO(Tyler & Sara): registry link`. These are rendered
+ * as the HEADING of a hand-off card on the PUBLIC gifts page, so the marker was the first thing a
+ * visitor read; `placeholder: true` is the flag that carries the meaning, and `ExternalHandoffCard`
+ * already prints the honest sentence ("Not final yet: this link goes to the provider's home page
+ * until Sara and Tyler add the real one"). A neutral category label states no fact the couple has
+ * not confirmed.
+ */
 export const MOCK_REGISTRY_LINKS: GiftLink[] = [
   {
     id: 'registry-placeholder',
     provider: 'zola',
-    label: 'TODO(Tyler & Sara): registry link',
+    label: 'Registry',
     note: 'Physical wishlist',
     url: 'https://www.zola.com/',
     opensNewTab: true,
@@ -19,7 +28,7 @@ export const MOCK_CASH_FUND_LINKS: GiftLink[] = [
   {
     id: 'adventure-fund-placeholder',
     provider: 'zola',
-    label: 'TODO(Tyler & Sara): help us with our next adventures',
+    label: 'Help us with our next adventures',
     note: 'Experience gifts and gift cards',
     url: 'https://www.zola.com/',
     opensNewTab: true,

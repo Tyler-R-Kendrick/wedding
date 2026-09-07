@@ -343,12 +343,20 @@ describe('transport benefit', () => {
 });
 
 describe('registry and cash-fund links', () => {
-  it('mock links are placeholders on allowlisted hosts', async () => {
+  // A link's label is the hand-off card's heading AND its button text on the public gifts page.
+  // This used to assert `l.label` CONTAINED 'TODO(Tyler & Sara)', so it pinned in place the very
+  // defect it should have caught: the mock labels printed the authoring marker to visitors. What
+  // must hold is the guarantee — the provider is a mock, so `listGiftLinks` marks every one of its
+  // links `placeholder: true` and `ExternalHandoffCard` prints the editorial sentence — and that
+  // the marker itself never reaches the label.
+  it('mock links are placeholders on allowlisted hosts, with no authoring marker in the label', async () => {
     for (const p of [new MockRegistry(), new MockCashFund()]) {
+      expect(p.mode).toBe('mock');
       const links = await p.describeLinks();
       expect(links.length).toBeGreaterThan(0);
       for (const l of links) {
-        expect(l.label).toContain('TODO(Tyler & Sara)');
+        expect(l.label).not.toContain('TODO(');
+        expect(l.label.length).toBeGreaterThan(0);
         expect(isAllowedRedirect(l.url)).toBe(true);
         expect(l.disclosure.length).toBeGreaterThan(10);
       }

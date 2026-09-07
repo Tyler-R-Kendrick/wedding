@@ -84,6 +84,27 @@ describe('gifts', () => {
     const opened = await run(openGiftLink, anon, { linkId: 'knot-registry' });
     expect(opened.ok && opened.value.data.handoff.providerDisplayName).toBe('The Knot');
   });
+
+  it('never prints the authoring marker in a label a guest reads', async () => {
+    // The label is the hand-off card's heading and its button text. An admin who types the marker
+    // into the label field is saying "not final yet" — that belongs in `placeholder`, which renders
+    // as the editorial sentence, not as `TODO(...)` on a public page.
+    const r = await run(
+      adminUpsertGiftLink,
+      admin,
+      { id: 'marker-registry', kind: 'registry', provider: 'zola', label: 'TODO(Tyler & Sara): registry link (backlog C-09)', url: 'https://www.zola.com/registry/x', placeholder: true },
+      { idempotencyKey: key() },
+    );
+    expect(r.ok).toBe(true);
+    const list = await run(listGiftLinksCapability, anon, {});
+    expect(list.ok).toBe(true);
+    if (!list.ok) return;
+    const link = list.value.data.links.find((l) => l.id === 'marker-registry');
+    expect(link).toBeDefined();
+    expect(link?.placeholder).toBe(true);
+    expect(link?.label).toBe('registry link');
+    expect(JSON.stringify(list.value.data.links)).not.toContain('TODO(');
+  });
 });
 
 describe('reservations ladder', () => {

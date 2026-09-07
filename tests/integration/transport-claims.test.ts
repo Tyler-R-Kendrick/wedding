@@ -123,7 +123,13 @@ afterAll(() => resetProviders());
 describe('ride benefit claims', () => {
   it('assigns via admin and shows the benefit as eligible only to its owner', async () => {
     const mine = await run(getMyTransportationOptions, guest(G1, H1), {});
-    expect(mine.ok && mine.value.data).toMatchObject({ signedIn: true, benefits: [{ entitlementId: E1, status: 'eligible', amountNote: 'TODO(Tyler & Sara): amount' }] });
+    // The notes are admin free text rendered to the guest verbatim, and every one of these
+    // entitlements was assigned with the authoring marker as its amount — an admin saying the
+    // planner has not confirmed it. The guest read must hand back `null`, which every surface
+    // renders as "To be confirmed"; this used to assert the marker came back intact, which is how
+    // `TODO(Tyler & Sara): amount` came to be printed on a guest's ride card.
+    expect(mine.ok && mine.value.data).toMatchObject({ signedIn: true, benefits: [{ entitlementId: E1, status: 'eligible', amountNote: null, validityNote: 'Wedding night' }] });
+    expect(JSON.stringify(mine.ok && mine.value.data.benefits)).not.toContain('TODO(');
     const manager = await run(getMyTransportationOptions, guest(G2, H1, { actsFor: [G2, G1, G3] }), {});
     expect(manager.ok && manager.value.data.benefits).toEqual([]); // individuals own benefits, even inside a household
     const other = await run(getMyTransportationOptions, guest(G4, H2), {});

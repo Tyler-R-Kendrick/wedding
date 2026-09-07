@@ -12,7 +12,7 @@ export const GIFTS_COPY = {
   adventureHeading: 'Our next adventures',
   adventureIntro: 'Experiences, trips and gift cards, gathered with a provider so that everything stays simple and secure.',
   handoffNote: 'Each link opens the provider’s own site in a new tab. Anything you choose there is handled by them; we never see payment details.',
-  placeholderNote: 'TODO(Tyler & Sara): the real links go here once the registry is chosen.',
+  placeholderNote: 'the real links, once the registry is chosen',
   thanks: 'Thank you. Truly.',
 } as const;
 

@@ -73,7 +73,7 @@ export const DEFAULT_RESERVATION_VENUES: readonly ReservationVenueRow[] = [
     resySlug: null,
     openTableId: null,
     url: 'https://www.chicagoathletichotel.com/',
-    note: 'TODO(Tyler & Sara): reservation link for Cindy’s (planner item P-07). Until then the hotel’s site lists its outlets.',
+    note: 'TODO(Tyler & Sara): reservation link for Cindy’s (backlog P-07). Until then the hotel’s site lists its outlets.',
     placeholder: true,
     active: true,
     sortOrder: 0,

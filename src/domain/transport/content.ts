@@ -76,7 +76,7 @@ export const TRANSPORTATION_TOPICS: readonly TransportationTopic[] = [
     title: 'Getting home after the reception',
     paragraphs: [
       'We want everyone home safely and without fuss. Eligible adult guests will find a ride benefit on this page once it is ready; the code or link is personal to you.',
-      'TODO(Tyler & Sara): ride benefit amount, area and validity (planner item P-05).',
+      'TODO(Tyler & Sara): ride benefit amount, area and validity (backlog P-05).',
     ],
     sourceId: BRIEF_SOURCE,
     verifiedAt: BRIEF_VERIFIED_AT,

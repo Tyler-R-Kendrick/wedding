@@ -1,3 +1,5 @@
+import { placeholderHint } from '@/components/provenance/Placeholder';
+import { isPlaceholderText } from '@/content/schemas';
 import type { Citation } from '@/contracts/provenance';
 import type { Db } from '@/db/client';
 import type { ReservationVenueRow } from '@/db/schema';
@@ -33,8 +35,21 @@ export interface ReservationWhen {
   partySize?: number;
 }
 
+/**
+ * The guest-facing view of a venue. Two fields are printed verbatim by the cards — `name` as the
+ * `<h3>`, `note` as the paragraph under it — and both carry the authoring marker in the built-in
+ * rows ("TODO(Tyler & Sara): a restaurant we love"; "TODO(Tyler & Sara): reservation link for
+ * Cindy's…"). `placeholder` is what says "not final", and the cards turn it into a sentence naming
+ * the couple; the marker is for the content record and stops here.
+ *
+ * The hint is kept rather than dropped because here it is the whole sentence — unlike the transport
+ * benefit's Amount/Valid/Area fields, where a bare hint would read as a value and the honest render
+ * is the "To be confirmed" fallback those surfaces already have.
+ */
+const forGuest = (text: string) => (isPlaceholderText(text) ? placeholderHint(text) : text);
+
 export function venueView(v: ReservationVenueRow): ReservationVenueView {
-  return { id: v.id, name: v.name, note: v.note, placeholder: v.placeholder, verifiedAt: v.verifiedAt?.toISOString() ?? null, sourceId: v.sourceId };
+  return { id: v.id, name: forGuest(v.name), note: v.note ? forGuest(v.note) : v.note, placeholder: v.placeholder, verifiedAt: v.verifiedAt?.toISOString() ?? null, sourceId: v.sourceId };
 }
 
 const UNAVAILABLE_MESSAGE = 'We do not have a reservation link for this place yet. Ask us and we will point you the right way.';
