@@ -90,6 +90,10 @@
     }
   });
 
+  /* The artifact wrapper (and a bare local file) supplies <html> without a
+     lang, which axe flags as a serious violation. Set it from here. */
+  if (!document.documentElement.lang) document.documentElement.lang = 'en';
+
   var first = document.querySelector('[data-scene]');
   if (first) setScene(first.dataset.scene);
   setTheme('gilded-hour');

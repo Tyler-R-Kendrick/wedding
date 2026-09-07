@@ -264,3 +264,9 @@ npm run test:e2e     # Playwright, needs BASE_URL</pre>
 
   <p class="foot">Facts on every lab come from <code>docs/design/brief.md</code> and <code>src/content/seed/*</code>. Guest data is the committed fictional fixtures — Testhouse, Fixture and Solo — because real guest data never enters the repository.</p>
 </div>
+
+<script>
+/* The artifact wrapper supplies <html> without a lang; set it here. This page
+   has no scenes, so it does not load the lab shell script. */
+if (!document.documentElement.lang) document.documentElement.lang = 'en';
+</script>

@@ -284,7 +284,7 @@
   --rule: #262a33;
   --ink: #e9e6e0;
   --ink-dim: #8b909c;
-  --ink-faint: #5d626d;
+  --ink-faint: #7b8190;
   /* The chrome borrows the active kit's signature; set on the root by JS. */
   --accent: #c9a648;
   --accent-ink: #0e0f12;
@@ -496,7 +496,8 @@ body {
   background: var(--wall-3);
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--ink-faint);
+  /* wall-3 is the lightest chrome ground: ink-faint only reaches 4.18:1 on it. */
+  color: var(--ink-dim);
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
 
@@ -1478,3 +1479,9 @@ npm run test:e2e     # Playwright, needs BASE_URL</pre>
 
   <p class="foot">Facts on every lab come from <code>docs/design/brief.md</code> and <code>src/content/seed/*</code>. Guest data is the committed fictional fixtures — Testhouse, Fixture and Solo — because real guest data never enters the repository.</p>
 </div>
+
+<script>
+/* The artifact wrapper supplies <html> without a lang; set it here. This page
+   has no scenes, so it does not load the lab shell script. */
+if (!document.documentElement.lang) document.documentElement.lang = 'en';
+</script>

@@ -284,7 +284,7 @@
   --rule: #262a33;
   --ink: #e9e6e0;
   --ink-dim: #8b909c;
-  --ink-faint: #5d626d;
+  --ink-faint: #7b8190;
   /* The chrome borrows the active kit's signature; set on the root by JS. */
   --accent: #c9a648;
   --accent-ink: #0e0f12;
@@ -496,7 +496,8 @@ body {
   background: var(--wall-3);
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--ink-faint);
+  /* wall-3 is the lightest chrome ground: ink-faint only reaches 4.18:1 on it. */
+  color: var(--ink-dim);
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
 
@@ -1860,6 +1861,10 @@ body {
       tg.setAttribute('aria-expanded', String(open));
     }
   });
+
+  /* The artifact wrapper (and a bare local file) supplies <html> without a
+     lang, which axe flags as a serious violation. Set it from here. */
+  if (!document.documentElement.lang) document.documentElement.lang = 'en';
 
   var first = document.querySelector('[data-scene]');
   if (first) setScene(first.dataset.scene);
