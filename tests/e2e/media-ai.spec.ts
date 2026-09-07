@@ -111,6 +111,15 @@ async function runMediaJobs(request: APIRequestContext, times = 4) {
 
 test.describe('semantic search and the face-matching opt-in', () => {
   test.describe.configure({ mode: 'serial' });
+  // ONE project. `serial` orders the tests within a file; it does not stop Playwright running the
+  // whole file once per viewport project, so three copies of this journey were uploading the same
+  // fixture as the same guest into the same database at the same time — and the search assertion
+  // failed having found another copy's asset id instead of its own. Level 10's upload journey
+  // carries the same guard for the same reason. This journey is about what search and the opt-in
+  // surface DO, not how they lay out; the responsive checks belong to the axe route list.
+  test.beforeEach(() => {
+    test.skip(test.info().project.name !== 'mobile', 'one project: this journey shares a database with its own copies');
+  });
 
   test.beforeAll(async ({ request }) => {
     // Compiling a dozen dev routes across three viewport projects takes longer than the default.
