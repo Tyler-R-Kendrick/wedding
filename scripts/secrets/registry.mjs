@@ -189,6 +189,9 @@ const RAW_SLOTS = [
     id: 'concierge', name: 'AI concierge', need: 'launch',
     does: 'Answers guest questions on /ask, captions photos, checks RSVPs',
     without: 'A mock model that only replays fixtures',
+    // Anything but Anthropic runs through src/providers/ai-model/openai-compatible.ts, which
+    // is the OpenAI chat API pointed at a different base URL — so the choice below is real,
+    // and adds no dependency. `fills` carry that base URL and the model ids per vendor.
     options: [
       // Verified 2026-09-07: no RFC 8414/9728 metadata at api.anthropic.com, console.anthropic.com
       // or claude.ai — nothing to register against, so this is an honest sign-in.
@@ -196,10 +199,36 @@ const RAW_SLOTS = [
         ladder: [{ method: 'authmd', origin: 'https://console.anthropic.com' }, { method: 'browser', recipe: 'anthropic-console' }, { method: 'manual' }],
         secrets: ['ANTHROPIC_API_KEY'], fills: {},
         probe: { url: 'https://api.anthropic.com/v1/models?limit=1', headers: { 'x-api-key': '{value}', 'anthropic-version': '2023-06-01' } } },
-      { id: 'openai-chat', name: 'OpenAI', note: 'Same adapter, different vendor', host: 'platform.openai.com', ceremony: 'signin',
+      // Verified 2026-09-07: mcp.openrouter.ai/oauth/register -> registers; PKCE S256.
+      { id: 'openrouter', name: 'OpenRouter', note: 'One key for every model; registers itself, you approve one link', host: 'openrouter.ai', ceremony: 'link',
+        ladder: [{ method: 'oauth', origin: 'https://mcp.openrouter.ai' }, { method: 'browser', recipe: 'openrouter-keys' }, { method: 'manual' }],
+        secrets: ['OPENAI_API_KEY'],
+        fills: { AI_BASE_URL: 'https://openrouter.ai/api/v1', AI_CHAT_MODEL: 'anthropic/claude-sonnet-5', AI_FAST_MODEL: 'anthropic/claude-haiku-4.5' },
+        probe: { url: 'https://openrouter.ai/api/v1/models', headers: { authorization: 'Bearer {value}' } } },
+      { id: 'openai', name: 'OpenAI', note: 'The reference implementation', host: 'platform.openai.com', ceremony: 'signin',
         ladder: [{ method: 'authmd', origin: 'https://platform.openai.com' }, { method: 'browser', recipe: 'openai-platform' }, { method: 'manual' }],
-        secrets: ['OPENAI_API_KEY'], fills: {},
+        secrets: ['OPENAI_API_KEY'], fills: { AI_CHAT_MODEL: 'gpt-5', AI_FAST_MODEL: 'gpt-5-mini' },
         probe: { url: 'https://api.openai.com/v1/models', headers: { authorization: 'Bearer {value}' } } },
+      { id: 'groq', name: 'Groq', note: 'Fastest responses; open-weight models', host: 'console.groq.com', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'groq-console' }, { method: 'manual' }],
+        secrets: ['OPENAI_API_KEY'],
+        fills: { AI_BASE_URL: 'https://api.groq.com/openai/v1', AI_CHAT_MODEL: 'llama-3.3-70b-versatile', AI_FAST_MODEL: 'llama-3.1-8b-instant' } },
+      { id: 'together', name: 'Together AI', note: 'Open-weight models at low cost', host: 'api.together.xyz', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'together-console' }, { method: 'manual' }],
+        secrets: ['OPENAI_API_KEY'],
+        fills: { AI_BASE_URL: 'https://api.together.xyz/v1', AI_CHAT_MODEL: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', AI_FAST_MODEL: 'meta-llama/Llama-3.1-8B-Instruct-Turbo' } },
+      { id: 'mistral', name: 'Mistral', note: 'European hosting', host: 'console.mistral.ai', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'mistral-console' }, { method: 'manual' }],
+        secrets: ['OPENAI_API_KEY'],
+        fills: { AI_BASE_URL: 'https://api.mistral.ai/v1', AI_CHAT_MODEL: 'mistral-large-latest', AI_FAST_MODEL: 'mistral-small-latest' } },
+      { id: 'deepseek', name: 'DeepSeek', note: 'Cheapest per token', host: 'platform.deepseek.com', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'deepseek-platform' }, { method: 'manual' }],
+        secrets: ['OPENAI_API_KEY'],
+        fills: { AI_BASE_URL: 'https://api.deepseek.com/v1', AI_CHAT_MODEL: 'deepseek-chat', AI_FAST_MODEL: 'deepseek-chat' } },
+      { id: 'ollama', name: 'Your own Ollama', note: 'Runs on your machine; nothing leaves it', host: null, ceremony: 'paste',
+        ladder: [{ method: 'manual' }],
+        secrets: ['AI_BASE_URL'],
+        fills: { OPENAI_API_KEY: 'ollama', AI_CHAT_MODEL: 'llama3.3', AI_FAST_MODEL: 'llama3.2' } },
     ],
   },
   {

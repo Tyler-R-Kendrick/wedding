@@ -88,6 +88,31 @@ export const RECIPES = {
     create: [/add key/i, /create key/i, /new key/i], confirm: [/^create$/i, /^add$/i],
     captures: [{ var: 'FAL_KEY', pattern: /[0-9a-f-]{36}:[0-9a-f]{32}/ }],
   },
+  'openrouter-keys': {
+    host: 'openrouter.ai', keysUrl: 'https://openrouter.ai/settings/keys',
+    create: [/create key/i, /new key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /sk-or-v1-[a-f0-9]{32,}/ }],
+  },
+  'groq-console': {
+    host: 'console.groq.com', keysUrl: 'https://console.groq.com/keys',
+    create: [/create api key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^submit$/i, /^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /gsk_[A-Za-z0-9]{20,}/ }],
+  },
+  'together-console': {
+    host: 'api.together.xyz', keysUrl: 'https://api.together.xyz/settings/api-keys',
+    create: [/create key/i, /add key/i], confirm: [/^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /\b[0-9a-f]{64}\b/ }],
+  },
+  'mistral-console': {
+    host: 'console.mistral.ai', keysUrl: 'https://console.mistral.ai/api-keys',
+    create: [/create new key/i, /create key/i], confirm: [/^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /\b[A-Za-z0-9]{32}\b/ }],
+  },
+  'deepseek-platform': {
+    host: 'platform.deepseek.com', keysUrl: 'https://platform.deepseek.com/api_keys',
+    create: [/create api key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /sk-[a-f0-9]{32}/ }],
+  },
   'duffel-dashboard': {
     host: 'app.duffel.com', keysUrl: 'https://app.duffel.com/settings/access-tokens',
     create: [/create access token/i, /new token/i], confirm: [/^create$/i],

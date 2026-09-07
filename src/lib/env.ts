@@ -75,6 +75,11 @@ const serverSchema = z.object({
   FORCE_MOCK_PROVIDERS: requiredBool(false),
   ANTHROPIC_API_KEY: optionalString,
   OPENAI_API_KEY: optionalString,
+  /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
+  AI_BASE_URL: optionalUrl,
+  /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */
+  AI_CHAT_MODEL: optionalString,
+  AI_FAST_MODEL: optionalString,
   VOYAGE_API_KEY: optionalString,
   EMBEDDINGS_PROVIDER: z.enum(['openai', 'voyage']).optional(),
   RESEND_API_KEY: optionalString,

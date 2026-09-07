@@ -31,7 +31,7 @@ page lets Tyler & Sara switch between them with one press.
 | Guest email | Resend · Postmark · Amazon SES |
 | Photo & video storage | Cloudflare R2 · Amazon S3 · Backblaze B2 · Supabase Storage · your own MinIO |
 | Database | Supabase · Neon · Vercel Postgres · a Postgres you already have |
-| AI concierge | Anthropic · OpenAI |
+| AI concierge | Anthropic · OpenRouter · OpenAI · Groq · Together · Mistral · DeepSeek · your own Ollama |
 | Photo & story search | Voyage AI · OpenAI |
 | Video playback | Cloudflare Stream · skip it |
 | Flights & hotels | Duffel · Skyscanner · Booking.com · just link out |
@@ -183,6 +183,7 @@ Findings on 2026-09-07 (`npm run secrets:probe -- --register`):
 | Provider | Registration endpoint | Result | Ceremony |
 |---|---|---|---|
 | Cloudflare | `bindings.mcp.cloudflare.com/register` | **201 registered** | one link |
+| OpenRouter | `mcp.openrouter.ai/oauth/register` | **registers** (PKCE S256) | one link |
 | Neon | `mcp.neon.tech/api/register` | **200 registered** (scopes `read write`) | one link |
 | Supabase | `api.supabase.com/platform/oauth/apps/register` | **201 registered** | one link |
 | Resend | `api.resend.com/oauth/register` | **201 registered** (scopes `emails:send`) | one link |
@@ -190,6 +191,13 @@ Findings on 2026-09-07 (`npm run secrets:probe -- --register`):
 | Uber | `auth.uber.com/oauth/v2/register` | advertised; 403 `Missing csrf token` | sign in once |
 | fal.ai | `auth.fal.ai/oidc/register` | advertised; "dynamic client registration is disabled" | sign in once |
 | Anthropic · OpenAI · Voyage · Duffel | — | no RFC 8414/9728 metadata at any probed origin | sign in once |
+| Groq · Mistral · DeepSeek · xAI · Fireworks · Cerebras · Google | — | nothing published | sign in once |
+| Together AI | — | OAuth, but no registration endpoint | sign in once |
+
+Every inference provider except Anthropic and OpenRouter runs through
+`src/providers/ai-model/openai-compatible.ts` — the OpenAI chat API with `AI_BASE_URL`
+pointed elsewhere — so adding one is a registry entry and a base URL, not a dependency.
+Browser auth is their default, because none of them publishes anything to register against.
 
 Two lessons are baked into the code as a result:
 
