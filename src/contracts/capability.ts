@@ -84,6 +84,19 @@ export interface CapabilityDescriptor<I, O> {
   confirmation?: ConfirmationMode;
   /** Mutations must be idempotent: the same key replays the first result. */
   idempotent?: boolean;
+  /**
+   * Whether the pipeline may STORE the result body against the idempotency key and hand it back
+   * on a repeat. Default true. Set `false` when the result itself is the sensitive thing and must
+   * not outlive the handler's own authorization — biometric results are the case this exists for:
+   * a stored response is a copy that lives in the public `idempotency_keys` table, outside the
+   * feature's vault, and replaying it at step 6 skips the handler and therefore skips its gate.
+   *
+   * With `replayable: false` the key is still reserved, so concurrent duplicates cannot both run;
+   * the reservation is released on success instead of being filled in, so a later repeat re-runs
+   * the handler and every gate applies again. The guarantee becomes "do not run twice at once"
+   * rather than "replay the answer".
+   */
+  replayable?: boolean;
   /** Feature flag that must be on. */
   flag?: keyof FlagValues;
   annotations: ToolAnnotations;

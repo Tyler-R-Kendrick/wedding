@@ -38,16 +38,21 @@ export async function isEnabled(flag: FeatureFlag, opts: { flags?: FlagValues; d
   return isReady(flag, opts.db);
 }
 
-/** Admin mutation: flips the readiness row and audits it. Callers authorize first. */
+/**
+ * Admin mutation: flips the readiness row and audits it. Callers authorize first.
+ * `note` records what authorises the switch (for BIOMETRICS_ENABLED, the counsel review) on the
+ * row itself; switching off clears it, so a stale reference can never appear to justify a live gate.
+ */
 export async function setReadiness(
   db: Db,
-  input: { flag: FeatureFlag; ready: boolean; actor: PrincipalRef; requestId: string; audit: AuditSink },
+  input: { flag: FeatureFlag; ready: boolean; actor: PrincipalRef; requestId: string; audit: AuditSink; note?: string },
 ): Promise<void> {
   const now = new Date();
+  const note = input.ready ? (input.note?.trim() || null) : null;
   await db
     .insert(featureFlags)
-    .values({ name: input.flag, readiness: input.ready, updatedBy: input.actor, updatedAt: now })
-    .onConflictDoUpdate({ target: featureFlags.name, set: { readiness: input.ready, updatedBy: input.actor, updatedAt: now } });
+    .values({ name: input.flag, readiness: input.ready, note, updatedBy: input.actor, updatedAt: now })
+    .onConflictDoUpdate({ target: featureFlags.name, set: { readiness: input.ready, note, updatedBy: input.actor, updatedAt: now } });
   cache.delete(input.flag);
   await input.audit.record({
     actor: input.actor,
@@ -55,6 +60,12 @@ export async function setReadiness(
     target: { type: 'feature_flag', id: input.flag },
     outcome: 'success',
     requestId: input.requestId,
-    metadata: { readiness: input.ready },
+    metadata: { readiness: input.ready, ...(note ? { note } : {}) },
   });
+}
+
+/** The recorded justification for a readiness switch, when there is one. */
+export async function readinessNote(flag: FeatureFlag, db: Db): Promise<string | null> {
+  const rows = await db.select({ note: featureFlags.note, readiness: featureFlags.readiness }).from(featureFlags).where(eq(featureFlags.name, flag)).limit(1);
+  return rows[0]?.readiness ? (rows[0]?.note ?? null) : null;
 }

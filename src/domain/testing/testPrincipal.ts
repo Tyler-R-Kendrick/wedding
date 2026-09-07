@@ -65,7 +65,7 @@ export type TestPrincipalSpec = z.infer<typeof testPrincipalSchema>;
 // an entitlement the default test guest does not hold answers 403 on its first real run, and the
 // spec that navigates to it quietly asserts the signed-out page instead. Third level running.
 export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools', 'claim_transportation_benefit', 'upload_media', 'view_private_media'] as const;
-export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle', 'admin_media'] as const;
+export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle', 'admin_media', 'admin_ai'] as const;
 
 export interface TestPrincipalEnv {
   isTest: boolean;

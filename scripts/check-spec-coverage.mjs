@@ -46,6 +46,10 @@ export const TEST_SERVER_SPECS = [
   // through identity's injector, and the journey needs the dev storage route, so both belong here.
   'tests/e2e/media-upload.spec.ts',
   'tests/security/uploads.spec.ts',
+  // Level 11: the media-AI journey uploads as a signed-in guest, drives the cron route with
+  // CRON_SECRET, and reads the biometrics opt-in surface — all of which need the NODE_ENV=test
+  // server and identity's test-principal injector.
+  'tests/e2e/media-ai.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

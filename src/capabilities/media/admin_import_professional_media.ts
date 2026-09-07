@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
@@ -7,6 +8,17 @@ import { createUploads, ensureDefaultCollections, getCollectionBySlug } from '@/
 import { vendorSlug } from '@/lib/media/keys';
 import { appServices } from '../context';
 import { mediaServices, SLUG, uploadFilesInput, uploadOutcomeSchema } from './_shared';
+
+/**
+ * Same shape as `COUNSEL_REVIEW_REF` in the biometrics readiness gate: a URL, an ADR section, a
+ * ticket, or a dated memo — something a person can follow to the document that authorised this.
+ */
+export const RIGHTS_CONFIRMATION_REF = z
+  .string()
+  .trim()
+  .min(8, 'Reference the confirmation itself: a URL, a contract clause, a ticket, or a dated memo reference.')
+  .max(200)
+  .regex(/^(https?:\/\/\S+|ADR-\d{4}|[A-Z]{2,}-\d+|.*\d{4}-\d{2}-\d{2}.*)/, 'Reference the confirmation itself: a URL, a contract clause, a ticket, or a dated memo.');
 
 const input = z.object({
   /** Vendor as named on the contract, e.g. "Brooke Alaina Photography" or "Oakhouse Visuals". */
@@ -22,7 +34,19 @@ const input = z.object({
     usageNotes: z.string().max(1000).optional(),
     /** Only honoured when the PRO_MEDIA_AI_PROCESSING flag AND its readiness switch are on AND a confirmation reference is given. */
     allowAiProcessing: z.boolean().optional(),
-    aiProcessingConfirmationRef: z.string().max(200).optional(),
+    /**
+     * The written confirmation that a photographer's contract permits AI processing. It was
+     * `z.string().max(200)`, so ANY non-empty string opened the gate that sends a professional's
+     * work to an external captioning and embeddings provider — `"x"` did, and so did the literal
+     * `TODO(Tyler & Sara): signed rider` that this level's own integration test was passing.
+     *
+     * This is the same defect the adversarial review recorded as F5 for the BIPA readiness gate
+     * ("asd" opened it), fixed there with `COUNSEL_REVIEW_REF` and left standing here because the
+     * review's scope was the biometric vault. Both are gates a human is meant to have cleared, and
+     * both now demand a reference that could actually be looked up. PRODUCT.md keeps the
+     * photographer's AI-rights confirmation as an explicit launch gate; this makes the code say so.
+     */
+    aiProcessingConfirmationRef: RIGHTS_CONFIRMATION_REF.optional(),
   }),
 });
 const output = z.object({ uploads: z.array(uploadOutcomeSchema), vendor: z.string(), aiProcessingGranted: z.boolean() });

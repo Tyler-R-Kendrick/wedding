@@ -12,7 +12,7 @@ export class PgVectorIndex implements VectorIndexProvider {
   readonly kind = 'vector-index' as const;
   readonly name = 'pgvector';
   readonly mode = 'live' as const;
-  readonly capabilities = { upsert: true, query: true, delete: true, persistent: true };
+  readonly capabilities = { upsert: true, query: true, delete: true, count: true, persistent: true };
   private ready?: Promise<void>;
 
   constructor(private readonly db: Db, readonly dims: number, private readonly table = 'vector_index_items') {
@@ -91,6 +91,16 @@ export class PgVectorIndex implements VectorIndexProvider {
         metadata: (typeof r.metadata === 'string' ? (JSON.parse(r.metadata) as VectorMetadata) : r.metadata) ?? undefined,
       }));
       return ok(matches);
+    } catch (e) {
+      return err(failure(this.name, 'server', 'Search index is not available right now.', { raw: e }));
+    }
+  }
+
+  async count(namespace: string) {
+    try {
+      await this.ensure();
+      const result = await this.db.execute(sql`SELECT count(*)::int AS n FROM ${sql.raw(this.table)} WHERE namespace = ${namespace}`);
+      return ok({ count: Number(this.rows<{ n: number | string }>(result)[0]?.n ?? 0) });
     } catch (e) {
       return err(failure(this.name, 'server', 'Search index is not available right now.', { raw: e }));
     }

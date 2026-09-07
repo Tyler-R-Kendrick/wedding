@@ -9,7 +9,7 @@ export class InMemoryCosineIndex implements VectorIndexProvider {
   readonly kind = 'vector-index' as const;
   readonly name = 'memory';
   readonly mode = 'mock' as const;
-  readonly capabilities = { upsert: true, query: true, delete: true, persistent: false };
+  readonly capabilities = { upsert: true, query: true, delete: true, count: true, persistent: false };
   private readonly store: Map<string, Map<string, VectorItem>>;
 
   constructor(readonly dims: number, opts: { shared?: boolean } = {}) {
@@ -57,6 +57,10 @@ export class InMemoryCosineIndex implements VectorIndexProvider {
     let count = 0;
     for (const id of ids) if (m.delete(id)) count++;
     return ok({ count });
+  }
+
+  async count(namespace: string) {
+    return ok({ count: this.ns(namespace).size });
   }
 
   clear() {
