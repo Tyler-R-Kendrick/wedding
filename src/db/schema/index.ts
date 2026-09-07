@@ -28,3 +28,5 @@ export * from './reservations';
 export * from './external';
 // Level 10: media uploads, assets, derivatives, collections, moderation.
 export * from './media';
+export * from './media_ai';
+export * from './biometrics';

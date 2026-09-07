@@ -3,7 +3,9 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, type Result } from '@/contracts/result';
 import { contentCapabilities } from './content';
 import { invoke } from './invoke';
+import { biometricCapabilities } from './biometrics';
 import { mediaCapabilities } from './media';
+import { mediaAiCapabilities } from './mediaai';
 import { navigateTo } from './navigate_to';
 import { registry } from './registry';
 import { rsvpSwarmCapabilities } from './rsvp';
@@ -25,6 +27,8 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...travelCapabilities,
   ...transportGiftsReservationsCapabilities,
   ...mediaCapabilities,
+  ...mediaAiCapabilities,
+  ...biometricCapabilities,
 ];
 
 registry.registerAll(BUILTIN_CAPABILITIES);

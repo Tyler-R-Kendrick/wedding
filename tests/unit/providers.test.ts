@@ -252,7 +252,8 @@ describe('biometric mock', () => {
     expect((await p.delete('s1')).ok).toBe(true);
     ready = true;
     expect((await p.enroll({ subjectId: 's1', vector: [1, 0] })).ok).toBe(true);
-    const m = await p.match({ vector: [0.9, 0.1] });
+    // `match` is subject-scoped: it answers "is this s1?", never "who is this?".
+    const m = await p.match({ vector: [0.9, 0.1], subjectId: 's1' });
     expect(m.ok && m.value[0]?.subjectId).toBe('s1');
   });
 });
