@@ -81,8 +81,14 @@ export async function sessionCookie(page: Page): Promise<string> {
 /** Each spec file behaves like a different network: distinct forwarded IPs keep per-IP buckets apart. */
 export const forwardedFor = (seed: string): Record<string, string> => ({ 'x-forwarded-for': `203.0.113.${(Array.from(seed).reduce((a, c) => a + c.charCodeAt(0), 0) % 200) + 1}` });
 
-export async function cap(request: APIRequestContext, name: string, input: unknown, opts: { cookie?: string; origin?: string; idempotencyKey?: string } = {}) {
-  const headers: Record<string, string> = { 'content-type': 'application/json', ...forwardedFor(`${name}${Math.random()}`) };
+/**
+ * A capability POST. By default each call presents a fresh forwarded address, so a spec making
+ * many calls does not exhaust the route's coarse per-IP bucket. Pass `client` to hold one address
+ * across several calls — required whenever the assertion is about a per-client limit, since the
+ * capability layer now derives its client from this header (`clientIp` in the context).
+ */
+export async function cap(request: APIRequestContext, name: string, input: unknown, opts: { cookie?: string; origin?: string; idempotencyKey?: string; client?: string } = {}) {
+  const headers: Record<string, string> = { 'content-type': 'application/json', ...forwardedFor(opts.client ?? `${name}${Math.random()}`) };
   if (opts.cookie) headers.cookie = opts.cookie;
   // Authenticated POSTs must be same-origin JSON (assertSameOriginJson): send the site origin unless a test overrides it.
   const origin = opts.origin ?? (opts.cookie ? SITE_ORIGIN : undefined);

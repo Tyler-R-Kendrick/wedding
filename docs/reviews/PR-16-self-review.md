@@ -103,9 +103,50 @@ blockers) was written against a level-03 base. Re-checked against the shipped co
 | 7. Idempotency keys accept any 8-char string | Fixed: `ID_PATTERN` (ULID) at `handlers.ts:33` |
 | 8. Sign-out leaves tools registered | Fixed: manifest fingerprint + per-generation abort |
 
-**An independent adversarial security review of the integrated result is running.** Its findings will
-be addressed before merge; the two deltas I flagged to it as highest-risk are the gate equivalence
-in §5.5 and the `agentConfirmable` change in §1.
+### The independent review of the integrated result
+
+**Verdict: no blockers, 4 should-fix, 5 nits.** It went for the two deltas I flagged as highest-risk
+and found something real in one of them.
+
+| # | Finding | Resolution |
+|---|---|---|
+| **S1** | `agentConfirmable` disarmed the `inline` refusal for a **transaction**, not just an action — the contract field's own doc comment says it "never relaxes `explicit`, `transaction` or `external`", and the code I wrote three lines under that comment did not honour it | **Fixed.** `agentMayComplete` now requires `kind === 'action'`. On `webmcp` it was masked by `effectiveWebMcpDescriptor`'s re-upgrade; on `ai` there is no second belt, so a `transaction` + `inline` + `agentConfirmable` descriptor would have committed unattended. Asserted in `tests/unit/invoke.test.ts` |
+| **S2** | The WebMCP route metered anonymous callers only, and its context carried no client | **Fixed** in `src/webmcp/server/handlers.ts`: `rateLimit: principal.kind !== 'anonymous'` and `clientIp` in the context, matching the JSON route |
+| **S3** | `/api/ai/chat` consumed the `concierge` policy but `ask_concierge` invoked from any other door did not — one budget, one door paying | **Fixed in the capability, not the route**: the handler consumes `concierge` itself, keyed `ai:anon:<ip>` / `ai:<principal>` exactly as the chat route does, so every door pays |
+| **S4** | Nothing stopped a capability being `ai: true, webmcp: false` — an asymmetry no descriptor should have silently | **Guarded** in `tests/unit/webmcp/derivation.test.ts` |
+| **N1** | Two `src/lib/env.ts` guards from swarm K were not ported | **Ported**: `NODE_ENV=test` on a deployed app refuses to boot; `TRUSTED_PROXY_HOPS=0` in production warns |
+| **N2** | Idempotency scope is not surface-scoped, so a `ui` result could replay onto `ai`/`webmcp` past the agent output cap | **Fixed, but not the way it was proposed.** Surface-scoping the *key* would let one key run the handler once per surface, which is the opposite of what an idempotency key promises. The cap belongs to the surface receiving the answer, so it is applied on the way out and the replay return is capped too. `tests/unit/invoke.test.ts` covers both halves: oversized is refused on `ai` and `webmcp`, and a replay that fits still replays |
+| **N3** | `state()` reports unregistered tools | **Fixed.** A generation aborted mid-`registerTool` resumed, pushed the rest onto its local list and assigned it back — republishing tools `stop()` had just unregistered, and restoring a fingerprint it had cleared, which the next `refresh` would then short-circuit on. `tests/unit/webmcp/register-client.test.ts` |
+| **N4** | An admin's manifest advertises guest tools | **Not fixed here; owned by level 15**, with the reason. The cause is `meetsAuthLevel('guest', admin) === true` in `src/policy/entitlements.ts` — a foundation-wide policy from level 03 that every surface shares, not a WebMCP one. Patching only the manifest would make it disagree with `visibleTo`, which is precisely the divergence the readiness comment in `src/webmcp/server/invoke.ts` warns about ("the two lists have to agree or the mask leaks what the manifest hides"). The real fix needs a contract distinction between "a guest may" and "a guest identity is required", which is a policy change deserving its own review. It fails closed today: those handlers call `guestOf()` and refuse |
+| **N5** | Input validation precedes the confirmation refusal, so an agent is told to fix input for a call that could never complete on its surface | **Not taken, deliberately.** Hoisting the refusal above step 2 also hoists it above `authorize` (step 3), which would tell an *unauthorized* caller that the capability exists and needs UI confirmation — trading a wasted round-trip for an existence leak. Doing it properly means moving input validation below authorization, a reordering of the security pipeline that belongs to level 15 with its own review, not to the end of this one |
+
+**Both N2 and N3 were mutation-verified**: each new test was run against the code it replaces and
+watched to fail first (`ai must not receive the oversized stored result: expected true to be false`;
+`expected [ 'first', 'second' ] to deeply equal []`).
+
+### The defect the review did not find, and neither did I until a test broke
+
+Wiring `clientIp` into the capability route's context (S2's counterpart on the JSON door) turned
+`tests/security/otp.spec.ts:51` red — it expected a 429 and got a 200. It was mine, and chasing it
+found something worse than the test failure.
+
+`ipHashOf(ctx)` is `hashOtpIdentifier(transportOf(ctx).clientIp ?? 'unknown')`. **The JSON capability
+route never set `clientIp`**, so every caller through that door hashed to `'unknown'` and shared one
+bucket. `OTP_LIMITS.sendPerEmailIp` — the tight capacity-5 bucket whose own comment says it exists so
+"a stranger cannot exhaust a guest's own allowance (review S10)" — had no client dimension at all
+there. A stranger *could* exhaust a guest's allowance for their own address, which is the exact thing
+it was added to prevent.
+
+The test passed for six levels because of that collapse: `cap()` in `tests/security/helpers.ts` sends
+a **fresh random `x-forwarded-for` per call** (level 06, so the coarse per-IP route bucket does not
+trip mid-spec), and with the client discarded server-side all seven sends landed in one bucket.
+With the client honoured they land in seven, and none reaches capacity.
+
+The test is not weakened to accommodate this. `cap()` gained an opt-in `client` so a spec can hold
+one address, this test holds one — which is the scenario a capacity-5 per-(email, client) bucket
+actually defends — and it gained the assertion that is only now meaningful: **a second client is not
+locked out by the first client's exhaustion.** Mutation-verified against the pre-fix route:
+`Expected: 200, Received: 429`, because every caller shared one bucket.
 
 ## 6. Design verdict
 
@@ -139,9 +180,21 @@ was wrong in a document whose point is that its numbers can be trusted.
 
 ## 10. Verdict
 
-**Ready to merge once the security review reports.** `npm run verify` exit 0 — typecheck, eslint
-(0 errors, 7 pre-existing `<img>` warnings from levels 10–11), stylelint, three DESIGN.md files at 0
-errors, design sync, `impeccable detect .`, 592 unit/UI, 262 integration, 26/26 evals, `next build`.
-Both Playwright arrangements green on servers this run started: **229 production**, **149
-test-server**. `check-spec-coverage` and `check-vitest-coverage` pass. `db:generate` reports no
-drift.
+**Ready to merge.** The independent review reported no blockers; all four should-fixes and three of
+the five nits are closed, and the two that are not are named above with the level that owns them and
+why they are not this level's to make.
+
+`npm run verify` exit 0 — typecheck, eslint (0 errors, 7 pre-existing `<img>` warnings from levels
+10–11), stylelint, three DESIGN.md files at 0 errors, design sync, `impeccable detect .`, 595
+unit/UI, 262 integration, evals, `next build`. Both Playwright arrangements green on servers this run
+started: **229 passed / 86 skipped** production, **149 passed / 46 skipped** test-server (the skips
+are the deliberate single-project guards). `check-spec-coverage` and `check-vitest-coverage` pass.
+`db:generate` reports no drift.
+
+**The worst true thing about this diff** is not in the WebMCP code at all. It is that a rate limit
+whose comment named the attack it prevented had been inoperative on the site's main JSON door since
+level 06, and the security suite written to cover it was green the whole time — because the test and
+the defect shared an assumption. Two levels of adversarial review, mine included, read that code and
+did not see it; a test failure caused by an unrelated fix did. The lesson is the one this run keeps
+relearning in new costumes: a passing security test proves the assertion holds, not that the
+guarantee does.

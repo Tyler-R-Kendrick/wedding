@@ -133,8 +133,16 @@ export async function handleInvoke(request: Request, name: string): Promise<Resp
   const principal = await resolvePrincipal(request);
   const sameOrigin = assertSameOriginJson(request);
   if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
-  const decision = await limiter.consume(limiterKeyFor(principal, ip), 'capability');
-  if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
+  // Anonymous callers are metered here, by IP, because there is no principal to key on. A SIGNED-IN
+  // caller is metered by the pipeline instead (`rateLimit` below), on the same `cap:<principal>`
+  // bucket the website and every server action share — which is the whole point of putting the
+  // limiter inside `invoke` at level 07: "so every entry point shares one budget". Metering signed-in
+  // callers here as well would have given one guest TWO independent 60-token budgets, one for the
+  // page and one for the bridge, each looking correctly limited on its own.
+  if (principal.kind === 'anonymous') {
+    const decision = await limiter.consume(limiterKeyFor(principal, ip), 'capability');
+    if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
+  }
 
   const raw = await readBodyText(request, WEBMCP_MAX_BODY_BYTES);
   if (!raw.ok) return errorResponse(raw.error, requestId);
@@ -151,6 +159,8 @@ export async function handleInvoke(request: Request, name: string): Promise<Resp
     surface: 'webmcp',
     idempotencyKey: body.idempotencyKey,
     inputTrust: 'UNTRUSTED_USER_CONTENT',
+    rateLimit: principal.kind !== 'anonymous',
+    clientIp: ip,
   });
   const result = await invokeForWebMcp(webMcpRegistry, name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);

@@ -2,7 +2,9 @@ import type { AnyCapability, CapabilityContext, CapabilityOutcome, CapabilityReg
 import { CapabilityError } from '@/contracts/errors';
 import { err, type Result } from '@/contracts/result';
 import { invoke } from '@/capabilities/invoke';
+import { pipelineServices } from '@/capabilities/services';
 import { authorize } from '@/policy/entitlements';
+import { READINESS_GATED } from '@/contracts/flags';
 import { requiresHumanConfirmation } from '../descriptors';
 
 /**
@@ -37,9 +39,19 @@ const notAvailable = () => new CapabilityError('not_found', 'That action is not 
  * audit row still records the true code (`unauthenticated`, `forbidden`, `not_found`). This only
  * decides how much the *response* is allowed to say.
  */
-function visibleTo(descriptor: AnyCapability, ctx: CapabilityContext): boolean {
+async function visibleTo(descriptor: AnyCapability, ctx: CapabilityContext): Promise<boolean> {
   if (!descriptor.exposure.webmcp) return false;
   if (descriptor.flag && !ctx.flags[descriptor.flag]) return false;
+  // Readiness too, matching the manifest. The manifest filters READINESS_GATED flags whose switch
+  // is off precisely so an anonymous caller is not told a legally gated feature (BIPA face
+  // matching, third-party media processing) exists — but this mask did not, so such a capability
+  // was absent from the manifest and yet answered with its true `feature_disabled` instead of the
+  // uniform "not available". The two lists have to agree or the mask leaks what the manifest hides.
+  // Inert today: no READINESS_GATED capability is webmcp-exposed. It is the day one is that matters.
+  if (descriptor.flag && READINESS_GATED.includes(descriptor.flag)) {
+    const services = pipelineServices(ctx);
+    if (!services.readiness || !(await services.readiness(descriptor.flag))) return false;
+  }
   return authorize(descriptor, ctx.principal).ok;
 }
 
@@ -56,7 +68,7 @@ export async function invokeForWebMcp(
   // The pipeline runs either way: it is what authorizes, and what writes the audit row carrying the
   // real reason. Only the reply is masked, and only for a capability this principal cannot see —
   // so a caller who *can* see a tool still gets the specific error they need to act on.
-  const visible = visibleTo(descriptor, ctx);
+  const visible = await visibleTo(descriptor, ctx);
   const result = await invoke(effectiveWebMcpDescriptor(descriptor), ctx, rawInput);
   if (!result.ok && !visible) return err(notAvailable());
   return result;

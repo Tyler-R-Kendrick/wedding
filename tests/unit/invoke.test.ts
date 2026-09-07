@@ -117,6 +117,43 @@ describe('invoke pipeline', () => {
     expect((await invoke(echo, ui.c, big)).ok).toBe(true);
   });
 
+  it('caps a REPLAYED outcome too: a ui result may not reach an agent past the cap', async () => {
+    // The replay return is upstream of step 8, so before review N2 it skipped every check there.
+    // One idempotency scope is shared by all surfaces on purpose — adding the surface to the key
+    // would let one key run the handler once per surface — so the cap has to be applied on the way
+    // out instead. `agent_echo` is exposed to ui, ai and webmcp so one key can cross between them.
+    const shared = new MemoryIdempotencyStore();
+    const key = 'replay-cap-key-0123456789' as IdempotencyKey;
+    const agentEcho = defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'agent_echo',
+      kind: 'action',
+      idempotent: true,
+      exposure: { ui: true, ai: true, webmcp: true },
+      annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
+    });
+    const big = { text: 'x'.repeat(100) };
+    const ui = ctx({ surface: 'ui', principal: guest, idempotencyKey: key }, { idempotency: shared });
+    const first = await invoke(agentEcho, ui.c, big);
+    expect(first.ok, 'the ui call itself is uncapped and stores its outcome').toBe(true);
+
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const replay = ctx({ surface, principal: guest, idempotencyKey: key }, { idempotency: shared });
+      const r = await invoke(agentEcho, replay.c, big);
+      expect(r.ok, `${surface} must not receive the oversized stored result`).toBe(false);
+      if (!r.ok) expect(r.error.details).toMatchObject({ maxOutputChars: 40 });
+    }
+    // A replay that fits still replays: the cap is the only thing added, not a blanket refusal.
+    const smallKey = 'replay-ok-key-0123456789' as IdempotencyKey;
+    const small = { text: 'ok' };
+    const uiSmall = ctx({ surface: 'ui', principal: guest, idempotencyKey: smallKey }, { idempotency: shared });
+    expect((await invoke(agentEcho, uiSmall.c, small)).ok).toBe(true);
+    const aiSmall = ctx({ surface: 'ai', principal: guest, idempotencyKey: smallKey }, { idempotency: shared });
+    const replayed = await invoke(agentEcho, aiSmall.c, small);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.value.data).toEqual({ text: 'ok' });
+  });
+
   it('hides capabilities not exposed on the calling surface', async () => {
     const { c } = ctx({ surface: 'webmcp' });
     const r = await invoke(echo, c, { text: 'hi' });
@@ -186,6 +223,27 @@ describe('invoke pipeline', () => {
     const explicitOptOut = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'explicit_opt_out', confirmation: 'explicit', agentConfirmable: true });
     const stillRefused = await invoke(explicitOptOut, ctx({ principal: guest, surface: 'ai' }).c, { text: 'hi' });
     expect(stillRefused.ok, 'agentConfirmable must never relax explicit confirmation').toBe(false);
+
+    // A TRANSACTION is never relaxable, on any surface. The contract says so and this is where it
+    // has to hold: the WebMCP layer re-upgrades a transaction on its own surface, but `ai` has no
+    // such belt, so the pipeline is the only thing standing between an agent and a committed
+    // transaction. Found by an adversarial review of the integrated level; before the fix this
+    // returned ok on surface `ai`.
+    const txn = defineCapability<{ text: string }, { text: string }>({
+      ...base,
+      name: 'txn_opt_out',
+      kind: 'transaction',
+      confirmation: 'inline',
+      agentConfirmable: true,
+      // `defineCapability` refuses a transaction without step-up, which is a belt of its own — so
+      // the attack needs a guest who signed in recently, and `guest` above is authenticated now.
+      stepUp: true,
+    });
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const r = await invoke(txn, ctx({ principal: guest, surface }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' });
+      expect(r.ok, `agentConfirmable must never relax a transaction (${surface})`).toBe(false);
+      if (!r.ok) expect(r.error).toMatchObject({ code: 'confirmation_required', details: { reason: 'requires_ui' } });
+    }
 
     // An `external` handoff commits nothing: it returns a provider URL and logs that it did, and
     // level 09 exposes the gift and reservation links to an assistant on purpose. The guest's own

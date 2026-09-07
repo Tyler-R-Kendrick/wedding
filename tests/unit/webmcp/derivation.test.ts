@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BUILTIN_CAPABILITIES } from '@/capabilities';
 import { z } from 'zod';
 import { navigateTo } from '@/capabilities/navigate_to';
 import { siteStatus } from '@/capabilities/site_status';
@@ -190,5 +191,24 @@ describe('toWebMcpTool', () => {
 
   it('is pure: the same descriptor derives the same tool every time', () => {
     expect(toWebMcpTool(navigateTo)).toEqual(toWebMcpTool(navigateTo));
+  });
+});
+
+describe('the surface lists cannot drift into a boundary that is not one', () => {
+  it('no capability is ai-exposed but webmcp-hidden, because that boundary does not hold', () => {
+    // `ask_concierge` is `webmcp: true` and re-enters the pipeline at `surface: 'ai'` for every tool
+    // its router plans (src/ai/concierge.ts). So `ai: true, webmcp: false` READS like "the concierge
+    // may use this, an agent may not" and IS NOT: an agent reaches it by asking the concierge.
+    //
+    // Today no capability is written that way, which is why nothing is broken. This test exists for
+    // the day someone writes the first one — the natural way to express exactly that intent — so it
+    // fails here, in a place that explains why, rather than becoming a quiet hole. If the intent is
+    // genuinely wanted it needs a real mechanism (the concierge restricting its tool list when it
+    // was itself invoked from an agent surface), not a flag that only looks like one.
+    const illusory = BUILTIN_CAPABILITIES.filter((c) => c.exposure.ai && !c.exposure.webmcp);
+    expect(
+      illusory.map((c) => c.name),
+      'ai-exposed but webmcp-hidden: an agent reaches these through ask_concierge anyway',
+    ).toEqual([]);
   });
 });

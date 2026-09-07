@@ -43,6 +43,8 @@ export interface CreateContextInput {
    * all of them. Left off for in-process callers such as tests and seeding.
    */
   rateLimit?: boolean;
+  /** The caller's address from `getClientIp` — never from the input. See AppServices.clientIp. */
+  clientIp?: string;
 }
 
 /** Builds a context wired to the real database, audit sink, providers, and policy services. */
@@ -58,6 +60,7 @@ export async function createCapabilityContext(input: CreateContextInput): Promis
     metrics,
     logger: input.requestId ? requestLogger(input.requestId) : logger,
     ...(input.rateLimit ? { limiter: getProvider('rate-limit', { db }) } : {}),
+    ...(input.clientIp ? { clientIp: input.clientIp } : {}),
   };
   return {
     principal: input.principal,

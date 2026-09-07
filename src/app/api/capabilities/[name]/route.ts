@@ -84,6 +84,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     inputTrust: 'UNTRUSTED_USER_CONTENT',
     // Signed-in callers are limited inside the pipeline; anonymous ones were limited by client above.
     rateLimit: principal.kind !== 'anonymous',
+    clientIp: ip,
   });
   const result = await invokeByName(name, ctx, body.input);
   if (!result.ok) return errorResponse(result.error, requestId);

@@ -136,3 +136,39 @@ describe('the manifest is not refetched more often than it can change', () => {
     expect(mc.registered.get('site_status')).toBe(first);
   });
 });
+
+describe('review N3: an aborted generation never publishes its state', () => {
+  it('does not resurrect the tool list when stop() lands mid-registration', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    /** Holds the loop inside the second registerTool await, which is where stop() has to be survivable. */
+    class SlowContext extends FakeModelContext {
+      override async registerTool(tool: Record<string, unknown>, options: { signal?: AbortSignal } = {}): Promise<void> {
+        if (tool.name === 'second') await gate;
+        return super.registerTool(tool, options);
+      }
+    }
+    const mc = new SlowContext();
+    const { doc } = fakeDoc(mc);
+    const bridge = startWebMcpBridge({
+      doc,
+      fetchImpl: (async () => respond(manifestFor('anonymous', ['first', 'second']))) as unknown as typeof fetch,
+    });
+
+    const pending = bridge.refresh();
+    await new Promise((r) => setTimeout(r, 0)); // let the loop register `first` and block on `second`
+    bridge.stop();
+    release();
+    await pending;
+
+    // stop() unregistered the tools and cleared the state. The suspended loop then resumed, pushed
+    // `second` onto its local list and ran off the end — and before N3 it assigned that list back,
+    // so state() named two tools the agent could not call and restored a fingerprint stop() had
+    // cleared, which the next refresh would have short-circuited on.
+    expect(mc.names(), 'the abort signal unregistered what was registered').toEqual([]);
+    expect(bridge.state().tools).toEqual([]);
+    expect(bridge.state().fingerprint).toBeUndefined();
+  });
+});

@@ -158,6 +158,12 @@ export function startWebMcpBridge(options: WebMcpBridgeOptions = {}): WebMcpBrid
         log(`webmcp: could not register ${tool.name}`, error);
       }
     }
+    // A generation that was aborted (superseded, or `stop()` while a registerTool await was in
+    // flight) must not publish its state: `stop` has already cleared `names` and unregistered the
+    // tools, and the loop breaks out here holding whatever it managed first. Assigning it back made
+    // `state()` report tools that are not registered, and restored a fingerprint `stop` had cleared,
+    // which a later `refresh` would then short-circuit on (review N3).
+    if (controller.signal.aborted || stopped) return;
     names = registered;
     fingerprint = manifest.fingerprint;
   }

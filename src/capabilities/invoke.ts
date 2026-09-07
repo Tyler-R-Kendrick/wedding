@@ -154,8 +154,18 @@ export async function invoke<I, O>(
   // layer would offer an opt-out the pipeline then refused anyway. It cannot relax `explicit`, and
   // `transaction` keeps its own upgrade in src/webmcp/server/invoke.ts as a second belt. Nothing
   // that ships sets it today; only the WebMCP test fixtures do, behind the test gate.
+  //
+  // `agentConfirmable` opts out for an inline ACTION and nothing else. The contract three lines up
+  // says it "never relaxes `explicit`, `transaction` or `external`", and this code did not honour
+  // that for a transaction: `agentConfirmable` disarmed the refusal there too. On `webmcp` that was
+  // invisible, because `effectiveWebMcpDescriptor` re-upgrades a transaction anyway; on `ai` there
+  // is no second belt, so a `transaction` + `inline` + `agentConfirmable` descriptor would have
+  // committed unattended for any guest fresh enough to pass step-up. A transaction is money,
+  // identity or an external commitment — `defineCapability` forces `stepUp` on it for that reason —
+  // and is never something an agent completes alone.
   const changesOurState = descriptor.kind === 'action' || descriptor.kind === 'transaction';
-  const inlineNeedsAPage = descriptor.confirmation === 'inline' && changesOurState && descriptor.agentConfirmable !== true;
+  const agentMayComplete = descriptor.agentConfirmable === true && descriptor.kind === 'action';
+  const inlineNeedsAPage = descriptor.confirmation === 'inline' && changesOurState && !agentMayComplete;
   if (descriptor.confirmation === 'explicit' || inlineNeedsAPage) {
     if (surface !== REDEEMABLE_SURFACE) {
       return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
@@ -169,6 +179,23 @@ export async function invoke<I, O>(
     if (!verified.ok) return finish(err(verified.error));
     confirmed = verified.value;
   }
+
+  /**
+   * Step 8's size cap. It belongs to the surface receiving the answer, not to the stored record,
+   * so a REPLAY is capped too (review N2). The scope stays `${name}:${principal}` deliberately —
+   * adding the surface to it would let one key run the handler once per surface, which is the
+   * opposite of what an idempotency key promises — and the cap is applied on the way out instead.
+   * Without this a `ui` call could store a result larger than an assistant may receive and the same
+   * key, replayed on `ai`/`webmcp`, would hand it over: the replay return below is upstream of
+   * step 8 and skipped every check in it.
+   */
+  const overSizeForSurface = (data: unknown): CapabilityError | null => {
+    if (surface !== 'ai' && surface !== 'webmcp') return null;
+    const max = descriptor.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+    const size = JSON.stringify(data).length;
+    if (size <= max) return null;
+    return new CapabilityError('validation', 'That result is too large to show here. Try a narrower request.', { maxOutputChars: max, size });
+  };
 
   // 6. idempotency: reserve first, so concurrent retries can never both run the handler
   const idemScope = `${descriptor.name}:${principalKey(actor)}`;
@@ -211,7 +238,10 @@ export async function invoke<I, O>(
           return finish(err(new CapabilityError('conflict', 'That request is still being processed. Please wait a moment before retrying.')));
         }
       } else {
-        return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
+        const replayed = claim.existing.response as CapabilityOutcome<O>;
+        const tooBig = overSizeForSurface(replayed?.data);
+        if (tooBig) return finish(err(tooBig));
+        return finish(ok(replayed), { replay: true });
       }
     }
     reserved = true;
@@ -264,13 +294,8 @@ export async function invoke<I, O>(
     return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE));
   }
   const outcome: CapabilityOutcome<O> = { ...result.value, data: outParsed.data, sources: result.value.sources ?? [] };
-  if (surface === 'ai' || surface === 'webmcp') {
-    const max = descriptor.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
-    const size = JSON.stringify(outcome.data).length;
-    if (size > max) {
-      return fail(new CapabilityError('validation', 'That result is too large to show here. Try a narrower request.', { maxOutputChars: max, size }));
-    }
-  }
+  const oversize = overSizeForSurface(outcome.data);
+  if (oversize) return fail(oversize);
 
   if (reserved && ctx.idempotencyKey && services.idempotency) {
     try {
