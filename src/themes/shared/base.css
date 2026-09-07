@@ -394,10 +394,42 @@ body {
   --radius-button: var(--rounded-none);
   --heading-transform: uppercase;
   --heading-tracking: var(--type-h1-tracking);
+
+  /* Gilded Hour is the symmetrical design: DESIGN.md's axis rule puts a section's content on the
+     same centre line as its heading, so a row that does not fill its tracks centres rather than
+     hugging the left edge. The media grids read these; a fixed `justify-content` in shared CSS
+     would make one design wear the other's rule. */
+  --media-justify: center;
+  --media-align: center;
+  --media-grid-inline: auto;
+
+  /* The full-width hairline is this design's own device (gold double rules across the measure). */
+  --media-rule-size: 100%;
+
+  /* DESIGN.md's photograph treatment: a 3px gold mat. `.gh-frame__mat` builds it from
+     `--color-gold` (#c9a648), so the tiles use the same token rather than the darker Bronze
+     `--color-tertiary` — the point is that the design's frame appears on the one surface that is
+     entirely photographs, and it was `border: 0` there in both designs. Decorative: the tile is
+     identified by the photograph it holds and by a 2px Lake Blue focus ring, not by this edge. */
+  --media-tile-frame: 3px solid var(--color-gold, var(--color-tertiary));
+  --media-tile-pad: 4px;
 }
 
 [data-theme="conservatory"] {
   --radius-button: var(--rounded-md);
   --heading-transform: none;
   --heading-tracking: normal;
+
+  /* Conservatory's DESIGN.md is explicit in the other direction — "Nothing is centred by default;
+     things are placed" — so the same grids start at the left margin here. */
+  --media-justify: start;
+  --media-align: start;
+  --media-grid-inline: 0;
+
+  /* And its dividers "grow from the left margin and stop at 12rem, not full-width rules". */
+  --media-rule-size: 12rem;
+
+  /* The herbarium sheet mounts a specimen on kraft rather than matting it in gold. */
+  --media-tile-frame: 1px solid var(--color-outline, currentcolor);
+  --media-tile-pad: 3px;
 }

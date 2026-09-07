@@ -22,7 +22,7 @@ const { PageHead } = content;
  */
 export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload, copy, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-    <PageHead eyebrow={copy.eyebrow} title={copy.title} lede={copy.lede} />
+    <PageHead title={copy.title} lede={copy.lede} />
 
     <Section id="albums" labelledBy="albums-title">
       <SectionHeading level={2} id="albums-title" title="Albums" />
@@ -31,17 +31,15 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
           <p role="status">{copy.empty}</p>
         </Prose>
       ) : (
-        <Prose>
-          <ul className="media-albums">
-            {albums.map((c: PhotosProps['albums'][number]) => (
-              <li key={c.slug} className="media-album">
-                <Link href={`${ROUTES.photos}/${c.slug}`}>{c.title}</Link>
-                {c.description ? <span className="media-lede">{c.description}</span> : null}
-                <span className="media-album__count">{c.itemCount === 0 ? 'Nothing here yet' : c.itemCount === 1 ? '1 item' : `${c.itemCount} items`}</span>
-              </li>
-            ))}
-          </ul>
-        </Prose>
+        <ul className="media-albums">
+          {albums.map((c: PhotosProps['albums'][number]) => (
+            <li key={c.slug} className="media-album">
+              <Link href={`${ROUTES.photos}/${c.slug}`}>{c.title}</Link>
+              {c.description ? <span className="media-lede">{c.description}</span> : null}
+              <span className="media-album__count">{c.itemCount === 0 ? 'Nothing here yet' : c.itemCount === 1 ? '1 item' : `${c.itemCount} items`}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </Section>
 
@@ -60,19 +58,16 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
 
 export const GildedPhotoAlbumPage: ContentRecipe<PhotoAlbumProps> = ({ slug, title, description, items, nextCursor, copy, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-    <PageHead eyebrow={copy.eyebrow} title={title} {...(description ? { lede: description } : {})} />
+    <PageHead title={title} {...(description ? { lede: description } : {})} />
 
     <Section id="grid">
       <GalleryGrid items={items} emptyMessage={copy.empty} />
       <Prose>
-        <p>
+        <p className="media-pager">
           {nextCursor ? (
-            <>
-              <Link href={`${ROUTES.photos}/${slug}?cursor=${encodeURIComponent(nextCursor)}`} rel="next">
-                {copy.showMore}
-              </Link>
-              {' · '}
-            </>
+            <Link href={`${ROUTES.photos}/${slug}?cursor=${encodeURIComponent(nextCursor)}`} rel="next">
+              {copy.showMore}
+            </Link>
           ) : null}
           <Link href={ROUTES.photos}>{copy.allAlbums}</Link>
         </p>

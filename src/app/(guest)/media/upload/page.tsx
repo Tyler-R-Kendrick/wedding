@@ -19,7 +19,7 @@ export default async function UploadPage() {
   const flags = getFlags();
   const allowed = principal.kind !== 'anonymous' && hasEntitlement(principal, 'upload_media');
   return (
-    <MediaPage eyebrow="Photos & Video" title="Add your photos and videos" lede="Pick a few from your camera roll and we will take it from there. Sara and Tyler look at everything before it is shared with other guests.">
+    <MediaPage title="Add your photos and videos" lede="Pick a few from your camera roll and we will take it from there. Sara and Tyler look at everything before it is shared with other guests.">
       {!flags.GUEST_UPLOADS ? (
         <MediaEmpty>Uploads are not open right now. Please check back after the wedding.</MediaEmpty>
       ) : !allowed ? (

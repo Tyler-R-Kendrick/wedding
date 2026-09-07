@@ -15,7 +15,7 @@ export default async function ImportPage() {
   const r = await invokeForRequest<{ items: QueueItem[]; collections: CollectionSummary[] }>('admin_list_media', { limit: 1 }, principal);
   const chapters = r.ok ? r.data.collections.filter((c) => c.kind === 'professional') : [];
   return (
-    <MediaPage eyebrow="Admin" title="Import professional media" lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery." actions={<AdminMediaNav current="import" />}>
+    <MediaPage title="Import professional media" lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery." actions={<AdminMediaNav current="import" />}>
       <MediaSection id="import">
         <ImportForm chapters={chapters} />
       </MediaSection>

@@ -5,8 +5,13 @@
  * Mobile (390px) first; 44px targets; reduced motion respected. Secondary copy is
  * `max(17px, 0.9375rem)`, not a bare `0.9375rem`: 15.94px is under the 17px floor this site sets
  * because grandparents are a primary audience, and it is the same `max()` the shared `.hint` has
- * used since level 09. The uppercase micro-labels stay at `0.75rem`, which is the open
- * `--type-label-caps-size` question DESIGN.md carries for every surface, not a media one.
+ * used since level 09.
+ *
+ * Layout tracks come from the CONTAINER (`auto-fill` + `minmax`), never from a viewport media
+ * query: these grids sit inside a theme section's text column, so window width is not their width.
+ * Where the two designs disagree on principle — centred versus placed, a full-measure rule versus
+ * one that stops at 12rem, a gold mat versus a hairline — that disagreement is a `--media-*` role
+ * token defined per `[data-theme]` in `themes/shared/base.css`, not a value picked here.
  *
  * Headings read the `--type-*` role tokens both designs publish under `[data-theme]`, not a literal
  * scale. Written with a bare `font-size` and no family they inherited `--font-text`, so the h1 on
@@ -32,21 +37,6 @@
   border-block-end: 1px solid var(--color-outline, currentcolor);
 }
 
-.media-eyebrow {
-  font-family: var(--type-label-caps-family, inherit);
-  font-size: max(13px, var(--type-label-caps-size, 0.75rem));
-  font-weight: var(--type-label-caps-weight, 600);
-  letter-spacing: var(--type-label-caps-tracking, 0.12em);
-  text-transform: uppercase;
-
-  /* `--color-tertiary` is Conservatory's gold: #d4b24a on its #f4eedf creme is 1.76:1, an axe
-     serious violation on /media/upload and /media/mine in that design (Gilded Hour's tertiary is
-     dark enough to pass, which is why it only showed in one). `--color-secondary` is what the guest
-     kit's own `.page__eyebrow` uses, and it is a token colour rather than gold-as-text. Level 09
-     found the same shape in Conservatory's hint colour at 4.12:1. */
-  color: var(--color-secondary, var(--color-on-surface));
-}
-
 .media-page__head h1 {
   margin: 0;
   font-family: var(--type-h1-family, inherit);
@@ -61,6 +51,14 @@
   max-width: var(--wp-measure, 33rem);
   margin: 0;
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+/* In the page head this is the lede, and the themed `PageHead` next door sets it at 22.31px; here
+   it inherited the 17px root, so the same role changed size depending on which surface you were on.
+   Declared after the base rule, not before: stylelint's `no-descending-specificity`. */
+.media-page__head .media-lede {
+  font-size: var(--type-body-lg-size, 1.25rem);
+  line-height: var(--type-body-lg-line, 1.5);
 }
 
 .media-section + .media-section {
@@ -270,41 +268,56 @@
 
 .media-albums {
   display: grid;
+
+  /* Tracks sized from the CONTAINER, not the viewport. The `@media (width >= 1024px)` rules this
+     replaces asked the window how wide the list was, and the window is not the answer: in
+     Conservatory these lists sit in `.cv-section__grid`'s text column, 587px at a 1440px viewport,
+     so a viewport-driven 3-up produced narrower cards on a desktop than on a phone. It also fixes
+     the axis break Gilded Hour showed with a single album — fixed 2- and 3-up tracks left one item
+     stranded 180px left of the heading's centre line, and an anonymous visitor sees exactly one of
+     the eight collections, so that WAS the default state. `justify-content` is a per-design role
+     token because the two designs disagree about it on purpose. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 22rem));
+  justify-content: var(--media-justify, start);
   gap: var(--spacing-md, 16px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-@media (width >= 640px) {
-  .media-albums {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (width >= 1024px) {
-  .media-albums {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 .media-album {
+  position: relative;
   display: grid;
   gap: var(--spacing-xs, 4px);
   padding: var(--spacing-md, 16px) 0;
-  border-block-start: 1px solid var(--color-outline, currentcolor);
 }
 
+/* A rule whose length is the design's choice: full measure in Gilded Hour, stopping at 12rem in
+   Conservatory, whose DESIGN.md asks for dividers that "grow from the left margin and stop at
+   12rem, not full-width rules". A `border-block-start` could only ever be one of the two. */
+.media-album::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--media-rule-size, 100%);
+  block-size: 1px;
+  background: var(--color-outline, currentcolor);
+}
+
+/* No `color` and no `text-decoration: none` here. Those two declarations (specificity 0-1-1) beat
+   the theme kits' own `.gh-link` / `.cv-link` (0-1-0), so the album link — the only way into an
+   album, and on `/photos` the only link in the main content at all — computed the same ink as the
+   headings with no underline: not distinguished by colour OR decoration, which is WCAG 2.2 SC
+   1.4.1. It now inherits whatever the design says a link looks like.
+   `min-height` because the project's bar is 44px (PRODUCT.md, grandparents are a primary
+   audience); it measured 35px. axe passes it either way — SC 2.5.8 asks 24px — so this is the
+   house rule, not the standard. */
 .media-album a {
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 1.25rem;
-  text-decoration: none;
-}
-
-.media-album a:hover,
-.media-album a:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 .media-album__count {
@@ -314,32 +327,51 @@
 
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+
+  /* See `.media-albums`: tracks from the container. Measured before this change, a tile was
+     171x136 at a 390px viewport and 135x136 at 1440 — photographs got SMALLER on a desktop,
+     because the 4-up rule fired on window width while the grid sat in a 587px column. */
+
+  /* The maximum must stay `1fr`. `auto-fit` picks its repetition count from the track's MAX sizing
+     function whenever that is definite, and only falls back to the min when it is not — so
+     `minmax(9.5rem, 15rem)` counted from 255px and laid one column in a 350px phone container and
+     three in a 1020px one. Measured, twice, mid-fix. With `1fr` the count comes from the 161.5px
+     minimum (9.5rem at this site's 17px root) and the tracks then divide the container: 2 x 171 on
+     a 390px phone, 3 x 185 in Conservatory's 587px text column, 5 x 191 in Gilded Hour's capped
+     1020px one. Never smaller on a larger screen, which is the defect this replaced. */
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  justify-content: var(--media-justify, start);
+
+  /* `auto-fit`, not `auto-fill`: an album with one photograph should show one photograph, and
+     `auto-fill`'s empty tracks eat the free space `justify-content` would otherwise centre — which
+     is exactly how the single album on `/photos` ended up 195px left of the heading's centre line
+     in the design whose DESIGN.md puts them on the same axis. The 15rem cap stops one photograph
+     stretching across the page; the 60rem cap keeps a wide desktop from thinning the tracks below
+     the ~171px a phone already gives (measured 167.5px at Gilded Hour's full 1085px column).
+     Note the root here is 17px, not 16 — the body floor this site sets — so 9.5rem is 161.5px. */
   gap: var(--spacing-sm, 8px);
+  max-width: min(60rem, 100%);
   margin: 0;
+  margin-inline: var(--media-grid-inline, 0);
   padding: 0;
   list-style: none;
 }
 
 @media (width >= 640px) {
   .media-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-md, 16px);
   }
 }
 
-@media (width >= 1024px) {
-  .media-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
+/* Gilded Hour mats a photograph in 3px of gold (DESIGN.md's frame treatment); Conservatory mounts
+   it on a hairline. Before this the tile was `border: 0` in both, so the one surface on the site
+   that is entirely photographs was the one surface wearing none of either design. */
 .media-tile {
   position: relative;
   display: block;
   width: 100%;
-  padding: 0;
-  border: 0;
+  padding: var(--media-tile-pad, 0);
+  border: var(--media-tile-frame, 0);
   border-radius: var(--rounded-sm, 2px);
   overflow: hidden;
   background: var(--color-neutral-variant, var(--color-neutral));
@@ -378,7 +410,7 @@
 
 .media-empty {
   padding: var(--spacing-xl, 40px) 0;
-  text-align: center;
+  text-align: var(--media-align, start);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
 
@@ -388,8 +420,16 @@
 
 .media-pager {
   display: flex;
-  justify-content: center;
+  justify-content: var(--media-justify, start);
+  gap: var(--spacing-md, 16px);
   margin-block-start: var(--spacing-lg, 24px);
+}
+
+/* 86x27 measured before: under the 44px house floor, on the control that leaves an album. */
+.media-pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 /* ---------------------------------------------------------------- lightbox */

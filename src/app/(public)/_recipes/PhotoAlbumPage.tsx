@@ -8,7 +8,6 @@ import type { PhotoAlbumProps } from '@/themes/content-types';
 export function PhotoAlbumPage({ slug, title, description, items, nextCursor, copy }: Omit<PhotoAlbumProps, 'frame'>) {
   return (
     <MediaPage
-      eyebrow={copy.eyebrow}
       title={title}
       {...(description ? { lede: description } : {})}
       actions={

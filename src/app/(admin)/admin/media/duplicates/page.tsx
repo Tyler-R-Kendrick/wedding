@@ -13,7 +13,7 @@ export default async function DuplicatesPage() {
   if (principal.kind !== 'admin' || !isMediaAdmin(principal)) return <AdminGate />;
   const r = await invokeForRequest<{ clusters: Cluster[] }>('admin_media_duplicates', {}, principal);
   return (
-    <MediaPage eyebrow="Admin" title="Duplicates" lede="Identical files (same checksum) and near-identical images (perceptual hash). Keeping the earliest and rejecting the rest is reversible from the queue." actions={<AdminMediaNav current="duplicates" />}>
+    <MediaPage title="Duplicates" lede="Identical files (same checksum) and near-identical images (perceptual hash). Keeping the earliest and rejecting the rest is reversible from the queue." actions={<AdminMediaNav current="duplicates" />}>
       <MediaSection id="clusters">{r.ok ? <DuplicateClusters clusters={r.data.clusters} /> : <p className="media-lede">{r.error.message}</p>}</MediaSection>
     </MediaPage>
   );

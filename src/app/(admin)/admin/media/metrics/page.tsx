@@ -14,7 +14,7 @@ export default async function MetricsPage() {
   const r = await invokeForRequest<MediaMetrics & { jobs: Record<string, number> }>('admin_media_metrics', {}, principal);
   if (!r.ok) {
     return (
-      <MediaPage eyebrow="Admin" title="Storage and cost" actions={<AdminMediaNav current="metrics" />}>
+      <MediaPage title="Storage and cost" actions={<AdminMediaNav current="metrics" />}>
         <p className="media-lede">{r.error.message}</p>
       </MediaPage>
     );
@@ -27,7 +27,7 @@ export default async function MetricsPage() {
     </>
   );
   return (
-    <MediaPage eyebrow="Admin" title="Storage and cost (approximate)" lede="Counts and bytes are exact as of now; the cost line is an estimate at an assumed price and is not a bill." actions={<AdminMediaNav current="metrics" />}>
+    <MediaPage title="Storage and cost (approximate)" lede="Counts and bytes are exact as of now; the cost line is an estimate at an assumed price and is not a bill." actions={<AdminMediaNav current="metrics" />}>
       <MediaSection title="Items" id="items">
         <dl className="media-metrics">
           {row('Total', String(m.assets.total))}

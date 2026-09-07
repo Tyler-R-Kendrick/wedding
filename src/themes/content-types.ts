@@ -85,7 +85,7 @@ export interface GiftsProps {
 export interface PhotosProps {
   albums: { slug: string; title: string; description: string | null; itemCount: number }[];
   canUpload: boolean;
-  copy: { eyebrow: string; title: string; lede: string; empty: string };
+  copy: { title: string; lede: string; empty: string };
 }
 
 export interface PhotoAlbumProps {
@@ -94,7 +94,7 @@ export interface PhotoAlbumProps {
   description: string | null;
   items: GalleryPage['items'];
   nextCursor: string | null;
-  copy: { eyebrow: string; empty: string; allAlbums: string; showMore: string };
+  copy: { empty: string; allAlbums: string; showMore: string };
 }
 
 export interface TravelProps {
@@ -149,8 +149,16 @@ export interface StopItem {
 }
 
 export interface ContentKit {
-  /** Title block of a content page: section eyebrow, H1, lede, optional facts under it. */
-  PageHead: (p: { eyebrow: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) => ReactNode;
+  /**
+   * Title block of a content page: H1, lede, optional facts under it, and an OPTIONAL eyebrow.
+   *
+   * Optional because `impeccable detect`'s `kicker-above-heading` rule bans a label sitting as its
+   * own block directly above a heading outright — "the heading carries its own weight" — so a page
+   * whose eyebrow is chrome rather than a genuine category (Photos & Video's was the couple's own
+   * names, repeating the wordmark 50px above it) must be able to omit it rather than restyle it.
+   * Pages whose eyebrow names a real section keep passing it.
+   */
+  PageHead: (p: { eyebrow?: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) => ReactNode;
   /** Our Story chapters in order, each with its provenance; placeholders stay marked. */
   StoryTimeline: (p: { sections: StorySectionView[] }) => ReactNode;
   /** Placeholder-aware prose: facts become paragraphs, placeholders become marked blocks. */

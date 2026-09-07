@@ -29,11 +29,11 @@ const ExternalMark = ({ opens }: { opens?: string }) => (
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-function PageHead({ eyebrow, title, lede, children }: { eyebrow: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) {
+function PageHead({ eyebrow, title, lede, children }: { eyebrow?: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) {
   return (
     <header className="gh-pagehead">
       <div className="gh-pagehead__inner">
-        <p className="gh-eyebrow">{eyebrow}</p>
+        {eyebrow ? <p className="gh-eyebrow">{eyebrow}</p> : null}
         <hr className="gh-divider" />
         <h1 className="gh-h gh-h--1 gh-pagehead__title">{title}</h1>
         {lede ? <p className="gh-lede gh-pagehead__lede">{lede}</p> : null}

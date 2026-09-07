@@ -14,7 +14,7 @@ export default async function AdminMediaPage() {
   if (principal.kind !== 'admin' || !isMediaAdmin(principal)) return <AdminGate />;
   const queue = await invokeForRequest<{ items: QueueItem[]; collections: CollectionSummary[]; nextCursor?: string }>('admin_list_media', { status: 'private', limit: 50 }, principal);
   return (
-    <MediaPage eyebrow="Admin" title="Media queue" lede="Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here." actions={<AdminMediaNav current="queue" />}>
+    <MediaPage title="Media queue" lede="Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here." actions={<AdminMediaNav current="queue" />}>
       <MediaSection id="queue">{queue.ok ? <ModerationQueue initial={queue.data} initialStatus="private" /> : <p className="media-lede">{queue.error.message}</p>}</MediaSection>
     </MediaPage>
   );

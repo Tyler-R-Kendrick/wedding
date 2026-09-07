@@ -40,11 +40,11 @@ const ExternalMark = ({ opens }: { opens?: string }) => (
   </>
 );
 
-function PageHead({ eyebrow, title, lede, children }: { eyebrow: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) {
+function PageHead({ eyebrow, title, lede, children }: { eyebrow?: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) {
   return (
     <header className="cv-pagehead">
       <p className="cv-pagehead__tag">
-        <span className="cv-specimen cv-specimen--static">{eyebrow}</span>
+        {eyebrow ? <span className="cv-specimen cv-specimen--static">{eyebrow}</span> : null}
       </p>
       <h1 className="cv-h cv-h--1 cv-pagehead__title">{title}</h1>
       {lede ? <p className="cv-lede">{lede}</p> : null}

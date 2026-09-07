@@ -11,7 +11,6 @@ import type { PhotosProps } from '@/themes/content-types';
 export function PhotosPage({ albums, canUpload, copy }: Omit<PhotosProps, 'frame'>) {
   return (
     <MediaPage
-      eyebrow={copy.eyebrow}
       title={copy.title}
       lede={copy.lede}
       actions={
