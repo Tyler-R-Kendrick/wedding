@@ -17,7 +17,7 @@ import { MockMediaAi } from '@/providers/media-ai';
 import { MockAiModel, MOCK_REPLY } from '@/providers/ai-model';
 import type { Db } from '@/db/client';
 import { createRateLimitProvider, DbRateLimit, MemoryRateLimit } from '@/providers/rate-limit';
-import { parseGiftLinks, MockRegistry, MockCashFund, REGISTRY_DISCLOSURE } from '@/providers/registry/index';
+import { MOCK_CASH_FUND_LINKS, MOCK_REGISTRY_LINKS, MockCashFund, MockRegistry, REGISTRY_DISCLOSURE, parseGiftLinks } from '@/providers/registry/index';
 import { describeProviders, getProvider, resetProviders } from '@/providers/registry';
 import { MockReservations } from '@/providers/reservations';
 import { createStorageProvider, LocalFsStorage, S3Storage, signDevStorage, verifyDevStorage, isValidKey } from '@/providers/storage';
@@ -343,25 +343,37 @@ describe('transport benefit', () => {
 });
 
 describe('registry and cash-fund links', () => {
-  // A link's label is the hand-off card's heading AND its button text on the public gifts page.
-  // This used to assert `l.label` CONTAINED 'TODO(Tyler & Sara)', so it pinned in place the very
-  // defect it should have caught: the mock labels printed the authoring marker to visitors. What
-  // must hold is the guarantee — the provider is a mock, so `listGiftLinks` marks every one of its
-  // links `placeholder: true` and `ExternalHandoffCard` prints the editorial sentence — and that
-  // the marker itself never reaches the label.
-  it('mock links are placeholders on allowlisted hosts, with no authoring marker in the label', async () => {
+  // The built-in providers offer NO links, and that is the assertion.
+  //
+  // They used to return one row each pointing at `https://www.zola.com/` with `provider: 'zola'`,
+  // and this test asserted the label contained `TODO(Tyler & Sara)` — so it pinned the marker onto
+  // a public card heading. Removing the marker left the invented brand behind: the page said "via
+  // Zola" and linked to it for a registry the couple have not chosen (brief §2: NOT settled), and
+  // `list_gift_links` is exposed to the AI concierge and WebMCP, so an assistant would have said
+  // the same. `placeholder: true` does not undo naming a company. The ladder is exercised by
+  // configured links instead, which carry a provider someone actually picked.
+  it('built-in providers offer no links at all, because no provider has been chosen', async () => {
     for (const p of [new MockRegistry(), new MockCashFund()]) {
       expect(p.mode).toBe('mock');
-      const links = await p.describeLinks();
-      expect(links.length).toBeGreaterThan(0);
-      for (const l of links) {
-        expect(l.label).not.toContain('TODO(');
-        expect(l.label.length).toBeGreaterThan(0);
-        expect(isAllowedRedirect(l.url)).toBe(true);
-        expect(l.disclosure.length).toBeGreaterThan(10);
-      }
+      expect(await p.describeLinks()).toEqual([]);
+    }
+    // Nothing anywhere in the built-in gift data names a provider or a destination.
+    expect(JSON.stringify([MOCK_REGISTRY_LINKS, MOCK_CASH_FUND_LINKS])).not.toMatch(/zola|theknot|withjoy|http/i);
+  });
+
+  it('a configured link is a real hand-off: allowlisted host, disclosure, no authoring marker', async () => {
+    const { links } = parseGiftLinks(
+      JSON.stringify([{ id: 'knot', provider: 'theknot', label: 'Our registry on The Knot', url: 'https://www.theknot.com/us/sara-and-tyler' }]),
+      REGISTRY_DISCLOSURE,
+    );
+    expect(links).toHaveLength(1);
+    for (const l of links) {
+      expect(l.label).not.toContain('TODO(');
+      expect(isAllowedRedirect(l.url)).toBe(true);
+      expect(l.disclosure.length).toBeGreaterThan(10);
     }
   });
+
   it('parses configured JSON links and drops off-allowlist entries', () => {
     const { links, rejected } = parseGiftLinks(JSON.stringify([
       { id: 'zola', provider: 'zola', label: 'Registry', url: 'https://www.zola.com/registry/x' },

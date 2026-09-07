@@ -20,7 +20,9 @@ const { PageHead } = content;
 export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
   const registry = data.links.filter((l) => l.kind === 'registry');
   const adventures = data.links.filter((l) => l.kind === 'adventure-fund');
-  const anyPlaceholder = data.links.some((l) => l.placeholder);
+  // A section with no configured links is the normal state today: the couple have not chosen a
+  // provider, so the page says that rather than naming one. `pending` also drives the closing note.
+  const pending = !registry.length || !adventures.length || data.links.some((l) => l.placeholder);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHead eyebrow={data.copy.eyebrow} title={data.copy.title} lede={data.copy.lede} />
@@ -30,9 +32,19 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
         <Prose>
           <p>{data.copy.registryIntro}</p>
         </Prose>
-        {registry.map((l) => (
-          <GiftLinkCard key={l.id} link={l} />
-        ))}
+        {/* Inside `Prose`, which is `text-align: start`. Outside it a card inherited
+            `.gh-section { text-align: center }`, so a card's own paragraphs centred on x=522 while
+            its button centred on x=720 and its heading sat at x=178 — four axes per card at 1440.
+            Gilded Hour's rule is a centred column of left-aligned body copy, not centred copy. */}
+        {registry.length ? (
+          <Prose>{registry.map((l) => <GiftLinkCard key={l.id} link={l} />)}</Prose>
+        ) : (
+          <Prose>
+            <p>
+              <Placeholder todo={data.copy.registryPending} />
+            </p>
+          </Prose>
+        )}
       </Section>
 
       <Section id="gifts-adventures" ground="alt" labelledBy="gifts-adventures-title">
@@ -40,15 +52,21 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
         <Prose>
           <p>{data.copy.adventureIntro}</p>
         </Prose>
-        {adventures.map((l) => (
-          <GiftLinkCard key={l.id} link={l} />
-        ))}
+        {adventures.length ? (
+          <Prose>{adventures.map((l) => <GiftLinkCard key={l.id} link={l} />)}</Prose>
+        ) : (
+          <Prose>
+            <p>
+              <Placeholder todo={data.copy.adventurePending} />
+            </p>
+          </Prose>
+        )}
       </Section>
 
       <Section id="gifts-note">
         <Prose>
           <p>{data.copy.handoffNote}</p>
-          {anyPlaceholder ? (
+          {pending ? (
             <p>
               <Placeholder todo={data.copy.placeholderNote} />
             </p>

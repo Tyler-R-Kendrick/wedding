@@ -32,33 +32,46 @@ const EVIL = ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>',
 afterAll(() => resetProviders());
 
 describe('gifts', () => {
-  it('lists placeholder links with the brief’s language and no forbidden words', async () => {
+  it('offers no links at all until the couple choose a provider, and says so in their language', async () => {
+    // This asserted two built-in rows on `www.zola.com` with `placeholder: true`. The brief lists
+    // Registry as NOT settled, so those rows named a company the couple have not chosen and linked
+    // to it — on the page as "via Zola", and in this very output, which the AI concierge and WebMCP
+    // both read. An empty list plus an editorial "still to come" is the honest answer; `placeholder`
+    // on a card carrying a brand is not.
     const r = await run(listGiftLinksCapability, anon, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.copy.title).toBe('Help us with our next adventures');
-    expect(r.value.data.links.map((l) => [l.kind, l.placeholder, l.host, l.origin])).toEqual([
-      ['registry', true, 'www.zola.com', 'placeholder'],
-      ['adventure-fund', true, 'www.zola.com', 'placeholder'],
-    ]);
+    expect(r.value.data.links).toEqual([]);
+    expect(r.value.data.copy.registryPending.length).toBeGreaterThan(10);
+    expect(r.value.data.copy.adventurePending.length).toBeGreaterThan(10);
+    expect(JSON.stringify(r.value.data)).not.toMatch(/zola|theknot|withjoy/i);
     const text = JSON.stringify(r.value.data.copy);
     for (const re of FORBIDDEN_GIFT_WORDS) expect(text).not.toMatch(re);
     expect(r.value.sources[0]?.url).toBe('/the-wedding');
   });
 
   it('records a handoff (host only) when a link is opened, never a purchase', async () => {
-    const r = await run(openGiftLink, anon, { linkId: 'registry-placeholder' }, { requestId: 'req-gift-open' });
-    expect(r.ok && r.value.handoffUrl).toBe('https://www.zola.com/');
-    expect(r.ok && r.value.data.handoff).toMatchObject({ providerDisplayName: 'Zola', opensNewTab: true });
+    // A link to open has to be configured first: there are no built-in ones any more.
+    const configured = await run(
+      adminUpsertGiftLink,
+      admin,
+      { id: 'knot-registry', kind: 'registry', provider: 'theknot', label: 'Our registry on The Knot', url: 'https://www.theknot.com/us/sara-and-tyler', note: 'Physical wishlist' },
+      { idempotencyKey: key() },
+    );
+    expect(configured.ok).toBe(true);
+    const r = await run(openGiftLink, anon, { linkId: 'knot-registry' }, { requestId: 'req-gift-open' });
+    expect(r.ok && r.value.handoffUrl).toBe('https://www.theknot.com/us/sara-and-tyler');
+    expect(r.ok && r.value.data.handoff).toMatchObject({ providerDisplayName: 'The Knot', opensNewTab: true });
     const db = await getDb();
     const rec = (await db.select().from(externalActionRecords)).find((x) => x.kind === 'gift_link');
-    expect(rec).toMatchObject({ status: 'initiated', provider: 'zola', urlHost: 'www.zola.com', actor: { kind: 'anonymous' }, targetId: 'registry-placeholder', requestId: 'req-gift-open' });
+    expect(rec).toMatchObject({ status: 'initiated', provider: 'theknot', urlHost: 'www.theknot.com', actor: { kind: 'anonymous' }, targetId: 'knot-registry', requestId: 'req-gift-open' });
     const audit = await listAuditEvents(db, { requestId: 'req-gift-open' });
     expect(audit.map((e) => e.action).sort()).toEqual(['capability.invoked', 'external_action.initiated']);
     expect((await run(openGiftLink, anon, { linkId: 'nope' })).ok).toBe(false);
     expect((await run(openGiftLink, anon, { linkId: '../etc' })).ok).toBe(false);
-    const ai = await run(openGiftLink, anon, { linkId: 'registry-placeholder' }, { surface: 'ai' });
-    expect(ai.ok && ai.value.handoffUrl).toBe('https://www.zola.com/');
+    const ai = await run(openGiftLink, anon, { linkId: 'knot-registry' }, { surface: 'ai' });
+    expect(ai.ok && ai.value.handoffUrl).toBe('https://www.theknot.com/us/sara-and-tyler');
   });
 
   it('admin links must be on the allowlist at write time AND at read time (open-redirect guard)', async () => {
@@ -75,10 +88,9 @@ describe('gifts', () => {
     const db = await getDb();
     await db.insert(giftLinks).values({ id: 'tampered', kind: 'registry', provider: 'custom', label: 'Evil', url: 'https://evil.example/pay', placeholder: false, active: true, sortOrder: 5, updatedBy: { kind: 'system', component: 'test' } });
     const list = await run(listGiftLinksCapability, anon, {});
-    expect(list.ok && list.value.data.links.map((l) => [l.id, l.kind, l.origin, l.placeholder])).toEqual([
-      ['knot-registry', 'registry', 'admin', false],
-      ['adventure-fund-placeholder', 'adventure-fund', 'placeholder', true],
-    ]);
+    // One admin row for registry and nothing for the adventure fund: an unconfigured kind is an
+    // empty section the page fills with its own editorial note, not a built-in card.
+    expect(list.ok && list.value.data.links.map((l) => [l.id, l.kind, l.origin, l.placeholder])).toEqual([['knot-registry', 'registry', 'admin', false]]);
     expect(JSON.stringify(list)).not.toContain('evil.example');
     expect((await run(openGiftLink, anon, { linkId: 'tampered' })).ok).toBe(false);
     const opened = await run(openGiftLink, anon, { linkId: 'knot-registry' });
@@ -187,7 +199,8 @@ describe('reservations ladder', () => {
 
   it('exposes the external action log to admins with audit access only', async () => {
     const r = await run(adminListExternalActions, admin, {});
-    // 3 gift opens (placeholder, ai surface, knot), 1 reservation link (resy), 2 preparations (resy, unavailable tampered venue).
+    // 3 gift opens (knot, the same on the ai surface, knot again from the guard test), 1 reservation
+    // link (resy), 2 preparations (resy, unavailable tampered venue).
     expect(r.ok && r.value.data.records.map((x) => x.kind).sort()).toEqual(['gift_link', 'gift_link', 'gift_link', 'reservation_link', 'reservation_prepare', 'reservation_prepare']);
     expect(r.ok && r.value.data.records.filter((x) => x.kind === 'reservation_prepare').map((x) => x.provider).sort()).toEqual(['none', 'resy']);
     expect(JSON.stringify(r)).not.toMatch(/seats=|Pat Example/);

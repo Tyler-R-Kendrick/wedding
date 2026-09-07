@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Placeholder } from '@/components/provenance/Placeholder';
 import type { GuestHandoff } from '@/domain/external/handoff';
 
 export interface ExternalHandoffCardProps {
@@ -27,17 +28,25 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
         <h3 className="text-xl">{heading}</h3>
         <p className="hint">via {handoff.providerDisplayName}</p>
       </div>
-      {note ? <p className="mt-2 max-w-[65ch] text-primary">{note}</p> : null}
+      {note ? <p className="mt-2 measure text-primary">{note}</p> : null}
+      {/* One placeholder, one contract. This was a hand-rolled <p> whose only "this is a note"
+          signal was an `sr-only` word — invisible to a sighted guest, and the same defect shape as
+          the marker the level fixed elsewhere — plus a dead `italic` (`font-synthesis: none` is set
+          globally and neither design ships an italic text face, so it rendered upright). The shared
+          component carries the visible stamp, `role="note"` and `data-placeholder="true"`, which is
+          what makes the honesty invariant machine-checkable. Voice is first person: PRODUCT.md sets
+          "first person plural for the couple", and this card sat 40px from "Sara + Tyler are still
+          writing this" while saying "Sara and Tyler". */}
       {placeholder ? (
-        <p className="mt-2 max-w-[65ch] italic text-primary">
-          <span className="sr-only">Placeholder: </span>Not final yet: this link goes to the provider’s home page until Sara and Tyler add the real one.
-        </p>
+        <div className="mt-2 measure">
+          <Placeholder>we have not added the real link yet, so this one goes to the provider’s home page</Placeholder>
+        </div>
       ) : null}
       {testMode ? <p className="mt-2 hint">Test mode: this credit is not real.</p> : null}
       {meta ? <div className="mt-2 hint">{meta}</div> : null}
       <p className="mt-4">
         <a
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-7 py-3 text-base text-neutral no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-button,2px)] bg-primary px-7 py-3 text-base text-neutral no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           href={handoff.url}
           target={handoff.opensNewTab ? '_blank' : undefined}
           rel="noopener noreferrer external"
@@ -49,7 +58,7 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
           <span className="sr-only">(opens {handoff.providerDisplayName} in a new tab)</span>
         </a>
       </p>
-      <p className="mt-3 max-w-[65ch] hint">{handoff.disclosure}</p>
+      <p className="mt-3 measure hint">{handoff.disclosure}</p>
       <p className="hidden print:block">{handoff.url}</p>
     </article>
   );

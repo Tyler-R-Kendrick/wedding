@@ -352,3 +352,38 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/*
+ * Button shape, per design, as a role token.
+ *
+ * The shared guest components hard-coded `rounded-full` (Tailwind's 9999px), so every primary
+ * action on /gifts, /transportation and the RSVP pages measured `border-radius: 33554432px` in
+ * BOTH designs. Each DESIGN.md forbids exactly that: Gilded Hour — "Buttons are rectangles with a
+ * 1px inset hairline; there are no pills" (`button-primary.rounded: {rounded.none}`); Conservatory
+ * — buttons take `rounded.md` "without becoming pills (pills are the editorial baseline's
+ * signature)". Both `--rounded-*` scales are generated from DESIGN.md into `theme.css`; this maps
+ * the button role onto each, so a shared component can ask for the shape without knowing the
+ * design. Gilded Hour publishes no `--rounded-md`, which is the point.
+ */
+
+/*
+ * Heading case and tracking, per design, as role tokens for the same reason.
+ *
+ * Gilded Hour's DESIGN.md ties the two together — Cinzel is "set in capitals with wide tracking
+ * (0.04–0.06em)" — and its kit does exactly that (`.gh-h { text-transform: uppercase;
+ * letter-spacing: var(--type-h1-tracking) }`). Applying the tracking without the capitals is not a
+ * half-measure but a different, worse thing: `impeccable detect` flags 0.06em on sentence-case text
+ * as `wide-tracking` (three findings on /transportation), and it is right — wide tracking is for
+ * short uppercase runs. Conservatory sets Gloock in sentence case with no tracking, and says so.
+ */
+[data-theme="gilded-hour"] {
+  --radius-button: var(--rounded-none);
+  --heading-transform: uppercase;
+  --heading-tracking: var(--type-h1-tracking);
+}
+
+[data-theme="conservatory"] {
+  --radius-button: var(--rounded-md);
+  --heading-transform: none;
+  --heading-tracking: normal;
+}

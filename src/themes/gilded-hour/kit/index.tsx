@@ -51,7 +51,7 @@ const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakho
  */
 function Placeholder({ todo }: PlaceholderProps) {
   return (
-    <span className="todo">
+    <span className="todo" role="note" data-placeholder="true">
       <span className="todo__label">{PLACEHOLDER_LABEL}:</span> {stripBacklogRefs(todo)}
     </span>
   );

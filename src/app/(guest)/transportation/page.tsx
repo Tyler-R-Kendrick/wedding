@@ -14,7 +14,7 @@ export default async function TransportationPage() {
     return (
       <main id="main" className="mx-auto w-full max-w-[42rem] px-5 py-10">
         <h1 className="text-3xl">Transportation</h1>
-        <p className="mt-4 max-w-[65ch]">{result.error.message}</p>
+        <p className="mt-4 measure">{result.error.message}</p>
       </main>
     );
   }

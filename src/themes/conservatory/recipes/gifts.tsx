@@ -16,7 +16,9 @@ const { PageHead } = content;
 export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
   const registry = data.links.filter((l) => l.kind === 'registry');
   const adventures = data.links.filter((l) => l.kind === 'adventure-fund');
-  const anyPlaceholder = data.links.some((l) => l.placeholder);
+  // A section with no configured links is the normal state today: the couple have not chosen a
+  // provider, so the page says that rather than naming one. `pending` also drives the closing note.
+  const pending = !registry.length || !adventures.length || data.links.some((l) => l.placeholder);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHead eyebrow={data.copy.eyebrow} title={data.copy.title} lede={data.copy.lede} />
@@ -26,9 +28,15 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
         <Prose>
           <p>{data.copy.registryIntro}</p>
         </Prose>
-        {registry.map((l) => (
-          <GiftLinkCard key={l.id} link={l} />
-        ))}
+        {registry.length ? (
+          registry.map((l) => <GiftLinkCard key={l.id} link={l} />)
+        ) : (
+          <Prose>
+            <p>
+              <Placeholder todo={data.copy.registryPending} />
+            </p>
+          </Prose>
+        )}
       </Section>
 
       <Section id="gifts-adventures" ground="wash" labelledBy="gifts-adventures-title">
@@ -36,15 +44,21 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
         <Prose>
           <p>{data.copy.adventureIntro}</p>
         </Prose>
-        {adventures.map((l) => (
-          <GiftLinkCard key={l.id} link={l} />
-        ))}
+        {adventures.length ? (
+          adventures.map((l) => <GiftLinkCard key={l.id} link={l} />)
+        ) : (
+          <Prose>
+            <p>
+              <Placeholder todo={data.copy.adventurePending} />
+            </p>
+          </Prose>
+        )}
       </Section>
 
       <Section id="gifts-note">
         <Prose>
           <p>{data.copy.handoffNote}</p>
-          {anyPlaceholder ? (
+          {pending ? (
             <p>
               <Placeholder todo={data.copy.placeholderNote} />
             </p>

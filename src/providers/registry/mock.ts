@@ -1,40 +1,25 @@
 import { okConfig, upHealth } from '../base';
-import { CASH_FUND_DISCLOSURE, REGISTRY_DISCLOSURE } from './links';
 import type { CashFundProvider, GiftLink, RegistryProvider } from './types';
 
 /**
- * Placeholders only: the real links come from the couple.
+ * No links at all — which is the honest answer, because the couple have not chosen a provider.
  *
- * The labels are plain category names, not `TODO(Tyler & Sara): registry link`. These are rendered
- * as the HEADING of a hand-off card on the PUBLIC gifts page, so the marker was the first thing a
- * visitor read; `placeholder: true` is the flag that carries the meaning, and `ExternalHandoffCard`
- * already prints the honest sentence ("Not final yet: this link goes to the provider's home page
- * until Sara and Tyler add the real one"). A neutral category label states no fact the couple has
- * not confirmed.
+ * These used to be one row each pointing at `https://www.zola.com/` with `provider: 'zola'`, so the
+ * public gifts page rendered "via Zola" twice and offered two live outbound links to a registry
+ * that does not exist. `docs/design/brief.md` §2 lists Registry as "(NOT settled)". The authoring
+ * marker in the label had been the only thing hinting the card was not real, and removing it (this
+ * level) left the invented brand standing on its own.
+ *
+ * `placeholder: true` cannot rescue a card that names a company and links to it: a guest reads the
+ * brand, and `list_gift_links` is exposed to the AI concierge and WebMCP, so an assistant would
+ * have answered "they are registered at Zola". An empty list is a fact; a named provider is not.
+ * The pages render their own editorial empty state (GIFTS_COPY.registryPending /
+ * adventurePending), and the ladder is exercised by configured links — env JSON via
+ * `ConfiguredLinks`, or admin rows, both of which carry a provider the couple actually chose.
  */
-export const MOCK_REGISTRY_LINKS: GiftLink[] = [
-  {
-    id: 'registry-placeholder',
-    provider: 'zola',
-    label: 'Registry',
-    note: 'Physical wishlist',
-    url: 'https://www.zola.com/',
-    opensNewTab: true,
-    disclosure: REGISTRY_DISCLOSURE,
-  },
-];
+export const MOCK_REGISTRY_LINKS: readonly GiftLink[] = [];
 
-export const MOCK_CASH_FUND_LINKS: GiftLink[] = [
-  {
-    id: 'adventure-fund-placeholder',
-    provider: 'zola',
-    label: 'Help us with our next adventures',
-    note: 'Experience gifts and gift cards',
-    url: 'https://www.zola.com/',
-    opensNewTab: true,
-    disclosure: CASH_FUND_DISCLOSURE,
-  },
-];
+export const MOCK_CASH_FUND_LINKS: readonly GiftLink[] = [];
 
 export class MockRegistry implements RegistryProvider {
   readonly kind = 'registry' as const;
@@ -47,8 +32,8 @@ export class MockRegistry implements RegistryProvider {
   async health() {
     return upHealth();
   }
-  async describeLinks() {
-    return MOCK_REGISTRY_LINKS;
+  async describeLinks(): Promise<GiftLink[]> {
+    return [...MOCK_REGISTRY_LINKS];
   }
 }
 
@@ -63,8 +48,8 @@ export class MockCashFund implements CashFundProvider {
   async health() {
     return upHealth();
   }
-  async describeLinks() {
-    return MOCK_CASH_FUND_LINKS;
+  async describeLinks(): Promise<GiftLink[]> {
+    return [...MOCK_CASH_FUND_LINKS];
   }
 }
 

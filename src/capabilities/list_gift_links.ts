@@ -29,6 +29,10 @@ const output = z.object({
     adventureIntro: z.string(),
     handoffNote: z.string(),
     placeholderNote: z.string(),
+    // Editorial empty states. A section with no configured links says what is still to come; it
+    // never names a provider the couple have not chosen (brief §2: Registry is NOT settled).
+    registryPending: z.string(),
+    adventurePending: z.string(),
     thanks: z.string(),
   }),
   links: z.array(giftLinkViewSchema),

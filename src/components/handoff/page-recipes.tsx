@@ -40,11 +40,11 @@ const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
  */
 function Paragraph({ text }: { text: string }) {
   const at = text.indexOf(PLACEHOLDER_MARKER);
-  if (at < 0) return <p className="max-w-[65ch]">{text}</p>;
+  if (at < 0) return <p className="measure">{text}</p>;
   const fact = text.slice(0, at).trim();
   return (
     <>
-      {fact ? <p className="max-w-[65ch]">{fact}</p> : null}
+      {fact ? <p className="measure">{fact}</p> : null}
       <Placeholder>{placeholderHint(text.slice(at))}</Placeholder>
     </>
   );
@@ -72,7 +72,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
           Your ride home
         </h2>
         {!data.signedIn ? (
-          <p className="mt-3 max-w-[65ch]">
+          <p className="mt-3 measure">
             Ride benefits are personal. Open this page from your invitation link to see whether one is waiting for you.{' '}
             <Link className="underline underline-offset-4" href={data.signInRoute}>
               Find your invitation
@@ -80,7 +80,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
             .
           </p>
         ) : data.benefits.length === 0 ? (
-          <p className="mt-3 max-w-[65ch]">There is no ride benefit on your invitation yet. If you were expecting one, ask us and we will sort it out.</p>
+          <p className="mt-3 measure">There is no ride benefit on your invitation yet. If you were expecting one, ask us and we will sort it out.</p>
         ) : null}
         {claimed.map((b) => (
           <RedemptionCard key={b.entitlementId} benefit={b} />
@@ -96,14 +96,14 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
               <dt className="text-primary">Area</dt>
               <dd>{b.geofenceNote ?? 'To be confirmed'}</dd>
             </dl>
-            <p className="mt-3 max-w-[65ch]">{b.statusMessage}</p>
+            <p className="mt-3 measure">{b.statusMessage}</p>
             <ClaimBenefitFlow entitlementId={b.entitlementId} program={b.program} />
           </article>
         ))}
         {other.map((b) => (
           <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
             <h3 className="sec__title sec__title--sm">Ride benefit</h3>
-            <p className="mt-2 max-w-[65ch]">{b.statusMessage}</p>
+            <p className="mt-2 measure">{b.statusMessage}</p>
           </article>
         ))}
       </section>
@@ -149,40 +149,36 @@ export type GiftsPageData = GiftLinks;
 export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
   const registry = data.links.filter((l) => l.kind === 'registry');
   const adventures = data.links.filter((l) => l.kind === 'adventure-fund');
-  const anyPlaceholder = data.links.some((l) => l.placeholder);
+  const pending = !registry.length || !adventures.length || data.links.some((l) => l.placeholder);
   return (
     <main id="main" className="bg-neutral text-primary">
       <HandoffClickRecorder />
       <header className={SECTION}>
         <h1 className="text-3xl leading-tight">{data.copy.title}</h1>
-        <p className="mt-4 max-w-[65ch] text-lg">{data.copy.lede}</p>
+        <p className="mt-4 measure text-lg">{data.copy.lede}</p>
       </header>
       <section className={SECTION} aria-labelledby="gifts-registry">
         <h2 id="gifts-registry" className="text-2xl">
           {data.copy.registryHeading}
         </h2>
-        <p className="mt-3 max-w-[65ch]">{data.copy.registryIntro}</p>
+        <p className="mt-3 measure">{data.copy.registryIntro}</p>
         <div className="mt-4">
-          {registry.map((l) => (
-            <GiftLinkCard key={l.id} link={l} />
-          ))}
+          {registry.length ? registry.map((l) => <GiftLinkCard key={l.id} link={l} />) : <Placeholder>{data.copy.registryPending}</Placeholder>}
         </div>
       </section>
       <section className={SECTION} aria-labelledby="gifts-adventures">
         <h2 id="gifts-adventures" className="text-2xl">
           {data.copy.adventureHeading}
         </h2>
-        <p className="mt-3 max-w-[65ch]">{data.copy.adventureIntro}</p>
+        <p className="mt-3 measure">{data.copy.adventureIntro}</p>
         <div className="mt-4">
-          {adventures.map((l) => (
-            <GiftLinkCard key={l.id} link={l} />
-          ))}
+          {adventures.length ? adventures.map((l) => <GiftLinkCard key={l.id} link={l} />) : <Placeholder>{data.copy.adventurePending}</Placeholder>}
         </div>
       </section>
       <footer className={SECTION}>
-        <p className="max-w-[65ch] hint">{data.copy.handoffNote}</p>
-        {anyPlaceholder ? (
-          <div className="mt-2 max-w-[65ch]">
+        <p className="measure hint">{data.copy.handoffNote}</p>
+        {pending ? (
+          <div className="mt-2 measure">
             <Placeholder>{data.copy.placeholderNote}</Placeholder>
           </div>
         ) : null}

@@ -46,7 +46,7 @@ const FLOWERS = ['a', 'b', 'c'] as const;
  */
 function Placeholder({ todo }: PlaceholderProps) {
   return (
-    <span className="todo">
+    <span className="todo" role="note" data-placeholder="true">
       <span className="todo__label">{PLACEHOLDER_LABEL}:</span> {stripBacklogRefs(todo)}
     </span>
   );

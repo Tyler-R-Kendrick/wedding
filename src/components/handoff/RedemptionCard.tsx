@@ -15,7 +15,7 @@ export function RedemptionCard({ benefit }: { benefit: BenefitView }) {
     return (
       <article className="border-t border-primary/20 py-6" data-benefit-status={benefit.status}>
         <h3 className="text-xl">Your ride benefit</h3>
-        <p className="mt-2 max-w-[65ch]">{benefit.statusMessage}</p>
+        <p className="mt-2 measure">{benefit.statusMessage}</p>
       </article>
     );
   }
@@ -39,7 +39,7 @@ export function RedemptionCard({ benefit }: { benefit: BenefitView }) {
       <p className="mt-4 select-all font-mono text-2xl tracking-[0.12em]" aria-label="Your ride code">
         {r.code}
       </p>
-      <p className="mt-3 max-w-[65ch] hint">{r.instructions}</p>
+      <p className="mt-3 measure hint">{r.instructions}</p>
       {meta ? <p className="mt-2 hint">{meta}</p> : null}
     </article>
   );

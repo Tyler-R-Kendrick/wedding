@@ -14,6 +14,28 @@ const EVIL = ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>',
 
 /** Open-redirect: every outbound link a guest can obtain is https on an allowlisted host; nothing an admin (or a tampered row) enters can change that. */
 test.describe('redirect allowlist', () => {
+  /*
+   * There are no built-in gift links any more: the registry provider is unchosen, so the mocks
+   * offer nothing rather than naming one (brief §2). A case that needs a real link configures its
+   * own and deactivates it again, so the public page other specs assert stays in its pending state.
+   */
+  const withGiftLink = async (request: import('@playwright/test').APIRequestContext, id: string, body: (linkId: string) => Promise<void>) => {
+    const put = async (active: boolean, key: string) =>
+      request.post('/api/capabilities/admin_upsert_gift_link', {
+        headers: headers('admin'),
+        // A different provider from the one the /gifts page spec configures, so a row that is
+        // briefly active here can never be mistaken for that one by a concurrent worker.
+        data: { input: { id, kind: 'registry', provider: 'withjoy', label: 'Our registry on Joy', url: 'https://www.withjoy.com/sara-and-tyler', active }, idempotencyKey: key },
+      });
+    const created = await put(true, `redir-on-${id}`);
+    expect(created.status(), await created.text()).toBe(200);
+    try {
+      await body(id);
+    } finally {
+      await put(false, `redir-off-${id}`);
+    }
+  };
+
   test('handoff capabilities only ever return partner hosts, and unknown ids never leak a URL', async ({ request }) => {
     for (const name of ['list_gift_links', 'get_reservation_options']) {
       const res = await request.post(`/api/capabilities/${name}`, { data: { input: {} } });
@@ -26,9 +48,11 @@ test.describe('redirect allowlist', () => {
         expect(new URL(url).hostname, url).toMatch(PARTNER_HOSTS);
       }
     }
-    const gift = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId: 'registry-placeholder' } } });
-    expect(gift.status()).toBe(200);
-    expect(new URL((await gift.json()).handoffUrl).hostname).toMatch(PARTNER_HOSTS);
+    await withGiftLink(request, `redir-hosts-${Date.now()}`, async (linkId) => {
+      const gift = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } } });
+      expect(gift.status()).toBe(200);
+      expect(new URL((await gift.json()).handoffUrl).hostname).toMatch(PARTNER_HOSTS);
+    });
     for (const linkId of ['nope', '../../etc/passwd', 'javascript:alert(1)', 'https://evil.example']) {
       const res = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } } });
       expect([404, 422], linkId).toContain(res.status());
@@ -42,9 +66,11 @@ test.describe('redirect allowlist', () => {
   });
 
   test('the capability route never redirects', async ({ request }) => {
-    const res = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId: 'registry-placeholder' } }, maxRedirects: 0 });
-    expect(res.status()).toBe(200);
-    expect(res.headers()['location']).toBeUndefined();
+    await withGiftLink(request, `redir-noredirect-${Date.now()}`, async (linkId) => {
+      const res = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } }, maxRedirects: 0 });
+      expect(res.status()).toBe(200);
+      expect(res.headers()['location']).toBeUndefined();
+    });
   });
 
   test('admin-entered links must pass the allowlist (javascript:, data:, http, foreign and lookalike hosts are rejected)', async ({ request }) => {

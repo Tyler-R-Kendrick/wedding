@@ -31,7 +31,7 @@ export function ConfirmationCard({ lede = 'Please review before you confirm.', t
           </div>
         ))}
       </dl>
-      {disclosure ? <p className="mt-4 max-w-[65ch] hint">{disclosure}</p> : null}
+      {disclosure ? <p className="mt-4 measure hint">{disclosure}</p> : null}
       {children ? <div className="mt-5 flex flex-wrap gap-3">{children}</div> : null}
     </section>
   );

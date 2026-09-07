@@ -274,8 +274,14 @@ export function transportationTopics(maps: MapsProvider): TopicView[] {
     const view: TopicView = { ...rest };
     if (directionsTo) {
       const place = directionsTo === 'valet' ? VALET_ENTRANCE : VENUE_PLACE;
-      const google = toGuestHandoff({ provider: 'google', label: `Directions in Google Maps`, url: maps.directionsUrl(place, { mode: directionsTo === 'valet' ? 'driving' : 'transit', platform: 'google' }), opensNewTab: true, disclosure: 'Opens Google Maps.' });
-      const apple = toGuestHandoff({ provider: 'apple', label: `Directions in Apple Maps`, url: maps.directionsUrl(place, { mode: directionsTo === 'valet' ? 'driving' : 'transit', platform: 'apple' }), opensNewTab: true, disclosure: 'Opens Apple Maps.' });
+      const mode = directionsTo === 'valet' ? ('driving' as const) : ('transit' as const);
+      // Two topics each render a Google and an Apple link, so the page carries four links under two
+      // accessible names — "Directions in Google Maps" twice, going to different places by different
+      // modes. A screen-reader user listing links heard one destination offered twice. The label now
+      // says where it goes and how, which is also what a sighted guest needs.
+      const where = directionsTo === 'valet' ? 'the valet entrance (driving)' : 'the hotel (transit)';
+      const google = toGuestHandoff({ provider: 'google', label: `Directions to ${where} in Google Maps`, url: maps.directionsUrl(place, { mode, platform: 'google' }), opensNewTab: true, disclosure: 'Opens Google Maps.' });
+      const apple = toGuestHandoff({ provider: 'apple', label: `Directions to ${where} in Apple Maps`, url: maps.directionsUrl(place, { mode, platform: 'apple' }), opensNewTab: true, disclosure: 'Opens Apple Maps.' });
       if (google.ok && apple.ok) view.directions = { google: google.value, apple: apple.value };
     }
     if (officialUrl) {

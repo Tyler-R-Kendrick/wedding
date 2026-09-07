@@ -22,3 +22,10 @@ export function isPersonalizedRoute(pathname: string): boolean {
 export const THEME_HEADER = 'x-theme';
 /** Header the proxy sets when a lifecycle preview is requested (query or cookie); verified server-side. */
 export const PREVIEW_HEADER = 'x-lifecycle-preview';
+/**
+ * Header the proxy sets with the request's own pathname. A Next.js layout receives no pathname and
+ * cannot take props from the page below it, so the guest layout — which owns the shell for
+ * /your-weekend, /rsvp, /transportation and /trip — has no other way to build a nav that knows
+ * which page it is on. Like the two above it is overwritten from the request, never trusted inbound.
+ */
+export const PATHNAME_HEADER = 'x-pathname';

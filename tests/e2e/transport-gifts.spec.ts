@@ -29,22 +29,42 @@ test.describe('gifts', () => {
   // Parameterised by design, as the travel spec is and for the same reason: /gifts now renders
   // through the theme engine, so a `goto('/gifts')` with no `?theme=` would exercise Gilded Hour
   // only and leave Conservatory's recipe — and its axe pass — entirely unvisited.
+  //
+  // The page shows BOTH states at once, which is the point of the case: the registry link is
+  // configured here through the admin capability, and the adventure fund is left unconfigured. A
+  // configured link is a real hand-off naming a real provider; an unconfigured one is an editorial
+  // "still to come" that names nobody. The built-in rows this replaces pointed at zola.com and made
+  // the page say "via Zola" for a registry the couple have not chosen (brief §2: NOT settled).
   for (const theme of THEMES) {
-    test(`frames "next adventures" and hands off with the provider named, on partner hosts only (${theme})`, async ({ page }) => {
+    test(`frames "next adventures", hands off only where a provider is configured (${theme})`, async ({ page, request }) => {
+      const configured = await request.post('/api/capabilities/admin_upsert_gift_link', {
+        headers: apiAs('admin'),
+        data: { input: { id: 'e2e-registry', kind: 'registry', provider: 'theknot', label: 'Our registry on The Knot', url: 'https://www.theknot.com/us/sara-and-tyler', note: 'Physical wishlist' }, idempotencyKey: `e2e-gift-${theme}-${Date.now()}` },
+      });
+      expect(configured.status(), await configured.text()).toBe(200);
+
       await page.goto(`/gifts?theme=${theme}`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
-      const cards = page.locator('article[data-handoff-provider]');
-      await expect(cards).toHaveCount(2);
-      await expect(cards.first()).toContainText('via Zola');
-      const link = cards.first().getByRole('link');
+      const card = page.locator('article[data-handoff-provider="theknot"]');
+      await expect(card).toHaveCount(1);
+      await expect(card).toContainText('via The Knot');
+      const link = card.getByRole('link');
       await expect(link).toHaveAttribute('target', '_blank');
       await expect(link).toHaveAttribute('rel', /noopener/);
       for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
         expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
         expect(href.startsWith('https://')).toBe(true);
       }
+
+      // The unconfigured kind names no company and offers no destination — it is a labelled
+      // placeholder saying the couple are still deciding.
+      const adventures = page.locator('#gifts-adventures');
+      await expect(adventures.locator('[data-placeholder="true"]')).toHaveCount(1);
+      await expect(adventures.locator('article[data-handoff-provider]')).toHaveCount(0);
+
       const text = await page.locator('main').innerText();
       expect(text).not.toMatch(/cash\s*fund|donat/i);
+      expect(text).not.toContain('TODO(');
       // The site is never the merchant of record: gifts are a hand-off, never a checkout. This
       // used to count `input, iframe, form` across the whole document, which held only because
       // /gifts rendered a bare <main> with no site chrome. Now that it renders inside the active

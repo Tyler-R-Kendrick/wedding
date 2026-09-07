@@ -15,7 +15,7 @@ interface DraftData {
 
 type Step = { name: 'idle' } | { name: 'drafting' } | { name: 'review'; draft: DraftData; token: string; expiresAt: string } | { name: 'claiming' } | { name: 'done'; redemptionKind: 'link' | 'code' } | { name: 'error'; message: string; retry: boolean };
 
-const BUTTON = 'inline-flex min-h-11 items-center rounded-full px-7 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60';
+const BUTTON = 'inline-flex min-h-11 items-center rounded-[var(--radius-button,2px)] px-7 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60';
 const PRIMARY = `${BUTTON} bg-primary text-neutral`;
 const GHOST = `${BUTTON} border border-primary/40 text-primary`;
 
@@ -84,12 +84,12 @@ export function ClaimBenefitFlow({ entitlementId, program }: { entitlementId: st
   return (
     <div className="mt-4" data-claim-step={step.name}>
       {step.name === 'error' ? (
-        <p role="alert" className="mb-3 max-w-[65ch]">
+        <p role="alert" className="mb-3 measure">
           {step.message}
         </p>
       ) : null}
       {step.name === 'done' ? (
-        <p role="status" className="mb-3 max-w-[65ch]">
+        <p role="status" className="mb-3 measure">
           Claimed. Your {step.redemptionKind === 'link' ? 'ride link' : 'ride code'} is below.
         </p>
       ) : null}

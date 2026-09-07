@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Placeholder } from '@/components/provenance/Placeholder';
 
 export interface UnavailableCardProps {
   heading: string;
@@ -17,13 +18,13 @@ export function UnavailableCard({ heading, message, contactRoute = '/ask-us', no
         <h3 className="text-xl">{heading}</h3>
         <p className="hint">not bookable here yet</p>
       </div>
-      {note ? <p className="mt-2 max-w-[65ch] text-primary">{note}</p> : null}
+      {note ? <p className="mt-2 measure text-primary">{note}</p> : null}
       {placeholder ? (
-        <p className="mt-2 max-w-[65ch] italic text-primary">
-          <span className="sr-only">Placeholder: </span>Sara and Tyler still have to add this one.
-        </p>
+        <div className="mt-2 measure">
+          <Placeholder>this one is still ours to add</Placeholder>
+        </div>
       ) : null}
-      <p className="mt-3 max-w-[65ch]">{message}</p>
+      <p className="mt-3 measure">{message}</p>
       <p className="mt-3">
         <Link className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" href={contactRoute}>
           Ask us

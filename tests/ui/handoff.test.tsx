@@ -25,7 +25,11 @@ describe('handoff cards', () => {
     expect(link.getAttribute('rel')).toContain('noreferrer');
     expect(screen.getByText(/via Zola/)).toBeTruthy();
     expect(screen.getByText(/Test mode/)).toBeTruthy();
-    expect(screen.getByText(/Not final yet/)).toBeTruthy();
+    // The placeholder note is the shared component now, not a hand-rolled <p> whose only "this is
+    // a note" signal was an `sr-only` word. Assert the contract a machine can check — the visible
+    // stamp naming the couple, plus role and data attribute — rather than one sentence's wording.
+    expect(screen.getByText(PLACEHOLDER_LABEL)).toBeTruthy();
+    expect(document.querySelector('[data-placeholder="true"][role="note"]')).toBeTruthy();
     expect(document.querySelector('.print\\:block')?.textContent).toBe(handoff.url);
     expect(document.querySelector('[data-handoff-host]')?.getAttribute('data-handoff-host')).toBe('www.zola.com');
   });
@@ -40,7 +44,7 @@ describe('handoff cards', () => {
     expect(screen.getByRole('link', { name: 'Ask us' }).getAttribute('href')).toBe('/ask-us');
     expect(screen.getByText(/not bookable here yet/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('a restaurant we love');
-    expect(screen.getByText(/Sara and Tyler still have to add this one/)).toBeTruthy();
+    expect(screen.getByText(PLACEHOLDER_LABEL)).toBeTruthy();
     expect(document.body.textContent ?? '').not.toContain('TODO(');
     render(<UnavailableCard heading="X" message="m" />);
     expect(screen.getAllByRole('link', { name: 'Ask us' }).length).toBeGreaterThan(1);
