@@ -139,6 +139,22 @@ of mine has not survived contact with a reviewer.
   form has no `action`. I added `name="q"` to the input so the query at least survives a submit;
   the round trip is a feature, not a defect fix, and belongs with the concierge work at level 12.
 
+**Two things the hostile pass caught in my own fix, after the reviewers had gone.**
+
+1. **I nearly squeezed the admin queue to a reading measure.** The Conservatory reviewer's remedy for
+   the column drift was `width: 100%` *plus* the guest tree's `--wp-frame` padding formula, and I
+   applied both. But `MediaPage` is also the shell for `/admin/media` — the moderation queue,
+   duplicates, import and metrics — and those are data screens with wide tables and image grids.
+   Measured: the frame would have cut admin content to **736px inside a 1224px column**. The drift is
+   fixed by `width: 100%` alone; the reading measure belongs on the prose that needs it. Re-measured
+   after scoping it back: all three pages at x=108 w=1224, admin content 1192px, and the guest lede
+   at 714px — which is `--wp-measure` actually applying, against the 561px fallback it took before.
+2. **Defining `--wp-measure` changes already-merged pages.** Five call sites took the `33rem`
+   fallback, and two of them are the level-07 and level-09 guest surfaces, not this level's. Giving
+   the token its real 42rem value widens their measure from ~53 characters to ~65-70 — which is the
+   correction DESIGN.md asks for, and is why the token exists. It is still a change to merged pages
+   made by a level that does not own them, so it is named here rather than left to be discovered.
+
 ## 7. Accessibility and performance
 
 - **axe 0 serious/critical across 12 combinations** (3 routes x 2 designs x 390/1440), re-measured

@@ -32,7 +32,14 @@
   max-width: 72rem;
   margin-inline: auto;
   padding-block: var(--spacing-lg, 24px) var(--spacing-3xl, 96px);
-  padding-inline: max(var(--spacing-md, 16px), calc((100% - var(--wp-frame, 46rem)) / 2));
+
+  /* Plain gutters, NOT the guest tree's `--wp-frame` formula. `MediaPage` is also the shell for
+     /admin/media — the moderation queue, duplicates, import and metrics — and those are data
+     screens with wide tables and image grids. Padding them to a 46rem reading frame would have cut
+     the queue to 736px inside a 1224px column to fix a guest-page measure. The drift the review
+     measured is fixed by `width: 100%` above; the reading measure belongs on the prose that needs
+     it (`.media-lede`, via `--wp-measure`), not on every surface that happens to share this shell. */
+  padding-inline: var(--spacing-md, 16px);
   color: var(--color-on-surface, var(--color-primary));
   font-family: inherit;
 }
