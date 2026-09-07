@@ -83,20 +83,34 @@ The queue shows the group once and stops asking as soon as one member lands.
 
 ## The loop, end to end
 
-The page is a work queue, not a form to complete. It is useful with **zero** actions: the
-sandbox is already walking the list.
+The page is a status board for work already under way, not a form to complete. Most rows say
+*Claude is handling this* and carry no control at all.
 
-1. **Claude runs `npm run secrets:acquire`** — no plan needed, no question asked — and
-   mirrors `.secrets/outbox.json` into the page's store, so every credential carries a live
-   status chip and anything needing a human carries an **Authorize** button.
-2. **You do nothing, or one of two things:**
-   - *Have a key already?* Type it in the field on its row and press **Seal and send** once.
-     Every value typed anywhere on the page is sealed in that single press. Dropping a
-     `.env` does the same for all of them at once.
-   - *See an Authorize button?* Press it. The link carries the code inside it
-     (`verification_uri_complete`), so nothing is ever typed on the provider's site either.
-3. **Claude runs `npm run secrets:resume`**, exchanges anything you approved, writes `.env`,
+1. **Claude runs `npm run secrets:acquire`** — no plan needed, no question asked — and mirrors
+   `.secrets/outbox.json` into the page's store. Each credential's status carries a structured
+   `nextAction: {method, reason}`, so the page states what is happening in plain language
+   without parsing failure prose.
+2. **A row grows exactly one button, only where a provider will not deal with software:**
+   - **Authorize** — a device or OAuth link. The code is carried inside the link
+     (`verification_uri_complete`), so nothing is typed on the provider's site either.
+   - **Sign in once** — writes `handoffs/<credential>` to the store. Claude opens the relay,
+     you sign in as yourself, and it reads the key off the dashboard from then on. This is the
+     path for anyone who has never minted an API key: you only need your own password.
+   - **Apply for access** — the two partner applications no endpoint can mint.
+3. **Pasting is the last resort, and looks like it.** Every row has a quiet *I already have a
+   key* link that reveals its fields in place; a seal bar appears only once something is typed.
+   Dropping a `.env` under "If you already have keys" does the whole set at once.
+4. **Claude runs `npm run secrets:resume`**, exchanges anything you approved, writes `.env`,
    and reports the variable *names* that landed.
+
+### What the agent must watch
+
+| Store path | Written by | Meaning |
+|---|---|---|
+| `status/<credential>` | agent | live state + `nextAction` the page renders |
+| `ceremonies/<credential>` | agent | a link waiting for a human |
+| `handoffs/<credential>` | **the page** | "sign me in" — start `browser-capture.mjs relay <host>` |
+| `envelopes/<VAR>` | the page | a sealed value to apply |
 
 An authorization-code provider redirects back to the page, which seals the one-time code
 with the sandbox's public key — worthless without the PKCE verifier that never left the
@@ -140,8 +154,12 @@ rather than by CSS selector, because dashboard markup drifts and key formats do 
 So the ladder is honest about falling through today — and the moment one of these publishes
 an `agent_auth` block, `acquire.mjs` picks it up with no code change. What *does* work now
 without a human: every `generate`/`derive`/`detect` variable, Openverse's anonymous
-registration endpoint, Supabase and Cloudflare through their MCP servers, and Uber's dynamic
-client registration (`auth.uber.com` publishes `registration_endpoint`).
+registration endpoint, and Supabase and Cloudflare through their MCP servers.
+
+One correction worth recording: `auth.uber.com` *advertises* a `registration_endpoint` in its
+RFC 8414 metadata, but posting to it returns 404 — the endpoint is published, not open. The
+ladder discovers that at run time and falls through to the sign-in handoff, which is why you
+should trust the page's live rows over any table in this document.
 
 ## Durable key (future sessions self-apply)
 

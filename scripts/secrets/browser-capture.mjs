@@ -95,6 +95,15 @@ export const RECIPES = {
     target: 'S3_SECRET_ACCESS_KEY',
     manualNote: 'R2 shows the access key id and secret on one screen; the recipe reads both.',
   },
+  'cloudflare-stream': {
+    host: 'dash.cloudflare.com',
+    keysUrl: 'https://dash.cloudflare.com/?to=/:account/stream',
+    create: [/create api token/i, /create token/i],
+    confirm: [/^create api token$/i, /^create$/i],
+    keyPattern: /[A-Za-z0-9_-]{40,}/,
+    target: 'CLOUDFLARE_STREAM_API_TOKEN',
+    manualNote: 'The account id is in the dashboard URL; the customer code appears on the Stream page.',
+  },
   'supabase-dashboard': {
     host: 'supabase.com',
     keysUrl: 'https://supabase.com/dashboard/project/_/settings/database',

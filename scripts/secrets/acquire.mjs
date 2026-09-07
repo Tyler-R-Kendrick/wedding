@@ -232,7 +232,7 @@ async function runLadder(entry, ctx) {
       const result = await rung(cred, step, ctx);
       return { credential: cred.id, state: 'acquired', ...result, attempts };
     } catch (err) {
-      attempts.push({ method: step.method, outcome: err.message });
+      attempts.push({ method: step.method, outcome: err.message, code: err.code || null });
       if (err.code === 'CEREMONY_PENDING') return { credential: cred.id, state: 'waiting-on-you', method: step.method, attempts };
       if (err.code === 'AGENT_TASK') { attempts[attempts.length - 1].task = err.task; continue; }
     }
@@ -309,6 +309,23 @@ async function commandResume() {
 
 /* ----------------------------------------------------------------- report */
 
+/**
+ * Which rung is actually next for a credential, and whether it needs a person. A rung that
+ * failed only for want of a sign-in is still THE rung to offer — "no session yet" is an
+ * invitation, not a dead end, and the page must not read it as "paste it yourself".
+ */
+export function nextActionFor(cred, result) {
+  const attempts = result?.attempts || [];
+  const handoff = attempts.find((a) => a.code === 'NEEDS_HANDOFF');
+  if (handoff) return { method: handoff.method, reason: 'needs you to sign in once, then it takes the key itself' };
+  const agentTask = attempts.find((a) => a.code === 'AGENT_TASK');
+  if (agentTask) return { method: agentTask.method, reason: agentTask.outcome };
+  const exhausted = new Set(attempts.filter((a) => !a.code).map((a) => a.method));
+  const rung = cred.ladder.find((step) => !exhausted.has(step.method)) || cred.ladder[cred.ladder.length - 1];
+  const blocked = attempts.find((a) => a.method === rung.method);
+  return { method: rung.method, reason: blocked?.outcome || null };
+}
+
 /** The file the agent mirrors into the page's store: ceremonies to click, status chips. */
 async function writeOutbox({ autofilled, results }) {
   const ceremonies = await readJson(CEREMONIES, {});
@@ -324,6 +341,7 @@ async function writeOutbox({ autofilled, results }) {
       of: cred.vars.length,
       state: r?.state || (set.length === cred.vars.length ? 'already-set' : 'queued'),
       method: r?.method || null,
+      nextAction: nextActionFor(cred, r),
       detail: r?.detail || r?.attempts?.map((a) => `${a.method}: ${a.outcome}`).join(' · ') || null,
       at: new Date().toISOString(),
     };

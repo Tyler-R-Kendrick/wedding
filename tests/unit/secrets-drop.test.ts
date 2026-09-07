@@ -172,3 +172,66 @@ beforeAll(async () => {
   const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
   planIds = resolvePlan().map((p) => p.cred.id);
 });
+
+describe('what the page is told to offer', () => {
+  it('keeps offering the sign-in rung when it only failed for want of a session', async () => {
+    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
+    const resend = CREDENTIALS.find((c) => c.id === 'resend')!;
+    const action = nextActionFor(resend, {
+      attempts: [
+        { method: 'authmd', outcome: 'declines agentic registration' },
+        { method: 'browser', outcome: 'no signed-in session for resend.com', code: 'NEEDS_HANDOFF' },
+      ],
+    });
+    // "No session yet" is an invitation to sign in, never a reason to demand a paste.
+    expect(action.method).toBe('browser');
+    expect(action.reason).toMatch(/sign in once/i);
+  });
+
+  it('falls through to the human rung only once every automatic one is genuinely spent', async () => {
+    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
+    const anthropic = CREDENTIALS.find((c) => c.id === 'anthropic')!;
+    expect(nextActionFor(anthropic, {
+      attempts: [
+        { method: 'authmd', outcome: 'no agent_auth metadata' },
+        { method: 'browser', outcome: 'the saved session has expired', code: 'NEEDS_HANDOFF' },
+      ],
+    }).method).toBe('browser');
+    expect(nextActionFor(anthropic, {
+      attempts: [
+        { method: 'authmd', outcome: 'no agent_auth metadata' },
+        { method: 'browser', outcome: 'signed in, but no value matching the key format appeared' },
+      ],
+    }).method).toBe('manual');
+  });
+
+  it('starts at the top of the ladder before anything has been tried', async () => {
+    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
+    for (const cred of CREDENTIALS) {
+      expect(nextActionFor(cred, undefined).method, cred.id).toBe(cred.ladder[0].method);
+    }
+  });
+});
+
+describe('the ladder only names rungs that exist', () => {
+  it('has a browser recipe for every recipe the registry references', async () => {
+    const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
+    for (const cred of CREDENTIALS) {
+      for (const step of cred.ladder) {
+        if (step.method !== 'browser') continue;
+        expect(RECIPES[step.recipe], `${cred.id} points at a missing recipe "${step.recipe}"`).toBeDefined();
+      }
+    }
+  });
+
+  it('points each recipe at a variable its credential actually fills', async () => {
+    const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
+    for (const cred of CREDENTIALS) {
+      for (const step of cred.ladder) {
+        if (step.method !== 'browser') continue;
+        const target = RECIPES[step.recipe]?.target;
+        expect(cred.vars, `${cred.id}'s recipe writes ${target}, which it does not own`).toContain(target);
+      }
+    }
+  });
+});

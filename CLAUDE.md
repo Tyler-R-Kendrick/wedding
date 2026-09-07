@@ -82,7 +82,10 @@ npm run secrets:page       # rebuild the Secret Drop artifact after a registry c
 
 - The agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
   `ceremonies/*`) so pending links become buttons, and drop sealed OAuth codes into
-  `.secrets/inbox/` before `secrets:resume`.
+  `.secrets/inbox/` before `secrets:resume`. Check `handoffs/*` too — that is the couple
+  pressing "Sign in once"; answer it with `node scripts/secrets/browser-capture.mjs relay <host>`.
+- Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
+  resort, for someone who already holds a key and would rather not wait.
 - Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.
 - Never read, print, or commit `.env` or `.secrets/private*`; `.claude/settings.json` denies
   both. Report variable *names* and lengths, never values.

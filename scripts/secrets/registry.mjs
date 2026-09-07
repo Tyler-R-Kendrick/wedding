@@ -35,18 +35,23 @@ export const METHOD_RANK = {
   device: 6, oauth: 7, browser: 8, manual: 9,
 };
 
-/** How each method reads in the UI and in the agent's report. */
+/**
+ * How each rung reads to a person. `doing` is the sentence the page puts first — what the
+ * agent is doing about this credential right now — because for anyone who has never minted
+ * an API key, "what is being handled for me" is the useful fact and "paste one" is not.
+ * `asksYou` marks the rungs that genuinely need a human, and `act` names that one action.
+ */
 export const METHOD_LABELS = {
-  generate: { short: 'generated', page: 'Generated in the sandbox', human: 'nothing to do' },
-  derive: { short: 'derived', page: 'Derived from what is already set', human: 'nothing to do' },
-  detect: { short: 'detected', page: 'Detected on this machine', human: 'nothing to do' },
-  mcp: { short: 'provisioned', page: 'Provisioned through a connected MCP server', human: 'nothing to do' },
-  authmd: { short: 'auth.md', page: 'Agent registers itself (auth.md)', human: 'one click, only if the provider asks you to claim it' },
-  register: { short: 'registered', page: 'Agent self-registers with the provider', human: 'nothing to do' },
-  device: { short: 'device link', page: 'You open one link and approve', human: 'one click' },
-  oauth: { short: 'OAuth link', page: 'You open one link and approve', human: 'one click' },
-  browser: { short: 'browser', page: 'You authorize, then the agent reads the dashboard', human: 'one sign-in' },
-  manual: { short: 'paste', page: 'Paste it yourself', human: 'copy and paste' },
+  generate: { short: 'generated', doing: 'Minting it here in the sandbox', human: 'nothing to do', asksYou: false },
+  derive: { short: 'derived', doing: 'Working it out from what is already set', human: 'nothing to do', asksYou: false },
+  detect: { short: 'detected', doing: 'Finding it on this machine', human: 'nothing to do', asksYou: false },
+  mcp: { short: 'provisioned', doing: 'Provisioning it through a connected service', human: 'nothing to do', asksYou: false },
+  authmd: { short: 'auth.md', doing: 'Registering itself with the provider (auth.md)', human: 'nothing, unless the provider asks you to confirm', asksYou: false },
+  register: { short: 'registered', doing: 'Signing itself up with the provider', human: 'nothing to do', asksYou: false },
+  device: { short: 'device link', doing: 'Waiting for you to approve one link', human: 'press Authorize', asksYou: true, act: 'Authorize' },
+  oauth: { short: 'oauth link', doing: 'Waiting for you to approve one link', human: 'press Authorize', asksYou: true, act: 'Authorize' },
+  browser: { short: 'sign-in', doing: 'Ready to sign in as you and fetch the key itself', human: 'sign in once', asksYou: true, act: 'Sign in once' },
+  manual: { short: 'paste', doing: 'No way to get this without you', human: 'paste it', asksYou: true, act: 'Paste it' },
 };
 
 /**
