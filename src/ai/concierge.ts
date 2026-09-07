@@ -43,6 +43,19 @@ export interface ConciergeInput {
   emit?: (event: ConciergeEvent) => void | Promise<void>;
   registry?: CapabilityRegistryImpl;
   config?: Partial<AiConfig>;
+  /**
+   * `answer` (the default) generates on the server. `evidence` stops at the seam just before
+   * generation and emits the contract and evidence instead, for a model running in the guest's own
+   * browser (the W3C Prompt API). Nothing after that seam is skipped — the draft comes back as
+   * `draft` and takes the same verifier, the same protected-fact gates and the same persistence.
+   */
+  mode?: 'answer' | 'evidence';
+  /**
+   * A draft written elsewhere — today, on the guest's device. Retrieval is re-run and the draft is
+   * verified against those fresh sources, so a forged evidence block buys nothing: a sentence is
+   * shown only if the server can still support it from what the server itself retrieved.
+   */
+  draft?: string;
 }
 
 export const MAX_STORED_ANSWER_CHARS = 2_000;
@@ -211,6 +224,18 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   // longer exists, and a model copying it would attach an old citation to a new source.
   const history: ModelMessage[] = session.turns.slice(-6).map((t) => ({ role: t.role, content: t.role === 'assistant' ? stripMarkers(t.text) : t.text }));
   const userTurn = `${renderQuestion(question)}\n\n${renderContext(ordered)}`;
+  const system = systemPromptFor({ principalKind: ctx.principal.kind, toolNames: available.map((t) => t.descriptor.name) });
+
+  // The seam. Everything above needs no model at all — routing is deterministic, the tools ran
+  // through `invoke` under the caller's own principal, and the evidence has already been deduped,
+  // injection-scanned and ordered by trust. Only generation needs one, which is why a model in the
+  // guest's browser can take this over and no key has to exist for the concierge to work.
+  if (input.mode === 'evidence') {
+    await emit({ type: 'evidence', system, userTurn });
+    // Deliberately not `finish`: no answer row, no session turn. This half of the exchange produced
+    // no answer, and the phase that does will write both.
+    return { sessionId: session.id, answerId, status: 'partial', text: '', sources: [], confirmations, intent: plan.intent, toolsSelected: runs.map((r) => r.name), toolsDenied: [...toolsDenied], dropped: 0, securityAlerts, latencyMs: Math.round(performance.now() - started), evidence: { system, userTurn } };
+  }
   const modelTools = modelToolsFor(available, async (name, rawInput) => {
     const blocks = await runTool(name, rawInput, 'model');
     for (const b of blocks) {
@@ -235,16 +260,23 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     kept.push(s);
   };
   try {
-    const result = streamText({
-      model: models.chat,
-      system: systemPromptFor({ principalKind: ctx.principal.kind, toolNames: available.map((t) => t.descriptor.name) }),
-      messages: [...history, { role: 'user', content: userTurn }],
-      tools: modelTools,
-      stopWhen: stepCountIs(1 + cfg.AI_MAX_TOOL_CALLS),
-      maxOutputTokens: 600,
-      abortSignal: AbortSignal.timeout(45_000),
-    });
-    for await (const delta of result.textStream) raw += delta;
+    if (input.draft !== undefined) {
+      // Written on the guest's device. It is a draft, not an answer: it has earned nothing yet and
+      // goes through the same verifier below as anything the server model writes. Capped at the
+      // same budget so a large paste cannot make verification expensive.
+      raw = truncate(input.draft.trim(), MAX_STORED_ANSWER_CHARS);
+    } else {
+      const result = streamText({
+        model: models.chat,
+        system,
+        messages: [...history, { role: 'user', content: userTurn }],
+        tools: modelTools,
+        stopWhen: stepCountIs(1 + cfg.AI_MAX_TOOL_CALLS),
+        maxOutputTokens: 600,
+        abortSignal: AbortSignal.timeout(45_000),
+      });
+      for await (const delta of result.textStream) raw += delta;
+    }
     refusedBySentinel = isRefusalSentinel(raw);
     if (!refusedBySentinel && raw.trim()) {
       for (const s of citedSentences(raw)) {

@@ -182,3 +182,123 @@ describe('concierge panel', () => {
     expect(document.querySelector('.cq__log')?.hasAttribute('role')).toBe(false);
   });
 });
+
+/**
+ * The on-device path in the browser. `LanguageModel` is a global in Chrome; stubbing it is exactly
+ * what a supporting browser looks like from here. What matters is that the panel asks for evidence,
+ * writes the sentences locally, sends the draft back for verification, and — whenever any of that
+ * fails — still ends up showing the server's own verified answer.
+ */
+describe('the concierge on the guest\'s own device', () => {
+  const evidence: ConciergeEvent[] = [
+    { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+    { type: 'status', stage: 'routing', tools: ['site_status'] },
+    { type: 'evidence', system: 'Answer only from the evidence.', userTurn: 'Q: when?\n\n[S1] The wedding is on Saturday, July 17, 2027.' },
+  ];
+
+  /** A fetch that answers the evidence request first and the draft request second. */
+  function stubTwoPhase(second: ConciergeEvent[] = grounded) {
+    const bodies: Record<string, unknown>[] = [];
+    const encoder = new TextEncoder();
+    const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      bodies.push(body);
+      const events = body.mode === 'evidence' ? evidence : second;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (const e of events) controller.enqueue(encoder.encode(encodeEvent(e)));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+      );
+    });
+    return { fetch, bodies };
+  }
+
+  /** Records what the device was grounded with, so a test can prove it was not the bare question. */
+  function stubDevice(prompt: (input: string) => Promise<string>) {
+    const seen = { system: '', asked: '' };
+    vi.stubGlobal('LanguageModel', {
+      availability: async () => 'available',
+      create: async (options?: { initialPrompts?: { role: string; content: string }[] }) => {
+        seen.system = options?.initialPrompts?.find((p) => p.role === 'system')?.content ?? '';
+        return {
+          prompt: (input: string) => { seen.asked = input; return prompt(input); },
+          destroy: () => {},
+        };
+      },
+    });
+    return seen;
+  }
+
+  it('asks for evidence, answers on device, and sends the draft back to be verified', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    const seen = stubDevice(async () => 'The wedding is on Saturday, July 17, 2027 [S1].');
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]).toMatchObject({ mode: 'evidence', message: 'when is the wedding?' });
+    // The device answered under the server's closed-world contract, from the server's evidence —
+    // not from the bare question, which is the whole difference between this and a chatbot.
+    expect(seen.system).toBe('Answer only from the evidence.');
+    expect(seen.asked).toContain('[S1] The wedding is on Saturday, July 17, 2027.');
+    // The second request carries the draft and the session the first one opened.
+    expect(bodies[1]).toMatchObject({ draft: 'The wedding is on Saturday, July 17, 2027 [S1].', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV' });
+    expect(bodies[1]).not.toHaveProperty('mode');
+  });
+
+  it('falls back to the server when the device cannot answer', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    stubDevice(async () => { throw new Error('out of memory'); });
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    // Still two requests, but the second one asks the server to write the answer itself.
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).not.toHaveProperty('draft');
+  });
+
+  it('does not ask twice when the server refused before handing over evidence', async () => {
+    const refusal: ConciergeEvent[] = [
+      { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+      { type: 'refusal', message: 'That is personal to your invitation.', links: [{ label: 'Sign in', href: '/your-weekend' }] },
+      { type: 'done', status: 'refused', dropped: 0, latencyMs: 4 },
+    ];
+    const encoder = new TextEncoder();
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body ?? '{}')));
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (const e of refusal) controller.enqueue(encoder.encode(encodeEvent(e)));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    stubDevice(async () => 'anything at all');
+    await open();
+    await ask('which table am I at?');
+    await screen.findByText(/personal to your invitation/);
+    expect(bodies).toHaveLength(1);
+  });
+
+  it('uses the server alone on a browser with no Prompt API', async () => {
+    const fetch = stubStream(grounded);
+    vi.stubGlobal('fetch', fetch);
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).not.toHaveProperty('mode');
+  });
+});

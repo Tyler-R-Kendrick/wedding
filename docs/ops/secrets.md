@@ -210,6 +210,15 @@ The two options above every account are the point of the slot:
    device. It is the recommended option, and the hosted providers are the fallback for
    browsers without it — not the other way round. `NEXT_PUBLIC_AI_BROWSER_MODEL=off` disables it.
 
+   This is wired, not aspirational. The concierge route takes `{ mode: 'evidence' }`, runs
+   routing, tool authorization, retrieval and injection quarantine, and stops at the one step
+   that needs a model — handing the browser the same closed-world contract and the same
+   evidence blocks the server model would have got. The draft comes back as `{ draft }`,
+   retrieval runs again, and every sentence faces the same verifier: a device that invents a
+   time or a room has that sentence dropped, exactly as a hosted model would.
+   See `docs/architecture/ai-grounding.md` §8a. Answers stay cited either way, and any failure
+   — no Prompt API, a declined download, a prompt that throws — falls through to the server.
+
 2. **A harness you're already signed in to.** `npm run secrets:harness` looks for Claude Code,
    Codex, GitHub Copilot and Ollama and reports what it finds; `--apply` borrows the first
    usable session into `.env`:

@@ -29,6 +29,11 @@ question
 Nothing the model writes reaches the guest before step 8 finishes. The panel shows progress
 (`status` events) while it happens; it never streams an unverified draft.
 
+**Step 6 is the only step that needs a model at all.** Routing is deterministic, the tools run under
+the caller's own principal, and the verifier in step 7 is a lexical gate over the retrieved text — so
+the pipeline can hand step 6 to a model running in the guest's own browser and lose none of the
+guarantees. See §8a.
+
 ## 1. Where facts come from, in order
 
 | Source | Module | Trust | Used for |
@@ -148,6 +153,41 @@ prove it is off in every other combination.
 present itself as the AI to widen what it may call. Order of checks: per-IP limiter, principal,
 same-origin JSON for signed-in callers (CSRF) and a JSON content type for everyone, per-principal
 `concierge` limiter, then a 16 KB streamed body cap.
+
+### 8a. Evidence mode — the model in the guest's browser
+
+Chrome ships a language model behind the W3C Prompt API. When the guest has one, it is the best
+answer to "which model powers the concierge": nothing is billed, no key exists to leak, and the
+question never leaves their device. It is the first option in the Secret Drop's concierge slot for
+that reason, and `NEXT_PUBLIC_AI_BROWSER_MODEL` (default on) is what turns it on.
+
+An on-device model does **not** get to be trusted, so it is spliced in at step 6 and nowhere else.
+One question becomes two requests to the same route:
+
+| | body | server does | client does |
+|---|---|---|---|
+| 1 | `{ message, mode: 'evidence' }` | steps 1–5, then emits `{ type: 'evidence', system, userTurn }` and stops | prompts the on-device model with exactly that contract and evidence |
+| 2 | `{ message, draft, sessionId }` | steps 1–5 **again**, then 7–9 over the draft | renders the verified sentences, as with any answer |
+
+Two properties make this safe, and both come from re-running retrieval in phase 2 rather than
+trusting anything the client returns:
+
+- **A forged evidence block buys nothing.** Sentences are verified against the sources the *server*
+  just retrieved. A draft citing `[S1]` survives only if the server's own `S1` supports it.
+- **A device that goes off-contract is dropped, not shown.** The protected-fact gate, the live-data
+  stamping and the citation renumbering all run over the draft unchanged; `tests/integration/
+  ai-concierge.test.ts` asserts that an invented time and room do not survive.
+
+Phase 1 writes no `ai_answers` row and appends no session turn: it produced no answer, and the phase
+that does writes both. A guest whose device fails mid-way leaves nothing behind. If phase 1 refuses
+before the seam (an anonymous personal question), no evidence is emitted and the client stops there
+rather than asking twice.
+
+The cost is honest and worth naming: the on-device path runs routing and retrieval twice and spends
+two `concierge` rate-limiter tokens per question. It spends no model tokens at all.
+
+Everything falls back. No Prompt API, a model the browser declines to download, a prompt that
+throws — each ends in phase 2 with no `draft`, and the server writes the answer itself.
 
 `ask_concierge` is the same pipeline as a non-streaming capability for the UI and WebMCP. It is
 deliberately **not** exposed to the model (`exposure.ai: false`): a model must not recurse into the

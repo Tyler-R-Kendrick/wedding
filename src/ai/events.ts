@@ -10,6 +10,14 @@ export type ConciergeEvent =
   | { type: 'status'; stage: 'routing' | 'retrieving' | 'generating' | 'verifying'; tools?: string[] }
   | { type: 'text'; text: string }
   | { type: 'sources'; sources: AnswerSource[] }
+  /**
+   * Evidence mode only (`{ mode: 'evidence' }`): the closed-world contract and the retrieved
+   * evidence, handed to a model running in the guest's own browser. Routing, tool authorization,
+   * injection quarantine and trust ordering have all already happened on the server; what crosses
+   * here is exactly what the server model would have been given, and nothing the guest writes back
+   * is believed — the draft returns for verification against freshly retrieved sources.
+   */
+  | { type: 'evidence'; system: string; userTurn: string }
   | { type: 'confirmation'; card: ConfirmationCard }
   | { type: 'navigate'; route: string; highlight?: string }
   | { type: 'refusal'; message: string; links: AnswerLink[] }

@@ -66,5 +66,10 @@ export interface ConciergeResult {
   toolsDenied: string[];
   dropped: number;
   securityAlerts: number;
+  /**
+   * Evidence mode only: the contract and evidence a model in the guest's browser is to answer from.
+   * Absent on every normal answer.
+   */
+  evidence?: { system: string; userTurn: string };
   latencyMs: number;
 }

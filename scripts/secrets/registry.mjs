@@ -200,7 +200,10 @@ const RAW_SLOTS = [
       { id: 'browser', name: 'The guest\'s own browser', recommended: true, note: 'On-device model, no key, nothing billed, nothing leaves their phone', host: null, ceremony: 'agent',
         ladder: [{ method: 'derive' }],
         secrets: [], fills: { NEXT_PUBLIC_AI_BROWSER_MODEL: 'on' },
-        note2: 'Needs a browser with the Prompt API; the site falls back to whichever option is set below.' },
+        note2: 'Needs a browser with the Prompt API; the site falls back to whichever option is set below.',
+        // Not a marketing line: the server hands the browser its evidence and verifies the draft it
+        // writes (docs/architecture/ai-grounding.md §8a). Answers stay cited either way.
+        evidence: 'src/lib/ai/browser-model.ts + POST /api/ai/chat { mode: "evidence" }' },
       // Ambient auth: a session this machine already holds, borrowed rather than issued.
       { id: 'harness', name: 'A harness you\'re signed in to', note: 'Borrows Claude Code, Codex, Copilot or Ollama — no new key at all', host: null, ceremony: 'agent',
         ladder: [{ method: 'harness' }, { method: 'manual' }],

@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { CHAT_ROUTE, MAX_QUESTION_CHARS } from "./constants";
+import { askOnDevice, isSupported } from "@/lib/ai/browser-model";
+import { publicEnv } from "@/lib/env.public";
+import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS } from "./constants";
 import "./concierge.css";
 
 /**
@@ -40,8 +42,54 @@ const STAGE_LABEL: Record<string, string> = {
   verifying: "Checking every sentence against its source…",
 };
 
+const ON_DEVICE_STAGE = "Writing an answer on your device\u2026";
+const ON_DEVICE_DOWNLOAD = "Getting your browser's model ready\u2026";
+
 let turnCounter = 0;
 const nextTurnId = () => `t${++turnCounter}`;
+
+/**
+ * One request, one NDJSON stream, every event handed to `onEvent`. Both halves of an on-device
+ * answer use this: asking for the evidence and returning the draft are the same exchange with a
+ * different body. `sessionId` is a ref so the second half continues the session the first began.
+ */
+async function streamTurn(
+  chatRoute: string,
+  body: { message: string; mode?: "evidence"; draft?: string },
+  sessionId: { current: string | undefined },
+  onEvent: (event: ConciergeEvent) => void,
+): Promise<void> {
+  const response = await fetch(chatRoute, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...body,
+      ...(sessionId.current ? { sessionId: sessionId.current } : {}),
+    }),
+    credentials: "same-origin",
+  });
+  if (!response.ok || !response.body) {
+    const detail = (await response.json().catch(() => undefined)) as
+      | { error?: { message?: string } }
+      | undefined;
+    // Tagged, so the catch can tell a message the SERVER wrote for a guest ("Too many
+    // questions at once…") from an exception the browser threw ("Failed to fetch").
+    throw new GuestSafeError(
+      detail?.error?.message ?? "The concierge is unavailable right now.",
+    );
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const { events, rest } = decodeEvents(buffer);
+    buffer = rest;
+    for (const e of events) onEvent(e);
+  }
+}
 
 export default function ConciergePanel({
   chatRoute = CHAT_ROUTE,
@@ -118,36 +166,46 @@ export default function ConciergePanel({
         );
 
       try {
-        const response = await fetch(chatRoute, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: asked,
-            ...(sessionId.current ? { sessionId: sessionId.current } : {}),
-          }),
-          credentials: "same-origin",
-        });
-        if (!response.ok || !response.body) {
-          const detail = (await response.json().catch(() => undefined)) as
-            | { error?: { message?: string } }
-            | undefined;
-          // Tagged, so the catch can tell a message the SERVER wrote for a guest ("Too many
-          // questions at once…") from an exception the browser threw ("Failed to fetch").
-          throw new GuestSafeError(
-            detail?.error?.message ?? "The concierge is unavailable right now.",
+        // The on-device half. When the guest's browser has the Prompt API, the server is asked for
+        // the evidence rather than for an answer: it still routes, still runs the tools under this
+        // guest's principal and still quarantines injected sources, but the sentences are written
+        // here, on their device. The draft then goes back for the same verification every answer
+        // gets. Any failure at all falls through to the server writing the answer itself.
+        let draft: string | null = null;
+        if (publicEnv.browserModel && isSupported()) {
+          let evidence: { system: string; userTurn: string } | null = null;
+          await streamTurn(
+            chatRoute,
+            { message: asked, mode: "evidence" },
+            sessionId,
+            (e) => {
+              if (e.type === "evidence") evidence = { system: e.system, userTurn: e.userTurn };
+              else apply(e, update, setStage, sessionId);
+            },
           );
+          // No evidence means the server never reached the seam — it refused, or it errored, and
+          // those events have already been applied. That turn is finished; asking again would only
+          // repeat it.
+          if (!evidence) return;
+          const { system, userTurn } = evidence;
+          setStage(ON_DEVICE_STAGE);
+          draft = await askOnDevice(userTurn, {
+            systemPrompt: system,
+            onProgress: (fraction) =>
+              setStage(fraction < 1 ? `${ON_DEVICE_DOWNLOAD} ${Math.round(fraction * 100)}%` : ON_DEVICE_STAGE),
+          });
+          setStage(STAGE_LABEL.verifying!);
         }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const { events, rest } = decodeEvents(buffer);
-          buffer = rest;
-          for (const e of events) apply(e, update, setStage, sessionId);
-        }
+        await streamTurn(
+          chatRoute,
+          {
+            message: asked,
+            // Capped to what the route accepts; a device that rambles is truncated, not rejected.
+            ...(draft ? { draft: draft.slice(0, MAX_DRAFT_CHARS) } : {}),
+          },
+          sessionId,
+          (e) => apply(e, update, setStage, sessionId),
+        );
       } catch (cause) {
         // A guest never sees `cause.message` from an exception: a dropped connection rendered the
         // browser's own "Failed to fetch" into the panel. A message the server wrote IS for them —
