@@ -1,0 +1,1232 @@
+<title>Wedding Platform Feature Labs</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+[data-theme="gilded-hour"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #1c1b18;
+  --color-on-primary: #f8f6f1;
+  --color-secondary: #2e5b7b;
+  --color-on-secondary: #f8f6f1;
+  --color-tertiary: #7a5a16;
+  --color-on-tertiary: #fbf9f4;
+  --color-gold: #c9a648;
+  --color-gold-wash: #f3ead0;
+  --color-lake-wash: #cfe0eb;
+  --color-moss: #4f5f3f;
+  --color-neutral: #f8f6f1;
+  --color-neutral-variant: #ede5d6;
+  --color-surface: #fdfcfa;
+  --color-on-surface: #1c1b18;
+  --color-on-surface-muted: #5e5a52;
+  --color-outline: #d8cfbf;
+  --color-error: #8e2e22;
+  --color-on-error: #fff5f2;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+  --spacing-step: 24px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-text: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-accent: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --font-cinzel: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-big-shoulders-display: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 500;
+  --type-display-xl-line: 1.02;
+  --type-display-xl-tracking: 0.04em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 2.75rem;
+  --type-display-lg-weight: 500;
+  --type-display-lg-line: 1.08;
+  --type-display-lg-tracking: 0.05em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h1-size: 2rem;
+  --type-h1-weight: 500;
+  --type-h1-line: 1.15;
+  --type-h1-tracking: 0.06em;
+  --type-h1-features: normal;
+  --type-h2-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 500;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0.06em;
+  --type-h2-features: normal;
+  --type-h3-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0.1em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-lg-size: 1.3125rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.55;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-md-size: 1.125rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.6;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 600;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.18em;
+  --type-label-caps-features: normal;
+  --type-label-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-sm-size: 0.765rem;
+  --type-label-sm-weight: 600;
+  --type-label-sm-line: 1.1;
+  --type-label-sm-tracking: 0.04em;
+  --type-label-sm-features: normal;
+  --type-numeral-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-size: 3.5rem;
+  --type-numeral-weight: 600;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0.02em;
+  --type-numeral-features: 'tnum', 'lnum';
+  --type-numeral-xl-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-xl-size: 6rem;
+  --type-numeral-xl-weight: 700;
+  --type-numeral-xl-line: 0.9;
+  --type-numeral-xl-tracking: 0.01em;
+  --type-numeral-xl-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-reveal: 700ms;
+  --duration-curtain: 1100ms;
+  --ease-engrave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-doors: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* shadows (design.json extensions.shadows) */
+  --shadow-panel-lift: 0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08);
+  --shadow-engraved-inset: inset 0 0 0 1px rgba(248,246,241,0.3);
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/gilded-hour) */
+
+}
+
+[data-theme="conservatory"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #2a4430;
+  --color-on-primary: #f4eedf;
+  --color-secondary: #4f6338;
+  --color-on-secondary: #f4eedf;
+  --color-tertiary: #d4b24a;
+  --color-on-tertiary: #2a4430;
+  --color-neutral: #f4eedf;
+  --color-neutral-variant: #eae2ce;
+  --color-surface: #fbf8f1;
+  --color-on-surface: #2a4430;
+  --color-on-surface-muted: #4f5a48;
+  --color-outline: #c8c1ac;
+  --color-error: #8b3a2b;
+  --color-on-error: #fff5f0;
+  --color-leaf: #7e9c5f;
+  --color-leaf-deep: #3f5f33;
+  --color-moss-wash: #dfe5cf;
+  --color-sky: #d4e4ec;
+  --color-sky-ink: #2b4a5a;
+  --color-kraft: #e4d6ba;
+  --color-kraft-deep: #c9b48c;
+  --color-soil: #6e5637;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  --rounded-md: 8px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-text: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-accent: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --font-gloock: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-spectral: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-cardo: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 400;
+  --type-display-xl-line: 1;
+  --type-display-xl-tracking: -0.01em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 3rem;
+  --type-display-lg-weight: 400;
+  --type-display-lg-line: 1.05;
+  --type-display-lg-tracking: -0.005em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 400;
+  --type-h1-line: 1.1;
+  --type-h1-tracking: 0em;
+  --type-h1-features: normal;
+  --type-h2-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.625rem;
+  --type-h2-weight: 400;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0em;
+  --type-h2-features: normal;
+  --type-h3-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-h3-size: 1.25rem;
+  --type-h3-weight: 500;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-lg-size: 1.25rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.6;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-md-size: 1.0625rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.55;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-lg-size: 1rem;
+  --type-label-lg-weight: 500;
+  --type-label-lg-line: 1;
+  --type-label-lg-tracking: 0.02em;
+  --type-label-lg-features: normal;
+  --type-label-caps-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 500;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.1em;
+  --type-label-caps-features: 'smcp', 'c2sc';
+  --type-specimen-label-family: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --type-specimen-label-size: 1rem;
+  --type-specimen-label-weight: 400;
+  --type-specimen-label-line: 1.4;
+  --type-specimen-label-tracking: 0.01em;
+  --type-specimen-label-features: 'liga', 'kern';
+  --type-numeral-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-numeral-size: 2.5rem;
+  --type-numeral-weight: 400;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0em;
+  --type-numeral-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 160ms;
+  --duration-settle: 700ms;
+  --stagger-settle: 80ms;
+  /* shadows (design.json extensions.shadows) */
+  --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
+  --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
+  --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-none: none;
+  /* focus (design.json extensions.focus) */
+  --focus-ring: 2px solid var(--color-secondary);
+  --focus-offset: 2px;
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/conservatory) */
+
+}
+/* ============================================================
+   Feature lab shell — the workbench chrome around the site.
+   Deliberately not the wedding's design language: the chrome is an
+   instrument (IBM Plex, workbench neutrals), the device viewport is
+   the site (Gilded Hour / Conservatory tokens, verbatim).
+   ============================================================ */
+
+:root {
+  --wb-ground: #eceef1;
+  --wb-panel: #ffffff;
+  --wb-panel-2: #f5f6f8;
+  --wb-rule: #d6dae1;
+  --wb-ink: #171a1f;
+  --wb-muted: #5f6875;
+  --wb-accent: #8a6d1f;
+  --wb-accent-soft: #f0e7cf;
+  --wb-pass: #2f6b45;
+  --wb-warn: #8a5a12;
+  --wb-block: #9a3323;
+  --wb-pass-soft: #ddeee3;
+  --wb-warn-soft: #f6e8cd;
+  --wb-block-soft: #f6ded9;
+  --wb-shadow: 0 1px 2px rgba(23, 26, 31, 0.06), 0 12px 32px rgba(23, 26, 31, 0.08);
+  --wb-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --wb-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wb-ground: #0f1216;
+    --wb-panel: #181c22;
+    --wb-panel-2: #1f242b;
+    --wb-rule: #2b323b;
+    --wb-ink: #dfe3e9;
+    --wb-muted: #8d97a5;
+    --wb-accent: #c9a648;
+    --wb-accent-soft: #332d1c;
+    --wb-pass: #6cc08a;
+    --wb-warn: #d8b04a;
+    --wb-block: #e08171;
+    --wb-pass-soft: #1a2b21;
+    --wb-warn-soft: #2e2716;
+    --wb-block-soft: #33201c;
+    --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --wb-ground: #0f1216;
+  --wb-panel: #181c22;
+  --wb-panel-2: #1f242b;
+  --wb-rule: #2b323b;
+  --wb-ink: #dfe3e9;
+  --wb-muted: #8d97a5;
+  --wb-accent: #c9a648;
+  --wb-accent-soft: #332d1c;
+  --wb-pass: #6cc08a;
+  --wb-warn: #d8b04a;
+  --wb-block: #e08171;
+  --wb-pass-soft: #1a2b21;
+  --wb-warn-soft: #2e2716;
+  --wb-block-soft: #33201c;
+  --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--wb-ground);
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- masthead ---------- */
+
+.lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+}
+
+.lab-kicker {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-accent);
+  margin: 0;
+}
+
+.lab-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.lab-sub {
+  margin: 0;
+  color: var(--wb-muted);
+  font-size: 13.5px;
+  max-width: 62ch;
+}
+
+.lab-head-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 340px; }
+
+/* ---------- control bar ---------- */
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ctl { display: flex; align-items: center; gap: 7px; }
+
+.ctl-label {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wb-panel);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--wb-muted);
+  font-family: var(--wb-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--wb-rule);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--wb-ink); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--wb-accent-soft);
+  color: var(--wb-ink);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.lab-body {
+  display: grid;
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.rail {
+  border-right: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 14px 28px;
+  position: sticky;
+  top: 47px;
+  max-height: calc(100vh - 47px);
+  overflow-y: auto;
+}
+
+.rail h2 {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 9px 4px;
+  font-weight: 500;
+}
+
+.rail h2 + .rail-group { margin-bottom: 20px; }
+.rail-group { display: flex; flex-direction: column; gap: 3px; }
+
+.rail button {
+  appearance: none;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.rail button:hover { background: var(--wb-panel-2); }
+
+.rail button[aria-current="true"] {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  font-weight: 600;
+}
+
+.rail button small {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  color: var(--wb-muted);
+  font-weight: 400;
+}
+
+.rail button[aria-current="true"] small { color: var(--wb-ink); }
+
+.stage {
+  padding: 26px 22px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- the device ---------- */
+
+.device {
+  width: 100%;
+  max-width: var(--device-w, 390px);
+  border: 1px solid var(--wb-rule);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--wb-shadow);
+  overflow: hidden;
+  transition: max-width 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.device-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--wb-panel-2);
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  color: var(--wb-muted);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-rule);
+  flex: none;
+}
+
+.device-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-ink);
+}
+
+.device-w { flex: none; }
+
+.viewport { max-height: 74vh; overflow-y: auto; overflow-x: hidden; }
+
+/* ---------- notes strip ---------- */
+
+.notes {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 10px;
+  background: var(--wb-panel);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes p { margin: 0; font-size: 13.5px; color: var(--wb-muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.notes li { font-size: 13.5px; color: var(--wb-muted); }
+.notes li strong { color: var(--wb-ink); font-weight: 600; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+.chip-cap { border-color: var(--wb-accent); color: var(--wb-accent); background: var(--wb-accent-soft); }
+.chip-pass { border-color: var(--wb-pass); color: var(--wb-pass); background: var(--wb-pass-soft); }
+.chip-warn { border-color: var(--wb-warn); color: var(--wb-warn); background: var(--wb-warn-soft); }
+.chip-block { border-color: var(--wb-block); color: var(--wb-block); background: var(--wb-block-soft); }
+
+/* ============================================================
+   Site primitives — everything below draws only on the theme
+   tokens inlined from src/themes/<id>/theme.css.
+   ============================================================ */
+
+.site {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.w-wrap { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.w-stack { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.w-stack-sm { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.w-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; }
+.w-between { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+
+.w-eyebrow {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  margin: 0;
+}
+
+.w-display, .w-h1, .w-h2, .w-h3 { margin: 0; text-wrap: balance; color: var(--color-on-surface); }
+
+.w-display {
+  font-family: var(--type-display-lg-family);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+
+.w-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-tracking);
+}
+
+.w-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-tracking);
+}
+
+.w-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  letter-spacing: var(--type-h3-tracking);
+}
+
+.w-body { margin: 0; font-size: var(--type-body-md-size); line-height: var(--type-body-md-line); max-width: 62ch; }
+.w-lede { margin: 0; font-size: var(--type-body-lg-size); line-height: var(--type-body-lg-line); max-width: 58ch; }
+.w-small { margin: 0; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.w-muted { color: var(--color-on-surface-muted); }
+
+.w-numeral {
+  font-family: var(--type-numeral-family);
+  font-size: var(--type-numeral-size);
+  font-weight: var(--type-numeral-weight);
+  line-height: var(--type-numeral-line);
+  letter-spacing: var(--type-numeral-tracking);
+  font-feature-settings: var(--type-numeral-features);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Buttons */
+
+.w-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast, 160ms) ease, color var(--duration-fast, 160ms) ease;
+}
+
+.w-btn-primary { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.w-btn-primary:hover { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-on-secondary); }
+.w-btn:hover { background: var(--color-neutral-variant); }
+.w-btn-primary:disabled, .w-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.w-btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--type-label-sm-size); }
+
+/* Surfaces */
+
+.w-card {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-panel {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-rule { border: 0; border-top: 1px solid var(--color-outline); margin: 0; }
+
+.w-grid { display: grid; gap: var(--spacing-sm); }
+.w-grid-2 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Notices */
+
+.w-notice {
+  border-left: 3px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--type-body-sm-size);
+  line-height: 1.5;
+}
+
+.w-notice-ok { border-left-color: var(--color-secondary); }
+.w-notice-err { border-left-color: var(--color-error); color: var(--color-error); }
+.w-notice-todo { border-left-color: var(--color-tertiary); }
+
+/* The TODO(Tyler & Sara) marker: placeholder facts must look like placeholders. */
+.w-todo {
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-on-surface-muted);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 7px,
+    var(--color-neutral-variant) 7px,
+    var(--color-neutral-variant) 14px
+  );
+  border: 1px dashed var(--color-outline);
+  padding: 8px 10px;
+  display: block;
+}
+
+/* Fields */
+
+.w-field { display: flex; flex-direction: column; gap: 6px; }
+
+.w-label {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.w-input, .w-select, .w-textarea {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.4;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.w-textarea { min-height: 84px; resize: vertical; }
+.w-input:focus-visible, .w-select:focus-visible, .w-textarea:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* A choice row: label wraps the control, so the whole row is a hit target. */
+.w-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 48px;
+}
+
+.w-choice:hover { background: var(--color-neutral); }
+.w-choice input { margin: 3px 0 0; width: 20px; height: 20px; flex: none; accent-color: var(--color-secondary); }
+.w-choice:has(input:checked) { border-color: var(--color-primary); background: var(--color-neutral); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.w-choice span { display: flex; flex-direction: column; gap: 2px; }
+.w-choice small { font-size: 14px; color: var(--color-on-surface-muted); }
+
+.w-choices { display: flex; flex-direction: column; gap: 6px; }
+.w-choices-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+
+/* Badges */
+
+.w-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--color-outline);
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+}
+
+.w-badge-on { border-color: var(--color-primary); color: var(--color-primary); }
+.w-badge-warn { border-color: var(--color-tertiary); color: var(--color-tertiary); }
+.w-badge-err { border-color: var(--color-error); color: var(--color-error); }
+
+/* Site nav */
+
+.w-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  align-items: center;
+}
+
+.w-nav a {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+}
+
+.w-nav a[aria-current="page"] { color: var(--color-on-surface); text-decoration: underline; text-underline-offset: 4px; }
+
+.w-monogram {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-on-surface);
+  margin-right: auto;
+}
+
+.w-link { color: var(--color-secondary); text-underline-offset: 3px; }
+
+/* Definition rows */
+
+.w-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--spacing-md); margin: 0; align-items: baseline; }
+.w-dl dt { font-family: var(--type-label-caps-family); font-size: var(--type-label-sm-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+.w-dl dd { margin: 0; font-size: var(--type-body-sm-size); }
+
+/* Theme-specific character. Gilded Hour is engraved and square; Conservatory
+   is printed and soft. These are the two kits' own rules, not decoration. */
+
+[data-theme="gilded-hour"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  border: 0;
+}
+
+[data-theme="gilded-hour"] .w-card { border-color: var(--color-gold); box-shadow: var(--shadow-engraved-inset); }
+[data-theme="gilded-hour"] .w-eyebrow { color: var(--color-tertiary); }
+
+[data-theme="conservatory"] .w-card,
+[data-theme="conservatory"] .w-panel,
+[data-theme="conservatory"] .w-btn,
+[data-theme="conservatory"] .w-choice,
+[data-theme="conservatory"] .w-input,
+[data-theme="conservatory"] .w-select,
+[data-theme="conservatory"] .w-textarea { border-radius: var(--rounded-md); }
+
+[data-theme="conservatory"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-leaf), transparent);
+  border: 0;
+}
+
+[data-theme="conservatory"] .w-eyebrow { color: var(--color-leaf-deep); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .lab-body { grid-template-columns: 1fr; }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--wb-rule); }
+  .rail-group { flex-direction: row; flex-wrap: wrap; }
+  .rail button { flex: 1 1 150px; }
+  .stage { padding: 18px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+
+.page { max-width: 940px; margin: 0 auto; padding: 30px 22px 56px; display: flex; flex-direction: column; gap: 34px; }
+
+.intro { display: flex; flex-direction: column; gap: 12px; }
+.intro h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.intro p { margin: 0; max-width: 66ch; color: var(--wb-muted); font-size: 15.5px; line-height: 1.6; }
+.intro strong { color: var(--wb-ink); font-weight: 600; }
+
+.section-label {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wb-rule);
+}
+
+.labs { display: grid; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); gap: 12px; }
+
+/* The level number is real structure: these shipped in order, each stacked on
+   the one before it. */
+.lab-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  align-items: baseline;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 18px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.lab-card:hover { border-color: var(--wb-accent); transform: translateY(-1px); }
+
+.lab-card .lv {
+  grid-row: 1 / 3;
+  font-family: var(--wb-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--wb-accent);
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.lab-card h3 { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -0.005em; }
+.lab-card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--wb-muted); }
+.lab-card .try { grid-column: 2; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+
+.card {
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.card h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--wb-muted); }
+.card code { font-family: var(--wb-mono); font-size: 12.5px; color: var(--wb-ink); }
+
+.pending { display: flex; flex-direction: column; gap: 0; }
+.pending div { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--wb-rule); }
+.pending div:last-child { border-bottom: 0; }
+.pending .n { font-family: var(--wb-mono); font-size: 12px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
+.pending .t { font-size: 14px; }
+.pending .s { font-family: var(--wb-mono); font-size: 10.5px; color: var(--wb-muted); }
+
+pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--wb-panel-2);
+  border: 1px solid var(--wb-rule);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--wb-ink);
+}
+
+.foot { color: var(--wb-muted); font-size: 13px; line-height: 1.6; max-width: 68ch; }
+</style>
+
+<div class="page">
+  <div class="intro">
+    <p class="lab-kicker">Sara + Tyler · Chicago · 17 July 2027</p>
+    <h1>Seven feature labs, one per shipped level</h1>
+    <p>The platform is built through level 10 and has no public deployment yet, so each lab is a standalone harness for one feature area. Every lab renders the real seed content inside a device frame you can resize, and the wedding tokens are inlined <strong>verbatim from <code>src/themes/&lt;id&gt;/theme.css</code></strong> — so switching between Gilded Hour and Conservatory shows you the two design systems as they actually ship, not an approximation of them.</p>
+    <p>Each lab opens on a 390px phone, because that is what the site is built for. Every scene carries a note strip naming the route, the capability behind it, and what is worth checking.</p>
+  </div>
+
+  <section>
+    <h2 class="section-label">Built and testable</h2>
+    <div class="labs">
+      <a class="lab-card" href="https://claude.ai/code/artifact/a1ed6d0c-a1e0-48a5-8e4f-49abcdbbf305">
+        <span class="lv">04</span>
+        <h3>Gilded Hour vs Conservatory</h3>
+        <p>Home reconfigured across all nine lifecycle states, from teaser to archive, in both design systems.</p>
+        <div class="try"><span class="chip">9 states</span><span class="chip">live countdown</span><span class="chip chip-cap">theme engine</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/f06d7654-3962-4ee2-801c-2dadf62351b2">
+        <span class="lv">05</span>
+        <h3>Adventure Graph &amp; CAA Docent</h3>
+        <p>Seven story chapters, eight adventures with their edges, the 1893 building's docent guide, and the FAQ.</p>
+        <div class="try"><span class="chip">7 surfaces</span><span class="chip">provenance</span><span class="chip chip-warn">many TODOs</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/9e061f4b-341b-4ec5-8bf3-9848f176a26d">
+        <span class="lv">06</span>
+        <h3>Invitation Claim Flow</h3>
+        <p>Four-step claim you can click through, plus passkeys, step-up, every error string, and the entitlement matrix.</p>
+        <div class="try"><span class="chip">clickable flow</span><span class="chip">19 entitlements</span><span class="chip chip-block">BIPA gate</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/a5618404-c0b0-4382-9e2d-53a35359e54a">
+        <span class="lv">07</span>
+        <h3>Household RSVP &amp; Seating</h3>
+        <p>Draft, review, submit for three guests; a partial invitation with a plus-one; the weekend hub and the floor plan.</p>
+        <div class="try"><span class="chip">clickable flow</span><span class="chip">3 household shapes</span><span class="chip">floor plan</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/61790123-89af-4c3f-90cf-dfe840cbf1a8">
+        <span class="lv">08</span>
+        <h3>Travel, Stay &amp; the Trip Bridge</h3>
+        <p>Room block, flight snapshots, the one-ticket-or-two warning, the trip timeline, and the unconfigured-provider fallback.</p>
+        <div class="try"><span class="chip">degraded mode</span><span class="chip">allowlist</span><span class="chip chip-warn">step-up delete</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/fd2dd429-41e7-4dd5-8449-926bc6a9a16d">
+        <span class="lv">09</span>
+        <h3>Ride Benefits &amp; Gift Handoffs</h3>
+        <p>Getting to Michigan Avenue, ride eligibility and claim, the gifts page in both states, delegated reservations.</p>
+        <div class="try"><span class="chip">clickable flow</span><span class="chip chip-block">3 forbidden words</span><span class="chip">handoffs</span></div>
+      </a>
+
+      <a class="lab-card" href="https://claude.ai/code/artifact/d5745699-7e2a-4908-a785-146468827ec6">
+        <span class="lv">10</span>
+        <h3>Guest Media Pipeline</h3>
+        <p>Resumable uploads on bad wifi, the nine-state asset machine, EXIF and GPS rules, moderation and duplicates.</p>
+        <div class="try"><span class="chip">9 asset states</span><span class="chip">EXIF stripped</span><span class="chip chip-block">2 legal gates</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-label">How to read a lab</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Design</h3>
+        <p>Switches which kit's token block the device resolves against. Nothing about the markup changes — that is the point of the theme engine. Try it on any scene.</p>
+      </div>
+      <div class="card">
+        <h3>Viewport</h3>
+        <p><code>390</code> is the phone the site is designed for and where most guests will be. <code>768</code> and <code>1240</code> check that nothing collapses on the way up.</p>
+      </div>
+      <div class="card">
+        <h3>The note strip</h3>
+        <p>Under each device: the route, the capability, the entitlement, and two or three specific things worth checking on that scene.</p>
+      </div>
+      <div class="card">
+        <h3>Hatched blocks</h3>
+        <p>Every <code>TODO(Tyler &amp; Sara)</code> is a fact only the couple can supply. They are drawn as placeholders on purpose — nothing plausible is ever invented to fill one.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-label">Not built yet</h2>
+    <div class="card">
+      <div class="pending">
+        <div><span class="n">11</span><span class="t">Media AI and biometric consent</span><span class="s">not started</span></div>
+        <div><span class="n">12</span><span class="t">Closed-world AI concierge and evals</span><span class="s">not started</span></div>
+        <div><span class="n">13</span><span class="t">WebMCP progressive enhancement</span><span class="s">not started</span></div>
+        <div><span class="n">14</span><span class="t">Admin operations</span><span class="s">not started</span></div>
+        <div><span class="n">15</span><span class="t">Security hardening and threat model</span><span class="s">not started</span></div>
+        <div><span class="n">16</span><span class="t">E2E, accessibility, performance, resilience</span><span class="s">not started</span></div>
+        <div><span class="n">17</span><span class="t">Docs, activation matrix, release evidence</span><span class="s">not started</span></div>
+      </div>
+      <p>Admin screens appear inside the labs above where a level shipped them; level 14 is the dedicated console. Levels 11–17 have no lab because there is nothing built to render.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-label">Testing the real thing</h2>
+    <div class="card">
+      <p>These labs are static harnesses: no database, no capability pipeline, no server-side authorization. They are for judging the interface. To exercise the actual system:</p>
+      <pre>npm run dev          # localhost:3000, auto-migrates and seeds PGlite
+npm run verify       # typecheck, lint, unit, stylelint, design lint,
+                     # detector, integration on PGlite, build
+npm run test:e2e     # Playwright, needs BASE_URL</pre>
+      <p>The labs are regenerated from the shipped tokens, so they cannot drift silently:</p>
+      <pre>npm run design:sync && node docs/prototypes/build.mjs</pre>
+    </div>
+  </section>
+
+  <p class="foot">Facts on every lab come from <code>docs/design/brief.md</code> and <code>src/content/seed/*</code>. Guest fixtures are the committed fictional households — Testhouse, Fixture and Solo — because real guest data never enters the repository.</p>
+</div>
+
+<script>
+/* Feature lab shell. No dependencies: a scene switcher, a theme switch that
+   swaps which kit's tokens the device viewport resolves against, and a
+   viewport-width toggle that starts at the 390px phone the site is built for. */
+(function () {
+  'use strict';
+
+  var device = document.getElementById('device');
+  var urlBar = document.getElementById('device-url');
+  var widthOut = document.getElementById('device-w');
+  var notes = document.getElementById('notes-body');
+
+  function pressGroup(name, value) {
+    var buttons = document.querySelectorAll('[data-' + name + ']');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+    }
+  }
+
+  /* Theme: the device carries data-theme, so every token under it resolves
+     from the chosen kit's generated block. */
+  function setTheme(id) {
+    if (device) device.setAttribute('data-theme', id);
+    pressGroup('labTheme', id);
+  }
+
+  function setWidth(px) {
+    if (device) device.style.setProperty('--device-w', px + 'px');
+    if (widthOut) widthOut.textContent = px + '×';
+    pressGroup('labWidth', px);
+  }
+
+  function setScene(id) {
+    var panels = document.querySelectorAll('[data-scene-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].hidden = panels[i].dataset.scenePanel !== id;
+    }
+    var buttons = document.querySelectorAll('[data-scene]');
+    for (var j = 0; j < buttons.length; j++) {
+      var b = buttons[j];
+      var on = b.dataset.scene === id;
+      b.setAttribute('aria-current', String(on));
+      if (on && urlBar && b.dataset.url) urlBar.textContent = b.dataset.url;
+    }
+    var tpl = document.querySelector('template[data-notes="' + id + '"]');
+    if (tpl && notes) {
+      notes.innerHTML = '';
+      notes.appendChild(tpl.content.cloneNode(true));
+    }
+    var vp = document.querySelector('.viewport');
+    if (vp) vp.scrollTop = 0;
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lab-theme], [data-lab-width], [data-scene]');
+    if (!t) return;
+    if (t.dataset.labTheme) setTheme(t.dataset.labTheme);
+    else if (t.dataset.labWidth) setWidth(t.dataset.labWidth);
+    else if (t.dataset.scene) setScene(t.dataset.scene);
+  });
+
+  /* Local interactivity inside a scene: [data-go] moves to another step of the
+     same flow, [data-toggle] flips a disclosure. Both are plain DOM so a scene
+     stays testable with the keyboard. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      e.preventDefault();
+      var scope = go.closest('[data-flow]');
+      if (!scope) return;
+      var steps = scope.querySelectorAll('[data-step]');
+      for (var i = 0; i < steps.length; i++) steps[i].hidden = steps[i].dataset.step !== go.dataset.go;
+      var vp = go.closest('.viewport');
+      if (vp) vp.scrollTop = 0;
+      return;
+    }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) {
+      var target = document.getElementById(tg.dataset.toggle);
+      if (!target) return;
+      var open = target.hidden;
+      target.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+    }
+  });
+
+  var first = document.querySelector('[data-scene]');
+  if (first) setScene(first.dataset.scene);
+  setTheme('gilded-hour');
+  setWidth('390');
+})();
+
+</script>

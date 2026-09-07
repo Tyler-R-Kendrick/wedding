@@ -1,0 +1,1571 @@
+<title>Gilded Hour vs Conservatory</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<style>
+[data-theme="gilded-hour"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #1c1b18;
+  --color-on-primary: #f8f6f1;
+  --color-secondary: #2e5b7b;
+  --color-on-secondary: #f8f6f1;
+  --color-tertiary: #7a5a16;
+  --color-on-tertiary: #fbf9f4;
+  --color-gold: #c9a648;
+  --color-gold-wash: #f3ead0;
+  --color-lake-wash: #cfe0eb;
+  --color-moss: #4f5f3f;
+  --color-neutral: #f8f6f1;
+  --color-neutral-variant: #ede5d6;
+  --color-surface: #fdfcfa;
+  --color-on-surface: #1c1b18;
+  --color-on-surface-muted: #5e5a52;
+  --color-outline: #d8cfbf;
+  --color-error: #8e2e22;
+  --color-on-error: #fff5f2;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+  --spacing-step: 24px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-text: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-accent: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --font-cinzel: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-big-shoulders-display: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 500;
+  --type-display-xl-line: 1.02;
+  --type-display-xl-tracking: 0.04em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 2.75rem;
+  --type-display-lg-weight: 500;
+  --type-display-lg-line: 1.08;
+  --type-display-lg-tracking: 0.05em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h1-size: 2rem;
+  --type-h1-weight: 500;
+  --type-h1-line: 1.15;
+  --type-h1-tracking: 0.06em;
+  --type-h1-features: normal;
+  --type-h2-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 500;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0.06em;
+  --type-h2-features: normal;
+  --type-h3-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0.1em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-lg-size: 1.3125rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.55;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-md-size: 1.125rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.6;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 600;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.18em;
+  --type-label-caps-features: normal;
+  --type-label-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-sm-size: 0.765rem;
+  --type-label-sm-weight: 600;
+  --type-label-sm-line: 1.1;
+  --type-label-sm-tracking: 0.04em;
+  --type-label-sm-features: normal;
+  --type-numeral-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-size: 3.5rem;
+  --type-numeral-weight: 600;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0.02em;
+  --type-numeral-features: 'tnum', 'lnum';
+  --type-numeral-xl-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-xl-size: 6rem;
+  --type-numeral-xl-weight: 700;
+  --type-numeral-xl-line: 0.9;
+  --type-numeral-xl-tracking: 0.01em;
+  --type-numeral-xl-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-reveal: 700ms;
+  --duration-curtain: 1100ms;
+  --ease-engrave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-doors: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* shadows (design.json extensions.shadows) */
+  --shadow-panel-lift: 0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08);
+  --shadow-engraved-inset: inset 0 0 0 1px rgba(248,246,241,0.3);
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/gilded-hour) */
+
+}
+
+[data-theme="conservatory"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #2a4430;
+  --color-on-primary: #f4eedf;
+  --color-secondary: #4f6338;
+  --color-on-secondary: #f4eedf;
+  --color-tertiary: #d4b24a;
+  --color-on-tertiary: #2a4430;
+  --color-neutral: #f4eedf;
+  --color-neutral-variant: #eae2ce;
+  --color-surface: #fbf8f1;
+  --color-on-surface: #2a4430;
+  --color-on-surface-muted: #4f5a48;
+  --color-outline: #c8c1ac;
+  --color-error: #8b3a2b;
+  --color-on-error: #fff5f0;
+  --color-leaf: #7e9c5f;
+  --color-leaf-deep: #3f5f33;
+  --color-moss-wash: #dfe5cf;
+  --color-sky: #d4e4ec;
+  --color-sky-ink: #2b4a5a;
+  --color-kraft: #e4d6ba;
+  --color-kraft-deep: #c9b48c;
+  --color-soil: #6e5637;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  --rounded-md: 8px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-text: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-accent: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --font-gloock: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-spectral: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-cardo: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 400;
+  --type-display-xl-line: 1;
+  --type-display-xl-tracking: -0.01em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 3rem;
+  --type-display-lg-weight: 400;
+  --type-display-lg-line: 1.05;
+  --type-display-lg-tracking: -0.005em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 400;
+  --type-h1-line: 1.1;
+  --type-h1-tracking: 0em;
+  --type-h1-features: normal;
+  --type-h2-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.625rem;
+  --type-h2-weight: 400;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0em;
+  --type-h2-features: normal;
+  --type-h3-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-h3-size: 1.25rem;
+  --type-h3-weight: 500;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-lg-size: 1.25rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.6;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-md-size: 1.0625rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.55;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-lg-size: 1rem;
+  --type-label-lg-weight: 500;
+  --type-label-lg-line: 1;
+  --type-label-lg-tracking: 0.02em;
+  --type-label-lg-features: normal;
+  --type-label-caps-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 500;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.1em;
+  --type-label-caps-features: 'smcp', 'c2sc';
+  --type-specimen-label-family: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --type-specimen-label-size: 1rem;
+  --type-specimen-label-weight: 400;
+  --type-specimen-label-line: 1.4;
+  --type-specimen-label-tracking: 0.01em;
+  --type-specimen-label-features: 'liga', 'kern';
+  --type-numeral-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-numeral-size: 2.5rem;
+  --type-numeral-weight: 400;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0em;
+  --type-numeral-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 160ms;
+  --duration-settle: 700ms;
+  --stagger-settle: 80ms;
+  /* shadows (design.json extensions.shadows) */
+  --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
+  --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
+  --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-none: none;
+  /* focus (design.json extensions.focus) */
+  --focus-ring: 2px solid var(--color-secondary);
+  --focus-offset: 2px;
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/conservatory) */
+
+}
+/* ============================================================
+   Feature lab shell — the workbench chrome around the site.
+   Deliberately not the wedding's design language: the chrome is an
+   instrument (IBM Plex, workbench neutrals), the device viewport is
+   the site (Gilded Hour / Conservatory tokens, verbatim).
+   ============================================================ */
+
+:root {
+  --wb-ground: #eceef1;
+  --wb-panel: #ffffff;
+  --wb-panel-2: #f5f6f8;
+  --wb-rule: #d6dae1;
+  --wb-ink: #171a1f;
+  --wb-muted: #5f6875;
+  --wb-accent: #8a6d1f;
+  --wb-accent-soft: #f0e7cf;
+  --wb-pass: #2f6b45;
+  --wb-warn: #8a5a12;
+  --wb-block: #9a3323;
+  --wb-pass-soft: #ddeee3;
+  --wb-warn-soft: #f6e8cd;
+  --wb-block-soft: #f6ded9;
+  --wb-shadow: 0 1px 2px rgba(23, 26, 31, 0.06), 0 12px 32px rgba(23, 26, 31, 0.08);
+  --wb-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --wb-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wb-ground: #0f1216;
+    --wb-panel: #181c22;
+    --wb-panel-2: #1f242b;
+    --wb-rule: #2b323b;
+    --wb-ink: #dfe3e9;
+    --wb-muted: #8d97a5;
+    --wb-accent: #c9a648;
+    --wb-accent-soft: #332d1c;
+    --wb-pass: #6cc08a;
+    --wb-warn: #d8b04a;
+    --wb-block: #e08171;
+    --wb-pass-soft: #1a2b21;
+    --wb-warn-soft: #2e2716;
+    --wb-block-soft: #33201c;
+    --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --wb-ground: #0f1216;
+  --wb-panel: #181c22;
+  --wb-panel-2: #1f242b;
+  --wb-rule: #2b323b;
+  --wb-ink: #dfe3e9;
+  --wb-muted: #8d97a5;
+  --wb-accent: #c9a648;
+  --wb-accent-soft: #332d1c;
+  --wb-pass: #6cc08a;
+  --wb-warn: #d8b04a;
+  --wb-block: #e08171;
+  --wb-pass-soft: #1a2b21;
+  --wb-warn-soft: #2e2716;
+  --wb-block-soft: #33201c;
+  --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--wb-ground);
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- masthead ---------- */
+
+.lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+}
+
+.lab-kicker {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-accent);
+  margin: 0;
+}
+
+.lab-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.lab-sub {
+  margin: 0;
+  color: var(--wb-muted);
+  font-size: 13.5px;
+  max-width: 62ch;
+}
+
+.lab-head-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 340px; }
+
+/* ---------- control bar ---------- */
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ctl { display: flex; align-items: center; gap: 7px; }
+
+.ctl-label {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wb-panel);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--wb-muted);
+  font-family: var(--wb-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--wb-rule);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--wb-ink); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--wb-accent-soft);
+  color: var(--wb-ink);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.lab-body {
+  display: grid;
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.rail {
+  border-right: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 14px 28px;
+  position: sticky;
+  top: 47px;
+  max-height: calc(100vh - 47px);
+  overflow-y: auto;
+}
+
+.rail h2 {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 9px 4px;
+  font-weight: 500;
+}
+
+.rail h2 + .rail-group { margin-bottom: 20px; }
+.rail-group { display: flex; flex-direction: column; gap: 3px; }
+
+.rail button {
+  appearance: none;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.rail button:hover { background: var(--wb-panel-2); }
+
+.rail button[aria-current="true"] {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  font-weight: 600;
+}
+
+.rail button small {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  color: var(--wb-muted);
+  font-weight: 400;
+}
+
+.rail button[aria-current="true"] small { color: var(--wb-ink); }
+
+.stage {
+  padding: 26px 22px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- the device ---------- */
+
+.device {
+  width: 100%;
+  max-width: var(--device-w, 390px);
+  border: 1px solid var(--wb-rule);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--wb-shadow);
+  overflow: hidden;
+  transition: max-width 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.device-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--wb-panel-2);
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  color: var(--wb-muted);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-rule);
+  flex: none;
+}
+
+.device-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-ink);
+}
+
+.device-w { flex: none; }
+
+.viewport { max-height: 74vh; overflow-y: auto; overflow-x: hidden; }
+
+/* ---------- notes strip ---------- */
+
+.notes {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 10px;
+  background: var(--wb-panel);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes p { margin: 0; font-size: 13.5px; color: var(--wb-muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.notes li { font-size: 13.5px; color: var(--wb-muted); }
+.notes li strong { color: var(--wb-ink); font-weight: 600; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+.chip-cap { border-color: var(--wb-accent); color: var(--wb-accent); background: var(--wb-accent-soft); }
+.chip-pass { border-color: var(--wb-pass); color: var(--wb-pass); background: var(--wb-pass-soft); }
+.chip-warn { border-color: var(--wb-warn); color: var(--wb-warn); background: var(--wb-warn-soft); }
+.chip-block { border-color: var(--wb-block); color: var(--wb-block); background: var(--wb-block-soft); }
+
+/* ============================================================
+   Site primitives — everything below draws only on the theme
+   tokens inlined from src/themes/<id>/theme.css.
+   ============================================================ */
+
+.site {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.w-wrap { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.w-stack { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.w-stack-sm { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.w-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; }
+.w-between { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+
+.w-eyebrow {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  margin: 0;
+}
+
+.w-display, .w-h1, .w-h2, .w-h3 { margin: 0; text-wrap: balance; color: var(--color-on-surface); }
+
+.w-display {
+  font-family: var(--type-display-lg-family);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+
+.w-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-tracking);
+}
+
+.w-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-tracking);
+}
+
+.w-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  letter-spacing: var(--type-h3-tracking);
+}
+
+.w-body { margin: 0; font-size: var(--type-body-md-size); line-height: var(--type-body-md-line); max-width: 62ch; }
+.w-lede { margin: 0; font-size: var(--type-body-lg-size); line-height: var(--type-body-lg-line); max-width: 58ch; }
+.w-small { margin: 0; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.w-muted { color: var(--color-on-surface-muted); }
+
+.w-numeral {
+  font-family: var(--type-numeral-family);
+  font-size: var(--type-numeral-size);
+  font-weight: var(--type-numeral-weight);
+  line-height: var(--type-numeral-line);
+  letter-spacing: var(--type-numeral-tracking);
+  font-feature-settings: var(--type-numeral-features);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Buttons */
+
+.w-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast, 160ms) ease, color var(--duration-fast, 160ms) ease;
+}
+
+.w-btn-primary { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.w-btn-primary:hover { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-on-secondary); }
+.w-btn:hover { background: var(--color-neutral-variant); }
+.w-btn-primary:disabled, .w-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.w-btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--type-label-sm-size); }
+
+/* Surfaces */
+
+.w-card {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-panel {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-rule { border: 0; border-top: 1px solid var(--color-outline); margin: 0; }
+
+.w-grid { display: grid; gap: var(--spacing-sm); }
+.w-grid-2 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Notices */
+
+.w-notice {
+  border-left: 3px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--type-body-sm-size);
+  line-height: 1.5;
+}
+
+.w-notice-ok { border-left-color: var(--color-secondary); }
+.w-notice-err { border-left-color: var(--color-error); color: var(--color-error); }
+.w-notice-todo { border-left-color: var(--color-tertiary); }
+
+/* The TODO(Tyler & Sara) marker: placeholder facts must look like placeholders. */
+.w-todo {
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-on-surface-muted);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 7px,
+    var(--color-neutral-variant) 7px,
+    var(--color-neutral-variant) 14px
+  );
+  border: 1px dashed var(--color-outline);
+  padding: 8px 10px;
+  display: block;
+}
+
+/* Fields */
+
+.w-field { display: flex; flex-direction: column; gap: 6px; }
+
+.w-label {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.w-input, .w-select, .w-textarea {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.4;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.w-textarea { min-height: 84px; resize: vertical; }
+.w-input:focus-visible, .w-select:focus-visible, .w-textarea:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* A choice row: label wraps the control, so the whole row is a hit target. */
+.w-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 48px;
+}
+
+.w-choice:hover { background: var(--color-neutral); }
+.w-choice input { margin: 3px 0 0; width: 20px; height: 20px; flex: none; accent-color: var(--color-secondary); }
+.w-choice:has(input:checked) { border-color: var(--color-primary); background: var(--color-neutral); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.w-choice span { display: flex; flex-direction: column; gap: 2px; }
+.w-choice small { font-size: 14px; color: var(--color-on-surface-muted); }
+
+.w-choices { display: flex; flex-direction: column; gap: 6px; }
+.w-choices-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+
+/* Badges */
+
+.w-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--color-outline);
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+}
+
+.w-badge-on { border-color: var(--color-primary); color: var(--color-primary); }
+.w-badge-warn { border-color: var(--color-tertiary); color: var(--color-tertiary); }
+.w-badge-err { border-color: var(--color-error); color: var(--color-error); }
+
+/* Site nav */
+
+.w-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  align-items: center;
+}
+
+.w-nav a {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+}
+
+.w-nav a[aria-current="page"] { color: var(--color-on-surface); text-decoration: underline; text-underline-offset: 4px; }
+
+.w-monogram {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-on-surface);
+  margin-right: auto;
+}
+
+.w-link { color: var(--color-secondary); text-underline-offset: 3px; }
+
+/* Definition rows */
+
+.w-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--spacing-md); margin: 0; align-items: baseline; }
+.w-dl dt { font-family: var(--type-label-caps-family); font-size: var(--type-label-sm-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+.w-dl dd { margin: 0; font-size: var(--type-body-sm-size); }
+
+/* Theme-specific character. Gilded Hour is engraved and square; Conservatory
+   is printed and soft. These are the two kits' own rules, not decoration. */
+
+[data-theme="gilded-hour"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  border: 0;
+}
+
+[data-theme="gilded-hour"] .w-card { border-color: var(--color-gold); box-shadow: var(--shadow-engraved-inset); }
+[data-theme="gilded-hour"] .w-eyebrow { color: var(--color-tertiary); }
+
+[data-theme="conservatory"] .w-card,
+[data-theme="conservatory"] .w-panel,
+[data-theme="conservatory"] .w-btn,
+[data-theme="conservatory"] .w-choice,
+[data-theme="conservatory"] .w-input,
+[data-theme="conservatory"] .w-select,
+[data-theme="conservatory"] .w-textarea { border-radius: var(--rounded-md); }
+
+[data-theme="conservatory"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-leaf), transparent);
+  border: 0;
+}
+
+[data-theme="conservatory"] .w-eyebrow { color: var(--color-leaf-deep); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .lab-body { grid-template-columns: 1fr; }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--wb-rule); }
+  .rail-group { flex-direction: row; flex-wrap: wrap; }
+  .rail button { flex: 1 1 150px; }
+  .stage { padding: 18px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+
+/* Home is the one surface that reconfigures per lifecycle state, so it gets
+   the kit's full hero treatment rather than the generic panel. */
+.hero {
+  padding: var(--spacing-xl) var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  align-items: center;
+  text-align: center;
+  background: var(--color-neutral);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+[data-theme="gilded-hour"] .hero {
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--color-gold-wash), transparent 62%),
+    var(--color-neutral);
+}
+
+[data-theme="conservatory"] .hero {
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--color-moss-wash), transparent 62%),
+    var(--color-neutral);
+}
+
+.hero-date {
+  font-family: var(--type-numeral-family);
+  font-size: 2.6rem;
+  font-weight: var(--type-numeral-weight);
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+[data-theme="conservatory"] .hero-date { font-family: var(--font-accent); letter-spacing: 0.06em; }
+
+.countdown { display: flex; gap: var(--spacing-md); justify-content: center; }
+.countdown div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.countdown b { font-family: var(--type-numeral-family); font-size: 2rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+[data-theme="conservatory"] .countdown b { font-family: var(--font-accent); }
+.countdown span { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline li { display: grid; grid-template-columns: 74px 1fr; gap: var(--spacing-sm); padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--color-outline); list-style: none; align-items: baseline; }
+.timeline li:last-child { border-bottom: 0; }
+.timeline time { font-family: var(--type-label-caps-family); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
+.timeline li[data-now="true"] time { color: var(--color-error); }
+.timeline ul { margin: 0; padding: 0; }
+
+.state-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+</style>
+
+<header class="lab-head">
+  <div class="lab-head-main">
+    <p class="lab-kicker">Feature lab · level 04</p>
+    <h1 class="lab-title">Theme engine &amp; site lifecycle</h1>
+    <p class="lab-sub">Home reconfigures across nine lifecycle states, in two complete design systems. Switch the kit at any state: the tokens below are inlined verbatim from <code>src/themes/&lt;id&gt;/theme.css</code>, so what renders here is what ships.</p>
+  </div>
+</header>
+
+<div class="lab-controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="lab-body">
+  <nav class="rail" aria-label="Lifecycle states">
+    <h2>Explore</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="teaser" data-url="/ — TEASER">Teaser<small>before anything is announced</small></button>
+      <button type="button" data-scene="save-the-date" data-url="/ — SAVE_THE_DATE">Save the date<small>date and city public</small></button>
+    </div>
+    <h2>Act</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="invitations-open" data-url="/ — INVITATIONS_OPEN">Invitations open<small>claim your invitation</small></button>
+      <button type="button" data-scene="rsvp-open" data-url="/ — RSVP_OPEN">RSVP open<small>the working state</small></button>
+      <button type="button" data-scene="rsvp-closed" data-url="/ — RSVP_CLOSED">RSVP closed<small>deadline passed</small></button>
+    </div>
+    <h2>Operate</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="wedding-week" data-url="/ — WEDDING_WEEK">Wedding week<small>logistics first</small></button>
+      <button type="button" data-scene="wedding-day" data-url="/ — WEDDING_DAY">Wedding day<small>pocket concierge</small></button>
+    </div>
+    <h2>Remember</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="post-wedding" data-url="/ — POST_WEDDING">Post wedding<small>photos land</small></button>
+      <button type="button" data-scene="archive" data-url="/ — ARCHIVE">Archive<small>the keepsake</small></button>
+    </div>
+    <h2>Machinery</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="switcher" data-url="/?theme=conservatory">Design switcher<small>both kits, side by side</small></button>
+      <button type="button" data-scene="transitions" data-url="/admin — lifecycle">Transition rules<small>what admin may do</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="device-bar">
+        <span class="device-dot" aria-hidden="true"></span>
+        <span class="device-url" id="device-url">/</span>
+        <span class="device-w" id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- TEASER -->
+        <div class="site" data-scene-panel="teaser" hidden>
+          <div class="state-flag">TEASER · mode: explore</div>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler</p>
+            <p class="hero-date">07 · 17 · 27</p>
+            <hr class="w-hairline" style="width: 60%">
+            <p class="w-lede">Chicago.</p>
+            <p class="w-small w-muted">More soon.</p>
+          </div>
+          <div class="w-wrap">
+            <p class="w-body w-muted">Nothing else is public yet — no venue, no schedule, no way in. The teaser exists so a link shared early resolves to something intentional instead of a 404.</p>
+          </div>
+        </div>
+
+        <!-- SAVE THE DATE -->
+        <div class="site" data-scene-panel="save-the-date" hidden>
+          <div class="state-flag">SAVE_THE_DATE · mode: explore</div>
+          <div class="hero">
+            <p class="w-eyebrow">Save the date</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <p class="hero-date">07 · 17 · 27</p>
+            <hr class="w-hairline" style="width: 60%">
+            <p class="w-lede">Chicago Athletic Association Hotel<br>Chicago, Illinois</p>
+          </div>
+          <div class="w-wrap">
+            <div class="w-card">
+              <h2 class="w-h3">Invitations to follow</h2>
+              <p class="w-small">Formal invitations go out closer to the date. This page will tell you when you can RSVP.</p>
+              <span class="w-todo">TODO(Tyler &amp; Sara): invitation send date (backlog P-01) drives the scheduled transition to INVITATIONS_OPEN.</span>
+            </div>
+            <div class="w-stack-sm">
+              <h2 class="w-h2">While you wait</h2>
+              <p class="w-body">We met at Allison and Jamie's wedding. Flirty glances across the room, and an immediate connection.</p>
+              <a class="w-btn w-btn-sm" href="#">Read our story</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- INVITATIONS OPEN -->
+        <div class="site" data-scene-panel="invitations-open" hidden>
+          <div class="state-flag">INVITATIONS_OPEN · mode: act</div>
+          <div class="hero">
+            <p class="w-eyebrow">You're invited</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <p class="hero-date">07 · 17 · 27</p>
+            <p class="w-small w-muted">Chicago Athletic Association Hotel · 12 S Michigan Ave</p>
+            <a class="w-btn w-btn-primary" href="#" style="margin-top: 8px">Find your invitation</a>
+          </div>
+          <div class="w-wrap">
+            <div class="w-card">
+              <h2 class="w-h3">The link in your invitation</h2>
+              <p class="w-small">Your invitation card carries a personal link. Open it and we'll know who you are — no password, no account to make.</p>
+              <p class="w-small w-muted">Lost the card? <a class="w-link" href="#">Sign in with your email</a> instead.</p>
+            </div>
+            <hr class="w-rule">
+            <div class="w-stack-sm">
+              <h2 class="w-h2">The essentials</h2>
+              <dl class="w-dl">
+                <dt>When</dt><dd>Saturday, July 17, 2027</dd>
+                <dt>Where</dt><dd>Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603</dd>
+                <dt>Time</dt><dd><span class="w-todo">TODO(Tyler &amp; Sara): ceremony, cocktail hour and reception times (backlog P-02).</span></dd>
+                <dt>Dress</dt><dd><span class="w-todo">TODO(Tyler &amp; Sara): dress code (backlog P-07).</span></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <!-- RSVP OPEN -->
+        <div class="site" data-scene-panel="rsvp-open" hidden>
+          <div class="state-flag">RSVP_OPEN · mode: act</div>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler · Chicago</p>
+            <p class="hero-date">07 · 17 · 27</p>
+            <div class="countdown" id="countdown" aria-label="Time until the wedding">
+              <div><b>—</b><span>days</span></div>
+            </div>
+            <a class="w-btn w-btn-primary" href="#">RSVP</a>
+            <p class="w-small w-muted">Please reply by <span class="w-todo" style="display:inline-block">TODO(Tyler &amp; Sara): RSVP deadline</span></p>
+          </div>
+          <div class="w-wrap">
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none">
+                <h3 class="w-h3">Travel &amp; stay</h3>
+                <p class="w-small w-muted">Hotels, flights, and getting to Michigan Avenue.</p>
+              </a>
+              <a class="w-card" href="#" style="text-decoration: none">
+                <h3 class="w-h3">The weekend</h3>
+                <p class="w-small w-muted">What happens, and when.</p>
+              </a>
+            </div>
+            <hr class="w-rule">
+            <div class="w-stack-sm">
+              <h2 class="w-h2">Above the fold, on a phone</h2>
+              <p class="w-body">In this state Home answers "when, where, and what do I do now" before any scrolling: the date, the countdown, and a single primary action. Story moves below the fold — utility wins when it matters.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RSVP CLOSED -->
+        <div class="site" data-scene-panel="rsvp-closed" hidden>
+          <div class="state-flag">RSVP_CLOSED · mode: act</div>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler</p>
+            <p class="hero-date">07 · 17 · 27</p>
+            <div class="countdown" id="countdown-2" aria-hidden="true"><div><b>—</b><span>days</span></div></div>
+          </div>
+          <div class="w-wrap">
+            <div class="w-notice w-notice-todo">
+              <strong>RSVPs are closed.</strong> We've sent our final count to the venue. If something has changed, please <a class="w-link" href="#">ask us</a> — we'll do what we can.
+            </div>
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none">
+                <h3 class="w-h3">Your weekend</h3>
+                <p class="w-small w-muted">Your schedule, your table, your party.</p>
+              </a>
+              <a class="w-card" href="#" style="text-decoration: none">
+                <h3 class="w-h3">Travel &amp; stay</h3>
+                <p class="w-small w-muted">Still time to book.</p>
+              </a>
+            </div>
+            <p class="w-small w-muted">The RSVP route stays reachable and explains itself rather than 404ing — a guest who follows an old link needs an answer, not a dead end.</p>
+          </div>
+        </div>
+
+        <!-- WEDDING WEEK -->
+        <div class="site" data-scene-panel="wedding-week" hidden>
+          <div class="state-flag">WEDDING_WEEK · mode: operate</div>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">This week</p>
+              <h1 class="w-h1">Saturday, July 17</h1>
+              <p class="w-small w-muted">Chicago Athletic Association Hotel · 12 S Michigan Ave</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Your day, in order</h2>
+              <ul class="timeline">
+                <li><time>—</time><div><strong>Ceremony</strong><br><span class="w-small w-muted">White City Ballroom</span></div></li>
+                <li><time>—</time><div><strong>Cocktail hour</strong></div></li>
+                <li><time>—</time><div><strong>Reception</strong><br><span class="w-small w-muted">Dinner and dancing</span></div></li>
+              </ul>
+              <span class="w-todo">TODO(Tyler &amp; Sara): times and rooms (backlog P-02, P-03). The site shows an em dash rather than a plausible guess.</span>
+            </div>
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Directions</h3><p class="w-small w-muted">Valet at 71 E Madison.</p></a>
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Your table</h3><p class="w-small w-muted">Revealed on the day.</p></a>
+            </div>
+            <p class="w-body">Story and adventures drop below logistics for the whole week: in operate mode the home page is a schedule with the couple's story attached, not the other way round.</p>
+          </div>
+        </div>
+
+        <!-- WEDDING DAY -->
+        <div class="site" data-scene-panel="wedding-day" hidden>
+          <div class="state-flag">WEDDING_DAY · mode: operate</div>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Today</p>
+              <h1 class="w-h1">It's today.</h1>
+            </div>
+            <div class="w-card">
+              <p class="w-eyebrow">Happening now</p>
+              <h2 class="w-h2">Cocktail hour</h2>
+              <p class="w-small w-muted">Next: reception, in the ballroom.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Today's order</h2>
+              <ul class="timeline">
+                <li><time>—</time><div>Ceremony</div></li>
+                <li data-now="true"><time>now</time><div><strong>Cocktail hour</strong></div></li>
+                <li><time>—</time><div>Reception</div></li>
+              </ul>
+            </div>
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Your table</h3><p class="w-small w-muted">Table and floor plan.</p></a>
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Share photos</h3><p class="w-small w-muted">Upload from your phone.</p></a>
+            </div>
+            <p class="w-small w-muted">On the day the page is a pocket concierge: now, next, table, photos. Everything else is one tap away, nothing else is on screen.</p>
+          </div>
+        </div>
+
+        <!-- POST WEDDING -->
+        <div class="site" data-scene-panel="post-wedding" hidden>
+          <div class="state-flag">POST_WEDDING · mode: remember</div>
+          <div class="hero">
+            <p class="w-eyebrow">Thank you</p>
+            <h1 class="w-display">We're married.</h1>
+            <p class="w-lede">Thank you for being in the room. Here is the weekend, as you all saw it.</p>
+          </div>
+          <div class="w-wrap">
+            <div class="w-card">
+              <h2 class="w-h3">Add your photos</h2>
+              <p class="w-small">If you took pictures, put them here — they join everyone else's in the gallery.</p>
+              <a class="w-btn w-btn-primary w-btn-sm" href="#">Upload photos</a>
+            </div>
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">The gallery</h3><p class="w-small w-muted">Everything guests shared.</p></a>
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Our story</h3><p class="w-small w-muted">How we got here.</p></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARCHIVE -->
+        <div class="site" data-scene-panel="archive" hidden>
+          <div class="state-flag">ARCHIVE · mode: remember</div>
+          <div class="hero">
+            <p class="w-eyebrow">July 17, 2027 · Chicago</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <hr class="w-hairline" style="width: 60%">
+            <p class="w-lede">The permanent record of a shared weekend.</p>
+          </div>
+          <div class="w-wrap">
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Photos</h3><p class="w-small w-muted">The full gallery, kept.</p></a>
+              <a class="w-card" href="#" style="text-decoration: none"><h3 class="w-h3">Our story</h3><p class="w-small w-muted">And the adventures behind it.</p></a>
+            </div>
+            <p class="w-small w-muted">RSVP, travel tools, and ride benefits are gone — not broken, retired. Each explains that the weekend has passed and points at what remains.</p>
+          </div>
+        </div>
+
+        <!-- DESIGN SWITCHER -->
+        <div class="site" data-scene-panel="switcher" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Two complete design systems</p>
+              <h1 class="w-h1">The switcher is for guests, not just us</h1>
+              <p class="w-body"><code>FLAG_DESIGN_SWITCHER</code> is on by default, so anyone can move between the two kits. The choice rides a cookie, and <code>?theme=</code> makes any link shareable in a chosen kit.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Gilded Hour</h2>
+              <p class="w-small">Art Deco. Cinzel over Josefin Sans, Big Shoulders for numerals; white Carrara marble ground, gold rules, square corners, engraved insets.</p>
+              <div class="w-row">
+                <span class="w-badge">#1C1B18</span><span class="w-badge">#C9A648</span><span class="w-badge">#2E5B7B</span>
+              </div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Conservatory</h2>
+              <p class="w-small">Botanical. Gloock over Spectral, Cardo for numerals; creme herbarium paper, leaf greens, 8px radius, pressed-specimen rules.</p>
+              <div class="w-row">
+                <span class="w-badge">#2A4430</span><span class="w-badge">#7E9C5F</span><span class="w-badge">#D4B24A</span>
+              </div>
+            </div>
+            <p class="w-small w-muted">Use the Design control above the viewport — every scene in every lab re-renders in the other kit. Nothing about the markup changes; only which generated token block resolves.</p>
+          </div>
+        </div>
+
+        <!-- TRANSITIONS -->
+        <div class="site" data-scene-panel="transitions" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · lifecycle</p>
+              <h1 class="w-h1">Manual state always beats the clock</h1>
+              <p class="w-body">The calendar only ever <em>suggests</em> a state. An admin accepts or ignores it, and a preview never changes what the public sees.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Allowed transitions</h2>
+              <p class="w-small">Forward by one or more states, or back by exactly one — an undo, not a rewind. <code>canTransition</code> enforces it server-side.</p>
+              <dl class="w-dl">
+                <dt>Now</dt><dd>RSVP_OPEN</dd>
+                <dt>Suggested</dt><dd>RSVP_OPEN <span class="w-muted">— from the wall clock</span></dd>
+                <dt>Forward</dt><dd>any later state</dd>
+                <dt>Back</dt><dd>INVITATIONS_OPEN only</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Preview without publishing</h2>
+              <p class="w-small">A signed preview token renders any state or kit for one admin at <code>/t/&lt;theme&gt;/preview/&lt;token&gt;</code>. Production state is untouched.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="notes" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="teaser">
+  <h3>Teaser — the pre-announcement state</h3>
+  <p>The earliest public state. A shared link resolves to a deliberate page rather than a 404, and nothing that isn't announced yet leaks.</p>
+  <ul>
+    <li><strong>Check:</strong> no venue name, no schedule, no RSVP entry point anywhere on the page.</li>
+    <li><strong>Check:</strong> the date motif reads correctly at 390px without wrapping mid-numeral.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: explore</span><span class="chip">anonymous</span></div>
+</template>
+
+<template data-notes="save-the-date">
+  <h3>Save the date — date and city go public</h3>
+  <p>Venue and city are now stated because the brief states them. Times and dress code are not, so they are absent rather than approximated.</p>
+  <ul>
+    <li><strong>Check:</strong> the invitation send date is a visible <code>TODO(Tyler &amp; Sara)</code>, not a guess.</li>
+    <li><strong>Check:</strong> story copy matches <code>src/content/seed/story.json</code> — only the two sentences the brief actually supplies.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: explore</span><span class="chip chip-warn">backlog P-01</span></div>
+</template>
+
+<template data-notes="invitations-open">
+  <h3>Invitations open — the first act state</h3>
+  <p>The primary action becomes "find your invitation". The essentials block appears in full, with placeholders held open for the facts the couple still owe.</p>
+  <ul>
+    <li><strong>Check:</strong> exactly one primary button above the fold.</li>
+    <li><strong>Check:</strong> a lost-card path (email sign-in) is offered without demoting the invitation link.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">claim_invitation</span><span class="chip chip-warn">backlog P-02, P-07</span></div>
+</template>
+
+<template data-notes="rsvp-open">
+  <h3>RSVP open — the state the site lives in longest</h3>
+  <p>The countdown is live, computed from July 17 2027 in America/Chicago. This is the state to judge the "when, where, what now" test against on a 390px phone.</p>
+  <ul>
+    <li><strong>Check:</strong> date, countdown and the RSVP button all sit above the fold at 390px.</li>
+    <li><strong>Check:</strong> the deadline placeholder is obvious enough that nobody mistakes it for a real date.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: act</span><span class="chip chip-pass">countdown live</span></div>
+</template>
+
+<template data-notes="rsvp-closed">
+  <h3>RSVP closed — a door that explains itself</h3>
+  <p>The count has gone to the venue. The RSVP route stays reachable and tells a late guest what to do instead of failing.</p>
+  <ul>
+    <li><strong>Check:</strong> no primary RSVP action remains anywhere on Home.</li>
+    <li><strong>Check:</strong> "ask us" is offered as the human fallback.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: act</span><span class="chip chip-block">rsvp window closed</span></div>
+</template>
+
+<template data-notes="wedding-week">
+  <h3>Wedding week — logistics outrank story</h3>
+  <p>Operate mode. The hero is gone; the schedule is the page. Story and adventures still exist, below everything a guest needs this week.</p>
+  <ul>
+    <li><strong>Check:</strong> unknown times render as an em dash plus a visible TODO, never an invented hour.</li>
+    <li><strong>Check:</strong> directions and table are reachable in one tap.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: operate</span><span class="chip chip-warn">backlog P-02, P-03</span></div>
+</template>
+
+<template data-notes="wedding-day">
+  <h3>Wedding day — pocket concierge</h3>
+  <p>Any time on July 17 in America/Chicago is WEDDING_DAY: the comparison is by calendar day, not instant. Now and next lead; the rest is one tap away.</p>
+  <ul>
+    <li><strong>Check:</strong> "happening now" is the largest thing on screen.</li>
+    <li><strong>Check:</strong> table and photo upload are both reachable without scrolling past the timeline.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">view_table_assignment</span><span class="chip chip-cap">upload_media</span></div>
+</template>
+
+<template data-notes="post-wedding">
+  <h3>Post wedding — the memory turn</h3>
+  <p>Remember mode. Upload is promoted while photos are still on people's phones; the operational tools retire.</p>
+  <ul>
+    <li><strong>Check:</strong> upload is the primary action, gallery second.</li>
+    <li><strong>Check:</strong> no RSVP or travel tooling survives on Home.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">upload_media</span><span class="chip">≤ 30 days after</span></div>
+</template>
+
+<template data-notes="archive">
+  <h3>Archive — the keepsake</h3>
+  <p>Thirty days on, the site settles into a permanent record. Retired features explain themselves rather than disappearing into 404s.</p>
+  <ul>
+    <li><strong>Check:</strong> only story, adventures and photos remain as destinations.</li>
+    <li><strong>Check:</strong> the page still reads as a keepsake, not a decommissioned app.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /</span><span class="chip chip-cap">LIFECYCLE_MODE: remember</span><span class="chip">&gt; 30 days after</span></div>
+</template>
+
+<template data-notes="switcher">
+  <h3>Design switcher — two kits, one markup</h3>
+  <p>Both kits are complete design systems, not palettes. Switching changes which generated <code>[data-theme]</code> block resolves; no component knows which kit it is in.</p>
+  <ul>
+    <li><strong>Check:</strong> switch kits on any other scene — spacing, type scale and ornament all change together.</li>
+    <li><strong>Check:</strong> no raw hex or font literal survives in a component; every value traces to a token.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">FLAG_DESIGN_SWITCHER</span><span class="chip">cookie + ?theme=</span><span class="chip chip-pass">tokens inlined from theme.css</span></div>
+</template>
+
+<template data-notes="transitions">
+  <h3>Transition rules — the clock only suggests</h3>
+  <p>Automatic transitions are proposals an admin accepts. Manual state always wins, and previews never mutate production.</p>
+  <ul>
+    <li><strong>Check:</strong> back is limited to exactly one state — an undo, not a rewind.</li>
+    <li><strong>Check:</strong> a preview token names both a state and a kit, and is scoped to one admin.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">admin_lifecycle</span><span class="chip">canTransition()</span><span class="chip">/t/&lt;theme&gt;/preview/&lt;token&gt;</span></div>
+</template>
+
+<script>
+/* Feature lab shell. No dependencies: a scene switcher, a theme switch that
+   swaps which kit's tokens the device viewport resolves against, and a
+   viewport-width toggle that starts at the 390px phone the site is built for. */
+(function () {
+  'use strict';
+
+  var device = document.getElementById('device');
+  var urlBar = document.getElementById('device-url');
+  var widthOut = document.getElementById('device-w');
+  var notes = document.getElementById('notes-body');
+
+  function pressGroup(name, value) {
+    var buttons = document.querySelectorAll('[data-' + name + ']');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+    }
+  }
+
+  /* Theme: the device carries data-theme, so every token under it resolves
+     from the chosen kit's generated block. */
+  function setTheme(id) {
+    if (device) device.setAttribute('data-theme', id);
+    pressGroup('labTheme', id);
+  }
+
+  function setWidth(px) {
+    if (device) device.style.setProperty('--device-w', px + 'px');
+    if (widthOut) widthOut.textContent = px + '×';
+    pressGroup('labWidth', px);
+  }
+
+  function setScene(id) {
+    var panels = document.querySelectorAll('[data-scene-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].hidden = panels[i].dataset.scenePanel !== id;
+    }
+    var buttons = document.querySelectorAll('[data-scene]');
+    for (var j = 0; j < buttons.length; j++) {
+      var b = buttons[j];
+      var on = b.dataset.scene === id;
+      b.setAttribute('aria-current', String(on));
+      if (on && urlBar && b.dataset.url) urlBar.textContent = b.dataset.url;
+    }
+    var tpl = document.querySelector('template[data-notes="' + id + '"]');
+    if (tpl && notes) {
+      notes.innerHTML = '';
+      notes.appendChild(tpl.content.cloneNode(true));
+    }
+    var vp = document.querySelector('.viewport');
+    if (vp) vp.scrollTop = 0;
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lab-theme], [data-lab-width], [data-scene]');
+    if (!t) return;
+    if (t.dataset.labTheme) setTheme(t.dataset.labTheme);
+    else if (t.dataset.labWidth) setWidth(t.dataset.labWidth);
+    else if (t.dataset.scene) setScene(t.dataset.scene);
+  });
+
+  /* Local interactivity inside a scene: [data-go] moves to another step of the
+     same flow, [data-toggle] flips a disclosure. Both are plain DOM so a scene
+     stays testable with the keyboard. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      e.preventDefault();
+      var scope = go.closest('[data-flow]');
+      if (!scope) return;
+      var steps = scope.querySelectorAll('[data-step]');
+      for (var i = 0; i < steps.length; i++) steps[i].hidden = steps[i].dataset.step !== go.dataset.go;
+      var vp = go.closest('.viewport');
+      if (vp) vp.scrollTop = 0;
+      return;
+    }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) {
+      var target = document.getElementById(tg.dataset.toggle);
+      if (!target) return;
+      var open = target.hidden;
+      target.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+    }
+  });
+
+  var first = document.querySelector('[data-scene]');
+  if (first) setScene(first.dataset.scene);
+  setTheme('gilded-hour');
+  setWidth('390');
+})();
+
+
+/* Live countdown to the ceremony date in the wedding's own time zone. */
+(function () {
+  var target = new Date('2027-07-17T00:00:00-05:00');
+  var units = [
+    ['days', 86400000],
+    ['hours', 3600000],
+    ['minutes', 60000]
+  ];
+  function render(el) {
+    if (!el) return;
+    var left = target.getTime() - Date.now();
+    if (left < 0) left = 0;
+    var html = '';
+    for (var i = 0; i < units.length; i++) {
+      var size = units[i][1];
+      var n = Math.floor(left / size);
+      left -= n * size;
+      html += '<div><b>' + n + '</b><span>' + units[i][0] + '</span></div>';
+    }
+    el.innerHTML = html;
+  }
+  function tick() {
+    render(document.getElementById('countdown'));
+    render(document.getElementById('countdown-2'));
+  }
+  tick();
+  setInterval(tick, 60000);
+})();
+</script>

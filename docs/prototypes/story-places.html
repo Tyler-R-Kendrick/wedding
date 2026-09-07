@@ -1,0 +1,1544 @@
+<title>Adventure Graph &amp; CAA Docent</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<style>
+[data-theme="gilded-hour"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #1c1b18;
+  --color-on-primary: #f8f6f1;
+  --color-secondary: #2e5b7b;
+  --color-on-secondary: #f8f6f1;
+  --color-tertiary: #7a5a16;
+  --color-on-tertiary: #fbf9f4;
+  --color-gold: #c9a648;
+  --color-gold-wash: #f3ead0;
+  --color-lake-wash: #cfe0eb;
+  --color-moss: #4f5f3f;
+  --color-neutral: #f8f6f1;
+  --color-neutral-variant: #ede5d6;
+  --color-surface: #fdfcfa;
+  --color-on-surface: #1c1b18;
+  --color-on-surface-muted: #5e5a52;
+  --color-outline: #d8cfbf;
+  --color-error: #8e2e22;
+  --color-on-error: #fff5f2;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+  --spacing-step: 24px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-text: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-accent: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --font-cinzel: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-big-shoulders-display: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 500;
+  --type-display-xl-line: 1.02;
+  --type-display-xl-tracking: 0.04em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 2.75rem;
+  --type-display-lg-weight: 500;
+  --type-display-lg-line: 1.08;
+  --type-display-lg-tracking: 0.05em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h1-size: 2rem;
+  --type-h1-weight: 500;
+  --type-h1-line: 1.15;
+  --type-h1-tracking: 0.06em;
+  --type-h1-features: normal;
+  --type-h2-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 500;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0.06em;
+  --type-h2-features: normal;
+  --type-h3-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0.1em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-lg-size: 1.3125rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.55;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-md-size: 1.125rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.6;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 600;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.18em;
+  --type-label-caps-features: normal;
+  --type-label-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-sm-size: 0.765rem;
+  --type-label-sm-weight: 600;
+  --type-label-sm-line: 1.1;
+  --type-label-sm-tracking: 0.04em;
+  --type-label-sm-features: normal;
+  --type-numeral-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-size: 3.5rem;
+  --type-numeral-weight: 600;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0.02em;
+  --type-numeral-features: 'tnum', 'lnum';
+  --type-numeral-xl-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-xl-size: 6rem;
+  --type-numeral-xl-weight: 700;
+  --type-numeral-xl-line: 0.9;
+  --type-numeral-xl-tracking: 0.01em;
+  --type-numeral-xl-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-reveal: 700ms;
+  --duration-curtain: 1100ms;
+  --ease-engrave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-doors: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* shadows (design.json extensions.shadows) */
+  --shadow-panel-lift: 0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08);
+  --shadow-engraved-inset: inset 0 0 0 1px rgba(248,246,241,0.3);
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/gilded-hour) */
+
+}
+
+[data-theme="conservatory"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #2a4430;
+  --color-on-primary: #f4eedf;
+  --color-secondary: #4f6338;
+  --color-on-secondary: #f4eedf;
+  --color-tertiary: #d4b24a;
+  --color-on-tertiary: #2a4430;
+  --color-neutral: #f4eedf;
+  --color-neutral-variant: #eae2ce;
+  --color-surface: #fbf8f1;
+  --color-on-surface: #2a4430;
+  --color-on-surface-muted: #4f5a48;
+  --color-outline: #c8c1ac;
+  --color-error: #8b3a2b;
+  --color-on-error: #fff5f0;
+  --color-leaf: #7e9c5f;
+  --color-leaf-deep: #3f5f33;
+  --color-moss-wash: #dfe5cf;
+  --color-sky: #d4e4ec;
+  --color-sky-ink: #2b4a5a;
+  --color-kraft: #e4d6ba;
+  --color-kraft-deep: #c9b48c;
+  --color-soil: #6e5637;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  --rounded-md: 8px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-text: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-accent: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --font-gloock: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-spectral: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-cardo: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 400;
+  --type-display-xl-line: 1;
+  --type-display-xl-tracking: -0.01em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 3rem;
+  --type-display-lg-weight: 400;
+  --type-display-lg-line: 1.05;
+  --type-display-lg-tracking: -0.005em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 400;
+  --type-h1-line: 1.1;
+  --type-h1-tracking: 0em;
+  --type-h1-features: normal;
+  --type-h2-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.625rem;
+  --type-h2-weight: 400;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0em;
+  --type-h2-features: normal;
+  --type-h3-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-h3-size: 1.25rem;
+  --type-h3-weight: 500;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-lg-size: 1.25rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.6;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-md-size: 1.0625rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.55;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-lg-size: 1rem;
+  --type-label-lg-weight: 500;
+  --type-label-lg-line: 1;
+  --type-label-lg-tracking: 0.02em;
+  --type-label-lg-features: normal;
+  --type-label-caps-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 500;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.1em;
+  --type-label-caps-features: 'smcp', 'c2sc';
+  --type-specimen-label-family: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --type-specimen-label-size: 1rem;
+  --type-specimen-label-weight: 400;
+  --type-specimen-label-line: 1.4;
+  --type-specimen-label-tracking: 0.01em;
+  --type-specimen-label-features: 'liga', 'kern';
+  --type-numeral-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-numeral-size: 2.5rem;
+  --type-numeral-weight: 400;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0em;
+  --type-numeral-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 160ms;
+  --duration-settle: 700ms;
+  --stagger-settle: 80ms;
+  /* shadows (design.json extensions.shadows) */
+  --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
+  --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
+  --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-none: none;
+  /* focus (design.json extensions.focus) */
+  --focus-ring: 2px solid var(--color-secondary);
+  --focus-offset: 2px;
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/conservatory) */
+
+}
+/* ============================================================
+   Feature lab shell — the workbench chrome around the site.
+   Deliberately not the wedding's design language: the chrome is an
+   instrument (IBM Plex, workbench neutrals), the device viewport is
+   the site (Gilded Hour / Conservatory tokens, verbatim).
+   ============================================================ */
+
+:root {
+  --wb-ground: #eceef1;
+  --wb-panel: #ffffff;
+  --wb-panel-2: #f5f6f8;
+  --wb-rule: #d6dae1;
+  --wb-ink: #171a1f;
+  --wb-muted: #5f6875;
+  --wb-accent: #8a6d1f;
+  --wb-accent-soft: #f0e7cf;
+  --wb-pass: #2f6b45;
+  --wb-warn: #8a5a12;
+  --wb-block: #9a3323;
+  --wb-pass-soft: #ddeee3;
+  --wb-warn-soft: #f6e8cd;
+  --wb-block-soft: #f6ded9;
+  --wb-shadow: 0 1px 2px rgba(23, 26, 31, 0.06), 0 12px 32px rgba(23, 26, 31, 0.08);
+  --wb-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --wb-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wb-ground: #0f1216;
+    --wb-panel: #181c22;
+    --wb-panel-2: #1f242b;
+    --wb-rule: #2b323b;
+    --wb-ink: #dfe3e9;
+    --wb-muted: #8d97a5;
+    --wb-accent: #c9a648;
+    --wb-accent-soft: #332d1c;
+    --wb-pass: #6cc08a;
+    --wb-warn: #d8b04a;
+    --wb-block: #e08171;
+    --wb-pass-soft: #1a2b21;
+    --wb-warn-soft: #2e2716;
+    --wb-block-soft: #33201c;
+    --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --wb-ground: #0f1216;
+  --wb-panel: #181c22;
+  --wb-panel-2: #1f242b;
+  --wb-rule: #2b323b;
+  --wb-ink: #dfe3e9;
+  --wb-muted: #8d97a5;
+  --wb-accent: #c9a648;
+  --wb-accent-soft: #332d1c;
+  --wb-pass: #6cc08a;
+  --wb-warn: #d8b04a;
+  --wb-block: #e08171;
+  --wb-pass-soft: #1a2b21;
+  --wb-warn-soft: #2e2716;
+  --wb-block-soft: #33201c;
+  --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--wb-ground);
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- masthead ---------- */
+
+.lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+}
+
+.lab-kicker {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-accent);
+  margin: 0;
+}
+
+.lab-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.lab-sub {
+  margin: 0;
+  color: var(--wb-muted);
+  font-size: 13.5px;
+  max-width: 62ch;
+}
+
+.lab-head-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 340px; }
+
+/* ---------- control bar ---------- */
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ctl { display: flex; align-items: center; gap: 7px; }
+
+.ctl-label {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wb-panel);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--wb-muted);
+  font-family: var(--wb-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--wb-rule);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--wb-ink); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--wb-accent-soft);
+  color: var(--wb-ink);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.lab-body {
+  display: grid;
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.rail {
+  border-right: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 14px 28px;
+  position: sticky;
+  top: 47px;
+  max-height: calc(100vh - 47px);
+  overflow-y: auto;
+}
+
+.rail h2 {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 9px 4px;
+  font-weight: 500;
+}
+
+.rail h2 + .rail-group { margin-bottom: 20px; }
+.rail-group { display: flex; flex-direction: column; gap: 3px; }
+
+.rail button {
+  appearance: none;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.rail button:hover { background: var(--wb-panel-2); }
+
+.rail button[aria-current="true"] {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  font-weight: 600;
+}
+
+.rail button small {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  color: var(--wb-muted);
+  font-weight: 400;
+}
+
+.rail button[aria-current="true"] small { color: var(--wb-ink); }
+
+.stage {
+  padding: 26px 22px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- the device ---------- */
+
+.device {
+  width: 100%;
+  max-width: var(--device-w, 390px);
+  border: 1px solid var(--wb-rule);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--wb-shadow);
+  overflow: hidden;
+  transition: max-width 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.device-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--wb-panel-2);
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  color: var(--wb-muted);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-rule);
+  flex: none;
+}
+
+.device-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-ink);
+}
+
+.device-w { flex: none; }
+
+.viewport { max-height: 74vh; overflow-y: auto; overflow-x: hidden; }
+
+/* ---------- notes strip ---------- */
+
+.notes {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 10px;
+  background: var(--wb-panel);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes p { margin: 0; font-size: 13.5px; color: var(--wb-muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.notes li { font-size: 13.5px; color: var(--wb-muted); }
+.notes li strong { color: var(--wb-ink); font-weight: 600; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+.chip-cap { border-color: var(--wb-accent); color: var(--wb-accent); background: var(--wb-accent-soft); }
+.chip-pass { border-color: var(--wb-pass); color: var(--wb-pass); background: var(--wb-pass-soft); }
+.chip-warn { border-color: var(--wb-warn); color: var(--wb-warn); background: var(--wb-warn-soft); }
+.chip-block { border-color: var(--wb-block); color: var(--wb-block); background: var(--wb-block-soft); }
+
+/* ============================================================
+   Site primitives — everything below draws only on the theme
+   tokens inlined from src/themes/<id>/theme.css.
+   ============================================================ */
+
+.site {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.w-wrap { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.w-stack { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.w-stack-sm { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.w-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; }
+.w-between { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+
+.w-eyebrow {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  margin: 0;
+}
+
+.w-display, .w-h1, .w-h2, .w-h3 { margin: 0; text-wrap: balance; color: var(--color-on-surface); }
+
+.w-display {
+  font-family: var(--type-display-lg-family);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+
+.w-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-tracking);
+}
+
+.w-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-tracking);
+}
+
+.w-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  letter-spacing: var(--type-h3-tracking);
+}
+
+.w-body { margin: 0; font-size: var(--type-body-md-size); line-height: var(--type-body-md-line); max-width: 62ch; }
+.w-lede { margin: 0; font-size: var(--type-body-lg-size); line-height: var(--type-body-lg-line); max-width: 58ch; }
+.w-small { margin: 0; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.w-muted { color: var(--color-on-surface-muted); }
+
+.w-numeral {
+  font-family: var(--type-numeral-family);
+  font-size: var(--type-numeral-size);
+  font-weight: var(--type-numeral-weight);
+  line-height: var(--type-numeral-line);
+  letter-spacing: var(--type-numeral-tracking);
+  font-feature-settings: var(--type-numeral-features);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Buttons */
+
+.w-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast, 160ms) ease, color var(--duration-fast, 160ms) ease;
+}
+
+.w-btn-primary { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.w-btn-primary:hover { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-on-secondary); }
+.w-btn:hover { background: var(--color-neutral-variant); }
+.w-btn-primary:disabled, .w-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.w-btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--type-label-sm-size); }
+
+/* Surfaces */
+
+.w-card {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-panel {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-rule { border: 0; border-top: 1px solid var(--color-outline); margin: 0; }
+
+.w-grid { display: grid; gap: var(--spacing-sm); }
+.w-grid-2 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Notices */
+
+.w-notice {
+  border-left: 3px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--type-body-sm-size);
+  line-height: 1.5;
+}
+
+.w-notice-ok { border-left-color: var(--color-secondary); }
+.w-notice-err { border-left-color: var(--color-error); color: var(--color-error); }
+.w-notice-todo { border-left-color: var(--color-tertiary); }
+
+/* The TODO(Tyler & Sara) marker: placeholder facts must look like placeholders. */
+.w-todo {
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-on-surface-muted);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 7px,
+    var(--color-neutral-variant) 7px,
+    var(--color-neutral-variant) 14px
+  );
+  border: 1px dashed var(--color-outline);
+  padding: 8px 10px;
+  display: block;
+}
+
+/* Fields */
+
+.w-field { display: flex; flex-direction: column; gap: 6px; }
+
+.w-label {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.w-input, .w-select, .w-textarea {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.4;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.w-textarea { min-height: 84px; resize: vertical; }
+.w-input:focus-visible, .w-select:focus-visible, .w-textarea:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* A choice row: label wraps the control, so the whole row is a hit target. */
+.w-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 48px;
+}
+
+.w-choice:hover { background: var(--color-neutral); }
+.w-choice input { margin: 3px 0 0; width: 20px; height: 20px; flex: none; accent-color: var(--color-secondary); }
+.w-choice:has(input:checked) { border-color: var(--color-primary); background: var(--color-neutral); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.w-choice span { display: flex; flex-direction: column; gap: 2px; }
+.w-choice small { font-size: 14px; color: var(--color-on-surface-muted); }
+
+.w-choices { display: flex; flex-direction: column; gap: 6px; }
+.w-choices-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+
+/* Badges */
+
+.w-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--color-outline);
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+}
+
+.w-badge-on { border-color: var(--color-primary); color: var(--color-primary); }
+.w-badge-warn { border-color: var(--color-tertiary); color: var(--color-tertiary); }
+.w-badge-err { border-color: var(--color-error); color: var(--color-error); }
+
+/* Site nav */
+
+.w-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  align-items: center;
+}
+
+.w-nav a {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+}
+
+.w-nav a[aria-current="page"] { color: var(--color-on-surface); text-decoration: underline; text-underline-offset: 4px; }
+
+.w-monogram {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-on-surface);
+  margin-right: auto;
+}
+
+.w-link { color: var(--color-secondary); text-underline-offset: 3px; }
+
+/* Definition rows */
+
+.w-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--spacing-md); margin: 0; align-items: baseline; }
+.w-dl dt { font-family: var(--type-label-caps-family); font-size: var(--type-label-sm-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+.w-dl dd { margin: 0; font-size: var(--type-body-sm-size); }
+
+/* Theme-specific character. Gilded Hour is engraved and square; Conservatory
+   is printed and soft. These are the two kits' own rules, not decoration. */
+
+[data-theme="gilded-hour"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  border: 0;
+}
+
+[data-theme="gilded-hour"] .w-card { border-color: var(--color-gold); box-shadow: var(--shadow-engraved-inset); }
+[data-theme="gilded-hour"] .w-eyebrow { color: var(--color-tertiary); }
+
+[data-theme="conservatory"] .w-card,
+[data-theme="conservatory"] .w-panel,
+[data-theme="conservatory"] .w-btn,
+[data-theme="conservatory"] .w-choice,
+[data-theme="conservatory"] .w-input,
+[data-theme="conservatory"] .w-select,
+[data-theme="conservatory"] .w-textarea { border-radius: var(--rounded-md); }
+
+[data-theme="conservatory"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-leaf), transparent);
+  border: 0;
+}
+
+[data-theme="conservatory"] .w-eyebrow { color: var(--color-leaf-deep); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .lab-body { grid-template-columns: 1fr; }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--wb-rule); }
+  .rail-group { flex-direction: row; flex-wrap: wrap; }
+  .rail button { flex: 1 1 150px; }
+  .stage { padding: 18px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+
+/* A chapter reads as a chapter: the numeral is the structure, because the
+   story genuinely is ordered. */
+.chapter { display: grid; grid-template-columns: 34px 1fr; gap: var(--spacing-md); padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-outline); }
+.chapter:last-child { border-bottom: 0; }
+.chapter-n { font-family: var(--type-numeral-family); font-size: 1.5rem; font-weight: 600; line-height: 1; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
+[data-theme="conservatory"] .chapter-n { font-family: var(--font-accent); }
+
+/* Adventures are a graph, so the card carries its edges. */
+.adv { display: flex; flex-direction: column; gap: 6px; padding: var(--spacing-md); border: 1px solid var(--color-outline); background: var(--color-neutral); }
+[data-theme="conservatory"] .adv { border-radius: var(--rounded-md); }
+.adv-edges { display: flex; flex-wrap: wrap; gap: 5px; }
+.edge { font-family: var(--wb-mono); font-size: 10.5px; padding: 2px 6px; border: 1px solid var(--color-outline); color: var(--color-on-surface-muted); background: var(--color-surface); }
+
+.memory-pair { display: grid; gap: var(--spacing-sm); }
+.memory { border-left: 3px solid var(--color-secondary); padding: var(--spacing-sm) var(--spacing-md); background: var(--color-neutral); }
+.memory p { margin: 0; }
+[data-theme="conservatory"] .memory { border-left-color: var(--color-leaf); }
+.memory-who { font-family: var(--type-label-caps-family); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+
+/* Provenance is a first-class citizen: every external fact carries its source
+   and the day it was last checked. */
+.prov { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--color-on-surface-muted); font-family: var(--font-text); }
+.prov .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-tertiary); flex: none; }
+
+.facts { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.facts li { list-style: none; padding: 10px 0; border-bottom: 1px solid var(--color-outline); font-size: var(--type-body-sm-size); }
+.facts li:last-child { border-bottom: 0; }
+
+.look { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; }
+.look-mark { flex: none; width: 20px; height: 20px; border: 1px solid var(--color-tertiary); display: grid; place-items: center; font-size: 11px; color: var(--color-tertiary); font-family: var(--wb-mono); margin-top: 2px; }
+[data-theme="conservatory"] .look-mark { border-color: var(--color-leaf-deep); color: var(--color-leaf-deep); border-radius: 50%; }
+
+.faq-q { width: 100%; text-align: left; appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-outline); padding: 14px 0; cursor: pointer; font-family: var(--font-text); font-size: 17px; line-height: 1.4; color: var(--color-on-surface); display: flex; justify-content: space-between; gap: var(--spacing-sm); align-items: baseline; }
+.faq-q:hover { color: var(--color-secondary); }
+.faq-q::after { content: "+"; font-family: var(--wb-mono); color: var(--color-on-surface-muted); flex: none; }
+.faq-q[aria-expanded="true"]::after { content: "−"; }
+.faq-a { padding: 12px 0 16px; border-bottom: 1px solid var(--color-outline); display: flex; flex-direction: column; gap: 8px; }
+</style>
+
+<header class="lab-head">
+  <div class="lab-head-main">
+    <p class="lab-kicker">Feature lab · level 05</p>
+    <h1 class="lab-title">Story, adventures &amp; the CAA docent</h1>
+    <p class="lab-sub">The celebrate half of the site: seven story chapters, an adventure graph the couple's places hang off, a guest-facing "borrow one of ours" layer, a docent guide to an 1893 building, and the FAQ. Every fact carries where it came from and when it was last checked.</p>
+  </div>
+</header>
+
+<div class="lab-controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="lab-body">
+  <nav class="rail" aria-label="Surfaces">
+    <h2>Story</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="story" data-url="/our-story">Our Story<small>seven chapters</small></button>
+    </div>
+    <h2>Adventures</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="adventures" data-url="/our-adventures">Our Adventures<small>the graph</small></button>
+      <button type="button" data-scene="adventure" data-url="/our-adventures/starved-rock">Starved Rock<small>detail + dual memory</small></button>
+      <button type="button" data-scene="share" data-url="/share-an-adventure">Share an Adventure<small>borrow one of ours</small></button>
+    </div>
+    <h2>Place</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="caa" data-url="/explore-caa">Explore CAA<small>docent guide</small></button>
+      <button type="button" data-scene="space" data-url="/explore-caa/white-city-ballroom">White City Ballroom<small>look for this</small></button>
+    </div>
+    <h2>Answers</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="ask" data-url="/ask-us">Ask us<small>13 questions</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="device-bar">
+        <span class="device-dot" aria-hidden="true"></span>
+        <span class="device-url" id="device-url">/our-story</span>
+        <span class="device-w" id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- OUR STORY -->
+        <div class="site" data-scene-panel="story" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Our story</p>
+              <h1 class="w-h1">Best friendship. Peace. Becoming better together.</h1>
+              <p class="w-lede">Seven chapters, in order. Four of them are still ours to write.</p>
+            </div>
+            <div>
+              <article class="chapter">
+                <span class="chapter-n">01</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">How we met</h2>
+                  <p class="w-body">We met at Allison and Jamie's wedding.</p>
+                  <p class="w-body">Flirty glances across the room, and an immediate connection.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the rest of the story — who noticed whom first, what was said, and what happened after the last dance.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">02</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">The connection</h2>
+                  <p class="w-body">Best friendship. Peace. Becoming better together.</p>
+                  <p class="w-body">Those are Tyler's words for what this is, and they are the seed of everything on this page.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the story of how the connection became a relationship, in your own words.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">03</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Our life together</h2>
+                  <p class="w-body">The places that shaped us: the Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, the Madison waterfront.</p>
+                  <p class="w-body">You can wander through them on Our Adventures, and borrow a few for your own weekend on Share an Adventure.</p>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">04</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Love</h2>
+                  <p class="w-body">We said "I love you" for the first time at Starved Rock.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): which trail, what day, and who said it first are yours to tell.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">05</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Greater together than alone</h2>
+                  <p class="w-body">Mutual support. Being each other's rock. Home. Gratitude. A deliberate partnership.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): what the next chapter looks like, in your words.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">06</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">The proposal</h2>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the engagement story and photos (content backlog C-07).</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="chapter-n">07</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">What marriage means to us</h2>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): what marriage means to you, and what you hope this weekend is for the people you love.</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUR ADVENTURES -->
+        <div class="site" data-scene-panel="adventures" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Our adventures</p>
+              <h1 class="w-h1">Eight places, and what happened at them</h1>
+              <p class="w-lede">Each one links to a story chapter, a place, and — where it makes sense — something you could do yourself.</p>
+            </div>
+            <div class="w-stack">
+              <article class="adv">
+                <h2 class="w-h3">Starved Rock</h2>
+                <p class="w-small">Where we first said "I love you."</p>
+                <div class="adv-edges"><span class="edge">→ chapter: love</span><span class="edge">→ place: Starved Rock State Park</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Allison and Jamie's wedding</h2>
+                <p class="w-small">Where it started: flirty glances and an immediate connection.</p>
+                <div class="adv-edges"><span class="edge">→ chapter: met</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Museum of Ice Cream</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the visit.</span>
+                <div class="adv-edges"><span class="edge">→ place: Chicago</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Richardson Farm</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the day at the farm.</span>
+                <div class="adv-edges"><span class="edge">→ place: Spring Grove, IL</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Michael Jordan's Steakhouse</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the dinner.</span>
+                <div class="adv-edges"><span class="edge">→ place: Chicago</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Food tastings</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the tastings.</span>
+                <div class="adv-edges"><span class="edge">→ chapter: our life together</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Gardening together</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the garden.</span>
+                <div class="adv-edges"><span class="edge">→ chapter: greater together</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Madison waterfront</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the waterfront.</span>
+                <div class="adv-edges"><span class="edge">→ place: Madison, WI</span></div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADVENTURE DETAIL -->
+        <div class="site" data-scene-panel="adventure" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">An adventure</p>
+              <h1 class="w-h1">Starved Rock</h1>
+              <p class="w-lede">Where we first said "I love you."</p>
+            </div>
+            <hr class="w-hairline">
+            <div class="memory-pair">
+              <div class="memory">
+                <p class="memory-who">Sara remembers</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): Sara remembers…</span>
+              </div>
+              <div class="memory">
+                <p class="memory-who">Tyler remembers</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): Tyler remembers…</span>
+              </div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">You could go too</h2>
+              <p class="w-small">An Illinois state park near Utica. Trail conditions, hours, and visitor-center details are on the park's official page.</p>
+              <p class="w-small"><em>Why we share this:</em> it's where we first said "I love you." If you have a free day, we'd love for you to walk it too.</p>
+              <div class="w-row">
+                <span class="w-badge">≈ 5 hours</span>
+                <span class="w-badge">Day trip</span>
+                <span class="w-badge w-badge-warn">Draft</span>
+              </div>
+              <a class="w-btn w-btn-sm" href="#">Open the park's official page</a>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Illinois DNR · official web · checked 4 Sep 2026</div>
+            </div>
+            <p class="w-small w-muted">Facts about the place come from the park's own site and are dated. The memory attached to it comes only from the couple — the site never writes one for them.</p>
+          </div>
+        </div>
+
+        <!-- SHARE AN ADVENTURE -->
+        <div class="site" data-scene-panel="share" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Share an adventure</p>
+              <h1 class="w-h1">Borrow one of ours</h1>
+              <p class="w-lede">If you're in town with time to spare, here's what we'd send you to do — and why it matters to us.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="have">How long have you got?</label>
+              <select class="w-select" id="have">
+                <option>Forty-five minutes</option>
+                <option>Half a day</option>
+                <option>A whole day</option>
+              </select>
+            </div>
+            <div class="w-card">
+              <p class="w-eyebrow">45 minutes</p>
+              <h2 class="w-h2">The building and the park</h2>
+              <p class="w-small">Between things? Walk the building with the "look for this" list, then step out to the park it looks over.</p>
+              <ul class="facts">
+                <li><strong>Self-guided tour of the CAA</strong> — 25 min</li>
+                <li><strong>Millennium Park walk</strong> — 20 min</li>
+              </ul>
+              <div class="w-row"><span class="w-badge w-badge-warn">Draft</span><span class="w-badge">Architecture</span><span class="w-badge">Outdoors</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">A whole day: Starved Rock</h2>
+              <p class="w-small"><em>Why we share this:</em> it's where we first said "I love you." If you have a free day, we'd love for you to walk it too.</p>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Illinois DNR · official web · checked 4 Sep 2026</div>
+            </div>
+            <p class="w-small w-muted">Every recommendation is a real place with an official link and a check date, plus the couple's own reason for sending you there. Itineraries stay in draft until the couple approve them.</p>
+          </div>
+        </div>
+
+        <!-- EXPLORE CAA -->
+        <div class="site" data-scene-panel="caa" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Explore CAA</p>
+              <h1 class="w-h1">A building worth arriving early for</h1>
+              <p class="w-lede">The Chicago Athletic Association Hotel, 12 S Michigan Ave — built 1893, and the reason we chose it.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">The short history</h2>
+              <ul class="facts">
+                <li>Built in 1893 for the private Chicago Athletic Association.</li>
+                <li>Designed by Henry Ives Cobb, with a facade by Louis Christian Mullgardt.</li>
+                <li>Venetian Gothic, after the Doge's Palace in Venice.</li>
+                <li>It opened amid the 1893 World's Columbian Exposition.</li>
+                <li>A men-only club until 1972.</li>
+                <li>The club closed in 2007.</li>
+                <li>Restored and reopened as a hotel: architecture by Hartshorne Plunkard Architecture, interiors by Roman &amp; Williams.</li>
+                <li>A contributing building in the Historic Michigan Boulevard District.</li>
+              </ul>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Look for this</h2>
+              <div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Patterned brick on the exterior.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Carved limestone.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Arched windows, the Venetian Gothic tell.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Custom stained glass.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Ornate plaster ceilings and cornices.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Mosaic and marble floors.</span></div>
+              </div>
+            </div>
+            <div class="w-stack-sm">
+              <h2 class="w-h2">The rooms</h2>
+              <div class="w-grid w-grid-2">
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">White City Ballroom</h3><p class="w-small w-muted">Stained glass, Carrara marble.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Madison Ballroom</h3><p class="w-small w-muted">Walnut parquet, city views.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Stagg Court</h3><p class="w-small w-muted">The original basketball court.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">The Tank</h3><p class="w-small w-muted">The club's former pool.</p></a>
+              </div>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <span class="w-todo">TODO(Tyler &amp; Sara): which room hosts the ceremony, cocktail hour and reception (backlog P-03). Until then the docent describes all four and claims none.</span>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Eating in the building</h2>
+              <ul class="facts">
+                <li><strong>Cindy's (rooftop)</strong> — hours, menus and reservations live on the official page.<div class="prov"><span class="dot" aria-hidden="true"></span> chicagoathletichotel.com · checked 5 Sep 2026</div></li>
+                <li><strong>Game Room</strong> — hours and menus live on the official page.<div class="prov"><span class="dot" aria-hidden="true"></span> chicagoathletichotel.com · checked 5 Sep 2026</div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- VENUE SPACE -->
+        <div class="site" data-scene-panel="space" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">A room in the building</p>
+              <h1 class="w-h1">White City Ballroom</h1>
+              <p class="w-lede">Floor-to-ceiling windows, vintage stained glass, an original Carrara marble floor, three 19th-century fireplaces, and 167 restored illuminated ceiling embellishments.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Look for this</h2>
+              <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Count the illuminated ceiling embellishments: the kit says 167 were restored.</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Capacity</h2>
+              <dl class="w-dl">
+                <dt>Ceremony</dt><dd>220</dd>
+                <dt>Dinner + dance</dt><dd>220</dd>
+                <dt>Reception</dt><dd>300</dd>
+              </dl>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Venue kit figure — verify with the planner before publishing as fact.</div>
+            </div>
+            <p class="w-small w-muted">Kit figures are labelled as kit figures. A number the couple have not confirmed is never presented in the same voice as one from the brief.</p>
+          </div>
+        </div>
+
+        <!-- ASK US -->
+        <div class="site" data-scene-panel="ask" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Ask us</p>
+              <h1 class="w-h1">Thirteen things people ask</h1>
+              <p class="w-lede">Grouped the way guests ask them, not the way we file them.</p>
+            </div>
+            <div>
+              <h2 class="w-eyebrow" style="margin-bottom:6px">Basics</h2>
+              <button class="faq-q" type="button" data-toggle="a1" aria-expanded="true">When and where is the wedding?</button>
+              <div class="faq-a" id="a1">
+                <p class="w-small">Saturday, July 17, 2027, at the Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
+                <a class="w-link w-small" href="#">The Wedding →</a>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a2" aria-expanded="false">What time does it start?</button>
+              <div class="faq-a" id="a2" hidden>
+                <span class="w-todo">TODO(Tyler &amp; Sara): the ceremony, cocktail hour, and reception times are being confirmed with the planner (backlog P-02).</span>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a3" aria-expanded="false">How do I RSVP?</button>
+              <div class="faq-a" id="a3" hidden>
+                <p class="w-small">You'll receive an invitation link; from there you pick your name and confirm with a one-time code sent to your email. No account, no password.</p>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">On the day</h2>
+              <button class="faq-q" type="button" data-toggle="a4" aria-expanded="false">What should I wear?</button>
+              <div class="faq-a" id="a4" hidden><span class="w-todo">TODO(Tyler &amp; Sara): the dress code, in one sentence, with an example outfit (backlog C-01).</span></div>
+              <button class="faq-q" type="button" data-toggle="a5" aria-expanded="false">What if it rains?</button>
+              <div class="faq-a" id="a5" hidden>
+                <p class="w-small">The ceremony and reception are indoors at the hotel.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): any outdoor plans for the weekend.</span>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a6" aria-expanded="false">Can I take photos?</button>
+              <div class="faq-a" id="a6" hidden><span class="w-todo">TODO(Tyler &amp; Sara): your photo policy for the ceremony and reception. Two professional photographers and a videographer will be there.</span></div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Getting there</h2>
+              <button class="faq-q" type="button" data-toggle="a7" aria-expanded="false">Where do I park?</button>
+              <div class="faq-a" id="a7" hidden>
+                <p class="w-small">The hotel's valet entrance, parking options, and current rates are kept as dated records on Explore CAA, each with the day we last checked them against the hotel's own pages.</p>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a8" aria-expanded="false">Is the venue accessible?</button>
+              <div class="faq-a" id="a8" hidden>
+                <p class="w-small">The hotel describes its accessible rooms and features on its own FAQ page; the link and the date we last checked it are on Explore CAA.</p>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Your party</h2>
+              <button class="faq-q" type="button" data-toggle="a9" aria-expanded="false">Can we bring our kids?</button>
+              <div class="faq-a" id="a9" hidden><span class="w-todo">TODO(Tyler &amp; Sara): kid policies and any activities for the 28 children in the family (backlog C-05).</span></div>
+              <button class="faq-q" type="button" data-toggle="a10" aria-expanded="false">Can I bring a plus-one?</button>
+              <div class="faq-a" id="a10" hidden>
+                <p class="w-small">Your invitation will say who it covers.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): plus-one wording (backlog X-04).</span>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Gifts &amp; contact</h2>
+              <button class="faq-q" type="button" data-toggle="a11" aria-expanded="false">Do you have a registry?</button>
+              <div class="faq-a" id="a11" hidden>
+                <p class="w-small">Your presence is the point. If you'd like to help us with our next adventures, the Gifts page will have the details once we've chosen how.</p>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a12" aria-expanded="false">How do I reach you?</button>
+              <div class="faq-a" id="a12" hidden><span class="w-todo">TODO(Tyler &amp; Sara): the best way for guests to reach you or the planner.</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="notes" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="story">
+  <h3>Our Story — seven ordered chapters</h3>
+  <p>The numerals are structure, not decoration: the chapters are genuinely sequential. Four of seven are pure placeholder, and the page is designed to be readable in that state rather than hiding the gaps.</p>
+  <ul>
+    <li><strong>Check:</strong> every sentence of real copy traces to <code>src/content/seed/story.json</code>; nothing plausible has been invented around it.</li>
+    <li><strong>Check:</strong> a hatched <code>TODO(Tyler &amp; Sara)</code> block can never be mistaken for finished prose.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /our-story</span><span class="chip chip-cap">story.json</span><span class="chip chip-warn">4 of 7 placeholder</span></div>
+</template>
+
+<template data-notes="adventures">
+  <h3>Our Adventures — a graph, not a list</h3>
+  <p>Each adventure carries its edges: the story chapter it belongs to, the place it happened at, and whether a guest could go themselves. Those edges are what Share an Adventure reads.</p>
+  <ul>
+    <li><strong>Check:</strong> six of eight summaries are placeholders — the graph still reads as a graph without them.</li>
+    <li><strong>Check:</strong> "you can go" only appears where a real recommendation exists behind it.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /our-adventures</span><span class="chip chip-cap">adventures.json</span><span class="chip">8 nodes</span></div>
+</template>
+
+<template data-notes="adventure">
+  <h3>Starved Rock — the dual memory layer</h3>
+  <p>The one adventure with a fact from the brief. Sara and Tyler each get their own memory slot; the site holds both open and writes neither.</p>
+  <ul>
+    <li><strong>Check:</strong> the external fact carries source and check date; the memory carries neither, because it isn't external.</li>
+    <li><strong>Check:</strong> the Draft badge is visible — this recommendation is not approved for publication yet.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /our-adventures/starved-rock</span><span class="chip chip-cap">trustClass: EXTERNAL_DATA</span><span class="chip chip-warn">draft</span></div>
+</template>
+
+<template data-notes="share">
+  <h3>Share an Adventure — the guest-facing half</h3>
+  <p>Time-boxed itineraries built from the same recommendation nodes. The couple's reason for sending you somewhere travels with the recommendation.</p>
+  <ul>
+    <li><strong>Check:</strong> pick a different duration — the itinerary bucket changes, the provenance line stays.</li>
+    <li><strong>Check:</strong> nothing here recommends a place without an official link behind it.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /share-an-adventure</span><span class="chip chip-cap">itineraries.json</span><span class="chip">45-min · half-day · full-day</span></div>
+</template>
+
+<template data-notes="caa">
+  <h3>Explore CAA — the docent</h3>
+  <p>Ten history facts from the brief, six things to look for, four rooms, and two restaurants whose hours live on the hotel's own site rather than being copied here.</p>
+  <ul>
+    <li><strong>Check:</strong> restaurant cards link out and show a check date instead of restating hours that go stale.</li>
+    <li><strong>Check:</strong> the page never claims which room the wedding is in.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /explore-caa</span><span class="chip chip-cap">venue-facts.json</span><span class="chip chip-warn">backlog P-03</span></div>
+</template>
+
+<template data-notes="space">
+  <h3>White City Ballroom — kit figures, labelled</h3>
+  <p>Capacities come from the venue kit, not the planner. They render with an explicit "verify before publishing as fact" line rather than in the same voice as brief facts.</p>
+  <ul>
+    <li><strong>Check:</strong> the 167 ceiling embellishments appear as a thing to look for, which is what makes a docent a docent.</li>
+    <li><strong>Check:</strong> trust class is visible in the provenance line, not buried.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /explore-caa/white-city-ballroom</span><span class="chip chip-warn">kit figure, unverified</span></div>
+</template>
+
+<template data-notes="ask">
+  <h3>Ask us — 13 questions, guest vocabulary</h3>
+  <p>Grouped as guests ask them. Eight of thirteen answers are still placeholders, so the page's job right now is to prove the gaps are visible and the real answers are correct.</p>
+  <ul>
+    <li><strong>Check:</strong> open and close several — the disclosure is keyboard-operable and the +/− state matches <code>aria-expanded</code>.</li>
+    <li><strong>Check:</strong> the registry answer never says "cash fund" or "donate", and shows no amount.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /ask-us</span><span class="chip chip-cap">faq.json</span><span class="chip chip-warn">8 of 13 placeholder</span></div>
+</template>
+
+<script>
+/* Feature lab shell. No dependencies: a scene switcher, a theme switch that
+   swaps which kit's tokens the device viewport resolves against, and a
+   viewport-width toggle that starts at the 390px phone the site is built for. */
+(function () {
+  'use strict';
+
+  var device = document.getElementById('device');
+  var urlBar = document.getElementById('device-url');
+  var widthOut = document.getElementById('device-w');
+  var notes = document.getElementById('notes-body');
+
+  function pressGroup(name, value) {
+    var buttons = document.querySelectorAll('[data-' + name + ']');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+    }
+  }
+
+  /* Theme: the device carries data-theme, so every token under it resolves
+     from the chosen kit's generated block. */
+  function setTheme(id) {
+    if (device) device.setAttribute('data-theme', id);
+    pressGroup('labTheme', id);
+  }
+
+  function setWidth(px) {
+    if (device) device.style.setProperty('--device-w', px + 'px');
+    if (widthOut) widthOut.textContent = px + '×';
+    pressGroup('labWidth', px);
+  }
+
+  function setScene(id) {
+    var panels = document.querySelectorAll('[data-scene-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].hidden = panels[i].dataset.scenePanel !== id;
+    }
+    var buttons = document.querySelectorAll('[data-scene]');
+    for (var j = 0; j < buttons.length; j++) {
+      var b = buttons[j];
+      var on = b.dataset.scene === id;
+      b.setAttribute('aria-current', String(on));
+      if (on && urlBar && b.dataset.url) urlBar.textContent = b.dataset.url;
+    }
+    var tpl = document.querySelector('template[data-notes="' + id + '"]');
+    if (tpl && notes) {
+      notes.innerHTML = '';
+      notes.appendChild(tpl.content.cloneNode(true));
+    }
+    var vp = document.querySelector('.viewport');
+    if (vp) vp.scrollTop = 0;
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lab-theme], [data-lab-width], [data-scene]');
+    if (!t) return;
+    if (t.dataset.labTheme) setTheme(t.dataset.labTheme);
+    else if (t.dataset.labWidth) setWidth(t.dataset.labWidth);
+    else if (t.dataset.scene) setScene(t.dataset.scene);
+  });
+
+  /* Local interactivity inside a scene: [data-go] moves to another step of the
+     same flow, [data-toggle] flips a disclosure. Both are plain DOM so a scene
+     stays testable with the keyboard. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      e.preventDefault();
+      var scope = go.closest('[data-flow]');
+      if (!scope) return;
+      var steps = scope.querySelectorAll('[data-step]');
+      for (var i = 0; i < steps.length; i++) steps[i].hidden = steps[i].dataset.step !== go.dataset.go;
+      var vp = go.closest('.viewport');
+      if (vp) vp.scrollTop = 0;
+      return;
+    }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) {
+      var target = document.getElementById(tg.dataset.toggle);
+      if (!target) return;
+      var open = target.hidden;
+      target.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+    }
+  });
+
+  var first = document.querySelector('[data-scene]');
+  if (first) setScene(first.dataset.scene);
+  setTheme('gilded-hour');
+  setWidth('390');
+})();
+
+</script>

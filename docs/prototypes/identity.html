@@ -1,0 +1,1455 @@
+<title>Invitation Claim Flow</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<style>
+[data-theme="gilded-hour"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #1c1b18;
+  --color-on-primary: #f8f6f1;
+  --color-secondary: #2e5b7b;
+  --color-on-secondary: #f8f6f1;
+  --color-tertiary: #7a5a16;
+  --color-on-tertiary: #fbf9f4;
+  --color-gold: #c9a648;
+  --color-gold-wash: #f3ead0;
+  --color-lake-wash: #cfe0eb;
+  --color-moss: #4f5f3f;
+  --color-neutral: #f8f6f1;
+  --color-neutral-variant: #ede5d6;
+  --color-surface: #fdfcfa;
+  --color-on-surface: #1c1b18;
+  --color-on-surface-muted: #5e5a52;
+  --color-outline: #d8cfbf;
+  --color-error: #8e2e22;
+  --color-on-error: #fff5f2;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+  --spacing-step: 24px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-text: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-accent: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --font-cinzel: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-big-shoulders-display: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 500;
+  --type-display-xl-line: 1.02;
+  --type-display-xl-tracking: 0.04em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 2.75rem;
+  --type-display-lg-weight: 500;
+  --type-display-lg-line: 1.08;
+  --type-display-lg-tracking: 0.05em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h1-size: 2rem;
+  --type-h1-weight: 500;
+  --type-h1-line: 1.15;
+  --type-h1-tracking: 0.06em;
+  --type-h1-features: normal;
+  --type-h2-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 500;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0.06em;
+  --type-h2-features: normal;
+  --type-h3-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0.1em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-lg-size: 1.3125rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.55;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-md-size: 1.125rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.6;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 600;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.18em;
+  --type-label-caps-features: normal;
+  --type-label-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-sm-size: 0.765rem;
+  --type-label-sm-weight: 600;
+  --type-label-sm-line: 1.1;
+  --type-label-sm-tracking: 0.04em;
+  --type-label-sm-features: normal;
+  --type-numeral-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-size: 3.5rem;
+  --type-numeral-weight: 600;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0.02em;
+  --type-numeral-features: 'tnum', 'lnum';
+  --type-numeral-xl-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-xl-size: 6rem;
+  --type-numeral-xl-weight: 700;
+  --type-numeral-xl-line: 0.9;
+  --type-numeral-xl-tracking: 0.01em;
+  --type-numeral-xl-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-reveal: 700ms;
+  --duration-curtain: 1100ms;
+  --ease-engrave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-doors: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* shadows (design.json extensions.shadows) */
+  --shadow-panel-lift: 0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08);
+  --shadow-engraved-inset: inset 0 0 0 1px rgba(248,246,241,0.3);
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/gilded-hour) */
+
+}
+
+[data-theme="conservatory"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #2a4430;
+  --color-on-primary: #f4eedf;
+  --color-secondary: #4f6338;
+  --color-on-secondary: #f4eedf;
+  --color-tertiary: #d4b24a;
+  --color-on-tertiary: #2a4430;
+  --color-neutral: #f4eedf;
+  --color-neutral-variant: #eae2ce;
+  --color-surface: #fbf8f1;
+  --color-on-surface: #2a4430;
+  --color-on-surface-muted: #4f5a48;
+  --color-outline: #c8c1ac;
+  --color-error: #8b3a2b;
+  --color-on-error: #fff5f0;
+  --color-leaf: #7e9c5f;
+  --color-leaf-deep: #3f5f33;
+  --color-moss-wash: #dfe5cf;
+  --color-sky: #d4e4ec;
+  --color-sky-ink: #2b4a5a;
+  --color-kraft: #e4d6ba;
+  --color-kraft-deep: #c9b48c;
+  --color-soil: #6e5637;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  --rounded-md: 8px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-text: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-accent: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --font-gloock: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-spectral: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-cardo: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 400;
+  --type-display-xl-line: 1;
+  --type-display-xl-tracking: -0.01em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 3rem;
+  --type-display-lg-weight: 400;
+  --type-display-lg-line: 1.05;
+  --type-display-lg-tracking: -0.005em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 400;
+  --type-h1-line: 1.1;
+  --type-h1-tracking: 0em;
+  --type-h1-features: normal;
+  --type-h2-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.625rem;
+  --type-h2-weight: 400;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0em;
+  --type-h2-features: normal;
+  --type-h3-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-h3-size: 1.25rem;
+  --type-h3-weight: 500;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-lg-size: 1.25rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.6;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-md-size: 1.0625rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.55;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-lg-size: 1rem;
+  --type-label-lg-weight: 500;
+  --type-label-lg-line: 1;
+  --type-label-lg-tracking: 0.02em;
+  --type-label-lg-features: normal;
+  --type-label-caps-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 500;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.1em;
+  --type-label-caps-features: 'smcp', 'c2sc';
+  --type-specimen-label-family: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --type-specimen-label-size: 1rem;
+  --type-specimen-label-weight: 400;
+  --type-specimen-label-line: 1.4;
+  --type-specimen-label-tracking: 0.01em;
+  --type-specimen-label-features: 'liga', 'kern';
+  --type-numeral-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-numeral-size: 2.5rem;
+  --type-numeral-weight: 400;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0em;
+  --type-numeral-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 160ms;
+  --duration-settle: 700ms;
+  --stagger-settle: 80ms;
+  /* shadows (design.json extensions.shadows) */
+  --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
+  --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
+  --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-none: none;
+  /* focus (design.json extensions.focus) */
+  --focus-ring: 2px solid var(--color-secondary);
+  --focus-offset: 2px;
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/conservatory) */
+
+}
+/* ============================================================
+   Feature lab shell — the workbench chrome around the site.
+   Deliberately not the wedding's design language: the chrome is an
+   instrument (IBM Plex, workbench neutrals), the device viewport is
+   the site (Gilded Hour / Conservatory tokens, verbatim).
+   ============================================================ */
+
+:root {
+  --wb-ground: #eceef1;
+  --wb-panel: #ffffff;
+  --wb-panel-2: #f5f6f8;
+  --wb-rule: #d6dae1;
+  --wb-ink: #171a1f;
+  --wb-muted: #5f6875;
+  --wb-accent: #8a6d1f;
+  --wb-accent-soft: #f0e7cf;
+  --wb-pass: #2f6b45;
+  --wb-warn: #8a5a12;
+  --wb-block: #9a3323;
+  --wb-pass-soft: #ddeee3;
+  --wb-warn-soft: #f6e8cd;
+  --wb-block-soft: #f6ded9;
+  --wb-shadow: 0 1px 2px rgba(23, 26, 31, 0.06), 0 12px 32px rgba(23, 26, 31, 0.08);
+  --wb-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --wb-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wb-ground: #0f1216;
+    --wb-panel: #181c22;
+    --wb-panel-2: #1f242b;
+    --wb-rule: #2b323b;
+    --wb-ink: #dfe3e9;
+    --wb-muted: #8d97a5;
+    --wb-accent: #c9a648;
+    --wb-accent-soft: #332d1c;
+    --wb-pass: #6cc08a;
+    --wb-warn: #d8b04a;
+    --wb-block: #e08171;
+    --wb-pass-soft: #1a2b21;
+    --wb-warn-soft: #2e2716;
+    --wb-block-soft: #33201c;
+    --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --wb-ground: #0f1216;
+  --wb-panel: #181c22;
+  --wb-panel-2: #1f242b;
+  --wb-rule: #2b323b;
+  --wb-ink: #dfe3e9;
+  --wb-muted: #8d97a5;
+  --wb-accent: #c9a648;
+  --wb-accent-soft: #332d1c;
+  --wb-pass: #6cc08a;
+  --wb-warn: #d8b04a;
+  --wb-block: #e08171;
+  --wb-pass-soft: #1a2b21;
+  --wb-warn-soft: #2e2716;
+  --wb-block-soft: #33201c;
+  --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--wb-ground);
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- masthead ---------- */
+
+.lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+}
+
+.lab-kicker {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-accent);
+  margin: 0;
+}
+
+.lab-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.lab-sub {
+  margin: 0;
+  color: var(--wb-muted);
+  font-size: 13.5px;
+  max-width: 62ch;
+}
+
+.lab-head-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 340px; }
+
+/* ---------- control bar ---------- */
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ctl { display: flex; align-items: center; gap: 7px; }
+
+.ctl-label {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wb-panel);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--wb-muted);
+  font-family: var(--wb-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--wb-rule);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--wb-ink); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--wb-accent-soft);
+  color: var(--wb-ink);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.lab-body {
+  display: grid;
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.rail {
+  border-right: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 14px 28px;
+  position: sticky;
+  top: 47px;
+  max-height: calc(100vh - 47px);
+  overflow-y: auto;
+}
+
+.rail h2 {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 9px 4px;
+  font-weight: 500;
+}
+
+.rail h2 + .rail-group { margin-bottom: 20px; }
+.rail-group { display: flex; flex-direction: column; gap: 3px; }
+
+.rail button {
+  appearance: none;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.rail button:hover { background: var(--wb-panel-2); }
+
+.rail button[aria-current="true"] {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  font-weight: 600;
+}
+
+.rail button small {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  color: var(--wb-muted);
+  font-weight: 400;
+}
+
+.rail button[aria-current="true"] small { color: var(--wb-ink); }
+
+.stage {
+  padding: 26px 22px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- the device ---------- */
+
+.device {
+  width: 100%;
+  max-width: var(--device-w, 390px);
+  border: 1px solid var(--wb-rule);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--wb-shadow);
+  overflow: hidden;
+  transition: max-width 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.device-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--wb-panel-2);
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  color: var(--wb-muted);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-rule);
+  flex: none;
+}
+
+.device-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-ink);
+}
+
+.device-w { flex: none; }
+
+.viewport { max-height: 74vh; overflow-y: auto; overflow-x: hidden; }
+
+/* ---------- notes strip ---------- */
+
+.notes {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 10px;
+  background: var(--wb-panel);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes p { margin: 0; font-size: 13.5px; color: var(--wb-muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.notes li { font-size: 13.5px; color: var(--wb-muted); }
+.notes li strong { color: var(--wb-ink); font-weight: 600; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+.chip-cap { border-color: var(--wb-accent); color: var(--wb-accent); background: var(--wb-accent-soft); }
+.chip-pass { border-color: var(--wb-pass); color: var(--wb-pass); background: var(--wb-pass-soft); }
+.chip-warn { border-color: var(--wb-warn); color: var(--wb-warn); background: var(--wb-warn-soft); }
+.chip-block { border-color: var(--wb-block); color: var(--wb-block); background: var(--wb-block-soft); }
+
+/* ============================================================
+   Site primitives — everything below draws only on the theme
+   tokens inlined from src/themes/<id>/theme.css.
+   ============================================================ */
+
+.site {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.w-wrap { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.w-stack { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.w-stack-sm { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.w-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; }
+.w-between { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+
+.w-eyebrow {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  margin: 0;
+}
+
+.w-display, .w-h1, .w-h2, .w-h3 { margin: 0; text-wrap: balance; color: var(--color-on-surface); }
+
+.w-display {
+  font-family: var(--type-display-lg-family);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+
+.w-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-tracking);
+}
+
+.w-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-tracking);
+}
+
+.w-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  letter-spacing: var(--type-h3-tracking);
+}
+
+.w-body { margin: 0; font-size: var(--type-body-md-size); line-height: var(--type-body-md-line); max-width: 62ch; }
+.w-lede { margin: 0; font-size: var(--type-body-lg-size); line-height: var(--type-body-lg-line); max-width: 58ch; }
+.w-small { margin: 0; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.w-muted { color: var(--color-on-surface-muted); }
+
+.w-numeral {
+  font-family: var(--type-numeral-family);
+  font-size: var(--type-numeral-size);
+  font-weight: var(--type-numeral-weight);
+  line-height: var(--type-numeral-line);
+  letter-spacing: var(--type-numeral-tracking);
+  font-feature-settings: var(--type-numeral-features);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Buttons */
+
+.w-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast, 160ms) ease, color var(--duration-fast, 160ms) ease;
+}
+
+.w-btn-primary { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.w-btn-primary:hover { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-on-secondary); }
+.w-btn:hover { background: var(--color-neutral-variant); }
+.w-btn-primary:disabled, .w-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.w-btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--type-label-sm-size); }
+
+/* Surfaces */
+
+.w-card {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-panel {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-rule { border: 0; border-top: 1px solid var(--color-outline); margin: 0; }
+
+.w-grid { display: grid; gap: var(--spacing-sm); }
+.w-grid-2 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Notices */
+
+.w-notice {
+  border-left: 3px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--type-body-sm-size);
+  line-height: 1.5;
+}
+
+.w-notice-ok { border-left-color: var(--color-secondary); }
+.w-notice-err { border-left-color: var(--color-error); color: var(--color-error); }
+.w-notice-todo { border-left-color: var(--color-tertiary); }
+
+/* The TODO(Tyler & Sara) marker: placeholder facts must look like placeholders. */
+.w-todo {
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-on-surface-muted);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 7px,
+    var(--color-neutral-variant) 7px,
+    var(--color-neutral-variant) 14px
+  );
+  border: 1px dashed var(--color-outline);
+  padding: 8px 10px;
+  display: block;
+}
+
+/* Fields */
+
+.w-field { display: flex; flex-direction: column; gap: 6px; }
+
+.w-label {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.w-input, .w-select, .w-textarea {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.4;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.w-textarea { min-height: 84px; resize: vertical; }
+.w-input:focus-visible, .w-select:focus-visible, .w-textarea:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* A choice row: label wraps the control, so the whole row is a hit target. */
+.w-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 48px;
+}
+
+.w-choice:hover { background: var(--color-neutral); }
+.w-choice input { margin: 3px 0 0; width: 20px; height: 20px; flex: none; accent-color: var(--color-secondary); }
+.w-choice:has(input:checked) { border-color: var(--color-primary); background: var(--color-neutral); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.w-choice span { display: flex; flex-direction: column; gap: 2px; }
+.w-choice small { font-size: 14px; color: var(--color-on-surface-muted); }
+
+.w-choices { display: flex; flex-direction: column; gap: 6px; }
+.w-choices-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+
+/* Badges */
+
+.w-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--color-outline);
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+}
+
+.w-badge-on { border-color: var(--color-primary); color: var(--color-primary); }
+.w-badge-warn { border-color: var(--color-tertiary); color: var(--color-tertiary); }
+.w-badge-err { border-color: var(--color-error); color: var(--color-error); }
+
+/* Site nav */
+
+.w-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  align-items: center;
+}
+
+.w-nav a {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+}
+
+.w-nav a[aria-current="page"] { color: var(--color-on-surface); text-decoration: underline; text-underline-offset: 4px; }
+
+.w-monogram {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-on-surface);
+  margin-right: auto;
+}
+
+.w-link { color: var(--color-secondary); text-underline-offset: 3px; }
+
+/* Definition rows */
+
+.w-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--spacing-md); margin: 0; align-items: baseline; }
+.w-dl dt { font-family: var(--type-label-caps-family); font-size: var(--type-label-sm-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+.w-dl dd { margin: 0; font-size: var(--type-body-sm-size); }
+
+/* Theme-specific character. Gilded Hour is engraved and square; Conservatory
+   is printed and soft. These are the two kits' own rules, not decoration. */
+
+[data-theme="gilded-hour"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  border: 0;
+}
+
+[data-theme="gilded-hour"] .w-card { border-color: var(--color-gold); box-shadow: var(--shadow-engraved-inset); }
+[data-theme="gilded-hour"] .w-eyebrow { color: var(--color-tertiary); }
+
+[data-theme="conservatory"] .w-card,
+[data-theme="conservatory"] .w-panel,
+[data-theme="conservatory"] .w-btn,
+[data-theme="conservatory"] .w-choice,
+[data-theme="conservatory"] .w-input,
+[data-theme="conservatory"] .w-select,
+[data-theme="conservatory"] .w-textarea { border-radius: var(--rounded-md); }
+
+[data-theme="conservatory"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-leaf), transparent);
+  border: 0;
+}
+
+[data-theme="conservatory"] .w-eyebrow { color: var(--color-leaf-deep); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .lab-body { grid-template-columns: 1fr; }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--wb-rule); }
+  .rail-group { flex-direction: row; flex-wrap: wrap; }
+  .rail button { flex: 1 1 150px; }
+  .stage { padding: 18px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+
+.auth { padding: var(--spacing-xl) var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-lg); min-height: 420px; }
+
+.code-input {
+  font-family: var(--wb-mono);
+  font-size: 28px;
+  letter-spacing: 0.36em;
+  text-align: center;
+  padding: 14px 10px 14px 20px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+  min-height: 56px;
+}
+
+.code-input:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* The entitlement matrix is the point of the last scene: what a principal may
+   do is data, and hidden UI is never authorization. */
+.ent { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ent th, .ent td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--color-outline); }
+.ent th { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-on-surface-muted); font-weight: 600; }
+.ent td:first-child { font-family: var(--wb-mono); font-size: 12px; }
+.ent .yes { color: var(--color-secondary); font-weight: 700; }
+.ent .no { color: var(--color-on-surface-muted); }
+[data-theme="conservatory"] .ent .yes { color: var(--color-leaf-deep); }
+
+.stepline { display: flex; gap: 5px; align-items: center; }
+.stepline i { flex: 1; height: 3px; background: var(--color-outline); font-style: normal; }
+.stepline i[data-on="true"] { background: var(--color-primary); }
+
+.member { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--color-outline); background: var(--color-surface); cursor: pointer; min-height: 48px; }
+.member:hover { background: var(--color-neutral); }
+[data-theme="conservatory"] .member { border-radius: var(--rounded-md); }
+.member-i { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border: 1px solid var(--color-outline); font-family: var(--type-label-caps-family); font-size: 13px; font-weight: 600; color: var(--color-on-surface-muted); border-radius: 50%; }
+.member b { font-weight: 600; font-size: 17px; }
+.member small { color: var(--color-on-surface-muted); font-size: 14px; }
+
+.clock { display: inline-flex; align-items: center; gap: 6px; font-family: var(--wb-mono); font-size: 13px; color: var(--color-error); }
+</style>
+
+<header class="lab-head">
+  <div class="lab-head-main">
+    <p class="lab-kicker">Feature lab · level 06</p>
+    <h1 class="lab-title">Invitation claim, codes &amp; entitlements</h1>
+    <p class="lab-sub">No passwords and no accounts. An invitation link is <em>discovery only</em> — it says which household you're looking at, never who you are. Possession is proved with a six-digit code or a passkey, and everything sensitive re-asks.</p>
+  </div>
+</header>
+
+<div class="lab-controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="lab-body">
+  <nav class="rail" aria-label="Identity surfaces">
+    <h2>The happy path</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="claim" data-url="/i/01JQ8F…  →  /claim/verify">Claim an invitation<small>4 steps, click through</small></button>
+    </div>
+    <h2>Other ways in</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="signin" data-url="/sign-in">Sign in by email<small>lost the card</small></button>
+      <button type="button" data-scene="passkey" data-url="/claim/passkey">Add a passkey<small>optional, skippable</small></button>
+    </div>
+    <h2>When it goes wrong</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="errors" data-url="/claim/verify?error=…">Error states<small>all 15, verbatim</small></button>
+      <button type="button" data-scene="stepup" data-url="/step-up">Step-up<small>5-minute window</small></button>
+    </div>
+    <h2>Authorization</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="entitlements" data-url="principal.entitlements">Entitlements<small>19 capabilities</small></button>
+      <button type="button" data-scene="guestops" data-url="/admin/guests">Admin guest ops<small>who can act for whom</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="device-bar">
+        <span class="device-dot" aria-hidden="true"></span>
+        <span class="device-url" id="device-url">/i/01JQ8F…</span>
+        <span class="device-w" id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- CLAIM FLOW -->
+        <div class="site" data-scene-panel="claim" hidden data-flow="claim">
+          <div class="auth" data-step="1">
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i></i><i></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">You're invited</p>
+              <h1 class="w-h1">The Testhouse household</h1>
+              <p class="w-body">This link opens your household's invitation. Tell us which one of you is holding the phone.</p>
+            </div>
+            <div class="w-stack-sm">
+              <button class="member" type="button" data-go="2"><span class="member-i">AT</span><span><b>Ada Testhouse</b><br><small>Manages this household's RSVP</small></span></button>
+              <button class="member" type="button" data-go="2"><span class="member-i">BT</span><span><b>Ben Testhouse</b></span></button>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Cleo is under 18, so she isn't listed here — a child never claims an invitation. An adult in the household answers for her.</p>
+            </div>
+            <p class="w-small w-muted">Not your household? <a class="w-link" href="#">Sign in with your email</a> instead.</p>
+          </div>
+
+          <div class="auth" data-step="2" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Step 2 of 3</p>
+              <h1 class="w-h1">Check your email</h1>
+              <p class="w-body">We sent a six-digit code to <strong>a•••@e•••.test</strong>. It's good for ten minutes.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="otp">Your code</label>
+              <input class="code-input" id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="otp-help">
+              <p class="w-small w-muted" id="otp-help">Six digits. Five tries, then a fifteen-minute wait.</p>
+            </div>
+            <div class="w-stack-sm">
+              <button class="w-btn w-btn-primary" type="button" data-go="3">Confirm it's me</button>
+              <button class="w-btn" type="button">Send a new code</button>
+            </div>
+            <p class="w-small w-muted">The masked address shows you which inbox to open without telling a forwarded link who you are.</p>
+          </div>
+
+          <div class="auth" data-step="3" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">You're in</p>
+              <h1 class="w-h1">Welcome, Ada</h1>
+              <p class="w-body">You're signed in as <strong>Ada Testhouse</strong> from Testhouse household — you manage the RSVP for your household.</p>
+            </div>
+            <a class="w-btn w-btn-primary" href="#" data-go="4">Go to Your Weekend</a>
+            <div class="w-card">
+              <h2 class="w-h3">Skip the code next time?</h2>
+              <p class="w-small">Add a passkey and your phone will let you straight back in — same face or fingerprint you use to unlock it.</p>
+              <div class="w-row">
+                <button class="w-btn w-btn-sm w-btn-primary" type="button" data-go="4">Add a passkey</button>
+                <button class="w-btn w-btn-sm" type="button" data-go="4">Not now</button>
+              </div>
+            </div>
+            <div class="w-stack-sm">
+              <h2 class="w-label">Not Ada? Pick yourself</h2>
+              <button class="member" type="button"><span class="member-i">BT</span><span><b>Ben Testhouse</b><br><small>Switch to Ben</small></span></button>
+            </div>
+          </div>
+
+          <div class="auth" data-step="4" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your weekend</p>
+              <h1 class="w-h1">Hello, Ada</h1>
+              <p class="w-body">You're through. From here the session carries an <code>authenticatedAt</code> stamp, and anything sensitive checks how old it is.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">What the session knows</h2>
+              <dl class="w-dl">
+                <dt>Guest</dt><dd>Ada Testhouse</dd>
+                <dt>Household</dt><dd>Testhouse household</dd>
+                <dt>Acts for</dt><dd>Ada, Ben, Cleo <span class="w-muted">— household manager</span></dd>
+                <dt>Proved at</dt><dd>just now</dd>
+              </dl>
+            </div>
+            <button class="w-btn" type="button" data-go="1">Start over</button>
+          </div>
+        </div>
+
+        <!-- SIGN IN -->
+        <div class="site" data-scene-panel="signin" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Sign in</p>
+              <h1 class="w-h1">Lost the card?</h1>
+              <p class="w-body">Enter the email address Sara and Tyler have for you and we'll send a code.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="em">Email address</label>
+              <input class="w-input" id="em" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Send me a code</button>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">An email that isn't linked to an invitation gets the same neutral response as one that is — the form never confirms who is on the guest list.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASSKEY -->
+        <div class="site" data-scene-panel="passkey" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Passkeys</p>
+              <h1 class="w-h1">Skip the code next time</h1>
+              <p class="w-body">A passkey lives on your phone or laptop. It uses the same unlock you already use, and there's nothing to remember or type.</p>
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Add a passkey</button>
+            <button class="w-btn" type="button">Not now</button>
+            <hr class="w-rule">
+            <div class="w-stack-sm">
+              <h2 class="w-h3">Your passkeys</h2>
+              <div class="w-panel">
+                <div class="w-between"><strong class="w-small">iPhone</strong><span class="w-badge w-badge-on">In use</span></div>
+                <p class="w-small w-muted" style="margin:0">Added 4 Sep 2026 · last used just now</p>
+                <button class="w-btn w-btn-sm" type="button">Remove</button>
+              </div>
+            </div>
+            <p class="w-small w-muted">Passkeys are always optional. Email codes keep working, because a grandparent on a shared tablet must never be locked out by an authenticator they don't have.</p>
+          </div>
+        </div>
+
+        <!-- ERRORS -->
+        <div class="site" data-scene-panel="errors" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Error states</p>
+              <h1 class="w-h1">Every message a journey can show</h1>
+              <p class="w-small w-muted">Fixed first-party copy, keyed by a short code in the URL. A page never renders text an attacker influenced.</p>
+            </div>
+            <div class="w-stack-sm">
+              <div class="w-notice w-notice-err">That code didn't work. Check the digits and try again, or request a new code.</div>
+              <div class="w-notice w-notice-err">That code has expired. Request a new one and we'll send it right away.</div>
+              <div class="w-notice w-notice-err">Too many incorrect codes. For your security, please wait 15 minutes and request a new code.</div>
+              <div class="w-notice w-notice-err">Too many attempts. Please wait a few minutes and try again.</div>
+              <div class="w-notice w-notice-err">We don't have an email address for anyone in this household yet. Reach out to Sara and Tyler and they will set it up.</div>
+              <div class="w-notice w-notice-err">That email isn't linked to an invitation yet. Open the link Sara and Tyler sent you, or get in touch with them.</div>
+              <div class="w-notice w-notice-err">That isn't available for your invitation. If you think it should be, get in touch with Sara and Tyler.</div>
+              <div class="w-notice w-notice-err">That person has already claimed their invitation with another email. If that's wrong, please get in touch with Sara and Tyler.</div>
+              <div class="w-notice w-notice-err">For your security, please confirm it's you first.</div>
+              <div class="w-notice w-notice-err">We couldn't send the code just now. Please try again in a moment.</div>
+              <div class="w-notice w-notice-err">Something went wrong on our side. Please try again in a moment.</div>
+            </div>
+            <p class="w-small w-muted">Each one names what happened and what to do next. None apologises twice, none blames the guest, and none leaks whether an address is on the list.</p>
+          </div>
+        </div>
+
+        <!-- STEP UP -->
+        <div class="site" data-scene-panel="stepup" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Confirm it's you</p>
+              <h1 class="w-h1">One more step</h1>
+              <p class="w-body">You're changing the email address for your invitation. Because that's how you get back in, we ask you to prove it's you again.</p>
+              <p class="clock">Proof older than 5 minutes · re-ask required</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="su">Code sent to a•••@e•••.test</label>
+              <input class="code-input" id="su" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Confirm and continue</button>
+            <button class="w-btn" type="button">Use my passkey instead</button>
+            <hr class="w-rule">
+            <div class="w-card">
+              <h2 class="w-h3">What re-asks</h2>
+              <ul class="w-stack-sm" style="margin:0;padding-left:18px">
+                <li class="w-small">Changing the email on an invitation</li>
+                <li class="w-small">Claiming a ride benefit</li>
+                <li class="w-small">Deleting a travel profile</li>
+                <li class="w-small">Any admin write</li>
+              </ul>
+            </div>
+            <p class="w-small w-muted">The window is five minutes from the last proof. It's enforced server-side in the capability pipeline, so hiding the button would not have been enough.</p>
+          </div>
+        </div>
+
+        <!-- ENTITLEMENTS -->
+        <div class="site" data-scene-panel="entitlements" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Authorization</p>
+              <h1 class="w-h1">Nineteen capabilities, four kinds of caller</h1>
+              <p class="w-body">Every decision is made server-side against this set. Hidden UI and omitted tools are never authorization.</p>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="ent">
+                <thead><tr><th scope="col">Entitlement</th><th scope="col">Anon</th><th scope="col">Guest</th><th scope="col">Manager</th><th scope="col">Admin</th></tr></thead>
+                <tbody>
+                  <tr><td>view_event</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>rsvp_self</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>manage_household_rsvp</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>view_private_schedule</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>view_table_assignment</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>claim_transportation_benefit</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>view_travel_tools</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>upload_media</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>view_private_media</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>use_face_matching</td><td class="no">—</td><td class="no">gate</td><td class="no">gate</td><td class="no">gate</td></tr>
+                  <tr><td>use_concierge</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_content</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_guest_ops</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_media</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_lifecycle</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <p class="w-small" style="margin:0"><code>use_face_matching</code> reads "gate" for everyone: <code>FLAG_BIOMETRICS_ENABLED</code> is off, and it additionally needs a persisted readiness switch. Illinois BIPA — it stays off until counsel signs off.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GUEST OPS -->
+        <div class="site" data-scene-panel="guestops" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · guest operations</p>
+              <h1 class="w-h1">Who may act for whom</h1>
+              <p class="w-body">A household manager acts for everyone in their household. Nobody else can, and an admin acting on a guest's behalf leaves an audit row that says so.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Testhouse household</h2><span class="w-badge w-badge-on">3 guests</span></div>
+              <dl class="w-dl">
+                <dt>Manager</dt><dd>Ada Testhouse</dd>
+                <dt>Members</dt><dd>Ada, Ben, Cleo (child)</dd>
+                <dt>Invited to</dt><dd>Ceremony, cocktail hour, reception</dd>
+                <dt>Plus-ones</dt><dd>None</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Fixture household</h2><span class="w-badge">2 guests</span></div>
+              <dl class="w-dl">
+                <dt>Manager</dt><dd>Dev Fixture</dd>
+                <dt>Members</dt><dd>Dev, Eve</dd>
+                <dt>Invited to</dt><dd>Dev: all · <strong>Eve: reception only</strong></dd>
+                <dt>Plus-ones</dt><dd>Dev: one, named</dd>
+              </dl>
+              <p class="w-small w-muted">Per-guest event entitlements: Eve is not invited to the ceremony, so the ceremony never appears on her RSVP.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Solo household</h2><span class="w-badge">1 guest</span></div>
+              <dl class="w-dl">
+                <dt>Member</dt><dd>Fin Solo</dd>
+                <dt>Plus-ones</dt><dd>One, unnamed</dd>
+              </dl>
+            </div>
+            <p class="w-small w-muted">These are the committed test fixtures — deliberately fictional names, deterministic ids, and the three shapes every RSVP rule has to survive. Real guest data never enters git.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="notes" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="claim">
+  <h3>Claim an invitation — the four-step happy path</h3>
+  <p>Click through all four steps. The invitation link is discovery only: it reveals a household, and possession of the email proves the person.</p>
+  <ul>
+    <li><strong>Check:</strong> a minor is never offered as someone to claim as.</li>
+    <li><strong>Check:</strong> the code screen states the ten-minute expiry and the five-attempt limit before you fail, not after.</li>
+    <li><strong>Check:</strong> the passkey offer is skippable in one tap and never blocks the weekend.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /i/&lt;token&gt;</span><span class="chip chip-cap">claim_person</span><span class="chip">6 digits · 10 min · 5 tries</span></div>
+</template>
+
+<template data-notes="signin">
+  <h3>Sign in by email — the lost-card path</h3>
+  <p>Not everyone keeps the card. The email route reaches the same place, and reveals nothing about who is on the list.</p>
+  <ul>
+    <li><strong>Check:</strong> a linked and an unlinked address produce the same visible outcome.</li>
+    <li><strong>Check:</strong> the field is a real <code>type="email"</code> with <code>autocomplete</code>, so a phone keyboard does the right thing.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /sign-in</span><span class="chip chip-cap">emailOTP</span><span class="chip chip-pass">no enumeration</span></div>
+</template>
+
+<template data-notes="passkey">
+  <h3>Passkeys — optional, always</h3>
+  <p>A convenience layer over the code, never a replacement. Codes must keep working for guests with borrowed or shared devices.</p>
+  <ul>
+    <li><strong>Check:</strong> "Not now" is as prominent as the primary action.</li>
+    <li><strong>Check:</strong> an enrolled passkey can be removed from the same screen it was added on.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /claim/passkey</span><span class="chip chip-cap">@better-auth/passkey</span><span class="chip">WebAuthn</span></div>
+</template>
+
+<template data-notes="errors">
+  <h3>Error states — all of them, verbatim</h3>
+  <p>Every string is fixed first-party copy selected by a short code. Nothing an attacker can influence is ever rendered as text.</p>
+  <ul>
+    <li><strong>Check:</strong> each message says what happened <em>and</em> what to do next.</li>
+    <li><strong>Check:</strong> the lockout message states the wait (15 minutes) rather than leaving a guest guessing.</li>
+  </ul>
+  <div class="meta"><span class="chip">ERROR_COPY</span><span class="chip chip-pass">no reflected text</span><span class="chip">15 codes</span></div>
+</template>
+
+<template data-notes="stepup">
+  <h3>Step-up — the five-minute window</h3>
+  <p>Sensitive actions require proof newer than five minutes. Enforced in the capability pipeline, before the handler runs.</p>
+  <ul>
+    <li><strong>Check:</strong> the screen names the specific action being protected, not "for security reasons".</li>
+    <li><strong>Check:</strong> a passkey satisfies step-up as well as a code.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /step-up</span><span class="chip chip-cap">authenticatedAt</span><span class="chip chip-warn">300s window</span></div>
+</template>
+
+<template data-notes="entitlements">
+  <h3>Entitlements — 19 capabilities as data</h3>
+  <p>The authorization surface in one table. The pipeline validates, authorizes, steps up, confirms, de-duplicates, then runs the handler — in that order, every time.</p>
+  <ul>
+    <li><strong>Check:</strong> anonymous holds nothing — not even <code>view_event</code>.</li>
+    <li><strong>Check:</strong> <code>manage_household_rsvp</code> separates a manager from an ordinary guest.</li>
+    <li><strong>Check:</strong> <code>use_face_matching</code> is gated for every principal including admin.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">src/contracts/principal.ts</span><span class="chip chip-block">BIPA gate</span><span class="chip">server-side only</span></div>
+</template>
+
+<template data-notes="guestops">
+  <h3>Admin guest ops — households and their shapes</h3>
+  <p>The three committed fixtures cover every RSVP rule: a family with a child, a household with a partial invitation and a named plus-one, and a solo guest with an unnamed one.</p>
+  <ul>
+    <li><strong>Check:</strong> Eve's reception-only entitlement is visible here, and drives what her RSVP renders.</li>
+    <li><strong>Check:</strong> names are obviously fictional — real guest data is never committed.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/guests</span><span class="chip chip-cap">admin_guest_ops</span><span class="chip chip-pass">fixtures only</span></div>
+</template>
+
+<script>
+/* Feature lab shell. No dependencies: a scene switcher, a theme switch that
+   swaps which kit's tokens the device viewport resolves against, and a
+   viewport-width toggle that starts at the 390px phone the site is built for. */
+(function () {
+  'use strict';
+
+  var device = document.getElementById('device');
+  var urlBar = document.getElementById('device-url');
+  var widthOut = document.getElementById('device-w');
+  var notes = document.getElementById('notes-body');
+
+  function pressGroup(name, value) {
+    var buttons = document.querySelectorAll('[data-' + name + ']');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+    }
+  }
+
+  /* Theme: the device carries data-theme, so every token under it resolves
+     from the chosen kit's generated block. */
+  function setTheme(id) {
+    if (device) device.setAttribute('data-theme', id);
+    pressGroup('labTheme', id);
+  }
+
+  function setWidth(px) {
+    if (device) device.style.setProperty('--device-w', px + 'px');
+    if (widthOut) widthOut.textContent = px + '×';
+    pressGroup('labWidth', px);
+  }
+
+  function setScene(id) {
+    var panels = document.querySelectorAll('[data-scene-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].hidden = panels[i].dataset.scenePanel !== id;
+    }
+    var buttons = document.querySelectorAll('[data-scene]');
+    for (var j = 0; j < buttons.length; j++) {
+      var b = buttons[j];
+      var on = b.dataset.scene === id;
+      b.setAttribute('aria-current', String(on));
+      if (on && urlBar && b.dataset.url) urlBar.textContent = b.dataset.url;
+    }
+    var tpl = document.querySelector('template[data-notes="' + id + '"]');
+    if (tpl && notes) {
+      notes.innerHTML = '';
+      notes.appendChild(tpl.content.cloneNode(true));
+    }
+    var vp = document.querySelector('.viewport');
+    if (vp) vp.scrollTop = 0;
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lab-theme], [data-lab-width], [data-scene]');
+    if (!t) return;
+    if (t.dataset.labTheme) setTheme(t.dataset.labTheme);
+    else if (t.dataset.labWidth) setWidth(t.dataset.labWidth);
+    else if (t.dataset.scene) setScene(t.dataset.scene);
+  });
+
+  /* Local interactivity inside a scene: [data-go] moves to another step of the
+     same flow, [data-toggle] flips a disclosure. Both are plain DOM so a scene
+     stays testable with the keyboard. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      e.preventDefault();
+      var scope = go.closest('[data-flow]');
+      if (!scope) return;
+      var steps = scope.querySelectorAll('[data-step]');
+      for (var i = 0; i < steps.length; i++) steps[i].hidden = steps[i].dataset.step !== go.dataset.go;
+      var vp = go.closest('.viewport');
+      if (vp) vp.scrollTop = 0;
+      return;
+    }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) {
+      var target = document.getElementById(tg.dataset.toggle);
+      if (!target) return;
+      var open = target.hidden;
+      target.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+    }
+  });
+
+  var first = document.querySelector('[data-scene]');
+  if (first) setScene(first.dataset.scene);
+  setTheme('gilded-hour');
+  setWidth('390');
+})();
+
+</script>

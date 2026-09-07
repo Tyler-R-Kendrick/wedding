@@ -1,0 +1,1565 @@
+<title>Household RSVP &amp; Seating</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<style>
+[data-theme="gilded-hour"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #1c1b18;
+  --color-on-primary: #f8f6f1;
+  --color-secondary: #2e5b7b;
+  --color-on-secondary: #f8f6f1;
+  --color-tertiary: #7a5a16;
+  --color-on-tertiary: #fbf9f4;
+  --color-gold: #c9a648;
+  --color-gold-wash: #f3ead0;
+  --color-lake-wash: #cfe0eb;
+  --color-moss: #4f5f3f;
+  --color-neutral: #f8f6f1;
+  --color-neutral-variant: #ede5d6;
+  --color-surface: #fdfcfa;
+  --color-on-surface: #1c1b18;
+  --color-on-surface-muted: #5e5a52;
+  --color-outline: #d8cfbf;
+  --color-error: #8e2e22;
+  --color-on-error: #fff5f2;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 160px;
+  --spacing-step: 24px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-text: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-accent: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --font-cinzel: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --font-big-shoulders-display: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 500;
+  --type-display-xl-line: 1.02;
+  --type-display-xl-tracking: 0.04em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 2.75rem;
+  --type-display-lg-weight: 500;
+  --type-display-lg-line: 1.08;
+  --type-display-lg-tracking: 0.05em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h1-size: 2rem;
+  --type-h1-weight: 500;
+  --type-h1-line: 1.15;
+  --type-h1-tracking: 0.06em;
+  --type-h1-features: normal;
+  --type-h2-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 500;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0.06em;
+  --type-h2-features: normal;
+  --type-h3-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0.1em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-lg-size: 1.3125rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.55;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-md-size: 1.125rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.6;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 600;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.18em;
+  --type-label-caps-features: normal;
+  --type-label-sm-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-label-sm-size: 0.765rem;
+  --type-label-sm-weight: 600;
+  --type-label-sm-line: 1.1;
+  --type-label-sm-tracking: 0.04em;
+  --type-label-sm-features: normal;
+  --type-numeral-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-size: 3.5rem;
+  --type-numeral-weight: 600;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0.02em;
+  --type-numeral-features: 'tnum', 'lnum';
+  --type-numeral-xl-family: "Big Shoulders Display", "Big Shoulders Display Fallback", system-ui, sans-serif;
+  --type-numeral-xl-size: 6rem;
+  --type-numeral-xl-weight: 700;
+  --type-numeral-xl-line: 0.9;
+  --type-numeral-xl-tracking: 0.01em;
+  --type-numeral-xl-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-reveal: 700ms;
+  --duration-curtain: 1100ms;
+  --ease-engrave: cubic-bezier(0.2, 0, 0, 1);
+  --ease-doors: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* shadows (design.json extensions.shadows) */
+  --shadow-panel-lift: 0 -1px 0 #D8CFBF, 0 -8px 24px rgba(28,27,24,0.08);
+  --shadow-engraved-inset: inset 0 0 0 1px rgba(248,246,241,0.3);
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/gilded-hour) */
+
+}
+
+[data-theme="conservatory"] {
+  /* colors, spacing, rounded (design.md export --format css-vars) */
+  --color-primary: #2a4430;
+  --color-on-primary: #f4eedf;
+  --color-secondary: #4f6338;
+  --color-on-secondary: #f4eedf;
+  --color-tertiary: #d4b24a;
+  --color-on-tertiary: #2a4430;
+  --color-neutral: #f4eedf;
+  --color-neutral-variant: #eae2ce;
+  --color-surface: #fbf8f1;
+  --color-on-surface: #2a4430;
+  --color-on-surface-muted: #4f5a48;
+  --color-outline: #c8c1ac;
+  --color-error: #8b3a2b;
+  --color-on-error: #fff5f0;
+  --color-leaf: #7e9c5f;
+  --color-leaf-deep: #3f5f33;
+  --color-moss-wash: #dfe5cf;
+  --color-sky: #d4e4ec;
+  --color-sky-ink: #2b4a5a;
+  --color-kraft: #e4d6ba;
+  --color-kraft-deep: #c9b48c;
+  --color-soil: #6e5637;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+  --rounded-none: 0px;
+  --rounded-sm: 2px;
+  --rounded-md: 8px;
+  /* font roles: display (headings), text (running copy), accent (numerals or specimen labels) */
+  --font-display: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-text: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-accent: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --font-gloock: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --font-spectral: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --font-cardo: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-xl-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-xl-size: 4.25rem;
+  --type-display-xl-weight: 400;
+  --type-display-xl-line: 1;
+  --type-display-xl-tracking: -0.01em;
+  --type-display-xl-features: normal;
+  --type-display-lg-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-display-lg-size: 3rem;
+  --type-display-lg-weight: 400;
+  --type-display-lg-line: 1.05;
+  --type-display-lg-tracking: -0.005em;
+  --type-display-lg-features: normal;
+  --type-h1-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 400;
+  --type-h1-line: 1.1;
+  --type-h1-tracking: 0em;
+  --type-h1-features: normal;
+  --type-h2-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-h2-size: 1.625rem;
+  --type-h2-weight: 400;
+  --type-h2-line: 1.2;
+  --type-h2-tracking: 0em;
+  --type-h2-features: normal;
+  --type-h3-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-h3-size: 1.25rem;
+  --type-h3-weight: 500;
+  --type-h3-line: 1.3;
+  --type-h3-tracking: 0em;
+  --type-h3-features: normal;
+  --type-body-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-lg-size: 1.25rem;
+  --type-body-lg-weight: 400;
+  --type-body-lg-line: 1.6;
+  --type-body-lg-tracking: 0em;
+  --type-body-lg-features: normal;
+  --type-body-md-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-md-size: 1.0625rem;
+  --type-body-md-weight: 400;
+  --type-body-md-line: 1.65;
+  --type-body-md-tracking: 0em;
+  --type-body-md-features: normal;
+  --type-body-sm-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-body-sm-size: 1.0625rem;
+  --type-body-sm-weight: 400;
+  --type-body-sm-line: 1.55;
+  --type-body-sm-tracking: 0em;
+  --type-body-sm-features: normal;
+  --type-label-lg-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-lg-size: 1rem;
+  --type-label-lg-weight: 500;
+  --type-label-lg-line: 1;
+  --type-label-lg-tracking: 0.02em;
+  --type-label-lg-features: normal;
+  --type-label-caps-family: "Spectral", "Spectral Fallback", "Times New Roman", serif;
+  --type-label-caps-size: 0.8125rem;
+  --type-label-caps-weight: 500;
+  --type-label-caps-line: 1.2;
+  --type-label-caps-tracking: 0.1em;
+  --type-label-caps-features: 'smcp', 'c2sc';
+  --type-specimen-label-family: "Cardo", "Cardo Fallback", "Times New Roman", serif;
+  --type-specimen-label-size: 1rem;
+  --type-specimen-label-weight: 400;
+  --type-specimen-label-line: 1.4;
+  --type-specimen-label-tracking: 0.01em;
+  --type-specimen-label-features: 'liga', 'kern';
+  --type-numeral-family: "Gloock", "Gloock Fallback", "Times New Roman", serif;
+  --type-numeral-size: 2.5rem;
+  --type-numeral-weight: 400;
+  --type-numeral-line: 1;
+  --type-numeral-tracking: 0em;
+  --type-numeral-features: 'tnum', 'lnum';
+  /* motion (design.json extensions.motion) */
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 160ms;
+  --duration-settle: 700ms;
+  --stagger-settle: 80ms;
+  /* shadows (design.json extensions.shadows) */
+  --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
+  --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
+  --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-none: none;
+  /* focus (design.json extensions.focus) */
+  --focus-ring: 2px solid var(--color-secondary);
+  --focus-offset: 2px;
+  /* procedural art (design.json extensions.ornaments; files in public/assets/art/conservatory) */
+
+}
+/* ============================================================
+   Feature lab shell — the workbench chrome around the site.
+   Deliberately not the wedding's design language: the chrome is an
+   instrument (IBM Plex, workbench neutrals), the device viewport is
+   the site (Gilded Hour / Conservatory tokens, verbatim).
+   ============================================================ */
+
+:root {
+  --wb-ground: #eceef1;
+  --wb-panel: #ffffff;
+  --wb-panel-2: #f5f6f8;
+  --wb-rule: #d6dae1;
+  --wb-ink: #171a1f;
+  --wb-muted: #5f6875;
+  --wb-accent: #8a6d1f;
+  --wb-accent-soft: #f0e7cf;
+  --wb-pass: #2f6b45;
+  --wb-warn: #8a5a12;
+  --wb-block: #9a3323;
+  --wb-pass-soft: #ddeee3;
+  --wb-warn-soft: #f6e8cd;
+  --wb-block-soft: #f6ded9;
+  --wb-shadow: 0 1px 2px rgba(23, 26, 31, 0.06), 0 12px 32px rgba(23, 26, 31, 0.08);
+  --wb-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --wb-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wb-ground: #0f1216;
+    --wb-panel: #181c22;
+    --wb-panel-2: #1f242b;
+    --wb-rule: #2b323b;
+    --wb-ink: #dfe3e9;
+    --wb-muted: #8d97a5;
+    --wb-accent: #c9a648;
+    --wb-accent-soft: #332d1c;
+    --wb-pass: #6cc08a;
+    --wb-warn: #d8b04a;
+    --wb-block: #e08171;
+    --wb-pass-soft: #1a2b21;
+    --wb-warn-soft: #2e2716;
+    --wb-block-soft: #33201c;
+    --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --wb-ground: #0f1216;
+  --wb-panel: #181c22;
+  --wb-panel-2: #1f242b;
+  --wb-rule: #2b323b;
+  --wb-ink: #dfe3e9;
+  --wb-muted: #8d97a5;
+  --wb-accent: #c9a648;
+  --wb-accent-soft: #332d1c;
+  --wb-pass: #6cc08a;
+  --wb-warn: #d8b04a;
+  --wb-block: #e08171;
+  --wb-pass-soft: #1a2b21;
+  --wb-warn-soft: #2e2716;
+  --wb-block-soft: #33201c;
+  --wb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--wb-ground);
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- masthead ---------- */
+
+.lab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+}
+
+.lab-kicker {
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wb-accent);
+  margin: 0;
+}
+
+.lab-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.lab-sub {
+  margin: 0;
+  color: var(--wb-muted);
+  font-size: 13.5px;
+  max-width: 62ch;
+}
+
+.lab-head-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 340px; }
+
+/* ---------- control bar ---------- */
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.ctl { display: flex; align-items: center; gap: 7px; }
+
+.ctl-label {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wb-panel);
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--wb-muted);
+  font-family: var(--wb-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--wb-rule);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--wb-ink); }
+
+.seg button[aria-pressed="true"] {
+  background: var(--wb-accent-soft);
+  color: var(--wb-ink);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.lab-body {
+  display: grid;
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.rail {
+  border-right: 1px solid var(--wb-rule);
+  background: var(--wb-panel);
+  padding: 16px 14px 28px;
+  position: sticky;
+  top: 47px;
+  max-height: calc(100vh - 47px);
+  overflow-y: auto;
+}
+
+.rail h2 {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+  margin: 0 0 9px 4px;
+  font-weight: 500;
+}
+
+.rail h2 + .rail-group { margin-bottom: 20px; }
+.rail-group { display: flex; flex-direction: column; gap: 3px; }
+
+.rail button {
+  appearance: none;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-ink);
+  font-family: var(--wb-sans);
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.rail button:hover { background: var(--wb-panel-2); }
+
+.rail button[aria-current="true"] {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  font-weight: 600;
+}
+
+.rail button small {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  color: var(--wb-muted);
+  font-weight: 400;
+}
+
+.rail button[aria-current="true"] small { color: var(--wb-ink); }
+
+.stage {
+  padding: 26px 22px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- the device ---------- */
+
+.device {
+  width: 100%;
+  max-width: var(--device-w, 390px);
+  border: 1px solid var(--wb-rule);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--wb-shadow);
+  overflow: hidden;
+  transition: max-width 220ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.device-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--wb-panel-2);
+  border-bottom: 1px solid var(--wb-rule);
+  font-family: var(--wb-mono);
+  font-size: 11px;
+  color: var(--wb-muted);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-rule);
+  flex: none;
+}
+
+.device-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-ink);
+}
+
+.device-w { flex: none; }
+
+.viewport { max-height: 74vh; overflow-y: auto; overflow-x: hidden; }
+
+/* ---------- notes strip ---------- */
+
+.notes {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--wb-rule);
+  border-radius: 10px;
+  background: var(--wb-panel);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes p { margin: 0; font-size: 13.5px; color: var(--wb-muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.notes li { font-size: 13.5px; color: var(--wb-muted); }
+.notes li strong { color: var(--wb-ink); font-weight: 600; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  font-family: var(--wb-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wb-rule);
+  background: var(--wb-panel-2);
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+.chip-cap { border-color: var(--wb-accent); color: var(--wb-accent); background: var(--wb-accent-soft); }
+.chip-pass { border-color: var(--wb-pass); color: var(--wb-pass); background: var(--wb-pass-soft); }
+.chip-warn { border-color: var(--wb-warn); color: var(--wb-warn); background: var(--wb-warn-soft); }
+.chip-block { border-color: var(--wb-block); color: var(--wb-block); background: var(--wb-block-soft); }
+
+/* ============================================================
+   Site primitives — everything below draws only on the theme
+   tokens inlined from src/themes/<id>/theme.css.
+   ============================================================ */
+
+.site {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.w-wrap { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.w-stack { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.w-stack-sm { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.w-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; }
+.w-between { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+
+.w-eyebrow {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  margin: 0;
+}
+
+.w-display, .w-h1, .w-h2, .w-h3 { margin: 0; text-wrap: balance; color: var(--color-on-surface); }
+
+.w-display {
+  font-family: var(--type-display-lg-family);
+  font-size: var(--type-display-lg-size);
+  font-weight: var(--type-display-lg-weight);
+  line-height: var(--type-display-lg-line);
+  letter-spacing: var(--type-display-lg-tracking);
+}
+
+.w-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-tracking);
+}
+
+.w-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-tracking);
+}
+
+.w-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+  letter-spacing: var(--type-h3-tracking);
+}
+
+.w-body { margin: 0; font-size: var(--type-body-md-size); line-height: var(--type-body-md-line); max-width: 62ch; }
+.w-lede { margin: 0; font-size: var(--type-body-lg-size); line-height: var(--type-body-lg-line); max-width: 58ch; }
+.w-small { margin: 0; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.w-muted { color: var(--color-on-surface-muted); }
+
+.w-numeral {
+  font-family: var(--type-numeral-family);
+  font-size: var(--type-numeral-size);
+  font-weight: var(--type-numeral-weight);
+  line-height: var(--type-numeral-line);
+  letter-spacing: var(--type-numeral-tracking);
+  font-feature-settings: var(--type-numeral-features);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Buttons */
+
+.w-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface);
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast, 160ms) ease, color var(--duration-fast, 160ms) ease;
+}
+
+.w-btn-primary { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.w-btn-primary:hover { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-on-secondary); }
+.w-btn:hover { background: var(--color-neutral-variant); }
+.w-btn-primary:disabled, .w-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.w-btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--type-label-sm-size); }
+
+/* Surfaces */
+
+.w-card {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-panel {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.w-rule { border: 0; border-top: 1px solid var(--color-outline); margin: 0; }
+
+.w-grid { display: grid; gap: var(--spacing-sm); }
+.w-grid-2 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Notices */
+
+.w-notice {
+  border-left: 3px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--type-body-sm-size);
+  line-height: 1.5;
+}
+
+.w-notice-ok { border-left-color: var(--color-secondary); }
+.w-notice-err { border-left-color: var(--color-error); color: var(--color-error); }
+.w-notice-todo { border-left-color: var(--color-tertiary); }
+
+/* The TODO(Tyler & Sara) marker: placeholder facts must look like placeholders. */
+.w-todo {
+  font-family: var(--wb-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-on-surface-muted);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 7px,
+    var(--color-neutral-variant) 7px,
+    var(--color-neutral-variant) 14px
+  );
+  border: 1px dashed var(--color-outline);
+  padding: 8px 10px;
+  display: block;
+}
+
+/* Fields */
+
+.w-field { display: flex; flex-direction: column; gap: 6px; }
+
+.w-label {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.w-input, .w-select, .w-textarea {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.4;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.w-textarea { min-height: 84px; resize: vertical; }
+.w-input:focus-visible, .w-select:focus-visible, .w-textarea:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* A choice row: label wraps the control, so the whole row is a hit target. */
+.w-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1.35;
+  min-height: 48px;
+}
+
+.w-choice:hover { background: var(--color-neutral); }
+.w-choice input { margin: 3px 0 0; width: 20px; height: 20px; flex: none; accent-color: var(--color-secondary); }
+.w-choice:has(input:checked) { border-color: var(--color-primary); background: var(--color-neutral); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.w-choice span { display: flex; flex-direction: column; gap: 2px; }
+.w-choice small { font-size: 14px; color: var(--color-on-surface-muted); }
+
+.w-choices { display: flex; flex-direction: column; gap: 6px; }
+.w-choices-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+
+/* Badges */
+
+.w-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--color-outline);
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+}
+
+.w-badge-on { border-color: var(--color-primary); color: var(--color-primary); }
+.w-badge-warn { border-color: var(--color-tertiary); color: var(--color-tertiary); }
+.w-badge-err { border-color: var(--color-error); color: var(--color-error); }
+
+/* Site nav */
+
+.w-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  align-items: center;
+}
+
+.w-nav a {
+  font-family: var(--type-label-caps-family);
+  font-size: var(--type-label-sm-size);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+}
+
+.w-nav a[aria-current="page"] { color: var(--color-on-surface); text-decoration: underline; text-underline-offset: 4px; }
+
+.w-monogram {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  color: var(--color-on-surface);
+  margin-right: auto;
+}
+
+.w-link { color: var(--color-secondary); text-underline-offset: 3px; }
+
+/* Definition rows */
+
+.w-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--spacing-md); margin: 0; align-items: baseline; }
+.w-dl dt { font-family: var(--type-label-caps-family); font-size: var(--type-label-sm-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+.w-dl dd { margin: 0; font-size: var(--type-body-sm-size); }
+
+/* Theme-specific character. Gilded Hour is engraved and square; Conservatory
+   is printed and soft. These are the two kits' own rules, not decoration. */
+
+[data-theme="gilded-hour"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  border: 0;
+}
+
+[data-theme="gilded-hour"] .w-card { border-color: var(--color-gold); box-shadow: var(--shadow-engraved-inset); }
+[data-theme="gilded-hour"] .w-eyebrow { color: var(--color-tertiary); }
+
+[data-theme="conservatory"] .w-card,
+[data-theme="conservatory"] .w-panel,
+[data-theme="conservatory"] .w-btn,
+[data-theme="conservatory"] .w-choice,
+[data-theme="conservatory"] .w-input,
+[data-theme="conservatory"] .w-select,
+[data-theme="conservatory"] .w-textarea { border-radius: var(--rounded-md); }
+
+[data-theme="conservatory"] .w-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-leaf), transparent);
+  border: 0;
+}
+
+[data-theme="conservatory"] .w-eyebrow { color: var(--color-leaf-deep); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .lab-body { grid-template-columns: 1fr; }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--wb-rule); }
+  .rail-group { flex-direction: row; flex-wrap: wrap; }
+  .rail button { flex: 1 1 150px; }
+  .stage { padding: 18px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+
+/* One guest is one block, and every event that guest is invited to sits
+   inside it. Household RSVP fails when a guest's answers get scattered. */
+.guest-block { border: 1px solid var(--color-outline); background: var(--color-surface); }
+[data-theme="conservatory"] .guest-block { border-radius: var(--rounded-md); }
+.guest-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--spacing-sm); padding: 12px var(--spacing-md); background: var(--color-neutral); border-bottom: 1px solid var(--color-outline); }
+.guest-head h3 { margin: 0; font-family: var(--type-h3-family); font-size: var(--type-h3-size); font-weight: var(--type-h3-weight); }
+.guest-body { padding: var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-md); }
+.event-row { display: flex; flex-direction: column; gap: 7px; }
+.event-name { font-family: var(--type-label-caps-family); font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+
+.review-line { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--spacing-sm); padding: 10px 0; border-bottom: 1px solid var(--color-outline); align-items: baseline; }
+.review-line:last-of-type { border-bottom: 0; }
+.review-line small { grid-column: 1 / -1; color: var(--color-on-surface-muted); font-size: 14px; }
+
+/* The floor plan is drawn to scale so "your table" is genuinely findable. */
+.plan { width: 100%; height: auto; display: block; background: var(--color-neutral); border: 1px solid var(--color-outline); }
+[data-theme="conservatory"] .plan { border-radius: var(--rounded-md); }
+
+.sched { margin: 0; padding: 0; }
+.sched li { list-style: none; display: grid; grid-template-columns: 68px 1fr; gap: var(--spacing-sm); padding: 12px 0; border-bottom: 1px solid var(--color-outline); align-items: baseline; }
+.sched li:last-child { border-bottom: 0; }
+.sched time { font-family: var(--type-label-caps-family); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
+
+.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: var(--spacing-sm); }
+.count { border: 1px solid var(--color-outline); padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+[data-theme="conservatory"] .count { border-radius: var(--rounded-md); }
+.count b { font-family: var(--type-numeral-family); font-size: 2rem; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
+[data-theme="conservatory"] .count b { font-family: var(--font-accent); }
+.count span { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+</style>
+
+<header class="lab-head">
+  <div class="lab-head-main">
+    <p class="lab-kicker">Feature lab · level 07</p>
+    <h1 class="lab-title">Household RSVP, Your Weekend &amp; seating</h1>
+    <p class="lab-sub">One person answers for everyone under their roof — including a guest invited to the reception but not the ceremony, a named plus-one and an unnamed one. Draft, review, submit; then the weekend page and, on the day, a table.</p>
+  </div>
+</header>
+
+<div class="lab-controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="lab-body">
+  <nav class="rail" aria-label="RSVP surfaces">
+    <h2>The RSVP</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="form" data-url="/rsvp">Household form<small>3 guests, 3 events</small></button>
+      <button type="button" data-scene="partial" data-url="/rsvp — household B">Partial invitation<small>reception only + plus-one</small></button>
+      <button type="button" data-scene="closed" data-url="/rsvp — RSVP_CLOSED">Window closed<small>read-only</small></button>
+    </div>
+    <h2>After</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="weekend" data-url="/your-weekend">Your Weekend<small>private schedule</small></button>
+      <button type="button" data-scene="table" data-url="/your-weekend — table">Your table<small>floor plan</small></button>
+    </div>
+    <h2>Admin</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="admin" data-url="/admin/rsvp">Counts &amp; needs<small>what the venue gets</small></button>
+      <button type="button" data-scene="seating" data-url="/admin/seating">Seating board<small>assign tables</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="device-bar">
+        <span class="device-dot" aria-hidden="true"></span>
+        <span class="device-url" id="device-url">/rsvp</span>
+        <span class="device-w" id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- RSVP FORM (household A) -->
+        <div class="site" data-scene-panel="form" hidden data-flow="rsvp">
+          <div class="w-wrap" data-step="1">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">RSVP · Testhouse household</p>
+              <h1 class="w-h1">You're answering for three people</h1>
+              <p class="w-body">Ada, Ben and Cleo. You can change any of this until the deadline.</p>
+            </div>
+
+            <div class="guest-block">
+              <div class="guest-head"><h3>Ada Testhouse</h3><span class="w-badge w-badge-on">You</span></div>
+              <div class="guest-body">
+                <div class="event-row">
+                  <span class="event-name">Ceremony</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="a-cer" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="a-cer"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <div class="event-row">
+                  <span class="event-name">Cocktail hour</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="a-ck" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="a-ck"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <div class="event-row">
+                  <span class="event-name">Reception</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="a-rec" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="a-rec"><span>Regretfully declines</span></label>
+                  </div>
+                  <div class="w-field">
+                    <span class="w-label">Meal</span>
+                    <div class="w-choices">
+                      <label class="w-choice"><input type="radio" name="a-meal" checked><span>Beef</span></label>
+                      <label class="w-choice"><input type="radio" name="a-meal"><span>Fish</span></label>
+                      <label class="w-choice"><input type="radio" name="a-meal"><span>Garden</span></label>
+                    </div>
+                    <p class="w-small w-muted">Only needed if attending.</p>
+                  </div>
+                </div>
+                <div class="w-field">
+                  <label class="w-label" for="a-diet">Dietary needs or allergies</label>
+                  <textarea class="w-textarea" id="a-diet" placeholder="Anything the kitchen should know"></textarea>
+                </div>
+                <div class="w-field">
+                  <label class="w-label" for="a-acc">Accessibility or seating needs</label>
+                  <textarea class="w-textarea" id="a-acc" placeholder="Anything that would make the day easier"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="guest-block">
+              <div class="guest-head"><h3>Ben Testhouse</h3></div>
+              <div class="guest-body">
+                <div class="event-row">
+                  <span class="event-name">All three events</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="b-all" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="b-all"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <div class="w-field">
+                  <span class="w-label">Meal</span>
+                  <div class="w-choices">
+                    <label class="w-choice"><input type="radio" name="b-meal"><span>Beef</span></label>
+                    <label class="w-choice"><input type="radio" name="b-meal" checked><span>Fish</span></label>
+                    <label class="w-choice"><input type="radio" name="b-meal"><span>Garden</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="guest-block">
+              <div class="guest-head"><h3>Cleo Testhouse</h3><span class="w-badge">Child</span></div>
+              <div class="guest-body">
+                <div class="event-row">
+                  <span class="event-name">All three events</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="c-all" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="c-all"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <div class="w-field">
+                  <span class="w-label">Meal</span>
+                  <div class="w-choices">
+                    <label class="w-choice"><input type="radio" name="c-meal"><span>Beef</span></label>
+                    <label class="w-choice"><input type="radio" name="c-meal"><span>Fish</span></label>
+                    <label class="w-choice"><input type="radio" name="c-meal" checked><span>Garden</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-btn w-btn-primary" type="button" data-go="2">Review your answers</button>
+            <p class="w-small w-muted">Nothing is sent yet. You'll see everything written out before it counts.</p>
+          </div>
+
+          <div class="w-wrap" data-step="2" hidden>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Review</p>
+              <h1 class="w-h1">Does this look right?</h1>
+              <p class="w-body">Three guests, three events, three meals. Nothing has been sent yet.</p>
+            </div>
+            <div class="w-panel">
+              <div class="review-line"><strong>Ada Testhouse</strong><span>Ceremony · accepts</span></div>
+              <div class="review-line"><strong>Ada Testhouse</strong><span>Cocktail hour · accepts</span></div>
+              <div class="review-line"><strong>Ada Testhouse</strong><span>Reception · accepts</span><small>Meal: Beef</small></div>
+              <div class="review-line"><strong>Ben Testhouse</strong><span>All three · accepts</span><small>Meal: Fish</small></div>
+              <div class="review-line"><strong>Cleo Testhouse</strong><span>All three · accepts</span><small>Meal: Garden</small></div>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0"><strong>Three of you will be there.</strong> We'll email Ada a copy.</p>
+            </div>
+            <button class="w-btn w-btn-primary" type="button" data-go="3">Send our RSVP</button>
+            <button class="w-btn" type="button" data-go="1">Go back and change something</button>
+            <p class="w-small w-muted">The review is a signed proposal: submitting sends exactly what you see, and a changed payload is rejected rather than quietly accepted.</p>
+          </div>
+
+          <div class="w-wrap" data-step="3" hidden>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">RSVP received</p>
+              <h1 class="w-h1">Thank you — you are all set</h1>
+              <p class="w-lede">Three of you, on Saturday July 17. We've emailed Ada a copy.</p>
+            </div>
+            <div class="w-panel">
+              <div class="review-line"><strong>Ada Testhouse</strong><span>All three · accepts</span><small>Beef</small></div>
+              <div class="review-line"><strong>Ben Testhouse</strong><span>All three · accepts</span><small>Fish</small></div>
+              <div class="review-line"><strong>Cleo Testhouse</strong><span>All three · accepts</span><small>Garden</small></div>
+            </div>
+            <a class="w-btn w-btn-primary" href="#">Go to Your Weekend</a>
+            <button class="w-btn" type="button" data-go="1">Change our answers</button>
+            <p class="w-small w-muted">Editable until the deadline. Re-submitting the same answers is a no-op rather than a duplicate — the submission carries an idempotency key.</p>
+          </div>
+        </div>
+
+        <!-- PARTIAL INVITATION -->
+        <div class="site" data-scene-panel="partial" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">RSVP · Fixture household</p>
+              <h1 class="w-h1">You're answering for two people</h1>
+              <p class="w-body">Dev and Eve. Each person only sees the events they're invited to.</p>
+            </div>
+
+            <div class="guest-block">
+              <div class="guest-head"><h3>Dev Fixture</h3><span class="w-badge w-badge-on">You</span></div>
+              <div class="guest-body">
+                <div class="event-row">
+                  <span class="event-name">All three events</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="d-all" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="d-all"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <hr class="w-rule">
+                <div class="w-field">
+                  <span class="w-label">Your plus-one, for the reception</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="d-p1" checked><span>Bringing someone</span></label>
+                    <label class="w-choice"><input type="radio" name="d-p1"><span>Coming alone</span></label>
+                  </div>
+                </div>
+                <div class="w-field">
+                  <label class="w-label" for="p1n">Their name</label>
+                  <input class="w-input" id="p1n" value="Jamie Rivera" maxlength="200">
+                </div>
+                <div class="w-field">
+                  <span class="w-label">Their meal</span>
+                  <div class="w-choices">
+                    <label class="w-choice"><input type="radio" name="p1m" checked><span>Beef</span></label>
+                    <label class="w-choice"><input type="radio" name="p1m"><span>Fish</span></label>
+                    <label class="w-choice"><input type="radio" name="p1m"><span>Garden</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="guest-block">
+              <div class="guest-head"><h3>Eve Fixture</h3><span class="w-badge w-badge-warn">Reception only</span></div>
+              <div class="guest-body">
+                <div class="event-row">
+                  <span class="event-name">Reception</span>
+                  <div class="w-choices-row">
+                    <label class="w-choice"><input type="radio" name="e-rec" checked><span>Joyfully accepts</span></label>
+                    <label class="w-choice"><input type="radio" name="e-rec"><span>Regretfully declines</span></label>
+                  </div>
+                </div>
+                <div class="w-field">
+                  <span class="w-label">Meal</span>
+                  <div class="w-choices">
+                    <label class="w-choice"><input type="radio" name="e-meal"><span>Beef</span></label>
+                    <label class="w-choice"><input type="radio" name="e-meal"><span>Fish</span></label>
+                    <label class="w-choice"><input type="radio" name="e-meal" checked><span>Garden</span></label>
+                  </div>
+                </div>
+                <div class="w-notice">
+                  <p class="w-small" style="margin:0">The ceremony and cocktail hour aren't shown for Eve, because her invitation doesn't cover them. She is never asked to decline something she wasn't offered.</p>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-btn w-btn-primary" type="button">Review your answers</button>
+            <p class="w-small w-muted">Fin Solo's household is the third shape: one guest, one unnamed plus-one — the name field is optional there, because "I'm bringing someone, I don't know who yet" is a real answer.</p>
+          </div>
+        </div>
+
+        <!-- CLOSED -->
+        <div class="site" data-scene-panel="closed" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">RSVP</p>
+              <h1 class="w-h1">RSVPs are closed</h1>
+              <p class="w-body">We've sent our final count to the venue. Here's what you told us.</p>
+            </div>
+            <div class="w-panel">
+              <div class="review-line"><strong>Ada Testhouse</strong><span>All three · accepts</span><small>Beef</small></div>
+              <div class="review-line"><strong>Ben Testhouse</strong><span>All three · accepts</span><small>Fish</small></div>
+              <div class="review-line"><strong>Cleo Testhouse</strong><span>All three · accepts</span><small>Garden</small></div>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <p class="w-small" style="margin:0">If something has changed, <a class="w-link" href="#">ask us</a> — we'll do what we can.</p>
+            </div>
+            <a class="w-btn" href="#">Go to Your Weekend</a>
+            <p class="w-small w-muted">The route stays reachable and read-only. A guest following an old link gets their answers back, not a 404 and not an editable form that would fail on submit.</p>
+          </div>
+        </div>
+
+        <!-- YOUR WEEKEND -->
+        <div class="site" data-scene-panel="weekend" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Your weekend</a><a href="#">Travel</a><a href="#">Photos</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your weekend</p>
+              <h1 class="w-h1">Hello, Ada</h1>
+              <p class="w-lede">Everything below is yours: your household's answers, your schedule, and — closer to the day — your table.</p>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Your party</h2>
+              <dl class="w-dl">
+                <dt>Attending</dt><dd>Ada, Ben and Cleo</dd>
+                <dt>Meals</dt><dd>Beef, fish, garden</dd>
+                <dt>Needs</dt><dd class="w-muted">None recorded</dd>
+              </dl>
+              <a class="w-btn w-btn-sm" href="#">Review or change your RSVP</a>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Saturday, July 17</h2>
+              <ul class="sched">
+                <li><time>—</time><div><strong>Ceremony</strong><br><span class="w-small w-muted">Chicago Athletic Association Hotel</span></div></li>
+                <li><time>—</time><div><strong>Cocktail hour</strong></div></li>
+                <li><time>—</time><div><strong>Reception</strong><br><span class="w-small w-muted">Dinner and dancing</span></div></li>
+              </ul>
+              <span class="w-todo">TODO(Tyler &amp; Sara): times and rooms (backlog P-02, P-03).</span>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Your table</h2>
+              <p class="w-small">Table assignments go live on the morning of the wedding. We'll show yours here, with a map.</p>
+              <span class="w-badge w-badge-warn">Not yet released</span>
+            </div>
+
+            <div class="w-grid w-grid-2">
+              <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Travel &amp; stay</h3><p class="w-small w-muted">Your trip in one place.</p></a>
+              <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Getting there</h3><p class="w-small w-muted">Valet, transit, rides.</p></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="site" data-scene-panel="table" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Your weekend</a><a href="#">Travel</a><a href="#">Photos</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">On the day</p>
+              <h1 class="w-h1">You're at table 7</h1>
+              <p class="w-lede">Near the windows, on the left as you come in from the cocktail hour.</p>
+            </div>
+
+            <svg class="plan" viewBox="0 0 320 240" role="img" aria-label="Reception floor plan. Table 7 is highlighted, on the left side near the windows.">
+              <rect x="0" y="0" width="320" height="240" fill="var(--color-neutral)"/>
+              <rect x="14" y="14" width="292" height="212" fill="none" stroke="var(--color-outline)" stroke-width="1.5"/>
+              <text x="160" y="34" text-anchor="middle" font-family="var(--font-text)" font-size="11" fill="var(--color-on-surface-muted)">Head table</text>
+              <rect x="110" y="40" width="100" height="14" fill="var(--color-outline)"/>
+              <text x="26" y="130" font-family="var(--font-text)" font-size="10" fill="var(--color-on-surface-muted)" transform="rotate(-90 26 130)">Windows</text>
+              <circle cx="72" cy="92" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="72" y="96" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">5</text>
+              <circle cx="128" cy="92" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="128" y="96" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">6</text>
+              <circle cx="72" cy="146" r="21" fill="var(--color-primary)" stroke="var(--color-primary)" stroke-width="3"/><text x="72" y="151" text-anchor="middle" font-size="14" font-weight="700" font-family="var(--font-text)" fill="var(--color-on-primary)">7</text>
+              <circle cx="128" cy="146" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="128" y="150" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">8</text>
+              <circle cx="200" cy="92" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="200" y="96" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">3</text>
+              <circle cx="256" cy="92" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="256" y="96" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">2</text>
+              <circle cx="200" cy="146" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="200" y="150" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">4</text>
+              <circle cx="256" cy="146" r="17" fill="var(--color-surface)" stroke="var(--color-outline)"/><text x="256" y="150" text-anchor="middle" font-size="11" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">1</text>
+              <rect x="132" y="196" width="56" height="16" fill="none" stroke="var(--color-outline)" stroke-dasharray="3 3"/>
+              <text x="160" y="208" text-anchor="middle" font-size="10" font-family="var(--font-text)" fill="var(--color-on-surface-muted)">Entrance</text>
+            </svg>
+
+            <div class="w-card">
+              <h2 class="w-h3">Who's with you</h2>
+              <p class="w-small">Ada, Ben and Cleo Testhouse, and five others.</p>
+              <span class="w-todo">TODO(Tyler &amp; Sara): table assignments (backlog X-09). This plan renders whatever the seating board holds.</span>
+            </div>
+            <p class="w-small w-muted">The plan is described for screen readers as a sentence — "table 7, on the left near the windows" — because a diagram alone doesn't help someone who can't see it.</p>
+          </div>
+        </div>
+
+        <!-- ADMIN RSVP -->
+        <div class="site" data-scene-panel="admin" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · RSVP</p>
+              <h1 class="w-h1">What the venue needs</h1>
+              <p class="w-body">Counts by event and meal, plus every dietary and accessibility note in one list.</p>
+            </div>
+            <div class="counts">
+              <div class="count"><b>6</b><span>Invited</span></div>
+              <div class="count"><b>5</b><span>Accepted</span></div>
+              <div class="count"><b>0</b><span>Declined</span></div>
+              <div class="count"><b>1</b><span>Awaiting</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Meals for the reception</h2>
+              <dl class="w-dl">
+                <dt>Beef</dt><dd>2</dd>
+                <dt>Fish</dt><dd>2</dd>
+                <dt>Garden</dt><dd>2</dd>
+                <dt>Plus-ones</dt><dd>1 named, 1 unnamed</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Needs</h2>
+              <p class="w-small w-muted">No dietary or accessibility notes recorded yet.</p>
+              <p class="w-small">When there are, each one names the guest it belongs to. Free text goes to the kitchen and the planner, never into a public page.</p>
+            </div>
+            <p class="w-small w-muted">Counts come from the fixture households. Real guest data never enters git, so this board is exercised against six fictional people.</p>
+          </div>
+        </div>
+
+        <!-- SEATING -->
+        <div class="site" data-scene-panel="seating" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · seating</p>
+              <h1 class="w-h1">The seating board</h1>
+              <p class="w-body">Assign households to tables, then release. Nothing reaches a guest until you do.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Table 7</h2><span class="w-badge">8 seats · 3 filled</span></div>
+              <ul class="sched">
+                <li><time>1–3</time><div>Testhouse household <span class="w-muted">— Ada, Ben, Cleo</span></div></li>
+                <li><time>4–8</time><div class="w-muted">Unassigned</div></li>
+              </ul>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Unassigned</h2><span class="w-badge w-badge-warn">3 guests</span></div>
+              <ul class="sched">
+                <li><time>—</time><div>Dev Fixture <span class="w-muted">+ Jamie Rivera</span></div></li>
+                <li><time>—</time><div>Eve Fixture</div></li>
+                <li><time>—</time><div>Fin Solo <span class="w-muted">+ guest</span></div></li>
+              </ul>
+            </div>
+            <div class="w-panel">
+              <div class="w-between"><strong class="w-small">Release to guests</strong><span class="w-badge w-badge-warn">Held</span></div>
+              <p class="w-small w-muted" style="margin:0">Assignments stay invisible until released — usually the morning of the wedding.</p>
+              <button class="w-btn w-btn-sm" type="button">Release table assignments</button>
+            </div>
+            <p class="w-small w-muted">Releasing is an admin action behind <code>admin_guest_ops</code> and a step-up. Until then <code>view_table_assignment</code> resolves to "not yet released" rather than an empty table.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="notes" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="form">
+  <h3>Household RSVP — draft, review, submit</h3>
+  <p>Click all the way through. One guest is one block; every event that guest is invited to sits inside it, so nobody's answers get scattered across the page.</p>
+  <ul>
+    <li><strong>Check:</strong> every control is reachable and operable by keyboard alone — the whole row is the hit target, and it's at least 48px tall.</li>
+    <li><strong>Check:</strong> the review step writes out every line before anything is sent.</li>
+    <li><strong>Check:</strong> the meal question only appears for the reception, the one event with a meal.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">draft_rsvp</span><span class="chip chip-cap">submit_rsvp</span><span class="chip">manage_household_rsvp</span><span class="chip chip-pass">idempotent</span></div>
+</template>
+
+<template data-notes="partial">
+  <h3>Partial invitation and plus-ones</h3>
+  <p>The household that breaks naive implementations: Eve is invited to the reception only, and Dev has a named plus-one.</p>
+  <ul>
+    <li><strong>Check:</strong> Eve is never asked about the ceremony — an event she wasn't invited to must not appear, even to decline.</li>
+    <li><strong>Check:</strong> the plus-one name is capped at 200 characters and the meal is asked separately.</li>
+    <li><strong>Check:</strong> an unnamed plus-one is a valid answer (Fin Solo's household).</li>
+  </ul>
+  <div class="meta"><span class="chip">eventEntitlements</span><span class="chip chip-warn">reception only</span><span class="chip">named + unnamed +1</span></div>
+</template>
+
+<template data-notes="closed">
+  <h3>Window closed — read-only, not gone</h3>
+  <p>After the deadline the route still answers. It returns the household's submitted answers and a human fallback.</p>
+  <ul>
+    <li><strong>Check:</strong> no editable control survives — a form that can't submit is worse than no form.</li>
+    <li><strong>Check:</strong> the guest can still see exactly what they told you.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">get_my_rsvp</span><span class="chip chip-block">window closed</span><span class="chip">route /rsvp</span></div>
+</template>
+
+<template data-notes="weekend">
+  <h3>Your Weekend — the private hub</h3>
+  <p>Everything personal in one place, behind authentication. The table card is present but honest about not being released yet.</p>
+  <ul>
+    <li><strong>Check:</strong> unknown times are em dashes with a visible TODO, never invented.</li>
+    <li><strong>Check:</strong> a not-yet-released table says so, rather than rendering an empty state that looks broken.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /your-weekend</span><span class="chip chip-cap">get_my_itinerary</span><span class="chip">view_private_schedule</span></div>
+</template>
+
+<template data-notes="table">
+  <h3>Your table — the floor plan</h3>
+  <p>Released on the morning. The plan is drawn to the room, and the same information is written as a sentence for anyone who can't use the diagram.</p>
+  <ul>
+    <li><strong>Check:</strong> the highlighted table is findable at 390px without pinch-zooming.</li>
+    <li><strong>Check:</strong> the SVG's accessible name locates the table in words, not just in pixels.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">show_my_table_on_floorplan</span><span class="chip">view_table_assignment</span><span class="chip chip-warn">backlog X-09</span></div>
+</template>
+
+<template data-notes="admin">
+  <h3>Counts &amp; needs — what the venue gets</h3>
+  <p>The numbers the caterer needs, and every dietary or accessibility note attached to the guest who wrote it.</p>
+  <ul>
+    <li><strong>Check:</strong> counts reconcile — invited equals accepted plus declined plus awaiting.</li>
+    <li><strong>Check:</strong> free-text needs never appear on any public surface.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/rsvp</span><span class="chip chip-cap">admin_rsvp</span><span class="chip chip-pass">fixtures only</span></div>
+</template>
+
+<template data-notes="seating">
+  <h3>Seating board — assign, then release</h3>
+  <p>Assignment and visibility are two different decisions. Guests see nothing until an admin releases, usually on the morning.</p>
+  <ul>
+    <li><strong>Check:</strong> households stay together by default when assigned.</li>
+    <li><strong>Check:</strong> release is a deliberate, step-up-protected action, not a side effect of saving.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/seating</span><span class="chip chip-cap">admin_seating</span><span class="chip chip-warn">held until released</span></div>
+</template>
+
+<script>
+/* Feature lab shell. No dependencies: a scene switcher, a theme switch that
+   swaps which kit's tokens the device viewport resolves against, and a
+   viewport-width toggle that starts at the 390px phone the site is built for. */
+(function () {
+  'use strict';
+
+  var device = document.getElementById('device');
+  var urlBar = document.getElementById('device-url');
+  var widthOut = document.getElementById('device-w');
+  var notes = document.getElementById('notes-body');
+
+  function pressGroup(name, value) {
+    var buttons = document.querySelectorAll('[data-' + name + ']');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      b.setAttribute('aria-pressed', String(b.dataset[name] === value));
+    }
+  }
+
+  /* Theme: the device carries data-theme, so every token under it resolves
+     from the chosen kit's generated block. */
+  function setTheme(id) {
+    if (device) device.setAttribute('data-theme', id);
+    pressGroup('labTheme', id);
+  }
+
+  function setWidth(px) {
+    if (device) device.style.setProperty('--device-w', px + 'px');
+    if (widthOut) widthOut.textContent = px + '×';
+    pressGroup('labWidth', px);
+  }
+
+  function setScene(id) {
+    var panels = document.querySelectorAll('[data-scene-panel]');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].hidden = panels[i].dataset.scenePanel !== id;
+    }
+    var buttons = document.querySelectorAll('[data-scene]');
+    for (var j = 0; j < buttons.length; j++) {
+      var b = buttons[j];
+      var on = b.dataset.scene === id;
+      b.setAttribute('aria-current', String(on));
+      if (on && urlBar && b.dataset.url) urlBar.textContent = b.dataset.url;
+    }
+    var tpl = document.querySelector('template[data-notes="' + id + '"]');
+    if (tpl && notes) {
+      notes.innerHTML = '';
+      notes.appendChild(tpl.content.cloneNode(true));
+    }
+    var vp = document.querySelector('.viewport');
+    if (vp) vp.scrollTop = 0;
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lab-theme], [data-lab-width], [data-scene]');
+    if (!t) return;
+    if (t.dataset.labTheme) setTheme(t.dataset.labTheme);
+    else if (t.dataset.labWidth) setWidth(t.dataset.labWidth);
+    else if (t.dataset.scene) setScene(t.dataset.scene);
+  });
+
+  /* Local interactivity inside a scene: [data-go] moves to another step of the
+     same flow, [data-toggle] flips a disclosure. Both are plain DOM so a scene
+     stays testable with the keyboard. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      e.preventDefault();
+      var scope = go.closest('[data-flow]');
+      if (!scope) return;
+      var steps = scope.querySelectorAll('[data-step]');
+      for (var i = 0; i < steps.length; i++) steps[i].hidden = steps[i].dataset.step !== go.dataset.go;
+      var vp = go.closest('.viewport');
+      if (vp) vp.scrollTop = 0;
+      return;
+    }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) {
+      var target = document.getElementById(tg.dataset.toggle);
+      if (!target) return;
+      var open = target.hidden;
+      target.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+    }
+  });
+
+  var first = document.querySelector('[data-scene]');
+  if (first) setScene(first.dataset.scene);
+  setTheme('gilded-hour');
+  setWidth('390');
+})();
+
+</script>

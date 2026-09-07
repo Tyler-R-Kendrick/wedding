@@ -1,0 +1,485 @@
+<title>Guest Media Pipeline</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600&family=Big+Shoulders+Display:wght@600;700&family=Gloock&family=Spectral:wght@400;500&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 5px; }
+
+/* Placeholder tiles, drawn from theme tokens. No external image can load in a
+   published artifact, and a fake wedding photo would be worse than a gap. */
+.tile { aspect-ratio: 1; border: 1px solid var(--color-outline); display: grid; place-items: center; position: relative; overflow: hidden; }
+.tile span { font-family: var(--wb-mono); font-size: 9.5px; color: var(--color-on-surface-muted); z-index: 1; text-align: center; padding: 2px; }
+.tile::before { content: ""; position: absolute; inset: 0; opacity: 0.5; }
+.tile:nth-child(3n)::before { background: linear-gradient(140deg, var(--color-neutral-variant), var(--color-neutral)); }
+.tile:nth-child(3n+1)::before { background: linear-gradient(200deg, var(--color-neutral), var(--color-neutral-variant)); }
+.tile:nth-child(3n+2)::before { background: linear-gradient(60deg, var(--color-neutral-variant), var(--color-surface)); }
+[data-theme="conservatory"] .tile { border-radius: var(--rounded-md); }
+
+.tile-wide { aspect-ratio: 16/10; }
+
+/* The upload row is the whole feature on a phone: one file, one state. */
+.up { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--color-outline); }
+.up:last-child { border-bottom: 0; }
+.up-thumb { width: 44px; height: 44px; border: 1px solid var(--color-outline); background: var(--color-neutral); }
+[data-theme="conservatory"] .up-thumb { border-radius: 4px; }
+.up-name { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-meta { font-family: var(--wb-mono); font-size: 11px; color: var(--color-on-surface-muted); }
+
+.bar { height: 4px; background: var(--color-neutral-variant); overflow: hidden; margin-top: 5px; }
+.bar i { display: block; height: 100%; background: var(--color-secondary); }
+[data-theme="conservatory"] .bar i { background: var(--color-leaf); }
+
+/* The asset state machine is the feature. Draw it as a machine. */
+.machine { display: flex; flex-direction: column; gap: 0; font-family: var(--wb-mono); font-size: 12.5px; }
+.st { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 9px 0; }
+.st-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--color-outline); background: var(--color-surface); margin: 3px 0 0 5px; position: relative; }
+.st-dot::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 20px; background: var(--color-outline); transform: translateX(-50%); }
+.st:last-child .st-dot::after { display: none; }
+.st[data-on="true"] .st-dot { border-color: var(--color-secondary); background: var(--color-secondary); }
+[data-theme="conservatory"] .st[data-on="true"] .st-dot { border-color: var(--color-leaf-deep); background: var(--color-leaf-deep); }
+.st[data-terminal="true"] .st-dot { border-color: var(--color-error); }
+.st b { font-weight: 600; }
+.st p { margin: 2px 0 0; font-family: var(--font-text); font-size: 14px; color: var(--color-on-surface-muted); }
+
+.queue-item { border: 1px solid var(--color-outline); background: var(--color-surface); padding: var(--spacing-sm) var(--spacing-md); display: flex; flex-direction: column; gap: 8px; }
+[data-theme="conservatory"] .queue-item { border-radius: var(--rounded-md); }
+
+.metric { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: var(--spacing-sm); }
+.metric div { border: 1px solid var(--color-outline); padding: 11px; }
+[data-theme="conservatory"] .metric div { border-radius: var(--rounded-md); }
+.metric b { display: block; font-family: var(--type-numeral-family); font-size: 1.7rem; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
+[data-theme="conservatory"] .metric b { font-family: var(--font-accent); }
+.metric span { font-family: var(--type-label-caps-family); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+</style>
+
+<header class="lab-head">
+  <div class="lab-head-main">
+    <p class="lab-kicker">Feature lab · level 10</p>
+    <h1 class="lab-title">Guest uploads, galleries &amp; moderation</h1>
+    <p class="lab-sub">Photos arrive from 140 phones on a hotel wifi. Uploads resume, originals stay private, derivatives get their EXIF and GPS stripped, and nothing reaches the gallery without passing a nine-state pipeline first.</p>
+  </div>
+</header>
+
+<div class="lab-controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="lab-body">
+  <nav class="rail" aria-label="Media surfaces">
+    <h2>Guest</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="upload" data-url="/media/upload">Upload<small>resumable, 4 states</small></button>
+      <button type="button" data-scene="mine" data-url="/media/mine">My uploads<small>delete your own</small></button>
+      <button type="button" data-scene="gallery" data-url="/photos">The gallery<small>published only</small></button>
+    </div>
+    <h2>Pipeline</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="states" data-url="media/state.ts">Asset states<small>nine, in order</small></button>
+      <button type="button" data-scene="privacy" data-url="derivatives">Privacy rules<small>EXIF, GPS, signing</small></button>
+    </div>
+    <h2>Admin</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="moderation" data-url="/admin/media">Moderation queue<small>publish or hide</small></button>
+      <button type="button" data-scene="duplicates" data-url="/admin/media/duplicates">Duplicates<small>same shot, 6 phones</small></button>
+      <button type="button" data-scene="metrics" data-url="/admin/media/metrics">Metrics<small>what's stuck</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="device-bar">
+        <span class="device-dot" aria-hidden="true"></span>
+        <span class="device-url" id="device-url">/media/upload</span>
+        <span class="device-w" id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- UPLOAD -->
+        <div class="site" data-scene-panel="upload" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Share your photos</p>
+              <h1 class="w-h1">Add what you took</h1>
+              <p class="w-body">Pick anything from your camera roll. Big files and bad wifi are fine — an interrupted upload picks up where it left off.</p>
+            </div>
+
+            <button class="w-btn w-btn-primary" type="button">Choose photos or video</button>
+
+            <div class="w-panel">
+              <h2 class="w-h3">Uploading — 4 files</h2>
+              <div>
+                <div class="up">
+                  <span class="up-thumb" aria-hidden="true"></span>
+                  <div><div class="up-name">IMG_4821.HEIC</div><div class="up-meta">4.2 MB · done</div></div>
+                  <span class="w-badge w-badge-on">✓</span>
+                </div>
+                <div class="up">
+                  <span class="up-thumb" aria-hidden="true"></span>
+                  <div>
+                    <div class="up-name">IMG_4822.HEIC</div>
+                    <div class="up-meta">5.1 MB · 62%</div>
+                    <div class="bar"><i style="width:62%"></i></div>
+                  </div>
+                  <button class="w-btn w-btn-sm" type="button">Stop</button>
+                </div>
+                <div class="up">
+                  <span class="up-thumb" aria-hidden="true"></span>
+                  <div>
+                    <div class="up-name">IMG_4823.MOV</div>
+                    <div class="up-meta">88 MB · paused — no connection</div>
+                    <div class="bar"><i style="width:34%"></i></div>
+                  </div>
+                  <button class="w-btn w-btn-sm" type="button">Resume</button>
+                </div>
+                <div class="up">
+                  <span class="up-thumb" aria-hidden="true"></span>
+                  <div><div class="up-name">screenshot.png</div><div class="up-meta w-muted">Not a photo or video we can accept</div></div>
+                  <span class="w-badge w-badge-err">✕</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Your photos stay private until Sara and Tyler publish them. You can delete anything you've added at any time.</p>
+            </div>
+            <p class="w-small w-muted">Content types are allowlisted when the upload is signed, not after it lands — a rejected file never reaches storage.</p>
+          </div>
+        </div>
+
+        <!-- MINE -->
+        <div class="site" data-scene-panel="mine" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your photos</p>
+              <h1 class="w-h1">You've added 12</h1>
+              <p class="w-body">Nine are in the gallery. Three are still with Sara and Tyler.</p>
+            </div>
+            <div class="gallery">
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>published</span></div>
+              <div class="tile"><span>private</span></div>
+              <div class="tile"><span>private</span></div>
+              <div class="tile"><span>processing</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Remove one</h2>
+              <p class="w-small">Deleting takes it out of the gallery and out of storage. It doesn't remove it from anyone's phone, and it can't be undone.</p>
+              <button class="w-btn w-btn-sm" type="button">Delete a photo</button>
+            </div>
+            <p class="w-small w-muted">Tiles are drawn placeholders — a published artifact can't load images, and a stand-in that looked like a real wedding photo would be worse than an honest gap.</p>
+          </div>
+        </div>
+
+        <!-- GALLERY -->
+        <div class="site" data-scene-panel="gallery" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Photos</a><a href="#">Your weekend</a></nav>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Photos</p>
+              <h1 class="w-h1">The weekend, as you all saw it</h1>
+              <p class="w-lede">Everything guests shared, plus the professional galleries when they arrive.</p>
+            </div>
+
+            <div class="w-stack-sm">
+              <div class="w-between"><h2 class="w-h2">Saturday</h2><span class="w-badge">248 photos</span></div>
+              <div class="gallery">
+                <div class="tile tile-wide"><span>guest upload</span></div>
+                <div class="tile tile-wide"><span>guest upload</span></div>
+                <div class="tile"><span>guest</span></div>
+                <div class="tile"><span>guest</span></div>
+                <div class="tile"><span>guest</span></div>
+                <div class="tile"><span>guest</span></div>
+                <div class="tile"><span>guest</span></div>
+                <div class="tile"><span>guest</span></div>
+              </div>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">From the photographers</h2>
+              <span class="w-todo">TODO(Tyler &amp; Sara): professional galleries arrive after the wedding. Two photographers and a videographer.</span>
+            </div>
+
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Only published photos appear here. Everything else — quarantined, processing, private, hidden — is invisible to guests by construction, not by a filter someone remembered to write.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATE MACHINE -->
+        <div class="site" data-scene-panel="states" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">The pipeline</p>
+              <h1 class="w-h1">Nine states, one direction</h1>
+              <p class="w-body">Every asset walks this path. Nothing skips ahead, and only one state is visible to a guest.</p>
+            </div>
+            <div class="machine">
+              <div class="st" data-on="true"><span class="st-dot"></span><div><b>quarantined</b><p>Just landed. Nothing has looked at it yet, and nothing can read it.</p></div></div>
+              <div class="st" data-on="true"><span class="st-dot"></span><div><b>validating</b><p>Is it really the image or video it claims to be?</p></div></div>
+              <div class="st" data-on="true"><span class="st-dot"></span><div><b>processing</b><p>Derivatives are generated: thumb, gallery, web-full, poster, video-web.</p></div></div>
+              <div class="st" data-on="true"><span class="st-dot"></span><div><b>private</b><p>Ready, and visible only to the guest who uploaded it and to admins.</p></div></div>
+              <div class="st" data-on="true"><span class="st-dot"></span><div><b>published</b><p>The only state a guest sees in the gallery.</p></div></div>
+              <div class="st"><span class="st-dot"></span><div><b>hidden</b><p>Pulled back from the gallery. Reversible — published and hidden swap freely.</p></div></div>
+              <div class="st" data-terminal="true"><span class="st-dot"></span><div><b>rejected</b><p>Not acceptable. Terminal.</p></div></div>
+              <div class="st" data-terminal="true"><span class="st-dot"></span><div><b>failed</b><p>Processing broke. Terminal, and it shows up in metrics.</p></div></div>
+              <div class="st" data-terminal="true"><span class="st-dot"></span><div><b>deleted</b><p>Gone from storage. Terminal.</p></div></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">And the upload itself</h2>
+              <p class="w-small"><code>pending → completed</code>, or <code>aborted</code>, <code>expired</code>, <code>rejected</code>. An upload that never completes expires on its own rather than holding a signed URL open forever.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRIVACY -->
+        <div class="site" data-scene-panel="privacy" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Privacy rules</p>
+              <h1 class="w-h1">What happens to a photo's metadata</h1>
+              <p class="w-body">A phone photo carries where it was taken, on what, and when. Most of that must not travel with a picture on a public gallery.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Originals</h2>
+              <dl class="w-dl">
+                <dt>Storage</dt><dd>Private bucket, never public</dd>
+                <dt>Reads</dt><dd>Signed URLs only, short-lived</dd>
+                <dt>EXIF</dt><dd>Kept on the original</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Derivatives</h2>
+              <dl class="w-dl">
+                <dt>EXIF</dt><dd>Stripped</dd>
+                <dt>GPS</dt><dd>Stripped</dd>
+                <dt>Served</dt><dd>With <code>CSP: sandbox</code></dd>
+              </dl>
+              <p class="w-small w-muted" style="margin:0">Every variant a guest can see is a derivative. The original is never the thing on the page.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Face matching</h2>
+              <p class="w-small">Off. <code>FLAG_BIOMETRICS_ENABLED</code> is false and additionally requires a persisted readiness switch.</p>
+              <span class="w-badge w-badge-err">Illinois BIPA — counsel sign-off required</span>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Professional media and AI</h2>
+              <p class="w-small">Third-party AI processing of professionally delivered media is off until the vendor confirms the rights in writing.</p>
+              <span class="w-badge w-badge-err">FLAG_PRO_MEDIA_AI_PROCESSING off</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODERATION -->
+        <div class="site" data-scene-panel="moderation" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · media</p>
+              <h1 class="w-h1">Moderation queue</h1>
+              <p class="w-body">34 waiting. Publish, hide or reject; every decision writes an audit row with the state it moved from and to.</p>
+            </div>
+            <div class="w-stack-sm">
+              <div class="queue-item">
+                <div class="w-between"><strong class="w-small">IMG_4821.HEIC</strong><span class="w-badge">private</span></div>
+                <div class="gallery" style="grid-template-columns:repeat(3,1fr)"><div class="tile"><span>preview</span></div></div>
+                <p class="up-meta">Ada Testhouse · Sat 21:04 · 4.2 MB</p>
+                <div class="w-row">
+                  <button class="w-btn w-btn-sm w-btn-primary" type="button">Publish</button>
+                  <button class="w-btn w-btn-sm" type="button">Keep private</button>
+                  <button class="w-btn w-btn-sm" type="button">Reject</button>
+                </div>
+              </div>
+              <div class="queue-item">
+                <div class="w-between"><strong class="w-small">IMG_4823.MOV</strong><span class="w-badge w-badge-warn">processing</span></div>
+                <p class="up-meta">Dev Fixture · Sat 22:18 · 88 MB · poster pending</p>
+                <p class="w-small w-muted" style="margin:0">Not decidable yet — derivatives are still being generated.</p>
+              </div>
+              <div class="queue-item">
+                <div class="w-between"><strong class="w-small">IMG_5107.HEIC</strong><span class="w-badge w-badge-on">published</span></div>
+                <p class="up-meta">Fin Solo · Sat 20:41 · 3.8 MB</p>
+                <div class="w-row"><button class="w-btn w-btn-sm" type="button">Hide from gallery</button></div>
+              </div>
+            </div>
+            <p class="w-small w-muted">Publish and hide are reversible and swap freely; reject and delete are terminal. The queue never offers a terminal action without saying so.</p>
+          </div>
+        </div>
+
+        <!-- DUPLICATES -->
+        <div class="site" data-scene-panel="duplicates" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · media</p>
+              <h1 class="w-h1">Near-duplicates</h1>
+              <p class="w-body">Six people photograph the first dance from the same angle. The gallery shouldn't show all six.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Cluster · 6 photos</h2><span class="w-badge w-badge-warn">Review</span></div>
+              <div class="gallery">
+                <div class="tile"><span>pick</span></div>
+                <div class="tile"><span>dupe</span></div>
+                <div class="tile"><span>dupe</span></div>
+                <div class="tile"><span>dupe</span></div>
+                <div class="tile"><span>dupe</span></div>
+                <div class="tile"><span>dupe</span></div>
+              </div>
+              <p class="w-small">Publish the best one, keep the rest private. Nobody's photo is deleted — every guest still sees their own in My Photos.</p>
+              <div class="w-row">
+                <button class="w-btn w-btn-sm w-btn-primary" type="button">Publish the pick</button>
+                <button class="w-btn w-btn-sm" type="button">Publish all six</button>
+              </div>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Clustering is perceptual, not facial. It compares images, never people — that distinction is what keeps this feature outside the biometric gate.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- METRICS -->
+        <div class="site" data-scene-panel="metrics" hidden>
+          <div class="w-wrap">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · media</p>
+              <h1 class="w-h1">What's stuck</h1>
+              <p class="w-body">On the night, the question isn't how many photos arrived. It's which ones aren't moving.</p>
+            </div>
+            <div class="metric">
+              <div><b>612</b><span>Assets</span></div>
+              <div><b>248</b><span>Published</span></div>
+              <div><b>34</b><span>Awaiting</span></div>
+              <div><b>7</b><span>Failed</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Failures</h2>
+              <dl class="w-dl">
+                <dt>Video transcode</dt><dd>5 — no encoder on this host</dd>
+                <dt>Validation</dt><dd>2 — not a media file</dd>
+              </dl>
+              <p class="w-small w-muted" style="margin:0">Each failure names the stage it died at, so a stuck queue is diagnosable without reading logs.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Uploads</h2>
+              <dl class="w-dl">
+                <dt>Pending</dt><dd>19 — resumable</dd>
+                <dt>Expired</dt><dd>3 — signed URL lapsed</dd>
+                <dt>Aborted</dt><dd>11 — guest stopped</dd>
+              </dl>
+            </div>
+            <p class="w-small w-muted">Storage is a provider seam with a local filesystem adapter in dev and S3-compatible in production, so this board reads the same in both.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="notes" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="upload">
+  <h3>Upload — resumable, on hotel wifi</h3>
+  <p>All four upload states at once: done, in flight, interrupted, rejected. The interrupted one is the realistic case at a reception.</p>
+  <ul>
+    <li><strong>Check:</strong> a paused upload offers Resume, not Start over — an 88 MB video must not restart from zero.</li>
+    <li><strong>Check:</strong> the rejected file explains why in guest vocabulary.</li>
+    <li><strong>Check:</strong> the privacy promise appears before the guest uploads, not after.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">create_upload</span><span class="chip chip-cap">resume_upload</span><span class="chip">FLAG_GUEST_UPLOADS</span></div>
+</template>
+
+<template data-notes="mine">
+  <h3>My uploads — the guest's own control</h3>
+  <p>What a guest can see and undo. Deletion is theirs, unconditionally, and it's honest about what it can't reach.</p>
+  <ul>
+    <li><strong>Check:</strong> a guest sees their own private and processing assets, which nobody else can.</li>
+    <li><strong>Check:</strong> delete says plainly that it can't be undone and doesn't touch their phone.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /media/mine</span><span class="chip chip-cap">list_my_uploads</span><span class="chip chip-cap">delete_my_upload</span></div>
+</template>
+
+<template data-notes="gallery">
+  <h3>The gallery — published only</h3>
+  <p>The public surface. Its safety property is structural: the query selects <code>published</code>, so no other state can leak through a forgotten filter.</p>
+  <ul>
+    <li><strong>Check:</strong> nothing on the page implies a photo exists that a guest can't see.</li>
+    <li><strong>Check:</strong> the professional galleries are an honest placeholder, not a fake empty collection.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /photos</span><span class="chip chip-cap">list_gallery</span><span class="chip chip-pass">status = published</span></div>
+</template>
+
+<template data-notes="states">
+  <h3>Asset states — nine, in order</h3>
+  <p>The pipeline as a machine. Five states before a guest ever sees an image, one visible state, three terminal.</p>
+  <ul>
+    <li><strong>Check:</strong> published and hidden are the only reversible pair.</li>
+    <li><strong>Check:</strong> an asset can't reach the gallery without passing validation and processing.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-cap">ASSET_STATUSES</span><span class="chip">UPLOAD_STATUSES</span><span class="chip">5 derivative variants</span></div>
+</template>
+
+<template data-notes="privacy">
+  <h3>Privacy rules — EXIF, GPS, signing, gates</h3>
+  <p>Where a wedding site can quietly publish a guest's home address. Originals stay private; every visible variant is a stripped derivative.</p>
+  <ul>
+    <li><strong>Check:</strong> GPS is stripped from derivatives, and originals are never served directly.</li>
+    <li><strong>Check:</strong> both legal gates read as off, and each names what would unblock it.</li>
+  </ul>
+  <div class="meta"><span class="chip chip-block">BIPA gate</span><span class="chip chip-block">pro-media AI gate</span><span class="chip">signed reads · CSP sandbox</span></div>
+</template>
+
+<template data-notes="moderation">
+  <h3>Moderation queue — reversible vs terminal</h3>
+  <p>Every decision writes an audit row recording the state it moved from and to.</p>
+  <ul>
+    <li><strong>Check:</strong> an asset still processing offers no decision at all, rather than a button that would fail.</li>
+    <li><strong>Check:</strong> terminal actions are visibly distinct from reversible ones.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/media</span><span class="chip chip-cap">admin_moderate_media</span><span class="chip">media_moderation audit</span></div>
+</template>
+
+<template data-notes="duplicates">
+  <h3>Near-duplicates — perceptual, not facial</h3>
+  <p>Six phones, one first dance. Clustering compares images; it never identifies people, which is what keeps it clear of the biometric gate.</p>
+  <ul>
+    <li><strong>Check:</strong> nobody's photo is deleted — non-picks go private, and each guest keeps theirs.</li>
+    <li><strong>Check:</strong> "publish all six" stays available; the tool suggests, it doesn't decide.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/media/duplicates</span><span class="chip chip-pass">non-biometric</span></div>
+</template>
+
+<template data-notes="metrics">
+  <h3>Metrics — the operational view</h3>
+  <p>Built for the night itself: what is stuck, at which stage, and whether it's the guest's problem or the host's.</p>
+  <ul>
+    <li><strong>Check:</strong> each failure names the stage it died at.</li>
+    <li><strong>Check:</strong> pending uploads are distinguished from aborted ones — one is recoverable, the other isn't.</li>
+  </ul>
+  <div class="meta"><span class="chip">route /admin/media/metrics</span><span class="chip chip-cap">admin_media_insights</span><span class="chip chip-warn">7 failed</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+</script>
