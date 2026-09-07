@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useCallback, useId, useRef, useState } from 'react';
-import { decodeEvents, type ConciergeEvent } from '@/ai/events';
-import type { AnswerLink, AnswerSource, ConfirmationCard } from '@/ai/types';
-import { CHAT_ROUTE, MAX_QUESTION_CHARS } from './constants';
-import './concierge.css';
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { decodeEvents, type ConciergeEvent } from "@/ai/events";
+import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
+import { CHAT_ROUTE, MAX_QUESTION_CHARS } from "./constants";
+import "./concierge.css";
 
 /**
  * The concierge conversation (swarm J deliverable 6). A client island: the page it sits on renders
@@ -15,63 +15,131 @@ import './concierge.css';
  */
 interface Turn {
   id: string;
-  role: 'guest' | 'concierge';
+  role: "guest" | "concierge";
   text: string;
   sources: AnswerSource[];
   confirmations: ConfirmationCard[];
   links: AnswerLink[];
   navigate?: { route: string };
   pending: boolean;
+  /** The request never completed: render nothing for this turn rather than an empty bubble. */
+  failed?: boolean;
 }
 
+/** Shown when the request never reached the server (offline, dropped connection, blocked). */
+/** A message the SERVER wrote for a guest (rate limit, feature off), safe to show as it stands. */
+class GuestSafeError extends Error {}
+
+export const TRANSPORT_ERROR =
+  "That did not reach us — the connection dropped. Please try again; the questions on this page and the FAQ above still work.";
+
 const STAGE_LABEL: Record<string, string> = {
-  routing: 'Looking for the right pages…',
-  retrieving: 'Reading what the site knows…',
-  generating: 'Writing an answer…',
-  verifying: 'Checking every sentence against its source…',
+  routing: "Looking for the right pages…",
+  retrieving: "Reading what the site knows…",
+  generating: "Writing an answer…",
+  verifying: "Checking every sentence against its source…",
 };
 
 let turnCounter = 0;
 const nextTurnId = () => `t${++turnCounter}`;
 
-export default function ConciergePanel({ chatRoute = CHAT_ROUTE }: { chatRoute?: string }) {
+export default function ConciergePanel({
+  chatRoute = CHAT_ROUTE,
+}: {
+  chatRoute?: string;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState("");
   const [stage, setStage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionId = useRef<string | undefined>(undefined);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
   const hintId = useId();
+
+  // The button that opened the panel is replaced by the panel, so without this focus falls to
+  // <body> and a keyboard or screen-reader guest has to tab back in from the top of the document.
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Bring the newest turn into view. Asking pushes the input 600px down the document while the
+  // scroll position stays where it was, so the answer arrived off-screen and the guest had to go
+  // looking for it. `block: 'nearest'` scrolls the minimum needed and does nothing when it is
+  // already visible; `prefers-reduced-motion` is respected because the default behaviour is 'auto'.
+  const lastTurnRef = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    // Feature-checked, not assumed: scrolling the newest turn into view is an enhancement, and an
+    // environment without `scrollIntoView` (jsdom, and any older engine) must still render a working
+    // conversation rather than throw out of an effect.
+    const last = lastTurnRef.current;
+    if (turns.length && typeof last?.scrollIntoView === "function")
+      last.scrollIntoView({ block: "nearest" });
+  }, [turns]);
+
+  const visible = turns.filter((turn) => !turn.failed);
 
   const submit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
       const asked = question.trim();
       if (asked.length < 2 || busy) return;
-      const answerTurn: Turn = { id: nextTurnId(), role: 'concierge', text: '', sources: [], confirmations: [], links: [], pending: true };
-      setTurns((prev) => [...prev, { id: nextTurnId(), role: 'guest', text: asked, sources: [], confirmations: [], links: [], pending: false }, answerTurn]);
-      setQuestion('');
+      const answerTurn: Turn = {
+        id: nextTurnId(),
+        role: "concierge",
+        text: "",
+        sources: [],
+        confirmations: [],
+        links: [],
+        pending: true,
+      };
+      setTurns((prev) => [
+        ...prev,
+        {
+          id: nextTurnId(),
+          role: "guest",
+          text: asked,
+          sources: [],
+          confirmations: [],
+          links: [],
+          pending: false,
+        },
+        answerTurn,
+      ]);
+      setQuestion("");
       setError(null);
       setBusy(true);
       setStage(STAGE_LABEL.routing!);
 
-      const update = (patch: (turn: Turn) => Turn) => setTurns((prev) => prev.map((t) => (t.id === answerTurn.id ? patch(t) : t)));
+      const update = (patch: (turn: Turn) => Turn) =>
+        setTurns((prev) =>
+          prev.map((t) => (t.id === answerTurn.id ? patch(t) : t)),
+        );
 
       try {
         const response = await fetch(chatRoute, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: asked, ...(sessionId.current ? { sessionId: sessionId.current } : {}) }),
-          credentials: 'same-origin',
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: asked,
+            ...(sessionId.current ? { sessionId: sessionId.current } : {}),
+          }),
+          credentials: "same-origin",
         });
         if (!response.ok || !response.body) {
-          const detail = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | undefined;
-          throw new Error(detail?.error?.message ?? 'The concierge is unavailable right now.');
+          const detail = (await response.json().catch(() => undefined)) as
+            | { error?: { message?: string } }
+            | undefined;
+          // Tagged, so the catch can tell a message the SERVER wrote for a guest ("Too many
+          // questions at once…") from an exception the browser threw ("Failed to fetch").
+          throw new GuestSafeError(
+            detail?.error?.message ?? "The concierge is unavailable right now.",
+          );
         }
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        let buffer = "";
         for (;;) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -81,8 +149,14 @@ export default function ConciergePanel({ chatRoute = CHAT_ROUTE }: { chatRoute?:
           for (const e of events) apply(e, update, setStage, sessionId);
         }
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'The concierge is unavailable right now.');
-        update((t) => ({ ...t, pending: false }));
+        // A guest never sees `cause.message` from an exception: a dropped connection rendered the
+        // browser's own "Failed to fetch" into the panel. A message the server wrote IS for them —
+        // the rate limit and the feature-off notice both arrive as a non-200 body — so those are
+        // passed through and anything else becomes the one honest sentence about a failed request.
+        setError(
+          cause instanceof GuestSafeError ? cause.message : TRANSPORT_ERROR,
+        );
+        update((t) => ({ ...t, pending: false, failed: true }));
       } finally {
         setBusy(false);
         setStage(null);
@@ -94,65 +168,120 @@ export default function ConciergePanel({ chatRoute = CHAT_ROUTE }: { chatRoute?:
 
   return (
     <div className="cq" data-testid="concierge">
-      <ol className="cq__log" aria-label="Conversation with the concierge">
-        {turns.map((turn) => (
-          <li key={turn.id} className={`cq__turn cq__turn--${turn.role === 'guest' ? 'guest' : 'concierge'}`}>
-            <span className="cq__who">{turn.role === 'guest' ? 'You asked' : 'The concierge'}</span>
-            <div className="cq__bubble">
-              {turn.text ? <p>{turn.text}</p> : turn.pending ? <p className="cq__meta">Working on it…</p> : null}
-              {turn.sources.length > 0 ? (
-                <>
-                  <p className="cq__meta">Based on:</p>
-                  <ol className="cq__sources">
-                    {turn.sources.map((source) => (
-                      <li key={source.marker}>
-                        <span aria-hidden="true">[{source.marker}] </span>
-                        {source.url ? (
-                          <a href={source.url} {...(source.url.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer external' } : {})}>
-                            {source.title}
-                          </a>
-                        ) : (
-                          source.title
-                        )}
-                        {source.verifiedAt ? <span className="cq__meta"> · checked {source.verifiedAt.slice(0, 10)}</span> : null}
-                        {source.trustClass === 'EXTERNAL_DATA' ? <span className="cq__meta"> · live data</span> : null}
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              ) : null}
-              {turn.links.length > 0 ? (
-                <ul className="cq__sources" aria-label="Where to look next">
-                  {turn.links.map((link) => (
-                    <li key={link.href}>
-                      <a href={link.href}>{link.label}</a>
-                    </li>
+      {/* `role="log"` sits on the WRAPPER, not on the <ol>. An explicit role replaces an element's
+          implicit one, so putting it on the list itself stopped the list being a list and axe
+          reported both turns as `listitem` violations — orphaned <li>s. The live region and the
+          list are two jobs; they get two elements. */}
+      {visible.length > 0 ? (
+        <div
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          aria-label="Conversation with the concierge"
+        >
+          <ol className="cq__log">
+            {visible.map((turn, index) => (
+              <li
+                key={turn.id}
+                ref={index === visible.length - 1 ? lastTurnRef : undefined}
+                className={`cq__turn cq__turn--${turn.role === "guest" ? "guest" : "concierge"}`}
+              >
+                <span className="cq__who">
+                  {turn.role === "guest" ? "You asked" : "The concierge"}
+                </span>
+                <div className="cq__bubble">
+                  {turn.text ? (
+                    <p>{turn.text}</p>
+                  ) : turn.pending ? (
+                    <p className="cq__meta">Working on it…</p>
+                  ) : null}
+                  {turn.sources.length > 0 ? (
+                    <>
+                      <p className="cq__meta">Based on:</p>
+                      <ol className="cq__sources">
+                        {turn.sources.map((source) => (
+                          <li key={source.marker}>
+                            <span aria-hidden="true">[{source.marker}] </span>
+                            {source.url ? (
+                              <a
+                                href={source.url}
+                                {...(source.url.startsWith("http")
+                                  ? {
+                                      target: "_blank",
+                                      rel: "noopener noreferrer external",
+                                    }
+                                  : {})}
+                              >
+                                {source.title}
+                              </a>
+                            ) : (
+                              source.title
+                            )}
+                            {source.verifiedAt ? (
+                              <span className="cq__meta">
+                                {" "}
+                                · checked {source.verifiedAt.slice(0, 10)}
+                              </span>
+                            ) : null}
+                            {source.trustClass === "EXTERNAL_DATA" ? (
+                              <span className="cq__meta"> · live data</span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ol>
+                    </>
+                  ) : null}
+                  {turn.links.length > 0 ? (
+                    <>
+                      {/* Its own class and a VISIBLE lead-in. This list is "where to go instead", not
+                        "where this came from", and sharing `.cq__sources` with the citations left a
+                        sighted guest two identical lists whose meanings differed only in an
+                        aria-label they could not see. */}
+                      <p className="cq__meta">Where to look next:</p>
+                      <ul className="cq__links">
+                        {turn.links.map((link) => (
+                          <li key={link.href}>
+                            <a href={link.href}>{link.label}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                  {turn.confirmations.map((card) => (
+                    <div
+                      className="cq__card"
+                      key={card.capability}
+                      role="group"
+                      aria-label={`Confirm on the website: ${card.title}`}
+                    >
+                      <h4>{card.title}</h4>
+                      <p>{card.summary}</p>
+                      <p>
+                        <a
+                          className="cq__button cq__button--quiet"
+                          href={card.reviewRoute}
+                        >
+                          Review and confirm on the website
+                        </a>
+                      </p>
+                    </div>
                   ))}
-                </ul>
-              ) : null}
-              {turn.confirmations.map((card) => (
-                <div className="cq__card" key={card.capability} role="group" aria-label={`Confirm on the website: ${card.title}`}>
-                  <h4>{card.title}</h4>
-                  <p>{card.summary}</p>
-                  <p>
-                    <a className="cq__button cq__button--quiet" href={card.reviewRoute}>
-                      Review and confirm on the website
-                    </a>
-                  </p>
+                  {turn.navigate ? (
+                    <p>
+                      <a href={turn.navigate.route}>
+                        Open {turn.navigate.route}
+                      </a>
+                    </p>
+                  ) : null}
                 </div>
-              ))}
-              {turn.navigate ? (
-                <p>
-                  <a href={turn.navigate.route}>Open {turn.navigate.route}</a>
-                </p>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ol>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
 
       <p className="cq__meta" aria-live="polite" data-testid="concierge-status">
-        {stage ?? ''}
+        {stage ?? ""}
       </p>
       {error ? (
         <p className="cq__error" role="alert">
@@ -164,24 +293,46 @@ export default function ConciergePanel({ chatRoute = CHAT_ROUTE }: { chatRoute?:
         <label className="cq__label" htmlFor={inputId}>
           Ask about the wedding
         </label>
-        <input
+        {/* A textarea, not a single-line input: the invitation says "in your own words" and the
+            field was 209px wide in the narrower design, showing a fraction of what had been typed.
+            Enter still submits, so the one-line habit is unchanged; Shift+Enter starts a line. */}
+        <textarea
           id={inputId}
+          ref={inputRef}
           className="cq__input"
           name="message"
-          type="text"
+          rows={2}
           value={question}
-          onChange={(e) => setQuestion(e.target.value.slice(0, MAX_QUESTION_CHARS))}
+          onChange={(e) =>
+            setQuestion(e.target.value.slice(0, MAX_QUESTION_CHARS))
+          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void submit(e);
+            }
+          }}
           maxLength={MAX_QUESTION_CHARS}
           minLength={2}
           aria-describedby={hintId}
           autoComplete="off"
           data-testid="concierge-input"
         />
-        <button className="cq__button" type="submit" disabled={busy || question.trim().length < 2} data-testid="concierge-send">
-          {busy ? 'Asking…' : 'Ask'}
+        {/* Enabled even when the field is empty: a disabled button leaves the tab order, so Tab
+            from an empty input skipped the primary action and left the panel entirely. `submit`
+            already ignores a question shorter than two characters. */}
+        <button
+          className="cq__button"
+          type="submit"
+          aria-disabled={busy || question.trim().length < 2}
+          data-testid="concierge-send"
+        >
+          {busy ? "Asking…" : "Ask"}
         </button>
         <p className="cq__hint" id={hintId}>
-          Answers come only from this site, with a source for every sentence. If we have not decided something yet, the concierge says so instead of guessing. It cannot book, submit, or change anything.
+          Answers come only from this site, with a source for every sentence. If
+          we have not decided something yet, the concierge says so instead of
+          guessing. It cannot book, submit, or change anything.
         </p>
       </form>
     </div>
@@ -195,31 +346,42 @@ function apply(
   sessionId: { current: string | undefined },
 ): void {
   switch (event.type) {
-    case 'session':
+    case "session":
       sessionId.current = event.sessionId;
       return;
-    case 'status':
+    case "status":
       setStage(STAGE_LABEL[event.stage] ?? null);
       return;
-    case 'text':
-      update((t) => ({ ...t, text: t.text ? `${t.text} ${event.text}` : event.text }));
+    case "text":
+      update((t) => ({
+        ...t,
+        text: t.text ? `${t.text} ${event.text}` : event.text,
+      }));
       return;
-    case 'sources':
+    case "sources":
       update((t) => ({ ...t, sources: event.sources }));
       return;
-    case 'confirmation':
-      update((t) => ({ ...t, confirmations: [...t.confirmations, event.card] }));
+    case "confirmation":
+      update((t) => ({
+        ...t,
+        confirmations: [...t.confirmations, event.card],
+      }));
       return;
-    case 'navigate':
+    case "navigate":
       update((t) => ({ ...t, navigate: { route: event.route } }));
       return;
-    case 'refusal':
-      update((t) => ({ ...t, text: event.message, links: event.links, pending: false }));
+    case "refusal":
+      update((t) => ({
+        ...t,
+        text: event.message,
+        links: event.links,
+        pending: false,
+      }));
       return;
-    case 'error':
+    case "error":
       update((t) => ({ ...t, text: event.message, pending: false }));
       return;
-    case 'done':
+    case "done":
       update((t) => ({ ...t, pending: false }));
       setStage(null);
       return;

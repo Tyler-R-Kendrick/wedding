@@ -47,7 +47,8 @@
 
 .cq__log {
   margin: 0;
-  padding: var(--spacing-md, 16px);
+  text-align: start;
+  padding: var(--cq-gutter, var(--spacing-md, 16px));
   list-style: none;
   display: flex;
   flex-direction: column;
@@ -58,19 +59,51 @@
   margin: 0;
 }
 
+/* Each design's own caps label, not one hardcoded here: Gilded Hour sets Josefin 600 at 0.18em,
+   Conservatory Spectral 500 at 0.1em with real small caps. Setting this to `max(17px, …)` made it
+   17px in both — the same size and weight as the answer beneath it, so the speaker label read
+   louder than what was said. The 17px floor is a rule about body text; this is a label. */
 .cq__who {
   display: block;
   margin-bottom: var(--spacing-xs, 4px);
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
+  font-family: var(--type-label-caps-family, inherit);
+  font-size: var(--type-label-caps-size, 0.8125rem);
+  font-weight: var(--type-label-caps-weight, 600);
+  line-height: var(--type-label-caps-line, 1.2);
+  letter-spacing: var(--type-label-caps-tracking, 0.14em);
+  font-feature-settings: var(--type-label-caps-features, normal);
   text-transform: uppercase;
   color: var(--color-on-surface-muted, var(--color-primary));
 }
 
 .cq__bubble {
   margin: 0;
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  padding: var(--spacing-sm, 8px) var(--cq-gutter, var(--spacing-md, 16px));
   border-left: 2px solid var(--color-outline, var(--color-primary));
+}
+
+/*
+ * Give the text its width back on a phone.
+ *
+ * A transcript paragraph measured 202px inside a 390 viewport — about 19 characters, against the
+ * 55-72 both DESIGN.md files ask for — because four containers each took their own gutter: the
+ * theme's slot, `.cq`, `.cq__log` and `.cq__bubble`. The panel's own gutters are the ones to give
+ * up; the theme's frame is the design and stays. Nothing here changes above 600px.
+ */
+@media (width < 600px) {
+  .cq {
+    --cq-gutter: var(--spacing-xs, 4px);
+  }
+
+  .cq__intro,
+  .cq__form {
+  text-align: start;
+    padding-inline: var(--spacing-sm, 8px);
+  }
+
+  .cq__start {
+    margin-inline: var(--spacing-sm, 8px);
+  }
 }
 
 .cq__turn--guest .cq__bubble {
@@ -80,22 +113,60 @@
 .cq__sources {
   margin: var(--spacing-sm, 8px) 0 0;
   padding: 0 0 0 var(--spacing-md, 16px);
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
 }
 
 .cq__sources li {
   margin: 0 0 var(--spacing-xs, 4px);
 }
 
+/* `--link-color`, not `--color-tertiary`. Tertiary is a FILL in Conservatory — Pollen, documented
+   as "never a text colour" — and as link ink here it measured 1.93:1 on the card against a 4.5
+   requirement. Each design names its own link ink in src/themes/shared/base.css; this is the same
+   defect level 10 fixed on the media surfaces, which is why that token is now shared rather than
+   media-specific. NO 44px minimum: WCAG 2.2 SC 2.5.8's Inline exception covers a link inside a line
+   of text, and these sit in one — "[S1] Site status · checked 2026-09-04". Forcing 44px here made
+   each entry 70px tall at 390 and orphaned the date onto its own line. */
 .cq__sources a {
-  color: var(--color-tertiary, var(--color-primary));
+  color: var(--link-color, var(--color-primary));
   text-decoration: underline;
+  text-decoration-color: var(--link-underline, currentcolor);
   text-underline-offset: 0.18em;
+}
+
+/* "Where to look next" — navigation offers, styled as a list of pages rather than as provenance. */
+.cq__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 4px) var(--spacing-md, 16px);
+  margin: var(--spacing-xs, 4px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cq__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--link-color, var(--color-primary));
+  text-decoration: underline;
+  text-decoration-color: var(--link-underline, currentcolor);
+  text-underline-offset: 0.18em;
+}
+
+/* Reserves the panel's height while its chunk loads, so opening it does not collapse the frame
+   around it and then overshoot. Roughly the empty panel: label, input, button and hint. */
+.cq--loading {
+  min-block-size: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md, 16px);
 }
 
 .cq__meta {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-primary));
 }
 
@@ -140,7 +211,7 @@
 
 .cq__hint {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-primary));
 }
 

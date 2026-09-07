@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { defineCapability, type AnyCapability } from '@/contracts/capability';
 import type { ContentSourceId } from '@/contracts/ids';
-import { CapabilityError } from '@/contracts/errors';
-import { err, ok } from '@/contracts/result';
+import { ok } from '@/contracts/result';
 
 /**
  * Fixture capabilities for the eval harness.

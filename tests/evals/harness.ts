@@ -5,7 +5,6 @@ import { createCapabilityContext } from '@/capabilities/context';
 import { BUILTIN_CAPABILITIES } from '@/capabilities';
 import { CapabilityRegistryImpl } from '@/capabilities/registry';
 import { newId } from '@/contracts/ids';
-import type { Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
 import { capabilityInvocations } from '@/db/schema';
 import { authorize } from '@/policy/entitlements';

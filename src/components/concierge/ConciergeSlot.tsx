@@ -22,7 +22,13 @@ export function ConciergeSlot({ chatRoute, invitation }: ConciergeSlotProps) {
   const [open, setOpen] = useState(false);
   if (open) {
     return (
-      <Suspense fallback={<p className="cq__meta">Opening the concierge…</p>}>
+      <Suspense
+        fallback={
+          <div className="cq cq--loading" data-testid="concierge-loading">
+            <p className="cq__meta">Opening the concierge…</p>
+          </div>
+        }
+      >
         <ConciergePanel {...(chatRoute ? { chatRoute } : {})} />
       </Suspense>
     );
