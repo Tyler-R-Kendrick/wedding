@@ -23,11 +23,20 @@ export const MAX_CLIENT_IP_CHARS = 128;
  * is the Nth entry from the right. With 0 hops every forwarding header is attacker-controlled
  * and is ignored: all callers share the `direct` bucket.
  */
-export function getClientIp(headers: Headers, trustedProxyHops = 0): string {
+export function getClientIp(headers: Headers, trustedProxyHops = 0, onVercel = !!process.env.VERCEL): string {
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops <= 0) return 'direct';
   const clamp = (s: string) => s.slice(0, MAX_CLIENT_IP_CHARS);
-  // Platform-set headers first (Vercel overwrites these; a client cannot inject them).
-  const vercel = headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim();
+  // ONLY on Vercel. Vercel overwrites `x-vercel-forwarded-for`, so there a client cannot inject it
+  // — which is what the previous comment here asserted unconditionally. Anywhere else it is an
+  // ordinary request header that nothing overwrites, so reading it first let a caller choose its
+  // own rate-limit bucket by rotating one header, and reset it whenever it liked.
+  //
+  // Level 12 is what makes that expensive rather than merely untidy: /api/ai/chat is the first
+  // ANONYMOUS endpoint that invokes a model, and `ai:anon:<ip>` is its only anti-abuse control.
+  // Found independently by swarm K against the WebMCP manifest route
+  // (review-K/poc-03-rate-limit-ip-spoof.test.ts); this is its fix, ported to the surface that
+  // needs it now rather than left for level 13.
+  const vercel = onVercel ? headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim() : undefined;
   if (vercel) return clamp(vercel);
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {

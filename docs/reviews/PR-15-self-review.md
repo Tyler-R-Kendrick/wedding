@@ -137,6 +137,21 @@ harness was green because it was testing itself.**
 5. **A signed-in guest was told to sign in.** That branch is unreachable for an anonymous caller
    (they return much earlier), so the message was only ever shown to someone already signed in.
 
+6. **The anonymous rate-limit bucket was chosen by the caller.** `getClientIp` read
+   `x-vercel-forwarded-for` first and took it verbatim, under a comment asserting "Vercel overwrites
+   these; a client cannot inject them" — true **on Vercel**, and nowhere else. Off it, that is an
+   ordinary request header nothing overwrites, so a caller could pick its own bucket and rotate it
+   per request. It has been there since level 03; level 12 is what makes it expensive, because
+   `/api/ai/chat` is the first **anonymous** endpoint that invokes a model and `ai:anon:<ip>` is its
+   only anti-abuse control. Now gated on actually running on Vercel, which also protects the five
+   other anonymous-reachable callers (OTP, the capability route, biometrics, the Duffel webhook).
+   Found independently by swarm K against the WebMCP manifest route
+   (`review-K/poc-03-rate-limit-ip-spoof.test.ts`, surveyed read-only while level 13 waits); this is
+   its fix, ported to the surface that needs it now rather than left for the level that found it.
+   `tests/unit/crypto.test.ts:48` **asserted the vulnerable behaviour** and was changed
+   deliberately: it now proves the header is trusted on Vercel, ignored off it, and that rotating it
+   mints no new buckets. Verified by mutation.
+
 **Injection.** Four eval cases and one e2e test: an instruction typed into the box, an instruction
 inside guest-written text, one inside a provider payload, and an exfiltration attempt. The system
 prompt never appears in output; a quarantined row raises `ai.security_alert` and the rest of the

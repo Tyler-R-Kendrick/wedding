@@ -45,7 +45,20 @@ describe('request helpers', () => {
   it('derives the client ip from the trusted proxy hops only', () => {
     // One trusted hop: the last x-forwarded-for entry is the one the proxy appended; the first is client-controllable.
     expect(getClientIp(new Headers({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }), 1)).toBe('10.0.0.1');
-    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1)).toBe('203.0.113.42');
+    // `x-vercel-forwarded-for` is trusted ONLY on Vercel, where the platform overwrites it. This
+    // line used to assert the opposite — that it wins wherever it appears — which pinned the defect
+    // rather than the guarantee: off Vercel nothing overwrites that header, so a caller could pick
+    // its own rate-limit bucket and rotate it at will. Level 12 makes that expensive rather than
+    // untidy, because /api/ai/chat is the first anonymous endpoint that invokes a model and
+    // `ai:anon:<ip>` is its only anti-abuse control. (Found independently by swarm K against the
+    // WebMCP manifest route; this is its fix, ported early.)
+    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1, true)).toBe('203.0.113.42');
+    expect(getClientIp(new Headers({ 'x-forwarded-for': 'spoofed, 198.51.100.7', 'x-vercel-forwarded-for': '203.0.113.42' }), 1, false)).toBe('198.51.100.7');
+    // With no other header to fall back on, an injected one buys nothing rather than being believed.
+    expect(getClientIp(new Headers({ 'x-vercel-forwarded-for': 'whatever-i-like' }), 1, false)).toBe('unknown');
+    // And rotating it cannot separate one caller into many buckets.
+    const rotated = ['a', 'b', 'c'].map((v) => getClientIp(new Headers({ 'x-vercel-forwarded-for': v, 'x-forwarded-for': '198.51.100.7' }), 1, false));
+    expect(new Set(rotated).size, 'rotating a client-settable header must not mint new rate-limit buckets').toBe(1);
     expect(getClientIp(new Headers({ 'x-real-ip': '198.51.100.2' }), 1)).toBe('198.51.100.2');
     expect(getClientIp(new Headers(), 1)).toBe('unknown');
     // Two trusted hops: second entry from the right.
