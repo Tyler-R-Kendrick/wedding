@@ -26,3 +26,5 @@ export * from './transport';
 export * from './gifts';
 export * from './reservations';
 export * from './external';
+// Level 10: media uploads, assets, derivatives, collections, moderation.
+export * from './media';

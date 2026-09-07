@@ -20,12 +20,30 @@ export interface VideoPlayback {
   expiresInSeconds?: number;
 }
 
+export interface VideoProbe {
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  container?: string;
+}
+
+export interface PosterFrame {
+  bytes: Uint8Array;
+  contentType: 'image/png' | 'image/jpeg';
+  /** True when this is a generated placeholder rather than a frame from the video. */
+  placeholder: boolean;
+}
+
 /**
- * Video hosting/transcoding. Keyframe extraction and ffmpeg live in the media swarm;
- * an ffmpeg-based adapter should read FFMPEG_PATH (default: `ffmpeg` on PATH).
+ * Video hosting/delivery (createAsset/getPlayback) plus the processing seam the media pipeline
+ * uses for posters/keyframes and probing. `capabilities.poster` says whether real frames can be
+ * extracted; adapters that cannot return an `unconfigured` failure and the pipeline falls back to
+ * the placeholder. Metadata stripping of MP4/MOV is done in src/lib/media/mp4.ts without ffmpeg.
  */
 export interface VideoProvider extends ProviderDescriptor {
   kind: 'video';
   createAsset(input: { objectKey: string }): Promise<Result<VideoAsset, ProviderFailure>>;
   getPlayback(assetId: string): Promise<Result<VideoPlayback, ProviderFailure>>;
+  extractPoster(input: { bytes: Uint8Array; contentType: string; atSeconds?: number }): Promise<Result<PosterFrame, ProviderFailure>>;
+  probe(input: { bytes: Uint8Array; contentType: string }): Promise<Result<VideoProbe, ProviderFailure>>;
 }
