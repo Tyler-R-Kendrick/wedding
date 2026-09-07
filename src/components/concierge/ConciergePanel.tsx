@@ -43,8 +43,22 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 const ON_DEVICE_STAGE = "Writing an answer on your device\u2026";
-/** Generation only — the model is already downloaded before this path is taken. */
-const ON_DEVICE_TIMEOUT_MS = 20_000;
+/**
+ * Generation only — the model is downloaded before this path is taken. Kept short because it is
+ * spent *before* the server is asked: a device that cannot answer in this long has cost the guest
+ * the whole budget and the server's generation still has to follow.
+ */
+const ON_DEVICE_TIMEOUT_MS = 8_000;
+
+/**
+ * Which of phase 2's stages are still true once the device has been asked. With a draft, all that
+ * remains is verification; without one the server generates after all, but the routing and
+ * retrieval the guest already heard about are not happening for the first time.
+ */
+function keepStage(stage: string, haveDraft: boolean): boolean {
+  if (haveDraft) return stage === "verifying";
+  return stage === "generating" || stage === "verifying";
+}
 
 /**
  * Whether to answer this question on the device. Only `available` counts: a model the browser has
@@ -190,15 +204,23 @@ export default function ConciergePanel({
         // here, on their device. The draft then goes back for the same verification every answer
         // gets. Any failure at all falls through to the server writing the answer itself.
         let draft: string | null = null;
+        let onDevice = false;
         if (publicEnv.browserModel && (await readyOnDevice())) {
+          onDevice = true;
           let evidence: { system: string; userTurn: string } | null = null;
           await streamTurn(
             chatRoute,
             { message: asked, mode: "evidence" },
             sessionId,
             (e) => {
-              if (e.type === "evidence") evidence = { system: e.system, userTurn: e.userTurn };
-              else apply(e, update, setStage, sessionId);
+              if (e.type === "evidence") {
+                evidence = { system: e.system, userTurn: e.userTurn };
+                return;
+              }
+              // Phase 1 stops at the seam, so its `generating` names a step the server never takes.
+              // The device's own stage says it truthfully a moment later.
+              if (e.type === "status" && e.stage === "generating") return;
+              apply(e, update, setStage, sessionId);
             },
           );
           // No evidence means the server never reached the seam — it refused, or it errored, and
@@ -208,12 +230,15 @@ export default function ConciergePanel({
           const { system, userTurn } = evidence;
           setStage(ON_DEVICE_STAGE);
           // A deadline, because a stalled device must not become a hung concierge. The model is
-          // already downloaded by this point (`readyOnDevice`), so this bounds generation only.
+          // already downloaded by this point (`readyOnDevice`), so this bounds generation only —
+          // and it is short, because whatever it spends is spent before the server is even asked.
           draft = await askOnDevice(userTurn, {
             systemPrompt: system,
             signal: AbortSignal.timeout(ON_DEVICE_TIMEOUT_MS),
           });
-          setStage(STAGE_LABEL.verifying!);
+          // Only claim verification when there is something to verify. On a device that returned
+          // nothing this would be indistinguishable, to a screen reader, from having succeeded.
+          if (draft) setStage(STAGE_LABEL.verifying!);
         }
         await streamTurn(
           chatRoute,
@@ -223,7 +248,15 @@ export default function ConciergePanel({
             ...(draft ? { draft: draft.slice(0, MAX_DRAFT_CHARS) } : {}),
           },
           sessionId,
-          (e) => apply(e, update, setStage, sessionId),
+          (e) => {
+            // The stage line is a live region: it must only ever move forward. Phase 2 re-routes
+            // and re-retrieves — that is what makes an on-device draft safe to trust — but those
+            // stages already played, and replaying them tells a blind guest the concierge gave up
+            // and started over. With a draft in hand only `verifying` is left to narrate; without
+            // one the server really does generate, so that stage is honest and stays.
+            if (onDevice && e.type === "status" && !keepStage(e.stage, draft !== null)) return;
+            apply(e, update, setStage, sessionId);
+          },
         );
       } catch (cause) {
         // A guest never sees `cause.message` from an exception: a dropped connection rendered the

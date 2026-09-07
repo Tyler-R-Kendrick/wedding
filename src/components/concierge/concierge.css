@@ -34,7 +34,10 @@
   cursor: pointer;
 }
 
-.cq__button:disabled {
+/* `aria-disabled`, not `disabled`: the button stays in the tab order on purpose (see the note in
+   ConciergePanel.tsx), so `:disabled` never matched and the state was announced but never shown. */
+.cq__button:disabled,
+.cq__button[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.6;
 }

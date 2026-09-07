@@ -80,12 +80,16 @@ npm run secrets:verify     # probe what landed: live / rejected / unreachable
 npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
 npm run secrets:probe      # which providers let an agent register itself (--register to prove it)
 npm run secrets:harness    # AI sessions this machine already holds (--apply to borrow one)
+npm run secrets:serve      # the same page as a local web app on 127.0.0.1 — no Claude in the loop
 ```
 
 - Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
   Supabase or MinIO). Whatever the choice implies — endpoints, regions, bucket names — is
   computed, never asked. Only the irreducible secret can reach a field.
-- The agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
+- The page has three homes and one codebase: published as an artifact, served by
+  `npm run secrets:serve` on loopback (files under `.secrets/` are the store, and it decrypts
+  and writes `.env` itself — no courier), or opened off disk (seals into a bundle you paste).
+- In the artifact case the agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
   `ceremonies/*`), copy `choices/*` back to `.secrets/choices.json`, and drop sealed OAuth
   codes into `.secrets/inbox/` before `secrets:resume`. Answer `handoffs/*`:
   `kind: signin` → `node scripts/secrets/browser-capture.mjs relay <host>`;

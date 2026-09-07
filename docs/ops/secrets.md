@@ -93,6 +93,7 @@ npm run secrets:page                            # rebuild the artifact HTML afte
 npm run secrets:harness                         # AI sessions this machine already holds (--apply to borrow)
 npm run secrets:probe                           # which providers let an agent register itself
 npm run secrets:probe -- --register             # ...and prove the advertised endpoints work
+npm run secrets:serve                           # the whole thing as a local web app (no Claude needed)
 ```
 
 ### How the plan is derived
@@ -105,6 +106,44 @@ npm run secrets:probe -- --register             # ...and prove the advertised en
 
 Choosing an **opt-out** option ("just link out", "codes you print", "skip it") is a real
 answer: the slot leaves the plan entirely and nothing is asked about it again.
+
+## Running it yourself: `npm run secrets:serve`
+
+The page has three homes and one codebase. Published as an artifact it talks to the artifact
+store and Claude is the courier. **Served locally it needs neither**, which is what a developer
+setting up their own checkout actually wants:
+
+```bash
+node scripts/secrets/keygen.mjs      # once per checkout — the key the page seals for
+npm run secrets:serve                # http://127.0.0.1:4600
+```
+
+It rebuilds the page from the live registry on every boot, so what you see is always the ladder
+the tooling will really run. Then:
+
+- **Choices, hand-offs and ceremonies** are files under `.secrets/`, not a remote store. Picking
+  a provider writes `.secrets/choices.json`, which is exactly what `secrets:acquire` reads.
+- **There is no courier.** A value sealed in the browser is POSTed, decrypted here with
+  `.secrets/private.jwk.json`, and written to `.env` on the spot. Only the variable name, the
+  time and the length are recorded (`.secrets/applied.json`); the value is not kept, returned
+  or logged.
+- **The ladder runs from the page.** *Fill what needs no account*, *Run the ladder* and *Check
+  what landed* are `autofill`, `acquire` and `verify` — the same scripts, with their output
+  streamed back into the page.
+
+Opened straight off disk with no server at all, it still works: it seals into a bundle you paste.
+
+### What stops a web page you visit from driving it
+
+The server binds the loopback interface only, mints a token at boot and injects it into the page
+it serves, and requires that token plus a loopback `Host` on every `/api/*` call — so a page on
+another origin gets `403`, including via DNS rebinding. `/api/run` takes a command *name* and maps
+it to argv written in the repo; a string from the request never reaches a shell. Writes are
+confined to `.secrets/` and to `.env` by name, and an envelope whose name is not a variable name
+is rejected before anything is decrypted.
+
+It is a development tool. Do not expose it beyond loopback, and do not run it on a machine whose
+`.env` you would not hand to whoever can reach that port.
 
 ## The loop, end to end
 

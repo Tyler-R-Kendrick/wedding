@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 // (no build, no tsx) — the tests import it the same way the scripts do.
 import { mergeEnv, parseDotenv, presentNames, quote } from '../../scripts/secrets/env-file.mjs';
 import { AUTOFILL, CEREMONY, METHOD_CEREMONY, METHOD_RANK, NEED, SLOTS, allVars, ceremonyOf, chosenOption, clientRegistry, recommendedOf } from '../../scripts/secrets/registry.mjs';
+import { COMMANDS, FILES, collections, run, writeDoc } from '../../scripts/secrets/serve.mjs';
 
 describe('dotenv parsing', () => {
   it('reads export prefixes, comments and both quote styles', () => {
@@ -325,5 +326,58 @@ describe('dynamic client registration asks only for what is on offer', () => {
       );
     } finally { globalThis.fetch = original; }
     expect(sent.application_type).toBe('native');
+  });
+});
+
+/**
+ * The local web app (`npm run secrets:serve`). It is the same page and the same envelope format as
+ * the published artifact, so what needs proving is the part that differs: it acts on what it
+ * receives, and it must not act on anything else. These cover the reachable surface without
+ * binding a port — `serve.mjs` exports its pieces for exactly that.
+ */
+describe('the Secret Drop as a local web app', () => {
+  it('runs a fixed set of commands, never a string from the request', () => {
+    // The page posts a command *name*; the argv it maps to is written here, in the repo.
+    for (const argv of Object.values(COMMANDS)) {
+      expect(Array.isArray(argv)).toBe(true);
+      expect(argv[0]).toMatch(/^scripts\/secrets\/[a-z-]+\.mjs$/);
+    }
+    expect(Object.keys(COMMANDS).sort()).toEqual(['acquire', 'autofill', 'verify']);
+  });
+
+  it('refuses a command it does not know, rather than shelling out', async () => {
+    const result = await run('rm -rf /');
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain('unknown command');
+  });
+
+  it('will not write to a collection that is not part of the protocol', async () => {
+    await expect(writeDoc('anything/else', 'set', { x: 1 })).rejects.toThrow(/not writable/);
+    await expect(writeDoc('choices', 'set', { x: 1 })).rejects.toThrow(/collection and an id/);
+  });
+
+  it('will not apply an envelope whose name is not a variable name', async () => {
+    // Otherwise a crafted name could reach `.env` as something other than an assignment.
+    await expect(writeDoc('envelopes/not a name', 'set', { name: 'not a name' })).rejects.toThrow(/not a variable name/);
+    await expect(writeDoc('envelopes/lowercase', 'set', { name: 'lowercase' })).rejects.toThrow(/not a variable name/);
+  });
+
+  it('projects the page\'s collections from files, and never a secret among them', async () => {
+    const shown = await collections();
+    // Exactly what the page subscribes to (template.html), plus the applied ledger it renders.
+    for (const name of ['status', 'ceremonies', 'choices', 'handoffs', 'recipients', 'envelopes']) {
+      expect(shown).toHaveProperty(name);
+    }
+    // The applied ledger is names, times and lengths — a value never survives the write to .env.
+    // serve.mjs is plain ESM, so what comes back here is untyped — say what it is.
+    for (const entry of Object.values(shown.envelopes) as Record<string, unknown>[]) {
+      expect(Object.keys(entry).sort()).toEqual(['appliedAt', 'chars', 'name', 'where']);
+    }
+  });
+
+  it('only ever reads and writes inside .secrets, and .env by name', () => {
+    for (const [key, path] of Object.entries(FILES)) {
+      expect(path.includes('/.secrets/'), `${key} -> ${path}`).toBe(true);
+    }
   });
 });

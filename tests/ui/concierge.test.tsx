@@ -292,6 +292,111 @@ describe('the concierge on the guest\'s own device', () => {
     expect(bodies).toHaveLength(1);
   });
 
+  /**
+   * The stage line is a live region, and a design review measured what the two-phase path did to
+   * it: nine announcements where the server alone makes four, running backwards through
+   * routing/retrieving a second time — which tells a blind guest the concierge restarted. These
+   * lock the sequence in both outcomes.
+   */
+  describe('what the stage line announces', () => {
+    const withStages = (extra: ConciergeEvent[]): ConciergeEvent[] => [
+      { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+      { type: 'status', stage: 'routing', tools: ['site_status'] },
+      { type: 'status', stage: 'retrieving' },
+      { type: 'status', stage: 'generating' },
+      ...extra,
+    ];
+    const evidenceWithStages = withStages([
+      { type: 'evidence', system: 'Answer only from the evidence.', userTurn: 'Q\n\n[S1] July 17, 2027.' },
+    ]);
+    const answerWithStages = withStages([
+      { type: 'status', stage: 'verifying' },
+      { type: 'text', text: 'The wedding is on Saturday, July 17, 2027 [S1].' },
+      { type: 'done', status: 'grounded', dropped: 0, latencyMs: 11 },
+    ]);
+
+    /** Every distinct string the stage element holds, in order. */
+    function recordStages(): string[] {
+      const seen: string[] = [];
+      const observer = new MutationObserver(() => {
+        const text = document.querySelector('[data-testid="concierge-status"]')?.textContent?.trim();
+        if (text && text !== seen[seen.length - 1]) seen.push(text);
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      return seen;
+    }
+
+    /**
+     * One event per macrotask. The other stubs enqueue the whole stream at once, which React 19
+     * batches into a single render — fine when the assertion is the final answer, useless when it
+     * is the sequence of stages, because every intermediate one is coalesced away.
+     */
+    function stubPhases(second: ConciergeEvent[]) {
+      const encoder = new TextEncoder();
+      return vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+        const events = body.mode === 'evidence' ? evidenceWithStages : second;
+        let i = 0;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              await new Promise((resolve) => setTimeout(resolve, 1));
+              if (i >= events.length) return controller.close();
+              controller.enqueue(encoder.encode(encodeEvent(events[i]!)));
+              i += 1;
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+        );
+      });
+    }
+
+    it('moves forward only, and never narrates a step that is not happening', async () => {
+      vi.stubGlobal('fetch', stubPhases(answerWithStages));
+      // A tick of thinking, as any real model takes. Resolving instantly makes React batch the
+      // on-device stage away with the one after it — which is the right outcome for a device that
+      // fast (a 5ms announcement is churn, not information) but says nothing about the sequence.
+      stubDevice(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return 'The wedding is on Saturday, July 17, 2027 [S1].';
+      });
+      const seen = recordStages();
+      await open();
+      await ask('when is the wedding?');
+      await screen.findByText(/July 17, 2027/);
+
+      // "Writing an answer…" never appears: the server stops at the seam in phase 1 and only
+      // verifies in phase 2. Routing and retrieving are announced once, not twice.
+      expect(seen).not.toContain('Writing an answer…');
+      expect(seen.filter((s) => s === 'Looking for the right pages…')).toHaveLength(1);
+      expect(seen.filter((s) => s === 'Reading what the site knows…')).toHaveLength(1);
+      // Monotonic: once the device has spoken, nothing earlier is announced again.
+      const device = seen.indexOf('Writing an answer on your device…');
+      expect(device).toBeGreaterThan(-1);
+      expect(seen.slice(device)).not.toContain('Looking for the right pages…');
+      expect(seen.slice(device)).not.toContain('Reading what the site knows…');
+    });
+
+    it('does not claim to be checking sentences the device never wrote', async () => {
+      vi.stubGlobal('fetch', stubPhases(answerWithStages));
+      stubDevice(async () => { throw new Error('out of memory'); });
+      const seen = recordStages();
+      await open();
+      await ask('when is the wedding?');
+      await screen.findByText(/July 17, 2027/);
+
+      // The device failed, so the server generates after all — that stage is true and stays. What
+      // must not happen is announcing verification before there is anything to verify.
+      const device = seen.indexOf('Writing an answer on your device…');
+      const verifying = seen.indexOf('Checking every sentence against its source…');
+      const generating = seen.indexOf('Writing an answer…');
+      expect(device).toBeGreaterThan(-1);
+      expect(generating).toBeGreaterThan(device);
+      expect(verifying).toBeGreaterThan(generating);
+      expect(seen.slice(device)).not.toContain('Looking for the right pages…');
+    });
+  });
+
   it('does not make a guest wait for a model download — the server answers, the download starts', async () => {
     const { fetch, bodies } = stubTwoPhase();
     vi.stubGlobal('fetch', fetch);
