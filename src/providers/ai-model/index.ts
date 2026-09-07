@@ -10,6 +10,9 @@ export * from './types';
 export { MockAiModel, mockLanguageModel, MOCK_REPLY } from './mock';
 export { AnthropicAiModel, ANTHROPIC_MODELS } from './anthropic';
 export { OpenAiCompatibleModel, OPENAI_MODELS } from './openai-compatible';
+// Level 12: a deterministic extractive stand-in for the concierge. MockAiModel's fixed MOCK_REPLY
+// is asserted on by earlier levels, so the concierge gets its own mock rather than changing that.
+export { createExtractiveMockModel, createMockVerifierModel, extractiveAnswer, extractiveVerdicts, parseBlocks, NO_SOURCE } from './concierge-mock';
 
 type AiModelEnv = Pick<
   ServerEnv,

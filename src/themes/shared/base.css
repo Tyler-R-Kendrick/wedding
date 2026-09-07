@@ -390,6 +390,20 @@ body {
  * as `wide-tracking` (three findings on /transportation), and it is right — wide tracking is for
  * short uppercase runs. Conservatory sets Gloock in sentence case with no tracking, and says so.
  */
+
+/*
+ * The reading measure, and the frame the guest and media columns are padded to.
+ *
+ * `--wp-measure` was USED at five call sites (media.css, rsvp/recipes.css) and DEFINED nowhere, so
+ * every one of them silently took its `33rem` fallback — a 53-character line against the 55-72 both
+ * DESIGN.md files ask for. A token that is only ever read is not a token; it is a default with
+ * extra steps, and that is exactly the defect an independent review found here at level 11.
+ */
+:root {
+  --wp-measure: 42rem;
+  --wp-frame: 46rem;
+}
+
 [data-theme="gilded-hour"] {
   --radius-button: var(--rounded-none);
   --heading-transform: uppercase;
@@ -413,6 +427,19 @@ body {
      identified by the photograph it holds and by a 2px Lake Blue focus ring, not by this edge. */
   --media-tile-frame: 3px solid var(--color-gold, var(--color-tertiary));
   --media-tile-pad: 4px;
+
+  /* DESIGN.md: "link: Bronze … never changes to blue", plus the One Blue Rule that reserves Lake
+     Blue for focus. The media surfaces rendered their links in Lake Blue #2E5B7B while Bronze went
+     unused on the page.
+
+     Promoted from `--media-link-*` at level 12: the concierge's source list repeated the identical
+     defect on a different surface (`--color-tertiary` as link ink, measured at 1.93:1 in
+     Conservatory), because there was a per-design link colour but its name tied it to one feature.
+     One token per design, read by every surface that draws a link outside a theme kit. */
+  --link-color: var(--color-tertiary);
+  --link-underline: var(--color-gold);
+  --media-link-color: var(--link-color);
+  --media-link-underline: var(--link-underline);
 }
 
 [data-theme="conservatory"] {
@@ -432,4 +459,12 @@ body {
   /* The herbarium sheet mounts a specimen on kraft rather than matting it in gold. */
   --media-tile-frame: 1px solid var(--color-outline, currentcolor);
   --media-tile-pad: 3px;
+
+  /* DESIGN.md: leaf-deep text with a 1px pollen underline — which is what `.cv-link` already does
+     everywhere else on the site. Pollen is 1.77:1 on creme and is never the ink; as the concierge's
+     source links it measured 1.93:1 against the card, an outright WCAG AA failure. */
+  --link-color: var(--color-secondary);
+  --link-underline: var(--color-tertiary);
+  --media-link-color: var(--link-color);
+  --media-link-underline: var(--link-underline);
 }

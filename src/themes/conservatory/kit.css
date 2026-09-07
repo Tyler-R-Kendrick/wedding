@@ -1877,6 +1877,17 @@
   background: var(--color-neutral);
 }
 
+/* The jar, opened. Once the slot holds the thing it promised, the dashed kraft edge is a third
+   frame around text that already has its own — and this design's card rule is "No nested cards".
+   The measure cap is what makes the section version legible: without it the transcript would run
+   the full sheet width. */
+.cv-slot--open {
+  max-inline-size: var(--wp-measure, 42rem);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 /* ---------- motion ---------- */
 @keyframes cv-settle {
   from {

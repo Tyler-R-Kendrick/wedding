@@ -88,7 +88,7 @@ test.describe('guest QR upload → resume → admin approve → gallery', () => 
     await expect(page.getByRole('link', { name: 'From our guests' })).toHaveCount(0);
   });
 
-  test('mobile guest uploads a batch with an interruption, resumes, and sees processing states', async ({ browser }) => {
+  test('mobile guest uploads a batch with an interruption, resumes, and sees processing states', async ({ browser, baseURL }) => {
     test.skip(test.info().project.name !== 'mobile', 'the upload journey runs on the phone profile');
     test.setTimeout(300_000);
     const context = await browser.newContext({ ...test.info().project.use, extraHTTPHeaders: guestA });
@@ -147,9 +147,23 @@ test.describe('guest QR upload → resume → admin approve → gallery', () => 
     await expect(page.getByText('Awaiting review').first()).toBeVisible();
     const html = await page.content();
     expect(html).not.toMatch(/41\.88|87\.62|latitude|longitude|FixtureCam|originals\//i);
-    // Not visible in the guest gallery yet (private until approved)
+    // Not visible in the guest gallery yet (private until approved).
+    //
+    // Asserted as "none of THIS guest's four uploads is listed", not as "the album is empty". The
+    // album being empty was an incidental fact about which specs had run, not the guarantee: level
+    // 11's media-AI journey publishes an approved photo into `guest-uploads`, and this assertion
+    // broke the moment it did — with no defect on either side. What must hold is that an upload
+    // nobody has approved is invisible to the gallery, and that is what this now checks, against
+    // the guest's own asset ids rather than against a global count.
+    const myItems = await context.request.post('/api/capabilities/list_my_uploads', { headers: apiHeaders(guestA, baseURL!), data: { input: { limit: 100 } } });
+    expect(myItems.status()).toBe(200);
+    const myAssetIds = (((await myItems.json()) as { data: { items: { assetId: string | null }[] } }).data.items.map((i) => i.assetId).filter(Boolean) as string[]);
+    expect(myAssetIds.length, 'the four uploads should have assets by now').toBe(4);
+    const albumBody = await context.request.post('/api/capabilities/list_gallery', { headers: apiHeaders(guestA, baseURL!), data: { input: { collection: 'guest-uploads' } } });
+    expect(albumBody.status()).toBe(200);
+    const listed = ((await albumBody.json()) as { data: { items: { id: string }[] } }).data.items.map((i) => i.id);
+    for (const id of myAssetIds) expect(listed, `unapproved upload ${id} must not appear in the gallery`).not.toContain(id);
     await page.goto('/photos/guest-uploads');
-    await expect(page.getByRole('status')).toContainText('Nothing here yet');
     await context.close();
   });
 

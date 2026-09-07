@@ -61,7 +61,15 @@ test.describe('voucher security', () => {
   test('no payment fields on any guest page', async ({ request }) => {
     for (const route of ['/gifts', '/transportation', '/']) {
       const html = await (await request.get(route)).text();
-      expect(html, route).not.toMatch(/card\s*number|cvv|cvc|expir(y|ation)\s*date|stripe|paypal/i);
+      // Match against the DOCUMENT, with script and style contents removed. Matching raw HTML made
+      // this security assertion randomly false: it fired on `self.__next_r="4H-O3ACvVcldM9As2v-F9"`,
+      // a framework-generated React root id that happened to contain `CvV`. Turbopack chunk hashes
+      // can do the same for `cvc`, `stripe` or `paypal`. A test that fails on a random nonce is not
+      // testing anything, and this one guards a claim that matters — the site is never the merchant
+      // of record — so it needs to be true for a reason, not by luck of the hash.
+      const document = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+      expect(document, route).not.toMatch(/card\s*number|cvv|cvc|expir(y|ation)\s*date|stripe|paypal/i);
+      // Form controls are never inside a script, so this one keeps the whole document.
       expect(html, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
     }
   });

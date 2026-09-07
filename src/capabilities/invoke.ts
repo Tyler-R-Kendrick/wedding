@@ -128,13 +128,32 @@ export async function invoke<I, O>(
     if (!fresh.ok) return finish(err(fresh.error));
   }
 
-  // 5. explicit confirmation: a human confirms on the website; models and WebMCP can only draft
+  // 5. confirmation: a human confirms on the website; models and WebMCP can only draft.
+  //
+  // `explicit` is website-only for every kind. `inline` is website-only when the capability CHANGES
+  // OUR OWN STATE, which until level 12 nothing enforced: the check read `=== 'explicit'`, harmless
+  // while `ui` was the only surface, and no longer harmless once the concierge began deriving a tool
+  // list from `exposure.ai`. Four AI-exposed mutations are `inline` — `delete_my_travel_profile`,
+  // `update_my_travel_profile`, `add_trip_item`, `remove_trip_item` — and the first takes no
+  // required input, so the router could plan it straight from a sentence. It was denied in practice
+  // only because the strict input schema rejected the router's extra `query` key: defence by
+  // accident, one `.strip()` away from deleting a guest's travel profile because they typed "please
+  // delete my travel profile". `inline` means "the form asks before it acts", and off the website
+  // there is no form and no token that could stand in for one, so such a call is simply refused.
+  //
+  // `external` is deliberately NOT included. A handoff commits nothing: it returns a provider URL
+  // and logs that it did. Level 09 exposes `open_gift_link`, `open_reservation_link` and
+  // `open_booking_link` to an assistant on purpose, so that asking "where are they registered?"
+  // gets an answer, and the guest's own click on the link is the commitment.
   const payloadHash = stableHash(input);
   let confirmed: VerifiedConfirmation | undefined;
-  if (descriptor.confirmation === 'explicit') {
+  const changesOurState = descriptor.kind === 'action' || descriptor.kind === 'transaction';
+  if (descriptor.confirmation === 'explicit' || (descriptor.confirmation === 'inline' && changesOurState)) {
     if (surface !== REDEEMABLE_SURFACE) {
       return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
     }
+  }
+  if (descriptor.confirmation === 'explicit') {
     if (!services.confirmation) {
       return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('confirmation service not wired'))));
     }
@@ -170,7 +189,22 @@ export async function invoke<I, O>(
       if (claim.existing.payloadHash !== payloadHash) {
         return finish(err(new CapabilityError('conflict', 'That request was already made with different details.')));
       }
-      return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
+      if (descriptor.replayable === false) {
+        // Nothing was stored to replay. Take the key over and run again, so the handler's own
+        // authorization decides — a result whose preconditions have since been withdrawn must not
+        // come back from a cache.
+        try {
+          await services.idempotency.release(idemScope, ctx.idempotencyKey);
+          claim = await services.idempotency.reserve(idemScope, ctx.idempotencyKey, payloadHash);
+        } catch (cause) {
+          return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, cause)));
+        }
+        if (!claim.reserved) {
+          return finish(err(new CapabilityError('conflict', 'That request is still being processed. Please wait a moment before retrying.')));
+        }
+      } else {
+        return finish(ok(claim.existing.response as CapabilityOutcome<O>), { replay: true });
+      }
     }
     reserved = true;
   }
@@ -232,7 +266,10 @@ export async function invoke<I, O>(
 
   if (reserved && ctx.idempotencyKey && services.idempotency) {
     try {
-      await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
+      // `replayable: false` never persists the body: releasing the reservation leaves nothing at
+      // all in the public idempotency table, and a later repeat re-runs under every gate.
+      if (descriptor.replayable === false) await services.idempotency.release(idemScope, ctx.idempotencyKey);
+      else await services.idempotency.set(idemScope, ctx.idempotencyKey, payloadHash, outcome);
     } catch (cause) {
       // The action happened; a retry within the reservation TTL sees "in progress" and then re-runs. Never hide the outcome.
       services.logger?.error({ err: cause, capability: descriptor.name, requestId: ctx.requestId }, 'idempotency outcome could not be stored');

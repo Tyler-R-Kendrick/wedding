@@ -19,6 +19,11 @@ export const INTERNAL_ROUTES = [
   '/trip',
   '/media/upload',
   '/media/mine',
+  // Level 11. Both were unreachable: `/media/me` had no inbound link anywhere in `src`, and
+  // `/media/search`'s only links were from `/media/me` itself, so neither could be reached by a
+  // guest OR named by the concierge. Two pages nobody could get to.
+  '/media/search',
+  '/media/me',
 ] as const;
 
 export type InternalRoute = (typeof INTERNAL_ROUTES)[number];

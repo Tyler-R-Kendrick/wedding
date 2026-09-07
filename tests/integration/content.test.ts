@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { findAdventures, getStory, getVenueFacts, listAdventures, listItineraries, markContentVerified, saveContentRecord, searchWeddingInformationStatic, showAdventure, showVenueRoom } from '@/capabilities/content';
+import { searchWeddingInformation } from '@/capabilities/search_wedding_information';
 import { newId } from '@/contracts/ids';
 import type { AdminPrincipal, Entitlement, GuestPrincipal, Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
@@ -178,26 +179,63 @@ describe('CAA docent', () => {
 });
 
 describe('static search', () => {
+  // Surfaces changed at level 12: `search_wedding_information_static` is `ai: false` now, because
+  // `search_wedding_information` has an identical input schema and the router had two
+  // indistinguishable tools. So the calls below moved to `ui`, the surface the static one still
+  // has, and the AI-surface guarantee is asserted separately against the tool the model now calls.
   it('finds operational records with routes and never returns drafts or placeholder text', async () => {
-    const r = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
+    const r = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'valet parking' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.results[0]!.route).toBe('/explore-caa#getting-here');
     expect(r.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
-    const drafts = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ai'), { query: 'ice cream museum' });
+    const drafts = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'ice cream museum' });
     expect(drafts.ok && drafts.value.data.results.filter((x) => x.kind === 'adventure')).toEqual([]);
-    const all = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'wedding', limit: 20 });
+    const all = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'wedding', limit: 20 });
     expect(all.ok && all.value.data.results.every((x) => !x.snippet.includes('TODO(Tyler & Sara)'))).toBe(true);
-    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'zebra crossing' });
+    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'zebra crossing' });
     expect(nothing.ok && nothing.value.data.results).toEqual([]);
     // Draft rows are projected (for admin search) but never returned to guests or the AI, whoever asks.
     const db = await getDb();
     const drafted = await db.select().from(knowledgeRecords).where(eq(knowledgeRecords.visibility, 'private-draft'));
     expect(drafted.length).toBeGreaterThan(0);
-    const adminAi = await invoke(searchWeddingInformationStatic, await ctxFor(admin(), 'ai'), { query: drafted[0]!.title, limit: 20 });
+    const adminAi = await invoke(searchWeddingInformation, await ctxFor(admin(), 'ai'), { query: drafted[0]!.title, limit: 20 });
     expect(adminAi.ok && adminAi.value.data.results.map((x) => x.id)).not.toContain(drafted[0]!.id);
     const adminUi = await invoke(searchWeddingInformationStatic, await ctxFor(admin(), 'ui'), { query: drafted[0]!.title, limit: 20 });
     expect(adminUi.ok && adminUi.value.data.results.map((x) => x.id)).toContain(drafted[0]!.id);
+  });
+
+  it('the concierge tool sees the same corpus, and no more of it than a person would', async () => {
+    // `search_wedding_information` returns full record text and a per-hit source id so the citation
+    // and verifier layers can quote and attribute. That is strictly more content than the static
+    // tool returns, so every visibility rule has to hold on it too — this is where a level-12
+    // regression would leak a draft or a placeholder straight into a model's context.
+    const db = await getDb();
+    const hit = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
+    expect(hit.ok).toBe(true);
+    if (!hit.ok) return;
+    expect(hit.value.data.mode).toBe('static');
+    expect(hit.value.data.results[0]!.route).toBe('/explore-caa#getting-here');
+    expect(hit.value.data.results[0]!.content.length).toBeGreaterThan(0);
+    expect(hit.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
+
+    const wide = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'wedding', limit: 20 });
+    expect(wide.ok).toBe(true);
+    if (!wide.ok) return;
+    // Not the snippet this time, the whole record text the model is handed.
+    expect(wide.value.data.results.every((x) => !x.content.includes('TODO(Tyler & Sara)'))).toBe(true);
+    expect(wide.value.data.results.every((x) => x.sourceId.length > 0)).toBe(true);
+
+    const drafted = await db.select().from(knowledgeRecords).where(eq(knowledgeRecords.visibility, 'private-draft'));
+    expect(drafted.length).toBeGreaterThan(0);
+    for (const principal of [anonymous, guest, admin()]) {
+      const r = await invoke(searchWeddingInformation, await ctxFor(principal, 'ai'), { query: drafted[0]!.title, limit: 20 });
+      expect(r.ok && r.value.data.results.map((x) => x.id)).not.toContain(drafted[0]!.id);
+    }
+
+    // The static tool is off the AI surface, so the router cannot reach it at all any more.
+    const gone = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
+    expect(!gone.ok && gone.error.code).toBe('not_found');
   });
 });
 

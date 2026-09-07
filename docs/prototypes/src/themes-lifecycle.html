@@ -1,0 +1,590 @@
+<title>Gilded Hour vs Conservatory</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+/* The countdown is the one place a numeral face gets to be monumental. */
+.count { display: flex; gap: var(--spacing-lg); justify-content: center; }
+.count div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+.count b {
+  font-family: var(--type-numeral-family);
+  font-size: clamp(2.1rem, 11cqi, 3.6rem);
+  font-weight: 700;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+[data-theme="conservatory"] .count b { font-family: var(--font-accent); font-weight: 700; }
+
+.count span {
+  font-family: var(--type-label-caps-family);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+/* The schedule is a rhythm of times against events, not a table. */
+.sched { margin: 0; padding: 0; list-style: none; }
+
+.sched li {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-outline);
+  align-items: baseline;
+}
+
+.sched li:last-child { border-bottom: 0; }
+
+.sched time {
+  font-family: var(--type-numeral-family);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-on-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="conservatory"] .sched time { font-family: var(--font-accent); font-size: 1.15rem; }
+.sched li[data-now] time { color: var(--color-error); }
+.sched strong { font-family: var(--type-h3-family); font-weight: 600; font-size: var(--type-h3-size); }
+
+
+/* Two kit portraits, side by side, for the switcher scene. */
+.swatches { display: flex; gap: 0; height: 54px; }
+.swatches i { flex: 1; }
+
+.spec { display: grid; grid-template-columns: auto 1fr; gap: 8px var(--spacing-md); margin: 0; }
+
+.spec dt {
+  font-family: var(--type-label-caps-family);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
+.spec dd { margin: 0; font-size: var(--type-body-sm-size); }
+</style>
+
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 04</p>
+    <h1 class="mast-title">Theme engine &amp; site lifecycle</h1>
+    <p class="mast-sub">Home reconfigures across nine states, in two complete design systems. Both the tokens and the procedural ornament are inlined from the shipped kits, so the sunburst, chevron rules and corner brackets here are the real generated art.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail" aria-label="Lifecycle states">
+    <h2>Explore</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="teaser" data-url="/ · TEASER">Teaser<small>nothing announced</small></button>
+      <button type="button" data-scene="save-the-date" data-url="/ · SAVE_THE_DATE">Save the date<small>date and city public</small></button>
+    </div>
+    <h2>Act</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="invitations-open" data-url="/ · INVITATIONS_OPEN">Invitations open<small>claim your invitation</small></button>
+      <button type="button" data-scene="rsvp-open" data-url="/ · RSVP_OPEN">RSVP open<small>the long state</small></button>
+      <button type="button" data-scene="rsvp-closed" data-url="/ · RSVP_CLOSED">RSVP closed<small>deadline passed</small></button>
+    </div>
+    <h2>Operate</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="wedding-week" data-url="/ · WEDDING_WEEK">Wedding week<small>logistics first</small></button>
+      <button type="button" data-scene="wedding-day" data-url="/ · WEDDING_DAY">Wedding day<small>pocket concierge</small></button>
+    </div>
+    <h2>Remember</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="post-wedding" data-url="/ · POST_WEDDING">Post wedding<small>photos land</small></button>
+      <button type="button" data-scene="archive" data-url="/ · ARCHIVE">Archive<small>the keepsake</small></button>
+    </div>
+    <h2>Machinery</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="switcher" data-url="/?theme=conservatory">The two kits<small>side by side</small></button>
+      <button type="button" data-scene="transitions" data-url="/admin · lifecycle">Transition rules<small>the clock only suggests</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/</b>
+        <span id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- TEASER -->
+        <div class="site" data-scene-panel="teaser" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler</p>
+            <p class="w-date">07 · 17 · 27</p>
+            <hr class="w-flourish">
+            <p class="w-lede">Chicago.</p>
+          </div>
+          <div class="band band-tight band-alt">
+            <p class="w-small w-muted">Nothing else is public yet — no venue, no schedule, no way in. The teaser exists so a link shared early resolves to something intentional instead of a 404.</p>
+          </div>
+        </div>
+
+        <!-- SAVE THE DATE -->
+        <div class="site" data-scene-panel="save-the-date" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">Save the date</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <p class="w-date">07 · 17 · 27</p>
+            <hr class="w-flourish">
+            <p class="w-lede">Chicago Athletic Association Hotel<br>Chicago, Illinois</p>
+          </div>
+
+          <div class="band">
+            <div class="w-framed w-stack-sm w-center">
+              <h2 class="w-h3">Invitations to follow</h2>
+              <p class="w-small">Formal invitations go out closer to the date. This page will tell you when you can reply.</p>
+            </div>
+            <p class="w-todo">TODO(Tyler &amp; Sara): invitation send date (backlog P-01) drives the scheduled transition to INVITATIONS_OPEN.</p>
+          </div>
+
+          <div class="band band-inverse">
+            <p class="w-eyebrow">While you wait</p>
+            <h2 class="w-display-sm">We met at Allison and Jamie's wedding.</h2>
+            <p class="w-body">Flirty glances across the room, and an immediate connection.</p>
+            <div><a class="w-btn" href="#">Read our story <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+          </div>
+        </div>
+
+        <!-- INVITATIONS OPEN -->
+        <div class="site" data-scene-panel="invitations-open" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">You're invited</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <p class="w-date">07 · 17 · 27</p>
+            <hr class="w-flourish">
+            <a class="w-btn w-btn-primary" href="#">Find your invitation</a>
+          </div>
+
+          <div class="band band-marble">
+            <p class="w-eyebrow">The essentials</p>
+            <ul class="w-list">
+              <li>
+                <span class="w-row"><svg class="ic" aria-hidden="true"><use href="#i-calendar"/></svg> <span class="w-label">When</span></span>
+                <strong class="w-h3">Saturday, July 17, 2027</strong>
+              </li>
+              <li>
+                <span class="w-row"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg> <span class="w-label">Where</span></span>
+                <strong class="w-h3">Chicago Athletic Association Hotel</strong>
+                <span class="w-small w-muted">12 S Michigan Ave, Chicago, IL 60603</span>
+              </li>
+              <li>
+                <span class="w-row"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg> <span class="w-label">Time</span></span>
+                <p class="w-todo">TODO(Tyler &amp; Sara): ceremony, cocktail hour and reception times (backlog P-02).</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="band band-wash band-tight">
+            <h2 class="w-h2">The link in your invitation</h2>
+            <p class="w-body">Your card carries a personal link. Open it and we'll know who you are — no password, no account to make.</p>
+            <p class="w-small">Lost the card? <a class="w-link" href="#">Sign in with your email</a> instead.</p>
+          </div>
+        </div>
+
+        <!-- RSVP OPEN -->
+        <div class="site" data-scene-panel="rsvp-open" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler · Chicago</p>
+            <p class="w-date">07 · 17 · 27</p>
+            <div class="count" id="countdown" aria-label="Time until the wedding"><div><b>—</b><span>days</span></div></div>
+            <a class="w-btn w-btn-primary" href="#">RSVP</a>
+            <p class="w-small w-muted">Please reply by <span class="w-badge w-badge-warn">date to come</span></p>
+          </div>
+
+          <div class="band">
+            <ul class="w-list">
+              <li>
+                <a class="w-between" href="#" style="text-decoration:none;color:inherit">
+                  <span><strong class="w-h3">Travel &amp; stay</strong><br><span class="w-small w-muted">Hotels, flights, and getting to Michigan Avenue.</span></span>
+                  <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
+                </a>
+              </li>
+              <li>
+                <a class="w-between" href="#" style="text-decoration:none;color:inherit">
+                  <span><strong class="w-h3">The weekend</strong><br><span class="w-small w-muted">What happens, and when.</span></span>
+                  <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="band band-inverse band-tight">
+            <p class="w-body">In this state Home answers "when, where, and what do I do now" before any scrolling. Story moves below the fold — utility wins when it matters.</p>
+          </div>
+        </div>
+
+        <!-- RSVP CLOSED -->
+        <div class="site" data-scene-panel="rsvp-closed" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">Sara + Tyler</p>
+            <p class="w-date">07 · 17 · 27</p>
+            <div class="count" id="countdown-2" aria-hidden="true"><div><b>—</b><span>days</span></div></div>
+          </div>
+          <div class="band">
+            <div class="w-notice w-notice-err">
+              <svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>
+              <p><strong>RSVPs are closed.</strong> We've sent our final count to the venue. If something has changed, please <a class="w-link" href="#">ask us</a> — we'll do what we can.</p>
+            </div>
+            <ul class="w-list">
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">Your weekend</strong><br><span class="w-small w-muted">Your schedule, your table, your party.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">Travel &amp; stay</strong><br><span class="w-small w-muted">Still time to book.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- WEDDING WEEK -->
+        <div class="site" data-scene-panel="wedding-week" hidden>
+          <div class="band band-alt band-tight">
+            <p class="w-eyebrow">This week</p>
+            <h1 class="w-display-sm">Saturday, July 17</h1>
+            <p class="w-small w-muted">Chicago Athletic Association Hotel · 12 S Michigan Ave</p>
+          </div>
+
+          <div class="band">
+            <h2 class="w-h2">Your day, in order</h2>
+            <ul class="sched">
+              <li><time>—</time><div><strong>Ceremony</strong><br><span class="w-small w-muted">White City Ballroom</span></div></li>
+              <li><time>—</time><div><strong>Cocktail hour</strong></div></li>
+              <li><time>—</time><div><strong>Reception</strong><br><span class="w-small w-muted">Dinner and dancing</span></div></li>
+            </ul>
+            <p class="w-todo">TODO(Tyler &amp; Sara): times and rooms (backlog P-02, P-03). The site shows an em dash rather than a plausible guess.</p>
+          </div>
+
+          <div class="band band-wash band-tight">
+            <div class="w-split w-split-2">
+              <a class="w-stack-sm" href="#" style="text-decoration:none;color:inherit">
+                <svg class="ic ic-lg" aria-hidden="true"><use href="#i-car"/></svg>
+                <strong class="w-h3">Directions</strong>
+                <span class="w-small w-muted">Valet at 71 E Madison.</span>
+              </a>
+              <a class="w-stack-sm" href="#" style="text-decoration:none;color:inherit">
+                <svg class="ic ic-lg" aria-hidden="true"><use href="#i-table"/></svg>
+                <strong class="w-h3">Your table</strong>
+                <span class="w-small w-muted">Revealed on the day.</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEDDING DAY -->
+        <div class="site" data-scene-panel="wedding-day" hidden>
+
+          <div class="band band-inverse">
+            <p class="w-eyebrow">Happening now</p>
+            <h1 class="w-display">Cocktail hour</h1>
+            <p class="w-lede">Next: reception, in the ballroom.</p>
+          </div>
+
+          <div class="band">
+            <h2 class="w-h2">Today's order</h2>
+            <ul class="sched">
+              <li><time>—</time><div>Ceremony</div></li>
+              <li data-now><time>now</time><div><strong>Cocktail hour</strong></div></li>
+              <li><time>—</time><div>Reception</div></li>
+            </ul>
+          </div>
+
+          <div class="band band-alt band-tight">
+            <div class="w-split w-split-2">
+              <a class="w-stack-sm" href="#" style="text-decoration:none;color:inherit">
+                <svg class="ic ic-lg" aria-hidden="true"><use href="#i-table"/></svg>
+                <strong class="w-h3">Your table</strong>
+                <span class="w-small w-muted">Table and floor plan.</span>
+              </a>
+              <a class="w-stack-sm" href="#" style="text-decoration:none;color:inherit">
+                <svg class="ic ic-lg" aria-hidden="true"><use href="#i-camera"/></svg>
+                <strong class="w-h3">Share photos</strong>
+                <span class="w-small w-muted">Upload from your phone.</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- POST WEDDING -->
+        <div class="site" data-scene-panel="post-wedding" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">Thank you</p>
+            <h1 class="w-display">We're married.</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Thank you for being in the room. Here is the weekend, as you all saw it.</p>
+          </div>
+
+          <div class="band">
+            <div class="w-framed w-stack-sm w-center">
+              <svg class="ic ic-lg" aria-hidden="true" style="margin:0 auto"><use href="#i-camera"/></svg>
+              <h2 class="w-h3">Add your photos</h2>
+              <p class="w-small">If you took pictures, put them here — they join everyone else's in the gallery.</p>
+              <div><a class="w-btn w-btn-primary w-btn-sm" href="#">Upload photos</a></div>
+            </div>
+          </div>
+
+          <div class="band band-alt band-tight">
+            <ul class="w-list">
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">The gallery</strong><br><span class="w-small w-muted">Everything guests shared.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">Our story</strong><br><span class="w-small w-muted">How we got here.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ARCHIVE -->
+        <div class="site" data-scene-panel="archive" hidden>
+          <div class="hero">
+            <p class="w-eyebrow">July 17, 2027 · Chicago</p>
+            <h1 class="w-display">Sara &amp; Tyler</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">The permanent record of a shared weekend.</p>
+          </div>
+          <div class="band">
+            <ul class="w-list">
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">Photos</strong><br><span class="w-small w-muted">The full gallery, kept.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+              <li><a class="w-between" href="#" style="text-decoration:none;color:inherit"><span><strong class="w-h3">Our story</strong><br><span class="w-small w-muted">And the adventures behind it.</span></span><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></li>
+            </ul>
+            <p class="w-small w-muted">RSVP, travel tools and ride benefits are gone — not broken, retired. Each explains that the weekend has passed and points at what remains.</p>
+          </div>
+        </div>
+
+        <!-- THE TWO KITS -->
+        <div class="site" data-scene-panel="switcher" hidden>
+          <div class="band band-tight">
+            <p class="w-eyebrow">Two complete design systems</p>
+            <h1 class="w-display-sm">The switcher is for guests, not just us</h1>
+            <p class="w-body"><code>FLAG_DESIGN_SWITCHER</code> is on by default. The choice rides a cookie, and <code>?theme=</code> makes any link shareable in a chosen kit.</p>
+          </div>
+
+          <div class="band band-alt">
+            <div class="swatches" aria-hidden="true">
+              <i style="background:#1C1B18"></i><i style="background:#C9A648"></i><i style="background:#F3EAD0"></i><i style="background:#2E5B7B"></i><i style="background:#CFE0EB"></i>
+            </div>
+            <h2 class="w-h2">Gilded Hour</h2>
+            <p class="w-small">Art Deco for 2027: white-marble ground, gold leaf as ornament, bronze as the gold you can read, lake blue as the second voice.</p>
+            <dl class="spec">
+              <dt>Display</dt><dd>Cinzel</dd>
+              <dt>Text</dt><dd>Josefin Sans</dd>
+              <dt>Numerals</dt><dd>Big Shoulders Display</dd>
+              <dt>Geometry</dt><dd>Sunburst, chevrons, stepped frames, square corners</dd>
+            </dl>
+          </div>
+
+          <div class="band">
+            <div class="swatches" aria-hidden="true">
+              <i style="background:#2A4430"></i><i style="background:#7E9C5F"></i><i style="background:#DFE5CF"></i><i style="background:#D4B24A"></i><i style="background:#E4D6BA"></i>
+            </div>
+            <h2 class="w-h2">Conservatory</h2>
+            <p class="w-small">Botanical: creme herbarium paper, pressed specimens, leaf greens with a pollen-gold accent, soft 8px corners.</p>
+            <dl class="spec">
+              <dt>Display</dt><dd>Gloock</dd>
+              <dt>Text</dt><dd>Spectral</dd>
+              <dt>Numerals</dt><dd>Cardo</dd>
+              <dt>Geometry</dt><dd>Ferns, tendrils, leaf borders, specimen tags</dd>
+            </dl>
+          </div>
+
+          <div class="band band-inverse band-tight">
+            <p class="w-body">Use the Design control above the viewport. Nothing about the markup changes — only which generated token block resolves, and which procedural art it points at.</p>
+          </div>
+        </div>
+
+        <!-- TRANSITIONS -->
+        <div class="site" data-scene-panel="transitions" hidden>
+          <div class="band band-tight">
+            <p class="w-eyebrow">Admin · lifecycle</p>
+            <h1 class="w-display-sm">Manual state always beats the clock</h1>
+            <p class="w-body">The calendar only ever <em>suggests</em> a state. An admin accepts or ignores it, and a preview never changes what the public sees.</p>
+          </div>
+
+          <div class="band band-alt">
+            <div class="w-row"><span class="w-plaque">01</span><h2 class="w-h2">Allowed transitions</h2></div>
+            <p class="w-small">Forward by one or more states, or back by exactly one — an undo, not a rewind. <code>canTransition</code> enforces it server-side.</p>
+            <dl class="w-dl">
+              <dt>Now</dt><dd>RSVP_OPEN</dd>
+              <dt>Suggested</dt><dd>RSVP_OPEN <span class="w-muted">— from the wall clock</span></dd>
+              <dt>Forward</dt><dd>any later state</dd>
+              <dt>Back</dt><dd>INVITATIONS_OPEN only</dd>
+            </dl>
+          </div>
+
+          <div class="band">
+            <div class="w-row"><span class="w-plaque">02</span><h2 class="w-h2">Preview without publishing</h2></div>
+            <p class="w-small">A signed preview token renders any state or kit for one admin at <code>/t/&lt;theme&gt;/preview/&lt;token&gt;</code>. Production state is untouched.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="label" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="teaser">
+  <h3>Teaser — the pre-announcement state</h3>
+  <p>The earliest public state. A shared link resolves to a deliberate page rather than a 404, and nothing unannounced leaks.</p>
+  <ul>
+    <li><strong>Check:</strong> no venue name, no schedule, no RSVP entry point anywhere on the page.</li>
+    <li><strong>Check:</strong> the date motif holds at 390px without breaking mid-numeral.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: explore</span><span>anonymous</span></div>
+</template>
+
+<template data-notes="save-the-date">
+  <h3>Save the date — date and city go public</h3>
+  <p>Venue and city are stated because the brief states them. Times and dress code are not, so they are absent rather than approximated. The dark band is the kit's <code>section-inverse</code>: primary ground, gold display type.</p>
+  <ul>
+    <li><strong>Check:</strong> the invitation send date is a visible placeholder, not a guess.</li>
+    <li><strong>Check:</strong> story copy matches <code>story.json</code> — only the two sentences the brief supplies.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: explore</span><span class="is-warn">backlog P-01</span></div>
+</template>
+
+<template data-notes="invitations-open">
+  <h3>Invitations open — the first act state</h3>
+  <p>The primary action becomes "find your invitation". The essentials sit on the marble ground, one fact per line with its own mark.</p>
+  <ul>
+    <li><strong>Check:</strong> exactly one primary button above the fold.</li>
+    <li><strong>Check:</strong> a lost-card path is offered without demoting the invitation link.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">claim_invitation</span><span class="is-warn">backlog P-02, P-07</span></div>
+</template>
+
+<template data-notes="rsvp-open">
+  <h3>RSVP open — the state the site lives in longest</h3>
+  <p>The countdown is live, computed from July 17 2027 in America/Chicago. Judge the "when, where, what now" test here, at 390px.</p>
+  <ul>
+    <li><strong>Check:</strong> date, countdown and the RSVP button all sit above the fold.</li>
+    <li><strong>Check:</strong> the deadline placeholder can't be mistaken for a real date.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: act</span><span class="is-ok">countdown live</span></div>
+</template>
+
+<template data-notes="rsvp-closed">
+  <h3>RSVP closed — a door that explains itself</h3>
+  <p>The count has gone to the venue. The route stays reachable and tells a late guest what to do instead of failing.</p>
+  <ul>
+    <li><strong>Check:</strong> no primary RSVP action remains anywhere on Home.</li>
+    <li><strong>Check:</strong> "ask us" is offered as the human fallback.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: act</span><span class="is-off">window closed</span></div>
+</template>
+
+<template data-notes="wedding-week">
+  <h3>Wedding week — logistics outrank story</h3>
+  <p>Operate mode. The hero is gone; the schedule is the page. Story still exists, below everything a guest needs this week.</p>
+  <ul>
+    <li><strong>Check:</strong> unknown times render as an em dash plus a visible placeholder, never an invented hour.</li>
+    <li><strong>Check:</strong> directions and table are reachable in one tap.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: operate</span><span class="is-warn">backlog P-02, P-03</span></div>
+</template>
+
+<template data-notes="wedding-day">
+  <h3>Wedding day — pocket concierge</h3>
+  <p>Any time on July 17 in America/Chicago is WEDDING_DAY: the comparison is by calendar day, not instant. "Happening now" takes the inverse band and the largest type on the page.</p>
+  <ul>
+    <li><strong>Check:</strong> now and next lead; everything else is one tap away.</li>
+    <li><strong>Check:</strong> table and upload are both reachable without scrolling past the timeline.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">view_table_assignment</span><span class="is-cap">upload_media</span></div>
+</template>
+
+<template data-notes="post-wedding">
+  <h3>Post wedding — the memory turn</h3>
+  <p>Remember mode. Upload is promoted while photos are still on people's phones; operational tools retire.</p>
+  <ul>
+    <li><strong>Check:</strong> upload is the primary action, gallery second.</li>
+    <li><strong>Check:</strong> no RSVP or travel tooling survives on Home.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">upload_media</span><span>≤ 30 days after</span></div>
+</template>
+
+<template data-notes="archive">
+  <h3>Archive — the keepsake</h3>
+  <p>Thirty days on, the site settles into a permanent record. Retired features explain themselves rather than 404ing.</p>
+  <ul>
+    <li><strong>Check:</strong> only story, adventures and photos remain as destinations.</li>
+    <li><strong>Check:</strong> it still reads as a keepsake, not a decommissioned app.</li>
+  </ul>
+  <div class="label-meta"><span>route /</span><span class="is-cap">mode: remember</span><span>&gt; 30 days after</span></div>
+</template>
+
+<template data-notes="switcher">
+  <h3>The two kits — one markup, two worlds</h3>
+  <p>Complete design systems, not palettes: different faces, different geometry, different ornament, different spacing rhythm.</p>
+  <ul>
+    <li><strong>Check:</strong> switch kits on any other scene — type, spacing and ornament all change together.</li>
+    <li><strong>Check:</strong> the ornament is the kits' own generated art, inlined from <code>public/assets/art/</code>.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">FLAG_DESIGN_SWITCHER</span><span>cookie + ?theme=</span><span class="is-ok">tokens + art inlined</span></div>
+</template>
+
+<template data-notes="transitions">
+  <h3>Transition rules — the clock only suggests</h3>
+  <p>Automatic transitions are proposals an admin accepts. The numbered plaques are the kit's numeral badge, used here because the rules genuinely are a sequence.</p>
+  <ul>
+    <li><strong>Check:</strong> back is limited to exactly one state — an undo, not a rewind.</li>
+    <li><strong>Check:</strong> a preview token names both a state and a kit, scoped to one admin.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">admin_lifecycle</span><span>canTransition()</span><span>/t/&lt;theme&gt;/preview/</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+
+/* Live countdown to the ceremony date in the wedding's own time zone. */
+(function () {
+  var target = new Date('2027-07-17T00:00:00-05:00');
+  var units = [['days', 86400000], ['hours', 3600000], ['minutes', 60000]];
+  function render(el) {
+    if (!el) return;
+    var left = Math.max(0, target.getTime() - Date.now());
+    var html = '';
+    for (var i = 0; i < units.length; i++) {
+      var n = Math.floor(left / units[i][1]);
+      left -= n * units[i][1];
+      html += '<div><b>' + n + '</b><span>' + units[i][0] + '</span></div>';
+    }
+    el.innerHTML = html;
+  }
+  function tick() {
+    render(document.getElementById('countdown'));
+    render(document.getElementById('countdown-2'));
+  }
+  tick();
+  setInterval(tick, 60000);
+})();
+</script>

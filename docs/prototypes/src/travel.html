@@ -1,0 +1,409 @@
+<title>Travel, Stay &amp; the Trip Bridge</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+/* A search result is a snapshot with a timestamp, not a live price. The card
+   has to say so without shouting. */
+.result { border: 1px solid var(--color-outline); background: var(--color-surface); padding: var(--spacing-md); display: flex; flex-direction: column; gap: 8px; }
+[data-theme="conservatory"] .result { border-radius: var(--rounded-md); }
+.result-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-sm); }
+.result-price { font-family: var(--type-numeral-family); font-size: 1.6rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+[data-theme="conservatory"] .result-price { font-family: var(--font-accent); }
+
+.legs { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-size: 15px; }
+.legs .line { flex: 1; height: 1px; background: var(--color-outline); position: relative; }
+.legs .line::after { content: ""; position: absolute; right: 0; top: -2px; width: 5px; height: 5px; border-radius: 50%; background: var(--color-outline); }
+
+.snapshot { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-on-surface-muted); }
+.snapshot::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--color-tertiary); flex: none; }
+
+.trip { margin: 0; padding: 0; }
+.trip li { list-style: none; display: grid; grid-template-columns: 62px 1fr auto; gap: var(--spacing-sm); align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--color-outline); }
+.trip li:last-child { border-bottom: 0; }
+.trip time { font-family: var(--type-label-caps-family); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--color-on-surface-muted); font-variant-numeric: tabular-nums; }
+.trip .who { font-size: 12px; color: var(--color-on-surface-muted); font-family: var(--mono); }
+
+.warn-block { border: 1px solid var(--color-error); padding: var(--spacing-sm) var(--spacing-md); background: var(--color-surface); }
+[data-theme="conservatory"] .warn-block { border-radius: var(--rounded-md); }
+.warn-block strong { color: var(--color-error); }
+</style>
+
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 08</p>
+    <h1 class="mast-title">Travel &amp; Stay, and the trip bridge</h1>
+    <p class="mast-sub">Many guests fly in from California and Nevada. The site orchestrates the trip and hands the transaction to whoever owns it — every price is a dated snapshot, every outbound link is on an allowlist, and the booking itself happens on the provider's own site.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail" aria-label="Travel surfaces">
+    <h2>Where to stay</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="stay" data-url="/travel">Travel &amp; Stay<small>the room block</small></button>
+    </div>
+    <h2>Getting here</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="flights" data-url="/travel · flights">Flight search<small>snapshots, not prices</small></button>
+      <button type="button" data-scene="risk" data-url="/travel · connections">Connection risk<small>one ticket or two</small></button>
+      <button type="button" data-scene="unconfigured" data-url="/travel · no provider">Provider missing<small>degrade to links</small></button>
+    </div>
+    <h2>Your trip</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="trip" data-url="/trip">The trip bridge<small>one timeline</small></button>
+      <button type="button" data-scene="privacy" data-url="/trip · profile">Profile &amp; deletion<small>step-up protected</small></button>
+    </div>
+    <h2>Admin</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="admin" data-url="/admin/travel">Hotels &amp; links<small>the allowlist</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/travel</b>
+        <span id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- TRAVEL & STAY -->
+        <div class="site" data-scene-panel="stay" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Travel</a><a href="#">Your weekend</a><a href="#">CAA</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Travel &amp; stay</p>
+            <h1 class="w-display-sm">Where to sleep, and how to get here</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Many of you are travelling in. Here's the shortest version.</p>
+          </div>
+          <div class="band">
+
+            <div class="w-card w-card-key">
+              <div class="w-between"><h2 class="w-h3">Chicago Athletic Association Hotel</h2><span class="w-badge w-badge-on">The venue</span></div>
+              <p class="w-small"><strong>The wedding is here: no travel on the day.</strong></p>
+              <p class="w-small">12 S Michigan Ave, Chicago, IL 60603</p>
+              <div class="w-notice w-notice-todo">
+                <p class="w-small" style="margin:0">The CAA offers a courtesy block of up to 20 rooms, subject to availability.</p>
+                <p class="w-small w-muted" style="margin:4px 0 0">2025/26 venue kit figure — to verify.</p>
+              </div>
+              <span class="w-todo">TODO(Tyler &amp; Sara): room-block rate, booking link and cut-off date (backlog X-01).</span>
+              <a class="w-btn w-btn-sm" href="#">Open the hotel's own site</a>
+              <div class="snapshot">chicagoathletichotel.com · checked 5 Sep 2026</div>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Somewhere else</h2>
+              <span class="w-todo">TODO(Tyler &amp; Sara): alternative hotels at other price points (backlog X-03). Until you pick them, the page says so instead of naming hotels we haven't checked.</span>
+            </div>
+
+            <hr class="w-hairline">
+
+            <div class="w-stack-sm">
+              <h2 class="w-h2">Flying in</h2>
+              <p class="w-body">Chicago has two airports. Both connect to downtown by train, taxi and rideshare.</p>
+              <div class="w-grid w-grid-2">
+                <div class="w-panel"><strong class="w-small">O'Hare (ORD)</strong><p class="w-small w-muted" style="margin:0">Blue Line to the Loop.</p></div>
+                <div class="w-panel"><strong class="w-small">Midway (MDW)</strong><p class="w-small w-muted" style="margin:0">Orange Line to the Loop.</p></div>
+              </div>
+              <span class="w-todo">TODO(Tyler &amp; Sara): which airport we recommend, and whether there will be a shuttle.</span>
+              <a class="w-btn" href="#">Search flights</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLIGHTS -->
+        <div class="site" data-scene-panel="flights" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Flights</p>
+              <h1 class="w-h1">Getting to Chicago</h1>
+            </div>
+            <div class="w-grid w-grid-2">
+              <div class="w-field"><label class="w-label" for="from">From</label><input class="w-input" id="from" value="SFO"></div>
+              <div class="w-field"><label class="w-label" for="to">To</label><input class="w-input" id="to" value="ORD"></div>
+            </div>
+            <div class="w-grid w-grid-2">
+              <div class="w-field"><label class="w-label" for="out">Out</label><input class="w-input" id="out" type="date" value="2027-07-16"></div>
+              <div class="w-field"><label class="w-label" for="back">Back</label><input class="w-input" id="back" type="date" value="2027-07-18"></div>
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Search</button>
+
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Prices move. Refresh before you book; the price the provider shows at checkout is the one that counts.</p>
+            </div>
+
+            <div class="w-stack-sm">
+              <div class="result">
+                <div class="result-top"><strong class="w-small">Nonstop · 4h 20m</strong><span class="result-price">$318</span></div>
+                <div class="legs"><span>SFO 07:15</span><span class="line" aria-hidden="true"></span><span>ORD 13:35</span></div>
+                <div class="w-row"><span class="w-badge w-badge-on">One ticket</span></div>
+                <a class="w-btn w-btn-sm" href="#">Book on the airline's site</a>
+                <div class="snapshot">Snapshot taken 3 minutes ago</div>
+              </div>
+              <div class="result">
+                <div class="result-top"><strong class="w-small">1 stop · 7h 05m</strong><span class="result-price">$246</span></div>
+                <div class="legs"><span>SFO 06:00</span><span class="line" aria-hidden="true"></span><span>DEN</span><span class="line" aria-hidden="true"></span><span>ORD 15:05</span></div>
+                <div class="w-row"><span class="w-badge w-badge-err">Separate tickets</span></div>
+                <a class="w-btn w-btn-sm" href="#">Book on the airline's site</a>
+                <div class="snapshot">Snapshot taken 3 minutes ago</div>
+              </div>
+            </div>
+            <p class="w-small w-muted">The site never takes a payment and never holds a fare. Every result links out to whoever actually sells it.</p>
+          </div>
+        </div>
+
+        <!-- CONNECTION RISK -->
+        <div class="site" data-scene-panel="risk" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Before you book</p>
+              <h1 class="w-h1">One ticket, or two?</h1>
+              <p class="w-body">It's the difference that costs people their weekend, and airline search results rarely spell it out.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Connection on one ticket</h2><span class="w-badge w-badge-on">Safer</span></div>
+              <p class="w-small">If a delay makes you miss the connection, the airline rebooks you.</p>
+            </div>
+            <div class="warn-block">
+              <div class="w-between"><h2 class="w-h3">Separate tickets (self-transfer)</h2><span class="w-badge w-badge-err">Riskier</span></div>
+              <p class="w-small" style="margin:6px 0 0">Miss the second flight and it's your problem, not the airline's. You'd be rebooking and re-paying yourself.</p>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Prices move. Refresh before you book; the price the provider shows at checkout is the one that counts.</p>
+            </div>
+            <p class="w-small w-muted">Cheaper itineraries are usually the self-transfer ones. The site shows both and explains the trade, rather than sorting by price and letting a guest find out at O'Hare.</p>
+          </div>
+        </div>
+
+        <!-- UNCONFIGURED PROVIDER -->
+        <div class="site" data-scene-panel="unconfigured" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Flights</p>
+              <h1 class="w-h1">Getting to Chicago</h1>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <p class="w-small" style="margin:0"><strong>Flight search is not set up yet.</strong></p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">In the meantime</h2>
+              <p class="w-small">Both Chicago airports connect to downtown by train. The venue is on Michigan Avenue, across from Millennium Park.</p>
+              <div class="w-grid w-grid-2">
+                <div class="w-panel"><strong class="w-small">O'Hare (ORD)</strong><p class="w-small w-muted" style="margin:0">Blue Line to the Loop.</p></div>
+                <div class="w-panel"><strong class="w-small">Midway (MDW)</strong><p class="w-small w-muted" style="margin:0">Orange Line to the Loop.</p></div>
+              </div>
+            </div>
+            <p class="w-small w-muted">No API key, no crash. Every provider adapter has a mock and a degraded mode: when live search is unavailable the page falls back to guidance and deep links, and says which it is showing.</p>
+          </div>
+        </div>
+
+        <!-- TRIP BRIDGE -->
+        <div class="site" data-scene-panel="trip" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Travel</a><a href="#" aria-current="page">Your trip</a><a href="#">Your weekend</a></nav>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your trip</p>
+              <h1 class="w-h1">Chicago, 16–18 July</h1>
+              <p class="w-lede">Everything you've booked, plus the wedding, on one timeline.</p>
+            </div>
+
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Friday 16 July</h2><span class="w-badge">Arrive</span></div>
+              <ul class="trip">
+                <li><time>13:35</time><div><strong>Land at O'Hare</strong><br><span class="w-small w-muted">UA 1180 from SFO</span></div><span class="who">you</span></li>
+                <li><time>15:00</time><div><strong>Check in</strong><br><span class="w-small w-muted">Chicago Athletic Association Hotel</span></div><span class="who">you</span></li>
+              </ul>
+            </div>
+
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Saturday 17 July</h2><span class="w-badge w-badge-on">The wedding</span></div>
+              <ul class="trip">
+                <li><time>—</time><div><strong>Ceremony</strong><br><span class="w-small w-muted">In the building — no travel needed</span></div><span class="who">us</span></li>
+                <li><time>—</time><div><strong>Cocktail hour</strong></div><span class="who">us</span></li>
+                <li><time>—</time><div><strong>Reception</strong></div><span class="who">us</span></li>
+              </ul>
+              <span class="w-todo">TODO(Tyler &amp; Sara): times (backlog P-02).</span>
+            </div>
+
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Sunday 18 July</h2><span class="w-badge">Home</span></div>
+              <ul class="trip">
+                <li><time>11:20</time><div><strong>Fly home</strong><br><span class="w-small w-muted">UA 505 to SFO</span></div><span class="who">you</span></li>
+              </ul>
+            </div>
+
+            <button class="w-btn w-btn-primary" type="button">Add something to your trip</button>
+            <div class="w-panel">
+              <h3 class="w-h3">Two sources, one timeline</h3>
+              <p class="w-small" style="margin:0"><strong>us</strong> — wedding events, which move if the couple move them. <strong>you</strong> — what you added yourself, which only you can edit.</p>
+            </div>
+            <p class="w-small w-muted">Adding an item validates the dates: an end before its start is rejected with "The end must be after the start", not silently stored.</p>
+          </div>
+        </div>
+
+        <!-- PRIVACY -->
+        <div class="site" data-scene-panel="privacy" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your travel profile</p>
+              <h1 class="w-h1">What we keep, and how to remove it</h1>
+              <p class="w-body">Your trip details are yours. They're stored so the timeline works, and you can delete them at any time.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">What's stored</h2>
+              <dl class="w-dl">
+                <dt>Home airport</dt><dd>SFO</dd>
+                <dt>Arrival</dt><dd>16 July, 13:35</dd>
+                <dt>Departure</dt><dd>18 July, 11:20</dd>
+                <dt>Items you added</dt><dd>3</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Who can see it</h2>
+              <p class="w-small">You. The couple see that you're arriving, not your flight numbers. Nobody else sees any of it.</p>
+            </div>
+            <div class="warn-block">
+              <strong>Delete my travel profile</strong>
+              <p class="w-small" style="margin:6px 0 0">Removes your airports, dates and every item you added. Wedding events stay — they aren't yours to delete.</p>
+              <p class="w-small" style="margin:6px 0 0">We'll ask you to confirm it's you first.</p>
+            </div>
+            <button class="w-btn" type="button">Delete my travel profile</button>
+            <p class="w-small w-muted">Deletion is a destructive action: it requires proof newer than five minutes and an explicit confirmation from the browser, never from an AI agent or a WebMCP tool.</p>
+          </div>
+        </div>
+
+        <!-- ADMIN -->
+        <div class="site" data-scene-panel="admin" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · travel</p>
+              <h1 class="w-h1">Hotels and the link allowlist</h1>
+              <p class="w-body">Every outbound link a guest can be sent to is on a list an admin curates. Anything else is refused.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">chicagoathletichotel.com</h2><span class="w-badge w-badge-on">Trusted</span></div>
+              <p class="w-small w-muted" style="margin:0">The venue. Added 4 Sep 2026.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">dnr.illinois.gov</h2><span class="w-badge w-badge-on">Trusted</span></div>
+              <p class="w-small w-muted" style="margin:0">Starved Rock State Park. Added 4 Sep 2026.</p>
+            </div>
+            <div class="warn-block">
+              <div class="w-between"><h2 class="w-h3">discount-hotels.example</h2><span class="w-badge w-badge-err">Refused</span></div>
+              <p class="w-small" style="margin:6px 0 0"><strong>That link is not on our list of trusted partners.</strong></p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="newlink">Add a link</label>
+              <input class="w-input" id="newlink" placeholder="https://…">
+            </div>
+            <button class="w-btn w-btn-sm" type="button">Add to the allowlist</button>
+            <p class="w-small w-muted">A guest clicking out is a moment where a wedding site can hand someone to a phishing page. The redirect route only ever emits hosts on this list.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="label" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="stay">
+  <h3>Travel &amp; Stay — the room block</h3>
+  <p>The single most-asked logistics question. The venue is also the hotel, which is the one genuinely reassuring fact available today.</p>
+  <ul>
+    <li><strong>Check:</strong> the 20-room courtesy block is labelled as an unverified kit figure, not stated as fact.</li>
+    <li><strong>Check:</strong> no alternative hotel is named until the couple pick them — an invented hotel with a live link is a fact the site has no right to state.</li>
+  </ul>
+  <div class="label-meta"><span>route /travel</span><span class="is-cap">list_hotel_recommendations</span><span class="is-warn">backlog X-01, X-03</span></div>
+</template>
+
+<template data-notes="flights">
+  <h3>Flight search — snapshots, never prices</h3>
+  <p>Results are dated snapshots from a provider adapter. The site never holds a fare and never takes a payment.</p>
+  <ul>
+    <li><strong>Check:</strong> every result carries how old its snapshot is.</li>
+    <li><strong>Check:</strong> the refresh-before-you-book line is present before the first result, not buried under them.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">search_travel_options</span><span>FLAG_TRAVEL_LIVE_SEARCH</span><span class="is-ok">no payment</span></div>
+</template>
+
+<template data-notes="risk">
+  <h3>Connection risk — the thing airlines don't say</h3>
+  <p>A self-transfer that saves $72 can cost a guest the wedding. The site names the trade in plain words.</p>
+  <ul>
+    <li><strong>Check:</strong> the riskier option is visually distinct, not just labelled.</li>
+    <li><strong>Check:</strong> the explanation says what happens to <em>you</em>, not what the fare rules are called.</li>
+  </ul>
+  <div class="label-meta"><span>travel/snapshot.ts</span><span class="is-warn">self-transfer</span><span>one ticket vs two</span></div>
+</template>
+
+<template data-notes="unconfigured">
+  <h3>Provider missing — degrade, don't break</h3>
+  <p>What a guest sees with no flight API configured. This is the state CI runs in, and the one most likely on launch day.</p>
+  <ul>
+    <li><strong>Check:</strong> the page still answers the question with guidance and links.</li>
+    <li><strong>Check:</strong> it says search is unavailable rather than showing an empty result list.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">providers/flights</span><span class="is-warn">degraded mode</span><span class="is-ok">mock default</span></div>
+</template>
+
+<template data-notes="trip">
+  <h3>The trip bridge — one timeline, two owners</h3>
+  <p>Wedding events and the guest's own bookings on a single timeline, with the ownership of each item visible.</p>
+  <ul>
+    <li><strong>Check:</strong> couple-owned items can't be edited by the guest, and guest items are invisible to everyone else.</li>
+    <li><strong>Check:</strong> date validation rejects an end before its start with a specific message.</li>
+  </ul>
+  <div class="label-meta"><span>route /trip</span><span class="is-cap">add_trip_item</span><span class="is-cap">get_my_trip</span></div>
+</template>
+
+<template data-notes="privacy">
+  <h3>Profile &amp; deletion — step-up protected</h3>
+  <p>Flight numbers and hotel dates are personal. The page states what is kept, who sees it, and offers real deletion.</p>
+  <ul>
+    <li><strong>Check:</strong> deletion explains exactly what goes and what stays.</li>
+    <li><strong>Check:</strong> it requires step-up and explicit UI confirmation — an agent can't trigger it.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">delete_my_travel_profile</span><span class="is-warn">step-up</span><span class="is-off">requires_ui</span></div>
+</template>
+
+<template data-notes="admin">
+  <h3>The link allowlist</h3>
+  <p>Outbound links are the phishing surface of a wedding site. Only hosts an admin has added can be emitted by the redirect route.</p>
+  <ul>
+    <li><strong>Check:</strong> an unlisted host is refused with a fixed first-party message.</li>
+    <li><strong>Check:</strong> each trusted entry records what it is and when it was added.</li>
+  </ul>
+  <div class="label-meta"><span>route /admin/travel</span><span class="is-cap">admin_save_travel_link</span><span class="is-ok">allowlist enforced</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+</script>

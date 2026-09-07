@@ -26,6 +26,13 @@ export const PRODUCTION_SPECS = [
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
   'tests/e2e/links.spec.ts',
+  // Level 12: the concierge journey is anonymous end to end — it opens the island on /ask-us and
+  // posts to /api/ai/chat as a visitor, so it needs no test principal. It belongs here rather than
+  // on the test server because the two things it asserts about are production behaviour: the answer
+  // must be grounded and cited against the SEEDED knowledge base, and the chat route must be the
+  // only door (405 on GET, 403 on a form-encoded POST). With no ANTHROPIC_API_KEY in CI the model
+  // provider is not live, so `conciergeModels()` hands back the deterministic extractive mock.
+  'tests/e2e/concierge.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
@@ -46,6 +53,10 @@ export const TEST_SERVER_SPECS = [
   // through identity's injector, and the journey needs the dev storage route, so both belong here.
   'tests/e2e/media-upload.spec.ts',
   'tests/security/uploads.spec.ts',
+  // Level 11: the media-AI journey uploads as a signed-in guest, drives the cron route with
+  // CRON_SECRET, and reads the biometrics opt-in surface — all of which need the NODE_ENV=test
+  // server and identity's test-principal injector.
+  'tests/e2e/media-ai.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

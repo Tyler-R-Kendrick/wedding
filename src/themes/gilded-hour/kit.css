@@ -2125,6 +2125,15 @@
     font-size: var(--type-h3-size);
   }
 
+  /* The plaque's frame, sized for the screen it is on — the same exception the marker above makes.
+     `--spacing-xl` on each side is 96px of a 390px phone, and with the concierge inside it the
+     transcript came out at 202px: about 19 characters, against the 55-72 this design's DESIGN.md
+     asks for. The gold rule and the stepped corners are the design and they stay; only the breathing
+     room shrinks, as it does for every other Gilded Hour ornament at this width. */
+  .gh-slot {
+    padding: var(--spacing-md);
+  }
+
   .gh-divider {
     height: 24px;
   }
