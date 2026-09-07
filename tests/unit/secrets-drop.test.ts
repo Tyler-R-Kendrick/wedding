@@ -1,8 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 // The Secret Drop tooling is plain ESM under scripts/ so it can run in a bare sandbox
 // (no build, no tsx) — the tests import it the same way the scripts do.
 import { mergeEnv, parseDotenv, presentNames, quote } from '../../scripts/secrets/env-file.mjs';
-import { AUTOFILL, CREDENTIALS, METHOD_RANK, NEED, clientRegistry, resolveLadderOrder, varIndex } from '../../scripts/secrets/registry.mjs';
+import { AUTOFILL, CEREMONY, METHOD_CEREMONY, METHOD_RANK, NEED, SLOTS, allVars, ceremonyOf, chosenOption, clientRegistry, recommendedOf } from '../../scripts/secrets/registry.mjs';
 
 describe('dotenv parsing', () => {
   it('reads export prefixes, comments and both quote styles', () => {
@@ -66,181 +66,151 @@ describe('env file writing', () => {
   });
 });
 
-describe('credential registry', () => {
-  it('gives every credential at least one rung and a manual floor', () => {
-    for (const cred of CREDENTIALS) {
-      expect(cred.ladder.length, `${cred.id} has no ladder`).toBeGreaterThan(0);
-      expect(cred.ladder.at(-1)?.method, `${cred.id} must end in a human fallback`).toBe('manual');
-      expect(cred.vars.length, `${cred.id} fills no variables`).toBeGreaterThan(0);
-      for (const v of cred.vars) expect(v, `${cred.id}: ${v}`).toMatch(/^[A-Z][A-Z0-9_]{0,63}$/);
+describe('slots and their provider options', () => {
+  it('offers a real choice wherever one exists, with exactly one recommendation', () => {
+    for (const slot of SLOTS) {
+      expect(slot.options.length, `${slot.id} has no options`).toBeGreaterThan(0);
+      const recommended = slot.options.filter((o) => o.recommended);
+      expect(recommended.length, `${slot.id} must recommend exactly one option`).toBe(1);
+      expect(recommendedOf(slot).id).toBe(recommended[0]?.id);
     }
   });
 
-  it('orders each ladder from cheapest to most human', () => {
-    for (const cred of CREDENTIALS) {
-      const ranks = cred.ladder.map((s) => METHOD_RANK[s.method as keyof typeof METHOD_RANK]);
-      expect(ranks, `${cred.id} ladder is out of order`).toEqual([...ranks].sort((a, b) => a - b));
+  it('gives storage several providers, because that choice is a real one', () => {
+    const storage = SLOTS.find((s) => s.id === 'storage');
+    expect(storage?.options.map((o) => o.id)).toEqual(expect.arrayContaining(['r2', 'aws', 'b2', 'supabase-storage', 'minio']));
+  });
+
+  it('never asks for a setting the choice already determines', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        const asked = new Set(option.secrets);
+        for (const inferred of Object.keys(option.fills)) {
+          expect(asked.has(inferred), `${slot.id}/${option.id} both infers and asks for ${inferred}`).toBe(false);
+        }
+      }
     }
   });
 
-  it('never asks a human for something the sandbox generates itself', () => {
+  it('states a ceremony a person can actually be offered', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        expect(Object.keys(CEREMONY), `${slot.id}/${option.id}`).toContain(ceremonyOf(option));
+        // Anything that needs no key must not ask for one, and vice versa.
+        if (ceremonyOf(option) === 'paste') expect(option.secrets.length, `${option.id} pastes nothing`).toBeGreaterThan(0);
+        if (option.isOptOut) expect(option.secrets).toHaveLength(0);
+      }
+    }
+  });
+
+  it('ends every ladder in a human fallback, ordered cheapest rung first', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        expect(option.ladder.length, `${option.id} has no ladder`).toBeGreaterThan(0);
+        const ranks = option.ladder.map((step: { method: string }) => METHOD_RANK[step.method as keyof typeof METHOD_RANK]);
+        expect(ranks, `${option.id} ladder is out of order`).toEqual([...ranks].sort((a, b) => a - b));
+        const last = option.ladder.at(-1)?.method;
+        expect(option.isOptOut ? ['derive', 'generate'] : ['manual'], `${option.id} ends at ${last}`).toContain(last);
+      }
+    }
+  });
+
+  it('maps every ladder method to a ceremony a person understands', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        for (const step of option.ladder) {
+          expect(METHOD_CEREMONY[step.method as keyof typeof METHOD_CEREMONY], `${option.id}: ${step.method}`).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it('keeps sandbox-generated material out of the slots entirely', () => {
     const generated = new Set(Object.keys(AUTOFILL));
-    for (const cred of CREDENTIALS) {
-      for (const v of cred.vars) expect(generated.has(v), `${v} is both auto-filled and asked for`).toBe(false);
-    }
+    for (const v of allVars()) expect(generated.has(v), `${v} is both auto-filled and asked for`).toBe(false);
   });
 
-  it('states its own need, so nobody has to be asked what the site is for', () => {
-    for (const cred of CREDENTIALS) {
-      expect(Object.keys(NEED), `${cred.id} has need "${cred.need}"`).toContain(cred.need);
-    }
+  it('declares a need the repo can justify', () => {
+    for (const slot of SLOTS) expect(Object.keys(NEED), `${slot.id}`).toContain(slot.need);
   });
 
-  it('groups alternates so one member satisfies the group', () => {
-    const groups = new Map<string, string[]>();
-    for (const cred of CREDENTIALS) {
-      if (!cred.alternateOf) continue;
-      groups.set(cred.alternateOf, [...(groups.get(cred.alternateOf) ?? []), cred.id]);
-    }
-    expect([...groups.keys()].sort()).toEqual(['embeddings', 'travel']);
-    for (const [group, members] of groups) expect(members.length, `${group} is not a choice`).toBeGreaterThan(1);
+  it('falls back to the recommendation when no choice has been made', () => {
+    const storage = SLOTS.find((s) => s.id === 'storage')!;
+    expect(chosenOption(storage, {}).id).toBe('r2');
+    expect(chosenOption(storage, { storage: 'b2' }).id).toBe('b2');
+    expect(chosenOption(storage, { storage: 'nonsense' }).id).toBe('r2');
   });
 
-  it('marks a variable as paste-only exactly when no rung can obtain it', () => {
-    for (const cred of CREDENTIALS) {
-      const automatable = cred.ladder.some((s) => s.method !== 'manual');
-      expect(cred.input === 'apply', `${cred.id}`).toBe(!automatable);
-    }
-  });
-
-  it('exports a client registry the page can render without functions', () => {
+  it('exports a page registry with no functions in it', () => {
     const client = clientRegistry();
     expect(JSON.parse(JSON.stringify(client))).toEqual(client);
-    expect(client.credentials).toHaveLength(CREDENTIALS.length);
-    for (const cred of client.credentials) {
-      for (const step of cred.ladder) expect(client.methodLabels[step.method as keyof typeof client.methodLabels]).toBeDefined();
-    }
-  });
-
-  it('indexes every registry variable exactly once', () => {
-    const index = varIndex();
-    const all = [...Object.keys(AUTOFILL), ...CREDENTIALS.flatMap((c) => c.vars)];
-    expect(index.size).toBe(new Set(all).size);
-    expect(index.get('RESEND_API_KEY')?.credential).toBe('resend');
-    expect(index.get('CRON_SECRET')?.method).toBe('generate');
-  });
-
-  it('sorts a ladder by how little it asks of a person', () => {
-    expect(resolveLadderOrder(['manual', 'device', 'generate'])).toEqual(['generate', 'device', 'manual']);
+    expect(client.slots).toHaveLength(SLOTS.length);
   });
 });
 
 describe('planning without asking', () => {
-  it('plans the whole required set with no arguments at all', async () => {
+  it('plans every slot the site needs, with no arguments at all', async () => {
     const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
-    const ids = resolvePlan().map((p) => p.cred.id);
-    expect(ids).toContain('resend');
+    const ids = resolvePlan().map((p) => p.slot.id);
+    expect(ids).toContain('email');
     expect(ids).toContain('storage');
-    expect(ids).toContain('anthropic');
-    // Tooling stays out of the default plan; --all opts into it.
-    expect(ids).not.toContain('fal');
-    expect(resolvePlan({ all: true }).map((p) => p.cred.id)).toContain('fal');
+    expect(ids).toContain('concierge');
+    expect(ids).not.toContain('imagery');            // tooling stays out until asked for
+    expect(resolvePlan({ all: true }).map((p) => p.slot.id)).toContain('imagery');
   });
 
-  it('asks for only one member of an alternate group', () => {
-    const plan = resolvePlanSync();
-    const embeddings = plan.filter((id) => id === 'openai' || id === 'voyage');
-    const travel = plan.filter((id) => ['duffel', 'skyscanner', 'booking'].includes(id));
-    expect(embeddings).toHaveLength(1);
-    expect(travel).toHaveLength(1);
-  });
-
-  it('stops asking for a group once one member is already set', async () => {
+  it('follows the chosen provider, not the recommendation', async () => {
     const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
-    const withVoyage = resolvePlan({ alreadySet: new Set(['VOYAGE_API_KEY']) }).map((p) => p.cred.id);
-    expect(withVoyage).not.toContain('openai');
-    expect(withVoyage).not.toContain('voyage');
-  });
-});
-
-/** The default plan's credential ids, resolved eagerly for the synchronous assertions above. */
-function resolvePlanSync(): string[] {
-  return planIds;
-}
-let planIds: string[] = [];
-beforeAll(async () => {
-  const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
-  planIds = resolvePlan().map((p) => p.cred.id);
-});
-
-describe('what the page is told to offer', () => {
-  it('keeps offering the sign-in rung when it only failed for want of a session', async () => {
-    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
-    const resend = CREDENTIALS.find((c) => c.id === 'resend')!;
-    const action = nextActionFor(resend, {
-      attempts: [
-        { method: 'authmd', outcome: 'declines agentic registration' },
-        { method: 'browser', outcome: 'no signed-in session for resend.com', code: 'NEEDS_HANDOFF' },
-      ],
-    });
-    // "No session yet" is an invitation to sign in, never a reason to demand a paste.
-    expect(action.method).toBe('browser');
-    expect(action.reason).toMatch(/sign in once/i);
+    const plan = resolvePlan({ choices: { storage: 'b2' } });
+    expect(plan.find((p) => p.slot.id === 'storage')?.option.id).toBe('b2');
   });
 
-  it('falls through to the human rung only once every automatic one is genuinely spent', async () => {
-    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
-    const anthropic = CREDENTIALS.find((c) => c.id === 'anthropic')!;
-    expect(nextActionFor(anthropic, {
-      attempts: [
-        { method: 'authmd', outcome: 'no agent_auth metadata' },
-        { method: 'browser', outcome: 'the saved session has expired', code: 'NEEDS_HANDOFF' },
-      ],
-    }).method).toBe('browser');
-    expect(nextActionFor(anthropic, {
-      attempts: [
-        { method: 'authmd', outcome: 'no agent_auth metadata' },
-        { method: 'browser', outcome: 'signed in, but no value matching the key format appeared' },
-      ],
-    }).method).toBe('manual');
+  it('drops a slot entirely when the choice is to do without', async () => {
+    const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
+    const ids = resolvePlan({ choices: { travel: 'deep-link', rides: 'manual-codes' } }).map((p) => p.slot.id);
+    expect(ids).not.toContain('travel');
+    expect(ids).not.toContain('rides');
   });
 
-  it('starts at the top of the ladder before anything has been tried', async () => {
-    const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
-    for (const cred of CREDENTIALS) {
-      expect(nextActionFor(cred, undefined).method, cred.id).toBe(cred.ladder[0]?.method);
-    }
+  it('stops asking once the chosen option already has its keys', async () => {
+    const { resolvePlan } = await import('../../scripts/secrets/acquire.mjs');
+    const ids = resolvePlan({ alreadySet: new Set(['RESEND_API_KEY']) }).map((p) => p.slot.id);
+    expect(ids).not.toContain('email');
   });
 });
 
 describe('the ladder only names rungs that exist', () => {
-  /** Every (credential, recipe name) pair the registry's browser rungs point at. */
-  function browserRungs(): { cred: string; vars: string[]; recipe: string }[] {
-    const pairs: { cred: string; vars: string[]; recipe: string }[] = [];
-    for (const cred of CREDENTIALS) {
-      for (const step of cred.ladder) {
-        // Only the browser rung carries a recipe; the union's other members have no such field.
-        if (step.method !== 'browser' || !('recipe' in step) || typeof step.recipe !== 'string') continue;
-        pairs.push({ cred: cred.id, vars: cred.vars, recipe: step.recipe });
+  /** Every (slot, option, recipe) the registry's browser rungs point at. */
+  function browserRungs(): { where: string; secrets: string[]; recipe: string }[] {
+    const out: { where: string; secrets: string[]; recipe: string }[] = [];
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        for (const step of option.ladder) {
+          if (step.method !== 'browser' || !('recipe' in step) || typeof step.recipe !== 'string') continue;
+          out.push({ where: `${slot.id}/${option.id}`, secrets: option.secrets, recipe: step.recipe });
+        }
       }
     }
-    return pairs;
+    return out;
   }
 
   it('has a browser recipe for every recipe the registry references', async () => {
     const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
     const rungs = browserRungs();
     expect(rungs.length, 'no browser rungs found — the invariant would be vacuous').toBeGreaterThan(0);
-    for (const { cred, recipe } of rungs) {
-      expect(RECIPES[recipe as keyof typeof RECIPES], `${cred} points at a missing recipe "${recipe}"`).toBeDefined();
+    for (const { where, recipe } of rungs) {
+      expect(RECIPES[recipe as keyof typeof RECIPES], `${where} points at a missing recipe "${recipe}"`).toBeDefined();
     }
   });
 
-  it('points each recipe at a variable its credential actually fills', async () => {
+  it('captures only variables the option actually asks for', async () => {
     const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
-    for (const { cred, vars, recipe } of browserRungs()) {
-      const target = RECIPES[recipe as keyof typeof RECIPES]?.target;
-      expect(vars, `${cred}'s recipe writes ${target}, which it does not own`).toContain(target);
+    for (const { where, secrets, recipe } of browserRungs()) {
+      const captures = RECIPES[recipe as keyof typeof RECIPES]?.captures ?? [];
+      expect(captures.length, `${recipe} captures nothing`).toBeGreaterThan(0);
+      for (const c of captures) {
+        expect(secrets, `${where}'s recipe writes ${c.var}, which that option does not ask for`).toContain(c.var);
+      }
     }
   });
 });

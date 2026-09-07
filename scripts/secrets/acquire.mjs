@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { webcrypto, randomBytes } from 'node:crypto';
-import { CREDENTIALS, AUTOFILL, METHOD_LABELS, NEED } from './registry.mjs';
+import { SLOTS, AUTOFILL, NEED, CEREMONY, chosenOption, ceremonyOf, slotById } from './registry.mjs';
 import { applyEnv, readEnv, presentNames, describe } from './env-file.mjs';
 import * as authmd from './authmd.mjs';
 import * as oauth from './oauth.mjs';
@@ -27,6 +27,7 @@ import * as oauth from './oauth.mjs';
 const { subtle } = webcrypto;
 const DIR = '.secrets';
 const CEREMONIES = join(DIR, 'ceremonies.json');
+const CHOICES = join(DIR, 'choices.json');
 const OUTBOX = join(DIR, 'outbox.json');
 const INBOX = join(DIR, 'inbox');
 const args = process.argv.slice(2);
@@ -35,7 +36,6 @@ const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i
 const flag = (n) => args.includes(`--${n}`);
 const envPath = opt('env', '.env');
 
-const byId = new Map(CREDENTIALS.map((c) => [c.id, c]));
 const readJson = async (p, fallback) => { try { return JSON.parse(await readFile(p, 'utf8')); } catch { return fallback; } };
 const writeJson = async (p, v) => { await mkdir(DIR, { recursive: true }); await writeFile(p, JSON.stringify(v, null, 2) + '\n', { mode: 0o600 }); };
 const rand = (n = 32) => randomBytes(n).toString('base64url');
@@ -44,34 +44,22 @@ const gitConfig = (key) => { try { return execFileSync('git', ['config', '--get'
 /* --------------------------------------------------------------------- plan */
 
 /**
- * What to go and get. There is no question to ask: the registry already knows which
- * credentials this site needs, so the default plan is "everything that is not just tooling".
- * `--credential a,b` narrows it; `--all` adds the optional tooling too.
- *
- * An `alternateOf` group is satisfied by its first member — one embeddings provider is
- * enough, one travel provider is enough — so the ladder stops asking once one lands.
+ * What to go and get. Nothing to ask: the repo says which slots matter, and each slot has
+ * a chosen provider (Tyler & Sara's pick from the page, else the recommendation). An
+ * opt-out option ("just link out", "codes you print") is a real answer — it needs no
+ * credential, so it leaves the plan entirely.
  */
-export function resolvePlan({ credentials = [], all = false, alreadySet = new Set() } = {}) {
-  if (credentials.length) {
-    const named = [];
-    for (const id of credentials) {
-      const cred = byId.get(id);
-      if (cred) named.push({ cred, why: 'asked for by name' });
-    }
-    return named;
-  }
-  const satisfied = new Set();
-  for (const cred of CREDENTIALS) {
-    if (cred.alternateOf && cred.vars.every((v) => alreadySet.has(v))) satisfied.add(cred.alternateOf);
-  }
+export function resolvePlan({ slots = [], all = false, alreadySet = new Set(), choices = {} } = {}) {
+  const wanted = [];
+  if (slots.length) { for (const id of slots) { const slot = slotById.get(id); if (slot) wanted.push(slot); } }
+  else wanted.push(...SLOTS);
   const plan = [];
-  for (const cred of CREDENTIALS) {
-    if (cred.need === 'optional' && !all) continue;
-    if (cred.alternateOf) {
-      if (satisfied.has(cred.alternateOf)) continue;
-      satisfied.add(cred.alternateOf); // take the first (cheapest ladder) member of the group
-    }
-    plan.push({ cred, why: NEED[cred.need] });
+  for (const slot of wanted) {
+    if (slot.need === 'tooling' && !all && !slots.length) continue;
+    const option = chosenOption(slot, choices);
+    if (option.isOptOut) continue;
+    if (option.secrets.length && option.secrets.every((v) => alreadySet.has(v))) continue;
+    plan.push({ slot, option, why: NEED[slot.need] });
   }
   return plan;
 }
@@ -223,31 +211,34 @@ const RUNGS = { authmd: rungAuthmd, register: rungRegister, device: rungDelegate
 /* -------------------------------------------------------------------- run */
 
 async function runLadder(entry, ctx) {
-  const { cred } = entry;
+  const { slot, option } = entry;
+  const cred = { id: slot.id, vars: option.secrets, ladder: option.ladder, host: option.host, warn: option.warn };
   const attempts = [];
   for (const step of cred.ladder) {
     const rung = RUNGS[step.method];
     if (!rung) { attempts.push({ method: step.method, outcome: step.method === 'manual' ? 'left to you' : 'not implemented' }); continue; }
     try {
       const result = await rung(cred, step, ctx);
-      return { credential: cred.id, state: 'acquired', ...result, attempts };
+      return { credential: slot.id, option: option.id, state: 'acquired', ...result, attempts };
     } catch (err) {
       attempts.push({ method: step.method, outcome: err.message, code: err.code || null });
-      if (err.code === 'CEREMONY_PENDING') return { credential: cred.id, state: 'waiting-on-you', method: step.method, attempts };
+      if (err.code === 'CEREMONY_PENDING') return { credential: slot.id, option: option.id, state: 'waiting-on-you', method: step.method, attempts };
       if (err.code === 'AGENT_TASK') { attempts[attempts.length - 1].task = err.task; continue; }
     }
   }
-  return { credential: cred.id, state: 'open', attempts };
+  return { credential: slot.id, option: option.id, state: 'open', attempts };
 }
 
 async function commandRun({ dryRun }) {
   const autofilled = await runAutofill({ dryRun });
   const envText = await readEnv(envPath);
   const already = presentNames(envText);
+  const choices = await readJson(CHOICES, {});
   const plan = resolvePlan({
-    credentials: (opt('credential', '')).split(',').filter(Boolean),
+    slots: (opt('slot', '')).split(',').filter(Boolean),
     all: flag('all'),
     alreadySet: already,
+    choices,
   });
   // The Secret Drop page is the OAuth redirect target: its URL lives in .secrets/page.json,
   // written by build-page.mjs, so a redeploy to a new artifact URL updates the ceremonies too.
@@ -262,7 +253,9 @@ async function commandRun({ dryRun }) {
 
   const results = [];
   for (const entry of plan) {
-    if (entry.cred.vars.every((v) => already.has(v))) { results.push({ credential: entry.cred.id, state: 'already-set', attempts: [] }); continue; }
+    // What the choice itself determines is written straight out — never asked for.
+    const inferred = new Map(Object.entries(entry.option.fills).filter(([, v]) => !/\{[a-z_]+\}/.test(String(v))));
+    if (inferred.size && !dryRun) await applyEnv(inferred, { path: envPath, note: `scripts/secrets/acquire.mjs (implied by ${entry.option.name})` });
     const result = await runLadder(entry, ctx);
     if (result.values?.size && !dryRun) {
       const applied = await applyEnv(result.values, { path: envPath, note: `scripts/secrets/acquire.mjs (${result.method})` });
@@ -283,8 +276,9 @@ async function commandResume() {
   const results = [];
   for (const [credId, ceremony] of Object.entries(ceremonies)) {
     if (ceremony.status === 'done') continue;
-    const cred = byId.get(credId);
-    if (!cred) continue;
+    const slot = slotById.get(credId);
+    if (!slot) continue;
+    const cred = { id: slot.id, vars: chosenOption(slot, await readJson(CHOICES, {})).secrets, ladder: chosenOption(slot, await readJson(CHOICES, {})).ladder };
     const code = await readInboxCode(ceremony.state);
     if (!code) { results.push({ credential: credId, state: 'waiting-on-you', method: ceremony.method }); continue; }
     try {
@@ -330,16 +324,20 @@ export function nextActionFor(cred, result) {
 async function writeOutbox({ autofilled, results }) {
   const ceremonies = await readJson(CEREMONIES, {});
   const present = presentNames(await readEnv(envPath));
+  const choices = await readJson(CHOICES, {});
   const status = {};
-  for (const cred of CREDENTIALS) {
-    const r = results.find((x) => x.credential === cred.id);
+  for (const slot of SLOTS) {
+    const option = chosenOption(slot, choices);
+    const cred = { id: slot.id, vars: option.secrets, ladder: option.ladder };
+    const r = results.find((x) => x.credential === slot.id);
     const set = cred.vars.filter((v) => present.has(v));
-    status[cred.id] = {
-      credential: cred.id,
+    status[slot.id] = {
+      credential: slot.id,
+      option: option.id,
       vars: cred.vars,
       set: set.length,
       of: cred.vars.length,
-      state: r?.state || (set.length === cred.vars.length ? 'already-set' : 'queued'),
+      state: option.isOptOut ? 'skipped' : r?.state || (cred.vars.length && set.length === cred.vars.length ? 'already-set' : 'queued'),
       method: r?.method || null,
       nextAction: nextActionFor(cred, r),
       detail: r?.detail || r?.attempts?.map((a) => `${a.method}: ${a.outcome}`).join(' · ') || null,
@@ -368,17 +366,24 @@ function report({ autofilled, results }) {
 
 async function commandPlan() {
   const already = presentNames(await readEnv(envPath));
+  const choices = await readJson(CHOICES, {});
   const plan = resolvePlan({
-    credentials: (opt('credential', '')).split(',').filter(Boolean),
+    slots: (opt('slot', '')).split(',').filter(Boolean),
     all: flag('all'),
     alreadySet: already,
+    choices,
   });
-  console.log('credential'.padEnd(20), 'need'.padEnd(9), 'best method'.padEnd(12), 'you do'.padEnd(24), 'unlocks');
-  for (const { cred } of plan) {
-    const m = cred.ladder[0].method;
-    console.log(cred.id.padEnd(20), (cred.need || '').padEnd(9), m.padEnd(12), (METHOD_LABELS[m]?.human || '').padEnd(24), cred.unlocks);
+  console.log('slot'.padEnd(12), 'provider'.padEnd(24), 'you do'.padEnd(14), 'asks for'.padEnd(30), 'inferred from the choice');
+  for (const { slot, option } of plan) {
+    console.log(
+      slot.id.padEnd(12), option.name.padEnd(24),
+      CEREMONY[ceremonyOf(option)].label.padEnd(14),
+      (option.secrets.join(', ') || '—').padEnd(30),
+      Object.keys(option.fills).join(', ') || '—',
+    );
   }
-  console.log(`\n${plan.filter((p) => ['device', 'oauth', 'browser'].includes(p.cred.ladder[0].method)).length} of these can need a click from you; the rest are the sandbox's job.`);
+  const asks = plan.filter((p) => CEREMONY[ceremonyOf(p.option)].asksYou).length;
+  console.log(`\n${asks} of ${plan.length} need something from you; the rest are Claude's job.`);
 }
 
 // Only dispatch when run as a command; `resolvePlan` is imported by the page build and tests,
@@ -389,6 +394,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     case 'run': await commandRun({ dryRun: flag('dry-run') }); break;
     case 'resume': await commandResume(); break;
     case 'report': await writeOutbox({ autofilled: [], results: [] }).then(async () => console.log(await readFile(OUTBOX, 'utf8'))); break;
-    default: console.error('usage: acquire.mjs plan|run|resume|report [--credential x,y] [--all] [--wait 300] [--dry-run]'); process.exit(2);
+    default: console.error('usage: acquire.mjs plan|run|resume|report [--slot x,y] [--all] [--wait 300] [--dry-run]'); process.exit(2);
   }
 }

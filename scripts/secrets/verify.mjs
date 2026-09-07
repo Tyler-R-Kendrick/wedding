@@ -9,12 +9,15 @@
  * live path and fail in front of guests — so this is what turns a "set" chip on the Secret
  * Drop page into a "working" chip. Values are read, used once, and never printed.
  */
-import { CREDENTIALS } from './registry.mjs';
+import { SLOTS, chosenOption } from './registry.mjs';
 import { readEnv, parseDotenv } from './env-file.mjs';
+
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
-const only = opt('credential', null);
+const only = opt('slot', null);
 const envPath = opt('env', '.env');
 const env = parseDotenv(await readEnv(envPath));
 const value = (name) => (env.get(name) || process.env[name] || '').trim();
@@ -47,16 +50,20 @@ async function probeOne(cred) {
   }
 }
 
-const targets = CREDENTIALS.filter((c) => c.probe && (!only || c.id === only));
+// Probe the option each slot is actually set to, not every option that exists.
+const choices = existsSync('.secrets/choices.json') ? JSON.parse(await readFile('.secrets/choices.json', 'utf8')) : {};
+const active = SLOTS.filter((s) => !only || s.id === only)
+  .map((slot) => { const option = chosenOption(slot, choices); return { id: slot.id, name: `${slot.name} (${option.name})`, vars: option.secrets, probe: option.probe }; });
+const targets = active.filter((c) => c.probe);
 const results = [];
 for (const cred of targets) results.push(await probeOne(cred));
 
 // Credentials without a probe still get a set/unset answer.
-for (const cred of CREDENTIALS.filter((c) => !c.probe && (!only || c.id === only))) {
+for (const cred of active.filter((c) => !c.probe)) {
   const set = cred.vars.filter((v) => value(v));
   results.push({
     credential: cred.id, vars: cred.vars,
-    state: set.length === cred.vars.length ? 'set' : set.length ? 'partial' : 'missing',
+    state: !cred.vars.length ? 'not needed' : set.length === cred.vars.length ? 'set' : set.length ? 'partial' : 'missing',
     detail: set.length === cred.vars.length ? 'no probe available — presence only' : `${set.length}/${cred.vars.length} variables set`,
   });
 }

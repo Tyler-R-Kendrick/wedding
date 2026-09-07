@@ -44,7 +44,7 @@ await writeFile(out, html);
 
 const pageMeta = existsSync('.secrets/page.json') ? JSON.parse(await readFile('.secrets/page.json', 'utf8')) : {};
 const url = opt('url', pageMeta.url || null);
-await writeFile('.secrets/page.json', JSON.stringify({ url, builtAt: new Date().toISOString(), key: sandboxKey?.kid || null, credentials: registry.credentials.length }, null, 2) + '\n');
+await writeFile('.secrets/page.json', JSON.stringify({ url, builtAt: new Date().toISOString(), key: sandboxKey?.kid || null, slots: registry.slots.length, options: registry.slots.reduce((n, s) => n + s.options.length, 0) }, null, 2) + '\n');
 
-console.log(`Built ${out} (${(html.length / 1024).toFixed(1)} KB) for key ${sandboxKey?.kid || '(none)'} with ${registry.credentials.length} credentials.`);
+console.log(`Built ${out} (${(html.length / 1024).toFixed(1)} KB) for key ${sandboxKey?.kid || '(none)'} — ${registry.slots.length} slots, ${registry.slots.reduce((n, s) => n + s.options.length, 0)} provider options.`);
 console.log(url ? `Redirect target for delegated OAuth: ${url}` : 'No artifact URL recorded yet — pass --url after publishing so OAuth redirects come back to the page.');

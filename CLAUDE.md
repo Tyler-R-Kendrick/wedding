@@ -80,10 +80,14 @@ npm run secrets:verify     # probe what landed: live / rejected / unreachable
 npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
 ```
 
+- Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
+  Supabase or MinIO). Whatever the choice implies — endpoints, regions, bucket names — is
+  computed, never asked. Only the irreducible secret can reach a field.
 - The agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
-  `ceremonies/*`) so pending links become buttons, and drop sealed OAuth codes into
-  `.secrets/inbox/` before `secrets:resume`. Check `handoffs/*` too — that is the couple
-  pressing "Sign in once"; answer it with `node scripts/secrets/browser-capture.mjs relay <host>`.
+  `ceremonies/*`), copy `choices/*` back to `.secrets/choices.json`, and drop sealed OAuth
+  codes into `.secrets/inbox/` before `secrets:resume`. Answer `handoffs/*`:
+  `kind: signin` → `node scripts/secrets/browser-capture.mjs relay <host>`;
+  `kind: link` → start that option's OAuth or device ceremony.
 - Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
   resort, for someone who already holds a key and would rather not wait.
 - Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.

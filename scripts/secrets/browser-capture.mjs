@@ -35,90 +35,108 @@ const RELAY = '.secrets/browser';
  */
 export const RECIPES = {
   'anthropic-console': {
-    host: 'console.anthropic.com',
-    keysUrl: 'https://console.anthropic.com/settings/keys',
-    create: [/create key/i, /create api key/i],
-    nameValue: 'sara-tyler-wedding-sandbox',
-    confirm: [/^create$/i, /^add$/i],
-    keyPattern: /sk-ant-api\d{2}-[A-Za-z0-9_-]{20,}/,
-    target: 'ANTHROPIC_API_KEY',
+    host: 'console.anthropic.com', keysUrl: 'https://console.anthropic.com/settings/keys',
+    create: [/create key/i, /create api key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^create$/i, /^add$/i],
+    captures: [{ var: 'ANTHROPIC_API_KEY', pattern: /sk-ant-api\d{2}-[A-Za-z0-9_-]{20,}/ }],
   },
   'openai-platform': {
-    host: 'platform.openai.com',
-    keysUrl: 'https://platform.openai.com/api-keys',
-    create: [/create new secret key/i, /create secret key/i],
-    nameValue: 'sara-tyler-wedding-sandbox',
-    confirm: [/^create secret key$/i, /^create$/i],
-    keyPattern: /sk-[A-Za-z0-9_-]{20,}/,
-    target: 'OPENAI_API_KEY',
+    host: 'platform.openai.com', keysUrl: 'https://platform.openai.com/api-keys',
+    create: [/create new secret key/i, /create secret key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^create secret key$/i, /^create$/i],
+    captures: [{ var: 'OPENAI_API_KEY', pattern: /sk-[A-Za-z0-9_-]{20,}/ }],
   },
   'voyage-dashboard': {
-    host: 'dashboard.voyageai.com',
-    keysUrl: 'https://dashboard.voyageai.com/api-keys',
-    create: [/create new secret key/i, /create key/i],
-    confirm: [/^create$/i],
-    keyPattern: /pa-[A-Za-z0-9_-]{20,}/,
-    target: 'VOYAGE_API_KEY',
+    host: 'dashboard.voyageai.com', keysUrl: 'https://dashboard.voyageai.com/api-keys',
+    create: [/create new secret key/i, /create key/i], confirm: [/^create$/i],
+    captures: [{ var: 'VOYAGE_API_KEY', pattern: /pa-[A-Za-z0-9_-]{20,}/ }],
   },
   'resend-dashboard': {
-    host: 'resend.com',
-    keysUrl: 'https://resend.com/api-keys',
-    create: [/create api key/i],
-    nameValue: 'sara-tyler-wedding-sandbox',
-    confirm: [/^add$/i, /^create$/i],
-    keyPattern: /re_[A-Za-z0-9_-]{16,}/,
-    target: 'RESEND_API_KEY',
-    api: { url: 'https://api.resend.com/api-keys', method: 'POST', body: { name: 'sara-tyler-wedding-sandbox', permission: 'sending_access' }, field: 'token' },
+    host: 'resend.com', keysUrl: 'https://resend.com/api-keys',
+    create: [/create api key/i], nameValue: 'sara-tyler-wedding-sandbox', confirm: [/^add$/i, /^create$/i],
+    captures: [{ var: 'RESEND_API_KEY', pattern: /re_[A-Za-z0-9_-]{16,}/ }],
+    api: { url: 'https://api.resend.com/api-keys', method: 'POST', body: { name: 'sara-tyler-wedding-sandbox', permission: 'sending_access' }, field: 'token', var: 'RESEND_API_KEY' },
+  },
+  'postmark-dashboard': {
+    host: 'account.postmarkapp.com', keysUrl: 'https://account.postmarkapp.com/servers',
+    create: [/create server/i, /api tokens/i], confirm: [/^create$/i],
+    // Postmark server tokens are UUIDs, which is all the shape we can rely on.
+    captures: [{ var: 'RESEND_API_KEY', pattern: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ }],
+  },
+  'aws-ses': {
+    host: 'console.aws.amazon.com', keysUrl: 'https://console.aws.amazon.com/ses/home#/smtp',
+    create: [/create smtp credentials/i, /create credentials/i], confirm: [/^create$/i, /^download/i],
+    captures: [{ var: 'RESEND_API_KEY', pattern: /[A-Za-z0-9/+=]{40}/ }],
+    manualNote: 'SES SMTP credentials are shown once, on a download screen.',
+  },
+  'aws-iam-s3': {
+    host: 'console.aws.amazon.com', keysUrl: 'https://console.aws.amazon.com/iam/home#/security_credentials',
+    create: [/create access key/i], confirm: [/^create access key$/i, /^create$/i],
+    captures: [
+      { var: 'S3_ACCESS_KEY_ID', pattern: /AKIA[0-9A-Z]{16}/ },
+      { var: 'S3_SECRET_ACCESS_KEY', pattern: /(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/ },
+    ],
+  },
+  'backblaze-b2': {
+    host: 'secure.backblaze.com', keysUrl: 'https://secure.backblaze.com/app_keys.htm',
+    create: [/add a new application key/i, /create.*key/i], confirm: [/^create new key$/i, /^create$/i],
+    captures: [
+      { var: 'S3_ACCESS_KEY_ID', pattern: /\b[0-9a-f]{25}\b/ },
+      { var: 'S3_SECRET_ACCESS_KEY', pattern: /\bK[0-9]{3}[A-Za-z0-9+/]{27}\b/ },
+    ],
   },
   'fal-dashboard': {
-    host: 'fal.ai',
-    keysUrl: 'https://fal.ai/dashboard/keys',
-    create: [/add key/i, /create key/i, /new key/i],
-    confirm: [/^create$/i, /^add$/i],
-    keyPattern: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[0-9a-f]{32}/,
-    target: 'FAL_KEY',
+    host: 'fal.ai', keysUrl: 'https://fal.ai/dashboard/keys',
+    create: [/add key/i, /create key/i, /new key/i], confirm: [/^create$/i, /^add$/i],
+    captures: [{ var: 'FAL_KEY', pattern: /[0-9a-f-]{36}:[0-9a-f]{32}/ }],
   },
   'duffel-dashboard': {
-    host: 'app.duffel.com',
-    keysUrl: 'https://app.duffel.com/settings/access-tokens',
-    create: [/create access token/i, /new token/i],
-    confirm: [/^create$/i],
-    keyPattern: /duffel_(test|live)_[A-Za-z0-9_-]{20,}/,
-    target: 'DUFFEL_API_KEY',
+    host: 'app.duffel.com', keysUrl: 'https://app.duffel.com/settings/access-tokens',
+    create: [/create access token/i, /new token/i], confirm: [/^create$/i],
+    captures: [{ var: 'DUFFEL_API_KEY', pattern: /duffel_(test|live)_[A-Za-z0-9_-]{20,}/ }],
   },
   'cloudflare-r2': {
-    host: 'dash.cloudflare.com',
-    keysUrl: 'https://dash.cloudflare.com/?to=/:account/r2/api-tokens',
-    create: [/create api token/i],
-    confirm: [/^create api token$/i, /^create$/i],
-    keyPattern: /[A-Za-z0-9_-]{40,}/,
-    target: 'S3_SECRET_ACCESS_KEY',
-    manualNote: 'R2 shows the access key id and secret on one screen; the recipe reads both.',
+    host: 'dash.cloudflare.com', keysUrl: 'https://dash.cloudflare.com/?to=/:account/r2/api-tokens',
+    create: [/create api token/i], confirm: [/^create api token$/i, /^create$/i],
+    captures: [
+      { var: 'S3_ACCESS_KEY_ID', pattern: /\b[0-9a-f]{32}\b/ },
+      { var: 'S3_SECRET_ACCESS_KEY', pattern: /\b[0-9a-f]{64}\b/ },
+    ],
   },
   'cloudflare-stream': {
-    host: 'dash.cloudflare.com',
-    keysUrl: 'https://dash.cloudflare.com/?to=/:account/stream',
-    create: [/create api token/i, /create token/i],
-    confirm: [/^create api token$/i, /^create$/i],
-    keyPattern: /[A-Za-z0-9_-]{40,}/,
-    target: 'CLOUDFLARE_STREAM_API_TOKEN',
-    manualNote: 'The account id is in the dashboard URL; the customer code appears on the Stream page.',
+    host: 'dash.cloudflare.com', keysUrl: 'https://dash.cloudflare.com/?to=/:account/stream',
+    create: [/create api token/i, /create token/i], confirm: [/^create api token$/i, /^create$/i],
+    captures: [{ var: 'CLOUDFLARE_STREAM_API_TOKEN', pattern: /[A-Za-z0-9_-]{40,}/ }],
   },
   'supabase-dashboard': {
-    host: 'supabase.com',
-    keysUrl: 'https://supabase.com/dashboard/project/_/settings/database',
+    host: 'supabase.com', keysUrl: 'https://supabase.com/dashboard/project/_/settings/database',
     create: [],
-    keyPattern: /postgres(ql)?:\/\/[^\s"'<>]+/,
-    target: 'DATABASE_URL',
+    captures: [{ var: 'DATABASE_URL', pattern: /postgres(ql)?:\/\/[^\s"'<>]+/ }],
+  },
+  'supabase-s3': {
+    host: 'supabase.com', keysUrl: 'https://supabase.com/dashboard/project/_/settings/storage',
+    create: [/new access key/i, /create.*key/i], confirm: [/^create$/i],
+    captures: [
+      { var: 'S3_ACCESS_KEY_ID', pattern: /\b[0-9a-f]{32}\b/ },
+      { var: 'S3_SECRET_ACCESS_KEY', pattern: /\b[0-9a-f]{64}\b/ },
+    ],
+  },
+  'neon-console': {
+    host: 'console.neon.tech', keysUrl: 'https://console.neon.tech/app/projects',
+    create: [/connection string/i, /connect/i],
+    captures: [{ var: 'DATABASE_URL', pattern: /postgres(ql)?:\/\/[^\s"'<>]+/ }],
+  },
+  'vercel-dashboard': {
+    host: 'vercel.com', keysUrl: 'https://vercel.com/dashboard/stores',
+    create: [/create database/i, /connect store/i],
+    captures: [{ var: 'DATABASE_URL', pattern: /postgres(ql)?:\/\/[^\s"'<>]+/ }],
   },
   'uber-dashboard': {
-    host: 'developer.uber.com',
-    keysUrl: 'https://developer.uber.com/dashboard',
+    host: 'developer.uber.com', keysUrl: 'https://developer.uber.com/dashboard',
     create: [],
-    keyPattern: /[A-Za-z0-9_-]{32,}/,
-    target: 'UBER_CLIENT_SECRET',
+    captures: [
+      { var: 'UBER_CLIENT_ID', pattern: /\b[A-Za-z0-9_-]{32}\b/ },
+      { var: 'UBER_CLIENT_SECRET', pattern: /\b[A-Za-z0-9_-]{40,}\b/ },
+    ],
   },
-  'openai-platform-alt': { host: 'platform.openai.com', keysUrl: 'https://platform.openai.com/settings/organization/api-keys', create: [/create new secret key/i], keyPattern: /sk-[A-Za-z0-9_-]{20,}/, target: 'OPENAI_API_KEY' },
 };
 
 const sessionPath = (host) => join(SESSIONS, `${host.replace(/[^a-z0-9.-]/gi, '_')}.json`);
@@ -146,7 +164,7 @@ async function viaApi(recipe, token, userAgent) {
   if (!res.ok) throw new Error(`${recipe.host} refused the key request (${res.status})`);
   const value = json[recipe.api.field];
   if (!value) throw new Error(`${recipe.host} returned no ${recipe.api.field}`);
-  return value;
+  return new Map([[recipe.api.var, value]]);
 }
 
 /* ------------------------------------------------ steady path: authed browser */
@@ -163,12 +181,21 @@ async function clickAny(page, names) {
 }
 
 /** Everything the page renders, plus input values — keys often live in a readonly input. */
-async function harvest(page, pattern) {
-  const text = await page.evaluate(() => {
+async function pageText(page) {
+  return page.evaluate(() => {
     const values = [...document.querySelectorAll('input,textarea')].map((el) => el.value || '');
     return [document.body?.innerText || '', ...values].join('\n');
   });
-  return text.match(pattern)?.[0] || null;
+}
+
+/** Pull every variable a recipe declares out of the rendered text, by shape. */
+function harvest(text, recipe) {
+  const found = new Map();
+  for (const { var: name, pattern } of recipe.captures) {
+    const m = text.match(pattern);
+    if (m) found.set(name, m[0]);
+  }
+  return found;
 }
 
 /**
@@ -194,8 +221,8 @@ export async function browseForKey(recipe, { timeoutMs = 60_000 } = {}) {
       err.code = 'NEEDS_HANDOFF';
       throw err;
     }
-    let value = await harvest(page, recipe.keyPattern);
-    if (!value && recipe.create?.length) {
+    let found = harvest(await pageText(page), recipe);
+    if (found.size < recipe.captures.length && recipe.create?.length) {
       await clickAny(page, recipe.create);
       await page.waitForTimeout(1500);
       if (recipe.nameValue) {
@@ -203,12 +230,15 @@ export async function browseForKey(recipe, { timeoutMs = 60_000 } = {}) {
         if (await field.count().catch(() => 0)) await field.fill(recipe.nameValue).catch(() => {});
       }
       if (recipe.confirm?.length) { await clickAny(page, recipe.confirm); await page.waitForTimeout(2500); }
-      value = await harvest(page, recipe.keyPattern);
+      found = harvest(await pageText(page), recipe);
     }
     // Refresh the session file: dashboards rotate their cookies.
     await context.storageState({ path: store });
-    if (!value) throw new Error(`signed in to ${recipe.host}, but no value matching the expected key format appeared`);
-    return value;
+    if (found.size < recipe.captures.length) {
+      const missing = recipe.captures.map((c) => c.var).filter((v) => !found.has(v));
+      throw new Error(`signed in to ${recipe.host}, but nothing matching ${missing.join(' and ')} appeared`);
+    }
+    return found;
   } finally { await browser.close(); }
 }
 
@@ -216,14 +246,11 @@ export async function browseForKey(recipe, { timeoutMs = 60_000 } = {}) {
 export async function capture(cred, step, ctx = {}) {
   const recipe = RECIPES[step.recipe];
   if (!recipe) throw new Error(`no browser recipe named ${step.recipe}`);
-  const target = recipe.target || cred.vars[0];
   const token = ctx.tokens?.[cred.id];
   if (recipe.api && token) {
-    const value = await viaApi(recipe, token, ctx.userAgent || 'sara-tyler-wedding-site/0.1');
-    return { values: new Map([[target, value]]), method: 'browser', detail: `minted through ${recipe.host}'s API with the token you authorized` };
+    return { values: await viaApi(recipe, token, ctx.userAgent || 'sara-tyler-wedding-site/0.1'), method: 'browser', detail: `minted through ${recipe.host}'s API with the token you authorized` };
   }
-  const value = await browseForKey(recipe);
-  return { values: new Map([[target, value]]), method: 'browser', detail: `read from ${recipe.host} using the session you handed over` };
+  return { values: await browseForKey(recipe), method: 'browser', detail: `read from ${recipe.host} using the session you handed over` };
 }
 
 /* --------------------------------------------------------------- the relay */
@@ -285,6 +312,6 @@ async function unseal(envelope, privKey) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [cmd, arg] = process.argv.slice(2);
   if (cmd === 'relay' && arg) await relay(arg);
-  else if (cmd === 'list') for (const [id, r] of Object.entries(RECIPES)) console.log(id.padEnd(24), r.host.padEnd(26), r.target, existsSync(sessionPath(r.host)) ? '(session saved)' : '');
+  else if (cmd === 'list') for (const [id, r] of Object.entries(RECIPES)) console.log(id.padEnd(22), r.host.padEnd(26), r.captures.map((c) => c.var).join(', ').padEnd(46), existsSync(sessionPath(r.host)) ? '(session saved)' : '');
   else { console.error('usage: browser-capture.mjs list | relay <recipe|host>'); process.exit(2); }
 }

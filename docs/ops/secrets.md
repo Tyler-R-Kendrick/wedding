@@ -18,33 +18,55 @@ into chat sends them through the model. This repo answers that twice over:
 Secret Drop page: <https://claude.ai/code/artifact/1f7c6ffb-f3f3-456e-8ebb-623f5124782c>
 (private artifact; rebuild and republish it with `npm run secrets:page`).
 
-## The ladder
+## Slots and provider options
 
-Every credential in `scripts/secrets/registry.mjs` declares an ordered ladder. `acquire.mjs`
-walks it top to bottom and stops at the first rung that works.
+Every connection is a **slot** — a job to be done — and each slot has several **provider
+options**, because there is rarely one right answer. S3-compatible storage alone can be
+Cloudflare R2, AWS, Backblaze, Supabase or a MinIO you host; they differ mainly in what
+signing up costs a person. `scripts/secrets/registry.mjs` declares them, and the Secret Drop
+page lets Tyler & Sara switch between them with one press.
 
-| Rung | What happens | What you do |
+| Slot | Options (recommended first) |
+|---|---|
+| Guest email | Resend · Postmark · Amazon SES |
+| Photo & video storage | Cloudflare R2 · Amazon S3 · Backblaze B2 · Supabase Storage · your own MinIO |
+| Database | Supabase · Neon · Vercel Postgres · a Postgres you already have |
+| AI concierge | Anthropic · OpenAI |
+| Photo & story search | Voyage AI · OpenAI |
+| Video playback | Cloudflare Stream · skip it |
+| Flights & hotels | Duffel · Skyscanner · Booking.com · just link out |
+| Ride vouchers | Uber for Business · codes you print |
+| Design imagery | fal.ai · Google Stitch · Openverse · skip it |
+
+Two rules keep the form short:
+
+- **`fills`** — settings the choice itself determines. Picking R2 fixes the endpoint, region,
+  bucket and path style; picking Backblaze fixes different ones. Four settings that used to be
+  four fields are now a consequence of one press.
+- **`secrets`** — the irreducible material a provider hands out once. Only these can ever reach
+  a field, and only after every ceremony above them has failed.
+
+## What a person is ever asked to do
+
+| Ceremony | What happens | Presses |
 |---|---|---|
-| `generate` | Random material minted in the sandbox (`CRON_SECRET`, `BETTER_AUTH_SECRET`, …) | nothing |
-| `derive` | Computed from another value, the repo, or `git config user.email` | nothing |
-| `detect` | Found on this machine (Chromium, ffmpeg) | nothing |
-| `mcp` | A connected MCP server provisions it (Supabase, Vercel, Cloudflare) | nothing |
-| `authmd` | The agent registers *itself* under [auth.md](https://github.com/workos/auth.md) | nothing, unless the provider asks you to claim the identity |
-| `register` | A documented anonymous self-registration endpoint (Openverse) | nothing |
-| `device` | RFC 8628 device authorization | open one link |
-| `oauth` | Authorization code + PKCE; the Secret Drop page is the redirect target | open one link |
-| `browser` | The agent drives Chromium against a dashboard you signed into once | one sign-in, ever |
-| `manual` | Paste the value | copy and paste |
+| **Automatic** | Claude registers itself (auth.md), provisions through an MCP server, or signs itself up | 0 |
+| **One link** | Approve in your browser; the code rides inside the link, so nothing is typed on the provider's site | 1 |
+| **Sign in once** | You sign in as yourself; Claude reads the key off the dashboard from then on | 1 |
+| **Application** | A human at the provider reviews it (Skyscanner, Booking.com) | 1 |
+| **Paste a key** | Nothing can obtain it on your behalf | 2 |
 
-Nineteen variables sit at `generate`/`derive`/`detect` and are never shown on the page at
-all. Two credentials (Skyscanner, Booking.com) are reviewed partner applications with no
-endpoint that can mint a key — those are honestly marked `paste`, and the page says why.
+Internally each option still declares an ordered ladder — `generate`, `derive`, `detect`,
+`mcp`, `authmd`, `register`, `device`, `oauth`, `browser`, `manual` — and `acquire.mjs` walks
+it. The five ceremonies above are what that ladder *feels* like from the other side.
+
+Seventeen variables sit at `generate`/`derive`/`detect` and never appear on the page at all.
 
 ## Pieces
 
 | Piece | Role |
 |---|---|
-| `scripts/secrets/registry.mjs` | Single source of truth: credentials, ladders, probes, and the outcomes ("send real e-mails") they serve. The page is *built* from it, so it cannot describe a route the sandbox won't take. |
+| `scripts/secrets/registry.mjs` | Single source of truth: slots, their provider options, ladders, probes, and which settings each choice implies. The page is *built* from it, so it cannot describe a route the sandbox won't take. |
 | `scripts/secrets/acquire.mjs` | Runs the ladder; writes `.env`; emits `.secrets/outbox.json` (pending ceremonies + status) for the agent to mirror into the page. |
 | `scripts/secrets/authmd.mjs` | auth.md client: RFC 9728/8414 discovery of the `agent_auth` block, identity registration (`anonymous`, `service_auth`, `identity_assertion`), JWT-bearer token exchange, and the device-code-style claim ceremony. |
 | `scripts/secrets/oauth.mjs` | RFC 8628 device grant, RFC 7591 dynamic client registration, PKCE authorize URLs and code exchange. |
@@ -62,7 +84,7 @@ endpoint that can mint a key — those are honestly marked `paste`, and the page
 npm run secrets:autofill                        # everything that needs no account
 npm run secrets:plan                            # what it will do, and what (if anything) you'd click
 npm run secrets:acquire                         # do it — no arguments; the repo says what is needed
-npm run secrets:acquire -- --credential resend  # narrow it to one
+npm run secrets:acquire -- --slot email         # narrow it to one slot
 npm run secrets:acquire -- --all                # include the optional tooling (fal, Stitch, Openverse)
 npm run secrets:resume                          # finish ceremonies you have since approved
 npm run secrets:verify                          # is what landed actually accepted by the provider?
@@ -72,14 +94,14 @@ npm run secrets:page                            # rebuild the artifact HTML afte
 
 ### How the plan is derived
 
-| `need` | Meaning | Members |
+| `need` | Meaning | Slots |
 |---|---|---|
-| `launch` | `src/lib/env.ts` refuses to boot production without it, or it powers a planned surface | Resend, S3 storage, Anthropic |
-| `feature` | A shipped page degrades honestly without it | Postgres, Cloudflare Stream, embeddings, travel, Uber |
-| `optional` | Tooling for us, invisible to guests — needs `--all` | fal.ai, Stitch, Openverse |
+| `launch` | `src/lib/env.ts` refuses to boot production without it, or it powers a planned surface | guest email, storage, concierge |
+| `feature` | A shipped page degrades honestly without it | database, search, video, travel, rides |
+| `tooling` | For us, invisible to guests — needs `--all`, or a press on the page | design imagery |
 
-`alternateOf` groups mean **one is enough**: any embeddings provider, any travel provider.
-The queue shows the group once and stops asking as soon as one member lands.
+Choosing an **opt-out** option ("just link out", "codes you print", "skip it") is a real
+answer: the slot leaves the plan entirely and nothing is asked about it again.
 
 ## The loop, end to end
 
@@ -109,7 +131,8 @@ The page is a status board for work already under way, not a form to complete. M
 |---|---|---|
 | `status/<credential>` | agent | live state + `nextAction` the page renders |
 | `ceremonies/<credential>` | agent | a link waiting for a human |
-| `handoffs/<credential>` | **the page** | "sign me in" — start `browser-capture.mjs relay <host>` |
+| `choices/<slot>` | **the page** | which provider option is in force; mirror to `.secrets/choices.json` |
+| `handoffs/<slot>` | **the page** | `kind: signin` → run `browser-capture.mjs relay <host>`; `kind: link` → start the OAuth/device ceremony |
 | `envelopes/<VAR>` | the page | a sealed value to apply |
 
 An authorization-code provider redirects back to the page, which seals the one-time code

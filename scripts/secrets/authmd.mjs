@@ -16,7 +16,7 @@
  * Nothing here prints a token. The CLI prints capability, not credentials:
  *   NODE_USE_ENV_PROXY=1 node scripts/secrets/authmd.mjs discover resend.com fal.ai
  */
-import { CREDENTIALS } from './registry.mjs';
+import { SLOTS } from './registry.mjs';
 
 const UA = process.env.ASSETS_USER_AGENT || 'sara-tyler-wedding-site/0.1 (secret-drop)';
 const TIMEOUT = 12_000;
@@ -188,7 +188,9 @@ async function main() {
     console.error('usage: authmd.mjs discover [origin ...]   (registration runs through acquire.mjs)');
     process.exit(2);
   }
-  const origins = rest.length ? rest : [...new Set(CREDENTIALS.flatMap((c) => c.ladder.filter((s) => s.method === 'authmd').map((s) => s.origin)))];
+  const origins = rest.length ? rest : [...new Set(
+    SLOTS.flatMap((slot) => slot.options.flatMap((o) => o.ladder.filter((s) => s.method === 'authmd').map((s) => s.origin))).filter(Boolean),
+  )];
   console.log('origin'.padEnd(34), 'agent_auth'.padEnd(11), 'identity types'.padEnd(38), 'notes');
   for (const origin of origins) {
     const meta = await discover(origin);
