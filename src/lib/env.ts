@@ -158,6 +158,19 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
   const isProduction = e.NODE_ENV === 'production';
   // `next build` evaluates route modules without runtime secrets; the boot-time check still runs when the server starts.
   const isBuildPhase = source.NEXT_PHASE === 'phase-production-build';
+  /**
+   * A deployed app is never a test run (swarm K, finding 5).
+   *
+   * `NODE_ENV=test` opens the test-principal gate: two headers and a secret become any guest or any
+   * admin. On a developer's machine or in CI that is the point; on a deployment it is a header away
+   * from full authority, and every level since 06 has leaned harder on that injector. Refuse to
+   * boot rather than serve. CI is deliberately NOT a marker — CI is exactly where NODE_ENV=test
+   * belongs.
+   */
+  if (e.NODE_ENV === 'test' && (source.VERCEL || source.VERCEL_ENV)) {
+    throw new Error('NODE_ENV=test is not allowed on a deployed app (VERCEL is set). Use development or production.');
+  }
+
   if (isProduction && !isBuildPhase) {
     // RESEND_API_KEY + EMAIL_FROM: production must never route one-time codes to the in-memory dev inbox (review S6).
     const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'RESEND_API_KEY', 'EMAIL_FROM'];
@@ -172,6 +185,20 @@ function load(source: NodeJS.ProcessEnv): ServerEnv {
     if (e.RATE_LIMIT_BACKEND === 'memory') throw new Error('RATE_LIMIT_BACKEND=memory is not allowed in production (per-process buckets are not a rate limit behind a load balancer)');
   }
   const TRUSTED_PROXY_HOPS = e.TRUSTED_PROXY_HOPS ?? (source.VERCEL ? 1 : 0);
+  /**
+   * With 0 hops every forwarding header is ignored — correctly, because nothing overwrites them —
+   * so every client collapses to the single `direct` rate-limit bucket and one visitor can hold the
+   * whole site's anonymous budget down. That is the right default when nothing is in front of the
+   * app and the wrong one behind nginx or Cloudflare, so say it out loud rather than failing
+   * quietly. The counterpart to the `getClientIp` fix at level 12: that one stops a caller MINTING
+   * buckets, this one stops everyone SHARING one. console, not the logger: this runs at first
+   * import, before anything is configured.
+   */
+  if (TRUSTED_PROXY_HOPS === 0 && isProduction && !isBuildPhase) {
+    console.warn(
+      '[env] TRUSTED_PROXY_HOPS=0: forwarding headers are ignored and every client shares one rate-limit bucket. Set it to the number of proxies in front of this app.',
+    );
+  }
   return { ...e, TRUSTED_PROXY_HOPS, isProduction, isTest: e.NODE_ENV === 'test', isDevelopment: e.NODE_ENV === 'development' };
 }
 

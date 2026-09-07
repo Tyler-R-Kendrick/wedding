@@ -63,9 +63,13 @@ describe('server env', () => {
   });
 
   it('resolves TRUSTED_PROXY_HOPS: explicit value, else 1 on Vercel, else 0', () => {
+    // The Vercel cases run as `development`, not `test`: level 13 refuses to boot with
+    // NODE_ENV=test alongside a deploy marker (that combination opens the test-principal gate on a
+    // deployment), so the pairing this test used to express is now impossible by design. The
+    // subject here is the hop arithmetic, not the environment name.
     expect(parseServerEnv({ NODE_ENV: 'test' }).TRUSTED_PROXY_HOPS).toBe(0);
-    expect(parseServerEnv({ NODE_ENV: 'test', VERCEL: '1' }).TRUSTED_PROXY_HOPS).toBe(1);
-    expect(parseServerEnv({ NODE_ENV: 'test', VERCEL: '1', TRUSTED_PROXY_HOPS: '2' }).TRUSTED_PROXY_HOPS).toBe(2);
+    expect(parseServerEnv({ NODE_ENV: 'development', VERCEL: '1' }).TRUSTED_PROXY_HOPS).toBe(1);
+    expect(parseServerEnv({ NODE_ENV: 'development', VERCEL: '1', TRUSTED_PROXY_HOPS: '2' }).TRUSTED_PROXY_HOPS).toBe(2);
     expect(parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: '0' }).TRUSTED_PROXY_HOPS).toBe(0);
     expect(() => parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: '-1' })).toThrow(/TRUSTED_PROXY_HOPS/);
     expect(() => parseServerEnv({ NODE_ENV: 'test', TRUSTED_PROXY_HOPS: 'many' })).toThrow(/TRUSTED_PROXY_HOPS/);

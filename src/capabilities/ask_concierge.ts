@@ -1,9 +1,15 @@
 import { z } from 'zod';
 import { runConcierge } from '@/ai/concierge';
 import { defineCapability } from '@/contracts/capability';
-import { ok } from '@/contracts/result';
+import { CapabilityError } from '@/contracts/errors';
+import { toPrincipalRef } from '@/contracts/principal';
+import { err, ok } from '@/contracts/result';
 import { TRUST_CLASSES } from '@/contracts/provenance';
+import type { Db } from '@/db/client';
 import { AI_ANSWER_STATUSES } from '@/db/schema/ai';
+import { principalKey } from '@/policy/confirmation';
+import { getProvider } from '@/providers/registry';
+import { requireService } from './services';
 
 const input = z.object({
   question: z.string().trim().min(2).max(2000),
@@ -69,6 +75,26 @@ export const askConcierge = defineCapability<z.infer<typeof input>, AskConcierge
   output,
   maxOutputChars: 16_000,
   async handler(ctx, { question, sessionId }) {
+    // The model budget is charged HERE, not at a route, because this capability is a second door to
+    // exactly the work `/api/ai/chat` does — and that route meters it on the `concierge` policy
+    // (20 burst, 1 per 3s) while a capability call was paying only the generic `capability` one
+    // (60 burst, 1 per second): three times the burst and three times the sustained rate, on a
+    // bucket that knows nothing about model cost. Level 13 made that reachable by an agent and
+    // advertised it in the anonymous manifest, but the gap is older than this level — the `ui` door
+    // at /api/capabilities/ask_concierge had it too. Metering in the capability closes every door
+    // at once, including any a later level adds.
+    //
+    // Same key shape as the chat route, so the two doors share one budget rather than having one
+    // each: a guest cannot ask twice as many questions by alternating between them.
+    const db = requireService<Db>(ctx, 'db');
+    const limiter = getProvider('rate-limit', { db });
+    const ip = ctx.services.clientIp;
+    const key = ctx.principal.kind === 'anonymous' ? `ai:anon:${typeof ip === 'string' && ip ? ip : 'unknown'}` : `ai:${principalKey(toPrincipalRef(ctx.principal))}`;
+    const decision = await limiter.consume(key, 'concierge');
+    if (!decision.allowed) {
+      return err(new CapabilityError('rate_limited', 'Too many questions at once. Please wait a moment.', { retryAfterMs: decision.retryAfterMs }));
+    }
+
     const result = await runConcierge({ ctx, question, sessionId });
     const { sessionId: sid, answerId, status, text, sources, refusal, confirmations, navigate, intent, toolsSelected } = result;
     return ok({

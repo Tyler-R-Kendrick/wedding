@@ -1,0 +1,169 @@
+import 'server-only';
+import { z } from 'zod';
+import { createCapabilityContext } from '@/capabilities';
+import { CapabilityError } from '@/contracts/errors';
+import { READINESS_GATED, type FeatureFlag, type FlagValues } from '@/contracts/flags';
+import { ID_PATTERN } from '@/contracts/ids';
+import { toPrincipalRef, type Principal } from '@/contracts/principal';
+import { getDb, type Db } from '@/db/client';
+import { env } from '@/lib/env';
+import { getFlags, isReady } from '@/lib/flags';
+import { getPrincipal } from '@/lib/principal';
+import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
+import { principalKey } from '@/policy/confirmation';
+import { getProvider } from '@/providers/registry';
+import type { RateLimitPolicy } from '@/providers/rate-limit/types';
+import { buildManifest } from '../manifest';
+import { assertSameOriginFetch, errorResponse, featureDisabled, outcomeResponse, rateLimited } from './http';
+import { invokeForWebMcp } from './invoke';
+import { webMcpRegistry } from './registry';
+
+export const WEBMCP_NAME = /^[a-z][a-z0-9_]{2,63}$/;
+/** Tool inputs are small; a quarter of the UI route's cap is generous. */
+export const WEBMCP_MAX_BODY_BYTES = 64 * 1024;
+
+export const WEBMCP_BODY_SCHEMA = z.object({
+  input: z.unknown().optional(),
+  /**
+   * A ULID, minted fresh per execute call by the bridge client. The UI route's documented contract
+   * is looser (8-128 chars, `docs/architecture/capability-layer.md`) because the page has its own
+   * callers; this surface has exactly one client, our own, so the format it documents is the format
+   * it enforces rather than something a reader has to take on trust.
+   */
+  idempotencyKey: z.string().regex(ID_PATTERN, 'idempotencyKey must be a ULID').optional(),
+});
+
+/**
+ * Just the installed resolver. Swarm K shipped its own `testPrincipalFromRequest` and consulted it
+ * first — the SIXTH swarm-local principal resolver, after the ones deleted at levels 07, 09, 10, 11
+ * and 12. It is redundant here: `src/instrumentation.ts` installs the canonical test-principal
+ * resolver at boot (wrapping the real one, gated on NODE_ENV=test plus a >=16-char TEST_AUTH_SECRET),
+ * so `getPrincipal` already honours the same two headers with the same gate. A second resolver in
+ * front of it can only drift from it.
+ *
+ * Nothing is registered here either: the synthetic fixtures live in the bridge's own registry and
+ * are installed once at module load (`./registry.ts`), so serving a request can never change what
+ * the app can do.
+ */
+async function resolvePrincipal(request: Request): Promise<Principal> {
+  return getPrincipal(request);
+}
+
+const limiterKeyFor = (principal: Principal, ip: string) =>
+  principal.kind === 'anonymous' ? `webmcp:anon:${ip}` : `webmcp:${principalKey(toPrincipalRef(principal))}`;
+
+/**
+ * The manifest gets its own bucket, separate from the shared `capability` one.
+ *
+ * Before this level a page view cost zero capability-limiter tokens. Now every WebMCP-capable page
+ * load fetches the manifest, and it refreshes on client-side navigation and on returning to the
+ * tab — so charging it to the same 60-token bucket that `/api/capabilities` uses would let ordinary
+ * wedding-weekend traffic 429 the capability layer for everyone. This is a cheap authenticated
+ * read of data the caller is allowed to see, so it is metered generously and separately: a flood
+ * still hits the coarse per-IP guard first.
+ */
+const MANIFEST_POLICY: RateLimitPolicy = { capacity: 240, refillPerSecond: 4 };
+const manifestKeyFor = (principal: Principal, ip: string) =>
+  principal.kind === 'anonymous' ? `webmcp:manifest:anon:${ip}` : `webmcp:manifest:${principalKey(toPrincipalRef(principal))}`;
+
+/**
+ * Which readiness-gated flags are on in the environment but not switched on in the database?
+ * `invoke` fails those closed (step 1), so the manifest must not advertise them: a tool that
+ * always answers `feature_disabled` is noise, and its presence discloses that a legally gated
+ * feature (BIPA face matching, third-party media processing) exists at all.
+ */
+async function unreadyGatedFlags(flags: FlagValues, db: Db): Promise<ReadonlySet<FeatureFlag>> {
+  const unready = new Set<FeatureFlag>();
+  for (const flag of READINESS_GATED) {
+    if (!flags[flag]) continue; // already excluded by the plain flag filter
+    if (!(await isReady(flag, db))) unready.add(flag);
+  }
+  return unready;
+}
+
+/**
+ * GET /api/webmcp/manifest -> { ok: true, data: WebMcpManifest }
+ * Only descriptors with `exposure.webmcp` that `authorize()` allows for the current principal.
+ * Personalized, so `Cache-Control: private, no-store`. Omission is UX minimisation; the bridge
+ * re-authorizes every call.
+ */
+export async function handleManifest(request: Request): Promise<Response> {
+  const requestId = getRequestId(request.headers);
+  const flags = getFlags();
+  if (!flags.WEBMCP) return featureDisabled(requestId);
+
+  const db = await getDb();
+  const limiter = getProvider('rate-limit', { db });
+  const ip = getClientIp(request.headers, env.TRUSTED_PROXY_HOPS);
+  const ipDecision = await limiter.consume(`cap:ip:${ip}`, 'capabilityIp');
+  if (!ipDecision.allowed) return rateLimited(ipDecision.retryAfterMs, requestId);
+
+  const principal = await resolvePrincipal(request);
+  if (principal.kind !== 'anonymous') {
+    const sameOrigin = assertSameOriginFetch(request);
+    if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
+  }
+  const decision = await limiter.consume(manifestKeyFor(principal, ip), MANIFEST_POLICY);
+  if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
+
+  const unreadyFlags = await unreadyGatedFlags(flags, db);
+  return jsonResponse({ ok: true, data: buildManifest({ registry: webMcpRegistry, principal, flags, unreadyFlags }) }, { requestId });
+}
+
+/**
+ * POST /api/webmcp/invoke/<name>  { input, idempotencyKey? }
+ * The WebMCP bridge. Same guards as the UI route, in the same order (per-IP limiter before
+ * anything is read, principal, CSRF for EVERY caller because only page script may call this,
+ * per-principal limiter, hard-capped body), but the context is built with `surface: 'webmcp'`
+ * server-side. No header or body field can claim a surface; a confirmation token in the body is
+ * ignored (nothing issued to an agent is redeemable).
+ */
+export async function handleInvoke(request: Request, name: string): Promise<Response> {
+  const requestId = getRequestId(request.headers);
+  if (!WEBMCP_NAME.test(name)) return errorResponse(new CapabilityError('not_found', 'That action is not available.'), requestId);
+  const flags = getFlags();
+  if (!flags.WEBMCP) return featureDisabled(requestId);
+
+  const db = await getDb();
+  const limiter = getProvider('rate-limit', { db });
+  const ip = getClientIp(request.headers, env.TRUSTED_PROXY_HOPS);
+  const ipDecision = await limiter.consume(`cap:ip:${ip}`, 'capabilityIp');
+  if (!ipDecision.allowed) return rateLimited(ipDecision.retryAfterMs, requestId);
+
+  const principal = await resolvePrincipal(request);
+  const sameOrigin = assertSameOriginJson(request);
+  if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
+  // Anonymous callers are metered here, by IP, because there is no principal to key on. A SIGNED-IN
+  // caller is metered by the pipeline instead (`rateLimit` below), on the same `cap:<principal>`
+  // bucket the website and every server action share — which is the whole point of putting the
+  // limiter inside `invoke` at level 07: "so every entry point shares one budget". Metering signed-in
+  // callers here as well would have given one guest TWO independent 60-token budgets, one for the
+  // page and one for the bridge, each looking correctly limited on its own.
+  if (principal.kind === 'anonymous') {
+    const decision = await limiter.consume(limiterKeyFor(principal, ip), 'capability');
+    if (!decision.allowed) return rateLimited(decision.retryAfterMs, requestId);
+  }
+
+  const raw = await readBodyText(request, WEBMCP_MAX_BODY_BYTES);
+  if (!raw.ok) return errorResponse(raw.error, requestId);
+  let body: z.infer<typeof WEBMCP_BODY_SCHEMA>;
+  try {
+    body = WEBMCP_BODY_SCHEMA.parse(raw.value ? JSON.parse(raw.value) : {});
+  } catch {
+    return errorResponse(new CapabilityError('validation', 'The request body must be JSON with an "input" field.'), requestId);
+  }
+
+  const ctx = await createCapabilityContext({
+    principal,
+    requestId,
+    surface: 'webmcp',
+    idempotencyKey: body.idempotencyKey,
+    inputTrust: 'UNTRUSTED_USER_CONTENT',
+    rateLimit: principal.kind !== 'anonymous',
+    clientIp: ip,
+  });
+  const result = await invokeForWebMcp(webMcpRegistry, name, ctx, body.input);
+  if (!result.ok) return errorResponse(result.error, requestId);
+  // Success means the capability exists and was visible, so looking it up here leaks nothing.
+  return outcomeResponse(result.value, requestId, webMcpRegistry.get(name)?.maxOutputChars);
+}

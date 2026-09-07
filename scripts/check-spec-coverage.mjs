@@ -57,6 +57,12 @@ export const TEST_SERVER_SPECS = [
   // CRON_SECRET, and reads the biometrics opt-in surface — all of which need the NODE_ENV=test
   // server and identity's test-principal injector.
   'tests/e2e/media-ai.spec.ts',
+  // Level 13: the WebMCP bridge. It drives signed-in guest and admin principals through the
+  // canonical test-principal injector and reads the manifest as each, so it needs the NODE_ENV=test
+  // server. Swarm K guarded its authenticated cases on `test.skip(!TEST_AUTH_SECRET)`; those guards
+  // are gone, because a spec that skips itself when an env var is missing is exactly how three
+  // security suites reported green at level 06. Registered here, the secret is always set.
+  'tests/e2e/webmcp.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',
