@@ -1,9 +1,10 @@
 import { GiftLinkCard } from '@/components/handoff/GiftLinkCard';
+import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, GiftsProps } from '@/themes/content-types';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
 import { kit } from '../kit';
 
-const { Shell, Section, SectionHeading, Prose, Placeholder, content } = kit;
+const { Shell, Section, SectionHeading, Prose, Placeholder, Link, content } = kit;
 const { PageHead } = content;
 
 /**
@@ -41,7 +42,7 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
         ) : (
           <Prose>
             <p>
-              <Placeholder todo={data.copy.registryPending} />
+              <Placeholder block todo={data.copy.registryPending} />
             </p>
           </Prose>
         )}
@@ -57,7 +58,7 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
         ) : (
           <Prose>
             <p>
-              <Placeholder todo={data.copy.adventurePending} />
+              <Placeholder block todo={data.copy.adventurePending} />
             </p>
           </Prose>
         )}
@@ -65,10 +66,19 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
 
       <Section id="gifts-note">
         <Prose>
-          <p>{data.copy.handoffNote}</p>
+          {/* "Each link opens the provider's own site in a new tab" is false on a page with no
+              links, and it ships in the capability response the concierge reads, so it is
+              conditional on there being a link rather than always printed. What replaces it is the
+              one thing a guest can actually do here while the couple are still deciding. */}
+          {data.links.length ? <p>{data.copy.handoffNote}</p> : null}
           {pending ? (
             <p>
-              <Placeholder todo={data.copy.placeholderNote} />
+              <Placeholder block todo={data.copy.placeholderNote} />
+            </p>
+          ) : null}
+          {pending ? (
+            <p>
+              {data.copy.askIntro} <Link href={ROUTES.ask}>{data.copy.askLabel}</Link>.
             </p>
           ) : null}
           <p>{data.copy.thanks}</p>

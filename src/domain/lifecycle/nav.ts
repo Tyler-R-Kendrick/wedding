@@ -1,4 +1,5 @@
 import type { LifecycleState } from '@/contracts/lifecycle';
+import { isBuiltRoute } from '@/domain/routes';
 import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
 
 /**
@@ -42,18 +43,15 @@ const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
   ARCHIVE: { primary: ['photos', 'story', 'adventures', 'caa'], more: ['share', 'wedding', 'ask'], sticky: [] },
 };
 
-/**
- * Pages that exist. `photos` is in the table for every lifecycle state — it is `primary` on
- * WEDDING_DAY, POST_WEDDING and ARCHIVE — and `/photos` is a 404: the media level has not landed.
- * The public shells hid the damage by putting `more` behind a Menu dialog, so the link was only
- * reachable by opening it; the guest shell renders its nav inline, which is how this surfaced —
- * as a browser sitting forever on a prefetch of a route that does not exist.
- *
- * Offering a link to a 404 is worse than offering nothing, so the nav is filtered here rather than
- * per shell. Delete the entry from this set when the route ships (media is level 10); the unit test
- * asserts every nav href is a route the app actually serves, so a stale entry fails the build.
+/*
+ * `photos` is in the table for every lifecycle state — `primary` on WEDDING_DAY, POST_WEDDING and
+ * ARCHIVE — and `/photos` is a 404: the media level has not landed. The public shells hid the
+ * damage by putting `more` behind a Menu dialog, so the link was only reachable by opening it; the
+ * guest shell renders its nav inline, which is how this surfaced — as a browser sitting forever on
+ * a prefetch of a route that does not exist. Offering a link to a 404 is worse than offering
+ * nothing, so the nav is filtered here rather than per shell, against the one list in
+ * `domain/routes.ts` that the FAQ's route links use too.
  */
-const NOT_BUILT_YET: ReadonlySet<PageKey> = new Set(['photos']);
 
 export interface NavOptions {
   currentPath?: string;
@@ -90,11 +88,11 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
           : { label: 'Directions', href: PAGES.transport.href };
     }
   });
-  const shipped = (keys: readonly PageKey[]) => keys.filter((k) => !NOT_BUILT_YET.has(k));
+  const shipped = (keys: readonly PageKey[]) => keys.filter((k) => isBuiltRoute(PAGES[k].href));
   return {
     primary: shipped(spec.primary).map(item),
     more: shipped(spec.more).map(item),
-    sticky: sticky.filter((i) => i.href !== PAGES.photos.href),
+    sticky: sticky.filter((i) => i.external || isBuiltRoute(i.href)),
     currentPath: opts.currentPath ?? '/',
   };
 }

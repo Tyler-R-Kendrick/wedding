@@ -6,7 +6,7 @@ import type { ReadContext } from '@/domain/content/read-context';
 import { textBlock } from '@/domain/content/text';
 import type { FaqView, SearchResult } from '@/domain/content/views';
 import { filterVisible } from '@/domain/content/visibility';
-import { ROUTES } from '@/domain/routes';
+import { isBuiltRoute, ROUTES } from '@/domain/routes';
 import { rankRecords } from './search';
 
 /**
@@ -35,7 +35,7 @@ export function toFaqView(row: FaqEntryRow, ctx: ReadContext): FaqView {
     category: row.category,
     question: row.question,
     answer: textBlock(row.answer),
-    ...(row.route ? { route: row.route } : {}),
+    ...(row.route && isBuiltRoute(row.route) ? { route: row.route } : {}),
     placeholder: row.placeholder,
     provenance: toProvenanceView(row, { route, sources: ctx.sources, now: ctx.now }),
   };

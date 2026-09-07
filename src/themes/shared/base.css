@@ -100,6 +100,17 @@ body {
   font-style: normal;
 }
 
+/*
+ * Standing on its own — a whole section the couple have not filled yet — rather than marking a gap
+ * inside a sentence. As an inline highlight it wrapped into two staggered rectangles, which reads
+ * as damage rather than as a note.
+ */
+.todo--block {
+  display: block;
+  max-width: var(--wp-measure, 33rem);
+  padding: var(--spacing-md);
+}
+
 
 /*
  * Fixed bottom chrome must never obscure focus or the end of the measure (WCAG 2.2 2.4.11): every
@@ -251,7 +262,10 @@ body {
   min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-outline);
-  border-radius: var(--rounded-sm);
+
+  /* The same shape as the primary buttons beside it: square in Gilded Hour, 8px in Conservatory.
+     `--rounded-sm` left it at 2px in both, so the switcher read as chrome from another design. */
+  border-radius: var(--radius-button, 2px);
   background: var(--color-surface);
   color: var(--color-primary);
   font-family: var(--font-text);

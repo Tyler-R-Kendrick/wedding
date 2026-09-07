@@ -33,9 +33,9 @@ const KIND_LABEL: Record<TripItem['kind'], string> = { flight: 'Flight', hotel: 
 
 function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="border-t border-primary/20 py-10">
+    <section id={id} aria-labelledby={`${id}-title`} className="sec">
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-      <h2 id={`${id}-title`} className="mt-1 text-2xl font-semibold">
+      <h2 id={`${id}-title`} className="sec__title">
         {title}
       </h2>
       <div className="mt-4 flex flex-col gap-4">{children}</div>
@@ -111,11 +111,18 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
   const { trip, returned, notice } = data;
   const block = trip.block.block;
   return (
-    <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
+    /* The guest kit from `components/rsvp/recipes.css`, which the (guest) layout imports: it takes
+       the active design's DISPLAY face, its measure and its heading case. This page was the last of
+       the four guest surfaces still on ad-hoc utilities — its h1 rendered in the TEXT face (Josefin
+       Sans / Spectral) at a fixed `text-4xl`, so it read as a different site from /rsvp,
+       /your-weekend and /transportation standing right next to it in the same nav. */
+    <main id="main" className="page">
       <header>
-        <p className="eyebrow">Your Weekend</p>
-        <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
-        <p className="mt-3 max-w-prose">Flights, where you are staying, and the free time in between. Only you and your household can see this.</p>
+        {/* No kicker above the heading: `impeccable detect` bans a tracked uppercase label sitting
+            as its own block above an h1 outright, and "Your Weekend" adds nothing "Your trip" does
+            not already say. The same clean-up commit c9d4ef5 made on the admin screens. */}
+        <h1 className="page__title">Your trip</h1>
+        <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and your household can see this.</p>
       </header>
       {notice ? (
         <p role="status" className="mt-6 rounded-sm border border-primary/40 p-3">
@@ -236,10 +243,9 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
 
 export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
   return (
-    <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
-      <p className="eyebrow">Your Weekend</p>
-      <h1 className="mt-1 text-4xl font-semibold">Your trip</h1>
-      <p className="mt-3 max-w-prose">
+    <main id="main" className="page">
+      <h1 className="page__title">Your trip</h1>
+      <p className="page__lede">
         {reason === 'anonymous' ? 'Open the link from your invitation to see and plan your trip. Until then, everything about getting here is on ' : 'This page is for invited guests. Everything about getting here is on '}
         <a className="underline underline-offset-4" href="/travel">
           Travel &amp; Stay

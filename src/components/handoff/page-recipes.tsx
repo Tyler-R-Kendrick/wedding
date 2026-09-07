@@ -176,11 +176,20 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         </div>
       </section>
       <footer className={SECTION}>
-        <p className="measure hint">{data.copy.handoffNote}</p>
+        {data.links.length ? <p className="measure hint">{data.copy.handoffNote}</p> : null}
         {pending ? (
           <div className="mt-2 measure">
             <Placeholder>{data.copy.placeholderNote}</Placeholder>
           </div>
+        ) : null}
+        {pending ? (
+          <p className="mt-4 measure">
+            {data.copy.askIntro}{' '}
+            <Link className="underline underline-offset-4" href="/ask-us">
+              {data.copy.askLabel}
+            </Link>
+            .
+          </p>
         ) : null}
         <p className="mt-6 text-lg">{data.copy.thanks}</p>
       </footer>

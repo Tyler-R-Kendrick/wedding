@@ -21,6 +21,9 @@ export const GIFTS_COPY = {
    */
   registryPending: 'where to find our wishlist, once we have chosen where to keep it',
   adventurePending: 'how to help with our next adventures, once we have set it up',
+  /** With nothing to click yet, the one thing a guest can do here is reach us. */
+  askIntro: 'In the meantime, if you would like to give something and cannot wait for us to decide,',
+  askLabel: 'ask us',
   thanks: 'Thank you. Truly.',
 } as const;
 

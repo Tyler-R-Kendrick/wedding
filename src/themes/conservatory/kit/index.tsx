@@ -44,9 +44,9 @@ const FLOWERS = ['a', 'b', 'c'] as const;
  * guest pages already said. The level-07 regression test covers the guest routes only, so this
  * path was never asserted; `tests/e2e/themes.spec.ts` now covers the themed public pages.
  */
-function Placeholder({ todo }: PlaceholderProps) {
+function Placeholder({ todo, block }: PlaceholderProps) {
   return (
-    <span className="todo" role="note" data-placeholder="true">
+    <span className={block ? 'todo todo--block' : 'todo'} role="note" data-placeholder="true">
       <span className="todo__label">{PLACEHOLDER_LABEL}:</span> {stripBacklogRefs(todo)}
     </span>
   );

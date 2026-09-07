@@ -7,8 +7,13 @@ export function GuestsOnly({ what }: { what: string }) {
     <main id="main" className="page">
       <h1 className="page__title">{what} is for invited guests</h1>
       <p className="page__lede">Open the link from your invitation to find your household, then confirm with the code we e-mail you. No account, no password.</p>
+      {/* `/claim` has no page — only `/claim/verify`, `/claim/welcome` and `/claim/passkey`, which
+          are steps you reach with a token. So the primary action on the signed-out RSVP and Your
+          Weekend pages, the one an invited guest most needs, was a 404. `/sign-in` is what a guest
+          without their link actually wants: "Sign in with your email". Second dead internal link
+          found this level (after `/photos` in the nav); `tests/e2e/links.spec.ts` now walks them. */}
       <p>
-        <Link className="btn btn--primary" href="/claim">
+        <Link className="btn btn--primary" href="/sign-in">
           Find your invitation
         </Link>
       </p>

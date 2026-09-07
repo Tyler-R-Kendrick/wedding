@@ -33,6 +33,8 @@ const output = z.object({
     // never names a provider the couple have not chosen (brief §2: Registry is NOT settled).
     registryPending: z.string(),
     adventurePending: z.string(),
+    askIntro: z.string(),
+    askLabel: z.string(),
     thanks: z.string(),
   }),
   links: z.array(giftLinkViewSchema),

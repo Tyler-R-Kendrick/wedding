@@ -134,10 +134,14 @@
   color: var(--color-on-surface-muted);
 }
 
-.placeholder {
-  color: var(--color-on-surface-muted);
-  font-style: italic;
-}
+/*
+ * `.placeholder` belongs to `components/provenance/provenance.css`, which styles the whole block —
+ * dashed frame, stamp, hint. This duplicate silently repainted its colour and, worse, set
+ * `font-style: italic`, which computed on twelve nodes across /transportation in both designs:
+ * `font-synthesis: none` is global and neither design self-hosts an italic text face, so it
+ * rendered roman, and Conservatory's DESIGN.md forbids asking Spectral for one at all. Deleted
+ * rather than corrected — one owner per class.
+ */
 
 .fld {
   margin: 0;
