@@ -76,4 +76,33 @@ describe('the test principal resolver is unreachable unless deliberately enabled
     const viaHeaders = await r.resolve(req({ 'x-test-auth': SECRET, 'x-test-principal': JSON.stringify({ ...guest, authenticatedAt: stale }) }));
     expect(viaHeaders.kind === 'guest' && viaHeaders.authenticatedAt).toBe(stale);
   });
+
+  it('is the ONE gate: closed in development and production, open only under test with a real secret', () => {
+    // Level 13 deleted swarm K's local copy of this gate, which read
+    // `env.isTest && !env.isProduction` where this one reads `env.isTest`. The extra clause was
+    // redundant — NODE_ENV is a three-value enum, so `isTest` already excludes production — but
+    // "redundant" is a claim, and this is the gate that decides whether a header becomes an admin
+    // AND (since level 13) whether the synthetic WebMCP fixtures register at all. So it is stated
+    // rather than argued.
+    const long = 'x'.repeat(16);
+    expect(isTestPrincipalEnabled({ isTest: true, secret: long })).toBe(true);
+    expect(isTestPrincipalEnabled({ isTest: false, secret: long })).toBe(false);
+    // A secret is required, and a short one is not a secret.
+    expect(isTestPrincipalEnabled({ isTest: true, secret: undefined })).toBe(false);
+    expect(isTestPrincipalEnabled({ isTest: true, secret: 'x'.repeat(15) })).toBe(false);
+    expect(isTestPrincipalEnabled({ isTest: true, secret: '' })).toBe(false);
+  });
+
+  it('a deployed app cannot be a test run at all', async () => {
+    // The control level 13 adds ON TOP of the gate above, ported from swarm K. `NODE_ENV=test`
+    // beside a deploy marker does not merely close the gate — the app refuses to start, so there is
+    // no window in which a misconfigured deploy serves requests with the injector reachable.
+    const { parseServerEnv } = await import('@/lib/env');
+    const base = { NODE_ENV: 'test', PGLITE_MEMORY: '1' };
+    expect(() => parseServerEnv({ ...base, VERCEL: '1' })).toThrow(/not allowed on a deployed app/);
+    expect(() => parseServerEnv({ ...base, VERCEL_ENV: 'preview' })).toThrow(/not allowed on a deployed app/);
+    // CI is not a deployment: CI is exactly where NODE_ENV=test belongs.
+    expect(() => parseServerEnv({ ...base, CI: 'true' })).not.toThrow();
+    expect(() => parseServerEnv(base)).not.toThrow();
+  });
 });
