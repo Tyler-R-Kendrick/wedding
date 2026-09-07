@@ -7,6 +7,10 @@ source, the `TODO(Tyler & Sara)` is removed from code and copy, and any
 operational value gets a provenance record
 ([ADR-0011](../adr/0011-content-provenance-and-freshness.md)).
 
+**For Sara and Tyler:** [`for-sara-and-tyler.md`](./for-sara-and-tyler.md) is the
+one-page version of this list — what to answer, in the order the site needs it,
+and which admin screen to type each answer into.
+
 Needed-by is the lifecycle state ([ADR-0012](../adr/0012-site-lifecycle-state-machine.md))
 in which the fact first renders to guests.
 
