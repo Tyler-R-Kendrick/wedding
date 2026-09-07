@@ -142,8 +142,19 @@ jobs:
             || { echo "::error::test server did not become ready"; cat "$RUNNER_TEMP/test-server.log"; exit 1; }
           # A dev server compiles each route on first request; warm the journeys' routes so a cold
           # compile cannot outlast a navigation timeout.
-          for path in / /sign-in /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
-                      /your-weekend /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
+          # /admin and the media surfaces were absent from this list until level 11, when this step
+          # failed on `signInViaUi(admin)`: Continue clicked, then a 5s wait for /admin that ended
+          # with the page still on /claim/verify — on the run AND its retry — while a concurrent
+          # request in another spec hit a 30s test timeout. Both are the shape of a server busy
+          # compiling, and /admin had never been requested; the level-11 journeys added load to the
+          # same dev server. That is the diagnosis, not a proof: it was not reproducible locally,
+          # where the suite passes either way. Adding the routes costs a few seconds and is what
+          # this list is for, so it is the first thing to try; if the step fails again the next
+          # suspect is worker contention rather than cold compiles.
+          for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
+                      /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
+                      /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
+                      /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
           npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")
