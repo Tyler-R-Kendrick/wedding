@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import type { AdminPrincipal, GuestPrincipal } from '@/contracts/principal';
@@ -6,6 +8,7 @@ import { toSiteFacts, mapsUrlFor } from '@/domain/lifecycle/facts';
 import { navFor, homeLabelFor } from '@/domain/lifecycle/nav';
 import { mintPreviewToken, parsePreviewValue, verifyPreviewToken } from '@/domain/lifecycle/preview';
 import { resolveLifecycle } from '@/domain/lifecycle/state';
+import { STATIC_PUBLIC_ROUTES } from '@/themes/routes';
 import { SEED_SITE } from '@/db/seed/seed';
 
 const SECRET = 'unit-test-secret-at-least-16';
@@ -68,6 +71,43 @@ describe('navigation by lifecycle state', () => {
     }
     for (const state of LIFECYCLE_STATES) expect(navFor(state).primary.some((i) => i.href === '/gifts')).toBe(false);
     expect(navFor('RSVP_OPEN').more.some((i) => i.href === '/gifts')).toBe(true);
+  });
+
+  it('never offers a route the app does not serve', () => {
+    // The nav table lists `photos` in every state — `primary` on WEDDING_DAY, POST_WEDDING and
+    // ARCHIVE — and /photos is a 404 until the media level ships. The public shells hid it behind a
+    // Menu dialog, so it was only reachable by opening one; the guest shell renders its nav inline,
+    // which is where it surfaced, as a browser sitting forever on the prefetch of a route that does
+    // not exist. A link to a 404 is worse than no link, so `navFor` filters unbuilt pages — and this
+    // test is what makes deleting the filter entry, once the route lands, non-optional.
+    const routes = new Set<string>();
+    const walk = (dir: string, route: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          const seg = entry.name;
+          if (seg.startsWith('_')) continue;
+          // `(group)` folders do not appear in the URL; `[param]` segments are not static routes.
+          const next = seg.startsWith('(') ? route : `${route}/${seg}`;
+          walk(join(dir, seg), next);
+        } else if (/^page\.(tsx|ts|jsx|js)$/.test(entry.name)) {
+          routes.add(route === '' ? '/' : route);
+        }
+      }
+    };
+    walk(join(process.cwd(), 'src', 'app'), '');
+    // Home has no `src/app/page.tsx`: the proxy rewrites it into the per-theme static tree
+    // (`/t/<theme>`), so the walk cannot see it. That rewrite list is the authority for those.
+    for (const r of STATIC_PUBLIC_ROUTES) routes.add(r);
+    expect(routes.has('/gifts')).toBe(true); // sanity: the walk finds real pages
+
+    for (const state of LIFECYCLE_STATES) {
+      const nav = navFor(state, { venue: toSiteFacts({ ...SEED_SITE }).venue });
+      for (const item of [...nav.primary, ...nav.more, ...nav.sticky]) {
+        if (item.external || item.href.startsWith('http')) continue;
+        const path = item.href.split('#')[0] ?? '/';
+        expect(routes.has(path), `${state}: nav offers ${item.href}, which no page serves`).toBe(true);
+      }
+    }
   });
 
   it('sticky actions follow the design doc and Directions is an explicit external handoff', () => {

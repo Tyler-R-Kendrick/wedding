@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
 import { resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions } from '@/themes/resolve';
-import { isPersonalizedRoute, isStaticPublicRoute, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
+import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
 /** `RSVP_OPEN` or `RSVP_OPEN.<exp>.<sig>`; anything else is dropped before it reaches a route. */
 const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
@@ -25,6 +25,7 @@ export function proxy(request: NextRequest) {
   // Inbound copies of our internal headers are never trusted; they are overwritten here.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(THEME_HEADER, theme);
+  requestHeaders.set(PATHNAME_HEADER, url.pathname);
   if (preview) requestHeaders.set(PREVIEW_HEADER, preview);
   else requestHeaders.delete(PREVIEW_HEADER);
 

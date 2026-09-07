@@ -1,5 +1,5 @@
 /*
- * Guest surfaces (RSVP, Your Weekend).
+ * Guest surfaces (RSVP, Your Weekend, Transportation, Trip).
  *
  * Fonts come from the theme's ROLE tokens — `--font-display` / `--font-text` / `--font-accent` —
  * which each theme defines with a full fallback stack. The level-03 names (`--font-h1`,
@@ -9,39 +9,84 @@
  * designs and Times New Roman whenever it had not loaded. Colours already resolve per theme —
  * every `--color-*` name below is defined in both `theme.css` files.
  */
+
+/*
+ * One frame for the whole guest shell.
+ *
+ * The header, the page and the footer used to carry three different widths — `46rem`, `72ch` and
+ * `46rem` — and `72ch` is face-relative, so at 1440 the boxes measured 366 / 857 / 585px in Gilded
+ * Hour and 343 / 688 / 580 in Conservatory: three ragged, differently-centred columns down one
+ * page. `impeccable detect` reported it as `first-viewport-column-overflow` on `div.site` (261% /
+ * 268% of the viewport against a sibling at 8%) on /transportation in both designs, and it is the
+ * reason the guest pages read as a different site from the themed ones.
+ *
+ * `--wp-frame` is the shell; `--wp-measure` is running text. Both are rem, not `ch`: a `ch` is the
+ * advance of "0", and against Josefin Sans and Spectral a `65ch` cap rendered 92 characters — far
+ * past the 60–70 both DESIGN.md files ask for. The `width: 100%` is not redundant: these are flex
+ * items of `.site`, and without it they shrink to fit their content.
+ */
+.page,
+.wp-header,
+.wp-footer {
+  width: 100%;
+  padding-inline: max(var(--spacing-md), calc((100% - var(--wp-frame, 46rem)) / 2));
+}
+
 .page {
-  max-width: 72ch;
-  margin: 0 auto;
-  padding: var(--spacing-lg) var(--spacing-md) var(--spacing-3xl);
-  font-size: var(--text-body-md, 1.0625rem);
-  line-height: 1.6;
+  padding-block: var(--spacing-lg) var(--spacing-3xl);
+  font-family: var(--type-body-md-family, inherit);
+  font-size: var(--type-body-md-size, 1.0625rem);
+  line-height: var(--type-body-md-line, 1.6);
   color: var(--color-on-surface);
 }
 
+/** Running text. Cards, tables and definition lists may use the full frame. */
+.measure {
+  max-width: var(--wp-measure, 33rem);
+}
+
 .page--wide {
-  max-width: 110ch;
+  max-width: var(--wp-frame-wide, 70rem);
 }
 
 .page__eyebrow {
   margin: 0 0 var(--spacing-xs);
-  font-family: var(--font-text, inherit);
-  font-size: var(--text-label-caps, 0.75rem);
-  letter-spacing: var(--tracking-label-caps, 0.14em);
+  font-family: var(--type-label-caps-family, inherit);
+  font-size: max(13px, var(--type-label-caps-size, 0.75rem));
+  font-weight: var(--type-label-caps-weight, 600);
+  letter-spacing: var(--type-label-caps-tracking, 0.14em);
   text-transform: uppercase;
   color: var(--color-secondary);
 }
 
+/*
+ * Per-design type, from the `--type-*` set both themes publish under `[data-theme]`.
+ *
+ * These read `--text-h1` / `--font-weight-h1` / `--text-body-lg`, which only Gilded Hour's Tailwind
+ * `@theme` block declares — and that block is unscoped, so Conservatory's guest pages wore Gilded
+ * Hour's numbers: h1 34px/500 where its own DESIGN.md says 38.25px/400 (Gloock is single-weight),
+ * h2 25.5px for 27.625px, lede 22.31px for 21.25px. The themed pages next door got all three right.
+ * The clamp is the same shape both kits use for their own headings, so an h1 here scales with the
+ * viewport as it does on /gifts instead of sitting at 34px from 390 all the way to 1440.
+ */
 .page__title {
   margin: 0 0 var(--spacing-md);
-  font-family: var(--font-display, inherit);
-  font-size: var(--text-h1, 2.25rem);
-  font-weight: var(--font-weight-h1, 400);
-  line-height: 1.1;
+  font-family: var(--type-h1-family, inherit);
+  font-size: clamp(var(--type-h1-size, 2.25rem), 1.25rem + 2.2vw, var(--type-display-lg-size, 3rem));
+  font-weight: var(--type-h1-weight, 400);
+  line-height: var(--type-h1-line, 1.1);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
+  font-feature-settings: var(--type-h1-features, normal);
 }
 
 .page__lede {
   margin: 0 0 var(--spacing-xl);
-  font-size: var(--text-body-lg, 1.25rem);
+  max-width: var(--wp-measure, 33rem);
+  font-family: var(--type-body-lg-family, inherit);
+  font-size: var(--type-body-lg-size, 1.25rem);
+  font-weight: var(--type-body-lg-weight, 400);
+  line-height: var(--type-body-lg-line, 1.55);
   color: var(--color-on-surface-muted);
 }
 
@@ -53,15 +98,20 @@
 
 .sec__title {
   margin: 0 0 var(--spacing-sm);
-  font-family: var(--font-display, inherit);
-  font-size: var(--text-h2, 1.625rem);
-  font-weight: var(--font-weight-h2, 400);
-  line-height: 1.2;
+  font-family: var(--type-h2-family, inherit);
+  font-size: clamp(var(--type-h2-size, 1.625rem), 1.2rem + 1.4vw, var(--type-h1-size, 2.25rem));
+  font-weight: var(--type-h2-weight, 400);
+  line-height: var(--type-h2-line, 1.2);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
+  font-feature-settings: var(--type-h2-features, normal);
 }
 
 .sec__title--sm {
-  font-family: var(--font-display, inherit);
-  font-size: var(--text-h3, 1.25rem);
+  font-family: var(--type-h3-family, inherit);
+  font-size: var(--type-h3-size, 1.25rem);
+  font-weight: var(--type-h3-weight, 400);
+  letter-spacing: var(--type-h3-tracking, normal);
 }
 
 .card {
@@ -84,10 +134,14 @@
   color: var(--color-on-surface-muted);
 }
 
-.placeholder {
-  color: var(--color-on-surface-muted);
-  font-style: italic;
-}
+/*
+ * `.placeholder` belongs to `components/provenance/provenance.css`, which styles the whole block —
+ * dashed frame, stamp, hint. This duplicate silently repainted its colour and, worse, set
+ * `font-style: italic`, which computed on twelve nodes across /transportation in both designs:
+ * `font-synthesis: none` is global and neither design self-hosts an italic text face, so it
+ * rendered roman, and Conservatory's DESIGN.md forbids asking Spectral for one at all. Deleted
+ * rather than corrected — one owner per class.
+ */
 
 .fld {
   margin: 0;
@@ -190,7 +244,7 @@
   text-transform: uppercase;
   text-decoration: none;
   border: 2px solid var(--color-primary);
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-button, 2px);
   cursor: pointer;
 }
 
@@ -292,7 +346,7 @@ a:focus-visible,
   padding: 2px 10px;
   font-size: max(17px, var(--text-body-md, 1.0625rem));
   border: 1px solid var(--color-outline);
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-button, 2px);
   background: var(--color-surface);
 }
 
@@ -415,9 +469,13 @@ a:focus-visible,
 }
 
 @media print {
+  /* `.skip` alone missed the guest shell, whose skip link and header are `.wp-skip` / `.wp-header`
+     — so a printed /transportation carried the site navigation across the top of the page. */
   .btn,
   .actions,
-  .skip {
+  .skip,
+  .wp-skip,
+  .wp-header {
     display: none;
   }
 
@@ -463,15 +521,13 @@ a:focus-visible,
   gap: var(--spacing-md);
   align-items: baseline;
   justify-content: space-between;
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: var(--spacing-md) var(--spacing-md) 0;
+  padding-block: var(--spacing-md) 0;
 }
 
 .wp-brand {
   margin: 0;
-  font-family: var(--font-display, inherit);
-  font-size: var(--text-h3, 1.25rem);
+  font-family: var(--type-h3-family, inherit);
+  font-size: var(--type-h3-size, 1.25rem);
 }
 
 .wp-nav {
@@ -496,9 +552,7 @@ a:focus-visible,
 }
 
 .wp-footer {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: var(--spacing-2xl) var(--spacing-md) var(--spacing-xl);
+  padding-block: var(--spacing-2xl) var(--spacing-xl);
   color: var(--color-on-surface-muted);
   font-size: max(17px, var(--text-body-md, 1.0625rem));
 }

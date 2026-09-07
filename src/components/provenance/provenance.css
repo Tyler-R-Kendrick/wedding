@@ -92,7 +92,11 @@
   margin: 0;
   font-size: var(--type-body-sm-size, 1.0625rem);
   line-height: var(--type-body-sm-line, 1.55);
-  max-width: 68ch;
+
+  /* `68ch` is the advance of "0" ×68, not 68 characters: against Josefin Sans it rendered a 748px
+     line, ~96 characters, well past the 60–70 both DESIGN.md files ask for. Same rem measure the
+     guest kit uses for its running text. */
+  max-width: var(--wp-measure, 33rem);
 }
 
 .placeholder--inline {

@@ -23,6 +23,9 @@ export const PRODUCTION_SPECS = [
   // one in. It also reads the flights provider mode from /api/health, so the runner exports
   // HEALTH_TOKEN alongside the server's.
   'tests/e2e/travel.spec.ts',
+  // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
+  // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
+  'tests/e2e/links.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
@@ -32,6 +35,11 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/seating.spec.ts',
   // Level 08: the signed-in trip page needs the test-principal injector.
   'tests/e2e/trip.spec.ts',
+  // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
+  // through identity's test-principal injector, so they need the NODE_ENV=test server.
+  'tests/e2e/transport-gifts.spec.ts',
+  'tests/security/redirect.spec.ts',
+  'tests/security/voucher.spec.ts',
   'tests/security/idor.spec.ts',
   'tests/security/invitation.spec.ts',
   'tests/security/otp.spec.ts',

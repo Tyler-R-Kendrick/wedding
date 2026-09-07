@@ -1,3 +1,4 @@
+import { Placeholder } from '@/components/provenance';
 import type { ReactNode } from 'react';
 
 /**
@@ -83,13 +84,22 @@ export function CodeInput({ id = 'code', error }: { id?: string; error?: string 
   );
 }
 
-export const RECOVERY_CONTACT = 'TODO(Tyler & Sara): how guests should reach you (email or text).';
+/**
+ * A guest who cannot get in reads this. It carried the raw `TODO(Tyler & Sara):` marker and was
+ * rendered verbatim below — on the recovery panel, which is exactly where a stuck guest lands.
+ * The marker is authoring syntax; what a guest should read is that a person is still writing it.
+ * Same treatment as the travel facts (level 08) and the guest surfaces (level 07); the missing fact
+ * is content-backlog X-07.
+ */
+export const RECOVERY_CONTACT = 'how to reach us if you are stuck';
 
 export function RecoveryPanel({ title, message }: { title: string; message: string }) {
   return (
     <Notice tone="info" title={title}>
       <p>{message}</p>
-      <p className="auth-hint">{RECOVERY_CONTACT}</p>
+      <p className="auth-hint">
+        <Placeholder inline>{RECOVERY_CONTACT}</Placeholder>
+      </p>
       <p>
         <a className="auth-link" href="/sign-in">
           Already claimed? Sign in with your email

@@ -5,6 +5,7 @@ import type { StoryPageData } from '@/capabilities/get_story';
 import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { ItinerariesData } from '@/capabilities/list_itineraries';
+import type { GiftLinks } from '@/capabilities/list_gift_links';
 import type { StaticSearchData } from '@/capabilities/search_wedding_information_static';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
@@ -63,6 +64,15 @@ export interface AskProps {
  * Facts carry `note` (confirmed) and `pending` (still to be decided, in the guest's words) as two
  * fields; a recipe renders `pending` as a marked placeholder and never as prose.
  */
+/**
+ * Gifts (level 09). `GiftLinkCard` carries the hand-off semantics — provider named, new tab,
+ * disclosure printed — and is the same component in both designs; a recipe decides where the cards
+ * sit and what the page around them looks like, never what a hand-off is.
+ */
+export interface GiftsProps {
+  data: GiftLinks;
+}
+
 export interface TravelProps {
   venue: HotelRecommendation;
   alternatives: HotelRecommendation[];
@@ -90,6 +100,7 @@ export interface ContentRecipes {
   wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;
   travel: ContentRecipe<TravelProps>;
+  gifts: ContentRecipe<GiftsProps>;
 }
 export type ContentRecipeKey = keyof ContentRecipes;
 

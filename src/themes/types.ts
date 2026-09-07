@@ -455,6 +455,8 @@ export interface SkeletonProps {
 
 export interface PlaceholderProps {
   todo: string;
+  /** Standing alone as a whole unwritten section, rather than marking a gap inside a sentence. */
+  block?: boolean;
 }
 
 export interface FormPrimitives {

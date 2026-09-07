@@ -7,7 +7,11 @@ import AxeBuilder from '@axe-core/playwright';
 // without a session redirects to /sign-in, so auditing them here would silently audit the sign-in
 // page under a test named for the RSVP page. Both are audited *with* a session, at phone and desktop
 // widths and mid-journey rather than just on load, in tests/e2e/rsvp.spec.ts (`axeClean`).
-const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
+//
+// Level 09 adds `/gifts` here because it is public. `/transportation` is NOT added: it is
+// guest-gated, so it belongs with the other authenticated audits, not in this list — swarm G
+// proposed it here because it built before that gating existed.
+const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/gifts', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
 
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
   for (const route of ROUTES) {

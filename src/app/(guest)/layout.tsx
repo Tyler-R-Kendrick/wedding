@@ -1,13 +1,18 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { preload } from 'react-dom';
 import { Placeholder } from '@/components/provenance/Placeholder';
-import { getThemeMeta } from '@/themes/registry';
-import { getRequestTheme } from '@/themes/server';
+import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
+import { getThemeMeta, listThemes } from '@/themes/registry';
+import { PATHNAME_HEADER } from '@/themes/routes';
+import { buildPageFrame, getRequestTheme } from '@/themes/server';
 import '@/components/rsvp/recipes.css';
 
 export const dynamic = 'force-dynamic';
+
+const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }));
 
 export async function generateViewport(): Promise<Viewport> {
   return { width: 'device-width', initialScale: 1, themeColor: getThemeMeta(await getRequestTheme()).themeColor };
@@ -19,11 +24,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Guest surfaces (Your Weekend, RSVP). Personalized: never cached (force-dynamic => no-store).
+ * Guest surfaces (Your Weekend, RSVP, Transportation, Trip). Personalized: never cached
+ * (force-dynamic => no-store).
  *
  * These pages wear the guest's chosen design, exactly as the public tree does: both themes' token
  * blocks already ship in `globals.css` scoped by `[data-theme]`, so setting that attribute here is
- * what makes `recipes.css` resolve its `var(--color-*)` and `var(--font-*)` against the theme.
+ * what makes `recipes.css` resolve its `var(--color-*)` and `var(--type-*)` against the theme.
  *
  * This file previously imported `@/components/tokens/foundation.css` instead. That file describes
  * itself as a level-03 fallback which "the theme engine … supersedes at merge", and DESIGN.md scopes
@@ -34,6 +40,14 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function GuestLayout({ children }: { children: ReactNode }) {
   const theme = await getRequestTheme();
+  const currentPath = (await headers()).get(PATHNAME_HEADER) ?? '/';
+  // The same nav model the themed shell renders, from the same lifecycle source, so a guest sees one
+  // site. The hand-rolled list this replaces held two links — Your Weekend and RSVP — which made
+  // /transportation a dead end: from it a guest could reach neither Gifts nor Travel & Stay nor The
+  // Wedding, and from /gifts they could not reach /transportation. Hidden UI is never
+  // authorization; every route still re-checks entitlements server-side.
+  const frame = await buildPageFrame({ theme, currentPath });
+  const nav = [...frame.nav.primary, ...frame.nav.more];
   for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return (
     // `data-theme` is on a server-rendered wrapper, not only mirrored onto <html> by the script
@@ -53,18 +67,23 @@ export default async function GuestLayout({ children }: { children: ReactNode })
       </a>
       <header className="wp-header">
         <p className="wp-brand">
-          <Link href="/">Sara + Tyler</Link>
+          <Link href="/">{frame.site.coupleDisplayName}</Link>
         </p>
         <nav aria-label="Primary">
           <ul className="wp-nav">
-            <li>
-              <Link href="/your-weekend">Your Weekend</Link>
-            </li>
-            <li>
-              <Link href="/rsvp">RSVP</Link>
-            </li>
+            {nav.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} aria-current={item.href === currentPath ? 'page' : undefined}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
+        {/* PRODUCT.md › Themes: the switcher is "visible to everyone until a design is chosen". It
+            was on every public page and on none of the guest ones, so a guest who followed a link
+            from Home into Transportation lost the ability to change design. */}
+        {frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-guest" current={theme} themes={THEME_OPTIONS} /> : null}
       </header>
       {children}
       <footer className="wp-footer">
