@@ -1,4 +1,4 @@
-# PR 12 — Media intelligence and the biometric vault, gated off
+# PR 14 — Media intelligence and the biometric vault, gated off
 
 Level **11** of 17. Base: `main` (level 10 merged as `18d4c052`). 111 files from swarm I, plus the
 integration, the corrections below, and an adversarial review promoted into the test suite.
