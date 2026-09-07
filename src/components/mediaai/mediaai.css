@@ -297,3 +297,40 @@
   outline: 3px solid var(--color-secondary, var(--color-on-surface));
   outline-offset: 2px;
 }
+
+/* Concierge traces (/admin/concierge). The panel, table and scroll region are the shared admin
+   ones above; only the totals strip, the tag row and the per-status accent are specific here. */
+.ai-totals,
+.ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px) var(--spacing-lg, 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-tags {
+  gap: var(--spacing-xs, 4px) var(--spacing-md, 16px);
+  font-size: max(17px, 0.875rem);
+  color: var(--color-on-surface-variant, currentcolor);
+}
+
+.ai-tags .is-bad {
+  color: var(--color-error, currentcolor);
+  font-weight: 600;
+}
+
+.ai-answer[data-status='refused'],
+.ai-answer[data-status='error'] {
+  border-inline-start: var(--spacing-xs, 4px) solid var(--color-error, currentcolor);
+}
+
+.ai-sources {
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+  margin: 0;
+  padding-inline-start: 0;
+  list-style: none;
+  font-size: max(17px, 0.9375rem);
+}

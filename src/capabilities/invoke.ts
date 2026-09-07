@@ -128,13 +128,32 @@ export async function invoke<I, O>(
     if (!fresh.ok) return finish(err(fresh.error));
   }
 
-  // 5. explicit confirmation: a human confirms on the website; models and WebMCP can only draft
+  // 5. confirmation: a human confirms on the website; models and WebMCP can only draft.
+  //
+  // `explicit` is website-only for every kind. `inline` is website-only when the capability CHANGES
+  // OUR OWN STATE, which until level 12 nothing enforced: the check read `=== 'explicit'`, harmless
+  // while `ui` was the only surface, and no longer harmless once the concierge began deriving a tool
+  // list from `exposure.ai`. Four AI-exposed mutations are `inline` — `delete_my_travel_profile`,
+  // `update_my_travel_profile`, `add_trip_item`, `remove_trip_item` — and the first takes no
+  // required input, so the router could plan it straight from a sentence. It was denied in practice
+  // only because the strict input schema rejected the router's extra `query` key: defence by
+  // accident, one `.strip()` away from deleting a guest's travel profile because they typed "please
+  // delete my travel profile". `inline` means "the form asks before it acts", and off the website
+  // there is no form and no token that could stand in for one, so such a call is simply refused.
+  //
+  // `external` is deliberately NOT included. A handoff commits nothing: it returns a provider URL
+  // and logs that it did. Level 09 exposes `open_gift_link`, `open_reservation_link` and
+  // `open_booking_link` to an assistant on purpose, so that asking "where are they registered?"
+  // gets an answer, and the guest's own click on the link is the commitment.
   const payloadHash = stableHash(input);
   let confirmed: VerifiedConfirmation | undefined;
-  if (descriptor.confirmation === 'explicit') {
+  const changesOurState = descriptor.kind === 'action' || descriptor.kind === 'transaction';
+  if (descriptor.confirmation === 'explicit' || (descriptor.confirmation === 'inline' && changesOurState)) {
     if (surface !== REDEEMABLE_SURFACE) {
       return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
     }
+  }
+  if (descriptor.confirmation === 'explicit') {
     if (!services.confirmation) {
       return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('confirmation service not wired'))));
     }

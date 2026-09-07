@@ -158,6 +158,33 @@ describe('invoke pipeline', () => {
     expect((await invoke(tx, ctx({ principal: guest }).c, { text: 'hi' })).ok).toBe(true);
   });
 
+  it('refuses an inline mutation off the website, but not an inline handoff', async () => {
+    // `inline` means "the form asks before it acts", and off the UI surface there is no form. This
+    // guarantee was `explicit`-only until level 12; the concierge then began deriving a tool list
+    // from `exposure.ai`, and four AI-exposed mutations are `inline` — one of them
+    // (`delete_my_travel_profile`) requiring no input at all, so the router could plan it from a
+    // sentence. Nothing but a strict input schema stood between a guest typing "please delete my
+    // travel profile" and the deletion.
+    const base = { ...echo, kind: 'action' as const, auth: 'guest' as const, exposure: { ui: true, ai: true, webmcp: true }, annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true } };
+    const inline = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'inline_thing', confirmation: 'inline' });
+    const explicit = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'explicit_thing', confirmation: 'explicit' });
+    for (const surface of ['ai', 'webmcp'] as const) {
+      for (const action of [inline, explicit]) {
+        const r = await invoke(action, ctx({ principal: guest, surface }).c, { text: 'hi' });
+        expect(r.ok, `${action.name} on ${surface}`).toBe(false);
+        if (!r.ok) expect(r.error, `${action.name} on ${surface}`).toMatchObject({ code: 'confirmation_required', details: { reason: 'requires_ui' } });
+      }
+    }
+    // On the website `inline` still needs no token — the form is the confirmation.
+    expect((await invoke(inline, ctx({ principal: guest }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' })).ok).toBe(true);
+
+    // An `external` handoff commits nothing: it returns a provider URL and logs that it did, and
+    // level 09 exposes the gift and reservation links to an assistant on purpose. The guest's own
+    // click is the commitment, so `inline` there is a UI affordance, not a safety gate.
+    const handoff = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'handoff_thing', kind: 'external', confirmation: 'inline' });
+    expect((await invoke(handoff, ctx({ principal: guest, surface: 'ai' }).c, { text: 'hi' })).ok).toBe(true);
+  });
+
   it('requires a matching confirmation token for explicit confirmation', async () => {
     const action = defineCapability<{ text: string }, { text: string }>({
       ...echo,

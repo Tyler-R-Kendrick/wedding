@@ -8,7 +8,7 @@ const { Shell, Section, SectionHeading, Prose, Button, Form, Card, content } = k
 const { PageHead, SearchResults, FaqList } = content;
 
 /** Ask Us on the sheet: the search on a sky wash with results mounted beside it, the FAQ down the left, the concierge as a kraft-tagged card. */
-export const ConservatoryAskPage: ContentRecipe<AskProps> = ({ faq, search, frame }) => (
+export const ConservatoryAskPage: ContentRecipe<AskProps> = ({ faq, search, concierge, frame }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
     <PageHead eyebrow={CONTENT_COPY.ask.eyebrow} title={CONTENT_COPY.ask.title} lede={CONTENT_COPY.ask.lede} />
 
@@ -39,11 +39,13 @@ export const ConservatoryAskPage: ContentRecipe<AskProps> = ({ faq, search, fram
         <FaqList entries={faq.entries} labelFor={labelForRoute} />
       </div>
       <div className="cv-section__mount">
-        <Card label="Soon" featured index={2} headingLevel={2} title={CONTENT_COPY.ask.concierge} id="concierge">
+        <Card label={concierge ? CONTENT_COPY.ask.conciergeTag : CONTENT_COPY.ask.conciergeTagOff} featured index={2} headingLevel={2} title={CONTENT_COPY.ask.concierge} id="concierge">
           <div className="cv-slot" id="concierge-slot" data-slot="concierge">
-            <Prose>
-              <p>{CONTENT_COPY.ask.conciergeNote}</p>
-            </Prose>
+            {concierge ?? (
+              <Prose>
+                <p>{CONTENT_COPY.ask.conciergeNote}</p>
+              </Prose>
+            )}
           </div>
         </Card>
       </div>

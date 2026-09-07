@@ -25,7 +25,13 @@ export const searchWeddingInformationStatic = defineCapability<z.infer<typeof in
   auth: 'anonymous',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
-  exposure: { ui: true, ai: true, webmcp: true },
+  // ai: false since level 12. `search_wedding_information` supersedes it for the model — same corpus,
+  // same visibility rules, but it also returns the record text and a per-hit source id, which is what
+  // the citation and verifier layers need. Both were `ai: true` and share an identical input schema,
+  // so the router had two indistinguishable tools to choose between. This one keeps `ui` because the
+  // no-JavaScript search form on /ask-us calls it server-side, and `webmcp` because an agent asking
+  // for a route list wants the compact shape.
+  exposure: { ui: true, ai: false, webmcp: true },
   input,
   output,
   maxOutputChars: 12_000,

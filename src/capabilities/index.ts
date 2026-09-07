@@ -1,6 +1,7 @@
 import type { AnyCapability, CapabilityContext, CapabilityOutcome } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, type Result } from '@/contracts/result';
+import { aiCapabilities } from './ai';
 import { contentCapabilities } from './content';
 import { invoke } from './invoke';
 import { biometricCapabilities } from './biometrics';
@@ -29,6 +30,7 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...mediaCapabilities,
   ...mediaAiCapabilities,
   ...biometricCapabilities,
+  ...aiCapabilities,
 ];
 
 registry.registerAll(BUILTIN_CAPABILITIES);

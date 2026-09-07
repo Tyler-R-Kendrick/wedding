@@ -64,6 +64,13 @@
       "when": 1788799439067,
       "tag": "0008_hard_eternals",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788810252368,
+      "tag": "0009_safe_shotgun",
+      "breakpoints": true
     }
   ]
 }

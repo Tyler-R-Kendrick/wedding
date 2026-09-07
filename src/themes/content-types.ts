@@ -57,6 +57,13 @@ export interface WeddingProps {
 export interface AskProps {
   faq: FaqPageData;
   search?: StaticSearchData;
+  /**
+   * Level 12. The concierge island, already rendered by the route when `AI_CONCIERGE` is on, or
+   * undefined when it is off. Both designs already reserve `#concierge-slot` for it; a recipe drops
+   * this node in there and keeps its own copy as the fallback. It arrives as a node rather than a
+   * flag so the route owns the decision and neither design can quietly answer it differently.
+   */
+  concierge?: ReactNode;
 }
 /**
  * Travel & Stay (level 08). The search forms are client components the route owns, so they arrive
