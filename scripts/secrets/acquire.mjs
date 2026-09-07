@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { webcrypto, randomBytes } from 'node:crypto';
-import { SLOTS, AUTOFILL, NEED, CEREMONY, chosenOption, ceremonyOf, slotById } from './registry.mjs';
+import { SLOTS, AUTOFILL, NEED, CEREMONY, METHOD_CEREMONY, chosenOption, ceremonyOf, slotById } from './registry.mjs';
 import { applyEnv, readEnv, presentNames, describe } from './env-file.mjs';
 import * as authmd from './authmd.mjs';
 import * as oauth from './oauth.mjs';
@@ -169,10 +169,11 @@ async function rungRegister(cred, step, ctx) {
 async function rungDelegated(cred, step, ctx) {
   const result = await oauth.delegate({
     origin: step.origin,
+    // An option may pin its own redirect when the provider refuses the artifact URL.
     authorizeEndpoint: step.authorize,
     tokenEndpoint: step.token,
     scope: step.scope,
-    redirectUri: ctx.redirectUri,
+    redirectUri: step.redirect || ctx.redirectUri,
     onCeremony: (c) => putCeremony(cred.id, c, { method: c.kind === 'device' ? 'device' : 'oauth', provider: step.origin, scope: step.scope || null }),
     awaitCode: ctx.waitSeconds
       ? async (state) => {
@@ -354,7 +355,7 @@ async function writeOutbox({ autofilled, results }) {
 function report({ autofilled, results }) {
   if (autofilled.length) console.log(`Auto-filled (no account needed): ${autofilled.join(', ')}`);
   for (const r of results) {
-    const label = METHOD_LABELS[r.method]?.short || r.method || '';
+    const label = r.method ? (CEREMONY[METHOD_CEREMONY[r.method]]?.label || r.method) : '';
     const head = `${r.credential.padEnd(20)} ${r.state}${label ? ` via ${label}` : ''}`;
     console.log(head);
     if (r.wrote) console.log(`  wrote ${r.wrote.join(', ')}`);

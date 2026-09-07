@@ -73,9 +73,10 @@ const RAW_SLOTS = [
     without: 'Codes land in a dev inbox nobody reads',
     options: [
       {
-        id: 'resend', name: 'Resend', recommended: true, note: 'Simplest sign-up; generous free tier',
-        host: 'resend.com', ceremony: 'signin',
-        ladder: [{ method: 'authmd', origin: 'https://resend.com' }, { method: 'browser', recipe: 'resend-dashboard' }, { method: 'manual' }],
+        id: 'resend', name: 'Resend', recommended: true, note: 'Registers itself; you approve one link',
+        host: 'resend.com', ceremony: 'link',
+        // Verified 2026-09-07: POST https://api.resend.com/oauth/register -> 201 with a client_id.
+        ladder: [{ method: 'oauth', origin: 'https://api.resend.com', scope: 'emails:send' }, { method: 'browser', recipe: 'resend-dashboard' }, { method: 'manual' }],
         secrets: ['RESEND_API_KEY'],
         fills: { EMAIL_FROM: 'Sara + Tyler <no-reply@{domain}>' },
         probe: { url: 'https://api.resend.com/domains', headers: { authorization: 'Bearer {value}' } },
@@ -103,8 +104,13 @@ const RAW_SLOTS = [
     options: [
       {
         id: 'r2', name: 'Cloudflare R2', recommended: true, note: 'No charge for downloads — the one that matters for a gallery',
-        host: 'dash.cloudflare.com', ceremony: 'agent',
-        ladder: [{ method: 'mcp', server: 'Cloudflare Developer Platform', how: 'create an R2 bucket and a scoped token' }, { method: 'browser', recipe: 'cloudflare-r2' }, { method: 'manual' }],
+        host: 'dash.cloudflare.com', ceremony: 'link',
+        // Verified 2026-09-07: bindings.mcp.cloudflare.com/register -> 201, PKCE S256 authorize.
+        ladder: [
+          { method: 'mcp', server: 'Cloudflare Developer Platform', how: 'create an R2 bucket and a scoped token' },
+          { method: 'oauth', origin: 'https://bindings.mcp.cloudflare.com' },
+          { method: 'browser', recipe: 'cloudflare-r2' }, { method: 'manual' },
+        ],
         secrets: ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'],
         fills: { S3_ENDPOINT: 'https://{account}.r2.cloudflarestorage.com', S3_REGION: 'auto', S3_BUCKET: `${brand}-media`, S3_FORCE_PATH_STYLE: 'true' },
       },
@@ -124,8 +130,13 @@ const RAW_SLOTS = [
       },
       {
         id: 'supabase-storage', name: 'Supabase Storage', note: 'One account for database and files',
-        host: 'supabase.com', ceremony: 'agent', pairsWith: 'database:supabase',
-        ladder: [{ method: 'mcp', server: 'Supabase', how: 'read the project ref and mint S3 access keys' }, { method: 'browser', recipe: 'supabase-s3' }, { method: 'manual' }],
+        host: 'supabase.com', ceremony: 'link', pairsWith: 'database:supabase',
+        // Verified 2026-09-07: api.supabase.com/platform/oauth/apps/register -> 201.
+        ladder: [
+          { method: 'mcp', server: 'Supabase', how: 'read the project ref and mint S3 access keys' },
+          { method: 'oauth', origin: 'https://api.supabase.com', scope: 'storage:read storage:write projects:read' },
+          { method: 'browser', recipe: 'supabase-s3' }, { method: 'manual' },
+        ],
         secrets: ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'],
         fills: { S3_ENDPOINT: 'https://{ref}.supabase.co/storage/v1/s3', S3_REGION: '{region}', S3_BUCKET: 'media', S3_FORCE_PATH_STYLE: 'true' },
       },
@@ -144,17 +155,31 @@ const RAW_SLOTS = [
     without: 'Embedded Postgres that resets when the sandbox does',
     options: [
       {
-        id: 'supabase', name: 'Supabase', recommended: true, note: 'Postgres with a dashboard; pairs with its storage',
-        host: 'supabase.com', ceremony: 'agent',
-        ladder: [{ method: 'mcp', server: 'Supabase', how: 'create_project, then the pooled connection string' }, { method: 'browser', recipe: 'supabase-dashboard' }, { method: 'manual' }],
+        id: 'supabase', name: 'Supabase', recommended: true, note: 'Registers itself; you approve one link',
+        host: 'supabase.com', ceremony: 'link',
+        // Verified 2026-09-07: api.supabase.com publishes authorize/token/register; DCR -> 201.
+        // (mcp.supabase.com answers 404 on its well-knowns intermittently — use the API origin.)
+        ladder: [
+          { method: 'mcp', server: 'Supabase', how: 'create_project, then the pooled connection string' },
+          { method: 'oauth', origin: 'https://api.supabase.com', scope: 'projects:read projects:write database:read' },
+          { method: 'browser', recipe: 'supabase-dashboard' }, { method: 'manual' },
+        ],
         secrets: ['DATABASE_URL'], fills: {},
         warn: 'A connection string returned through chat has passed the transcript — rotate the password before real guest data exists.',
       },
       { id: 'neon', name: 'Neon', note: 'Serverless Postgres; scales to zero between visits', host: 'console.neon.tech', ceremony: 'link',
-        ladder: [{ method: 'oauth', origin: 'https://oauth2.neon.tech', scope: 'urn:neoncloud:projects:create' }, { method: 'browser', recipe: 'neon-console' }, { method: 'manual' }],
+        // Verified 2026-09-07: mcp.neon.tech/api/register -> 200; scopes "read write"; PKCE S256.
+        ladder: [{ method: 'oauth', origin: 'https://mcp.neon.tech', scope: 'read write' }, { method: 'browser', recipe: 'neon-console' }, { method: 'manual' }],
         secrets: ['DATABASE_URL'], fills: {} },
-      { id: 'vercel-postgres', name: 'Vercel Postgres', note: 'If the site deploys to Vercel anyway', host: 'vercel.com', ceremony: 'agent',
-        ladder: [{ method: 'mcp', server: 'Vercel', how: 'create a Postgres store and read its URL' }, { method: 'browser', recipe: 'vercel-dashboard' }, { method: 'manual' }],
+      { id: 'vercel-postgres', name: 'Vercel Postgres', note: 'If the site deploys to Vercel anyway', host: 'vercel.com', ceremony: 'link',
+        // Verified 2026-09-07: api.vercel.com/login/oauth/register -> 201, but ONLY for a loopback
+        // redirect; it refuses the artifact URL ("redirect URIs are not approved"). The sandbox
+        // therefore runs this one against 127.0.0.1 and polls, rather than catching a redirect.
+        ladder: [
+          { method: 'mcp', server: 'Vercel', how: 'create a Postgres store and read its URL' },
+          { method: 'oauth', origin: 'https://api.vercel.com', redirect: 'http://127.0.0.1:8976/callback' },
+          { method: 'browser', recipe: 'vercel-dashboard' }, { method: 'manual' },
+        ],
         secrets: ['DATABASE_URL'], fills: {} },
       { id: 'byo-postgres', name: 'A Postgres you already have', note: 'Any connection string', host: null, ceremony: 'paste',
         ladder: [{ method: 'manual' }], secrets: ['DATABASE_URL'], fills: {} },
@@ -165,6 +190,8 @@ const RAW_SLOTS = [
     does: 'Answers guest questions on /ask, captions photos, checks RSVPs',
     without: 'A mock model that only replays fixtures',
     options: [
+      // Verified 2026-09-07: no RFC 8414/9728 metadata at api.anthropic.com, console.anthropic.com
+      // or claude.ai — nothing to register against, so this is an honest sign-in.
       { id: 'anthropic', name: 'Anthropic', recommended: true, note: 'What the site is written against', host: 'console.anthropic.com', ceremony: 'signin',
         ladder: [{ method: 'authmd', origin: 'https://console.anthropic.com' }, { method: 'browser', recipe: 'anthropic-console' }, { method: 'manual' }],
         secrets: ['ANTHROPIC_API_KEY'], fills: {},
@@ -194,8 +221,12 @@ const RAW_SLOTS = [
     does: 'Transcodes guest clips so they play on any phone',
     without: 'Clips play as uploaded, with an ffmpeg poster frame',
     options: [
-      { id: 'cloudflare-stream', name: 'Cloudflare Stream', recommended: true, note: 'Pairs with R2', host: 'dash.cloudflare.com', ceremony: 'agent',
-        ladder: [{ method: 'mcp', server: 'Cloudflare Developer Platform', how: 'read the account id and mint a Stream token' }, { method: 'browser', recipe: 'cloudflare-stream' }, { method: 'manual' }],
+      { id: 'cloudflare-stream', name: 'Cloudflare Stream', recommended: true, note: 'Pairs with R2', host: 'dash.cloudflare.com', ceremony: 'link',
+        ladder: [
+          { method: 'mcp', server: 'Cloudflare Developer Platform', how: 'read the account id and mint a Stream token' },
+          { method: 'oauth', origin: 'https://bindings.mcp.cloudflare.com' },
+          { method: 'browser', recipe: 'cloudflare-stream' }, { method: 'manual' },
+        ],
         secrets: ['CLOUDFLARE_STREAM_API_TOKEN'], fills: { CLOUDFLARE_ACCOUNT_ID: '{account}', CLOUDFLARE_STREAM_CUSTOMER_CODE: '{customer}' },
         probe: { url: 'https://api.cloudflare.com/client/v4/user/tokens/verify', headers: { authorization: 'Bearer {value}' }, valueVar: 'CLOUDFLARE_STREAM_API_TOKEN' } },
       { id: 'none-video', name: 'Skip it', note: 'ffmpeg posters only — perfectly fine for a wedding', host: null, ceremony: 'agent',
@@ -207,6 +238,7 @@ const RAW_SLOTS = [
     does: 'Live prices on the Travel page instead of a link',
     without: 'Honest "check current prices" deep links',
     options: [
+      // Verified 2026-09-07: nothing published at api.duffel.com, app.duffel.com or mcp.duffel.com.
       { id: 'duffel', name: 'Duffel', recommended: true, note: 'Self-serve token; flights and stays in one', host: 'app.duffel.com', ceremony: 'signin',
         ladder: [{ method: 'authmd', origin: 'https://duffel.com' }, { method: 'browser', recipe: 'duffel-dashboard' }, { method: 'manual' }],
         secrets: ['DUFFEL_API_KEY'], fills: { FLIGHTS_PROVIDER: 'duffel-links', HOTELS_PROVIDER: 'duffel-stays' },
@@ -224,10 +256,13 @@ const RAW_SLOTS = [
     does: 'Gets guests home safely on the night',
     without: 'Codes you hand out yourself',
     options: [
-      { id: 'uber', name: 'Uber for Business', recommended: true, note: 'Vouchers charged to one account', host: 'developer.uber.com', ceremony: 'link',
+      { id: 'uber', name: 'Uber for Business', recommended: true, note: 'Vouchers charged to one account', host: 'developer.uber.com', ceremony: 'signin',
         ladder: [{ method: 'oauth', origin: 'https://auth.uber.com', authorize: 'https://auth.uber.com/oauth/v2/authorize', token: 'https://auth.uber.com/oauth/v2/token', scope: 'vouchers.read vouchers.write' }, { method: 'browser', recipe: 'uber-dashboard' }, { method: 'manual' }],
         secrets: ['UBER_CLIENT_ID', 'UBER_CLIENT_SECRET'], fills: { TRANSPORT_BENEFIT_MODE: 'uber', UBER_ORG_ID: '{org}', UBER_VOUCHER_PROGRAM_ID: '{program}' },
-        note2: 'Uber publishes a registration endpoint that currently returns 404, so this falls through to a sign-in.' },
+        // Verified 2026-09-07: auth.uber.com advertises an oauth.dcr scope and a registration
+        // endpoint, but POSTing to it answers 403 "Missing csrf token" — it is browser-gated,
+        // so the agent cannot register itself here and this falls through to a sign-in.
+        note2: 'Uber gates client registration behind a browser CSRF token, so this needs one sign-in.' },
       { id: 'manual-codes', name: 'Codes you print', note: 'No account; you distribute them', host: null, ceremony: 'agent',
         ladder: [{ method: 'generate' }], secrets: [], fills: { TRANSPORT_BENEFIT_MODE: 'manual-code' }, isOptOut: true },
     ],
@@ -238,6 +273,8 @@ const RAW_SLOTS = [
     without: 'The licensed placeholder set already in the repo',
     options: [
       { id: 'fal', name: 'fal.ai', recommended: true, note: 'What scripts/fal-generate.mjs calls', host: 'fal.ai', ceremony: 'signin',
+        // Verified 2026-09-07: auth.fal.ai (Auth0) advertises a registration_endpoint and a device
+        // grant, but POSTing answers "dynamic client registration is disabled". Sign-in it is.
         ladder: [{ method: 'authmd', origin: 'https://fal.ai' }, { method: 'browser', recipe: 'fal-dashboard' }, { method: 'manual' }],
         secrets: ['FAL_KEY'], fills: {},
         probe: { url: 'https://rest.alpha.fal.ai/tokens/', headers: { authorization: 'Key {value}' } } },

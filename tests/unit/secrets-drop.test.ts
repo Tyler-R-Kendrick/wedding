@@ -214,3 +214,78 @@ describe('the ladder only names rungs that exist', () => {
     }
   });
 });
+
+describe('what a ceremony promises, the ladder can deliver', () => {
+  it('never advertises "one link" without a rung that can produce one', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        if (ceremonyOf(option) !== 'link') continue;
+        const delegated = option.ladder.some((s: { method: string }) => s.method === 'oauth' || s.method === 'device');
+        expect(delegated, `${slot.id}/${option.id} promises a link with no oauth or device rung`).toBe(true);
+      }
+    }
+  });
+
+  it('never advertises "automatic" unless a rung needs no human at all', () => {
+    const handsFree = new Set(['generate', 'derive', 'detect', 'mcp', 'authmd', 'register']);
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        if (ceremonyOf(option) !== 'agent') continue;
+        const free = option.ladder.some((s: { method: string }) => handsFree.has(s.method));
+        expect(free, `${slot.id}/${option.id} claims automatic with no hands-free rung`).toBe(true);
+      }
+    }
+  });
+
+  it('carries the origin an oauth rung needs to discover its endpoints', () => {
+    for (const slot of SLOTS) {
+      for (const option of slot.options) {
+        for (const step of option.ladder as { method: string; origin?: string }[]) {
+          if (step.method !== 'oauth') continue;
+          expect(step.origin, `${slot.id}/${option.id} has an oauth rung with no origin to discover`).toMatch(/^https:\/\//);
+        }
+      }
+    }
+  });
+});
+
+describe('dynamic client registration asks only for what is on offer', () => {
+  it('drops grants the server does not advertise', async () => {
+    const { registerClient } = await import('../../scripts/secrets/oauth.mjs');
+    let sent: Record<string, unknown> = {};
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (_url: string, init: { body: string }) => {
+      sent = JSON.parse(init.body);
+      return { ok: true, status: 201, text: async () => JSON.stringify({ client_id: 'abc' }) };
+    }) as unknown as typeof fetch;
+    try {
+      // Requesting the device grant from a server that lacks it is what made Cloudflare and
+      // Resend look unavailable: both answer 400 rather than ignoring the extra grant.
+      await registerClient(
+        { registration_endpoint: 'https://example.test/register', grant_types_supported: ['authorization_code', 'refresh_token'] },
+        { redirectUri: 'https://claude.ai/code/artifact/x' },
+      );
+    } finally { globalThis.fetch = original; }
+    expect(sent.grant_types).toEqual(['authorization_code', 'refresh_token']);
+    expect(sent.grant_types).not.toContain('urn:ietf:params:oauth:grant-type:device_code');
+    // An https redirect is a web client, not a native one.
+    expect(sent.application_type).toBeUndefined();
+  });
+
+  it('marks a loopback redirect as a native client', async () => {
+    const { registerClient } = await import('../../scripts/secrets/oauth.mjs');
+    let sent: Record<string, unknown> = {};
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (_url: string, init: { body: string }) => {
+      sent = JSON.parse(init.body);
+      return { ok: true, status: 201, text: async () => JSON.stringify({ client_id: 'abc' }) };
+    }) as unknown as typeof fetch;
+    try {
+      await registerClient(
+        { registration_endpoint: 'https://example.test/register', grant_types_supported: ['authorization_code'] },
+        { redirectUri: 'http://127.0.0.1:8976/callback' },
+      );
+    } finally { globalThis.fetch = original; }
+    expect(sent.application_type).toBe('native');
+  });
+});

@@ -47,6 +47,7 @@
     "secrets:verify": "NODE_USE_ENV_PROXY=1 node scripts/secrets/verify.mjs",
     "secrets:authmd": "NODE_USE_ENV_PROXY=1 node scripts/secrets/authmd.mjs discover",
     "secrets:page": "node scripts/secrets/build-page.mjs",
+    "secrets:probe": "NODE_USE_ENV_PROXY=1 node scripts/secrets/probe-agent-auth.mjs",
     "assets:fal": "node scripts/fal-generate.mjs",
     "assets:check": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --check",
     "assets:fetch": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs",

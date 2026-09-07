@@ -78,6 +78,7 @@ npm run secrets:acquire    # run the ladder (no args); writes .env, emits .secre
 npm run secrets:resume     # finish delegated ceremonies the couple has since approved
 npm run secrets:verify     # probe what landed: live / rejected / unreachable
 npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
+npm run secrets:probe      # which providers let an agent register itself (--register to prove it)
 ```
 
 - Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
@@ -90,6 +91,11 @@ npm run secrets:page       # rebuild the Secret Drop artifact after a registry c
   `kind: link` → start that option's OAuth or device ceremony.
 - Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
   resort, for someone who already holds a key and would rather not wait.
+- **Never assert what a provider supports — probe it.** `npm run secrets:probe` checks RFC
+  9728/8414 metadata and RFC 7591 registration; `--register` proves an advertised endpoint
+  honours a request. Cloudflare, Neon, Supabase, Resend and Vercel all register an agent
+  client with no human at all. Looking only for WorkOS's `agent_auth` at an apex domain finds
+  none of them, and concluding "no agent auth exists" from that is how this got it wrong once.
 - Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.
 - Never read, print, or commit `.env` or `.secrets/private*`; `.claude/settings.json` denies
   both. Report variable *names* and lengths, never values.

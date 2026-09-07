@@ -35,36 +35,83 @@ async function post(url, body, headers = {}) {
 }
 const form = (obj) => new URLSearchParams(Object.entries(obj).filter(([, v]) => v != null)).toString();
 
-/** RFC 8414 / OIDC discovery. Returns the metadata document or null. */
-export async function metadata(origin) {
-  const base = origin.startsWith('http') ? origin.replace(/\/+$/, '') : `https://${origin}`;
-  for (const path of ['/.well-known/oauth-authorization-server', '/.well-known/openid-configuration']) {
+const WELL_KNOWN = ['/.well-known/oauth-authorization-server', '/.well-known/openid-configuration'];
+
+async function fetchJson(url, tries = 2) {
+  for (let i = 0; i < tries; i++) {
     try {
-      const res = await fetch(base + path, { headers: { accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(12_000) });
-      if (!res.ok) continue;
-      const json = await res.json();
-      if (json.token_endpoint) return json;
-    } catch { /* try the next path */ }
+      const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(12_000) });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      // These endpoints rate-limit; one retry separates "busy" from "absent".
+      if (i + 1 < tries) await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  return null;
+}
+
+/**
+ * Discovery, the whole chain: RFC 9728 protected-resource metadata names the authorization
+ * servers, and each is described by RFC 8414 metadata. Trying only the resource's own origin
+ * misses every provider that separates the two — Supabase's MCP endpoint points at
+ * api.supabase.com, and looking only at mcp.supabase.com finds nothing.
+ */
+export async function metadata(origin) {
+  const u = new URL(origin.startsWith('http') ? origin : `https://${origin}`);
+  const base = u.origin;
+  const path = u.pathname === '/' ? '' : u.pathname;
+
+  const servers = [];
+  for (const wk of [`${base}/.well-known/oauth-protected-resource${path}`, `${base}/.well-known/oauth-protected-resource`]) {
+    const prm = await fetchJson(wk);
+    if (prm?.authorization_servers?.length) { servers.push(...prm.authorization_servers.map((x) => String(x).replace(/\/+$/, ''))); break; }
+  }
+  if (!servers.includes(base)) servers.push(base);
+
+  for (const server of servers) {
+    for (const wk of WELL_KNOWN) {
+      for (const candidate of path ? [server + wk, server + wk + path] : [server + wk]) {
+        const json = await fetchJson(candidate);
+        if (json?.token_endpoint) return json;
+      }
+    }
   }
   return null;
 }
 
 /** RFC 7591: ask the provider to mint us a client. Many providers allow this anonymously. */
+/**
+ * RFC 7591. Ask only for grants the server says it supports: requesting the device grant from
+ * a server that does not offer it is a 400, which is how this failed against Cloudflare and
+ * Resend even though both register happily when asked properly.
+ */
+/**
+ * @param {{registration_endpoint?: string, grant_types_supported?: string[]}} meta
+ * @param {{redirectUri?: string, name?: string, grantTypes?: string[]}} [options]
+ * @returns {Promise<{client_id: string, client_secret?: string}>}
+ */
 export async function registerClient(meta, { redirectUri, name = 'Sara + Tyler wedding sandbox', grantTypes } = {}) {
   if (!meta?.registration_endpoint) {
     const err = new Error('provider publishes no registration_endpoint');
     err.code = 'NO_DCR';
     throw err;
   }
-  const res = await post(meta.registration_endpoint, JSON.stringify({
+  const supported = new Set(meta.grant_types_supported || ['authorization_code', 'refresh_token']);
+  const wanted = (grantTypes || ['authorization_code', 'refresh_token', 'urn:ietf:params:oauth:grant-type:device_code']).filter((g) => supported.has(g));
+  const body = {
     client_name: name,
     redirect_uris: redirectUri ? [redirectUri] : undefined,
-    grant_types: grantTypes || ['urn:ietf:params:oauth:grant-type:device_code', 'authorization_code'],
+    grant_types: wanted.length ? wanted : ['authorization_code'],
     response_types: ['code'],
     token_endpoint_auth_method: 'none',
-    application_type: 'native',
-  }), { 'content-type': 'application/json' });
-  if (!res.ok || !res.json.client_id) throw new Error(`dynamic client registration failed (${res.status})`);
+  };
+  // `application_type: native` is for loopback/custom-scheme clients; an https redirect is a web client.
+  if (redirectUri && !/^https:/.test(redirectUri)) body.application_type = 'native';
+  const res = await post(meta.registration_endpoint, JSON.stringify(body), { 'content-type': 'application/json' });
+  if (!res.ok || !res.json.client_id) {
+    throw new Error(`dynamic client registration failed (${res.status})${res.json?.error_description ? ': ' + res.json.error_description : ''}`);
+  }
   return res.json;
 }
 
@@ -146,6 +193,7 @@ export async function exchangeCode({ tokenEndpoint, clientId, clientSecret, redi
  * sealed a code for us (acquire.mjs supplies both).
  */
 export async function delegate({ origin, clientId, clientSecret, scope, redirectUri, onCeremony, awaitCode, authorizeEndpoint, tokenEndpoint }) {
+  // Some servers refuse an https redirect they have not approved (Vercel) and want a loopback.
   const meta = await metadata(origin);
   const token_endpoint = tokenEndpoint || meta?.token_endpoint;
   if (!token_endpoint) throw new Error(`no token endpoint discoverable at ${origin}`);

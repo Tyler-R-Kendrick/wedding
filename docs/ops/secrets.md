@@ -90,6 +90,8 @@ npm run secrets:resume                          # finish ceremonies you have sin
 npm run secrets:verify                          # is what landed actually accepted by the provider?
 npm run secrets:authmd                          # which providers publish agent registration today
 npm run secrets:page                            # rebuild the artifact HTML after a registry change
+npm run secrets:probe                           # which providers let an agent register itself
+npm run secrets:probe -- --register             # ...and prove the advertised endpoints work
 ```
 
 ### How the plan is derived
@@ -164,25 +166,42 @@ gitignored) and every later run drives the dashboard headlessly: open the keys p
 "Create key", and read the value back **by pattern** (`sk-ant-api…`, `re_…`, `duffel_test_…`)
 rather than by CSS selector, because dashboard markup drifts and key formats do not.
 
-## auth.md today
+## Which providers let an agent register itself
 
-`npm run secrets:authmd` re-probes every provider on the ladder. As of 2026-09-07:
+**Ask, don't assume.** `npm run secrets:probe` checks every provider on the ladder and prints
+what it found; `-- --register` proves an advertised endpoint actually mints a client, because
+advertising one is not the same as honouring it.
 
-| Provider | `agent_auth` metadata | auth.md document |
-|---|---|---|
-| Resend | no | yes — states it does not support agentic registration |
-| WorkOS | no (per-tenant, not at the apex) | yes |
-| Anthropic, OpenAI, Voyage, fal.ai, Stitch, Duffel, Uber, Cloudflare, Supabase | no | no |
+An earlier version of this document asserted that no provider supported agent registration.
+That was wrong, and wrong in an instructive way: it looked only for WorkOS's `agent_auth`
+extension at apex domains. The mechanism the industry actually shipped is **RFC 7591 dynamic
+client registration** behind **RFC 9728/8414** metadata — which MCP's auth spec requires — and
+most of these providers have it.
 
-So the ladder is honest about falling through today — and the moment one of these publishes
-an `agent_auth` block, `acquire.mjs` picks it up with no code change. What *does* work now
-without a human: every `generate`/`derive`/`detect` variable, Openverse's anonymous
-registration endpoint, and Supabase and Cloudflare through their MCP servers.
+Findings on 2026-09-07 (`npm run secrets:probe -- --register`):
 
-One correction worth recording: `auth.uber.com` *advertises* a `registration_endpoint` in its
-RFC 8414 metadata, but posting to it returns 404 — the endpoint is published, not open. The
-ladder discovers that at run time and falls through to the sign-in handoff, which is why you
-should trust the page's live rows over any table in this document.
+| Provider | Registration endpoint | Result | Ceremony |
+|---|---|---|---|
+| Cloudflare | `bindings.mcp.cloudflare.com/register` | **201 registered** | one link |
+| Neon | `mcp.neon.tech/api/register` | **200 registered** (scopes `read write`) | one link |
+| Supabase | `api.supabase.com/platform/oauth/apps/register` | **201 registered** | one link |
+| Resend | `api.resend.com/oauth/register` | **201 registered** (scopes `emails:send`) | one link |
+| Vercel | `api.vercel.com/login/oauth/register` | **201**, loopback redirect only | one link |
+| Uber | `auth.uber.com/oauth/v2/register` | advertised; 403 `Missing csrf token` | sign in once |
+| fal.ai | `auth.fal.ai/oidc/register` | advertised; "dynamic client registration is disabled" | sign in once |
+| Anthropic · OpenAI · Voyage · Duffel | — | no RFC 8414/9728 metadata at any probed origin | sign in once |
+
+Two lessons are baked into the code as a result:
+
+- **Discovery must follow the whole chain.** A resource's metadata names its authorization
+  servers, which are often on a different host — Supabase's MCP endpoint points at
+  `api.supabase.com`, and looking only at `mcp.supabase.com` finds nothing.
+- **Ask only for grants the server advertises.** Requesting the device grant from a server
+  that does not offer it is a 400; that alone made Cloudflare and Resend look unavailable when
+  both register happily.
+
+Re-run the probe periodically. When a provider turns registration on, moving its option to a
+one-link ceremony is a two-line change in `registry.mjs`.
 
 ## Durable key (future sessions self-apply)
 
