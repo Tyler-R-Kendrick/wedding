@@ -167,6 +167,21 @@ The page is a status board for work already under way, not a form to complete. M
 4. **Claude runs `npm run secrets:resume`**, exchanges anything you approved, writes `.env`,
    and reports the variable *names* that landed.
 
+**Nothing you have already done is ever offered again.** Each control disappears the moment its
+work is under way, and is replaced by what is actually true:
+
+| State | What the strip shows |
+|---|---|
+| You asked Claude to sign in or fetch a link | *Asked 3 min ago — Claude is on it*, plus a quiet **ask again** if it stalls |
+| A link is posted and you have opened it | *Opened 1 min ago — waiting for the provider*; the link stays, demoted, because approval can fail |
+| You approved and the code came back | *Approved 2 min ago — finishing up* — no control at all |
+| The credential is held | The row leaves **Waiting on you** for the manifest, teal, reading `connected · 1/1 held · you approved a link` |
+
+The last row is the point of the others: `status/<slot>` carries how many of the slot's variables
+are held and which rung produced them, so "connected" is never something you have to take on
+faith after signing in somewhere. Ceremonies at `code-received` are deliberately *not* treated as
+open — offering "Approve" for something already approved is the trap this page exists to remove.
+
 ### What the agent must watch
 
 | Store path | Written by | Meaning |

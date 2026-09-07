@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 // The Secret Drop tooling is plain ESM under scripts/ so it can run in a bare sandbox
 // (no build, no tsx) — the tests import it the same way the scripts do.
@@ -379,5 +380,38 @@ describe('the Secret Drop as a local web app', () => {
     for (const [key, path] of Object.entries(FILES)) {
       expect(path.includes('/.secrets/'), `${key} -> ${path}`).toBe(true);
     }
+  });
+});
+
+/**
+ * The page and its stores have to agree about which collections exist. They did not: `handoffs`
+ * was written on every "Sign in once" and subscribed to by nobody, so the next snapshot rebuilt
+ * the strip from state that had never heard of the request — restoring the button that had just
+ * been pressed. Anyone acting on that page reasonably concluded it had not worked and pressed
+ * again. These are the invariants that would have caught it.
+ */
+describe('the page and its stores agree on what exists', () => {
+  const template = readFileSync(new URL('../../scripts/secrets/page/template.html', import.meta.url), 'utf8');
+  const matchAll = (re: RegExp) => [...new Set([...template.matchAll(re)].map((m) => m[1]!))].sort();
+
+  const written = matchAll(/db\.doc\('([a-z]+)\//g);
+  const subscribed = matchAll(/db\.collection\('([a-z]+)'\)/g);
+
+  it('reads back every collection it writes to', () => {
+    // A write nobody reads is state the page cannot render, which reads to a user as "it failed".
+    expect(written.length).toBeGreaterThan(0);
+    for (const collection of written) expect(subscribed).toContain(collection);
+  });
+
+  it('is served every collection it subscribes to when it runs locally', async () => {
+    const served = Object.keys(await collections());
+    for (const collection of subscribed) expect(served).toContain(collection);
+  });
+
+  it('never offers a second approval for a ceremony already answered', () => {
+    // `code-received` means the code came back and is being exchanged. The old filter was
+    // `status !== 'done'`, which left the Approve link up for a ceremony already approved.
+    expect(template).toContain("c.status === 'code-received'");
+    expect(template).not.toMatch(/ceremonies\.find\(\(c\) => c\.credential === slot\.id && c\.status !== 'done'\)/);
   });
 });
