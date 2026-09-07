@@ -1,0 +1,442 @@
+<title>Invitation Claim Flow</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+.auth { padding: var(--spacing-xl) var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-lg); min-height: 420px; }
+
+.code-input {
+  font-family: var(--mono);
+  font-size: 28px;
+  letter-spacing: 0.36em;
+  text-align: center;
+  padding: 14px 10px 14px 20px;
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+  min-height: 56px;
+}
+
+.code-input:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 1px; }
+
+/* The entitlement matrix is the point of the last scene: what a principal may
+   do is data, and hidden UI is never authorization. */
+.ent { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ent th, .ent td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--color-outline); }
+.ent th { font-family: var(--type-label-caps-family); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-on-surface-muted); font-weight: 600; }
+.ent td:first-child { font-family: var(--mono); font-size: 12px; }
+.ent .yes { color: var(--color-secondary); font-weight: 700; }
+.ent .no { color: var(--color-on-surface-muted); }
+[data-theme="conservatory"] .ent .yes { color: var(--color-leaf-deep); }
+
+.stepline { display: flex; gap: 5px; align-items: center; }
+.stepline i { flex: 1; height: 3px; background: var(--color-outline); font-style: normal; }
+.stepline i[data-on="true"] { background: var(--color-primary); }
+
+.member { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--color-outline); background: var(--color-surface); cursor: pointer; min-height: 48px; }
+.member:hover { background: var(--color-neutral); }
+[data-theme="conservatory"] .member { border-radius: var(--rounded-md); }
+.member-i { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border: 1px solid var(--color-outline); font-family: var(--type-label-caps-family); font-size: 13px; font-weight: 600; color: var(--color-on-surface-muted); border-radius: 50%; }
+.member b { font-weight: 600; font-size: 17px; }
+.member small { color: var(--color-on-surface-muted); font-size: 14px; }
+
+.clock { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 13px; color: var(--color-error); }
+</style>
+
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 06</p>
+    <h1 class="mast-title">Invitation claim, codes &amp; entitlements</h1>
+    <p class="mast-sub">No passwords and no accounts. An invitation link is <em>discovery only</em> — it says which household you're looking at, never who you are. Possession is proved with a six-digit code or a passkey, and everything sensitive re-asks.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail" aria-label="Identity surfaces">
+    <h2>The happy path</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="claim" data-url="/i/01JQ8F…  →  /claim/verify">Claim an invitation<small>4 steps, click through</small></button>
+    </div>
+    <h2>Other ways in</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="signin" data-url="/sign-in">Sign in by email<small>lost the card</small></button>
+      <button type="button" data-scene="passkey" data-url="/claim/passkey">Add a passkey<small>optional, skippable</small></button>
+    </div>
+    <h2>When it goes wrong</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="errors" data-url="/claim/verify?error=…">Error states<small>all 15, verbatim</small></button>
+      <button type="button" data-scene="stepup" data-url="/step-up">Step-up<small>5-minute window</small></button>
+    </div>
+    <h2>Authorization</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="entitlements" data-url="principal.entitlements">Entitlements<small>19 capabilities</small></button>
+      <button type="button" data-scene="guestops" data-url="/admin/guests">Admin guest ops<small>who can act for whom</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/i/01JQ8F…</b>
+        <span id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- CLAIM FLOW -->
+        <div class="site" data-scene-panel="claim" hidden data-flow="claim">
+          <div class="auth" data-step="1">
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i></i><i></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">You're invited</p>
+              <h1 class="w-h1">The Testhouse household</h1>
+              <p class="w-body">This link opens your household's invitation. Tell us which one of you is holding the phone.</p>
+            </div>
+            <div class="w-stack-sm">
+              <button class="member" type="button" data-go="2"><span class="member-i">AT</span><span><b>Ada Testhouse</b><br><small>Manages this household's RSVP</small></span></button>
+              <button class="member" type="button" data-go="2"><span class="member-i">BT</span><span><b>Ben Testhouse</b></span></button>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Cleo is under 18, so she isn't listed here — a child never claims an invitation. An adult in the household answers for her.</p>
+            </div>
+            <p class="w-small w-muted">Not your household? <a class="w-link" href="#">Sign in with your email</a> instead.</p>
+          </div>
+
+          <div class="auth" data-step="2" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Step 2 of 3</p>
+              <h1 class="w-h1">Check your email</h1>
+              <p class="w-body">We sent a six-digit code to <strong>a•••@e•••.test</strong>. It's good for ten minutes.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="otp">Your code</label>
+              <input class="code-input" id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="otp-help">
+              <p class="w-small w-muted" id="otp-help">Six digits. Five tries, then a fifteen-minute wait.</p>
+            </div>
+            <div class="w-stack-sm">
+              <button class="w-btn w-btn-primary" type="button" data-go="3">Confirm it's me</button>
+              <button class="w-btn" type="button">Send a new code</button>
+            </div>
+            <p class="w-small w-muted">The masked address shows you which inbox to open without telling a forwarded link who you are.</p>
+          </div>
+
+          <div class="auth" data-step="3" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i><i></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">You're in</p>
+              <h1 class="w-h1">Welcome, Ada</h1>
+              <p class="w-body">You're signed in as <strong>Ada Testhouse</strong> from Testhouse household — you manage the RSVP for your household.</p>
+            </div>
+            <a class="w-btn w-btn-primary" href="#" data-go="4">Go to Your Weekend</a>
+            <div class="w-card">
+              <h2 class="w-h3">Skip the code next time?</h2>
+              <p class="w-small">Add a passkey and your phone will let you straight back in — same face or fingerprint you use to unlock it.</p>
+              <div class="w-row">
+                <button class="w-btn w-btn-sm w-btn-primary" type="button" data-go="4">Add a passkey</button>
+                <button class="w-btn w-btn-sm" type="button" data-go="4">Not now</button>
+              </div>
+            </div>
+            <div class="w-stack-sm">
+              <h2 class="w-label">Not Ada? Pick yourself</h2>
+              <button class="member" type="button"><span class="member-i">BT</span><span><b>Ben Testhouse</b><br><small>Switch to Ben</small></span></button>
+            </div>
+          </div>
+
+          <div class="auth" data-step="4" hidden>
+            <div class="stepline" aria-hidden="true"><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i><i data-on="true"></i></div>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your weekend</p>
+              <h1 class="w-h1">Hello, Ada</h1>
+              <p class="w-body">You're through. From here the session carries an <code>authenticatedAt</code> stamp, and anything sensitive checks how old it is.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">What the session knows</h2>
+              <dl class="w-dl">
+                <dt>Guest</dt><dd>Ada Testhouse</dd>
+                <dt>Household</dt><dd>Testhouse household</dd>
+                <dt>Acts for</dt><dd>Ada, Ben, Cleo <span class="w-muted">— household manager</span></dd>
+                <dt>Proved at</dt><dd>just now</dd>
+              </dl>
+            </div>
+            <button class="w-btn" type="button" data-go="1">Start over</button>
+          </div>
+        </div>
+
+        <!-- SIGN IN -->
+        <div class="site" data-scene-panel="signin" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Sign in</p>
+              <h1 class="w-h1">Lost the card?</h1>
+              <p class="w-body">Enter the email address Sara and Tyler have for you and we'll send a code.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="em">Email address</label>
+              <input class="w-input" id="em" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Send me a code</button>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">An email that isn't linked to an invitation gets the same neutral response as one that is — the form never confirms who is on the guest list.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASSKEY -->
+        <div class="site" data-scene-panel="passkey" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Passkeys</p>
+              <h1 class="w-h1">Skip the code next time</h1>
+              <p class="w-body">A passkey lives on your phone or laptop. It uses the same unlock you already use, and there's nothing to remember or type.</p>
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Add a passkey</button>
+            <button class="w-btn" type="button">Not now</button>
+            <hr class="w-rule">
+            <div class="w-stack-sm">
+              <h2 class="w-h3">Your passkeys</h2>
+              <div class="w-panel">
+                <div class="w-between"><strong class="w-small">iPhone</strong><span class="w-badge w-badge-on">In use</span></div>
+                <p class="w-small w-muted" style="margin:0">Added 4 Sep 2026 · last used just now</p>
+                <button class="w-btn w-btn-sm" type="button">Remove</button>
+              </div>
+            </div>
+            <p class="w-small w-muted">Passkeys are always optional. Email codes keep working, because a grandparent on a shared tablet must never be locked out by an authenticator they don't have.</p>
+          </div>
+        </div>
+
+        <!-- ERRORS -->
+        <div class="site" data-scene-panel="errors" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Error states</p>
+              <h1 class="w-h1">Every message a journey can show</h1>
+              <p class="w-small w-muted">Fixed first-party copy, keyed by a short code in the URL. A page never renders text an attacker influenced.</p>
+            </div>
+            <div class="w-stack-sm">
+              <div class="w-notice w-notice-err">That code didn't work. Check the digits and try again, or request a new code.</div>
+              <div class="w-notice w-notice-err">That code has expired. Request a new one and we'll send it right away.</div>
+              <div class="w-notice w-notice-err">Too many incorrect codes. For your security, please wait 15 minutes and request a new code.</div>
+              <div class="w-notice w-notice-err">Too many attempts. Please wait a few minutes and try again.</div>
+              <div class="w-notice w-notice-err">We don't have an email address for anyone in this household yet. Reach out to Sara and Tyler and they will set it up.</div>
+              <div class="w-notice w-notice-err">That email isn't linked to an invitation yet. Open the link Sara and Tyler sent you, or get in touch with them.</div>
+              <div class="w-notice w-notice-err">That isn't available for your invitation. If you think it should be, get in touch with Sara and Tyler.</div>
+              <div class="w-notice w-notice-err">That person has already claimed their invitation with another email. If that's wrong, please get in touch with Sara and Tyler.</div>
+              <div class="w-notice w-notice-err">For your security, please confirm it's you first.</div>
+              <div class="w-notice w-notice-err">We couldn't send the code just now. Please try again in a moment.</div>
+              <div class="w-notice w-notice-err">Something went wrong on our side. Please try again in a moment.</div>
+            </div>
+            <p class="w-small w-muted">Each one names what happened and what to do next. None apologises twice, none blames the guest, and none leaks whether an address is on the list.</p>
+          </div>
+        </div>
+
+        <!-- STEP UP -->
+        <div class="site" data-scene-panel="stepup" hidden>
+          <div class="auth">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Confirm it's you</p>
+              <h1 class="w-h1">One more step</h1>
+              <p class="w-body">You're changing the email address for your invitation. Because that's how you get back in, we ask you to prove it's you again.</p>
+              <p class="clock">Proof older than 5 minutes · re-ask required</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="su">Code sent to a•••@e•••.test</label>
+              <input class="code-input" id="su" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+            </div>
+            <button class="w-btn w-btn-primary" type="button">Confirm and continue</button>
+            <button class="w-btn" type="button">Use my passkey instead</button>
+            <hr class="w-rule">
+            <div class="w-card">
+              <h2 class="w-h3">What re-asks</h2>
+              <ul class="w-stack-sm" style="margin:0;padding-left:18px">
+                <li class="w-small">Changing the email on an invitation</li>
+                <li class="w-small">Claiming a ride benefit</li>
+                <li class="w-small">Deleting a travel profile</li>
+                <li class="w-small">Any admin write</li>
+              </ul>
+            </div>
+            <p class="w-small w-muted">The window is five minutes from the last proof. It's enforced server-side in the capability pipeline, so hiding the button would not have been enough.</p>
+          </div>
+        </div>
+
+        <!-- ENTITLEMENTS -->
+        <div class="site" data-scene-panel="entitlements" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Authorization</p>
+              <h1 class="w-h1">Nineteen capabilities, four kinds of caller</h1>
+              <p class="w-body">Every decision is made server-side against this set. Hidden UI and omitted tools are never authorization.</p>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="ent">
+                <thead><tr><th scope="col">Entitlement</th><th scope="col">Anon</th><th scope="col">Guest</th><th scope="col">Manager</th><th scope="col">Admin</th></tr></thead>
+                <tbody>
+                  <tr><td>view_event</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>rsvp_self</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>manage_household_rsvp</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>view_private_schedule</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>view_table_assignment</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>claim_transportation_benefit</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+                  <tr><td>view_travel_tools</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>upload_media</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>view_private_media</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>use_face_matching</td><td class="no">—</td><td class="no">gate</td><td class="no">gate</td><td class="no">gate</td></tr>
+                  <tr><td>use_concierge</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_content</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_guest_ops</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_media</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                  <tr><td>admin_lifecycle</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <p class="w-small" style="margin:0"><code>use_face_matching</code> reads "gate" for everyone: <code>FLAG_BIOMETRICS_ENABLED</code> is off, and it additionally needs a persisted readiness switch. Illinois BIPA — it stays off until counsel signs off.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GUEST OPS -->
+        <div class="site" data-scene-panel="guestops" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Admin · guest operations</p>
+              <h1 class="w-h1">Who may act for whom</h1>
+              <p class="w-body">A household manager acts for everyone in their household. Nobody else can, and an admin acting on a guest's behalf leaves an audit row that says so.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Testhouse household</h2><span class="w-badge w-badge-on">3 guests</span></div>
+              <dl class="w-dl">
+                <dt>Manager</dt><dd>Ada Testhouse</dd>
+                <dt>Members</dt><dd>Ada, Ben, Cleo (child)</dd>
+                <dt>Invited to</dt><dd>Ceremony, cocktail hour, reception</dd>
+                <dt>Plus-ones</dt><dd>None</dd>
+              </dl>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Fixture household</h2><span class="w-badge">2 guests</span></div>
+              <dl class="w-dl">
+                <dt>Manager</dt><dd>Dev Fixture</dd>
+                <dt>Members</dt><dd>Dev, Eve</dd>
+                <dt>Invited to</dt><dd>Dev: all · <strong>Eve: reception only</strong></dd>
+                <dt>Plus-ones</dt><dd>Dev: one, named</dd>
+              </dl>
+              <p class="w-small w-muted">Per-guest event entitlements: Eve is not invited to the ceremony, so the ceremony never appears on her RSVP.</p>
+            </div>
+            <div class="w-card">
+              <div class="w-between"><h2 class="w-h3">Solo household</h2><span class="w-badge">1 guest</span></div>
+              <dl class="w-dl">
+                <dt>Member</dt><dd>Fin Solo</dd>
+                <dt>Plus-ones</dt><dd>One, unnamed</dd>
+              </dl>
+            </div>
+            <p class="w-small w-muted">These are the committed test fixtures — deliberately fictional names, deterministic ids, and the three shapes every RSVP rule has to survive. Real guest data never enters git.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="label" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="claim">
+  <h3>Claim an invitation — the four-step happy path</h3>
+  <p>Click through all four steps. The invitation link is discovery only: it reveals a household, and possession of the email proves the person.</p>
+  <ul>
+    <li><strong>Check:</strong> a minor is never offered as someone to claim as.</li>
+    <li><strong>Check:</strong> the code screen states the ten-minute expiry and the five-attempt limit before you fail, not after.</li>
+    <li><strong>Check:</strong> the passkey offer is skippable in one tap and never blocks the weekend.</li>
+  </ul>
+  <div class="label-meta"><span>route /i/&lt;token&gt;</span><span class="is-cap">claim_person</span><span>6 digits · 10 min · 5 tries</span></div>
+</template>
+
+<template data-notes="signin">
+  <h3>Sign in by email — the lost-card path</h3>
+  <p>Not everyone keeps the card. The email route reaches the same place, and reveals nothing about who is on the list.</p>
+  <ul>
+    <li><strong>Check:</strong> a linked and an unlinked address produce the same visible outcome.</li>
+    <li><strong>Check:</strong> the field is a real <code>type="email"</code> with <code>autocomplete</code>, so a phone keyboard does the right thing.</li>
+  </ul>
+  <div class="label-meta"><span>route /sign-in</span><span class="is-cap">emailOTP</span><span class="is-ok">no enumeration</span></div>
+</template>
+
+<template data-notes="passkey">
+  <h3>Passkeys — optional, always</h3>
+  <p>A convenience layer over the code, never a replacement. Codes must keep working for guests with borrowed or shared devices.</p>
+  <ul>
+    <li><strong>Check:</strong> "Not now" is as prominent as the primary action.</li>
+    <li><strong>Check:</strong> an enrolled passkey can be removed from the same screen it was added on.</li>
+  </ul>
+  <div class="label-meta"><span>route /claim/passkey</span><span class="is-cap">@better-auth/passkey</span><span>WebAuthn</span></div>
+</template>
+
+<template data-notes="errors">
+  <h3>Error states — all of them, verbatim</h3>
+  <p>Every string is fixed first-party copy selected by a short code. Nothing an attacker can influence is ever rendered as text.</p>
+  <ul>
+    <li><strong>Check:</strong> each message says what happened <em>and</em> what to do next.</li>
+    <li><strong>Check:</strong> the lockout message states the wait (15 minutes) rather than leaving a guest guessing.</li>
+  </ul>
+  <div class="label-meta"><span>ERROR_COPY</span><span class="is-ok">no reflected text</span><span>15 codes</span></div>
+</template>
+
+<template data-notes="stepup">
+  <h3>Step-up — the five-minute window</h3>
+  <p>Sensitive actions require proof newer than five minutes. Enforced in the capability pipeline, before the handler runs.</p>
+  <ul>
+    <li><strong>Check:</strong> the screen names the specific action being protected, not "for security reasons".</li>
+    <li><strong>Check:</strong> a passkey satisfies step-up as well as a code.</li>
+  </ul>
+  <div class="label-meta"><span>route /step-up</span><span class="is-cap">authenticatedAt</span><span class="is-warn">300s window</span></div>
+</template>
+
+<template data-notes="entitlements">
+  <h3>Entitlements — 19 capabilities as data</h3>
+  <p>The authorization surface in one table. The pipeline validates, authorizes, steps up, confirms, de-duplicates, then runs the handler — in that order, every time.</p>
+  <ul>
+    <li><strong>Check:</strong> anonymous holds nothing — not even <code>view_event</code>.</li>
+    <li><strong>Check:</strong> <code>manage_household_rsvp</code> separates a manager from an ordinary guest.</li>
+    <li><strong>Check:</strong> <code>use_face_matching</code> is gated for every principal including admin.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">src/contracts/principal.ts</span><span class="is-off">BIPA gate</span><span>server-side only</span></div>
+</template>
+
+<template data-notes="guestops">
+  <h3>Admin guest ops — households and their shapes</h3>
+  <p>The three committed fixtures cover every RSVP rule: a family with a child, a household with a partial invitation and a named plus-one, and a solo guest with an unnamed one.</p>
+  <ul>
+    <li><strong>Check:</strong> Eve's reception-only entitlement is visible here, and drives what her RSVP renders.</li>
+    <li><strong>Check:</strong> names are obviously fictional — real guest data is never committed.</li>
+  </ul>
+  <div class="label-meta"><span>route /admin/guests</span><span class="is-cap">admin_guest_ops</span><span class="is-ok">fixtures only</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+</script>

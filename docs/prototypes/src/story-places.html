@@ -1,0 +1,532 @@
+<title>Adventure Graph &amp; CAA Docent</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+/* A chapter reads as a chapter: the numeral is the structure, because the
+   story genuinely is ordered. */
+.chapter { display: grid; grid-template-columns: 46px 1fr; gap: var(--spacing-md); padding: var(--spacing-lg) 0; border-bottom: 1px solid var(--color-outline); }
+.chapter:last-child { border-bottom: 0; }
+
+/* Adventures are a graph, so the card carries its edges. */
+.adv { display: flex; flex-direction: column; gap: 6px; padding: var(--spacing-md); border: 1px solid var(--color-outline); background: var(--color-neutral); }
+[data-theme="conservatory"] .adv { border-radius: var(--rounded-md); }
+.adv-edges { display: flex; flex-wrap: wrap; gap: 5px; }
+.edge { font-family: var(--mono); font-size: 10.5px; padding: 2px 6px; border: 1px solid var(--color-outline); color: var(--color-on-surface-muted); background: var(--color-surface); }
+
+.memory-pair { display: grid; gap: var(--spacing-sm); }
+.memory { border-left: 3px solid var(--color-secondary); padding: var(--spacing-sm) var(--spacing-md); background: var(--color-neutral); }
+.memory p { margin: 0; }
+[data-theme="conservatory"] .memory { border-left-color: var(--color-leaf); }
+.memory-who { font-family: var(--type-label-caps-family); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-on-surface-muted); }
+
+/* Provenance is a first-class citizen: every external fact carries its source
+   and the day it was last checked. */
+.prov { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--color-on-surface-muted); font-family: var(--font-text); }
+.prov .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-tertiary); flex: none; }
+
+.facts { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.facts li { list-style: none; padding: 10px 0; border-bottom: 1px solid var(--color-outline); font-size: var(--type-body-sm-size); }
+.facts li:last-child { border-bottom: 0; }
+
+.look { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; }
+.look-mark { flex: none; width: 20px; height: 20px; border: 1px solid var(--color-tertiary); display: grid; place-items: center; font-size: 11px; color: var(--color-tertiary); font-family: var(--mono); margin-top: 2px; }
+[data-theme="conservatory"] .look-mark { border-color: var(--color-leaf-deep); color: var(--color-leaf-deep); border-radius: 50%; }
+
+.faq-q { width: 100%; text-align: left; appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-outline); padding: 14px 0; cursor: pointer; font-family: var(--font-text); font-size: 17px; line-height: 1.4; color: var(--color-on-surface); display: flex; justify-content: space-between; gap: var(--spacing-sm); align-items: baseline; }
+.faq-q:hover { color: var(--color-secondary); }
+.faq-q::after { content: "+"; font-family: var(--mono); color: var(--color-on-surface-muted); flex: none; }
+.faq-q[aria-expanded="true"]::after { content: "−"; }
+.faq-a { padding: 12px 0 16px; border-bottom: 1px solid var(--color-outline); display: flex; flex-direction: column; gap: 8px; }
+</style>
+
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 05</p>
+    <h1 class="mast-title">Story, adventures &amp; the CAA docent</h1>
+    <p class="mast-sub">The celebrate half of the site: seven story chapters, an adventure graph the couple's places hang off, a guest-facing "borrow one of ours" layer, a docent guide to an 1893 building, and the FAQ. Every fact carries where it came from and when it was last checked.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail" aria-label="Surfaces">
+    <h2>Story</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="story" data-url="/our-story">Our Story<small>seven chapters</small></button>
+    </div>
+    <h2>Adventures</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="adventures" data-url="/our-adventures">Our Adventures<small>the graph</small></button>
+      <button type="button" data-scene="adventure" data-url="/our-adventures/starved-rock">Starved Rock<small>detail + dual memory</small></button>
+      <button type="button" data-scene="share" data-url="/share-an-adventure">Share an Adventure<small>borrow one of ours</small></button>
+    </div>
+    <h2>Place</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="caa" data-url="/explore-caa">Explore CAA<small>docent guide</small></button>
+      <button type="button" data-scene="space" data-url="/explore-caa/white-city-ballroom">White City Ballroom<small>look for this</small></button>
+    </div>
+    <h2>Answers</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="ask" data-url="/ask-us">Ask us<small>13 questions</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/our-story</b>
+        <span id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- OUR STORY -->
+        <div class="site" data-scene-panel="story" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Our story</p>
+            <h1 class="w-display-sm">Best friendship.<br>Peace.<br>Becoming better together.</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Seven chapters, in order. Four of them are still ours to write.</p>
+          </div>
+          <div class="band">
+            <div>
+              <article class="chapter">
+                <span class="w-plaque">01</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">How we met</h2>
+                  <p class="w-body">We met at Allison and Jamie's wedding.</p>
+                  <p class="w-body">Flirty glances across the room, and an immediate connection.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the rest of the story — who noticed whom first, what was said, and what happened after the last dance.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">02</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">The connection</h2>
+                  <p class="w-body">Best friendship. Peace. Becoming better together.</p>
+                  <p class="w-body">Those are Tyler's words for what this is, and they are the seed of everything on this page.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the story of how the connection became a relationship, in your own words.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">03</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Our life together</h2>
+                  <p class="w-body">The places that shaped us: the Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, the Madison waterfront.</p>
+                  <p class="w-body">You can wander through them on Our Adventures, and borrow a few for your own weekend on Share an Adventure.</p>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">04</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Love</h2>
+                  <p class="w-body">We said "I love you" for the first time at Starved Rock.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): which trail, what day, and who said it first are yours to tell.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">05</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">Greater together than alone</h2>
+                  <p class="w-body">Mutual support. Being each other's rock. Home. Gratitude. A deliberate partnership.</p>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): what the next chapter looks like, in your words.</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">06</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">The proposal</h2>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): the engagement story and photos (content backlog C-07).</span>
+                </div>
+              </article>
+              <article class="chapter">
+                <span class="w-plaque">07</span>
+                <div class="w-stack-sm">
+                  <h2 class="w-h3">What marriage means to us</h2>
+                  <span class="w-todo">TODO(Tyler &amp; Sara): what marriage means to you, and what you hope this weekend is for the people you love.</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUR ADVENTURES -->
+        <div class="site" data-scene-panel="adventures" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Our adventures</p>
+            <h1 class="w-display-sm">Eight places, and what happened at them</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Each links to a chapter, a place, and sometimes something you could do yourself.</p>
+          </div>
+          <div class="band">
+            <div class="w-stack">
+              <article class="adv">
+                <h2 class="w-h3">Starved Rock</h2>
+                <p class="w-small">Where we first said "I love you."</p>
+                <div class="adv-edges"><span class="edge">→ chapter: love</span><span class="edge">→ place: Starved Rock State Park</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Allison and Jamie's wedding</h2>
+                <p class="w-small">Where it started: flirty glances and an immediate connection.</p>
+                <div class="adv-edges"><span class="edge">→ chapter: met</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Museum of Ice Cream</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the visit.</span>
+                <div class="adv-edges"><span class="edge">→ place: Chicago</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Richardson Farm</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the day at the farm.</span>
+                <div class="adv-edges"><span class="edge">→ place: Spring Grove, IL</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Michael Jordan's Steakhouse</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the dinner.</span>
+                <div class="adv-edges"><span class="edge">→ place: Chicago</span><span class="edge">→ you can go</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Food tastings</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the tastings.</span>
+                <div class="adv-edges"><span class="edge">→ chapter: our life together</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Gardening together</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the garden.</span>
+                <div class="adv-edges"><span class="edge">→ chapter: greater together</span></div>
+              </article>
+              <article class="adv">
+                <h2 class="w-h3">Madison waterfront</h2>
+                <span class="w-todo">TODO(Tyler &amp; Sara): one line about the waterfront.</span>
+                <div class="adv-edges"><span class="edge">→ place: Madison, WI</span></div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADVENTURE DETAIL -->
+        <div class="site" data-scene-panel="adventure" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">An adventure</p>
+              <h1 class="w-h1">Starved Rock</h1>
+              <p class="w-lede">Where we first said "I love you."</p>
+            </div>
+            <hr class="w-hairline">
+            <div class="memory-pair">
+              <div class="memory">
+                <p class="memory-who">Sara remembers</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): Sara remembers…</span>
+              </div>
+              <div class="memory">
+                <p class="memory-who">Tyler remembers</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): Tyler remembers…</span>
+              </div>
+            </div>
+            <div class="w-card w-card-key">
+              <h2 class="w-h3">You could go too</h2>
+              <p class="w-small">An Illinois state park near Utica. Trail conditions, hours, and visitor-center details are on the park's official page.</p>
+              <p class="w-small"><em>Why we share this:</em> it's where we first said "I love you." If you have a free day, we'd love for you to walk it too.</p>
+              <div class="w-row">
+                <span class="w-badge">≈ 5 hours</span>
+                <span class="w-badge">Day trip</span>
+                <span class="w-badge w-badge-warn">Draft</span>
+              </div>
+              <a class="w-btn w-btn-sm" href="#">Open the park's official page</a>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Illinois DNR · official web · checked 4 Sep 2026</div>
+            </div>
+            <p class="w-small w-muted">Facts about the place come from the park's own site and are dated. The memory attached to it comes only from the couple — the site never writes one for them.</p>
+          </div>
+        </div>
+
+        <!-- SHARE AN ADVENTURE -->
+        <div class="site" data-scene-panel="share" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#" aria-current="page">Adventures</a><a href="#">CAA</a></nav>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Share an adventure</p>
+              <h1 class="w-h1">Borrow one of ours</h1>
+              <p class="w-lede">If you're in town with time to spare, here's what we'd send you to do — and why it matters to us.</p>
+            </div>
+            <div class="w-field">
+              <label class="w-label" for="have">How long have you got?</label>
+              <select class="w-select" id="have">
+                <option>Forty-five minutes</option>
+                <option>Half a day</option>
+                <option>A whole day</option>
+              </select>
+            </div>
+            <div class="w-card">
+              <p class="w-eyebrow">45 minutes</p>
+              <h2 class="w-h2">The building and the park</h2>
+              <p class="w-small">Between things? Walk the building with the "look for this" list, then step out to the park it looks over.</p>
+              <ul class="facts">
+                <li><strong>Self-guided tour of the CAA</strong> — 25 min</li>
+                <li><strong>Millennium Park walk</strong> — 20 min</li>
+              </ul>
+              <div class="w-row"><span class="w-badge w-badge-warn">Draft</span><span class="w-badge">Architecture</span><span class="w-badge">Outdoors</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">A whole day: Starved Rock</h2>
+              <p class="w-small"><em>Why we share this:</em> it's where we first said "I love you." If you have a free day, we'd love for you to walk it too.</p>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Illinois DNR · official web · checked 4 Sep 2026</div>
+            </div>
+            <p class="w-small w-muted">Every recommendation is a real place with an official link and a check date, plus the couple's own reason for sending you there. Itineraries stay in draft until the couple approve them.</p>
+          </div>
+        </div>
+
+        <!-- EXPLORE CAA -->
+        <div class="site" data-scene-panel="caa" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Explore CAA</p>
+            <h1 class="w-display-sm">A building worth arriving early for</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">12 S Michigan Ave, built 1893 — and the reason we chose it.</p>
+          </div>
+          <div class="band band-marble">
+            <div class="w-stack-sm">
+              <h2 class="w-h2">The short history</h2>
+              <ul class="facts">
+                <li>Built in 1893 for the private Chicago Athletic Association.</li>
+                <li>Designed by Henry Ives Cobb, with a facade by Louis Christian Mullgardt.</li>
+                <li>Venetian Gothic, after the Doge's Palace in Venice.</li>
+                <li>It opened amid the 1893 World's Columbian Exposition.</li>
+                <li>A men-only club until 1972.</li>
+                <li>The club closed in 2007.</li>
+                <li>Restored and reopened as a hotel: architecture by Hartshorne Plunkard Architecture, interiors by Roman &amp; Williams.</li>
+                <li>A contributing building in the Historic Michigan Boulevard District.</li>
+              </ul>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Look for this</h2>
+              <div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Patterned brick on the exterior.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Carved limestone.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Arched windows, the Venetian Gothic tell.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Custom stained glass.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Ornate plaster ceilings and cornices.</span></div>
+                <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Mosaic and marble floors.</span></div>
+              </div>
+            </div>
+            <div class="w-stack-sm">
+              <h2 class="w-h2">The rooms</h2>
+              <div class="w-grid w-grid-2">
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">White City Ballroom</h3><p class="w-small w-muted">Stained glass, Carrara marble.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Madison Ballroom</h3><p class="w-small w-muted">Walnut parquet, city views.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">Stagg Court</h3><p class="w-small w-muted">The original basketball court.</p></a>
+                <a class="w-card" href="#" style="text-decoration:none"><h3 class="w-h3">The Tank</h3><p class="w-small w-muted">The club's former pool.</p></a>
+              </div>
+            </div>
+            <div class="w-notice w-notice-todo">
+              <span class="w-todo">TODO(Tyler &amp; Sara): which room hosts the ceremony, cocktail hour and reception (backlog P-03). Until then the docent describes all four and claims none.</span>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Eating in the building</h2>
+              <ul class="facts">
+                <li><strong>Cindy's (rooftop)</strong> — hours, menus and reservations live on the official page.<div class="prov"><span class="dot" aria-hidden="true"></span> chicagoathletichotel.com · checked 5 Sep 2026</div></li>
+                <li><strong>Game Room</strong> — hours and menus live on the official page.<div class="prov"><span class="dot" aria-hidden="true"></span> chicagoathletichotel.com · checked 5 Sep 2026</div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- VENUE SPACE -->
+        <div class="site" data-scene-panel="space" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#" aria-current="page">CAA</a></nav>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">A room in the building</p>
+              <h1 class="w-h1">White City Ballroom</h1>
+              <p class="w-lede">Floor-to-ceiling windows, vintage stained glass, an original Carrara marble floor, three 19th-century fireplaces, and 167 restored illuminated ceiling embellishments.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Look for this</h2>
+              <div class="look"><span class="look-mark" aria-hidden="true">✓</span><span class="w-small">Count the illuminated ceiling embellishments: the kit says 167 were restored.</span></div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Capacity</h2>
+              <dl class="w-dl">
+                <dt>Ceremony</dt><dd>220</dd>
+                <dt>Dinner + dance</dt><dd>220</dd>
+                <dt>Reception</dt><dd>300</dd>
+              </dl>
+              <div class="prov"><span class="dot" aria-hidden="true"></span> Venue kit figure — verify with the planner before publishing as fact.</div>
+            </div>
+            <p class="w-small w-muted">Kit figures are labelled as kit figures. A number the couple have not confirmed is never presented in the same voice as one from the brief.</p>
+          </div>
+        </div>
+
+        <!-- ASK US -->
+        <div class="site" data-scene-panel="ask" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Story</a><a href="#">Adventures</a><a href="#">CAA</a></nav>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Ask us</p>
+              <h1 class="w-h1">Thirteen things people ask</h1>
+              <p class="w-lede">Grouped the way guests ask them, not the way we file them.</p>
+            </div>
+            <div>
+              <h2 class="w-eyebrow" style="margin-bottom:6px">Basics</h2>
+              <button class="faq-q" type="button" data-toggle="a1" aria-expanded="true">When and where is the wedding?</button>
+              <div class="faq-a" id="a1">
+                <p class="w-small">Saturday, July 17, 2027, at the Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
+                <a class="w-link w-small" href="#">The Wedding →</a>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a2" aria-expanded="false">What time does it start?</button>
+              <div class="faq-a" id="a2" hidden>
+                <span class="w-todo">TODO(Tyler &amp; Sara): the ceremony, cocktail hour, and reception times are being confirmed with the planner (backlog P-02).</span>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a3" aria-expanded="false">How do I RSVP?</button>
+              <div class="faq-a" id="a3" hidden>
+                <p class="w-small">You'll receive an invitation link; from there you pick your name and confirm with a one-time code sent to your email. No account, no password.</p>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">On the day</h2>
+              <button class="faq-q" type="button" data-toggle="a4" aria-expanded="false">What should I wear?</button>
+              <div class="faq-a" id="a4" hidden><span class="w-todo">TODO(Tyler &amp; Sara): the dress code, in one sentence, with an example outfit (backlog C-01).</span></div>
+              <button class="faq-q" type="button" data-toggle="a5" aria-expanded="false">What if it rains?</button>
+              <div class="faq-a" id="a5" hidden>
+                <p class="w-small">The ceremony and reception are indoors at the hotel.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): any outdoor plans for the weekend.</span>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a6" aria-expanded="false">Can I take photos?</button>
+              <div class="faq-a" id="a6" hidden><span class="w-todo">TODO(Tyler &amp; Sara): your photo policy for the ceremony and reception. Two professional photographers and a videographer will be there.</span></div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Getting there</h2>
+              <button class="faq-q" type="button" data-toggle="a7" aria-expanded="false">Where do I park?</button>
+              <div class="faq-a" id="a7" hidden>
+                <p class="w-small">The hotel's valet entrance, parking options, and current rates are kept as dated records on Explore CAA, each with the day we last checked them against the hotel's own pages.</p>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a8" aria-expanded="false">Is the venue accessible?</button>
+              <div class="faq-a" id="a8" hidden>
+                <p class="w-small">The hotel describes its accessible rooms and features on its own FAQ page; the link and the date we last checked it are on Explore CAA.</p>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Your party</h2>
+              <button class="faq-q" type="button" data-toggle="a9" aria-expanded="false">Can we bring our kids?</button>
+              <div class="faq-a" id="a9" hidden><span class="w-todo">TODO(Tyler &amp; Sara): kid policies and any activities for the 28 children in the family (backlog C-05).</span></div>
+              <button class="faq-q" type="button" data-toggle="a10" aria-expanded="false">Can I bring a plus-one?</button>
+              <div class="faq-a" id="a10" hidden>
+                <p class="w-small">Your invitation will say who it covers.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): plus-one wording (backlog X-04).</span>
+              </div>
+
+              <h2 class="w-eyebrow" style="margin:20px 0 6px">Gifts &amp; contact</h2>
+              <button class="faq-q" type="button" data-toggle="a11" aria-expanded="false">Do you have a registry?</button>
+              <div class="faq-a" id="a11" hidden>
+                <p class="w-small">Your presence is the point. If you'd like to help us with our next adventures, the Gifts page will have the details once we've chosen how.</p>
+              </div>
+              <button class="faq-q" type="button" data-toggle="a12" aria-expanded="false">How do I reach you?</button>
+              <div class="faq-a" id="a12" hidden><span class="w-todo">TODO(Tyler &amp; Sara): the best way for guests to reach you or the planner.</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="label" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="story">
+  <h3>Our Story — seven ordered chapters</h3>
+  <p>The numerals are structure, not decoration: the chapters are genuinely sequential. Four of seven are pure placeholder, and the page is designed to be readable in that state rather than hiding the gaps.</p>
+  <ul>
+    <li><strong>Check:</strong> every sentence of real copy traces to <code>src/content/seed/story.json</code>; nothing plausible has been invented around it.</li>
+    <li><strong>Check:</strong> a hatched <code>TODO(Tyler &amp; Sara)</code> block can never be mistaken for finished prose.</li>
+  </ul>
+  <div class="label-meta"><span>route /our-story</span><span class="is-cap">story.json</span><span class="is-warn">4 of 7 placeholder</span></div>
+</template>
+
+<template data-notes="adventures">
+  <h3>Our Adventures — a graph, not a list</h3>
+  <p>Each adventure carries its edges: the story chapter it belongs to, the place it happened at, and whether a guest could go themselves. Those edges are what Share an Adventure reads.</p>
+  <ul>
+    <li><strong>Check:</strong> six of eight summaries are placeholders — the graph still reads as a graph without them.</li>
+    <li><strong>Check:</strong> "you can go" only appears where a real recommendation exists behind it.</li>
+  </ul>
+  <div class="label-meta"><span>route /our-adventures</span><span class="is-cap">adventures.json</span><span>8 nodes</span></div>
+</template>
+
+<template data-notes="adventure">
+  <h3>Starved Rock — the dual memory layer</h3>
+  <p>The one adventure with a fact from the brief. Sara and Tyler each get their own memory slot; the site holds both open and writes neither.</p>
+  <ul>
+    <li><strong>Check:</strong> the external fact carries source and check date; the memory carries neither, because it isn't external.</li>
+    <li><strong>Check:</strong> the Draft badge is visible — this recommendation is not approved for publication yet.</li>
+  </ul>
+  <div class="label-meta"><span>route /our-adventures/starved-rock</span><span class="is-cap">trustClass: EXTERNAL_DATA</span><span class="is-warn">draft</span></div>
+</template>
+
+<template data-notes="share">
+  <h3>Share an Adventure — the guest-facing half</h3>
+  <p>Time-boxed itineraries built from the same recommendation nodes. The couple's reason for sending you somewhere travels with the recommendation.</p>
+  <ul>
+    <li><strong>Check:</strong> pick a different duration — the itinerary bucket changes, the provenance line stays.</li>
+    <li><strong>Check:</strong> nothing here recommends a place without an official link behind it.</li>
+  </ul>
+  <div class="label-meta"><span>route /share-an-adventure</span><span class="is-cap">itineraries.json</span><span>45-min · half-day · full-day</span></div>
+</template>
+
+<template data-notes="caa">
+  <h3>Explore CAA — the docent</h3>
+  <p>Ten history facts from the brief, six things to look for, four rooms, and two restaurants whose hours live on the hotel's own site rather than being copied here.</p>
+  <ul>
+    <li><strong>Check:</strong> restaurant cards link out and show a check date instead of restating hours that go stale.</li>
+    <li><strong>Check:</strong> the page never claims which room the wedding is in.</li>
+  </ul>
+  <div class="label-meta"><span>route /explore-caa</span><span class="is-cap">venue-facts.json</span><span class="is-warn">backlog P-03</span></div>
+</template>
+
+<template data-notes="space">
+  <h3>White City Ballroom — kit figures, labelled</h3>
+  <p>Capacities come from the venue kit, not the planner. They render with an explicit "verify before publishing as fact" line rather than in the same voice as brief facts.</p>
+  <ul>
+    <li><strong>Check:</strong> the 167 ceiling embellishments appear as a thing to look for, which is what makes a docent a docent.</li>
+    <li><strong>Check:</strong> trust class is visible in the provenance line, not buried.</li>
+  </ul>
+  <div class="label-meta"><span>route /explore-caa/white-city-ballroom</span><span class="is-warn">kit figure, unverified</span></div>
+</template>
+
+<template data-notes="ask">
+  <h3>Ask us — 13 questions, guest vocabulary</h3>
+  <p>Grouped as guests ask them. Eight of thirteen answers are still placeholders, so the page's job right now is to prove the gaps are visible and the real answers are correct.</p>
+  <ul>
+    <li><strong>Check:</strong> open and close several — the disclosure is keyboard-operable and the +/− state matches <code>aria-expanded</code>.</li>
+    <li><strong>Check:</strong> the registry answer never says "cash fund" or "donate", and shows no amount.</li>
+  </ul>
+  <div class="label-meta"><span>route /ask-us</span><span class="is-cap">faq.json</span><span class="is-warn">8 of 13 placeholder</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+</script>

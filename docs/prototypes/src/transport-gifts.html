@@ -1,0 +1,423 @@
+<title>Ride Benefits &amp; Gift Handoffs</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@400;600;700&family=Big+Shoulders+Display:wght@600;700;800&family=Gloock&family=Spectral:wght@400;500;600&family=Cardo:wght@400;700&display=swap">
+<style>
+/*@THEME_TOKENS@*/
+/*@SHELL_CSS@*/
+
+.voucher {
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+}
+
+[data-theme="conservatory"] .voucher { border-radius: var(--rounded-md); }
+
+.code {
+  font-family: var(--mono);
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  padding: 12px 16px;
+  border: 1px dashed var(--color-outline);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+/* A handoff card has to make the boundary obvious: past this point, the site
+   is not the one holding your money. */
+.handoff { border: 1px solid var(--color-outline); background: var(--color-surface); padding: var(--spacing-md); display: flex; flex-direction: column; gap: 9px; }
+[data-theme="conservatory"] .handoff { border-radius: var(--rounded-md); }
+.handoff-edge { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-on-surface-muted); padding-top: 8px; border-top: 1px dashed var(--color-outline); }
+.handoff-edge::before { content: ""; width: 6px; height: 6px; border-top: 1.5px solid var(--color-tertiary); border-right: 1.5px solid var(--color-tertiary); transform: rotate(45deg); flex: none; }
+
+.topic { padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-outline); display: flex; flex-direction: column; gap: 9px; }
+.topic:last-child { border-bottom: 0; }
+
+.ban { display: flex; flex-direction: column; gap: 6px; }
+.ban code { font-family: var(--mono); font-size: 13px; color: var(--color-error); }
+</style>
+
+<!--@ICONS@-->
+
+<header class="masthead">
+  <div class="mast-id">
+    <p class="mast-tag">Feature lab · Level 09</p>
+    <h1 class="mast-title">Getting there, ride benefits &amp; gifts</h1>
+    <p class="mast-sub">Three features that all end at someone else's checkout. The site explains, decides eligibility and hands off; Uber, the registry and the restaurant own the transaction. Gift copy is constrained by tests — "cash fund", "donate" and any dollar amount are forbidden strings.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-theme">Design</span>
+    <div class="seg" role="group" aria-labelledby="lbl-theme">
+      <button type="button" data-lab-theme="gilded-hour" aria-pressed="true">Gilded Hour</button>
+      <button type="button" data-lab-theme="conservatory" aria-pressed="false">Conservatory</button>
+    </div>
+  </div>
+  <div class="ctl">
+    <span class="ctl-label" id="lbl-width">Viewport</span>
+    <div class="seg" role="group" aria-labelledby="lbl-width">
+      <button type="button" data-lab-width="390" aria-pressed="true">390</button>
+      <button type="button" data-lab-width="768" aria-pressed="false">768</button>
+      <button type="button" data-lab-width="1240" aria-pressed="false">1240</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail" aria-label="Surfaces">
+    <h2>Getting there</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="transportation" data-url="/transportation">Transportation<small>four topics</small></button>
+    </div>
+    <h2>Ride benefits</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="claim" data-url="/transportation · claim">Claim a ride<small>eligible adult</small></button>
+      <button type="button" data-scene="ineligible" data-url="/transportation · refused">Refused<small>3 reasons</small></button>
+    </div>
+    <h2>Gifts</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="gifts" data-url="/gifts">Gifts<small>nothing chosen yet</small></button>
+      <button type="button" data-scene="gifts-live" data-url="/gifts · configured">Gifts, configured<small>the handoff</small></button>
+      <button type="button" data-scene="words" data-url="FORBIDDEN_GIFT_WORDS">Forbidden words<small>what tests assert</small></button>
+    </div>
+    <h2>Reservations</h2>
+    <div class="rail-group">
+      <button type="button" data-scene="reservations" data-url="/explore-caa · book">Reservations<small>delegated</small></button>
+    </div>
+  </nav>
+
+  <main class="stage">
+    <div class="device" id="device" data-theme="gilded-hour">
+      <div class="chrome-bar">
+        <span class="chrome-dot" aria-hidden="true"></span>
+        <b id="device-url">/transportation</b>
+        <span id="device-w">390×</span>
+      </div>
+      <div class="viewport">
+
+        <!-- TRANSPORTATION -->
+        <div class="site" data-scene-panel="transportation" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#" aria-current="page">Getting there</a><a href="#">Travel</a><a href="#">CAA</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Getting there</p>
+            <h1 class="w-display-sm">Michigan Avenue, across from the park</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">12 S Michigan Ave, Chicago, IL 60603</p>
+            <a class="w-btn w-btn-sm" href="#"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg> Directions to the venue</a>
+          </div>
+          <div class="band">
+
+            <div>
+              <div class="topic">
+                <h2 class="w-h3">Arriving in Chicago</h2>
+                <p class="w-body">Chicago has two airports, O'Hare (ORD) and Midway (MDW). Both connect to downtown by train, taxi and rideshare.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): which airport we recommend, and whether there will be a shuttle.</span>
+              </div>
+
+              <div class="topic">
+                <h2 class="w-h3">Do I need a car?</h2>
+                <p class="w-body">The hotel is on Michigan Avenue across from Millennium Park; the wedding happens inside the building, so a car is not needed for the day itself.</p>
+                <p class="w-body">If you drive in, the hotel's valet entrance is at 71 E Madison.</p>
+                <span class="w-todo">TODO(Tyler &amp; Sara): the special event valet rate from the venue kit, once verified.</span>
+                <a class="w-btn w-btn-sm" href="#">Directions to the valet entrance</a>
+              </div>
+
+              <div class="topic">
+                <h2 class="w-h3">Getting around: trains, buses, taxis</h2>
+                <p class="w-body">The CTA runs Chicago's trains and buses. Taxis and rideshares drop off at the valet entrance on Madison.</p>
+                <p class="w-body">The hotel publishes transit and accessibility directions on its FAQ page, including step-free routes into the building.</p>
+                <a class="w-btn w-btn-sm" href="#">Transit and accessibility directions (hotel FAQ)</a>
+                <p class="w-small w-muted">chicagoathletichotel.com · checked 4 Sep 2026</p>
+              </div>
+
+              <div class="topic">
+                <h2 class="w-h3">Getting home safely</h2>
+                <p class="w-body">If you'd rather not drive after the reception, we've set something aside for you.</p>
+                <a class="w-btn w-btn-primary w-btn-sm" href="#">See your ride benefit</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CLAIM -->
+        <div class="site" data-scene-panel="claim" hidden data-flow="ride">
+          <div class="band" data-step="1">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your ride home</p>
+              <h1 class="w-h1">We've set aside a ride for you</h1>
+              <p class="w-body">One ride each for the adults in your party, for getting home after the reception.</p>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Who it's for</h2>
+              <dl class="w-dl">
+                <dt>Ada</dt><dd>Eligible</dd>
+                <dt>Ben</dt><dd>Eligible</dd>
+                <dt>Cleo</dt><dd class="w-muted">Not eligible — under 18</dd>
+              </dl>
+            </div>
+            <span class="w-todo">TODO(Tyler &amp; Sara): the ride benefit terms — value, window, and which nights it covers (backlog X-06).</span>
+            <button class="w-btn w-btn-primary" type="button" data-go="2">Claim my ride</button>
+            <p class="w-small w-muted">We'll ask you to confirm it's you before releasing the code.</p>
+          </div>
+
+          <div class="band" data-step="2" hidden>
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Your ride home</p>
+              <h1 class="w-h1">Here's your code</h1>
+              <p class="w-body">Open your rideshare app, add this under promotions, and book as usual.</p>
+            </div>
+            <div class="voucher">
+              <span class="w-label">One ride · Ada Testhouse</span>
+              <span class="code">TODO-CODE</span>
+              <span class="w-small w-muted">Yours only. Claimed just now.</span>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Claiming again returns this same code rather than issuing a second one — refresh the page as many times as you like.</p>
+            </div>
+            <button class="w-btn" type="button" data-go="1">Start over</button>
+            <p class="w-small w-muted">The code is issued once per guest and never appears in a page the rest of the household can read. Voucher codes are never committed to git.</p>
+          </div>
+        </div>
+
+        <!-- INELIGIBLE -->
+        <div class="site" data-scene-panel="ineligible" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Ride benefits</p>
+              <h1 class="w-h1">When we can't release one</h1>
+              <p class="w-body">An admin-assigned entitlement is necessary but not sufficient — the personal question is answered separately, at claim time.</p>
+            </div>
+            <div class="w-stack-sm">
+              <div class="w-notice w-notice-err">Ride benefits are for adult guests. A parent or guardian in your party can claim theirs.</div>
+              <div class="w-notice w-notice-err">We could not match this benefit to your invitation. Please ask us for help.</div>
+              <div class="w-notice w-notice-err">This benefit belongs to another household.</div>
+            </div>
+            <div class="w-card">
+              <h2 class="w-h3">Why it's two checks</h2>
+              <p class="w-small">The entitlement row says a benefit exists. The fact source answers whether <em>this</em> guest may take it: are they an adult, are they still in that household. Either alone would be a bug — an entitlement that outlived a household change would hand a stranger a code.</p>
+            </div>
+            <p class="w-small w-muted">Each message says what to do next. None of them exposes whether another guest has a benefit.</p>
+          </div>
+        </div>
+
+        <!-- GIFTS (pending) -->
+        <div class="site" data-scene-panel="gifts" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Getting there</a><a href="#" aria-current="page">Gifts</a><a href="#">Ask us</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Gifts</p>
+            <h1 class="w-display-sm">Help us with our next adventures</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Having you with us in Chicago is the gift.</p>
+          </div>
+          <div class="band">
+            <p class="w-body">If you would like to give something more, here is where to find our wishlist and a way to send us on our next adventure.</p>
+
+            <div class="w-card">
+              <h2 class="w-h3">Our wishlist</h2>
+              <p class="w-small">A conventional list of things for our home, kept with a registry provider.</p>
+              <span class="w-todo">TODO(Tyler &amp; Sara): where to find our wishlist, once we have chosen where to keep it.</span>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Our next adventures</h2>
+              <p class="w-small">Experiences, trips and gift cards, gathered with a provider so that everything stays simple and secure.</p>
+              <span class="w-todo">TODO(Tyler &amp; Sara): how to help with our next adventures, once we have set it up.</span>
+            </div>
+
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">In the meantime, if you would like to give something and cannot wait for us to decide, <a class="w-link" href="#">ask us</a>.</p>
+            </div>
+
+            <p class="w-display-sm" style="text-align:center">Thank you. Truly.</p>
+            <p class="w-small w-muted">No provider has been chosen, so none is named. A card reading "via Zola" with a <code>placeholder</code> flag would still be a fact the site has no right to state.</p>
+          </div>
+        </div>
+
+        <!-- GIFTS (configured) -->
+        <div class="site" data-scene-panel="gifts-live" hidden>
+          <nav class="w-nav"><span class="w-monogram">S + T</span><a href="#">Getting there</a><a href="#" aria-current="page">Gifts</a><a href="#">Ask us</a></nav>
+          <div class="hero">
+            <p class="w-eyebrow">Gifts</p>
+            <h1 class="w-display-sm">Help us with our next adventures</h1>
+            <hr class="w-flourish">
+            <p class="w-lede">Having you with us in Chicago is the gift.</p>
+          </div>
+          <div class="band">
+            <div class="handoff">
+              <h2 class="w-h3">Our wishlist</h2>
+              <p class="w-small">A conventional list of things for our home, kept with a registry provider.</p>
+              <a class="w-btn w-btn-sm w-btn-primary" href="#">Open our wishlist</a>
+              <div class="handoff-edge">Opens the provider's own site in a new tab</div>
+            </div>
+
+            <div class="handoff">
+              <h2 class="w-h3">Our next adventures</h2>
+              <p class="w-small">Experiences, trips and gift cards, gathered with a provider so that everything stays simple and secure.</p>
+              <a class="w-btn w-btn-sm" href="#">Send us on an adventure</a>
+              <div class="handoff-edge">Opens the provider's own site in a new tab</div>
+            </div>
+
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Each link opens the provider's own site in a new tab. Anything you choose there is handled by them; we never see payment details.</p>
+            </div>
+
+            <p class="w-display-sm" style="text-align:center">Thank you. Truly.</p>
+            <p class="w-small w-muted">This is the same page with two configured links. Note what is still absent: any amount, any suggestion, any nudge.</p>
+          </div>
+        </div>
+
+        <!-- FORBIDDEN WORDS -->
+        <div class="site" data-scene-panel="words" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Copy constraints</p>
+              <h1 class="w-h1">Three things the gifts page may never say</h1>
+              <p class="w-body">Asserted by tests over the rendered page, not left to an author's judgement.</p>
+            </div>
+            <div class="w-card">
+              <div class="ban">
+                <code>/cash\s*fund/i</code>
+                <p class="w-small" style="margin:0">"Cash fund" turns a gift into a transaction. The page says "help us with our next adventures".</p>
+              </div>
+            </div>
+            <div class="w-card">
+              <div class="ban">
+                <code>/\bdonat(e|ion|ions)\b/i</code>
+                <p class="w-small" style="margin:0">"Donate" is charity vocabulary. A wedding gift is not a donation.</p>
+              </div>
+            </div>
+            <div class="w-card">
+              <div class="ban">
+                <code>/\$\s?\d/</code>
+                <p class="w-small" style="margin:0">No amount, ever — not a suggestion, not a default, not a tier. Naming a number tells a guest what they're worth.</p>
+              </div>
+            </div>
+            <div class="w-notice">
+              <p class="w-small" style="margin:0">Presence first. The registry exists because guests ask for it, and it stays below the thank-you in emphasis on every variant of the page.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESERVATIONS -->
+        <div class="site" data-scene-panel="reservations" hidden>
+          <div class="band">
+            <div class="w-stack-sm">
+              <p class="w-eyebrow">Eating in the building</p>
+              <h1 class="w-h1">Book a table</h1>
+              <p class="w-body">Two restaurants in the hotel. We link you to them; they take the booking.</p>
+            </div>
+
+            <div class="handoff">
+              <div class="w-between"><h2 class="w-h3">Cindy's (rooftop)</h2><span class="w-badge">Rooftop</span></div>
+              <p class="w-small">Hours, menus, and reservations live on the official page.</p>
+              <a class="w-btn w-btn-sm w-btn-primary" href="#">Reserve on their site</a>
+              <div class="handoff-edge">chicagoathletichotel.com · checked 5 Sep 2026</div>
+            </div>
+
+            <div class="handoff">
+              <div class="w-between"><h2 class="w-h3">Game Room</h2><span class="w-badge">Ground floor</span></div>
+              <p class="w-small">Hours and menus live on the official page.</p>
+              <a class="w-btn w-btn-sm" href="#">See hours and menu</a>
+              <div class="handoff-edge">chicagoathletichotel.com · checked 5 Sep 2026</div>
+            </div>
+
+            <div class="w-card">
+              <h2 class="w-h3">Somewhere without a link</h2>
+              <p class="w-small">We do not have a reservation link for this place yet. Ask us and we will point you the right way.</p>
+            </div>
+
+            <p class="w-small w-muted">The site never holds a booking, a card or a cancellation policy. It knows where you're going and when — enough to put it on your trip timeline — and nothing more.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="label" aria-label="What this scene exercises">
+      <div id="notes-body"></div>
+    </section>
+  </main>
+</div>
+
+<template data-notes="transportation">
+  <h3>Transportation — four topics, mostly honest gaps</h3>
+  <p>Non-transactional guidance. Facts come from the brief and the hotel's own pages; anything undecided is a visible placeholder.</p>
+  <ul>
+    <li><strong>Check:</strong> the valet entrance address (71 E Madison) differs from the venue address — both are correct, and the page distinguishes them.</li>
+    <li><strong>Check:</strong> accessibility directions link to the hotel's page with a check date rather than being restated here where they'd go stale.</li>
+  </ul>
+  <div class="label-meta"><span>route /transportation</span><span class="is-cap">TRANSPORTATION_TOPICS</span><span class="is-warn">backlog X-02, X-06, P-05</span></div>
+</template>
+
+<template data-notes="claim">
+  <h3>Claim a ride — two checks, one code</h3>
+  <p>Click through. The entitlement says a benefit exists; eligibility answers whether this guest may take it.</p>
+  <ul>
+    <li><strong>Check:</strong> the minor in the household is listed as not eligible <em>before</em> anyone taps claim.</li>
+    <li><strong>Check:</strong> re-claiming returns the same code — the action is idempotent, not a second voucher.</li>
+    <li><strong>Check:</strong> the code is scoped to one guest and never rendered into a household-wide view.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">claim_transportation_benefit</span><span>FLAG_TRANSPORT_BENEFITS</span><span class="is-warn">step-up</span></div>
+</template>
+
+<template data-notes="ineligible">
+  <h3>Refused — all three reasons</h3>
+  <p>The full set of eligibility verdicts, in the words a guest actually reads.</p>
+  <ul>
+    <li><strong>Check:</strong> the minor message routes to a parent instead of dead-ending.</li>
+    <li><strong>Check:</strong> no message reveals whether some other guest holds a benefit.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">ELIGIBILITY_MESSAGES</span><span>minor · unknown_guest · not_in_household</span></div>
+</template>
+
+<template data-notes="gifts">
+  <h3>Gifts — with nothing chosen yet</h3>
+  <p>Today's real state. No registry provider has been picked, so none is named, and the page still reads as finished rather than broken.</p>
+  <ul>
+    <li><strong>Check:</strong> "Thank you. Truly." carries more weight than either card.</li>
+    <li><strong>Check:</strong> the one available action is to reach the couple.</li>
+  </ul>
+  <div class="label-meta"><span>route /gifts</span><span class="is-cap">GIFTS_COPY</span><span class="is-warn">provider not chosen</span></div>
+</template>
+
+<template data-notes="gifts-live">
+  <h3>Gifts — the same page, configured</h3>
+  <p>What changes when links exist, and what deliberately doesn't.</p>
+  <ul>
+    <li><strong>Check:</strong> the handoff boundary is explicit on each card — the provider's site, their checkout, no payment details here.</li>
+    <li><strong>Check:</strong> still no amount, no suggestion, no default tier.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">providers/registry</span><span class="is-cap">providers/cash-fund</span><span class="is-ok">ADR-0004 delegation</span></div>
+</template>
+
+<template data-notes="words">
+  <h3>Forbidden words — copy as a test</h3>
+  <p>Three regexes assert over the rendered gifts page. Voice is enforced by CI, not by remembering.</p>
+  <ul>
+    <li><strong>Check:</strong> neither gifts scene contains any of the three patterns.</li>
+    <li><strong>Check:</strong> the replacement phrasing still tells a guest what the section is for.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">FORBIDDEN_GIFT_WORDS</span><span class="is-ok">asserted in tests</span></div>
+</template>
+
+<template data-notes="reservations">
+  <h3>Reservations — delegated, with a fallback</h3>
+  <p>The restaurant owns the booking. The site knows where and when, which is what the trip timeline needs, and nothing else.</p>
+  <ul>
+    <li><strong>Check:</strong> a place without a link says so and offers a human route.</li>
+    <li><strong>Check:</strong> hours and menus are never copied into the page — only linked, with a check date.</li>
+  </ul>
+  <div class="label-meta"><span class="is-cap">providers/reservations</span><span>ADR-0004</span><span class="is-ok">no card, no policy</span></div>
+</template>
+
+<script>
+/*@SHELL_JS@*/
+</script>
