@@ -208,30 +208,39 @@ describe('what the page is told to offer', () => {
   it('starts at the top of the ladder before anything has been tried', async () => {
     const { nextActionFor } = await import('../../scripts/secrets/acquire.mjs');
     for (const cred of CREDENTIALS) {
-      expect(nextActionFor(cred, undefined).method, cred.id).toBe(cred.ladder[0].method);
+      expect(nextActionFor(cred, undefined).method, cred.id).toBe(cred.ladder[0]?.method);
     }
   });
 });
 
 describe('the ladder only names rungs that exist', () => {
-  it('has a browser recipe for every recipe the registry references', async () => {
-    const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
+  /** Every (credential, recipe name) pair the registry's browser rungs point at. */
+  function browserRungs(): { cred: string; vars: string[]; recipe: string }[] {
+    const pairs: { cred: string; vars: string[]; recipe: string }[] = [];
     for (const cred of CREDENTIALS) {
       for (const step of cred.ladder) {
-        if (step.method !== 'browser') continue;
-        expect(RECIPES[step.recipe], `${cred.id} points at a missing recipe "${step.recipe}"`).toBeDefined();
+        // Only the browser rung carries a recipe; the union's other members have no such field.
+        if (step.method !== 'browser' || !('recipe' in step) || typeof step.recipe !== 'string') continue;
+        pairs.push({ cred: cred.id, vars: cred.vars, recipe: step.recipe });
       }
+    }
+    return pairs;
+  }
+
+  it('has a browser recipe for every recipe the registry references', async () => {
+    const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
+    const rungs = browserRungs();
+    expect(rungs.length, 'no browser rungs found — the invariant would be vacuous').toBeGreaterThan(0);
+    for (const { cred, recipe } of rungs) {
+      expect(RECIPES[recipe as keyof typeof RECIPES], `${cred} points at a missing recipe "${recipe}"`).toBeDefined();
     }
   });
 
   it('points each recipe at a variable its credential actually fills', async () => {
     const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
-    for (const cred of CREDENTIALS) {
-      for (const step of cred.ladder) {
-        if (step.method !== 'browser') continue;
-        const target = RECIPES[step.recipe]?.target;
-        expect(cred.vars, `${cred.id}'s recipe writes ${target}, which it does not own`).toContain(target);
-      }
+    for (const { cred, vars, recipe } of browserRungs()) {
+      const target = RECIPES[recipe as keyof typeof RECIPES]?.target;
+      expect(vars, `${cred}'s recipe writes ${target}, which it does not own`).toContain(target);
     }
   });
 });
