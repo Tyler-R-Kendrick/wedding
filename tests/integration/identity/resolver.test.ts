@@ -72,7 +72,17 @@ describe('principal resolver', () => {
     //     principal does not compile. Asserted at `transport-claims.test.ts` ("signedIn: false,
     //     benefits: []") as well. The public part is valet, transit and parking, which is public.
     // Every claim capability stays `auth: 'guest'` behind `claim_transportation_benefit`.
-    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_faq', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
+    //
+    // Level 10 (media) adds exactly two anonymous names, and both earn it: `/photos` is a public
+    // page, so a visitor must be able to list albums and open an item. What makes that safe is the
+    // ACL, not the `auth` line — `canViewVisibility` returns true for an anonymous principal only
+    // when the effective visibility is `public`, every other case requires `kind === 'guest'`, and
+    // `canViewPublishedAsset` demands `status === 'published'` first. `list_gallery` 404s a
+    // collection the principal cannot see rather than revealing that it exists, and (as of this
+    // integration) filters each asset by its OWN visibility too — it previously trusted the
+    // collection's, which would have listed a `private` asset in a public album to anyone.
+    // Every upload, delete and moderation capability stays `auth: 'guest'` or `auth: 'admin'`.
+    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_faq', 'get_media_item', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
     const amara = await signIn(f.emails.amara);
     // Level 08 (travel) adds 7 guest capabilities, all `auth: 'guest'` behind `view_travel_tools`,
     // and every mutating one carries `confirmation: 'inline'`. `update_trip_item` is the one absent
@@ -91,10 +101,16 @@ describe('principal resolver', () => {
     // confirmation on any surface but `ui` ("models and WebMCP can only draft"), so an assistant can
     // describe and draft a claim but can never redeem one. That is the same guarantee level 07
     // relied on to leave `submit_rsvp` off the agent lists, reached a different way.
+    // Level 10 (media) adds 8 guest capabilities. Only the three READS reach an assistant:
+    // `list_gallery`, `get_media_item` and `list_my_uploads`. Every mutating one — create, complete,
+    // resume, abort and delete an upload — is `ui: true, ai: false, webmcp: false`, so no agent can
+    // start, finish, cancel or destroy a guest's upload; `delete_my_upload` additionally carries
+    // `confirmation: 'inline'`. Swarm H chose that itself, and it is the right line: an upload is
+    // the one thing on this site a guest cannot recreate.
     const guest = await principalFor({ cookie: amara.cookie });
-    expect(names({ principal: guest })).toEqual(['add_trip_item', 'claim_identity', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
-    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
-    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
+    expect(names({ principal: guest })).toEqual(['abort_upload', 'add_trip_item', 'claim_identity', 'claim_my_transportation_benefit', 'complete_upload', 'create_upload', 'delete_my_travel_profile', 'delete_my_upload', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'resume_upload', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
+    expect(names({ principal: guest, exposure: 'ai' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
+    expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_travel_options', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
     await grantAdmin(`owner+rs4@example.test`, 'owner');
     const admin = await signIn(`owner+rs4@example.test`, {}, 'admin_sign_in');
     const ap = await principalFor({ cookie: admin.cookie });
@@ -106,7 +122,11 @@ describe('principal resolver', () => {
     // touches rather than a blanket one — guest records under `admin_guest_ops` (assign, revoke and
     // list transportation entitlements), the voucher code pool under `admin_integrations` (it holds
     // provider secrets), and the curated gift and reservation links under `admin_content`.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(48);
+    // 48 -> 53: level 10's five media admin capabilities — the moderation queue, the moderation
+    // action, the professional import, and the duplicates and metrics views. All five are
+    // `auth: 'admin'` behind `admin_media`, the entitlement that matches what they touch: guest
+    // photographs and the vendors' originals. None is exposed to an assistant.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(53);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);

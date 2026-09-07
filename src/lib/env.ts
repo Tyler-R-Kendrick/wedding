@@ -86,6 +86,17 @@ const serverSchema = z.object({
   S3_SECRET_ACCESS_KEY: optionalString,
   S3_FORCE_PATH_STYLE: requiredBool(true),
   STORAGE_DATA_DIR: z.string().default('./.data/storage'),
+  /** Media pipeline (level 10). Caps are per file; parts must be >= 5 MiB on S3/R2 (local-fs accepts smaller for tests). */
+  MEDIA_MAX_IMAGE_MB: intish(40, 1),
+  MEDIA_MAX_VIDEO_MB: intish(512, 1),
+  MEDIA_PART_SIZE_MB: intish(8, 1),
+  MEDIA_MULTIPART_THRESHOLD_MB: intish(8, 1),
+  /** ffmpeg binary for video posters/probing; the adapter reports what the binary can really do. Unset -> `ffmpeg` on PATH, else mock. */
+  FFMPEG_PATH: optionalString,
+  /** Cloudflare Stream delivery adapter (skeleton). All three required for live mode. */
+  CLOUDFLARE_ACCOUNT_ID: optionalString,
+  CLOUDFLARE_STREAM_API_TOKEN: optionalString,
+  CLOUDFLARE_STREAM_CUSTOMER_CODE: optionalString,
   FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'skyscanner', 'duffel-links']).optional(),
   HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'booking', 'duffel-stays']).optional(),
   /** Travel (level 08): Skyscanner Live Prices, Duffel Links/Stays + signed webhooks, Booking.com Demand API. */

@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from 'react';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
-import type { GiftsProps, TravelProps } from '@/themes/content-types';
+import type { GiftsProps, PhotoAlbumProps, PhotosProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
@@ -25,6 +25,8 @@ import { VenueSpacePage } from './VenueSpacePage';
 import { WeddingPage } from './WeddingPage';
 import { TravelPage } from './TravelPage';
 import { GiftsPage } from './GiftsPage';
+import { PhotoAlbumPage } from './PhotoAlbumPage';
+import { PhotosPage } from './PhotosPage';
 
 /**
  * The recipe seam. Pages fetch theme-agnostic data through capabilities and render
@@ -45,6 +47,9 @@ export interface PageRecipes {
   TravelPage: ComponentType<Omit<TravelProps, 'frame'>>;
   /** Level 09. Fallback is swarm G's plain recipe; both themes supply their own. */
   GiftsPage: ComponentType<Omit<GiftsProps, 'frame'>>;
+  /** Level 10. Fallback is swarm H's plain media shell; both themes supply their own. */
+  PhotosPage: ComponentType<Omit<PhotosProps, 'frame'>>;
+  PhotoAlbumPage: ComponentType<Omit<PhotoAlbumProps, 'frame'>>;
 }
 type VenueSpaceData = VenueRoomData;
 
@@ -60,6 +65,8 @@ export const placeholderRecipes: PageRecipes = {
   AskPage,
   TravelPage,
   GiftsPage,
+  PhotosPage,
+  PhotoAlbumPage,
 };
 
 type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0], 'frame'>;
@@ -102,6 +109,8 @@ export const themedRecipes: PageRecipes = {
   AskPage: themed('ask', ROUTES.ask, AskPage),
   TravelPage: themed('travel', ROUTES.travel, TravelPage),
   GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage),
+  PhotosPage: themed('photos', ROUTES.photos, PhotosPage),
+  PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage),
 };
 
 /** Swap point: the theme kit's recipes, with the placeholders as the fallback for unknown themes. */

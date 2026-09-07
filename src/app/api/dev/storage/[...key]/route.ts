@@ -12,7 +12,15 @@ function local(): LocalFsStorage | null {
   // Never in production, whatever the storage provider is.
   if (env.isProduction) return null;
   const storage = getProvider('storage');
-  return storage instanceof LocalFsStorage ? storage : null;
+  // Structural check rather than `instanceof`: the process-wide provider cache may hold an
+  // instance built in another bundler layer (RSC vs route handler), where the class object differs.
+  return isLocalFsStorage(storage) ? storage : null;
+}
+
+function isLocalFsStorage(storage: unknown): storage is LocalFsStorage {
+  if (storage instanceof LocalFsStorage) return true;
+  const s = storage as Partial<LocalFsStorage> | null;
+  return !!s && s.name === 'local-fs' && typeof s.verifySignedRequest === 'function' && typeof s.writeMultipartPart === 'function';
 }
 
 /** Query parameters are untrusted even when signed: shape-check them before anything touches the filesystem. */

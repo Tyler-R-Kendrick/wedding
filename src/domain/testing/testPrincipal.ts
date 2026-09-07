@@ -60,8 +60,12 @@ export type TestPrincipalSpec = z.infer<typeof testPrincipalSchema>;
  * `entitlements` list, as `tests/security/voucher.spec.ts` does; the default is the permissive one
  * so that a missing entitlement shows up as a deliberate case rather than as a silent 403.
  */
-export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools', 'claim_transportation_benefit'] as const;
-export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle'] as const;
+// `upload_media` and `view_private_media` (level 10) are here for the same reason
+// `view_travel_tools` (08) and `claim_transportation_benefit` (09) are: a capability that requires
+// an entitlement the default test guest does not hold answers 403 on its first real run, and the
+// spec that navigates to it quietly asserts the signed-out page instead. Third level running.
+export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools', 'claim_transportation_benefit', 'upload_media', 'view_private_media'] as const;
+export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle', 'admin_media'] as const;
 
 export interface TestPrincipalEnv {
   isTest: boolean;

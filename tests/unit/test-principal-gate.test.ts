@@ -42,4 +42,15 @@ describe('the test principal resolver is unreachable unless deliberately enabled
     expect((await r.resolve(req(injected()))).kind).toBe('admin');
     expect(principalFromSpec(spec).kind).toBe('admin');
   });
+
+  // Ported from swarm H's own injector test at level 10, when its duplicate resolver was deleted.
+  // `system` is the interesting one: unlike `wizard` above it is a REAL principal kind, used by
+  // seeds and jobs, so "unknown kind is refused" does not cover it — a header must never be able to
+  // claim it.
+  it('never injects a system principal, and refuses an entitlement that is not one', async () => {
+    const r = createTestPrincipalResolver(fallback, { isTest: true, secret: SECRET });
+    const as = (principal: unknown) => req({ 'x-test-auth': SECRET, 'x-test-principal': JSON.stringify(principal) });
+    expect(await r.resolve(as({ kind: 'system', component: 'seed' }))).toEqual(anonymous);
+    expect(await r.resolve(as({ kind: 'guest', guestId: '0'.repeat(26), householdId: '1'.repeat(26), entitlements: ['root'] }))).toEqual(anonymous);
+  });
 });

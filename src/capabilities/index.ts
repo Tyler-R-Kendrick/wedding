@@ -3,6 +3,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, type Result } from '@/contracts/result';
 import { contentCapabilities } from './content';
 import { invoke } from './invoke';
+import { mediaCapabilities } from './media';
 import { navigateTo } from './navigate_to';
 import { registry } from './registry';
 import { rsvpSwarmCapabilities } from './rsvp';
@@ -23,6 +24,7 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...rsvpSwarmCapabilities,
   ...travelCapabilities,
   ...transportGiftsReservationsCapabilities,
+  ...mediaCapabilities,
 ];
 
 registry.registerAll(BUILTIN_CAPABILITIES);

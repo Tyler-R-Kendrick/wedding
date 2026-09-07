@@ -1,0 +1,652 @@
+/*
+ * Media surfaces (level 10): upload page, My uploads, Photos & Video, admin moderation.
+ * Token-only: every color, space and radius is a DESIGN.md variable. Fallbacks reference other
+ * tokens so the surfaces render before the theme kit's full variable set lands.
+ * Mobile (390px) first; 44px targets; reduced motion respected. Secondary copy is
+ * `max(17px, 0.9375rem)`, not a bare `0.9375rem`: 15.94px is under the 17px floor this site sets
+ * because grandparents are a primary audience, and it is the same `max()` the shared `.hint` has
+ * used since level 09.
+ *
+ * Layout tracks come from the CONTAINER (`auto-fill` + `minmax`), never from a viewport media
+ * query: these grids sit inside a theme section's text column, so window width is not their width.
+ * Where the two designs disagree on principle — centred versus placed, a full-measure rule versus
+ * one that stops at 12rem, a gold mat versus a hairline — that disagreement is a `--media-*` role
+ * token defined per `[data-theme]` in `themes/shared/base.css`, not a value picked here.
+ *
+ * Headings read the `--type-*` role tokens both designs publish under `[data-theme]`, not a literal
+ * scale. Written with a bare `font-size` and no family they inherited `--font-text`, so the h1 on
+ * /media/upload and /media/mine rendered in Josefin Sans / Spectral — the BODY face — at the same
+ * 38.25px in both designs, where the guest kit next door gives Cinzel 34→46.75 uppercase and Gloock
+ * 38.25→51. Case and tracking come from the same per-design role tokens the guest kit uses, because
+ * Gilded Hour ties its wide tracking to capitals and Conservatory sets Gloock in sentence case.
+ */
+
+.media-page {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: var(--spacing-lg, 24px) var(--spacing-md, 16px) var(--spacing-3xl, 96px);
+  color: var(--color-on-surface, var(--color-primary));
+  font-family: inherit;
+}
+
+.media-page__head {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  padding-block-end: var(--spacing-lg, 24px);
+  margin-block-end: var(--spacing-lg, 24px);
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-page__head h1 {
+  margin: 0;
+  font-family: var(--type-h1-family, inherit);
+  font-size: clamp(var(--type-h1-size, 2.25rem), 1.25rem + 2.2vw, var(--type-display-lg-size, 3rem));
+  font-weight: var(--type-h1-weight, 400);
+  line-height: var(--type-h1-line, 1.15);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
+}
+
+.media-lede {
+  max-width: var(--wp-measure, 33rem);
+  margin: 0;
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+/* In the page head this is the lede, and the themed `PageHead` next door sets it at 22.31px; here
+   it inherited the 17px root, so the same role changed size depending on which surface you were on.
+   Declared after the base rule, not before: stylelint's `no-descending-specificity`. */
+.media-page__head .media-lede {
+  font-size: var(--type-body-lg-size, 1.25rem);
+  line-height: var(--type-body-lg-line, 1.5);
+}
+
+.media-section + .media-section {
+  margin-block-start: var(--spacing-xl, 40px);
+}
+
+.media-section > h2 {
+  margin: 0 0 var(--spacing-sm, 8px);
+  font-family: var(--type-h2-family, inherit);
+  font-size: clamp(var(--type-h2-size, 1.625rem), 1.2rem + 1.4vw, var(--type-h1-size, 2.25rem));
+  font-weight: var(--type-h2-weight, 400);
+  line-height: var(--type-h2-line, 1.2);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
+}
+
+.media-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+}
+
+.media-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs, 4px);
+  min-height: 44px;
+  padding: 0 var(--spacing-md, 16px);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-primary);
+  color: var(--color-on-primary, var(--color-neutral));
+  font: inherit;
+  font-size: 1.0625rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.media-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.media-button--secondary {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.media-button--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-secondary, var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.media-button--danger {
+  border-color: var(--color-error, var(--color-primary));
+  background: transparent;
+  color: var(--color-error, var(--color-primary));
+}
+
+.media-link {
+  color: var(--color-secondary, var(--color-primary));
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ---------------------------------------------------------------- upload page */
+
+.media-dropzone {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-lg, 24px);
+  border: 1px dashed var(--color-outline, currentcolor);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-surface, var(--color-neutral));
+  text-align: center;
+}
+
+.media-dropzone--active {
+  border-style: solid;
+  border-color: var(--color-secondary, var(--color-primary));
+}
+
+.media-dropzone input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.media-dropzone__hint {
+  margin: 0;
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-upload-list {
+  display: grid;
+  gap: var(--spacing-sm, 8px);
+  margin: var(--spacing-lg, 24px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.media-upload-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  align-items: start;
+  padding: var(--spacing-sm, 8px) 0;
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-upload-row__preview {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-neutral-variant, var(--color-neutral));
+}
+
+.media-upload-row__preview--video {
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.media-upload-row__name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+
+.media-upload-row__meta {
+  margin: 0;
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-upload-row__meta[data-tone='error'] {
+  color: var(--color-error, var(--color-primary));
+}
+
+.media-upload-row__actions {
+  grid-column: 2;
+}
+
+.media-progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-block-start: var(--spacing-xs, 4px);
+  accent-color: var(--color-secondary, var(--color-primary));
+}
+
+.media-caption-field {
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+  grid-column: 2;
+}
+
+.media-caption-field textarea,
+.media-field input,
+.media-field textarea,
+.media-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-sm, 8px);
+  border: 1px solid var(--color-outline, currentcolor);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-surface, var(--color-neutral));
+  color: inherit;
+  font: inherit;
+  font-size: 1.0625rem;
+}
+
+.media-field {
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+  margin-block-end: var(--spacing-md, 16px);
+}
+
+.media-field > span,
+.media-caption-field > span {
+  font-size: max(17px, 0.9375rem);
+}
+
+.media-summary {
+  margin: var(--spacing-md, 16px) 0 0;
+  padding: var(--spacing-md, 16px) 0;
+  border-block: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-summary p {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- galleries */
+
+.media-albums {
+  display: grid;
+
+  /* Tracks sized from the CONTAINER, not the viewport. The `@media (width >= 1024px)` rules this
+     replaces asked the window how wide the list was, and the window is not the answer: in
+     Conservatory these lists sit in `.cv-section__grid`'s text column, 587px at a 1440px viewport,
+     so a viewport-driven 3-up produced narrower cards on a desktop than on a phone. It also fixes
+     the axis break Gilded Hour showed with a single album — fixed 2- and 3-up tracks left one item
+     stranded 180px left of the heading's centre line, and an anonymous visitor sees exactly one of
+     the eight collections, so that WAS the default state. `justify-content` is a per-design role
+     token because the two designs disagree about it on purpose. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 22rem));
+  justify-content: var(--media-justify, start);
+  gap: var(--spacing-md, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.media-album {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-md, 16px) 0;
+}
+
+/* A rule whose length is the design's choice: full measure in Gilded Hour, stopping at 12rem in
+   Conservatory, whose DESIGN.md asks for dividers that "grow from the left margin and stop at
+   12rem, not full-width rules". A `border-block-start` could only ever be one of the two. */
+.media-album::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--media-rule-size, 100%);
+  block-size: 1px;
+  background: var(--color-outline, currentcolor);
+}
+
+/* No `color` and no `text-decoration: none` here. Those two declarations (specificity 0-1-1) beat
+   the theme kits' own `.gh-link` / `.cv-link` (0-1-0), so the album link — the only way into an
+   album, and on `/photos` the only link in the main content at all — computed the same ink as the
+   headings with no underline: not distinguished by colour OR decoration, which is WCAG 2.2 SC
+   1.4.1. It now inherits whatever the design says a link looks like.
+   `min-height` because the project's bar is 44px (PRODUCT.md, grandparents are a primary
+   audience); it measured 35px. axe passes it either way — SC 2.5.8 asks 24px — so this is the
+   house rule, not the standard. */
+.media-album a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 1.25rem;
+}
+
+.media-album__count {
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-grid {
+  display: grid;
+
+  /* See `.media-albums`: tracks from the container. Measured before this change, a tile was
+     171x136 at a 390px viewport and 135x136 at 1440 — photographs got SMALLER on a desktop,
+     because the 4-up rule fired on window width while the grid sat in a 587px column. */
+
+  /* The maximum must stay `1fr`. `auto-fit` picks its repetition count from the track's MAX sizing
+     function whenever that is definite, and only falls back to the min when it is not — so
+     `minmax(9.5rem, 15rem)` counted from 255px and laid one column in a 350px phone container and
+     three in a 1020px one. Measured, twice, mid-fix. With `1fr` the count comes from the 161.5px
+     minimum (9.5rem at this site's 17px root) and the tracks then divide the container: 2 x 171 on
+     a 390px phone, 3 x 185 in Conservatory's 587px text column, 5 x 191 in Gilded Hour's capped
+     1020px one. Never smaller on a larger screen, which is the defect this replaced. */
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  justify-content: var(--media-justify, start);
+
+  /* `auto-fit`, not `auto-fill`: an album with one photograph should show one photograph, and
+     `auto-fill`'s empty tracks eat the free space `justify-content` would otherwise centre — which
+     is exactly how the single album on `/photos` ended up 195px left of the heading's centre line
+     in the design whose DESIGN.md puts them on the same axis. The 15rem cap stops one photograph
+     stretching across the page; the 60rem cap keeps a wide desktop from thinning the tracks below
+     the ~171px a phone already gives (measured 167.5px at Gilded Hour's full 1085px column).
+     Note the root here is 17px, not 16 — the body floor this site sets — so 9.5rem is 161.5px. */
+  gap: var(--spacing-sm, 8px);
+  max-width: min(60rem, 100%);
+  margin: 0;
+  margin-inline: var(--media-grid-inline, 0);
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 640px) {
+  .media-grid {
+    gap: var(--spacing-md, 16px);
+  }
+}
+
+/* Gilded Hour mats a photograph in 3px of gold (DESIGN.md's frame treatment); Conservatory mounts
+   it on a hairline. Before this the tile was `border: 0` in both, so the one surface on the site
+   that is entirely photographs was the one surface wearing none of either design. */
+.media-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: var(--media-tile-pad, 0);
+  border: var(--media-tile-frame, 0);
+  border-radius: var(--rounded-sm, 2px);
+  overflow: hidden;
+  background: var(--color-neutral-variant, var(--color-neutral));
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.media-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-tile__badge {
+  position: absolute;
+  inset-block-end: var(--spacing-xs, 4px);
+  inset-inline-start: var(--spacing-xs, 4px);
+  padding: 2px var(--spacing-xs, 4px);
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-primary);
+  color: var(--color-on-primary, var(--color-neutral));
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.media-tile__placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-empty {
+  padding: var(--spacing-xl, 40px) 0;
+  text-align: var(--media-align, start);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-empty p {
+  margin: 0;
+}
+
+.media-pager {
+  display: flex;
+  justify-content: var(--media-justify, start);
+  gap: var(--spacing-md, 16px);
+  margin-block-start: var(--spacing-lg, 24px);
+}
+
+/* 86x27 measured before: under the 44px house floor, on the control that leaves an album. */
+.media-pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* ---------------------------------------------------------------- lightbox */
+
+.media-lightbox {
+  width: min(100vw, 1200px);
+  max-width: 100vw;
+  max-height: 100vh;
+  padding: 0;
+  border: 0;
+  background: var(--color-primary);
+  color: var(--color-on-primary, var(--color-neutral));
+}
+
+.media-lightbox::backdrop {
+  background: var(--color-primary);
+  opacity: 0.92;
+}
+
+.media-lightbox__inner {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+@media (width >= 640px) {
+  .media-lightbox__inner {
+    min-height: min(100vh, 900px);
+  }
+}
+
+.media-lightbox__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+}
+
+.media-lightbox__bar .media-button {
+  border-color: var(--color-on-primary, var(--color-neutral));
+  background: transparent;
+  color: var(--color-on-primary, var(--color-neutral));
+}
+
+.media-lightbox__stage {
+  display: grid;
+  place-items: center;
+  padding: 0 var(--spacing-sm, 8px);
+}
+
+.media-lightbox__stage img,
+.media-lightbox__stage video {
+  max-width: 100%;
+  max-height: calc(100vh - 9rem);
+  object-fit: contain;
+}
+
+.media-lightbox__caption {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px) var(--spacing-md, 16px);
+  font-size: max(17px, 0.9375rem);
+}
+
+.media-lightbox__caption p {
+  margin: 0;
+}
+
+.media-lightbox__credit {
+  opacity: 0.8;
+}
+
+/* ---------------------------------------------------------------- admin */
+
+.media-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: end;
+  margin-block-end: var(--spacing-md, 16px);
+}
+
+.media-filters .media-field {
+  margin: 0;
+  min-width: 10rem;
+}
+
+.media-bulk {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  align-items: center;
+  padding: var(--spacing-sm, 8px) 0;
+  background: var(--color-neutral);
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-queue {
+  display: grid;
+  gap: var(--spacing-md, 16px);
+  margin: var(--spacing-md, 16px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.media-queue-row {
+  display: grid;
+  grid-template-columns: auto 96px 1fr;
+  gap: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  align-items: start;
+  padding-block-end: var(--spacing-md, 16px);
+  border-block-end: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-queue-row input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+  margin-block-start: var(--spacing-xs, 4px);
+  accent-color: var(--color-secondary, var(--color-primary));
+}
+
+.media-queue-row__thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--rounded-sm, 2px);
+  background: var(--color-neutral-variant, var(--color-neutral));
+}
+
+.media-queue-row dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px var(--spacing-sm, 8px);
+  margin: var(--spacing-xs, 4px) 0 0;
+  font-size: max(17px, 0.9375rem);
+}
+
+.media-queue-row dt {
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-queue-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.media-status {
+  display: inline-block;
+  padding: 1px var(--spacing-sm, 8px);
+  border: 1px solid var(--color-outline, currentcolor);
+  border-radius: var(--rounded-sm, 2px);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.media-metrics {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--spacing-xs, 4px) var(--spacing-lg, 24px);
+  margin: 0;
+}
+
+.media-metrics dt {
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-metrics dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.media-note {
+  max-width: 60ch;
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
+}
+
+.media-cluster {
+  padding: var(--spacing-md, 16px) 0;
+  border-block-start: 1px solid var(--color-outline, currentcolor);
+}
+
+.media-cluster .media-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--spacing-sm, 8px);
+}
+
+.media-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .media-tile img {
+    transition: opacity 200ms ease-out;
+  }
+
+  .media-tile img[data-loading='true'] {
+    opacity: 0;
+  }
+}
+
+/* Focus rings last: they must win over every base rule above. */
+.media-button:focus-visible,
+.media-dropzone:focus-within,
+.media-tile:focus-visible,
+.media-link:focus-visible,
+.media-field select:focus-visible,
+.media-field input:focus-visible,
+.media-field textarea:focus-visible {
+  outline: 3px solid var(--color-secondary, var(--color-primary));
+  outline-offset: 2px;
+}

@@ -157,6 +157,12 @@ jobs:
           # test-auth secret enables the principal injector; both are refused on a production host.
           DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real
           TEST_AUTH_SECRET: ci-only-test-auth-secret-not-real
+          # Level 10: the upload journey interrupts a MULTIPART part-2 PUT to prove resume works.
+          # Its largest fixture is ~4 MB, so at the 8 MB default nothing is multipart, the route
+          # interception never fires and the spec fails asserting 2 interruptions and seeing 0. A
+          # 1 MiB part size makes the fixture ~5 parts, which is the shape the journey is about.
+          MEDIA_PART_SIZE_MB: '1'
+          MEDIA_MULTIPART_THRESHOLD_MB: '1'
           PGLITE_MEMORY: '1'
           DB_AUTO_MIGRATE: '1'
           DB_AUTO_SEED: '1'

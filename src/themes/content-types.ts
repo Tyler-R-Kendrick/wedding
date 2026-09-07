@@ -6,6 +6,7 @@ import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
+import type { GalleryPage } from '@/capabilities/media';
 import type { StaticSearchData } from '@/capabilities/search_wedding_information_static';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
@@ -73,6 +74,29 @@ export interface GiftsProps {
   data: GiftLinks;
 }
 
+/**
+ * Level 10. The gallery's own markup — album list, responsive grid, lightbox, pager — is swarm H's
+ * and is shared by both designs: a photograph is a photograph, and `media.css` already speaks only
+ * in per-theme role tokens. What the recipe supplies is what `/photos` had none of: the design's
+ * Shell, its page head, its sections and its grounds. Rendered bare it had no nav, no switcher, an
+ * h1 in the text face at one fixed size in both designs, and — with JavaScript off — Times New
+ * Roman, because nothing above it carried `[data-theme]` for the tokens to resolve against.
+ */
+export interface PhotosProps {
+  albums: { slug: string; title: string; description: string | null; itemCount: number }[];
+  canUpload: boolean;
+  copy: { title: string; lede: string; empty: string };
+}
+
+export interface PhotoAlbumProps {
+  slug: string;
+  title: string;
+  description: string | null;
+  items: GalleryPage['items'];
+  nextCursor: string | null;
+  copy: { empty: string; allAlbums: string; showMore: string };
+}
+
 export interface TravelProps {
   venue: HotelRecommendation;
   alternatives: HotelRecommendation[];
@@ -101,6 +125,8 @@ export interface ContentRecipes {
   ask: ContentRecipe<AskProps>;
   travel: ContentRecipe<TravelProps>;
   gifts: ContentRecipe<GiftsProps>;
+  photos: ContentRecipe<PhotosProps>;
+  photoAlbum: ContentRecipe<PhotoAlbumProps>;
 }
 export type ContentRecipeKey = keyof ContentRecipes;
 
@@ -123,8 +149,16 @@ export interface StopItem {
 }
 
 export interface ContentKit {
-  /** Title block of a content page: section eyebrow, H1, lede, optional facts under it. */
-  PageHead: (p: { eyebrow: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) => ReactNode;
+  /**
+   * Title block of a content page: H1, lede, optional facts under it, and an OPTIONAL eyebrow.
+   *
+   * Optional because `impeccable detect`'s `kicker-above-heading` rule bans a label sitting as its
+   * own block directly above a heading outright — "the heading carries its own weight" — so a page
+   * whose eyebrow is chrome rather than a genuine category (Photos & Video's was the couple's own
+   * names, repeating the wordmark 50px above it) must be able to omit it rather than restyle it.
+   * Pages whose eyebrow names a real section keep passing it.
+   */
+  PageHead: (p: { eyebrow?: string; title: ReactNode; lede?: ReactNode; children?: ReactNode }) => ReactNode;
   /** Our Story chapters in order, each with its provenance; placeholders stay marked. */
   StoryTimeline: (p: { sections: StorySectionView[] }) => ReactNode;
   /** Placeholder-aware prose: facts become paragraphs, placeholders become marked blocks. */

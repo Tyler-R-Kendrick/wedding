@@ -530,9 +530,18 @@ a:focus-visible,
   font-size: var(--type-h3-size, 1.25rem);
 }
 
+/*
+ * Wraps. The guest nav grew to the full lifecycle list at level 09, and a non-wrapping flex row of
+ * seven items overflowed a 390px phone: measured `body.scrollWidth` 406 against `clientWidth` 390,
+ * with `overflow-x: clip` on the body, so the last item ("Photos & Video") was cut and could not be
+ * scrolled to — WCAG 2.2 SC 1.4.10, and it hid the link to the surface this level adds. Both design
+ * reviewers found it independently, in both designs. The `row-gap` is tighter than the column gap
+ * so a wrapped second row reads as continuation rather than as a second nav.
+ */
 .wp-nav {
   display: flex;
-  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-lg);
   margin: 0;
   padding: 0;
   list-style: none;
