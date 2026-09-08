@@ -146,12 +146,14 @@ export default function ConciergePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
-   * Every turn ever pushed. `dropped` is this minus what the state still holds, which is exact
-   * and needs no second piece of state: `trimTranscript` is the only thing that shortens `turns`.
-   * A ref rather than state because nothing re-renders on it — the render that shows a dropped
-   * count is the one `setTurns` already causes.
+   * Every turn ever pushed. `dropped` is this minus what the state still holds, which is exact:
+   * `trimTranscript` is the only thing that shortens `turns`.
+   *
+   * State rather than a ref because the count is read while rendering, and a ref read during
+   * render is not guaranteed to be the value this render commits with. It costs no extra render:
+   * it is set in the same event as the `setTurns` beside it, so React batches the two into one.
    */
-  const addedRef = useRef(0);
+  const [added, setAdded] = useState(0);
   const sessionId = useRef<string | undefined>(undefined);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
@@ -178,14 +180,14 @@ export default function ConciergePanel({
   }, [turns]);
 
   const visible = turns.filter((turn) => !turn.failed);
-  const dropped = Math.max(0, addedRef.current - turns.length);
+  const dropped = Math.max(0, added - turns.length);
 
   const submit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
       const asked = question.trim();
       if (asked.length < 2 || busy) return;
-      addedRef.current += 2;
+      setAdded((n) => n + 2);
       const answerTurn: Turn = {
         id: nextTurnId(),
         role: "concierge",

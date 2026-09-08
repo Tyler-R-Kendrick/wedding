@@ -29,7 +29,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 
 | Kind | Implementation | Mode | Variables its source reads | Operations available | Notes |
 |---|---|---|---|---|---|
-| `ai-model` | mock | mock | `ANTHROPIC_API_KEY`<br>`FORCE_MOCK_PROVIDERS` | chat, verifier, caption, streaming |  |
+| `ai-model` | mock | mock | `AI_BASE_URL`<br>`AI_CHAT_MODEL`<br>`AI_FAST_MODEL`<br>`AI_HARNESS`<br>`ANTHROPIC_API_KEY`<br>`ANTHROPIC_AUTH_TOKEN`<br>`ANTHROPIC_BASE_URL`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY` | chat, verifier, caption, streaming |  |
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_API_KEY` | sendOtp, sendMessage |  |
 | `biometric` | mock | mock | — | extract, enroll, match, delete | mock biometric provider: detects no faces and must never be enabled in production without counsel review |
 | `cash-fund` | mock | mock | `CASH_FUND_LINKS_JSON`<br>`FORCE_MOCK_PROVIDERS` | describeLinks |  |
