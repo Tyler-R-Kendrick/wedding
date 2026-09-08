@@ -182,6 +182,3 @@ export function AdminIndex({ current, variant = 'labels', idPrefix = 'index' }: 
     </div>
   );
 }
-
-/** Numbers in tables are aligned on the decimal: tabular figures, right-aligned, one class. */
-export const NUM = 'con-num';
