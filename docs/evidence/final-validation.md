@@ -86,8 +86,14 @@ Deferred with reasons recorded on their pull requests:
 - The `(auth)` tree measures **12.75px** on buttons and **15.94px** on hints
   against this repo's 17px floor. Level 16 fixed its missing `[data-theme]`; the
   type scale is a DESIGN.md question and is still open.
-- Public prose is byte-identical in all nine lifecycle states, so `POST_WEDDING`
-  still describes a future wedding.
+- **Only Home uses the lifecycle it renders under.** `home-content.ts` carries a
+  per-state hero, section order and copy for all nine states, and it is good.
+  The other twelve public pages take `frame.lifecycle` for the preview banner
+  and nothing else, so `/the-wedding` offers dress-code guidance in
+  `POST_WEDDING` and `ARCHIVE` in exactly the words it uses in `TEASER`.
+  (An earlier note in this run said the public prose was byte-identical in all
+  nine states; that was wrong about Home, and the corrected version is the one
+  above.)
 - `/photos` offers face matching that `/media/me` says is off and staying off.
 - Home and `/our-story` promise seven adventures where `/our-adventures` has one.
 - 14 placeholders are written in the second person **to the couple**.
