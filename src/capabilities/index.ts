@@ -8,6 +8,7 @@ import { biometricCapabilities } from './biometrics';
 import { mediaCapabilities } from './media';
 import { mediaAiCapabilities } from './mediaai';
 import { navigateTo } from './navigate_to';
+import { opsCapabilities } from './ops';
 import { registry } from './registry';
 import { rsvpSwarmCapabilities } from './rsvp';
 import { siteStatus } from './site_status';
@@ -31,6 +32,7 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...mediaAiCapabilities,
   ...biometricCapabilities,
   ...aiCapabilities,
+  ...opsCapabilities,
 ];
 
 registry.registerAll(BUILTIN_CAPABILITIES);

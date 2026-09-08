@@ -63,6 +63,12 @@ export const TEST_SERVER_SPECS = [
   // are gone, because a spec that skips itself when an env var is missing is exactly how three
   // security suites reported green at level 06. Registered here, the secret is always set.
   'tests/e2e/webmcp.spec.ts',
+  // Level 14: the admin console. Signed-in admins come from the canonical test-principal injector,
+  // so it needs the NODE_ENV=test server. It is deliberately read-only — every mutation these
+  // screens offer changes state other specs on this same server depend on (the RSVP window follows
+  // the lifecycle; the media-AI journey expects its own jobs to still be queued), and those paths
+  // are covered through the real pipeline in tests/integration/ops-*.test.ts instead.
+  'tests/e2e/admin-console.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

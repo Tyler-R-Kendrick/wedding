@@ -65,7 +65,13 @@ export type TestPrincipalSpec = z.infer<typeof testPrincipalSchema>;
 // an entitlement the default test guest does not hold answers 403 on its first real run, and the
 // spec that navigates to it quietly asserts the signed-out page instead. Third level running.
 export const GUEST_DEFAULT_ENTITLEMENTS = ['view_event', 'rsvp_self', 'view_private_schedule', 'view_table_assignment', 'use_concierge', 'view_travel_tools', 'claim_transportation_benefit', 'upload_media', 'view_private_media'] as const;
-export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle', 'admin_media', 'admin_ai'] as const;
+// `admin_integrations` (level 14) is here for the same reason `view_travel_tools` (08),
+// `claim_transportation_benefit` (09) and `upload_media` (10) are: the console's jobs, metrics and
+// providers screens require it, and a default test admin without it answers 403 on the first real
+// run while the spec quietly asserts the signed-out page instead. It is also the entitlement the
+// `owner` role already carries in `src/policy/derive.ts`, so this list stays a mirror of production
+// rather than a superset of it. Fourth level running.
+export const ADMIN_DEFAULT_ENTITLEMENTS = ['admin_content', 'admin_guest_ops', 'admin_audit', 'admin_lifecycle', 'admin_media', 'admin_ai', 'admin_integrations'] as const;
 
 export interface TestPrincipalEnv {
   isTest: boolean;

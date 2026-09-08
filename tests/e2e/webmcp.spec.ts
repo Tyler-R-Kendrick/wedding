@@ -182,8 +182,27 @@ function installModelContextPolyfill(): void {
   };
 }
 
+/**
+ * One retry, and ONLY on a transport-level failure — a socket the dev server reset before any
+ * response arrived. That failure mode showed up twice on this spec across unrelated trees, always
+ * as `read ECONNRESET` on this GET, never with a server-side error and never on a second attempt;
+ * two parallel workers against `next dev` is enough to produce it.
+ *
+ * This is deliberately not a retry on the assertions below. A 200 that is not 200, or a body whose
+ * `ok` is false, is the thing these tests exist to catch and is never retried: only a request that
+ * never completed at all is sent again.
+ */
+async function getManifestResponse(request: APIRequestContext, headers: Record<string, string>) {
+  try {
+    return await request.get('/api/webmcp/manifest', { headers });
+  } catch (cause) {
+    if (!/ECONNRESET|socket hang up|ECONNREFUSED/i.test(String(cause))) throw cause;
+    return await request.get('/api/webmcp/manifest', { headers });
+  }
+}
+
 async function manifestFor(request: APIRequestContext, headers: Record<string, string> = {}) {
-  const response = await request.get('/api/webmcp/manifest', { headers });
+  const response = await getManifestResponse(request, headers);
   expect(response.status()).toBe(200);
   const body = await response.json();
   expect(body.ok).toBe(true);
