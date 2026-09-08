@@ -32,7 +32,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `ai-model` | mock | mock | `AI_BASE_URL`<br>`AI_CHAT_MODEL`<br>`AI_FAST_MODEL`<br>`AI_HARNESS`<br>`ANTHROPIC_API_KEY`<br>`ANTHROPIC_AUTH_TOKEN`<br>`ANTHROPIC_BASE_URL`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY` | chat, verifier, caption, streaming |  |
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_API_KEY` | sendOtp, sendMessage |  |
 | `biometric` | mock | mock | — | extract, enroll, match, delete | mock biometric provider: detects no faces and must never be enabled in production without counsel review |
-| `cash-fund` | mock | mock | `CASH_FUND_LINKS_JSON`<br>`FORCE_MOCK_PROVIDERS` | describeLinks |  |
+| `cash-fund` | mock | mock | — | describeLinks |  |
 | `embeddings` | mock | mock | `EMBEDDINGS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY`<br>`VOYAGE_API_KEY` | embed |  |
 | `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY` | search, deepLink |  |
 | `hotels` | mock | mock | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER` | search, deepLink |  |
@@ -40,7 +40,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `maps` | deep-link | deep-link | — | directionsUrl, staticMapUrl |  |
 | `media-ai` | mock | mock | `ANTHROPIC_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`MEDIA_AI_PROVIDER` | caption, describeScenes, tags, annotate |  |
 | `rate-limit` | memory | mock | `FORCE_MOCK_PROVIDERS`<br>`RATE_LIMIT_BACKEND` | consume |  |
-| `registry` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`REGISTRY_LINKS_JSON` | describeLinks |  |
+| `registry` | mock | mock | — | describeLinks |  |
 | `reservations` | mock | deep-link | — | deepLink, url |  |
 | `storage` | local-fs | mock | `DEV_STORAGE_SECRET`<br>`FORCE_MOCK_PROVIDERS`<br>`S3_ACCESS_KEY_ID`<br>`S3_BUCKET`<br>`S3_ENDPOINT`<br>`S3_FORCE_PATH_STYLE`<br>`S3_REGION`<br>`S3_SECRET_ACCESS_KEY`<br>`STORAGE_DATA_DIR`<br>`STORAGE_SIGNING_SECRET` | putObject, getObject, deleteObject, head, signedUpload, signedRead, multipart | local-fs storage is for development only |
 | `transport-benefit` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`TRANSPORT_BENEFIT_MODE`<br>`TRANSPORT_MANUAL_CODES`<br>`UBER_API_BASE_URL`<br>`UBER_CLIENT_ID`<br>`UBER_CLIENT_SECRET`<br>`UBER_ORG_ID`<br>`UBER_VOUCHER_PROGRAM_ID` | createVoucherClaim, getRedemptionLink |  |

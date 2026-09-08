@@ -91,7 +91,13 @@ if (home !== 'ok') { await browser.close(); console.error('the artifact runtime 
 
 /** Select a provider and read back what its strip offers. */
 const inspect = (slotName, optName) => page.evaluate(([n, o]) => {
-  const strip = () => [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes(n));
+  // A slot whose options are all required renders one card PER option, titled "<slot> · <option>".
+  // Matching on the slot name alone found the first card and then asserted the wrong option's
+  // control against it.
+  const strip = () => {
+    const all = [...document.querySelectorAll('#open .slot, #done .row')];
+    return all.find((x) => x.textContent?.includes(`${n} · ${o}`)) || all.find((x) => x.textContent?.includes(n));
+  };
   let s = strip();
   if (!s) return { error: 'no strip' };
   if (!s.querySelector('.pick')) s.querySelector('button.link')?.click();
@@ -299,8 +305,10 @@ check(writes.some((w) => w.collection === 'choices'), 'choosing a provider store
       strips: document.querySelectorAll('#open .slot').length,
       filedAway: document.querySelectorAll('#done .row').length,
     }));
-    check(shown.strips === REG.slots.length,
-      `the list shows ${shown.strips} of ${REG.slots.length} connections — one has been removed from it`);
+    // One card per connection, and one per option where the options are not alternatives.
+    const expectedCards = REG.slots.reduce((n, s) => n + (s.acquireAll && s.options.length > 1 ? s.options.length : 1), 0);
+    check(shown.strips === expectedCards,
+      `the list shows ${shown.strips} of ${expectedCards} connection cards — one has been removed from it`);
     check(shown.filedAway === 0, `${shown.filedAway} connections were filed away into a second list`);
     // And it must not sit there still looking like it wants something.
     check(/Skipped/.test(moved.text), `the answered strip does not say it is settled: "${moved.text.slice(0, 160)}"`);

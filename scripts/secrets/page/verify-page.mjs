@@ -150,8 +150,11 @@ page.on('pageerror', (e) => pageErrors.push(String(e)));
 await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
 
-const readStrip = (slotName) => page.evaluate((n) => {
-  const s = [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes(n));
+const readStrip = (slotName, optName) => page.evaluate(([n, o]) => {
+  // Same per-option card lookup as pickProvider: a slot whose options are all required renders
+  // one card each, so matching the slot name alone read fal.ai's card and judged Higgsfield by it.
+  const all = [...document.querySelectorAll('#open .slot, #done .row')];
+  const s = (o && all.find((x) => x.textContent?.includes(`${n} · ${o}`))) || all.find((x) => x.textContent?.includes(n));
   if (!s) return null;
   return {
     open: Boolean(s.closest('#open')),
@@ -160,7 +163,7 @@ const readStrip = (slotName) => page.evaluate((n) => {
     fields: [...s.querySelectorAll('.fields label')].map((l) => l.textContent),
     why: s.querySelector('.why')?.textContent ?? '',
   };
-}, slotName);
+}, [slotName, optName]);
 
 /**
  * Click a provider tab, revealing it first on a manifest row where tabs live behind "change".
@@ -170,7 +173,10 @@ const readStrip = (slotName) => page.evaluate((n) => {
  * no-op rather than a failure.
  */
 const pickProvider = (slotName, optName, single) => page.evaluate(([n, o, only]) => {
-  const s = [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes(n));
+  const all = [...document.querySelectorAll('#open .slot, #done .row')];
+  // A slot whose options are all required renders a card per option, titled "<slot> · <option>",
+  // and offers no tabs — there is nothing to choose between.
+  const s = all.find((x) => x.textContent?.includes(`${n} · ${o}`)) || all.find((x) => x.textContent?.includes(n));
   if (!s) return 'no-slot';
   if (!s.querySelector('.pick')) s.querySelector('button.link')?.click();
   const tabs = [...s.querySelectorAll('.pick')];
@@ -195,14 +201,14 @@ const shownBySlot = new Map();
 for (const slot of REG.slots) {
   shownBySlot.set(slot.id, []);
   for (const opt of slot.options) {
-    const clicked = await pickProvider(slot.name, opt.name, slot.options.length === 1);
+    const clicked = await pickProvider(slot.name, opt.name, slot.options.length === 1 || slot.acquireAll);
     if (clicked !== 'ok') {
       failures++;
       console.log(`FAIL ${slot.id}/${opt.id}: provider tab unreachable (${clicked})`);
       continue;
     }
     await page.waitForTimeout(260);
-    const got = await readStrip(slot.name);
+    const got = await readStrip(slot.name, opt.name);
     const persisted = await storedChoice(slot.id);
     checked++;
 
@@ -215,7 +221,7 @@ for (const slot of REG.slots) {
     // Nothing was clicked on a single-provider slot, so nothing should have been stored: that
     // option is in force by default, and writing a "choice" nobody made would be a lie in the
     // store. Everywhere else the click must have reached it.
-    if (slot.options.length === 1) {
+    if (slot.options.length === 1 || slot.acquireAll) {
       if (persisted !== null) problems.push(`stored "${persisted}" for a slot with nothing to choose`);
     } else if (persisted !== opt.id) {
       problems.push(`store kept "${persisted}" not "${opt.id}"`);

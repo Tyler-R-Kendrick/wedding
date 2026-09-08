@@ -39,8 +39,9 @@ touching any UI. The site itself is not built yet; the tooling is.
    UX guidelines. Use it to *compare* options, not to override `DESIGN.md`.
 6. **Generated media — `fal.ai` and Higgsfield, both required.** Image, video
    AND audio. They do different jobs and neither substitutes for the other, so
-   the Secret Drop's `media` slot acquires BOTH (`acquireAll`) rather than
-   asking you to choose between them:
+   the Secret Drop's `media` slot acquires BOTH (`acquireAll`) and renders one
+   card per option — provider tabs are how you choose ONE, so tabs said the
+   opposite of what the ladder does:
    - **fal.ai** (`FAL_KEY`) — one key across image, video and audio models. Mood
      boards, textures, paper and fabric grounds, section backgrounds, motion
      tests, sound. Called by `scripts/fal-generate.mjs` and the `fal-ai` MCP
@@ -129,7 +130,7 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
   than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
   no control may repeat a request nobody answered.
-- **Every feature has its own connection, and none is ever hidden.** 16 slots, 47 options, all in
+- **Every feature has its own connection, and none is ever hidden.** 14 slots, 44 options, all in
   one list: answering a connection never files it away somewhere else, because the one you have
   just configured is the one you are most likely to want to look at again. Identity is first class with
   five real alternatives, and their ceremonies were probed on 2026-09-08 rather than assumed —
@@ -137,10 +138,13 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   offers a device flow (and `workos.com/auth.md` provisions a one-shot environment with no account
   at all), `api.supabase.com` registers but issues confidential clients only, `mcp.clerk.com` has
   OAuth without registration, and Auth0 registers per tenant so a tenant must exist first. Better
-  Auth stays the default and needs no account. Maps, restaurant links and face grouping are their
-  own slots: the first two are complete as deep links, and face grouping is deliberately **off**,
-  which is a decision rather than a gap — turning it on means processing biometric data and needs
-  legal review.
+  Auth stays the default and needs no account. Maps and restaurant links are their own slots and
+  are complete as deep links.
+- **Gift links are not a credential.** Registry and "next adventures" links live in the
+  `gift_links` table and are edited in `/admin/gifts`, which validates every URL against the
+  redirect allowlist at write time and again at read time. `REGISTRY_LINKS_JSON` and
+  `CASH_FUND_LINKS_JSON` were a second, hand-maintained copy that only applied when that table was
+  empty; both are gone, and the Secret Drop does not ask for them.
 - In the artifact case the agent is still the courier for what it can help with: mirror
   `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
   to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before

@@ -322,7 +322,7 @@ ceremonies have arrived, and the URL is cleaned only once it is somewhere safer.
 grew a pass that seeds a waiting ceremony and delivers the snapshot *late*, because the old stub
 answered `onSnapshot` synchronously and no real store does — which is why nothing caught this.
 
-**Every feature has its own connection.** 16 slots, 47 options.
+**Every feature has its own connection.** 14 slots, 44 options.
 
 *Identity is first class*, with five alternatives whose ceremonies were probed on 2026-09-08 rather
 than assumed. The apex domains are the trap — auth0.com, clerk.com and workos.com all publish
@@ -336,14 +336,23 @@ needs no account at all: its keys are generated here.
 
 *Generated media is image, video and audio*, and it is not stock photography. fal.ai and Higgsfield
 both live in the `media` slot, which is marked `acquireAll` because they are not alternatives: the
-ladder takes both rather than a chosen one. **Openverse** — openly licensed real work — is its own
+ladder takes both rather than a chosen one, and the page renders **one card per option** with no
+provider tabs. Tabs are how you choose one of several, so rendering two required connections as
+tabs said either/or no matter what the ladder did behind it. **Openverse** — openly licensed real work — is its own
 slot, and **Stitch** (screen comps) is its own again. Filing Openverse under "generated imagery"
 was a category error: it generates nothing.
 
 *Maps and restaurant links* are their own slots and are complete as deep links: they open whichever
-app the guest already has, with no key, no billing and no tracking. *Grouping photos by face* is
-deliberately **off** — a decision rather than a gap, because turning it on means processing
-biometric data and needs legal review first.
+app the guest already has, with no key, no billing and no tracking.
+
+*Gift links are not a credential and never were.* Registry and "next adventures" links live in the
+`gift_links` table, edited in `/admin/gifts`, with every URL checked against the redirect allowlist
+at write time and again at read time — `listGiftLinks` reads those rows first and only falls back
+to a provider when the table is empty. `REGISTRY_LINKS_JSON` and `CASH_FUND_LINKS_JSON` were a
+second copy of that data in the format least suited to it, applying only when the admin table was
+empty. Asking for them in the Secret Drop was asking the couple to hand-maintain something that
+already had a screen. Both variables are removed from `src/lib/env.ts` and `.env.example`, and the
+slot is gone.
 
 *Photo and story search is not here at all.* It was removed on request: the vectors live in the
 database via pgvector and need no account, and the AI captioning that briefly sat beside it was a

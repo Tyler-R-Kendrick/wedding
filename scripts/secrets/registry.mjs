@@ -427,20 +427,6 @@ const RAW_SLOTS = [
     ],
   },
   {
-    id: 'gifts', name: 'Registry & cash fund', need: 'feature',
-    does: 'Points guests at where you are registered and how to contribute',
-    without: 'The gifts page says there is nothing to link to yet',
-    options: [
-      { id: 'links', name: 'Your own links', recommended: true,
-        note: 'Whatever you are registered with — no account here',
-        host: null, ceremony: 'paste',
-        ladder: [{ method: 'manual' }],
-        secrets: ['REGISTRY_LINKS_JSON', 'CASH_FUND_LINKS_JSON'], fills: {} },
-      { id: 'none-gifts', name: 'Skip it', note: 'No gifts page', host: null, ceremony: 'agent',
-        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
-    ],
-  },
-  {
     id: 'maps', name: 'Directions', need: 'feature',
     does: 'Gets guests from where they are to the ceremony, the hotels and the parking',
     without: 'Nothing — this needs no account',
@@ -460,25 +446,6 @@ const RAW_SLOTS = [
         note: 'Links straight to each restaurant — no key, no billing',
         host: null, ceremony: 'agent',
         ladder: [{ method: 'derive' }], secrets: [], fills: {} },
-    ],
-  },
-  {
-    /*
-     * Face grouping is off, and off is a finished state rather than a missing one. The provider
-     * is a mock that detects nothing, and the activation matrix says it must not be enabled in
-     * production without counsel review — biometric data carries duties (BIPA and friends) that a
-     * wedding website has no business taking on by accident. Listing it says so out loud instead
-     * of leaving a capability nobody decided about.
-     */
-    id: 'faces', name: 'Grouping photos by face', need: 'feature',
-    does: 'Would let a guest find every photo they are in',
-    without: 'Guests browse and search by words, which is what the site does today',
-    options: [
-      { id: 'faces-off', name: 'Off', recommended: true,
-        note: 'No biometric data is collected or stored',
-        host: null, ceremony: 'agent',
-        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true,
-        warn: 'Turning this on means processing biometric data, which needs legal review first.' },
     ],
   },
   {
