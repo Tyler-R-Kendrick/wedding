@@ -2,7 +2,9 @@
 
 exports[`draft seating never reaches guests > answers not_found before publication and leaks no draft ids or names anywhere 1`] = `
 {
+  "message": "Your table will appear here once seating is published.",
   "published": false,
+  "state": "not_published",
   "table": null,
 }
 `;

@@ -31,9 +31,22 @@ export function WeekendPage({ data, theme }: { data: MyItinerary; theme: ThemeId
 
       <GuestSection theme={theme} id="rsvp" index={0} title="RSVP">
         <p>
-          {data.rsvp.status === 'complete' ? <Badge tone="yes">Answered for everyone</Badge> : data.rsvp.status === 'partial' ? <Badge tone="pending">{data.rsvp.answered} of {data.rsvp.expected} answered</Badge> : <Badge tone="pending">Not answered yet</Badge>}
+          {/* "for everyone" is only true when the counts cover more than one person. They are built
+              from `actsFor`, so a non-manager who answers for themselves alone used to read that
+              their whole household was done. */}
+          {data.rsvp.status === 'complete' ? (
+            <Badge tone="yes">{data.rsvp.scope === 'household' ? 'Answered for everyone' : 'Answered'}</Badge>
+          ) : data.rsvp.status === 'partial' ? (
+            <Badge tone="pending">
+              {data.rsvp.answered} of {data.rsvp.expected} answered
+            </Badge>
+          ) : (
+            <Badge tone="pending">Not answered yet</Badge>
+          )}
         </p>
-        {data.rsvp.window.open ? (
+        {/* A delegate may not answer, and `derive.ts` strips `rsvp_self` from exactly that role, so
+            offering the primary button on the window alone put a 403 behind it. */}
+        {data.rsvp.window.open && data.rsvp.canAnswer ? (
           <p>
             <Link className="btn btn--primary" href="/rsvp">
               {data.rsvp.status === 'not_started' ? 'RSVP now' : 'Review or change your RSVP'}
@@ -115,7 +128,7 @@ export function WeekendPage({ data, theme }: { data: MyItinerary; theme: ThemeId
             ) : null}
           </div>
         ) : (
-          <p className="card__meta">Your table will appear here once seating is published.</p>
+          <p className="card__meta">{data.seating.message}</p>
         )}
       </GuestSection>
 
