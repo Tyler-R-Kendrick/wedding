@@ -47,6 +47,15 @@ jobs:
       - name: Every var(--token) a component references is defined
         run: node scripts/check-css-vars.mjs
 
+      # Level 16. The other half of the same hole: a token that IS defined and resolves to the wrong
+      # design. `globals.css` imports the DEFAULT design's Tailwind `@theme` block unscoped, so a
+      # shared component reading `--text-h3` gets Gilded Hour's number under Conservatory too — and
+      # every check above stays green, because the reference resolves. An independent review found
+      # two of these by measuring two elements; there were 21. Also in `npm run test:unit`
+      # (tests/unit/theme-tokens.test.ts) so it is not a gate that lives only in a workflow file.
+      - name: No shared component reads a token only one design declares
+        run: node scripts/check-theme-tokens.mjs
+
   verify:
     name: typecheck · lint · unit · integration · build
     runs-on: ubuntu-latest

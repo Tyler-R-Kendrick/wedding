@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { GuestCard, GuestSection } from '@/themes/guest';
+import type { ThemeId } from '@/themes/types';
 import Link from 'next/link';
 import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
@@ -31,15 +33,20 @@ const INPUT = 'min-h-11 rounded-sm border border-primary/40 bg-neutral px-3 py-2
 const STATUS_LABEL: Record<TripItem['status'], string> = { planned: 'Planned', confirmed: 'Confirmed', cancelled: 'Cancelled' };
 const KIND_LABEL: Record<TripItem['kind'], string> = { flight: 'Flight', hotel: 'Hotel', other: 'Plan' };
 
-function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: ReactNode }) {
+/**
+ * The active design's own section (`themes/<id>/guest.tsx`), not the shared `.sec`.
+ *
+ * `.sec` was a 1px full-width rule and a left-aligned heading on every one of these — identical
+ * under both designs, and the opposite of what each design's DESIGN.md asks for.
+ *
+ * The wrapper stays even though it now only adds `.trip-sec__stack`, because that stack is what
+ * holds this page's sections to the design's measure; see `recipes.css`.
+ */
+function Section({ theme, id, title, index, children }: { theme: ThemeId; id: string; title: string; index: number; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="sec">
-      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-      <h2 id={`${id}-title`} className="sec__title">
-        {title}
-      </h2>
-      <div className="mt-4 flex flex-col gap-4">{children}</div>
-    </section>
+    <GuestSection theme={theme} id={id} title={title} index={index}>
+      <div className="trip-sec__stack">{children}</div>
+    </GuestSection>
   );
 }
 
@@ -65,16 +72,21 @@ function ItemForm({ item, op, label, withReference }: { item: TripItem; op: 'con
   );
 }
 
-function ItemCard({ item, highlighted }: { item: TripItem; highlighted: boolean }) {
+function ItemCard({ item, highlighted, theme }: { item: TripItem; highlighted: boolean; theme: ThemeId }) {
   const d = item.details;
   const detailLine = [d.carrier && d.flightNumber ? `${d.carrier} ${d.flightNumber}` : d.carrier, d.origin && d.destination ? `${d.origin} → ${d.destination}` : null, d.hotelName, d.address].filter(Boolean).join(' · ');
   return (
-    <li className={`rounded-sm border p-5 ${highlighted ? 'border-primary' : 'border-primary/20'}`} aria-current={highlighted ? 'true' : undefined}>
-      <p className="eyebrow">
-        {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
-        {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
-      </p>
-      <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
+    // The active design's card. The small-caps line is the item's kind and status and sits BELOW
+    // the card heading, so it is a meta line, not a kicker — impeccable's craft floor bans the
+    // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`,
+    // which shouts `text-transform: uppercase`; Conservatory's DESIGN.md rejects that by name in
+    // favour of Spectral's real small capitals ("instead of shouting uppercase").
+    <li aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
+      <GuestCard theme={theme} title={item.title}>
+        <p className={theme === 'conservatory' ? 'cv-eyebrow' : 'gh-eyebrow'}>
+          {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
+          {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
+        </p>
       <p className="mt-1 tabular-nums">
         {formatChicagoDateTime(item.startAt)}
         {item.endAt ? ` → ${formatChicagoDateTime(item.endAt)}` : ''}
@@ -87,8 +99,9 @@ function ItemCard({ item, highlighted }: { item: TripItem; highlighted: boolean 
         <div className="flex flex-wrap gap-2">
           {item.status !== 'cancelled' ? <ItemForm item={item} op="cancel" label="Mark cancelled" /> : <ItemForm item={item} op="reopen" label="Back to planned" />}
           <ItemForm item={item} op="remove" label="Remove" />
+          </div>
         </div>
-      </div>
+      </GuestCard>
     </li>
   );
 }
@@ -107,7 +120,7 @@ function ReturnedBanner({ returned }: { returned: NonNullable<TripPageData['retu
   );
 }
 
-export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, slots }) => {
+export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, slots, theme }) => {
   const { trip, returned, notice } = data;
   const block = trip.block.block;
   return (
@@ -131,11 +144,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
       ) : null}
       {returned ? <div className="mt-6"><ReturnedBanner returned={returned} /></div> : null}
 
-      <Section id="items" eyebrow="Plans" title="What you have so far">
+      <Section theme={theme} index={0} id="items" title="What you have so far">
         {trip.items.length ? (
           <ul className="flex flex-col gap-4">
             {trip.items.map((item) => (
-              <ItemCard key={item.id} item={item} highlighted={returned?.itemId === item.id} />
+              <ItemCard key={item.id} item={item} highlighted={returned?.itemId === item.id} theme={theme} />
             ))}
           </ul>
         ) : (
@@ -172,7 +185,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         ) : null}
       </Section>
 
-      <Section id="free-time" eyebrow="Adventures" title="Free time for an adventure">
+      <Section theme={theme} index={1} id="free-time" title="Free time for an adventure">
         {trip.freeTime.length ? (
           <ul className="flex flex-col gap-2">
             {trip.freeTime.map((w) => (
@@ -196,7 +209,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         )}
       </Section>
 
-      <Section id="block" eyebrow="Stay" title={`Room block at the ${trip.block.hotelName}`}>
+      <Section theme={theme} index={2} id="block" title={`Room block at the ${trip.block.hotelName}`}>
         {block && !block.placeholder ? (
           <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
@@ -222,11 +235,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         </p>
       </Section>
 
-      <Section id="add" eyebrow="Record" title="Add to your trip">
+      <Section theme={theme} index={3} id="add" title="Add to your trip">
         {slots.addItemForm}
       </Section>
 
-      <Section id="profile" eyebrow="Preferences" title="Your travel preferences">
+      <Section theme={theme} index={4} id="profile" title="Your travel preferences">
         {slots.profileForm}
         {data.profile ? (
           <form action={deleteProfileAction} className="mt-2">

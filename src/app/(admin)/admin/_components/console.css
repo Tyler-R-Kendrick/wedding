@@ -27,8 +27,17 @@
   color: var(--ops-muted);
 }
 
-/* Wide operational tables scroll inside their own region; the page body never scrolls sideways. */
+/*
+ * Wide operational tables scroll inside their own region; the page body never scrolls sideways.
+ *
+ * The inset is not decoration. The region is a bordered box, and with `padding: 0` the table ruled
+ * against the frame line on three sides: `impeccable detect --viewport 1280x800
+ * http://localhost:3318/admin/guests` returned `[cramped-padding] <div> "ops-table-wrap": children
+ * flush against border on right/bottom/left (no inset)` on all 36 console page/design/viewport
+ * combinations that render a table.
+ */
 .con-scroll {
+  padding: var(--spacing-sm);
   border: 1px solid var(--ops-outline);
   border-radius: var(--radius-sm);
 }
@@ -58,12 +67,18 @@
   border-bottom: 0;
 }
 
+/*
+ * A <caption> is a SENTENCE about the table ("Guests and the households they belong to"), not a
+ * label, so it does not get the caps treatment: `[all-caps-body] text-transform: uppercase on 40
+ * chars of body text` on every console page with a table. Uppercase strips the ascenders and
+ * descenders a reader recognizes words by, and this is the line that explains the table to whoever
+ * opens the console at 11pm. Same size and colour, sentence case.
+ */
 .con-caption {
   padding: 0.5rem 0.625rem;
+  max-width: 62ch;
   text-align: left;
   font-size: var(--text-control-caps);
-  letter-spacing: var(--tracking-control-caps);
-  text-transform: uppercase;
   color: var(--ops-muted);
   border-bottom: 1px solid var(--ops-outline);
 }
@@ -159,14 +174,18 @@
   color: var(--ops-muted);
 }
 
+/*
+ * Same as `.ops-button`: a pill here carries a SENTENCE ("Not published — guests see nothing",
+ * "draft differs from what guests see"), which `impeccable detect http://localhost:3318/admin/seating`
+ * read as `[all-caps-body] text-transform: uppercase on 34 chars of body text`. The 1px vertical
+ * padding went with it — a 17px word inside a 1px inset touches its own outline.
+ */
 .con-pill {
   display: inline-block;
-  padding: 0.0625rem 0.5rem;
+  padding: 0.375rem 0.75rem;
   border: 1px solid currentcolor;
   border-radius: var(--radius-pill);
   font-size: var(--text-control-caps);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 

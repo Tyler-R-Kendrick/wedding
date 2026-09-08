@@ -241,8 +241,57 @@ test.describe('the guest tree wears the design end to end', () => {
 
         const sideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
         expect(sideways, `${route} @ ${theme} scrolls sideways`).toBe(false);
+
+        /*
+         * And the page BODY, not only the shell around it.
+         *
+         * Level 16 first moved the Shell and left the recipes alone: an independent review measured
+         * zero themed elements inside `<main>` on all four routes and identical DOM element counts
+         * under both designs — one shared recipe wearing two palettes, with `.sec` giving every
+         * section a 1px full-width rule that Gilded Hour's DESIGN.md contradicts and Conservatory's
+         * forbids by name. Every assertion above passed throughout, because a shell is not a page.
+         */
+        const themed = await page.locator('main#main').evaluate((main, prefix) => [...main.querySelectorAll('*')].filter((e) => String(e.className || '').split(/\s+/).some((c) => c.startsWith(prefix))).length, `${shellClass}-`);
+        expect(themed, `${route} @ ${theme} renders no ${theme} element inside <main>`).toBeGreaterThan(0);
       }
       await ctx.close();
     });
   }
+
+  /**
+   * The two designs must not render the same DOM for the same guest page.
+   *
+   * This is the assertion the count above cannot make on its own: a recipe can carry a themed class
+   * and still be one structure with two palettes. `.sec` was exactly that.
+   */
+  test('the two designs render different structure for the same guest page', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    for (const route of ['/your-weekend', '/transportation', '/trip']) {
+      const shapes: Record<string, string> = {};
+      for (const theme of THEMES) {
+        await page.goto(`${route}?theme=${theme}`);
+        // The tag sequence inside `<main>`: structure, with no class names and no copy in it, so
+        // this cannot be satisfied by renaming a class or changing a word.
+        shapes[theme] = await page.locator('main#main').evaluate((main) => [...main.querySelectorAll('*')].map((e) => e.tagName).join(','));
+      }
+      expect(shapes['gilded-hour'], `${route} renders identical structure under both designs`).not.toBe(shapes['conservatory']);
+    }
+    await ctx.close();
+  });
+
+  /*
+   * A shared component reading a token only one design declares — the `.card__title` / `.inp` /
+   * `.fld__hint` / `.badge` class the level-16 review found — is checked STATICALLY, in
+   * `tests/unit/theme-tokens.test.ts` via `scripts/check-theme-tokens.mjs`, and deliberately not
+   * here.
+   *
+   * A browser assertion for it can only say "the two designs computed the same value", and that is
+   * silent wherever their two scales agree: both designs set `body-sm` to 1.0625rem, so a `.badge`
+   * reading the unscoped `--text-body-md` and one reading the per-design `--type-body-sm-size`
+   * measure identically in both. It is also silent for any control the current lifecycle state does
+   * not render — `.btn` and `.inp` are on none of these four routes while RSVPs are shut. A version
+   * of this test was written here first and PASSED against the unfixed code; the static gate fails
+   * against it with 21 findings.
+   */
 });

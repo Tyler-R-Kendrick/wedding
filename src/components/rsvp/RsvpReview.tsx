@@ -1,11 +1,13 @@
 import { formatDeadline } from '@/domain/events/format';
+import { GuestCard } from '@/themes/guest';
+import type { ThemeId } from '@/themes/types';
 import { Button } from './fields';
 import type { RsvpFormState } from './types';
 
 type ReviewState = Extract<RsvpFormState, { stage: 'review' }>;
 
 /** Inline confirmation step: restates every answer before anything is saved. */
-export function RsvpReview({ state, formAction, pending }: { state: ReviewState; formAction: (fd: FormData) => void; pending: boolean }) {
+export function RsvpReview({ state, formAction, pending, theme }: { state: ReviewState; formAction: (fd: FormData) => void; pending: boolean; theme: ThemeId }) {
   const byEvent = new Map<string, ReviewState['proposal']['lines']>();
   for (const line of state.proposal.lines) byEvent.set(line.eventName, [...(byEvent.get(line.eventName) ?? []), line]);
   return (
@@ -13,13 +15,12 @@ export function RsvpReview({ state, formAction, pending }: { state: ReviewState;
       <input type="hidden" name="submission" value={JSON.stringify(state.submission)} />
       <input type="hidden" name="token" value={state.token} />
       <input type="hidden" name="idempotencyKey" value={state.idempotencyKey} />
-      <h2 className="sec__title" id="review-title" tabIndex={-1}>
+      <h2 className="page__section-title" id="review-title" tabIndex={-1}>
         Please check your answers
       </h2>
       <p className="card__meta">Nothing is saved yet. Confirm below, or go back to change anything.</p>
       {[...byEvent.entries()].map(([eventName, lines]) => (
-        <section key={eventName} className="card" aria-label={eventName}>
-          <h3 className="card__title">{eventName}</h3>
+        <GuestCard key={eventName} theme={theme} title={eventName} level={3}>
           <dl className="review">
             {lines.map((l) => (
               <div key={`${l.guestId}-${l.eventId}`} className="review__row">
@@ -32,7 +33,7 @@ export function RsvpReview({ state, formAction, pending }: { state: ReviewState;
               </div>
             ))}
           </dl>
-        </section>
+        </GuestCard>
       ))}
       {state.proposal.needsRecordedFor.length ? <p>Dietary and accessibility notes will be recorded for {state.proposal.needsRecordedFor.join(', ')}.</p> : null}
       <p className="card__meta">{state.editableUntil ? `You can change this until ${formatDeadline(state.editableUntil)}.` : 'You can change this while RSVPs are open.'}</p>

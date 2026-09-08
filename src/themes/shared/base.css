@@ -52,17 +52,27 @@ body {
  * the second only after the travel spec was made to run in both designs; before that it had only
  * ever visited the default one.
  */
+
+/* A hint is running text: it takes the design's measure and the design's small step. */
 .hint {
+  max-width: var(--wp-measure, 33rem);
   color: var(--color-on-surface-muted);
-  font-size: max(17px, 0.95rem);
+  font-size: var(--type-body-sm-size, 1rem);
 }
 
-/* Section kicker above a heading. Same reason as `.hint`: a token colour, not an opacity on one. */
+/*
+ * Section kicker above a heading. Same reason as `.hint`: a token colour, not an opacity on one.
+ *
+ * The transform is a role token, not `uppercase`: Conservatory's DESIGN.md asks for Spectral's real
+ * small capitals "instead of shouting uppercase", and this rule was shouting on every guest surface
+ * that used it.
+ */
 .eyebrow {
   color: var(--color-on-surface-muted);
-  font-size: max(17px, 0.95rem);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: var(--type-label-caps-size, 1rem);
+  font-feature-settings: var(--type-label-caps-features, normal);
+  text-transform: var(--label-transform, uppercase);
+  letter-spacing: var(--type-label-caps-tracking, 0.08em);
 }
 
 .site :focus-visible {
@@ -415,6 +425,16 @@ body {
   --heading-transform: uppercase;
   --heading-tracking: var(--type-h1-tracking);
 
+  /*
+   * How caps are MADE, per design. Gilded Hour sets Josefin in real uppercase with wide tracking;
+   * Conservatory has Spectral's `smcp`/`c2sc` and its DESIGN.md says so in as many words — "real
+   * small caps, so eyebrows and nav tags can be set in `smcp` small capitals instead of shouting
+   * uppercase". A shared component that hard-codes `text-transform: uppercase` gives Conservatory
+   * both at once: small-cap glyph substitution on already-capital letters, which is neither.
+   */
+  --control-transform: uppercase;
+  --label-transform: uppercase;
+
   /* Gilded Hour is the symmetrical design: DESIGN.md's axis rule puts a section's content on the
      same centre line as its heading, so a row that does not fill its tracks centres rather than
      hugging the left edge. The media grids read these; a fixed `justify-content` in shared CSS
@@ -453,6 +473,10 @@ body {
   --heading-transform: none;
   --heading-tracking: normal;
 
+  /* Small capitals, never shouting uppercase (DESIGN.md § Typography). */
+  --control-transform: none;
+  --label-transform: none;
+
   /* Conservatory's DESIGN.md is explicit in the other direction — "Nothing is centred by default;
      things are placed" — so the same grids start at the left margin here. */
   --media-justify: start;
@@ -473,4 +497,20 @@ body {
   --link-underline: var(--color-tertiary);
   --media-link-color: var(--link-color);
   --media-link-underline: var(--link-underline);
+}
+
+/*
+ * WCAG 2.2 AA SC 2.5.8, target size. Tailwind's `h-5 w-5` is 20px, and the two "nonstop" checkboxes
+ * rendered 13x13 and 21x21 CSS px on /travel and /trip — under the 24x24 minimum, on a control a
+ * guest taps on a phone. The `min-height: 44px` on the LABEL around one of them does not help: the
+ * label's box is not the checkbox's target.
+ *
+ * It lives HERE, in the stylesheet `globals.css` imports for every route, and not in the guest kit:
+ * one of the two is on a public page, which does not import the guest kit at all — which is how the
+ * first version of this rule fixed /trip and left /travel at 13x13.
+ */
+.checkbox-target {
+  inline-size: 24px;
+  block-size: 24px;
+  accent-color: var(--color-primary);
 }

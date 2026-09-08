@@ -222,6 +222,93 @@ positioned ancestor. On `/admin/events` they sat at their static position 445px 
 `overflow-x: clip`), and precisely the measurement level 14 used to certify that admin screens never
 scroll sideways. `.ops-table-wrap` is `position: relative` now; 446 → 390.
 
+### Round two — what the independent review measured that this file did not
+
+The review returned FIX FIRST on the guest tree with seven blockers. Its first one — `/rsvp` telling
+a signed-in guest "RSVPs are closed. Thank you — the guest list has gone to the venue" while the site
+is in TEASER and RSVPs had never opened — was fixed by the lead before this round began, and
+`RsvpForm.tsx`'s `RsvpClosed`/`closedCopy` and `WeekendPage.tsx`'s window branch are untouched here.
+The only change near them is the `<GuestSection>` / `<GuestNotice>` frame those states now render
+inside, which is B2.
+
+| | Before → after, measured, same probe |
+|---|---|
+| B2 the page BODY wears the design | themed elements inside `<main>`: `/rsvp` **0/11 → 51/201** (Gilded Hour) and **40/190** (Conservatory); `/your-weekend` **0/84 → 30/101** and **26/97**; `/transportation` **0/60 → 19/84** and **20/85**; `/trip` **0/144 → 19/148** and **20/149**. The two designs' element counts now differ on every route, which the count alone cannot prove — `quality-sweep.spec.ts` also compares the tag sequence inside `<main>` between designs |
+| B3/B4 unscoped token reads | **21 → 0** findings, `node scripts/check-theme-tokens.mjs` |
+| B5 measure in the guest tree | `/transportation` **91 → 64** characters a line, `/trip` **88–95 → 66–73** |
+| B6 `impeccable detect <url>` | see below — it now runs, and it found six things this file had not |
+| B7 `.cv-stat__label` | label drift **15px → 0px**; `.cv-rail` clientWidth/scrollWidth **255/266 → 306/306** |
+| provenance badges | raised to `control-caps` (17px) and the comment that asserted an ornament role no DESIGN.md grants is replaced with what the three documents actually say |
+| PRODUCT.md's route table | `/story`, `/adventures`, `/ask`, `/claim` → `/our-story`, `/our-adventures`, `/ask-us`, `/claim/verify`, with a paragraph on the drift; `tests/e2e/links.spec.ts` now walks that table so it cannot rot again |
+
+**B6 is the one that mattered.** `npm run verify` runs `impeccable detect .`, a FILE scan. The URL
+detector drives a browser, and it takes no `--header` and no `--cookie` — while the canonical test
+principal is honored only through `x-test-auth` / `x-test-principal` headers. So the four routes the
+review was about were the four the gate structurally could not see. `scripts/probes/auth-proxy.mjs`
+forwards to the test server with the headers attached:
+
+```
+node scripts/probes/auth-proxy.mjs 3317 A1        # guest
+node scripts/probes/auth-proxy.mjs 3318 admin     # console
+npx impeccable detect --viewport 390x844 http://localhost:3317/your-weekend?theme=conservatory
+```
+
+What it found, all six of them mine, all from this level:
+
+| Finding | Where it came from | After |
+|---|---|---|
+| `[kicker-above-heading] kicker "For you" above h2 "Your ride home"` | the eyebrow I put on `GuestSection`; 15 call sites | the prop is gone. impeccable's craft floor bans a kicker above a heading with no exception — "no brief earns it back" — and all three DESIGN.md files ask for one. Each kit's file records the conflict; reconciling the documents is a DESIGN.md change and is not this level's |
+| `[side-tab] border-top: 3px` × 12 on `/rsvp`, × 5 on `/your-weekend` | my `.cv-gcard` / `.cv-gnotice`. The 3px kraft thread along the top was itself the SECOND attempt, after `detect .` refused a 4px bar down the left | an edge is an edge. Ground plus a 1px frame on all four sides; the tone rides the frame |
+| `[wide-tracking] letter-spacing: 0.08em on body text` | Conservatory's `control-caps`, which this level authored at 0.08em. It reaches capitals through `smcp`, not `text-transform`, so at 17px the detector reads it as body text — correctly | 0.05em, in `src/themes/conservatory/DESIGN.md` and re-synced. Gilded Hour keeps 0.12em because it does shout uppercase |
+| `[cramped-padding] 4px vertical padding` × 22 on `/share-an-adventure` | `.cv-chip` at body size on a filled ground | `--spacing-sm` / `--spacing-md`; 8px alone still failed the horizontal axis at `need ≥ 8.5px` |
+| `[cramped-padding] 0px vertical padding` on `/media/upload`, `[line-length] ~134/~132/~105 chars/line` on `/media/me`, `/media/mine`, `/media/upload` | `.media-button` leaned on `min-height` for its inset; `.media-dropzone__hint`, `.media-upload-row__meta` and `.mi-notice` had no measure at all | real padding, and `--wp-measure` — the active design's own reading measure |
+| `[low-contrast] pixel contrast 1.1:1 median 2.1:1 (need 4.5:1)` on "Approve and publish" | `.media-button:disabled { opacity: 0.55 }` | a muted ground and outline. WCAG exempts inactive components, so axe never saw it — but the bulk-action row is disabled until something is selected, so unreadable words are the first thing `/admin/media` shows |
+
+The console had never been scanned by the URL detector either. Through the admin proxy it returned
+**236 findings over all 36 page × design × viewport combinations**; the real ones are now zero:
+`.con-scroll` had no inset so tables ruled against their own frame (24), `<caption>` and `.ops-button`
+and `.con-pill` shouted 25–44-character sentences in uppercase (24), and `.ops-lede`, `.ops-h2`,
+`.ops-notice` and the console's lists had no measure (14).
+
+```
+$ for VP in 1280x800 390x844; do for D in gilded-hour conservatory; do for P in /admin /admin/guests \
+    /admin/rsvp /admin/events /admin/media /admin/seating /admin/content /admin/concierge /admin/travel; do
+    npx impeccable detect --viewport $VP "http://localhost:3318$P?theme=$D"; done; done; done
+before: 190 text-occlusion · 24 cramped-padding · 24 all-caps-body · 14 line-length · 8 em-dash · 4 low-contrast
+after:  202 text-occlusion · 8 em-dash
+```
+
+**The 202 that remain are a false positive, and this is the one finding I did not act on.** The
+console's "all admin screens" navigation is a closed `<details>`. Chrome gives closed
+`::details-content` `content-visibility: hidden`, which skips PAINTING but keeps LAYOUT — deliberately,
+so find-in-page and fragment navigation can still reach inside and open it. The detector's occlusion
+rule compares rectangles without asking whether an element renders, so it reports the invisible nav
+copy as "covered by" whatever the reader can actually see at those coordinates.
+
+```
+$ node scripts/probes/occlusion.mjs /admin/guests
+INVISIBLE  547x31 at 45,118       closed<details>=true  "The site"
+INVISIBLE  547x26 at 45,195       closed<details>=true  "What state guests see, what "
+…
+47 of 47 nav elements have a laid-out box and checkVisibility() === false.
+```
+
+The change that would satisfy it is `display: none` on closed `<details>` content, which takes 21
+admin links out of find-in-page. That is a real regression traded for a scanner's exit code, so the
+finding is recorded in `scripts/probes/occlusion.mjs` rather than acted on, and the console is the
+one surface where `impeccable detect <url>` still exits 2. **The lead should decide** whether that
+warrants a `detector.ignoreRules` entry; suppressing the rule repo-wide would hide real occlusions
+elsewhere, so I did not add one.
+
+Final state of the URL detector, on servers this run started:
+
+| Set | Pages × designs × viewports | Result |
+|---|---|---|
+| public + auth | 12 × 2 × 2 = 48 | **48 clean** |
+| signed-in guest tree | 4 × 2 × 2 = 16 | **16 clean** |
+| media | 4 × 2 × 2 = 16 | **16 clean** |
+| admin console | 9 × 2 × 2 = 36 | 36 report only `[text-occlusion]` (artifact above) and `[em-dash-overuse]` (advisory, not counted) |
+
 ## 7. Accessibility and performance
 
 axe 0 serious/critical across 25 admin routes, 8 guest routes × 2 designs, and 6 auth routes.
@@ -257,11 +344,28 @@ by reading the delivered sources for the panel's own markers, not by guessing at
 - **A rendered Conservatory "before" for the guest tree.** Both designs' before/after numbers above
   come from re-measuring with the changed token reverted in place, which isolates the change; I did
   not re-render the base commit's five-shell tree to compare.
+- **The eyebrow everywhere else.** `PageIntro` still sets one above the `<h1>` on nine merged public
+  pages, and all three DESIGN.md files still name an `eyebrow` component. The URL detector does not
+  flag those, and removing a component three design documents describe is a DESIGN.md change, not a
+  quality sweep. What this level did was stop ADDING them: the 15 I had put on the guest sections are
+  gone. The conflict between the craft floor's ban and the three documents is written into
+  `src/themes/<id>/guest.tsx` for whoever reconciles them.
+- **`impeccable detect <url>` in CI.** The sweep above runs from a shell against servers started by
+  hand, and the guest and console halves of it need `scripts/probes/auth-proxy.mjs`. Wiring that into
+  `design-quality.yml` means a third server arrangement and a header-injecting proxy inside CI, which
+  is a workflow change I would rather propose than make at the end of a level. The static
+  `impeccable detect .` still runs in `verify`, and `scripts/check-theme-tokens.mjs` is now a CI step.
+- **`text-occlusion` on the console.** Described above: proven to be a rendering-agnostic rectangle
+  comparison against `content-visibility: hidden` content, left in place rather than silenced.
 
 ## 9. Verdict
 
 **Ready to merge.** `npm run verify` exit 0; `db:generate` no drift, twice; both Playwright
-arrangements green on servers this run started; 28 specs, each in exactly one arrangement.
+arrangements green on servers this run started — production **257 passed / 88 skipped**, test server
+**260 passed / 49 skipped**, both exit 0; 28 specs, each in exactly one arrangement;
+`node scripts/check-theme-tokens.mjs` exit 0; `impeccable detect <url>` clean on 80 of 116 page ×
+design × viewport combinations and reporting only the `text-occlusion` artifact and the em-dash
+advisory on the other 36.
 
 **The worst true thing about this diff** is that it is large, and most of it is a refactor — eighteen
 admin screens moved onto one shell in one change. The mitigation is that the shell they moved to was

@@ -123,8 +123,13 @@
   accent-color: var(--color-primary);
 }
 
+/* A measure, like every other run of prose. `impeccable detect --viewport 1280x800
+   http://localhost:3317/media/me` read this at `[line-length] ~134 chars/line` in Gilded Hour and
+   ~105 in Conservatory: it is the sentence that explains why face matching is switched off, so it
+   is exactly the notice a guest has to read all of. `--wp-measure` is the active design's own. */
 .mi-notice {
   margin: 0;
+  max-width: var(--wp-measure, 33rem);
   padding: var(--spacing-md, 16px);
   border: 1px solid var(--color-outline, currentcolor);
   border-radius: var(--rounded-sm, 2px);

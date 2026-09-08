@@ -13,7 +13,7 @@ const data: TravelPageData = {
 
 describe('Travel & Stay recipe', () => {
   it('renders landmarks, the block first with honest placeholders, both airports, and no live search on load', () => {
-    render(<TravelPageRecipe data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
+    render(<TravelPageRecipe theme="gilded-hour" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
     expect(screen.getByRole('main')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Getting to Chicago');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);

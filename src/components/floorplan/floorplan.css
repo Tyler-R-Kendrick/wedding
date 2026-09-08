@@ -33,8 +33,8 @@
 }
 
 .fp__label {
-  font-family: var(--font-label-caps, inherit);
-  font-size: var(--text-body-md, 1.0625rem);
+  font-family: var(--type-control-caps-family, inherit);
+  font-size: var(--type-body-md-size, 1.0625rem);
   fill: var(--color-on-surface);
 }
 
@@ -44,16 +44,19 @@
 }
 
 .fp__you {
-  font-family: var(--font-label-caps, inherit);
-  font-size: var(--text-label-caps, 0.75rem);
-  letter-spacing: var(--tracking-label-caps, 0.1em);
+  /* The floor plan renders on /your-weekend, inside whichever design the guest chose; these read
+     the DEFAULT design's unscoped Tailwind tokens, so a Conservatory guest got Gilded Hour's label
+     face and size on their own table. `--type-*` is the per-`[data-theme]` set. */
+  font-family: var(--type-control-caps-family, inherit);
+  font-size: var(--type-control-caps-size, 1rem);
+  letter-spacing: var(--type-control-caps-tracking, 0.1em);
   text-transform: uppercase;
   fill: var(--color-tertiary);
 }
 
 .fp__caption {
   margin-top: var(--spacing-sm);
-  font-size: var(--text-body-sm, 1rem);
+  font-size: var(--type-body-sm-size, 1rem);
   color: var(--color-on-surface-muted);
 }
 

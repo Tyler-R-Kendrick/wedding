@@ -313,14 +313,30 @@ function Prose({ children, lead }: ProseProps) {
   return <div className={`gh-prose${lead ? ' gh-prose--lead' : ''}`}>{children}</div>;
 }
 
+/** Longest label that still reads as a plaque rather than as a name. */
+const PLAQUE_MAX_CHARS = 18;
+
 function Card({ title, headingLevel = 3, children, media, actions, label, featured, id }: CardProps) {
   const H = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
   const body = (
     <div className="gh-card__inner">
+      {/*
+        A plaque is a MARK: a monogram, a numeral, a short word cut into stone. Long labels are not
+        marks. `/travel` passes the airport CODE as the title and the full name as the label, so
+        "Chicago Midway International Airport" was rendered in tracked uppercase inside an octagon —
+        `impeccable detect <url>` reported `[all-caps-body] 36 chars` and `[cramped-padding] 0px`
+        against it — AND it was `aria-hidden`, so the only place the airport's name appeared was the
+        one place a screen reader could not reach. Above the plaque length it becomes a plain line,
+        in sentence case, that assistive technology can read.
+      */}
       {label ? (
-        <span className="gh-plaque gh-plaque--label" aria-hidden="true">
-          {label}
-        </span>
+        label.length > PLAQUE_MAX_CHARS ? (
+          <span className="gh-card__label">{label}</span>
+        ) : (
+          <span className="gh-plaque gh-plaque--label" aria-hidden="true">
+            {label}
+          </span>
+        )
       ) : null}
       {media ? <div className="gh-card__media">{media}</div> : null}
       {title ? <H className="gh-card__title">{title}</H> : null}

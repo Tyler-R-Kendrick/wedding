@@ -1,22 +1,22 @@
 import Link from 'next/link';
 import type { SubmitRsvpOutput } from '@/capabilities/rsvp';
 import { formatDeadline } from '@/domain/events/format';
-import { Notice } from './fields';
+import { GuestCard, GuestNotice } from '@/themes/guest';
+import type { ThemeId } from '@/themes/types';
 
 /** Confirmation screen: restates what was submitted and how to change it (wedding-site-standards §3). */
-export function RsvpConfirmation({ result }: { result: SubmitRsvpOutput }) {
+export function RsvpConfirmation({ result, theme }: { result: SubmitRsvpOutput; theme: ThemeId }) {
   const byEvent = new Map<string, SubmitRsvpOutput['lines']>();
   for (const line of result.lines) byEvent.set(line.eventName, [...(byEvent.get(line.eventName) ?? []), line]);
   return (
     <div>
-      <Notice tone="success" title="Thank you — you are all set">
+      <GuestNotice theme={theme} tone="success" title="Thank you — you are all set">
         <p id="done-title" tabIndex={-1}>
           Here is what we have for your household.
         </p>
-      </Notice>
+      </GuestNotice>
       {[...byEvent.entries()].map(([eventName, lines]) => (
-        <section key={eventName} className="card" aria-label={eventName}>
-          <h2 className="card__title">{eventName}</h2>
+        <GuestCard key={eventName} theme={theme} title={eventName} level={2}>
           <ul className="list list--plain">
             {lines.map((l) => (
               <li key={`${l.guestId}-${l.eventId}`}>
@@ -26,7 +26,7 @@ export function RsvpConfirmation({ result }: { result: SubmitRsvpOutput }) {
               </li>
             ))}
           </ul>
-        </section>
+        </GuestCard>
       ))}
       {result.needsRecordedFor.length ? <p>Notes recorded for {result.needsRecordedFor.join(', ')}. Only the caterer and planner see them.</p> : null}
       <p>{result.emailQueued ? 'A confirmation is on its way to your e-mail. ' : ''}To change anything, come back to this page{result.editableUntil ? ` before ${formatDeadline(result.editableUntil)}` : ' while RSVPs are open'} — your latest answers always win.</p>

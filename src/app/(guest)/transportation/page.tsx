@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getMyTransportationOptions } from '@/capabilities/get_my_transportation_options';
 import { TransportationPageRecipe } from '@/components/handoff/page-recipes';
 import { invokeForPage } from '@/components/handoff/server';
+import { getRequestTheme } from '@/themes/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,5 +19,7 @@ export default async function TransportationPage() {
       </div>
     );
   }
-  return <TransportationPageRecipe data={{ ...result.value.data, signInRoute: '/' }} />;
+  // The recipe renders the active design's own sections and cards; the theme comes from the same
+  // resolution the layout's Shell used.
+  return <TransportationPageRecipe data={{ ...result.value.data, signInRoute: '/' }} theme={await getRequestTheme()} />;
 }

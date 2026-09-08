@@ -82,7 +82,7 @@ typography:
     fontSize: 1rem
     fontWeight: 500
     lineHeight: 1.3
-    letterSpacing: 0.08em
+    letterSpacing: 0.05em
     fontFeature: "'smcp', 'c2sc'"
   label-caps:
     fontFamily: Spectral
@@ -393,6 +393,16 @@ target; buttons, `h3` and labels depend on it and synthesis is off.
   two roman weights (400, 500) are self-hosted**, and `font-synthesis` is
   off, so nothing in this theme may ask Spectral for an italic — Cardo
   italic below is the only italic voice on the sheet.
+- **Tracking on the caps steps.** `label-caps` (13px, ornament) tracks at
+  0.1em; `control-caps` (17px, anything a guest must READ or OPERATE) tracks
+  at **0.05em**, not the 0.1em its ornament sibling takes. It was authored at
+  0.08em and `impeccable detect --viewport 390x844
+  http://localhost:3317/your-weekend?theme=conservatory` returned
+  `[wide-tracking] letter-spacing: 0.08em on body text` — correctly: at 17px
+  a small-caps run is body size, and this theme reaches its capitals through
+  `smcp` rather than `text-transform`, so wide tracking here spaces out text
+  a guest is reading rather than a short label they are scanning past. Gilded
+  Hour keeps 0.12em on the same step because it does shout uppercase.
 - **Cardo italic** (`specimen-label`). Cardo is a scholarly Bembo-style
   face; its italic is the voice of the handwritten Latin on a specimen
   label. It is used in exactly two slots: specimen labels on pressed cards

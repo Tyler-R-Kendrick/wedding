@@ -41,8 +41,15 @@
   line-height: 1.1;
 }
 
+/*
+ * Capped, like every other run of prose on the site. The console had no measure at all: at a 1280
+ * desktop `impeccable detect http://localhost:3318/admin/guests` measured `[line-length] ~131
+ * chars/line` on this element and ~112 on `.ops-h2`. The console is where Sara and Tyler read
+ * instructions under time pressure, so it takes the same 62-66ch cap the guest pages take.
+ */
 .ops-lede {
   margin: 0 0 1.5rem;
+  max-width: 66ch;
   color: var(--ops-muted);
 }
 
@@ -63,13 +70,25 @@
   min-width: 0;
 }
 
+/*
+ * A measure for the console's plain lists. `/admin/seating`'s publish history ran 129 chars a line
+ * on a 1280 desktop (`impeccable detect http://localhost:3318/admin/seating` -> `[line-length] ~129
+ * chars/line`). These are records rather than prose, so they get a wider cap than the 66ch on
+ * `.ops-lede`, but not the full width of a 1280 screen: the eye loses the row it is tracking.
+ */
+.ops .list {
+  max-width: 80ch;
+}
+
 .ops-h2 {
   margin: 0;
+  max-width: 46ch;
   font-size: 1.25rem;
   font-weight: 500;
 }
 
 .ops-notice {
+  max-width: 66ch;
   padding: 0.75rem 1rem;
   border: 1px solid var(--ops-outline);
   border-radius: var(--radius-sm, 2px);
@@ -126,13 +145,19 @@
   align-items: center;
 }
 
+/*
+ * Sentence case, not caps. Console buttons are not chips — "Show dietary & accessibility notes
+ * (audited)" is 44 characters, and `impeccable detect http://localhost:3318/admin/rsvp` returned
+ * `[all-caps-body] text-transform: uppercase on 44 chars of body text` (and 37 on its sibling, and
+ * 25/27 on /admin/seating) under both designs. Uppercase removes the ascenders and descenders that
+ * make a word recognizable at a glance, which is the whole job of a button label in a room where
+ * someone is deciding whether the audited export is the one they want.
+ */
 .ops-button {
   min-height: 2.75rem;
   padding: 0.5rem 1.25rem;
   font: inherit;
   font-size: var(--text-control-caps);
-  letter-spacing: var(--tracking-control-caps);
-  text-transform: uppercase;
   border-radius: var(--radius-pill, 999px);
   border: 1px solid transparent;
   cursor: pointer;

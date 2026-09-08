@@ -65,10 +65,15 @@
   font-weight: var(--type-label-caps-weight);
   line-height: var(--type-label-caps-line);
   letter-spacing: var(--type-label-caps-tracking);
-  text-transform: uppercase;
+  text-transform: var(--label-transform, uppercase);
 }
 
-.gh-label,
+/*
+ * `.gh-label` is NOT here. It was, and `.gh-label` below overrode every declaration it took from
+ * this group — so the two rules' comments contradicted each other ("caps a guest must operate"
+ * against "a form label is read; it takes the body size") and the selector in this list did
+ * nothing. One owner per class: a form label is body-sized, and that rule is the one that says so.
+ */
 .gh-legend,
 .gh-stat__label,
 .gh-badge {
@@ -77,7 +82,7 @@
   font-weight: var(--type-control-caps-weight);
   line-height: var(--type-control-caps-line);
   letter-spacing: var(--type-control-caps-tracking);
-  text-transform: uppercase;
+  text-transform: var(--control-transform, uppercase);
 }
 
 .gh-eyebrow {
@@ -274,14 +279,30 @@
 }
 
 
+/*
+ * `padding-block` is not decoration: the plaque is `place-items: center` in a fixed 56px box, so at
+ * the control-caps step its text had 0px of vertical padding against a filled ground and
+ * `impeccable detect <url>` reported `[cramped-padding]`. `height: auto` with real padding lets the
+ * plaque grow with the type instead of clipping it.
+ */
 .gh-plaque--label {
   width: auto;
+  height: auto;
   min-width: 56px;
-  padding-inline: var(--spacing-md);
+  min-height: 56px;
+  padding: var(--spacing-sm) var(--spacing-md);
   font-family: var(--font-text);
   font-size: var(--type-control-caps-size);
   letter-spacing: var(--type-control-caps-tracking);
-  text-transform: uppercase;
+  text-transform: var(--control-transform, uppercase);
+}
+
+/* A label too long to be a plaque: a name, in sentence case, that a screen reader can reach. */
+.gh-card__label {
+  display: block;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
 }
 
 /* ---------- elevator panel (mobile) ---------- */
@@ -1092,9 +1113,12 @@
 
 /*
  * SF-5: `label-caps` is 13.8 px, and PRODUCT.md sets a 17 px floor for anything a guest has to read
- * — grandparents are a primary audience. A form label is read; it takes the body size.
+ * — grandparents are a primary audience. A form label is read; it takes the body size. This is the
+ * only rule that owns `.gh-label`; it used to be listed in the caps group above as well, where
+ * every one of its declarations was then overridden here.
  */
 .gh-label {
+  font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   letter-spacing: 0.02em;
@@ -2276,4 +2300,100 @@
   .gh-divider {
     clip-path: none;
   }
+}
+
+/* ---------- guest recipes (RSVP, Your Weekend, Transportation, Trip) ---------- */
+
+/*
+ * DESIGN.md § Layout: "each section opens with an eyebrow, a chevron divider, a Cinzel heading, and
+ * a clear plinth of space beneath", and "Heroes, section titles, numerals, ornaments … sit on [one
+ * vertical axis]; body copy and forms sit in a centred column and are left-aligned inside it".
+ *
+ * The shared `.sec` these routes used opened with a 1px full-width rule and left-aligned the
+ * heading. Same content, opposite instruction — which is what an independent review measured as
+ * zero themed elements inside `<main>` on all four routes.
+ */
+.gh-gsec {
+  margin: 0 0 var(--spacing-2xl);
+  text-align: center;
+}
+
+@media (width >= 900px) {
+  .gh-gsec {
+    margin-block-end: var(--spacing-3xl);
+  }
+}
+
+.gh-gsec__rule {
+  margin-block: 0 var(--spacing-lg);
+}
+
+.gh-gsec__title {
+  margin: var(--spacing-xs) 0 var(--spacing-lg);
+}
+
+/* Body copy and forms are left-aligned inside the centred column; only the heading is on the axis. */
+.gh-gsec__body {
+  max-width: var(--gh-prose);
+  margin-inline: auto;
+  text-align: start;
+}
+
+/*
+ * The COLUMN is 42rem; RUNNING TEXT is 34rem, the same distinction level 16 drew on the public
+ * pages and did not carry into the guest tree. `/trip` measured 88-94 characters a line at 1440
+ * (`scripts/probes/measure.mjs`) because its paragraphs took the column. Cards, forms, tables and
+ * definition lists keep the column: they are structure, not prose.
+ */
+.gh-gsec__body > p,
+.gh-gsec__body > ul,
+.gh-gsec__body > ol,
+.gh-gnotice__body,
+.gh-gcard > .gh-card__inner > p {
+  max-width: var(--gh-measure);
+}
+
+.gh-gcard {
+  margin-block-end: var(--spacing-lg);
+}
+
+.gh-gcard__title {
+  margin-block-end: var(--spacing-xs);
+}
+
+/*
+ * A notice as a gold-ruled plinth on the axis. DESIGN.md: "hierarchy comes from size and from the
+ * ornament around it, never from bolding", and the shared `.notice` set 700 on a face that ships
+ * one weight, on a tinted box that belongs to neither design.
+ */
+.gh-gnotice {
+  max-width: var(--gh-prose);
+  margin: 0 auto var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border-block: 1px solid var(--color-gold);
+  background: var(--color-gold-wash);
+  text-align: start;
+}
+
+.gh-gnotice--urgent {
+  border-color: var(--color-error);
+  background: var(--color-surface);
+}
+
+.gh-gnotice--success {
+  border-color: var(--color-secondary);
+  background: var(--color-lake-wash);
+}
+
+.gh-gnotice__title {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-text);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  letter-spacing: var(--type-h3-tracking);
+  text-transform: uppercase;
+}
+
+.gh-gnotice__body > :last-child {
+  margin-block-end: 0;
 }
