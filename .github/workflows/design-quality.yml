@@ -166,6 +166,7 @@ jobs:
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
+                      /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
