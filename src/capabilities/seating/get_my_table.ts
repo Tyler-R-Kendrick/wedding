@@ -67,6 +67,8 @@ export const getMyTable = defineCapability<z.infer<typeof input>, MyTable>({
     'Before that it answers not_found — say seating has not been shared yet. Household managers may ask for a household member by guestId. Read-only.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_table_assignment'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

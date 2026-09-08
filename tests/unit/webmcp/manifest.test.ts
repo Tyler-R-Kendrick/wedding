@@ -9,6 +9,8 @@ import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/
 import type { Entitlement, Principal } from '@/contracts/principal';
 import { ok } from '@/contracts/result';
 import { buildManifest, manifestFingerprint, WEBMCP_SPEC } from '@/webmcp/manifest';
+import { authorize } from '@/policy/entitlements';
+import { deriveAdminEntitlements } from '@/policy/derive';
 
 /**
  * Authorization filtering for the manifest. Tool omission is UX minimisation, never the check
@@ -157,5 +159,52 @@ describe('review extras: the manifest cannot disagree with invoke', () => {
     expect(ready.tools.map((t) => t.name)).toEqual(['face_match', 'site_status']);
     const noneReady = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set(['BIOMETRICS_ENABLED']) });
     expect(noneReady.tools.map((t) => t.name)).toEqual(['site_status']);
+  });
+});
+
+/**
+ * Level-13 review N4, fixed at level 15. `meetsAuthLevel('guest', admin)` is true — `guest` is a
+ * floor, not an identity — so an admin's manifest advertised tools whose handlers call `guestOf()`
+ * and refuse. `guestIdentityRequired` moves that refusal into `authorize()`, which is the one
+ * function `registry.list`, the manifest and `visibleTo` all share, so the mask cannot drift from
+ * the list.
+ *
+ * This asserts against the REAL registry, so a future capability that admits admins by accident
+ * shows up as a diff a reviewer has to justify.
+ */
+describe('N4: an admin manifest advertises no capability an admin cannot complete', () => {
+  it('lists exactly the guest-auth tools an admin can actually run', async () => {
+    const { registry: real } = await import('@/capabilities');
+    const owner: Principal = {
+      kind: 'admin',
+      authIdentityId: 'auth-n4' as AuthIdentityId,
+      adminId: 'admin-n4' as AdminId,
+      roles: new Set(['owner']),
+      entitlements: deriveAdminEntitlements(['owner']),
+      authenticatedAt: new Date().toISOString(),
+      sessionId: 'session-n4',
+    };
+    const manifest = buildManifest({ registry: real, principal: owner, flags: { ...flags, WEBMCP: true } });
+    const guestAuth = manifest.tools.filter((t) => t.execution.auth === 'guest').map((t) => t.name);
+    // `prepare_reservation` stays: it is `auth: 'guest'` in the sense of "a signed-in principal",
+    // builds a card from shared venue data and touches no guest-owned row, so an admin genuinely
+    // can run it. `get_my_household` and `get_my_invitation` were the two that leaked.
+    expect(guestAuth).toEqual(['prepare_reservation']);
+    // `get_my_table` is deliberately NOT in this list and never was: it requires
+    // `view_table_assignment`, which only `deriveGuestEntitlements` grants, so entitlements already
+    // excluded it. Its `guestIdentityRequired` marker states the intrinsic property anyway — the
+    // entitlement is a gate that can be re-derived, the marker is the durable statement.
+    expect(manifest.tools.map((t) => t.name)).not.toContain('get_my_table');
+  });
+
+  it('refuses an admin at authorize(), not only in the handler, for a caller-identity capability', async () => {
+    const { getMyHousehold } = await import('@/capabilities/get_my_household');
+    const owner = admin([...deriveAdminEntitlements(['owner'])]);
+    expect(getMyHousehold.guestIdentityRequired).toBe(true);
+    expect(authorize(getMyHousehold, owner).ok).toBe(false);
+    // A guest with the same (empty) `requires` still passes.
+    expect(authorize(getMyHousehold, guest([])).ok).toBe(true);
+    // System principals act FOR a guest, never AS one, and keep passing.
+    expect(authorize(getMyHousehold, { kind: 'system', component: 'jobs' }).ok).toBe(true);
   });
 });

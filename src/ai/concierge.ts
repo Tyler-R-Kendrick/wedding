@@ -8,6 +8,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { aiAnswerSources, aiAnswers, capabilityInvocations, type AiAnswerStatus, type AiInvocationOutcome, type AiToolSelector, type AiVerifierSummary } from '@/db/schema/ai';
 import { pipelineServices } from '@/capabilities/services';
+import { unreadyGatedFlags } from '@/capabilities/readiness';
 import { citedSentences, dropNearDuplicates, finaliseCitations, stripMarkers } from './citations';
 import { aiConfig, type AiConfig } from './config';
 import { CONTACT_LINK, REFUSAL, confirmationCardFor, labelForRoute, refusalLinks, systemPromptFor } from './contract';
@@ -92,8 +93,11 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   if (userFindings.length) await alert('user_message', { rules: userFindings.map((f) => f.rule).join(',') });
 
   // --- route: derived from the registry, decided deterministically
-  const available = toolsFor(ctx.principal, ctx.flags, reg);
-  const everything = allAiTools(ctx.flags, reg);
+  // Readiness is resolved once per answer, through the same helper the WebMCP manifest uses, so a
+  // readiness-gated capability is hidden from the model rather than offered and then refused.
+  const unready = await unreadyGatedFlags(ctx.flags, services.readiness);
+  const available = toolsFor(ctx.principal, ctx.flags, reg, unready);
+  const everything = allAiTools(ctx.flags, reg, unready);
   const plan = planRoute(question, available, everything, cfg.AI_MAX_TOOL_CALLS);
   await emit({ type: 'status', stage: 'routing', tools: plan.calls.map((c) => c.name) });
 

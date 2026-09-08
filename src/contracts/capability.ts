@@ -78,6 +78,30 @@ export interface CapabilityDescriptor<I, O> {
   description: string;
   kind: CapabilityKind;
   auth: AuthLevel;
+  /**
+   * `auth: 'guest'` means "at least a guest may attempt this": an admin and the system pass it too,
+   * which is right for a capability that acts on shared data (`prepare_reservation`), names its
+   * subject explicitly (the travel reads, which an admin reaches with a `guestId`), or means
+   * "any signed-in principal" (`step_up`, `register_passkey`).
+   *
+   * Set this when the capability is about the CALLER'S OWN guest identity — my invitation, my
+   * household, my table, my consent. An admin holds no guest identity and can never satisfy it, so
+   * the refusal belongs in `authorize()` and not only in the handler: every derived list (the
+   * WebMCP manifest, the AI tool list, UI menus) then agrees with what `invoke` will actually do.
+   * Before this existed, an admin's WebMCP manifest advertised `get_my_household` and
+   * `get_my_invitation` — tools whose handlers refuse an admin — because `meetsAuthLevel('guest',
+   * admin)` is true (level-13 review N4).
+   *
+   * `system` still passes: jobs act FOR a guest, never AS one.
+   *
+   * The marker states an intrinsic property of the capability, not a note about which other gate
+   * happens to cover it today. Several capabilities that carry it are also excluded from an admin's
+   * lists by an entitlement only guests are granted (`view_table_assignment`, `use_face_matching`)
+   * or by a flag that is off; entitlement derivation and flags both change, and the marker is what
+   * stays true. Handler-level guards stay: this is one more layer, never a replacement for them.
+   * Only meaningful with `auth: 'guest'`; `defineCapability` rejects it elsewhere.
+   */
+  guestIdentityRequired?: boolean;
   requires: readonly Entitlement[];
   /** Fresh authentication required (money, identity, external commitments). */
   stepUp?: boolean;
@@ -91,7 +115,7 @@ export interface CapabilityDescriptor<I, O> {
    * to complete unattended. It never relaxes `explicit`, `transaction` or `external`.
    *
    * Note that since level 12 the pipeline itself refuses `inline` off the `ui` surface for
-   * `action` and `transaction` kinds (`src/capabilities/invoke.ts` step 5) — swarm K found the same
+   * `action` and `transaction` kinds (`src/capabilities/invoke.ts` step 4) — swarm K found the same
    * hole from the WebMCP side and swarm J's evals found it from the concierge side. This flag is
    * the deliberate, per-descriptor way out of that, and the WebMCP layer's own upgrade is a second
    * belt over the top.
@@ -104,7 +128,7 @@ export interface CapabilityDescriptor<I, O> {
    * on a repeat. Default true. Set `false` when the result itself is the sensitive thing and must
    * not outlive the handler's own authorization — biometric results are the case this exists for:
    * a stored response is a copy that lives in the public `idempotency_keys` table, outside the
-   * feature's vault, and replaying it at step 6 skips the handler and therefore skips its gate.
+   * feature's vault, and replaying it at step 7 skips the handler and therefore skips its gate.
    *
    * With `replayable: false` the key is still reserved, so concurrent duplicates cannot both run;
    * the reservation is released on success instead of being filled in, so a later repeat re-runs
@@ -129,6 +153,9 @@ export function defineCapability<I, O>(d: CapabilityDescriptor<I, O>): Capabilit
   if (d.kind === 'read' || d.kind === 'navigate') {
     if (!d.annotations.readOnlyHint) throw new Error(`${d.name}: read/navigate capabilities must be readOnlyHint`);
   }
+  if (d.guestIdentityRequired && d.auth !== 'guest') {
+    throw new Error(`${d.name}: guestIdentityRequired is only meaningful with auth: 'guest'`);
+  }
   if (d.kind === 'transaction' && !d.stepUp) throw new Error(`${d.name}: transactions require stepUp`);
   if ((d.kind === 'transaction' || d.kind === 'external') && !d.annotations.consequentialHint) {
     throw new Error(`${d.name}: transactions/external handoffs must be consequentialHint`);
@@ -147,15 +174,20 @@ export interface CapabilityRegistry {
 
 /**
  * Invocation pipeline (src/capabilities/invoke.ts):
- *   1. resolve descriptor; check flag
- *   2. validate input (zod) — untrusted input never reaches handlers unvalidated
- *   3. authorize: auth level, entitlements, ownership (handlers re-check row ownership)
- *   4. step-up check when `stepUp`
- *   5. confirmation token check when `confirmation === 'explicit'`
- *   6. idempotency replay when `idempotent`
- *   7. handler
- *   8. validate output, cap size, attach sources
- *   9. audit (success/denied/failed) — always, including denials
+ *    1. resolve descriptor; check exposure and flag
+ *    2. authorize: auth level, `guestIdentityRequired`, entitlements (handlers re-check row ownership)
+ *    3. step-up check when `stepUp`
+ *    4. confirmation, surface half: `explicit` (and state-changing `inline`) are website-only
+ *    5. validate input (zod) — untrusted input never reaches handlers unvalidated
+ *    6. confirmation, token half: verified against the hash of the VALIDATED payload
+ *    7. idempotency replay when `idempotent`
+ *    8. handler
+ *    9. validate output, cap size, attach sources
+ *   10. audit (success/denied/failed) — always, including denials
+ *
+ * Validation sits at 5, not at 2: an error about a caller's fields is an answer about a capability,
+ * and it is owed only to a caller who has been established as someone that capability would run for
+ * (level-13 review N5). Everything above it needs the descriptor and the principal and nothing else.
  */
 export type InvokeFn = <I, O>(descriptor: CapabilityDescriptor<I, O>, ctx: CapabilityContext, rawInput: unknown) => Promise<Result<CapabilityOutcome<O>, CapabilityError>>;
 

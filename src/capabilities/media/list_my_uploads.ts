@@ -33,6 +33,8 @@ export const listMyUploads = defineCapability<z.infer<typeof input>, z.infer<typ
   description: 'Lists the photos and videos this guest has uploaded with their current state (checking, preparing, awaiting review, shared, not added). Reads only; shows nothing from other guests.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['upload_media'],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

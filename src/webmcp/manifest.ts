@@ -1,6 +1,7 @@
 import type { CapabilityRegistry } from '@/contracts/capability';
 import type { FeatureFlag, FlagValues } from '@/contracts/flags';
 import type { Principal } from '@/contracts/principal';
+import { withoutUnready } from '@/capabilities/readiness';
 import { stableHash } from '@/lib/crypto';
 import { toWebMcpTool, type WebMcpToolDescriptor } from './descriptors';
 
@@ -35,6 +36,10 @@ export interface BuildManifestInput {
    * so without this the manifest would advertise a tool that always answers `feature_disabled` —
    * and advertise that a legally gated feature exists at all. Readiness is an async DB read and
    * `list` is sync, so the caller resolves it and passes the answer in.
+   *
+   * Resolve it with `unreadyGatedFlags` from `@/capabilities/readiness`, which is the same
+   * resolution the concierge's tool list uses. Level 15 moved it there because this manifest was
+   * the only derived list doing it, and `exposure.ai` was answering differently.
    */
   unreadyFlags?: ReadonlySet<FeatureFlag>;
   now?: Date;
@@ -47,10 +52,7 @@ export interface BuildManifestInput {
  */
 export function buildManifest(input: BuildManifestInput): WebMcpManifest {
   const tools = input.flags.WEBMCP
-    ? input.registry
-        .list({ exposure: 'webmcp', principal: input.principal, flags: input.flags })
-        .filter((c) => !(c.flag && input.unreadyFlags?.has(c.flag)))
-        .map(toWebMcpTool)
+    ? withoutUnready(input.registry.list({ exposure: 'webmcp', principal: input.principal, flags: input.flags }), input.unreadyFlags).map(toWebMcpTool)
     : [];
   return {
     version: WEBMCP_MANIFEST_VERSION,

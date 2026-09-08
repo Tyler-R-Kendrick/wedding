@@ -16,6 +16,8 @@ export const enrollBiometricReference = defineCapability<z.infer<typeof input>, 
   description: 'Creates the guest\'s face reference from up to three of their own uploaded photos. Requires face-matching consent. Replaces any earlier reference. Guests only, for themselves.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['use_face_matching'],
   flag: 'BIOMETRICS_ENABLED',
   confirmation: 'inline',

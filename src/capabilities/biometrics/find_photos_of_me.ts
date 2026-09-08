@@ -29,6 +29,8 @@ export const findPhotosOfMe = defineCapability<z.infer<typeof input>, FindPhotos
   description: 'Checks the photos the guest picked for their own face, using their reference. Requires face-matching consent and a reference. Only the guest\'s own face is ever matched; nobody else is identified. Guests only, on the website.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['use_face_matching'],
   flag: 'BIOMETRICS_ENABLED',
   confirmation: 'inline',

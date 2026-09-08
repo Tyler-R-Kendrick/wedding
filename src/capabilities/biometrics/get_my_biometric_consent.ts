@@ -28,6 +28,8 @@ export const getMyBiometricConsent = defineCapability<z.infer<typeof input>, MyB
     'reference enrolment, match results and deletion records. Never returns another guest\'s data. Reads only.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: false, webmcp: false },

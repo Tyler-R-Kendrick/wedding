@@ -173,6 +173,29 @@ describe('principal resolver', () => {
     // moving a readiness switch are not things an assistant may reach for.
     expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
+    // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
+    // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
+    // is true, so seven of them were listed for an admin whose handler then refuses:
+    // claim_identity, get_my_biometric_consent, get_my_household, get_my_invitation,
+    // request_biometric_deletion, revoke_biometric_consent, update_my_contact. The three biometric
+    // ones are the surprise: they carry no `flag` on purpose, because revoking consent and
+    // requesting deletion must stay reachable when the feature is off (BIPA), so they were listed
+    // for an admin today rather than only hypothetically. `guestIdentityRequired` refuses all seven
+    // in authorize(). What remains is the honest list: capabilities an admin can genuinely run.
+    // `prepare_reservation`, `register_passkey`, `step_up` and `suggest_alt_text` are `auth: 'guest'`
+    // in the sense of "a signed-in principal", and each admits an admin by design.
+    // `names()` above already drops `site_*` and `navigate_to`, which every principal can reach.
+    expect(names({ principal: ap }).filter((n) => !n.startsWith('admin_'))).toEqual([
+      'ask_concierge', 'draft_biometric_readiness', 'draft_lifecycle_transition', 'find_adventures',
+      'get_content_record', 'get_faq', 'get_media_clusters', 'get_media_item',
+      'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts',
+      'list_adventures', 'list_ai_traces', 'list_content_records', 'list_gallery', 'list_gift_links',
+      'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'mark_content_verified',
+      'open_booking_link', 'open_gift_link', 'open_reservation_link',
+      'prepare_reservation', 'register_passkey', 'request_otp', 'save_content_record', 'search_media',
+      'search_travel_options', 'search_wedding_information', 'search_wedding_information_static',
+      'show_adventure', 'show_venue_room', 'step_up', 'suggest_alt_text', 'verify_otp',
+    ]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);
   });

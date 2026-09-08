@@ -29,7 +29,7 @@ export const featureDisabled = (requestId: string): Response =>
 export function outcomeResponse(outcome: CapabilityOutcome<unknown>, requestId: string, maxOutputChars = DEFAULT_MAX_OUTPUT_CHARS): Response {
   const { data, confirmation, handoffUrl, retrievedAt } = outcome;
   /**
-   * The pipeline caps `data` (step 8) but not `sources`, so a citation-heavy result could still
+   * The pipeline caps `data` (step 9) but not `sources`, so a citation-heavy result could still
    * blow the agent's budget — and the client would then discard the whole thing as
    * `output_too_large`, making the capability silently unusable rather than merely less cited.
    * Citations are the droppable part: keep the answer, drop the provenance, and say so. The guest

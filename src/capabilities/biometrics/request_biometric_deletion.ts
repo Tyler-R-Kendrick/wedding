@@ -16,6 +16,8 @@ export const requestBiometricDeletion = defineCapability<z.infer<typeof input>, 
   description: 'Queues permanent deletion of the guest\'s face template, reference and match results, withdrawing consent if still active. Produces a deletion record with proof. Works even when the feature is switched off.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   confirmation: 'inline',
   idempotent: true,

@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import type { AnyCapability } from '@/contracts/capability';
-import type { FlagValues } from '@/contracts/flags';
+import type { FeatureFlag, FlagValues } from '@/contracts/flags';
 import type { Principal } from '@/contracts/principal';
 import { INTERNAL_ROUTES, isInternalRoute } from '@/capabilities/routes';
 import { registry } from '@/capabilities/registry';
+import { withoutUnready } from '@/capabilities/readiness';
 import { contentTokens, stem, stemmedSet } from './text';
 
 /**
@@ -44,14 +45,24 @@ export interface RouterTool {
   jsonSchema: Record<string, unknown>;
 }
 
-/** Capabilities the model may see: `exposure.ai`, flag on, and callable by this principal. */
-export function toolsFor(principal: Principal, flags: FlagValues, reg = registry): RouterTool[] {
-  return reg.list({ exposure: 'ai', principal, flags }).map((descriptor) => ({ descriptor, jsonSchema: inputJsonSchema(descriptor) }));
+/**
+ * Capabilities the model may see: `exposure.ai`, flag on, readiness switch on, and callable by
+ * this principal.
+ *
+ * `unready` comes from `unreadyGatedFlags` (src/capabilities/readiness.ts) — the same resolution
+ * the WebMCP manifest uses. Until level 15 only the manifest did this, so a READINESS_GATED
+ * capability with the env flag on and the switch off would have been offered to the concierge and
+ * then refused by `invoke` with `feature_disabled`, while the same capability was correctly hidden
+ * from an agent. Omitting `unready` keeps the old behaviour and is right only where no readiness
+ * service exists to ask (tests, the static route planner).
+ */
+export function toolsFor(principal: Principal, flags: FlagValues, reg = registry, unready?: ReadonlySet<FeatureFlag>): RouterTool[] {
+  return withoutUnready(reg.list({ exposure: 'ai', principal, flags }), unready).map((descriptor) => ({ descriptor, jsonSchema: inputJsonSchema(descriptor) }));
 }
 
 /** Everything AI-exposed regardless of principal (to explain denials without ever calling them). */
-export function allAiTools(flags: FlagValues, reg = registry): AnyCapability[] {
-  return reg.list({ exposure: 'ai', flags });
+export function allAiTools(flags: FlagValues, reg = registry, unready?: ReadonlySet<FeatureFlag>): AnyCapability[] {
+  return withoutUnready(reg.list({ exposure: 'ai', flags }), unready);
 }
 
 export function inputJsonSchema(descriptor: AnyCapability): Record<string, unknown> {

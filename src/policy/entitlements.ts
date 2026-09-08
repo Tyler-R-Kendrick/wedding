@@ -7,7 +7,11 @@ import { err, ok, type Result } from '@/contracts/result';
 const SIGN_IN_MESSAGE = 'Please sign in to continue.';
 const FORBIDDEN_MESSAGE = 'You do not have access to that.';
 
-/** Auth-level check: who may even attempt this capability. */
+/**
+ * Auth-level check: who may even attempt this capability. `guest` is a floor, not an identity —
+ * an admin and the system clear it. A capability that is about the CALLER'S OWN guest identity
+ * declares `guestIdentityRequired` and is refused separately, in `authorize` below.
+ */
 export function meetsAuthLevel(auth: AnyCapability['auth'], p: Principal): boolean {
   switch (auth) {
     case 'anonymous':
@@ -29,9 +33,19 @@ export function missingEntitlements(required: readonly Entitlement[], p: Princip
  * Server-side authorization for a capability descriptor. Hidden UI is never authorization;
  * this runs on every invocation regardless of surface.
  */
-export function authorize(descriptor: Pick<AnyCapability, 'auth' | 'requires' | 'name'>, principal: Principal): Result<void, CapabilityError> {
+export function authorize(
+  descriptor: Pick<AnyCapability, 'auth' | 'requires' | 'name'> & Partial<Pick<AnyCapability, 'guestIdentityRequired'>>,
+  principal: Principal,
+): Result<void, CapabilityError> {
   if (!meetsAuthLevel(descriptor.auth, principal)) {
     if (principal.kind === 'anonymous') return err(new CapabilityError('unauthenticated', SIGN_IN_MESSAGE));
+    return err(new CapabilityError('forbidden', FORBIDDEN_MESSAGE));
+  }
+  // "My invitation", "my table", "my consent": an admin clears the `guest` floor but holds no guest
+  // identity, so it can never satisfy such a capability. Refusing here rather than only in the
+  // handler is what keeps every derived list — WebMCP manifest, AI tool list, UI menus — agreeing
+  // with what `invoke` will do (level-13 review N4). `system` acts FOR a guest, never AS one.
+  if (descriptor.guestIdentityRequired && principal.kind !== 'guest' && principal.kind !== 'system') {
     return err(new CapabilityError('forbidden', FORBIDDEN_MESSAGE));
   }
   const missing = missingEntitlements(descriptor.requires, principal);

@@ -9,7 +9,7 @@ import { hmacSha256, randomToken, timingSafeEqualString } from '@/lib/crypto';
  * (capability, principal, payload hash); the matching `action`/`transaction` with
  * `confirmation: 'explicit'` must present it before the pipeline runs the handler.
  * Tokens are short-lived and bound to the exact payload they confirm; the pipeline consumes
- * the nonce on first use (see invoke step 6b), so a token is never accepted twice. Only
+ * the nonce on first use (see invoke step 7b), so a token is never accepted twice. Only
  * tokens issued on the `ui` surface are redeemable: a human clicks "confirm", never a model.
  */
 export type ConfirmationSurface = keyof CapabilityExposure;
