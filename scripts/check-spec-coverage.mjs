@@ -33,6 +33,11 @@ export const PRODUCTION_SPECS = [
   // only door (405 on GET, 403 on a form-encoded POST). With no ANTHROPIC_API_KEY in CI the model
   // provider is not live, so `conciergeModels()` hands back the deterministic extractive mock.
   'tests/e2e/concierge.spec.ts',
+  // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
+  // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`
+  // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
+  // Anonymous throughout, and `next start` serves prebuilt routes, so it needs no warm-up.
+  'tests/e2e/security-headers.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
