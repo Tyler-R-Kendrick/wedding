@@ -209,8 +209,8 @@ describe('planning without asking', () => {
     expect(ids).toContain('concierge');
     // Required tooling is planned like anything else: the media the site is made with is not
     // optional, and tagging it `tooling` never meant it was.
-    expect(ids).toContain('media');
-    expect(ids).toContain('motion');
+    // `media` acquires BOTH its options rather than a chosen one, so it appears twice.
+    expect(ids.filter((id) => id === 'media')).toHaveLength(2);
     // Optional tooling still waits to be asked for.
     expect(ids).not.toContain('stock');
     expect(ids).not.toContain('comps');

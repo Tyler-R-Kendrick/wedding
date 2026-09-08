@@ -59,10 +59,14 @@ export function resolvePlan({ slots = [], all = false, alreadySet = new Set(), c
     // Optional tooling waits to be asked for; REQUIRED tooling does not. The media the site is
     // built with (fal.ai, Higgsfield) is not a nice-to-have that happens to be tagged `tooling`.
     if (slot.need === 'tooling' && !slot.required && !all && !slots.length) continue;
-    const option = chosenOption(slot, choices);
-    if (option.isOptOut) continue;
-    if (option.secrets.length && option.secrets.every((v) => alreadySet.has(v))) continue;
-    plan.push({ slot, option, why: NEED[slot.need] });
+    // A slot whose options are not alternatives acquires all of them. fal.ai and Higgsfield are
+    // both needed, so choosing between them was never the question.
+    const options = slot.acquireAll ? slot.options : [chosenOption(slot, choices)];
+    for (const option of options) {
+      if (option.isOptOut) continue;
+      if (option.secrets.length && option.secrets.every((v) => alreadySet.has(v))) continue;
+      plan.push({ slot, option, why: NEED[slot.need] });
+    }
   }
   return plan;
 }

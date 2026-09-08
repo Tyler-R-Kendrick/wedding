@@ -38,9 +38,9 @@ touching any UI. The site itself is not built yet; the tooling is.
 5. **Reference data — `ui-ux-pro-max`.** Searchable font pairings, palettes,
    UX guidelines. Use it to *compare* options, not to override `DESIGN.md`.
 6. **Generated media — `fal.ai` and Higgsfield, both required.** Image, video
-   AND audio. They do different jobs and neither substitutes for the other,
-   which is why the Secret Drop carries them as two connections rather than two
-   options in one slot:
+   AND audio. They do different jobs and neither substitutes for the other, so
+   the Secret Drop's `media` slot acquires BOTH (`acquireAll`) rather than
+   asking you to choose between them:
    - **fal.ai** (`FAL_KEY`) — one key across image, video and audio models. Mood
      boards, textures, paper and fabric grounds, section backgrounds, motion
      tests, sound. Called by `scripts/fal-generate.mjs` and the `fal-ai` MCP
@@ -129,7 +129,9 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
   than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
   no control may repeat a request nobody answered.
-- **Every feature has its own connection.** 18 slots, 49 options. Identity is first class with
+- **Every feature has its own connection, and none is ever hidden.** 16 slots, 47 options, all in
+  one list: answering a connection never files it away somewhere else, because the one you have
+  just configured is the one you are most likely to want to look at again. Identity is first class with
   five real alternatives, and their ceremonies were probed on 2026-09-08 rather than assumed —
   the apex domains publish nothing, which is the trap: `mcp.workos.com` registers a client AND
   offers a device flow (and `workos.com/auth.md` provisions a one-shot environment with no account

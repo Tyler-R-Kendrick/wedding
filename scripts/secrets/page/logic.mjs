@@ -97,28 +97,6 @@ export function createLogic(reg) {
   }
 
   /**
-   * Whether the strip is drawn among the ones waiting on a person, rather than in the manifest.
-   *
-   * `needsYou` decided this on its own, and that made choosing a provider move the card you had
-   * just clicked. Picking "Just link out" or "Skip it" answers the slot, so `needsYou` went false
-   * and the strip vanished from under the cursor into a one-line row further down the page — you
-   * pressed a tab and the thing you pressed it on left. Choosing the provider beside it did
-   * nothing of the sort, so the same gesture had two completely different consequences.
-   *
-   * A slot the person has touched in this page load is therefore held above until the page is
-   * reloaded, whatever it now says. Nothing is hidden as a result of a click; the manifest is
-   * where things are on the way back IN, not somewhere a click can push them.
-   *
-   * The count in the header still uses `needsYou`, so holding a settled strip in place does not
-   * make it claim anyone is waited on.
-   */
-  function heldOpen(slot, { status = {}, choices = {}, pinned = null } = {}) {
-    const id = typeof slot === 'string' ? slot : slot.id;
-    if (pinned && typeof pinned.has === 'function' && pinned.has(id)) return true;
-    return needsYou(slot, status, choices);
-  }
-
-  /**
    * Which provider a ceremony or hand-off was started for.
    *
    * Newer records carry `option` outright. Older ones do not, but the status row was written by
@@ -395,7 +373,7 @@ export function createLogic(reg) {
   }
 
   return {
-    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, heldOpen, ownerOf, stillChosen, expired,
+    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, ownerOf, stillChosen, expired,
     ceremonyState, askedFor, workOf, settleOf, actionFor, allowsManualEntry, pasteFields, boundSummary,
   };
 }

@@ -322,7 +322,7 @@ ceremonies have arrived, and the URL is cleaned only once it is somewhere safer.
 grew a pass that seeds a waiting ceremony and delivers the snapshot *late*, because the old stub
 answered `onSnapshot` synchronously and no real store does — which is why nothing caught this.
 
-**Every feature has its own connection.** 18 slots, 49 options.
+**Every feature has its own connection.** 16 slots, 47 options.
 
 *Identity is first class*, with five alternatives whose ceremonies were probed on 2026-09-08 rather
 than assumed. The apex domains are the trap — auth0.com, clerk.com and workos.com all publish
@@ -335,29 +335,32 @@ Auth0 registers only per tenant, and a tenant needs a person. Better Auth stays 
 needs no account at all: its keys are generated here.
 
 *Generated media is image, video and audio*, and it is not stock photography. fal.ai and Higgsfield
-are two required connections; **Openverse** — openly licensed real work — is its own slot, and
-**Stitch** (screen comps) is its own again. Filing Openverse under "generated imagery" was a
-category error: it generates nothing.
+both live in the `media` slot, which is marked `acquireAll` because they are not alternatives: the
+ladder takes both rather than a chosen one. **Openverse** — openly licensed real work — is its own
+slot, and **Stitch** (screen comps) is its own again. Filing Openverse under "generated imagery"
+was a category error: it generates nothing.
 
 *Maps and restaurant links* are their own slots and are complete as deep links: they open whichever
 app the guest already has, with no key, no billing and no tracking. *Grouping photos by face* is
 deliberately **off** — a decision rather than a gap, because turning it on means processing
 biometric data and needs legal review first.
 
-*Photo search* is vector storage: embeddings kept in the database via pgvector. The AI captioning
-slot that briefly sat beside it is gone — tagging images with a model is a nice-to-have, not part
-of making search work.
+*Photo and story search is not here at all.* It was removed on request: the vectors live in the
+database via pgvector and need no account, and the AI captioning that briefly sat beside it was a
+nice-to-have rather than part of making search work. `VOYAGE_API_KEY` stays documented in
+`.env.example` because `src/` still reads it; the Secret Drop simply does not ask for it.
 
-**Choosing something never hides anything.** Picking "Just link out" or "Skip it" answers a slot,
-which used to make `needsYou` go false and the strip leave *Waiting on you* for a one-line row
-further down the page — the card went away from under the pointer, while choosing the provider
-immediately beside it did nothing of the sort. One gesture, two completely different consequences,
-and the destructive one looked like the harmless one. A slot touched in this page load is now held
-where it is (`heldOpen` in `logic.mjs`) and shows that it is settled; the manifest is where things
-are on the way back *in*, never somewhere a click can push them. The header count still uses
-`needsYou`, so a held strip never makes the page claim someone is waited on. A second rule of the
-same kind went with it: `tooling` slots were hidden until a provider had been chosen, which made
-the media tooling the site is built with invisible unless you knew to look.
+**Nothing is ever removed from the list.** There is one list of connections and every slot is in
+it, always, whatever its state. Two earlier attempts at this were both wrong: first the page moved
+an answered slot into a second "Claude is handling" section — so picking "Just link out" made the
+card leave from under the pointer while choosing the provider beside it did nothing of the sort —
+and then a pin held a *touched* card in place, which fixed the gesture but not the problem, because
+after a reload the list you had configured was still not the list you came back to. A configured
+connection is not finished business to be filed away; it is the one most likely to be looked at,
+changed or checked. The artifact gate asserts the list holds every connection and that nothing is
+filed into a second one. A third rule of the same kind went earlier: `tooling` slots were hidden
+until a provider had been chosen, which made the media tooling the site is built with invisible
+unless you already knew to look.
 
 **The media tooling is required, and it is two connections, not one.** fal.ai and Higgsfield do
 different jobs — fal.ai generates a still, Soul generates the *same person* across many stills, and

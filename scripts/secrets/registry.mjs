@@ -249,20 +249,6 @@ const RAW_SLOTS = [
     ],
   },
   {
-    id: 'search', name: 'Photo & story search', need: 'feature',
-    does: 'Turns photos and stories into vectors kept in the database (pgvector), so "the one on the beach" finds itself',
-    without: 'A hashed stand-in — search works, but worse',
-    options: [
-      { id: 'voyage', name: 'Voyage AI', recommended: true, note: 'Best recall per dollar for this size', host: 'dashboard.voyageai.com', ceremony: 'signin',
-        ladder: [{ method: 'authmd', origin: 'https://www.voyageai.com' }, { method: 'browser', recipe: 'voyage-dashboard' }, { method: 'manual' }],
-        secrets: ['VOYAGE_API_KEY'], fills: { EMBEDDINGS_PROVIDER: 'voyage' },
-        probe: { url: 'https://api.voyageai.com/v1/embeddings', method: 'POST', headers: { authorization: 'Bearer {value}', 'content-type': 'application/json' }, body: '{"input":["ping"],"model":"voyage-3-lite"}' } },
-      { id: 'openai-embed', name: 'OpenAI', note: 'One key for chat and search if you use it for both', host: 'platform.openai.com', ceremony: 'signin',
-        ladder: [{ method: 'authmd', origin: 'https://platform.openai.com' }, { method: 'browser', recipe: 'openai-platform' }, { method: 'manual' }],
-        secrets: ['OPENAI_API_KEY'], fills: { EMBEDDINGS_PROVIDER: 'openai' } },
-    ],
-  },
-  {
     id: 'video', name: 'Video playback', need: 'feature',
     does: 'Transcodes guest clips so they play on any phone',
     without: 'Clips play as uploaded, with an ffmpeg poster frame',
@@ -315,9 +301,10 @@ const RAW_SLOTS = [
   },
   {
     id: 'media', name: 'Generated media', need: 'tooling',
-    // Required: the site's media is made with these, so the ladder acquires them by default
-    // rather than waiting to be asked. `stock` and `comps` are the optional tooling.
-    required: true,
+    // Required, and BOTH of them: fal.ai and Higgsfield are not alternatives to choose
+    // between, so this slot acquires every option rather than a chosen one. `stock` and
+    // `comps` are the optional tooling.
+    required: true, acquireAll: true,
     does: 'Images, video and audio: mood boards, textures, grounds, motion tests and sound',
     without: 'Only the licensed placeholder set already committed',
     options: [
@@ -327,6 +314,41 @@ const RAW_SLOTS = [
         ladder: [{ method: 'authmd', origin: 'https://fal.ai' }, { method: 'browser', recipe: 'fal-dashboard' }, { method: 'manual' }],
         secrets: ['FAL_KEY'], fills: {},
         probe: { url: 'https://rest.alpha.fal.ai/tokens/', headers: { authorization: 'Key {value}' } } },
+      {
+        id: 'higgsfield', name: 'Higgsfield',
+        note: 'Soul holds an identity across image, video and audio; sign in once, no key to paste',
+        host: 'higgsfield.ai', ceremony: 'signin',
+        /*
+         * Verified 2026-09-08. `mcp.higgsfield.ai/mcp` answers the MCP auth challenge, publishes
+         * RFC 9728/8414 metadata and mints a client under RFC 7591 — so this could be an
+         * "Authorize" link like Resend's. It deliberately is not, because there would be nowhere
+         * to put what comes back: the vendored CLI (`@higgsfield/cli`) runs its own OAuth
+         * (HIGGSFIELD_OAUTH_*) and writes a credentials file (HIGGSFIELD_CREDENTIALS_PATH), and
+         * `.claude/skills/higgsfield-*` call `higgsfield account status`, not an API key. There is
+         * no HIGGSFIELD_API_KEY in `src/` or `.mcp.json`, and inventing one so the page had a
+         * field to show would be exactly the plausible fiction this repo bans.
+         *
+         * So: no secret, and the rung is `mcp` — Claude authorizes the server it is already
+         * configured for in `.mcp.json`. It is listed because it is required, not because
+         * anything here needs typing.
+         */
+        /*
+         * The credential is a CLI session on the machine, not a value to seal — the vendored
+         * `@higgsfield/cli` runs its own OAuth and writes a credentials file, and the skills call
+         * `higgsfield account status`. For a while I read "no environment variable" as "the page
+         * cannot offer this", which was the same mistake as reading "no CORS" as "the ceremony
+         * cannot start". The machine has a shell: `cli-login.mjs` runs the login, the CLI prints
+         * a link, and `runJob` streams it back to the strip. The person approves in their own
+         * browser and nothing secret goes through the page.
+         */
+        handoffKind: 'cli', cli: 'higgsfield',
+        ladder: [
+          { method: 'mcp', server: 'higgsfield', how: 'the MCP server is already configured in .mcp.json' },
+          { method: 'browser', cli: 'higgsfield', how: '`higgsfield auth login`, streamed to the page' },
+          { method: 'manual' },
+        ],
+        secrets: [], fills: {},
+      },
     ],
   },
   {
@@ -490,58 +512,6 @@ const RAW_SLOTS = [
         ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
     ],
   },
-  {
-    /*
-     * Higgsfield is the other half of the media toolchain, and a different job from fal.ai:
-     * fal.ai generates a picture or a clip, Soul generates the SAME person across many of them,
-     * and Higgsfield does the camera-move video and its audio. Neither substitutes for the other,
-     * so they are two required connections rather than two options in one slot — a slot's options
-     * are alternatives, and these are not.
-     */
-    id: 'motion', name: 'Identity-consistent media', need: 'tooling',
-    // Required: the site's media is made with these, so the ladder acquires them by default
-    // rather than waiting to be asked. `stock` and `comps` are the optional tooling.
-    required: true,
-    does: 'Keeps one face and one look across a series of images and video, with sound',
-    without: 'Every generated image is a different-looking stranger',
-    options: [
-      {
-        id: 'higgsfield', name: 'Higgsfield', recommended: true,
-        note: 'Soul holds an identity across image, video and audio; sign in once, no key to paste',
-        host: 'higgsfield.ai', ceremony: 'signin',
-        /*
-         * Verified 2026-09-08. `mcp.higgsfield.ai/mcp` answers the MCP auth challenge, publishes
-         * RFC 9728/8414 metadata and mints a client under RFC 7591 — so this could be an
-         * "Authorize" link like Resend's. It deliberately is not, because there would be nowhere
-         * to put what comes back: the vendored CLI (`@higgsfield/cli`) runs its own OAuth
-         * (HIGGSFIELD_OAUTH_*) and writes a credentials file (HIGGSFIELD_CREDENTIALS_PATH), and
-         * `.claude/skills/higgsfield-*` call `higgsfield account status`, not an API key. There is
-         * no HIGGSFIELD_API_KEY in `src/` or `.mcp.json`, and inventing one so the page had a
-         * field to show would be exactly the plausible fiction this repo bans.
-         *
-         * So: no secret, and the rung is `mcp` — Claude authorizes the server it is already
-         * configured for in `.mcp.json`. It is listed because it is required, not because
-         * anything here needs typing.
-         */
-        /*
-         * The credential is a CLI session on the machine, not a value to seal — the vendored
-         * `@higgsfield/cli` runs its own OAuth and writes a credentials file, and the skills call
-         * `higgsfield account status`. For a while I read "no environment variable" as "the page
-         * cannot offer this", which was the same mistake as reading "no CORS" as "the ceremony
-         * cannot start". The machine has a shell: `cli-login.mjs` runs the login, the CLI prints
-         * a link, and `runJob` streams it back to the strip. The person approves in their own
-         * browser and nothing secret goes through the page.
-         */
-        handoffKind: 'cli', cli: 'higgsfield',
-        ladder: [
-          { method: 'mcp', server: 'higgsfield', how: 'the MCP server is already configured in .mcp.json' },
-          { method: 'browser', cli: 'higgsfield', how: '`higgsfield auth login`, streamed to the page' },
-          { method: 'manual' },
-        ],
-        secrets: [], fills: {},
-      },
-    ],
-  },
 ];
 
 /**
@@ -576,6 +546,9 @@ function normalizeOption(raw) {
 
 export const SLOTS = RAW_SLOTS.map((slot) => ({
   required: slot.required === true,
+  // Whether the slot's options are alternatives at all. `media` needs fal.ai AND Higgsfield, so
+  // the ladder takes every option instead of a chosen one.
+  acquireAll: slot.acquireAll === true,
   id: slot.id, name: slot.name, need: slot.need, does: slot.does, without: slot.without,
   options: slot.options.map(normalizeOption),
 }));
@@ -698,7 +671,8 @@ export function clientRegistry() {
     autofillCount: Object.keys(AUTOFILL).length,
     autofillNames: Object.keys(AUTOFILL),
     slots: SLOTS.map((slot) => ({
-      id: slot.id, name: slot.name, need: slot.need, required: slot.required === true, does: slot.does, without: slot.without,
+      id: slot.id, name: slot.name, need: slot.need, required: slot.required === true,
+      acquireAll: slot.acquireAll === true, does: slot.does, without: slot.without,
       options: slot.options.map((o) => ({
         id: o.id, name: o.name, note: o.note || null, recommended: !!o.recommended, isOptOut: !!o.isOptOut,
         ceremony: ceremonyOf(o), host: o.host || null, recipe: browserRecipeOf(o),

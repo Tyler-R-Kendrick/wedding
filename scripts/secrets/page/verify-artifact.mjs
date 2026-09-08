@@ -292,6 +292,16 @@ check(writes.some((w) => w.collection === 'choices'), 'choosing a provider store
   if (moved.error) failures.push(`artifact: ${moved.error}`);
   else {
     check(moved.at === 'open', `choosing an opt-out moved the strip from ${moved.before} to ${moved.at}`);
+    // The stronger form of the same rule: the list holds EVERY connection, whatever its state.
+    // Answering one used to file it away in a second section, so the list you had configured was
+    // never the list you came back to.
+    const shown = await page.evaluate(() => ({
+      strips: document.querySelectorAll('#open .slot').length,
+      filedAway: document.querySelectorAll('#done .row').length,
+    }));
+    check(shown.strips === REG.slots.length,
+      `the list shows ${shown.strips} of ${REG.slots.length} connections — one has been removed from it`);
+    check(shown.filedAway === 0, `${shown.filedAway} connections were filed away into a second list`);
     // And it must not sit there still looking like it wants something.
     check(/Skipped/.test(moved.text), `the answered strip does not say it is settled: "${moved.text.slice(0, 160)}"`);
   }

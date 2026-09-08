@@ -175,28 +175,6 @@ describe("whether a slot is the person's problem", () => {
     assert.equal(L.needsYou(toolingSlot, {}, { imagery: 'fal' }), true);
   });
 
-  it('holds a strip in place once the person has touched it', () => {
-    // Answering a slot used to move its card out from under the pointer: "Just link out" made
-    // `needsYou` false, so the strip left "waiting on you" for a one-line row further down, while
-    // choosing the provider beside it did nothing of the sort. Same gesture, two outcomes.
-    const answered = { travel: { option: 'out', state: 'skipped' } };
-    assert.equal(L.needsYou(applySlot, answered, { travel: 'out' }), false);
-    assert.equal(L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' } }), false,
-      'nothing touched: it belongs in the manifest');
-    assert.equal(
-      L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' }, pinned: new Set(['travel']) }),
-      true,
-      'touched in this page load: it stays where it was clicked',
-    );
-    // Pinning only ever holds a strip in place; it never invents one that was not there.
-    assert.equal(L.heldOpen(slot, { pinned: new Set(['email']) }), true);
-    assert.equal(L.heldOpen(slot, { pinned: new Set() }), L.needsYou(slot, {}, {}));
-    // Given nothing at all, it is exactly `needsYou`.
-    assert.equal(L.heldOpen(slot), L.needsYou(slot, {}, {}));
-    // A bare id works the same, and something that is not a Set is simply not a pin.
-    assert.equal(L.heldOpen('travel', { status: answered, choices: { travel: 'out' }, pinned: new Set(['travel']) }), true);
-    assert.equal(L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' }, pinned: {} }), false);
-  });
   it('is not, while the next rung is one Claude runs itself', () => {
     // `mcp` and `authmd` are agent ceremonies: there is nothing for a person to do yet.
     const status = { email: { option: 'resend', state: 'queued', nextAction: { method: 'mcp' } } };
@@ -673,15 +651,16 @@ describe('the registry the page is built from', () => {
     // higgsfield.ai, so without this the published page offered "Sign in to Higgsfield" — a link
     // that signs you in to the website and leaves the CLI with no session at all. A control that
     // looks like the ceremony but is not is the exact failure this page keeps being rebuilt over.
-    const motion = REG.slots.find((s) => s.id === 'motion');
+    const media = REG.slots.find((s) => s.id === 'media');
+    const choices = { media: 'higgsfield' };
     for (const home of ['artifact', 'local']) {
-      const action = L.actionFor(motion, { home });
+      const action = L.actionFor(media, { home, choices });
       assert.equal(action.kind, 'dispatch', `${home}: ${action.kind}`);
       assert.equal(action.handoffKind, 'cli');
       assert.equal(action.option.cli, 'higgsfield');
     }
     // Off disk there is no store to record the request in, so there is nothing to offer.
-    assert.notEqual(L.actionFor(motion, { home: 'disk' }).kind, 'dispatch');
+    assert.notEqual(L.actionFor(media, { home: 'disk', choices }).kind, 'dispatch');
   });
 
   it('has a registered client for each provider that issues a public one', () => {
