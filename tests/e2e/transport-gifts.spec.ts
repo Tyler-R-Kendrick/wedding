@@ -137,7 +137,14 @@ test.describe('transportation', () => {
 test.describe('admin pages', () => {
   test('are gated and, for admins, show entitlements without secrets', async ({ page, context }) => {
     await page.goto('/admin/transport');
-    await expect(page.getByText('Administrator sign-in is required.')).toBeVisible();
+    // Level 16 moved every admin screen onto one shell, so this screen's gate is `ConsoleGate` —
+    // the same heading and sentence as the other twenty-four, instead of the bespoke
+    // "Administrator sign-in is required." this page rendered on its own. Changed deliberately, and
+    // stronger than the string it replaces: it checks the level-1 heading, which the old form never
+    // looked at, and that the screen's own content is absent from `#main`.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Administrator sign-in required');
+    await expect(page.locator('#main')).toContainText('is part of the admin console');
+    await expect(page.locator('#main')).not.toContainText('Ride benefits');
     await context.setExtraHTTPHeaders(principalHeaders('admin'));
     for (const route of ['/admin/transport', '/admin/gifts', '/admin/reservations']) {
       await page.goto(route);

@@ -38,6 +38,11 @@ export const PRODUCTION_SPECS = [
   // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
   // Anonymous throughout, and `next start` serves prebuilt routes, so it needs no warm-up.
   'tests/e2e/security-headers.spec.ts',
+  // Level 16: the client-bundle and lazy-load budget. Production and nowhere else — a `next dev`
+  // bundle is unminified, unsplit and carries the refresh runtime, so the same numbers there would
+  // have to be loosened until they asserted nothing. Anonymous, and `next start` serves prebuilt
+  // routes, so it needs no warm-up.
+  'tests/e2e/bundle.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
@@ -74,6 +79,17 @@ export const TEST_SERVER_SPECS = [
   // the lifecycle; the media-AI journey expects its own jobs to still be queued), and those paths
   // are covered through the real pipeline in tests/integration/ops-*.test.ts instead.
   'tests/e2e/admin-console.spec.ts',
+  // Level 16: the computed-font and 17px-floor assertions for the auth journeys and the admin
+  // console. It belongs HERE and not with the production specs for one reason: half its routes are
+  // console screens, which need the canonical test-principal injector and therefore NODE_ENV=test.
+  // The auth half would run on either server; splitting the file to put it there would mean two
+  // files asserting one rule, and the rule is the thing that must not be splittable.
+  'tests/e2e/typography.spec.ts',
+  // Level 16: the quality sweep — keyboard and focus order, prefers-reduced-motion, cross-identity
+  // cache isolation, the no-JavaScript paths, and the guest tree's shell. Every route it visits is
+  // a signed-in guest route, so it needs the test-principal injector. It walks 4 routes x 2 designs
+  // several times over; the CI warm-up list already holds every one of them.
+  'tests/e2e/quality-sweep.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

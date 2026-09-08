@@ -19,7 +19,7 @@ export function GuestsOnly({ what, signedIn = false, returnTo }: { what: string;
   const href = returnTo ? `/sign-in?next=${encodeURIComponent(returnTo)}` : '/sign-in';
   if (signedIn) {
     return (
-      <main id="main" className="page">
+      <div className="page">
         <h1 className="page__title">{what} is not on your invitation</h1>
         <p className="page__lede">
           You are signed in, so nothing is wrong with your link or your code. This part of the site is not open to you right now — most often because your invitation was replaced or cancelled after you
@@ -29,11 +29,11 @@ export function GuestsOnly({ what, signedIn = false, returnTo }: { what: string;
         <p className="card__meta">
           To reach them: <Placeholder inline>how to reach them</Placeholder>
         </p>
-      </main>
+      </div>
     );
   }
   return (
-    <main id="main" className="page">
+    <div className="page">
       <h1 className="page__title">{what} is for invited guests</h1>
       <p className="page__lede">Open the link from your invitation to find your household, then confirm with the code we e-mail you. No account, no password.</p>
       {/* `/claim` has no page — only `/claim/verify`, `/claim/welcome` and `/claim/passkey`, which
@@ -49,18 +49,18 @@ export function GuestsOnly({ what, signedIn = false, returnTo }: { what: string;
       <p className="card__meta">
         Lost the link? <Placeholder inline>how to reach them</Placeholder>
       </p>
-    </main>
+    </div>
   );
 }
 
 export function FriendlyFailure({ what }: { what: string }) {
   return (
-    <main id="main" className="page">
+    <div className="page">
       <h1 className="page__title">{what} is taking a moment</h1>
       <p className="page__lede">Something went wrong on our side. Please try again in a minute.</p>
       <p>
         If it keeps happening, reach Sara and Tyler directly. <Placeholder inline>their contact details</Placeholder>
       </p>
-    </main>
+    </div>
   );
 }

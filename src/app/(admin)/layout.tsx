@@ -17,7 +17,15 @@ export const dynamic = 'force-dynamic';
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <>
+    // `.admin-root` exists to carry the family. `globals.css` sets `html { font-family:
+    // var(--font-text) }`, and `--font-text` is defined only under `[data-theme]` — which the admin
+    // tree deliberately never carries — so on every admin route that declaration was invalid at
+    // computed-value time and `html` fell back to the browser default. `.ops` re-declares the family
+    // for the page body, which is why level 14's fix looked complete; the chrome AROUND it did not,
+    // and the skip link, the four top-bar links, the "all admin screens" summary and all 21 index
+    // links inside it rendered in Times New Roman. Measured, not inferred:
+    // `getComputedStyle(document.querySelector('.con-nav__bar a')).fontFamily`.
+    <div className="admin-root">
       <a className="skip" href="#main">
         Skip to content
       </a>
@@ -42,6 +50,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </details>
       </nav>
       {children}
-    </>
+    </div>
   );
 }

@@ -8,6 +8,8 @@ import { ExternalHandoffCard } from './ExternalHandoffCard';
 import { GiftLinkCard } from './GiftLinkCard';
 import { HandoffClickRecorder } from './HandoffClickRecorder';
 import { RedemptionCard } from './RedemptionCard';
+import { GuestCard, GuestSection } from '@/themes/guest';
+import type { ThemeId } from '@/themes/types';
 
 /**
  * PageRecipe seam. Pages fetch theme-agnostic data through capabilities and render a recipe;
@@ -21,6 +23,11 @@ export interface TransportationPageData extends TransportationOptions {
 
 export interface PageRecipe<D> {
   (props: { data: D }): React.JSX.Element;
+}
+
+/** A recipe that renders the active design's own sections and cards, so it needs to know which. */
+export interface ThemedPageRecipe<D> {
+  (props: { data: D; theme: ThemeId }): React.JSX.Element;
 }
 
 const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
@@ -50,27 +57,24 @@ function Paragraph({ text }: { text: string }) {
   );
 }
 
-export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ data }) => {
+export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> = ({ data, theme }) => {
   const claimable = data.benefits.filter((b) => b.status === 'eligible' || b.status === 'failed');
   const claimed = data.benefits.filter((b) => b.status === 'claimed');
   const other = data.benefits.filter((b) => !claimable.includes(b) && !claimed.includes(b));
-  // `page`, `page__title`, `sec` and `sec__title` are the guest kit from `components/rsvp/recipes.css`,
-  // which the (guest) layout already imports: they take the active design's DISPLAY face and its
-  // 72ch measure. Before this the headings rendered in the theme's text face at a fixed `text-3xl`
-  // and `main` ran the full viewport width — the page sat on the themed ground without being
-  // composed by the design. Same treatment as /rsvp and /your-weekend at level 07.
+  // `page` and `page__title` are the guest kit (`components/rsvp/recipes.css`); the SECTIONS and
+  // CARDS are the active design's own (`themes/<id>/guest.tsx`). `.sec` gave every section a 1px
+  // full-width rule and a left-aligned heading, which Gilded Hour's DESIGN.md contradicts and
+  // Conservatory's forbids by name — and it looked identical under both designs, which is what an
+  // independent review measured here as zero themed elements inside `<main>`.
   return (
-    <main id="main" className="page">
+    <div className="page">
       <HandoffClickRecorder />
       <header>
         <h1 className="page__title">Getting here, getting around, getting home.</h1>
         <p className="page__lede">The wedding is at the Chicago Athletic Association Hotel, 12 S Michigan Ave. Everything below is meant to take the guesswork out of the day so you can relax and dance.</p>
       </header>
 
-      <section className="sec" aria-labelledby="ride-benefit">
-        <h2 id="ride-benefit" className="sec__title">
-          Your ride home
-        </h2>
+      <GuestSection theme={theme} id="ride-benefit" index={0} title="Your ride home">
         {!data.signedIn ? (
           <p className="mt-3 measure">
             Ride benefits are personal. Open this page from your invitation link to see whether one is waiting for you.{' '}
@@ -86,8 +90,8 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
           <RedemptionCard key={b.entitlementId} benefit={b} />
         ))}
         {claimable.map((b) => (
-          <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
-            <h3 className="sec__title sec__title--sm">A ride benefit is waiting for you</h3>
+          <div key={b.entitlementId} data-benefit-status={b.status}>
+            <GuestCard theme={theme} title="A ride benefit is waiting for you">
             <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1">
               <dt className="text-primary">Amount</dt>
               <dd>{b.amountNote ?? 'To be confirmed'}</dd>
@@ -98,21 +102,20 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
             </dl>
             <p className="mt-3 measure">{b.statusMessage}</p>
             <ClaimBenefitFlow entitlementId={b.entitlementId} program={b.program} />
-          </article>
+            </GuestCard>
+          </div>
         ))}
         {other.map((b) => (
-          <article key={b.entitlementId} className="border-t border-primary/20 py-6" data-benefit-status={b.status}>
-            <h3 className="sec__title sec__title--sm">Ride benefit</h3>
-            <p className="mt-2 measure">{b.statusMessage}</p>
-          </article>
+          <div key={b.entitlementId} data-benefit-status={b.status}>
+            <GuestCard theme={theme} title="Ride benefit">
+              <p className="measure">{b.statusMessage}</p>
+            </GuestCard>
+          </div>
         ))}
-      </section>
+      </GuestSection>
 
-      {data.topics.map((t) => (
-        <section key={t.id} className="sec" aria-labelledby={`topic-${t.id}`}>
-          <h2 id={`topic-${t.id}`} className="sec__title">
-            {t.title}
-          </h2>
+      {data.topics.map((t, i) => (
+        <GuestSection theme={theme} key={t.id} id={`topic-${t.id}`} index={i + 1} title={t.title}>
           <div className="mt-3 space-y-3">
             {/* Keyed by position, not by the text: a paragraph's text is the authoring string, so
                 keying on it wrote `TODO(Tyler & Sara): …` into the RSC payload as a React key —
@@ -135,12 +138,12 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
             </p>
           ) : null}
           {t.official ? <ExternalHandoffCard heading="On the hotel’s site" handoff={t.official} meta={<span>Checked <time dateTime={t.verifiedAt}>{new Date(t.verifiedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</time></span>} /> : null}
-        </section>
+        </GuestSection>
       ))}
-      <footer className="sec">
+      <footer className="wp-guest-foot">
         <p className="hint">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
       </footer>
-    </main>
+    </div>
   );
 };
 

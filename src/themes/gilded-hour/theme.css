@@ -87,6 +87,12 @@
   --type-body-sm-line: 1.6;
   --type-body-sm-tracking: 0em;
   --type-body-sm-features: normal;
+  --type-control-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
+  --type-control-caps-size: 1rem;
+  --type-control-caps-weight: 600;
+  --type-control-caps-line: 1.25;
+  --type-control-caps-tracking: 0.12em;
+  --type-control-caps-features: normal;
   --type-label-caps-family: "Josefin Sans", "Josefin Sans Fallback", system-ui, sans-serif;
   --type-label-caps-size: 0.8125rem;
   --type-label-caps-weight: 600;

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { ADMIN_SECTIONS } from './sections';
 import './ops.css';
 import './console.css';
@@ -69,14 +70,25 @@ export function Denied({ message, entitlement }: { message: string; entitlement?
   );
 }
 
-export function Section({ title, id, children, note }: { title: string; id: string; children: ReactNode; note?: ReactNode }) {
+/**
+ * A titled region of a screen. `title` is optional: a screen whose section is the whole screen
+ * (the media queue, the import form) has nothing to say in a second heading, and an
+ * `aria-labelledby` pointing at an id that renders nothing is worse than no label at all — which
+ * is what the media shell this replaced produced whenever it was given an id and no title.
+ */
+export function Section({ title, id, children, note }: { title?: string; id?: string; children: ReactNode; note?: ReactNode }) {
+  // `id` falls back to a slug of the title, which is what the guest-operations shell did; screens
+  // that a test or a link addresses by fragment (`#events`) pass their own and get it verbatim.
+  const sectionId = id ?? (title ? title.replace(/\W+/g, '-').toLowerCase() : undefined);
   return (
     // The id lands on the section, not on the heading: `#events` has to select the region a reader
     // (or a test) means by it, and the heading gets its own id for `aria-labelledby`.
-    <section id={id} className="ops-section" aria-labelledby={`${id}-heading`}>
-      <h2 id={`${id}-heading`} className="ops-h2">
-        {title}
-      </h2>
+    <section id={sectionId} className="ops-section" aria-labelledby={title && sectionId ? `${sectionId}-heading` : undefined}>
+      {title ? (
+        <h2 id={sectionId ? `${sectionId}-heading` : undefined} className="ops-h2">
+          {title}
+        </h2>
+      ) : null}
       {note ? <p className="con-note">{note}</p> : null}
       {children}
     </section>
@@ -84,29 +96,171 @@ export function Section({ title, id, children, note }: { title: string; id: stri
 }
 
 /**
- * A real table in a scroll container, so wide operational data scrolls inside its own region
- * instead of making the page scroll sideways. `caption` is the accessible name.
+ * Sub-navigation inside one family of screens (media, intelligence, content).
+ *
+ * The layout's index already reaches every screen; this is the local "you are here" strip a person
+ * uses while working inside one family. It replaces three hand-rolled navs — `AdminMediaNav`,
+ * `AdminAiNav` and the content pages' bare links — which each had their own markup, their own
+ * button classes and their own idea of what `aria-current` meant.
  */
-export function DataTable({ caption, head, children, dense = true }: { caption: string; head: ReactNode; children: ReactNode; dense?: boolean }) {
+export function SubNav({ label, items }: { label: string; items: { href: string; label: string; current?: boolean }[] }) {
   return (
-    <div className="ops-table-wrap con-scroll" tabIndex={0} role="region" aria-label={caption}>
+    <nav aria-label={label} className="con-subnav">
+      <ul className="list list--plain">
+        {items.map((i) => (
+          <li key={i.href}>
+            <Link href={i.href} aria-current={i.current ? 'page' : undefined}>
+              {i.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** An empty state that is not a table row. Announced, because it usually replaces a list. */
+export function Empty({ children }: { children: ReactNode }) {
+  return (
+    <p className="con-empty-note" role="status">
+      {children}
+    </p>
+  );
+}
+
+/**
+ * Where you are inside a family of screens. The content editor had its own `.ac-crumbs` list with
+ * a `::before` separator; this is the console's, and it is a `<nav>` with a name so a screen reader
+ * can skip it.
+ */
+export function Breadcrumbs({ trail }: { trail: { href?: string; label: string }[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="con-crumbs">
+      <ol className="list list--plain">
+        {trail.map((c) => (
+          <li key={c.label}>{c.href ? <Link href={c.href}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}</li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+/** A muted explanatory line inside a section. */
+export function Note({ children }: { children: ReactNode }) {
+  return <p className="con-note">{children}</p>;
+}
+
+/**
+ * A real table in a scroll container, so wide operational data scrolls inside its own region
+ * instead of making the page scroll sideways. `<caption>` is the accessible name — once.
+ *
+ * The wrapper used to carry `role="region" aria-label={caption}` as well, so every table announced
+ * "region, Audit events newest first … table, Audit events newest first": one string, two nodes,
+ * read twice before a single row. The `<caption>` is the name worth keeping — it is what table
+ * navigation in a screen reader reports, and it is visible — so the region role and its label are
+ * gone. Nothing is lost for keyboard users: `scrollable-region-focusable` (the axe rule this
+ * wrapper exists for) asks for focusability, not for a role.
+ *
+ * `empty` decides whether the wrapper is focusable at all. A table with a header row and no body
+ * cannot scroll, and a focusable element that does nothing is a stop in the tab order that costs a
+ * keyboard user a keystroke on every empty screen — which, on a fresh deployment, is most of them.
+ */
+/**
+ * The scroll container wide operational data lives in. Focusable so a keyboard can reach the
+ * overflow (axe `scrollable-region-focusable`), and unnamed and role-less so it does not repeat the
+ * name of whatever it wraps.
+ */
+export function ScrollRegion({ children, scrollable = true }: { children: ReactNode; scrollable?: boolean }) {
+  return (
+    <div className="ops-table-wrap con-scroll" tabIndex={scrollable ? 0 : undefined}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A real table in a scroll container, so wide operational data scrolls inside its own region
+ * instead of making the page scroll sideways. `<caption>` is the accessible name — once.
+ *
+ * The wrapper used to carry `role="region" aria-label={caption}` as well, so every table announced
+ * "region, Audit events newest first … table, Audit events newest first": one string, two nodes,
+ * read twice before a single row. The `<caption>` is the name worth keeping — it is what table
+ * navigation in a screen reader reports, and it is visible — so the region role and its label are
+ * gone. Nothing is lost for keyboard users: `scrollable-region-focusable` (the axe rule this
+ * wrapper exists for) asks for focusability, not for a role.
+ *
+ * `empty` is the message to show when there are no rows, and when it is set NO TABLE IS RENDERED.
+ * An eight-column header row on a 390px phone is 500px of sideways scrolling and a stop in the tab
+ * order, both in service of showing an operator the shape of nothing — and on a fresh deployment
+ * that is most of this console. Dropping the `tabIndex` alone is not enough and is worse: the
+ * header row still overflows, so axe reports `scrollable-region-focusable` on a region a keyboard
+ * can no longer reach. The empty state is a sentence, announced, and the caption above it still
+ * says what the table would have held.
+ */
+export function DataTable({ caption, head, children, dense = true, empty = null }: { caption: string; head: ReactNode; children: ReactNode; dense?: boolean; empty?: ReactNode }) {
+  if (empty) {
+    return (
+      <>
+        <p className="con-caption con-caption--standalone">{caption}</p>
+        <Empty>{empty}</Empty>
+      </>
+    );
+  }
+  return (
+    <ScrollRegion>
       <table className={dense ? 'ops-table con-table' : 'ops-table'}>
         <caption className="con-caption">{caption}</caption>
         <thead>{head}</thead>
         <tbody>{children}</tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }
 
-export function EmptyRow({ span, children }: { span: number; children: ReactNode }) {
-  return (
-    <tr>
-      <td colSpan={span} className="con-empty">
-        {children}
-      </td>
-    </tr>
-  );
+/**
+ * A machine timestamp, rendered in the deployment's time zone.
+ *
+ * Every stamp in this console was the raw ISO string the database returned —
+ * `2026-09-08T05:04:07.912Z` — on a deployment whose operators, whose venue and whose lifecycle
+ * dates are all America/Chicago. The milliseconds were noise in a table already scrolling
+ * sideways, and the offset was a subtraction the reader had to do. `dateTime` keeps the exact
+ * instant for anything parsing the page.
+ *
+ * `Intl` with an explicit `timeZone` gives the same string on the server and in the browser, so
+ * this is safe in a server component and safe to hydrate.
+ */
+const STAMP = new Intl.DateTimeFormat('en-US', {
+  timeZone: WEDDING_TIMEZONE,
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+  timeZoneName: 'short',
+});
+
+export function formatStamp(at: string | null | undefined): string {
+  if (!at) return '—';
+  const d = new Date(at);
+  // An unparseable value is shown as it stands rather than as "Invalid Date": on this screen the
+  // raw string is the evidence.
+  return Number.isNaN(d.getTime()) ? at : STAMP.format(d);
+}
+
+/** Day only, same time zone. For a cutoff or an expiry, where the clock is noise. */
+const DAY = new Intl.DateTimeFormat('en-US', { timeZone: WEDDING_TIMEZONE, year: 'numeric', month: 'short', day: '2-digit' });
+
+export function Day({ at }: { at: string | null | undefined }) {
+  if (!at) return <>—</>;
+  const d = new Date(at);
+  return Number.isNaN(d.getTime()) ? <>{at}</> : <time dateTime={at}>{DAY.format(d)}</time>;
+}
+
+export function Stamp({ at }: { at: string | null | undefined }) {
+  if (!at) return <>—</>;
+  return <time dateTime={at}>{formatStamp(at)}</time>;
 }
 
 /** One headline number with its label underneath. Used in strips of three or four, never as cards. */

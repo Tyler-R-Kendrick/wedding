@@ -202,7 +202,7 @@ export function FlightSearchForm({ defaults = {} }: { defaults?: Defaults }) {
         </Field>
         <div className="flex items-end">
           <label className="flex min-h-11 items-center gap-2 text-base">
-            <input type="checkbox" name="nonstopOnly" defaultChecked={value('nonstopOnly') === 'on'} className="h-5 w-5" />
+            <input type="checkbox" name="nonstopOnly" defaultChecked={value('nonstopOnly') === 'on'} className="checkbox-target" />
             Nonstop only
           </label>
         </div>

@@ -9,8 +9,11 @@ import type { PhotosProps } from '@/themes/content-types';
  * page anyone sees.
  */
 export function PhotosPage({ albums, canUpload, copy }: Omit<PhotosProps, 'frame'>) {
+  // A fallback recipe renders WITHOUT a theme Shell, so it carries the document landmark itself;
+  // `MediaPage` stopped emitting one when the guest tree moved onto the per-design Shell.
   return (
-    <MediaPage
+    <main id="main">
+      <MediaPage
       title={copy.title}
       lede={copy.lede}
       actions={
@@ -41,6 +44,7 @@ export function PhotosPage({ albums, canUpload, copy }: Omit<PhotosProps, 'frame
           </ul>
         )}
       </MediaSection>
-    </MediaPage>
+      </MediaPage>
+    </main>
   );
 }

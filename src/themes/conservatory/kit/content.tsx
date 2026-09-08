@@ -462,9 +462,21 @@ function Programme({ events, venueName }: Parameters<ContentKit['Programme']>[0]
             <h2 className="cv-h cv-h--2 cv-programme__name">{e.name}</h2>
             <MetaList
               items={[
+                /*
+                 * One fact per line when the other half is a placeholder, never joined by a middot.
+                 * `Chicago Athletic Association Hotel · Sara + Tyler are still writing this: which
+                 * room` reads as one run-on claim, and at 390 the separator lands alone on a line
+                 * between them. `WeekendPage` fixed the same defect at level 09; this is the themed
+                 * copy of it, on the page that carries the wedding's own facts.
+                 */
                 {
                   label: 'When',
-                  value: (
+                  value: e.timeLabel.placeholder ? (
+                    <>
+                      <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
+                      <Block block={e.timeLabel} />
+                    </>
+                  ) : (
                     <>
                       <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
                       {' · '}
@@ -474,7 +486,12 @@ function Programme({ events, venueName }: Parameters<ContentKit['Programme']>[0]
                 },
                 {
                   label: 'Where',
-                  value: (
+                  value: e.room.placeholder ? (
+                    <>
+                      {venueName}
+                      <Block block={e.room} />
+                    </>
+                  ) : (
                     <>
                       {venueName}
                       {' · '}

@@ -27,8 +27,17 @@
   color: var(--ops-muted);
 }
 
-/* Wide operational tables scroll inside their own region; the page body never scrolls sideways. */
+/*
+ * Wide operational tables scroll inside their own region; the page body never scrolls sideways.
+ *
+ * The inset is not decoration. The region is a bordered box, and with `padding: 0` the table ruled
+ * against the frame line on three sides: `impeccable detect --viewport 1280x800
+ * http://localhost:3318/admin/guests` returned `[cramped-padding] <div> "ops-table-wrap": children
+ * flush against border on right/bottom/left (no inset)` on all 36 console page/design/viewport
+ * combinations that render a table.
+ */
 .con-scroll {
+  padding: var(--spacing-sm);
   border: 1px solid var(--ops-outline);
   border-radius: var(--radius-sm);
 }
@@ -58,12 +67,18 @@
   border-bottom: 0;
 }
 
+/*
+ * A <caption> is a SENTENCE about the table ("Guests and the households they belong to"), not a
+ * label, so it does not get the caps treatment: `[all-caps-body] text-transform: uppercase on 40
+ * chars of body text` on every console page with a table. Uppercase strips the ascenders and
+ * descenders a reader recognizes words by, and this is the line that explains the table to whoever
+ * opens the console at 11pm. Same size and colour, sentence case.
+ */
 .con-caption {
   padding: 0.5rem 0.625rem;
+  max-width: 62ch;
   text-align: left;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
-  text-transform: uppercase;
+  font-size: var(--text-control-caps);
   color: var(--ops-muted);
   border-bottom: 1px solid var(--ops-outline);
 }
@@ -78,6 +93,43 @@
   color: var(--ops-muted);
 }
 
+.con-empty-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--ops-outline);
+  color: var(--ops-muted);
+}
+
+/*
+ * One sub-navigation for every family of admin screens. Three of these existed — the media pages'
+ * `.media-actions` row of filled buttons, the intelligence pages' `.mi-nav`, and the content
+ * pages' bare inline links — so the same job looked like three different products depending on
+ * which screen you had reached. Same shape as `.con-nav__bar`: caps at the control step, targets
+ * sized from padding.
+ */
+.con-subnav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+}
+
+.con-subnav a {
+  display: inline-block;
+  min-height: 24px;
+  padding: 0.3125rem 0;
+}
+
+.con-subnav a[aria-current='page'] {
+  color: var(--ops-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
 /* A strip of headline numbers. Deliberately not boxes: a rule under each, nothing around them. */
 .con-stats {
   display: flex;
@@ -87,8 +139,19 @@
   border-block: 1px solid var(--ops-outline);
 }
 
+/*
+ * `align-content: start` is the whole fix for a wrapped stat row.
+ *
+ * `.con-stats` is a flex container, so its items stretch to the tallest in the row; `.con-stat` is
+ * a grid, and a grid with more height than content distributes the surplus between its rows. A
+ * stat with a hint is one row taller than one without, so on /admin/jobs "Queued" (hint: "0 due
+ * now") stretched its neighbour "Running" and pushed that label 15px below it — measured, both
+ * before and after, with scripts/probes/stat-strip.mjs. Packing the rows at the top makes every label in
+ * a row sit at the same y whatever its neighbours carry.
+ */
 .con-stat {
   display: grid;
+  align-content: start;
   gap: 0.125rem;
   min-width: 7rem;
 }
@@ -100,8 +163,8 @@
 }
 
 .con-stat__label {
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--ops-muted);
 }
@@ -111,14 +174,18 @@
   color: var(--ops-muted);
 }
 
+/*
+ * Same as `.ops-button`: a pill here carries a SENTENCE ("Not published — guests see nothing",
+ * "draft differs from what guests see"), which `impeccable detect http://localhost:3318/admin/seating`
+ * read as `[all-caps-body] text-transform: uppercase on 34 chars of body text`. The 1px vertical
+ * padding went with it — a 17px word inside a 1px inset touches its own outline.
+ */
 .con-pill {
   display: inline-block;
-  padding: 0.0625rem 0.5rem;
+  padding: 0.375rem 0.75rem;
   border: 1px solid currentcolor;
   border-radius: var(--radius-pill);
-  font-size: var(--text-label-caps);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-control-caps);
   white-space: nowrap;
 }
 
@@ -146,8 +213,8 @@
 }
 
 .con-kv dt {
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--ops-muted);
 }
@@ -174,9 +241,9 @@
   margin: 0 0 var(--spacing-sm);
   padding-bottom: var(--spacing-xs);
   border-bottom: 1px solid var(--ops-outline);
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
-  font-weight: var(--font-weight-label-caps);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  font-weight: var(--font-weight-control-caps);
   text-transform: uppercase;
   color: var(--ops-muted);
 }
@@ -221,15 +288,21 @@
   align-items: center;
   margin: 0;
   padding: 0;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
 }
 
 /*
- * WCAG 2.2 AA 2.5.8: every target is at least 24x24. The nav links are 12px caps, so the size has to
- * come from padding rather than from the text — which also gives adjacent targets the clear space
- * the same rule asks for. Index links are body-sized and stacked; this guarantees it for them too.
+ * WCAG 2.2 AA 2.5.8 for the THREE targets this rule names — the top-bar links, the "all admin
+ * screens" summary, and the index links inside it. It does not cover the console at large, and the
+ * comment that used to sit here said it did: buttons, form controls and in-table links get their
+ * 24x24 from `.ops-button`, `.ops-input` and `.con-window a` instead, which are separate rules with
+ * separate minima (44px and 2.75rem). `tests/e2e/admin-console.spec.ts` measures every target on
+ * every console screen rather than trusting any of these comments.
+ *
+ * These three need the size to come from padding rather than from the text: the nav links are caps
+ * at the ornament step, which also gives adjacent targets the clear space the same rule asks for.
  * One rule for all three so specificity ascends down the file (stylelint no-descending-specificity).
  */
 .con-nav__bar a,
@@ -360,4 +433,137 @@
   font-size: var(--text-body-md, 1.0625rem);
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+/* --- Level 16: furniture the migrated screens brought with them ---------- */
+
+/*
+ * A checklist with a mark column, and a bordered panel.
+ *
+ * `/admin/ai` and `/admin/biometrics` rendered these as `.mi-checklist` and `.mi-panel` from
+ * `components/mediaai/mediaai.css` — a second admin design system, loaded on some console screens
+ * and not others, with its own panel border, its own radius and its own `<small>` floor. Moving
+ * the screens onto the console shell means moving the furniture with them; the stylesheet they came
+ * from stays where it belongs, on the guest-facing media surfaces.
+ */
+.con-checklist {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.con-checklist li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.con-checklist__mark {
+  font-variant-numeric: tabular-nums;
+  color: var(--ops-muted);
+}
+
+/* `<small>` is 0.8em by default — 13.6px at this site's 17px root. This is a second line of
+   explanation, not a chip, so it takes the body step. */
+.con-checklist small {
+  display: block;
+  font-size: var(--text-body-md);
+  color: var(--ops-muted);
+}
+
+.con-panel {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--ops-outline);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.con-panel > h3 {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--font-weight-h3);
+}
+
+.con-panel h4 {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--text-body-md);
+  font-weight: 600;
+}
+
+/* A seat number is two digits; a full-width field for it reads as a mistake. */
+.con-seat {
+  width: 6em;
+}
+
+.con-plans {
+  display: grid;
+  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+/* Inline validation text under a field, and the breadcrumb trail. Both came in with the content
+   editor, which carried its own 192-line stylesheet for a screen that is otherwise the console. */
+.con-field-error {
+  margin: 0;
+  color: var(--ops-error);
+}
+
+.ops-field [aria-invalid='true'] {
+  border-color: var(--ops-error);
+}
+
+.con-crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 var(--spacing-sm);
+  padding: 0;
+  font-size: var(--text-body-sm);
+  color: var(--ops-muted);
+}
+
+.con-crumbs li + li::before {
+  content: '/';
+  margin-inline-end: 0.5rem;
+  color: var(--ops-outline);
+}
+
+/* The caption when there is no table under it: same label, same weight, no <table> to hang from. */
+.con-caption--standalone {
+  margin: 0 0 var(--spacing-xs);
+  padding: 0;
+  border-bottom: 0;
+}
+
+/*
+ * An audit row's metadata, as facts rather than as one joined string.
+ * `kind=read · surface=ui · durationMs=17` is three key/value pairs; this renders them as three.
+ */
+.con-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.75rem;
+  margin: 0;
+}
+
+.con-detail dt {
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+  color: var(--ops-muted);
+}
+
+.con-detail dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The thing a row is about, leading its row. */
+.con-subject {
+  display: block;
+  font-family: var(--font-mono-ops);
 }

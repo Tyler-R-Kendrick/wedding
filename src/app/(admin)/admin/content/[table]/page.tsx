@@ -5,7 +5,9 @@ import { listContentRecordsCapability } from '@/capabilities/list_content_record
 import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
+import { Breadcrumbs, ConsolePage, DataTable, Pill, Stamp } from '../../_components/console';
 import { AdminDenied, adminContentContext } from '../_auth';
+import { FRESHNESS_TONE } from '../page';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,48 +24,45 @@ export default async function AdminContentTable({ params }: { params: Params }) 
   const rows = r.value.data.tables[0]?.records ?? [];
 
   return (
-    <main id="main" className="ac-main">
-      <ul className="ac-crumbs">
-        <li>
-          <Link href={ROUTES.adminContent}>Content</Link>
-        </li>
-        <li>{spec.label}</li>
-      </ul>
-      <h1>{spec.label}</h1>
-      <p>
-        <Link href={`${ROUTES.adminContent}/${table}/new`}>New record</Link>
-      </p>
-      <div className="ac-scroll">
-        <table className="ac-table">
-          <thead>
-            <tr>
-              <th scope="col">Record</th>
-              <th scope="col">Visibility</th>
-              <th scope="col">Freshness</th>
-              <th scope="col">Verified</th>
-              <th scope="col">Version</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((rec) => (
-              <tr key={rec.id}>
-                <th scope="row">
-                  <Link href={`${ROUTES.adminContent}/${table}/${rec.id}`}>{rec.title}</Link>
-                  {rec.placeholder ? <span className="ac-badge"> placeholder</span> : null}
-                </th>
-                <td>{rec.visibility}</td>
-                <td>
-                  <span className={`ac-badge ac-badge--${FRESHNESS_LABELS[rec.freshness].tone}`}>{FRESHNESS_LABELS[rec.freshness].label}</span>
-                </td>
-                <td>
-                  <time dateTime={rec.verifiedAt}>{rec.verifiedAt.slice(0, 10)}</time>
-                </td>
-                <td>v{rec.contentVersion}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </main>
+    <ConsolePage
+      title={spec.label}
+      actions={
+        <Link className="ops-button ops-button-ghost" href={`${ROUTES.adminContent}/${table}/new`}>
+          New record
+        </Link>
+      }
+    >
+      <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { label: spec.label }]} />
+      <DataTable
+        caption={`${spec.label} records`}
+        empty={rows.length === 0 ? <>Nothing in this table yet.</> : null}
+        head={
+          <tr>
+            <th scope="col">Record</th>
+            <th scope="col">Visibility</th>
+            <th scope="col">Freshness</th>
+            <th scope="col">Verified</th>
+            <th scope="col">Version</th>
+          </tr>
+        }
+      >
+        {rows.map((rec) => (
+          <tr key={rec.id}>
+            <th scope="row">
+              <Link href={`${ROUTES.adminContent}/${table}/${rec.id}`}>{rec.title}</Link>
+              {rec.placeholder ? <Pill tone="warn">placeholder</Pill> : null}
+            </th>
+            <td>{rec.visibility}</td>
+            <td>
+              <Pill tone={FRESHNESS_TONE[FRESHNESS_LABELS[rec.freshness].tone] ?? 'neutral'}>{FRESHNESS_LABELS[rec.freshness].label}</Pill>
+            </td>
+            <td>
+              <Stamp at={rec.verifiedAt} />
+            </td>
+            <td className="con-num">v{rec.contentVersion}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </ConsolePage>
   );
 }

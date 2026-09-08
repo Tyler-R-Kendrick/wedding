@@ -1,4 +1,14 @@
-/* Admin guest operations: shared foundation tokens only (root DESIGN.md), never the guest themes. */
+/* Admin console: shared foundation tokens only (root DESIGN.md), never the guest themes. */
+
+/*
+ * The family for everything in `/admin`, including the chrome outside `.ops` — the skip link and
+ * the navigation. Same stack as `.ops` below, declared once on the tree's own root so a new piece
+ * of admin chrome cannot silently inherit the browser default the way the nav did.
+ */
+.admin-root {
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
+}
+
 .ops {
   --ops-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
   --ops-muted: var(--color-on-surface-muted, color-mix(in oklab, var(--color-primary) 70%, var(--color-neutral)));
@@ -23,17 +33,6 @@
   color: var(--color-primary);
 }
 
-.ops-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ops-outline);
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .ops-title {
   margin: 1.5rem 0 0.25rem;
   font-family: var(--font-h1), Georgia, "Times New Roman", serif;
@@ -42,8 +41,15 @@
   line-height: 1.1;
 }
 
+/*
+ * Capped, like every other run of prose on the site. The console had no measure at all: at a 1280
+ * desktop `impeccable detect http://localhost:3318/admin/guests` measured `[line-length] ~131
+ * chars/line` on this element and ~112 on `.ops-h2`. The console is where Sara and Tyler read
+ * instructions under time pressure, so it takes the same 62-66ch cap the guest pages take.
+ */
 .ops-lede {
   margin: 0 0 1.5rem;
+  max-width: 66ch;
   color: var(--ops-muted);
 }
 
@@ -53,13 +59,36 @@
   gap: 0.75rem;
 }
 
+/*
+ * A grid item's automatic minimum size is its content, so anything wrapping a wide table pushes
+ * the page sideways unless it is told otherwise. `.ops-table-wrap` escapes this by itself (a
+ * scroll container's automatic minimum is 0), but a <form> around one does not: /admin/events wraps
+ * its entitlement matrix in the form that saves it, and the page measured scrollWidth 446 against a
+ * 390 viewport until this line existed.
+ */
+.ops-section > * {
+  min-width: 0;
+}
+
+/*
+ * A measure for the console's plain lists. `/admin/seating`'s publish history ran 129 chars a line
+ * on a 1280 desktop (`impeccable detect http://localhost:3318/admin/seating` -> `[line-length] ~129
+ * chars/line`). These are records rather than prose, so they get a wider cap than the 66ch on
+ * `.ops-lede`, but not the full width of a 1280 screen: the eye loses the row it is tracking.
+ */
+.ops .list {
+  max-width: 80ch;
+}
+
 .ops-h2 {
   margin: 0;
+  max-width: 46ch;
   font-size: 1.25rem;
   font-weight: 500;
 }
 
 .ops-notice {
+  max-width: 66ch;
   padding: 0.75rem 1rem;
   border: 1px solid var(--ops-outline);
   border-radius: var(--radius-sm, 2px);
@@ -95,7 +124,7 @@
 }
 
 .ops-hint {
-  font-size: 0.9375rem;
+  font-size: var(--text-body-sm);
   color: var(--ops-muted);
 }
 
@@ -116,13 +145,19 @@
   align-items: center;
 }
 
+/*
+ * Sentence case, not caps. Console buttons are not chips — "Show dietary & accessibility notes
+ * (audited)" is 44 characters, and `impeccable detect http://localhost:3318/admin/rsvp` returned
+ * `[all-caps-body] text-transform: uppercase on 44 chars of body text` (and 37 on its sibling, and
+ * 25/27 on /admin/seating) under both designs. Uppercase removes the ascenders and descenders that
+ * make a word recognizable at a glance, which is the whole job of a button label in a room where
+ * someone is deciding whether the audited export is the one they want.
+ */
 .ops-button {
   min-height: 2.75rem;
   padding: 0.5rem 1.25rem;
   font: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--text-control-caps);
   border-radius: var(--radius-pill, 999px);
   border: 1px solid transparent;
   cursor: pointer;
@@ -160,14 +195,26 @@
   outline-offset: 2px;
 }
 
+/*
+ * `position: relative` is load-bearing, not decoration.
+ *
+ * `.sr-only` is `position: absolute`, and an absolutely positioned element is clipped by an
+ * `overflow` ancestor only when that ancestor is also its containing block. The visually hidden
+ * `<label>`s inside /admin/events' entitlement matrix had no positioned ancestor, so they escaped
+ * this scroll container, sat at their static position 445px out, and made the DOCUMENT report
+ * scrollWidth 446 against a 390 viewport — invisible, un-scrollable (html is `overflow-x: clip`),
+ * and exactly the measurement the level-14 review used to certify that admin screens never scroll
+ * sideways. Measured with scripts/probes/overflow.mjs: 446 before, 390 after.
+ */
 .ops-table-wrap {
+  position: relative;
   overflow-x: auto;
 }
 
 .ops-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: var(--text-body-md);
 }
 
 .ops-table th,
@@ -193,7 +240,7 @@
 .ops-code {
   word-break: break-all;
   font-family: var(--font-mono-ops);
-  font-size: 0.9375rem;
+  font-size: var(--text-body-sm);
 }
 
 /* --- Level 14 design review: B4, B5, B6 ---------------------------------- */
@@ -206,9 +253,25 @@
   background: color-mix(in oklab, var(--color-secondary, var(--ops-accent)) 12%, var(--color-neutral));
 }
 
-/* B6. Table data and notes computed to 15.94px (0.9375rem at the site's 17px root), under
-   PRODUCT.md's 17px floor. This is an operations console read at speed; it is the last place to
-   shave two pixels off. `--text-body-md` is 1.0625rem = 18.06px. */
-.ops :is(.con-table td, .con-table th, .con-note, .con-stat__hint) {
+/* B6, level 14: table data and notes computed to 15.94px, under PRODUCT.md's 17px floor. That was
+   patched here, for four selectors, while the token underneath (`--text-body-sm`) stayed at
+   0.9375rem and every other user of it stayed under the floor. Level 16 moved the answer into the
+   root DESIGN.md — `body-sm` is 1rem and there is a `control-caps` style at 1rem for caps a reader
+   has to read — so `.ops-table` and `.ops-hint` are now correct from their own base rules. What is
+   left here is only the two console-specific notes, which take the larger body step deliberately
+   because they carry the explanation of a screen rather than a caption. */
+.ops :is(.con-note, .con-stat__hint) {
   font-size: var(--text-body-md, 1.0625rem);
+}
+
+/* The console's own radio group. See `Radios` in ops.tsx for why it is not the guest kit's. */
+.ops-radios {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.ops-radios legend {
+  padding: 0;
+  font-weight: 500;
 }

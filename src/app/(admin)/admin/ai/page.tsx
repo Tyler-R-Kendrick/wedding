@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import type { MediaAiStatusView } from '@/capabilities/mediaai';
-import { AdminGate } from '@/components/media/AdminMediaNav';
-import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
-import { AdminAiNav } from '@/components/mediaai/AdminAiNav';
-import { ScrollableTable } from '@/components/mediaai/ScrollableTable';
+import { ConsoleGate, ConsolePage, Note, ScrollRegion, Section, SubNav } from '../_components/console';
+import { INTELLIGENCE_SUBNAV } from '../_components/sections';
 import { SuggestionReview } from '@/components/mediaai/SuggestionReview';
 
 export const dynamic = 'force-dynamic';
@@ -12,29 +10,29 @@ export const metadata: Metadata = { title: 'Search index', robots: { index: fals
 
 export default async function AdminAiPage() {
   const principal = await currentPrincipal();
-  if (principal.kind !== 'admin') return <AdminGate />;
+  if (principal.kind !== 'admin') return <ConsoleGate what="The media search index" />;
   const status = await invokeForRequest<MediaAiStatusView>('admin_media_ai_status', { suggestions: 20 }, principal);
   if (!status.ok) {
     return (
-      <MediaPage title="Search index" actions={<AdminAiNav current="ai" />}>
-        <MediaSection id="error">
-          <p className="media-lede">{status.error.message}</p>
-        </MediaSection>
-      </MediaPage>
+      <ConsolePage title="Search index" actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/ai' }))} />}>
+        <Section id="error">
+          <Note>{status.error.message}</Note>
+        </Section>
+      </ConsolePage>
     );
   }
   const { flags, providers, status: counts, suggestions } = status.data;
   return (
-    <MediaPage
+    <ConsolePage
 
       title="Search index"
       lede="What the archive can be searched by, where each description came from, and what is waiting for a person to approve."
-      actions={<AdminAiNav current="ai" />}
+      actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/ai' }))} />}
     >
-      <MediaSection id="coverage" title="Coverage">
-        <ScrollableTable label="Index coverage">
-          <table className="mi-table">
-            <caption className="media-lede">Counts at {counts.lastIndexedAt ? new Date(counts.lastIndexedAt).toLocaleString() : 'no index run yet'}.</caption>
+      <Section id="coverage" title="Coverage">
+        <ScrollRegion>
+          <table className="ops-table con-table">
+            <caption className="con-caption">Counts at {counts.lastIndexedAt ? new Date(counts.lastIndexedAt).toLocaleString() : 'no index run yet'}.</caption>
             <tbody>
               <tr>
                 <th scope="row">Indexable items</th>
@@ -70,13 +68,13 @@ export default async function AdminAiPage() {
               </tr>
             </tbody>
           </table>
-        </ScrollableTable>
-      </MediaSection>
+        </ScrollRegion>
+      </Section>
 
-      <MediaSection id="providers" title="What is switched on">
-        <ul className="mi-checklist">
+      <Section id="providers" title="What is switched on">
+        <ul className="con-checklist">
           <li>
-            <span className="mi-checklist__mark" aria-hidden="true">{flags.semanticSearch ? '✓' : '·'}</span>
+            <span className="con-checklist__mark" aria-hidden="true">{flags.semanticSearch ? '✓' : '·'}</span>
             <span>
               Semantic search {flags.semanticSearch ? 'on' : 'off'}
               <small>
@@ -86,19 +84,19 @@ export default async function AdminAiPage() {
             </span>
           </li>
           <li>
-            <span className="mi-checklist__mark" aria-hidden="true">{flags.proMediaAi.enabled ? '✓' : '·'}</span>
+            <span className="con-checklist__mark" aria-hidden="true">{flags.proMediaAi.enabled ? '✓' : '·'}</span>
             <span>
               Third-party processing of photographers&apos; media {flags.proMediaAi.enabled ? 'on' : 'off'}
               <small>Flag {flags.proMediaAi.flag ? 'on' : 'off'}, readiness {flags.proMediaAi.readiness ? 'on' : 'off'}. Each vendor also needs written confirmation on their own files.</small>
             </span>
           </li>
         </ul>
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="review" title={`Waiting for review (${counts.pendingSuggestions})`}>
-        <p className="media-lede">Suggested alt text is a draft. Edit it into your own words before publishing; nothing here reaches a guest until you do.</p>
+      <Section id="review" title={`Waiting for review (${counts.pendingSuggestions})`}>
+        <Note>Suggested alt text is a draft. Edit it into your own words before publishing; nothing here reaches a guest until you do.</Note>
         <SuggestionReview initial={suggestions} />
-      </MediaSection>
-    </MediaPage>
+      </Section>
+    </ConsolePage>
   );
 }

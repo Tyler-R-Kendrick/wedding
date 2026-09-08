@@ -6,6 +6,7 @@ import { FriendlyFailure, GuestsOnly } from '@/components/rsvp/GuestsOnly';
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { RsvpForm } from '@/components/rsvp/RsvpForm';
 import { formatDeadline } from '@/domain/events/format';
+import { getRequestTheme } from '@/themes/server';
 import { uiContext } from '../_shared/principal';
 import { rsvpAction } from './actions';
 
@@ -15,6 +16,8 @@ export const metadata: Metadata = { title: 'RSVP', robots: { index: false, follo
 /** Route only: resolve the principal, call the capability, render the recipe. No business logic here. */
 export default async function RsvpPage() {
   const { ctx, principal } = await uiContext();
+  // `RsvpForm` is a client island and cannot read the request, so the design is handed to it here.
+  const theme = await getRequestTheme();
   if (principal.kind !== 'guest') return <GuestsOnly what="RSVP" returnTo="/rsvp" />;
   const result = await invoke(getMyRsvp, ctx, {});
   if (!result.ok) {
@@ -24,7 +27,7 @@ export default async function RsvpPage() {
   const data = result.value.data;
   const self = data.guests.find((g) => g.isSelf);
   return (
-    <main id="main" className="page">
+    <div className="page">
       {/* A closed window must not be asked a question. The same defect as the deadline copy below,
           one element up: "Ada, will you join us?" sitting above "RSVPs are closed" invites an answer
           the page will not take. Personalisation is kept either way. */}
@@ -49,7 +52,7 @@ export default async function RsvpPage() {
           <Placeholder inline>the date answers are needed by</Placeholder>
         </p>
       ) : null}
-      <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} />
-    </main>
+      <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} theme={theme} />
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { TravelProps } from '@/themes/content-types';
+import { DEFAULT_THEME } from '@/themes/registry';
 import { TravelPageRecipe } from '../travel/recipe';
 
 /**
@@ -9,5 +10,7 @@ import { TravelPageRecipe } from '../travel/recipe';
  * supply their own, so in practice this renders only for a theme that has yet to.
  */
 export function TravelPage({ venue, alternatives, facts, sources, slots }: Omit<TravelProps, 'frame' | 'tripHref'> & { tripHref?: string }) {
-  return <TravelPageRecipe data={{ venue, alternatives, facts, sources, viewer: { kind: 'anonymous', hasProfile: false } }} slots={slots} />;
+  // A fallback renders for a theme that supplies no `travel` recipe, so there is no design to defer
+  // to; the default one is the honest answer and is what this file has always rendered.
+  return <TravelPageRecipe theme={DEFAULT_THEME} data={{ venue, alternatives, facts, sources, viewer: { kind: 'anonymous', hasProfile: false } }} slots={slots} />;
 }

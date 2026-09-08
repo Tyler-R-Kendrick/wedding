@@ -1,231 +1,165 @@
 import type { Metadata } from 'next';
 import { adminExportNeeds, adminListEvents, adminRsvpOverview } from '@/capabilities/rsvp';
-import { newId } from '@/contracts/ids';
-import { AdminGate, Denied, Outcome, outcomeFrom, type SearchParams } from '@/components/admin-e/AdminShell';
-import { Badge, Button, Checkbox, ChoiceGroup, Field, Select, TextInput } from '@/components/rsvp/fields';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
+import { Button, Checkbox, IdemKey, Input, Radios } from '../_components/ops';
 import { overrideAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'RSVPs (admin)', robots: { index: false, follow: false } };
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+/**
+ * RSVPs, on the admin console shell.
+ *
+ * This screen rendered in the GUEST kit — `page`, `sec`, `card`, `stat`, `tbl` from
+ * `components/rsvp/recipes.css`, and the guest RSVP form's own `Field`/`Select`/`ChoiceGroup`
+ * widgets. It was the same information as `/admin/audit` next door, dressed as a guest page: a
+ * different type scale, a different table, a different idea of what a section is. Everything below
+ * is the console's, and the guest kit is no longer imported by any admin route.
+ */
 export default async function AdminRsvpPage({ searchParams }: { searchParams: SearchParams }) {
   const { principal } = await adminPrincipal();
+  if (principal.kind !== 'admin') return <ConsoleGate what="RSVPs" />;
   const sp = await searchParams;
-  const outcome = await outcomeFrom(searchParams);
-  const showNeeds = sp.needs === '1';
-  return (
-    <AdminGate principalKind={principal.kind}>
-      <Body outcome={outcome} showNeeds={showNeeds} />
-    </AdminGate>
-  );
-}
+  const showNeeds = one(sp.needs) === '1';
+  const notice = { ok: one(sp.ok), error: one(sp.error) };
 
-async function Body({ outcome, showNeeds }: { outcome: { ok?: string; error?: string }; showNeeds: boolean }) {
   const [overview, events] = await Promise.all([adminInvoke(adminRsvpOverview, {}), adminInvoke(adminListEvents, {})]);
-  if (!overview.ok) return <Denied message={overview.error.message} />;
+  if (!overview.ok) {
+    return (
+      <ConsolePage title="RSVPs">
+        <Denied message={overview.error.message} />
+      </ConsolePage>
+    );
+  }
   const d = overview.value.data;
   const ev = events.ok ? events.value.data : null;
   // Sensitive: loaded only on explicit request (the capability call itself is the audit trail).
   const needs = showNeeds ? await adminInvoke(adminExportNeeds, { includeNeeds: true }) : null;
-  return (
-    <main id="main" className="page page--wide">
-      <p className="page__eyebrow">Admin</p>
-      <h1 className="page__title">RSVPs</h1>
-      <Outcome {...outcome} />
-      <p className="card__meta">RSVPs are {d.window.open ? 'open' : 'closed'} ({d.window.reason.replace('_', ' ')}).</p>
+  const meals = ev ? ev.events.flatMap((e) => e.mealOptions.map((m) => ({ value: m.id, label: `${e.name}: ${m.label}` }))) : [];
 
-      <section className="sec" aria-labelledby="counts-title">
-        <h2 className="sec__title" id="counts-title">
-          By event
-        </h2>
+  return (
+    <ConsolePage
+      title="RSVPs"
+      lede={`RSVPs are ${d.window.open ? 'open' : 'closed'} (${d.window.reason.replace('_', ' ')}).`}
+      notice={notice}
+      actions={
+        <>
+          <a className="ops-button ops-button-ghost" href="/admin/rsvp/export">
+            RSVP CSV
+          </a>
+          <a className="ops-button ops-button-ghost" href="/admin/rsvp/export?needs=1">
+            Dietary &amp; accessibility CSV (audited)
+          </a>
+          <a className="ops-button ops-button-ghost" href={showNeeds ? '/admin/rsvp' : '/admin/rsvp?needs=1'}>
+            {showNeeds ? 'Hide notes' : <>Show dietary &amp; accessibility notes (audited)</>}
+          </a>
+        </>
+      }
+    >
+      <Section title="By event" id="counts">
         {d.events.map((e) => (
-          <div key={e.id} className="card">
-            <h3 className="card__title">{e.name}</h3>
-            <div>
-              {[
-                ['invited', e.invited],
-                ['attending', e.accepted],
-                ['declined', e.declined],
-                ['no answer', e.pending],
-                ['plus-ones', e.plusOnes],
-                ['stale meals', e.staleMeals],
-              ].map(([label, value]) => (
-                <div key={String(label)} className="stat">
-                  <span className="stat__value">{value}</span>
-                  <span className="stat__label">{label}</span>
-                </div>
-              ))}
-            </div>
+          <div key={e.id}>
+            <h3 className="ops-h2">{e.name}</h3>
+            <StatStrip>
+              <Stat label="Invited" value={e.invited} />
+              <Stat label="Attending" value={e.accepted} />
+              <Stat label="Declined" value={e.declined} />
+              <Stat label="No answer" value={e.pending} />
+              <Stat label="Plus-ones" value={e.plusOnes} />
+              <Stat label="Stale meals" value={e.staleMeals} hint={e.staleMeals ? 'the menu changed after the answer' : 'nothing to re-ask'} />
+            </StatStrip>
           </div>
         ))}
-        <div className="actions">
-          <a className="btn btn--secondary" href="/admin/rsvp/export">
-            Download RSVP CSV
-          </a>
-          <a className="btn btn--secondary" href="/admin/rsvp/export?needs=1">
-            Download dietary &amp; accessibility CSV (audited)
-          </a>
-          {showNeeds ? (
-            <a className="btn btn--ghost" href="/admin/rsvp">
-              Hide notes
-            </a>
-          ) : (
-            <a className="btn btn--ghost" href="/admin/rsvp?needs=1">
-              Show dietary &amp; accessibility notes (audited)
-            </a>
-          )}
-        </div>
-      </section>
+      </Section>
 
       {needs ? (
-        <section className="sec" aria-labelledby="needs-title">
-          <h2 className="sec__title" id="needs-title">
-            Dietary and accessibility notes
-          </h2>
+        <Section title="Dietary and accessibility notes" id="needs">
           {needs.ok ? (
-            needs.value.data.rows.length ? (
-              <div className="tbl-wrap">
-                <table className="tbl">
-                  <thead>
-                    <tr>
-                      <th scope="col">Household</th>
-                      <th scope="col">Guest</th>
-                      <th scope="col">Dietary</th>
-                      <th scope="col">Accessibility</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {needs.value.data.rows.map((n) => (
-                      <tr key={n.guestId}>
-                        <td>{n.householdName}</td>
-                        <td>{n.displayName}</td>
-                        <td>{n.dietary ?? ''}</td>
-                        <td>{n.accessibility ?? ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="card__meta">No notes recorded yet.</p>
-            )
-          ) : (
-            <p className="fld__error">{needs.error.message}</p>
-          )}
-        </section>
-      ) : null}
-
-      <section className="sec" aria-labelledby="rows-title">
-        <h2 className="sec__title" id="rows-title">
-          Every answer
-        </h2>
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th scope="col">Event</th>
-                <th scope="col">Household</th>
-                <th scope="col">Guest</th>
-                <th scope="col">Answer</th>
-                <th scope="col">Meal</th>
-                <th scope="col">Plus-one</th>
-                <th scope="col">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.rows.map((r) => (
-                <tr key={`${r.guestId}-${r.eventId}`}>
-                  <td>{r.eventName}</td>
-                  <td>{r.householdName}</td>
-                  <td>{r.displayName}</td>
-                  <td>{r.status === 'accepted' ? <Badge tone="yes">attending</Badge> : r.status === 'declined' ? <Badge tone="no">declined</Badge> : <Badge tone="pending">no answer</Badge>}</td>
-                  <td>
-                    {r.mealLabel ?? ''} {r.mealStale ? <Badge tone="stale">menu changed</Badge> : null}
-                  </td>
-                  <td>{r.plusOnePolicy === 'none' ? '—' : r.plusOne?.attending ? `${r.plusOne.name ?? 'unnamed'}${r.plusOne.mealLabel ? ` (${r.plusOne.mealLabel})` : ''}` : 'no'}</td>
-                  <td>
-                    {r.updatedAt ? r.updatedAt.slice(0, 10) : ''} {r.submittedVia === 'admin' ? <Badge tone="info">by admin</Badge> : null}
-                  </td>
+            <DataTable
+              caption="Dietary and accessibility notes"
+              empty={needs.value.data.rows.length === 0 ? <>No notes recorded yet.</> : null}
+              head={
+                <tr>
+                  <th scope="col">Household</th>
+                  <th scope="col">Guest</th>
+                  <th scope="col">Dietary</th>
+                  <th scope="col">Accessibility</th>
+                </tr>
+              }
+            >
+              {needs.value.data.rows.map((n) => (
+                <tr key={n.guestId}>
+                  <th scope="row">{n.householdName}</th>
+                  <td>{n.displayName}</td>
+                  <td className="con-wrap">{n.dietary ?? '—'}</td>
+                  <td className="con-wrap">{n.accessibility ?? '—'}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </DataTable>
+          ) : (
+            <Denied message={needs.error.message} />
+          )}
+        </Section>
+      ) : null}
+
+      <Section title="Every answer" id="rows">
+        <DataTable
+          caption="Every RSVP answer"
+          empty={d.rows.length === 0 ? <>Nobody has answered yet.</> : null}
+          head={
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Household</th>
+              <th scope="col">Guest</th>
+              <th scope="col">Answer</th>
+              <th scope="col">Meal</th>
+              <th scope="col">Plus-one</th>
+              <th scope="col">Updated</th>
+            </tr>
+          }
+        >
+          {d.rows.map((r) => (
+            <tr key={`${r.guestId}-${r.eventId}`}>
+              <th scope="row">{r.eventName}</th>
+              <td>{r.householdName}</td>
+              <td>{r.displayName}</td>
+              <td>
+                {r.status === 'accepted' ? <Pill tone="good">attending</Pill> : r.status === 'declined' ? <Pill tone="bad">declined</Pill> : <Pill tone="neutral">no answer</Pill>}
+              </td>
+              <td>
+                {r.mealLabel ?? '—'} {r.mealStale ? <Pill tone="warn">menu changed</Pill> : null}
+              </td>
+              <td>{r.plusOnePolicy === 'none' ? '—' : r.plusOne?.attending ? `${r.plusOne.name ?? 'unnamed'}${r.plusOne.mealLabel ? ` (${r.plusOne.mealLabel})` : ''}` : 'no'}</td>
+              <td>
+                <Stamp at={r.updatedAt} /> {r.submittedVia === 'admin' ? <Pill tone="neutral">by admin</Pill> : null}
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+      </Section>
 
       {ev ? (
-        <section className="sec" aria-labelledby="override-title">
-          <h2 className="sec__title" id="override-title">
-            Record or correct an answer
-          </h2>
-          <p className="card__meta">Use after a phone call or e-mail. Works after the deadline; audited with your reason.</p>
-          <form action={overrideAction} className="card">
-            <input type="hidden" name="idempotencyKey" value={newId()} />
-            <div className="grid-2">
-              <Field id="ov-guest" label="Guest" required>
-                {(a) => (
-                  <Select id={a.id} name="guestId" placeholderLabel="Choose a guest" required describedBy={a.describedBy}>
-                    {ev.guests.map((g) => (
-                      <option key={g.guestId} value={g.guestId}>
-                        {g.displayName} ({g.householdName})
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-              <Field id="ov-event" label="Event" required>
-                {(a) => (
-                  <Select id={a.id} name="eventId" placeholderLabel="Choose an event" required describedBy={a.describedBy}>
-                    {ev.events.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-            </div>
-            <ChoiceGroup idBase="ov-status" name="status" legend="Answer" options={[{ value: 'accepted', label: 'Attending', defaultChecked: true }, { value: 'declined', label: 'Not attending' }]} />
-            <Field id="ov-meal" label="Meal (current menu)" hint="Only for events with a menu.">
-              {(a) => (
-                <Select id={a.id} name="mealOptionId" placeholderLabel="No meal" describedBy={a.describedBy}>
-                  {ev.events.flatMap((e) => e.mealOptions.map((m) => ({ e, m }))).map(({ e, m }) => (
-                    <option key={m.id} value={m.id}>
-                      {e.name}: {m.label}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-            <div className="choice" style={{ marginTop: 'var(--spacing-md)' }}>
-              <Checkbox id="ov-p1" name="plusOne" label="Bringing a guest" />
-            </div>
-            <div className="grid-2">
-              <Field id="ov-p1name" label="Guest's name">
-                {(a) => <TextInput id={a.id} name="plusOneName" maxLength={80} describedBy={a.describedBy} />}
-              </Field>
-              <Field id="ov-p1meal" label="Guest's meal">
-                {(a) => (
-                  <Select id={a.id} name="plusOneMealOptionId" placeholderLabel="No meal" describedBy={a.describedBy}>
-                    {ev.events.flatMap((e) => e.mealOptions.map((m) => ({ e, m }))).map(({ e, m }) => (
-                      <option key={m.id} value={m.id}>
-                        {e.name}: {m.label}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-            </div>
-            <Field id="ov-reason" label="Reason (audited)" required>
-              {(a) => <TextInput id={a.id} name="reason" required minLength={3} maxLength={300} describedBy={a.describedBy} />}
-            </Field>
-            <div className="actions">
-              <Button type="submit">Record answer</Button>
+        <Section title="Record or correct an answer" id="override" note="Use after a phone call or e-mail. Works after the deadline; audited with your reason.">
+          <form action={overrideAction} className="ops-form">
+            <IdemKey />
+            <Input id="ov-guest" name="guestId" label="Guest" required options={ev.guests.map((g) => ({ value: g.guestId, label: `${g.displayName} (${g.householdName})` }))} />
+            <Input id="ov-event" name="eventId" label="Event" required options={ev.events.map((e) => ({ value: e.id, label: e.name }))} />
+            <Radios name="status" legend="Answer" options={[{ value: 'accepted', label: 'Attending', defaultChecked: true }, { value: 'declined', label: 'Not attending' }]} />
+            <Input id="ov-meal" name="mealOptionId" label="Meal (current menu)" hint="Only for events with a menu." options={[{ value: '', label: 'No meal' }, ...meals]} />
+            <Checkbox id="ov-p1" name="plusOne" label="Bringing a guest" />
+            <Input id="ov-p1name" name="plusOneName" label="Guest's name" hint="Leave blank if nobody is coming with them." />
+            <Input id="ov-p1meal" name="plusOneMealOptionId" label="Guest's meal" options={[{ value: '', label: 'No meal' }, ...meals]} />
+            <Input id="ov-reason" name="reason" label="Reason (audited)" required hint="Recorded on the audit row with your identity." />
+            <div className="ops-form-inline">
+              <Button>Record answer</Button>
             </div>
           </form>
-        </section>
+        </Section>
       ) : null}
-    </main>
+    </ConsolePage>
   );
 }

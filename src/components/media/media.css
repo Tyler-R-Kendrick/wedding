@@ -97,13 +97,20 @@
   align-items: center;
 }
 
+/*
+ * The vertical padding is real, not implied by `min-height`. It was `0`, and a control whose text
+ * is 18px needs ~5.4px before the words stop touching the button's own edge on a line that wraps:
+ * `impeccable detect --viewport 390x844 http://localhost:3317/media/upload` returned
+ * `[cramped-padding] 0px vertical padding` under both designs at both viewports. Centring inside a
+ * 44px box hides it only while the label is one line, and "Choose photos or videos" is not, at 390.
+ */
 .media-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs, 4px);
   min-height: 44px;
-  padding: 0 var(--spacing-md, 16px);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   border: 1px solid var(--color-primary);
   border-radius: var(--rounded-sm, 2px);
   background: var(--color-primary);
@@ -114,9 +121,21 @@
   cursor: pointer;
 }
 
+/*
+ * A disabled control still has to be READABLE. `opacity: 0.55` over a filled button measured
+ * `[low-contrast] pixel contrast 1.1:1 median 2.1:1 (need 4.5:1)` on "Approve and publish"
+ * (`impeccable detect --viewport 1280x800 http://localhost:3318/admin/media`), on all four
+ * design/viewport combinations. WCAG exempts inactive components from 1.4.3, so this was never an
+ * axe finding — but the bulk-action row is disabled until something is selected, so a row of
+ * unreadable words is the FIRST thing the console shows on this screen, and "why can't I read the
+ * buttons" is not a question to leave for the night before the wedding. Muted ground and outline
+ * instead of a dimmed layer: the control reads as off without the words going with it.
+ */
 .media-button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  border-color: var(--color-outline, var(--color-primary));
+  background: var(--color-neutral);
+  color: var(--color-on-surface-muted, var(--color-primary));
 }
 
 .media-button--secondary {
@@ -177,8 +196,15 @@
   white-space: nowrap;
 }
 
+/*
+ * Capped like `.media-lede` above it. These two ran the full 1224px media column: `impeccable
+ * detect --viewport 1280x800 http://localhost:3317/media/upload` returned `[line-length] ~134
+ * chars/line` and `/media/mine` returned three at ~132. `--wp-measure` is the design's own reading
+ * measure (`themes/shared/base.css`), so each design caps them where its DESIGN.md says.
+ */
 .media-dropzone__hint {
   margin: 0;
+  max-width: var(--wp-measure, 33rem);
   font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }
@@ -224,6 +250,7 @@
 
 .media-upload-row__meta {
   margin: 0;
+  max-width: var(--wp-measure, 33rem);
   font-size: max(17px, 0.9375rem);
   color: var(--color-on-surface-muted, var(--color-on-surface, var(--color-primary)));
 }

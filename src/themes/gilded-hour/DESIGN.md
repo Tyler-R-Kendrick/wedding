@@ -72,6 +72,12 @@ typography:
     fontSize: 1.0625rem
     fontWeight: 400
     lineHeight: 1.6
+  control-caps:
+    fontFamily: Josefin Sans
+    fontSize: 1rem
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: 0.12em
   label-caps:
     fontFamily: Josefin Sans
     fontSize: 0.8125rem
@@ -342,9 +348,16 @@ close but has no numeral voice and no Chicago story. Cinzel + Josefin +
 Big Shoulders is the only set where each family has one job and a reason to
 be in this building.
 
-Measure is 60–70 characters for body copy. Headings are centered on the
-page axis; body copy is left-aligned inside a centered column so that
-paragraphs remain readable.
+Measure is 60–70 characters for body copy, and the **measure is not the
+column**. The column is 42rem (`--gh-prose`); running text is capped at
+34rem (`--gh-measure`), because at 42rem = 714px this face renders 82
+characters a line. Neither number is a `ch`: a `ch` is the advance of "0",
+and against Josefin Sans a 70ch cap resolved to the same 714px, so the
+`min(42rem, 70ch)` that was supposed to hold the measure never bound.
+34rem measures 63–69 characters on the nine merged public pages (Range walk
+over rendered line boxes at 1440). Headings are centered on the page axis;
+body copy is left-aligned inside a centered column so that paragraphs
+remain readable.
 
 ## Layout
 

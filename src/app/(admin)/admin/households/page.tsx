@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { deleteHousehold, saveHousehold } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, IdemKey, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
+import { Button, IdemKey, Input } from '../_components/ops';
+import { ConsoleGate, ConsolePage, DataTable, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Households', robots: { index: false, follow: false } };
@@ -11,14 +12,14 @@ type Detail = { household: Household & { mailingAddress: Record<string, string |
 
 export default async function HouseholdsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  if ((await adminPrincipal()).kind !== 'admin') return <SignInRequired />;
+  if ((await adminPrincipal()).kind !== 'admin') return <ConsoleGate what="Households" />;
   const list = await adminInvoke<{ households: Household[] }>('admin_list_households', { q: sp.q || undefined }, { method: 'GET' });
   const detail = sp.edit ? await adminInvoke<Detail>('admin_get_household', { householdId: sp.edit }, { method: 'GET' }) : null;
   const rows = list.ok ? list.value.data.households : [];
   const editing = detail?.ok ? detail.value.data : null;
   const a = editing?.household.mailingAddress ?? {};
   return (
-    <OpsPage title="Households" lede="The RSVP unit. One manager per household; children and guests without email are managed by them." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
+    <ConsolePage title="Households" lede="The RSVP unit. One manager per household; children and guests without email are managed by them." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       <Section title={editing ? `Edit ${editing.household.name}` : 'Add a household'}>
         <form action={saveHousehold} className="ops-form">
           <IdemKey />
@@ -48,17 +49,19 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
           <Input id="q" label="Search" defaultValue={sp.q} />
           <Button variant="ghost">Search</Button>
         </form>
-        <div className="ops-table-wrap">
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Members</th>
-                <th scope="col">Invitation</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <DataTable
+          caption="Households"
+          dense={false}
+          empty={rows.length === 0 ? <>No household matches this search.</> : null}
+          head={
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Members</th>
+              <th scope="col">Invitation</th>
+              <th scope="col">Actions</th>
+            </tr>
+          }
+        >
               {rows.map((h) => (
                 <tr key={h.id}>
                   <td>{h.name}</td>
@@ -78,10 +81,8 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       </Section>
-    </OpsPage>
+    </ConsolePage>
   );
 }

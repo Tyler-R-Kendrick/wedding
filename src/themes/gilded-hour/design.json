@@ -188,9 +188,13 @@
         "displayName": "Body SM",
         "purpose": "Captions, helper text, muted card text. Never below 17px."
       },
+      "control-caps": {
+        "displayName": "Control Caps",
+        "purpose": "Caps a guest must READ or OPERATE: nav links, form labels and legends, buttons, table headers, disclosure summaries, status badges. 17px is the floor (PRODUCT.md), so this style exists rather than shrinking a control to the ornament size."
+      },
       "label-caps": {
         "displayName": "Label Caps",
-        "purpose": "Structural labels only: nav, eyebrows, form labels, section numbers. Not decoration above every heading."
+        "purpose": "Ornamental caps only: eyebrows, section numbers, stat and speaker labels, countdown units. Never a control, a form label, or table data — those take control-caps at 17px. Not decoration above every heading."
       },
       "label-sm": {
         "displayName": "Label SM",

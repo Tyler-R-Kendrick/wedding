@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminOpsMetrics } from '@/capabilities/ops';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, EmptyRow, Pill, Section, Stat, StatStrip } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip, formatStamp } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Metrics', robots: { index: false, follow: false } };
@@ -69,7 +69,7 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
       )}
 
       <StatStrip>
-        <Stat label="Window" value={windowHours < 24 ? `${windowHours}h` : `${windowHours / 24}d`} hint={`since ${m.since}`} />
+        <Stat label="Window" value={windowHours < 24 ? `${windowHours}h` : `${windowHours / 24}d`} hint={`since ${formatStamp(m.since)}`} />
         <Stat label="Points" value={m.totalPoints} hint={`${m.series.length} series`} />
         <Stat label="Audit rows" value={m.audit.total} hint="same window" />
         <Stat label="Denied" value={m.audit.byOutcome.denied ?? 0} hint="authorization refusals" />
@@ -88,23 +88,19 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
             <th scope="col" className="con-num">Max</th>
             <th scope="col">Last</th>
           </tr>
-        }>
-          {m.series.length === 0 ? (
-            <EmptyRow span={8}>{m.recording ? 'Nothing was recorded in this window.' : 'Metrics are switched off in this deployment.'}</EmptyRow>
-          ) : (
-            m.series.map((s) => (
-              <tr key={`${s.name}-${s.kind}`}>
-                <th scope="row">{s.name}</th>
-                <td>{s.kind}</td>
-                <td className="con-num">{s.points}</td>
-                <td className="con-num">{s.sum}</td>
-                <td className="con-num">{s.p50 ?? '—'}</td>
-                <td className="con-num">{s.p95 ?? '—'}</td>
-                <td className="con-num">{s.max}</td>
-                <td>{s.lastAt}</td>
-              </tr>
-            ))
-          )}
+        } empty={m.series.length === 0 ? <>{m.recording ? 'Nothing was recorded in this window.' : 'Metrics are switched off in this deployment.'}</> : null}>
+          {m.series.map((s) => (
+            <tr key={`${s.name}-${s.kind}`}>
+              <th scope="row">{s.name}</th>
+              <td>{s.kind}</td>
+              <td className="con-num">{s.points}</td>
+              <td className="con-num">{s.sum}</td>
+              <td className="con-num">{s.p50 ?? '—'}</td>
+              <td className="con-num">{s.p95 ?? '—'}</td>
+              <td className="con-num">{s.max}</td>
+              <td><Stamp at={s.lastAt} /></td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
 
@@ -114,19 +110,15 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
             <th scope="col">Action</th>
             <th scope="col" className="con-num">Rows</th>
           </tr>
-        }>
-          {m.audit.topActions.length === 0 ? (
-            <EmptyRow span={2}>Nothing was audited in this window.</EmptyRow>
-          ) : (
-            m.audit.topActions.map((a) => (
-              <tr key={a.action}>
-                <th scope="row">
-                  <Link href={`/admin/audit?action=${encodeURIComponent(a.action)}`}>{a.action}</Link>
-                </th>
-                <td className="con-num">{a.count}</td>
-              </tr>
-            ))
-          )}
+        } empty={m.audit.topActions.length === 0 ? <>Nothing was audited in this window.</> : null}>
+          {m.audit.topActions.map((a) => (
+            <tr key={a.action}>
+              <th scope="row">
+                <Link href={`/admin/audit?action=${encodeURIComponent(a.action)}`}>{a.action}</Link>
+              </th>
+              <td className="con-num">{a.count}</td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
 

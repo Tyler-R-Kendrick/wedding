@@ -3,7 +3,11 @@ import './media.css';
 
 /**
  * Page recipe for media surfaces: title + lede, then sections. Theme-agnostic markup; the theme
- * kit's variables paint it. Landmarks: <main id="main"> with a single h1.
+ * kit's variables paint it.
+ *
+ * It renders a `<div>`, not a `<main>`: every route that uses it is inside the (guest) layout,
+ * whose Shell — the active design's own — provides the document's single `<main id="main">`. The
+ * two fallback recipes in `app/(public)/_recipes` render outside a Shell and carry their own.
  *
  * There is no eyebrow. It read "Photos & Video" directly above the h1 "Add your photos and
  * videos", and `impeccable detect` banned it outright on both guest pages in both designs —
@@ -14,14 +18,14 @@ import './media.css';
  */
 export function MediaPage({ title, lede, children, actions }: { title: string; lede?: ReactNode; actions?: ReactNode; children: ReactNode }) {
   return (
-    <main id="main" className="media-page">
+    <div className="media-page">
       <header className="media-page__head">
         <h1>{title}</h1>
         {lede ? <p className="media-lede">{lede}</p> : null}
         {actions ? <div className="media-actions">{actions}</div> : null}
       </header>
       {children}
-    </main>
+    </div>
   );
 }
 

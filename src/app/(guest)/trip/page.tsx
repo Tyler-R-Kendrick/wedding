@@ -3,6 +3,7 @@ import { noticeFor } from '@/app/(public)/travel/_shared/recipe';
 import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
 import { getMyTravelProfile, getMyTrip } from '@/capabilities/travel';
 import { AddItemForm, ProfileForm } from './forms';
+import { getRequestTheme } from '@/themes/server';
 import { TripGate, TripPageRecipe, type TripPageData } from './recipe';
 
 export const dynamic = 'force-dynamic';
@@ -24,5 +25,6 @@ export default async function TripPage({ searchParams }: { searchParams: Promise
     notice: noticeFor(sp.notice),
   };
   const Recipe = TripPageRecipe; // theme kit seam: theme.recipes.trip ?? TripPageRecipe
-  return <Recipe data={data} slots={{ profileForm: <ProfileForm profile={data.profile} suggestion={data.suggestion} />, addItemForm: <AddItemForm /> }} />;
+  // The recipe renders the active design's own sections; same resolution the layout's Shell used.
+  return <Recipe theme={await getRequestTheme()} data={data} slots={{ profileForm: <ProfileForm profile={data.profile} suggestion={data.suggestion} />, addItemForm: <AddItemForm /> }} />;
 }
