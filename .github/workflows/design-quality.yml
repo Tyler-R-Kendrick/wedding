@@ -38,6 +38,15 @@ jobs:
       - name: stylelint
         run: npm run lint:css
 
+      # Level 15. stylelint matches literal `font-family` values and cannot see through an
+      # indirection that resolves to one: `ops.css` referenced `var(--font-sans)`, defined nowhere,
+      # and the whole admin console rendered in Roboto / Helvetica Neue / Arial with every check in
+      # this job green. This compares references against definitions, which nothing else here does.
+      # It also runs inside `npm run test:unit` (tests/unit/css-vars.test.ts) so it cannot be a gate
+      # that exists only in a workflow file.
+      - name: Every var(--token) a component references is defined
+        run: node scripts/check-css-vars.mjs
+
   verify:
     name: typecheck · lint · unit · integration · build
     runs-on: ubuntu-latest

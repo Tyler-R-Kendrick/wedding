@@ -19,7 +19,13 @@
   margin-inline: auto;
   padding: var(--spacing-xl, 2.5rem) var(--spacing-md, 1rem) var(--spacing-3xl, 6rem);
   color: var(--color-primary);
-  font-family: var(--font-sans);
+  /* `var(--font-sans)` is defined nowhere in src/, so this declaration was invalid at
+     computed-value time and the auth journeys — invite, claim, verify, passkey, step-up — rendered
+     in Tailwind's default stack: Roboto / Helvetica Neue / Arial, three faces CLAUDE.md bans by
+     name. That is the same defect level 14 found in `ops.css`, still live here because nothing
+     compared a `var()` reference against a definition. `scripts/check-css-vars.mjs` does now.
+     Themed when an ancestor carries [data-theme]; the foundation name at :root otherwise. */
+  font-family: var(--font-text, var(--font-body-md));
   font-size: 1.0625rem;
   line-height: 1.6;
 }
@@ -43,7 +49,7 @@
 
 .auth-title {
   margin: 0;
-  font-family: var(--font-display, var(--font-sans));
+  font-family: var(--font-display, var(--font-h1));
   font-size: clamp(1.625rem, 6vw, 2.25rem);
   font-weight: 400;
   line-height: 1.1;
