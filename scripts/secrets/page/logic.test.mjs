@@ -26,21 +26,27 @@ const slot = {
   need: 'launch',
   does: 'Sends codes',
   options: [
-    { id: 'resend', name: 'Resend', recommended: true, isOptOut: false, ceremony: 'link', host: 'resend.com', secrets: ['RESEND_API_KEY'], inferred: ['EMAIL_FROM'], note: '', warn: null },
-    { id: 'postmark', name: 'Postmark', recommended: false, isOptOut: false, ceremony: 'signin', host: 'postmarkapp.com', secrets: ['RESEND_API_KEY'], inferred: [], note: '', warn: null },
-    { id: 'byo', name: 'Your own SMTP', recommended: false, isOptOut: false, ceremony: 'paste', host: null, secrets: ['SMTP_URL'], inferred: [], note: '', warn: null },
+    { id: 'resend', name: 'Resend', recommended: true, isOptOut: false, ceremony: 'link', host: 'resend.com', keysUrl: 'https://resend.com/api-keys', browserAuth: false, secrets: ['RESEND_API_KEY'], inferred: ['EMAIL_FROM'], note: '', warn: null },
+    { id: 'postmark', name: 'Postmark', recommended: false, isOptOut: false, ceremony: 'signin', host: 'postmarkapp.com', keysUrl: 'https://account.postmarkapp.com/servers', browserAuth: false, recipe: 'postmark-dashboard', secrets: ['RESEND_API_KEY'], inferred: [], note: '', warn: null },
+    { id: 'byo', name: 'Your own SMTP', recommended: false, isOptOut: false, ceremony: 'paste', host: null, keysUrl: null, browserAuth: false, secrets: ['SMTP_URL'], inferred: [], note: '', warn: null },
+  ],
+};
+/** A slot whose provider lets a browser register and exchange, so the page can run it itself. */
+const inPageSlot = {
+  id: 'database', name: 'Database', need: 'feature', does: '', options: [
+    { id: 'neon', name: 'Neon', recommended: true, isOptOut: false, ceremony: 'link', host: 'console.neon.tech', keysUrl: 'https://console.neon.tech', browserAuth: true, oauth: { origin: 'https://mcp.neon.tech', scope: 'read write' }, secrets: ['DATABASE_URL'], inferred: [], note: '', warn: null },
   ],
 };
 const applySlot = {
   id: 'travel', name: 'Flights', need: 'feature', does: '', options: [
-    { id: 'sky', name: 'Skyscanner', recommended: true, isOptOut: false, ceremony: 'apply', host: 'partners.skyscanner.net', secrets: ['SKY'], inferred: [], note: '', warn: null },
-    { id: 'nohost', name: 'No host', recommended: false, isOptOut: false, ceremony: 'apply', host: null, secrets: ['X'], inferred: [], note: '', warn: null },
-    { id: 'out', name: 'Just link out', recommended: false, isOptOut: true, ceremony: 'agent', host: null, secrets: [], inferred: [], note: '', warn: null },
+    { id: 'sky', name: 'Skyscanner', recommended: true, isOptOut: false, ceremony: 'apply', host: 'partners.skyscanner.net', keysUrl: null, browserAuth: false, secrets: ['SKY'], inferred: [], note: '', warn: null },
+    { id: 'nohost', name: 'No host', recommended: false, isOptOut: false, ceremony: 'apply', host: null, keysUrl: null, browserAuth: false, secrets: ['X'], inferred: [], note: '', warn: null },
+    { id: 'out', name: 'Just link out', recommended: false, isOptOut: true, ceremony: 'agent', host: null, keysUrl: null, browserAuth: false, secrets: [], inferred: [], note: '', warn: null },
   ],
 };
 const toolingSlot = {
   id: 'imagery', name: 'Design imagery', need: 'tooling', does: '', options: [
-    { id: 'fal', name: 'fal.ai', recommended: true, isOptOut: false, ceremony: 'signin', host: 'fal.ai', secrets: ['FAL_KEY'], inferred: [], note: '', warn: null },
+    { id: 'fal', name: 'fal.ai', recommended: true, isOptOut: false, ceremony: 'signin', host: 'fal.ai', keysUrl: 'https://fal.ai/dashboard/keys', browserAuth: false, secrets: ['FAL_KEY'], inferred: [], note: '', warn: null },
   ],
 };
 
@@ -76,8 +82,9 @@ describe('a status only speaks for the provider it was computed for', () => {
     assert.equal(L.statusFor(slot, status, { email: 'postmark' }), null);
     assert.equal(L.ceremonyIdFor(slot, status, { email: 'postmark' }), 'signin');
     assert.equal(L.ceremonyIdFor(slot, status, { email: 'resend' }), 'link');
-    assert.equal(L.actionFor(slot, { status, choices: { email: 'postmark' } }).kind, 'signin');
-    assert.equal(L.actionFor(slot, { status, choices: { email: 'resend' } }).kind, 'link');
+    const local = { status, home: 'local' };
+    assert.equal(L.actionFor(slot, { ...local, choices: { email: 'postmark' } }).handoffKind, 'signin');
+    assert.equal(L.actionFor(slot, { ...local, choices: { email: 'resend' } }).handoffKind, 'link');
   });
 
   it('applies a status that names no option at all', () => {
@@ -227,7 +234,7 @@ describe('a ceremony belongs to the provider that started it', () => {
   });
 
   it('offers the chosen provider its own ceremony, not the previous one', () => {
-    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'postmark' }, ceremonies: resendCeremony }).kind, 'signin');
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'postmark' }, ceremonies: resendCeremony, home: 'local' }).handoffKind, 'signin');
     assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'byo' }, ceremonies: resendCeremony }).kind, 'none');
     assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'resend' }, ceremonies: resendCeremony }).kind, 'approve');
   });
@@ -235,7 +242,7 @@ describe('a ceremony belongs to the provider that started it', () => {
   it('uses the option a newer ceremony records, ignoring the status', () => {
     const stamped = [{ id: 'email', credential: 'email', status: 'waiting', option: 'postmark' }];
     assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'postmark' }, ceremonies: stamped }).kind, 'approve');
-    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'resend' }, ceremonies: stamped }).kind, 'link');
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'resend' }, ceremonies: stamped, home: 'local' }).handoffKind, 'link');
   });
 });
 
@@ -425,16 +432,16 @@ describe('the one control a strip offers', () => {
     assert.equal(L.actionFor(slot, { handoffs: { email: { status: 'requested', kind: 'signin' } } }).kind, 'asked');
   });
   it('ignores a ceremony for another slot entirely', () => {
-    assert.equal(L.actionFor(slot, { ceremonies: [{ id: 'x', credential: 'storage', status: 'waiting' }] }).kind, 'link');
+    assert.equal(L.actionFor(slot, { ceremonies: [{ id: 'x', credential: 'storage', status: 'waiting' }], home: 'local' }).handoffKind, 'link');
   });
   it('prefers a live ceremony over an outstanding ask', () => {
     const both = { ceremonies: [{ id: 'c', credential: 'email', status: 'waiting' }], handoffs: { email: { status: 'requested' } } };
     assert.equal(L.actionFor(slot, both).kind, 'approve');
   });
   it('offers each provider its own ceremony', () => {
-    assert.equal(L.actionFor(slot, { choices: { email: 'postmark' } }).kind, 'signin');
-    assert.equal(L.actionFor(slot, { choices: { email: 'resend' } }).kind, 'link');
-    assert.equal(L.actionFor(slot, { choices: { email: 'byo' } }).kind, 'none');
+    assert.equal(L.actionFor(slot, { choices: { email: 'postmark' }, home: 'local' }).handoffKind, 'signin');
+    assert.equal(L.actionFor(slot, { choices: { email: 'resend' }, home: 'local' }).handoffKind, 'link');
+    assert.equal(L.actionFor(slot, { choices: { email: 'byo' }, home: 'local' }).kind, 'none');
     assert.equal(L.actionFor(applySlot, { choices: { travel: 'sky' } }).kind, 'apply');
   });
   it('does not offer an application with nowhere to apply', () => {
@@ -444,7 +451,8 @@ describe('the one control a strip offers', () => {
     assert.equal(L.actionFor(applySlot, { choices: { travel: 'out' } }).kind, 'none');
   });
   it('defaults its inputs', () => {
-    assert.equal(L.actionFor(slot).kind, 'link');
+    // No home given is the published artifact: the cautious default, since it has no worker.
+    assert.equal(L.actionFor(slot).kind, 'selfServe');
   });
 });
 
@@ -532,8 +540,96 @@ describe('the registry the page is built from', () => {
       for (const o of s.options) {
         const choices = { [s.id]: o.id };
         const cer = L.ceremonyIdFor(s, {}, choices);
-        const expected = { signin: 'signin', link: 'link', apply: o.host ? 'apply' : 'none', agent: 'none', paste: 'none' }[cer];
-        assert.equal(L.actionFor(s, { choices }).kind, expected, `${s.id}/${o.id} (${cer})`);
+        const expected = {
+          signin: 'dispatch', link: 'dispatch', apply: o.host ? 'apply' : 'none', agent: 'none', paste: 'none',
+        }[cer];
+        assert.equal(L.actionFor(s, { choices, home: 'local' }).kind, expected, `${s.id}/${o.id} (${cer})`);
+      }
+    }
+  });
+
+  it('never offers a route the home it is running in cannot finish', () => {
+    // The whole point. The published artifact has no server behind it and no guarantee any Claude
+    // session is watching, so a press that writes a request there is a queue with no consumer —
+    // which looks, on screen, exactly like work in progress. `dispatch` is the only kind that
+    // queues, so it may appear in no home but the local one.
+    for (const home of ['artifact', 'disk']) {
+      for (const s of REG.slots) {
+        for (const o of s.options) {
+          const action = L.actionFor(s, { choices: { [s.id]: o.id }, home });
+          assert.notEqual(action.kind, 'dispatch', `${home}: ${s.id}/${o.id} would queue work nothing claims`);
+        }
+      }
+    }
+  });
+
+  it('leaves nobody with nothing to do, in any home', () => {
+    // Every option that asks something of a person must, in every home, end somewhere: a ceremony
+    // the page can run, a page they can open, a field they can fill, or an application to make.
+    const ENDS = new Set(['authorize', 'selfServe', 'apply', 'dispatch']);
+    const gaps = [];
+    for (const home of ['local', 'artifact', 'disk']) {
+      for (const s of REG.slots) {
+        for (const o of s.options) {
+          const choices = { [s.id]: o.id };
+          if (!L.needsYou(s, {}, choices)) continue;
+          const action = L.actionFor(s, { choices, home });
+          const pasteable = L.pasteFields(s, {}, choices).length > 0;
+          if (!ENDS.has(action.kind) && !pasteable) gaps.push(`${home}: ${s.id}/${o.id} (${action.kind})`);
+        }
+      }
+    }
+    assert.deepEqual(gaps, [], 'options with no way to finish');
+  });
+
+  it('offers the page its own ceremony where allowed, and the person theirs otherwise', () => {
+    // The three branches an artifact takes for a provider that asks something of you.
+    const canRun = L.actionFor(inPageSlot, { choices: { database: 'neon' }, home: 'artifact' });
+    assert.equal(canRun.kind, 'authorize');
+    assert.equal(canRun.option.oauth.origin, 'https://mcp.neon.tech');
+
+    const cannot = L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' });
+    assert.equal(cannot.kind, 'selfServe');
+    assert.equal(cannot.url, 'https://account.postmarkapp.com/servers');
+
+    // Neither a ceremony a browser may run nor a page to open: there is nothing to offer, and
+    // the strip falls back to the field rather than inventing a control.
+    const nowhere = { ...slot, options: [{ ...slot.options[1], keysUrl: null, host: null }] };
+    assert.equal(L.actionFor(nowhere, { home: 'artifact' }).kind, 'none');
+  });
+
+  it('stops calling a request queued once nothing has claimed it', () => {
+    // 45s is the deadline. Before it, a hand-off is genuinely pending and outranks offering to
+    // dispatch it again; after it, the strip goes back to a route that does not need a courier.
+    const at = (ms) => new Date(Date.now() - ms).toISOString();
+    const fresh = { email: { status: 'requested', kind: 'signin', requestedAt: at(5_000) } };
+    const old = { email: { status: 'requested', kind: 'signin', requestedAt: at(120_000) } };
+
+    assert.equal(L.workOf(fresh.email).state, 'queued');
+    assert.equal(L.workOf(old.email).state, 'unclaimed');
+    assert.equal(L.workOf({ status: 'requested' }).state, 'queued', 'no timestamp is not yet stale');
+
+    assert.equal(L.actionFor(slot, { handoffs: fresh, home: 'local' }).kind, 'asked');
+    // Past the deadline the press comes back, and what was asked for is carried alongside it.
+    const back = L.actionFor(slot, { handoffs: old, home: 'local' });
+    assert.equal(back.kind, 'dispatch');
+    assert.equal(back.stalled.work.state, 'unclaimed');
+    assert.equal(back.stalled.work.canRetry, true);
+    // And in the artifact, where nothing would ever have claimed it, the person gets their route.
+    const artifact = L.actionFor(slot, { handoffs: old, choices: { email: 'postmark' }, home: 'artifact' });
+    assert.equal(artifact.kind, 'selfServe');
+    assert.equal(artifact.stalled.work.state, 'unclaimed');
+    assert.equal(L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' }).stalled, null);
+  });
+
+  it('runs the ceremony in the page exactly where a browser is allowed to', () => {
+    // Not a guess: BROWSER_AUTH records what each provider's own CORS headers said when probed.
+    for (const s of REG.slots) {
+      for (const o of s.options) {
+        if (o.ceremony !== 'link') continue;
+        const action = L.actionFor(s, { choices: { [s.id]: o.id }, home: 'artifact' });
+        assert.equal(action.kind, o.browserAuth ? 'authorize' : 'selfServe',
+          `${s.id}/${o.id}: browserAuth=${o.browserAuth} but the artifact offers ${action.kind}`);
       }
     }
   });

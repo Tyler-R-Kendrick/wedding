@@ -20,6 +20,16 @@ export function createLogic(reg) {
   const CEREMONY = reg.ceremony;
   const METHOD_CEREMONY = reg.methodCeremony;
 
+  /**
+   * How long a request may sit before the page stops calling it pending.
+   *
+   * Nothing may queue forever. `secrets:serve` claims a hand-off in well under a second; a Claude
+   * session acting as courier takes seconds, not minutes. Past this the honest word is not
+   * "queued" but "nothing picked this up", and the strip has to offer a route that does not
+   * depend on anyone else being awake.
+   */
+  const CLAIM_DEADLINE_MS = 45_000;
+
   /** The provider in force: what was chosen, else the recommended one, else the first. */
   function optionFor(slot, choices = {}) {
     return slot.options.find((o) => o.id === choices[slot.id])
@@ -178,11 +188,16 @@ export function createLogic(reg) {
    * distinguishable on the page: nobody has started (`queued`), something is doing it (`running`),
    * it worked (`done`), it did not (`failed`, with a reason).
    */
-  function workOf(handoff) {
+  function workOf(handoff, now = Date.now()) {
     if (!handoff) return null;
+    const asked = Date.parse(handoff.requestedAt ?? '');
+    // Queued is a promise that something is coming. Past the deadline nothing is, and saying so
+    // is the whole point: this is where "Asked just now" used to sit for ever.
+    const stale = Number.isFinite(asked) && now - asked > CLAIM_DEADLINE_MS;
     const state = handoff.status === 'running' ? 'running'
       : handoff.status === 'failed' ? 'failed'
       : handoff.status === 'done' ? 'done'
+      : stale ? 'unclaimed'
       : 'queued';
     return {
       state,
@@ -190,30 +205,56 @@ export function createLogic(reg) {
       host: handoff.host || null,
       // `running` is timed from when the work started, not from when it was asked for.
       since: state === 'running' ? (handoff.startedAt || handoff.requestedAt) : handoff.requestedAt,
-      // The last thing the work said. Absent while queued, because nothing has said anything.
-      detail: state === 'queued' ? null : (handoff.detail || null),
+      // The last thing the work said. Absent until something has said anything.
+      detail: (state === 'queued' || state === 'unclaimed') ? null : (handoff.detail || null),
       progressAt: handoff.progressAt || null,
       log: handoff.log || '',
-      canRetry: state === 'failed' || state === 'queued',
+      canRetry: state === 'failed' || state === 'queued' || state === 'unclaimed',
     };
   }
 
   /**
-   * The single control a strip should offer, if any. One function so the page cannot drift from
-   * what the tests assert, and so "which button do I get" is answerable without a browser.
+   * The single control a strip should offer, if any.
+   *
+   * `home` is load-bearing, not decoration. The published artifact is a page with its own origin
+   * and NOTHING behind it: no server, and no guarantee a Claude session is watching. Offering it
+   * "Sign in once" wrote a request that nothing would ever claim — a queue with no consumer, which
+   * is indistinguishable on screen from work in progress. So a home may only offer a route it can
+   * carry to an end:
+   *
+   *   local     a worker is behind the page, so a press may dispatch a job.
+   *   artifact  only what the page itself can do (a ceremony the provider lets a browser run) or
+   *             what the person at the keyboard can do (their own key page, and a field).
+   *   disk      no store at all: everything ends in a sealed bundle to paste.
+   *
+   * `dispatch` is therefore the only kind that queues, and it exists only where something claims it.
    */
-  function actionFor(slot, { status = {}, choices = {}, ceremonies = [], handoffs = {} } = {}) {
+  function actionFor(slot, { status = {}, choices = {}, ceremonies = [], handoffs = {}, home = 'artifact', now = Date.now() } = {}) {
     const opt = optionFor(slot, choices);
-    const { open, settling } = ceremonyState(slot, ceremonies, status, choices);
+    const { open, settling } = ceremonyState(slot, ceremonies, status, choices, now);
     if (settling) return { kind: 'settling', ceremony: settling, work: settleOf(settling) };
     if (open) return { kind: 'approve', ceremony: open, reopened: Boolean(open.openedAt) };
+
+    // Work already dispatched outranks offering to dispatch it again — but only while it is
+    // really moving. An unclaimed request is reported by the strip, not treated as progress.
     const asked = askedFor(slot, handoffs, status, choices);
-    if (asked) return { kind: 'asked', handoff: asked, work: workOf(asked) };
+    const work = workOf(asked, now);
+    if (asked && work.state !== 'unclaimed') return { kind: 'asked', handoff: asked, work };
+
     const cer = ceremonyIdFor(slot, status, choices);
-    if (cer === 'signin') return { kind: 'signin', option: opt };
-    if (cer === 'link') return { kind: 'link', option: opt };
-    if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt };
-    return { kind: 'none', option: opt };
+    const stalled = asked ? { handoff: asked, work } : null;
+
+    if (cer === 'signin' || cer === 'link') {
+      // A worker is behind this page, so asking it to do the work is a real thing to press.
+      if (home === 'local') return { kind: 'dispatch', option: opt, handoffKind: cer, stalled };
+      // The provider lets a browser register and exchange, so the page can run the whole ceremony.
+      if (cer === 'link' && opt.browserAuth) return { kind: 'authorize', option: opt, stalled };
+      // Nothing here can do it, so the person can: their own key page, and a field beside it.
+      if (opt.keysUrl) return { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled };
+      return { kind: 'none', option: opt, stalled };
+    }
+    if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt, stalled };
+    return { kind: 'none', option: opt, stalled };
   }
 
   /** Whether the quiet "enter it myself" escape belongs on this strip. */

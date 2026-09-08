@@ -97,6 +97,7 @@ npm run secrets:serve                           # the whole thing as a local web
 npm run secrets:coverage                        # the page's decisions, 100% or it fails
 npm run secrets:verify:page                     # click all 36 provider choices in a real browser
 npm run secrets:verify:lifecycle                # press the buttons and watch the work actually happen
+npm run secrets:verify:artifact                 # drive the page as the published artifact, where nothing is behind it
 ```
 
 ### How the plan is derived
@@ -146,6 +147,13 @@ trusted — reintroduce the defect and the gate must go red:
   asserts that the run touched nothing outside its fixture store — an earlier version of this
   check spawned the ladder against the developer's real `.secrets/`, because `--secrets` bound
   the server and not the jobs it spawns.
+
+- `secrets:verify:artifact` loads the built page with the artifact runtime's store stubbed and
+  walks all 36 options, asserting that none offers a control that queues and that every one ends
+  somewhere the page or the person can reach. It exists because the other two checks both run
+  against `secrets:serve` — which has a worker — so both were green while the artifact, the home
+  people actually open, was the broken one. Reintroduce the bug and it names 87 problems, starting
+  with `email/postmark offers "Sign in once" in the artifact — that press queues work nothing claims`.
 
 ## Running it yourself: `npm run secrets:serve`
 
@@ -223,6 +231,34 @@ The last row is the point of the others: `status/<slot>` carries how many of the
 are held and which rung produced them, so "connected" is never something you have to take on
 faith after signing in somewhere. Ceremonies at `code-received` are deliberately *not* treated as
 open — offering "Approve" for something already approved is the trap this page exists to remove.
+
+### What each home can actually finish
+
+A control may only offer a route the home it is running in can carry to an end. This is not a
+nicety: the published artifact is a page with its own origin, no server behind it, and no
+guarantee any Claude session is watching. Offering it "Sign in once" wrote `handoffs/<slot>` and
+nothing on earth would claim it — a queue with no consumer, which on screen is indistinguishable
+from work in progress.
+
+| Ceremony | `secrets:serve` (a worker is behind it) | Published artifact | Opened off disk |
+|---|---|---|---|
+| `agent` | the ladder runs from the bar | Claude's job; nothing to press | — |
+| `link`, browser-runnable | dispatch to the worker | **the page runs it**: registers a client, PKCE, opens the link, exchanges the code and seals the token, all in the tab | paste |
+| `link`, not browser-runnable | dispatch to the worker | the provider's own key page + a field | paste |
+| `signin` | dispatch (the headless relay) | the provider's own key page + a field | same |
+| `apply` | the application page | same | same |
+| `paste` | a field | a field | a field |
+
+"Browser-runnable" is probed, never assumed — `BROWSER_AUTH` in `registry.mjs` records what each
+provider's CORS headers actually said, with the date. Today that is Cloudflare and OpenRouter.
+**Check the real response, not the preflight**: Neon's `OPTIONS` returns
+`Access-Control-Allow-Origin: *` for both its registration and token endpoints while its `POST`
+responses carry no such header, so a browser completes the preflight, sends the request and is
+then refused the reply. Trusting the preflight would have shipped another button that cannot work.
+
+**Nothing queues for ever.** A request nobody has claimed within 45 seconds stops being called
+queued: the strip goes back to the route that needs no courier and says, once, that the other one
+was never picked up.
 
 **A pending state must name what is pending on.** The page said *"Asked just now — Claude is on
 it"* and *"Approved — finishing up"* for a long time, and neither sentence ever changed, because

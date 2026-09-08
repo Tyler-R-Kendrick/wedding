@@ -19,6 +19,10 @@
  * route the sandbox will not take).
  */
 
+// Recipes carry the page a person can open to make a key themselves; browser-capture loads
+// playwright lazily, so importing them here costs nothing.
+import { RECIPES } from './browser-capture.mjs';
+
 /** The five things a person can be asked to do, cheapest first. */
 export const CEREMONY = {
   agent: { rank: 0, label: 'Automatic', asksYou: false, act: null, detail: 'Claude registers itself' },
@@ -398,6 +402,56 @@ export function browserRecipeOf(option) {
   return option.ladder?.find((step) => step.method === 'browser')?.recipe || null;
 }
 
+/**
+ * Which OAuth origins a BROWSER may talk to, probed rather than assumed.
+ *
+ * This decides whether the published artifact can run a one-link ceremony by itself or must hand
+ * the person a route that does not depend on anything else being awake. The artifact is a page
+ * with its own origin and no server behind it: if the provider sends no `Access-Control-Allow-
+ * Origin`, the page cannot register a client or exchange a code, full stop — and offering the
+ * ceremony anyway is how "Asked just now" came to mean "nothing will ever happen".
+ *
+ * Verified 2026-09-08 by sending `Origin:` from three different origins (claude.ai, an
+ * artifact-shaped subdomain, and example.invalid) at each `registration_endpoint` and
+ * `token_endpoint` named in the provider's own RFC 8414 metadata. `reflects` records what came
+ * back, because "*" and "echoes whatever you sent" are both usable from an artifact while an
+ * allowlist of one origin would not be.
+ *
+ * Checked on the REAL POST, not the preflight, and that distinction changed an answer. Neon's
+ * `OPTIONS` preflight returns `Access-Control-Allow-Origin: *` for both endpoints — but its
+ * actual `POST` responses carry no such header, so a browser completes the preflight, sends the
+ * request, and is then refused the reply. Trusting the preflight would have shipped a button that
+ * registers a client nobody can read back. A ceremony counts as browser-runnable only when every
+ * response the flow must READ says so.
+ */
+export const BROWSER_AUTH = {
+  // register -> 201 ACAO echoes the caller; token -> 401 ACAO echoes the caller.
+  'https://bindings.mcp.cloudflare.com': { ok: true, reflects: 'origin', checkedAt: '2026-09-08' },
+  // register -> 201 ACAO *; token -> 400 ACAO *.
+  'https://mcp.openrouter.ai': { ok: true, reflects: '*', checkedAt: '2026-09-08' },
+  // Preflight says `*`; the POST responses say nothing. A browser cannot read either reply.
+  'https://mcp.neon.tech': { ok: false, reflects: 'preflight only', checkedAt: '2026-09-08' },
+  'https://api.resend.com': { ok: false, reflects: null, checkedAt: '2026-09-08' },
+  'https://api.supabase.com': { ok: false, reflects: null, checkedAt: '2026-09-08' },
+  // No RFC 8414 metadata at all, so there is nothing for a browser to discover either.
+  'https://api.vercel.com': { ok: false, reflects: null, checkedAt: '2026-09-08' },
+  'https://auth.uber.com': { ok: false, reflects: null, checkedAt: '2026-09-08' },
+};
+
+/** The oauth rung an option would take, if it has one. */
+export function oauthRungOf(option) {
+  return option.ladder?.find((step) => step.method === 'oauth') || null;
+}
+
+/**
+ * Whether a page — with no server behind it — could run this option's one-link ceremony itself.
+ * Unprobed origins are `false`: an unproven route is not a route.
+ */
+export function browserAuthOf(option) {
+  const rung = oauthRungOf(option);
+  return Boolean(rung?.origin && BROWSER_AUTH[rung.origin]?.ok);
+}
+
 /** Every variable any option could fill — used to keep autofill and the slots disjoint. */
 export function allVars() {
   const vars = new Set();
@@ -406,6 +460,18 @@ export function allVars() {
     for (const v of Object.keys(o.fills)) vars.add(v);
   }
   return vars;
+}
+
+/**
+ * The page a person can open to make this key themselves.
+ *
+ * Every sign-in option has one (asserted in the tests), which is what makes the published artifact
+ * able to finish a sign-in with no agent and no server: the human is already at a browser, so the
+ * honest route is the provider's own key page plus a field, not a headless relay nothing will run.
+ */
+export function keysUrlOf(option) {
+  const recipe = browserRecipeOf(option);
+  return (recipe && RECIPES[recipe]?.keysUrl) || (option.host ? `https://${option.host}` : null);
 }
 
 /** JSON-safe projection baked into the page. */
@@ -422,6 +488,12 @@ export function clientRegistry() {
       options: slot.options.map((o) => ({
         id: o.id, name: o.name, note: o.note || null, recommended: !!o.recommended, isOptOut: !!o.isOptOut,
         ceremony: ceremonyOf(o), host: o.host || null, recipe: browserRecipeOf(o),
+        // Where a person can do it themselves, and whether a page with no server behind it could
+        // do it for them. Together these are what let the published artifact finish a ceremony
+        // instead of queueing one: an artifact only ever offers a route that ends somewhere.
+        keysUrl: keysUrlOf(o),
+        browserAuth: browserAuthOf(o),
+        oauth: oauthRungOf(o) ? { origin: oauthRungOf(o).origin ?? null, scope: oauthRungOf(o).scope ?? null } : null,
         secrets: o.secrets, inferred: Object.keys(o.fills),
         warn: o.warn || null,
       })),

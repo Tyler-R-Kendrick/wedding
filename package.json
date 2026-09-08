@@ -52,14 +52,15 @@
     "secrets:harness": "node scripts/secrets/detect-harness.mjs",
     "secrets:serve": "node scripts/secrets/serve.mjs",
     "secrets:verify:page": "node scripts/secrets/page/verify-page.mjs",
-    "secrets:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=**/registry.mjs --test-coverage-exclude=**/*.test.mjs --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 scripts/secrets/page/logic.test.mjs",
+    "secrets:coverage": "node --test --experimental-test-coverage --test-coverage-include=scripts/secrets/page/logic.mjs --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 scripts/secrets/page/logic.test.mjs",
     "assets:fal": "node scripts/fal-generate.mjs",
     "assets:check": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --check",
     "assets:fetch": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs",
     "art:generate": "node scripts/generate-art.mjs",
     "design:sync": "node scripts/design-sync.mjs",
     "design:sync:check": "node scripts/design-sync.mjs --check",
-    "secrets:verify:lifecycle": "node scripts/secrets/page/verify-lifecycle.mjs"
+    "secrets:verify:lifecycle": "node scripts/secrets/page/verify-lifecycle.mjs",
+    "secrets:verify:artifact": "node scripts/secrets/page/verify-artifact.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

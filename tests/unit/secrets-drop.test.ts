@@ -493,11 +493,29 @@ describe('a control that reports dispatched work dispatched work', () => {
 
   it('has a worker for every kind of hand-off the page can ask for', async () => {
     const { HANDOFF_WORK } = await import('../../scripts/secrets/serve.mjs');
-    // The kinds are the third argument to handoff() in the markup: any new button that asks for
-    // work must arrive with something able to do it, or it is the frozen sentence all over again.
-    const asked = new Set([...template.matchAll(/handoff\(slot, opt, \w+, '(\w+)'\)/g)].map((m) => m[1]!));
-    expect(asked.size).toBeGreaterThan(0);
+    const { createLogic } = await import('../../scripts/secrets/page/logic.mjs');
+    const reg = clientRegistry();
+    const L = createLogic(reg);
+    // Derived from what actionFor really produces, not from a literal in the markup: the button's
+    // kind became `action.handoffKind`, and a regex over the HTML would have quietly gone vacuous.
+    const asked = new Set<string>();
+    for (const slot of reg.slots) {
+      for (const option of slot.options) {
+        const action = L.actionFor(slot, { choices: { [slot.id]: option.id }, home: 'local' });
+        if (action.kind === 'dispatch') asked.add(action.handoffKind);
+      }
+    }
+    expect(asked.size, 'no dispatchable option found — the invariant would be vacuous').toBeGreaterThan(0);
     for (const kind of asked) expect(Object.keys(HANDOFF_WORK), `nothing performs a "${kind}" hand-off`).toContain(kind);
+  });
+
+  it('only ever dispatches from the home that has a worker', () => {
+    // The published artifact has no server and no guaranteed courier. A press there must resolve
+    // in the page or in the person's hands — never into a queue with nothing at the other end.
+    expect(template).toContain("db.local ? 'local' : 'artifact'");
+    expect(template).toContain('home: homeOf()');
+    // And the dispatching button exists only under the kind logic.mjs gates on the home.
+    expect(template).toMatch(/action\.kind === 'dispatch'[\s\S]{0,400}handoff\(slot, opt, b, action\.handoffKind\)/);
   });
 });
 

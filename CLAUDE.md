@@ -82,6 +82,7 @@ npm run secrets:probe      # which providers let an agent register itself (--reg
 npm run secrets:harness    # AI sessions this machine already holds (--apply to borrow one)
 npm run secrets:serve      # the same page as a local web app on 127.0.0.1 — no Claude in the loop
 npm run secrets:verify:lifecycle  # press the page's buttons for real; fails if a control claims work it never does
+npm run secrets:verify:artifact   # the page as the published artifact: every control ends somewhere, none queue
 ```
 
 - Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
@@ -90,10 +91,16 @@ npm run secrets:verify:lifecycle  # press the page's buttons for real; fails if 
 - The page has three homes and one codebase: published as an artifact, served by
   `npm run secrets:serve` on loopback (files under `.secrets/` are the store, and it decrypts
   and writes `.env` itself — no courier), or opened off disk (seals into a bundle you paste).
-- In the artifact case the agent is the courier: mirror `.secrets/outbox.json` into the page's store (`status/*`,
-  `ceremonies/*`), copy `choices/*` back to `.secrets/choices.json`, and drop sealed OAuth
-  codes into `.secrets/inbox/` before `secrets:resume`. Answer `handoffs/*`:
-  `kind: signin` → `node scripts/secrets/browser-capture.mjs relay <host>`;
+- **A home may only offer a route it can finish.** The artifact has no server and no guaranteed
+  courier, so it never dispatches: it runs the ceremony itself where the provider's CORS headers
+  allow (probed in `BROWSER_AUTH`; today Cloudflare and OpenRouter) and otherwise hands the person
+  their provider's own key page plus a field. Only `secrets:serve` dispatches, because only it has
+  a worker. Nothing queues past 45s without saying nobody claimed it.
+- In the artifact case the agent is still the courier for what it can help with: mirror
+  `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
+  to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before
+  `secrets:resume`. A `handoffs/*` record means someone asked for help: `kind: signin` →
+  `node scripts/secrets/browser-capture.mjs relay <recipe>` (the record's `recipe`, not its host);
   `kind: link` → start that option's OAuth or device ceremony.
 - Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
   resort, for someone who already holds a key and would rather not wait.
