@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { POST as webhookPost } from '@/app/(public)/travel/webhooks/duffel/route';
 import { createCapabilityContext, invoke, invokeByName } from '@/capabilities';
+import { MemoryIdempotencyStore } from '@/capabilities/services';
 import {
   addTripItemCapability,
   adminGetTravelConfig,
@@ -386,13 +387,13 @@ describe('booking webhook (trusted path to confirmed)', () => {
   it('is a 404 when no webhook is configured and a uniform 401 when unsigned', async () => {
     const db = await getDb();
     const audit = new DbAuditSink(db);
-    const none = await handleBookingWebhook({ db, audit, flights: new MockFlights(), requestId: 'wh-0' }, event(newId()), null);
+    const none = await handleBookingWebhook({ db, audit, flights: new MockFlights(), requestId: 'wh-0', nonces: new MemoryIdempotencyStore() }, event(newId()), null);
     expect(none.status).toBe(404);
     const flights = hostedFakeProvider();
-    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-1' }, event(newId()), null)).status).toBe(401);
-    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-2' }, event(newId()), 't=1,v1=00')).status).toBe(401);
+    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-1', nonces: new MemoryIdempotencyStore() }, event(newId()), null)).status).toBe(401);
+    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-2', nonces: new MemoryIdempotencyStore() }, event(newId()), 't=1,v1=00')).status).toBe(401);
     const tampered = event(newId());
-    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-3' }, tampered + ' ', signed(tampered))).status).toBe(401);
+    expect((await handleBookingWebhook({ db, audit, flights, requestId: 'wh-3', nonces: new MemoryIdempotencyStore() }, tampered + ' ', signed(tampered))).status).toBe(401);
   });
 
   it('confirms the matching item via webhook, ignores unknown references, and replays idempotently', async () => {
@@ -420,6 +421,43 @@ describe('booking webhook (trusted path to confirmed)', () => {
     expect(await unsigned.text()).toBe('{"ok":false}');
     const db = await getDb();
     expect((await listAuditEvents(db, { action: 'external_action.confirmed', targetId: itemId }))[0]).toMatchObject({ actor: { kind: 'system', component: 'travel-webhook' }, metadata: { via: 'webhook' } });
+  });
+
+  /**
+   * Level 15. A signature stops forgery, not replay: the verifier accepts any correctly signed
+   * payload inside a five-minute window, so a captured delivery can be sent again. The state check
+   * above catches only the same event landing twice on an item confirmed from the same order. The
+   * case that matters is an OLDER captured event replayed after a newer one: the provider ref
+   * differs, so it took the re-confirm branch and overwrote the item with the stale flight.
+   */
+  it('refuses a replayed event id, including one that would overwrite newer details', async () => {
+    setProviderOverride('flights', hostedFakeProvider());
+    const hosted = await run(openBookingLink, guestA, { kind: 'hosted_flights', origin: 'LAX', departDate: '2027-07-16' });
+    const itemId = hosted.ok ? hosted.value.data.itineraryItemId : '';
+    const post = (raw: string) =>
+      webhookPost(new Request('http://localhost:3108/travel/webhooks/duffel', { method: 'POST', headers: { 'content-type': 'application/json', 'x-duffel-signature': signed(raw) }, body: raw }));
+    const itemNow = async () => {
+      const trip = await run(getMyTrip, guestA, {});
+      return trip.ok ? trip.value.data.items.find((i: { id: string }) => i.id === itemId) : undefined;
+    };
+
+    const stale = JSON.stringify({ id: `evt_${newId()}`, type: 'order.updated', data: { object: { id: 'ord_stale', booking_reference: 'OLD111', metadata: { reference: itemId }, slices: [{ segments: [{ departing_at: '2027-07-16T08:00:00-07:00', marketing_carrier: { name: 'United', iata_code: 'UA' }, marketing_carrier_flight_number: '1' }] }] } } });
+    expect(await (await post(stale)).json()).toMatchObject({ applied: true });
+    expect(await itemNow()).toMatchObject({ providerRef: 'OLD111' });
+
+    // A newer delivery lands and moves the booking on.
+    const fresh = JSON.stringify({ id: `evt_${newId()}`, type: 'order.updated', data: { object: { id: 'ord_new', booking_reference: 'NEW222', metadata: { reference: itemId }, slices: [{ segments: [{ departing_at: '2027-07-16T09:00:00-07:00', marketing_carrier: { name: 'United', iata_code: 'UA' }, marketing_carrier_flight_number: '2' }] }] } } });
+    expect(await (await post(fresh)).json()).toMatchObject({ applied: true });
+    expect(await itemNow()).toMatchObject({ providerRef: 'NEW222' });
+
+    // Now replay the captured older delivery, still correctly signed and still inside the window.
+    const replayed = await post(stale);
+    expect(replayed.status).toBe(200);
+    expect(await replayed.json()).toMatchObject({ ok: true, matched: true, replay: true });
+    // The stale reference must NOT have come back.
+    expect(await itemNow()).toMatchObject({ providerRef: 'NEW222' });
+    const db = await getDb();
+    expect((await listAuditEvents(db, { action: 'external_action.failed' })).some((e) => e.metadata?.reason === 'replayed_event')).toBe(true);
   });
 
   it('is reachable by name through the registry and hidden capabilities stay hidden per surface', async () => {

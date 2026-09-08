@@ -5,6 +5,7 @@ import { READINESS_GATED } from '@/contracts/flags';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import { stableHash } from '@/lib/crypto';
+import { assertAllowedRedirect } from '@/lib/redirects';
 import { authorize } from '@/policy/entitlements';
 import { principalKey, REDEEMABLE_SURFACE, type VerifiedConfirmation } from '@/policy/confirmation';
 import { requireFreshSession } from '@/policy/stepUp';
@@ -323,6 +324,23 @@ export async function invoke<I, O>(
   const outcome: CapabilityOutcome<O> = { ...result.value, data: outParsed.data, sources: result.value.sources ?? [] };
   const oversize = overSizeForSurface(outcome.data);
   if (oversize) return fail(oversize);
+
+  // 9b. A `handoffUrl` is a URL this server hands a guest to follow — `src/app/(guest)/trip/actions.ts`
+  //     turns one straight into a server-side `redirect()`. Three capabilities produce one today and
+  //     each relies on someone upstream having checked it: `open_booking_link` calls
+  //     `assertAllowedRedirect` itself, but `open_gift_link` and `open_reservation_link` inherit the
+  //     check from the provider adapter that happened to make the URL, so a future adapter, a
+  //     changed mock, or a provider answering with something unexpected would carry an arbitrary
+  //     origin all the way to the browser. The allowlist belongs on the way out, where every
+  //     capability passes, and the per-capability checks stay as the specific errors guests see.
+  //     The rejected URL is logged, never returned: it is not the caller's to learn.
+  if (outcome.handoffUrl) {
+    const allowed = assertAllowedRedirect(outcome.handoffUrl);
+    if (!allowed.ok) {
+      services.logger?.error({ capability: descriptor.name, requestId: ctx.requestId, host: allowed.error.details?.host }, 'capability produced a handoff URL that is not on the redirect allowlist');
+      return fail(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE));
+    }
+  }
 
   if (reserved && ctx.idempotencyKey && services.idempotency) {
     try {

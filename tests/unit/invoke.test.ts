@@ -544,3 +544,43 @@ describe('N5: error precedence — authorize, then surface, then input', () => {
     }
   });
 });
+
+/**
+ * Level 15. `handoffUrl` becomes a server-side `redirect()` on the trip page, so an arbitrary
+ * origin reaching it is an open redirect with our domain's authority behind it. The allowlist is
+ * applied once on the way out instead of being inherited from whichever provider adapter happened
+ * to build the URL: `open_gift_link` and `open_reservation_link` never asserted it themselves.
+ */
+describe('handoff URLs are allowlisted centrally', () => {
+  const handoff = (url: string) =>
+    defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'handoff_test',
+      handler: async (_c, i) => ok({ data: { text: i.text }, sources: [], handoffUrl: url }),
+    });
+
+  it('passes a partner URL through untouched', async () => {
+    const { c } = ctx();
+    const r = await invoke(handoff('https://www.zola.com/registry/x'), c, { text: 'ok' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.handoffUrl).toBe('https://www.zola.com/registry/x');
+  });
+
+  it('refuses one that is not on the allowlist, and says nothing about it to the caller', async () => {
+    const { c, audit } = ctx();
+    const r = await invoke(handoff('https://evil.example/steal'), c, { text: 'ok' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('internal');
+      expect(JSON.stringify(r.error)).not.toContain('evil.example');
+    }
+    expect(audit.events[0]).toMatchObject({ action: 'capability.failed', outcome: 'failed' });
+  });
+
+  it('refuses an http:// partner URL too — downgrade is not a partner exception', async () => {
+    const { c } = ctx();
+    const r = await invoke(handoff('http://www.zola.com/registry/x'), c, { text: 'ok' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('internal');
+  });
+});
