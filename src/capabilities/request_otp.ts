@@ -8,14 +8,14 @@ import { getHousehold } from '@/domain/households/repo';
 import { activeBindingForGuest, activeBindingsForIdentity, findAuthUserByEmail, getAuthUser } from '@/domain/identity/bindings';
 import { issueChallenge, type ChallengePayload } from '@/domain/identity/challenge';
 import { isEmailShape, maskEmail, normalizeEmail } from '@/domain/identity/mask';
-import { hashOtpIdentifier } from '@/domain/identity/otp';
+import { getOtpLockout, hashOtpIdentifier } from '@/domain/identity/otp';
 import { resolveAdminRoles } from '@/domain/identity/principal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { findInvitationByToken } from '@/domain/invitations/repo';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { isSafeReturnPath } from '@/domain/identity/routes';
-import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, holdToFloor, logOtp, otpBuckets, RECOVERY } from './identity/shared';
+import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, holdToFloor, ipHashOf, logOtp, otpBuckets, RECOVERY } from './identity/shared';
 
 const input = z.discriminatedUnion('purpose', [
   z.object({ purpose: z.literal('claim'), token: z.string().min(1).max(128), guestId: z.string().min(1).max(64), next: z.string().max(256).optional() }),
@@ -34,6 +34,17 @@ const output = z.discriminatedUnion('sent', [
     deliveredTo: z.string(),
     /** Who the code was addressed to when the claim goes through a household manager. */
     deliveredFor: z.string().nullable(),
+    /**
+     * ISO instant this caller's verify lockout lifts, or null.
+     *
+     * Sending is deliberately NOT gated on the lockout — the code is real and will work the moment
+     * the pause ends. What was missing is saying so: the lock lives at verify time, so "request a
+     * new code" always appeared to succeed, the next page said "we sent a code … it works for 10
+     * minutes", and the correct new code was rejected exactly like the wrong ones. A guest can loop
+     * on that forever. Reveals nothing an attacker does not already know: it is their own lockout,
+     * on their own IP, for the address they just typed.
+     */
+    lockedUntil: z.string().nullable(),
   }),
   z.object({ sent: z.literal(false), recovery: z.object({ title: z.string(), message: z.string() }) }),
 ]);
@@ -151,7 +162,8 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { ...payload, email }, { now: ctx.now });
     // Identical shape for known and unknown addresses; the mask is of the address the caller typed (or the one on file for claims).
     const shown = email ?? typedEmail ?? '';
+    const lock = await getOtpLockout(db, emailHash, ipHashOf(ctx), ctx.now);
     await holdToFloor(startedMs);
-    return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor }, sources: [] });
+    return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor, lockedUntil: lock.locked ? (lock.until ?? null) : null }, sources: [] });
   },
 });

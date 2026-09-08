@@ -40,5 +40,17 @@ describe('Travel & Stay recipe', () => {
     for (const a of external) expect(a.getAttribute('rel')).toContain('noopener');
     expect(screen.getByRole('link', { name: /Visit the hotel website/ }).getAttribute('href')).toBe('https://www.chicagoathletichotel.com/');
     expect(screen.getByRole('link', { name: /12 S Michigan Ave/ }).getAttribute('href')).toContain('https://www.google.com/maps/search/');
+    // No hotels are configured, so there is no list to describe. This sentence sat outside the
+    // ternary and rendered directly under "we are still confirming a few nearby options" — a
+    // present-tense account of a list that does not exist.
+    expect(text).not.toContain('We list why we picked each place');
+  });
+
+  it('describes the criteria only once there are hotels to describe', () => {
+    // Built from the real recommendation the page already renders, not by hand: a hand-made view
+    // object missed `verifiedAt` and threw inside the card, which proved nothing about the copy.
+    const hotel = { ...data.venue, id: 'alt-1', name: 'A Nearby Hotel', placeholder: false };
+    render(<TravelPageRecipe data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    expect(document.body.textContent ?? '').toContain('We list why we picked each place');
   });
 });

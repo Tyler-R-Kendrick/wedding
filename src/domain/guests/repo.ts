@@ -47,13 +47,29 @@ export async function findGuestsByEmail(db: Db, email: string): Promise<GuestRow
   return db.select().from(guests).where(and(eq(guests.email, normalized), notMerged)).orderBy(asc(guests.createdAt));
 }
 
-/** Guests managed by any of `managerIds`: household manager role or an explicit managedBy. */
+/**
+ * Guests managed by any of `managerIds`: household manager role or an explicit managedBy.
+ *
+ * BOTH arms are bounded by household. `managedByGuestId` is an ordinary column that
+ * `admin_upsert_guest` used to accept from a free-text admin field with no validation, so a single
+ * typo could name a guest in someone else's household — and this query would then return them, put
+ * them in that household's `actsFor`, and render their name, RSVP and dietary notes inside another
+ * family's RSVP form. Managing someone is a relationship inside a household; the query says so now,
+ * so an existing bad row cannot be exercised even before `upsertGuest` stops new ones.
+ */
 export async function listManagedGuests(db: Db, managerIds: readonly string[]): Promise<GuestRow[]> {
   if (managerIds.length === 0) return [];
-  const managedHouseholds = await db.select({ id: households.id }).from(households).where(inArray(households.managerGuestId, [...managerIds]));
-  const householdIds = managedHouseholds.map((h) => h.id);
-  const clauses = [inArray(guests.managedByGuestId, [...managerIds])];
-  if (householdIds.length) clauses.push(inArray(guests.householdId, householdIds));
+  const [managedHouseholds, managerRows] = await Promise.all([
+    db.select({ id: households.id }).from(households).where(inArray(households.managerGuestId, [...managerIds])),
+    db.select({ householdId: guests.householdId }).from(guests).where(inArray(guests.id, [...managerIds])),
+  ]);
+  // Managing a household reaches every member of it. An explicit `managedByGuestId` reaches only
+  // inside a household the manager is already part of — their own, or one they manage.
+  const managedHouseholdIds = managedHouseholds.map((h) => h.id);
+  const reachable = [...new Set([...managedHouseholdIds, ...managerRows.map((g) => g.householdId)])];
+  if (!reachable.length) return [];
+  const delegated = and(inArray(guests.managedByGuestId, [...managerIds]), inArray(guests.householdId, reachable));
+  const clauses = managedHouseholdIds.length ? [delegated, inArray(guests.householdId, managedHouseholdIds)] : [delegated];
   const rows = await db.select().from(guests).where(and(or(...clauses), notMerged));
   return rows.filter((g) => !managerIds.includes(g.id));
 }
@@ -87,6 +103,18 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
   }
   const household = (await db.select({ id: households.id }).from(households).where(eq(households.id, input.householdId)).limit(1))[0];
   if (!household) return err(new CapabilityError('not_found', 'That household does not exist.'));
+  // Both of these are guest ids typed into a free-text admin field ("Managed by (guest id) — leave
+  // blank to use the household manager"). Naming someone in ANOTHER household made that person part
+  // of this household's `actsFor`: their name, their RSVP and their dietary and accessibility notes
+  // rendered inside a family they are not in. One typo was enough, and nothing anywhere said no.
+  for (const [field, value] of [['managedByGuestId', input.managedByGuestId], ['plusOneOfGuestId', input.plusOneOfGuestId]] as const) {
+    if (!value) continue;
+    const other = (await db.select({ householdId: guests.householdId }).from(guests).where(eq(guests.id, value)).limit(1))[0];
+    if (!other) return err(new CapabilityError('validation', 'That guest does not exist.', { issues: [{ path: field, message: 'No guest has that id.' }] }));
+    if (other.householdId !== input.householdId) {
+      return err(new CapabilityError('validation', 'That guest is in a different household.', { issues: [{ path: field, message: 'Pick someone from this household. Move them first if they belong here.' }] }));
+    }
+  }
   if (input.id) {
     // Review N3: an edit changes only the fields it carries; absent fields keep their stored value.
     const patch: Partial<typeof guests.$inferInsert> = { householdId: input.householdId, firstName, updatedAt: new Date() };

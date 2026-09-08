@@ -64,8 +64,15 @@ export function Actions({ children }: { children: ReactNode }) {
   return <div className="auth-actions">{children}</div>;
 }
 
-/** Six-digit code input: numeric keyboard, one-time-code autofill, 17px so iOS never zooms. */
-export function CodeInput({ id = 'code', error }: { id?: string; error?: string | null }) {
+/**
+ * Six-digit code input: numeric keyboard, one-time-code autofill, 17px so iOS never zooms.
+ *
+ * `hasHint` says whether the enclosing `Field` rendered `#<id>-hint`. `aria-describedby` used to
+ * swap the hint OUT for the error, so a screen-reader user who had just mistyped lost "Digits only,
+ * no spaces." at the moment they needed it. Both are named now; `Field` (rsvp/fields.tsx) already
+ * did this, so the two are consistent.
+ */
+export function CodeInput({ id = 'code', error, hasHint = true }: { id?: string; error?: string | null; hasHint?: boolean }) {
   return (
     <input
       id={id}
@@ -78,7 +85,7 @@ export function CodeInput({ id = 'code', error }: { id?: string; error?: string 
       minLength={6}
       required
       aria-invalid={error ? true : undefined}
-      aria-describedby={error ? `${id}-error` : `${id}-hint`}
+      aria-describedby={[error ? `${id}-error` : null, hasHint ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined}
       autoFocus
     />
   );

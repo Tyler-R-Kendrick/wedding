@@ -1,4 +1,5 @@
 import { isPlaceholderText, PLACEHOLDER_MARKER } from '@/content/schemas';
+import { splitSentences } from '@/lib/sentences';
 
 export { isPlaceholderText, PLACEHOLDER_MARKER };
 
@@ -36,7 +37,35 @@ export function optionalText(text: string | null | undefined, forcePlaceholder =
   return text ? textBlock(text, forcePlaceholder) : undefined;
 }
 
-/** Strips placeholder sentences so a TODO never enters the AI corpus. */
+/**
+ * Splits a string into the sentences that are settled and the sentences that are still a TODO.
+ *
+ * Content records mix the two all the time — "The ceremony and reception are indoors at the hotel.
+ * TODO(Tyler & Sara): any outdoor plans for the weekend." is one answer with one decided half. The
+ * marker runs to the end of its own sentence, never further, so the split is per sentence.
+ */
+export function splitPlaceholderText(text: string): { settled: string[]; hints: string[] } {
+  const settled: string[] = [];
+  const hints: string[] = [];
+  for (const sentence of splitSentences(text)) (isPlaceholderText(sentence) ? hints : settled).push(sentence);
+  return { settled, hints };
+}
+
+/**
+ * Strips placeholder SENTENCES so a TODO never enters the AI corpus, keeping whatever the record
+ * has already decided.
+ *
+ * This used to drop the whole string, which deleted settled facts wholesale: five FAQ answers carry
+ * the marker mid-answer, so the corpus lost "you pick your name and confirm with a one-time code",
+ * "the ceremony and reception are indoors at the hotel", and three more — and the concierge then
+ * denied knowing how to RSVP. A hint is not knowledge (ADR-0003 rule 6); the sentence beside it is.
+ */
 export function withoutPlaceholders(texts: readonly (string | null | undefined)[]): string[] {
-  return texts.filter((t): t is string => typeof t === 'string' && t.trim().length > 0 && !isPlaceholderText(t));
+  const out: string[] = [];
+  for (const t of texts) {
+    if (typeof t !== 'string' || !t.trim()) continue;
+    const settled = isPlaceholderText(t) ? splitPlaceholderText(t).settled.join(' ') : t;
+    if (settled.trim()) out.push(settled);
+  }
+  return out;
 }

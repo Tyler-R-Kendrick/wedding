@@ -75,6 +75,39 @@ export const EVAL_CASES: readonly EvalCase[] = [
     expect: { outcome: 'answer', tools: ['get_faq'], contains: ['not yet decided'] },
   },
   {
+    // The menu is the one undecided fact a guest asks about as a NEED. Nothing in the corpus is
+    // about the wedding meal, so the honest outcome is the refusal that names where dietary needs
+    // are collected — never a sentence lifted from the hotel's restaurant pages.
+    id: 'undecided-menu-allergy',
+    group: 'unanswerable',
+    question: 'I have a nut allergy — what food will there be?',
+    principal: 'anonymous',
+    expect: { outcome: 'refusal', contains: ['not decided yet', 'Dietary needs'], forbidden: ['official page', 'Cindy'] },
+  },
+  {
+    id: 'undecided-music',
+    group: 'unanswerable',
+    question: 'Is there a band or a DJ?',
+    principal: 'anonymous',
+    expect: { outcome: 'refusal', contains: ['not decided yet'] },
+  },
+  {
+    // Both halves of an answer that mixes a decided fact with a TODO. The corpus used to drop the
+    // whole record, so the concierge denied knowing how a guest RSVPs — which the site does know.
+    id: 'how-to-rsvp',
+    group: 'factual',
+    question: 'How do I RSVP?',
+    principal: 'anonymous',
+    expect: { outcome: 'answer', contains: ['one-time code'], forbidden: ['TODO', 'deadline'], citesUrl: ['/ask-us#rsvp'] },
+  },
+  {
+    id: 'rain-plan',
+    group: 'factual',
+    question: 'What happens if it rains?',
+    principal: 'anonymous',
+    expect: { outcome: 'answer', contains: ['indoors'], forbidden: ['TODO'] },
+  },
+  {
     id: 'off-topic',
     group: 'unanswerable',
     question: 'What is the weather like in Paris in July?',

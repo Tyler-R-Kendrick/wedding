@@ -30,9 +30,14 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
 
       <Section id="gifts-registry" labelledBy="gifts-registry-title">
         <SectionHeading level={2} id="gifts-registry-title" title={data.copy.registryHeading} />
-        <Prose>
-          <p>{data.copy.registryIntro}</p>
-        </Prose>
+        {/* The intro describes a list that is kept with a provider. Until one exists it is a claim the
+            site has no right to make — and it used to render directly above the placeholder saying
+            the couple have not chosen where to keep it. It appears with the links, or not at all. */}
+        {registry.length ? (
+          <Prose>
+            <p>{data.copy.registryIntro}</p>
+          </Prose>
+        ) : null}
         {/* Inside `Prose`, which is `text-align: start`. Outside it a card inherited
             `.gh-section { text-align: center }`, so a card's own paragraphs centred on x=522 while
             its button centred on x=720 and its heading sat at x=178 — four axes per card at 1440.
@@ -50,9 +55,11 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
 
       <Section id="gifts-adventures" ground="alt" labelledBy="gifts-adventures-title">
         <SectionHeading level={2} id="gifts-adventures-title" title={data.copy.adventureHeading} />
-        <Prose>
-          <p>{data.copy.adventureIntro}</p>
-        </Prose>
+        {adventures.length ? (
+          <Prose>
+            <p>{data.copy.adventureIntro}</p>
+          </Prose>
+        ) : null}
         {adventures.length ? (
           <Prose>{adventures.map((l) => <GiftLinkCard key={l.id} link={l} />)}</Prose>
         ) : (

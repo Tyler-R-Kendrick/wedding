@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
+import { splitPlaceholderText } from '@/domain/content/text';
 import type { TextBlockView } from '@/domain/content/views';
 import './provenance.css';
 
@@ -17,14 +18,49 @@ export const PLACEHOLDER_LABEL = 'Sara + Tyler are still writing this';
  */
 const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi;
 
-/** The hint after the marker, for display ("TODO(Tyler & Sara): the trail" -> "the trail"). */
+const MARKER_RE = new RegExp(`${PLACEHOLDER_MARKER.replace(/[()&]/g, '\\$&')}:?\\s*`, 'g');
+
+/** Removes the marker and any ticket reference, and tidies the spacing that leaves behind. */
+const scrub = (text: string): string => text.replace(MARKER_RE, '').replace(BACKLOG_REF, '').replace(/\s+([.,;:])/g, '$1').trim();
+
+/**
+ * The hint after the marker, for display ("TODO(Tyler & Sara): the trail" -> "the trail").
+ *
+ * Only the sentences that actually carry the marker. A record that mixes the two — "The ceremony and
+ * reception are indoors at the hotel. TODO(Tyler & Sara): any outdoor plans for the weekend." — used
+ * to hand the whole thing to the placeholder block, which read as
+ * "Sara + Tyler are still writing this: The ceremony and reception are indoors at the hotel. any
+ * outdoor plans for the weekend." — a decided fact labelled undecided, then a lowercase run-on.
+ * `Text` and `Paragraphs` render the settled half beside the block instead.
+ */
 export function placeholderHint(text: string): string {
-  const stripped = text
-    .replace(new RegExp(`${PLACEHOLDER_MARKER.replace(/[()&]/g, '\\$&')}:?\\s*`, 'g'), '')
-    .replace(BACKLOG_REF, '')
-    .replace(/\s+([.,;:])/g, '$1')
-    .trim();
+  const { hints } = splitPlaceholderText(text);
+  const stripped = scrub(hints.length ? hints.join(' ') : text);
   return stripped.length ? stripped : 'Details to come.';
+}
+
+/** The settled sentences of a mixed block. Empty when the whole string is a hint. */
+export function placeholderFacts(text: string): string {
+  const { settled, hints } = splitPlaceholderText(text);
+  return hints.length ? scrub(settled.join(' ')) : '';
+}
+
+/**
+ * The whole string as prose, marker and ticket reference removed — for the non-UI callers that
+ * flatten a description or a label into one line and have no block to render a hint into.
+ *
+ * A hint that FOLLOWS a settled sentence is capitalised, because the marker sat where a capital
+ * would be and stripping it leaves "…indoors at the hotel. any outdoor plans for the weekend." A
+ * hint that stands alone keeps its own case: these strings are written to follow a label ("Sara +
+ * Tyler are still writing this: a restaurant we love"), and a card prints one as a heading.
+ */
+export function withoutPlaceholderMarker(text: string): string {
+  const { settled, hints } = splitPlaceholderText(text);
+  if (!hints.length) return scrub(text);
+  const facts = scrub(settled.join(' '));
+  const hint = scrub(hints.join(' '));
+  if (!facts) return hint;
+  return `${facts} ${hint.charAt(0).toUpperCase()}${hint.slice(1)}`.trim();
 }
 
 /** Same scrub for any other guest-facing string that may carry a hint verbatim. */
@@ -49,25 +85,47 @@ export function Placeholder({ children, inline = false, label = PLACEHOLDER_LABE
   );
 }
 
-/** Renders a TextBlock: plain text when it is a fact, a Placeholder when it is not. */
+/**
+ * Renders a TextBlock: plain text when it is a fact, a Placeholder when it is not, and — when the
+ * block holds both — the decided sentences as prose with the hint labelled beside them.
+ */
 export function Text({ block, inline = false }: { block: TextBlockView; inline?: boolean }) {
-  if (block.placeholder) return <Placeholder inline={inline}>{placeholderHint(block.text)}</Placeholder>;
-  return <>{block.text}</>;
+  if (!block.placeholder) return <>{block.text}</>;
+  const facts = placeholderFacts(block.text);
+  const hint = <Placeholder inline={inline}>{placeholderHint(block.text)}</Placeholder>;
+  if (!facts) return hint;
+  return inline ? (
+    <>
+      {facts} {hint}
+    </>
+  ) : (
+    <>
+      <p>{facts}</p>
+      {hint}
+    </>
+  );
 }
 
-/** Paragraph list: facts become <p>, placeholders become blocks. */
+/** Paragraph list: facts become <p>, placeholders become blocks, a mixed block becomes both. */
 export function Paragraphs({ blocks, className }: { blocks: readonly TextBlockView[]; className?: string }) {
   return (
     <>
-      {blocks.map((b, i) =>
-        b.placeholder ? (
-          <Placeholder key={i}>{placeholderHint(b.text)}</Placeholder>
-        ) : (
-          <p key={i} className={className}>
-            {b.text}
-          </p>
-        ),
-      )}
+      {blocks.map((b, i) => {
+        if (!b.placeholder) {
+          return (
+            <p key={i} className={className}>
+              {b.text}
+            </p>
+          );
+        }
+        const facts = placeholderFacts(b.text);
+        return (
+          <Fragment key={i}>
+            {facts ? <p className={className}>{facts}</p> : null}
+            <Placeholder>{placeholderHint(b.text)}</Placeholder>
+          </Fragment>
+        );
+      })}
     </>
   );
 }

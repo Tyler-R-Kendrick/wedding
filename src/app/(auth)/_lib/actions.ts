@@ -36,7 +36,7 @@ export async function startClaim(formData: FormData): Promise<void> {
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
   const d = r.value.data;
-  await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, for: d.deliveredFor ?? undefined, back, kind: 'claim' });
+  await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, for: d.deliveredFor ?? undefined, back, kind: 'claim', lockedUntil: d.lockedUntil ?? undefined });
   redirect('/claim/verify');
 }
 
@@ -48,7 +48,7 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: admin ? 'admin_sign_in' : 'sign_in', email, next: next || undefined });
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
-  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, back, kind: admin ? 'admin_sign_in' : 'sign_in' });
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, back, kind: admin ? 'admin_sign_in' : 'sign_in', lockedUntil: r.value.data.lockedUntil ?? undefined });
   redirect('/claim/verify');
 }
 
@@ -71,7 +71,7 @@ export async function requestStepUpCode(formData: FormData): Promise<void> {
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: 'step_up', next });
   if (!r.ok) redirect(withError(target, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(target, 'no_email'));
-  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, kind: 'step_up' });
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, kind: 'step_up', lockedUntil: r.value.data.lockedUntil ?? undefined });
   redirect(target);
 }
 
@@ -95,6 +95,12 @@ export async function claimPerson(formData: FormData): Promise<void> {
     if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent('/claim/welcome')}`);
     redirect(withError('/claim/welcome', errorCode(r.error)));
   }
+  // `claim_identity` has two successes and they are not the same event. `bound` moves the session
+  // to that person; `managed` deliberately leaves it where it is and only records that you answer
+  // for them. Both redirected as `switched=1`, so the page congratulated a no-email guest on being
+  // "now signed in as" the manager they already were.
+  const d = r.value.data;
+  if (d.status === 'managed') redirect(`/claim/welcome?switched=managed&who=${encodeURIComponent(d.displayName)}`);
   redirect('/claim/welcome?switched=1');
 }
 

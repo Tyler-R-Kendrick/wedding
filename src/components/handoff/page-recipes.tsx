@@ -161,7 +161,10 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         <h2 id="gifts-registry" className="text-2xl">
           {data.copy.registryHeading}
         </h2>
-        <p className="mt-3 measure">{data.copy.registryIntro}</p>
+        {/* The intro describes a list that is kept with a provider. Until one exists it is a claim the
+            site has no right to make — and it used to render directly above the placeholder saying
+            the couple have not chosen where to keep it. It appears with the links, or not at all. */}
+        {registry.length ? <p className="mt-3 measure">{data.copy.registryIntro}</p> : null}
         <div className="mt-4">
           {registry.length ? registry.map((l) => <GiftLinkCard key={l.id} link={l} />) : <Placeholder>{data.copy.registryPending}</Placeholder>}
         </div>
@@ -170,7 +173,7 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         <h2 id="gifts-adventures" className="text-2xl">
           {data.copy.adventureHeading}
         </h2>
-        <p className="mt-3 measure">{data.copy.adventureIntro}</p>
+        {adventures.length ? <p className="mt-3 measure">{data.copy.adventureIntro}</p> : null}
         <div className="mt-4">
           {adventures.length ? adventures.map((l) => <GiftLinkCard key={l.id} link={l} />) : <Placeholder>{data.copy.adventurePending}</Placeholder>}
         </div>

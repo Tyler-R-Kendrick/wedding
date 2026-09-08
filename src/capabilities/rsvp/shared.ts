@@ -1,4 +1,4 @@
-import { placeholderHint } from '@/components/provenance/Placeholder';
+import { withoutPlaceholderMarker } from '@/components/provenance/Placeholder';
 import { z } from 'zod';
 import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -68,7 +68,7 @@ export function toEventView(e: EventRow, allMeals: readonly MealOptionRow[]): Ev
     id: e.id,
     slug: e.slug,
     name: e.name,
-    description: e.description ? placeholderHint(e.description) : e.description,
+    description: e.description ? withoutPlaceholderMarker(e.description) : e.description,
     dateIso: e.dateIso,
     startsAt: e.startsAt ? e.startsAt.toISOString() : null,
     endsAt: e.endsAt ? e.endsAt.toISOString() : null,

@@ -20,17 +20,18 @@ export async function getHousehold(db: Db, id: string): Promise<HouseholdRow | n
 
 export async function listHouseholds(db: Db, filter: { q?: string; limit?: number; offset?: number } = {}): Promise<(HouseholdRow & { memberCount: number })[]> {
   const where = filter.q ? ilike(households.name, `%${filter.q.replace(/[%_]/g, '')}%`) : undefined;
-  const rows = await db
-    .select({
-      household: households,
-      memberCount: sql<number>`(select count(*) from ${guests} where ${guests.householdId} = ${households.id} and ${guests.mergedIntoGuestId} is null)`,
-    })
-    .from(households)
-    .where(where)
-    .orderBy(asc(households.name))
-    .limit(Math.min(filter.limit ?? 200, 1000))
-    .offset(filter.offset ?? 0);
-  return rows.map((r) => ({ ...r.household, memberCount: Number(r.memberCount) }));
+  // A correlated `(select count(*) …)` in a raw `sql` template returned 0 for EVERY household under
+  // this driver, so /admin/households showed "Members 0" for three populated households, said "Add
+  // members first" in the manager picker, and offered the red Delete button — which is gated on
+  // `memberCount === 0` — on every one of them. The capability itself still refuses ("Move or delete
+  // the household members first"), so nothing was lost; the screen was simply lying about who
+  // exists. A grouped count is one more round trip and cannot be wrong.
+  const [rows, counts] = await Promise.all([
+    db.select().from(households).where(where).orderBy(asc(households.name)).limit(Math.min(filter.limit ?? 200, 1000)).offset(filter.offset ?? 0),
+    db.select({ householdId: guests.householdId, n: sql<number>`count(*)` }).from(guests).where(isNull(guests.mergedIntoGuestId)).groupBy(guests.householdId),
+  ]);
+  const byHousehold = new Map(counts.map((c) => [c.householdId, Number(c.n)]));
+  return rows.map((r) => ({ ...r, memberCount: byHousehold.get(r.id) ?? 0 }));
 }
 
 export async function findHouseholdByName(db: Db, name: string): Promise<HouseholdRow | null> {
