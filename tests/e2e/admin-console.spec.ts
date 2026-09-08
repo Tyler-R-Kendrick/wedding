@@ -64,6 +64,12 @@ test('an admin reaches every console page, and each one is accessible at phone a
 });
 
 test('the console index reaches every admin screen and none of them 404', async ({ browser }) => {
+  // This one test does twenty-one full navigations; every other test in the suite does a handful.
+  // Against a dev server that compiles each route on first request it blew the default 30s timeout
+  // in CI (`net::ERR_ABORTED at /admin/rsvp`) while passing locally, where the machine is faster and
+  // the routes were already warm. The budget is raised to match what the test actually does — no
+  // assertion is relaxed, and every route is still required to resolve and render its own heading.
+  test.setTimeout(180_000);
   const ctx = await contextAs(browser, 'admin');
   const page = await ctx.newPage();
   await page.goto('/admin');

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { CapabilityRegistryImpl } from '@/capabilities/registry';
 import { MemoryIdempotencyStore } from '@/capabilities/services';
@@ -10,6 +10,18 @@ import type { Entitlement, Principal } from '@/contracts/principal';
 import { ok } from '@/contracts/result';
 import { MemoryAuditSink } from '@/lib/audit';
 import { outcomeResponse } from '@/webmcp/server/http';
+
+/**
+ * Several tests here reach their subject through `await import(…)` on purpose — what they assert is
+ * a module-load side effect (fixtures registering under a gate), which a static import at the top of
+ * the file would have already performed before the first assertion ran. The cost of that is Vite
+ * transforming the capability graph behind `@/webmcp/server/handlers`, and it lands on whichever
+ * test triggers it first: measured at ~3.1s of a 5s per-test budget on an idle machine, which is a
+ * margin thin enough to lose under load — it timed out during a full `npm run verify` at level 14
+ * while passing in isolation seconds later. The budget is raised so the transform cannot be mistaken
+ * for a failing assertion. Nothing here is retried and no assertion is relaxed.
+ */
+vi.setConfig({ testTimeout: 30_000 });
 import { effectiveWebMcpDescriptor, invokeForWebMcp } from '@/webmcp/server/invoke';
 
 /**
