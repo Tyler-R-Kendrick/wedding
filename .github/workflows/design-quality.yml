@@ -105,6 +105,29 @@ jobs:
   e2e:
     name: Playwright smoke (production build)
     runs-on: ubuntu-latest
+    # One of these at a time in the whole repository, queued rather than cancelled.
+    #
+    # This job is the heaviest thing here — a production build, `next start`, then a `next dev`
+    # server with two Playwright workers against it — and it is the only one that has ever died
+    # with "the runner has received a shutdown signal". Five runs on this branch today say when:
+    #
+    #   11:44–11:55  no run on main   green
+    #   11:56–12:07  no run on main   green
+    #   12:11–12:18  #20 on main      shutdown signal, 30s into the dev-server step
+    #   12:37–12:50  #22 on main      superseded
+    #   12:45–12:57  #23 on main      shutdown signal, 30s into the dev-server step
+    #
+    # Both deaths took THIS job while its siblings on the same run finished green seconds later,
+    # so it is not the run being cancelled and not the account losing its runners — it is this
+    # job's own machine going away while another copy of it runs elsewhere in the repo.
+    #
+    # Scoped to the job, not the workflow, so lint and typecheck stay parallel and only the
+    # expensive one takes a turn. `cancel-in-progress: false` because a queued run is the point;
+    # GitHub keeps one running and one pending per group and drops older pending ones itself,
+    # so a burst of pushes still collapses to the newest.
+    concurrency:
+      group: playwright-smoke-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
