@@ -19,9 +19,12 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { clientRegistry } from '../registry.mjs';
+import { inStore } from '../store.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-const PAGE = resolve(repoRoot, '.secrets/secret-drop.html');
+// Honour SECRETS_DIR like the rest of the toolchain: a check that reads a different build from
+// the one it was pointed at proves nothing about that build.
+const PAGE = resolve(repoRoot, inStore('secret-drop.html'));
 const CHROMIUM = process.env.PW_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 const REG = clientRegistry();
 

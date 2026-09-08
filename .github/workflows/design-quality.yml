@@ -117,6 +117,15 @@ jobs:
       - name: Every spec runs in exactly one arrangement
         run: node scripts/check-spec-coverage.mjs
 
+      # The Secret Drop page as it is actually PUBLISHED — no server behind it, no Claude session
+      # watching. Every other check of that page runs it against `secrets:serve`, which has a
+      # worker, so all of them stayed green while the published artifact queued work nothing could
+      # ever claim. This one needs only the built page and the Chromium this job already installs.
+      - name: The published Secret Drop offers no control that cannot finish
+        run: |
+          node scripts/secrets/build-page.mjs
+          node scripts/secrets/page/verify-artifact.mjs
+
       - name: Production-build specs against `next start`
         # These assert production behaviour, including the proxy's `private, no-store` on
         # cookie-resolved public URLs — `next dev` replaces that header, so they only mean
