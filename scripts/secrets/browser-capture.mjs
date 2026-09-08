@@ -137,6 +137,17 @@ export const RECIPES = {
     create: [],
     captures: [{ var: 'DATABASE_URL', pattern: /postgres(ql)?:\/\/[^\s"'<>]+/ }],
   },
+  // Auth keys, not the connection string: `supabase-dashboard` captures DATABASE_URL, which is the
+  // database slot's credential and not this one's. Reusing it wrote a variable the identity option
+  // never asked for.
+  'supabase-auth-keys': {
+    host: 'supabase.com', keysUrl: 'https://supabase.com/dashboard/project/_/settings/api',
+    create: [/project api keys/i, /^api$/i], nameValue: 'sara-tyler-wedding',
+    captures: [
+      { var: 'NEXT_PUBLIC_SUPABASE_URL', pattern: /https:\/\/[a-z0-9]{16,}\.supabase\.co/ },
+      { var: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', pattern: /\bey[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/ },
+    ],
+  },
   'supabase-s3': {
     host: 'supabase.com', keysUrl: 'https://supabase.com/dashboard/project/_/settings/storage',
     create: [/new access key/i, /create.*key/i], confirm: [/^create$/i],
@@ -154,6 +165,26 @@ export const RECIPES = {
     host: 'vercel.com', keysUrl: 'https://vercel.com/dashboard/stores',
     create: [/create database/i, /connect store/i],
     captures: [{ var: 'DATABASE_URL', pattern: /postgres(ql)?:\/\/[^\s"'<>]+/ }],
+  },
+  // Identity. Clerk's MCP server has OAuth but no RFC 7591 registration, and Auth0 registers only
+  // per-tenant (a tenant has to exist first), so for both the first credential comes from the
+  // dashboard — probed 2026-09-08, not assumed.
+  'clerk-dashboard': {
+    host: 'dashboard.clerk.com', keysUrl: 'https://dashboard.clerk.com/last-active?path=api-keys',
+    create: [/create application/i, /api keys/i], nameValue: 'sara-tyler-wedding',
+    captures: [
+      { var: 'CLERK_SECRET_KEY', pattern: /sk_(?:test|live)_[A-Za-z0-9_-]{20,}/ },
+      { var: 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', pattern: /pk_(?:test|live)_[A-Za-z0-9_-]{20,}/ },
+    ],
+  },
+  'auth0-dashboard': {
+    host: 'manage.auth0.com', keysUrl: 'https://manage.auth0.com/dashboard',
+    create: [/create application/i, /^applications$/i], nameValue: 'sara-tyler-wedding',
+    captures: [
+      { var: 'AUTH0_DOMAIN', pattern: /[a-z0-9-]+\.(?:[a-z]{2}\.)?auth0\.com/ },
+      { var: 'AUTH0_CLIENT_ID', pattern: /\b[A-Za-z0-9]{32}\b/ },
+      { var: 'AUTH0_CLIENT_SECRET', pattern: /\b[A-Za-z0-9_-]{64}\b/ },
+    ],
   },
   'uber-dashboard': {
     host: 'developer.uber.com', keysUrl: 'https://developer.uber.com/dashboard',

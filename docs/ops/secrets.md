@@ -322,13 +322,31 @@ ceremonies have arrived, and the URL is cleaned only once it is somewhere safer.
 grew a pass that seeds a waiting ceremony and delivers the snapshot *late*, because the old stub
 answered `onSnapshot` synchronously and no real store does — which is why nothing caught this.
 
-**Every provider kind has a slot.** 15 slots, 43 options, one for each kind in `src/providers`,
-including the ones that had been invisible: identity (Better Auth, whose keys are all autofilled,
-so it had nothing to ask and therefore was never written down), rate limiting (`RATE_LIMIT_BACKEND`
-— the database, not memory, which production refuses), photo captions, and the gift registry and
-cash fund. Maps, reservations, the vector index and face matching have no configuration surface in
-the code, so their slot says there is nothing to connect rather than offering a field for an
-adapter that does not exist.
+**Every feature has its own connection.** 18 slots, 49 options.
+
+*Identity is first class*, with five alternatives whose ceremonies were probed on 2026-09-08 rather
+than assumed. The apex domains are the trap — auth0.com, clerk.com and workos.com all publish
+nothing. What they actually run: `mcp.workos.com` registers a client under RFC 7591 **and** offers
+a device flow, and `workos.com/auth.md` documents provisioning a one-shot environment with no
+account at all, claimed by a person later — so WorkOS asks nobody. `api.supabase.com` registers
+(with `auth:read`/`auth:write` among its scopes) but issues confidential clients only, so the
+artifact asks Claude. `mcp.clerk.com` has OAuth but no registration, so a client must exist first.
+Auth0 registers only per tenant, and a tenant needs a person. Better Auth stays the default and
+needs no account at all: its keys are generated here.
+
+*Generated media is image, video and audio*, and it is not stock photography. fal.ai and Higgsfield
+are two required connections; **Openverse** — openly licensed real work — is its own slot, and
+**Stitch** (screen comps) is its own again. Filing Openverse under "generated imagery" was a
+category error: it generates nothing.
+
+*Maps and restaurant links* are their own slots and are complete as deep links: they open whichever
+app the guest already has, with no key, no billing and no tracking. *Grouping photos by face* is
+deliberately **off** — a decision rather than a gap, because turning it on means processing
+biometric data and needs legal review first.
+
+*Photo search* is vector storage: embeddings kept in the database via pgvector. The AI captioning
+slot that briefly sat beside it is gone — tagging images with a model is a nice-to-have, not part
+of making search work.
 
 **Choosing something never hides anything.** Picking "Just link out" or "Skip it" answers a slot,
 which used to make `needsYou` go false and the strip leave *Waiting on you* for a one-line row

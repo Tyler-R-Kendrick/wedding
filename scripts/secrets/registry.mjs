@@ -250,7 +250,7 @@ const RAW_SLOTS = [
   },
   {
     id: 'search', name: 'Photo & story search', need: 'feature',
-    does: 'Finds "the one on the beach" without tags',
+    does: 'Turns photos and stories into vectors kept in the database (pgvector), so "the one on the beach" finds itself',
     without: 'A hashed stand-in — search works, but worse',
     options: [
       { id: 'voyage', name: 'Voyage AI', recommended: true, note: 'Best recall per dollar for this size', host: 'dashboard.voyageai.com', ceremony: 'signin',
@@ -314,39 +314,72 @@ const RAW_SLOTS = [
     ],
   },
   {
-    id: 'imagery', name: 'Generated imagery', need: 'tooling',
-    does: 'Makes the mood boards, textures and placeholder art the design work runs on',
+    id: 'media', name: 'Generated media', need: 'tooling',
+    // Required: the site's media is made with these, so the ladder acquires them by default
+    // rather than waiting to be asked. `stock` and `comps` are the optional tooling.
+    required: true,
+    does: 'Images, video and audio: mood boards, textures, grounds, motion tests and sound',
     without: 'Only the licensed placeholder set already committed',
     options: [
-      { id: 'fal', name: 'fal.ai', recommended: true, note: 'What scripts/fal-generate.mjs calls', host: 'fal.ai', ceremony: 'signin',
+      { id: 'fal', name: 'fal.ai', recommended: true, note: 'One key for image, video and audio models; what scripts/fal-generate.mjs calls', host: 'fal.ai', ceremony: 'signin',
         // Verified 2026-09-07: auth.fal.ai (Auth0) advertises a registration_endpoint and a device
         // grant, but POSTing answers "dynamic client registration is disabled". Sign-in it is.
         ladder: [{ method: 'authmd', origin: 'https://fal.ai' }, { method: 'browser', recipe: 'fal-dashboard' }, { method: 'manual' }],
         secrets: ['FAL_KEY'], fills: {},
         probe: { url: 'https://rest.alpha.fal.ai/tokens/', headers: { authorization: 'Key {value}' } } },
-      { id: 'stitch', name: 'Google Stitch', note: 'Comp generator; optional alternative', host: 'stitch.withgoogle.com', ceremony: 'paste',
-        ladder: [{ method: 'authmd', origin: 'https://stitch.withgoogle.com' }, { method: 'manual' }], secrets: ['STITCH_API_KEY'], fills: {} },
-      { id: 'openverse', name: 'Openverse', note: 'Free licensed photography; Claude signs itself up', host: 'api.openverse.org', ceremony: 'agent',
-        ladder: [{ method: 'register', url: 'https://api.openverse.org/v1/auth_tokens/register/', body: { name: brand, description: 'Placeholder imagery for a private wedding website', email: '{admin_email}' }, map: { OPENVERSE_CLIENT_ID: 'client_id', OPENVERSE_CLIENT_SECRET: 'client_secret' }, confirm: 'Openverse emails a verification link; it works at the anonymous rate until clicked.' }, { method: 'manual' }],
-        secrets: ['OPENVERSE_CLIENT_ID', 'OPENVERSE_CLIENT_SECRET'], fills: {} },
     ],
   },
   {
     /*
-     * Identity was configured but invisible: every variable Better Auth needs is autofilled, so
-     * the slot had nothing to ask and therefore was not written at all. "Nothing to ask" is not
-     * the same as "not a connection" — this is how a guest proves who they are, and it belongs on
-     * the page saying so.
+     * Identity, as a first-class connection with real alternatives.
+     *
+     * Ceremonies here were probed on 2026-09-08, not assumed, and the apex domains are the wrong
+     * place to look — auth0.com, clerk.com and workos.com all publish nothing. What they actually
+     * run:
+     *   mcp.workos.com    RFC 7591 registration AND a device flow; workos.com/auth.md documents
+     *                     provisioning a ONE-SHOT environment with no account at all, claimed by
+     *                     a person later. That is a real agent ceremony, so WorkOS asks nobody.
+     *   api.supabase.com  registration works (auth:read auth:write among its scopes), but it
+     *                     issues confidential clients only, so the artifact asks Claude.
+     *   mcp.clerk.com     OAuth, no registration — a client must exist first, so: sign in.
+     *   auth0.com         nothing published at the apex or at mcp.auth0.com. Auth0 does per-tenant
+     *                     registration at <tenant>.auth0.com/oidc/register, which needs a tenant
+     *                     to exist first, so the first step is still a person. Sign in.
      */
     id: 'identity', name: 'Sign-in & sessions', need: 'launch',
     does: 'Proves a guest is who they say, and keeps them signed in',
     without: 'Nobody can open their own RSVP',
     options: [
       { id: 'better-auth', name: 'Better Auth', recommended: true,
-        note: 'Session keys generated here; the admin list comes from the git identity',
+        note: 'What the site is built on — self-hosted, no account, keys generated here',
         host: null, ceremony: 'agent',
         ladder: [{ method: 'generate', bytes: 32 }, { method: 'derive' }],
         secrets: [], fills: {} },
+      { id: 'workos', name: 'WorkOS', note: 'Provisions itself with no account; you claim it later',
+        host: 'workos.com', ceremony: 'agent',
+        ladder: [
+          { method: 'authmd', origin: 'https://workos.com' },
+          { method: 'device', origin: 'https://mcp.workos.com' },
+          { method: 'manual' },
+        ],
+        secrets: ['WORKOS_API_KEY', 'WORKOS_CLIENT_ID'], fills: {},
+        warn: 'A one-shot environment is anonymous until someone claims it at dashboard.workos.com.' },
+      { id: 'supabase-auth', name: 'Supabase Auth', note: 'One account for the database and sign-in',
+        host: 'supabase.com', ceremony: 'link', pairsWith: 'database:supabase',
+        ladder: [
+          { method: 'oauth', origin: 'https://api.supabase.com', scope: 'auth:read auth:write projects:read' },
+          { method: 'browser', recipe: 'supabase-auth-keys' },
+          { method: 'manual' },
+        ],
+        secrets: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'], fills: {} },
+      { id: 'clerk', name: 'Clerk', note: 'Drop-in UI; its MCP server has OAuth but no self-registration',
+        host: 'clerk.com', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'clerk-dashboard' }, { method: 'manual' }],
+        secrets: ['CLERK_SECRET_KEY', 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY'], fills: {} },
+      { id: 'auth0', name: 'Auth0', note: 'Registration is per-tenant, so a tenant has to exist first',
+        host: 'auth0.com', ceremony: 'signin',
+        ladder: [{ method: 'browser', recipe: 'auth0-dashboard' }, { method: 'manual' }],
+        secrets: ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET'], fills: {} },
     ],
   },
   {
@@ -372,20 +405,6 @@ const RAW_SLOTS = [
     ],
   },
   {
-    id: 'captions', name: 'Photo captions & scene tags', need: 'feature',
-    does: 'Writes alt text and finds what is in a photo, so search and screen readers work',
-    without: 'Uploads keep whatever caption a guest typed, and nothing else',
-    options: [
-      { id: 'anthropic-vision', name: 'Anthropic vision', recommended: true,
-        note: 'Reuses the concierge key if one is already set',
-        host: 'console.anthropic.com', ceremony: 'signin',
-        ladder: [{ method: 'detect', from: 'ANTHROPIC_API_KEY' }, { method: 'browser', recipe: 'anthropic-console' }, { method: 'manual' }],
-        secrets: ['ANTHROPIC_API_KEY'], fills: {} },
-      { id: 'none-captions', name: 'Skip it', note: 'Guest captions only', host: null, ceremony: 'agent',
-        ladder: [{ method: 'derive' }], secrets: [], fills: { MEDIA_AI_PROVIDER: 'mock' }, isOptOut: true },
-    ],
-  },
-  {
     id: 'gifts', name: 'Registry & cash fund', need: 'feature',
     does: 'Points guests at where you are registered and how to contribute',
     without: 'The gifts page says there is nothing to link to yet',
@@ -400,43 +419,95 @@ const RAW_SLOTS = [
     ],
   },
   {
-    /*
-     * Four provider kinds have no configuration surface at all in `src/providers`: maps is
-     * deep-link only, reservations is deep-link only, the vector index picks pgvector or memory
-     * from whether a database is there, and biometric is a mock that must not be enabled without
-     * counsel review. They are listed because "every feature has a connector" should be checkable
-     * on this page — and the honest connector for these is one that says there is nothing to
-     * connect. Giving them a Mapbox or a Pinecone option would be a field for an adapter that
-     * does not exist.
-     */
-    id: 'derived', name: 'Maps, reservations, photo search & face matching', need: 'feature',
-    does: 'Directions, restaurant links, the photo index, and face grouping',
-    without: 'Nothing — these need no account',
+    id: 'maps', name: 'Directions', need: 'feature',
+    does: 'Gets guests from where they are to the ceremony, the hotels and the parking',
+    without: 'Nothing — this needs no account',
     options: [
-      { id: 'built-in', name: 'Built in', recommended: true,
-        note: 'Deep links for maps and reservations; the photo index follows the database; face matching stays off',
+      { id: 'deep-link-maps', name: 'Deep links', recommended: true,
+        note: 'Opens whichever map app the guest already uses — no key, no billing, no tracking',
         host: null, ceremony: 'agent',
-        ladder: [{ method: 'derive' }],
-        secrets: [], fills: {},
-        warn: 'Face matching is a mock and must not be enabled in production without counsel review.' },
+        ladder: [{ method: 'derive' }], secrets: [], fills: {} },
     ],
   },
-
+  {
+    id: 'reservations', name: 'Restaurant links', need: 'feature',
+    does: 'Points at the places you recommend for the nights around the wedding',
+    without: 'Nothing — this needs no account',
+    options: [
+      { id: 'deep-link-tables', name: 'Deep links', recommended: true,
+        note: 'Links straight to each restaurant — no key, no billing',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: {} },
+    ],
+  },
+  {
+    /*
+     * Face grouping is off, and off is a finished state rather than a missing one. The provider
+     * is a mock that detects nothing, and the activation matrix says it must not be enabled in
+     * production without counsel review — biometric data carries duties (BIPA and friends) that a
+     * wedding website has no business taking on by accident. Listing it says so out loud instead
+     * of leaving a capability nobody decided about.
+     */
+    id: 'faces', name: 'Grouping photos by face', need: 'feature',
+    does: 'Would let a guest find every photo they are in',
+    without: 'Guests browse and search by words, which is what the site does today',
+    options: [
+      { id: 'faces-off', name: 'Off', recommended: true,
+        note: 'No biometric data is collected or stored',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true,
+        warn: 'Turning this on means processing biometric data, which needs legal review first.' },
+    ],
+  },
+  {
+    id: 'stock', name: 'Licensed photography', need: 'tooling',
+    does: 'Real, openly licensed photographs — not generated, and not of anyone you know',
+    without: 'The licensed placeholder set already committed',
+    options: [
+      { id: 'openverse', name: 'Openverse', recommended: true,
+        note: 'Openly licensed work from Flickr, Wikimedia and others; Claude registers itself',
+        host: 'api.openverse.org', ceremony: 'agent',
+        ladder: [
+          { method: 'register', url: 'https://api.openverse.org/v1/auth_tokens/register/', body: { name: brand, description: 'Placeholder imagery for a private wedding website', email: '{admin_email}' }, map: { OPENVERSE_CLIENT_ID: 'client_id', OPENVERSE_CLIENT_SECRET: 'client_secret' }, confirm: 'Openverse emails a verification link; it works at the anonymous rate until clicked.' },
+          { method: 'manual' },
+        ],
+        secrets: ['OPENVERSE_CLIENT_ID', 'OPENVERSE_CLIENT_SECRET'], fills: {} },
+      { id: 'none-stock', name: 'Skip it', note: 'Use what is committed', host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
+    ],
+  },
+  {
+    id: 'comps', name: 'Design comps', need: 'tooling',
+    does: 'Generates screen mock-ups to compare directions against',
+    without: 'Comps are built by hand in the browser, which is slower but works',
+    options: [
+      { id: 'stitch', name: 'Google Stitch', recommended: true,
+        note: 'Screen mock-ups and an alternative DESIGN.md to compare with ours',
+        host: 'stitch.withgoogle.com', ceremony: 'paste',
+        ladder: [{ method: 'authmd', origin: 'https://stitch.withgoogle.com' }, { method: 'manual' }],
+        secrets: ['STITCH_API_KEY'], fills: {} },
+      { id: 'none-comps', name: 'Skip it', note: 'Build comps by hand', host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
+    ],
+  },
   {
     /*
      * Higgsfield is the other half of the media toolchain, and a different job from fal.ai:
-     * fal.ai generates a picture, Soul generates the SAME person across many pictures, and
-     * Higgsfield does the camera-move video. Neither substitutes for the other, so they are two
-     * required connections rather than two options in one slot — a slot's options are
-     * alternatives, and these are not.
+     * fal.ai generates a picture or a clip, Soul generates the SAME person across many of them,
+     * and Higgsfield does the camera-move video and its audio. Neither substitutes for the other,
+     * so they are two required connections rather than two options in one slot — a slot's options
+     * are alternatives, and these are not.
      */
     id: 'motion', name: 'Identity-consistent media', need: 'tooling',
-    does: 'Keeps one face and one look across a series of shots, and animates them',
+    // Required: the site's media is made with these, so the ladder acquires them by default
+    // rather than waiting to be asked. `stock` and `comps` are the optional tooling.
+    required: true,
+    does: 'Keeps one face and one look across a series of images and video, with sound',
     without: 'Every generated image is a different-looking stranger',
     options: [
       {
         id: 'higgsfield', name: 'Higgsfield', recommended: true,
-        note: 'Soul holds an identity across shots; sign in once, no key to paste',
+        note: 'Soul holds an identity across image, video and audio; sign in once, no key to paste',
         host: 'higgsfield.ai', ceremony: 'signin',
         /*
          * Verified 2026-09-08. `mcp.higgsfield.ai/mcp` answers the MCP auth challenge, publishes
@@ -504,6 +575,7 @@ function normalizeOption(raw) {
 }
 
 export const SLOTS = RAW_SLOTS.map((slot) => ({
+  required: slot.required === true,
   id: slot.id, name: slot.name, need: slot.need, does: slot.does, without: slot.without,
   options: slot.options.map(normalizeOption),
 }));
@@ -626,7 +698,7 @@ export function clientRegistry() {
     autofillCount: Object.keys(AUTOFILL).length,
     autofillNames: Object.keys(AUTOFILL),
     slots: SLOTS.map((slot) => ({
-      id: slot.id, name: slot.name, need: slot.need, does: slot.does, without: slot.without,
+      id: slot.id, name: slot.name, need: slot.need, required: slot.required === true, does: slot.does, without: slot.without,
       options: slot.options.map((o) => ({
         id: o.id, name: o.name, note: o.note || null, recommended: !!o.recommended, isOptOut: !!o.isOptOut,
         ceremony: ceremonyOf(o), host: o.host || null, recipe: browserRecipeOf(o),

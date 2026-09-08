@@ -207,8 +207,16 @@ describe('planning without asking', () => {
     expect(ids).toContain('email');
     expect(ids).toContain('storage');
     expect(ids).toContain('concierge');
-    expect(ids).not.toContain('imagery');            // tooling stays out until asked for
-    expect(resolvePlan({ all: true }).map((p) => p.slot.id)).toContain('imagery');
+    // Required tooling is planned like anything else: the media the site is made with is not
+    // optional, and tagging it `tooling` never meant it was.
+    expect(ids).toContain('media');
+    expect(ids).toContain('motion');
+    // Optional tooling still waits to be asked for.
+    expect(ids).not.toContain('stock');
+    expect(ids).not.toContain('comps');
+    const all = resolvePlan({ all: true }).map((p) => p.slot.id);
+    expect(all).toContain('stock');
+    expect(all).toContain('comps');
   });
 
   it('follows the chosen provider, not the recommendation', async () => {

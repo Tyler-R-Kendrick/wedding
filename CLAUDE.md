@@ -37,20 +37,26 @@ touching any UI. The site itself is not built yet; the tooling is.
    `npx impeccable detect`.
 5. **Reference data — `ui-ux-pro-max`.** Searchable font pairings, palettes,
    UX guidelines. Use it to *compare* options, not to override `DESIGN.md`.
-6. **Assets — `fal.ai` and Higgsfield, both required.** They do different
-   jobs and neither substitutes for the other, which is why the Secret Drop
-   carries them as two connections rather than two options in one slot:
-   - **fal.ai** (`FAL_KEY`) — one-off stills. Mood boards, textures, paper and
-     fabric grounds, section backgrounds, placeholder art. Called by
-     `scripts/fal-generate.mjs` and the `fal-ai` MCP server. Reach for it when
-     the image has no person in it.
+6. **Generated media — `fal.ai` and Higgsfield, both required.** Image, video
+   AND audio. They do different jobs and neither substitutes for the other,
+   which is why the Secret Drop carries them as two connections rather than two
+   options in one slot:
+   - **fal.ai** (`FAL_KEY`) — one key across image, video and audio models. Mood
+     boards, textures, paper and fabric grounds, section backgrounds, motion
+     tests, sound. Called by `scripts/fal-generate.mjs` and the `fal-ai` MCP
+     server. Reach for it when nothing has to stay consistent between takes.
    - **Higgsfield** (`node scripts/secrets/cli-login.mjs higgsfield`, or the
      Secret Drop's own control, which dispatches exactly that and streams the
      terminal back to the page so you can approve the link it prints) — anything
      that must stay the *same* across shots, plus motion. A **Soul** (with the
      couple's consent and photos) keeps one identity across a series; the video
-     models do the camera move. Skills: `higgsfield-generate`,
+     models do the camera move and its audio. Skills: `higgsfield-generate`,
      `higgsfield-soul-id`.
+
+   Neither is stock photography: **Openverse** is its own connection (openly
+   licensed real work from Flickr, Wikimedia and others), and **Stitch** is its
+   own again (screen comps). A generated image is not a licensed photograph and
+   the page no longer files them together.
 
    Order of preference for any image on the site: a real licensed photograph
    first, then a generated texture or abstract ground, and a generated *person*
@@ -123,10 +129,16 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
   than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
   no control may repeat a request nobody answered.
-- **Every provider kind in `src/providers` has a slot.** 15 slots, 43 options, checked against the
-  activation matrix. Four kinds (maps, reservations, the vector index, face matching) have no
-  configuration surface in the code at all, so their slot says there is nothing to connect rather
-  than offering a field for an adapter that does not exist.
+- **Every feature has its own connection.** 18 slots, 49 options. Identity is first class with
+  five real alternatives, and their ceremonies were probed on 2026-09-08 rather than assumed —
+  the apex domains publish nothing, which is the trap: `mcp.workos.com` registers a client AND
+  offers a device flow (and `workos.com/auth.md` provisions a one-shot environment with no account
+  at all), `api.supabase.com` registers but issues confidential clients only, `mcp.clerk.com` has
+  OAuth without registration, and Auth0 registers per tenant so a tenant must exist first. Better
+  Auth stays the default and needs no account. Maps, restaurant links and face grouping are their
+  own slots: the first two are complete as deep links, and face grouping is deliberately **off**,
+  which is a decision rather than a gap — turning it on means processing biometric data and needs
+  legal review.
 - In the artifact case the agent is still the courier for what it can help with: mirror
   `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
   to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before
@@ -144,7 +156,7 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   honours a request. Cloudflare, Neon, Supabase, Resend and Vercel all register an agent
   client with no human at all. Looking only for WorkOS's `agent_auth` at an apex domain finds
   none of them, and concluding "no agent auth exists" from that is how this got it wrong once.
-- Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.
+- Higgsfield: the Secret Drop's own control, or `node scripts/secrets/cli-login.mjs higgsfield`.
 - Never read, print, or commit `.env` or `.secrets/private*`; `.claude/settings.json` denies
   both. Report variable *names* and lengths, never values.
 

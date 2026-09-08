@@ -56,7 +56,9 @@ export function resolvePlan({ slots = [], all = false, alreadySet = new Set(), c
   else wanted.push(...SLOTS);
   const plan = [];
   for (const slot of wanted) {
-    if (slot.need === 'tooling' && !all && !slots.length) continue;
+    // Optional tooling waits to be asked for; REQUIRED tooling does not. The media the site is
+    // built with (fal.ai, Higgsfield) is not a nice-to-have that happens to be tagged `tooling`.
+    if (slot.need === 'tooling' && !slot.required && !all && !slots.length) continue;
     const option = chosenOption(slot, choices);
     if (option.isOptOut) continue;
     if (option.secrets.length && option.secrets.every((v) => alreadySet.has(v))) continue;
