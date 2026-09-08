@@ -6,7 +6,7 @@ import { appServices } from '@/capabilities/context';
 import { GUEST_KINDS } from '@/db/schema';
 import { getGuest, guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
-import { activeBindingsForGuests } from '@/domain/identity/bindings';
+import { activeBindingsForGuests, getAuthUser } from '@/domain/identity/bindings';
 import { guestOf } from './identity/shared';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { currentInvitationForHousehold } from '@/domain/invitations/repo';
@@ -35,6 +35,20 @@ const output = z.object({
       /** You may RSVP for this person (household manager semantics). */
       managedByYou: z.boolean(),
       claimed: z.boolean(),
+      /**
+       * What "I'm <name>" would actually do for THIS reader — the welcome page offered the button
+       * to every adult member unfiltered, and three of the outcomes are guaranteed refusals
+       * (`claim_identity`): someone with their own inbox is told to sign in with it, and someone
+       * without one can only be taken on by their household manager. A button that cannot work is
+       * not an offer.
+       *
+       *   `switch`             — this inbox is theirs too (a shared address): you become them.
+       *   `manage`             — no email of their own and you may act for them; you keep your session.
+       *   `own_inbox`          — their own address is on the invitation; they sign in with it.
+       *   `not_manager`        — no email of their own, and only the household manager may act for them.
+       *   `claimed_elsewhere`  — already bound to a different inbox; only the couple can undo that.
+       */
+      claimAction: z.enum(['switch', 'manage', 'own_inbox', 'not_manager', 'claimed_elsewhere']),
     }),
   ),
 });
@@ -61,7 +75,7 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
     if (!guard.ok) return err(guard.error);
     const p = guard.value;
     const { db } = appServices(ctx);
-    const [me, household] = await Promise.all([getGuest(db, p.guestId), getHousehold(db, p.householdId)]);
+    const [me, household, user] = await Promise.all([getGuest(db, p.guestId), getHousehold(db, p.householdId), getAuthUser(db, p.authIdentityId)]);
     if (!me || !household) return err(new CapabilityError('not_found', 'We could not find your invitation.'));
     const [invitation, members] = await Promise.all([currentInvitationForHousehold(db, household.id), listHouseholdMembers(db, household.id)]);
     const bindings = await activeBindingsForGuests(db, members.map((m) => m.id));
@@ -72,15 +86,27 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
         invitation: invitation
           ? { status: invitationLifecycle(invitation, ctx.now), events: invitation.eventKeys, plusOneAllowance: invitation.plusOneAllowance, childrenAllowance: invitation.childrenAllowance, claimedAt: invitation.claimedAt?.toISOString() ?? null }
           : null,
-        members: members.map((m) => ({
-          guestId: m.id,
-          displayName: guestDisplayName(m),
-          kind: m.kind,
-          isMinor: m.isMinor,
-          isYou: m.id === me.id,
-          managedByYou: m.id !== me.id && p.actsFor.includes(m.id as never),
-          claimed: bindings.has(m.id),
-        })),
+        // Mirrors `claim_identity`'s own order of tests, so the button offered and the answer it
+        // gets cannot disagree. `selfBind` there is "no verified inbox and no email of their own".
+        members: members.map((m) => {
+          const managedByYou = m.id !== me.id && p.actsFor.includes(m.id as never);
+          // `claim_identity` binds you TO someone only when their address on the invitation is this
+          // very inbox (a couple sharing one). Anything else is either theirs to sign in with, or a
+          // household-manager act, or already spoken for.
+          const sharesThisInbox = !!m.email && !!user?.email && m.email === user.email;
+          const boundElsewhere = bindings.get(m.id)?.authIdentityId !== undefined && bindings.get(m.id)!.authIdentityId !== p.authIdentityId;
+          const mayManage = p.guestId === household.managerGuestId || m.managedByGuestId === p.guestId || (m.managedByGuestId === null && household.managerGuestId === null);
+          return {
+            guestId: m.id,
+            displayName: guestDisplayName(m),
+            kind: m.kind,
+            isMinor: m.isMinor,
+            isYou: m.id === me.id,
+            managedByYou,
+            claimed: bindings.has(m.id),
+            claimAction: (boundElsewhere ? 'claimed_elsewhere' : sharesThisInbox ? 'switch' : m.email ? 'own_inbox' : mayManage ? 'manage' : 'not_manager') as 'switch' | 'manage' | 'own_inbox' | 'not_manager' | 'claimed_elsewhere',
+          };
+        }),
       },
       sources: [],
     });

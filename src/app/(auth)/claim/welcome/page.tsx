@@ -44,7 +44,17 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   const error = errorCopy(sp.error);
   const pendingEmail = sp.contact === '1' ? await readChallengeCookie() : null;
   const changing = pendingEmail?.kind === 'change_email' ? pendingEmail : null;
+  // Every adult member used to get an "I'm <name>" button, and three of the four outcomes are
+  // guaranteed refusals. The page already knew enough to say so — it printed "· claimed" and
+  // "· you manage their RSVP" beside the names — and offered the button anyway.
   const others = d.members.filter((m) => !m.isYou && m.kind !== 'child' && !m.isMinor);
+  const actionable = others.filter((m) => m.claimAction === 'switch' || m.claimAction === 'manage');
+  const blocked = others.filter((m) => m.claimAction !== 'switch' && m.claimAction !== 'manage');
+  const WHY: Record<string, string> = {
+    own_inbox: 'signs in with their own email',
+    not_manager: 'only your household manager can act for them',
+    claimed_elsewhere: 'already claimed with a different email — ask Sara and Tyler',
+  };
   const firstName = d.you.displayName.split(' ')[0];
   return (
     <AuthShell
@@ -62,7 +72,14 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
         </form>
       }
     >
-      {sp.switched ? <Notice tone="success">Done — you’re now signed in as {d.you.displayName}.</Notice> : null}
+      {/* `claim_identity` has two successes and this claimed the wrong one for half of them: taking
+          on someone with no inbox of their own returns `managed` and deliberately does NOT move the
+          session (`claim_identity.ts`), yet the redirect and this notice both said "you're now
+          signed in as <the name it already showed>". The action now says which happened. */}
+      {sp.switched === '1' ? <Notice tone="success">Done — you’re now signed in as {d.you.displayName}.</Notice> : null}
+      {sp.switched === 'managed' ? (
+        <Notice tone="success">Done — you now answer for {sp.who ? decodeURIComponent(sp.who) : 'them'}. You are still signed in as {d.you.displayName}.</Notice>
+      ) : null}
       {sp.contact === 'done' ? <Notice tone="success">Your email is updated. Future codes will go to the new address.</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
 
@@ -81,7 +98,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
           </h2>
           <p className="auth-hint">If you share this email with someone on the invitation, choose your own name.</p>
           <ul className="auth-list">
-            {others.map((m) => (
+            {actionable.map((m) => (
               <li key={m.guestId}>
                 <span>
                   {m.displayName}
@@ -89,8 +106,15 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
                 </span>
                 <form action={claimPerson}>
                   <input type="hidden" name="guestId" value={m.guestId} />
-                  <Button variant="ghost">I’m {m.displayName.split(' ')[0]}</Button>
+                  <Button variant="ghost">{m.claimAction === 'switch' ? `I’m ${m.displayName.split(' ')[0]}` : `Answer for ${m.displayName.split(' ')[0]}`}</Button>
                 </form>
+              </li>
+            ))}
+            {blocked.map((m) => (
+              <li key={m.guestId}>
+                <span>
+                  {m.displayName} · {WHY[m.claimAction] ?? 'not available from here'}
+                </span>
               </li>
             ))}
           </ul>

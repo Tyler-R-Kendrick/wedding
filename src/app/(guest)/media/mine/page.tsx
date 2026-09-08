@@ -15,11 +15,14 @@ export default async function MyUploadsPage() {
     <MediaPage
       title="My uploads"
       lede="Everything you have added, and where each one is. Only you and the couple can see items that are still being reviewed."
-      // Gated on a session. Rendered unconditionally, "Add more" was the only link on the page when
-      // signed out, and it led to /media/upload, which answers "Please sign in first" — a dead end
-      // whose one exit was the thing that had just failed.
+      // Gated on the call SUCCEEDING, not merely on there being a session. Rendered unconditionally,
+      // "Add more" was the only link on the page when signed out, and it led to /media/upload, which
+      // answers "Please sign in first" — a dead end whose one exit was the thing that had just
+      // failed. Gating it on `result` alone left the same dead end one step along: a signed-in guest
+      // without `upload_media` read "You do not have access to that." with "Add more" above it,
+      // pointing at the page that would refuse them for the same reason.
       actions={
-        result ? (
+        result?.ok ? (
           <Link className="media-button" href="/media/upload">
             Add more
           </Link>
@@ -38,7 +41,20 @@ export default async function MyUploadsPage() {
           </p>
         </MediaSection>
       ) : (
-        <MediaSection id="list">{!result.ok ? <p className="media-lede">{result.error.message}</p> : <UploadList items={result.data.items} uploadHref="/media/upload" />}</MediaSection>
+        <MediaSection id="list">
+          {!result.ok ? (
+            <>
+              <p className="media-lede">{result.error.message}</p>
+              <p>
+                <Link className="media-button" href="/your-weekend">
+                  Back to Your Weekend
+                </Link>
+              </p>
+            </>
+          ) : (
+            <UploadList items={result.data.items} uploadHref="/media/upload" />
+          )}
+        </MediaSection>
       )}
     </MediaPage>
   );
