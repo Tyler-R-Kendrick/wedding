@@ -168,11 +168,34 @@ describe("whether a slot is the person's problem", () => {
   it('is, when the ladder failed', () => {
     assert.equal(L.needsYou(slot, { email: { option: 'resend', state: 'failed' } }, {}), true);
   });
-  it('is not, for tooling nobody has asked for', () => {
-    assert.equal(L.needsYou(toolingSlot, {}, {}), false);
-  });
-  it('is, for tooling once it has been chosen', () => {
+  it('is, for the tooling the site is built with, before anyone asks', () => {
+    // This used to be false until a provider had been chosen, which meant the media tooling was
+    // invisible unless you already knew to look for it. Required things do not hide.
+    assert.equal(L.needsYou(toolingSlot, {}, {}), true);
     assert.equal(L.needsYou(toolingSlot, {}, { imagery: 'fal' }), true);
+  });
+
+  it('holds a strip in place once the person has touched it', () => {
+    // Answering a slot used to move its card out from under the pointer: "Just link out" made
+    // `needsYou` false, so the strip left "waiting on you" for a one-line row further down, while
+    // choosing the provider beside it did nothing of the sort. Same gesture, two outcomes.
+    const answered = { travel: { option: 'out', state: 'skipped' } };
+    assert.equal(L.needsYou(applySlot, answered, { travel: 'out' }), false);
+    assert.equal(L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' } }), false,
+      'nothing touched: it belongs in the manifest');
+    assert.equal(
+      L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' }, pinned: new Set(['travel']) }),
+      true,
+      'touched in this page load: it stays where it was clicked',
+    );
+    // Pinning only ever holds a strip in place; it never invents one that was not there.
+    assert.equal(L.heldOpen(slot, { pinned: new Set(['email']) }), true);
+    assert.equal(L.heldOpen(slot, { pinned: new Set() }), L.needsYou(slot, {}, {}));
+    // Given nothing at all, it is exactly `needsYou`.
+    assert.equal(L.heldOpen(slot), L.needsYou(slot, {}, {}));
+    // A bare id works the same, and something that is not a Set is simply not a pin.
+    assert.equal(L.heldOpen('travel', { status: answered, choices: { travel: 'out' }, pinned: new Set(['travel']) }), true);
+    assert.equal(L.heldOpen(applySlot, { status: answered, choices: { travel: 'out' }, pinned: {} }), false);
   });
   it('is not, while the next rung is one Claude runs itself', () => {
     // `mcp` and `authmd` are agent ceremonies: there is nothing for a person to do yet.

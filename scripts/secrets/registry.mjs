@@ -70,7 +70,7 @@ export const AUTOFILL = {
  *   feature  a shipped page degrades honestly without it
  *   tooling  for us, invisible to guests
  */
-export const NEED = { launch: 'Before guests arrive', feature: 'Makes a page real', tooling: 'For us' };
+export const NEED = { launch: 'Before guests arrive', feature: 'Makes a page real', tooling: 'Needed to build the site' };
 
 const brand = 'sara-tyler-wedding';
 
@@ -93,13 +93,6 @@ const RAW_SLOTS = [
         id: 'postmark', name: 'Postmark', note: 'Best deliverability for transactional mail',
         host: 'postmarkapp.com', ceremony: 'signin',
         ladder: [{ method: 'browser', recipe: 'postmark-dashboard' }, { method: 'manual' }],
-        secrets: ['RESEND_API_KEY'],
-        fills: { EMAIL_FROM: 'Sara + Tyler <no-reply@{domain}>' },
-      },
-      {
-        id: 'ses', name: 'Amazon SES', note: 'Cheapest at volume; needs an AWS account out of sandbox',
-        host: 'console.aws.amazon.com', ceremony: 'signin',
-        ladder: [{ method: 'browser', recipe: 'aws-ses' }, { method: 'manual' }],
         secrets: ['RESEND_API_KEY'],
         fills: { EMAIL_FROM: 'Sara + Tyler <no-reply@{domain}>' },
       },
@@ -321,9 +314,9 @@ const RAW_SLOTS = [
     ],
   },
   {
-    id: 'imagery', name: 'Design imagery', need: 'tooling',
-    does: 'Mood boards and textures for the design work',
-    without: 'The licensed placeholder set already in the repo',
+    id: 'imagery', name: 'Generated imagery', need: 'tooling',
+    does: 'Makes the mood boards, textures and placeholder art the design work runs on',
+    without: 'Only the licensed placeholder set already committed',
     options: [
       { id: 'fal', name: 'fal.ai', recommended: true, note: 'What scripts/fal-generate.mjs calls', host: 'fal.ai', ceremony: 'signin',
         // Verified 2026-09-07: auth.fal.ai (Auth0) advertises a registration_endpoint and a device
@@ -336,8 +329,41 @@ const RAW_SLOTS = [
       { id: 'openverse', name: 'Openverse', note: 'Free licensed photography; Claude signs itself up', host: 'api.openverse.org', ceremony: 'agent',
         ladder: [{ method: 'register', url: 'https://api.openverse.org/v1/auth_tokens/register/', body: { name: brand, description: 'Placeholder imagery for a private wedding website', email: '{admin_email}' }, map: { OPENVERSE_CLIENT_ID: 'client_id', OPENVERSE_CLIENT_SECRET: 'client_secret' }, confirm: 'Openverse emails a verification link; it works at the anonymous rate until clicked.' }, { method: 'manual' }],
         secrets: ['OPENVERSE_CLIENT_ID', 'OPENVERSE_CLIENT_SECRET'], fills: {} },
-      { id: 'none-imagery', name: 'Skip it', note: 'Use what is committed', host: null, ceremony: 'agent',
-        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
+    ],
+  },
+  {
+    /*
+     * Higgsfield is the other half of the media toolchain, and a different job from fal.ai:
+     * fal.ai generates a picture, Soul generates the SAME person across many pictures, and
+     * Higgsfield does the camera-move video. Neither substitutes for the other, so they are two
+     * required connections rather than two options in one slot — a slot's options are
+     * alternatives, and these are not.
+     */
+    id: 'motion', name: 'Identity-consistent media', need: 'tooling',
+    does: 'Keeps one face and one look across a series of shots, and animates them',
+    without: 'Every generated image is a different-looking stranger',
+    options: [
+      {
+        id: 'higgsfield', name: 'Higgsfield', recommended: true,
+        note: 'Soul holds an identity across shots; Claude authorizes it, no key to paste',
+        host: 'higgsfield.ai', ceremony: 'agent',
+        /*
+         * Verified 2026-09-08. `mcp.higgsfield.ai/mcp` answers the MCP auth challenge, publishes
+         * RFC 9728/8414 metadata and mints a client under RFC 7591 — so this could be an
+         * "Authorize" link like Resend's. It deliberately is not, because there would be nowhere
+         * to put what comes back: the vendored CLI (`@higgsfield/cli`) runs its own OAuth
+         * (HIGGSFIELD_OAUTH_*) and writes a credentials file (HIGGSFIELD_CREDENTIALS_PATH), and
+         * `.claude/skills/higgsfield-*` call `higgsfield account status`, not an API key. There is
+         * no HIGGSFIELD_API_KEY in `src/` or `.mcp.json`, and inventing one so the page had a
+         * field to show would be exactly the plausible fiction this repo bans.
+         *
+         * So: no secret, and the rung is `mcp` — Claude authorizes the server it is already
+         * configured for in `.mcp.json`. It is listed because it is required, not because
+         * anything here needs typing.
+         */
+        ladder: [{ method: 'mcp', server: 'higgsfield', how: 'authorize mcp.higgsfield.ai, then Soul and video generation are available' }],
+        secrets: [], fills: {},
+      },
     ],
   },
 ];

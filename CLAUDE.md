@@ -37,10 +37,25 @@ touching any UI. The site itself is not built yet; the tooling is.
    `npx impeccable detect`.
 5. **Reference data — `ui-ux-pro-max`.** Searchable font pairings, palettes,
    UX guidelines. Use it to *compare* options, not to override `DESIGN.md`.
-6. **Assets — fal.ai and Higgsfield.** Mood boards, comps, textures,
-   placeholder imagery, and (with the couple's consent and photos) a
-   Higgsfield **Soul** for identity-consistent imagery. AI imagery is
-   never shipped as a "photo of the couple".
+6. **Assets — `fal.ai` and Higgsfield, both required.** They do different
+   jobs and neither substitutes for the other, which is why the Secret Drop
+   carries them as two connections rather than two options in one slot:
+   - **fal.ai** (`FAL_KEY`) — one-off stills. Mood boards, textures, paper and
+     fabric grounds, section backgrounds, placeholder art. Called by
+     `scripts/fal-generate.mjs` and the `fal-ai` MCP server. Reach for it when
+     the image has no person in it.
+   - **Higgsfield** (`npx higgsfield auth login`, then `/mcp`) — anything that
+     must stay the *same* across shots, plus motion. A **Soul** (with the
+     couple's consent and photos) keeps one identity across a series; the video
+     models do the camera move. Skills: `higgsfield-generate`,
+     `higgsfield-soul-id`.
+
+   Order of preference for any image on the site: a real licensed photograph
+   first, then a generated texture or abstract ground, and a generated *person*
+   last and only via a Soul — a fresh prompt per image gives a different
+   stranger each time, which reads as stock and is the tell. AI imagery is
+   never shipped as a "photo of the couple", and anything generated is recorded
+   in `docs/ops/asset-licensing.md` with the tool and prompt that made it.
 7. **Stitch (Google) — `enhance-prompt`, `taste-design`, `design-md`, `site-md`.**
    Optional comp generator; needs `STITCH_API_KEY`. `taste-design` can
    draft an alternative DESIGN.md to compare against ours.

@@ -301,6 +301,28 @@ turn rather than a failure, so a stale entry costs nothing.
 responses carry no such header, so a browser completes the preflight, sends the request and is
 then refused the reply. Trusting the preflight would have shipped another button that cannot work.
 
+**Choosing something never hides anything.** Picking "Just link out" or "Skip it" answers a slot,
+which used to make `needsYou` go false and the strip leave *Waiting on you* for a one-line row
+further down the page — the card went away from under the pointer, while choosing the provider
+immediately beside it did nothing of the sort. One gesture, two completely different consequences,
+and the destructive one looked like the harmless one. A slot touched in this page load is now held
+where it is (`heldOpen` in `logic.mjs`) and shows that it is settled; the manifest is where things
+are on the way back *in*, never somewhere a click can push them. The header count still uses
+`needsYou`, so a held strip never makes the page claim someone is waited on. A second rule of the
+same kind went with it: `tooling` slots were hidden until a provider had been chosen, which made
+the media tooling the site is built with invisible unless you knew to look.
+
+**The media tooling is required, and it is two connections, not one.** fal.ai and Higgsfield do
+different jobs — fal.ai generates a still, Soul generates the *same person* across many stills, and
+Higgsfield's video models animate them — so they are separate slots with no opt-out rather than
+alternatives in one. Higgsfield deliberately seals nothing: its endpoint `mcp.higgsfield.ai/mcp`
+does advertise RFC 9728 metadata and mint a client under RFC 7591 (verified 2026-09-08), so it
+*could* have an Authorize button, but there would be nowhere to put the token. The vendored CLI
+runs its own OAuth and writes a credentials file (`HIGGSFIELD_CREDENTIALS_PATH`), and
+`.claude/skills/higgsfield-*` call `higgsfield account status`; no `HIGGSFIELD_API_KEY` is read by
+`src/` or `.mcp.json`. Inventing one so the page had a field to show would be the plausible fiction
+this repo bans, so the slot has no secret and its rung is `mcp`.
+
 **Nothing queues for ever.** A request nobody has claimed within 45 seconds stops being called
 queued: the strip goes back to the route that needs no courier and says, once, that the other one
 was never picked up.

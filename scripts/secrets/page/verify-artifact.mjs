@@ -96,10 +96,15 @@ const inspect = (slotName, optName) => page.evaluate(([n, o]) => {
   if (!s) return { error: 'no strip' };
   if (!s.querySelector('.pick')) s.querySelector('button.link')?.click();
   s = strip();
-  const tab = [...s.querySelectorAll('.pick')].find((x) => x.textContent === o);
-  if (!tab) return { error: 'no tab for ' + o };
-  tab.click();
-  s = strip();
+  // A slot with a single provider has no tabs to choose between, and rendering one would be a
+  // choice that is not a choice. Nothing to click, so the strip is read as it stands.
+  const tabs = [...s.querySelectorAll('.pick')];
+  if (tabs.length) {
+    const tab = tabs.find((x) => x.textContent === o);
+    if (!tab) return { error: 'no tab for ' + o };
+    tab.click();
+    s = strip();
+  }
   if (!s) return { error: 'strip vanished after choosing' };
   return {
     controls: [...s.querySelectorAll('.act button, .act a.btn')].map((b) => b.textContent.trim()),
@@ -252,6 +257,40 @@ check(writes.some((w) => w.collection === 'choices'), 'choosing a provider store
     `an approved ceremony offers no way to claim it: [${after.controls.join(', ')}]`);
   check(!/npm run|secrets:serve|in the chat/.test(after.text),
     `the approved state tells the reader to run a terminal command: "${after.text.slice(0, 160)}"`);
+}
+
+/**
+ * Choosing an option must never move the strip you chose it on.
+ *
+ * Reported: picking "Just link out" made the whole section disappear. Answering a slot flips
+ * `needsYou` to false, and the strip left "waiting on you" for a one-line row further down the
+ * page — while choosing the provider immediately beside it did nothing of the sort. One gesture,
+ * two completely different consequences, and the one that removed things was the one that looked
+ * like it had done nothing.
+ */
+{
+  const moved = await page.evaluate(async () => {
+    const where = () => {
+      const inOpen = [...document.querySelectorAll('#open .slot')].some((x) => x.textContent?.includes('Flights & hotels'));
+      const inDone = [...document.querySelectorAll('#done .row')].some((x) => x.textContent?.includes('Flights & hotels'));
+      return inOpen ? 'open' : inDone ? 'done' : 'nowhere';
+    };
+    const before = where();
+    const strip = [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Flights & hotels'));
+    if (!strip) return { error: `travel strip is not in the open list to begin with (it is ${before})` };
+    const tab = [...strip.querySelectorAll('.pick')].find((x) => x.textContent === 'Just link out');
+    if (!tab) return { error: 'no "Just link out" tab' };
+    tab.click();
+    await new Promise((r) => setTimeout(r, 400));
+    const after = [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Flights & hotels'));
+    return { before, at: where(), text: after ? after.textContent.replace(/\s+/g, ' ').trim() : '' };
+  });
+  if (moved.error) failures.push(`artifact: ${moved.error}`);
+  else {
+    check(moved.at === 'open', `choosing an opt-out moved the strip from ${moved.before} to ${moved.at}`);
+    // And it must not sit there still looking like it wants something.
+    check(/Skipped/.test(moved.text), `the answered strip does not say it is settled: "${moved.text.slice(0, 160)}"`);
+  }
 }
 
 /**

@@ -81,14 +81,41 @@ export function createLogic(reg) {
     return CEREMONY[ceremonyIdFor(slot, status, choices)] || CEREMONY.paste;
   }
 
-  /** A slot is the person's problem only when its ceremony needs a human and it is not done. */
+  /**
+   * A slot is the person's problem only when its ceremony needs a human and it is not done.
+   *
+   * There used to be a rule here that a `tooling` slot stayed out of sight until someone had
+   * already chosen a provider for it — which meant the media tooling the site is actually built
+   * with was invisible until you knew to go looking for it. A slot that is required does not
+   * announce itself by hiding.
+   */
   function needsYou(slot, status = {}, choices = {}) {
     const st = stateOf(slot, status, choices);
     if (st === 'connected' || st === 'working' || st === 'skipped') return false;
     if (st === 'fault') return true;
-    // Tooling is for us, never for the wedding — it waits below until someone asks for it.
-    if (slot.need === 'tooling' && !choices[slot.id]) return false;
     return ceremonyOf(slot, status, choices).asksYou === true;
+  }
+
+  /**
+   * Whether the strip is drawn among the ones waiting on a person, rather than in the manifest.
+   *
+   * `needsYou` decided this on its own, and that made choosing a provider move the card you had
+   * just clicked. Picking "Just link out" or "Skip it" answers the slot, so `needsYou` went false
+   * and the strip vanished from under the cursor into a one-line row further down the page — you
+   * pressed a tab and the thing you pressed it on left. Choosing the provider beside it did
+   * nothing of the sort, so the same gesture had two completely different consequences.
+   *
+   * A slot the person has touched in this page load is therefore held above until the page is
+   * reloaded, whatever it now says. Nothing is hidden as a result of a click; the manifest is
+   * where things are on the way back IN, not somewhere a click can push them.
+   *
+   * The count in the header still uses `needsYou`, so holding a settled strip in place does not
+   * make it claim anyone is waited on.
+   */
+  function heldOpen(slot, { status = {}, choices = {}, pinned = null } = {}) {
+    const id = typeof slot === 'string' ? slot : slot.id;
+    if (pinned && typeof pinned.has === 'function' && pinned.has(id)) return true;
+    return needsYou(slot, status, choices);
   }
 
   /**
@@ -357,7 +384,7 @@ export function createLogic(reg) {
   }
 
   return {
-    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, ownerOf, stillChosen, expired,
+    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, heldOpen, ownerOf, stillChosen, expired,
     ceremonyState, askedFor, workOf, settleOf, actionFor, allowsManualEntry, pasteFields, boundSummary,
   };
 }

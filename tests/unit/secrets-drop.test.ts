@@ -145,11 +145,24 @@ describe('slots and their provider options', () => {
         const ranks = option.ladder.map((step: { method: string }) => METHOD_RANK[step.method as keyof typeof METHOD_RANK]);
         expect(ranks, `${option.id} ladder is out of order`).toEqual([...ranks].sort((a, b) => a - b));
         const last = option.ladder.at(-1)?.method;
-        // An option that asks for no secret — the on-device model, an opt-out — has nothing to
-        // paste, so ending at a hands-free rung is correct. Anything that asks for one must
-        // leave a way for a person to provide it.
-        const expected = option.secrets.length ? ['manual'] : ['derive', 'generate', 'manual'];
-        expect(expected, `${slot.id}/${option.id} ends at ${last}`).toContain(last);
+        // An option that asks for no secret — the on-device model, an opt-out, Higgsfield's MCP
+        // authorization — has nothing to paste, so ending at a rung that asks nobody is correct.
+        // Anything that asks for one must leave a way for a person to provide it.
+        //
+        // Derived from the ceremony each rung maps to rather than listed by hand: the list was
+        // ['derive', 'generate', 'manual'], which was not the rule but an inventory of the
+        // hands-free rungs that happened to be in use, so adding `mcp` "failed" an invariant it
+        // actually satisfies.
+        if (option.secrets.length) {
+          expect(last, `${slot.id}/${option.id} wants ${option.secrets.length} secret(s) but ends at ${last}`).toBe('manual');
+        } else {
+          // Nothing to type, so it may stop at any rung that asks nobody — or still offer `manual`,
+          // as borrowing a harness session does, where the last resort is a person doing it by hand
+          // rather than a value they paste.
+          const ceremonyId = METHOD_CEREMONY[last as keyof typeof METHOD_CEREMONY] as keyof typeof CEREMONY;
+          const handsFree = CEREMONY[ceremonyId]?.asksYou === false;
+          expect(handsFree || last === 'manual', `${slot.id}/${option.id} asks for nothing yet ends at ${last}`).toBe(true);
+        }
       }
     }
   });

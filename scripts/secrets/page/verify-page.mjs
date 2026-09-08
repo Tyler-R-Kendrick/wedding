@@ -162,16 +162,24 @@ const readStrip = (slotName) => page.evaluate((n) => {
   };
 }, slotName);
 
-/** Click a provider tab, revealing it first on a manifest row where tabs live behind "change". */
-const pickProvider = (slotName, optName) => page.evaluate(([n, o]) => {
+/**
+ * Click a provider tab, revealing it first on a manifest row where tabs live behind "change".
+ *
+ * A slot with one provider has nothing to choose between and renders no tabs — offering a single
+ * tab would be a choice that is not one — so there the option is already in force and this is a
+ * no-op rather than a failure.
+ */
+const pickProvider = (slotName, optName, single) => page.evaluate(([n, o, only]) => {
   const s = [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes(n));
   if (!s) return 'no-slot';
   if (!s.querySelector('.pick')) s.querySelector('button.link')?.click();
-  const b = [...s.querySelectorAll('.pick')].find((x) => x.textContent === o);
+  const tabs = [...s.querySelectorAll('.pick')];
+  if (!tabs.length && only) return 'ok';
+  const b = tabs.find((x) => x.textContent === o);
   if (!b) return 'no-tab';
   b.click();
   return 'ok';
-}, [slotName, optName]);
+}, [slotName, optName, single]);
 
 async function storedChoice(slotId) {
   const res = await fetch(`http://127.0.0.1:${PORT}/api/state`, { headers: { 'x-drop-token': token } });
@@ -187,7 +195,7 @@ const shownBySlot = new Map();
 for (const slot of REG.slots) {
   shownBySlot.set(slot.id, []);
   for (const opt of slot.options) {
-    const clicked = await pickProvider(slot.name, opt.name);
+    const clicked = await pickProvider(slot.name, opt.name, slot.options.length === 1);
     if (clicked !== 'ok') {
       failures++;
       console.log(`FAIL ${slot.id}/${opt.id}: provider tab unreachable (${clicked})`);
@@ -204,7 +212,14 @@ for (const slot of REG.slots) {
     shownBySlot.get(slot.id).push({ opt, shown, open: got.open });
 
     const problems = [];
-    if (persisted !== opt.id) problems.push(`store kept "${persisted}" not "${opt.id}"`);
+    // Nothing was clicked on a single-provider slot, so nothing should have been stored: that
+    // option is in force by default, and writing a "choice" nobody made would be a lie in the
+    // store. Everywhere else the click must have reached it.
+    if (slot.options.length === 1) {
+      if (persisted !== null) problems.push(`stored "${persisted}" for a slot with nothing to choose`);
+    } else if (persisted !== opt.id) {
+      problems.push(`store kept "${persisted}" not "${opt.id}"`);
+    }
     if (got.provider && !got.provider.includes(opt.name)) problems.push(`row shows "${got.provider}"`);
 
     if (got.open) {
