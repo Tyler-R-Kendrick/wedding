@@ -12,10 +12,10 @@ export default async function TransportationPage() {
   const { result } = await invokeForPage(getMyTransportationOptions, {});
   if (!result.ok) {
     return (
-      <main id="main" className="mx-auto w-full max-w-[42rem] px-5 py-10">
+      <div className="page">
         <h1 className="text-3xl">Transportation</h1>
         <p className="mt-4 measure">{result.error.message}</p>
-      </main>
+      </div>
     );
   }
   return <TransportationPageRecipe data={{ ...result.value.data, signInRoute: '/' }} />;

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { CHAT_ROUTE, MAX_QUESTION_CHARS } from "./constants";
+import { CHAT_ROUTE, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
 import "./concierge.css";
 
 /**
@@ -43,6 +43,18 @@ const STAGE_LABEL: Record<string, string> = {
 let turnCounter = 0;
 const nextTurnId = () => `t${++turnCounter}`;
 
+/**
+ * Keep the newest `MAX_TRANSCRIPT_TURNS` turns and count what was dropped.
+ *
+ * Trimming happens where turns are ADDED, not where they are rendered, so the state itself stays
+ * bounded: a patch from a streaming event maps over `turns`, and an unbounded array means an
+ * unbounded map on every chunk. The dropped count is kept so the panel can say so rather than
+ * silently losing the top of the conversation.
+ */
+export function trimTranscript(turns: Turn[], limit = MAX_TRANSCRIPT_TURNS): Turn[] {
+  return turns.length <= limit ? turns : turns.slice(turns.length - limit);
+}
+
 export default function ConciergePanel({
   chatRoute = CHAT_ROUTE,
 }: {
@@ -53,6 +65,13 @@ export default function ConciergePanel({
   const [stage, setStage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Every turn ever pushed. `dropped` is this minus what the state still holds, which is exact
+   * and needs no second piece of state: `trimTranscript` is the only thing that shortens `turns`.
+   * A ref rather than state because nothing re-renders on it — the render that shows a dropped
+   * count is the one `setTurns` already causes.
+   */
+  const addedRef = useRef(0);
   const sessionId = useRef<string | undefined>(undefined);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
@@ -79,12 +98,14 @@ export default function ConciergePanel({
   }, [turns]);
 
   const visible = turns.filter((turn) => !turn.failed);
+  const dropped = Math.max(0, addedRef.current - turns.length);
 
   const submit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
       const asked = question.trim();
       if (asked.length < 2 || busy) return;
+      addedRef.current += 2;
       const answerTurn: Turn = {
         id: nextTurnId(),
         role: "concierge",
@@ -94,19 +115,22 @@ export default function ConciergePanel({
         links: [],
         pending: true,
       };
-      setTurns((prev) => [
-        ...prev,
-        {
-          id: nextTurnId(),
-          role: "guest",
-          text: asked,
-          sources: [],
-          confirmations: [],
-          links: [],
-          pending: false,
-        },
-        answerTurn,
-      ]);
+      setTurns((prev) =>
+        trimTranscript([
+          ...prev,
+          {
+            id: nextTurnId(),
+            role: "guest",
+            text: asked,
+            sources: [],
+            confirmations: [],
+            links: [],
+            pending: false,
+          },
+          answerTurn,
+        ]),
+      );
+
       setQuestion("");
       setError(null);
       setBusy(true);
@@ -179,6 +203,13 @@ export default function ConciergePanel({
           aria-relevant="additions text"
           aria-label="Conversation with the concierge"
         >
+          {dropped > 0 ? (
+            <p className="cq__trimmed">
+              Showing the last {MAX_TRANSCRIPT_TURNS} messages. {dropped}{" "}
+              earlier {dropped === 1 ? "message is" : "messages are"} no longer
+              on this page; the concierge still has the thread.
+            </p>
+          ) : null}
           <ol className="cq__log">
             {visible.map((turn, index) => (
               <li

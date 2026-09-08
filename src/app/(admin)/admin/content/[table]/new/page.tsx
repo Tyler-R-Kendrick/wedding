@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { newId } from '@/contracts/ids';
 import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
 import { SOURCE_KEYS } from '@/content/sources';
 import { ROUTES } from '@/domain/routes';
+import { Breadcrumbs, ConsolePage } from '../../../_components/console';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { RecordForm } from '../../_form';
 
@@ -25,19 +25,9 @@ export default async function AdminContentNew({ params }: { params: Params }) {
     verifiedAt: new Date().toISOString(),
   };
   return (
-    <main id="main" className="ac-main">
-      <ul className="ac-crumbs">
-        <li>
-          <Link href={ROUTES.adminContent}>Content</Link>
-        </li>
-        <li>
-          <Link href={`${ROUTES.adminContent}/${table}`}>{spec.label}</Link>
-        </li>
-        <li>New</li>
-      </ul>
-      <h1>New: {spec.label}</h1>
-      <p className="ac-muted">New records start as private drafts. Any text containing the TODO(Tyler &amp; Sara) marker must have &ldquo;Placeholder&rdquo; ticked.</p>
+    <ConsolePage title={`New: ${spec.label}`} lede="New records start as private drafts. Any text containing the TODO(Tyler & Sara) marker must have “Placeholder” ticked.">
+      <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { href: `${ROUTES.adminContent}/${table}`, label: spec.label }, { label: 'New' }]} />
       <RecordForm table={table} tableLabel={spec.label} fields={spec.fields} initial={initial} idempotencyKey={newId()} />
-    </main>
+    </ConsolePage>
   );
 }

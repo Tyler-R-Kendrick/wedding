@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { invoke } from '@/capabilities/invoke';
 import { getContentRecordCapability } from '@/capabilities/get_content_record';
@@ -6,8 +5,11 @@ import { newId } from '@/contracts/ids';
 import { CONTENT_TABLE_NAMES, TABLE_SPECS, toFormValues } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
+import { Breadcrumbs, ConsolePage, Note, Pill, Section, Stamp } from '../../../_components/console';
+import { Button, IdemKey } from '../../../_components/ops';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { RecordForm } from '../../_form';
+import { FRESHNESS_TONE } from '../../page';
 import { markVerifiedAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -38,81 +40,60 @@ export default async function AdminContentEdit({ params, searchParams }: { param
   const message = one(sp.message);
 
   return (
-    <main id="main" className="ac-main">
-      <ul className="ac-crumbs">
-        <li>
-          <Link href={ROUTES.adminContent}>Content</Link>
-        </li>
-        <li>
-          <Link href={`${ROUTES.adminContent}/${table}`}>{spec.label}</Link>
-        </li>
-        <li>{title}</li>
-      </ul>
-      <h1>{title}</h1>
-      <p className="ac-muted">
-        Version {record.contentVersion} · last edited by {record.editedBy} on <time dateTime={record.updatedAt}>{record.updatedAt.slice(0, 10)}</time> ·{' '}
-        <span className={`ac-badge ac-badge--${fresh.tone}`}>{fresh.label}</span> <time dateTime={String(record.values.verifiedAt)}>{String(record.values.verifiedAt).slice(0, 10)}</time>
-      </p>
-      {saved ? (
-        <p className="ac-ok" role="status">
-          Saved as version {saved}.
-        </p>
-      ) : null}
-      {verified ? (
-        <p className="ac-ok" role="status">
-          Marked verified at <time dateTime={verified}>{verified}</time>.
-        </p>
-      ) : null}
-      {error ? (
-        <p className="ac-warn" role="alert">
-          {message ?? 'That did not work.'} ({error})
-        </p>
-      ) : null}
+    <ConsolePage
+      title={title}
+      notice={{
+        ok: saved ? `Saved as version ${saved}.` : verified ? `Marked verified.` : undefined,
+        error: error ? `${message ?? 'That did not work.'} (${error})` : undefined,
+      }}
+    >
+      <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { href: `${ROUTES.adminContent}/${table}`, label: spec.label }, { label: title }]} />
+      <Note>
+        Version {record.contentVersion} · last edited by {record.editedBy} on <Stamp at={record.updatedAt} /> · <Pill tone={FRESHNESS_TONE[fresh.tone] ?? 'neutral'}>{fresh.label}</Pill>{' '}
+        <Stamp at={String(record.values.verifiedAt)} />
+      </Note>
       {record.freshness !== 'fresh' ? (
-        <div className="ac-warn" role="note">
-          <p>
-            <strong>{fresh.label}.</strong> Re-check this record against its source
-            {record.values.sourceUrl ? (
-              <>
-                {' '}
-                (
-                <a href={String(record.values.sourceUrl)} rel="noopener noreferrer" target="_blank">
-                  official page
-                </a>
-                )
-              </>
-            ) : null}
-            , fix anything that changed, then mark it verified.
-          </p>
-        </div>
+        <p className="ops-notice ops-notice-error" role="note">
+          <strong>{fresh.label}.</strong> Re-check this record against its source
+          {record.values.sourceUrl ? (
+            <>
+              {' ('}
+              <a href={String(record.values.sourceUrl)} rel="noopener noreferrer" target="_blank">
+                official page
+              </a>
+              {')'}
+            </>
+          ) : null}
+          , fix anything that changed, then mark it verified.
+        </p>
       ) : null}
 
-      <form action={markVerifiedAction} className="ac-actions">
+      <form action={markVerifiedAction} className="ops-form-inline">
         <input type="hidden" name="table" value={table} />
         <input type="hidden" name="id" value={id} />
-        <input type="hidden" name="idempotencyKey" value={newId()} />
-        <button className="ac-button ac-button--ghost" type="submit">
-          Mark verified now
-        </button>
-        <span className="ac-muted">Stamps verifiedAt with the current time and records a content.verified audit event.</span>
+        <IdemKey />
+        <Button variant="ghost">Mark verified now</Button>
+        <span className="con-index__blurb">Stamps verifiedAt with the current time and records a content.verified audit event.</span>
       </form>
 
-      <h2>Edit</h2>
-      <RecordForm table={table} tableLabel={spec.label} id={id} fields={spec.fields} initial={values} idempotencyKey={newId()} />
+      <Section title="Edit" id="edit">
+        <RecordForm table={table} tableLabel={spec.label} id={id} fields={spec.fields} initial={values} idempotencyKey={newId()} />
+      </Section>
 
-      <h2>History</h2>
-      {record.revisions.length === 0 ? (
-        <p className="ac-muted">No previous versions.</p>
-      ) : (
-        <ul>
-          {record.revisions.map((rev) => (
-            <li key={rev.contentVersion}>
-              v{rev.contentVersion} · {rev.editedBy} · <time dateTime={rev.editedAt}>{rev.editedAt.slice(0, 19).replace('T', ' ')}</time>
-              {rev.reason ? ` · ${rev.reason}` : ''}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+      <Section title="History" id="history">
+        {record.revisions.length === 0 ? (
+          <Note>No previous versions.</Note>
+        ) : (
+          <ul className="list">
+            {record.revisions.map((rev) => (
+              <li key={rev.contentVersion}>
+                v{rev.contentVersion} · {rev.editedBy} · <Stamp at={rev.editedAt} />
+                {rev.reason ? ` · ${rev.reason}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+    </ConsolePage>
   );
 }

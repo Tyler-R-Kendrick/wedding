@@ -130,7 +130,7 @@ export default async function AdminFlagsPage({ searchParams }: { searchParams: S
             <th scope="col">This environment</th>
             <th scope="col">In effect</th>
           </tr>
-        }>
+        } empty={plain.length === 0 ? <>No feature flags are declared.</> : null}>
           {plain.map((f) => (
             <tr key={f.name}>
               <th scope="row">{f.name}</th>

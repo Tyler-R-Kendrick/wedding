@@ -24,7 +24,7 @@ export default async function RsvpPage() {
   const data = result.value.data;
   const self = data.guests.find((g) => g.isSelf);
   return (
-    <main id="main" className="page">
+    <div className="page">
       {/* A closed window must not be asked a question. The same defect as the deadline copy below,
           one element up: "Ada, will you join us?" sitting above "RSVPs are closed" invites an answer
           the page will not take. Personalisation is kept either way. */}
@@ -50,6 +50,6 @@ export default async function RsvpPage() {
         </p>
       ) : null}
       <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} />
-    </main>
+    </div>
   );
 }

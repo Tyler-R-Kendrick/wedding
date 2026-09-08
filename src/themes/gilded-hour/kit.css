@@ -5,11 +5,40 @@
 .gh {
   --gh-max: 1200px;
   --gh-prose: 42rem;
+
+  /*
+   * The COLUMN is 42rem (`--gh-prose`, DESIGN.md > Layout); the MEASURE is narrower, and they are
+   * two different numbers. Running text at 42rem = 714px rendered 82 characters a line against the
+   * 60-70 this design's own DESIGN.md asks for (measured with a Range walk over the rendered line
+   * boxes, not with `ch`: `ch` is the advance of "0", and against Josefin Sans a 70ch cap resolved
+   * to the same 714px, which is why the `min(--gh-prose, 70ch)` below never bound). 34rem = 578px
+   * lands at 66. Cards, forms, tables, timelines and frames keep the column. `--gh-measure` itself
+   * is declared on `[data-theme="gilded-hour"]` above, so the guest kit can read it too.
+   */
   --gh-gutter: clamp(20px, 4vw, 64px);
   --gh-step: var(--spacing-step);
   --gh-octagon: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
 
   border-block-start: 1px solid var(--color-gold);
+}
+
+/*
+ * Role tokens the shared concierge panel reads (components/concierge/concierge.css). Scoped to the
+ * attribute, not to `.gh`, because the panel also renders on surfaces that carry `[data-theme]`
+ * without this kit's shell class.
+ */
+[data-theme="gilded-hour"] {
+  --cq-control-radius: var(--rounded-none);
+  --cq-input-fill: var(--color-surface);
+
+  /*
+   * The measure lives on the ATTRIBUTE, not on `.gh`, because two things read it: this kit, and the
+   * guest kit's `.measure` / `.page__lede` (`--wp-measure`, shared/base.css). Those surfaces used
+   * one 42rem for both designs — 82 characters here — while each design's own DESIGN.md asks for a
+   * different, narrower number. One design, one measure.
+   */
+  --gh-measure: 34rem;
+  --wp-measure: var(--gh-measure);
 }
 
 /* ---------- type helpers ---------- */
@@ -21,17 +50,33 @@
   letter-spacing: var(--type-numeral-tracking);
 }
 
+/*
+ * Two caps styles, not one. DESIGN.md `label-caps` is ornament — an eyebrow, a countdown unit —
+ * and stays at 0.8125rem (13.81px at this site's 17px root). Anything a guest has to READ or
+ * OPERATE takes `control-caps` at 1rem, because PRODUCT.md's floor is 17px and a form label, a
+ * fieldset legend, a status badge and a data label are all things a grandparent has to read.
+ * Carried since level 07 as "--type-label-caps-size computes to 13.8px"; answered in the type
+ * scale rather than with a `max(17px, …)` at each call site.
+ */
 .gh-eyebrow,
-.gh-label,
-.gh-legend,
-.gh-stat__label,
-.gh-countdown__label,
-.gh-badge {
+.gh-countdown__label {
   font-family: var(--font-text);
   font-size: var(--type-label-caps-size);
   font-weight: var(--type-label-caps-weight);
   line-height: var(--type-label-caps-line);
   letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+}
+
+.gh-label,
+.gh-legend,
+.gh-stat__label,
+.gh-badge {
+  font-family: var(--font-text);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
 }
 
@@ -75,7 +120,7 @@
 /* DESIGN.md: headings are centred on the axis, body copy is left-aligned inside a centred column. */
 .gh-lede {
   margin: var(--spacing-sm) auto 0;
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
   text-align: start;
@@ -160,10 +205,10 @@
   padding: var(--spacing-xs) 0;
   border-block-end: 1px solid transparent;
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  line-height: var(--type-label-caps-line);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
+  line-height: var(--type-control-caps-line);
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
@@ -190,9 +235,9 @@
   background: none;
   color: var(--color-primary);
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
@@ -234,8 +279,8 @@
   min-width: 56px;
   padding-inline: var(--spacing-md);
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
 }
 
@@ -514,7 +559,7 @@
 }
 
 .gh-hero__note {
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
   margin: var(--spacing-md) auto 0;
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
@@ -523,7 +568,7 @@
 }
 
 .gh-hero__lede {
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
   margin: var(--spacing-md) auto 0;
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
@@ -658,7 +703,7 @@
 }
 
 .gh-prose {
-  max-width: min(var(--gh-prose), 70ch);
+  max-width: var(--gh-measure);
   margin-inline: auto;
   text-align: start;
   font-size: var(--type-body-md-size);
@@ -703,6 +748,7 @@
 
 .gh-stat__value {
   margin: var(--spacing-xs) 0 0;
+  max-width: var(--gh-measure);
   font-size: var(--type-body-md-size);
   overflow-wrap: anywhere;
 }
@@ -897,10 +943,10 @@
   border: 0;
   border-radius: var(--rounded-none);
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  line-height: var(--type-label-caps-line);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
+  line-height: var(--type-control-caps-line);
   text-transform: uppercase;
   text-decoration: none;
   text-align: center;
@@ -1186,7 +1232,7 @@
 }
 
 .gh-footer__rights {
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
   text-align: start;
@@ -1307,7 +1353,7 @@
 
 /* the story spine: plaque, chapter, a gold hairline down to the next plaque */
 .gh-spine {
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
   margin: 0 auto;
   padding: 0;
   list-style: none;
@@ -1379,10 +1425,10 @@
   box-shadow: inset 0 0 0 1px var(--color-outline);
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
   color: var(--color-primary);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  line-height: var(--type-label-caps-line);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
+  line-height: var(--type-control-caps-line);
   text-transform: uppercase;
   text-decoration: none;
   transition: background-color var(--duration-fast) var(--ease-engrave);
@@ -1428,9 +1474,9 @@
 }
 
 .gh-meta__label {
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   line-height: var(--type-body-md-line);
   text-transform: uppercase;
   color: var(--color-on-surface-muted);
@@ -1631,9 +1677,9 @@
   min-height: 44px;
   cursor: pointer;
   list-style: none;
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   line-height: 44px;
   text-transform: uppercase;
   color: var(--color-tertiary);
@@ -1874,9 +1920,9 @@
 .gh-table th {
   padding: var(--spacing-sm) var(--spacing-md);
   border-block-end: 1px solid var(--color-gold);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   text-align: start;
   text-transform: uppercase;
   color: var(--color-on-surface-muted);
@@ -2007,7 +2053,7 @@
 .gh-programme__act > .gh-meta,
 .gh-programme__act > .gh-prose {
   width: 100%;
-  max-width: var(--gh-prose);
+  max-width: var(--gh-measure);
 }
 
 /* the FAQ column */
@@ -2172,9 +2218,9 @@
   border: 0;
   padding-inline: 0;
   background: none;
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
 }
 
@@ -2184,9 +2230,9 @@
 
 .gh .switcher__heading {
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
   color: var(--color-secondary);
 }

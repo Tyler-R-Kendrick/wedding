@@ -1,16 +1,12 @@
 import 'server-only';
 import type { Metadata } from 'next';
 import type { AiTracesData } from '@/capabilities/list_ai_traces';
-import { AdminGate } from '@/components/media/AdminMediaNav';
-import { MediaEmpty, MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
-import { AdminAiNav } from '@/components/mediaai/AdminAiNav';
-import { ScrollableTable } from '@/components/mediaai/ScrollableTable';
+import { ConsoleGate, ConsolePage, Empty, Note, ScrollRegion, Section, SubNav, formatStamp } from '../_components/console';
+import { INTELLIGENCE_SUBNAV } from '../_components/sections';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Concierge traces', robots: { index: false, follow: false } };
-
-const stamp = (iso: string) => iso.replace('T', ' ').slice(0, 16);
 
 /**
  * What the concierge was asked, what it actually said, and why (swarm J).
@@ -25,26 +21,26 @@ const stamp = (iso: string) => iso.replace('T', ' ').slice(0, 16);
  */
 export default async function AdminConciergePage() {
   const principal = await currentPrincipal();
-  if (principal.kind !== 'admin') return <AdminGate />;
+  if (principal.kind !== 'admin') return <ConsoleGate what="Concierge traces" />;
   const traces = await invokeForRequest<AiTracesData>('list_ai_traces', { limit: 50 }, principal);
   if (!traces.ok) {
     return (
-      <MediaPage title="Concierge" actions={<AdminAiNav current="concierge" />}>
-        <MediaSection id="error">
-          <p className="media-lede">{traces.error.message}</p>
-        </MediaSection>
-      </MediaPage>
+      <ConsolePage title="Concierge" actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/concierge' }))} />}>
+        <Section id="error">
+          <Note>{traces.error.message}</Note>
+        </Section>
+      </ConsolePage>
     );
   }
   const { answers, groundingFailures, securityAlerts, totals } = traces.data;
 
   return (
-    <MediaPage
+    <ConsolePage
       title="Concierge"
       lede="Every answer the concierge gave, with the verdict its verifier reached, the sources it cited and the capabilities it called. Questions and answers are redacted and expire with their session. No reasoning is stored, so there is none to show."
-      actions={<AdminAiNav current="concierge" />}
+      actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/concierge' }))} />}
     >
-      <MediaSection id="totals" title="Totals">
+      <Section id="totals" title="Totals">
         <ul className="ai-totals">
           <li>
             <b>{totals.answers}</b> answers
@@ -59,14 +55,14 @@ export default async function AdminConciergePage() {
             <b>{totals.refused}</b> refused
           </li>
         </ul>
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="alerts" title="Security alerts">
+      <Section id="alerts" title="Security alerts">
         {securityAlerts.length === 0 ? (
-          <MediaEmpty>No prompt-injection attempts have been recorded.</MediaEmpty>
+          <Empty>No prompt-injection attempts have been recorded.</Empty>
         ) : (
-          <ScrollableTable label="Security alerts">
-            <table className="mi-table">
+          <ScrollRegion>
+            <table className="ops-table con-table">
               <thead>
                 <tr>
                   <th scope="col">When</th>
@@ -79,7 +75,7 @@ export default async function AdminConciergePage() {
                 {securityAlerts.map((alert) => (
                   <tr key={alert.id}>
                     <td>
-                      <time dateTime={alert.at}>{stamp(alert.at)}</time>
+                      <time dateTime={alert.at}>{formatStamp(alert.at)}</time>
                     </td>
                     <td>{String(alert.metadata?.kind ?? 'source')}</td>
                     <td>{String(alert.metadata?.rules ?? '')}</td>
@@ -88,16 +84,16 @@ export default async function AdminConciergePage() {
                 ))}
               </tbody>
             </table>
-          </ScrollableTable>
+          </ScrollRegion>
         )}
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="grounding" title="Grounding failures">
+      <Section id="grounding" title="Grounding failures">
         {groundingFailures.length === 0 ? (
-          <MediaEmpty>Every claim the model made was supported by the source it cited.</MediaEmpty>
+          <Empty>Every claim the model made was supported by the source it cited.</Empty>
         ) : (
-          <ScrollableTable label="Grounding failures">
-            <table className="mi-table">
+          <ScrollRegion>
+            <table className="ops-table con-table">
               <thead>
                 <tr>
                   <th scope="col">When</th>
@@ -111,7 +107,7 @@ export default async function AdminConciergePage() {
                 {groundingFailures.map((failure) => (
                   <tr key={failure.id}>
                     <td>
-                      <time dateTime={failure.at}>{stamp(failure.at)}</time>
+                      <time dateTime={failure.at}>{formatStamp(failure.at)}</time>
                     </td>
                     <td>{String(failure.metadata?.intent ?? '')}</td>
                     <td>{String(failure.metadata?.claims ?? '')}</td>
@@ -121,16 +117,16 @@ export default async function AdminConciergePage() {
                 ))}
               </tbody>
             </table>
-          </ScrollableTable>
+          </ScrollRegion>
         )}
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="answers" title="Answers">
+      <Section id="answers" title="Answers">
         {answers.length === 0 ? (
-          <MediaEmpty>Nobody has asked the concierge anything yet.</MediaEmpty>
+          <Empty>Nobody has asked the concierge anything yet.</Empty>
         ) : (
           answers.map((answer) => (
-            <article key={answer.id} className="mi-panel ai-answer" data-status={answer.status} aria-labelledby={`a-${answer.id}`}>
+            <article key={answer.id} className="con-panel ai-answer" data-status={answer.status} aria-labelledby={`a-${answer.id}`}>
               <h3 id={`a-${answer.id}`}>{answer.question}</h3>
               <ul className="ai-tags">
                 <li>{answer.status}</li>
@@ -144,21 +140,21 @@ export default async function AdminConciergePage() {
                 {answer.securityAlerts > 0 ? <li className="is-bad">{answer.securityAlerts} security alerts</li> : null}
               </ul>
               <p>{answer.answer}</p>
-              {answer.verifier.reasons.length > 0 ? <p className="media-lede">Dropped because: {answer.verifier.reasons.join(', ')}.</p> : null}
+              {answer.verifier.reasons.length > 0 ? <Note>Dropped because: {answer.verifier.reasons.join(', ')}.</Note> : null}
               {answer.sources.length > 0 ? (
                 <ol className="ai-sources">
                   {answer.sources.map((source) => (
                     <li key={`${answer.id}-${source.marker}`}>
                       [{source.marker}] {source.url ? <a href={source.url}>{source.title}</a> : source.title} · {source.trustClass}
                       {source.verifiedAt ? ` · checked ${source.verifiedAt.slice(0, 10)}` : ''}
-                      {source.retrievedAt ? ` · retrieved ${stamp(source.retrievedAt)}` : ''}
+                      {source.retrievedAt ? ` · retrieved ${formatStamp(source.retrievedAt)}` : ''}
                     </li>
                   ))}
                 </ol>
               ) : null}
               {answer.invocations.length > 0 ? (
-                <ScrollableTable label={`Capabilities called for ${answer.requestId}`}>
-                  <table className="mi-table">
+                <ScrollRegion>
+                  <table className="ops-table con-table">
                     <thead>
                       <tr>
                         <th scope="col">Capability</th>
@@ -184,15 +180,14 @@ export default async function AdminConciergePage() {
                       ))}
                     </tbody>
                   </table>
-                </ScrollableTable>
+                </ScrollRegion>
               ) : null}
-              <p className="media-lede">
-                <time dateTime={answer.createdAt}>{stamp(answer.createdAt)}</time> · request {answer.requestId}
-              </p>
+              <Note><time dateTime={answer.createdAt}>{formatStamp(answer.createdAt)}</time> · request {answer.requestId}
+              </Note>
             </article>
           ))
         )}
-      </MediaSection>
-    </MediaPage>
+      </Section>
+    </ConsolePage>
   );
 }

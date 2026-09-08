@@ -6,36 +6,70 @@
 .cv {
   --cv-max: 1200px;
   --cv-prose: 42rem;
+
+  /*
+   * The COLUMN is 42rem (`--cv-prose`); the MEASURE is narrower. `min(--cv-prose, 68ch)` resolved to
+   * 587px against Spectral and rendered 72-78 characters a line, past the 55-72 this design's
+   * DESIGN.md asks for: a `ch` is the advance of "0" and Spectral's is wider than its average
+   * letter, so the cap never bound where it was meant to. 31rem = 527px lands in the band. Measured
+   * with a Range walk over the rendered line boxes, the same probe Gilded Hour's `--gh-measure` was
+   * set from. `--cv-measure` is declared on `[data-theme="conservatory"]` above.
+   */
   --cv-gutter: clamp(20px, 4vw, 64px);
   --cv-rail: 15rem;
 
 }
 
 /*
- * Provenance ink slots, on the THEME and not on `.cv`.
+ * Slots on the THEME and not on `.cv`.
  *
  * `.cv` is this kit's shell class; guest surfaces (RSVP, Your Weekend) render provenance notes
- * without it, so scoped here these slots never applied and `provenance.css` fell through to
+ * without it, so scoped there these slots never applied and `provenance.css` fell through to
  * `--color-tertiary` — pollen, which the line below says is an accent and never text. On the creme
  * ground that measured 1.58:1, a serious axe failure on nine nodes. Soil is the text-safe ink.
+ *
+ * The `--cq-*` pair is the same argument for the shared concierge panel: it renders wherever
+ * `[data-theme]` is set, with or without this shell class. A pressed card has a soft edge here, so
+ * the control radius is `rounded.md`, not Gilded Hour's stepped 0.
  */
 [data-theme="conservatory"] {
   --prov-note-ink: var(--color-soil);
   --prov-external-ink: var(--color-soil);
   --prov-external-line: var(--color-kraft-deep);
+  --cq-control-radius: var(--rounded-md);
+  --cq-input-fill: var(--color-surface);
+
+  /* The measure, on the attribute so the guest kit's `--wp-measure` can be this design's own. */
+  --cv-measure: 31rem;
+  --wp-measure: var(--cv-measure);
 }
 
 /* ---------- type helpers ---------- */
+
+/*
+ * Two small-caps styles, not one. `label-caps` is ornament — an eyebrow, a sky unit — and stays at
+ * 0.8125rem (13.81px at this site's 17px root). A chip and a kraft tag are controls a guest taps,
+ * so they take `control-caps` at 1rem: PRODUCT.md's floor is 17px, and small caps read smaller than
+ * their em size, not larger. Same answer as Gilded Hour's, in each design's own voice.
+ */
 .cv-eyebrow,
-.cv-sky__unit,
-.cv-chip,
-.cv-tag {
+.cv-sky__unit {
   font-family: var(--font-text);
   font-size: var(--type-label-caps-size);
   font-weight: var(--type-label-caps-weight);
   line-height: var(--type-label-caps-line);
   letter-spacing: var(--type-label-caps-tracking);
   font-feature-settings: var(--type-label-caps-features);
+}
+
+.cv-chip,
+.cv-tag {
+  font-family: var(--font-text);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-feature-settings: var(--type-control-caps-features);
 }
 
 .cv-eyebrow {
@@ -71,7 +105,7 @@
 
 .cv-lede {
   margin: var(--spacing-sm) 0 0;
-  max-width: var(--cv-prose);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
 }
@@ -645,7 +679,7 @@
 }
 
 .cv-prose {
-  max-width: min(var(--cv-prose), 68ch);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-md-size);
   line-height: var(--type-body-md-line);
 }
@@ -782,8 +816,11 @@
   color: var(--color-soil);
 }
 
+/* A stat value carries a sentence when the fact is still a placeholder; without a measure it ran
+   104 characters a line on /the-wedding at 1440. */
 .cv-stat__value {
   margin: 0;
+  max-width: var(--cv-measure);
   font-size: var(--type-body-md-size);
   overflow-wrap: anywhere;
 }
@@ -1206,7 +1243,7 @@
 }
 
 .cv-footer__rights {
-  max-width: min(var(--cv-prose), 68ch);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
 }
@@ -1633,10 +1670,10 @@
 
 .cv-table th {
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  font-feature-settings: var(--type-label-caps-features);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-feature-settings: var(--type-control-caps-features);
   color: var(--color-soil);
 }
 
@@ -1965,10 +2002,10 @@
   border-radius: var(--rounded-sm);
   background: var(--color-kraft);
   color: var(--color-primary);
-  font-feature-settings: var(--type-label-caps-features);
-  letter-spacing: var(--type-label-caps-tracking);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
+  font-feature-settings: var(--type-control-caps-features);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
 }
 
 .cv .switcher__trigger:hover {

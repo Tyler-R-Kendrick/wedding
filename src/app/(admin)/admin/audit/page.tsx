@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { adminSearchAudit } from '@/capabilities/ops';
 import { AUDIT_ACTIONS, type AuditAction } from '@/contracts/audit';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, EmptyRow, Pill, Section, Stat, StatStrip } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Audit trail', robots: { index: false, follow: false } };
@@ -135,44 +135,67 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
         </form>
       </Section>
 
+      {/*
+        Level-14 review, should-fix: at 390 this was "25 undifferentiated `capability.invoked` rows
+        with `k=v · k=v` detail soup". Three changes, and none of them removes a column:
+
+        1. The SUBJECT leads. Every row's second column said `capability.invoked`, and what actually
+           told two rows apart — `admin_media_metrics` vs `list_ai_traces` — was column five, off
+           the right edge of a phone. The target is now the row header, first, which is also what
+           every other table in this console uses `<th scope="row">` for and what a screen reader
+           announces before each cell.
+        2. The detail is a real key/value list instead of one joined string. `kind=read · surface=ui
+           · durationMs=17` is three facts pretending to be a sentence.
+        3. Cells carry `data-col`, so a test asserts on the COLUMN it means rather than on an index
+           that silently follows a reordering. tests/e2e/admin-console.spec.ts uses them.
+      */}
       <Section title="Events" id="events" note="Metadata is redacted when it is written and again when it is read; keys carrying free text show as withheld rather than being reprinted here.">
         <DataTable caption="Audit events, newest first" head={
           <tr>
+            <th scope="col">Subject</th>
             <th scope="col">When</th>
             <th scope="col">Action</th>
             <th scope="col">Outcome</th>
             <th scope="col">Actor</th>
-            <th scope="col">Target</th>
             <th scope="col">Detail</th>
             <th scope="col">Request</th>
           </tr>
-        }>
-          {data.rows.length === 0 ? (
-            <EmptyRow span={7}>No audit events match this filter.</EmptyRow>
-          ) : (
-            data.rows.map((r) => (
-              <tr key={r.id}>
-                <td>{r.at}</td>
-                <td>{r.action}</td>
-                <td>
-                  <Pill tone={tone(r.outcome)}>{r.outcome}</Pill>
-                </td>
-                <td>
-                  {r.actor.kind}
-                  {r.actor.ref ? <span className="ops-code"> {r.actor.ref}</span> : null}
-                </td>
-                <td>
-                  {r.targetType}
-                  <span className="ops-code"> {r.targetId}</span>
-                </td>
-                <td className="con-wrap">
-                  {r.metadata && Object.keys(r.metadata).length ? Object.entries(r.metadata).map(([k, v]) => `${k}=${v}`).join(' · ') : '—'}
-                  {r.metadataRedacted ? <span className="con-index__blurb"> (some values withheld)</span> : null}
-                </td>
-                <td className="ops-code">{r.requestId}</td>
-              </tr>
-            ))
-          )}
+        } empty={data.rows.length === 0 ? <>No audit events match this filter.</> : null}>
+          {data.rows.map((r) => (
+            <tr key={r.id}>
+              <th scope="row" data-col="target">
+                <span className="con-subject">{r.targetId}</span>
+                <span className="con-index__blurb">{r.targetType}</span>
+              </th>
+              <td data-col="at">
+                <Stamp at={r.at} />
+              </td>
+              <td data-col="action">{r.action}</td>
+              <td data-col="outcome">
+                <Pill tone={tone(r.outcome)}>{r.outcome}</Pill>
+              </td>
+              <td data-col="actor">
+                {r.actor.kind}
+                {r.actor.ref ? <span className="ops-code"> {r.actor.ref}</span> : null}
+              </td>
+              <td className="con-wrap" data-col="detail">
+                {r.metadata && Object.keys(r.metadata).length ? (
+                  <dl className="con-detail">
+                    {Object.entries(r.metadata).map(([k, v]) => (
+                      <div key={k}>
+                        <dt>{k}</dt>
+                        <dd>{String(v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  '—'
+                )}
+                {r.metadataRedacted ? <span className="con-index__blurb">some values withheld</span> : null}
+              </td>
+              <td className="ops-code" data-col="request">{r.requestId}</td>
+            </tr>
+          ))}
         </DataTable>
         {nextHref ? (
           <p>
@@ -189,19 +212,15 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               Rows
             </th>
           </tr>
-        }>
-          {data.window.topActions.length === 0 ? (
-            <EmptyRow span={2}>Nothing has been audited yet.</EmptyRow>
-          ) : (
-            data.window.topActions.map((a) => (
-              <tr key={a.action}>
-                <th scope="row">
-                  <Link href={`/admin/audit?action=${encodeURIComponent(a.action)}`}>{a.action}</Link>
-                </th>
-                <td className="con-num">{a.count}</td>
-              </tr>
-            ))
-          )}
+        } empty={data.window.topActions.length === 0 ? <>Nothing has been audited yet.</> : null}>
+          {data.window.topActions.map((a) => (
+            <tr key={a.action}>
+              <th scope="row">
+                <Link href={`/admin/audit?action=${encodeURIComponent(a.action)}`}>{a.action}</Link>
+              </th>
+              <td className="con-num">{a.count}</td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
     </ConsolePage>

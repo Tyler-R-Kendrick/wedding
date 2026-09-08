@@ -11,7 +11,7 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const table = data.seating.table;
   return (
-    <main id="main" className="page">
+    <div className="page">
       <h1 className="page__title">Your weekend, {data.greeting.firstName}</h1>
       <p className="page__lede">Saturday, July 17, 2027 · Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
 
@@ -135,6 +135,6 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

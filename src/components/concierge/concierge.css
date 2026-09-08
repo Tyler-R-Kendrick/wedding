@@ -20,6 +20,17 @@
   margin: 0 var(--spacing-md, 16px) var(--spacing-md, 16px);
 }
 
+/*
+ * Two ROLE tokens, answered per design rather than shared.
+ *
+ * `--rounded-sm` (2px) was the same value in both designs, and both designs disagree with it:
+ * Gilded Hour's own buttons are `rounded.none` — Art Deco is a stepped corner, not a soft one —
+ * and Conservatory's are `rounded.md` (8px), because a pressed card has a rounded edge. The
+ * panel's field was filled with `--color-neutral`, the page ground, while both designs fill their
+ * own inputs with `--color-surface`, so the concierge input was the one field on the site that did
+ * not sit on the design's field colour. Each theme sets these under its own `[data-theme]` block in
+ * `themes/<id>/kit.css`; the fallbacks keep the panel correct on the foundation (admin, print).
+ */
 .cq__button {
   display: inline-flex;
   align-items: center;
@@ -27,7 +38,7 @@
   min-height: 44px;
   padding: 0 var(--spacing-md, 16px);
   border: 1px solid var(--color-primary);
-  border-radius: var(--rounded-sm, 2px);
+  border-radius: var(--cq-control-radius, var(--rounded-sm, 2px));
   background: var(--color-primary);
   color: var(--color-on-primary, var(--color-neutral));
   font: inherit;
@@ -57,6 +68,13 @@
 
 .cq__turn {
   margin: 0;
+}
+
+/* Says out loud that the transcript is capped, where the dropped turns used to be. */
+.cq__trimmed {
+  margin: 0;
+  font-size: max(17px, 0.9375rem);
+  color: var(--color-on-surface-muted, var(--color-primary));
 }
 
 /* Each design's own caps label, not one hardcoded here: Gilded Hour sets Josefin 600 at 0.18em,
@@ -203,8 +221,8 @@
   min-height: 44px;
   padding: var(--spacing-sm, 8px);
   border: 1px solid var(--color-outline, var(--color-primary));
-  border-radius: var(--rounded-sm, 2px);
-  background: var(--color-neutral);
+  border-radius: var(--cq-control-radius, var(--rounded-sm, 2px));
+  background: var(--cq-input-fill, var(--color-surface, var(--color-neutral)));
   color: inherit;
   font: inherit;
 }

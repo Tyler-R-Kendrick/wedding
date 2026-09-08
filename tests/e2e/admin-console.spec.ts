@@ -160,12 +160,28 @@ test('the audit trail renders rows, filters them server-side, and withholds free
   await page.getByLabel('Action', { exact: true }).selectOption('capability.invoked');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page).toHaveURL(/action=capability.invoked/);
-  const actions = await page.locator('#events table tbody tr td:nth-child(2)').allInnerTexts();
+  // `[data-col="action"]`, not `td:nth-child(2)`. Level 16 moved the row's SUBJECT to the front of
+  // the row (the review's "25 undifferentiated capability.invoked rows" at 390px), which shifted
+  // every index by one — and an index-addressed assertion follows a column move silently, still
+  // green, asserting about whatever landed there. The cells carry their column name now.
+  const actions = await page.locator('#events table tbody tr [data-col="action"]').allInnerTexts();
   expect(actions.length).toBeGreaterThan(0);
   expect(new Set(actions)).toEqual(new Set(['capability.invoked']));
 
-  // No page of the trail ever prints a value under a free-text or sensitive key.
-  const detail = (await page.locator('#events table tbody tr td:nth-child(6)').allInnerTexts()).join(' ');
-  expect(detail).not.toMatch(/(?:^|[\s·])(?:reason|note|question|answer|otp|email)=(?!\[)/);
+  // The subject of every row is visible without scrolling the table sideways: it is the row header.
+  const subjects = await page.locator('#events table tbody tr th[scope="row"]').allInnerTexts();
+  expect(subjects.length).toBe(actions.length);
+  expect(new Set(subjects).size, 'rows must be told apart by something').toBeGreaterThan(1);
+
+  // No page of the trail ever prints a value under a free-text or sensitive key. The detail cell is
+  // a <dl> now, so the key and its value are separate nodes: `innerText` joins them with a newline
+  // or a tab rather than with `=`, and the old `key=value` regex would pass on anything.
+  const details = await page.locator('#events table tbody tr [data-col="detail"]').evaluateAll((cells) =>
+    cells.flatMap((cell) => [...cell.querySelectorAll('div')].map((row) => `${row.querySelector('dt')?.textContent ?? ''}=${row.querySelector('dd')?.textContent ?? ''}`)),
+  );
+  expect(details.length, 'the detail column must render at least one key/value pair').toBeGreaterThan(0);
+  for (const pair of details) {
+    expect(pair, 'a free-text or sensitive key reached the rendered trail').not.toMatch(/^(?:reason|note|question|answer|otp|email)=(?!\[)/);
+  }
   await ctx.close();
 });

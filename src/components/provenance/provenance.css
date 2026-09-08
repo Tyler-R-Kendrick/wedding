@@ -13,7 +13,11 @@
   gap: var(--spacing-sm, 8px);
   align-items: center;
   margin: var(--spacing-sm, 8px) 0 0;
-  font-size: 0.9375rem;
+
+  /* A provenance line carries a link a guest follows ("Tyler's brief 2026-09-04"); at 0.9375rem it
+     measured 15.94px against PRODUCT.md's 17px floor. body-sm is the design's own "never below
+     17px" step, and it is a token rather than a raw rem. */
+  font-size: var(--type-body-sm-size, 1.0625rem);
   line-height: 1.4;
   color: var(--color-on-surface-muted, var(--color-primary));
 }
@@ -26,7 +30,10 @@
   padding: 2px 10px;
   border: 1px solid var(--color-outline, var(--color-primary));
   border-radius: var(--rounded-sm, 2px);
-  font-size: 0.75rem;
+
+  /* The badge is ornament next to the line it annotates, so it takes the ornament caps step
+     (DESIGN.md `label-caps`) rather than a raw rem of its own. */
+  font-size: var(--type-label-caps-size, 0.8125rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;

@@ -60,7 +60,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
   // and `main` ran the full viewport width — the page sat on the themed ground without being
   // composed by the design. Same treatment as /rsvp and /your-weekend at level 07.
   return (
-    <main id="main" className="page">
+    <div className="page">
       <HandoffClickRecorder />
       <header>
         <h1 className="page__title">Getting here, getting around, getting home.</h1>
@@ -140,7 +140,7 @@ export const TransportationPageRecipe: PageRecipe<TransportationPageData> = ({ d
       <footer className="sec">
         <p className="hint">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
       </footer>
-    </main>
+    </div>
   );
 };
 

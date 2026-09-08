@@ -398,6 +398,12 @@ body {
  * every one of them silently took its `33rem` fallback — a 53-character line against the 55-72 both
  * DESIGN.md files ask for. A token that is only ever read is not a token; it is a default with
  * extra steps, and that is exactly the defect an independent review found here at level 11.
+ *
+ * The 42rem here is the value for surfaces with NO design — admin, print, the dev inbox, error
+ * pages. Each design overrides it in its own kit (`[data-theme="<id>"] { --wp-measure: … }`) with
+ * the measure its DESIGN.md asks for, because 42rem renders 82 characters in Gilded Hour and 78 in
+ * Conservatory: one number cannot be right for two faces. Level 16, measured before and after with
+ * a Range walk over rendered line boxes.
  */
 :root {
   --wp-measure: 42rem;

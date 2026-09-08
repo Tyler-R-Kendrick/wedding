@@ -1,56 +1,17 @@
-import Link from 'next/link';
 import { newId } from '@/contracts/ids';
 import type { ReactNode } from 'react';
 import './ops.css';
 
-/** Plain, keyboard-complete admin primitives on the shared foundation tokens (no guest theme). */
-export function OpsPage({ title, lede, children, notice }: { title: string; lede?: string; children: ReactNode; notice?: { ok?: string; error?: string } }) {
-  return (
-    <main id="main" className="ops">
-      <nav aria-label="Guest operations" className="ops-nav">
-        <Link href="/admin">Admin</Link>
-        <Link href="/admin/guests">Guests</Link>
-        <Link href="/admin/households">Households</Link>
-        <Link href="/admin/invitations">Invitations</Link>
-      </nav>
-      <h1 className="ops-title">{title}</h1>
-      {lede ? <p className="ops-lede">{lede}</p> : null}
-      {notice?.ok ? (
-        <p className="ops-notice ops-notice-ok" role="status">
-          {notice.ok}
-        </p>
-      ) : null}
-      {notice?.error ? (
-        <p className="ops-notice ops-notice-error" role="alert">
-          {notice.error}
-        </p>
-      ) : null}
-      {children}
-    </main>
-  );
-}
-
-export function SignInRequired() {
-  return (
-    <main id="main" className="ops">
-      <h1 className="ops-title">Administrator sign-in required</h1>
-      <p>
-        <Link href="/sign-in/admin">Sign in with your administrator email</Link>
-      </p>
-    </main>
-  );
-}
-
-export function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
-  return (
-    <section className="ops-section" aria-labelledby={id ?? title.replace(/\W+/g, '-').toLowerCase()}>
-      <h2 id={id ?? title.replace(/\W+/g, '-').toLowerCase()} className="ops-h2">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
+/*
+ * Form primitives for the admin console.
+ *
+ * The page shell, the sign-in gate and the section wrapper used to live here too, as a second
+ * shell (`OpsPage`) beside `console.tsx`'s: two page frames, two gates, two `Section`s, one
+ * stylesheet, and a nav strip that repeated four of the links the layout already renders above it.
+ * Level 16 moved every screen onto `ConsolePage`; what is left here is the parts that shell does
+ * not have — labelled fields, a checkbox that reports its own presence, a submit button and a
+ * render-time idempotency key.
+ */
 
 export function Input({ id, label, type = 'text', name, defaultValue, required, hint, options }: { id: string; label: string; type?: string; name?: string; defaultValue?: string; required?: boolean; hint?: string; options?: { value: string; label: string }[] }) {
   return (
@@ -82,6 +43,27 @@ export function Checkbox({ id, label, name, defaultChecked }: { id: string; labe
       <input id={id} name={name ?? id} type="checkbox" defaultChecked={defaultChecked} />
       <label htmlFor={id}>{label}</label>
     </div>
+  );
+}
+
+/**
+ * A radio group with a real `<fieldset>`/`<legend>`.
+ *
+ * The screens that needed one were reaching into `components/rsvp/fields` — the GUEST RSVP kit —
+ * for `ChoiceGroup`, so an admin correcting an answer got the guest form's widgets, sizes and
+ * error styling on an operations screen. This is the console's own.
+ */
+export function Radios({ name, legend, options, describedBy }: { name: string; legend: string; options: { value: string; label: string; defaultChecked?: boolean }[]; describedBy?: string }) {
+  return (
+    <fieldset className="ops-field ops-radios" aria-describedby={describedBy}>
+      <legend>{legend}</legend>
+      {options.map((o) => (
+        <div className="ops-check" key={o.value}>
+          <input type="radio" id={`${name}-${o.value}`} name={name} value={o.value} defaultChecked={o.defaultChecked} />
+          <label htmlFor={`${name}-${o.value}`}>{o.label}</label>
+        </div>
+      ))}
+    </fieldset>
   );
 }
 

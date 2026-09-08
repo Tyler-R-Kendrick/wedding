@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Checkbox, IdemKey, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
+import { Button, Checkbox, IdemKey, Input } from '../_components/ops';
+import { ConsoleGate, ConsolePage, DataTable, Day, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -11,7 +12,7 @@ type Guest = { id: string; householdId: string; householdName: string; firstName
 export default async function GuestsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const principal = await adminPrincipal();
-  if (principal.kind !== 'admin') return <SignInRequired />;
+  if (principal.kind !== 'admin') return <ConsoleGate what="Guests" />;
   const [list, hh] = await Promise.all([
     adminInvoke<{ guests: Guest[] }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: sp.merged === '1' }, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[] }>('admin_list_households', {}, { method: 'GET' }),
@@ -21,7 +22,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
   const isOwner = principal.roles.has('owner');
   return (
-    <OpsPage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
+    <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
         <form action={saveGuest} className="ops-form">
           <IdemKey />
@@ -49,19 +50,21 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <a href="/admin/guests/export">Export CSV</a>
           <a href="/admin/guests/export?notes=1&address=1">Export CSV with notes + addresses</a>
         </form>
-        <div className="ops-table-wrap">
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Household</th>
-                <th scope="col">Kind</th>
-                <th scope="col">Email</th>
-                <th scope="col">Access</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <DataTable
+          caption="Guests and the households they belong to"
+          dense={false}
+          empty={rows.length === 0 ? <>No guest matches this search.</> : null}
+          head={
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Household</th>
+              <th scope="col">Kind</th>
+              <th scope="col">Email</th>
+              <th scope="col">Access</th>
+              <th scope="col">Actions</th>
+            </tr>
+          }
+        >
               {rows.map((g) => (
                 <tr key={g.id}>
                   <td>
@@ -71,7 +74,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   <td>{g.householdName}</td>
                   <td>{g.kind}{g.isMinor ? ' · minor' : ''}</td>
                   <td>{g.email ?? '—'}</td>
-                  <td>{g.claimed ? `claimed ${g.claimedAt ? new Date(g.claimedAt).toLocaleDateString('en-US') : ''} (${g.claimMethod})` : 'not claimed'}</td>
+                  <td>{g.claimed ? <>claimed <Day at={g.claimedAt} /> ({g.claimMethod})</> : 'not claimed'}</td>
                   <td>
                     <div className="ops-form-inline">
                       <a href={`/admin/guests?edit=${encodeURIComponent(g.id)}${sp.householdId ? `&householdId=${encodeURIComponent(sp.householdId)}` : ''}`}>Edit</a>
@@ -91,9 +94,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       </Section>
 
       <Section title="Move a guest’s access to another email (rebind)">
@@ -138,6 +139,6 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           </form>
         </Section>
       ) : null}
-    </OpsPage>
+    </ConsolePage>
   );
 }

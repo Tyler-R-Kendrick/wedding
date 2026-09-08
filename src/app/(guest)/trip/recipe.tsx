@@ -116,7 +116,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
        the four guest surfaces still on ad-hoc utilities — its h1 rendered in the TEXT face (Josefin
        Sans / Spectral) at a fixed `text-4xl`, so it read as a different site from /rsvp,
        /your-weekend and /transportation standing right next to it in the same nav. */
-    <main id="main" className="page">
+    <div className="page">
       <header>
         {/* No kicker above the heading: `impeccable detect` bans a tracked uppercase label sitting
             as its own block above an h1 outright, and "Your Weekend" adds nothing "Your trip" does
@@ -237,13 +237,13 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
           </form>
         ) : null}
       </Section>
-    </main>
+    </div>
   );
 };
 
 export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
   return (
-    <main id="main" className="page">
+    <div className="page">
       <h1 className="page__title">Your trip</h1>
       <p className="page__lede">
         {reason === 'anonymous' ? 'Open the link from your invitation to see and plan your trip. Until then, everything about getting here is on ' : 'This page is for invited guests. Everything about getting here is on '}
@@ -252,6 +252,6 @@ export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
         </a>
         .
       </p>
-    </main>
+    </div>
   );
 }

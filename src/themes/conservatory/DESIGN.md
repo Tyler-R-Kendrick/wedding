@@ -77,6 +77,13 @@ typography:
     fontWeight: 500
     lineHeight: 1
     letterSpacing: 0.02em
+  control-caps:
+    fontFamily: Spectral
+    fontSize: 1rem
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: 0.08em
+    fontFeature: "'smcp', 'c2sc'"
   label-caps:
     fontFamily: Spectral
     fontSize: 0.8125rem
@@ -410,8 +417,14 @@ script faces anywhere.
 
 ## Layout
 
-**The herbarium sheet.** A 12-column grid, max content width 1200px, prose
-width 42rem, but the content column is *left-weighted*: text occupies
+**The herbarium sheet.** A 12-column grid, max content width 1200px, text
+column 42rem (`--cv-prose`) with running text capped narrower at 31rem
+(`--cv-measure`) — the column and the measure are two numbers, and only the
+second one is about reading. `min(42rem, 68ch)` resolved to 587px against
+Spectral and rendered 72–78 characters, past the 55–72 above, because a
+`ch` is the advance of "0" and Spectral's is wider than its average letter;
+31rem measures 62–69 (Range walk over rendered line boxes at 1440). The
+content column is *left-weighted*: text occupies
 columns 1–7 and the right 5 columns are the "mounting area" where pressed
 cards, tags, and ornament hang. Cards may cross section boundaries by up to
 `spacing.2xl` and overlap each other by `spacing.lg`. Section rhythm is

@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { adminLifecycleStatus } from '@/capabilities/ops';
 import { PREVIEW_COOKIE } from '@/domain/lifecycle/constants';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, EmptyRow, KeyValues, Pill, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stamp } from '../_components/console';
 import { startPreview, stopPreview } from '../_lib/ops-actions';
 import { PublishForm } from './PublishForm';
 
@@ -46,7 +46,7 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
         items={[
           { label: 'Published state', value: <strong>{s.state}</strong> },
           { label: 'Home page mode', value: s.mode },
-          { label: 'Published', value: s.publishedAt ?? 'never' },
+          { label: 'Published', value: s.publishedAt ? <Stamp at={s.publishedAt} /> : 'never' },
           { label: 'By', value: s.publishedBy ? `${s.publishedBy.kind}${s.publishedBy.ref ? ` · ${s.publishedBy.ref}` : ''}` : '—' },
           { label: 'Calendar suggests', value: s.behindSchedule ? <Pill tone="warn">{s.suggested}</Pill> : <Pill tone="good">{s.suggested}</Pill> },
         ]}
@@ -74,20 +74,16 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
             <th scope="col">Navigation gains</th>
             <th scope="col">Navigation loses</th>
           </tr>
-        }>
-          {s.transitions.length === 0 ? (
-            <EmptyRow span={5}>{s.state} is the last state; there is nowhere further to go.</EmptyRow>
-          ) : (
-            s.transitions.map((t) => (
-              <tr key={t.to}>
-                <th scope="row">{t.to}</th>
-                <td>{t.direction}</td>
-                <td>{t.mode}</td>
-                <td className="con-wrap">{t.navGained.length ? t.navGained.join(', ') : '—'}</td>
-                <td className="con-wrap">{t.navLost.length ? t.navLost.join(', ') : '—'}</td>
-              </tr>
-            ))
-          )}
+        } empty={s.transitions.length === 0 ? <>{s.state} is the last state; there is nowhere further to go.</> : null}>
+          {s.transitions.map((t) => (
+            <tr key={t.to}>
+              <th scope="row">{t.to}</th>
+              <td>{t.direction}</td>
+              <td>{t.mode}</td>
+              <td className="con-wrap">{t.navGained.length ? t.navGained.join(', ') : '—'}</td>
+              <td className="con-wrap">{t.navLost.length ? t.navLost.join(', ') : '—'}</td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
 
@@ -134,21 +130,17 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
             <th scope="col">Detail</th>
             <th scope="col">Request</th>
           </tr>
-        }>
-          {s.history.length === 0 ? (
-            <EmptyRow span={6}>Nothing has been published or previewed yet.</EmptyRow>
-          ) : (
-            s.history.map((h) => (
-              <tr key={h.id}>
-                <td>{h.at}</td>
-                <td>{h.action}</td>
-                <td>{h.actor.kind}</td>
-                <td>{h.outcome}</td>
-                <td className="con-wrap">{h.metadata ? Object.entries(h.metadata).map(([k, v]) => `${k}=${v}`).join(' · ') : '—'}</td>
-                <td className="ops-code">{h.requestId}</td>
-              </tr>
-            ))
-          )}
+        } empty={s.history.length === 0 ? <>Nothing has been published or previewed yet.</> : null}>
+          {s.history.map((h) => (
+            <tr key={h.id}>
+              <td><Stamp at={h.at} /></td>
+              <td>{h.action}</td>
+              <td>{h.actor.kind}</td>
+              <td>{h.outcome}</td>
+              <td className="con-wrap">{h.metadata ? Object.entries(h.metadata).map(([k, v]) => `${k}=${v}`).join(' · ') : '—'}</td>
+              <td className="ops-code">{h.requestId}</td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
     </ConsolePage>

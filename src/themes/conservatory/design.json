@@ -407,9 +407,13 @@
         "displayName": "Button / field label",
         "purpose": "Spectral 500, 16px, line-height 1 inside flex rows."
       },
+      "control-caps": {
+        "displayName": "Control small caps",
+        "purpose": "Small caps a guest must READ or OPERATE: nav links, form labels, buttons, tags that act, table headers. 17px is the floor (PRODUCT.md). font-feature smcp/c2sc; never text-transform: uppercase."
+      },
       "label-caps": {
         "displayName": "Small caps label",
-        "purpose": "Eyebrows, nav tags, memory tags. font-feature smcp/c2sc; never text-transform: uppercase."
+        "purpose": "Ornamental small caps only: eyebrows, memory tags, unit labels. Never a control or a form label — those take control-caps at 17px. font-feature smcp/c2sc; never text-transform: uppercase."
       },
       "specimen-label": {
         "displayName": "Specimen label",
