@@ -162,7 +162,16 @@ describe('principal resolver', () => {
     // for the biometric gate (`admin_biometric_status`, `admin_delete_biometric_data`,
     // `admin_enable_biometric_readiness`, `admin_disable_biometric_readiness`). The assertion below
     // is the one that matters: not one of the sixty reaches an assistant.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(60);
+    // 60 -> 70: level 14's ten `admin_`-prefixed console capabilities — `admin_lifecycle_status`,
+    // `admin_publish_lifecycle` (`admin_lifecycle`); `admin_search_audit` (`admin_audit`);
+    // `admin_jobs_overview`, `admin_retry_job`, `admin_cancel_job`, `admin_ops_metrics`,
+    // `admin_provider_status` (`admin_integrations`); `admin_flag_status`,
+    // `admin_disable_flag_readiness` (`admin_lifecycle`). The eleventh, `draft_lifecycle_transition`,
+    // has no prefix and so is not counted here — the count is of the `admin_` namespace, not of the
+    // level. Every one of the eleven is `ui: true, ai: false, webmcp: false`, which is what the
+    // second assertion checks and what matters: publishing a lifecycle state, retrying a job and
+    // moving a readiness switch are not things an assistant may reach for.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);
