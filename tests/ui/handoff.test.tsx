@@ -6,7 +6,7 @@ import { GiftsPageRecipe, TransportationPageRecipe } from '@/components/handoff/
 import { ReservationHandoffCard } from '@/components/handoff/ReservationHandoffCard';
 import { UnavailableCard } from '@/components/handoff/UnavailableCard';
 import { PLACEHOLDER_LABEL } from '@/components/provenance';
-import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY } from '@/domain/gifts/copy';
+import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY, giftsStatement } from '@/domain/gifts/copy';
 import { DEFAULT_RESERVATION_VENUES } from '@/domain/reservations/repo';
 import { venueView } from '@/domain/reservations/service';
 import { TRANSPORTATION_TOPICS } from '@/domain/transport/content';
@@ -78,7 +78,7 @@ describe('handoff cards', () => {
 
   it('gifts recipe frames "next adventures", names each provider, and never says cash fund or donate', () => {
     const link = { ...handoff, id: 'r', kind: 'registry' as const, note: null, placeholder: true, origin: 'placeholder' as const, verifiedAt: null };
-    render(<GiftsPageRecipe data={{ copy: GIFTS_COPY, links: [link, { ...link, id: 'a', kind: 'adventure-fund' as const, providerDisplayName: 'Joy', provider: 'withjoy' }] }} />);
+    render(<GiftsPageRecipe data={{ copy: GIFTS_COPY, statement: giftsStatement({ registry: 1, adventures: 1 }), links: [link, { ...link, id: 'a', kind: 'adventure-fund' as const, providerDisplayName: 'Joy', provider: 'withjoy' }] }} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Help us with our next adventures');
     expect(screen.getByText(/via Zola/)).toBeTruthy();
     expect(screen.getByText(/via Joy/)).toBeTruthy();

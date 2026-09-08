@@ -4,7 +4,7 @@ import type { ContentSourceId } from '@/contracts/ids';
 import { ok } from '@/contracts/result';
 import { seedId } from '@/db/seed/sources';
 import { guestHandoffSchema } from '@/domain/external/schemas';
-import { GIFTS_COPY, listGiftLinks } from '@/domain/gifts';
+import { GIFTS_COPY, giftsStatement, listGiftLinks } from '@/domain/gifts';
 import { appServices } from './context';
 
 const input = z.object({}).optional();
@@ -38,6 +38,16 @@ const output = z.object({
     thanks: z.string(),
   }),
   links: z.array(giftLinkViewSchema),
+  /**
+   * The gift arrangements in prose, computed from what is actually configured.
+   *
+   * `copy` above is the page's furniture, and the AI fact renderer used to flatten all of it into
+   * an answer — field paths and all: "Copy › Registry intro: A conventional list of things for our
+   * home, kept with a registry provider." Two defects in one line: an internal path shown to a
+   * guest, and a registry asserted to exist. `copy` is skipped by that renderer now, and this is
+   * what it reads instead.
+   */
+  statement: z.string(),
 });
 
 export type GiftLinks = z.infer<typeof output>;
@@ -61,6 +71,7 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
   async handler(ctx) {
     const { db, providers } = appServices(ctx);
     const links = await listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') });
-    return ok({ data: { copy: GIFTS_COPY, links }, sources: [BRIEF_CITATION] });
+    const counts = { registry: links.filter((l) => l.kind === 'registry' && !l.placeholder).length, adventures: links.filter((l) => l.kind === 'adventure-fund' && !l.placeholder).length };
+    return ok({ data: { copy: GIFTS_COPY, links, statement: giftsStatement(counts) }, sources: [BRIEF_CITATION] });
   },
 });

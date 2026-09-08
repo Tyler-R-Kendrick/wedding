@@ -1,4 +1,4 @@
-import { placeholderHint } from '@/components/provenance/Placeholder';
+import { withoutPlaceholderMarker } from '@/components/provenance/Placeholder';
 import { isPlaceholderText } from '@/content/schemas';
 import type { Citation } from '@/contracts/provenance';
 import type { Db } from '@/db/client';
@@ -46,7 +46,7 @@ export interface ReservationWhen {
  * benefit's Amount/Valid/Area fields, where a bare hint would read as a value and the honest render
  * is the "To be confirmed" fallback those surfaces already have.
  */
-const forGuest = (text: string) => (isPlaceholderText(text) ? placeholderHint(text) : text);
+const forGuest = (text: string) => (isPlaceholderText(text) ? withoutPlaceholderMarker(text) : text);
 
 export function venueView(v: ReservationVenueRow): ReservationVenueView {
   return { id: v.id, name: forGuest(v.name), note: v.note ? forGuest(v.note) : v.note, placeholder: v.placeholder, verifiedAt: v.verifiedAt?.toISOString() ?? null, sourceId: v.sourceId };

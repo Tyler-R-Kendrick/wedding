@@ -1,4 +1,4 @@
-import { placeholderHint } from '@/components/provenance/Placeholder';
+import { withoutPlaceholderMarker } from '@/components/provenance/Placeholder';
 import { isPlaceholderText } from '@/content/schemas';
 import type { Db } from '@/db/client';
 import type { GiftLinkKind } from '@/db/schema';
@@ -26,7 +26,7 @@ export interface GiftLinkView extends GuestHandoff {
  * turns it into the editorial sentence naming who is still writing. Strip the marker for display
  * and keep the hint, exactly as `Text`/`Paragraphs` do for content blocks.
  */
-const guestLabel = (label: string) => (isPlaceholderText(label) ? placeholderHint(label) : label);
+const guestLabel = (label: string) => (isPlaceholderText(label) ? withoutPlaceholderMarker(label) : label);
 
 function fromProvider(kind: GiftLinkKind, provider: RegistryProvider | CashFundProvider, links: GiftLink[]): GiftLinkView[] {
   const out: GiftLinkView[] = [];

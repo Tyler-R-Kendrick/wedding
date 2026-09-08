@@ -98,13 +98,19 @@ const ROUTE_WORDS: [RegExp, string][] = [
   [/faq|question|ask/i, '/ask-us'],
 ];
 
+/** CAA outlets by name — the food questions that are answerable from the hotel's own dated records. */
+const NAMED_OUTLET = /cindy|shake\s*shack|game\s*room|drawing\s*room|milk\s*room|cherry\s*circle|mid[oō]suji|fairgrounds|the\s+ives|topgolf|rooftop/i;
+
 const PROTECTED: [RegExp, ProtectedFact][] = [
   // "Which room / what space" and "where is the ceremony" are room questions. "Where is the wedding"
   // is a venue question and is answerable from site_status, so it must not be gated here.
   [/(which|what)\s+(room|space|ballroom|hall)\b|(ceremony|reception|cocktail\s*hour)[^.?]{0,40}\b(room|space|held|take place|happen|located)\b|\bwhere\b[^.?]{0,30}\b(ceremony|reception|cocktail\s*hour)\b/i, 'room'],
   [/(what|which)\s+time|start time|\bstarts?\b|\bbegins?\b|o'?clock|\bschedule\b|\btimeline\b|how long|end time|\bends?\b/i, 'time'],
   [/dress\s*code|what (should|do|can|to) (i|we) wear|\battire\b|black[- ]tie|cocktail attire|formal|\bsuit\b|\bgown\b|\bheels\b/i, 'dress'],
-  [/\bmenu\b|what('s| is) (for )?(dinner|lunch|food)|\bvegan\b|\bvegetarian\b|gluten|\bcater/i, 'menu'],
+  // Food is asked about far more often as a NEED than as a menu. "I have a nut allergy, what is
+  // being served?" used to miss this row entirely, so no gate ran and the answer was assembled from
+  // the hotel's restaurant pages — the one fact class where a wrong answer costs a guest.
+  [/\bmenu\b|what('s| is) (for )?(dinner|lunch|food)|\bvegan\b|\bvegetarian\b|gluten|\bcater|\ballerg|\bdietar|\bpeanut|\bshellfish\b|\bkosher\b|\bhalal\b|\b(nut|dairy|gluten)[- ]free\b|\b(serve[ds]?|serving)\b[^.?]{0,20}\b(dinner|lunch|food|meal|guests)\b|what[^.?]{0,25}\b(served|serving)\b|(will there be|is there)[^.?]{0,20}\b(dinner|lunch|food|a meal)\b/i, 'menu'],
   [/\bmusic\b|\bband\b|\bdj\b|playlist|first dance|song/i, 'music'],
 ];
 
@@ -118,7 +124,7 @@ export const PROTECTED_FACT_WORDS: Record<ProtectedFact, RegExp> = {
   room: /\broom\b|\bballroom\b|\bspace\b|\bvenue\b|\bhall\b|\bcourt\b|not yet decided/i,
   time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|not yet decided/i,
   dress: /\bdress\b|\battire\b|\bwear\b|black[- ]tie|\bformal\b|\bsuit\b|\bgown\b|not yet decided/i,
-  menu: /\bmenu\b|\bfood\b|\bdinner\b|\bdietary\b|\bmeal\b|\bcater/i,
+  menu: /\bmenu\b|\bfood\b|\bdinner\b|\bdietar|\ballerg|\bmeal\b|\bcater|not yet decided/i,
   music: /\bmusic\b|\bband\b|\bdj\b|\bplaylist\b|\bdance\b|\bsong\b|not yet decided/i,
 };
 
@@ -239,7 +245,11 @@ export function planRoute(question: string, available: readonly RouterTool[], ev
     for (const call of rule.calls(q)) add(call);
   }
 
-  const protectedFact = PROTECTED.find(([re]) => re.test(q))?.[1];
+  let protectedFact = PROTECTED.find(([re]) => re.test(q))?.[1];
+  // A named hotel outlet turns a food question back into an outlet question, which has a public,
+  // dated answer. Without this, "does Cindy's do a vegetarian option?" would be refused with "the
+  // menu is not decided yet" — true about the wedding, and not what was asked.
+  if (protectedFact === 'menu' && NAMED_OUTLET.test(q)) protectedFact = undefined;
   if (protectedFact) {
     intents.unshift(`wedding.protected:${protectedFact}`);
     add({ name: 'get_faq', input: {}, reason: 'protected wedding fact: FAQ placeholders say what is undecided' });

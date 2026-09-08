@@ -27,7 +27,10 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
       <Section id="gifts-registry" labelledBy="gifts-registry-title">
         <SectionHeading level={2} id="gifts-registry-title" title={data.copy.registryHeading} />
         <Prose>
-          <p>{data.copy.registryIntro}</p>
+          {/* The intro describes a list that is kept with a provider. Until one exists it is a claim the
+            site has no right to make — and it used to render directly above the placeholder saying
+            the couple have not chosen where to keep it. It appears with the links, or not at all. */}
+          {registry.length ? <p>{data.copy.registryIntro}</p> : null}
         </Prose>
         {registry.length ? (
           registry.map((l) => <GiftLinkCard key={l.id} link={l} />)
@@ -43,7 +46,7 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
       <Section id="gifts-adventures" ground="wash" labelledBy="gifts-adventures-title">
         <SectionHeading level={2} id="gifts-adventures-title" title={data.copy.adventureHeading} />
         <Prose>
-          <p>{data.copy.adventureIntro}</p>
+          {adventures.length ? <p>{data.copy.adventureIntro}</p> : null}
         </Prose>
         {adventures.length ? (
           adventures.map((l) => <GiftLinkCard key={l.id} link={l} />)
