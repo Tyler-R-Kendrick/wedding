@@ -179,9 +179,61 @@ confirmed:
 - **no server-side fetch takes a caller-influenced URL** — every provider base URL comes from `env`,
   so there is no classic SSRF sink to guard. Recorded rather than assumed.
 
+## 9b. What the integration pass found, after the swarm reported
+
+Two things, and the first is the reason this section exists.
+
+**The CSP made user-content isolation weaker than it found it.** The header rule matched `/(.*)`,
+which includes the routes that serve uploaded bytes. Those set
+`Content-Security-Policy: sandbox` per response — the standard isolation for a document this site
+did not write — and the blanket rule replaced it with the site policy, `script-src 'unsafe-inline'`
+included.
+
+The inversion is twofold. §7 above argues that `img-src` and `media-src` may stay permissive
+**because** served objects carry their own sandbox. The header rule removed exactly the control that
+argument depends on, so the level that added a CSP left user content less isolated than before it.
+
+It was found by running the **test-server Playwright arrangement, which §9 records this level as not
+having run**. `media-upload.spec.ts:208` asserts `sandbox` on a served derivative and received the
+site policy. That single header also accounts for the rest of the failure: with the sandbox gone the
+upload journey took 1.8m and failed; with the storage routes excluded it is 33s and green — the same
+timing as with no CSP at all. Four attributions were run to get there (all headers off, CSP only off,
+`connect-src` widened, and the shipped policy twice) rather than accepting the first plausible story;
+`connect-src` was my first guess and it was wrong.
+
+`tests/e2e/security-headers.spec.ts` now pins both halves — the site policy IS on a page, and is NOT
+on a storage route — mutation-verified by restoring `/(.*)`, which fails it on all three projects.
+
+**Two claims of this level's I checked and found correct**, recorded because the checking is the
+point: the theme tree is still SSG with the header rule in place (`● /t/gilded-hour`,
+`● /t/conservatory` in the production build — my hypothesis that `headers()` had opted them out was
+wrong), and the dev policy really does carry `'unsafe-eval'` and `ws:`, so the relaxed shape is not
+silently applied in production.
+
+**One change reverted, then restored.** The `.claude/settings.json` move of `npm run skills:update`
+and friends from `allow` to `ask` reads as agent configuration outside a swarm's remit, and I
+reverted it on that basis. That was wrong: it is level-03 review item **N17**, and
+`docs/reviews/PR-01-self-review.md` already states that "level 15 removes it from the allowlist".
+Restored, and `CLAUDE.md`'s Maintenance section — which still described that command as routine —
+now says it is a reviewed action, because a vendored skill executes its instructions when loaded.
+
 ## 10. Verdict
 
 **READY**, with two things a reviewer should look at rather than skim: the `.claude/settings.json`
-permission change (item 11 — configuration, normally outside a swarm's remit, and tightening only),
-and the CSP's `'unsafe-inline'` (§7 — a real trade-off, taken deliberately, with the reasoning and
-the upgrade path written down).
+permission change (item 11 — this is level-03 review N17, which `docs/reviews/PR-01-self-review.md`
+already promised level 15 would close; it tightens only), and the CSP's `'unsafe-inline'` (§7 — a
+real trade-off, taken deliberately, with the reasoning and the upgrade path written down).
+
+**Gates, on the integrated tree** (`npm run verify` exit 0): typecheck, eslint 0 errors with 7
+pre-existing `<img>` warnings from levels 10–11, stylelint, three DESIGN.md files at 0 errors,
+design sync, `impeccable detect .`, **630** unit/UI, **308** integration, evals, `next build`.
+Playwright both arrangements on servers this run started: **166 passed / 47 skipped** test-server —
+the arrangement §9 records as not run, and the one that found the CSP regression — and **241 passed
+/ 86 skipped** production. `db:generate` reports no schema change, twice.
+
+**The worst true thing about this diff** is that a level whose whole subject is security shipped a
+change that removed an isolation header from user-uploaded content, and justified a permissive
+`img-src` in the same file on the grounds that the header was there. It was caught only because the
+integration pass ran the one arrangement the level had skipped. A CSP is the kind of change whose
+failure mode is silence: nothing errors, a header is simply weaker than it was, and the only way to
+know is to assert it on the route that matters.
