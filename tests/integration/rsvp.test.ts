@@ -10,7 +10,7 @@ import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { runDueJobs } from '@/lib/jobs';
 import { ok } from '@/contracts/result';
 import { getProvider, resetProviders, setProviderOverride } from '@/providers/registry';
-import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
+import { expectErr, expectOk, run, runHandler, seedSwarmE } from './helpers/swarm-e';
 
 const A1 = fixturePrincipal('A1');
 const A2 = fixturePrincipal('A2');
@@ -197,9 +197,17 @@ describe('authorization: only your own household, only entitled events', () => {
     expect(JSON.stringify(ai.data)).not.toContain('NEEDS-SECRET');
     expect(expectErr(await run(submitRsvp, A1, {}, { surface: 'ai', idempotencyKey: newId() })).code).toBe('not_found');
     expect(expectErr(await run(getMyRsvp, { kind: 'anonymous' }, {})).code).toBe('unauthenticated');
-    // Entitled on purpose: otherwise authorize() refuses before getMyRsvp's own guest-only guard runs,
-    // and that guard — the only thing stopping an entitled admin reading a household's RSVP — is untested.
-    expect(expectErr(await run(getMyRsvp, fixtureAdmin({ entitlements: new Set(['rsvp_self']) }), {})).code).toBe('forbidden');
+    // An entitled admin is refused twice over, and the two refusals are worth separating.
+    // This comment used to say the admin had to HOLD `rsvp_self` "otherwise authorize() refuses
+    // before getMyRsvp's own guest-only guard runs" — true until level 15, and now wrong: since
+    // `get_my_rsvp` declares `guestIdentityRequired`, authorize() refuses an admin whatever
+    // entitlements it holds, so this line no longer reaches the handler at all. It still asserts
+    // something real (the pipeline refuses), but it would keep passing with the handler's guard
+    // deleted, which is why the direct handler call below exists.
+    const entitledAdmin = fixtureAdmin({ entitlements: new Set(['rsvp_self']) });
+    expect(expectErr(await run(getMyRsvp, entitledAdmin, {})).code).toBe('forbidden');
+    // The handler's own guard, reached with the pipeline out of the way.
+    expect(expectErr(await runHandler(getMyRsvp, entitledAdmin, {})).code).toBe('forbidden');
     const events = expectOk(await run(listMyEvents, B1, {}));
     expect(events.data.events.map((e) => e.id).sort()).toEqual([E.ceremony, E.cocktailHour, E.reception].sort());
     expect(events.data.events.find((e) => e.id === E.ceremony)?.invited.map((i) => i.guestId)).toEqual([FX.guestB1]);

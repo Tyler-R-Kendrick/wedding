@@ -38,6 +38,28 @@ export async function run<I, O>(cap: CapabilityDescriptor<I, O>, principal: Prin
   return invoke(cap, ctx, input);
 }
 
+/**
+ * Calls a capability's HANDLER directly, with the same context `run` builds but no pipeline.
+ *
+ * Needed since level 15: `guestIdentityRequired` refuses an admin inside `authorize()` (pipeline
+ * step 3), which is upstream of the handler's own guest-only guard. A test that drives an admin
+ * through `run` therefore proves the pipeline refuses, and says nothing at all about the guard —
+ * so the guard could be deleted with the test still green. Use this to keep the guard covered:
+ * the two layers are deliberately independent, and the handler is the one that survives a
+ * descriptor being edited.
+ */
+export async function runHandler<I, O>(cap: CapabilityDescriptor<I, O>, principal: Principal, input: I, opts: RunOptions = {}) {
+  const ctx = await createCapabilityContext({
+    principal,
+    requestId: opts.requestId ?? `req-${newId()}`,
+    surface: opts.surface ?? 'ui',
+    idempotencyKey: opts.idempotencyKey,
+    confirmationToken: opts.confirmationToken,
+    now: opts.now,
+  });
+  return cap.handler(ctx, input);
+}
+
 export function expectOk<T, E>(r: { ok: true; value: T } | { ok: false; error: E }): T {
   if (!r.ok) throw new Error(`expected ok, got ${JSON.stringify(r.error)}`);
   return r.value;

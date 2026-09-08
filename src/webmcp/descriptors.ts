@@ -21,7 +21,7 @@ import type { AnyCapability, AuthLevel, CapabilityKind, ConfirmationMode, ToolAn
  *     `explicit` so the pipeline answers `confirmation_required { reason: 'requires_ui' }`.
  *  7. Idempotent mutations need a caller-generated key; the client sends one per execute call
  *     for signed-in principals only (anonymous keys are refused by the pipeline).
- *  8. Output is capped at `maxOutputChars` (pipeline step 8) on the webmcp surface.
+ *  8. Output is capped at `maxOutputChars` (pipeline step 9) on the webmcp surface.
  */
 export interface WebMcpExecutionRules {
   /** The auth level the capability declares; the manifest only lists tools the caller passes. */

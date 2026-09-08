@@ -16,6 +16,8 @@ export const deleteMyUpload = defineCapability<z.infer<typeof input>, z.infer<ty
     'Only the uploader can do this. Professional media cannot be deleted here.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['upload_media'],
   confirmation: 'inline',
   idempotent: true,

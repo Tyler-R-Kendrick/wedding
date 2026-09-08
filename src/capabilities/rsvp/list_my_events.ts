@@ -26,6 +26,8 @@ export const listMyEvents = defineCapability<z.infer<typeof input>, MyEvents>({
     'the room when confirmed, dress code, and who in the household is invited. Facts marked placeholder are not confirmed yet. Read-only.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_event'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

@@ -19,6 +19,8 @@ export const revokeBiometricConsent = defineCapability<z.infer<typeof input>, z.
   description: 'Withdraws the guest\'s face-matching consent and queues deletion of their face template and match results. Works even when the feature is switched off. Guests only, for themselves.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   confirmation: 'inline',
   idempotent: true,

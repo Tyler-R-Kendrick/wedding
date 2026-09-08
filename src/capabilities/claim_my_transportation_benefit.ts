@@ -37,6 +37,8 @@ export const claimMyTransportationBenefit = defineCapability<z.infer<typeof inpu
     'It never claims for another guest, never pays for anything, and never returns the code here.',
   kind: 'transaction',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['claim_transportation_benefit'],
   stepUp: true,
   confirmation: 'explicit',

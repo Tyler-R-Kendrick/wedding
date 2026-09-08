@@ -40,6 +40,8 @@ export const getMyHousehold = defineCapability<z.infer<typeof input>, MyHousehol
   description: 'Lists the people in the signed-in guest’s household, who manages the RSVP, who has claimed access, and whom the guest may act for. No email addresses or postal addresses.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

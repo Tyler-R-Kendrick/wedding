@@ -25,6 +25,8 @@ export const showMyTableOnFloorplan = defineCapability<z.infer<typeof input>, z.
     "Opens Your Weekend with the guest's table highlighted on the room's floor plan. Only works after seating is published (otherwise not_found). It changes nothing.",
   kind: 'navigate',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_table_assignment'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

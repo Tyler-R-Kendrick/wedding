@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { adminSetRsvpWindow, adminUpsertNotice, draftRsvp, getMyItinerary, submitRsvp } from '@/capabilities/rsvp';
 import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
 import { clearWeekendSlotProviders, registerWeekendSlotProvider } from '@/domain/weekend/slots';
-import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
+import { expectErr, expectOk, run, runHandler, seedSwarmE } from './helpers/swarm-e';
 
 const A1 = fixturePrincipal('A1');
 const B2 = fixturePrincipal('B2');
@@ -72,9 +72,15 @@ describe('get_my_itinerary', () => {
 
   it('is private: anonymous and admin principals are refused, and a guest without the entitlement too', async () => {
     expect(expectErr(await run(getMyItinerary, { kind: 'anonymous' }, {})).code).toBe('unauthenticated');
-    // The admin must HOLD view_private_schedule here, or authorize() refuses first and the handler's
-    // own requireGuestPrincipal never runs — the guard would be deletable with this test still green.
-    expect(expectErr(await run(getMyItinerary, fixtureAdmin({ entitlements: new Set(['view_private_schedule']) }), {})).code).toBe('forbidden');
+    // This comment used to say the admin must HOLD view_private_schedule "or authorize() refuses
+    // first and the handler's own requireGuestPrincipal never runs". Since level 15 that is exactly
+    // what happens regardless: `get_my_itinerary` declares `guestIdentityRequired`, so authorize()
+    // refuses an admin before the handler is reached, and the entitlement no longer changes the
+    // outcome. The assertion below is now about the pipeline; the handler's guard is asserted
+    // separately, because a test that only exercised the pipeline would stay green without it.
+    const entitledAdmin = fixtureAdmin({ entitlements: new Set(['view_private_schedule']) });
+    expect(expectErr(await run(getMyItinerary, entitledAdmin, {})).code).toBe('forbidden');
+    expect(expectErr(await runHandler(getMyItinerary, entitledAdmin, {})).code).toBe('forbidden');
     expect(expectErr(await run(getMyItinerary, fixturePrincipal('A1', { entitlements: new Set(['view_event']) }), {})).code).toBe('forbidden');
   });
 });

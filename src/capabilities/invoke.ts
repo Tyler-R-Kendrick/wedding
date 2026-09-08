@@ -19,8 +19,9 @@ const DENIED_CODES: ReadonlySet<CapabilityErrorCode> = new Set([
 
 /**
  * The single invocation pipeline (see src/contracts/capability.ts):
- *   1 resolve + exposure + flag, 2 validate input, 3 authorize, 4 step-up, 5 confirmation,
- *   6 idempotency replay, 7 handler, 8 validate output + cap, 9 audit (always).
+ *   1 resolve + exposure + flag, 2 authorize, 3 step-up, 4 confirmation (surface),
+ *   5 validate input, 6 confirmation (token), 7 idempotency replay, 8 handler,
+ *   9 validate output + cap, 10 audit (always).
  */
 export async function invoke<I, O>(
   descriptor: CapabilityDescriptor<I, O>,
@@ -89,18 +90,22 @@ export async function invoke<I, O>(
     }
   }
 
-  // 2. validate input
-  const parsed = descriptor.input.safeParse(rawInput);
-  if (!parsed.success) {
-    const issues = parsed.error.issues.slice(0, 20).map((i) => ({ path: i.path.map(String).join('.'), message: i.message }));
-    return finish(err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues })));
-  }
-  const input = parsed.data;
-
-  // 3. authorize (auth level + entitlements; handlers re-check row ownership)
+  // 2. authorize (auth level + entitlements; handlers re-check row ownership)
+  //
+  // Authorization runs BEFORE input validation, and the order is deliberate (level-13 review N5).
+  // It used to be the other way round, which meant an `ai`/`webmcp` caller was told to fix its
+  // input for a capability that could never complete on its surface, and a caller who had guessed a
+  // capability name learned its input schema before learning it was not allowed to call it.
+  // Everything from here to step 6 depends only on the descriptor and the principal, so it can all
+  // be decided without looking at the input at all; validation is what happens once the caller has
+  // been established as someone who could act on a valid input.
+  //
+  // The naive version of the N5 fix — hoisting only the confirmation refusal above step 2 — would
+  // have hoisted it above this too, telling an UNAUTHORIZED caller that the capability exists and
+  // wants a confirmation on the website. That is a worse leak than the wasted round trip it saved.
   const authz = authorize(descriptor, ctx.principal);
   if (!authz.ok) return finish(err(authz.error));
-  // 3b. anonymous callers all share one identity, so they can neither hold idempotency keys
+  // 2b. anonymous callers all share one identity, so they can neither hold idempotency keys
   //     (one scope for everyone) nor confirm anything (one confirmation identity for everyone)
   if (ctx.principal.kind === 'anonymous') {
     if (ctx.idempotencyKey) {
@@ -111,10 +116,14 @@ export async function invoke<I, O>(
     }
   }
 
-  // 3c. per-principal rate limit, inside the pipeline so every entry point shares one budget. The
+  // 2c. per-principal rate limit, inside the pipeline so every entry point shares one budget. The
   //     JSON route additionally limits by IP before a principal exists; this is the authenticated
   //     bucket, and it is what stops a signed-in guest driving unbounded writes (and outbox rows and
   //     e-mail jobs) through a server action, which reaches `invoke` without passing that route.
+  //
+  //     Since the reorder this also meters calls that carry invalid input. It used to not: a caller
+  //     could send malformed bodies at whatever rate it liked and pay nothing, because validation
+  //     answered first. Metering them is the correct behaviour for an authenticated bucket.
   if (services.limiter) {
     const decision = await services.limiter.consume(`cap:${principalKey(actor)}`, 'capability');
     if (!decision.allowed) {
@@ -122,13 +131,16 @@ export async function invoke<I, O>(
     }
   }
 
-  // 4. step-up
+  // 3. step-up
   if (descriptor.stepUp) {
     const fresh = requireFreshSession(ctx.principal, ctx.now);
     if (!fresh.ok) return finish(err(fresh.error));
   }
 
-  // 5. confirmation: a human confirms on the website; models and WebMCP can only draft.
+  // 4. confirmation, part one: which surface may complete this at all. A human confirms on the
+  //    website; models and WebMCP can only draft. This half needs no input, so it answers before
+  //    validation — an agent asking for something only the website can finish is told that, instead
+  //    of being sent away to fix fields for a call that could never have completed (review N5).
   //
   // `explicit` is website-only for every kind. `inline` is website-only when the capability CHANGES
   // OUR OWN STATE, which until level 12 nothing enforced: the check read `=== 'explicit'`, harmless
@@ -140,13 +152,12 @@ export async function invoke<I, O>(
   // accident, one `.strip()` away from deleting a guest's travel profile because they typed "please
   // delete my travel profile". `inline` means "the form asks before it acts", and off the website
   // there is no form and no token that could stand in for one, so such a call is simply refused.
+  // (That accidental defence is also gone now in a second way: the schema no longer answers first.)
   //
   // `external` is deliberately NOT included. A handoff commits nothing: it returns a provider URL
   // and logs that it did. Level 09 exposes `open_gift_link`, `open_reservation_link` and
   // `open_booking_link` to an assistant on purpose, so that asking "where are they registered?"
   // gets an answer, and the guest's own click on the link is the commitment.
-  const payloadHash = stableHash(input);
-  let confirmed: VerifiedConfirmation | undefined;
   //
   // Level 13 adds the one documented way out: `agentConfirmable: true` is a descriptor stating that
   // this particular `inline` mutation really is safe to complete unattended (contract addition,
@@ -171,6 +182,22 @@ export async function invoke<I, O>(
       return finish(err(new CapabilityError('confirmation_required', 'Please confirm this on the website.', { reason: 'requires_ui' })));
     }
   }
+
+  // 5. validate input — untrusted input still never reaches a handler unvalidated; it is only that
+  //    the caller now has to be someone this capability would run for before we discuss its fields.
+  const parsed = descriptor.input.safeParse(rawInput);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.slice(0, 20).map((i) => ({ path: i.path.map(String).join('.'), message: i.message }));
+    return finish(err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues })));
+  }
+  const input = parsed.data;
+
+  // 6. confirmation, part two: the token itself. `payloadHash` is derived from VALIDATED input —
+  //    it is what binds a confirmation token, and later the idempotency reservation, to the exact
+  //    payload the guest approved — so this half cannot move above step 5, and it is why the whole
+  //    of confirmation could not simply be hoisted.
+  const payloadHash = stableHash(input);
+  let confirmed: VerifiedConfirmation | undefined;
   if (descriptor.confirmation === 'explicit') {
     if (!services.confirmation) {
       return finish(err(new CapabilityError('internal', INTERNAL_ERROR_MESSAGE, undefined, new Error('confirmation service not wired'))));
@@ -181,13 +208,13 @@ export async function invoke<I, O>(
   }
 
   /**
-   * Step 8's size cap. It belongs to the surface receiving the answer, not to the stored record,
+   * Step 9's size cap. It belongs to the surface receiving the answer, not to the stored record,
    * so a REPLAY is capped too (review N2). The scope stays `${name}:${principal}` deliberately —
    * adding the surface to it would let one key run the handler once per surface, which is the
    * opposite of what an idempotency key promises — and the cap is applied on the way out instead.
    * Without this a `ui` call could store a result larger than an assistant may receive and the same
    * key, replayed on `ai`/`webmcp`, would hand it over: the replay return below is upstream of
-   * step 8 and skipped every check in it.
+   * step 9 and skipped every check in it.
    */
   const overSizeForSurface = (data: unknown): CapabilityError | null => {
     if (surface !== 'ai' && surface !== 'webmcp') return null;
@@ -197,7 +224,7 @@ export async function invoke<I, O>(
     return new CapabilityError('validation', 'That result is too large to show here. Try a narrower request.', { maxOutputChars: max, size });
   };
 
-  // 6. idempotency: reserve first, so concurrent retries can never both run the handler
+  // 7. idempotency: reserve first, so concurrent retries can never both run the handler
   const idemScope = `${descriptor.name}:${principalKey(actor)}`;
   let reserved = false;
   const isMutation = descriptor.kind === 'action' || descriptor.kind === 'transaction' || descriptor.kind === 'external';
@@ -258,7 +285,7 @@ export async function invoke<I, O>(
     return finish(err(error));
   };
 
-  // 6b. consume the confirmation nonce: a token is accepted once, ever (after the replay check, so an
+  // 7b. consume the confirmation nonce: a token is accepted once, ever (after the replay check, so an
   //     honest retry of a completed request still replays instead of burning a second confirmation)
   if (confirmed) {
     if (!services.idempotency) {
@@ -277,7 +304,7 @@ export async function invoke<I, O>(
     }
   }
 
-  // 7. handler
+  // 8. handler
   let result: Result<CapabilityOutcome<O>, CapabilityError>;
   try {
     result = await descriptor.handler(ctx, input);
@@ -287,7 +314,7 @@ export async function invoke<I, O>(
   }
   if (!result.ok) return fail(result.error);
 
-  // 8. validate output, cap size
+  // 9. validate output, cap size
   const outParsed = descriptor.output.safeParse(result.value.data);
   if (!outParsed.success) {
     services.logger?.error({ capability: descriptor.name, requestId: ctx.requestId, issues: outParsed.error.issues.length }, 'capability output failed schema');
@@ -309,6 +336,6 @@ export async function invoke<I, O>(
     }
   }
 
-  // 9. audit success
+  // 10. audit success
   return finish(ok(outcome));
 }

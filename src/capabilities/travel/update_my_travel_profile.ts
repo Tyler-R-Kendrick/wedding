@@ -14,6 +14,8 @@ export const updateMyTravelProfile = defineCapability<z.infer<typeof input>, z.i
     'and arrival/departure date windows. Saving is the guest’s opt-in; nothing is guessed from their location. Use get_my_travel_profile first and send the full set of fields back.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_travel_tools'],
   confirmation: 'inline',
   idempotent: true,

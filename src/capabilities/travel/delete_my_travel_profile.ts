@@ -13,6 +13,8 @@ export const deleteMyTravelProfile = defineCapability<z.infer<typeof input>, z.i
   description: 'Deletes the signed-in guest’s travel preferences and withdraws the opt-in. Safe to repeat: deleting a profile that no longer exists reports deleted: false. Trip items are not affected.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_travel_tools'],
   confirmation: 'inline',
   idempotent: true,

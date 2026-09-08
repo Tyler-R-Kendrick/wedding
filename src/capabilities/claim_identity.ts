@@ -37,6 +37,8 @@ export const claimIdentity = defineCapability<z.infer<typeof input>, ClaimIdenti
   description: 'Links another person on the invitation to the signed-in email (shared inbox), or takes over managing a household member who has no email. Never overrides someone else’s claim.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   stepUp: true,
   confirmation: 'inline',

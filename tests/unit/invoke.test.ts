@@ -487,3 +487,60 @@ describe('invoke pipeline', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+/**
+ * Level-13 review N5, fixed at level 15 by moving input validation BELOW authorization.
+ *
+ * The finding was small — an agent told to fix its input for a call that could never complete on
+ * its surface — but the obvious fix was worse than the bug: hoisting only the confirmation refusal
+ * above validation also hoists it above `authorize`, so a caller who had merely guessed a
+ * capability name would learn that it exists and wants a confirmation on the website. These three
+ * cases pin all three answers, because getting one right at the cost of another is the failure mode.
+ */
+describe('N5: error precedence — authorize, then surface, then input', () => {
+  const confirmed = defineCapability<{ text: string }, { text: string }>({
+    ...echo,
+    name: 'confirm_text',
+    kind: 'action',
+    auth: 'guest',
+    requires: ['manage_household_rsvp'],
+    confirmation: 'explicit',
+    annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
+  });
+  const entitled: Principal = { ...guest, entitlements: new Set(['manage_household_rsvp']) };
+
+  it('tells an unauthorized caller nothing about the capability, even about its confirmation', async () => {
+    // Invalid input AND unauthorized AND a surface that could never complete it: `forbidden` must
+    // win. `confirmation_required` here would confirm the name is real; `validation` would hand
+    // back its input schema.
+    const { c } = ctx({ principal: guest, surface: 'ai' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('forbidden');
+    const anon = ctx({ surface: 'ai' });
+    const r2 = await invoke(confirmed, anon.c, { text: '' });
+    if (!r2.ok) expect(r2.error.code).toBe('unauthenticated');
+  });
+
+  it('tells an authorized agent to use the website instead of asking it to fix fields', async () => {
+    const { c } = ctx({ principal: entitled, surface: 'ai' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('confirmation_required');
+      expect(r.error.details).toMatchObject({ reason: 'requires_ui' });
+    }
+  });
+
+  it('still validates input on the surface that can complete the call', async () => {
+    // Validation moved, it did not go away: on `ui` the same bad input is still a validation error,
+    // and untrusted input still never reaches a handler unparsed.
+    const { c } = ctx({ principal: entitled, surface: 'ui' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('validation');
+      expect(r.error.details?.issues).toEqual([{ path: 'text', message: expect.any(String) }]);
+    }
+  });
+});

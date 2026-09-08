@@ -29,6 +29,8 @@ export const draftBiometricConsent = defineCapability<z.infer<typeof input>, z.i
   description: 'Prepares the face-matching consent for review: returns the exact policy text and a confirmation token for grant_biometric_consent. No side effects. Guests only, for themselves.',
   kind: 'draft',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['use_face_matching'],
   flag: 'BIOMETRICS_ENABLED',
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },

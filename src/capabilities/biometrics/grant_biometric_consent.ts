@@ -19,6 +19,8 @@ export const grantBiometricConsent = defineCapability<z.infer<typeof grantPayloa
   description: 'Records the guest\'s consent to face matching for the exact policy text they reviewed. Requires the confirmation token from draft_biometric_consent and a fresh session. Guests only, for themselves.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['use_face_matching'],
   flag: 'BIOMETRICS_ENABLED',
   stepUp: true,

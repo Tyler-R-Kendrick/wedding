@@ -24,24 +24,44 @@ Implementation: `src/capabilities/{registry,invoke,context,services}.ts`.
 ```
 1  exposure + flag      hidden on this surface -> not_found; flag off -> feature_disabled;
                         readiness-gated flags fail closed without a readiness service
-2  validate input       zod safeParse; issues returned as { path, message } (guest-safe)
-3  authorize            auth level (anonymous < guest < admin < system) + required entitlements;
-                        anonymous principals may not send idempotencyKey (validation) nor confirm (forbidden)
-4  step-up              descriptor.stepUp -> session must be < 5 min old (system exempt)
-5  confirmation         confirmation === 'explicit' -> surface must be 'ui' (else confirmation_required
-                        {reason:'requires_ui'}); token must match (capability, principal, payload hash)
-                        and carry surface 'ui'; anonymous principals are refused (forbidden)
-6  idempotency          idempotent action/transaction/external -> idempotencyKey is REQUIRED (validation
+2  authorize            auth level (anonymous < guest < admin < system) + required entitlements;
+                        `guestIdentityRequired` additionally refuses an admin (a guest floor is not
+                        a guest identity); anonymous principals may not send idempotencyKey
+                        (validation) nor confirm (forbidden); then the per-principal rate limit
+3  step-up              descriptor.stepUp -> session must be < 5 min old (system exempt)
+4  confirmation (surface) confirmation === 'explicit', and state-changing 'inline', -> surface must be
+                        'ui' (else confirmation_required {reason:'requires_ui'})
+5  validate input       zod safeParse; issues returned as { path, message } (guest-safe)
+6  confirmation (token) token must match (capability, principal, payload hash) and carry surface 'ui'
+7  idempotency          idempotent action/transaction/external -> idempotencyKey is REQUIRED (validation
                         "idempotencyKey required") and a store must be wired (else internal);
                         (scope, key) is RESERVED before the handler; a live reservation
                         is `conflict` (still processing), a stored outcome is replayed, a different payload
                         is `conflict`; any later failure releases the reservation so the retry re-runs
-6b consume the nonce     explicit confirmation -> the token's nonce is reserved under
+7b consume the nonce     explicit confirmation -> the token's nonce is reserved under
                         confirm:<capability>:<principalKey>; a second use is confirmation_required {reason:'used'}
-7  handler              exceptions become `internal` with a guest-safe message; cause is logged, never returned
-8  validate output      zod safeParse of data; maxOutputChars enforced for 'ai' and 'webmcp' surfaces
-9  audit                ALWAYS: capability.invoked | capability.denied | capability.failed
+8  handler              exceptions become `internal` with a guest-safe message; cause is logged, never returned
+9  validate output      zod safeParse of data; maxOutputChars enforced for 'ai' and 'webmcp' surfaces
+10 audit                ALWAYS: capability.invoked | capability.denied | capability.failed
 ```
+
+**Why validation is at 5 and not at 2** (level-13 review N5, moved at level 15). A message about
+a caller's fields is an answer about the capability, and it is owed only to a caller the capability
+would run for. Before the move, an agent was told to fix its input for a call that could never
+complete on its surface, and a caller who had guessed a name learned the input schema before
+learning it was not allowed to call it. Only the *surface* half of confirmation could move up with
+it: the token half verifies against a hash of the **validated** payload, which is also what the
+idempotency reservation is keyed on, so that half stays below. One consequence is deliberate: calls
+carrying invalid input now consume the authenticated rate-limit budget, which they did not before.
+
+**`guestIdentityRequired`** (level-13 review N4, added at level 15). `auth: 'guest'` is a floor —
+an admin and the system clear it — which is right for `prepare_reservation`, `step_up`, the travel
+reads an admin drives with an explicit `guestId`, and the upload lifecycle an admin runs "as the
+couple". A capability about the CALLER'S OWN guest identity ("my invitation", "my table", "my
+consent") sets `guestIdentityRequired: true` and an admin is refused in `authorize()`. Because
+`registry.list`, the WebMCP manifest and `visibleTo` all call `authorize`, the advertised list and
+the masked list cannot drift apart. Handler-side guards (`guestOf`, `requireGuestPrincipal`,
+`requireGuestWriter`, `biometricGate`) stay: this is a second layer, not a replacement.
 
 Audit rows carry `requestId`, the principal ref, `{ type: 'capability', id: name }`, the
 outcome, and metadata `{ kind, surface, inputHash?, durationMs, errorCode? }`. Inputs are
