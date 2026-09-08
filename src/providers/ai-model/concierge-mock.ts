@@ -100,7 +100,14 @@ export function extractiveAnswer(prompt: LanguageModelV4Prompt, maxSentences = 3
       if (hits === 0 && titleHits === 0) return;
       const undecidedBoost = /not yet decided/.test(line) ? 0.25 : 0;
       const score = (hits + titleHits * 0.5 + undecidedBoost) * (TRUST_WEIGHT[block.trust] ?? 0.4);
-      if (hits >= 1 || titleHits >= 2) scored.push({ score, block, line, index });
+      // A block whose TITLE accounts for every content word of the question is the block the guest
+      // asked for, and an answer rarely repeats its own question: "How do I RSVP?" is answered by
+      // "you pick your name and confirm with a one-time code", which shares no word with it. Without
+      // this the stand-in refused the site's own FAQ heading — refusing on vocabulary, not evidence,
+      // which is the failure this file's synonym map already exists to avoid. Still extractive: the
+      // line comes back verbatim and the verifier and trust rules are unchanged.
+      const answersTheWholeQuestion = titleHits >= q.size;
+      if (hits >= 1 || titleHits >= 2 || answersTheWholeQuestion) scored.push({ score, block, line, index });
     });
   }
   scored.sort((a, b) => b.score - a.score || a.block.order - b.block.order || a.index - b.index);

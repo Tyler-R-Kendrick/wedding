@@ -55,6 +55,11 @@ const SKIP_KEYS = new Set([
   'handoffs', 'lifecycle', 'themes', 'defaultTheme', 'placeholder', 'experienceId', 'experienceSlug', 'experienceHref', 'ttlSeconds', 'provider', 'opensNewTab',
   // The caller's own words must never come back as evidence: a question is not a source.
   'query', 'q', 'question_text', 'mode', 'snippet', 'url', 'results', 'bucket', 'order', 'chapter', 'count', 'index',
+  // A page's own furniture — headings, eyebrows, a closing "Thank you. Truly." — is not evidence.
+  // Flattened into an answer it arrives as internal field paths ("Copy › Registry intro: …") and,
+  // worse, as page copy written for a state the site is not in. A capability that wants the model
+  // to have prose gives it a `statement`, computed from what is actually configured.
+  'copy',
 ]);
 
 /**
