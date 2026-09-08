@@ -44,14 +44,48 @@ export interface AuditSink {
   record(event: Omit<AuditEvent, 'id' | 'at'>): Promise<AuditEventId>;
 }
 
-const REDACT_KEYS = /^(otp|code|token|secret|password|voucher|redemption|dietary|allergy|accessibility|needs|embedding|vector|prompt|email|phone|address)/i;
+/**
+ * Words that make a key's value sensitive. This used to be a pattern ANCHORED at the start of the
+ * key (`/^(otp|code|…)/`), which meant `guestEmail`, `contactPhone` and `mailingAddress` were
+ * written to `audit_events` verbatim. Nothing wrote such a key, so nothing leaked — but the write
+ * side is the pass that matters, because it is destructive: what it does not redact is in the table
+ * for anyone who reads it with psql or an export, long after the request is gone. Found at level 14
+ * by a test written to prove the read-time projection was a genuine second pass rather than a copy.
+ */
+export const AUDIT_SENSITIVE_WORDS: ReadonlySet<string> = new Set([
+  'otp', 'code', 'codes', 'token', 'tokens', 'secret', 'secrets', 'password', 'passwords', 'voucher', 'vouchers',
+  'redemption', 'dietary', 'allergy', 'allergies', 'accessibility', 'needs', 'embedding', 'embeddings', 'vector',
+  'vectors', 'prompt', 'prompts', 'email', 'emails', 'phone', 'phones', 'address', 'addresses', 'ssn', 'pii',
+]);
+
+/**
+ * Keys a sensitive word would otherwise catch, which carry a closed enum rather than a value.
+ * `errorCode` is a `CapabilityErrorCode` and is the single most useful field on a failed row —
+ * redacting it destructively at write time would lose it for good. Reviewed one at a time, by name.
+ */
+export const AUDIT_ENUM_KEYS: ReadonlySet<string> = new Set(['errorCode', 'claimMethod']);
+
+/** Splits camelCase and snake_case into lowercase words, so a sensitive word anywhere in a key counts. */
+export const auditKeyWords = (key: string): string[] =>
+  key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[^A-Za-z0-9]+/).map((w) => w.toLowerCase()).filter(Boolean);
+
+/**
+ * A boolean is never sensitive: it carries one bit and cannot be an OTP, an email or free text.
+ * That is what keeps `includeNeeds` on a guest export and `viaToken` on a claim readable, while
+ * every string under the same kind of key is redacted.
+ */
+export function isAuditSensitive(key: string, value: unknown): boolean {
+  if (typeof value === 'boolean') return false;
+  if (AUDIT_ENUM_KEYS.has(key)) return false;
+  return auditKeyWords(key).some((w) => AUDIT_SENSITIVE_WORDS.has(w));
+}
 
 /** Shallow redaction of sensitive keys. Nested objects are summarized by shape only. */
 export function redactForAudit(input: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   if (!input) return undefined;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input)) {
-    if (REDACT_KEYS.test(k)) { out[k] = '[redacted]'; continue; }
+    if (isAuditSensitive(k, v)) { out[k] = '[redacted]'; continue; }
     if (v && typeof v === 'object') { out[k] = Array.isArray(v) ? `[array:${v.length}]` : '[object]'; continue; }
     if (typeof v === 'string' && v.length > 200) { out[k] = v.slice(0, 200) + '…'; continue; }
     out[k] = v;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { redactForAudit } from '@/contracts/audit';
+import { isAuditSensitive, redactForAudit } from '@/contracts/audit';
 import { actorView, projectAuditMetadata } from '@/domain/ops/audit';
 import { describeTransition, allowedTransitions } from '@/domain/ops/lifecycle';
 
@@ -119,5 +119,50 @@ describe('lifecycle transitions', () => {
 
   it('has no transition out of the last state', () => {
     expect(allowedTransitions('ARCHIVE').map((t) => t.to)).toEqual(['POST_WEDDING']);
+  });
+});
+
+describe('level 14: the WRITE side redacts a sensitive word anywhere in the key', () => {
+  it('redacts camelCase and snake_case keys the anchored pattern let through', () => {
+    const out = redactForAudit({
+      guestEmail: 'chidi@example.test',
+      contactPhone: '+1 312 555 0142',
+      mailingAddress: '12 S Michigan Ave',
+      guest_email: 'ana@example.test',
+      recoveryCode: '482913',
+    })!;
+    // Every one of these was stored verbatim before: REDACT_KEYS was anchored at the start of the
+    // key, so only a key BEGINNING with a sensitive word was caught.
+    for (const k of ['guestEmail', 'contactPhone', 'mailingAddress', 'guest_email', 'recoveryCode']) {
+      expect(out[k], `${k} must never reach audit_events verbatim`).toBe('[redacted]');
+    }
+    expect(JSON.stringify(out)).not.toContain('example.test');
+    expect(JSON.stringify(out)).not.toContain('Michigan');
+  });
+
+  it('still keeps what an audit row exists to tell you', () => {
+    const out = redactForAudit({
+      errorCode: 'forbidden',      // enum, and the most useful field on a failed row
+      claimMethod: 'invitation',   // enum
+      includeNeeds: true,          // boolean under a sensitive word: one bit, not a value
+      viaToken: false,
+      responses: 3,
+      guestId: 'G1',
+    })!;
+    expect(out.errorCode).toBe('forbidden');
+    expect(out.claimMethod).toBe('invitation');
+    expect(out.includeNeeds).toBe(true);
+    expect(out.viaToken).toBe(false);
+    expect(out.responses).toBe(3);
+    expect(out.guestId).toBe('G1');
+  });
+
+  it('the two passes share one rule, so neither can drift from the other', () => {
+    // A key the read side would hide but the write side would store is the failure mode this
+    // guards: the write side is destructive and is the only pass psql and exports ever see.
+    for (const key of ['guestEmail', 'sessionToken', 'dietaryNotes', 'voucherCode']) {
+      expect(isAuditSensitive(key, 'x'), key).toBe(true);
+      expect(redactForAudit({ [key]: 'x' })![key]).toBe('[redacted]');
+    }
   });
 });

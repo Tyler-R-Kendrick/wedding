@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, inArray, lt, lte, or, sql } from 'drizzle-orm';
-import { AUDIT_ACTIONS, redactForAudit, type AuditAction, type AuditOutcome } from '@/contracts/audit';
+import { AUDIT_ACTIONS, isAuditSensitive, redactForAudit, type AuditAction, type AuditOutcome } from '@/contracts/audit';
 import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { auditEvents } from '@/db/schema';
@@ -57,39 +57,20 @@ const MAX_KEYS = 24;
 const WITHHELD_KEYS: ReadonlySet<string> = new Set(['note', 'notes', 'reason', 'question', 'answer', 'message', 'comment', 'description', 'summary', 'freeText', 'text']);
 
 /**
- * The read-time redaction, and deliberately STRICTER than the write-time one in
- * `redactForAudit`. That one anchors its pattern at the start of the key, so `guestEmail`,
- * `contactPhone` and `mailingAddress` would all be stored and rendered verbatim; nothing writes
- * such a key today, but this screen renders whatever is in the table, including rows written before
- * a rule existed and rows a future level adds. So the key is split into words
- * (camelCase and snake_case) and redacted if ANY word is sensitive.
+ * The read-time redaction. It was written STRICTER than the write-time one, because that one
+ * anchored its pattern at the start of the key and so would have stored `guestEmail`,
+ * `contactPhone` and `mailingAddress` verbatim. That gap is now closed at the write side itself
+ * (`isAuditSensitive`), which is where it belonged — a row this screen never renders is still in
+ * the table for psql and for exports. What stays stricter HERE is what only a screen needs: free
+ * text is withheld entirely, values are capped, and the key count is capped.
  */
-const SENSITIVE_WORDS: ReadonlySet<string> = new Set([
-  'otp', 'code', 'codes', 'token', 'tokens', 'secret', 'secrets', 'password', 'passwords', 'voucher', 'vouchers',
-  'redemption', 'dietary', 'allergy', 'allergies', 'accessibility', 'needs', 'embedding', 'embeddings', 'vector',
-  'vectors', 'prompt', 'prompts', 'email', 'emails', 'phone', 'phones', 'address', 'addresses', 'ssn', 'pii',
-]);
-
 /**
- * Two string keys that a sensitive WORD would otherwise catch and that carry a closed enum, not a
- * value: `errorCode` is a `CapabilityErrorCode` and is the single most useful field on a failed row,
- * and `claimMethod` names how an invitation was claimed. Reviewed one at a time, by name; the list
- * is meant to stay this short.
+ * The write-time redactor is now the single source of both the sensitive-word list and the
+ * boolean/enum rules (`isAuditSensitive`, level 14). Two copies of a security list drift; this file
+ * keeps only what is genuinely STRICTER on read — the withheld free-text keys above, the value
+ * length cap and the key cap — and defers the rest.
  */
-const ENUM_KEYS: ReadonlySet<string> = new Set(['errorCode', 'claimMethod']);
-
-const words = (key: string): string[] => key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[^A-Za-z0-9]+/).map((w) => w.toLowerCase()).filter(Boolean);
-
-/**
- * A boolean is never sensitive: it carries one bit and cannot be an OTP, an email or free text. That
- * is what keeps the genuinely important flags on this screen readable — `includeNeeds` on a guest
- * export, `viaToken` on a claim — while every string under the same kind of key is redacted.
- */
-const isSensitive = (key: string, value: unknown): boolean => {
-  if (typeof value === 'boolean') return false;
-  if (ENUM_KEYS.has(key)) return false;
-  return words(key).some((w) => SENSITIVE_WORDS.has(w));
-};
+const isSensitive = isAuditSensitive;
 
 /** Anything not a primitive is summarised by shape, exactly as the write-time redactor does. */
 function renderValue(value: unknown): string {
