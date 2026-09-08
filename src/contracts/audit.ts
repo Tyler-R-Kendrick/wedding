@@ -20,6 +20,11 @@ export const AUDIT_ACTIONS = [
   'lifecycle.published', 'lifecycle.previewed',
   'content.updated', 'content.verified',
   'provider.configured', 'flag.changed',
+  // Retry and cancel used to leave only the pipeline's own `capability.invoked` row, whose metadata
+  // carries a keyed input hash and not the job id — so the trail recorded that someone retried A
+  // job, never which one. Proposed by swarm L at level 14 rather than taken, because this is a
+  // contract file; taken here.
+  'job.retried', 'job.cancelled',
   'ai.grounding_failed', 'ai.security_alert',
   'capability.denied', 'capability.invoked', 'capability.failed',
 ] as const;

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
+import { toPrincipalRef } from '@/contracts/principal';
 import { CapabilityError } from '@/contracts/errors';
 import { ID_PATTERN } from '@/contracts/ids';
 import { err, ok } from '@/contracts/result';
@@ -83,6 +84,14 @@ export const adminRetryJob = defineCapability<z.infer<typeof jobIdInput>, z.infe
       if (!current) return err(new CapabilityError('not_found', 'No job with that id.'));
       return err(new CapabilityError('conflict', `A ${current.status} job cannot be retried; only failed or dead ones can.`, { status: current.status }));
     }
+    await ctx.audit.record({
+      actor: toPrincipalRef(ctx.principal),
+      action: 'job.retried',
+      target: { type: 'job', id: i.jobId },
+      outcome: 'success',
+      requestId: ctx.requestId,
+      metadata: { jobType: row.type, attempts: row.attempts },
+    });
     return ok({ data: toJobRowView(row), sources: [] });
   },
 });
@@ -109,6 +118,14 @@ export const adminCancelJob = defineCapability<z.infer<typeof jobIdInput>, z.inf
       if (!current) return err(new CapabilityError('not_found', 'No job with that id.'));
       return err(new CapabilityError('conflict', `A ${current.status} job cannot be cancelled; only a queued one can.`, { status: current.status }));
     }
+    await ctx.audit.record({
+      actor: toPrincipalRef(ctx.principal),
+      action: 'job.cancelled',
+      target: { type: 'job', id: i.jobId },
+      outcome: 'success',
+      requestId: ctx.requestId,
+      metadata: { jobType: row.type },
+    });
     return ok({ data: toJobRowView(row), sources: [] });
   },
 });

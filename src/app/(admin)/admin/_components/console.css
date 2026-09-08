@@ -246,6 +246,41 @@
   cursor: pointer;
 }
 
+/* --- Level 14 design review: B7, the metrics time-window switcher --------- */
+
+/*
+  Every figure on /admin/metrics is scoped to the selected window, and the switcher rendered as four
+  plain words — same colour and weight as prose, no underline, no border, nothing but `aria-current`
+  on the active one. Targets measured 20x20 and cleared SC 2.5.8 only on the spacing exception, by
+  0.1px. Now: a real control, a visible selected state, and 24px targets outright.
+*/
+.con-window ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.con-window a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  border: 1px solid var(--ops-outline);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.con-window a[aria-current='page'] {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-neutral));
+  font-weight: 600;
+}
+
 .con-nav__bar li:first-child a {
   padding-left: 0;
 }
@@ -289,4 +324,40 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* --- Level 14 design review: B2/B3, the legal-gate panels ----------------- */
+
+/*
+  Two gates, each with the control that closes it. Panels rather than table rows because the action
+  is the point: as the 7th column of a 7-column table the off-switch sat 881px past the right edge
+  at 390 and 47px past it at 1440 — never fully visible at any width.
+*/
+.con-gates {
+  display: grid;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.con-gate {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--ops-outline);
+}
+
+.con-gate__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+}
+
+.con-gate__name {
+  margin: 0;
+  font-size: var(--text-body-md, 1.0625rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }

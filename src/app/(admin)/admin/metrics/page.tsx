@@ -39,12 +39,20 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
     <ConsolePage
       title="Metrics"
       lede="What this deployment recorded about itself. No third-party telemetry is sent anywhere."
+      // Every number on this page is scoped to this window, and the switcher used to read as four
+      // words: identical colour and weight to body text, no underline, no border, no background,
+      // and nothing but `aria-current` marking the selected one. An operator could misread a 1-day
+      // figure as an all-time one. It is a control now, and it says which window it is on.
       actions={
-        <nav aria-label="Window">
-          <ul className="con-diff">
+        <nav aria-label="Time window" className="con-window">
+          <ul>
             {WINDOWS.map((h) => (
               <li key={h}>
-                <Link href={`/admin/metrics?window=${h}`} aria-current={h === windowHours ? 'page' : undefined}>
+                <Link
+                  href={`/admin/metrics?window=${h}`}
+                  aria-current={h === windowHours ? 'page' : undefined}
+                  aria-label={`Show the last ${h < 24 ? `${h} hours` : `${h / 24} days`}`}
+                >
                   {h < 24 ? `${h}h` : `${h / 24}d`}
                 </Link>
               </li>

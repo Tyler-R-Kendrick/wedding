@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { adminFlagStatus } from '@/capabilities/ops';
 import { newId } from '@/contracts/ids';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section } from '../_components/console';
 import { disableFlagReadiness } from '../_lib/ops-actions';
 
 export const dynamic = 'force-dynamic';
@@ -55,54 +55,63 @@ export default async function AdminFlagsPage({ searchParams }: { searchParams: S
         <p className="ops-notice" role="note">
           <Pill tone="warn">No switch-on here</Pill> {enablement.reason}
         </p>
-        <DataTable caption="Readiness-gated flags" head={
-          <tr>
-            <th scope="col">Flag</th>
-            <th scope="col">Environment</th>
-            <th scope="col">Readiness</th>
-            <th scope="col">In effect</th>
-            <th scope="col">Blocked by</th>
-            <th scope="col">Last changed</th>
-            <th scope="col">Switch off</th>
-          </tr>
-        }>
+        {/*
+          Two gates, and the control that closes them is the whole point of the screen — so they are
+          panels, not a seven-column table. As a table the "Switch off" cell was the 7th column: 881px
+          past the right edge at 390 and, because `.ops` caps at 72rem, still 47px past it at 1440.
+          There was no viewport at which an operator could see the off-switch, and "In effect" — the
+          only column that answers "is this gate open right now?" — was off-screen at 390 too.
+        */}
+        <ul className="con-gates">
           {gated.map((f) => (
-            <tr key={f.name}>
-              <th scope="row">{f.name}</th>
-              <td>{f.envValue ? <Pill tone="warn">on</Pill> : <Pill tone="good">off</Pill>}</td>
-              <td>{f.readiness ? <Pill tone="warn">on</Pill> : <Pill tone="good">off</Pill>}</td>
-              <td>{f.effective ? <Pill tone="bad">live</Pill> : <Pill tone="good">not live</Pill>}</td>
-              <td className="con-wrap">
-                {f.gate ? (
-                  <>
-                    {f.gate.requirement} <span className="con-index__blurb">(backlog {f.gate.backlogIds.join(', ')})</span>
-                    {f.gate.ownedBy ? (
+            <li key={f.name} className="con-gate">
+              <div className="con-gate__head">
+                <h3 className="con-gate__name">{f.name}</h3>
+                {f.effective ? <Pill tone="bad">live</Pill> : <Pill tone="neutral">not live</Pill>}
+              </div>
+              <KeyValues
+                items={[
+                  { label: 'Environment', value: f.envValue ? <Pill tone="warn">on</Pill> : <Pill tone="neutral">off</Pill> },
+                  { label: 'Readiness', value: f.readiness ? <Pill tone="warn">on</Pill> : <Pill tone="neutral">off</Pill> },
+                  {
+                    label: 'Last changed',
+                    value: (
                       <>
-                        {' '}
-                        <Link href={f.gate.ownedBy.route}>Switched on from {f.gate.ownedBy.label}</Link>.
+                        {f.updatedAt ?? '—'}
+                        {f.hasNote ? <span className="con-index__blurb"> justification recorded</span> : null}
                       </>
-                    ) : null}
-                  </>
-                ) : (
-                  '—'
-                )}
-              </td>
-              <td>
-                {f.updatedAt ?? '—'}
-                {f.hasNote ? <span className="con-index__blurb"> justification recorded</span> : null}
-              </td>
-              <td>
-                <form action={disableFlagReadiness} className="con-inline-form">
-                  <input type="hidden" name="flag" value={f.name} />
-                  <input type="hidden" name="idem" value={newId()} />
-                  <button type="submit" className="ops-button ops-button-danger">
-                    Switch off
-                  </button>
-                </form>
-              </td>
-            </tr>
+                    ),
+                  },
+                ]}
+              />
+              {f.gate ? (
+                <p className="con-note">
+                  <strong>Blocked by:</strong> {f.gate.requirement}{' '}
+                  <span className="con-index__blurb">(backlog {f.gate.backlogIds.join(', ')})</span>
+                  {f.gate.ownedBy ? (
+                    <>
+                      {' '}
+                      <Link href={f.gate.ownedBy.route}>Switched on from {f.gate.ownedBy.label}</Link>.
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+              <form action={disableFlagReadiness} className="con-inline-form">
+                <input type="hidden" name="flag" value={f.name} />
+                <input type="hidden" name="idem" value={newId()} />
+                {/*
+                  Both buttons used to be named exactly "Switch off". A screen reader announced the
+                  same name twice on a screen governing two different legal gates, and `<th scope="row">`
+                  is not read in focus order — so the one irreversible-feeling control here was the one
+                  you could not tell apart.
+                */}
+                <button type="submit" className="ops-button ops-button-danger" aria-label={`Switch ${f.name} readiness off`}>
+                  Switch off
+                </button>
+              </form>
+            </li>
           ))}
-        </DataTable>
+        </ul>
         <p className="con-note">
           Switching off is unconditional and always available, on purpose: closing a legal gate must never be blocked by a missing precondition, and must not
           depend on holding the entitlement that owns the feature.

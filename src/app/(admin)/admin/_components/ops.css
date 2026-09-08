@@ -5,10 +5,19 @@
   --ops-error: var(--color-error, var(--color-primary));
   --ops-accent: var(--color-tertiary, var(--color-primary));
 
+  /* The foundation has no monospace token, so the console owns one — declared once, here, rather
+     than as a raw `font-family` literal further down the file. */
+  --font-mono-ops: ui-monospace, "SFMono-Regular", "Liberation Mono", monospace;
+
   max-width: 72rem;
   margin-inline: auto;
   padding: 1.5rem 1rem 4rem;
-  font-family: var(--font-sans);
+
+  /* `var(--font-sans)` and `var(--font-display)` are defined nowhere in src/. They fell through to
+     Tailwind's default stack, so the whole console rendered in Roboto / Helvetica Neue / Arial —
+     three faces CLAUDE.md bans by name. `npm run lint:css` stayed green because stylelint matches
+     literal font-family values, not a `var()` that resolves to one. Named tokens only, here. */
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
   font-size: 1.0625rem;
   line-height: 1.5;
   color: var(--color-primary);
@@ -27,7 +36,7 @@
 
 .ops-title {
   margin: 1.5rem 0 0.25rem;
-  font-family: var(--font-display, var(--font-sans));
+  font-family: var(--font-h1), Georgia, "Times New Roman", serif;
   font-weight: 400;
   font-size: 2.25rem;
   line-height: 1.1;
@@ -136,6 +145,14 @@
   border-color: var(--ops-error);
 }
 
+/* B4 (WCAG 2.2 AA 1.4.1 / F73). Inline links in prose, table cells and lists were the same colour,
+   weight and decoration as the text around them: nothing distinguished them but position. axe passed
+   vacuously, because `link-in-text-block` only fires once the colours DIFFER. */
+.ops :is(p, td, dd, li, figcaption) a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 .ops-input:focus-visible,
 .ops-button:focus-visible,
 .ops a:focus-visible {
@@ -175,6 +192,23 @@
 
 .ops-code {
   word-break: break-all;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono-ops);
   font-size: 0.9375rem;
+}
+
+/* --- Level 14 design review: B4, B5, B6 ---------------------------------- */
+
+/* B5. `.ops-notice-ok` was emitted by console.tsx and ops.tsx and styled nowhere, so "readiness
+   switched off" and "was already off" — a distinction the action layer takes care to make — arrived
+   looking exactly like an ambient note. The error variant was styled; the success one was not. */
+.ops-notice-ok {
+  border-color: var(--color-secondary, var(--ops-accent));
+  background: color-mix(in oklab, var(--color-secondary, var(--ops-accent)) 12%, var(--color-neutral));
+}
+
+/* B6. Table data and notes computed to 15.94px (0.9375rem at the site's 17px root), under
+   PRODUCT.md's 17px floor. This is an operations console read at speed; it is the last place to
+   shave two pixels off. `--text-body-md` is 1.0625rem = 18.06px. */
+.ops :is(.con-table td, .con-table th, .con-note, .con-stat__hint) {
+  font-size: var(--text-body-md, 1.0625rem);
 }
