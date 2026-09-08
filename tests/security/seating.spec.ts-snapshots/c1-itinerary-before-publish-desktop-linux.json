@@ -105,19 +105,29 @@
     "slots": {
       "transport": {
         "kind": "transport",
-        "status": "placeholder",
-        "placeholder": true,
+        "status": "ready",
+        "placeholder": false,
         "title": "Getting there and home",
-        "body": "Ride and valet details will appear here once they are set.",
-        "owner": "swarm-G"
+        "items": [
+          {
+            "label": "Rides, valet and parking",
+            "detail": "on the Transportation page",
+            "href": "/transportation"
+          }
+        ]
       },
       "trip": {
         "kind": "trip",
-        "status": "placeholder",
-        "placeholder": true,
+        "status": "ready",
+        "placeholder": false,
         "title": "Your trip",
-        "body": "Flights, hotel, and free-time ideas will appear here once travel tools are live.",
-        "owner": "swarm-F"
+        "items": [
+          {
+            "label": "Flights, where you are staying, and the free time in between",
+            "detail": "on your Trip page",
+            "href": "/trip"
+          }
+        ]
       }
     },
     "notices": []

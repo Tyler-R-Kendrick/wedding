@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
-import { splitPlaceholderText } from '@/domain/content/text';
+import { BACKLOG_REF, splitPlaceholderText } from '@/domain/content/text';
 import type { TextBlockView } from '@/domain/content/views';
 import './provenance.css';
 
@@ -10,13 +10,6 @@ import './provenance.css';
  * `aria-hidden` copy, no separate `aria-label` a sighted guest cannot see.
  */
 export const PLACEHOLDER_LABEL = 'Sara + Tyler are still writing this';
-
-/**
- * Internal ticket references live in the content record, never on a guest page. Catches both the
- * parenthesised forms — "(backlog C-01)", "(content backlog C-07)", "(backlog V-01, C-10)" — and a
- * bare "backlog P-02" left in a sentence.
- */
-const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi;
 
 const MARKER_RE = new RegExp(`${PLACEHOLDER_MARKER.replace(/[()&]/g, '\\$&')}:?\\s*`, 'g');
 

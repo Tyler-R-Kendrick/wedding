@@ -22,7 +22,7 @@ const input = z.object({}).optional();
 const SLOT_HREF = z.string().regex(/^(\/[^\s]*|https:\/\/[^\s]+)$/, 'href must be a site-relative path or an https URL');
 
 const slotSchema = z.discriminatedUnion('status', [
-  z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('placeholder'), placeholder: z.literal(true), title: z.string(), body: z.string(), owner: z.string() }),
+  z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('placeholder'), placeholder: z.literal(true), title: z.string(), body: z.string() }),
   z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('ready'), placeholder: z.literal(false), title: z.string(), items: z.array(z.object({ label: z.string(), detail: z.string().optional(), href: SLOT_HREF.optional() })), retrievedAt: z.string().optional() }),
   z.object({ kind: z.enum(WEEKEND_SLOT_KINDS), status: z.literal('unavailable'), placeholder: z.literal(false), title: z.string(), body: z.string() }),
 ]);
