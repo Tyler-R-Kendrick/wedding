@@ -154,12 +154,20 @@ describe('travel profile (opt-in, editable, deletable)', () => {
 });
 
 describe('search_travel_options (explicit action, snapshot, fallback ladder)', () => {
-  it('returns a timestamped live snapshot from the mock with transfer labels and allowlisted links', async () => {
+  // Renamed and re-pointed deliberately. The old name — "a timestamped LIVE snapshot from the MOCK"
+  // — states the defect out loud: the mock invents its prices, and calling that `live` is what let
+  // `search-form.tsx` render them through the real-results branch, under the page's own promise
+  // that "prices come from the partner". The shape assertions below are unchanged; only the claim
+  // about what the numbers ARE has changed, and it now matches what the provider says of itself.
+  it('returns a timestamped sample snapshot from the mock with transfer labels and allowlisted links', async () => {
     const r = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'lax', departDate: '2027-07-15', returnDate: '2027-07-19', adults: 2 });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const d = r.value.data;
-    expect(d).toMatchObject({ kind: 'flights', mode: 'live', provider: 'mock', request: { origin: 'LAX', destination: 'ORD', cabin: 'economy' } });
+    expect(d).toMatchObject({ kind: 'flights', mode: 'sample', provider: 'mock', request: { origin: 'LAX', destination: 'ORD', cabin: 'economy' } });
+    // The mode is the only thing standing between a fabricated price and a guest's booking screen.
+    expect(d.mode, 'a mock provider must never report live').not.toBe('live');
+    expect(d.notice, 'and the guest is told why there are no prices').toMatch(/not connected yet/i);
     expect(d.snapshot.refreshBeforeBooking).toBe(true);
     expect(Date.parse(d.snapshot.expiresAt) - Date.parse(d.snapshot.retrievedAt)).toBe(d.snapshot.ttlSeconds * 1000);
     expect(r.value.retrievedAt).toBe(d.snapshot.retrievedAt);
@@ -193,7 +201,7 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
     expectErr(await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'ORD', departDate: '2027-07-16' }), 'validation');
     expectErr(await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' }, { flags: { TRAVEL_LIVE_SEARCH: false } }), 'feature_disabled');
     const hotels = await run(searchTravelOptions, guestA, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18', adults: 2 });
-    expect(hotels.ok && hotels.value.data).toMatchObject({ kind: 'hotels', mode: 'live', request: { rooms: 1 } });
+    expect(hotels.ok && hotels.value.data).toMatchObject({ kind: 'hotels', mode: 'sample', request: { rooms: 1 } });
     expect(hotels.ok && hotels.value.data.snapshot.results[0]).toMatchObject({ isVenue: true, name: 'Chicago Athletic Association Hotel' });
     expect(hotels.ok && hotels.value.data.handoffs.map((h: ExternalHandoff) => h.provider)).toEqual(['booking.com', 'hyatt']);
     setProviderOverride('hotels', new DeepLinkOnlyHotels());

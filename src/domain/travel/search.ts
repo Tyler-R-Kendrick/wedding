@@ -23,6 +23,23 @@ export interface SearchDeps {
 
 const allowed = (handoff: ExternalHandoff): boolean => assertAllowedRedirect(handoff.url).ok;
 
+/**
+ * What the provider says about its own numbers, not what we wish they were. A provider declaring
+ * `mode: 'mock'` fabricates prices and walk times; presenting those as `live` is the difference
+ * between a search tool and a lie a guest can book against.
+ */
+function modeFor(provider: { mode?: string }): 'live' | 'sample' {
+  return provider.mode === 'mock' ? 'sample' : 'live';
+}
+
+/**
+ * What a guest reads when the configured provider invents its numbers. It says the true thing —
+ * this deployment has no live search wired up — rather than the generic "not available right now",
+ * because search is not broken and telling someone it is would send them away for the wrong reason.
+ * The deep links beside it are real and are the useful answer.
+ */
+const SAMPLE_NOTICE = 'Live prices are not connected yet, so we are not showing any here. Search with a partner below and you will get their real prices.';
+
 export async function searchFlights(deps: SearchDeps, input: FlightSearchInput): Promise<FlightSearchOutcome> {
   const provider = deps.flights;
   const req: FlightSearchRequest = {
@@ -79,12 +96,14 @@ export async function searchFlights(deps: SearchDeps, input: FlightSearchInput):
       ...(bookingUrl ? { bookingUrl, bookingProvider: r.bookingProvider ?? provider.name } : {}),
     };
   });
+  const flightMode = modeFor(provider);
   return {
     kind: 'flights',
-    mode: 'live',
+    mode: flightMode,
     provider: snap.provider,
     request,
     airports,
+    ...(flightMode === 'sample' ? { notice: SAMPLE_NOTICE } : {}),
     snapshot: { provider: snap.provider, retrievedAt: snap.retrievedAt, ttlSeconds: snap.ttlSeconds, expiresAt: snapshotExpiresAt(snap), refreshBeforeBooking: true, results },
     handoffs,
   };
@@ -118,11 +137,13 @@ export async function searchHotels(deps: SearchDeps, input: HotelSearchInput): P
     ...(h.bookingUrl && assertAllowedRedirect(h.bookingUrl).ok ? { bookingUrl: h.bookingUrl } : {}),
     ...(h.isVenue ? { isVenue: true } : {}),
   }));
+  const hotelMode = modeFor(provider);
   return {
     kind: 'hotels',
-    mode: 'live',
+    mode: hotelMode,
     provider: snap.provider,
     request,
+    ...(hotelMode === 'sample' ? { notice: SAMPLE_NOTICE } : {}),
     snapshot: { provider: snap.provider, retrievedAt: snap.retrievedAt, ttlSeconds: snap.ttlSeconds, expiresAt: snapshotExpiresAt(snap), refreshBeforeBooking: true, results },
     handoffs,
   };
