@@ -19,6 +19,7 @@
   margin-inline: auto;
   padding: var(--spacing-xl, 2.5rem) var(--spacing-md, 1rem) var(--spacing-3xl, 6rem);
   color: var(--color-primary);
+
   /* `var(--font-sans)` is defined nowhere in src/, so this declaration was invalid at
      computed-value time and the auth journeys — invite, claim, verify, passkey, step-up — rendered
      in Tailwind's default stack: Roboto / Helvetica Neue / Arial, three faces CLAUDE.md bans by
