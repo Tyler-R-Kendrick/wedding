@@ -8,6 +8,14 @@ on:
 permissions:
   contents: read
 
+# One run per ref at a time. Without this every push starts a fresh set of four jobs while the
+# superseded ones keep running to completion — six pushes to one branch in a morning meant six
+# concurrent Playwright jobs, each holding a runner for eleven minutes. Only pull requests cancel:
+# a run on `main` is finishing something nobody is about to supersede, and is left alone.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   # Node's http client does not read HTTPS_PROXY by itself; harmless on GitHub runners.
   NODE_USE_ENV_PROXY: '1'
@@ -107,6 +115,21 @@ jobs:
 
       - run: npm ci
 
+      # Every run was downloading Chrome for Testing (184 MiB), chrome-headless-shell (115 MiB)
+      # and ffmpeg from scratch. The key is the resolved Playwright version, so a version bump
+      # misses the cache and re-downloads exactly once.
+      - name: Playwright version
+        id: pw
+        run: echo "v=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-browsers-${{ runner.os }}-${{ steps.pw.outputs.v }}
+
+      # `--with-deps` installs system libraries, which the cache cannot hold, so it always runs;
+      # the browser download itself is what the cache skips.
       - run: npx playwright install --with-deps chromium
 
       - name: Build
