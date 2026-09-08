@@ -1,6 +1,6 @@
-# PR 20 — level 16: quality
+# PR 24 — level 16: quality
 
-**Branch** `claude/wedding-16-quality` · **Base** `main` @ `fc9ae86` (level 15)
+**Branch** `claude/wedding-16-quality` · **Base** `main` @ `59eb3e8` (level 15 + the four guest-truth PRs, #20-#23)
 **Diff** 78 files, ~+2,820 / −2,080 · no new dependency, no schema change, no contract change
 
 The carried design debt, the five admin shells, the level-14 review's should-fix list, the computed

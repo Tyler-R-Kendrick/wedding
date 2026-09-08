@@ -50,7 +50,7 @@ describe('Travel & Stay recipe', () => {
     // Built from the real recommendation the page already renders, not by hand: a hand-made view
     // object missed `verifiedAt` and threw inside the card, which proved nothing about the copy.
     const hotel = { ...data.venue, id: 'alt-1', name: 'A Nearby Hotel', placeholder: false };
-    render(<TravelPageRecipe data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    render(<TravelPageRecipe theme="gilded-hour" data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
     expect(document.body.textContent ?? '').toContain('We list why we picked each place');
   });
 });
