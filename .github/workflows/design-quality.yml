@@ -184,6 +184,17 @@ jobs:
           # EVERY admin route belongs here now, not just the ones a level happens to add: the walk
           # visits all of them by construction, so a screen added without a line here re-creates the
           # failure. The walk asserts `hrefs.length >= 20`, which is the tripwire.
+          #
+          # That tripwire has a blind spot, and it cost a run at level 16. The walk enumerates
+          # `#main .con-index a` — so it only covers routes reachable as a LINK from the console
+          # index. A `route.ts` export endpoint is never a link there, and neither are the media
+          # sub-pages, so `/admin/guests/export` stayed cold while `/admin/guests` beside it was
+          # warm. `idor.spec.ts` hit it and blew its 30s test budget compiling; on the retry the
+          # same contention took out a 5s `toHaveURL` in `claimViaUi`, two specs away. Measured
+          # locally against this same server: that test takes 26s cold and 5s warm.
+          #
+          # So when adding a route here, read `src/app`, not the console index — the walk cannot
+          # see what is not a link.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
@@ -191,6 +202,8 @@ jobs:
                       /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \
                       /admin/households /admin/invitations /admin/media /admin/reservations /admin/rsvp \
                       /admin/seating /admin/transport /admin/travel \
+                      /admin/guests/export /admin/rsvp/export \
+                      /admin/media/duplicates /admin/media/import /admin/media/metrics \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
