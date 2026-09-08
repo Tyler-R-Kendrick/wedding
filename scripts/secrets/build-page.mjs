@@ -30,9 +30,22 @@ if (existsSync('.secrets/public.jwk.json')) {
 }
 
 const registry = clientRegistry();
+
+// The page is one self-contained file with no build step at runtime, so the decision logic is
+// inlined rather than imported. It is written as an ES module because the tests import it; the
+// only transform needed is dropping the `export` keywords.
+const logic = (await readFile(new URL('./page/logic.mjs', import.meta.url), 'utf8'))
+  .replace(/^export (function|const|class)/gm, '$1');
+
 const html = template
   .replace('/*__REGISTRY__*/ null', JSON.stringify(registry))
-  .replace('/*__SANDBOX_KEY__*/ null', JSON.stringify(sandboxKey));
+  .replace('/*__SANDBOX_KEY__*/ null', JSON.stringify(sandboxKey))
+  .replace('/*__LOGIC__*/', logic);
+
+if (html.includes('__LOGIC__') || html.includes('createLogic') === false) {
+  console.error('Page logic did not inline — check scripts/secrets/page/logic.mjs and the /*__LOGIC__*/ placeholder.');
+  process.exit(1);
+}
 
 if (html.includes('__REGISTRY__') || html.includes('__SANDBOX_KEY__')) {
   console.error('Template placeholders did not substitute — check scripts/secrets/page/template.html');

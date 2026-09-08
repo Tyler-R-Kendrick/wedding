@@ -94,6 +94,8 @@ npm run secrets:harness                         # AI sessions this machine alrea
 npm run secrets:probe                           # which providers let an agent register itself
 npm run secrets:probe -- --register             # ...and prove the advertised endpoints work
 npm run secrets:serve                           # the whole thing as a local web app (no Claude needed)
+npm run secrets:coverage                        # the page's decisions, 100% or it fails
+npm run secrets:verify:page                     # click all 36 provider choices in a real browser
 ```
 
 ### How the plan is derived
@@ -106,6 +108,31 @@ npm run secrets:serve                           # the whole thing as a local web
 
 Choosing an **opt-out** option ("just link out", "codes you print", "skip it") is a real
 answer: the slot leaves the plan entirely and nothing is asked about it again.
+
+### Why the page's logic is its own module
+
+Everything the page decides — which provider is in force, which ceremony that implies, whether a
+control belongs on a strip at all — lives in `scripts/secrets/page/logic.mjs`, not in the HTML.
+`build-page.mjs` inlines it (the artifact stays one self-contained file) and the tests import it.
+
+That split exists because the logic was wrong in a way nothing could see. `.secrets/outbox.json`
+records which option each ladder run was for; switching provider does not re-run the ladder, so the
+old row survives. The page trusted its `nextAction` unconditionally, so after choosing Postmark
+(sign in) it still offered Resend's OAuth link — the choice registered and then decided nothing.
+A status now speaks only for the option it was computed for.
+
+Two gates keep it honest, and both were checked against the bug before being trusted:
+
+- `secrets:coverage` runs the decisions under Node's own V8 coverage and fails below 100% on
+  lines, branches and functions. No new dependency; `node --test` does it, because vitest
+  transforms the module before V8 can see it. `npm run quality` runs it, so CI enforces it.
+- `secrets:verify:page` starts the server, drives Chromium, and clicks every provider in every
+  slot. Its expectations come from the registry's declarations and the page's own rendered text —
+  never from `logic.mjs`. An earlier version asked the module under test what to expect, and so
+  reported all thirty-six passing while the page was broken. The rule that catches this class of
+  bug: a live status may override an option's declared ceremony, but only for the one option it
+  was computed for, so two options in a slot rendering someone else's ceremony means the choice is
+  not being honoured.
 
 ## Running it yourself: `npm run secrets:serve`
 

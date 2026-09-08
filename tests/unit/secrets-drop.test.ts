@@ -408,10 +408,15 @@ describe('the page and its stores agree on what exists', () => {
     for (const collection of subscribed) expect(served).toContain(collection);
   });
 
-  it('never offers a second approval for a ceremony already answered', () => {
-    // `code-received` means the code came back and is being exchanged. The old filter was
-    // `status !== 'done'`, which left the Approve link up for a ceremony already approved.
-    expect(template).toContain("c.status === 'code-received'");
-    expect(template).not.toMatch(/ceremonies\.find\(\(c\) => c\.credential === slot\.id && c\.status !== 'done'\)/);
+  it('keeps its decisions in the module the tests can reach, not in the markup', () => {
+    // Every choice the page makes now lives in scripts/secrets/page/logic.mjs, covered to 100% by
+    // `npm run secrets:coverage`. What must stay true here is that the template *delegates*: the
+    // moment a ceremony decision is inlined back into the HTML it leaves the covered path, which
+    // is how a stale status came to override the selected provider unnoticed.
+    expect(template).toContain('/*__LOGIC__*/');
+    expect(template).toContain('createLogic(REG)');
+    // No ceremony branching in the markup — that is logic.mjs's job.
+    expect(template).not.toMatch(/REG\.ceremony\.(signin|link|apply|paste)\b/);
+    expect(template).not.toMatch(/status\[slot\.id\]\?\.nextAction/);
   });
 });
