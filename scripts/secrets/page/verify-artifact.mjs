@@ -108,30 +108,74 @@ for (const slot of REG.slots) {
     if (got.error) { failures.push(`${slot.id}/${opt.id}: ${got.error}`); continue; }
     checked += 1;
 
-    // The controls that queue in the local app must not exist here at all.
-    for (const banned of ['Sign in once', 'Get the link']) {
-      check(!got.controls.includes(banned),
-        `${slot.id}/${opt.id} offers "${banned}" in the artifact — that press queues work nothing claims`);
-    }
-
     if (opt.ceremony === 'signin' || opt.ceremony === 'link') {
-      const expected = opt.browserAuth ? 'Connect ' + opt.name : 'Open ' + opt.name;
+      // The product in one assertion. Acquiring a credential is the agent's job — the ladder
+      // tries ten rungs before a person is asked — so the control here must be the ask, or the
+      // page running the ceremony itself where the provider's CORS headers permit it.
+      const expected = opt.browserAuth ? 'Connect ' + opt.name
+        : opt.ceremony === 'signin' ? 'Sign in once' : 'Get the link';
       check(got.controls.includes(expected),
-        `${slot.id}/${opt.id} should offer "${expected}" but offers [${got.controls.join(', ')}]`);
-      if (!opt.browserAuth) {
-        check(got.links.some((h) => h === opt.keysUrl),
-          `${slot.id}/${opt.id} links to [${got.links.join(', ')}], not its own key page ${opt.keysUrl}`);
-        check(/paste it here/.test(got.text), `${slot.id}/${opt.id} opens a page but offers nowhere to put the key`);
-      }
+        `${slot.id}/${opt.id} should lead with "${expected}" but offers [${got.controls.join(', ')}]`);
+
+      // And it must NOT lead with the provider's key page. That is the regression this exists for:
+      // the artifact once led with "Open Resend" and a field, for a provider that registers an
+      // agent client with no human at all.
+      check(!got.controls.some((c) => c.startsWith('Open ')),
+        `${slot.id}/${opt.id} leads with a self-serve key page: [${got.controls.join(', ')}]`);
+      check(!/paste it here/.test(got.text),
+        `${slot.id}/${opt.id} puts a key field on the strip before anything has been asked`);
     }
   }
 }
 
-/** Nothing pressed so far may have written a hand-off: that is the whole defect. */
+/** Choosing providers alone must not ask for anything; only a press may. */
 const writes = await page.evaluate(() => window.__WRITES__);
 const queued = writes.filter((w) => w.collection === 'handoffs');
-check(queued.length === 0, `${queued.length} hand-off(s) were written in the artifact: ${queued.map((w) => w.id).join(', ')}`);
+check(queued.length === 0, `${queued.length} hand-off(s) written without anyone pressing anything: ${queued.map((w) => w.id).join(', ')}`);
 check(writes.some((w) => w.collection === 'choices'), 'choosing a provider stored nothing at all — the check drove a dead page');
+
+/**
+ * Pressing the ask records it for the agent, and an ask nobody answers must not turn into
+ * "go get it yourself" — the fallback appears BESIDE it, and the ask stays the control.
+ */
+{
+  const pressed = await page.evaluate(() => {
+    const strip = () => [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
+    let s = strip();
+    const tab = [...s.querySelectorAll('.pick')].find((x) => x.textContent === 'Postmark');
+    if (tab) tab.click();
+    s = strip();
+    const b = [...s.querySelectorAll('.act button')].find((x) => x.textContent.trim() === 'Sign in once');
+    if (!b) return { error: `no ask to press: [${[...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()).join(', ')}]` };
+    b.click();
+    return { ok: true };
+  });
+  if (pressed.error) failures.push(`artifact: ${pressed.error}`);
+  else {
+    await page.waitForTimeout(400);
+    const asked = (await page.evaluate(() => window.__WRITES__)).filter((w) => w.collection === 'handoffs');
+    check(asked.length === 1, `pressing the ask wrote ${asked.length} hand-offs, expected 1`);
+    check(asked[0]?.data?.recipe === 'postmark-dashboard',
+      `the ask carries recipe "${asked[0]?.data?.recipe}", which browser-capture cannot resolve`);
+
+    // Now age it past the claim deadline and re-render: the ask must survive.
+    const after = await page.evaluate(async () => {
+      const stale = new Date(Date.now() - 5 * 60_000).toISOString();
+      const db = await window.claude.use('db');
+      await db.doc('handoffs/email').set({ slot: 'email', option: 'postmark', kind: 'signin', recipe: 'postmark-dashboard', requestedAt: stale, status: 'requested' });
+      await new Promise((r) => setTimeout(r, 300));
+      const s = [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
+      return {
+        controls: [...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()),
+        text: s.textContent.replace(/\s+/g, ' ').trim(),
+      };
+    });
+    check(after.controls.includes('Sign in once'),
+      `an unanswered ask demoted the ask itself: [${after.controls.join(', ')}]`);
+    check(/nobody has picked this up/.test(after.text), `an unanswered ask says nothing: ${after.text}`);
+    check(/Get it yourself at Postmark/.test(after.text), 'no way through offered once the ask went unanswered');
+  }
+}
 
 /** And a press of the self-serve route reveals the field rather than dispatching. */
 {
@@ -204,4 +248,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`${checked} provider options checked as the published artifact — every one ends somewhere, none queue; and the storeless page seals a bundle.`);
+console.log(`${checked} provider options checked as the published artifact — every one leads with acquiring it, not with a key field; and the storeless page seals a bundle.`);

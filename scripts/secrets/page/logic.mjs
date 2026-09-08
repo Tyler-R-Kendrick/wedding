@@ -216,18 +216,30 @@ export function createLogic(reg) {
   /**
    * The single control a strip should offer, if any.
    *
-   * `home` is load-bearing, not decoration. The published artifact is a page with its own origin
-   * and NOTHING behind it: no server, and no guarantee a Claude session is watching. Offering it
-   * "Sign in once" wrote a request that nothing would ever claim — a queue with no consumer, which
-   * is indistinguishable on screen from work in progress. So a home may only offer a route it can
-   * carry to an end:
+   * The order is the whole product. Acquiring a credential is the AGENT's job — the ladder runs
+   * `generate -> derive -> detect -> harness -> mcp -> authmd -> register -> device -> oauth ->
+   * browser -> manual`, and asking a person is rung eleven. A strip must therefore always lead
+   * with the cheapest ceremony the option can actually reach, and a field is the last resort for
+   * someone who already holds a key and would rather not wait.
    *
-   *   local     a worker is behind the page, so a press may dispatch a job.
-   *   artifact  only what the page itself can do (a ceremony the provider lets a browser run) or
-   *             what the person at the keyboard can do (their own key page, and a field).
-   *   disk      no store at all: everything ends in a sealed bundle to paste.
+   * I broke exactly that and it has to be written down. Reasoning about "the artifact has no
+   * server behind it", I made the artifact stop asking and lead with "Open Resend" and a paste
+   * field — for a provider that registers an agent client with NO human at all. The error was
+   * conflating "this PAGE cannot run the ceremony" with "nobody can": the page is not the
+   * acquirer, the agent is, and `handoffs/<slot>` is how the artifact asks it. What the artifact
+   * genuinely lacks is a guarantee that anyone is listening right now — which is a reason to
+   * report an unanswered ask honestly, never a reason to demote the ask beneath a paste field.
    *
-   * `dispatch` is therefore the only kind that queues, and it exists only where something claims it.
+   * So, in order:
+   *   settling / approve   a ceremony already in flight, or a link waiting for you
+   *   asked                an ask that is moving
+   *   authorize            the page can register a client ITSELF (probed) — nothing else awake
+   *   dispatch             ask whoever runs the ladder here: the agent, or `secrets:serve`
+   *   apply                a human at the provider must review it; nothing can shortcut that
+   *   none                 the option asks nothing of anyone
+   *
+   * `fallback` rides along when a previous ask went unclaimed: the ask stays primary, and the
+   * person gets a way through that needs nobody — offered beside it, not instead of it.
    */
   function actionFor(slot, { status = {}, choices = {}, ceremonies = [], handoffs = {}, home = 'artifact', now = Date.now() } = {}) {
     const opt = optionFor(slot, choices);
@@ -243,18 +255,29 @@ export function createLogic(reg) {
 
     const cer = ceremonyIdFor(slot, status, choices);
     const stalled = asked ? { handoff: asked, work } : null;
+    // Only once an ask has gone unanswered does a self-serve route belong on the strip at all,
+    // and even then beside the ask rather than in place of it.
+    const fallback = stalled && opt.keysUrl ? { url: opt.keysUrl, name: opt.name } : null;
 
     if (cer === 'signin' || cer === 'link') {
-      // A worker is behind this page, so asking it to do the work is a real thing to press.
-      if (home === 'local') return { kind: 'dispatch', option: opt, handoffKind: cer, stalled };
-      // The provider lets a browser register and exchange, so the page can run the whole ceremony.
-      if (cer === 'link' && opt.browserAuth) return { kind: 'authorize', option: opt, stalled };
-      // Nothing here can do it, so the person can: their own key page, and a field beside it.
-      if (opt.keysUrl) return { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled };
-      return { kind: 'none', option: opt, stalled };
+      // The provider's own CORS headers say a browser may register and exchange, so this page can
+      // be the acquirer with nothing else awake. Cheaper than asking, so it wins.
+      // Artifact only: served locally the worker runs the whole ladder (registering, borrowing,
+      // writing .env directly), which beats the page doing one ceremony by hand; and off disk
+      // there is no store to keep the verifier in between the tab opening and coming back.
+      if (cer === 'link' && opt.browserAuth && home === 'artifact') {
+        return { kind: 'authorize', option: opt, stalled, fallback };
+      }
+      // Otherwise ask whoever runs the ladder in this home. In the artifact that is Claude, by
+      // the courier protocol in CLAUDE.md; served locally it is the worker behind the page.
+      if (home !== 'disk') return { kind: 'dispatch', option: opt, handoffKind: cer, stalled, fallback };
+      // Opened off disk there is no store to ask through, so the person's own route is all there is.
+      return opt.keysUrl
+        ? { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled, fallback }
+        : { kind: 'none', option: opt, stalled, fallback };
     }
-    if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt, stalled };
-    return { kind: 'none', option: opt, stalled };
+    if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt, stalled, fallback };
+    return { kind: 'none', option: opt, stalled, fallback };
   }
 
   /**

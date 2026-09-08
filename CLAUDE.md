@@ -91,11 +91,11 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
 - The page has three homes and one codebase: published as an artifact, served by
   `npm run secrets:serve` on loopback (files under `.secrets/` are the store, and it decrypts
   and writes `.env` itself — no courier), or opened off disk (seals into a bundle you paste).
-- **A home may only offer a route it can finish.** The artifact has no server and no guaranteed
-  courier, so it never dispatches: it runs the ceremony itself where the provider's CORS headers
-  allow (probed in `BROWSER_AUTH`; today Cloudflare and OpenRouter) and otherwise hands the person
-  their provider's own key page plus a field. Only `secrets:serve` dispatches, because only it has
-  a worker. Nothing queues past 45s without saying nobody claimed it.
+- **Every strip leads with acquiring the credential, never with a field.** The artifact runs the
+  ceremony itself where the provider's CORS headers allow it (probed in `BROWSER_AUTH`; today
+  Cloudflare and OpenRouter) and otherwise asks Claude through `handoffs/<slot>`. A self-serve key
+  page appears only *after* an ask goes 45s unanswered, beside the ask rather than in place of it.
+  "The page cannot run this ceremony" never means "nobody can" — the page is not the acquirer.
 - In the artifact case the agent is still the courier for what it can help with: mirror
   `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
   to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before

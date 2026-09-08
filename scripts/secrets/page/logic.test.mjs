@@ -451,8 +451,8 @@ describe('the one control a strip offers', () => {
     assert.equal(L.actionFor(applySlot, { choices: { travel: 'out' } }).kind, 'none');
   });
   it('defaults its inputs', () => {
-    // No home given is the published artifact: the cautious default, since it has no worker.
-    assert.equal(L.actionFor(slot).kind, 'selfServe');
+    // No home given is the published artifact, which still ASKS — that is the product.
+    assert.equal(L.actionFor(slot).kind, 'dispatch');
   });
 });
 
@@ -469,15 +469,21 @@ describe('where the paste fields go', () => {
     assert.equal(L.allowsManualEntry(applySlot, {}, { travel: 'out' }, 'local'), false, 'nothing to type');
   });
 
+  it('has nothing to offer off disk when there is nowhere to send anyone', () => {
+    // No store to ask through and no key page: the strip says nothing rather than inventing a
+    // control. The field still reaches it through "enter it myself".
+    const nowhere = { ...slot, options: [{ ...slot.options[1], keysUrl: null, host: null }] };
+    assert.equal(L.actionFor(nowhere, { home: 'disk' }).kind, 'none');
+    assert.equal(L.allowsManualEntry(nowhere, {}, {}, 'disk'), true);
+  });
+
   it('does not offer two buttons for the one gesture', () => {
-    // A selfServe strip already carries "paste it here" beside the provider's key page. Offering
-    // "enter it myself" as well is the same control twice, and the second reads as another route.
-    const artifact = L.actionFor(slot, { choices: { email: 'resend' }, home: 'artifact' });
-    assert.equal(artifact.kind, 'selfServe');
-    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }, 'artifact'), false);
-    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }), false, 'the artifact is the default home');
-    // Where the page runs the ceremony itself there is no field on the strip, so the escape stays.
-    assert.equal(L.allowsManualEntry(inPageSlot, {}, { database: 'neon' }, 'artifact'), true);
+    // Only a strip that already shows the field suppresses the quiet escape. Asking does not.
+    assert.equal(L.actionFor(slot, { choices: { email: 'resend' }, home: 'artifact' }).kind, 'dispatch');
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }, 'artifact'), true);
+    // Off disk the strip carries "paste it here" itself, so "enter it myself" would be it twice.
+    assert.equal(L.actionFor(slot, { choices: { email: 'resend' }, home: 'disk' }).kind, 'selfServe');
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }, 'disk'), false);
   });
 });
 
@@ -555,23 +561,56 @@ describe('the registry the page is built from', () => {
           signin: 'dispatch', link: 'dispatch', apply: o.host ? 'apply' : 'none', agent: 'none', paste: 'none',
         }[cer];
         assert.equal(L.actionFor(s, { choices, home: 'local' }).kind, expected, `${s.id}/${o.id} (${cer})`);
+        // And the artifact asks too — the page is not the acquirer, the agent is.
+        const inArtifact = L.actionFor(s, { choices, home: 'artifact' });
+        const artifactExpected = cer === 'link' && o.browserAuth ? 'authorize' : expected;
+        assert.equal(inArtifact.kind, artifactExpected, `artifact ${s.id}/${o.id} (${cer})`);
       }
     }
   });
 
-  it('never offers a route the home it is running in cannot finish', () => {
-    // The whole point. The published artifact has no server behind it and no guarantee any Claude
-    // session is watching, so a press that writes a request there is a queue with no consumer —
-    // which looks, on screen, exactly like work in progress. `dispatch` is the only kind that
-    // queues, so it may appear in no home but the local one.
-    for (const home of ['artifact', 'disk']) {
+  it('never leads with a key field where something could acquire it', () => {
+    // The reason this page exists. Acquiring a credential is the AGENT's job — the ladder tries
+    // ten rungs before a person is asked, and a field is the last resort for someone who already
+    // holds a key. So wherever an option's ceremony is cheaper than `paste`, the primary control
+    // must be the ask (or the page running it itself), NEVER the provider's key page and a field.
+    //
+    // This exists because that got inverted: reasoning that the artifact has no server behind it,
+    // the artifact was made to lead with "Open Resend" and a paste field — for a provider that
+    // registers an agent client with no human at all.
+    const led = [];
+    for (const home of ['local', 'artifact']) {
       for (const s of REG.slots) {
         for (const o of s.options) {
-          const action = L.actionFor(s, { choices: { [s.id]: o.id }, home });
-          assert.notEqual(action.kind, 'dispatch', `${home}: ${s.id}/${o.id} would queue work nothing claims`);
+          if (!['link', 'signin'].includes(o.ceremony)) continue;
+          const kind = L.actionFor(s, { choices: { [s.id]: o.id }, home }).kind;
+          if (!['dispatch', 'authorize'].includes(kind)) led.push(`${home}: ${s.id}/${o.id} leads with ${kind}`);
         }
       }
     }
+    assert.deepEqual(led, [], 'strips that put a key field ahead of acquiring one');
+  });
+
+  it('offers a self-serve way through only after an ask goes unanswered', () => {
+    // Nothing is asked yet: no fallback, because there is nothing to fall back from.
+    const fresh = L.actionFor(slot, { choices: { email: 'resend' }, home: 'artifact' });
+    assert.equal(fresh.kind, 'dispatch');
+    assert.equal(fresh.fallback, null);
+
+    // Asked, and nobody claimed it within the deadline: the ask STAYS the control, and a route
+    // that needs no one appears beside it.
+    const old = { email: { status: 'requested', kind: 'link', requestedAt: new Date(Date.now() - 120_000).toISOString() } };
+    const stuck = L.actionFor(slot, { choices: { email: 'resend' }, handoffs: old, home: 'artifact' });
+    assert.equal(stuck.kind, 'dispatch', 'the ask must not be demoted by going unanswered');
+    assert.equal(stuck.stalled.work.state, 'unclaimed');
+    assert.equal(stuck.fallback.url, 'https://resend.com/api-keys');
+    assert.equal(stuck.fallback.name, 'Resend');
+
+    // An option with nowhere to send a person has no fallback to offer, and still asks.
+    const nowhere = { ...slot, options: [{ ...slot.options[0], keysUrl: null }] };
+    const bare = L.actionFor(nowhere, { handoffs: old, home: 'artifact' });
+    assert.equal(bare.kind, 'dispatch');
+    assert.equal(bare.fallback, null);
   });
 
   it('leaves nobody with nothing to do, in any home', () => {
@@ -593,20 +632,18 @@ describe('the registry the page is built from', () => {
     assert.deepEqual(gaps, [], 'options with no way to finish');
   });
 
-  it('offers the page its own ceremony where allowed, and the person theirs otherwise', () => {
-    // The three branches an artifact takes for a provider that asks something of you.
+  it('runs it in the page where a browser may, and asks where it may not', () => {
+    // Probed: this provider lets a browser register and exchange, so the page needs nobody.
     const canRun = L.actionFor(inPageSlot, { choices: { database: 'neon' }, home: 'artifact' });
     assert.equal(canRun.kind, 'authorize');
     assert.equal(canRun.option.oauth.origin, 'https://mcp.neon.tech');
+    // Served locally the worker runs the whole ladder, which beats one hand-rolled ceremony.
+    assert.equal(L.actionFor(inPageSlot, { choices: { database: 'neon' }, home: 'local' }).kind, 'dispatch');
 
+    // A provider a browser cannot talk to is still ASKED for — of the agent, not of the person.
     const cannot = L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' });
-    assert.equal(cannot.kind, 'selfServe');
-    assert.equal(cannot.url, 'https://account.postmarkapp.com/servers');
-
-    // Neither a ceremony a browser may run nor a page to open: there is nothing to offer, and
-    // the strip falls back to the field rather than inventing a control.
-    const nowhere = { ...slot, options: [{ ...slot.options[1], keysUrl: null, host: null }] };
-    assert.equal(L.actionFor(nowhere, { home: 'artifact' }).kind, 'none');
+    assert.equal(cannot.kind, 'dispatch');
+    assert.equal(cannot.handoffKind, 'signin');
   });
 
   it('stops calling a request queued once nothing has claimed it', () => {
@@ -626,20 +663,22 @@ describe('the registry the page is built from', () => {
     assert.equal(back.kind, 'dispatch');
     assert.equal(back.stalled.work.state, 'unclaimed');
     assert.equal(back.stalled.work.canRetry, true);
-    // And in the artifact, where nothing would ever have claimed it, the person gets their route.
+    // In the artifact the ask likewise stays put; what changes is that a way through appears too.
     const artifact = L.actionFor(slot, { handoffs: old, choices: { email: 'postmark' }, home: 'artifact' });
-    assert.equal(artifact.kind, 'selfServe');
+    assert.equal(artifact.kind, 'dispatch');
     assert.equal(artifact.stalled.work.state, 'unclaimed');
+    assert.equal(artifact.fallback.url, 'https://account.postmarkapp.com/servers');
     assert.equal(L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' }).stalled, null);
   });
 
   it('runs the ceremony in the page exactly where a browser is allowed to', () => {
     // Not a guess: BROWSER_AUTH records what each provider's own CORS headers said when probed.
+    // Where a browser may not, the artifact asks the agent — it never falls back to a field.
     for (const s of REG.slots) {
       for (const o of s.options) {
         if (o.ceremony !== 'link') continue;
         const action = L.actionFor(s, { choices: { [s.id]: o.id }, home: 'artifact' });
-        assert.equal(action.kind, o.browserAuth ? 'authorize' : 'selfServe',
+        assert.equal(action.kind, o.browserAuth ? 'authorize' : 'dispatch',
           `${s.id}/${o.id}: browserAuth=${o.browserAuth} but the artifact offers ${action.kind}`);
       }
     }

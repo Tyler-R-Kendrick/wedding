@@ -243,11 +243,21 @@ from work in progress.
 | Ceremony | `secrets:serve` (a worker is behind it) | Published artifact | Opened off disk |
 |---|---|---|---|
 | `agent` | the ladder runs from the bar | Claude's job; nothing to press | — |
-| `link`, browser-runnable | dispatch to the worker | **the page runs it**: registers a client, PKCE, opens the link, exchanges the code and seals the token, all in the tab | paste |
-| `link`, not browser-runnable | dispatch to the worker | the provider's own key page + a field | paste |
-| `signin` | dispatch (the headless relay) | the provider's own key page + a field | same |
+| `link`, browser-runnable | the worker runs the whole ladder | **the page runs it itself**: registers a client, PKCE, opens the link, exchanges the code and seals the token, all in the tab | paste |
+| `link`, not browser-runnable | dispatch to the worker | **ask Claude** — `handoffs/<slot>`, per the courier protocol | paste |
+| `signin` | dispatch (the headless relay) | **ask Claude** | the provider's key page + a field |
 | `apply` | the application page | same | same |
 | `paste` | a field | a field | a field |
+
+**The ask is never demoted beneath a key field.** Acquiring a credential is the agent's job; a
+field is rung eleven. It is worth writing down how that got inverted once: reasoning that the
+published artifact has no server behind it, the artifact was changed to stop asking and to lead
+with *"Open Resend"* and a paste field — for a provider that registers an agent client with no
+human at all. The error was equating "this PAGE cannot run the ceremony" with "nobody can": the
+page is not the acquirer, the agent is, and `handoffs/<slot>` is how the artifact reaches it.
+What the artifact genuinely lacks is a guarantee that anyone is listening *right now*, which is a
+reason to report an unanswered ask — the strip says so after 45 seconds and offers a way through
+*beside* the ask — and never a reason to put the field first.
 
 "Browser-runnable" is probed, never assumed — `BROWSER_AUTH` in `registry.mjs` records what each
 provider's CORS headers actually said, with the date. Today that is Cloudflare and OpenRouter.
