@@ -257,10 +257,19 @@ export function createLogic(reg) {
     return { kind: 'none', option: opt, stalled };
   }
 
-  /** Whether the quiet "enter it myself" escape belongs on this strip. */
-  function allowsManualEntry(slot, status = {}, choices = {}) {
+  /**
+   * Whether the quiet "enter it myself" escape belongs on this strip.
+   *
+   * Not when the strip already offers the field. A `paste` ceremony shows its fields inline, and
+   * a `selfServe` control comes with "paste it here" beside the provider's key page — offering
+   * "enter it myself" as well is two buttons doing the identical thing, and the second one reads
+   * as a different route that turns out not to be one.
+   */
+  function allowsManualEntry(slot, status = {}, choices = {}, home = 'artifact') {
     const opt = optionFor(slot, choices);
-    return ceremonyIdFor(slot, status, choices) !== 'paste' && opt.secrets.length > 0;
+    if (opt.secrets.length === 0) return false;
+    if (ceremonyIdFor(slot, status, choices) === 'paste') return false;
+    return actionFor(slot, { status, choices, home }).kind !== 'selfServe';
   }
 
   /** Fields shown inline, because nothing can obtain this on anyone's behalf. */

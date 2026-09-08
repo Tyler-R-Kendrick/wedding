@@ -148,6 +148,55 @@ check(writes.some((w) => w.collection === 'choices'), 'choosing a provider store
   check(after.length === before, 'revealing a field wrote to the store');
 }
 
+/* ------------------------------------------------ and the same page with NO store at all */
+
+// The third home: opened straight off disk, no artifact runtime and no server. Its behaviour was
+// asserted in logic.mjs and never once driven, which is how a state gets tested that the page
+// cannot actually reach. It can: this walks it to a sealed bundle.
+{
+  const bare = await browser.newPage({ viewport: { width: 390, height: 900 } });
+  bare.on('pageerror', (e) => pageErrors.push('disk: ' + e));
+  await bare.goto('file://' + PAGE, { waitUntil: 'domcontentloaded' });
+  await bare.waitForTimeout(900);
+
+  const walked = await bare.evaluate(() => {
+    const strip = () => [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
+    let s = strip();
+    if (!s) return { error: 'the storeless page renders no strips at all' };
+    const tab = [...s.querySelectorAll('.pick')].find((x) => x.textContent === 'Postmark');
+    if (!tab) return { error: 'no provider tabs without a store' };
+    tab.click();
+    s = strip();
+    const controls = [...s.querySelectorAll('.act button, .act a.btn, .act button.link')].map((b) => b.textContent.trim());
+    const paste = [...s.querySelectorAll('button.link')].find((x) => x.textContent.trim() === 'paste it here');
+    if (!paste) return { controls, error: 'nowhere to put a key' };
+    paste.click();
+    const input = strip().querySelector('.fields input');
+    if (!input) return { controls, error: 'the field never appeared' };
+    input.value = 'probe-not-a-real-key-0123456789';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#sealAll').click();
+    return { controls, secret: input.dataset.var };
+  });
+
+  if (walked.error) failures.push(`storeless: ${walked.error}`);
+  else {
+    // One gesture, one control: "paste it here" and "enter it myself" do the same thing.
+    const dupes = walked.controls.filter((c) => /paste it here|enter it myself/.test(c));
+    check(dupes.length === 1, `storeless: ${dupes.length} controls reveal the same field: ${dupes.join(' + ')}`);
+    await bare.waitForTimeout(1200);
+    const sealed = await bare.evaluate(() => {
+      const raw = document.querySelector('#bundle')?.value || '';
+      let ok = false;
+      try { const b = JSON.parse(raw); ok = Boolean(b.envelopes?.[0]?.ct) && !raw.includes('probe-not-a-real-key'); } catch { ok = false; }
+      return { chars: raw.length, ciphertextOnly: ok };
+    });
+    check(sealed.chars > 0, 'storeless: sealing produced no bundle to paste');
+    check(sealed.ciphertextOnly, 'storeless: the bundle is not ciphertext, or the typed key is in it');
+  }
+  await bare.close();
+}
+
 await browser.close();
 if (pageErrors.length) failures.push(`the page threw: ${pageErrors.join(' | ')}`);
 if (failures.length) {
@@ -155,4 +204,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`${checked} provider options checked as the published artifact — every one ends somewhere, none queue.`);
+console.log(`${checked} provider options checked as the published artifact — every one ends somewhere, none queue; and the storeless page seals a bundle.`);

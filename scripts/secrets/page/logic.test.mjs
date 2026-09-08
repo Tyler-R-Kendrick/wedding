@@ -463,10 +463,21 @@ describe('where the paste fields go', () => {
     assert.deepEqual(L.pasteFields(slot), []);
   });
   it('offers the quiet escape everywhere else, when there is a secret to type', () => {
-    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }), true);
-    assert.equal(L.allowsManualEntry(slot, {}, { email: 'byo' }), false);
-    assert.equal(L.allowsManualEntry(applySlot, {}, { travel: 'out' }), false);
-    assert.equal(L.allowsManualEntry(slot), true);
+    // Where the strip dispatches, the field is the last resort behind "enter it myself".
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }, 'local'), true);
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'byo' }, 'local'), false, 'a paste ceremony shows its fields already');
+    assert.equal(L.allowsManualEntry(applySlot, {}, { travel: 'out' }, 'local'), false, 'nothing to type');
+  });
+
+  it('does not offer two buttons for the one gesture', () => {
+    // A selfServe strip already carries "paste it here" beside the provider's key page. Offering
+    // "enter it myself" as well is the same control twice, and the second reads as another route.
+    const artifact = L.actionFor(slot, { choices: { email: 'resend' }, home: 'artifact' });
+    assert.equal(artifact.kind, 'selfServe');
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }, 'artifact'), false);
+    assert.equal(L.allowsManualEntry(slot, {}, { email: 'resend' }), false, 'the artifact is the default home');
+    // Where the page runs the ceremony itself there is no field on the strip, so the escape stays.
+    assert.equal(L.allowsManualEntry(inPageSlot, {}, { database: 'neon' }, 'artifact'), true);
   });
 });
 
