@@ -73,8 +73,17 @@ Higgsfield skills produce concept imagery for mood boards, comps and
 temporary page fills while the real photographs are pending.
 
 - Output goes to `.impeccable/review/` (git-ignored) or, when a page needs a
-  committed placeholder, to `public/assets/generated/` with a sibling
-  `generated.json` listing model, prompt, date and the page it stands in for.
+  committed placeholder, to a `generated/` directory beside the two that exist
+  today, with a sibling ledger naming model, prompt, date and the page it
+  stands in for:
+
+  ```
+  public/assets/art/       procedural SVG, committed        (scripts/generate-art.mjs)
+  public/assets/commons/   Wikimedia CC/PD, committed       (scripts/fetch-commons.mjs)
+  public/assets/generated/ fal.ai / Higgsfield              — does not exist; no key is
+                           + generated.json                   configured and nothing has
+                                                              been generated
+  ```
 - **Never** shipped as a "photo of the couple", of a guest, of the wedding
   party, or of a vendor's work. **Never** presented as a real photograph of
   the venue: generated interiors of "the White City Ballroom" are fiction and
