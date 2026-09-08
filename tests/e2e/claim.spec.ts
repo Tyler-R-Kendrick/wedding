@@ -71,7 +71,13 @@ test.describe('claim journey', () => {
     await expect(page.locator('body')).toContainText('Sara Fitzgerald’s email');
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.shared!));
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Sara');
+    // This asserted 'Welcome, Sara' — the manager whose inbox took the code — after the reader had
+    // just picked Ruth one screen earlier. That is the defect this branch fixes, so the assertion
+    // changes deliberately: the heading names the person who was picked, and the lede has to say
+    // whose session it actually is, or the greeting is a bare name that could be either of them.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ruth');
+    await expect(page.locator('body')).toContainText('Ruth Fitzgerald');
+    await expect(page.locator('body')).toContainText('Sara Fitzgerald');
     await page.getByRole('button', { name: 'I’m Tyler' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Tyler');
   });

@@ -36,7 +36,18 @@ test('before publication: not_found everywhere, and no draft table id or name in
   expect(all).not.toContain(TABLE_NAME);
   expect(all).not.toContain('seatNumber');
   const itinerary = responses[0]!.body;
-  expect(itinerary.data!.seating).toEqual({ published: false, table: null });
+  // Exact equality on purpose: this is the assertion that catches a new field carrying a draft
+  // detail into an unpublished itinerary. It gained `state` and `message` deliberately — before,
+  // `published: false` alone was told to a guest with no seat and a guest whose chart is unpublished
+  // in the same words, and neither could tell which. Both new values are constants keyed off
+  // publication state (SEATING_MESSAGE in src/capabilities/seating/get_my_table.ts); neither reads
+  // the draft. The three assertions above still prove no table id, name or seat number is present.
+  expect(itinerary.data!.seating).toEqual({
+    published: false,
+    table: null,
+    state: 'not_published',
+    message: 'Your table will appear here once seating is published.',
+  });
   expect(JSON.stringify(stabilize(itinerary), null, 2)).toMatchSnapshot('c1-itinerary-before-publish.json');
 
   const ctx = await contextAs(browser, 'C1');

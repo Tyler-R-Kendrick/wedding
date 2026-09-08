@@ -147,3 +147,33 @@ Unchanged.
 **READY.** The two things to push on are both named above and both deliberate:
 the picked name in a query string, and `canAnswer` taking the union of two
 entitlements.
+
+## 11. CI round 2 — two tests that asserted the behaviour this PR fixes
+
+The first CI run was green on quality, typecheck/lint/unit/integration/build,
+and red on the Playwright smoke with four failures across two specs. Both were
+tests pinning the pre-fix output, not defects in the fix:
+
+- **`tests/e2e/claim.spec.ts:74`** expected `Welcome, Sara` after a reader
+  picked *Ruth* on the invitation. Sara is the household manager whose inbox
+  took the code; Ruth is who the reader said they were. That greeting is
+  finding 1 verbatim, asserted as a guarantee. Changed to `Welcome, Ruth`, plus
+  two assertions that both names appear on the page — so the heading can never
+  again be a bare name that could be either person, in either direction.
+- **`tests/security/seating.spec.ts:39`** is an exact-equality assertion on the
+  unpublished `seating` block, and it is exactly the assertion that should
+  catch a new field carrying a draft detail. It now names `state` and `message`
+  explicitly rather than being loosened to `toMatchObject`. Both new values are
+  constants keyed off publication state; neither reads the draft, and the three
+  assertions above it still prove no table id, name or seat number is present.
+
+Its snapshot was regenerated from a live server and then **hand-corrected**: a
+fresh server has the RSVP window closed, while the CI ordering opens it earlier
+in the run, so `--update-snapshots` also rewrote three `rsvp.window` fields that
+this diff does not touch. Only the four fields this PR adds are committed —
+`rsvp.canAnswer`, `rsvp.scope`, `seating.state`, `seating.message`. Neither
+added field depends on the window: `canAnswer` reads entitlements and `scope`
+counts `expectedPairs`.
+
+Re-run locally in the `NODE_ENV=test` arrangement: `tests/e2e/claim.spec.ts`
+2 passed, `tests/security/seating.spec.ts` 3 passed.

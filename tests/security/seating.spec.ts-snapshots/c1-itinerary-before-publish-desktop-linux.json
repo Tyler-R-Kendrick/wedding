@@ -16,7 +16,9 @@
       },
       "status": "not_started",
       "answered": 0,
-      "expected": 2
+      "expected": 2,
+      "canAnswer": true,
+      "scope": "self"
     },
     "events": [
       {
@@ -96,6 +98,8 @@
     ],
     "seating": {
       "published": false,
+      "state": "not_published",
+      "message": "Your table will appear here once seating is published.",
       "table": null
     },
     "slots": {
