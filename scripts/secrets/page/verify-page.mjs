@@ -26,11 +26,11 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { clientRegistry } from '../registry.mjs';
+import { launchOptions } from './chromium.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const PORT = Number(process.env.SECRET_DROP_VERIFY_PORT || 4699);
 const CONTROL = { signin: 'Sign in once', link: 'Get the link', apply: 'Apply' };
-const CHROMIUM = process.env.PW_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 
 const REG = clientRegistry();
 /**
@@ -131,7 +131,7 @@ if (!token) { stop(); console.error('served page carries no token'); process.exi
   }
 }
 
-const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
+const browser = await chromium.launch(launchOptions());
 const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));

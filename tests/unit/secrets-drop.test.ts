@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 // The Secret Drop tooling is plain ESM under scripts/ so it can run in a bare sandbox
 // (no build, no tsx) — the tests import it the same way the scripts do.
@@ -558,5 +558,30 @@ describe('nothing the page reports as pending is left with no one to finish it',
       }
     }
     expect(blind, `${blind.length} store write(s) discard their own error`).toEqual([]);
+  });
+});
+
+describe('the page checks launch a browser the way the repo already does', () => {
+  it('uses the system Chromium only when it is really there', async () => {
+    const { launchOptions } = await import('../../scripts/secrets/page/chromium.mjs');
+    const opts = launchOptions() as { executablePath?: string; args?: string[] };
+    if (existsSync(process.env.PW_CHROMIUM_PATH || '/opt/pw-browsers/chromium')) {
+      // Running as root against a system build, so it needs --no-sandbox — same as playwright.config.
+      expect(opts.executablePath).toBeTruthy();
+      expect(opts.args).toContain('--no-sandbox');
+    } else {
+      // A CI runner has no such path: passing one anyway is what failed this job's first run with
+      // "Failed to launch chromium because executable doesn't exist". Let Playwright find its own.
+      expect(opts).toEqual({});
+    }
+  });
+
+  it('is the only place those checks decide it', () => {
+    // Three copies of the same hardcoded path is how one of them stayed wrong.
+    for (const file of ['verify-page.mjs', 'verify-lifecycle.mjs', 'verify-artifact.mjs']) {
+      const src = readFileSync(new URL(`../../scripts/secrets/page/${file}`, import.meta.url), 'utf8');
+      expect(src, `${file} still hardcodes a browser path`).not.toMatch(/executablePath:/);
+      expect(src, `${file} does not share the launch rule`).toContain('launchOptions()');
+    }
   });
 });

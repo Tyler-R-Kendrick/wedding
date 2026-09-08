@@ -26,10 +26,10 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { clientRegistry } from '../registry.mjs';
+import { launchOptions } from './chromium.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const PORT = Number(process.env.SECRET_DROP_LIFECYCLE_PORT || 4698);
-const CHROMIUM = process.env.PW_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 const REG = clientRegistry();
 
 /** A slot whose chosen provider signs in, and one whose provider hands back a link. */
@@ -117,7 +117,7 @@ async function until(what, read, ms = 45_000) {
   throw new Error(`${what} — never happened within ${ms / 1000}s (last saw: ${JSON.stringify(last)})`);
 }
 
-const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
+const browser = await chromium.launch(launchOptions());
 const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));

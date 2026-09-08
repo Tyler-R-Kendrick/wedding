@@ -20,12 +20,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { clientRegistry } from '../registry.mjs';
 import { inStore } from '../store.mjs';
+import { launchOptions } from './chromium.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 // Honour SECRETS_DIR like the rest of the toolchain: a check that reads a different build from
 // the one it was pointed at proves nothing about that build.
 const PAGE = resolve(repoRoot, inStore('secret-drop.html'));
-const CHROMIUM = process.env.PW_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 const REG = clientRegistry();
 
 if (!existsSync(PAGE)) { console.error('build the page first: npm run secrets:page'); process.exit(2); }
@@ -34,7 +34,7 @@ let chromium;
 try { ({ chromium } = await import('playwright')); }
 catch { console.error('playwright is not installed here — this check needs a browser.'); process.exit(2); }
 
-const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
+const browser = await chromium.launch(launchOptions());
 const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
