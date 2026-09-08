@@ -179,7 +179,7 @@
  * this scroll container, sat at their static position 445px out, and made the DOCUMENT report
  * scrollWidth 446 against a 390 viewport — invisible, un-scrollable (html is `overflow-x: clip`),
  * and exactly the measurement the level-14 review used to certify that admin screens never scroll
- * sideways. Measured with .data/probes/sw.mjs: 446 before, 390 after.
+ * sideways. Measured with scripts/probes/overflow.mjs: 446 before, 390 after.
  */
 .ops-table-wrap {
   position: relative;

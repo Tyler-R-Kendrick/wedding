@@ -12,10 +12,6 @@ import { expect, test } from '@playwright/test';
  * no chunk splitting and carries the whole refresh runtime, so the same assertions there would
  * either be meaningless or would have to be loosened until they said nothing.
  *
- * The budgets are deliberately generous — roughly twice what the build currently emits — because
- * the value here is catching a step change (a chart library on the home page, a client component
- * that pulls the whole capability barrel into the browser), not policing kilobytes. When one is
- * raised, it should be raised with a reason.
  */
 interface Budget {
   route: string;
@@ -25,10 +21,17 @@ interface Budget {
   maxScriptRequests: number;
 }
 
+/*
+ * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
+ * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8, `/ask-us` 143kB over
+ * 8. The budgets are roughly double that, because the value is catching a step change — a chart
+ * library on the home page, a client component that pulls the capability barrel into the browser —
+ * not policing kilobytes. Raise one with a reason.
+ */
 const BUDGETS: Budget[] = [
-  { route: '/', maxScriptKb: 400, maxScriptRequests: 40 },
-  { route: '/the-wedding', maxScriptKb: 400, maxScriptRequests: 40 },
-  { route: '/ask-us', maxScriptKb: 450, maxScriptRequests: 45 },
+  { route: '/', maxScriptKb: 300, maxScriptRequests: 20 },
+  { route: '/the-wedding', maxScriptKb: 300, maxScriptRequests: 20 },
+  { route: '/ask-us', maxScriptKb: 300, maxScriptRequests: 20 },
 ];
 
 test.describe('client bundle', () => {
@@ -36,19 +39,32 @@ test.describe('client bundle', () => {
 
   for (const budget of BUDGETS) {
     test(`${budget.route} stays inside its script budget`, async ({ page }) => {
-      const scripts = new Map<string, number>();
-      page.on('response', async (res) => {
+      /*
+       * `request().sizes().responseBodySize` — the bytes that crossed the wire, encoding included.
+       *
+       * NOT `content-length`: `next start` serves chunked, so that header is absent on every script
+       * and the first version of this test summed 0kB against a 400kB budget and reported green.
+       * A budget measured from a header that is not there is a budget that cannot fail.
+       */
+      const scripts = new Map<string, Promise<number>>();
+      page.on('response', (res) => {
         const url = res.url();
-        if (!/\.js(\?|$)/.test(url)) return;
-        if (!scripts.has(url)) {
-          const length = Number(res.headers()['content-length'] ?? 0);
-          scripts.set(url, Number.isFinite(length) ? length : 0);
-        }
+        if (!/\.js(\?|$)/.test(url) || scripts.has(url)) return;
+        scripts.set(
+          url,
+          res
+            .request()
+            .sizes()
+            .then((s) => s.responseBodySize)
+            .catch(() => 0),
+        );
       });
       await page.goto(budget.route, { waitUntil: 'networkidle' });
+      const sizes = await Promise.all([...scripts.values()]);
 
-      const total = [...scripts.values()].reduce((a, b) => a + b, 0);
+      const total = sizes.reduce((a, b) => a + b, 0);
       const kb = Math.round(total / 1024);
+      expect(total, `${budget.route} measured 0 bytes of script, so this budget proves nothing`).toBeGreaterThan(0);
       expect(
         scripts.size,
         `${budget.route} requested ${scripts.size} scripts:\n  ${[...scripts.keys()].map((u) => new URL(u).pathname).join('\n  ')}`,

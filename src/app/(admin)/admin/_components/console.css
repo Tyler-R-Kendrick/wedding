@@ -131,7 +131,7 @@
  * a grid, and a grid with more height than content distributes the surplus between its rows. A
  * stat with a hint is one row taller than one without, so on /admin/jobs "Queued" (hint: "0 due
  * now") stretched its neighbour "Running" and pushed that label 15px below it — measured, both
- * before and after, with .data/probes/stats.mjs. Packing the rows at the top makes every label in
+ * before and after, with scripts/probes/stat-strip.mjs. Packing the rows at the top makes every label in
  * a row sit at the same y whatever its neighbours carry.
  */
 .con-stat {
