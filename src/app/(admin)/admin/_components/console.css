@@ -1,0 +1,292 @@
+/*
+ * Admin console (level 14): the cross-cutting operations screens. Foundation tokens only — the
+ * admin surface never wears a guest theme. Everything here exists because this level's data is
+ * dense: the audit trail and the job queue are tables of timestamps, counts and ids, and a card
+ * grid would turn six rows of facts into six screens of scrolling.
+ */
+
+.con-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.con-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+}
+
+.con-note {
+  margin: 0;
+  max-width: 62ch;
+  font-size: var(--text-body-sm);
+  color: var(--ops-muted);
+}
+
+/* Wide operational tables scroll inside their own region; the page body never scrolls sideways. */
+.con-scroll {
+  border: 1px solid var(--ops-outline);
+  border-radius: var(--radius-sm);
+}
+
+.con-scroll:focus-visible {
+  outline: 3px solid var(--ops-accent);
+  outline-offset: 2px;
+}
+
+.con-table {
+  font-size: var(--text-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.con-table th,
+.con-table td {
+  padding: 0.4375rem 0.625rem;
+  white-space: nowrap;
+}
+
+.con-table td.con-wrap {
+  white-space: normal;
+  min-width: 18rem;
+}
+
+.con-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.con-caption {
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--ops-muted);
+  border-bottom: 1px solid var(--ops-outline);
+}
+
+.con-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.con-empty {
+  padding-block: 1.25rem;
+  color: var(--ops-muted);
+}
+
+/* A strip of headline numbers. Deliberately not boxes: a rule under each, nothing around them. */
+.con-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-lg) var(--spacing-2xl);
+  padding-block: var(--spacing-md);
+  border-block: 1px solid var(--ops-outline);
+}
+
+.con-stat {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 7rem;
+}
+
+.con-stat__value {
+  font-size: var(--text-h2);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.con-stat__label {
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--ops-muted);
+}
+
+.con-stat__hint {
+  font-size: var(--text-body-sm);
+  color: var(--ops-muted);
+}
+
+.con-pill {
+  display: inline-block;
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid currentcolor;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label-caps);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.con-pill--neutral {
+  color: var(--ops-muted);
+}
+
+.con-pill--good {
+  color: var(--color-secondary, var(--color-primary));
+}
+
+.con-pill--warn {
+  color: var(--ops-accent);
+}
+
+.con-pill--bad {
+  color: var(--ops-error);
+}
+
+.con-kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md) var(--spacing-xl);
+  margin: 0;
+}
+
+.con-kv dt {
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--ops-muted);
+}
+
+.con-kv dd {
+  margin: 0.125rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.con-index {
+  display: grid;
+  gap: var(--spacing-xl);
+  margin-block: var(--spacing-xl);
+}
+
+@media (width >= 52rem) {
+  .con-index {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--spacing-3xl);
+  }
+}
+
+.con-index__label {
+  margin: 0 0 var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--ops-outline);
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  font-weight: var(--font-weight-label-caps);
+  text-transform: uppercase;
+  color: var(--ops-muted);
+}
+
+.con-index__list {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+}
+
+.con-index__list li {
+  display: grid;
+  gap: 0.0625rem;
+}
+
+.con-index__blurb {
+  font-size: var(--text-body-sm);
+  color: var(--ops-muted);
+}
+
+/*
+ * The layout's "all screens" disclosure: closed by default so 20 links never push a page down.
+ * It sits outside `.ops`, so it declares the same local custom properties rather than inheriting them.
+ */
+.con-nav {
+  --ops-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
+  --ops-muted: var(--color-on-surface-muted, color-mix(in oklab, var(--color-primary) 70%, var(--color-neutral)));
+  --ops-accent: var(--color-tertiary, var(--color-primary));
+
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: var(--spacing-md) 1rem;
+  font-size: var(--text-body-md);
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--ops-outline);
+}
+
+.con-nav__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+}
+
+/*
+ * WCAG 2.2 AA 2.5.8: every target is at least 24x24. The nav links are 12px caps, so the size has to
+ * come from padding rather than from the text — which also gives adjacent targets the clear space
+ * the same rule asks for. Index links are body-sized and stacked; this guarantees it for them too.
+ * One rule for all three so specificity ascends down the file (stylelint no-descending-specificity).
+ */
+.con-nav__bar a,
+.con-nav summary,
+.con-index__list a {
+  display: inline-block;
+  min-height: 24px;
+  padding: 0.3125rem 0.5rem;
+}
+
+.con-nav summary {
+  margin-top: var(--spacing-xs);
+  padding-left: 0;
+  cursor: pointer;
+}
+
+.con-nav__bar li:first-child a {
+  padding-left: 0;
+}
+
+.con-nav summary:focus-visible {
+  outline: 3px solid var(--ops-accent);
+  outline-offset: 2px;
+}
+
+.con-nav .con-index {
+  margin-block: var(--spacing-md) var(--spacing-sm);
+}
+
+.con-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: end;
+}
+
+.con-form .ops-field {
+  min-width: 10rem;
+}
+
+.con-inline-form {
+  display: inline;
+}
+
+.con-consequences {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  max-width: 68ch;
+}
+
+.con-diff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
