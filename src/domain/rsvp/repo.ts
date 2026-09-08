@@ -47,15 +47,22 @@ export async function loadHouseholdRsvpContext(db: Db, input: { guestIds: readon
   ]);
   const householdId = input.householdId ?? guestRows[0]?.householdId;
   const household = householdId ? ((await db.select().from(households).where(eq(households.id, householdId)).limit(1))[0] ?? null) : null;
-  const entitledIds = new Set(entitlements.map((e) => e.eventId));
+  // `guestIds` comes from the principal's `actsFor`, which is built from `listManagedGuests`. That
+  // query is household-bounded now, but this is the function that renders another person's name,
+  // RSVP and dietary notes, so it does not take the boundary on trust: anyone outside the household
+  // this context is about is dropped here, whatever asked for them.
+  const inHousehold = householdId ? guestRows.filter((g) => g.householdId === householdId) : guestRows;
+  const scopedIds = new Set(inHousehold.map((g) => g.id));
+  const entitledIds = new Set(entitlements.filter((e) => scopedIds.has(e.guestId)).map((e) => e.eventId));
   const entitledEvents = events.filter((e) => entitledIds.has(e.id));
+  const scoped = [...scopedIds];
   const [mealOptions, responses, needs] = await Promise.all([
     listMealOptionsForEvents(db, entitledEvents.map((e) => e.id)),
-    input.guestIds.length ? db.select().from(rsvpResponses).where(inArray(rsvpResponses.guestId, [...input.guestIds])) : Promise.resolve([] as RsvpResponseRow[]),
-    input.guestIds.length ? db.select().from(guestNeeds).where(inArray(guestNeeds.guestId, [...input.guestIds])) : Promise.resolve([] as GuestNeedsRow[]),
+    scoped.length ? db.select().from(rsvpResponses).where(inArray(rsvpResponses.guestId, scoped)) : Promise.resolve([] as RsvpResponseRow[]),
+    scoped.length ? db.select().from(guestNeeds).where(inArray(guestNeeds.guestId, scoped)) : Promise.resolve([] as GuestNeedsRow[]),
   ]);
   const lifecycle = lifecycleRow?.state ?? 'TEASER';
-  return { guests: guestRows, household, events, entitledEvents, entitlements, mealOptions, responses, needs, window: computeRsvpWindow(settings, lifecycle, input.now), lifecycle };
+  return { guests: inHousehold, household, events, entitledEvents, entitlements: entitlements.filter((e) => scopedIds.has(e.guestId)), mealOptions, responses, needs, window: computeRsvpWindow(settings, lifecycle, input.now), lifecycle };
 }
 
 /** Persists a normalized submission atomically. Needs are written to their own table and never returned. */

@@ -70,7 +70,7 @@ export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<
   for (const h of FIXTURE_HOUSEHOLDS) await db.insert(households).values({ ...h, createdAt: now }).onConflictDoNothing({ target: households.id });
   for (const g of FIXTURE_GUESTS) await db.insert(guests).values({ ...g, createdAt: now }).onConflictDoNothing({ target: guests.id });
   for (const [idx, en] of FIXTURE_ENTITLEMENTS.entries()) {
-    await db.insert(eventEntitlements).values({ id: fixtureId(`ENT${idx}`), ...en, createdAt: now }).onConflictDoNothing();
+    await db.insert(eventEntitlements).values({ id: fixtureId(`ENT${String(idx).padStart(2, '0')}`), ...en, createdAt: now }).onConflictDoNothing();
   }
   for (const m of FIXTURE_MEALS) await db.insert(mealOptions).values({ ...m, eventId: E.reception, version: 1, createdAt: now }).onConflictDoNothing({ target: mealOptions.id });
   await db.update(events).set({ mealOptionsVersion: 1, hasMeal: true }).where(eq(events.id, E.reception));
