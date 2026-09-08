@@ -99,7 +99,16 @@ test.describe('explore journey', () => {
     await page.getByRole('link', { name: 'White City Ballroom' }).click();
     await expect(page).toHaveURL(/\/explore-caa\/white-city-ballroom$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('White City Ballroom');
-    await expect(page.locator('table caption')).toContainText('Kit figure');
+    // Was `toContainText('Kit figure')`, which pinned the caption to
+    // "Kit figure - verify with the planner before publishing as fact." — an instruction addressed
+    // to the couple, printed under the capacities a guest is reading. Changed deliberately, to the
+    // guarantee behind it: the numbers are marked as the venue's own and not yet confirmed, and the
+    // caption is not somebody's task. The third test in the repository to pin that string; the
+    // other two are in tests/integration/{content,weekend}.test.ts.
+    const caption = page.locator('table caption');
+    await expect(caption).toContainText(/kit figures/i);
+    await expect(caption).toContainText(/not confirmed/i);
+    await expect(caption).not.toContainText(/\bverify\b|before publishing/i);
     await axe(page);
   });
 

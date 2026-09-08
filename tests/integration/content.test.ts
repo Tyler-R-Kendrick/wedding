@@ -141,7 +141,17 @@ describe('CAA docent', () => {
     expect(d.history.map((h) => h.statement)).toContain('Built in 1893 for the private Chicago Athletic Association.');
     expect(d.history.find((h) => h.slug === 'historic-district')!.statement).not.toMatch(/\d{4}/);
     expect(d.spaces.map((s) => s.slug)).toEqual(['white-city-ballroom', 'madison-ballroom', 'stagg-court', 'the-tank']);
-    expect(d.spaces[0]!.capacities).toMatchObject({ ceremony: 220, reception: 300, note: expect.stringContaining('Kit figure') });
+    expect(d.spaces[0]!.capacities).toMatchObject({ ceremony: 220, reception: 300 });
+    // The note read "Kit figure - verify with the planner before publishing as fact." until
+    // this commit: an instruction addressed to the couple, rendered to guests on /explore-caa.
+    // The guarantee it was protecting is that the numbers are marked as the venue's own,
+    // unconfirmed figures - so assert that, and that the note is no longer a task for someone.
+    for (const space of d.spaces) {
+      const note = space.capacities.note ?? '';
+      expect(note).toMatch(/kit figures/i);
+      expect(note).toMatch(/not confirmed/i);
+      expect(note).not.toMatch(/\bverify\b|before publishing/i);
+    }
     expect(d.roomsNotConfirmed.placeholder).toBe(true);
     const outletLabels = d.outlets.map((o) => o.label);
     expect(outletLabels).toContain("Cindy's (rooftop)");

@@ -73,7 +73,16 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
       case 'rsvp':
         return PAGES.rsvp;
       case 'claim':
-        return { label: 'Claim your invitation', href: PAGES.weekend.href };
+        // NOT an instruction. Public pages are statically rendered per design, so this nav cannot
+        // know whether the reader has claimed — `claimed` is only ever passed a principal by
+        // `site_status` (the AI/WebMCP surface) and by the admin preview; on every page a guest
+        // actually browses it is `false`. "Claim your invitation" therefore told a guest who had
+        // already claimed, signed in, and answered their RSVP to go and do it. A label that names
+        // the destination is true in both states, and `/your-weekend` handles both correctly.
+        // "Open", not the bare "Your invitation" `item('weekend')` gives: this is the sticky call
+        // to action and INVITATIONS_OPEN carries `weekend` in its primary nav too, so the two would
+        // otherwise render the same words twice.
+        return { label: 'Open your invitation', href: PAGES.weekend.href };
       case 'weekend':
         return item('weekend');
       case 'ask':

@@ -111,7 +111,7 @@ describe('typed placeholders never render as facts', () => {
       route: '/explore-caa', venueName: 'Chicago Athletic Association Hotel',
       history: [{ id: 'h', slug: 'built-1893', category: 'history', statement: 'Built in 1893 for the private Chicago Athletic Association.', provenance: prov() }],
       lookForThis: [{ id: 'l', slug: 'look-brick', category: 'look-for-this', statement: 'Patterned brick.', provenance: prov() }],
-      spaces: [{ id: 's', slug: 'the-tank', href: '/explore-caa/the-tank', name: 'The Tank', character: 'The former pool.', features: ['pool tile'], capacities: { ceremony: 175, dinnerDance: 130, reception: 225, note: 'Kit figure — verify with the planner.' }, lookForThis: ['tile'], provenance: prov({ sourceType: 'venue-document', external: true, trustClass: 'EXTERNAL_DATA' }) }],
+      spaces: [{ id: 's', slug: 'the-tank', href: '/explore-caa/the-tank', name: 'The Tank', character: 'The former pool.', features: ['pool tile'], capacities: { ceremony: 175, dinnerDance: 130, reception: 225, note: 'Capacity note from the venue, unconfirmed.' }, lookForThis: ['tile'], provenance: prov({ sourceType: 'venue-document', external: true, trustClass: 'EXTERNAL_DATA' }) }],
       outlets: [op('Cindy’s'), op('Milk Room', { expired: true, url: null, provenance: prov({ sourceType: 'venue-document', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'expired', validUntil: '2025-02-28T23:59:59.000Z', policy: 'venue-document' }) })],
       gettingHere: [op('valet.entrance', { kind: 'valet', label: 'Valet entrance', value: '71 E Madison', provenance: prov({ sourceType: 'official-web', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'aging', url: 'https://www.chicagoathletichotel.com/about/faq/', policy: 'operational' }) })],
       roomsNotConfirmed: todo('which room hosts the ceremony'),
@@ -126,6 +126,10 @@ describe('typed placeholders never render as facts', () => {
     expect(valet.textContent).toContain('71 E Madison');
     expect(valet.textContent).toMatch(/Last checked/);
     expect(valet.querySelector('a[href="https://www.chicagoathletichotel.com/about/faq/"]')).not.toBeNull();
-    expect(container.textContent).toContain('Kit figure');
+    // This fixture's own note, rendered verbatim: the assertion is that the capacity note reaches
+    // the page at all. The literal used to be "Kit figure — verify with the planner", which is the
+    // seed copy this branch removes for being an instruction to the couple printed to guests — a
+    // dead string echoed in a test is how a reader concludes the copy is still live.
+    expect(container.textContent).toContain('Capacity note from the venue, unconfirmed.');
   });
 });
