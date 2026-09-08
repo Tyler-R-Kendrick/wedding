@@ -184,8 +184,15 @@ jobs:
           # EVERY admin route belongs here now, not just the ones a level happens to add: the walk
           # visits all of them by construction, so a screen added without a line here re-creates the
           # failure. The walk asserts `hrefs.length >= 20`, which is the tripwire.
+          #
+          # Level 16 added two many-navigation specs to this step — `typography.spec.ts` (6 auth
+          # routes + 12 console routes, per project) and `quality-sweep.spec.ts` (4 guest routes,
+          # walked five times over, two designs). Every route either was already here or is added
+          # above (`/ask-us`), and both specs carry a timeout proportional to their navigations
+          # rather than the 30s default, which is the other half of what level 14 learned.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
+                      /ask-us \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
                       /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \

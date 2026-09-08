@@ -2,7 +2,20 @@
  * Auth journeys (invite, claim, verify, passkey, step-up). Tokens only: the design swarm's
  * theme.css defines --color-* / --font-* per theme; fallbacks derive from the foundation
  * tokens in globals.css so nothing here ever carries a raw color or font name.
+ *
+ * The layout above puts `[data-theme]` on `.auth-root`, so every token below now resolves against
+ * the guest's chosen design instead of against whatever the default design happened to leave at
+ * `:root`. `.auth-root` paints the ground, because `.auth-shell` is a centred column and the
+ * canvas either side of it belongs to the design too.
  */
+
+.auth-root {
+  min-height: 100%;
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  font-family: var(--font-text, var(--font-body-md));
+}
+
 .auth-shell {
   --auth-surface: var(--color-surface, color-mix(in oklab, var(--color-neutral) 92%, var(--color-primary)));
   --auth-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
@@ -40,10 +53,11 @@
   border-radius: var(--auth-radius);
 }
 
+/* The ornament caps step (DESIGN.md `label-caps`), as a token rather than as a raw 0.75rem. */
 .auth-eyebrow {
   margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
+  font-size: var(--type-label-caps-size, var(--text-label-caps, 0.8125rem));
+  letter-spacing: var(--type-label-caps-tracking, var(--tracking-label-caps, 0.14em));
   text-transform: uppercase;
   color: var(--auth-muted);
 }
@@ -79,12 +93,12 @@
 
 .auth-hint {
   color: var(--auth-muted);
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
 }
 
 .auth-error {
   color: var(--auth-error);
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
 }
 
 .auth-input,
@@ -143,7 +157,7 @@
 
 .auth-choice-meta {
   display: block;
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
   color: var(--auth-muted);
 }
 
@@ -154,13 +168,18 @@
   align-items: center;
 }
 
+/*
+ * "Send me a code" is the one control on the claim journey, and it rendered at 12.75px — under
+ * PRODUCT.md's 17px floor, on the page a guest reaches from a text message. It takes the
+ * `control-caps` step: caps a guest must operate, at 17px, in all three DESIGN.md files.
+ */
 .auth-button {
   min-height: 3rem;
   padding: 0.75rem 1.5rem;
   font: inherit;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-size: var(--type-control-caps-size, var(--text-control-caps, 1rem));
+  font-weight: var(--type-control-caps-weight, var(--font-weight-control-caps, 500));
+  letter-spacing: var(--type-control-caps-tracking, var(--tracking-control-caps, 0.14em));
   text-transform: uppercase;
   border-radius: var(--radius-pill, 999px);
   border: 1px solid transparent;
@@ -216,7 +235,7 @@
 
 .auth-footer {
   color: var(--auth-muted);
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
 }
 
 .auth-list {

@@ -1,4 +1,14 @@
-/* Admin guest operations: shared foundation tokens only (root DESIGN.md), never the guest themes. */
+/* Admin console: shared foundation tokens only (root DESIGN.md), never the guest themes. */
+
+/*
+ * The family for everything in `/admin`, including the chrome outside `.ops` — the skip link and
+ * the navigation. Same stack as `.ops` below, declared once on the tree's own root so a new piece
+ * of admin chrome cannot silently inherit the browser default the way the nav did.
+ */
+.admin-root {
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
+}
+
 .ops {
   --ops-outline: var(--color-outline, color-mix(in oklab, var(--color-primary) 22%, var(--color-neutral)));
   --ops-muted: var(--color-on-surface-muted, color-mix(in oklab, var(--color-primary) 70%, var(--color-neutral)));

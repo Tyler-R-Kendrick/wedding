@@ -117,4 +117,30 @@ test.describe('security headers', () => {
     expect(objectPolicy ?? '', 'a storage route must never carry the site policy').not.toContain("default-src 'self'");
     expect(objectPolicy ?? '', 'nor its script-src').not.toContain('unsafe-inline');
   });
+
+  /**
+   * Level 16, cache isolation — the header half.
+   *
+   * `src/proxy.ts` marks every personalized route and every cookie-resolved public URL
+   * `private, no-store` with `Vary: Cookie`, and the reason is not politeness: without it a shared
+   * cache may serve one household's Your Weekend to another, and a browser may reuse a themed RSC
+   * payload across a design switch. `next dev` replaces that header with
+   * `no-cache, must-revalidate`, so this can only be asserted against `next start` — which is why
+   * it is here and not in `quality-sweep.spec.ts`, where the identities live.
+   *
+   * Anonymous is enough: the proxy sets the header by path, before any handler decides who the
+   * caller is, so the status of the personalized routes below does not matter.
+   */
+  test('personalized and theme-resolved URLs forbid a shared cache from keeping them', async ({ request }) => {
+    for (const path of ['/your-weekend', '/rsvp', '/trip', '/transportation', '/media/mine', '/']) {
+      const res = await request.get(path);
+      const cc = res.headers()['cache-control'] ?? '';
+      expect(cc, `${path} may be stored by a shared cache`).toContain('no-store');
+      expect(cc, `${path} is not marked private`).toContain('private');
+      expect(res.headers()['vary'] ?? '', `${path} does not vary on the cookie that chose it`).toMatch(/cookie/i);
+      // A validator invites a conditional request, and a conditional request is how a shared cache
+      // revalidates one identity's copy for another.
+      expect(res.headers()['etag'], `${path} carries an ETag`).toBeUndefined();
+    }
+  });
 });
