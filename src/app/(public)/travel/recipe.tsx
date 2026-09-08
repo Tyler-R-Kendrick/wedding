@@ -196,7 +196,9 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
             We are still confirming a few nearby options at different prices. <Todo>which hotels we recommend nearby</Todo>
           </p>
         )}
-        <p className="hint">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p>
+        {/* Outside the ternary this described a list that does not exist, directly under "we are
+            still confirming a few nearby options". It belongs with the list it describes. */}
+        {alternatives.length ? <p className="hint">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p> : null}
       </Section>
 
       <Section id="flights" eyebrow="Compare" title="Search flights">

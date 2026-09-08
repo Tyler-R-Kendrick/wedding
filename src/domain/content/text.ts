@@ -51,11 +51,6 @@ export function splitPlaceholderText(text: string): { settled: string[]; hints: 
   return { settled, hints };
 }
 
-/** True only when every sentence in the string is a placeholder — i.e. nothing is settled yet. */
-export function isWhollyPlaceholder(text: string): boolean {
-  return isPlaceholderText(text) && splitPlaceholderText(text).settled.length === 0;
-}
-
 /**
  * Strips placeholder SENTENCES so a TODO never enters the AI corpus, keeping whatever the record
  * has already decided.

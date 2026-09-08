@@ -166,13 +166,18 @@ export const ConservatoryTravelPage: ContentRecipe<TravelProps> = ({
           </p>
         </Prose>
       )}
-      <Prose>
-        <p>
-          We list why we picked each place (walk time, staffed desk, family
-          suites, price, step-free route, transit). We do not rate safety;
-          please use your own judgement.
-        </p>
-      </Prose>
+      {/* "We list why we picked each place" sat outside the ternary, so with no hotels configured
+          it rendered directly under "we are still confirming a few nearby options" — a present-tense
+          description of a list that does not exist. It belongs with the list it describes. */}
+      {alternatives.length ? (
+        <Prose>
+          <p>
+            We list why we picked each place (walk time, staffed desk, family
+            suites, price, step-free route, transit). We do not rate safety;
+            please use your own judgement.
+          </p>
+        </Prose>
+      ) : null}
     </Section>
 
     <Section id="flights" labelledBy="flights-title">
