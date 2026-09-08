@@ -93,7 +93,12 @@ test.describe("Travel & Stay", () => {
     });
   }
 
-  test("flight search is explicit: live mock results carry a timestamp and allowlisted hand-offs; unconfigured providers fall back cleanly", async ({
+  // Renamed and re-pointed. "live mock results" was the defect stated in a test name, and the
+  // branch below made it explicit: `if (mode === "mock") expect(body.data.mode).toBe("live")` —
+  // the suite asserting that a provider which invents its prices reports them as the partner's.
+  // A mock now reports `sample`, the page shows no fabricated price, and the deep links — the part
+  // that was always real and always useful — are what a guest gets.
+  test("flight search is explicit: a mock provider shows no prices, only real hand-offs; unconfigured providers fall back cleanly", async ({
     page,
     request,
   }) => {
@@ -110,17 +115,14 @@ test.describe("Travel & Stay", () => {
       /^https:\/\/www\.skyscanner\.com\/transport\/flights\/lax\/ord\/270715\//,
     );
     if (mode === "mock") {
-      await expect(page.getByText(/Prices as of/)).toBeVisible();
-      await expect(page.getByText(/Refresh before you book/)).toBeVisible();
-      await expect(
-        page
-          .getByText(/Nonstop|Connection on one ticket|Separate tickets/)
-          .first(),
-      ).toBeVisible();
+      // No invented price, no invented duration, and the guest is told why.
+      await expect(page.getByText(/Live prices are not connected yet/)).toBeVisible();
+      await expect(page.getByText(/Prices as of/)).toHaveCount(0);
+      await expect(page.getByText(/\$\d/).first()).toHaveCount(0);
       const hrefs = await page
-        .getByRole("link", { name: /Continue on/ })
+        .getByRole("link", { name: /Continue on|Search directly|Search with/ })
         .evaluateAll((els) => els.map((e) => e.getAttribute("href") ?? ""));
-      expect(hrefs.length).toBeGreaterThan(1);
+      expect(hrefs.length, "the real deep links are still offered").toBeGreaterThan(0);
       for (const href of hrefs) expect(href).toMatch(ALLOWLIST);
     } else if (mode === "deep-link") {
       await expect(page.getByText(/not available/)).toBeVisible();
@@ -151,7 +153,11 @@ test.describe("Travel & Stay", () => {
     expect(body.ok).toBe(true);
     expect(body.data.handoffs[0].url).toMatch(ALLOWLIST);
     if (mode === "mock") {
-      expect(body.data.mode).toBe("live");
+      // Was `expect(body.data.mode).toBe("live")` inside `if (mode === "mock")`: the suite
+      // asserting that fabricated numbers be labelled as the partner's own.
+      expect(body.data.mode).toBe("sample");
+      expect(body.data.mode).not.toBe("live");
+      expect(body.data.notice).toMatch(/not connected yet/i);
       expect(body.retrievedAt).toBe(body.data.snapshot.retrievedAt);
       expect(body.data.snapshot.refreshBeforeBooking).toBe(true);
     } else if (mode === "deep-link") {

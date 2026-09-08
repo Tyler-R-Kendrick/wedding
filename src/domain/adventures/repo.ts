@@ -1,3 +1,4 @@
+import { isPlaceholderText } from '@/domain/content/text';
 import { asc, eq } from 'drizzle-orm';
 import type { ExternalHandoff } from '@/contracts/providers';
 import type { Citation } from '@/contracts/provenance';
@@ -45,11 +46,31 @@ function toHandoffView(h: ExternalHandoff): HandoffView | undefined {
   return assertAllowedRedirect(h.url).ok ? { provider: h.provider, label: h.label, url: h.url, disclosure: h.disclosure, opensNewTab: h.opensNewTab } : undefined;
 }
 
-/** Directions deep link (Google Maps) through the redirect allowlist. Never a Maps API call. */
+/**
+ * Directions deep link (Google Maps) through the redirect allowlist. Never a Maps API call.
+ *
+ * The guard used to be `place.placeholder && !place.lat && !place.address`, which passed whenever
+ * the address column held something — and for three seeded places what it held was the placeholder
+ * itself. The button rendered as "Open directions in Google Maps" next to honest prose saying the
+ * address is still being written, and sent the guest to
+ * `…destination=Michael+Jordan%27s+Steakhouse%2C+TODO%28Tyler+%26+Sara%29%3A+which+location…`.
+ * Two failures in one: a control that cannot work is offered as if it can, and the authoring marker
+ * — which `(guest)/layout.tsx` says "belongs in the content record, never in what a guest reads" —
+ * is handed to a third party in a URL.
+ *
+ * The rule is about what travels, not about what exists: placeholder text is stripped from the
+ * destination, and the button survives whenever something real is left to send — coordinates, a
+ * real address, or just a real name. Starved Rock has only a name and it resolves perfectly well.
+ */
 export function directionsHandoff(place: PlaceRow, opts: { mode?: 'driving' | 'transit' | 'walking' } = {}): HandoffView | undefined {
-  if (place.placeholder && !place.lat && !place.address) return undefined;
+  const hasCoords = place.lat !== null && place.lat !== undefined && place.lng !== null && place.lng !== undefined;
+  const hasRealAddress = !!place.address && !isPlaceholderText(place.address);
+  const hasRealName = !!place.name && !isPlaceholderText(place.name);
+  // Something real has to reach Maps. A name alone is enough — "Starved Rock State Park" resolves —
+  // which is why the rule is about what we SEND, not about whether an address exists.
+  if (!hasCoords && !hasRealAddress && !hasRealName) return undefined;
   const maps = getProvider('maps');
-  const url = maps.directionsUrl({ name: place.name, address: place.address ?? undefined, lat: place.lat ?? undefined, lng: place.lng ?? undefined }, { mode: opts.mode ?? 'transit' });
+  const url = maps.directionsUrl({ name: place.name, address: hasRealAddress ? (place.address ?? undefined) : undefined, lat: place.lat ?? undefined, lng: place.lng ?? undefined }, { mode: opts.mode ?? 'transit' });
   return toHandoffView({ provider: 'google-maps', label: 'Open directions in Google Maps', url, opensNewTab: true, disclosure: `You will leave our site for Google Maps to get directions to ${place.name}.` });
 }
 
