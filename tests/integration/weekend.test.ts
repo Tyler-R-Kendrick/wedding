@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
 import { adminSetRsvpWindow, adminUpsertNotice, draftRsvp, getMyItinerary, submitRsvp } from '@/capabilities/rsvp';
 import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
 import { clearWeekendSlotProviders, registerWeekendSlotProvider } from '@/domain/weekend/slots';
@@ -29,7 +30,10 @@ describe('get_my_itinerary', () => {
     // it then rendered verbatim to guests, and, since this capability is exposed to `ai` and
     // `webmcp`, would have gone into assistant transcripts too. Inverted deliberately.
     expect(it0.data.slots.transport).toHaveProperty('body', expect.not.stringContaining('TODO('));
-    expect(it0.data.seating).toEqual({ published: false, table: null });
+    // Changed on purpose: `seating` gained `state` and `message`, so "no chart yet" is no longer
+    // the same sentence as "a chart exists and you are not on it". Nothing is published here, so
+    // `not_published` is the right one; the exact shape is still pinned.
+    expect(it0.data.seating).toEqual({ published: false, state: 'not_published', message: SEATING_MESSAGE.not_published, table: null });
     expect(it0.data.events[0]?.whenText).toBe('Time to be confirmed');
     expect(it0.data.events[0]?.whenText).not.toContain('TODO(');
     expect(it0.data.events[0]?.dateText).toBe('Saturday, July 17, 2027');

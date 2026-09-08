@@ -56,15 +56,28 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
     claimed_elsewhere: 'already claimed with a different email — ask Sara and Tyler',
   };
   const firstName = d.you.displayName.split(' ')[0];
+  // A guest with no email of their own is claimed through their household manager and the session
+  // becomes the manager's — correct, and by design (ADR-0001). Nothing on this page said so, so a
+  // guest who picked her own name on the invitation was greeted "Welcome, Dev", told she was signed
+  // in as Dev Fixture, and told she manages the RSVP for the household. Three sentences false about
+  // the person reading them. Only shown when the two names actually differ.
+  const picked = typeof sp.picked === 'string' && sp.picked !== d.you.displayName ? sp.picked : null;
   return (
     <AuthShell
       eyebrow="You’re in"
-      title={`Welcome, ${firstName}`}
+      title={picked ? `Welcome, ${picked.split(' ')[0]}` : `Welcome, ${firstName}`}
       lede={
-        <p>
-          You’re signed in as <strong>{d.you.displayName}</strong> from {d.household.name}
-          {d.you.isManager ? ' — you manage the RSVP for your household.' : '.'}
-        </p>
+        picked ? (
+          <p>
+            You picked <strong>{picked}</strong>. {picked.split(' ')[0]} has no email on the invitation, so the code went to <strong>{d.you.displayName}</strong>’s inbox and that is the name this session is
+            signed in as — {picked.split(' ')[0]}’s answers go in from here, together with the rest of {d.household.name}.
+          </p>
+        ) : (
+          <p>
+            You’re signed in as <strong>{d.you.displayName}</strong> from {d.household.name}
+            {d.you.isManager ? ' — you manage the RSVP for your household.' : '.'}
+          </p>
+        )
       }
       footer={
         <form action={signOut}>

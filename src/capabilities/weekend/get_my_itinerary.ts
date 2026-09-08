@@ -10,7 +10,7 @@ import { getLifecycle } from '@/db/repos/site';
 import { resolveWeekendSlots, WEEKEND_SLOT_KINDS } from '@/domain/weekend';
 import { loadForPrincipal } from '@/capabilities/rsvp/context';
 import { briefCitation, eventViewSchema, GUEST_READ_MAX_CHARS, requireGuestPrincipal, windowSchema } from '@/capabilities/rsvp/shared';
-import { myTableSchema, readPublishedTable } from '@/capabilities/seating/get_my_table';
+import { myTableSchema, readPublishedTable, readSeatingState, SEATING_MESSAGE, type SeatingState } from '@/capabilities/seating/get_my_table';
 
 const input = z.object({}).optional();
 
@@ -35,6 +35,18 @@ const output = z.object({
     status: z.enum(['not_started', 'partial', 'complete']),
     answered: z.number(),
     expected: z.number(),
+    /**
+     * Whether the caller may answer at all. The primary "RSVP now" button was gated on the window
+     * being open and nothing else, so a delegate — the one binding role `derive.ts` explicitly
+     * strips `rsvp_self` from — got the big button and a 403 behind it.
+     */
+    canAnswer: z.boolean(),
+    /**
+     * How many people the counts above cover. They are built from `actsFor`, so for a non-manager
+     * they are ONE person — and the badge said "Answered for everyone" once that person alone had
+     * answered, while the rest of the household had not. Ben and Eve are exactly this guest.
+     */
+    scope: z.enum(['self', 'household']),
   }),
   events: z.array(
     eventViewSchema.extend({
@@ -43,7 +55,13 @@ const output = z.object({
       household: z.array(z.object({ guestId: z.string(), displayName: z.string(), isSelf: z.boolean(), status: z.enum(RSVP_STATUSES).nullable() })),
     }),
   ),
-  seating: z.object({ published: z.boolean(), table: myTableSchema.nullable() }),
+  /**
+   * `published` alone collapsed three different truths into "Your table will appear here once
+   * seating is published": no chart exists yet, a chart exists and you are not on it, and table
+   * assignments are not part of your invitation. A guest added late, one who declined, a child or
+   * a plus-one all read the first sentence and waited for something that had already happened.
+   */
+  seating: z.object({ published: z.boolean(), state: z.enum(['not_entitled', 'not_published', 'not_seated', 'seated']), message: z.string().nullable(), table: myTableSchema.nullable() }),
   slots: z.object({ transport: slotSchema, trip: slotSchema }),
   notices: z.array(z.object({ id: z.string(), title: z.string(), body: z.string(), severity: z.enum(NOTICE_SEVERITIES), startsAt: z.string().nullable(), endsAt: z.string().nullable() })),
 });
@@ -76,6 +94,11 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
       resolveWeekendSlots({ principal: ctx.principal, guestId: p.value.guestId, db, now: ctx.now }),
       p.value.entitlements.has('view_table_assignment') ? readPublishedTable(ctx, p.value.guestId) : Promise.resolve(null),
     ]);
+    const seatingState: SeatingState = !p.value.entitlements.has('view_table_assignment')
+      ? 'not_entitled'
+      : table
+        ? 'seated'
+        : await readSeatingState(ctx, p.value.guestId);
     const self = hc.guests.find((g) => g.id === p.value.guestId);
     const responseKey = new Map(hc.responses.map((r) => [`${r.guestId}::${r.eventId}`, r.status]));
     const expectedPairs = hc.entitlements.filter((en) => hc.entitledEvents.some((e) => e.id === en.eventId && e.rsvpRequired));
@@ -86,7 +109,14 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
       data: {
         greeting: { firstName: self?.firstName ?? 'there', householdName: hc.household?.name ?? 'Your household' },
         lifecycle: lifecycleRow?.state ?? 'TEASER',
-        rsvp: { window: hc.window, status, answered, expected: expectedPairs.length },
+        rsvp: {
+          window: hc.window,
+          status,
+          answered,
+          expected: expectedPairs.length,
+          canAnswer: p.value.entitlements.has('rsvp_self') || p.value.entitlements.has('manage_household_rsvp'),
+          scope: new Set(expectedPairs.map((en) => en.guestId)).size > 1 ? ('household' as const) : ('self' as const),
+        },
         events: hc.entitledEvents.map((e) => ({
           ...toEventViewLocal(e, hc.mealOptions),
           whenText: formatEventWindow(e.startsAt, e.endsAt, e.timezone),
@@ -95,7 +125,7 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
             .filter((en) => en.eventId === e.id && guestName.has(en.guestId))
             .map((en) => ({ guestId: en.guestId, displayName: guestName.get(en.guestId)!, isSelf: en.guestId === p.value.guestId, status: responseKey.get(`${en.guestId}::${e.id}`) ?? null })),
         })),
-        seating: { published: !!table, table: table?.data ?? null },
+        seating: { published: !!table, state: seatingState, message: seatingState === 'seated' ? null : SEATING_MESSAGE[seatingState], table: table?.data ?? null },
         slots,
         notices: notices.map((n) => ({ id: n.id, title: n.title, body: n.body, severity: n.severity, startsAt: n.startsAt?.toISOString() ?? null, endsAt: n.endsAt?.toISOString() ?? null })),
       },

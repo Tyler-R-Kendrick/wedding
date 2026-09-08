@@ -38,6 +38,32 @@ export const myTableSchema = z.object({
 export type MyTable = z.infer<typeof myTableSchema>;
 
 /**
+ * Whether a guest has a seat, and when they do not, WHY.
+ *
+ * `readPublishedTable` returned `null` for two different facts — no chart has been published yet,
+ * and a chart exists but this guest is not on it — and the page said "Your table will appear here
+ * once seating is published" for both, plus a third time for a guest without
+ * `view_table_assignment` who never reached the query at all. A guest added late, a declined
+ * invitation, a child, a plus-one: all told the chart does not exist. Three truths, one sentence.
+ */
+export type SeatingState = 'not_entitled' | 'not_published' | 'not_seated' | 'seated';
+
+/** What the guest is told for each state that is not `seated`. */
+export const SEATING_MESSAGE: Record<Exclude<SeatingState, 'seated'>, string> = {
+  not_published: TABLE_NOT_PUBLISHED_MESSAGE,
+  not_seated: 'The seating chart is published, and you are not on it. If that is not what you expected, ask Sara and Tyler — they can add you.',
+  not_entitled: 'Table assignments are not part of your invitation.',
+};
+
+/** `not_published` vs `not_seated`, without loading the guest's own view twice. */
+export async function readSeatingState(ctx: CapabilityContext, guestId: string): Promise<Exclude<SeatingState, 'not_entitled'>> {
+  const db = await eDb(ctx);
+  const live = await getLivePublication(db);
+  if (!live) return 'not_published';
+  return findGuestInSnapshot(live.snapshot, guestId) ? 'seated' : 'not_seated';
+}
+
+/**
  * Reads ONLY the live publication snapshot. Before publication (or when the guest is not
  * in the snapshot) this is `not_found` — the draft chart never reaches any surface.
  */

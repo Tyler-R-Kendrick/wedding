@@ -36,7 +36,7 @@ export async function startClaim(formData: FormData): Promise<void> {
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
   const d = r.value.data;
-  await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, for: d.deliveredFor ?? undefined, back, kind: 'claim', lockedUntil: d.lockedUntil ?? undefined });
+  await setChallengeCookie({ c: d.challenge, to: d.deliveredTo, for: d.deliveredFor ?? undefined, back, kind: 'claim', lockedUntil: d.lockedUntil ?? undefined, picked: d.claimedFor ?? undefined });
   redirect('/claim/verify');
 }
 
@@ -62,7 +62,13 @@ export async function verifyCode(formData: FormData): Promise<void> {
   const d = r.value.data;
   if (d.isAdmin && !d.guestId) redirect(safeReturnPath(d.next, '/admin'));
   if (!d.guestId) redirect(withError('/sign-in', 'unlinked'));
-  redirect(safeReturnPath(d.next, '/claim/welcome'));
+  // Who they said they were, when the session is about to be somebody else. Read before the cookie
+  // is cleared, and carried only when the claim went through a household manager — the welcome page
+  // has to reconcile the two names or it greets a no-email guest by the manager's and tells her she
+  // manages the RSVP.
+  const target = safeReturnPath(d.next, '/claim/welcome');
+  if (cookie.picked && target === '/claim/welcome') redirect(`/claim/welcome?picked=${encodeURIComponent(cookie.picked)}`);
+  redirect(target);
 }
 
 export async function requestStepUpCode(formData: FormData): Promise<void> {

@@ -49,7 +49,12 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
       title={d.household.name}
       lede={
         <p>
-          Sara and Tyler have you down for {d.events.length > 0 ? `${d.events.length} ${d.events.length === 1 ? 'event' : 'events'}` : 'the celebration'}. Pick your name and we’ll send a six-digit code to the email on file — no password, nothing to remember.
+          {/* `d.events` is the INVITATION's event list, which is one list for the whole household —
+              and per-guest `event_entitlements` supersede it (`src/policy/derive.ts`). The page also
+              renders before the reader has said who they are. So "have you down for 2 events" was
+              wrong for at least one reader of every household whose members differ, which is exactly
+              the household where it matters. It says whose list it is now. */}
+          This invitation covers {d.events.length > 0 ? `${d.events.length} ${d.events.length === 1 ? 'event' : 'events'}` : 'the celebration'} for {d.household.name}; what each person is invited to is on their own page once they sign in. Pick your name and we’ll send a six-digit code to the email on file — no password, nothing to remember.
         </p>
       }
       footer={<p>This link only shows who is invited. Codes go to the email Sara and Tyler already have, so a forwarded link can’t be used by someone else.</p>}

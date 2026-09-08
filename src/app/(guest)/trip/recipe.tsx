@@ -135,7 +135,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
             as its own block above an h1 outright, and "Your Weekend" adds nothing "Your trip" does
             not already say. The same clean-up commit c9d4ef5 made on the admin screens. */}
         <h1 className="page__title">Your trip</h1>
-        <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and your household can see this.</p>
+        {/* Trips are per-guest and read through `actsFor`, which is one-directional: whoever answers
+            for you can see yours, and you cannot see theirs. "you and your household" was false for
+            every household manager, and meaningless in a household of one. It reads as a privacy
+            guarantee, so being wrong about it matters more than the words cost. */}
+        <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and whoever answers for you can see this.</p>
       </header>
       {notice ? (
         <p role="status" className="mt-6 rounded-sm border border-primary/40 p-3">

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { adminAssignSeats, adminDeleteTable, adminImportSeatingCsv, adminPublishSeating, adminSeatingOverview, adminUnpublishSeating, adminUpsertTable, getMyItinerary, getMyRsvp, getMyTable, listMyEvents, showMyTableOnFloorplan } from '@/capabilities/rsvp';
+import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
 import type { Db } from '@/db/client';
 import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
 import { listAuditEvents } from '@/lib/audit';
@@ -109,7 +110,17 @@ describe('published seating', () => {
     expectOk(await run(adminUnpublishSeating, admin, {}, { requestId: 'req-unpub-1' }));
     expect((await listAuditEvents(db, { requestId: 'req-unpub-1', action: 'seating.unpublished' })).length).toBe(1);
     expect(expectErr(await run(getMyTable, A1, {})).code).toBe('not_found');
-    expect(expectOk(await run(getMyItinerary, A1, {})).data.seating).toEqual({ published: false, table: null });
+    // Changed on purpose: `seating` gained `state` and `message` so the page can tell "no chart
+    // yet" apart from "a chart exists without you" and from "not on your invitation". Unpublishing
+    // leaves no live publication, so the first of the three is the right answer here. The exact
+    // shape is still pinned, and the added fields are an enum and a fixed string — neither can
+    // carry a draft id or a name, which is what the assertions around this one are about.
+    expect(expectOk(await run(getMyItinerary, A1, {})).data.seating).toEqual({
+      published: false,
+      state: 'not_published',
+      message: SEATING_MESSAGE.not_published,
+      table: null,
+    });
     expect(expectOk(await run(adminSeatingOverview, admin, {})).data.history.length).toBe(2);
 
     expectOk(await run(adminDeleteTable, admin, { id: gamma }));
