@@ -162,8 +162,40 @@ describe('principal resolver', () => {
     // for the biometric gate (`admin_biometric_status`, `admin_delete_biometric_data`,
     // `admin_enable_biometric_readiness`, `admin_disable_biometric_readiness`). The assertion below
     // is the one that matters: not one of the sixty reaches an assistant.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(60);
+    // 60 -> 70: level 14's ten `admin_`-prefixed console capabilities — `admin_lifecycle_status`,
+    // `admin_publish_lifecycle` (`admin_lifecycle`); `admin_search_audit` (`admin_audit`);
+    // `admin_jobs_overview`, `admin_retry_job`, `admin_cancel_job`, `admin_ops_metrics`,
+    // `admin_provider_status` (`admin_integrations`); `admin_flag_status`,
+    // `admin_disable_flag_readiness` (`admin_lifecycle`). The eleventh, `draft_lifecycle_transition`,
+    // has no prefix and so is not counted here — the count is of the `admin_` namespace, not of the
+    // level. Every one of the eleven is `ui: true, ai: false, webmcp: false`, which is what the
+    // second assertion checks and what matters: publishing a lifecycle state, retrying a job and
+    // moving a readiness switch are not things an assistant may reach for.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
+    // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
+    // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
+    // is true, so seven of them were listed for an admin whose handler then refuses:
+    // claim_identity, get_my_biometric_consent, get_my_household, get_my_invitation,
+    // request_biometric_deletion, revoke_biometric_consent, update_my_contact. The three biometric
+    // ones are the surprise: they carry no `flag` on purpose, because revoking consent and
+    // requesting deletion must stay reachable when the feature is off (BIPA), so they were listed
+    // for an admin today rather than only hypothetically. `guestIdentityRequired` refuses all seven
+    // in authorize(). What remains is the honest list: capabilities an admin can genuinely run.
+    // `prepare_reservation`, `register_passkey`, `step_up` and `suggest_alt_text` are `auth: 'guest'`
+    // in the sense of "a signed-in principal", and each admits an admin by design.
+    // `names()` above already drops `site_*` and `navigate_to`, which every principal can reach.
+    expect(names({ principal: ap }).filter((n) => !n.startsWith('admin_'))).toEqual([
+      'ask_concierge', 'draft_biometric_readiness', 'draft_lifecycle_transition', 'find_adventures',
+      'get_content_record', 'get_faq', 'get_media_clusters', 'get_media_item',
+      'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts',
+      'list_adventures', 'list_ai_traces', 'list_content_records', 'list_gallery', 'list_gift_links',
+      'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'mark_content_verified',
+      'open_booking_link', 'open_gift_link', 'open_reservation_link',
+      'prepare_reservation', 'register_passkey', 'request_otp', 'save_content_record', 'search_media',
+      'search_travel_options', 'search_wedding_information', 'search_wedding_information_static',
+      'show_adventure', 'show_venue_room', 'step_up', 'suggest_alt_text', 'verify_otp',
+    ]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);
   });

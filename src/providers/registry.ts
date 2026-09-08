@@ -130,6 +130,8 @@ export interface ProviderStatus {
   name: string;
   mode: ProviderMode;
   config: { ok: boolean; missing: string[]; warnings: string[] };
+  /** Which operations this instance can actually perform right now (`ProviderDescriptor.capabilities`). */
+  capabilities: Record<string, boolean>;
 }
 
 /** Modes for /api/health and the admin integrations page. Never includes values. */
@@ -138,9 +140,9 @@ export function describeProviders(deps: RegistryDeps = {}): ProviderStatus[] {
   return kinds.map((kind) => {
     try {
       const p: ProviderDescriptor = resolve(kind, deps);
-      return { kind, name: p.name, mode: p.mode, config: p.validateConfig() };
+      return { kind, name: p.name, mode: p.mode, config: p.validateConfig(), capabilities: p.capabilities };
     } catch (e) {
-      return { kind, name: 'unavailable', mode: 'unavailable', config: { ok: false, missing: [], warnings: [e instanceof Error ? e.message : 'error'] } };
+      return { kind, name: 'unavailable', mode: 'unavailable', config: { ok: false, missing: [], warnings: [e instanceof Error ? e.message : 'error'] }, capabilities: {} };
     }
   });
 }

@@ -117,6 +117,43 @@ describe('invoke pipeline', () => {
     expect((await invoke(echo, ui.c, big)).ok).toBe(true);
   });
 
+  it('caps a REPLAYED outcome too: a ui result may not reach an agent past the cap', async () => {
+    // The replay return is upstream of step 8, so before review N2 it skipped every check there.
+    // One idempotency scope is shared by all surfaces on purpose — adding the surface to the key
+    // would let one key run the handler once per surface — so the cap has to be applied on the way
+    // out instead. `agent_echo` is exposed to ui, ai and webmcp so one key can cross between them.
+    const shared = new MemoryIdempotencyStore();
+    const key = 'replay-cap-key-0123456789' as IdempotencyKey;
+    const agentEcho = defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'agent_echo',
+      kind: 'action',
+      idempotent: true,
+      exposure: { ui: true, ai: true, webmcp: true },
+      annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
+    });
+    const big = { text: 'x'.repeat(100) };
+    const ui = ctx({ surface: 'ui', principal: guest, idempotencyKey: key }, { idempotency: shared });
+    const first = await invoke(agentEcho, ui.c, big);
+    expect(first.ok, 'the ui call itself is uncapped and stores its outcome').toBe(true);
+
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const replay = ctx({ surface, principal: guest, idempotencyKey: key }, { idempotency: shared });
+      const r = await invoke(agentEcho, replay.c, big);
+      expect(r.ok, `${surface} must not receive the oversized stored result`).toBe(false);
+      if (!r.ok) expect(r.error.details).toMatchObject({ maxOutputChars: 40 });
+    }
+    // A replay that fits still replays: the cap is the only thing added, not a blanket refusal.
+    const smallKey = 'replay-ok-key-0123456789' as IdempotencyKey;
+    const small = { text: 'ok' };
+    const uiSmall = ctx({ surface: 'ui', principal: guest, idempotencyKey: smallKey }, { idempotency: shared });
+    expect((await invoke(agentEcho, uiSmall.c, small)).ok).toBe(true);
+    const aiSmall = ctx({ surface: 'ai', principal: guest, idempotencyKey: smallKey }, { idempotency: shared });
+    const replayed = await invoke(agentEcho, aiSmall.c, small);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.value.data).toEqual({ text: 'ok' });
+  });
+
   it('hides capabilities not exposed on the calling surface', async () => {
     const { c } = ctx({ surface: 'webmcp' });
     const r = await invoke(echo, c, { text: 'hi' });
@@ -177,6 +214,36 @@ describe('invoke pipeline', () => {
     }
     // On the website `inline` still needs no token — the form is the confirmation.
     expect((await invoke(inline, ctx({ principal: guest }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' })).ok).toBe(true);
+
+    // The opt-out is opt-IN: a descriptor that says nothing is still refused. This is the security
+    // property — `agentConfirmable` has to be typed out deliberately, per capability, by someone
+    // who has thought about an agent completing it with nobody watching.
+    const optedOut = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'opted_out_thing', confirmation: 'inline', agentConfirmable: true });
+    expect((await invoke(optedOut, ctx({ principal: guest, surface: 'ai' }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' })).ok).toBe(true);
+    const explicitOptOut = defineCapability<{ text: string }, { text: string }>({ ...base, name: 'explicit_opt_out', confirmation: 'explicit', agentConfirmable: true });
+    const stillRefused = await invoke(explicitOptOut, ctx({ principal: guest, surface: 'ai' }).c, { text: 'hi' });
+    expect(stillRefused.ok, 'agentConfirmable must never relax explicit confirmation').toBe(false);
+
+    // A TRANSACTION is never relaxable, on any surface. The contract says so and this is where it
+    // has to hold: the WebMCP layer re-upgrades a transaction on its own surface, but `ai` has no
+    // such belt, so the pipeline is the only thing standing between an agent and a committed
+    // transaction. Found by an adversarial review of the integrated level; before the fix this
+    // returned ok on surface `ai`.
+    const txn = defineCapability<{ text: string }, { text: string }>({
+      ...base,
+      name: 'txn_opt_out',
+      kind: 'transaction',
+      confirmation: 'inline',
+      agentConfirmable: true,
+      // `defineCapability` refuses a transaction without step-up, which is a belt of its own — so
+      // the attack needs a guest who signed in recently, and `guest` above is authenticated now.
+      stepUp: true,
+    });
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const r = await invoke(txn, ctx({ principal: guest, surface }, { idempotency: new MemoryIdempotencyStore() }).c, { text: 'hi' });
+      expect(r.ok, `agentConfirmable must never relax a transaction (${surface})`).toBe(false);
+      if (!r.ok) expect(r.error).toMatchObject({ code: 'confirmation_required', details: { reason: 'requires_ui' } });
+    }
 
     // An `external` handoff commits nothing: it returns a provider URL and logs that it did, and
     // level 09 exposes the gift and reservation links to an assistant on purpose. The guest's own
@@ -418,5 +485,102 @@ describe('invoke pipeline', () => {
     const principal: Principal = { kind: 'anonymous' };
     const r = await invoke(sys, ctx({ principal }).c, { text: 'hi' });
     expect(r.ok).toBe(false);
+  });
+});
+
+/**
+ * Level-13 review N5, fixed at level 15 by moving input validation BELOW authorization.
+ *
+ * The finding was small — an agent told to fix its input for a call that could never complete on
+ * its surface — but the obvious fix was worse than the bug: hoisting only the confirmation refusal
+ * above validation also hoists it above `authorize`, so a caller who had merely guessed a
+ * capability name would learn that it exists and wants a confirmation on the website. These three
+ * cases pin all three answers, because getting one right at the cost of another is the failure mode.
+ */
+describe('N5: error precedence — authorize, then surface, then input', () => {
+  const confirmed = defineCapability<{ text: string }, { text: string }>({
+    ...echo,
+    name: 'confirm_text',
+    kind: 'action',
+    auth: 'guest',
+    requires: ['manage_household_rsvp'],
+    confirmation: 'explicit',
+    annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
+  });
+  const entitled: Principal = { ...guest, entitlements: new Set(['manage_household_rsvp']) };
+
+  it('tells an unauthorized caller nothing about the capability, even about its confirmation', async () => {
+    // Invalid input AND unauthorized AND a surface that could never complete it: `forbidden` must
+    // win. `confirmation_required` here would confirm the name is real; `validation` would hand
+    // back its input schema.
+    const { c } = ctx({ principal: guest, surface: 'ai' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('forbidden');
+    const anon = ctx({ surface: 'ai' });
+    const r2 = await invoke(confirmed, anon.c, { text: '' });
+    if (!r2.ok) expect(r2.error.code).toBe('unauthenticated');
+  });
+
+  it('tells an authorized agent to use the website instead of asking it to fix fields', async () => {
+    const { c } = ctx({ principal: entitled, surface: 'ai' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('confirmation_required');
+      expect(r.error.details).toMatchObject({ reason: 'requires_ui' });
+    }
+  });
+
+  it('still validates input on the surface that can complete the call', async () => {
+    // Validation moved, it did not go away: on `ui` the same bad input is still a validation error,
+    // and untrusted input still never reaches a handler unparsed.
+    const { c } = ctx({ principal: entitled, surface: 'ui' });
+    const r = await invoke(confirmed, c, { text: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('validation');
+      expect(r.error.details?.issues).toEqual([{ path: 'text', message: expect.any(String) }]);
+    }
+  });
+});
+
+/**
+ * Level 15. `handoffUrl` becomes a server-side `redirect()` on the trip page, so an arbitrary
+ * origin reaching it is an open redirect with our domain's authority behind it. The allowlist is
+ * applied once on the way out instead of being inherited from whichever provider adapter happened
+ * to build the URL: `open_gift_link` and `open_reservation_link` never asserted it themselves.
+ */
+describe('handoff URLs are allowlisted centrally', () => {
+  const handoff = (url: string) =>
+    defineCapability<{ text: string }, { text: string }>({
+      ...echo,
+      name: 'handoff_test',
+      handler: async (_c, i) => ok({ data: { text: i.text }, sources: [], handoffUrl: url }),
+    });
+
+  it('passes a partner URL through untouched', async () => {
+    const { c } = ctx();
+    const r = await invoke(handoff('https://www.zola.com/registry/x'), c, { text: 'ok' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.handoffUrl).toBe('https://www.zola.com/registry/x');
+  });
+
+  it('refuses one that is not on the allowlist, and says nothing about it to the caller', async () => {
+    const { c, audit } = ctx();
+    const r = await invoke(handoff('https://evil.example/steal'), c, { text: 'ok' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('internal');
+      expect(JSON.stringify(r.error)).not.toContain('evil.example');
+    }
+    expect(audit.events[0]).toMatchObject({ action: 'capability.failed', outcome: 'failed' });
+  });
+
+  it('refuses an http:// partner URL too — downgrade is not a partner exception', async () => {
+    const { c } = ctx();
+    const r = await invoke(handoff('http://www.zola.com/registry/x'), c, { text: 'ok' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('internal');
   });
 });

@@ -48,18 +48,27 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     expect(cookies.some((c) => c.name.endsWith('session_token'))).toBe(false);
   });
 
-  test('per-email send limit answers 429 with Retry-After; verify over the JSON door never mints a session', async ({ request }) => {
+  test('per-(email, client) send limit answers 429 with Retry-After and does not lock other clients out; verify over the JSON door never mints a session', async ({ request }) => {
     const f = await seedFixtures(request);
+    // One client, held across the loop. `cap` otherwise presents a fresh forwarded address per
+    // call, and the capability layer derives its client from that header, so a rotating address
+    // would spread these sends across seven different buckets and never reach any capacity.
     let last = 200;
     let retryAfter: string | undefined;
     for (let i = 0; i < 7; i++) {
-      const res = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN });
+      const res = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN, client: 'otp-limit-client-a' });
       last = res.status();
       retryAfter = res.headers()['retry-after'];
       if (last === 429) break;
     }
     expect(last).toBe(429);
     expect(Number(retryAfter)).toBeGreaterThan(0);
+    // The point of keying the tight bucket on (email, client): a stranger who has just spent that
+    // guest's allowance must not have locked the guest out of their own inbox. This holds only
+    // because the client reaches the capability layer — while it did not, every caller shared one
+    // bucket and this second address was already denied.
+    const otherClient = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN, client: 'otp-limit-client-b' });
+    expect(otherClient.status(), 'a second client keeps its own allowance for the same address').toBe(200);
     const verify = await cap(request, 'verify_otp', { challenge: 'x'.repeat(40), code: '123456' });
     expect([422]).toContain(verify.status());
     expect(verify.headers()['set-cookie'] ?? '').not.toContain('session_token');

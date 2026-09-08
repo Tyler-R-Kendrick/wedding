@@ -14,6 +14,8 @@ export const removeTripItemCapability = defineCapability<z.infer<typeof input>, 
   description: 'Deletes one of the signed-in guest’s trip items. It does not cancel any booking with a partner; it only removes the record from the trip. Safe to repeat.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_travel_tools'],
   confirmation: 'inline',
   idempotent: true,

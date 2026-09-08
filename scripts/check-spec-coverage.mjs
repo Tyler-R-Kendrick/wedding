@@ -33,6 +33,11 @@ export const PRODUCTION_SPECS = [
   // only door (405 on GET, 403 on a form-encoded POST). With no ANTHROPIC_API_KEY in CI the model
   // provider is not live, so `conciergeModels()` hands back the deterministic extractive mock.
   'tests/e2e/concierge.spec.ts',
+  // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
+  // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`
+  // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
+  // Anonymous throughout, and `next start` serves prebuilt routes, so it needs no warm-up.
+  'tests/e2e/security-headers.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
@@ -57,6 +62,18 @@ export const TEST_SERVER_SPECS = [
   // CRON_SECRET, and reads the biometrics opt-in surface — all of which need the NODE_ENV=test
   // server and identity's test-principal injector.
   'tests/e2e/media-ai.spec.ts',
+  // Level 13: the WebMCP bridge. It drives signed-in guest and admin principals through the
+  // canonical test-principal injector and reads the manifest as each, so it needs the NODE_ENV=test
+  // server. Swarm K guarded its authenticated cases on `test.skip(!TEST_AUTH_SECRET)`; those guards
+  // are gone, because a spec that skips itself when an env var is missing is exactly how three
+  // security suites reported green at level 06. Registered here, the secret is always set.
+  'tests/e2e/webmcp.spec.ts',
+  // Level 14: the admin console. Signed-in admins come from the canonical test-principal injector,
+  // so it needs the NODE_ENV=test server. It is deliberately read-only — every mutation these
+  // screens offer changes state other specs on this same server depend on (the RSVP window follows
+  // the lifecycle; the media-AI journey expects its own jobs to still be queued), and those paths
+  // are covered through the real pipeline in tests/integration/ops-*.test.ts instead.
+  'tests/e2e/admin-console.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

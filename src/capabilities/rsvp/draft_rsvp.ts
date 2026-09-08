@@ -41,6 +41,8 @@ export const draftRsvp = defineCapability<DraftRsvpInput, DraftRsvpOutput>({
     'Dietary and accessibility notes are accepted here but are only ever shown on the website.',
   kind: 'draft',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['rsvp_self'],
   annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

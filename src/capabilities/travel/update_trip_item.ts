@@ -22,6 +22,8 @@ export const updateTripItemCapability = defineCapability<z.infer<typeof input>, 
     'opening a partner link never confirms anything. Only the owning guest or household manager may change an item.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_travel_tools'],
   confirmation: 'inline',
   idempotent: true,

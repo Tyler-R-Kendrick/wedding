@@ -38,6 +38,15 @@ jobs:
       - name: stylelint
         run: npm run lint:css
 
+      # Level 15. stylelint matches literal `font-family` values and cannot see through an
+      # indirection that resolves to one: `ops.css` referenced `var(--font-sans)`, defined nowhere,
+      # and the whole admin console rendered in Roboto / Helvetica Neue / Arial with every check in
+      # this job green. This compares references against definitions, which nothing else here does.
+      # It also runs inside `npm run test:unit` (tests/unit/css-vars.test.ts) so it cannot be a gate
+      # that exists only in a workflow file.
+      - name: Every var(--token) a component references is defined
+        run: node scripts/check-css-vars.mjs
+
   verify:
     name: typecheck · lint · unit · integration · build
     runs-on: ubuntu-latest
@@ -163,9 +172,25 @@ jobs:
           # where the suite passes either way. Adding the routes costs a few seconds and is what
           # this list is for, so it is the first thing to try; if the step fails again the next
           # suspect is worker contention rather than cold compiles.
+          #
+          # Level 14 turned that diagnosis into proof. `admin-console.spec.ts` walks EVERY href in
+          # the console index — 21 admin routes — and the step failed with
+          # `page.goto: net::ERR_ABORTED at /admin/rsvp` and, on retry, `/admin/content`: two routes
+          # this list did not have. Level 14 had added only its own six. Those cold compiles also
+          # starved the specs running beside them, which is why claim.spec and otp.spec — untouched
+          # by that level and green before it — began timing out on the same runner. The failing
+          # navigations name the unwarmed routes by URL, so this is no longer inference.
+          #
+          # EVERY admin route belongs here now, not just the ones a level happens to add: the walk
+          # visits all of them by construction, so a screen added without a line here re-creates the
+          # failure. The walk asserts `hrefs.length >= 20`, which is the tripwire.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
+                      /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
+                      /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \
+                      /admin/households /admin/invitations /admin/media /admin/reservations /admin/rsvp \
+                      /admin/seating /admin/transport /admin/travel \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done

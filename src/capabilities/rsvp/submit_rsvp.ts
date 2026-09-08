@@ -23,6 +23,8 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     'Editable again until the deadline. Sends a confirmation e-mail.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['rsvp_self'],
   confirmation: 'explicit',
   idempotent: true,

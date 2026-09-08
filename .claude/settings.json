@@ -16,7 +16,6 @@
       "Bash(.claude/skills/impeccable/scripts/impeccable *)",
       "Bash(npx design.md *)",
       "Bash(npx designmd *)",
-      "Bash(npx skills *)",
       "Bash(npx higgsfield *)",
       "Bash(higgsfield *)",
       "Bash(npx playwright *)",
@@ -31,6 +30,15 @@
       "WebFetch(domain:withjoy.com)",
       "WebFetch(domain:www.zola.com)",
       "Bash(node scripts/secrets/*)"
+    ],
+    "ask": [
+      "Bash(npm run skills:update)",
+      "Bash(npm run skills:update *)",
+      "Bash(npm run impeccable:update)",
+      "Bash(npm run impeccable:update *)",
+      "Bash(npx skills *)",
+      "Bash(skills *)",
+      "Bash(npx impeccable update *)"
     ],
     "deny": [
       "Read(./.env)",

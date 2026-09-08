@@ -12,11 +12,14 @@ export async function adminPrincipal(): Promise<{ principal: Principal; requestI
 }
 
 /** Runs a capability for the current request's principal (authorization stays inside the pipeline). */
-export async function adminInvoke<I, O>(cap: CapabilityDescriptor<I, O>, input: unknown, extra: { idempotencyKey?: string } = {}) {
+export async function adminInvoke<I, O>(cap: CapabilityDescriptor<I, O>, input: unknown, extra: { idempotencyKey?: string; confirmationToken?: string } = {}) {
   const { principal, requestId } = await adminPrincipal();
   // Same reason as the guest path: admin server actions reach invoke() directly, so the
   // per-principal budget is wired here rather than left to the JSON capability route.
-  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: extra.idempotencyKey, rateLimit: true });
+  // `confirmationToken` (level 14) carries the token a `draft` step issued: the pipeline is what
+  // verifies it, and the surface stays 'ui', which is the only surface an explicit confirmation is
+  // redeemable from.
+  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: extra.idempotencyKey, confirmationToken: extra.confirmationToken, rateLimit: true });
   return invoke(cap, ctx, input);
 }
 

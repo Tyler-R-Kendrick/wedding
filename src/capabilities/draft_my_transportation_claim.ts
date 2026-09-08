@@ -37,6 +37,8 @@ export const draftMyTransportationClaim = defineCapability<z.infer<typeof input>
     'and returns a confirmation the guest must approve on the website. It changes nothing by itself and never claims for another guest.',
   kind: 'draft',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['claim_transportation_benefit'],
   flag: 'TRANSPORT_BENEFITS',
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },

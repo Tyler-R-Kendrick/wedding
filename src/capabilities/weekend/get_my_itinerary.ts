@@ -57,6 +57,8 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
     'ride and trip sections (placeholders until those tools are live), and any urgent notices from the couple. Read-only.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_private_schedule'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

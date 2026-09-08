@@ -63,6 +63,13 @@ export interface PipelineServices {
   readiness?: (flag: FeatureFlag) => Promise<boolean>;
   /** Keyed fingerprint for audit `inputHash` (HMAC with a server key). Absent means no hash is recorded. */
   hashInput?: (value: unknown) => string;
+  /**
+   * The caller's address, as `getClientIp` derived it — never from anything in the input. Set by the
+   * routes that front a real request. A handler that meters its own budget (ask_concierge charges
+   * the model on the `concierge` policy) needs it to key anonymous callers apart; absent, they share
+   * one bucket, which is a limit but a coarse one.
+   */
+  clientIp?: string;
   confirmation?: ConfirmationService;
   idempotency?: IdempotencyStore;
   metrics?: MetricsLike;

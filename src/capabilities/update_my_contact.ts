@@ -36,6 +36,8 @@ export const updateMyContact = defineCapability<z.infer<typeof input>, UpdateMyC
   description: 'Changes the email address Sara and Tyler have on file for the signed-in guest. Sends a confirmation code to the new address first; the change applies only after the code is confirmed.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   stepUp: true,
   confirmation: 'inline',

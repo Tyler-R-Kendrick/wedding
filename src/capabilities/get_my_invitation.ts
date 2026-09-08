@@ -48,6 +48,8 @@ export const getMyInvitation = defineCapability<z.infer<typeof input>, MyInvitat
   description: 'Returns the signed-in guest’s invitation: household name, the people on it, which events it covers, plus-one and children allowances, and whom the guest may RSVP for. Read-only; never another household.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

@@ -130,4 +130,32 @@ export class JobQueue {
     const rows = await this.db.select({ status: jobs.status, n: sql<number>`count(*)::int` }).from(jobs).groupBy(jobs.status);
     return Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
   }
+
+  /**
+   * Puts a failed or dead job back on the queue, now. Attempt history is kept — the operator wants to
+   * see that this is the fourth try — so `maxAttempts` is raised just far enough to allow exactly one
+   * more run; without that a dead job (`attempts >= maxAttempts`) would be claimed and immediately
+   * die again. Only `failed` and `dead` rows move: requeuing a `running` job would let two workers
+   * hold the same row, and requeuing a `succeeded` one would re-run a completed side effect.
+   */
+  async requeue(id: string): Promise<JobRow | null> {
+    const now = this.now();
+    const [row] = await this.db
+      .update(jobs)
+      .set({ status: 'queued', runAt: now, lockedAt: null, lockedBy: null, updatedAt: now, completedAt: null, maxAttempts: sql`greatest(${jobs.maxAttempts}, ${jobs.attempts} + 1)` })
+      .where(and(eq(jobs.id, id), inArray(jobs.status, ['failed', 'dead'])))
+      .returning();
+    return row ?? null;
+  }
+
+  /** Stops a job that should not run: `queued` or `failed` becomes `dead` with the given reason. */
+  async cancel(id: string, reason: string): Promise<JobRow | null> {
+    const now = this.now();
+    const [row] = await this.db
+      .update(jobs)
+      .set({ status: 'dead', lastError: reason.slice(0, 1000), updatedAt: now, completedAt: now, lockedAt: null, lockedBy: null, dedupeKey: null })
+      .where(and(eq(jobs.id, id), inArray(jobs.status, ['queued', 'failed'])))
+      .returning();
+    return row ?? null;
+  }
 }

@@ -41,6 +41,8 @@ export const getMyRsvp = defineCapability<z.infer<typeof input>, MyRsvp>({
     'the answers already on file, and whether RSVPs are open. Read-only; use draft_rsvp to propose changes. Dietary and accessibility notes are shown only on the website, never to assistants.',
   kind: 'read',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['rsvp_self'],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

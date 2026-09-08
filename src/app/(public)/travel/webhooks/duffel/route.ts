@@ -1,6 +1,7 @@
 import { getDb } from '@/db/client';
 import { handleBookingWebhook } from '@/domain/travel';
 import { getAuditSink } from '@/lib/audit';
+import { DbIdempotencyStore } from '@/lib/idempotency';
 import { env } from '@/lib/env';
 import { getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
 import { getProvider } from '@/providers/registry';
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   const raw = await readBodyText(request, MAX_BODY_BYTES);
   if (!raw.ok) return jsonResponse({ ok: false }, { status: 413, requestId });
   const result = await handleBookingWebhook(
-    { db, audit: await getAuditSink(), flights: getProvider('flights'), requestId },
+    { db, audit: await getAuditSink(), flights: getProvider('flights'), requestId, nonces: new DbIdempotencyStore(db) },
     raw.value,
     request.headers.get('x-duffel-signature'),
   );

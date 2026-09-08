@@ -15,6 +15,8 @@ export const addTripItemCapability = defineCapability<z.infer<typeof input>, z.i
     'Items start as "planned"; the guest confirms a booking themselves on the website. Household managers may pass a member’s guestId.',
   kind: 'action',
   auth: 'guest',
+  // About the caller's own guest identity: an admin clears the `guest` floor but has none.
+  guestIdentityRequired: true,
   requires: ['view_travel_tools'],
   confirmation: 'inline',
   idempotent: true,
