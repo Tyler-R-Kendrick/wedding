@@ -5,6 +5,12 @@ test.use({ extraHTTPHeaders: forwardedFor('idor-' + String(Date.now())) });
 
 test.describe('IDOR across guests and households', () => {
   test('a guest sees only their own household, cannot claim or read others, and admin surfaces deny them', async ({ page, request }) => {
+    // A full UI claim plus ~25 capability round-trips and four navigations. Measured against the
+    // CI-shaped dev server: 5s with its routes warm, 26s cold — against a 30s default budget, which
+    // is how one unwarmed route (`/admin/guests/export`, line 36) turned into a timeout here rather
+    // than a clear failure there. The warm-up list in the workflow is the fix; this is the headroom
+    // that keeps a cold route reporting as a slow test instead of a red suite.
+    test.slow();
     const f = await seedFixtures(request);
     const ana = await claimViaUi(page, request, f.invitations.ruiz!.token, f.guests.ana!, f.emails.ana!);
 

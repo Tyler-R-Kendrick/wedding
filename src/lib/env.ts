@@ -74,7 +74,17 @@ const serverSchema = z.object({
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
   ANTHROPIC_API_KEY: optionalString,
+  /** OAuth bearer borrowed from a signed-in Claude Code session; sent as Authorization, not x-api-key. */
+  ANTHROPIC_AUTH_TOKEN: optionalString,
+  ANTHROPIC_BASE_URL: optionalUrl,
   OPENAI_API_KEY: optionalString,
+  /** Which local harness the credential came from, when it was borrowed rather than issued to the site. */
+  AI_HARNESS: z.enum(['claude-code', 'codex', 'copilot', 'ollama']).optional(),
+  /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
+  AI_BASE_URL: optionalUrl,
+  /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */
+  AI_CHAT_MODEL: optionalString,
+  AI_FAST_MODEL: optionalString,
   VOYAGE_API_KEY: optionalString,
   EMBEDDINGS_PROVIDER: z.enum(['openai', 'voyage']).optional(),
   /** Media intelligence (Swarm I): force the deterministic caption mock even when ANTHROPIC_API_KEY exists. */
@@ -122,8 +132,6 @@ const serverSchema = z.object({
   /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
   TRANSPORT_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
-  REGISTRY_LINKS_JSON: optionalString,
-  CASH_FUND_LINKS_JSON: optionalString,
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
   METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),
 

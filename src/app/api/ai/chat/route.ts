@@ -21,6 +21,14 @@ export const maxDuration = 60;
 const bodySchema = z.object({
   message: z.string().trim().min(2).max(2000),
   sessionId: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/).optional(),
+  /**
+   * The two halves of an on-device answer. `evidence` asks for the contract and the retrieved
+   * evidence and stops before generation; `draft` returns what a model in the guest's browser wrote
+   * for verification. Neither is trusted: the draft is re-routed, re-retrieved and re-verified
+   * server-side, so the only thing the browser can do is propose sentences.
+   */
+  mode: z.enum(['answer', 'evidence']).optional(),
+  draft: z.string().max(4000).optional(),
 });
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -77,7 +85,7 @@ export async function POST(request: Request) {
     async start(controller) {
       const emit = (event: Parameters<typeof encodeEvent>[0]) => controller.enqueue(encoder.encode(encodeEvent(event)));
       try {
-        await runConcierge({ ctx, question: body.message, sessionId: body.sessionId, emit, registry });
+        await runConcierge({ ctx, question: body.message, sessionId: body.sessionId, emit, registry, ...(body.mode ? { mode: body.mode } : {}), ...(body.draft !== undefined ? { draft: body.draft } : {}) });
       } catch (cause) {
         const log = ctx.services.logger as { error: (o: unknown, m?: string) => void } | undefined;
         log?.error({ err: cause, requestId }, 'concierge route failed');

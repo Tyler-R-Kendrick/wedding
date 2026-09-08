@@ -37,10 +37,34 @@ touching any UI. The site itself is not built yet; the tooling is.
    `npx impeccable detect`.
 5. **Reference data — `ui-ux-pro-max`.** Searchable font pairings, palettes,
    UX guidelines. Use it to *compare* options, not to override `DESIGN.md`.
-6. **Assets — fal.ai and Higgsfield.** Mood boards, comps, textures,
-   placeholder imagery, and (with the couple's consent and photos) a
-   Higgsfield **Soul** for identity-consistent imagery. AI imagery is
-   never shipped as a "photo of the couple".
+6. **Generated media — `fal.ai` and Higgsfield, both required.** Image, video
+   AND audio. They do different jobs and neither substitutes for the other, so
+   the Secret Drop's `media` slot acquires BOTH (`acquireAll`) and renders one
+   card per option — provider tabs are how you choose ONE, so tabs said the
+   opposite of what the ladder does:
+   - **fal.ai** (`FAL_KEY`) — one key across image, video and audio models. Mood
+     boards, textures, paper and fabric grounds, section backgrounds, motion
+     tests, sound. Called by `scripts/fal-generate.mjs` and the `fal-ai` MCP
+     server. Reach for it when nothing has to stay consistent between takes.
+   - **Higgsfield** (`node scripts/secrets/cli-login.mjs higgsfield`, or the
+     Secret Drop's own control, which dispatches exactly that and streams the
+     terminal back to the page so you can approve the link it prints) — anything
+     that must stay the *same* across shots, plus motion. A **Soul** (with the
+     couple's consent and photos) keeps one identity across a series; the video
+     models do the camera move and its audio. Skills: `higgsfield-generate`,
+     `higgsfield-soul-id`.
+
+   Neither is stock photography: **Openverse** is its own connection (openly
+   licensed real work from Flickr, Wikimedia and others), and **Stitch** is its
+   own again (screen comps). A generated image is not a licensed photograph and
+   the page no longer files them together.
+
+   Order of preference for any image on the site: a real licensed photograph
+   first, then a generated texture or abstract ground, and a generated *person*
+   last and only via a Soul — a fresh prompt per image gives a different
+   stranger each time, which reads as stock and is the tell. AI imagery is
+   never shipped as a "photo of the couple", and anything generated is recorded
+   in `docs/ops/asset-licensing.md` with the tool and prompt that made it.
 7. **Stitch (Google) — `enhance-prompt`, `taste-design`, `design-md`, `site-md`.**
    Optional comp generator; needs `STITCH_API_KEY`. `taste-design` can
    draft an alternative DESIGN.md to compare against ours.
@@ -65,10 +89,82 @@ Inside Claude Code: `/impeccable <cmd> <target>`, `hallmark audit <target>`,
 
 ## Secrets & accounts
 
-- Copy `.env.example` → `.env` and export vars before launching `claude`
-  (`.mcp.json` expands `${FAL_KEY}` and `${STITCH_API_KEY}`).
-- Higgsfield: `npx higgsfield auth login` (browser), then `/mcp` → higgsfield.
-- Never read, print, or commit `.env`; `.claude/settings.json` denies it.
+Credentials come through the **Secret Drop** ladder, not through chat. Never ask the couple
+what the site needs — `src/lib/env.ts` and `PRODUCT.md` already say. `npm run secrets:acquire`
+takes no arguments: it mints, derives, self-registers (auth.md / WorkOS) or delegates every
+credential the site needs, and only falls back to asking a human.
+Full protocol: `docs/ops/secrets.md`.
+
+```bash
+npm run secrets:autofill   # 19 variables that need no account at all — run first in a fresh sandbox
+npm run secrets:plan       # what it will do, and what (if anything) a human would click
+npm run secrets:acquire    # run the ladder (no args); writes .env, emits .secrets/outbox.json
+npm run secrets:resume     # finish delegated ceremonies the couple has since approved
+npm run secrets:verify     # probe what landed: live / rejected / unreachable
+npm run secrets:page       # rebuild the Secret Drop artifact after a registry change
+npm run secrets:probe      # which providers let an agent register itself (--register to prove it)
+npm run secrets:harness    # AI sessions this machine already holds (--apply to borrow one)
+npm run secrets:serve      # the same page as a local web app on 127.0.0.1 — no Claude in the loop
+npm run secrets:verify:lifecycle  # press the page's buttons for real; fails if a control claims work it never does
+npm run secrets:verify:artifact   # the page as the published artifact: every control ends somewhere, none queue
+```
+
+- Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,
+  Supabase or MinIO). Whatever the choice implies — endpoints, regions, bucket names — is
+  computed, never asked. Only the irreducible secret can reach a field.
+- The page has three homes and one codebase: published as an artifact, served by
+  `npm run secrets:serve` on loopback (files under `.secrets/` are the store, and it decrypts
+  and writes `.env` itself — no courier), or opened off disk (seals into a bundle you paste).
+- **Every strip leads with acquiring the credential, never with a field**, and every control is
+  named for what it does — the label is the ceremony's own `start` verb from `registry.mjs`, never
+  a phrase written in the template. Of the three OAuth steps only discovery/registration and the
+  token exchange need CORS; **authorization is a navigation and needs none**. So clients are
+  registered at build time in Node (`oauth-clients.mjs`, cache committed — public `client_id`s,
+  never a secret) and the published page opens the provider's real authorization URL itself for
+  Resend, Cloudflare (R2 + Stream), Neon and OpenRouter. Supabase issues only confidential clients
+  and Vercel publishes no registration endpoint, so those two still ask Claude through
+  `handoffs/<slot>`. `signin` options publish no agent route at all (probed), so there signing in
+  yourself *is* the ceremony — unless the option names its own worker (`handoffKind`), which is how
+  a credential that is a CLI session on this machine is acquired: `cli-login.mjs` runs the
+  provider's own login and `runJob` streams the link it prints back to the strip. A self-serve key
+  page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
+  than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
+  no control may repeat a request nobody answered.
+- **Every feature has its own connection, and none is ever hidden.** 14 slots, 44 options, all in
+  one list: answering a connection never files it away somewhere else, because the one you have
+  just configured is the one you are most likely to want to look at again. Identity is first class with
+  five real alternatives, and their ceremonies were probed on 2026-09-08 rather than assumed —
+  the apex domains publish nothing, which is the trap: `mcp.workos.com` registers a client AND
+  offers a device flow (and `workos.com/auth.md` provisions a one-shot environment with no account
+  at all), `api.supabase.com` registers but issues confidential clients only, `mcp.clerk.com` has
+  OAuth without registration, and Auth0 registers per tenant so a tenant must exist first. Better
+  Auth stays the default and needs no account. Maps and restaurant links are their own slots and
+  are complete as deep links.
+- **Gift links are not a credential.** Registry and "next adventures" links live in the
+  `gift_links` table and are edited in `/admin/gifts`, which validates every URL against the
+  redirect allowlist at write time and again at read time. `REGISTRY_LINKS_JSON` and
+  `CASH_FUND_LINKS_JSON` were a second, hand-maintained copy that only applied when that table was
+  empty; both are gone, and the Secret Drop does not ask for them.
+- In the artifact case the agent is still the courier for what it can help with: mirror
+  `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
+  to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before
+  `secrets:resume`. A `handoffs/*` record means someone asked for help: `kind: signin` →
+  `node scripts/secrets/browser-capture.mjs relay <recipe>` (the record's `recipe`, not its host);
+  `kind: link` → start that option's OAuth or device ceremony.
+- Never lead with "paste your key". Acquiring it is the agent's job; a field is the last
+  resort, for someone who already holds a key and would rather not wait.
+- The concierge's default is **no account at all**: the guest's own browser via the Prompt API
+  (`src/lib/ai/browser-model.ts`), then a harness this machine is already signed in to
+  (`secrets:harness`), and only then a hosted provider. A borrowed session is the operator's
+  identity — local development only.
+- **Never assert what a provider supports — probe it.** `npm run secrets:probe` checks RFC
+  9728/8414 metadata and RFC 7591 registration; `--register` proves an advertised endpoint
+  honours a request. Cloudflare, Neon, Supabase, Resend and Vercel all register an agent
+  client with no human at all. Looking only for WorkOS's `agent_auth` at an apex domain finds
+  none of them, and concluding "no agent auth exists" from that is how this got it wrong once.
+- Higgsfield: the Secret Drop's own control, or `node scripts/secrets/cli-login.mjs higgsfield`.
+- Never read, print, or commit `.env` or `.secrets/private*`; `.claude/settings.json` denies
+  both. Report variable *names* and lengths, never values.
 
 ## Rules for UI work in this repo
 

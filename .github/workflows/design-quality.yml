@@ -8,6 +8,14 @@ on:
 permissions:
   contents: read
 
+# One run per ref at a time. Without this every push starts a fresh set of four jobs while the
+# superseded ones keep running to completion — six pushes to one branch in a morning meant six
+# concurrent Playwright jobs, each holding a runner for eleven minutes. Only pull requests cancel:
+# a run on `main` is finishing something nobody is about to supersede, and is left alone.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   # Node's http client does not read HTTPS_PROXY by itself; harmless on GitHub runners.
   NODE_USE_ENV_PROXY: '1'
@@ -117,6 +125,29 @@ jobs:
   e2e:
     name: Playwright smoke (production build)
     runs-on: ubuntu-latest
+    # One of these at a time in the whole repository, queued rather than cancelled.
+    #
+    # This job is the heaviest thing here — a production build, `next start`, then a `next dev`
+    # server with two Playwright workers against it — and it is the only one that has ever died
+    # with "the runner has received a shutdown signal". Five runs on this branch today say when:
+    #
+    #   11:44–11:55  no run on main   green
+    #   11:56–12:07  no run on main   green
+    #   12:11–12:18  #20 on main      shutdown signal, 30s into the dev-server step
+    #   12:37–12:50  #22 on main      superseded
+    #   12:45–12:57  #23 on main      shutdown signal, 30s into the dev-server step
+    #
+    # Both deaths took THIS job while its siblings on the same run finished green seconds later,
+    # so it is not the run being cancelled and not the account losing its runners — it is this
+    # job's own machine going away while another copy of it runs elsewhere in the repo.
+    #
+    # Scoped to the job, not the workflow, so lint and typecheck stay parallel and only the
+    # expensive one takes a turn. `cancel-in-progress: false` because a queued run is the point;
+    # GitHub keeps one running and one pending per group and drops older pending ones itself,
+    # so a burst of pushes still collapses to the newest.
+    concurrency:
+      group: playwright-smoke-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -127,6 +158,21 @@ jobs:
 
       - run: npm ci
 
+      # Every run was downloading Chrome for Testing (184 MiB), chrome-headless-shell (115 MiB)
+      # and ffmpeg from scratch. The key is the resolved Playwright version, so a version bump
+      # misses the cache and re-downloads exactly once.
+      - name: Playwright version
+        id: pw
+        run: echo "v=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-browsers-${{ runner.os }}-${{ steps.pw.outputs.v }}
+
+      # `--with-deps` installs system libraries, which the cache cannot hold, so it always runs;
+      # the browser download itself is what the cache skips.
       - run: npx playwright install --with-deps chromium
 
       - name: Build
@@ -136,6 +182,15 @@ jobs:
 
       - name: Every spec runs in exactly one arrangement
         run: node scripts/check-spec-coverage.mjs
+
+      # The Secret Drop page as it is actually PUBLISHED — no server behind it, no Claude session
+      # watching. Every other check of that page runs it against `secrets:serve`, which has a
+      # worker, so all of them stayed green while the published artifact queued work nothing could
+      # ever claim. This one needs only the built page and the Chromium this job already installs.
+      - name: The published Secret Drop offers no control that cannot finish
+        run: |
+          node scripts/secrets/build-page.mjs
+          node scripts/secrets/page/verify-artifact.mjs
 
       - name: Production-build specs against `next start`
         # These assert production behaviour, including the proxy's `private, no-store` on
@@ -205,6 +260,24 @@ jobs:
           # visits all of them by construction, so a screen added without a line here re-creates the
           # failure. The walk asserts `hrefs.length >= 20`, which is the tripwire.
           #
+          # That tripwire has a blind spot, and it cost a run at level 16. The walk enumerates
+          # `#main .con-index a` — so it only covers routes reachable as a LINK from the console
+          # index. A `route.ts` export endpoint is never a link there, and neither are the media
+          # sub-pages, so `/admin/guests/export` stayed cold while `/admin/guests` beside it was
+          # warm. `idor.spec.ts` hit it and blew its 30s test budget compiling; on the retry the
+          # same contention took out a 5s `toHaveURL` in `claimViaUi`, two specs away. Measured
+          # locally against this same server: that test takes 26s cold and 5s warm.
+          #
+          # So when adding a route here, read `src/app`, not the console index — the walk cannot
+          # see what is not a link.
+          #
+          # Guest routes have the same blind spot, and the level-16 run showed it: with the admin
+          # exports warmed, `claim.spec.ts` went flaky on `page.goto('/sign-out')` — 30s test
+          # budget gone, then green on the retry. Six guest pages the specs navigate to were
+          # missing here. The list below is now every path any spec calls `page.goto` on, which is
+          # a rule that can be re-derived rather than remembered:
+          #   comm -23 <(grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u) <this list>
+          #
           # Level 16 added two many-navigation specs to this step — `typography.spec.ts` (6 auth
           # routes + 12 console routes, per project) and `quality-sweep.spec.ts` (4 guest routes,
           # walked five times over, two designs). Every route either was already here or is added
@@ -212,12 +285,14 @@ jobs:
           # rather than the 30s default, which is the other half of what level 14 learned.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
-                      /ask-us \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
                       /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \
                       /admin/households /admin/invitations /admin/media /admin/reservations /admin/rsvp \
                       /admin/seating /admin/transport /admin/travel \
+                      /admin/guests/export /admin/rsvp/export \
+                      /admin/media/duplicates /admin/media/import /admin/media/metrics \
+                      /ask-us /our-story /the-wedding /explore-caa /share-an-adventure /sign-out \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done

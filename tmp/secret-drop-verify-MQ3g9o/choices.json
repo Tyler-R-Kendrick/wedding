@@ -1,0 +1,47 @@
+{
+  "email": {
+    "slot": "email",
+    "option": "ses",
+    "at": "2026-09-08T01:47:28.337Z"
+  },
+  "storage": {
+    "slot": "storage",
+    "option": "minio",
+    "at": "2026-09-08T01:47:29.695Z"
+  },
+  "database": {
+    "slot": "database",
+    "option": "byo-postgres",
+    "at": "2026-09-08T01:47:30.781Z"
+  },
+  "concierge": {
+    "slot": "concierge",
+    "option": "ollama",
+    "at": "2026-09-08T01:47:33.493Z"
+  },
+  "search": {
+    "slot": "search",
+    "option": "openai-embed",
+    "at": "2026-09-08T01:47:34.036Z"
+  },
+  "video": {
+    "slot": "video",
+    "option": "none-video",
+    "at": "2026-09-08T01:47:34.575Z"
+  },
+  "travel": {
+    "slot": "travel",
+    "option": "deep-link",
+    "at": "2026-09-08T01:47:35.658Z"
+  },
+  "rides": {
+    "slot": "rides",
+    "option": "manual-codes",
+    "at": "2026-09-08T01:47:36.198Z"
+  },
+  "imagery": {
+    "slot": "imagery",
+    "option": "none-imagery",
+    "at": "2026-09-08T01:47:37.283Z"
+  }
+}

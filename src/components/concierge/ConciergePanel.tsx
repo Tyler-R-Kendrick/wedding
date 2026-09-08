@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { CHAT_ROUTE, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
+import { askOnDevice, isSupported, openSession, probe } from "@/lib/ai/browser-model";
+import { publicEnv } from "@/lib/env.public";
+import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
 import "./concierge.css";
 
 /**
@@ -40,8 +42,86 @@ const STAGE_LABEL: Record<string, string> = {
   verifying: "Checking every sentence against its source…",
 };
 
+const ON_DEVICE_STAGE = "Writing an answer on your device\u2026";
+/**
+ * Generation only — the model is downloaded before this path is taken. Kept short because it is
+ * spent *before* the server is asked: a device that cannot answer in this long has cost the guest
+ * the whole budget and the server's generation still has to follow.
+ */
+const ON_DEVICE_TIMEOUT_MS = 8_000;
+
+/**
+ * Which of phase 2's stages are still true once the device has been asked. With a draft, all that
+ * remains is verification; without one the server generates after all, but the routing and
+ * retrieval the guest already heard about are not happening for the first time.
+ */
+function keepStage(stage: string, haveDraft: boolean): boolean {
+  if (haveDraft) return stage === "verifying";
+  return stage === "generating" || stage === "verifying";
+}
+
+/**
+ * Whether to answer this question on the device. Only `available` counts: a model the browser has
+ * offered but not yet downloaded is worth having, but not worth making someone wait minutes for,
+ * so the download is started in the background and this question goes to the server. The next one
+ * is on-device.
+ */
+async function readyOnDevice(): Promise<boolean> {
+  if (!isSupported()) return false;
+  const state = await probe();
+  if (state === "available") return true;
+  if (state === "downloadable" || state === "downloading") {
+    // Fire and forget: nothing here awaits the download, and a failure is not this turn's problem.
+    void openSession().then((session) => session?.destroy?.()).catch(() => {});
+  }
+  return false;
+}
+
 let turnCounter = 0;
 const nextTurnId = () => `t${++turnCounter}`;
+
+/**
+ * One request, one NDJSON stream, every event handed to `onEvent`. Both halves of an on-device
+ * answer use this: asking for the evidence and returning the draft are the same exchange with a
+ * different body. `sessionId` is a ref so the second half continues the session the first began.
+ */
+async function streamTurn(
+  chatRoute: string,
+  body: { message: string; mode?: "evidence"; draft?: string },
+  sessionId: { current: string | undefined },
+  onEvent: (event: ConciergeEvent) => void,
+): Promise<void> {
+  const response = await fetch(chatRoute, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...body,
+      ...(sessionId.current ? { sessionId: sessionId.current } : {}),
+    }),
+    credentials: "same-origin",
+  });
+  if (!response.ok || !response.body) {
+    const detail = (await response.json().catch(() => undefined)) as
+      | { error?: { message?: string } }
+      | undefined;
+    // Tagged, so the catch can tell a message the SERVER wrote for a guest ("Too many
+    // questions at once…") from an exception the browser threw ("Failed to fetch").
+    throw new GuestSafeError(
+      detail?.error?.message ?? "The concierge is unavailable right now.",
+    );
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const { events, rest } = decodeEvents(buffer);
+    buffer = rest;
+    for (const e of events) onEvent(e);
+  }
+}
 
 /**
  * Keep the newest `MAX_TRANSCRIPT_TURNS` turns and count what was dropped.
@@ -66,12 +146,14 @@ export default function ConciergePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
-   * Every turn ever pushed. `dropped` is this minus what the state still holds, which is exact
-   * and needs no second piece of state: `trimTranscript` is the only thing that shortens `turns`.
-   * A ref rather than state because nothing re-renders on it — the render that shows a dropped
-   * count is the one `setTurns` already causes.
+   * Every turn ever pushed. `dropped` is this minus what the state still holds, which is exact:
+   * `trimTranscript` is the only thing that shortens `turns`.
+   *
+   * State rather than a ref because the count is read while rendering, and a ref read during
+   * render is not guaranteed to be the value this render commits with. It costs no extra render:
+   * it is set in the same event as the `setTurns` beside it, so React batches the two into one.
    */
-  const addedRef = useRef(0);
+  const [added, setAdded] = useState(0);
   const sessionId = useRef<string | undefined>(undefined);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
@@ -98,14 +180,14 @@ export default function ConciergePanel({
   }, [turns]);
 
   const visible = turns.filter((turn) => !turn.failed);
-  const dropped = Math.max(0, addedRef.current - turns.length);
+  const dropped = Math.max(0, added - turns.length);
 
   const submit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
       const asked = question.trim();
       if (asked.length < 2 || busy) return;
-      addedRef.current += 2;
+      setAdded((n) => n + 2);
       const answerTurn: Turn = {
         id: nextTurnId(),
         role: "concierge",
@@ -142,36 +224,66 @@ export default function ConciergePanel({
         );
 
       try {
-        const response = await fetch(chatRoute, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: asked,
-            ...(sessionId.current ? { sessionId: sessionId.current } : {}),
-          }),
-          credentials: "same-origin",
-        });
-        if (!response.ok || !response.body) {
-          const detail = (await response.json().catch(() => undefined)) as
-            | { error?: { message?: string } }
-            | undefined;
-          // Tagged, so the catch can tell a message the SERVER wrote for a guest ("Too many
-          // questions at once…") from an exception the browser threw ("Failed to fetch").
-          throw new GuestSafeError(
-            detail?.error?.message ?? "The concierge is unavailable right now.",
+        // The on-device half. When the guest's browser has the Prompt API, the server is asked for
+        // the evidence rather than for an answer: it still routes, still runs the tools under this
+        // guest's principal and still quarantines injected sources, but the sentences are written
+        // here, on their device. The draft then goes back for the same verification every answer
+        // gets. Any failure at all falls through to the server writing the answer itself.
+        let draft: string | null = null;
+        let onDevice = false;
+        if (publicEnv.browserModel && (await readyOnDevice())) {
+          onDevice = true;
+          let evidence: { system: string; userTurn: string } | null = null;
+          await streamTurn(
+            chatRoute,
+            { message: asked, mode: "evidence" },
+            sessionId,
+            (e) => {
+              if (e.type === "evidence") {
+                evidence = { system: e.system, userTurn: e.userTurn };
+                return;
+              }
+              // Phase 1 stops at the seam, so its `generating` names a step the server never takes.
+              // The device's own stage says it truthfully a moment later.
+              if (e.type === "status" && e.stage === "generating") return;
+              apply(e, update, setStage, sessionId);
+            },
           );
+          // No evidence means the server never reached the seam — it refused, or it errored, and
+          // those events have already been applied. That turn is finished; asking again would only
+          // repeat it.
+          if (!evidence) return;
+          const { system, userTurn } = evidence;
+          setStage(ON_DEVICE_STAGE);
+          // A deadline, because a stalled device must not become a hung concierge. The model is
+          // already downloaded by this point (`readyOnDevice`), so this bounds generation only —
+          // and it is short, because whatever it spends is spent before the server is even asked.
+          draft = await askOnDevice(userTurn, {
+            systemPrompt: system,
+            signal: AbortSignal.timeout(ON_DEVICE_TIMEOUT_MS),
+          });
+          // Only claim verification when there is something to verify. On a device that returned
+          // nothing this would be indistinguishable, to a screen reader, from having succeeded.
+          if (draft) setStage(STAGE_LABEL.verifying!);
         }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const { events, rest } = decodeEvents(buffer);
-          buffer = rest;
-          for (const e of events) apply(e, update, setStage, sessionId);
-        }
+        await streamTurn(
+          chatRoute,
+          {
+            message: asked,
+            // Capped to what the route accepts; a device that rambles is truncated, not rejected.
+            ...(draft ? { draft: draft.slice(0, MAX_DRAFT_CHARS) } : {}),
+          },
+          sessionId,
+          (e) => {
+            // The stage line is a live region: it must only ever move forward. Phase 2 re-routes
+            // and re-retrieves — that is what makes an on-device draft safe to trust — but those
+            // stages already played, and replaying them tells a blind guest the concierge gave up
+            // and started over. With a draft in hand only `verifying` is left to narrate; without
+            // one the server really does generate, so that stage is honest and stays.
+            if (onDevice && e.type === "status" && !keepStage(e.stage, draft !== null)) return;
+            apply(e, update, setStage, sessionId);
+          },
+        );
       } catch (cause) {
         // A guest never sees `cause.message` from an exception: a dropped connection rendered the
         // browser's own "Failed to fetch" into the panel. A message the server wrote IS for them —
