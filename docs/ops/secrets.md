@@ -301,6 +301,35 @@ turn rather than a failure, so a stale entry costs nothing.
 responses carry no such header, so a browser completes the preflight, sends the request and is
 then refused the reply. Trusting the preflight would have shipped another button that cannot work.
 
+**A credential can be a session rather than a value.** Higgsfield issues no API key: the vendored
+CLI runs its own OAuth and writes a credentials file, and the skills call `higgsfield account
+status`. For a while that was treated as a reason the page could not offer the connection — the
+same mistake as reading "no CORS" as "the ceremony cannot start". The machine has a shell. An
+option may name its own worker with `handoffKind`, `HANDOFF_WORK.cli` maps that to fixed argv, and
+`cli-login.mjs` runs the provider's login while `runJob` streams its output into the record the
+strip renders — the CLI prints a link, the person approves it in their own browser, and nothing
+secret passes through the page. A named worker outranks the self-serve key page, because opening
+`higgsfield.ai` would sign you in to the website and leave the CLI with no session: a control that
+looks like the ceremony but is not.
+
+**A returning code waits for the ceremony it belongs to.** After a Resend approval that actually
+succeeded, both tabs sat on *"Opened just now — waiting for the provider"* for ever. `takeCode` ran
+at bootstrap while the `ceremonies` snapshot was still in flight, so the `state` in the URL matched
+nothing, the code was filed under `OAUTH_CODE_PENDING`, the ceremony never moved off `waiting` —
+and then `history.replaceState` cleaned the URL, leaving the snapshot that arrived milliseconds
+later nothing to retry with. The code is now captured once at parse time, redeemed only after the
+ceremonies have arrived, and the URL is cleaned only once it is somewhere safer. The artifact gate
+grew a pass that seeds a waiting ceremony and delivers the snapshot *late*, because the old stub
+answered `onSnapshot` synchronously and no real store does — which is why nothing caught this.
+
+**Every provider kind has a slot.** 15 slots, 43 options, one for each kind in `src/providers`,
+including the ones that had been invisible: identity (Better Auth, whose keys are all autofilled,
+so it had nothing to ask and therefore was never written down), rate limiting (`RATE_LIMIT_BACKEND`
+— the database, not memory, which production refuses), photo captions, and the gift registry and
+cash fund. Maps, reservations, the vector index and face matching have no configuration surface in
+the code, so their slot says there is nothing to connect rather than offering a field for an
+adapter that does not exist.
+
 **Choosing something never hides anything.** Picking "Just link out" or "Skip it" answers a slot,
 which used to make `needsYou` go false and the strip leave *Waiting on you* for a one-line row
 further down the page — the card went away from under the pointer, while choosing the provider

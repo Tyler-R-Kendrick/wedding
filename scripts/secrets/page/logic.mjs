@@ -322,15 +322,26 @@ export function createLogic(reg) {
       }
       // No client to be had (Vercel publishes no registration endpoint at all), so nobody can
       // shortcut this from here: ask whoever runs the ladder in this home.
-      if (home !== 'disk') return { kind: 'dispatch', option: opt, handoffKind: 'link', stalled, fallback };
+      if (home !== 'disk') return { kind: 'dispatch', option: opt, handoffKind: opt.handoffKind || 'link', stalled, fallback };
       return opt.keysUrl
         ? { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled, fallback }
         : { kind: 'none', option: opt, stalled, fallback };
     }
     if (cer === 'signin') {
+      /*
+       * An option that names its own worker is performed by that worker, full stop.
+       *
+       * Higgsfield's credential is a session its CLI writes on the machine. Opening
+       * `higgsfield.ai` in a tab looks like the same thing and is not: you would sign in to the
+       * website and the CLI would still have no session. So a named `handoffKind` outranks the
+       * self-serve page — the control has to do what its label says, and here only the worker can.
+       */
+      if (opt.handoffKind && home !== 'disk') {
+        return { kind: 'dispatch', option: opt, handoffKind: opt.handoffKind, stalled, fallback };
+      }
       // Served locally the worker really does drive the sign-in and write `.env` itself, so
       // asking it beats making a person do it by hand.
-      if (home === 'local') return { kind: 'dispatch', option: opt, handoffKind: 'signin', stalled, fallback };
+      if (home === 'local') return { kind: 'dispatch', option: opt, handoffKind: opt.handoffKind || 'signin', stalled, fallback };
       // Everywhere else: signing in yourself IS this ceremony. Probed rather than assumed —
       // Postmark, Anthropic, OpenAI, Groq, Duffel, Voyage and fal publish no registration
       // endpoint at all, so there is no agent route being passed over here, and a control that
@@ -341,7 +352,7 @@ export function createLogic(reg) {
       // myself", which is why saying nothing here is honest rather than a dead end.
       return home === 'disk'
         ? { kind: 'none', option: opt, stalled, fallback }
-        : { kind: 'dispatch', option: opt, handoffKind: 'signin', stalled, fallback };
+        : { kind: 'dispatch', option: opt, handoffKind: opt.handoffKind || 'signin', stalled, fallback };
     }
     if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt, stalled, fallback };
     return { kind: 'none', option: opt, stalled, fallback };

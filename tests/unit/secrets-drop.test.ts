@@ -475,16 +475,29 @@ describe('a control that reports dispatched work dispatched work', () => {
       for (const option of slot.options) {
         if (option.ceremony !== 'signin') continue;
         offered += 1;
-        // Exactly what `handoff()` writes, and exactly what the local server would pick up.
-        const argv = HANDOFF_WORK.signin({
-          slot: slot.id, option: option.id, kind: 'signin',
-          recipe: option.recipe, host: option.host,
+        // Exactly what `handoff()` writes, and exactly what the local server would pick up —
+        // including the KIND, which is not always the one the ceremony implies. Higgsfield's
+        // ceremony is a sign-in, but the thing that performs it is its own CLI login, not a
+        // browser relay; assuming the kind here asserted that a relay could resolve `higgsfield.ai`,
+        // which is true of nothing and was never what the page would send.
+        const kind = (option.handoffKind || 'signin') as keyof typeof HANDOFF_WORK;
+        const argv = HANDOFF_WORK[kind]({
+          slot: slot.id, option: option.id, kind,
+          recipe: option.recipe, host: option.host, cli: option.cli,
         });
-        expect(argv, `${slot.id}/${option.id} offers "Sign in once" but dispatches nothing`).toBeTruthy();
-        expect(
-          resolves(argv![2]!),
-          `${slot.id}/${option.id} would dispatch "relay ${argv![2]}", which browser-capture cannot resolve`,
-        ).toBe(true);
+        expect(argv, `${slot.id}/${option.id} offers a sign-in but dispatches nothing`).toBeTruthy();
+        if (kind === 'signin') {
+          expect(
+            resolves(argv![2]!),
+            `${slot.id}/${option.id} would dispatch "relay ${argv![2]}", which browser-capture cannot resolve`,
+          ).toBe(true);
+        } else {
+          // Whatever else performs it must at least be a script that exists.
+          expect(
+            existsSync(new URL('../../' + argv![0], import.meta.url)),
+            `${slot.id}/${option.id} dispatches ${argv!.join(' ')}, and ${argv![0]} is not there`,
+          ).toBe(true);
+        }
       }
     }
     expect(offered, 'no sign-in options found — the invariant would be vacuous').toBeGreaterThan(0);

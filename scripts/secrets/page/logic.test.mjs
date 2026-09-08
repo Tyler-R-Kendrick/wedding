@@ -607,8 +607,9 @@ describe('the registry the page is built from', () => {
         //   link, no client published  -> nobody can shortcut it, so ask
         //   signin                     -> probed: these publish no agent route at all, so
         //                                 signing in yourself IS the ceremony
+        //   signin + its own worker  -> that worker, because only it performs this ceremony
         const artifactExpected = cer === 'link' ? (hasClient(o) ? 'authorize' : 'dispatch')
-          : cer === 'signin' ? (o.keysUrl ? 'selfServe' : 'dispatch')
+          : cer === 'signin' ? (o.handoffKind ? 'dispatch' : o.keysUrl ? 'selfServe' : 'dispatch')
           : expected;
         assert.equal(L.actionFor(s, { choices, home: 'artifact' }).kind, artifactExpected, `artifact ${s.id}/${o.id} (${cer})`);
       }
@@ -665,6 +666,22 @@ describe('the registry the page is built from', () => {
     const blankSignin = { ...email, options: [{ ...email.options.find((o) => o.id === 'postmark'), keysUrl: null }] };
     assert.equal(L.actionFor(blankSignin, { home: 'artifact' }).kind, 'dispatch');
     assert.equal(L.actionFor(blankSignin, { home: 'disk' }).kind, 'none');
+  });
+
+  it('sends an option with its own worker to that worker, not to a web page', () => {
+    // Higgsfield's credential is a session its CLI writes on this machine. `keysUrl` resolves to
+    // higgsfield.ai, so without this the published page offered "Sign in to Higgsfield" — a link
+    // that signs you in to the website and leaves the CLI with no session at all. A control that
+    // looks like the ceremony but is not is the exact failure this page keeps being rebuilt over.
+    const motion = REG.slots.find((s) => s.id === 'motion');
+    for (const home of ['artifact', 'local']) {
+      const action = L.actionFor(motion, { home });
+      assert.equal(action.kind, 'dispatch', `${home}: ${action.kind}`);
+      assert.equal(action.handoffKind, 'cli');
+      assert.equal(action.option.cli, 'higgsfield');
+    }
+    // Off disk there is no store to record the request in, so there is nothing to offer.
+    assert.notEqual(L.actionFor(motion, { home: 'disk' }).kind, 'dispatch');
   });
 
   it('has a registered client for each provider that issues a public one', () => {

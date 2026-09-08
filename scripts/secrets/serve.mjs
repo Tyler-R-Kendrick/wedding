@@ -222,7 +222,19 @@ const HANDOFF_WORK = {
     return target ? ['scripts/secrets/browser-capture.mjs', 'relay', target] : null;
   },
   link: (h) => ['scripts/secrets/acquire.mjs', 'run', '--slot', h.slot],
+  /*
+   * A provider whose credential is a CLI session on this machine rather than a value to seal.
+   *
+   * The id is checked against a list written here, never used as a command: `cli-login.mjs`
+   * validates it a second time against its own table, and neither place ever builds a shell
+   * string. The CLI prints a link to approve and `runJob` streams that back into the record, so
+   * the person approves in their own browser and no secret passes through the page at all.
+   */
+  cli: (h) => (CLI_LOGIN.has(h.cli) ? ['scripts/secrets/cli-login.mjs', h.cli] : null),
 };
+
+/** Logins `cli-login.mjs` implements. Kept beside HANDOFF_WORK so the two cannot drift apart. */
+const CLI_LOGIN = new Set(['higgsfield']);
 
 /** One job per key; the map is also how a second press knows not to start a duplicate. */
 const running = new Map();

@@ -128,9 +128,13 @@ for (const slot of REG.slots) {
       // than written out here — so a button renamed in the template without the ceremony meaning
       // anything different is a failure, not a silent rewording.
       const cer = CEREMONY[opt.ceremony];
-      const expected = opt.ceremony === 'link'
-        ? (opt.oauthClient?.clientId ? `${cer.start} ${opt.name}` : 'Ask Claude to set this up')
-        : `${cer.start} ${opt.name}`;
+      // An option that names its own worker is performed by that worker: Higgsfield's session is
+      // written by its CLI, and a link to higgsfield.ai would sign you in to the website while
+      // leaving the CLI with nothing.
+      const expected = opt.handoffKind ? 'Ask Claude to set this up'
+        : opt.ceremony === 'link'
+          ? (opt.oauthClient?.clientId ? `${cer.start} ${opt.name}` : 'Ask Claude to set this up')
+          : `${cer.start} ${opt.name}`;
       check(got.controls.includes(expected),
         `${slot.id}/${opt.id} should lead with "${expected}" but offers [${got.controls.join(', ')}]`);
 
@@ -395,6 +399,91 @@ check(writes.some((w) => w.collection === 'choices'), 'choosing a provider store
     check(sealed.ciphertextOnly, 'storeless: the bundle is not ciphertext, or the typed key is in it');
   }
   await bare.close();
+}
+
+/**
+ * Coming back from the provider with a code, the way it really arrives.
+ *
+ * Reported after a Resend approval that actually succeeded: the tab that came back said "Opened
+ * just now — waiting for the provider" and never moved, and the originating tab never moved
+ * either. The redeem ran at bootstrap while the ceremonies snapshot was still in flight, so the
+ * `state` in the URL matched nothing, the code was filed under OAUTH_CODE_PENDING, and the URL
+ * was then cleaned — leaving the snapshot that arrived milliseconds later nothing to retry with.
+ *
+ * The stub used above cannot catch this, because it answers `onSnapshot` SYNCHRONOUSLY and a real
+ * store does not. This one seeds a waiting ceremony and delivers it late, on purpose.
+ */
+{
+  const back = await browser.newPage();
+  back.on('pageerror', (e) => pageErrors.push('returning: ' + e.message));
+  await back.addInitScript(() => {
+    const seeded = {
+      ceremonies: {
+        email: {
+          id: 'email', credential: 'email', option: 'resend', kind: 'oauth', method: 'oauth',
+          status: 'waiting', openedAt: new Date().toISOString(), startedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+          state: 'THE-STATE', verifier: 'v'.repeat(43), client_id: 'cid',
+          redirectUri: 'https://example.invalid/', token_endpoint: 'https://api.resend.com/oauth/token',
+        },
+      },
+    };
+    const data = new Map(Object.entries(seeded).map(([c, docs]) => [c, new Map(Object.entries(docs))]));
+    const subs = new Map();
+    window.__WRITES__ = [];
+    const key = (c) => (data.has(c) ? data : data.set(c, new Map())).get(c);
+    const snap = (c) => ({ docs: [...key(c).entries()].map(([id, d]) => ({ id, data: () => d })) });
+    const fire = (c) => (subs.get(c) || []).forEach((fn) => fn(snap(c)));
+    const doc = (path) => {
+      const [c, ...rest] = path.split('/');
+      const id = rest.join('/');
+      const write = (op, v) => {
+        window.__WRITES__.push({ collection: c, id, op, data: v });
+        if (op === 'delete') key(c).delete(id);
+        else key(c).set(id, op === 'update' ? { ...(key(c).get(id) || {}), ...v } : v);
+        fire(c);
+        return Promise.resolve({ ok: true });
+      };
+      return { set: (v) => write('set', v), update: (v) => write('update', v), delete: () => write('delete') };
+    };
+    window.claude = {
+      use: (name) => Promise.resolve(name === 'db' ? {
+        doc,
+        collection: (c) => ({
+          onSnapshot: (fn) => {
+            (subs.get(c) || subs.set(c, []).get(c)).push(fn);
+            // Late, like a network. This is the whole point of this pass.
+            setTimeout(() => fn(snap(c)), 250);
+            return () => {};
+          },
+        }),
+      } : null),
+    };
+  });
+  await back.goto('file://' + PAGE + '?code=THE-CODE&state=THE-STATE', { waitUntil: 'domcontentloaded' });
+  await back.waitForTimeout(2000);
+
+  const settled = await back.evaluate(() => {
+    const writes = window.__WRITES__ || [];
+    const cer = writes.filter((w) => w.collection === 'ceremonies' && w.id === 'email').pop();
+    const env = writes.filter((w) => w.collection === 'envelopes');
+    const s = [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes('Guest email'));
+    return {
+      status: cer?.data?.status ?? null,
+      envelopeNames: env.map((w) => w.id),
+      text: s ? s.textContent.replace(/\s+/g, ' ').trim() : '(no email strip)',
+    };
+  });
+
+  // The ceremony must have moved off `waiting`; that is what both tabs are watching for.
+  check(settled.status === 'code-received' || settled.status === 'exchanging' || settled.status === 'done',
+    `a returning code left the ceremony at "${settled.status}" — this is the approval that never landed`);
+  // And it must be filed against the slot, not as the "nothing matched" placeholder.
+  check(!settled.envelopeNames.includes('OAUTH_CODE_PENDING'),
+    `the code was filed as OAUTH_CODE_PENDING: the state in the URL matched no ceremony (${settled.envelopeNames.join(', ')})`);
+  check(!/waiting for the provider/.test(settled.text),
+    `the strip still says it is waiting after the code came back: "${settled.text.slice(0, 160)}"`);
+  await back.close();
 }
 
 await browser.close();

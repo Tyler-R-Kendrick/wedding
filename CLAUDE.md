@@ -44,8 +44,10 @@ touching any UI. The site itself is not built yet; the tooling is.
      fabric grounds, section backgrounds, placeholder art. Called by
      `scripts/fal-generate.mjs` and the `fal-ai` MCP server. Reach for it when
      the image has no person in it.
-   - **Higgsfield** (`npx higgsfield auth login`, then `/mcp`) — anything that
-     must stay the *same* across shots, plus motion. A **Soul** (with the
+   - **Higgsfield** (`node scripts/secrets/cli-login.mjs higgsfield`, or the
+     Secret Drop's own control, which dispatches exactly that and streams the
+     terminal back to the page so you can approve the link it prints) — anything
+     that must stay the *same* across shots, plus motion. A **Soul** (with the
      couple's consent and photos) keeps one identity across a series; the video
      models do the camera move. Skills: `higgsfield-generate`,
      `higgsfield-soul-id`.
@@ -115,9 +117,16 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   Resend, Cloudflare (R2 + Stream), Neon and OpenRouter. Supabase issues only confidential clients
   and Vercel publishes no registration endpoint, so those two still ask Claude through
   `handoffs/<slot>`. `signin` options publish no agent route at all (probed), so there signing in
-  yourself *is* the ceremony. A self-serve key page appears for a `link` option only *after* an ask
-  goes 45s unanswered, beside the ask rather than in place of it. Two rules that hold everywhere:
-  no control may name a terminal command, and no control may repeat a request nobody answered.
+  yourself *is* the ceremony — unless the option names its own worker (`handoffKind`), which is how
+  a credential that is a CLI session on this machine is acquired: `cli-login.mjs` runs the
+  provider's own login and `runJob` streams the link it prints back to the strip. A self-serve key
+  page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
+  than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
+  no control may repeat a request nobody answered.
+- **Every provider kind in `src/providers` has a slot.** 15 slots, 43 options, checked against the
+  activation matrix. Four kinds (maps, reservations, the vector index, face matching) have no
+  configuration surface in the code at all, so their slot says there is nothing to connect rather
+  than offering a field for an adapter that does not exist.
 - In the artifact case the agent is still the courier for what it can help with: mirror
   `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
   to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before

@@ -333,6 +333,97 @@ const RAW_SLOTS = [
   },
   {
     /*
+     * Identity was configured but invisible: every variable Better Auth needs is autofilled, so
+     * the slot had nothing to ask and therefore was not written at all. "Nothing to ask" is not
+     * the same as "not a connection" — this is how a guest proves who they are, and it belongs on
+     * the page saying so.
+     */
+    id: 'identity', name: 'Sign-in & sessions', need: 'launch',
+    does: 'Proves a guest is who they say, and keeps them signed in',
+    without: 'Nobody can open their own RSVP',
+    options: [
+      { id: 'better-auth', name: 'Better Auth', recommended: true,
+        note: 'Session keys generated here; the admin list comes from the git identity',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'generate', bytes: 32 }, { method: 'derive' }],
+        secrets: [], fills: {} },
+    ],
+  },
+  {
+    /*
+     * Counters and rate limits, which are NOT the database even though they can live in it. In
+     * production the memory backend is a configuration error (`rate-limit/index.ts` throws), so
+     * this is a real decision with a real consequence rather than a preference.
+     */
+    id: 'cache', name: 'Rate limiting & counters', need: 'feature',
+    does: 'Holds the per-guest counters that stop the concierge and RSVP being hammered',
+    without: 'Counters live in one process and reset whenever it does',
+    options: [
+      { id: 'db-backed', name: 'In the database', recommended: true,
+        note: 'Survives a restart and is correct across instances',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }],
+        secrets: [], fills: { RATE_LIMIT_BACKEND: 'db' } },
+      { id: 'memory', name: 'In memory', note: 'Development only — production refuses this',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }],
+        secrets: [], fills: { RATE_LIMIT_BACKEND: 'memory' }, isOptOut: true,
+        warn: 'Production refuses to start with the memory backend, by design.' },
+    ],
+  },
+  {
+    id: 'captions', name: 'Photo captions & scene tags', need: 'feature',
+    does: 'Writes alt text and finds what is in a photo, so search and screen readers work',
+    without: 'Uploads keep whatever caption a guest typed, and nothing else',
+    options: [
+      { id: 'anthropic-vision', name: 'Anthropic vision', recommended: true,
+        note: 'Reuses the concierge key if one is already set',
+        host: 'console.anthropic.com', ceremony: 'signin',
+        ladder: [{ method: 'detect', from: 'ANTHROPIC_API_KEY' }, { method: 'browser', recipe: 'anthropic-console' }, { method: 'manual' }],
+        secrets: ['ANTHROPIC_API_KEY'], fills: {} },
+      { id: 'none-captions', name: 'Skip it', note: 'Guest captions only', host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: { MEDIA_AI_PROVIDER: 'mock' }, isOptOut: true },
+    ],
+  },
+  {
+    id: 'gifts', name: 'Registry & cash fund', need: 'feature',
+    does: 'Points guests at where you are registered and how to contribute',
+    without: 'The gifts page says there is nothing to link to yet',
+    options: [
+      { id: 'links', name: 'Your own links', recommended: true,
+        note: 'Whatever you are registered with — no account here',
+        host: null, ceremony: 'paste',
+        ladder: [{ method: 'manual' }],
+        secrets: ['REGISTRY_LINKS_JSON', 'CASH_FUND_LINKS_JSON'], fills: {} },
+      { id: 'none-gifts', name: 'Skip it', note: 'No gifts page', host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }], secrets: [], fills: {}, isOptOut: true },
+    ],
+  },
+  {
+    /*
+     * Four provider kinds have no configuration surface at all in `src/providers`: maps is
+     * deep-link only, reservations is deep-link only, the vector index picks pgvector or memory
+     * from whether a database is there, and biometric is a mock that must not be enabled without
+     * counsel review. They are listed because "every feature has a connector" should be checkable
+     * on this page — and the honest connector for these is one that says there is nothing to
+     * connect. Giving them a Mapbox or a Pinecone option would be a field for an adapter that
+     * does not exist.
+     */
+    id: 'derived', name: 'Maps, reservations, photo search & face matching', need: 'feature',
+    does: 'Directions, restaurant links, the photo index, and face grouping',
+    without: 'Nothing — these need no account',
+    options: [
+      { id: 'built-in', name: 'Built in', recommended: true,
+        note: 'Deep links for maps and reservations; the photo index follows the database; face matching stays off',
+        host: null, ceremony: 'agent',
+        ladder: [{ method: 'derive' }],
+        secrets: [], fills: {},
+        warn: 'Face matching is a mock and must not be enabled in production without counsel review.' },
+    ],
+  },
+
+  {
+    /*
      * Higgsfield is the other half of the media toolchain, and a different job from fal.ai:
      * fal.ai generates a picture, Soul generates the SAME person across many pictures, and
      * Higgsfield does the camera-move video. Neither substitutes for the other, so they are two
@@ -345,8 +436,8 @@ const RAW_SLOTS = [
     options: [
       {
         id: 'higgsfield', name: 'Higgsfield', recommended: true,
-        note: 'Soul holds an identity across shots; Claude authorizes it, no key to paste',
-        host: 'higgsfield.ai', ceremony: 'agent',
+        note: 'Soul holds an identity across shots; sign in once, no key to paste',
+        host: 'higgsfield.ai', ceremony: 'signin',
         /*
          * Verified 2026-09-08. `mcp.higgsfield.ai/mcp` answers the MCP auth challenge, publishes
          * RFC 9728/8414 metadata and mints a client under RFC 7591 — so this could be an
@@ -361,7 +452,21 @@ const RAW_SLOTS = [
          * configured for in `.mcp.json`. It is listed because it is required, not because
          * anything here needs typing.
          */
-        ladder: [{ method: 'mcp', server: 'higgsfield', how: 'authorize mcp.higgsfield.ai, then Soul and video generation are available' }],
+        /*
+         * The credential is a CLI session on the machine, not a value to seal — the vendored
+         * `@higgsfield/cli` runs its own OAuth and writes a credentials file, and the skills call
+         * `higgsfield account status`. For a while I read "no environment variable" as "the page
+         * cannot offer this", which was the same mistake as reading "no CORS" as "the ceremony
+         * cannot start". The machine has a shell: `cli-login.mjs` runs the login, the CLI prints
+         * a link, and `runJob` streams it back to the strip. The person approves in their own
+         * browser and nothing secret goes through the page.
+         */
+        handoffKind: 'cli', cli: 'higgsfield',
+        ladder: [
+          { method: 'mcp', server: 'higgsfield', how: 'the MCP server is already configured in .mcp.json' },
+          { method: 'browser', cli: 'higgsfield', how: '`higgsfield auth login`, streamed to the page' },
+          { method: 'manual' },
+        ],
         secrets: [], fills: {},
       },
     ],
@@ -388,6 +493,13 @@ function normalizeOption(raw) {
     probe: raw.probe ?? null,
     warn: raw.warn ?? null,
     pairsWith: raw.pairsWith ?? null,
+    // What performs a press, when it is not the kind the ceremony implies. Higgsfield's ceremony
+    // is a sign-in, but the thing that performs it is that provider's own CLI login rather than a
+    // browser relay. Left out of here, the field existed in the source and was silently dropped
+    // on the way to the page — which is a worse failure than not having written it, because the
+    // registry read as if it were configured.
+    handoffKind: raw.handoffKind ?? null,
+    cli: raw.cli ?? null,
   };
 }
 
@@ -524,6 +636,11 @@ export function clientRegistry() {
         keysUrl: keysUrlOf(o),
         browserAuth: browserAuthOf(o),
         oauth: oauthRungOf(o) ? { origin: oauthRungOf(o).origin ?? null, scope: oauthRungOf(o).scope ?? null } : null,
+        // What kind of work a press should ask for, and which login it names. Most options want
+        // the kind their ceremony implies; one whose credential is a CLI session on the machine
+        // says so here, because "sign in" through a browser relay is not the same job as running
+        // that provider's own CLI login.
+        handoffKind: o.handoffKind || null, cli: o.cli || null,
         secrets: o.secrets, inferred: Object.keys(o.fills),
         warn: o.warn || null,
       })),
