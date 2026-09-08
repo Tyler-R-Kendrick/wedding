@@ -136,10 +136,13 @@ the standard guarantee for an anonymous session and the reason the stored tail i
 And with `TRUSTED_PROXY_HOPS=0` every anonymous caller shares the `direct` rate-limit bucket; behind
 a proxy, set the hop count so the per-IP limiter can tell callers apart.
 
-`src/ai/test-principal.ts` is an e2e affordance, not a feature: it selects a fixed guest or admin
-from `x-test-principal` + `x-test-auth`, and only when `NODE_ENV=test`, `TEST_AUTH_SECRET` is set,
-the secret matches in constant time, and neither `VERCEL` nor `CI` is set. Its unit test exists to
-prove it is off in every other combination.
+`src/domain/testing/testPrincipal.ts` is an e2e affordance, not a feature: it selects a fixed guest
+or admin from `x-test-principal` + `x-test-auth`, and only when `NODE_ENV=test`, `TEST_AUTH_SECRET`
+is set, the secret matches in constant time, and neither `VERCEL` nor `CI` is set. Its unit test
+exists to prove it is off in every other combination. (This level shipped its own copy under
+src/ai/ — the fifth such copy in the ladder. It was deleted on integration and its unique cases
+ported onto the shared resolver. A path in backticks in these documents is one that exists;
+`npm run docs:links` fails the build otherwise, which is why the dead one is written plainly.)
 
 ## 8. The transport
 

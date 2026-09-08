@@ -1,8 +1,10 @@
 # Sara + Tyler Wedding Experience Platform — build plan and hand-off
 
 > Living plan for the whole build. Anyone (or any agent) can continue from this
-> file plus the repo. Last updated 2026-09-05 by the integrating session
-> (https://claude.ai/code/session_015ZSj3WcgMEVfg4Twn7wLs5).
+> file plus the repo. Last updated 2026-09-08 at level 17, the final level.
+>
+> **The ladder is complete.** All seventeen levels are merged. What remains is
+> content, not code — see §2 and `docs/content/for-sara-and-tyler.md`.
 
 ## 1. Context
 
@@ -23,29 +25,56 @@ placeholders tracked in `docs/content/backlog.md`.
 
 ## 2. Status board
 
-| Level | Scope | Branch | State |
-|---|---|---|---|
-| 01 | Design toolchain, DESIGN.md baseline, quality gates | `claude/wedding-site-design-tools-lhs4i1` | **Merged** (PR #1, squash `93aa863`) |
-| 02 | SDLC process, ADRs, brief, two theme systems, inspo boards, licensed placeholders, Secret Drop tooling | `claude/wedding-02-design-sdlc` | **Merged** (PR #2, squash `4b7843c`) |
-| 03 | Next.js 16 foundation: contracts, capability pipeline, policy, PGlite/Drizzle, 17 provider seams with mocks, jobs, audit, CI | `claude/wedding-03-foundation` (rebased onto `main`, pushed at `3f5baee`) | **PR open** ([#4](https://github.com/Tyler-R-Kendrick/wedding/pull/4) against `main`): hardening §6 done, verify + e2e green, `docs/reviews/PR-03-self-review.md` READY |
-| 04 | Theme engine, public shell, lifecycle, Home (Swarm B) | `claude/wedding-04-themes-lifecycle` (from `swarm/B-themes-lifecycle` `5c475d7`, rebased on 03 `5901831`) | **Integrating**: verify + 39 e2e/axe green, design-reviewer pass, self-review, PR against `claude/wedding-03-foundation` |
-| 05 | Story, adventures, recommendations, CAA docent (Swarm C) | `swarm/C-story-adventures-caa` (resumed from checkpoint `b7deccd`, rebasing onto 03 `5901831`) | In progress |
-| 06 | Identity, Better Auth, entitlements (Swarm D) | `swarm/D-identity-auth` (pushed at `e3ae640`, rebased on 03 `5901831`, 11 commits) | **Swarm done**, awaiting integration after 05 |
-| 07 | Events, RSVP, Your Weekend, seating (Swarm E) | `swarm/E-rsvp-weekend-seating` (resumed from checkpoint `989d6f2`, rebasing onto 03 `5901831`) | In progress |
-| 08 | Travel & lodging (Swarm F) | `swarm/F-travel-lodging` (worktree reset to 03 `5901831`) | In progress |
-| 09 | Transport, gifts, reservations (Swarm G) | `swarm/G-transport-gifts-reservations` (worktree reset to 03 `5901831`) | In progress |
-| 10 | Media pipeline (Swarm H) | `swarm/H-media-pipeline` (resumed from checkpoint `d36f984`, rebasing onto 03 `5901831`) | In progress |
-| 11 | Media AI + biometric consent (Swarm I) | `swarm/I-media-ai-biometric` | Not started |
-| 12 | AI concierge + evals (Swarm J) | `swarm/J-ai-concierge` | Not started |
-| 13 | WebMCP (Swarm K) | `swarm/K-webmcp` | Not started |
-| 14 | Admin ops (Swarm L) | `swarm/L-admin-ops` | Not started |
-| 15 | Security hardening, threat model (Swarm M) | | Not started |
-| 16 | Quality: E2E, a11y, perf, resilience (Swarm N) | | Not started |
-| 17 | Docs, activation matrix, release evidence (Swarm O) | | Not started |
+All seventeen levels are merged to `main`. Each row is the squash commit and the
+pull request it came from.
 
-Also live: the private **Secret Drop** page
-(https://claude.ai/code/artifact/1f7c6ffb-f3f3-456e-8ebb-623f5124782c) for
-passing API keys as ciphertext (`docs/ops/secrets.md`).
+| Level | Scope | Merged as |
+|---|---|---|
+| 01 | Design toolchain, DESIGN.md baseline, quality gates | `93aa863` (#1) |
+| 02 | SDLC process, ADRs, brief, two theme systems, inspiration boards, licensed placeholders | `4b7843c` (#2) |
+| 03 | Next.js 16 foundation: contracts, capability pipeline, policy, PGlite/Drizzle, 17 provider seams with mocks, jobs, audit, CI | (#4) |
+| 04 | Theme engine, public shell, lifecycle, Home per state, design switcher | `1f40044` (#5) |
+| 05 | Story, adventures, Share an Adventure, CAA docent, FAQ — nine pages in both designs | `7d64658` (#6) |
+| 06 | Identity: invitation claim, email codes, passkeys, step-up, entitlements, admin guest ops | `701e05c` (#7) |
+| 07 | RSVP, Your Weekend, seating — and the security suites that were never running | `8fe223b` (#8) |
+| 08 | Travel & Stay and the trip bridge | `39119c8` (#9) |
+| 09 | Transportation benefits, gifts, reservations | `8b8e06a` (#10) |
+| 10 | Media pipeline: uploads, galleries, moderation | `18d4c05` (#11) |
+| 11 | Media intelligence and the biometric vault, gated off | `a86c282` (#14) |
+| 12 | AI concierge: grounded answers with citations | `c04993d` (#15) |
+| 13 | WebMCP: the same capabilities, offered to a browser agent | `310926e` (#16) |
+| 14 | Admin operations: the six screens no feature level owned | `9266ddb` (#18) |
+| 15 | Security: headers, webhook replay, the guest-identity gap in `authorize()` | `fc9ae86` (#19) |
+| 16 | Quality: the carried design debt, and the two trees wearing the wrong fonts | `6af8b64` (#24) |
+| 17 | Docs, activation matrix, release evidence, three documentation gates | this level |
+
+Plus the couple-facing content handoff (`4a2fa20`, #17) and the feature labs
+(`0973987`, #13).
+
+### The guest-truth series
+
+Six pull requests that are not levels. After the feature ladder was built, the
+site was read as a guest would read it, and each round found defects that a
+green test suite could not: the site describing a version of itself that does
+not exist, or describing the reader as somebody else.
+
+| PR | What a guest was told |
+|---|---|
+| #20 `3735c86` | Invented hotel and flight prices, shown as live partner rates |
+| #21 `09b120c` | A settled fact glued to one nobody had decided; a registry that does not exist |
+| #22 `59eb3e8` | Another household's members, inside your own RSVP |
+| #23 `59bfc03` | "Sign in" — to a guest already signed in; an OTP lockout with no way out |
+| #25 `3c43d80` | Greeted by the household manager's name; "Answered for everyone" after one person |
+| #26 | "Claim your invitation" — to a guest who had claimed; travel tools "not live" one tap from the live travel tools |
+
+This is the most transferable finding of the whole run and is written up in
+`docs/evidence/final-validation.md`.
+
+### What is left, and it is not code
+
+119 `TODO(Tyler & Sara)` markers and 30 open backlog items. No further
+engineering reduces that number; every one needs a decision from the couple, the
+planner or a vendor. Start at `docs/content/for-sara-and-tyler.md`.
 
 ## 3. Locked decisions
 
@@ -80,49 +109,31 @@ WebMCP tools ───────┘        validate → authorize → step-up 
 
 ## 5. How to continue in a new session
 
-1. Clone, `npm ci`, `node scripts/secrets/autofill.mjs`, then apply any
-   Secret Drop envelopes (`docs/ops/secrets.md`). Chromium for Playwright is
-   at `PW_CHROMIUM_PATH` when preinstalled; never run `playwright install` in
-   the cloud sandbox.
-2. Level 03: done. `claude/wedding-03-foundation` is rebased onto `main`
-   (head `3f5baee`), hardened per §6, verified, self-reviewed, and open as
-   PR #4 against `main`. Once #4 is squash-merged, rebase level 04 with
-   `git rebase --onto origin/main 3f5baee`.
-3. Swarms: create a worktree per branch (`git worktree add ../wedding-<X>
-   swarm/<X>-…`, symlink `node_modules`), give the agent
-   `docs/sdlc/swarms/README.md` + its brief, its own `PORT`, and the contract
-   updates in §7. Partially built swarms resume from their pushed branch;
-   uncommitted work in B and D exists only in the original container.
-4. Integrate in ladder order 04 → 14: `git rebase --onto <previous level>
-   $(git merge-base swarm/<X>-… claude/wedding-03-foundation) swarm/<X>-…`
-   (every swarm branched from `8d3ce99`; swarms that
-   already rebased onto the hardened 03 head report their new base), merge into
-   `claude/wedding-NN-<slug>`, `npm run verify`, `design-review` for UI
-   levels, self-review file, PR against the previous level, subscribe.
-5. Then swarms M/N/O (levels 15–17) on the level-14 head; final evidence in
-   `docs/evidence/final-validation.md`.
-6. Keep `npm run quality` green at every level; never weaken a test to pass.
+1. Clone, `npm ci`. Everything runs with no accounts and no keys: `npm run dev`
+   migrates and seeds PGlite on first connection. For Playwright, Chromium is at
+   `PW_CHROMIUM_PATH` when preinstalled; never run `playwright install` in the
+   cloud sandbox.
+2. Read `docs/README.md`. It is the index, and `npm run docs:links` fails the
+   build if anything on it points at a file that does not exist.
+3. Before changing anything, read `docs/architecture/capability-layer.md`.
+   Every surface — UI, AI concierge, WebMCP — goes through one `invoke()`
+   pipeline, and a feature added anywhere else bypasses authorization, audit and
+   provenance in one step.
+4. `NEXT_TURBOPACK_ROOT=/home/user npm run verify` before pushing, and note that
+   it does **not** run Playwright: the two browser arrangements need
+   incompatible servers, and `node scripts/check-spec-coverage.mjs` is what
+   guarantees every spec belongs to one of them. The runners are in `.data/run/`.
+5. The verification standard in §8 still governs, and so does the rule under it:
+   **never weaken a test to pass.**
 
-## 6. Level-03 security review: what must land before PR 03
+## 6. Where the level-03 security review went
 
-Blockers: **B1** local-storage dev route reachable in production with the
-committed HMAC key (require `S3_*` or `STORAGE_SIGNING_SECRET` in production;
-route 404s when `isProduction`); **B2** multipart `uploadId`/`partNumber`
-unvalidated (path traversal). Should-fix: single-use confirmation tokens
-(S1); idempotency keys required for action/transaction/external and
-reserved before the handler (S2, S3); anonymous principals get neither (S4);
-remove the client-claimed `x-capability-surface` header (S5); `explicit`
-confirmation only from the UI surface (S6); same-origin JSON check on
-authenticated POSTs (S7); `TRUSTED_PROXY_HOPS` for client IP (S8); stream
-bodies with a cap and rate-limit before reading (S9); allowlist upload
-content types and serve with `CSP: sandbox` (S10); reject sidecar/dot-segment
-keys (S11); gate `/api/dev/inbox` (S12); require `DATABASE_URL` on Vercel
-production (S13); housekeeping purge job (S14); HMAC the audit `inputHash`
-(S15); reject future `authenticatedAt` (S16); rate-limit fail modes (S17);
-S3 key validation on every method (S18); plus quick nits N1, N3–N7, N12–N14,
-N16, N19. Deferred to level 15: N2, N8–N11, N15 (CSP/HSTS), N17, N18, N20,
-N21. Full text lives in the integrating session's transcript; the hardening
-agent's commits carry the same numbering.
+It is closed. The two blockers and eighteen should-fixes landed before PR 03
+opened; the nits deliberately deferred (N2, N8–N11, N15 CSP/HSTS, N17, N18, N20,
+N21) landed at level 15, and `docs/reviews/PR-19-self-review.md` records which.
+The current security posture — what is worth stealing, what stops it, and the
+test that fails if the control goes away — is
+`docs/architecture/threat-model.md`, not this section.
 
 ## 7. Contract updates already communicated to swarms
 
@@ -152,13 +163,21 @@ and no secrets, guest fixtures, voucher codes, or biometric data in git.
 
 ## 9. Open items only Tyler & Sara can resolve
 
-See `docs/content/backlog.md` (18 items + 6 derived): ceremony/reception
-rooms, times, room-block details, dress code, menus, palette/florals, music,
-officiant, invitation count, kid policy, alternative hotels, Uber voucher
-terms, registry provider, proposal story, public adventures, CAA menus, AI
-rights for professional media, table assignments. Plus: Vercel project
-permission, Supabase project (deferred), fal.ai/Stitch/Resend keys via Secret
-Drop, Higgsfield CLI login.
+`docs/content/backlog.md` is the complete record: 30 items — C-01…C-10 for the
+couple, P-01…P-07 for the planner, V-01…V-03 for vendors, X-01…X-10
+cross-cutting. `docs/content/for-sara-and-tyler.md` is the same list in plain
+language, each item naming the page it unblocks.
+
+**X-07 deserves singling out:** "how to reach us if you are stuck". Every
+recovery path on the site — a wrong code, an expired link, a revoked invitation,
+an email that never arrived — ends by pointing at that placeholder. It is the
+one gap a code fix cannot close and the most likely thing to strand a real
+guest.
+
+Accounts and keys, none of which the site needs to run: a Vercel project, a
+Supabase project, an R2 bucket, a Resend domain, and optionally fal.ai / Stitch
+keys for generated imagery. `docs/ops/deploy-vercel-supabase.md` is the
+sequence; `docs/ops/activation-matrix.md` is what each one turns on.
 
 ## 10. Risks
 

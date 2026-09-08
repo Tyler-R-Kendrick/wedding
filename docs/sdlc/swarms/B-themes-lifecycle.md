@@ -2,7 +2,8 @@
 
 **Ownership:** `src/themes/**` (engine, both kits, recipes, resolve/proxy
 logic), `src/app/(public)/**` shell and home only, `src/app/t/[theme]/**` if
-used for static rendering, `src/app/proxy.ts`, `src/app/globals.css`,
+used for static rendering, `src/proxy.ts` (this brief originally said src/app/proxy.ts; Next 16
+resolves the proxy from the project root, not from `app/`), `src/app/globals.css`,
 `src/app/layout.tsx`, `src/components/switcher/**`, `src/domain/lifecycle/**`,
 `src/capabilities/site_status.ts` (extend), `src/capabilities/navigate_to.ts`
 (extend), `tests/e2e/themes*.spec.ts`, `tests/unit/themes/**`,
