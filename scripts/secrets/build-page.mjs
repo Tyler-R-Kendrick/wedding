@@ -14,6 +14,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { clientRegistry } from './registry.mjs';
+import { ensureClients, attachClients } from './oauth-clients.mjs';
 import { STORE, inStore } from './store.mjs';
 
 const args = process.argv.slice(2);
@@ -30,7 +31,25 @@ if (existsSync(inStore('public.jwk.json'))) {
   console.error('No .secrets/public.jwk.json — run scripts/secrets/keygen.mjs first, or the page will have nothing to seal for.');
 }
 
+const pageMeta = existsSync(inStore('page.json')) ? JSON.parse(await readFile(inStore('page.json'), 'utf8')) : {};
+const url = opt('url', pageMeta.url || null);
+
 const registry = clientRegistry();
+
+/*
+ * Register the OAuth clients the page cannot register for itself.
+ *
+ * A browser may navigate to an authorization endpoint (no CORS involved), but it may not read the
+ * reply to a registration or token POST unless the provider allows the origin — and most do not.
+ * Registering here, once, is what lets the published page open a real authorization URL for every
+ * provider that supports it rather than filing a request and telling the reader to open a
+ * terminal. `--offline` uses only what is cached, so a build never depends on the network.
+ */
+const { clients, added, missing } = await ensureClients(registry, url, {
+  offline: args.includes('--offline'),
+  log: (m) => console.log('  ' + m),
+});
+const withClient = await attachClients(registry, url, clients);
 
 // The page is one self-contained file with no build step at runtime, so the decision logic is
 // inlined rather than imported. It is written as an ES module because the tests import it; the
@@ -56,9 +75,9 @@ if (html.includes('__REGISTRY__') || html.includes('__SANDBOX_KEY__')) {
 await mkdir(STORE, { recursive: true });
 await writeFile(out, html);
 
-const pageMeta = existsSync(inStore('page.json')) ? JSON.parse(await readFile(inStore('page.json'), 'utf8')) : {};
-const url = opt('url', pageMeta.url || null);
 await writeFile(inStore('page.json'), JSON.stringify({ url, builtAt: new Date().toISOString(), key: sandboxKey?.kid || null, slots: registry.slots.length, options: registry.slots.reduce((n, s) => n + s.options.length, 0) }, null, 2) + '\n');
 
 console.log(`Built ${out} (${(html.length / 1024).toFixed(1)} KB) for key ${sandboxKey?.kid || '(none)'} — ${registry.slots.length} slots, ${registry.slots.reduce((n, s) => n + s.options.length, 0)} provider options.`);
 console.log(url ? `Redirect target for delegated OAuth: ${url}` : 'No artifact URL recorded yet — pass --url after publishing so OAuth redirects come back to the page.');
+console.log(`OAuth clients: ${withClient} option${withClient === 1 ? '' : 's'} can open a real authorization link${added ? ` (${added} registered just now)` : ''}.`);
+if (missing.length) console.log(`  No client, so these still ask: ${missing.join(', ')}`);

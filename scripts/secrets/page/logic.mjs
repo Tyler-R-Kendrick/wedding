@@ -222,19 +222,34 @@ export function createLogic(reg) {
    * with the cheapest ceremony the option can actually reach, and a field is the last resort for
    * someone who already holds a key and would rather not wait.
    *
-   * I broke exactly that and it has to be written down. Reasoning about "the artifact has no
-   * server behind it", I made the artifact stop asking and lead with "Open Resend" and a paste
-   * field — for a provider that registers an agent client with NO human at all. The error was
-   * conflating "this PAGE cannot run the ceremony" with "nobody can": the page is not the
-   * acquirer, the agent is, and `handoffs/<slot>` is how the artifact asks it. What the artifact
-   * genuinely lacks is a guarantee that anyone is listening right now — which is a reason to
-   * report an unanswered ask honestly, never a reason to demote the ask beneath a paste field.
+   * I broke this twice, in opposite directions, and both belong in the file.
+   *
+   * First I reasoned that "the artifact has no server behind it" and made it lead with "Open
+   * Resend" and a paste field — for a provider that registers an agent client with NO human at
+   * all. That conflated "this PAGE cannot run the ceremony" with "nobody can": the page is not
+   * the acquirer, the agent is.
+   *
+   * Correcting that, I made every `link` and `signin` option lead with an ask instead — and an
+   * ask in the published page reaches nobody unless a Claude session happens to be watching. So
+   * pressing "Get the link" (a name that describes nothing) wrote a request, rendered a sentence
+   * telling the reader to run `npm run secrets:serve`, and offered "ask again", which filed the
+   * identical request. Three controls, no outcome, and a terminal command the reader does not
+   * have.
+   *
+   * What was wrong underneath both is that `browserAuth` — whether a browser may READ the
+   * provider's registration and token replies — was being used to decide whether the ceremony
+   * could be STARTED. It cannot decide that, because the authorization step is a navigation and
+   * involves no CORS at all. Registering at build time (oauth-clients.mjs) separates the two, and
+   * seven of the eight `link` options now open a real authorization URL from the published page:
+   * Resend, Cloudflare (R2 and Stream), Supabase (storage and database), Neon and OpenRouter —
+   * each proven to mint a client, not assumed to.
    *
    * So, in order:
    *   settling / approve   a ceremony already in flight, or a link waiting for you
    *   asked                an ask that is moving
-   *   authorize            the page can register a client ITSELF (probed) — nothing else awake
-   *   dispatch             ask whoever runs the ladder here: the agent, or `secrets:serve`
+   *   authorize            open the provider's own authorization URL (a real, standalone route)
+   *   dispatch             nothing here can start it: ask whoever runs the ladder in this home
+   *   selfServe            signing in yourself IS the ceremony, so start it
    *   apply                a human at the provider must review it; nothing can shortcut that
    *   none                 the option asks nothing of anyone
    *
@@ -259,22 +274,47 @@ export function createLogic(reg) {
     // and even then beside the ask rather than in place of it.
     const fallback = stalled && opt.keysUrl ? { url: opt.keysUrl, name: opt.name } : null;
 
-    if (cer === 'signin' || cer === 'link') {
-      // The provider's own CORS headers say a browser may register and exchange, so this page can
-      // be the acquirer with nothing else awake. Cheaper than asking, so it wins.
-      // Artifact only: served locally the worker runs the whole ladder (registering, borrowing,
-      // writing .env directly), which beats the page doing one ceremony by hand; and off disk
-      // there is no store to keep the verifier in between the tab opening and coming back.
-      if (cer === 'link' && opt.browserAuth && home === 'artifact') {
+    if (cer === 'link') {
+      // A registered client means this page can open the provider's OWN authorization URL, and
+      // that is a top-level navigation: it needs no CORS from anybody. Only registration and the
+      // token exchange ever did, which is why the client is registered at build time instead
+      // (see oauth-clients.mjs). Every home with somewhere to keep the PKCE verifier across the
+      // redirect can therefore run the real ceremony — the artifact included.
+      //
+      // Reading `browserAuth` here was the bug the whole strip was built on: it describes only
+      // whether the browser may READ the provider's POST replies, and it was used to decide
+      // whether the ceremony could be STARTED at all. Resend registers a client for an agent with
+      // no human involved, and this still offered "Get the link" — a button that filed a request
+      // and told the reader to run a terminal command they do not have.
+      // Artifact only, because the client was registered for the artifact's URL and a provider
+      // rejects a redirect_uri it did not register. Served locally the worker runs the whole
+      // ladder itself and writes `.env` directly, which is better than this anyway; off disk
+      // there is nowhere to keep the PKCE verifier across the redirect.
+      if (opt.oauthClient?.clientId && home === 'artifact') {
         return { kind: 'authorize', option: opt, stalled, fallback };
       }
-      // Otherwise ask whoever runs the ladder in this home. In the artifact that is Claude, by
-      // the courier protocol in CLAUDE.md; served locally it is the worker behind the page.
-      if (home !== 'disk') return { kind: 'dispatch', option: opt, handoffKind: cer, stalled, fallback };
-      // Opened off disk there is no store to ask through, so the person's own route is all there is.
+      // No client to be had (Vercel publishes no registration endpoint at all), so nobody can
+      // shortcut this from here: ask whoever runs the ladder in this home.
+      if (home !== 'disk') return { kind: 'dispatch', option: opt, handoffKind: 'link', stalled, fallback };
       return opt.keysUrl
         ? { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled, fallback }
         : { kind: 'none', option: opt, stalled, fallback };
+    }
+    if (cer === 'signin') {
+      // Served locally the worker really does drive the sign-in and write `.env` itself, so
+      // asking it beats making a person do it by hand.
+      if (home === 'local') return { kind: 'dispatch', option: opt, handoffKind: 'signin', stalled, fallback };
+      // Everywhere else: signing in yourself IS this ceremony. Probed rather than assumed —
+      // Postmark, Anthropic, OpenAI, Groq, Duffel, Voyage and fal publish no registration
+      // endpoint at all, so there is no agent route being passed over here, and a control that
+      // opens the provider's key page does something the moment it is pressed.
+      if (opt.keysUrl) return { kind: 'selfServe', option: opt, url: opt.keysUrl, stalled, fallback };
+      // Off disk there is no store, so there is nothing to ask THROUGH: offering to ask would be
+      // a button that cannot even record the request. The field still reaches it via "enter it
+      // myself", which is why saying nothing here is honest rather than a dead end.
+      return home === 'disk'
+        ? { kind: 'none', option: opt, stalled, fallback }
+        : { kind: 'dispatch', option: opt, handoffKind: 'signin', stalled, fallback };
     }
     if (cer === 'apply' && opt.host) return { kind: 'apply', option: opt, stalled, fallback };
     return { kind: 'none', option: opt, stalled, fallback };

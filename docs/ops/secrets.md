@@ -259,8 +259,43 @@ What the artifact genuinely lacks is a guarantee that anyone is listening *right
 reason to report an unanswered ask — the strip says so after 45 seconds and offers a way through
 *beside* the ask — and never a reason to put the field first.
 
-"Browser-runnable" is probed, never assumed — `BROWSER_AUTH` in `registry.mjs` records what each
-provider's CORS headers actually said, with the date. Today that is Cloudflare and OpenRouter.
+That correction then over-shot in the other direction, and the second mistake is the more useful
+one. Every `link` and `signin` option was made to lead with an ask — and an ask in the published
+page reaches nobody unless a Claude session happens to be watching. Pressing *"Get the link"* (a
+name describing nothing) wrote a request, rendered a sentence telling the reader to run
+`npm run secrets:serve`, and offered *"ask again"*, which filed the identical request. Three
+controls, no outcome, and a terminal command the reader does not have.
+
+What was wrong underneath both is that `BROWSER_AUTH` was deciding the wrong question. It records
+whether a browser may **read** a provider's registration and token replies; it was being used to
+decide whether the ceremony could be **started**. It cannot, because of the three OAuth steps only
+two involve CORS at all:
+
+| Step | Needs CORS? | So it happens |
+|---|---|---|
+| discovery + registration | yes — a `fetch` whose reply must be read | once, at build time, in Node |
+| authorization | **no** — a top-level navigation | in the browser, always |
+| token exchange | yes | in the browser where allowed, else the courier |
+
+`scripts/secrets/oauth-clients.mjs` registers a public client per `link` option against the
+artifact's URL and caches it in `scripts/secrets/oauth-clients.json`. That file is committed on
+purpose: these are public clients (`token_endpoint_auth_method: none`), the `client_id` travels in
+every authorization URL and is readable in the published page regardless. A client *secret* must
+never appear there, and two providers make that a live risk rather than a theoretical one —
+Supabase issues only confidential clients, so it is refused before registration; Neon agrees to a
+public client and returns a secret anyway, which is dropped. Either way `register()` yields an id
+or nothing.
+
+Proven by `secrets:probe --register`, not assumed: Resend, Cloudflare, Neon and OpenRouter all
+mint a public client with no human involved, and the published page opens their real authorization
+pages. Vercel publishes no registration endpoint. Postmark, Anthropic, OpenAI, Groq, Together,
+Mistral, DeepSeek, Voyage, Duffel and fal publish nothing either — so for those, `signin` is not an
+agent route being passed over, it *is* the ceremony, and the page starts it at once.
+
+`BROWSER_AUTH` still records what each provider's CORS headers said, with the date, but it now
+decides only one thing: whether **Claim** can redeem the code in the tab or has to leave it sealed
+for the courier. Claim tries the exchange regardless and treats a blocked reply as the courier's
+turn rather than a failure, so a stale entry costs nothing.
 **Check the real response, not the preflight**: Neon's `OPTIONS` returns
 `Access-Control-Allow-Origin: *` for both its registration and token endpoints while its `POST`
 responses carry no such header, so a browser completes the preflight, sends the request and is

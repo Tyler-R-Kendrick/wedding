@@ -25,12 +25,24 @@ import { readFileSync, existsSync, mkdtempSync, writeFileSync, copyFileSync, rmS
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { clientRegistry } from '../registry.mjs';
+import { clientRegistry, CEREMONY } from '../registry.mjs';
 import { launchOptions } from './chromium.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const PORT = Number(process.env.SECRET_DROP_VERIFY_PORT || 4699);
-const CONTROL = { signin: 'Sign in once', link: 'Get the link', apply: 'Apply' };
+/**
+ * The control a ceremony must offer, built from the ceremony's own declared start verb.
+ *
+ * Written out by hand these went stale the moment the labels changed, and worse, they were the
+ * old labels — "Get the link" for a press that fetched no link. Deriving them from CEREMONY keeps
+ * this file's independence (it is a declaration in the registry, not the logic module this checks)
+ * while making a renamed button a failure rather than a silent drift.
+ */
+const CEREMONIES_WITH_CONTROL = ['signin', 'link', 'apply'];
+const controlFor = (ceremonyId, optName) => {
+  const start = CEREMONY[ceremonyId]?.start;
+  return start ? `${start} ${optName}` : null;
+};
 
 const REG = clientRegistry();
 /**
@@ -202,13 +214,17 @@ for (const slot of REG.slots) {
       // the link exists, so asking for it again is not the next step.
       const pending = withCeremony.has(slot.id) && opt.id === fixtureOwner.get(slot.id);
       const approving = got.controls.some((c) => c === 'Approve' || c === 'Approve again');
-      const expected = CONTROL[shown];
-      if (expected && !got.controls.includes(expected) && !(pending && approving)) {
+      const expected = controlFor(shown, opt.name);
+      // Locally an option whose ceremony nothing here can shortcut is asked of the worker, which
+      // is the same press under the same name; the artifact wording is checked in verify-artifact.
+      const asking = got.controls.includes('Ask Claude to set this up');
+      if (expected && !got.controls.includes(expected) && !(pending && approving) && !asking) {
         problems.push(`says "${label}" but does not offer "${expected}" (got ${JSON.stringify(got.controls)})`);
       }
-      for (const [id, control] of Object.entries(CONTROL)) {
-        if (id !== shown && got.controls.includes(control)) {
-          problems.push(`says "${label}" but offers ${id}'s "${control}"`);
+      for (const id of CEREMONIES_WITH_CONTROL) {
+        const other = controlFor(id, opt.name);
+        if (id !== shown && other && got.controls.includes(other)) {
+          problems.push(`says "${label}" but offers ${id}'s "${other}"`);
         }
       }
       if (shown === 'paste' && got.fields.length !== opt.secrets.length) {

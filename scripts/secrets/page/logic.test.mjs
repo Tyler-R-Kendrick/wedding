@@ -15,8 +15,24 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ago, createLogic } from './logic.mjs';
 import { clientRegistry, METHOD_CEREMONY, SLOTS } from '../registry.mjs';
+import { attachClients } from '../oauth-clients.mjs';
+import { inStore } from '../store.mjs';
+import { readFileSync, existsSync } from 'node:fs';
 
 const REG = clientRegistry();
+/**
+ * The registry as the published page actually gets it, clients and all.
+ *
+ * Hand-written fixtures would let these tests agree with a page that does not exist: whether a
+ * strip can run a ceremony now depends on whether a client was registered for the artifact's URL,
+ * so the committed cache is what has to be read. `has a registered client for each provider that
+ * issues a public one` below is what stops the sweeps going quiet if that cache is ever empty.
+ */
+const ARTIFACT_URL = existsSync(inStore('page.json'))
+  ? JSON.parse(readFileSync(inStore('page.json'), 'utf8')).url
+  : null;
+await attachClients(REG, ARTIFACT_URL);
+const hasClient = (o) => Boolean(o.oauthClient?.clientId);
 const L = createLogic(REG);
 
 /** A slot shaped like the registry's, small enough to reason about. */
@@ -557,14 +573,21 @@ describe('the registry the page is built from', () => {
       for (const o of s.options) {
         const choices = { [s.id]: o.id };
         const cer = L.ceremonyIdFor(s, {}, choices);
+        // Locally the worker behind the page runs the whole ladder, so anything a person would
+        // be asked for is asked of it instead.
         const expected = {
           signin: 'dispatch', link: 'dispatch', apply: o.host ? 'apply' : 'none', agent: 'none', paste: 'none',
         }[cer];
         assert.equal(L.actionFor(s, { choices, home: 'local' }).kind, expected, `${s.id}/${o.id} (${cer})`);
-        // And the artifact asks too — the page is not the acquirer, the agent is.
-        const inArtifact = L.actionFor(s, { choices, home: 'artifact' });
-        const artifactExpected = cer === 'link' && o.browserAuth ? 'authorize' : expected;
-        assert.equal(inArtifact.kind, artifactExpected, `artifact ${s.id}/${o.id} (${cer})`);
+        // Published, the strip runs whatever it can run itself and only asks for the rest:
+        //   link + a registered client -> the provider's own authorization page
+        //   link, no client published  -> nobody can shortcut it, so ask
+        //   signin                     -> probed: these publish no agent route at all, so
+        //                                 signing in yourself IS the ceremony
+        const artifactExpected = cer === 'link' ? (hasClient(o) ? 'authorize' : 'dispatch')
+          : cer === 'signin' ? (o.keysUrl ? 'selfServe' : 'dispatch')
+          : expected;
+        assert.equal(L.actionFor(s, { choices, home: 'artifact' }).kind, artifactExpected, `artifact ${s.id}/${o.id} (${cer})`);
       }
     }
   });
@@ -578,17 +601,61 @@ describe('the registry the page is built from', () => {
     // This exists because that got inverted: reasoning that the artifact has no server behind it,
     // the artifact was made to lead with "Open Resend" and a paste field — for a provider that
     // registers an agent client with no human at all.
+    //
+    // The test of "could something acquire it" is the `link` ceremony, and that is now a probed
+    // fact rather than a hopeful one: Postmark, Anthropic, OpenAI, Groq, Duffel, Voyage and fal
+    // publish no registration endpoint at all, so `signin` is not an agent route being passed
+    // over — it is the ceremony. Where a route DOES exist, a key field must never lead.
     const led = [];
     for (const home of ['local', 'artifact']) {
       for (const s of REG.slots) {
         for (const o of s.options) {
-          if (!['link', 'signin'].includes(o.ceremony)) continue;
+          if (o.ceremony !== 'link') continue;
           const kind = L.actionFor(s, { choices: { [s.id]: o.id }, home }).kind;
           if (!['dispatch', 'authorize'].includes(kind)) led.push(`${home}: ${s.id}/${o.id} leads with ${kind}`);
         }
       }
     }
     assert.deepEqual(led, [], 'strips that put a key field ahead of acquiring one');
+
+    // Named outright, because this is the one that was actually reported broken: the published
+    // page must open Resend's own authorization page, not offer to open Resend's key list.
+    const resend = L.actionFor(REG.slots.find((s) => s.id === 'email'), { choices: { email: 'resend' }, home: 'artifact' });
+    assert.equal(resend.kind, 'authorize');
+    assert.equal(resend.option.oauthClient.authorizationEndpoint, 'https://api.resend.com/oauth/authorize');
+  });
+
+  it('falls back to the person only where nothing else can reach', () => {
+    // Off disk there is no store, so a ceremony cannot even be started: no verifier can outlive
+    // the redirect and no request can be recorded. What is left is the provider's own page, and
+    // where there is not even one of those, saying nothing.
+    const email = REG.slots.find((s) => s.id === 'email');
+    const database = REG.slots.find((s) => s.id === 'database');
+    // A `link` option WITH a client is still only self-serve off disk — the client is useless
+    // without somewhere to keep the PKCE verifier.
+    assert.equal(L.actionFor(email, { choices: { email: 'resend' }, home: 'disk' }).kind, 'selfServe');
+    // A `link` option with neither a client nor a key page has nothing to offer at all.
+    const blankLink = { ...database, options: [{ ...database.options.find((o) => o.id === 'vercel-postgres'), keysUrl: null }] };
+    assert.equal(L.actionFor(blankLink, { home: 'disk' }).kind, 'none');
+    assert.equal(L.actionFor(blankLink, { home: 'artifact' }).kind, 'dispatch');
+    // A `signin` option with no key page can still be asked for wherever there is a store.
+    const blankSignin = { ...email, options: [{ ...email.options.find((o) => o.id === 'postmark'), keysUrl: null }] };
+    assert.equal(L.actionFor(blankSignin, { home: 'artifact' }).kind, 'dispatch');
+    assert.equal(L.actionFor(blankSignin, { home: 'disk' }).kind, 'none');
+  });
+
+  it('has a registered client for each provider that issues a public one', () => {
+    // Anti-vacuity guard. Every "leads with authorize" assertion above is conditioned on a client
+    // existing, so an empty cache would make them all pass without exercising anything. These are
+    // the five proven to mint a PUBLIC client for this page's redirect URI; Supabase issues only
+    // confidential ones and Vercel publishes no registration endpoint, so both are absent by
+    // design rather than by accident.
+    const withClient = REG.slots
+      .flatMap((s) => s.options.filter(hasClient).map((o) => `${s.id}/${o.id}`))
+      .sort();
+    assert.deepEqual(withClient, [
+      'concierge/openrouter', 'database/neon', 'email/resend', 'storage/r2', 'video/cloudflare-stream',
+    ]);
   });
 
   it('offers a self-serve way through only after an ask goes unanswered', () => {
@@ -632,18 +699,21 @@ describe('the registry the page is built from', () => {
     assert.deepEqual(gaps, [], 'options with no way to finish');
   });
 
-  it('runs it in the page where a browser may, and asks where it may not', () => {
-    // Probed: this provider lets a browser register and exchange, so the page needs nobody.
-    const canRun = L.actionFor(inPageSlot, { choices: { database: 'neon' }, home: 'artifact' });
+  it('runs it in the page where a client exists, and asks where none does', () => {
+    // A client was registered for this provider at build time, so the page opens its real
+    // authorization page and needs nobody.
+    const canRun = L.actionFor(REG.slots.find((s) => s.id === 'database'), { choices: { database: 'neon' }, home: 'artifact' });
     assert.equal(canRun.kind, 'authorize');
-    assert.equal(canRun.option.oauth.origin, 'https://mcp.neon.tech');
-    // Served locally the worker runs the whole ladder, which beats one hand-rolled ceremony.
-    assert.equal(L.actionFor(inPageSlot, { choices: { database: 'neon' }, home: 'local' }).kind, 'dispatch');
+    assert.equal(canRun.option.oauthClient.authorizationEndpoint, 'https://mcp.neon.tech/api/authorize');
+    // Served locally the worker runs the whole ladder and writes `.env` itself, which beats the
+    // page doing one ceremony by hand.
+    assert.equal(L.actionFor(REG.slots.find((s) => s.id === 'database'), { choices: { database: 'neon' }, home: 'local' }).kind, 'dispatch');
 
-    // A provider a browser cannot talk to is still ASKED for — of the agent, not of the person.
-    const cannot = L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' });
-    assert.equal(cannot.kind, 'dispatch');
-    assert.equal(cannot.handoffKind, 'signin');
+    // Vercel publishes no registration endpoint, so there is no client and nothing here can
+    // shortcut it: that one really is an ask.
+    const noClient = L.actionFor(REG.slots.find((s) => s.id === 'database'), { choices: { database: 'vercel-postgres' }, home: 'artifact' });
+    assert.equal(noClient.kind, 'dispatch');
+    assert.equal(noClient.handoffKind, 'link');
   });
 
   it('stops calling a request queued once nothing has claimed it', () => {
@@ -664,23 +734,34 @@ describe('the registry the page is built from', () => {
     assert.equal(back.stalled.work.state, 'unclaimed');
     assert.equal(back.stalled.work.canRetry, true);
     // In the artifact the ask likewise stays put; what changes is that a way through appears too.
-    const artifact = L.actionFor(slot, { handoffs: old, choices: { email: 'postmark' }, home: 'artifact' });
+    // Shown on a `link` option with no client published, because that is the only kind that still
+    // has to ask there — a `signin` option leads with its own ceremony from the start.
+    const db = REG.slots.find((s) => s.id === 'database');
+    const stale = { database: { status: 'requested', kind: 'link', requestedAt: at(120_000) } };
+    const artifact = L.actionFor(db, { handoffs: stale, choices: { database: 'vercel-postgres' }, home: 'artifact' });
     assert.equal(artifact.kind, 'dispatch');
     assert.equal(artifact.stalled.work.state, 'unclaimed');
-    assert.equal(artifact.fallback.url, 'https://account.postmarkapp.com/servers');
-    assert.equal(L.actionFor(slot, { choices: { email: 'postmark' }, home: 'artifact' }).stalled, null);
+    assert.equal(artifact.fallback.url, 'https://vercel.com/dashboard/stores');
+    assert.equal(L.actionFor(db, { choices: { database: 'vercel-postgres' }, home: 'artifact' }).stalled, null);
   });
 
-  it('runs the ceremony in the page exactly where a browser is allowed to', () => {
-    // Not a guess: BROWSER_AUTH records what each provider's own CORS headers said when probed.
-    // Where a browser may not, the artifact asks the agent — it never falls back to a field.
+  it('runs the ceremony in the page exactly where a client was registered for it', () => {
+    // What decides this is whether a client exists, NOT `browserAuth`. `browserAuth` says only
+    // whether a browser may read the provider's POST replies; it was being used to decide whether
+    // the ceremony could be started at all, and it cannot, because the authorization step is a
+    // navigation and involves no CORS. Resend is the proof: browserAuth false, and the page opens
+    // its real authorization page regardless.
     for (const s of REG.slots) {
       for (const o of s.options) {
         if (o.ceremony !== 'link') continue;
         const action = L.actionFor(s, { choices: { [s.id]: o.id }, home: 'artifact' });
-        assert.equal(action.kind, o.browserAuth ? 'authorize' : 'dispatch',
-          `${s.id}/${o.id}: browserAuth=${o.browserAuth} but the artifact offers ${action.kind}`);
+        assert.equal(action.kind, hasClient(o) ? 'authorize' : 'dispatch',
+          `${s.id}/${o.id}: client=${hasClient(o)} but the artifact offers ${action.kind}`);
       }
     }
+    const email = REG.slots.find((s) => s.id === 'email');
+    const resend = email.options.find((o) => o.id === 'resend');
+    assert.equal(resend.browserAuth, false, 'the point of the case');
+    assert.equal(L.actionFor(email, { choices: { email: 'resend' }, home: 'artifact' }).kind, 'authorize');
   });
 });

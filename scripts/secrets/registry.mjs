@@ -25,11 +25,15 @@ import { RECIPES } from './browser-capture.mjs';
 
 /** The five things a person can be asked to do, cheapest first. */
 export const CEREMONY = {
-  agent: { rank: 0, label: 'Automatic', asksYou: false, act: null, detail: 'Claude registers itself' },
-  link: { rank: 1, label: 'One link', asksYou: true, act: 'Approve', detail: 'Approve in your browser; the code rides inside the link' },
-  signin: { rank: 2, label: 'Sign in once', asksYou: true, act: 'Sign in', detail: 'Sign in as yourself; Claude reads the key from the dashboard' },
-  apply: { rank: 3, label: 'Application', asksYou: true, act: 'Apply', detail: 'A human at the provider reviews it' },
-  paste: { rank: 4, label: 'Paste a key', asksYou: true, act: 'Paste', detail: 'Nothing can obtain this on your behalf' },
+  // `act` is what you do when the ceremony is already under way; `start` is what the control that
+  // BEGINS it says. Both live here so a button can never be labelled something the ceremony does
+  // not actually do — "Get the link" was invented in the template, described nothing, and pressed
+  // into filing a request that told the reader to open a terminal.
+  agent: { rank: 0, label: 'Automatic', asksYou: false, act: null, start: null, detail: 'Claude registers itself' },
+  link: { rank: 1, label: 'One link', asksYou: true, act: 'Approve', start: 'Authorize', detail: 'Approve in your browser; the code rides inside the link' },
+  signin: { rank: 2, label: 'Sign in once', asksYou: true, act: 'Sign in', start: 'Sign in to', detail: 'Sign in as yourself; Claude reads the key from the dashboard' },
+  apply: { rank: 3, label: 'Application', asksYou: true, act: 'Apply', start: 'Apply at', detail: 'A human at the provider reviews it' },
+  paste: { rank: 4, label: 'Paste a key', asksYou: true, act: 'Paste', start: null, detail: 'Nothing can obtain this on your behalf' },
 };
 
 /** Internal ladder rungs, mapped to the ceremony a person experiences. */

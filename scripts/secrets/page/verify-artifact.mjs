@@ -16,9 +16,11 @@
  *   somewhere the page or the person can reach, and NO press leaves work queued for nobody.
  */
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { clientRegistry } from '../registry.mjs';
+import { clientRegistry, CEREMONY } from '../registry.mjs';
+import { attachClients } from '../oauth-clients.mjs';
 import { inStore } from '../store.mjs';
 import { launchOptions } from './chromium.mjs';
 
@@ -27,6 +29,11 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 // the one it was pointed at proves nothing about that build.
 const PAGE = resolve(repoRoot, inStore('secret-drop.html'));
 const REG = clientRegistry();
+// The same clients the page was built with, so this checks the page that ships.
+const ARTIFACT_URL = existsSync(inStore('page.json'))
+  ? JSON.parse(await readFile(inStore('page.json'), 'utf8')).url
+  : null;
+await attachClients(REG, ARTIFACT_URL);
 
 if (!existsSync(PAGE)) { console.error('build the page first: npm run secrets:page'); process.exit(2); }
 
@@ -102,29 +109,50 @@ const inspect = (slotName, optName) => page.evaluate(([n, o]) => {
 }, [slotName, optName]);
 
 let checked = 0;
+const leads = [];
 for (const slot of REG.slots) {
   for (const opt of slot.options) {
     const got = await inspect(slot.name, opt.name);
     if (got.error) { failures.push(`${slot.id}/${opt.id}: ${got.error}`); continue; }
     checked += 1;
 
+    leads.push({ slot: slot.id, option: opt.id, ceremony: opt.ceremony, leads: got.controls[0] || '(nothing)' });
+
     if (opt.ceremony === 'signin' || opt.ceremony === 'link') {
-      // The product in one assertion. Acquiring a credential is the agent's job — the ladder
-      // tries ten rungs before a person is asked — so the control here must be the ask, or the
-      // page running the ceremony itself where the provider's CORS headers permit it.
-      const expected = opt.browserAuth ? 'Connect ' + opt.name
-        : opt.ceremony === 'signin' ? 'Sign in once' : 'Get the link';
+      // The product in one assertion, and the label is derived from the built-in ceremony rather
+      // than written out here — so a button renamed in the template without the ceremony meaning
+      // anything different is a failure, not a silent rewording.
+      const cer = CEREMONY[opt.ceremony];
+      const expected = opt.ceremony === 'link'
+        ? (opt.oauthClient?.clientId ? `${cer.start} ${opt.name}` : 'Ask Claude to set this up')
+        : `${cer.start} ${opt.name}`;
       check(got.controls.includes(expected),
         `${slot.id}/${opt.id} should lead with "${expected}" but offers [${got.controls.join(', ')}]`);
 
-      // And it must NOT lead with the provider's key page. That is the regression this exists for:
-      // the artifact once led with "Open Resend" and a field, for a provider that registers an
-      // agent client with no human at all.
-      check(!got.controls.some((c) => c.startsWith('Open ')),
-        `${slot.id}/${opt.id} leads with a self-serve key page: [${got.controls.join(', ')}]`);
-      check(!/paste it here/.test(got.text),
-        `${slot.id}/${opt.id} puts a key field on the strip before anything has been asked`);
+      // A `link` option must never lead with the provider's key page: something CAN acquire it,
+      // and that is the regression this exists for — the artifact once led with "Open Resend"
+      // and a field, for a provider that registers an agent client with no human at all.
+      if (opt.ceremony === 'link') {
+        check(!/paste it here/.test(got.text),
+          `${slot.id}/${opt.id} puts a key field on the strip when a ceremony could acquire it`);
+      }
+      // Nothing may be named for a thing it does not do. "Get the link" fetched no link.
+      check(!got.controls.some((c) => /^(Get the link|Connect|Open |Sign in once$)/.test(c)),
+        `${slot.id}/${opt.id} offers a control named for something it does not do: [${got.controls.join(', ')}]`);
     }
+
+    /*
+     * Two rules that hold for every strip, whatever its ceremony.
+     *
+     * Both are things the page actually did, reported by the person using it: a control that
+     * answered with "Run `npm run secrets:serve` … or ask Claude in the chat" — a terminal command
+     * the reader does not have — and an "ask again" beside it that filed the identical request
+     * that had already gone unanswered.
+     */
+    check(!/npm run|`npm|secrets:serve|in the chat/.test(got.text),
+      `${slot.id}/${opt.id} tells the reader to run a terminal command: "${got.text.slice(0, 160)}"`);
+    check(!got.controls.some((c) => /^ask again$/i.test(c)),
+      `${slot.id}/${opt.id} offers "ask again", which repeats a request nobody answered`);
   }
 }
 
@@ -135,61 +163,150 @@ check(queued.length === 0, `${queued.length} hand-off(s) written without anyone 
 check(writes.some((w) => w.collection === 'choices'), 'choosing a provider stored nothing at all — the check drove a dead page');
 
 /**
- * Pressing the ask records it for the agent, and an ask nobody answers must not turn into
- * "go get it yourself" — the fallback appears BESIDE it, and the ask stays the control.
+ * The press that the whole change is about.
+ *
+ * Reported broken by the person using it: the email strip offered "Get the link", and pressing it
+ * produced a sentence telling them to run `npm run secrets:serve` next to an "ask again" that
+ * re-filed the same unanswered request. Resend registers an OAuth client for an agent with no
+ * human involved, so the published page has one, and this press must open Resend's own
+ * authorization page — a real, standalone route that needs nobody awake.
+ *
+ * The assertion is on the URL actually handed to `window.open`, parameter by parameter, because a
+ * button that opens the wrong URL looks exactly like one that opens the right one.
  */
 {
-  const pressed = await page.evaluate(() => {
+  const email = REG.slots.find((x) => x.id === 'email');
+  const resend = email.options.find((o) => o.id === 'resend');
+  const opened = await page.evaluate((optName) => {
     const strip = () => [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
     let s = strip();
-    const tab = [...s.querySelectorAll('.pick')].find((x) => x.textContent === 'Postmark');
+    const tab = [...s.querySelectorAll('.pick')].find((x) => x.textContent === optName);
     if (tab) tab.click();
     s = strip();
-    const b = [...s.querySelectorAll('.act button')].find((x) => x.textContent.trim() === 'Sign in once');
-    if (!b) return { error: `no ask to press: [${[...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()).join(', ')}]` };
+    // Capture the navigation instead of taking it; a real tab would leave the page under test.
+    window.__OPENED__ = [];
+    window.open = (u) => { window.__OPENED__.push(String(u)); return null; };
+    const b = [...s.querySelectorAll('.act button')].find((x) => x.textContent.trim() === `Authorize ${optName}`);
+    if (!b) return { error: `no Authorize button: [${[...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()).join(', ')}]` };
     b.click();
     return { ok: true };
-  });
-  if (pressed.error) failures.push(`artifact: ${pressed.error}`);
-  else {
-    await page.waitForTimeout(400);
-    const asked = (await page.evaluate(() => window.__WRITES__)).filter((w) => w.collection === 'handoffs');
-    check(asked.length === 1, `pressing the ask wrote ${asked.length} hand-offs, expected 1`);
-    check(asked[0]?.data?.recipe === 'postmark-dashboard',
-      `the ask carries recipe "${asked[0]?.data?.recipe}", which browser-capture cannot resolve`);
+  }, resend.name);
 
-    // Now age it past the claim deadline and re-render: the ask must survive.
-    const after = await page.evaluate(async () => {
-      const stale = new Date(Date.now() - 5 * 60_000).toISOString();
-      const db = await window.claude.use('db');
-      await db.doc('handoffs/email').set({ slot: 'email', option: 'postmark', kind: 'signin', recipe: 'postmark-dashboard', requestedAt: stale, status: 'requested' });
-      await new Promise((r) => setTimeout(r, 300));
-      const s = [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
-      return {
-        controls: [...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()),
-        text: s.textContent.replace(/\s+/g, ' ').trim(),
-      };
+  if (opened.error) failures.push(`artifact: ${opened.error}`);
+  else {
+    await page.waitForTimeout(600);
+    const got = await page.evaluate(() => ({
+      urls: window.__OPENED__ || [],
+      writes: window.__WRITES__,
+    }));
+    check(got.urls.length === 1, `Authorize opened ${got.urls.length} tabs, expected 1`);
+    const u = got.urls[0] ? new URL(got.urls[0]) : null;
+    check(Boolean(u), 'Authorize opened nothing at all');
+    if (u) {
+      const want = new URL(resend.oauthClient.authorizationEndpoint);
+      check(u.origin + u.pathname === want.origin + want.pathname,
+        `Authorize opened ${u.origin + u.pathname}, not the provider's authorization endpoint ${want.origin + want.pathname}`);
+      check(u.searchParams.get('client_id') === resend.oauthClient.clientId,
+        `Authorize sent client_id "${u.searchParams.get('client_id')}", not the registered one`);
+      check(u.searchParams.get('response_type') === 'code', 'Authorize did not ask for a code');
+      check(u.searchParams.get('code_challenge_method') === 'S256', 'Authorize did not use PKCE S256');
+      check((u.searchParams.get('code_challenge') || '').length >= 43, 'Authorize sent no PKCE challenge');
+      check(u.searchParams.get('redirect_uri') === resend.oauthClient.redirectUri,
+        `Authorize sent redirect_uri "${u.searchParams.get('redirect_uri')}", which the provider did not register`);
+    }
+    // Nothing was queued for anybody: this route needs no courier at all.
+    const asked = got.writes.filter((w) => w.collection === 'handoffs');
+    check(asked.length === 0, `Authorize also filed ${asked.length} hand-off(s) — that is the dead request again`);
+    // And the verifier is in the store BEFORE the tab opens, or the redirect could never finish.
+    const cer = got.writes.filter((w) => w.collection === 'ceremonies' && w.id === 'email').pop();
+    check(Boolean(cer?.data?.verifier), 'no PKCE verifier stored, so the returning code could never be redeemed');
+    check(cer?.data?.status === 'waiting', `ceremony written as "${cer?.data?.status}"`);
+  }
+}
+
+/**
+ * And once the code is back, the control becomes the one that redeems it.
+ *
+ * "Approved" is not "connected", and the strip has to say which — with a press that finishes it,
+ * not a sentence that waits for someone.
+ */
+{
+  const after = await page.evaluate(async () => {
+    const db = await window.claude.use('db');
+    const now = new Date().toISOString();
+    await db.doc('ceremonies/email').set({
+      id: 'email', credential: 'email', option: 'resend', kind: 'oauth', method: 'oauth',
+      status: 'code-received', receivedAt: now, startedAt: now,
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      state: 'x', verifier: 'y', client_id: 'z', redirectUri: 'https://example.invalid/',
+      token_endpoint: 'https://api.resend.com/oauth/token',
     });
-    check(after.controls.includes('Sign in once'),
-      `an unanswered ask demoted the ask itself: [${after.controls.join(', ')}]`);
-    check(/nobody has picked this up/.test(after.text), `an unanswered ask says nothing: ${after.text}`);
-    check(/Get it yourself at Postmark/.test(after.text), 'no way through offered once the ask went unanswered');
+    await new Promise((r) => setTimeout(r, 400));
+    const s = [...document.querySelectorAll('#open .slot')].find((x) => x.textContent?.includes('Guest email'));
+    return {
+      controls: [...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()),
+      text: s.textContent.replace(/\s+/g, ' ').trim(),
+    };
+  });
+  check(after.controls.some((c) => /^Claim /.test(c)),
+    `an approved ceremony offers no way to claim it: [${after.controls.join(', ')}]`);
+  check(!/npm run|secrets:serve|in the chat/.test(after.text),
+    `the approved state tells the reader to run a terminal command: "${after.text.slice(0, 160)}"`);
+}
+
+/**
+ * An option nothing can shortcut still asks — and an ask nobody answers must not turn into "go get
+ * it yourself": the fallback appears BESIDE it, and the ask stays the control.
+ */
+{
+  const stalled = await page.evaluate(async () => {
+    const strip = () => [...document.querySelectorAll('#open .slot, .done .row')].find((x) => x.textContent?.includes('Database'));
+    const db = await window.claude.use('db');
+    await db.doc('choices/database').set({ option: 'vercel-postgres' });
+    await new Promise((r) => setTimeout(r, 300));
+    await db.doc('handoffs/database').set({
+      slot: 'database', option: 'vercel-postgres', kind: 'link', recipe: null,
+      requestedAt: new Date(Date.now() - 5 * 60_000).toISOString(), status: 'requested',
+    });
+    await new Promise((r) => setTimeout(r, 400));
+    const s = strip();
+    if (!s) return { error: 'no database strip' };
+    return {
+      controls: [...s.querySelectorAll('.act button, .act a.btn')].map((x) => x.textContent.trim()),
+      text: s.textContent.replace(/\s+/g, ' ').trim(),
+    };
+  });
+  if (stalled.error) failures.push(`artifact: ${stalled.error}`);
+  else {
+    check(stalled.controls.includes('Ask Claude to set this up'),
+      `an unanswered ask demoted the ask itself: [${stalled.controls.join(', ')}]`);
+    check(/nobody has picked this up/i.test(stalled.text), `an unanswered ask says nothing: ${stalled.text}`);
+    check(/Get it yourself at Vercel Postgres/.test(stalled.text),
+      'no way through offered once the ask went unanswered');
+    check(!/npm run|secrets:serve/.test(stalled.text), `the unanswered ask names a terminal command: ${stalled.text}`);
   }
 }
 
 /** And a press of the self-serve route reveals the field rather than dispatching. */
 {
-  const before = (await page.evaluate(() => window.__WRITES__.length));
-  const revealed = await page.evaluate(() => {
-    const s = [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes('Guest email'));
+  const revealed = await page.evaluate(async () => {
+    const strip = () => [...document.querySelectorAll('#open .slot, #done .row')].find((x) => x.textContent?.includes('Guest email'));
+    // Postmark publishes no registration endpoint, so signing in yourself IS its ceremony and the
+    // field sits beside it. (Resend is mid-ceremony by now and rightly offers Claim instead.)
+    const tab = [...strip().querySelectorAll('.pick')].find((x) => x.textContent === 'Postmark');
+    if (tab) tab.click();
+    await new Promise((r) => setTimeout(r, 300));
+    const s = strip();
     const b = [...s.querySelectorAll('button.link')].find((x) => x.textContent.trim() === 'paste it here');
-    if (!b) return 'no paste control';
+    if (!b) return { state: 'no paste control', writes: window.__WRITES__.length };
+    // Counted after the provider choice, which is itself a legitimate write.
+    const writes = window.__WRITES__.length;
     b.click();
-    return s.querySelectorAll('.fields input').length ? 'fields shown' : 'nothing appeared';
+    return { state: s.querySelectorAll('.fields input').length ? 'fields shown' : 'nothing appeared', writes };
   });
-  check(revealed === 'fields shown', `pressing "paste it here" did: ${revealed}`);
-  const after = await page.evaluate(() => window.__WRITES__);
-  check(after.length === before, 'revealing a field wrote to the store');
+  check(revealed.state === 'fields shown', `pressing "paste it here" did: ${revealed.state}`);
+  const after = await page.evaluate(() => window.__WRITES__.length);
+  check(after === revealed.writes, 'revealing a field wrote to the store');
 }
 
 /* ------------------------------------------------ and the same page with NO store at all */
@@ -248,4 +365,8 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`${checked} provider options checked as the published artifact — every one leads with acquiring it, not with a key field; and the storeless page seals a bundle.`);
+// What each option actually leads with, so the result is readable and not merely green.
+for (const l of leads.filter((x) => ['link', 'signin'].includes(x.ceremony))) {
+  console.log(`  ${(l.slot + '/' + l.option).padEnd(28)} ${l.ceremony.padEnd(7)} -> ${l.leads}`);
+}
+console.log(`${checked} provider options checked as the published artifact: every one leads with a control named for what it does, none names a terminal command, Authorize opens the provider's own PKCE authorization URL, an approved ceremony offers Claim, and the storeless page seals a bundle.`);

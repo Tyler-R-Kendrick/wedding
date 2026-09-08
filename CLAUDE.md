@@ -91,11 +91,18 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
 - The page has three homes and one codebase: published as an artifact, served by
   `npm run secrets:serve` on loopback (files under `.secrets/` are the store, and it decrypts
   and writes `.env` itself — no courier), or opened off disk (seals into a bundle you paste).
-- **Every strip leads with acquiring the credential, never with a field.** The artifact runs the
-  ceremony itself where the provider's CORS headers allow it (probed in `BROWSER_AUTH`; today
-  Cloudflare and OpenRouter) and otherwise asks Claude through `handoffs/<slot>`. A self-serve key
-  page appears only *after* an ask goes 45s unanswered, beside the ask rather than in place of it.
-  "The page cannot run this ceremony" never means "nobody can" — the page is not the acquirer.
+- **Every strip leads with acquiring the credential, never with a field**, and every control is
+  named for what it does — the label is the ceremony's own `start` verb from `registry.mjs`, never
+  a phrase written in the template. Of the three OAuth steps only discovery/registration and the
+  token exchange need CORS; **authorization is a navigation and needs none**. So clients are
+  registered at build time in Node (`oauth-clients.mjs`, cache committed — public `client_id`s,
+  never a secret) and the published page opens the provider's real authorization URL itself for
+  Resend, Cloudflare (R2 + Stream), Neon and OpenRouter. Supabase issues only confidential clients
+  and Vercel publishes no registration endpoint, so those two still ask Claude through
+  `handoffs/<slot>`. `signin` options publish no agent route at all (probed), so there signing in
+  yourself *is* the ceremony. A self-serve key page appears for a `link` option only *after* an ask
+  goes 45s unanswered, beside the ask rather than in place of it. Two rules that hold everywhere:
+  no control may name a terminal command, and no control may repeat a request nobody answered.
 - In the artifact case the agent is still the courier for what it can help with: mirror
   `.secrets/outbox.json` into the page's store (`status/*`, `ceremonies/*`), copy `choices/*` back
   to `.secrets/choices.json`, and drop sealed OAuth codes into `.secrets/inbox/` before

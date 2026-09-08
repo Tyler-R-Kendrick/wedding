@@ -502,20 +502,44 @@ describe('a control that reports dispatched work dispatched work', () => {
     for (const slot of reg.slots) {
       for (const option of slot.options) {
         const action = L.actionFor(slot, { choices: { [slot.id]: option.id }, home: 'local' });
-        if (action.kind === 'dispatch') asked.add(action.handoffKind);
+        if (action.kind === 'dispatch' && action.handoffKind) asked.add(action.handoffKind);
       }
     }
     expect(asked.size, 'no dispatchable option found — the invariant would be vacuous').toBeGreaterThan(0);
     for (const kind of asked) expect(Object.keys(HANDOFF_WORK), `nothing performs a "${kind}" hand-off`).toContain(kind);
   });
 
-  it('only ever dispatches from the home that has a worker', () => {
-    // The published artifact has no server and no guaranteed courier. A press there must resolve
-    // in the page or in the person's hands — never into a queue with nothing at the other end.
+  it('never dispatches a kind nothing can perform, and never where nothing can record it', async () => {
+    const { HANDOFF_WORK } = await import('../../scripts/secrets/serve.mjs');
+    const { createLogic } = await import('../../scripts/secrets/page/logic.mjs');
+    const reg = clientRegistry();
+    const L = createLogic(reg);
     expect(template).toContain("db.local ? 'local' : 'artifact'");
     expect(template).toContain('home: homeOf()');
-    // And the dispatching button exists only under the kind logic.mjs gates on the home.
-    expect(template).toMatch(/action\.kind === 'dispatch'[\s\S]{0,400}handoff\(slot, opt, b, action\.handoffKind\)/);
+
+    // Behavioural rather than a regex over the markup. The previous version matched the button's
+    // source within 400 characters of its branch, so adding a comment to that branch "failed" the
+    // invariant while changing nothing — and, far worse, editing the button out entirely would
+    // have failed it in exactly the same way as editing it wrongly. What actually matters is that
+    // no press ever asks for work that nothing performs, or asks it where nothing can even write
+    // the request down.
+    let dispatches = 0;
+    for (const home of ['local', 'artifact', 'disk'] as const) {
+      for (const slot of reg.slots) {
+        for (const option of slot.options) {
+          const action = L.actionFor(slot, { choices: { [slot.id]: option.id }, home });
+          if (action.kind !== 'dispatch') continue;
+          dispatches += 1;
+          expect(
+            Object.keys(HANDOFF_WORK),
+            `${home}: ${slot.id}/${option.id} asks for a "${action.handoffKind}" hand-off, which nothing performs`,
+          ).toContain(action.handoffKind);
+          // Off disk there is no store, so a request could not even be recorded.
+          expect(home, `${home}: ${slot.id}/${option.id} dispatches with nowhere to record it`).not.toBe('disk');
+        }
+      }
+    }
+    expect(dispatches, 'nothing dispatches at all — the invariant would be vacuous').toBeGreaterThan(0);
   });
 });
 

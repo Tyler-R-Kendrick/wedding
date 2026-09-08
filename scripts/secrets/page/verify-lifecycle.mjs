@@ -25,7 +25,7 @@ import { existsSync, mkdtempSync, writeFileSync, copyFileSync, rmSync, readFileS
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { clientRegistry } from '../registry.mjs';
+import { clientRegistry, CEREMONY } from '../registry.mjs';
 import { launchOptions } from './chromium.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -160,8 +160,11 @@ if (picked !== 'ok') { console.error(`could not select ${signin.slot.id}/${signi
 await page.waitForTimeout(300);
 
 const before = await stripText(signin.slot.name);
-const pressed = await press(signin.slot.name, 'Sign in once');
-if (pressed !== 'ok') { console.error(`no "Sign in once" on ${signin.slot.id}/${signin.option.id}: ${pressed}`); process.exit(2); }
+// From the ceremony's own declared start verb, so a renamed button fails here rather than
+// quietly leaving this pressing something that no longer exists.
+const signinControl = `${CEREMONY[signin.option.ceremony].start} ${signin.option.name}`;
+const pressed = await press(signin.slot.name, signinControl);
+if (pressed !== 'ok') { console.error(`no "${signinControl}" on ${signin.slot.id}/${signin.option.id}: ${pressed}`); process.exit(2); }
 
 const dispatched = await until('the hand-off left "requested"', async () => {
   const h = (await state()).collections?.handoffs?.[signin.slot.id];
