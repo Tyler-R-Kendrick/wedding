@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error -- plain .mjs script, no types; it is the gate, not a library.
+// Plain .mjs script: it is the gate, not a library, and TypeScript infers its shape from the source.
 import { check } from '../../scripts/check-css-vars.mjs';
 
 /**
