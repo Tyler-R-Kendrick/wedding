@@ -113,7 +113,11 @@ placeholder until the design swarm exports `DESIGN.md`.
 
 - Skills were installed with `npx skills add … --copy` into `.claude/skills`
   (self-contained, committed). `skills-lock.json` records sources;
-  `npm run skills:update` refreshes them.
+  `npm run skills:update` refreshes them. **That command now prompts rather
+  than running unattended** (`permissions.ask` in `.claude/settings.json`,
+  level-03 review N17, closed at level 15): a vendored skill executes its
+  instructions when loaded, so pulling new ones is a reviewed action, not a
+  routine one. The same applies to `npx skills *` and the impeccable updates.
 - impeccable's skill payload is the official bundle vendored into
   `.claude/skills/impeccable` (skill 4.2.0, engine 0.1.0). The launcher
   downloads the engine binary once into `~/.impeccable/bin/`. Update with

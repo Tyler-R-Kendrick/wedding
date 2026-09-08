@@ -93,4 +93,28 @@ test.describe('security headers', () => {
     // `preload` is deliberately absent: the preload list is effectively one-way.
     expect(hsts).not.toContain('preload');
   });
+
+  /**
+   * The site policy must not reach the routes that hand back user-uploaded bytes. Those set
+   * `Content-Security-Policy: sandbox`, which is strictly stronger for a document this site did not
+   * write, and the first version of the header rule was a blanket `/(.*)` that replaced it — the
+   * media journey caught it, receiving the site policy where it asserts `sandbox`.
+   *
+   * The inversion was twofold, which is why this is pinned here rather than left to that journey:
+   * `img-src`/`media-src` in security-headers.ts are permissive ON THE GROUNDS that served objects
+   * carry their own sandbox. Losing the sandbox silently removed the control the looser directive
+   * was traded against.
+   */
+  test('the site policy does not reach routes that serve user-uploaded bytes', async ({ request }) => {
+    const res = await request.get('/');
+    const sitePolicy = res.headers()['content-security-policy'] ?? '';
+    expect(sitePolicy, 'the site policy is present on a page').toContain("default-src 'self'");
+
+    // An unauthenticated request is enough: the header rule is matched by path, before any handler
+    // decides whether the caller may read the object, so the status does not matter here.
+    const object = await request.get('/api/dev/storage/quarantine/whatever/original');
+    const objectPolicy = object.headers()['content-security-policy'];
+    expect(objectPolicy ?? '', 'a storage route must never carry the site policy').not.toContain("default-src 'self'");
+    expect(objectPolicy ?? '', 'nor its script-src').not.toContain('unsafe-inline');
+  });
 });
