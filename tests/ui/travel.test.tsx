@@ -13,7 +13,7 @@ const data: TravelPageData = {
 
 describe('Travel & Stay recipe', () => {
   it('renders landmarks, the block first with honest placeholders, both airports, and no live search on load', () => {
-    render(<TravelPageRecipe data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
+    render(<TravelPageRecipe theme="gilded-hour" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
     expect(screen.getByRole('main')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Getting to Chicago');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
@@ -50,7 +50,7 @@ describe('Travel & Stay recipe', () => {
     // Built from the real recommendation the page already renders, not by hand: a hand-made view
     // object missed `verifiedAt` and threw inside the card, which proved nothing about the copy.
     const hotel = { ...data.venue, id: 'alt-1', name: 'A Nearby Hotel', placeholder: false };
-    render(<TravelPageRecipe data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    render(<TravelPageRecipe theme="gilded-hour" data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
     expect(document.body.textContent ?? '').toContain('We list why we picked each place');
   });
 });

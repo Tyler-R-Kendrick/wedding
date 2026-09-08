@@ -6,36 +6,72 @@
 .cv {
   --cv-max: 1200px;
   --cv-prose: 42rem;
+
+  /*
+   * The COLUMN is 42rem (`--cv-prose`); the MEASURE is narrower. `min(--cv-prose, 68ch)` resolved to
+   * 587px against Spectral and rendered 72-78 characters a line, past the 55-72 this design's
+   * DESIGN.md asks for: a `ch` is the advance of "0" and Spectral's is wider than its average
+   * letter, so the cap never bound where it was meant to. 31rem = 527px lands in the band. Measured
+   * with a Range walk over the rendered line boxes, the same probe Gilded Hour's `--gh-measure` was
+   * set from. `--cv-measure` is declared on `[data-theme="conservatory"]` above.
+   */
   --cv-gutter: clamp(20px, 4vw, 64px);
-  --cv-rail: 15rem;
+
+  /* Wide enough for the longest tag, rotated, with an equal gutter either side — see `.cv-rail`. */
+  --cv-rail: 18rem;
 
 }
 
 /*
- * Provenance ink slots, on the THEME and not on `.cv`.
+ * Slots on the THEME and not on `.cv`.
  *
  * `.cv` is this kit's shell class; guest surfaces (RSVP, Your Weekend) render provenance notes
- * without it, so scoped here these slots never applied and `provenance.css` fell through to
+ * without it, so scoped there these slots never applied and `provenance.css` fell through to
  * `--color-tertiary` — pollen, which the line below says is an accent and never text. On the creme
  * ground that measured 1.58:1, a serious axe failure on nine nodes. Soil is the text-safe ink.
+ *
+ * The `--cq-*` pair is the same argument for the shared concierge panel: it renders wherever
+ * `[data-theme]` is set, with or without this shell class. A pressed card has a soft edge here, so
+ * the control radius is `rounded.md`, not Gilded Hour's stepped 0.
  */
 [data-theme="conservatory"] {
   --prov-note-ink: var(--color-soil);
   --prov-external-ink: var(--color-soil);
   --prov-external-line: var(--color-kraft-deep);
+  --cq-control-radius: var(--rounded-md);
+  --cq-input-fill: var(--color-surface);
+
+  /* The measure, on the attribute so the guest kit's `--wp-measure` can be this design's own. */
+  --cv-measure: 31rem;
+  --wp-measure: var(--cv-measure);
 }
 
 /* ---------- type helpers ---------- */
+
+/*
+ * Two small-caps styles, not one. `label-caps` is ornament — an eyebrow, a sky unit — and stays at
+ * 0.8125rem (13.81px at this site's 17px root). A chip and a kraft tag are controls a guest taps,
+ * so they take `control-caps` at 1rem: PRODUCT.md's floor is 17px, and small caps read smaller than
+ * their em size, not larger. Same answer as Gilded Hour's, in each design's own voice.
+ */
 .cv-eyebrow,
-.cv-sky__unit,
-.cv-chip,
-.cv-tag {
+.cv-sky__unit {
   font-family: var(--font-text);
   font-size: var(--type-label-caps-size);
   font-weight: var(--type-label-caps-weight);
   line-height: var(--type-label-caps-line);
   letter-spacing: var(--type-label-caps-tracking);
   font-feature-settings: var(--type-label-caps-features);
+}
+
+.cv-chip,
+.cv-tag {
+  font-family: var(--font-text);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-feature-settings: var(--type-control-caps-features);
 }
 
 .cv-eyebrow {
@@ -71,7 +107,7 @@
 
 .cv-lede {
   margin: var(--spacing-sm) 0 0;
-  max-width: var(--cv-prose);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-lg-size);
   line-height: var(--type-body-lg-line);
 }
@@ -98,14 +134,26 @@
   padding: var(--spacing-md) var(--cv-gutter);
 }
 
+/*
+ * `impeccable detect <url>` — `[edge-flush-cards] nav.cv-rail`, on every Conservatory page.
+ *
+ * The rail is a scroller (`overflow: auto`) and its inline padding was asymmetric: 24px left, 16px
+ * right, plus the hanging thread's own 16px on the list, so a tag started 41px from the left edge
+ * and the widest one ("Our Adventures", 209px) ended 5.1px from the right — flush, with its rounded
+ * corner and its 3° rotation clipped. Measured `clientWidth 255` against `scrollWidth 266`.
+ *
+ * Symmetric padding, and a rail sized for the WIDEST ROTATED TAG rather than for the average one:
+ * 209px of tag + the thread's inset + equal gutters does not fit in 15rem, and a scroller that has
+ * to scroll to show a nav item is not a nav rail. 18rem holds it with the gutter intact.
+ */
 @media (width >= 900px) {
   .cv-rail {
     position: sticky;
     inset-block-start: 0;
     align-self: start;
     max-height: 100dvh;
-    overflow: auto;
-    padding: var(--spacing-xl) var(--spacing-md) var(--spacing-xl) var(--spacing-lg);
+    overflow: clip auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
   }
 }
 
@@ -645,7 +693,7 @@
 }
 
 .cv-prose {
-  max-width: min(var(--cv-prose), 68ch);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-md-size);
   line-height: var(--type-body-md-line);
 }
@@ -775,15 +823,31 @@
   gap: 2px;
 }
 
+/*
+ * A data label, in the design's own small capitals — the `control-caps` step level 16 added and
+ * applied here only to `.cv-chip` and `.cv-tag`.
+ *
+ * It was `body-sm` at 18.06px with no transform, no tracking and no `smcp`, against a
+ * `.cv-stat__value` of 18.06px: on /the-wedding the label and the value were the same size in the
+ * same face, so the label did not read as a label at all. Gilded Hour's equivalent has been
+ * 17px/600 uppercase at 2.04px tracking since the caps split; this is the same role in this
+ * design's voice — real small capitals, never shouting uppercase (DESIGN.md § Typography).
+ */
 .cv-stat__label {
   font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  font-weight: var(--type-label-lg-weight);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-feature-settings: var(--type-control-caps-features);
   color: var(--color-soil);
 }
 
+/* A stat value carries a sentence when the fact is still a placeholder; without a measure it ran
+   104 characters a line on /the-wedding at 1440. */
 .cv-stat__value {
   margin: 0;
+  max-width: var(--cv-measure);
   font-size: var(--type-body-md-size);
   overflow-wrap: anywhere;
 }
@@ -963,7 +1027,17 @@
   /* a chip carries a phrase ("Draft — not yet curated"), so it drops the small-caps tracking */
   letter-spacing: 0.02em;
   margin-inline-start: var(--spacing-xs);
-  padding: 4px 8px;
+
+  /*
+   * 8px / 16px, not the 4px / 8px this had. A chip inherits body size (17px) and sits on a filled
+   * ground, so at 4px the words touched the fill: `impeccable detect
+   * http://localhost:3316/share-an-adventure?theme=conservatory` returned 22 x `[cramped-padding]
+   * 4px vertical padding (need >= 5.1px for 17px text)`, one per `.cv-chip--pending` on the page.
+   * The rule wants a third of the font size vertically and half of it horizontally, so 8px alone
+   * still failed on the second axis ("8px horizontal padding (need >= 8.5px)"); `--spacing-sm` and
+   * `--spacing-md` are the steps the rest of the kit uses inside small filled shapes.
+   */
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--rounded-sm);
   background: var(--color-secondary);
   color: var(--color-on-secondary);
@@ -1206,7 +1280,7 @@
 }
 
 .cv-footer__rights {
-  max-width: min(var(--cv-prose), 68ch);
+  max-width: var(--cv-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
 }
@@ -1633,10 +1707,10 @@
 
 .cv-table th {
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
-  letter-spacing: var(--type-label-caps-tracking);
-  font-feature-settings: var(--type-label-caps-features);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-feature-settings: var(--type-control-caps-features);
   color: var(--color-soil);
 }
 
@@ -1965,10 +2039,10 @@
   border-radius: var(--rounded-sm);
   background: var(--color-kraft);
   color: var(--color-primary);
-  font-feature-settings: var(--type-label-caps-features);
-  letter-spacing: var(--type-label-caps-tracking);
-  font-size: var(--type-label-caps-size);
-  font-weight: var(--type-label-caps-weight);
+  font-feature-settings: var(--type-control-caps-features);
+  letter-spacing: var(--type-control-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
 }
 
 .cv .switcher__trigger:hover {
@@ -2018,4 +2092,125 @@
   .cv-footer::before {
     display: none;
   }
+}
+
+/* ---------- guest recipes (RSVP, Your Weekend, Transportation, Trip) ---------- */
+
+/*
+ * DESIGN.md § Layout: sections "are separated by *washes* (sky, moss, parchment) and by fern
+ * dividers that grow from the left margin and stop at 12rem, **not by full-width rules and not by
+ * identical whitespace**".
+ *
+ * The shared `.sec` these routes used was a 1px full-width rule with the same padding above every
+ * section — both halves of what that sentence forbids, on the four routes a claimed guest lives on.
+ * The ground and the leading space alternate on the section's index (see `conservatory/guest.tsx`),
+ * which is where "not identical whitespace" is honoured rather than asserted.
+ */
+.cv-gsec {
+  position: relative;
+  margin-inline: calc(-1 * var(--spacing-md));
+  padding: var(--spacing-xl) var(--spacing-md) var(--spacing-2xl);
+}
+
+.cv-gsec--wash {
+  background: var(--color-sky);
+}
+
+.cv-gsec--alt {
+  background: var(--color-moss-wash);
+}
+
+/* Not identical whitespace: a plain section opens tighter than a washed one. */
+.cv-gsec--plain {
+  padding-block-start: var(--spacing-lg);
+}
+
+.cv-gsec__fern {
+  margin-block-end: var(--spacing-sm);
+}
+
+.cv-gsec__title {
+  margin: 0 0 var(--spacing-lg);
+}
+
+.cv-gsec__body {
+  max-width: var(--cv-prose);
+}
+
+/* The column is 42rem; running text is 31rem. See the Gilded Hour note — same defect, same fix. */
+.cv-gsec__body > p,
+.cv-gsec__body > ul,
+.cv-gsec__body > ol,
+.cv-gnotice__body,
+.cv-gcard > p {
+  max-width: var(--cv-measure);
+}
+
+/*
+ * A pressed card: a hairline frame on all four sides and nothing thicker.
+ *
+ * This had `border-block-start: 3px solid var(--color-kraft)` — a kraft thread along the top edge,
+ * which was itself the second attempt after `impeccable detect` refused a 4px bar down the left.
+ * Moving a thick coloured bar from one edge to another does not stop it being one: with the guest
+ * tree finally reachable by the URL detector (`scripts/probes/auth-proxy.mjs`) it came back as
+ * `[side-tab] border-top: 3px`, 5 on /your-weekend and 12 on /rsvp. The detector's own advice is
+ * "use a subtler accent or remove it entirely", and this design already has the subtler accent:
+ * DESIGN.md separates things by washes and by ornament, and a pressed sheet is bounded by a
+ * hairline, so the frame carries it alone.
+ */
+.cv-gcard {
+  margin-block-end: var(--spacing-lg);
+  box-shadow: inset 0 0 0 1px var(--color-outline);
+}
+
+.cv-gcard__title {
+  margin: 0;
+}
+
+/*
+ * A notice as a kraft tag pinned to a wash. DESIGN.md: grounds and ornament separate things here,
+ * never a full-width rule; and "One weight means hierarchy comes from size and space, never from
+ * bolding", which the shared `.notice`'s 700 asked of a face that self-hosts 400 and 500 only.
+ */
+.cv-gnotice {
+  position: relative;
+  max-width: var(--cv-prose);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-lg);
+
+  /*
+   * A GROUND and a hairline, with no thick bar on any edge.
+   *
+   * Two earlier attempts got this wrong in the same way: `border-inline-start: 4px solid`, which
+   * `impeccable detect .` called `[side-tab]` ("the most recognizable tell of AI-generated UIs"),
+   * and then a 3px kraft thread along the TOP edge, which the URL detector called the same thing
+   * once `scripts/probes/auth-proxy.mjs` let it reach a signed-in guest. An edge is an edge. What
+   * separates a notice here is what DESIGN.md says separates everything here — the wash it sits on
+   * — and the tone rides the hairline, which is 1px on all four sides and so is a frame rather than
+   * a tab. Colour is never the only carrier: every notice has a title and `role="status"`/`"alert"`.
+   */
+  background: var(--color-sky);
+  box-shadow: inset 0 0 0 1px var(--color-outline);
+}
+
+.cv-gnotice--urgent {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-error);
+}
+
+.cv-gnotice--success {
+  background: var(--color-moss-wash);
+  box-shadow: inset 0 0 0 1px var(--color-secondary);
+}
+
+.cv-gnotice__title {
+  margin: 0 0 var(--spacing-xs);
+  font-family: var(--font-display);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+}
+
+.cv-gnotice__body > :last-child {
+  margin-block-end: 0;
 }

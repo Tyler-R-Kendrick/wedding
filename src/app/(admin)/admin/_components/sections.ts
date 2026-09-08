@@ -74,3 +74,25 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
 ];
 
 export const ADMIN_SCREENS: readonly AdminScreen[] = ADMIN_SECTIONS.flatMap((s) => s.screens);
+
+/**
+ * Sub-navigation within a family of screens.
+ *
+ * `ADMIN_SECTIONS` above is the index of every screen; these are the strips a person uses while
+ * working inside one family, and they exist here rather than in `components/media` and
+ * `components/mediaai` because they are console navigation, not media widgets. The two components
+ * they replace (`AdminMediaNav`, `AdminAiNav`) each rendered a row of filled buttons in a different
+ * stylesheet from the console around them.
+ */
+export const MEDIA_SUBNAV = [
+  { href: '/admin/media', label: 'Queue' },
+  { href: '/admin/media/duplicates', label: 'Duplicates' },
+  { href: '/admin/media/import', label: 'Import professional media' },
+  { href: '/admin/media/metrics', label: 'Storage and cost' },
+] as const;
+
+export const INTELLIGENCE_SUBNAV = [
+  { href: '/admin/ai', label: 'Search index' },
+  { href: '/admin/biometrics', label: 'Face matching' },
+  { href: '/admin/concierge', label: 'Concierge' },
+] as const;

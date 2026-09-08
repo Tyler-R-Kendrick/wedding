@@ -56,12 +56,17 @@ describe('handoff cards', () => {
     // event valet rate…"). The fact must survive as prose and the rest become a labelled
     // placeholder — the recipe used to test `startsWith`, so those two rendered as plain fact with
     // the marker inline, and the one that did match printed the marker behind an `sr-only` label.
-    render(<TransportationPageRecipe data={{ signedIn: false, signInRoute: '/claim', benefits: [], topics: TRANSPORTATION_TOPICS.map((t) => ({ ...t, paragraphs: [...t.paragraphs] })) }} />);
+    // Both designs, because level 16 gave the recipe the ACTIVE DESIGN's sections and cards: the
+    // markup differs per theme now, and a placeholder that survives one arrangement of it and not
+    // the other is exactly the regression this test exists to catch.
+    for (const theme of ['gilded-hour', 'conservatory'] as const) {
+      render(<TransportationPageRecipe theme={theme} data={{ signedIn: false, signInRoute: '/claim', benefits: [], topics: TRANSPORTATION_TOPICS.map((t) => ({ ...t, paragraphs: [...t.paragraphs] })) }} />);
+    }
     const text = document.body.textContent ?? '';
     expect(text).not.toContain('TODO(');
     expect(text).not.toMatch(/backlog\s+[A-Z]{1,2}-\d/i);
     expect(text).toContain('the hotel’s valet entrance is at 71 E Madison.');
-    expect(screen.getAllByText(PLACEHOLDER_LABEL).length).toBe(TRANSPORTATION_TOPICS.filter((t) => t.paragraphs.some((p) => p.includes('TODO(Tyler & Sara)'))).length);
+    expect(screen.getAllByText(PLACEHOLDER_LABEL).length).toBe(2 * TRANSPORTATION_TOPICS.filter((t) => t.paragraphs.some((p) => p.includes('TODO(Tyler & Sara)'))).length);
     for (const node of document.querySelectorAll('[data-placeholder="true"]')) expect(node.textContent ?? '').not.toContain('TODO(');
   });
 

@@ -185,9 +185,22 @@ test.describe("Travel & Stay", () => {
       page.getByText(/Open the link from your invitation/),
     ).toBeVisible();
     await page.goto("/admin/travel");
-    await expect(
-      page.getByText("Administrator sign-in is required."),
-    ).toBeVisible();
+    // Level 16 moved every admin screen onto one shell, so this screen's gate is `ConsoleGate` —
+    // the same heading and the same sentence as the other twenty-four, instead of the bespoke
+    // "Administrator sign-in is required." this page used to render on its own. The assertion is
+    // changed deliberately, and it is STRONGER than the string it replaces: it checks the level-1
+    // heading (which the old one did not look at) and that the screen's own content is absent.
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Administrator sign-in required",
+    );
+    await expect(page.locator("#main")).toContainText(
+      "is part of the admin console",
+    );
+    // `#main`, not `body`: the admin layout's index of every screen is in the chrome around it, and
+    // one of its blurbs contains this phrase. That index is deliberate — the routes are not secret
+    // and every one of them re-checks server-side — so the assertion is that the SCREEN's own
+    // content is absent, which is what a gate has to guarantee.
+    await expect(page.locator("#main")).not.toContainText("room block");
     const hook = await request.post("/travel/webhooks/duffel", {
       data: { id: "evt", type: "order.created", data: { object: { id: "o" } } },
     });

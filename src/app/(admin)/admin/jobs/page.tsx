@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { adminJobsOverview } from '@/capabilities/ops';
 import { newId } from '@/contracts/ids';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, EmptyRow, Pill, Section, Stat, StatStrip } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
 import { cancelJob, retryJob } from '../_lib/ops-actions';
 
 export const dynamic = 'force-dynamic';
@@ -62,36 +62,32 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
             <th scope="col">Last error</th>
             <th scope="col">Actions</th>
           </tr>
-        }>
-          {j.attention.length === 0 ? (
-            <EmptyRow span={6}>No job has failed. Nothing to do here.</EmptyRow>
-          ) : (
-            j.attention.map((row) => (
-              <tr key={row.id}>
-                <th scope="row">
-                  {row.type}
-                  {row.handlerRegistered ? null : <> <Pill tone="bad">no handler</Pill></>}
-                </th>
-                <td>
-                  <Pill tone={statusTone(row.status)}>{row.status}</Pill>
-                </td>
-                <td className="con-num">
-                  {row.attempts}/{row.maxAttempts}
-                </td>
-                <td>{row.updatedAt}</td>
-                <td className="con-wrap">{row.lastError ?? '—'}</td>
-                <td>
-                  <form action={retryJob} className="con-inline-form">
-                    <input type="hidden" name="jobId" value={row.id} />
-                    <input type="hidden" name="idem" value={newId()} />
-                    <button type="submit" className="ops-button ops-button-ghost">
-                      Retry
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))
-          )}
+        } empty={j.attention.length === 0 ? <>No job has failed. Nothing to do here.</> : null}>
+          {j.attention.map((row) => (
+            <tr key={row.id}>
+              <th scope="row">
+                {row.type}
+                {row.handlerRegistered ? null : <> <Pill tone="bad">no handler</Pill></>}
+              </th>
+              <td>
+                <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+              </td>
+              <td className="con-num">
+                {row.attempts}/{row.maxAttempts}
+              </td>
+              <td><Stamp at={row.updatedAt} /></td>
+              <td className="con-wrap">{row.lastError ?? '—'}</td>
+              <td>
+                <form action={retryJob} className="con-inline-form">
+                  <input type="hidden" name="jobId" value={row.id} />
+                  <input type="hidden" name="idem" value={newId()} />
+                  <button type="submit" className="ops-button ops-button-ghost">
+                    Retry
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
 
@@ -106,22 +102,18 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
             <th scope="col" className="con-num">Succeeded</th>
             <th scope="col" className="con-num">Dead</th>
           </tr>
-        }>
-          {j.byType.length === 0 ? (
-            <EmptyRow span={7}>No job has ever been enqueued.</EmptyRow>
-          ) : (
-            j.byType.map((t) => (
-              <tr key={t.type}>
-                <th scope="row">{t.type}</th>
-                <td>{t.handlerRegistered ? <Pill tone="good">registered</Pill> : <Pill tone="bad">missing</Pill>}</td>
-                <td className="con-num">{t.total}</td>
-                <td className="con-num">{t.queued}</td>
-                <td className="con-num">{t.running}</td>
-                <td className="con-num">{t.succeeded}</td>
-                <td className="con-num">{t.dead}</td>
-              </tr>
-            ))
-          )}
+        } empty={j.byType.length === 0 ? <>No job has ever been enqueued.</> : null}>
+          {j.byType.map((t) => (
+            <tr key={t.type}>
+              <th scope="row">{t.type}</th>
+              <td>{t.handlerRegistered ? <Pill tone="good">registered</Pill> : <Pill tone="bad">missing</Pill>}</td>
+              <td className="con-num">{t.total}</td>
+              <td className="con-num">{t.queued}</td>
+              <td className="con-num">{t.running}</td>
+              <td className="con-num">{t.succeeded}</td>
+              <td className="con-num">{t.dead}</td>
+            </tr>
+          ))}
         </DataTable>
         {j.idleHandlers.length ? <p className="con-note">Registered but never used: {j.idleHandlers.join(', ')}.</p> : null}
       </Section>
@@ -137,38 +129,34 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
             <th scope="col">Locked by</th>
             <th scope="col">Actions</th>
           </tr>
-        }>
-          {j.recent.length === 0 ? (
-            <EmptyRow span={7}>No job has ever been enqueued.</EmptyRow>
-          ) : (
-            j.recent.map((row) => (
-              <tr key={row.id}>
-                <th scope="row">{row.type}</th>
-                <td>
-                  <Pill tone={statusTone(row.status)}>{row.status}</Pill>
-                </td>
-                <td className="con-num">
-                  {row.attempts}/{row.maxAttempts}
-                </td>
-                <td>{row.runAt}</td>
-                <td>{row.updatedAt}</td>
-                <td className="ops-code">{row.lockedBy ?? '—'}</td>
-                <td>
-                  {row.status === 'queued' ? (
-                    <form action={cancelJob} className="con-inline-form">
-                      <input type="hidden" name="jobId" value={row.id} />
-                      <input type="hidden" name="idem" value={newId()} />
-                      <button type="submit" className="ops-button ops-button-danger">
-                        Cancel
-                      </button>
-                    </form>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
+        } empty={j.recent.length === 0 ? <>No job has ever been enqueued.</> : null}>
+          {j.recent.map((row) => (
+            <tr key={row.id}>
+              <th scope="row">{row.type}</th>
+              <td>
+                <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+              </td>
+              <td className="con-num">
+                {row.attempts}/{row.maxAttempts}
+              </td>
+              <td><Stamp at={row.runAt} /></td>
+              <td><Stamp at={row.updatedAt} /></td>
+              <td className="ops-code">{row.lockedBy ?? '—'}</td>
+              <td>
+                {row.status === 'queued' ? (
+                  <form action={cancelJob} className="con-inline-form">
+                    <input type="hidden" name="jobId" value={row.id} />
+                    <input type="hidden" name="idem" value={newId()} />
+                    <button type="submit" className="ops-button ops-button-danger">
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  '—'
+                )}
+              </td>
+            </tr>
+          ))}
         </DataTable>
       </Section>
     </ConsolePage>

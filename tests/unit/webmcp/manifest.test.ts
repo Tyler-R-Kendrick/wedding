@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { CapabilityRegistryImpl } from '@/capabilities/registry';
 import { siteStatus } from '@/capabilities/site_status';
@@ -173,8 +173,18 @@ describe('review extras: the manifest cannot disagree with invoke', () => {
  * shows up as a diff a reviewer has to justify.
  */
 describe('N4: an admin manifest advertises no capability an admin cannot complete', () => {
+  // Loaded once, in a hook with its own budget, rather than inside a test. `@/capabilities` is the
+  // whole registry barrel — every capability, the db schema behind them, every provider — and on a
+  // loaded machine that import alone can outrun the 5s test timeout. This suite failed four times
+  // that way, always on the import and never on an assertion. Nothing about the assertions changes.
+  let real: Awaited<typeof import('@/capabilities')>['registry'];
+  let getMyHousehold: Awaited<typeof import('@/capabilities/get_my_household')>['getMyHousehold'];
+  beforeAll(async () => {
+    ({ registry: real } = await import('@/capabilities'));
+    ({ getMyHousehold } = await import('@/capabilities/get_my_household'));
+  }, 120_000);
+
   it('lists exactly the guest-auth tools an admin can actually run', async () => {
-    const { registry: real } = await import('@/capabilities');
     const owner: Principal = {
       kind: 'admin',
       authIdentityId: 'auth-n4' as AuthIdentityId,
@@ -198,7 +208,6 @@ describe('N4: an admin manifest advertises no capability an admin cannot complet
   });
 
   it('refuses an admin at authorize(), not only in the handler, for a caller-identity capability', async () => {
-    const { getMyHousehold } = await import('@/capabilities/get_my_household');
     const owner = admin([...deriveAdminEntitlements(['owner'])]);
     expect(getMyHousehold.guestIdentityRequired).toBe(true);
     expect(authorize(getMyHousehold, owner).ok).toBe(false);

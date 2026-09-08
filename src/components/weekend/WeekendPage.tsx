@@ -3,39 +3,65 @@ import Link from 'next/link';
 import type { MyItinerary } from '@/capabilities/rsvp';
 import { highlightIdFor } from '@/capabilities/seating/show_my_table_on_floorplan';
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
-import { Badge, Notice } from '@/components/rsvp/fields';
+import { Badge } from '@/components/rsvp/fields';
 import { formatDeadline } from '@/domain/events/format';
+import { GuestCard, GuestNotice, GuestSection } from '@/themes/guest';
+import type { ThemeId } from '@/themes/types';
 
-/** Your Weekend recipe: renders what get_my_itinerary returned, nothing more. */
-export function WeekendPage({ data }: { data: MyItinerary }) {
+/**
+ * Your Weekend recipe: renders what get_my_itinerary returned, nothing more.
+ *
+ * The sections and cards are the ACTIVE DESIGN'S (`themes/<id>/guest.tsx`), not the shared `.sec` /
+ * `.card` pair — see `src/themes/guest.tsx` for why one shared recipe wearing two palettes was a
+ * blocker rather than a shortcut.
+ */
+export function WeekendPage({ data, theme }: { data: MyItinerary; theme: ThemeId }) {
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const table = data.seating.table;
   return (
-    <main id="main" className="page">
+    <div className="page">
       <h1 className="page__title">Your weekend, {data.greeting.firstName}</h1>
       <p className="page__lede">Saturday, July 17, 2027 · Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
 
       {notices.map((n) => (
-        <Notice key={n.id} tone={n.severity === 'urgent' ? 'urgent' : 'info'} title={n.title}>
+        <GuestNotice key={n.id} theme={theme} tone={n.severity === 'urgent' ? 'urgent' : 'info'} title={n.title}>
           <p>{n.body}</p>
-        </Notice>
+        </GuestNotice>
       ))}
 
-      <section className="sec" aria-labelledby="rsvp-title">
-        <h2 className="sec__title" id="rsvp-title">
-          RSVP
-        </h2>
+      <GuestSection theme={theme} id="rsvp" index={0} title="RSVP">
         <p>
-          {data.rsvp.status === 'complete' ? <Badge tone="yes">Answered for everyone</Badge> : data.rsvp.status === 'partial' ? <Badge tone="pending">{data.rsvp.answered} of {data.rsvp.expected} answered</Badge> : <Badge tone="pending">Not answered yet</Badge>}
+          {/* "for everyone" is only true when the counts cover more than one person. They are built
+              from `actsFor`, so a non-manager who answers for themselves alone used to read that
+              their whole household was done. */}
+          {data.rsvp.status === 'complete' ? (
+            <Badge tone="yes">{data.rsvp.scope === 'household' ? 'Answered for everyone' : 'Answered'}</Badge>
+          ) : data.rsvp.status === 'partial' ? (
+            <Badge tone="pending">
+              {data.rsvp.answered} of {data.rsvp.expected} answered
+            </Badge>
+          ) : (
+            <Badge tone="pending">Not answered yet</Badge>
+          )}
         </p>
-        {data.rsvp.window.open ? (
+        {/* A delegate may not answer, and `derive.ts` strips `rsvp_self` from exactly that role, so
+            offering the primary button on the window alone put a 403 behind it. */}
+        {data.rsvp.window.open && data.rsvp.canAnswer ? (
           <p>
             <Link className="btn btn--primary" href="/rsvp">
               {data.rsvp.status === 'not_started' ? 'RSVP now' : 'Review or change your RSVP'}
             </Link>
           </p>
         ) : (
-          <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details</Placeholder></p>
+          // Says the same thing /rsvp says, for the same reason — including the case that matters:
+          // `lifecycle` means RSVPs have not opened yet, and telling a guest they are "closed"
+          // during the teaser is false. Keeping the two pages in step is why this branches on the
+          // same field rather than on `open` alone.
+          data.rsvp.window.reason === 'lifecycle' ? (
+            <p className="card__meta">RSVPs are not open yet — Sara and Tyler will send word when it is time to reply.</p>
+          ) : (
+            <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details</Placeholder></p>
+          )
         )}
         {/* Says the same thing /rsvp says, including when there is no deadline yet: a guest who reads
             one page and not the other should not come away with a different understanding. */}
@@ -47,16 +73,13 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
             <Placeholder inline>the date answers are needed by</Placeholder>
           </p>
         ) : null}
-      </section>
+      </GuestSection>
 
-      <section className="sec" aria-labelledby="events-title">
-        <h2 className="sec__title" id="events-title">
-          Your events
-        </h2>
+      <GuestSection theme={theme} id="events" index={1} title="Your events">
         <ol className="list list--plain">
           {data.events.map((e) => (
-            <li key={e.id} className="card">
-              <h3 className="card__title">{e.name}</h3>
+            <li key={e.id}>
+              <GuestCard theme={theme} title={e.name}>
               <p className="card__meta">
                 {e.dateText} · {e.whenText}
               </p>
@@ -76,15 +99,13 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
                   </li>
                 ))}
               </ul>
+              </GuestCard>
             </li>
           ))}
         </ol>
-      </section>
+      </GuestSection>
 
-      <section className="sec" aria-labelledby="table-title">
-        <h2 className="sec__title" id="table-title">
-          Your table
-        </h2>
+      <GuestSection theme={theme} id="table" index={2} title="Your table">
         {table ? (
           <div>
             <p>
@@ -107,18 +128,14 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
             ) : null}
           </div>
         ) : (
-          <p className="card__meta">Your table will appear here once seating is published.</p>
+          <p className="card__meta">{data.seating.message}</p>
         )}
-      </section>
+      </GuestSection>
 
-      <section className="sec" aria-labelledby="slots-title">
-        <h2 className="sec__title" id="slots-title">
-          Getting around and your trip
-        </h2>
+      <GuestSection theme={theme} id="slots" index={3} title="Getting around and your trip">
         <div className="grid-2">
           {[data.slots.transport, data.slots.trip].map((slot) => (
-            <div key={slot.kind} className="card">
-              <h3 className="card__title">{slot.title}</h3>
+            <GuestCard theme={theme} key={slot.kind} title={slot.title}>
               {slot.status === 'ready' ? (
                 <ul className="list">
                   {slot.items.map((i, idx) => (
@@ -131,10 +148,10 @@ export function WeekendPage({ data }: { data: MyItinerary }) {
               ) : (
                 slot.status === 'placeholder' ? <Placeholder>{slot.body}</Placeholder> : <p className="card__meta">{slot.body}</p>
               )}
-            </div>
+            </GuestCard>
           ))}
         </div>
-      </section>
-    </main>
+      </GuestSection>
+    </div>
   );
 }

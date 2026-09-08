@@ -13,11 +13,19 @@ export interface TextBlock {
 }
 
 /**
- * Internal ticket references ("(backlog C-01)", "(content backlog C-07)", a bare "backlog P-02")
- * are editorial metadata. They stay in the content record and in `docs/content/backlog.md`; they
- * never reach a guest, an export, or the AI corpus.
+ * Internal ticket references are editorial metadata. They stay in the content record and in
+ * `docs/content/backlog.md`; they never reach a guest, an export, or the AI corpus.
+ *
+ * Three shapes, because all three have shipped: the parenthesised forms "(backlog C-01)" and
+ * "(content backlog C-07)"; a bare "backlog P-02" left in a sentence; and — the one a guest
+ * reviewer found on `/our-adventures` — a bare "(P-02)" with the word "backlog" nowhere near it,
+ * which the first two patterns had no way to see. `[CPVX]` are the backlog's own prefixes
+ * (couple, planner, vendor, cross-cutting), so an ordinary parenthetical is never eaten.
+ *
+ * `src/components/provenance/Placeholder.tsx` imports this rather than keeping its own copy: two
+ * regexes for one rule is how the last one leaked (PR #21, `isPlaceholderText`).
  */
-const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi;
+export const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b|\s*\((?:[CPVX]-\d{1,3})(?:,\s*[CPVX]-\d{1,3})*\)/gi;
 
 /** Scrubs ticket references from any string that is about to be shown to a guest. */
 export function guestText(text: string): string {

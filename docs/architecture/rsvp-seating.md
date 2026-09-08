@@ -2,7 +2,10 @@
 
 Owner: Swarm E (level 07). Contracts: `src/contracts/*`. Domain: `src/domain/{events,rsvp,seating,weekend}`.
 Capabilities: `src/capabilities/{rsvp,events,seating,weekend}`. Schema: `src/db/schema/{events,rsvp,seating}.ts`
-(+ `guests.stub.ts`, see below). Migration: `src/db/migrations/0002_rsvp_seating.sql`.
+(+ `guests.stub.ts`, see below). Migrations: this level's tables entered the chain on integration
+rather than as a file of their own — the incoming migration is deleted and `npm run db:generate`
+emits a fresh one from the merged schema at every level, so there is no `0002_rsvp_seating.sql`.
+`src/db/migrations/` is the whole chain; `src/db/schema/{events,rsvp,seating}.ts` is the truth.
 
 ## Data model
 

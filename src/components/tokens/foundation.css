@@ -27,6 +27,7 @@
   --font-body-lg: "Newsreader";
   --font-body-md: "Newsreader";
   --font-body-sm: "Newsreader";
+  --font-control-caps: "Newsreader";
   --font-label-caps: "Newsreader";
   --font-numeral: "Libre Caslon Display";
   --text-display-xl: 4.5rem;
@@ -36,12 +37,14 @@
   --text-h3: 1.25rem;
   --text-body-lg: 1.25rem;
   --text-body-md: 1.0625rem;
-  --text-body-sm: 0.9375rem;
+  --text-body-sm: 1rem;
+  --text-control-caps: 1rem;
   --text-label-caps: 0.75rem;
   --text-numeral: 2.5rem;
   --tracking-display-xl: -0.02em;
   --tracking-display-lg: -0.015em;
   --tracking-h1: -0.01em;
+  --tracking-control-caps: 0.1em;
   --tracking-label-caps: 0.14em;
   --font-weight-display-xl: 400;
   --font-weight-display-lg: 400;
@@ -51,6 +54,7 @@
   --font-weight-body-lg: 400;
   --font-weight-body-md: 400;
   --font-weight-body-sm: 400;
+  --font-weight-control-caps: 500;
   --font-weight-label-caps: 500;
   --font-weight-numeral: 400;
   --radius-none: 0px;

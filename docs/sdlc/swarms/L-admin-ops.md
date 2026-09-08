@@ -6,7 +6,7 @@ swarms own their domain-specific admin pages; you integrate them into one
 coherent admin app and fill the gaps), `src/components/admin/**`,
 `src/capabilities/admin_*` for lifecycle publish/preview, provider
 configuration status, readiness switches, audit search, metrics,
-`tests/e2e/admin.spec.ts`, `docs/ops/admin-guide.md`.
+`tests/e2e/admin-console.spec.ts`, `docs/ops/admin-guide.md`.
 
 **Inputs:** ADR-0012, brief §19–20, root `DESIGN.md` (admin uses the
 shared foundation, not the guest themes).

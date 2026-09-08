@@ -134,19 +134,35 @@ test.describe('the guest surfaces are themed', () => {
     });
   }
 
-  test('every header link meets the 44px target', async ({ browser }) => {
-    // The guest layout uses the same class names as the public tree, which styles them in a
-    // stylesheet guest routes do not import; borrowing the names alone left these links 17px tall.
+  test('every header link a phone can actually tap meets the 44px target', async ({ browser }) => {
+    /*
+     * This existed because the guest layout BORROWED the public tree's class names without its
+     * stylesheet, which left these links 17px tall. Level 16 removed that possibility at the root:
+     * the guest tree renders the active design's own `Shell`, so the header here is the same
+     * component, in the same stylesheet, as the one on `/`.
+     *
+     * The assertion changes with it, deliberately, and gets stronger rather than weaker. It used to
+     * measure EVERY `header a`, which on the themed header at 390 includes the link lists the
+     * design collapses into its Menu sheet and elevator panel — laid out at 0x0, so the old form
+     * reported "link 0 is under the tap target: 0". It now measures every link a phone can actually
+     * reach, in BOTH designs (it only ever ran in the default one), and requires the collapsed
+     * header to still offer at least one.
+     */
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    for (const route of ['/rsvp', '/your-weekend']) {
-      await page.goto(route);
-      const links = page.locator('header a');
-      const count = await links.count();
-      expect(count).toBeGreaterThan(0);
-      for (let i = 0; i < count; i++) {
-        const box = await links.nth(i).boundingBox();
-        expect(Math.round(box?.height ?? 0), `${route} header link ${i} is under the tap target`).toBeGreaterThanOrEqual(44);
+    for (const theme of ['gilded-hour', 'conservatory']) {
+      for (const route of ['/rsvp', '/your-weekend']) {
+        await page.goto(`${route}?theme=${theme}`);
+        const boxes = await page.locator('header a').evaluateAll((els) =>
+          els
+            .map((e) => ({ text: (e.textContent ?? '').trim().slice(0, 24), rect: e.getBoundingClientRect() }))
+            .filter((x) => x.rect.width > 0 && x.rect.height > 0)
+            .map((x) => ({ text: x.text, height: Math.round(x.rect.height), width: Math.round(x.rect.width) })),
+        );
+        expect(boxes.length, `${route} @ ${theme} offers no tappable header link at 390`).toBeGreaterThan(0);
+        for (const box of boxes) {
+          expect(box.height, `${route} @ ${theme}: header link "${box.text}" is ${box.height}px tall`).toBeGreaterThanOrEqual(44);
+        }
       }
     }
     await ctx.close();

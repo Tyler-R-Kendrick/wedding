@@ -60,9 +60,16 @@ typography:
     lineHeight: 1.6
   body-sm:
     fontFamily: Newsreader
-    fontSize: 0.9375rem
+    fontSize: 1rem
     fontWeight: 400
     lineHeight: 1.55
+  control-caps:
+    fontFamily: Newsreader
+    fontSize: 1rem
+    fontWeight: 500
+    lineHeight: 1.25
+    letterSpacing: 0.1em
+    fontFeature: "'smcp', 'c2sc'"
   label-caps:
     fontFamily: Newsreader
     fontSize: 0.75rem

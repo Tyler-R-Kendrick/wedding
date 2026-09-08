@@ -1,76 +1,81 @@
 import { adminListGiftLinks } from '@/capabilities/admin_gifts';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
-import { AdminShell, ScrollRegion, SECTION_TITLE, TABLE, TD, TH } from '@/components/handoff/AdminShell';
+import { ConsoleGate, ConsolePage, Note, ScrollRegion, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminGiftsPage() {
   const { principal, result } = await invokeForPage(adminListGiftLinks, {});
+  // AdminShell used to gate on the principal; ConsolePage is a frame, so the gate is the
+  // route's own first statement — visible where the authorization decision is made.
+  if (principal.kind !== 'admin') return <ConsoleGate what="Gift links" />;
   return (
-    <AdminShell title="Gift links" principal={principal}>
+    <ConsolePage title="Gift links">
       {!result.ok ? (
-        <p className="mt-4">{result.error.message}</p>
+        <Note>{result.error.message}</Note>
       ) : (
         <>
-          <h2 className={SECTION_TITLE}>What guests see now</h2>
-          <ScrollRegion label="What guests see now">
-            <table className={TABLE}>
+          <Section title="What guests see now">
+          <ScrollRegion>
+            <table className="ops-table con-table">
               <thead>
                 <tr>
-                  <th className={TH} scope="col">Kind</th>
-                  <th className={TH} scope="col">Label</th>
-                  <th className={TH} scope="col">Provider</th>
-                  <th className={TH} scope="col">Host</th>
-                  <th className={TH} scope="col">Origin</th>
-                  <th className={TH} scope="col">Placeholder</th>
+                  <th scope="col">Kind</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Host</th>
+                  <th scope="col">Origin</th>
+                  <th scope="col">Placeholder</th>
                 </tr>
               </thead>
               <tbody>
                 {result.value.data.effective.map((l) => (
                   <tr key={l.id} data-gift-link-id={l.id}>
-                    <td className={TD}>{l.kind}</td>
-                    <td className={TD}>{l.label}</td>
-                    <td className={TD}>{l.providerDisplayName}</td>
-                    <td className={TD}>{l.host}</td>
-                    <td className={TD}>{l.origin}</td>
-                    <td className={TD}>{l.placeholder ? 'yes' : 'no'}</td>
+                    <td>{l.kind}</td>
+                    <td>{l.label}</td>
+                    <td>{l.providerDisplayName}</td>
+                    <td>{l.host}</td>
+                    <td>{l.origin}</td>
+                    <td>{l.placeholder ? 'yes' : 'no'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </ScrollRegion>
-          <h2 className={SECTION_TITLE}>Configured rows</h2>
-          <ScrollRegion label="Configured rows">
-            <table className={TABLE}>
+          </Section>
+          <Section title="Configured rows">
+          <ScrollRegion>
+            <table className="ops-table con-table">
               <thead>
                 <tr>
-                  <th className={TH} scope="col">Id</th>
-                  <th className={TH} scope="col">Kind</th>
-                  <th className={TH} scope="col">Label</th>
-                  <th className={TH} scope="col">URL</th>
-                  <th className={TH} scope="col">Active</th>
+                  <th scope="col">Id</th>
+                  <th scope="col">Kind</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">URL</th>
+                  <th scope="col">Active</th>
                 </tr>
               </thead>
               <tbody>
                 {result.value.data.rows.length === 0 ? (
                   <tr>
-                    <td className={TD} colSpan={5}>None configured; guests see the built-in placeholders.</td>
+                    <td colSpan={5}>None configured; guests see the built-in placeholders.</td>
                   </tr>
                 ) : null}
                 {result.value.data.rows.map((r) => (
                   <tr key={r.id}>
-                    <td className={TD}>{r.id}</td>
-                    <td className={TD}>{r.kind}</td>
-                    <td className={TD}>{r.label}</td>
-                    <td className={TD}>{r.url}</td>
-                    <td className={TD}>{r.active ? 'yes' : 'no'}</td>
+                    <td>{r.id}</td>
+                    <td>{r.kind}</td>
+                    <td>{r.label}</td>
+                    <td>{r.url}</td>
+                    <td>{r.active ? 'yes' : 'no'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </ScrollRegion>
-          <div className="mt-10">
+          </Section>
+          <Section title="Add or change a link" id="gift-forms">
             <AdminCapabilityForm
               capability="admin_upsert_gift_link"
               title="Add or update a gift link"
@@ -87,9 +92,9 @@ export default async function AdminGiftsPage() {
                 { name: 'active', label: 'Active', type: 'checkbox', defaultValue: true },
               ]}
             />
-          </div>
+          </Section>
         </>
       )}
-    </AdminShell>
+    </ConsolePage>
   );
 }

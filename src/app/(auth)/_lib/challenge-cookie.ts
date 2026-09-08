@@ -22,6 +22,8 @@ export interface ChallengeCookie {
   email?: string;
   /** ISO instant a verify lockout lifts. Set means the code below will be refused until then. */
   lockedUntil?: string;
+  /** The person the caller picked, when signing in will bind them to somebody else. */
+  picked?: string;
   kind: 'claim' | 'sign_in' | 'admin_sign_in' | 'step_up' | 'change_email';
 }
 

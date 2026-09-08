@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { revokeInvitation } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Input, OpsPage, Section, SignInRequired } from '../_components/ops';
+import { Button, Input } from '../_components/ops';
+import { ConsoleGate, ConsolePage, DataTable, Day, Section } from '../_components/console';
 import { IssueForm } from './IssueForm';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ type Inv = { id: string; householdId: string; householdName: string; tokenPrefix
 
 export default async function InvitationsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  if ((await adminPrincipal()).kind !== 'admin') return <SignInRequired />;
+  if ((await adminPrincipal()).kind !== 'admin') return <ConsoleGate what="Invitations" />;
   const [inv, hh] = await Promise.all([
     adminInvoke<{ invitations: Inv[] }>('admin_list_invitations', {}, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[] }>('admin_list_households', {}, { method: 'GET' }),
@@ -20,35 +21,39 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
   const rows = inv.ok ? inv.value.data.invitations : [];
   const households = hh.ok ? hh.value.data.households : [];
   return (
-    <OpsPage title="Invitations" lede="Links are discovery only: they show who is invited and start a claim. Tokens are never stored; rotate a link if it leaks." notice={notice}>
+    <ConsolePage title="Invitations" lede="Links are discovery only: they show who is invited and start a claim. Tokens are never stored; rotate a link if it leaks." notice={notice}>
       <Section title="Issue a link">
         <IssueForm households={households} />
       </Section>
       <Section title="All links">
-        <div className="ops-table-wrap">
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th scope="col">Household</th>
-                <th scope="col">Prefix</th>
-                <th scope="col">Status</th>
-                <th scope="col">Events</th>
-                <th scope="col">Expires</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <DataTable
+          caption="Invitation links"
+          dense={false}
+          empty={rows.length === 0 ? <>No invitation link has been issued yet.</> : null}
+          head={
+            <tr>
+              <th scope="col">Household</th>
+              <th scope="col">Prefix</th>
+              <th scope="col">Status</th>
+              <th scope="col">Events</th>
+              <th scope="col">Expires</th>
+              <th scope="col">Actions</th>
+            </tr>
+          }
+        >
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.householdName}</td>
                   <td className="ops-code">{r.tokenPrefix}…</td>
                   <td>
                     {r.lifecycle}
-                    {r.claimedAt ? ` · claimed ${new Date(r.claimedAt).toLocaleDateString('en-US')}` : ''}
+                    {r.claimedAt ? <> · claimed <Day at={r.claimedAt} /></> : ''}
                     {r.revokedReason ? ` · ${r.revokedReason}` : ''}
                   </td>
                   <td>{r.eventKeys.join(', ') || '—'}</td>
-                  <td>{new Date(r.expiresAt).toLocaleDateString('en-US')}</td>
+                  <td>
+                    <Day at={r.expiresAt} />
+                  </td>
                   <td>
                     {r.lifecycle !== 'revoked' ? (
                       <div className="ops-form-inline">
@@ -65,10 +70,8 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       </Section>
-    </OpsPage>
+    </ConsolePage>
   );
 }

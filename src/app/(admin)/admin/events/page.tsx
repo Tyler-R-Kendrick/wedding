@@ -1,46 +1,53 @@
 import type { Metadata } from 'next';
 import { adminListEvents } from '@/capabilities/rsvp';
-import { newId } from '@/contracts/ids';
-import { AdminGate, Denied, Outcome, outcomeFrom, type SearchParams } from '@/components/admin-e/AdminShell';
-import { Button, Checkbox, ChoiceGroup, Field, Select, Textarea, TextInput } from '@/components/rsvp/fields';
 import { isoToChicagoLocal } from '@/domain/events/format';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
+import { ConsoleGate, ConsolePage, Denied, Note, ScrollRegion, Section } from '../_components/console';
+import { Button, Checkbox, IdemKey, Input, Radios } from '../_components/ops';
 import { saveEntitlementsAction, saveEventAction, saveMealsAction, saveNoticeAction, saveWindowAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Events (admin)', robots: { index: false, follow: false } };
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+/**
+ * Events, menus, invitations and the RSVP window — on the admin console shell.
+ *
+ * Every form here was built from `components/rsvp/fields`, the GUEST RSVP kit: `Field`, `Select`,
+ * `Textarea`, `ChoiceGroup` and the `.card` / `.sec` / `.tbl` classes from the guest stylesheet.
+ * The console's own primitives are what an operator meets everywhere else in `/admin`, so they are
+ * what this screen uses now; the guest kit is no longer imported by any admin route.
+ */
 export default async function AdminEventsPage({ searchParams }: { searchParams: SearchParams }) {
   const { principal } = await adminPrincipal();
-  const outcome = await outcomeFrom(searchParams);
-  return (
-    <AdminGate principalKind={principal.kind}>
-      <Body outcome={outcome} />
-    </AdminGate>
-  );
-}
-
-async function Body({ outcome }: { outcome: { ok?: string; error?: string } }) {
+  if (principal.kind !== 'admin') return <ConsoleGate what="Events and the RSVP window" />;
+  const sp = await searchParams;
+  const notice = { ok: one(sp.ok), error: one(sp.error) };
   const r = await adminInvoke(adminListEvents, {});
-  if (!r.ok) return <Denied message={r.error.message} />;
+  if (!r.ok) {
+    return (
+      <ConsolePage title="Events, menu, invitations, RSVP window" notice={notice}>
+        <Denied message={r.error.message} />
+      </ConsolePage>
+    );
+  }
   const d = r.value.data;
   return (
-    <main id="main" className="page page--wide">
-      <p className="page__eyebrow">Admin</p>
-      <h1 className="page__title">Events, menu, invitations, RSVP window</h1>
-      <Outcome {...outcome} />
-
-      <section className="sec" aria-labelledby="window-title">
-        <h2 className="sec__title" id="window-title">
-          RSVP window
-        </h2>
-        <p className="card__meta">
-          Right now RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> ({d.window.reason.replace('_', ' ')}; lifecycle {d.window.lifecycle}). Manual open/closed beats the schedule.
-        </p>
-        <form action={saveWindowAction} className="card">
-          <input type="hidden" name="idempotencyKey" value={newId()} />
-          <ChoiceGroup
-            idBase="window-mode"
+    <ConsolePage title="Events, menu, invitations, RSVP window" notice={notice}>
+      <Section
+        title="RSVP window"
+        id="window"
+        note={
+          <>
+            Right now RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> ({d.window.reason.replace('_', ' ')}; lifecycle {d.window.lifecycle}). Manual open/closed beats the schedule.
+          </>
+        }
+      >
+        <form action={saveWindowAction} className="ops-form">
+          <IdemKey />
+          <Radios
             name="mode"
             legend="Mode"
             options={[
@@ -49,105 +56,68 @@ async function Body({ outcome }: { outcome: { ok?: string; error?: string } }) {
               { value: 'closed', label: 'Closed now', defaultChecked: d.settings.mode === 'closed' },
             ]}
           />
-          <Field id="window-deadline" label="Deadline (America/Chicago)" hint="Leave empty while TODO(Tyler & Sara).">
-            {(a) => <TextInput id={a.id} name="deadlineAt" type="datetime-local" defaultValue={isoToChicagoLocal(d.settings.deadlineAt)} describedBy={a.describedBy} />}
-          </Field>
-          <Field id="window-note" label="Note (internal)">
-            {(a) => <TextInput id={a.id} name="note" defaultValue={d.settings.note ?? ''} maxLength={300} describedBy={a.describedBy} />}
-          </Field>
-          <div className="actions">
-            <Button type="submit">Save RSVP window</Button>
+          <Input id="window-deadline" name="deadlineAt" label="Deadline (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(d.settings.deadlineAt)} hint="Leave empty while TODO(Tyler &amp; Sara)." />
+          <Input id="window-note" name="note" label="Note (internal)" defaultValue={d.settings.note ?? ''} />
+          <div className="ops-form-inline">
+            <Button>Save RSVP window</Button>
           </div>
         </form>
-      </section>
+      </Section>
 
-      <section className="sec" aria-labelledby="events-title">
-        <h2 className="sec__title" id="events-title">
-          Events
-        </h2>
+      <Section title="Events" id="events">
         {[...d.events, null].map((e, idx) => (
-          <form key={e?.id ?? 'new'} action={saveEventAction} className="card" aria-label={e ? `Edit ${e.name}` : 'Add an event'}>
-            <input type="hidden" name="idempotencyKey" value={newId()} />
+          <form key={e?.id ?? 'new'} action={saveEventAction} className="ops-form con-panel" aria-label={e ? `Edit ${e.name}` : 'Add an event'}>
+            <IdemKey />
             {e ? <input type="hidden" name="id" value={e.id} /> : null}
-            <h3 className="card__title">{e ? e.name : 'Add an event'}</h3>
-            {e ? <p className="card__meta">Invited: {e.invitedCount} · Menu version {e.mealOptionsVersion} ({e.mealOptions.length} options)</p> : null}
-            <div className="grid-2">
-              <Field id={`ev-${idx}-name`} label="Name" required>
-                {(a) => <TextInput id={a.id} name="name" defaultValue={e?.name ?? ''} required maxLength={80} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`ev-${idx}-date`} label="Date" required>
-                {(a) => <TextInput id={a.id} name="dateIso" type="date" defaultValue={e?.dateIso ?? '2027-07-17'} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`ev-${idx}-start`} label="Starts (America/Chicago)">
-                {(a) => <TextInput id={a.id} name="startsAt" type="datetime-local" defaultValue={isoToChicagoLocal(e?.startsAt)} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`ev-${idx}-end`} label="Ends (America/Chicago)">
-                {(a) => <TextInput id={a.id} name="endsAt" type="datetime-local" defaultValue={isoToChicagoLocal(e?.endsAt)} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`ev-${idx}-space`} label="Room">
-                {(a) => (
-                  <Select id={a.id} name="venueSpaceRef" defaultValue={e?.venueSpaceRef ?? ''} placeholderLabel="Not confirmed" describedBy={a.describedBy}>
-                    {d.venueSpaces.map((s) => (
-                      <option key={s.ref} value={s.ref}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
-              <Field id={`ev-${idx}-dress`} label="Dress code">
-                {(a) => <TextInput id={a.id} name="dressCode" defaultValue={e?.dressCode ?? ''} maxLength={200} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`ev-${idx}-sort`} label="Order">
-                {(a) => <TextInput id={a.id} name="sortOrder" type="number" min={0} max={1000} defaultValue={e?.sortOrder ?? (idx + 1) * 10} describedBy={a.describedBy} />}
-              </Field>
-            </div>
-            <Field id={`ev-${idx}-desc`} label="What happens">
-              {(a) => <Textarea id={a.id} name="description" defaultValue={e?.description ?? ''} rows={2} maxLength={2000} describedBy={a.describedBy} />}
-            </Field>
-            <Field id={`ev-${idx}-access`} label="Accessibility note">
-              {(a) => <Textarea id={a.id} name="accessibilityNote" defaultValue={e?.accessibilityNote ?? ''} rows={2} maxLength={1000} describedBy={a.describedBy} />}
-            </Field>
-            <div className="choice" style={{ marginTop: 'var(--spacing-md)' }}>
-              <Checkbox id={`ev-${idx}-placeholder`} name="placeholder" label="Details not confirmed yet (shown as placeholder)" defaultChecked={e ? e.placeholder : true} />
-              <Checkbox id={`ev-${idx}-rsvp`} name="rsvpRequired" label="Guests RSVP to this event" defaultChecked={e ? e.rsvpRequired : true} />
-            </div>
-            <div className="actions">
-              <Button type="submit">{e ? 'Save event' : 'Add event'}</Button>
+            <h3>{e ? e.name : 'Add an event'}</h3>
+            {e ? <Note>Invited: {e.invitedCount} · Menu version {e.mealOptionsVersion} ({e.mealOptions.length} options)</Note> : null}
+            <Input id={`ev-${idx}-name`} name="name" label="Name" defaultValue={e?.name ?? ''} required />
+            <Input id={`ev-${idx}-date`} name="dateIso" label="Date" type="date" defaultValue={e?.dateIso ?? '2027-07-17'} required />
+            <Input id={`ev-${idx}-start`} name="startsAt" label="Starts (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(e?.startsAt)} />
+            <Input id={`ev-${idx}-end`} name="endsAt" label="Ends (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(e?.endsAt)} />
+            <Input id={`ev-${idx}-space`} name="venueSpaceRef" label="Room" defaultValue={e?.venueSpaceRef ?? ''} options={[{ value: '', label: 'Not confirmed' }, ...d.venueSpaces.map((s) => ({ value: s.ref, label: s.name }))]} />
+            <Input id={`ev-${idx}-dress`} name="dressCode" label="Dress code" defaultValue={e?.dressCode ?? ''} />
+            <Input id={`ev-${idx}-sort`} name="sortOrder" label="Order" type="number" defaultValue={String(e?.sortOrder ?? (idx + 1) * 10)} />
+            <Input id={`ev-${idx}-desc`} name="description" label="What happens" type="textarea" defaultValue={e?.description ?? ''} />
+            <Input id={`ev-${idx}-access`} name="accessibilityNote" label="Accessibility note" type="textarea" defaultValue={e?.accessibilityNote ?? ''} />
+            <Checkbox id={`ev-${idx}-placeholder`} name="placeholder" label="Details not confirmed yet (shown as placeholder)" defaultChecked={e ? e.placeholder : true} />
+            <Checkbox id={`ev-${idx}-rsvp`} name="rsvpRequired" label="Guests RSVP to this event" defaultChecked={e ? e.rsvpRequired : true} />
+            <div className="ops-form-inline">
+              <Button>{e ? 'Save event' : 'Add event'}</Button>
             </div>
           </form>
         ))}
-      </section>
+      </Section>
 
-      <section className="sec" aria-labelledby="menu-title">
-        <h2 className="sec__title" id="menu-title">
-          Menus
-        </h2>
+      <Section title="Menus" id="menus">
         {d.events.map((e) => (
-          <form key={e.id} action={saveMealsAction} className="card" aria-label={`Menu for ${e.name}`}>
-            <input type="hidden" name="idempotencyKey" value={newId()} />
+          <form key={e.id} action={saveMealsAction} className="ops-form con-panel" aria-label={`Menu for ${e.name}`}>
+            <IdemKey />
             <input type="hidden" name="eventId" value={e.id} />
-            <h3 className="card__title">{e.name} — publish menu version {e.mealOptionsVersion + 1}</h3>
-            <Field id={`menu-${e.id}`} label="One option per line" hint="Format: Label | short description. Empty = no meal choice for this event. Guests who chose from an older version are asked to choose again.">
-              {(a) => <Textarea id={a.id} name="options" rows={4} defaultValue={e.mealOptions.map((m) => (m.description ? `${m.label} | ${m.description}` : m.label)).join('\n')} describedBy={a.describedBy} />}
-            </Field>
-            <div className="actions">
-              <Button type="submit" variant="secondary">
-                Publish new menu version
-              </Button>
+            <h3>
+              {e.name} — publish menu version {e.mealOptionsVersion + 1}
+            </h3>
+            <Input
+              id={`menu-${e.id}`}
+              name="options"
+              label="One option per line"
+              type="textarea"
+              hint="Format: Label | short description. Empty = no meal choice for this event. Guests who chose from an older version are asked to choose again."
+              defaultValue={e.mealOptions.map((m) => (m.description ? `${m.label} | ${m.description}` : m.label)).join('\n')}
+            />
+            <div className="ops-form-inline">
+              <Button variant="ghost">Publish new menu version</Button>
             </div>
           </form>
         ))}
-      </section>
+      </Section>
 
-      <section className="sec" aria-labelledby="ent-title">
-        <h2 className="sec__title" id="ent-title">
-          Who is invited to what
-        </h2>
+      <Section title="Who is invited to what" id="entitlements">
         <form action={saveEntitlementsAction}>
-          <input type="hidden" name="idempotencyKey" value={newId()} />
-          <div className="tbl-wrap">
-            <table className="tbl">
+          <IdemKey />
+          <ScrollRegion scrollable={d.guests.length > 0}>
+            <table className="ops-table con-table">
+              <caption className="con-caption">Invitations per guest and event</caption>
               <thead>
                 <tr>
                   <th scope="col">Guest</th>
@@ -164,17 +134,20 @@ async function Body({ outcome }: { outcome: { ok?: string; error?: string } }) {
                     <th scope="row">
                       {g.displayName}
                       <br />
-                      <span className="card__meta">{g.householdName}{g.isMinor ? ' · child' : ''}</span>
+                      <span className="con-index__blurb">
+                        {g.householdName}
+                        {g.isMinor ? ' · child' : ''}
+                      </span>
                     </th>
                     {d.events.map((e) => {
                       const current = d.entitlements.find((en) => en.guestId === g.guestId && en.eventId === e.id);
                       const id = `ent-${g.guestId}-${e.id}`;
                       return (
                         <td key={e.id}>
-                          <label className="fld__label" htmlFor={id} style={{ position: 'absolute', left: -9999 }}>
+                          <label className="sr-only" htmlFor={id}>
                             {g.displayName} at {e.name}
                           </label>
-                          <select id={id} className="inp" name={`ent:${g.guestId}:${e.id}`} defaultValue={current ? current.plusOnePolicy : 'no'}>
+                          <select id={id} className="ops-input" name={`ent:${g.guestId}:${e.id}`} defaultValue={current ? current.plusOnePolicy : 'no'}>
                             <option value="no">Not invited</option>
                             <option value="none">Invited</option>
                             <option value="named">Invited + named guest</option>
@@ -187,48 +160,38 @@ async function Body({ outcome }: { outcome: { ok?: string; error?: string } }) {
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="actions">
-            <Button type="submit">Save invitations</Button>
+          </ScrollRegion>
+          <div className="ops-form-inline">
+            <Button>Save invitations</Button>
           </div>
         </form>
-      </section>
+      </Section>
 
-      <section className="sec" aria-labelledby="notice-title">
-        <h2 className="sec__title" id="notice-title">
-          Your Weekend notices
-        </h2>
+      <Section title="Your Weekend notices" id="notices">
         {[...d.notices, null].map((n, idx) => (
-          <form key={n?.id ?? 'new'} action={saveNoticeAction} className="card" aria-label={n ? `Edit notice ${n.title}` : 'Post a notice'}>
-            <input type="hidden" name="idempotencyKey" value={newId()} />
+          <form key={n?.id ?? 'new'} action={saveNoticeAction} className="ops-form con-panel" aria-label={n ? `Edit notice ${n.title}` : 'Post a notice'}>
+            <IdemKey />
             {n ? <input type="hidden" name="id" value={n.id} /> : null}
-            <h3 className="card__title">{n ? n.title : 'Post a notice'}</h3>
-            <Field id={`nt-${idx}-title`} label="Title" required>
-              {(a) => <TextInput id={a.id} name="title" defaultValue={n?.title ?? ''} maxLength={120} required describedBy={a.describedBy} />}
-            </Field>
-            <Field id={`nt-${idx}-body`} label="Message" required>
-              {(a) => <Textarea id={a.id} name="body" defaultValue={n?.body ?? ''} rows={3} maxLength={1000} required describedBy={a.describedBy} />}
-            </Field>
-            <ChoiceGroup idBase={`nt-${idx}-sev`} name="severity" legend="Severity" options={[{ value: 'info', label: 'Info', defaultChecked: (n?.severity ?? 'info') === 'info' }, { value: 'urgent', label: 'Urgent', defaultChecked: n?.severity === 'urgent' }]} />
-            <div className="grid-2">
-              <Field id={`nt-${idx}-start`} label="Show from (optional)">
-                {(a) => <TextInput id={a.id} name="startsAt" type="datetime-local" defaultValue={isoToChicagoLocal(n?.startsAt)} describedBy={a.describedBy} />}
-              </Field>
-              <Field id={`nt-${idx}-end`} label="Show until (optional)">
-                {(a) => <TextInput id={a.id} name="endsAt" type="datetime-local" defaultValue={isoToChicagoLocal(n?.endsAt)} describedBy={a.describedBy} />}
-              </Field>
-            </div>
-            <div className="choice" style={{ marginTop: 'var(--spacing-md)' }}>
-              <Checkbox id={`nt-${idx}-active`} name="active" label="Active" defaultChecked={n ? n.active : true} />
-            </div>
-            <div className="actions">
-              <Button type="submit" variant="secondary">
-                {n ? 'Save notice' : 'Post notice'}
-              </Button>
+            <h3>{n ? n.title : 'Post a notice'}</h3>
+            <Input id={`nt-${idx}-title`} name="title" label="Title" defaultValue={n?.title ?? ''} required />
+            <Input id={`nt-${idx}-body`} name="body" label="Message" type="textarea" defaultValue={n?.body ?? ''} required />
+            <Radios
+              name="severity"
+              legend="Severity"
+              options={[
+                { value: 'info', label: 'Info', defaultChecked: (n?.severity ?? 'info') === 'info' },
+                { value: 'urgent', label: 'Urgent', defaultChecked: n?.severity === 'urgent' },
+              ]}
+            />
+            <Input id={`nt-${idx}-start`} name="startsAt" label="Show from (optional)" type="datetime-local" defaultValue={isoToChicagoLocal(n?.startsAt)} />
+            <Input id={`nt-${idx}-end`} name="endsAt" label="Show until (optional)" type="datetime-local" defaultValue={isoToChicagoLocal(n?.endsAt)} />
+            <Checkbox id={`nt-${idx}-active`} name="active" label="Active" defaultChecked={n ? n.active : true} />
+            <div className="ops-form-inline">
+              <Button variant="ghost">{n ? 'Save notice' : 'Post notice'}</Button>
             </div>
           </form>
         ))}
-      </section>
-    </main>
+      </Section>
+    </ConsolePage>
   );
 }

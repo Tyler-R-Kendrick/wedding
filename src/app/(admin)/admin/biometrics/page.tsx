@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import type { BiometricStatusView } from '@/capabilities/biometrics';
-import { AdminGate } from '@/components/media/AdminMediaNav';
-import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
-import { AdminAiNav } from '@/components/mediaai/AdminAiNav';
+import { ConsoleGate, ConsolePage, Note, ScrollRegion, Section, SubNav } from '../_components/console';
+import { INTELLIGENCE_SUBNAV } from '../_components/sections';
 import { BiometricReadiness } from '@/components/mediaai/BiometricReadiness';
-import { ScrollableTable } from '@/components/mediaai/ScrollableTable';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Face matching', robots: { index: false, follow: false } };
@@ -13,33 +11,33 @@ export const metadata: Metadata = { title: 'Face matching', robots: { index: fal
 /** Readiness, consent counts and deletion records. Never a template, a hash of one, or an IP hash. */
 export default async function AdminBiometricsPage() {
   const principal = await currentPrincipal();
-  if (principal.kind !== 'admin') return <AdminGate />;
+  if (principal.kind !== 'admin') return <ConsoleGate what="Face matching" />;
   const status = await invokeForRequest<BiometricStatusView>('admin_biometric_status', {}, principal);
   if (!status.ok) {
     return (
-      <MediaPage title="Face matching" actions={<AdminAiNav current="biometrics" />}>
-        <MediaSection id="error">
-          <p className="media-lede">{status.error.message}</p>
-        </MediaSection>
-      </MediaPage>
+      <ConsolePage title="Face matching" actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/biometrics' }))} />}>
+        <Section id="error">
+          <Note>{status.error.message}</Note>
+        </Section>
+      </ConsolePage>
     );
   }
   const s = status.data;
   return (
-    <MediaPage
+    <ConsolePage
 
       title="Face matching"
       lede="Illinois BIPA territory. This page exists so the feature can be reviewed and switched on deliberately — or left off, which is the default and the current state."
-      actions={<AdminAiNav current="biometrics" />}
+      actions={<SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/biometrics' }))} />}
     >
-      <MediaSection id="readiness" title="Before this can be switched on">
-        <p className="media-lede">
+      <Section id="readiness" title="Before this can be switched on">
+        <Note>
           This checklist is engineering readiness, not legal advice. See docs/architecture/biometrics-bipa-readiness.md and ADR-0006 §7.
-        </p>
-        <ul className="mi-checklist">
+        </Note>
+        <ul className="con-checklist">
           {s.checklist.map((c) => (
             <li key={c.item}>
-              <span className="mi-checklist__mark" aria-hidden="true">{c.done ? '✓' : '·'}</span>
+              <span className="con-checklist__mark" aria-hidden="true">{c.done ? '✓' : '·'}</span>
               <span>
                 {c.item}
                 <small>{c.note}</small>
@@ -47,15 +45,15 @@ export default async function AdminBiometricsPage() {
             </li>
           ))}
         </ul>
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="switch">
+      <Section id="switch">
         <BiometricReadiness status={s} />
-      </MediaSection>
+      </Section>
 
-      <MediaSection id="ledger" title="Consent ledger">
-        <ScrollableTable label="Consent ledger totals">
-          <table className="mi-table">
+      <Section id="ledger" title="Consent ledger">
+        <ScrollRegion>
+          <table className="ops-table con-table">
             <tbody>
               <tr>
                 <th scope="row">Policy version</th>
@@ -87,15 +85,15 @@ export default async function AdminBiometricsPage() {
               </tr>
             </tbody>
           </table>
-        </ScrollableTable>
-      </MediaSection>
+        </ScrollRegion>
+      </Section>
 
-      <MediaSection id="deletions" title="Deletion records">
+      <Section id="deletions" title="Deletion records">
         {s.recentDeletions.length === 0 ? (
-          <p className="media-lede">No deletion has been requested.</p>
+          <Note>No deletion has been requested.</Note>
         ) : (
-          <ScrollableTable label="Deletion records">
-            <table className="mi-table">
+          <ScrollRegion>
+            <table className="ops-table con-table">
               <thead>
                 <tr>
                   <th scope="col">Requested</th>
@@ -117,9 +115,9 @@ export default async function AdminBiometricsPage() {
                 ))}
               </tbody>
             </table>
-          </ScrollableTable>
+          </ScrollRegion>
         )}
-      </MediaSection>
-    </MediaPage>
+      </Section>
+    </ConsolePage>
   );
 }

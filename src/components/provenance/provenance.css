@@ -13,7 +13,11 @@
   gap: var(--spacing-sm, 8px);
   align-items: center;
   margin: var(--spacing-sm, 8px) 0 0;
-  font-size: 0.9375rem;
+
+  /* A provenance line carries a link a guest follows ("Tyler's brief 2026-09-04"); at 0.9375rem it
+     measured 15.94px against PRODUCT.md's 17px floor. body-sm is the design's own "never below
+     17px" step, and it is a token rather than a raw rem. */
+  font-size: var(--type-body-sm-size, 1.0625rem);
   line-height: 1.4;
   color: var(--color-on-surface-muted, var(--color-primary));
 }
@@ -26,9 +30,23 @@
   padding: 2px 10px;
   border: 1px solid var(--color-outline, var(--color-primary));
   border-radius: var(--rounded-sm, 2px);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+
+  /*
+   * NOT the ornament step, and the comment that used to sit here claiming it was ornament is the
+   * reason this is worth spelling out: a comment cannot grant a role that no DESIGN.md names.
+   *
+   * There is no `prov__badge` role in any of the three DESIGN.md files, and what these badges say
+   * is not decoration — "External source" is a warning that a fact came from off this site,
+   * "Checked" carries a verification date, and an independent review counted 150 of them rendering
+   * at 13.81px. ADR-0011 makes provenance part of what a guest is owed, so it takes the
+   * `control-caps` step (1rem, the level-16 style for caps a guest must READ) like every other
+   * readable caps run on the site.
+   */
+  font-size: var(--type-control-caps-size, 1rem);
+  font-weight: var(--type-control-caps-weight, 500);
+  letter-spacing: var(--type-control-caps-tracking, 0.06em);
+  font-feature-settings: var(--type-control-caps-features, normal);
+  text-transform: var(--label-transform, uppercase);
   white-space: nowrap;
 }
 

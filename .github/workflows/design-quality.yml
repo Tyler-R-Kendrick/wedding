@@ -55,6 +55,26 @@ jobs:
       - name: Every var(--token) a component references is defined
         run: node scripts/check-css-vars.mjs
 
+      # Level 16. The other half of the same hole: a token that IS defined and resolves to the wrong
+      # design. `globals.css` imports the DEFAULT design's Tailwind `@theme` block unscoped, so a
+      # shared component reading `--text-h3` gets Gilded Hour's number under Conservatory too — and
+      # every check above stays green, because the reference resolves. An independent review found
+      # two of these by measuring two elements; there were 21. Also in `npm run test:unit`
+      # (tests/unit/theme-tokens.test.ts) so it is not a gate that lives only in a workflow file.
+      - name: No shared component reads a token only one design declares
+        run: node scripts/check-theme-tokens.mjs
+
+      # Level 17. Documentation is the one artifact here with no compiler behind it, and this run
+      # kept finding pages that described a version of the site that no longer existed. Three
+      # mechanical guarantees, so the same class cannot come back through the docs:
+      #   * every path a living document points at exists (vendored skills and dated records of a
+      #     moment — reviews, critiques — are out of scope, and the script says why);
+      #   * `.env.example` documents every variable the app reads, exactly once, and nothing dead;
+      #   * the activation matrix is regenerated from `flags.ts` and the provider registry, so an
+      #     operator's table of what is switched off cannot drift from the code that switches it.
+      - name: Documentation references resolve · .env.example complete · activation matrix current
+        run: npm run docs:check
+
   verify:
     name: typecheck · lint · unit · integration · build
     runs-on: ubuntu-latest
@@ -257,6 +277,12 @@ jobs:
           # missing here. The list below is now every path any spec calls `page.goto` on, which is
           # a rule that can be re-derived rather than remembered:
           #   comm -23 <(grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u) <this list>
+          #
+          # Level 16 added two many-navigation specs to this step — `typography.spec.ts` (6 auth
+          # routes + 12 console routes, per project) and `quality-sweep.spec.ts` (4 guest routes,
+          # walked five times over, two designs). Every route either was already here or is added
+          # above (`/ask-us`), and both specs carry a timeout proportional to their navigations
+          # rather than the 30s default, which is the other half of what level 14 learned.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \

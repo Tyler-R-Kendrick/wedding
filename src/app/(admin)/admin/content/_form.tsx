@@ -26,12 +26,12 @@ export function RecordForm({ table, tableLabel, id, fields, initial, idempotency
   const issueFor = (name: string) => state.error?.issues?.find((i) => i.path === name || i.path.startsWith(`${name}.`))?.message;
 
   return (
-    <form action={action} className="ac-form" aria-describedby={state.error ? 'form-error' : undefined}>
+    <form action={action} className="ops-form" aria-describedby={state.error ? 'form-error' : undefined}>
       <input type="hidden" name="table" value={table} />
       {id ? <input type="hidden" name="id" value={id} /> : null}
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {state.error ? (
-        <div id="form-error" className="ac-warn" role="alert" tabIndex={-1}>
+        <div id="form-error" className="ops-notice ops-notice-error" role="alert" tabIndex={-1}>
           <p>
             <strong>Not saved.</strong> {state.error.message}
           </p>
@@ -49,11 +49,11 @@ export function RecordForm({ table, tableLabel, id, fields, initial, idempotency
       {fields.map((f) => (
         <Field key={f.name} field={f} value={values[f.name] ?? ''} error={issueFor(f.name)} />
       ))}
-      <div className="ac-actions">
-        <button className="ac-button" type="submit" disabled={pending}>
+      <div className="ops-form-inline">
+        <button className="ops-button ops-button-primary" type="submit" disabled={pending}>
           {pending ? 'Saving…' : id ? `Save ${tableLabel}` : `Create ${tableLabel}`}
         </button>
-        <span className="ac-muted">Saving keeps the previous version and bumps the content version.</span>
+        <span className="con-index__blurb">Saving keeps the previous version and bumps the content version.</span>
       </div>
     </form>
   );
@@ -64,7 +64,9 @@ function Field({ field, value, error }: { field: FieldSpec; value: string; error
   const helpId = field.help ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
-  const common = { id, name: field.name, 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined, required: field.required };
+  // Every control takes the console's field class; the editor used to inherit its own from
+  // `admin-content.css`, which is deleted.
+  const common = { id, name: field.name, className: 'ops-input', 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined, required: field.required };
 
   let control: React.ReactNode;
   switch (field.type) {
@@ -95,18 +97,18 @@ function Field({ field, value, error }: { field: FieldSpec; value: string; error
       break;
     case 'boolean':
       return (
-        <div className="ac-field">
-          <div className="ac-check">
+        <div className="ops-field">
+          <div className="ops-check">
             <input id={id} name={field.name} type="checkbox" defaultChecked={value === 'on' || value === 'true'} aria-describedby={describedBy} aria-invalid={error ? true : undefined} />
             <label htmlFor={id}>{field.label}</label>
           </div>
           {field.help ? (
-            <p id={helpId} className="ac-help">
+            <p id={helpId} className="ops-hint">
               {field.help}
             </p>
           ) : null}
           {error ? (
-            <p id={errorId} className="ac-error">
+            <p id={errorId} className="con-field-error">
               {error}
             </p>
           ) : null}
@@ -125,19 +127,19 @@ function Field({ field, value, error }: { field: FieldSpec; value: string; error
       control = <input {...common} type="text" defaultValue={value} />;
   }
   return (
-    <div className="ac-field">
+    <div className="ops-field">
       <label htmlFor={id}>
         {field.label}
         {field.required ? ' *' : ''}
       </label>
       {control}
       {field.help ? (
-        <p id={helpId} className="ac-help">
+        <p id={helpId} className="ops-hint">
           {field.help}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="ac-error">
+        <p id={errorId} className="con-field-error">
           {error}
         </p>
       ) : null}

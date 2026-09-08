@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
 import { adminSetRsvpWindow, adminUpsertNotice, draftRsvp, getMyItinerary, submitRsvp } from '@/capabilities/rsvp';
 import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
 import { clearWeekendSlotProviders, registerWeekendSlotProvider } from '@/domain/weekend/slots';
@@ -21,15 +22,30 @@ describe('get_my_itinerary', () => {
     expect(it0.data.events.map((e) => e.slug)).toEqual(['cocktail-hour', 'reception']);
     expect(it0.data.events[1]?.household.map((h) => h.guestId)).toEqual([FX.guestB2]);
     expect(it0.data.rsvp).toMatchObject({ status: 'not_started', answered: 0, expected: 2 });
-    expect(it0.data.slots.transport).toMatchObject({ status: 'placeholder', placeholder: true, owner: 'swarm-G' });
-    expect(it0.data.slots.trip).toMatchObject({ status: 'placeholder', placeholder: true, owner: 'swarm-F' });
-    // A gap is signalled by the TYPED flag above (`status: 'placeholder'`), never by the authoring
-    // marker appearing in the payload. These two assertions used to require the opposite — that the
-    // literal `TODO(Tyler & Sara)` reached the output — which made the marker part of the contract:
-    // it then rendered verbatim to guests, and, since this capability is exposed to `ai` and
-    // `webmcp`, would have gone into assistant transcripts too. Inverted deliberately.
-    expect(it0.data.slots.transport).toHaveProperty('body', expect.not.stringContaining('TODO('));
-    expect(it0.data.seating).toEqual({ published: false, table: null });
+    // These required `status: 'placeholder'` and `owner: 'swarm-<letter>'` — the state the slots
+    // were built in at level 03, when neither travel page existed. Levels 08 and 09 shipped
+    // `/transportation` and `/trip` into the same nav, and no provider was ever registered outside
+    // this file, so the assertion pinned Your Weekend to telling a guest the travel tools were not
+    // live one tap from the live travel tools. Changed deliberately: the slots now point at those
+    // pages, and `owner` is gone because this capability is exposed to `ai` and `webmcp` and the
+    // name of an internal work unit has no business in an assistant transcript.
+    expect(it0.data.slots.transport).toMatchObject({ status: 'ready', placeholder: false });
+    expect(it0.data.slots.trip).toMatchObject({ status: 'ready', placeholder: false });
+    expect(it0.data.slots.transport).not.toHaveProperty('owner');
+    expect(it0.data.slots.trip).not.toHaveProperty('owner');
+    expect(JSON.stringify(it0.data.slots)).toMatch(/\/transportation/);
+    expect(JSON.stringify(it0.data.slots)).toMatch(/\/trip/);
+    // A gap is signalled by the TYPED flag above (`placeholder`), never by the authoring marker
+    // appearing in the payload. This used to require the opposite — that the literal
+    // `TODO(Tyler & Sara)` reached the output — which made the marker part of the contract: it then
+    // rendered verbatim to guests, and would have gone into assistant transcripts too. Inverted
+    // deliberately, and widened from one field to the whole slot block.
+    expect(JSON.stringify(it0.data.slots)).not.toContain('TODO(');
+    expect(JSON.stringify(it0.data.slots)).not.toContain('swarm-');
+    // Changed on purpose: `seating` gained `state` and `message`, so "no chart yet" is no longer
+    // the same sentence as "a chart exists and you are not on it". Nothing is published here, so
+    // `not_published` is the right one; the exact shape is still pinned.
+    expect(it0.data.seating).toEqual({ published: false, state: 'not_published', message: SEATING_MESSAGE.not_published, table: null });
     expect(it0.data.events[0]?.whenText).toBe('Time to be confirmed');
     expect(it0.data.events[0]?.whenText).not.toContain('TODO(');
     expect(it0.data.events[0]?.dateText).toBe('Saturday, July 17, 2027');

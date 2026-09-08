@@ -6,8 +6,11 @@ import type { PhotoAlbumProps } from '@/themes/content-types';
 
 /** Fallback for a theme with no `photoAlbum` recipe — swarm H's original page, unchanged. */
 export function PhotoAlbumPage({ slug, title, description, items, nextCursor, copy }: Omit<PhotoAlbumProps, 'frame'>) {
+  // A fallback recipe renders WITHOUT a theme Shell, so it carries the document landmark itself;
+  // `MediaPage` stopped emitting one when the guest tree moved onto the per-design Shell.
   return (
-    <MediaPage
+    <main id="main">
+      <MediaPage
       title={title}
       {...(description ? { lede: description } : {})}
       actions={
@@ -26,6 +29,7 @@ export function PhotoAlbumPage({ slug, title, description, items, nextCursor, co
           </div>
         ) : null}
       </MediaSection>
-    </MediaPage>
+      </MediaPage>
+    </main>
   );
 }

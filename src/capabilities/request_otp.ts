@@ -35,6 +35,17 @@ const output = z.discriminatedUnion('sent', [
     /** Who the code was addressed to when the claim goes through a household manager. */
     deliveredFor: z.string().nullable(),
     /**
+     * The person the caller PICKED, when signing in will bind them to somebody else.
+     *
+     * A guest with no email of their own is claimed through their household manager (ADR-0001) and
+     * the session becomes the manager's — correctly, and by design. Nothing said so. Eve picked
+     * "Eve Fixture" on the invitation, entered the code, and every page from there called her Dev:
+     * "Welcome, Dev", "You're signed in as Dev Fixture — you manage the RSVP for your household".
+     * Three sentences false about the person reading them. The binding is right; saying nothing
+     * about it is what was wrong.
+     */
+    claimedFor: z.string().nullable(),
+    /**
      * ISO instant this caller's verify lockout lifts, or null.
      *
      * Sending is deliberately NOT gated on the lockout — the code is real and will work the moment
@@ -80,6 +91,7 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     let email: string | null = null;
     let payload: Omit<ChallengePayload, 'email'>;
     let deliveredFor: string | null = null;
+    let claimedFor: string | null = null;
     let typedEmail: string | null = null;
 
     if (i.purpose === 'claim') {
@@ -109,6 +121,7 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
           bindGuestId = manager.id;
           managed.push(picked.id);
           deliveredFor = [manager.firstName, manager.lastName].filter(Boolean).join(' ');
+          claimedFor = [picked.firstName, picked.lastName].filter(Boolean).join(' ');
         }
       }
       if (!email) return ok({ data: { sent: false, recovery: NO_EMAIL }, sources: [] });
@@ -164,6 +177,6 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     const shown = email ?? typedEmail ?? '';
     const lock = await getOtpLockout(db, emailHash, ipHashOf(ctx), ctx.now);
     await holdToFloor(startedMs);
-    return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor, lockedUntil: lock.locked ? (lock.until ?? null) : null }, sources: [] });
+    return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor, claimedFor, lockedUntil: lock.locked ? (lock.until ?? null) : null }, sources: [] });
   },
 });

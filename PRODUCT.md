@@ -225,15 +225,22 @@ full list with what to borrow from each; per-theme boards in
 
 ## Surfaces (planned routes)
 
-Names are the guests' vocabulary (brief §5). Slugs are proposals for the
-scaffold level; states per ADR-0012. Details and 390px fold contracts in
-`docs/design/design-doc.md` §4.
+Names are the guests' vocabulary (brief §5). States per ADR-0012. Details and
+390px fold contracts in `docs/design/design-doc.md` §4.
+
+**These are the slugs the app serves, not proposals.** They were proposals at the
+scaffold level and three of them were never updated when the routes landed:
+`/story`, `/adventures` and `/ask` are 404s, and the app has served `/our-story`,
+`/our-adventures` and `/ask-us` since level 05. A route table that 404s is worse
+than none — every agent that reads this file starts from it.
+`tests/e2e/links.spec.ts` now walks this table and fails on a route it names that
+the app does not serve, so the two cannot drift again.
 
 | Surface | Route | Job | Visitor mode | Visible from |
 |---|---|---|---|---|
 | Home | `/` | Names, date, place, state-specific primary action, story teaser | Inform + Act | TEASER |
-| Our Story | `/story` | Met → connection → relationship → love → future → engagement → what marriage means | Celebrate | TEASER |
-| Our Adventures | `/adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | TEASER |
+| Our Story | `/our-story` | Met → connection → relationship → love → future → engagement → what marriage means | Celebrate | TEASER |
+| Our Adventures | `/our-adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | TEASER |
 | Share an Adventure | `/share-an-adventure` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | SAVE_THE_DATE |
 | The Wedding | `/the-wedding` | Ceremony, cocktail hour, reception; rooms, times, dress code (all TODO), accessibility | Inform | INVITATIONS_OPEN |
 | Explore CAA | `/explore-caa` | Docent: building, spaces, history with provenance, live outlet links, "look for this", floor plan with your table | Celebrate + Inform | TEASER |
@@ -243,9 +250,9 @@ scaffold level; states per ADR-0012. Details and 390px fold contracts in
 | Transportation | `/transportation` | Valet, transit, rides and voucher, parking, accessibility | Inform + Act | INVITATIONS_OPEN |
 | Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards | Act | RSVP_OPEN |
 | Photos & Video | `/photos` | Engagement photos, guest uploads, professional galleries by rights | Celebrate | TEASER |
-| Ask Us | `/ask` | Grounded concierge with citations | Inform | TEASER |
+| Ask Us | `/ask-us` | Grounded concierge with citations | Inform | TEASER |
 | Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | INVITATIONS_OPEN |
-| Claim | `/claim` | Email OTP → binding; optional passkey | Gate | INVITATIONS_OPEN |
+| Claim | `/claim/verify` | Email OTP → binding; optional passkey (`/claim/welcome`, `/claim/passkey`) | Gate | INVITATIONS_OPEN |
 | Admin | `/admin/*` | Lifecycle, content + provenance, moderation, tables | Admin | — |
 
 ## Build path

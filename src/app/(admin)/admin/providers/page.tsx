@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminProviderStatus } from '@/capabilities/ops';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, EmptyRow, KeyValues, Pill, Section, Stat, StatStrip } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stat, StatStrip } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Providers', robots: { index: false, follow: false } };
@@ -73,7 +73,7 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
             <th scope="col">Missing variables</th>
             {p.probed ? <th scope="col">Health</th> : null}
           </tr>
-        }>
+        } empty={p.providers.length === 0 ? <>No adapter is registered in this deployment.</> : null}>
           {p.providers.map((row) => (
             <tr key={row.kind}>
               <th scope="row">{row.kind}</th>
@@ -107,20 +107,16 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
             <th scope="col">Supported</th>
             <th scope="col">Not supported</th>
           </tr>
-        }>
-          {p.providers.every((row) => row.capabilities.length === 0) ? (
-            <EmptyRow span={3}>No adapter reported an operation list.</EmptyRow>
-          ) : (
-            p.providers
-              .filter((row) => row.capabilities.length > 0)
-              .map((row) => (
-                <tr key={row.kind}>
-                  <th scope="row">{row.kind}</th>
-                  <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
-                  <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
-                </tr>
-              ))
-          )}
+        } empty={p.providers.every((row) => row.capabilities.length === 0) ? <>No adapter reported an operation list.</> : null}>
+          {p.providers
+            .filter((row) => row.capabilities.length > 0)
+            .map((row) => (
+              <tr key={row.kind}>
+                <th scope="row">{row.kind}</th>
+                <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
+                <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
+              </tr>
+            ))}
         </DataTable>
       </Section>
 
@@ -130,17 +126,13 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
             <th scope="col">Kind</th>
             <th scope="col">Warning</th>
           </tr>
-        }>
-          {p.providers.every((row) => row.config.warnings.length === 0) ? (
-            <EmptyRow span={2}>No adapter reported a warning.</EmptyRow>
-          ) : (
-            p.providers.flatMap((row) => row.config.warnings.map((w, idx) => (
-              <tr key={`${row.kind}-${idx}`}>
-                <th scope="row">{row.kind}</th>
-                <td className="con-wrap">{w}</td>
-              </tr>
-            )))
-          )}
+        } empty={p.providers.every((row) => row.config.warnings.length === 0) ? <>No adapter reported a warning.</> : null}>
+          {p.providers.flatMap((row) => row.config.warnings.map((w, idx) => (
+            <tr key={`${row.kind}-${idx}`}>
+              <th scope="row">{row.kind}</th>
+              <td className="con-wrap">{w}</td>
+            </tr>
+          )))}
         </DataTable>
       </Section>
     </ConsolePage>
