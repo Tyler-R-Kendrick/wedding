@@ -81,6 +81,7 @@ npm run secrets:page       # rebuild the Secret Drop artifact after a registry c
 npm run secrets:probe      # which providers let an agent register itself (--register to prove it)
 npm run secrets:harness    # AI sessions this machine already holds (--apply to borrow one)
 npm run secrets:serve      # the same page as a local web app on 127.0.0.1 — no Claude in the loop
+npm run secrets:verify:lifecycle  # press the page's buttons for real; fails if a control claims work it never does
 ```
 
 - Every connection is a **slot** with several **provider options** (storage can be R2, S3, B2,

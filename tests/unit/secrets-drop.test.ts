@@ -420,3 +420,125 @@ describe('the page and its stores agree on what exists', () => {
     expect(template).not.toMatch(/status\[slot\.id\]\?\.nextAction/);
   });
 });
+
+describe('a control that reports dispatched work dispatched work', () => {
+  const template = readFileSync(new URL('../../scripts/secrets/page/template.html', import.meta.url), 'utf8');
+
+  /**
+   * The hand-off record the page writes, rebuilt from the template's own payload.
+   *
+   * Not a hand-written fixture: the previous audit checked the registry against the recipes and
+   * passed while the path was broken, because the page sent `opt.host` and the relay wanted a
+   * recipe id. What has to hold is that *the value the page actually sends* is dispatchable, so
+   * the field mapping is read out of the markup and any change to it fails here.
+   */
+  function handoffPayload(): Record<string, string> {
+    const match = template.match(/db\.doc\('handoffs\/'[^)]*\)\.set\(\{([\s\S]*?)\}\);/)?.[1];
+    expect(match, 'the page no longer writes a handoffs/<slot> record the way this test reads it').toBeTruthy();
+    const body = match!.replace(/\/\/[^\n]*/g, '');   // comments carry commas and colons of their own
+    const fields: Record<string, string> = {};
+    for (const [, key, value] of body.matchAll(/(?:^|,)\s*(\w+)\s*:\s*([^,\n]+)/gm)) fields[key!] = value!.trim();
+    for (const bare of body.matchAll(/(?:^|,)\s*(\w+)\s*(?=,|$)/gm)) fields[bare[1]!] ??= bare[1]!;
+    return fields;
+  }
+
+  it('sends the worker a target it can resolve, not the one a person would read', () => {
+    const fields = handoffPayload();
+    // `host` is the brand domain on the button; `recipe` is what browser-capture can look up.
+    expect(fields.recipe, 'the page must send the recipe id — a host is a label, not a route').toContain('opt.recipe');
+    expect(Object.keys(fields)).toContain('kind');
+    expect(Object.keys(fields)).toContain('status');
+  });
+
+  it('turns every sign-in button into a job browser-capture can actually run', async () => {
+    const { RECIPES } = await import('../../scripts/secrets/browser-capture.mjs');
+    const { HANDOFF_WORK } = await import('../../scripts/secrets/serve.mjs');
+    const resolves = (target: string) =>
+      Boolean(RECIPES[target as keyof typeof RECIPES])
+      || Object.values(RECIPES).some((r) => r.host === target);
+
+    let offered = 0;
+    for (const slot of clientRegistry().slots) {
+      for (const option of slot.options) {
+        if (option.ceremony !== 'signin') continue;
+        offered += 1;
+        // Exactly what `handoff()` writes, and exactly what the local server would pick up.
+        const argv = HANDOFF_WORK.signin({
+          slot: slot.id, option: option.id, kind: 'signin',
+          recipe: option.recipe, host: option.host,
+        });
+        expect(argv, `${slot.id}/${option.id} offers "Sign in once" but dispatches nothing`).toBeTruthy();
+        expect(
+          resolves(argv![2]!),
+          `${slot.id}/${option.id} would dispatch "relay ${argv![2]}", which browser-capture cannot resolve`,
+        ).toBe(true);
+      }
+    }
+    expect(offered, 'no sign-in options found — the invariant would be vacuous').toBeGreaterThan(0);
+  });
+
+  it('turns every link button into a command acquire.mjs accepts', async () => {
+    const { HANDOFF_WORK } = await import('../../scripts/secrets/serve.mjs');
+    const acquire = readFileSync(new URL('../../scripts/secrets/acquire.mjs', import.meta.url), 'utf8');
+    const linkSlots = clientRegistry().slots.filter((s) => s.options.some((o) => o.ceremony === 'link'));
+    expect(linkSlots.length, 'no link options found — the invariant would be vacuous').toBeGreaterThan(0);
+    for (const slot of linkSlots) {
+      const argv = HANDOFF_WORK.link({ slot: slot.id, kind: 'link' });
+      expect(argv?.[0]).toBe('scripts/secrets/acquire.mjs');
+      // The subcommand and flag have to be ones the script really parses, not ones we wish it had.
+      expect(acquire, `acquire.mjs has no "${argv![1]}" command`).toMatch(new RegExp(`case '${argv![1]}':`));
+      expect(acquire, 'acquire.mjs does not read --slot').toContain("opt('slot'");
+    }
+  });
+
+  it('has a worker for every kind of hand-off the page can ask for', async () => {
+    const { HANDOFF_WORK } = await import('../../scripts/secrets/serve.mjs');
+    // The kinds are the third argument to handoff() in the markup: any new button that asks for
+    // work must arrive with something able to do it, or it is the frozen sentence all over again.
+    const asked = new Set([...template.matchAll(/handoff\(slot, opt, \w+, '(\w+)'\)/g)].map((m) => m[1]!));
+    expect(asked.size).toBeGreaterThan(0);
+    for (const kind of asked) expect(Object.keys(HANDOFF_WORK), `nothing performs a "${kind}" hand-off`).toContain(kind);
+  });
+});
+
+describe('nothing the page reports as pending is left with no one to finish it', () => {
+  const template = readFileSync(new URL('../../scripts/secrets/page/template.html', import.meta.url), 'utf8');
+
+  it('names a returned code the way the server recognises one', async () => {
+    const { OAUTH_CODE_RE } = await import('../../scripts/secrets/serve.mjs');
+    // Exactly the expression `takeCode()` uses, applied to every slot that could return a code.
+    const mint = (slot: string) => `OAUTH_CODE_${slot}`.toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 64);
+    expect(template, 'the page no longer mints code names this way').toContain("('OAUTH_CODE_' + slot).toUpperCase()");
+    for (const slot of SLOTS) {
+      // A name the server does not recognise is written into .env as a variable and never
+      // exchanged, which is what left the strip saying "finishing up" for ever.
+      expect(OAUTH_CODE_RE.test(mint(slot.id)), `a code for ${slot.id} would be filed as "${mint(slot.id)}"`).toBe(true);
+    }
+  });
+
+  it('no longer claims a pending thing is being handled without saying by what', () => {
+    // Comments may still recount the history; what must not survive is a sentence the page shows.
+    const shown = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    // The two sentences that were true of nothing: both are gone, and both states now render
+    // through renderWork(), which has to be told which of queued/running/failed is the case.
+    expect(shown).not.toContain('Claude is on it');
+    expect(shown).not.toContain('finishing up');
+    expect(template).toContain('function renderWork(');
+    const callers = [...template.matchAll(/renderWork\(/g)].length;
+    expect(callers, 'renderWork is defined but nothing renders through it').toBeGreaterThan(2);
+  });
+
+  it('leaves no control that swallows the failure of its own write', () => {
+    // A `.catch(() => {})` on a store write is indistinguishable, on screen, from the write
+    // succeeding: the choice renders, the record never lands, and the page says nothing. Every
+    // catch on a `db.doc(...)` chain must therefore take the error and do something with it.
+    const blind: string[] = [];
+    for (const m of template.matchAll(/db\.doc\(/g)) {
+      const statement = template.slice(m.index!, m.index! + 400).split(';')[0]!;
+      for (const c of statement.matchAll(/\.catch\(([^)]*)\)/g)) {
+        if (!/^\(?\s*\w/.test(c[1]!)) blind.push(statement.split('\n')[0]!.trim());
+      }
+    }
+    expect(blind, `${blind.length} store write(s) discard their own error`).toEqual([]);
+  });
+});

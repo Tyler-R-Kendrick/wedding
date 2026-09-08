@@ -14,11 +14,12 @@ import { readEnv, parseDotenv } from './env-file.mjs';
 
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { ENV_PATH, inStore } from './store.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
 const only = opt('slot', null);
-const envPath = opt('env', '.env');
+const envPath = opt('env', ENV_PATH);
 const env = parseDotenv(await readEnv(envPath));
 const value = (name) => (env.get(name) || process.env[name] || '').trim();
 
@@ -51,7 +52,7 @@ async function probeOne(cred) {
 }
 
 // Probe the option each slot is actually set to, not every option that exists.
-const choices = existsSync('.secrets/choices.json') ? JSON.parse(await readFile('.secrets/choices.json', 'utf8')) : {};
+const choices = existsSync(inStore('choices.json')) ? JSON.parse(await readFile(inStore('choices.json'), 'utf8')) : {};
 const active = SLOTS.filter((s) => !only || s.id === only)
   .map((slot) => { const option = chosenOption(slot, choices); return { id: slot.id, name: `${slot.name} (${option.name})`, vars: option.secrets, probe: option.probe }; });
 const targets = active.filter((c) => c.probe);

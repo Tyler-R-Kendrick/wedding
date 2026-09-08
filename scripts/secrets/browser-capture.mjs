@@ -23,11 +23,12 @@
 import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { inStore } from './store.mjs';
 import { webcrypto } from 'node:crypto';
 
 const { subtle } = webcrypto;
-const SESSIONS = '.secrets/sessions';
-const RELAY = '.secrets/browser';
+const SESSIONS = inStore('sessions');
+const RELAY = inStore('browser');
 
 /**
  * Per-provider recipes. `keyPattern` is the load-bearing part: after the "create" click
@@ -300,8 +301,8 @@ export async function relay(hostOrRecipe, { frames = 600, intervalMs = 1200 } = 
   await page.goto(recipe.keysUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
   console.log(`Relay open on ${recipe.host}. Mirror ${RELAY}/frame.png into the Secret Drop page and copy sealed input back to ${RELAY}/input.json.`);
 
-  const priv = existsSync('.secrets/private.jwk.json')
-    ? await subtle.importKey('jwk', (({ kid, createdAt, ...k }) => k)(JSON.parse(await readFile('.secrets/private.jwk.json', 'utf8'))), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['unwrapKey'])
+  const priv = existsSync(inStore('private.jwk.json'))
+    ? await subtle.importKey('jwk', (({ kid, createdAt, ...k }) => k)(JSON.parse(await readFile(inStore('private.jwk.json'), 'utf8'))), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['unwrapKey'])
     : null;
 
   for (let i = 0; i < frames; i++) {

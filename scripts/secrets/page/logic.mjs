@@ -108,6 +108,9 @@ export function createLogic(reg) {
    * had expired the previous evening.
    */
   function expired(ceremony, now = Date.now()) {
+    // A failure has no deadline. Hiding it once the link lapsed is how a failed exchange came back
+    // as a fresh "Approve" with nothing saying the last one could not be redeemed.
+    if (ceremony?.status === 'failed') return false;
     const at = Date.parse(ceremony?.expiresAt ?? '');
     return Number.isFinite(at) && at <= now;
   }
@@ -124,19 +127,75 @@ export function createLogic(reg) {
     const mine = ceremonies.filter((c) => c.credential === id
       && stillChosen(c, shaped, status, choices)
       && !expired(c, now));
+    const SETTLING = ['code-received', 'exchanging', 'running', 'failed'];
     return {
       open: mine.find((c) => c.status === 'waiting' || !c.status) || null,
-      settling: mine.find((c) => c.status === 'code-received' || c.status === 'exchanging') || null,
+      settling: mine.find((c) => SETTLING.includes(c.status)) || null,
     };
   }
 
-  /** A hand-off Claude has been asked for, has not finished, and that is still for this provider. */
+  /**
+   * What is happening to an approved link, in the same four states as a hand-off.
+   *
+   * The page used to say "Approved just now — finishing up" from the moment the code came back,
+   * for ever. Nothing was finishing it up: `code-received` had one writer and no reader, exactly
+   * like hand-offs did. `queued` is the honest word for a code nobody has exchanged yet.
+   */
+  function settleOf(ceremony) {
+    if (!ceremony) return null;
+    // Two words for the same thing: `exchanging` is what the ladder writes, `running` is what the
+    // local server writes when it spawns the exchange. Reading only one of them showed live work
+    // as "nothing has finished this yet" — the frozen sentence again, in a new spelling.
+    const state = (ceremony.status === 'exchanging' || ceremony.status === 'running') ? 'running'
+      : ceremony.status === 'failed' ? 'failed'
+      : 'queued';
+    return {
+      state,
+      since: state === 'running'
+        ? (ceremony.exchangeStartedAt || ceremony.receivedAt || ceremony.openedAt)
+        : (ceremony.finishedAt || ceremony.receivedAt || ceremony.openedAt || ceremony.startedAt),
+      detail: state === 'queued' ? null : (ceremony.detail || null),
+      // A spent code cannot be exchanged twice, so the way back is a fresh link, not a re-try.
+      canRetry: state === 'failed',
+    };
+  }
+
+  /** A hand-off for this provider that still has something to say. */
   function askedFor(slot, handoffs = {}, status = {}, choices = {}) {
     const id = typeof slot === 'string' ? slot : slot.id;
     const shaped = typeof slot === 'string' ? { id, options: [] } : slot;
     const h = handoffs[id];
-    if (!h || h.status === 'done' || h.status === 'cancelled') return null;
+    if (!h || h.status === 'cancelled' || h.status === 'done') return null;
     return stillChosen(h, shaped, status, choices) ? h : null;
+  }
+
+  /**
+   * What is actually happening to a hand-off, in the terms a person needs.
+   *
+   * The page used to say "Claude is on it" the moment the request was written, for ever, whatever
+   * happened next — including when nothing happened next, which was every time, because nothing
+   * consumed hand-offs at all. These four states are the ones that can be true, and each is
+   * distinguishable on the page: nobody has started (`queued`), something is doing it (`running`),
+   * it worked (`done`), it did not (`failed`, with a reason).
+   */
+  function workOf(handoff) {
+    if (!handoff) return null;
+    const state = handoff.status === 'running' ? 'running'
+      : handoff.status === 'failed' ? 'failed'
+      : handoff.status === 'done' ? 'done'
+      : 'queued';
+    return {
+      state,
+      kind: handoff.kind || 'signin',
+      host: handoff.host || null,
+      // `running` is timed from when the work started, not from when it was asked for.
+      since: state === 'running' ? (handoff.startedAt || handoff.requestedAt) : handoff.requestedAt,
+      // The last thing the work said. Absent while queued, because nothing has said anything.
+      detail: state === 'queued' ? null : (handoff.detail || null),
+      progressAt: handoff.progressAt || null,
+      log: handoff.log || '',
+      canRetry: state === 'failed' || state === 'queued',
+    };
   }
 
   /**
@@ -146,10 +205,10 @@ export function createLogic(reg) {
   function actionFor(slot, { status = {}, choices = {}, ceremonies = [], handoffs = {} } = {}) {
     const opt = optionFor(slot, choices);
     const { open, settling } = ceremonyState(slot, ceremonies, status, choices);
-    if (settling) return { kind: 'settling', ceremony: settling };
+    if (settling) return { kind: 'settling', ceremony: settling, work: settleOf(settling) };
     if (open) return { kind: 'approve', ceremony: open, reopened: Boolean(open.openedAt) };
     const asked = askedFor(slot, handoffs, status, choices);
-    if (asked) return { kind: 'asked', handoff: asked };
+    if (asked) return { kind: 'asked', handoff: asked, work: workOf(asked) };
     const cer = ceremonyIdFor(slot, status, choices);
     if (cer === 'signin') return { kind: 'signin', option: opt };
     if (cer === 'link') return { kind: 'link', option: opt };
@@ -186,7 +245,7 @@ export function createLogic(reg) {
 
   return {
     optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, ownerOf, stillChosen, expired,
-    ceremonyState, askedFor, actionFor, allowsManualEntry, pasteFields, boundSummary,
+    ceremonyState, askedFor, workOf, settleOf, actionFor, allowsManualEntry, pasteFields, boundSummary,
   };
 }
 

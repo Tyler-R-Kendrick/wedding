@@ -21,11 +21,12 @@ import { execFileSync } from 'node:child_process';
 import { webcrypto, randomBytes } from 'node:crypto';
 import { SLOTS, AUTOFILL, NEED, CEREMONY, METHOD_CEREMONY, chosenOption, ceremonyOf, slotById } from './registry.mjs';
 import { applyEnv, readEnv, presentNames, describe } from './env-file.mjs';
+import { ENV_PATH, STORE } from './store.mjs';
 import * as authmd from './authmd.mjs';
 import * as oauth from './oauth.mjs';
 
 const { subtle } = webcrypto;
-const DIR = '.secrets';
+const DIR = STORE;
 const CEREMONIES = join(DIR, 'ceremonies.json');
 const CHOICES = join(DIR, 'choices.json');
 const OUTBOX = join(DIR, 'outbox.json');
@@ -34,7 +35,7 @@ const args = process.argv.slice(2);
 const cmd = args[0] || 'report';
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
 const flag = (n) => args.includes(`--${n}`);
-const envPath = opt('env', '.env');
+const envPath = opt('env', ENV_PATH);
 
 const readJson = async (p, fallback) => { try { return JSON.parse(await readFile(p, 'utf8')); } catch { return fallback; } };
 const writeJson = async (p, v) => { await mkdir(DIR, { recursive: true }); await writeFile(p, JSON.stringify(v, null, 2) + '\n', { mode: 0o600 }); };
@@ -316,6 +317,10 @@ async function commandResume() {
       ceremonies[credId] = { ...ceremony, status: 'done', finishedAt: new Date().toISOString() };
       results.push({ credential: credId, state: 'acquired', method: 'oauth', wrote: describe(values) });
     } catch (err) {
+      // Recorded on the ceremony, not only in the results: the page reads ceremonies, and a
+      // ceremony left at `waiting` after a failed exchange simply offers "Approve" again with
+      // nothing anywhere saying the last approval could not be redeemed.
+      ceremonies[credId] = { ...ceremony, status: 'failed', finishedAt: new Date().toISOString(), detail: err.message };
       results.push({ credential: credId, state: 'failed', method: ceremony.method, attempts: [{ method: ceremony.method, outcome: err.message }] });
     }
   }
@@ -368,7 +373,9 @@ async function writeOutbox({ autofilled, results }) {
     };
   }
   const pending = Object.values(ceremonies)
-    .filter((c) => c.status !== 'done' && new Date(c.expiresAt || 0).getTime() > Date.now())
+    // A failure outlives its deadline: dropping it once the link expired is how a failed exchange
+    // came back as a fresh "Approve" with no trace of what went wrong.
+    .filter((c) => c.status !== 'done' && (c.status === 'failed' || new Date(c.expiresAt || 0).getTime() > Date.now()))
     .map(({ device_code, verifier, client_secret, ...safe }) => safe); // never mirror the secret half
   const tasks = results.flatMap((r) => (r.attempts || []).filter((a) => a.task).map((a) => a.task));
   await writeJson(OUTBOX, { format: 'secret-drop/plan-1', updatedAt: new Date().toISOString(), autofilled, status, ceremonies: pending, agentTasks: tasks });

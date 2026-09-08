@@ -9,13 +9,14 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { webcrypto } from 'node:crypto';
 import { applyEnv, describe, NAME_RE } from './env-file.mjs';
+import { ENV_PATH, inStore } from './store.mjs';
 
 const { subtle } = webcrypto;
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
 const flag = (n) => args.includes(`--${n}`);
 const source = args.find((a) => !a.startsWith('--') && !['.env', opt('env', '.env')].includes(a));
-const envPath = opt('env', '.env');
+const envPath = opt('env', ENV_PATH);
 if (!source) { console.error('usage: apply-env.mjs <envelopes.json | directory> [--env .env] [--dry-run]'); process.exit(2); }
 
 const b64u = { dec: (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64') };
@@ -23,7 +24,7 @@ const b64u = { dec: (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 
 async function loadPrivateKey() {
   let jwk;
   if (process.env.SECRETS_PRIVATE_KEY) jwk = JSON.parse(b64u.dec(process.env.SECRETS_PRIVATE_KEY).toString('utf8'));
-  else if (existsSync('.secrets/private.jwk.json')) jwk = JSON.parse(await readFile('.secrets/private.jwk.json', 'utf8'));
+  else if (existsSync(inStore('private.jwk.json'))) jwk = JSON.parse(await readFile(inStore('private.jwk.json'), 'utf8'));
   else { console.error('No private key: set SECRETS_PRIVATE_KEY or run scripts/secrets/keygen.mjs'); process.exit(2); }
   const { kid, createdAt, ...pure } = jwk;
   const key = await subtle.importKey('jwk', pure, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['unwrapKey']);

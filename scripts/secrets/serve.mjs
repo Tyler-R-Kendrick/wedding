@@ -26,6 +26,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { applyEnv, describe, NAME_RE } from './env-file.mjs';
 
+/** Names the page seals a redirect code under; `takeCode()` in the page mints them. */
+const OAUTH_CODE_RE = /^OAUTH_CODE_[A-Z0-9_]+$/;
+
 const { subtle } = webcrypto;
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const at = (...p) => join(repoRoot, ...p);
@@ -44,15 +47,31 @@ const secretsDir = opt('secrets', '.secrets');
 // silently pointed the store at a directory that did not exist and served empty collections.
 const inStore = (name) => resolve(repoRoot, secretsDir, name);
 
+/**
+ * The environment every spawned job gets.
+ *
+ * `--secrets` used to bind only this server: the ladder it spawned still read and wrote the
+ * developer's real `.secrets/`, so a check pointed at a fixture directory quietly mutated the real
+ * store and then judged the fixture. NODE_USE_ENV_PROXY matches what the npm scripts set.
+ */
+const jobEnv = () => ({
+  ...process.env,
+  SECRETS_DIR: resolve(repoRoot, secretsDir),
+  SECRET_DROP_ENV: envPath,
+  NODE_USE_ENV_PROXY: '1',
+  NODE_OPTIONS: '',
+});
+
 /** Files the page's collections are projected from. Nothing else on disk is reachable. */
 const FILES = {
   outbox: inStore('outbox.json'),
   choices: inStore('choices.json'),
   handoffs: inStore('handoffs.json'),
+  ceremonies: inStore('ceremonies.json'),
   applied: inStore('applied.json'),
   publicKey: inStore('public.jwk.json'),
   privateKey: inStore('private.jwk.json'),
-  page: at('.secrets/secret-drop.html'),
+  page: inStore('secret-drop.html'),
 };
 
 /** The ladder, as the page may invoke it. Fixed argv — never a string from the request. */
@@ -132,6 +151,9 @@ async function writeDoc(path, op, data) {
       return { removed: id };
     }
     if (!NAME_RE.test(data?.name || id)) throw new Error('not a variable name');
+    // An OAuth code is not a variable. Writing it into .env put a JSON blob under a name nothing
+    // reads and left the ceremony saying "finishing up" for ever; `resume` is what finishes it.
+    if (OAUTH_CODE_RE.test(data?.name || id)) return startExchange(data?.name || id, { ...data, name: data?.name || id });
     const priv = await privateKey();
     if (!priv) throw new Error('no private key here — run `node scripts/secrets/keygen.mjs` first');
     const value = await unseal({ ...data, name: data?.name || id }, priv);
@@ -151,6 +173,11 @@ async function writeDoc(path, op, data) {
     if (op === 'delete') delete all[id];
     else all[id] = op === 'update' ? { ...(all[id] || {}), ...data } : data;
     await writeJson(file, all);
+    // A hand-off is a request for work, so do the work. Not awaited: the page gets its answer
+    // immediately and watches the record move through running -> done | failed.
+    if (collection === 'handoffs' && op !== 'delete' && all[id]?.status === 'requested') {
+      startHandoff(id, all[id]);
+    }
     return { [op]: path };
   }
 
@@ -177,17 +204,200 @@ async function writeDoc(path, op, data) {
   throw new Error(`collection ${collection} is not writable here`);
 }
 
+/* --------------------------------------------------------------- hand-offs */
+
+/**
+ * What a hand-off actually runs. Named work, never a string from the request.
+ *
+ * Before this existed the page wrote `handoffs/<slot>` and *nothing read it*: one writer,
+ * zero consumers. Pressing "Sign in once" said "Claude is on it" and then sat there for ever,
+ * because nobody was on it. A button that reports dispatched work must dispatch work.
+ */
+const HANDOFF_WORK = {
+  // The recipe id, not the host. `relay` resolves an id or a recipe's exact host, and an option's
+  // host is the brand domain (postmarkapp.com) while the recipe drives account.postmarkapp.com —
+  // so sending the host dispatched work that could only ever answer "unknown provider".
+  signin: (h) => {
+    const target = h.recipe || h.host;
+    return target ? ['scripts/secrets/browser-capture.mjs', 'relay', target] : null;
+  },
+  link: (h) => ['scripts/secrets/acquire.mjs', 'run', '--slot', h.slot],
+};
+
+/** One job per key; the map is also how a second press knows not to start a duplicate. */
+const running = new Map();
+
+/** Anything that looks like a credential never reaches the log the page can read. */
+const redact = (text) => String(text)
+  .replace(/\b[A-Za-z0-9_-]{32,}\b/g, '[redacted]')
+  .replace(/\b(sk|pk|re|key|tok)[-_][A-Za-z0-9_-]{8,}\b/gi, '[redacted]');
+
+/**
+ * The part of a job's output a person can act on.
+ *
+ * The last three lines of stdout are usually a V8 stack: `at Module._compile (node:internal/...)`
+ * tells nobody anything about why signing in to Postmark failed. Prefer the thrown message, then
+ * the last line that is not a stack frame, and only then give up and say how it exited.
+ */
+function explain(log, code) {
+  const lines = String(log).split('\n').map((l) => l.trim()).filter(Boolean);
+  const frame = /^(at\s|node:internal|\s*\^|Node\.js v)/;
+  const thrown = [...lines].reverse().find((l) => /^(Uncaught\s)?\w*Error:\s*\S/.test(l));
+  if (thrown) return thrown.replace(/^(Uncaught\s)?\w*Error:\s*/, '');
+  const said = [...lines].reverse().find((l) => !frame.test(l));
+  if (said) return said;
+  return code === 0 ? 'finished' : `exited ${code}`;
+}
+
+async function patchHandoff(slot, patch) {
+  const all = await readJson(FILES.handoffs, {});
+  if (!all[slot]) return null;
+  all[slot] = { ...all[slot], ...patch };
+  await writeJson(FILES.handoffs, all);
+  return all[slot];
+}
+
+/**
+ * The same, for a ceremony — which the page reads from the outbox but the ladder owns.
+ *
+ * Both copies, deliberately. The outbox list is what the page renders, but `acquire.mjs` rebuilds
+ * that list from `ceremonies.json` every time it writes an outbox, so patching only the outbox
+ * meant the exchange's progress was erased by the very run that produced it.
+ */
+async function patchCeremony(id, patch) {
+  const owned = await readJson(FILES.ceremonies, {});
+  const key = Object.keys(owned).find((k) => k === id || owned[k]?.id === id);
+  if (key) {
+    owned[key] = { ...owned[key], ...patch };
+    await writeJson(FILES.ceremonies, owned);
+  }
+  const outbox = await readJson(FILES.outbox, {});
+  const list = outbox.ceremonies || [];
+  const i = list.findIndex((c) => c.id === id || c.credential === id);
+  if (i >= 0) {
+    list[i] = { ...list[i], ...patch };
+    await writeJson(FILES.outbox, { ...outbox, ceremonies: list });
+  }
+  return (key || i >= 0) ? { ...patch, id } : null;
+}
+
+/**
+ * Run a job and record what happens to it, so the page can show progress and an outcome instead
+ * of a sentence that never changes. Every dispatched thing goes through here: states are
+ * running -> done | failed, and the log tail is redacted before the page can read it.
+ */
+function runJob(key, argv, { patch, label, startField = 'startedAt' }) {
+  if (running.has(key)) return;
+
+  const child = spawn(process.execPath, argv, { cwd: repoRoot, env: jobEnv() });
+  running.set(key, child);
+  void patch({ status: 'running', [startField]: new Date().toISOString(), detail: null, log: '' });
+  console.log(`> ${label} (${argv.slice(1).join(' ')})`);
+
+  let log = '';
+  const take = (chunk) => {
+    log = redact(log + chunk).slice(-8000);
+    // The page polls the store, so progress is whatever the last lines say.
+    void patch({ log, progressAt: new Date().toISOString() });
+  };
+  child.stdout.on('data', (c) => take(String(c)));
+  child.stderr.on('data', (c) => take(String(c)));
+  child.on('error', (err) => {
+    running.delete(key);
+    void patch({ status: 'failed', finishedAt: new Date().toISOString(), detail: redact(err.message) });
+  });
+  child.on('close', (code) => {
+    running.delete(key);
+    void patch({
+      status: code === 0 ? 'done' : 'failed',
+      finishedAt: new Date().toISOString(),
+      exitCode: code,
+      detail: explain(log, code),
+    });
+    console.log(`  ${label}: ${code === 0 ? 'done' : `failed (${code})`}`);
+  });
+}
+
+/** A hand-off the page asked for: pick the named work, or say plainly that there is none. */
+function startHandoff(slot, handoff) {
+  const argv = HANDOFF_WORK[handoff.kind]?.(handoff);
+  if (!argv) {
+    void patchHandoff(slot, {
+      status: 'failed', finishedAt: new Date().toISOString(),
+      detail: `nothing here knows how to do a "${handoff.kind}" hand-off for ${slot}`,
+    });
+    return;
+  }
+  runJob(slot, argv, { patch: (p) => patchHandoff(slot, p), label: `handoff ${slot}: ${handoff.kind}` });
+}
+
+/**
+ * An OAuth code came back. Exchange it.
+ *
+ * This is the hand-off bug in its other costume: the page wrote `status: 'code-received'` and
+ * rendered "Approved — finishing up", and nothing anywhere read that status, so the exchange
+ * never happened and the sentence never changed. `acquire.mjs resume` is what finishes it, and
+ * it reads sealed codes out of `.secrets/inbox/` — so that is where the envelope goes, still
+ * sealed, instead of being written into `.env` under a name that is not a variable.
+ */
+async function startExchange(name, envelope) {
+  const inbox = inStore('inbox');
+  await mkdir(inbox, { recursive: true, mode: 0o700 });
+  await writeFile(join(inbox, `${name}.json`), JSON.stringify(envelope, null, 2) + '\n', { mode: 0o600 });
+  const outbox = await readJson(FILES.outbox, {});
+  // The ceremony this code belongs to, by the slot the page named when it sealed it.
+  const slot = name.replace(/^OAUTH_CODE_/, '').toLowerCase().replace(/_/g, '-');
+  const ceremony = (outbox.ceremonies || []).find((c) => c.credential === slot || c.id === slot);
+  const id = ceremony?.id || slot;
+  await patchCeremony(id, { status: 'code-received', receivedAt: new Date().toISOString() });
+  runJob(`ceremony:${id}`, ['scripts/secrets/acquire.mjs', 'resume'], {
+    patch: (p) => patchCeremony(id, p),
+    label: `exchange ${id}`,
+    startField: 'exchangeStartedAt',
+  });
+  return { queued: id };
+}
+
+/**
+ * A job cannot survive the process that spawned it. Anything still marked `running` at boot
+ * belongs to a server that is gone, and leaving it there is the same lie in a new form.
+ */
+async function reapAbandonedJobs() {
+  const stale = (r) => ({ ...r, status: 'failed', finishedAt: new Date().toISOString(), detail: 'the server stopped before this finished' });
+
+  const all = await readJson(FILES.handoffs, {});
+  let changed = false;
+  for (const [slot, h] of Object.entries(all)) {
+    if (h?.status === 'running') { all[slot] = stale(h); changed = true; }
+  }
+  if (changed) await writeJson(FILES.handoffs, all);
+
+  const midExchange = (c) => c?.status === 'exchanging' || c?.status === 'running';
+
+  const outbox = await readJson(FILES.outbox, {});
+  const list = outbox.ceremonies || [];
+  let ceremoniesChanged = false;
+  for (const [i, c] of list.entries()) {
+    if (midExchange(c)) { list[i] = stale(c); ceremoniesChanged = true; }
+  }
+  if (ceremoniesChanged) await writeJson(FILES.outbox, { ...outbox, ceremonies: list });
+
+  // The ladder's own copy too, or `writeOutbox` mirrors the dead state straight back.
+  const owned = await readJson(FILES.ceremonies, {});
+  let ownedChanged = false;
+  for (const [id, c] of Object.entries(owned)) {
+    if (midExchange(c)) { owned[id] = stale(c); ownedChanged = true; }
+  }
+  if (ownedChanged) await writeJson(FILES.ceremonies, owned);
+}
+
 /* ------------------------------------------------------------------- running */
 
 function run(command) {
   const argv = COMMANDS[command];
   if (!argv) return Promise.resolve({ ok: false, code: 2, output: `unknown command` });
   return new Promise((done) => {
-    const child = spawn(process.execPath, argv, {
-      cwd: repoRoot,
-      // The ladder reaches providers; NODE_USE_ENV_PROXY matches what the npm scripts set.
-      env: { ...process.env, NODE_USE_ENV_PROXY: '1', NODE_OPTIONS: '' },
-    });
+    const child = spawn(process.execPath, argv, { cwd: repoRoot, env: jobEnv() });
     let output = '';
     const take = (chunk) => {
       output += chunk;
@@ -269,8 +479,14 @@ const server = createServer(async (req, res) => {
 
 /** Rebuild first, so the page always matches the registry the ladder will actually run. */
 async function main() {
-  const build = spawn(process.execPath, ['scripts/secrets/build-page.mjs'], { cwd: repoRoot, env: { ...process.env, NODE_OPTIONS: '' }, stdio: 'inherit' });
+  const build = spawn(process.execPath, ['scripts/secrets/build-page.mjs'], { cwd: repoRoot, env: jobEnv(), stdio: 'inherit' });
   await new Promise((done) => build.on('close', done));
+  await reapAbandonedJobs();
+  // "The server stopped before this finished" has to be true of the job as well as the record:
+  // an orphaned Chromium keeps a provider session open with nobody watching it.
+  const stopJobs = () => { for (const child of running.values()) { try { child.kill('SIGTERM'); } catch { /* already gone */ } } };
+  for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { stopJobs(); process.exit(0); });
+  process.on('exit', stopJobs);
 
   server.listen(port, '127.0.0.1', () => {
     const where = `http://127.0.0.1:${port}`;
@@ -287,4 +503,4 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) await main();
 
-export { collections, writeDoc, unseal, run, COMMANDS, FILES };
+export { collections, writeDoc, unseal, run, COMMANDS, FILES, HANDOFF_WORK, OAUTH_CODE_RE, redact, explain };

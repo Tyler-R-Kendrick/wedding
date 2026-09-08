@@ -386,6 +386,18 @@ export function ceremonyOf(option) {
   return METHOD_CEREMONY[best?.method] || 'paste';
 }
 
+/**
+ * The browser recipe an option would fall back to, by id.
+ *
+ * The page needs this, not the host: `browser-capture.mjs relay` resolves a recipe id or a recipe's
+ * *exact* host, and an option's `host` is the brand domain a person would type (postmarkapp.com)
+ * while the recipe's is the dashboard it actually drives (account.postmarkapp.com). Sending the
+ * host meant "unknown provider postmarkapp.com" — a button that dispatched work that could not run.
+ */
+export function browserRecipeOf(option) {
+  return option.ladder?.find((step) => step.method === 'browser')?.recipe || null;
+}
+
 /** Every variable any option could fill — used to keep autofill and the slots disjoint. */
 export function allVars() {
   const vars = new Set();
@@ -409,7 +421,7 @@ export function clientRegistry() {
       id: slot.id, name: slot.name, need: slot.need, does: slot.does, without: slot.without,
       options: slot.options.map((o) => ({
         id: o.id, name: o.name, note: o.note || null, recommended: !!o.recommended, isOptOut: !!o.isOptOut,
-        ceremony: ceremonyOf(o), host: o.host || null,
+        ceremony: ceremonyOf(o), host: o.host || null, recipe: browserRecipeOf(o),
         secrets: o.secrets, inferred: Object.keys(o.fills),
         warn: o.warn || null,
       })),

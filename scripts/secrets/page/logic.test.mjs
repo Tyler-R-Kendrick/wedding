@@ -181,6 +181,13 @@ describe('ceremonies already answered', () => {
       assert.equal(state.open, null);
     }
   });
+  it('treats a failed exchange as settling, so the reason survives', () => {
+    // Without this the strip falls back to "Get the link" and the person is never told that the
+    // code they approved could not be exchanged.
+    const state = L.ceremonyState(slot, [{ id: 'c5', credential: 'email', status: 'failed' }]);
+    assert.equal(state.settling.id, 'c5');
+    assert.equal(state.open, null);
+  });
   it('finds nothing when there are no ceremonies', () => {
     assert.equal(L.ceremonyState(slot, []).open, null);
     assert.equal(L.ceremonyState(slot).open, null);
@@ -256,6 +263,19 @@ describe('an authorization link has a deadline', () => {
   });
 });
 
+describe('a failure outlives the link that caused it', () => {
+  const dead = { id: 'c', credential: 'email', status: 'failed', expiresAt: '2020-01-01T00:00:00Z', detail: 'the code was already used' };
+  it('keeps a failed ceremony past its deadline, with its reason', () => {
+    assert.equal(L.expired(dead), false);
+    const action = L.actionFor(slot, { ceremonies: [dead] });
+    assert.equal(action.kind, 'settling');
+    assert.equal(action.work.detail, 'the code was already used');
+  });
+  it('still hides a lapsed link that has not failed', () => {
+    assert.equal(L.expired({ ...dead, status: 'waiting' }), true);
+  });
+});
+
 describe('hand-offs already asked for', () => {
   it('is active while it is outstanding', () => {
     assert.ok(L.askedFor(slot, { email: { status: 'requested' } }));
@@ -276,6 +296,115 @@ describe('hand-offs already asked for', () => {
     assert.ok(L.askedFor(slot, asked, {}, { email: 'postmark' }));
     assert.equal(L.askedFor(slot, asked, {}, { email: 'byo' }), null);
     assert.equal(L.actionFor(slot, { handoffs: asked, choices: { email: 'byo' } }).kind, 'none');
+  });
+});
+
+describe('what is happening to a hand-off', () => {
+  it('has nothing to say about a hand-off that is not there', () => {
+    assert.equal(L.workOf(null), null);
+    assert.equal(L.workOf(undefined), null);
+  });
+
+  it('calls a request nobody has started queued, not "Claude is on it"', () => {
+    const w = L.workOf({ status: 'requested', requestedAt: 'q', detail: 'ignored while queued' });
+    assert.equal(w.state, 'queued');
+    assert.equal(w.since, 'q');
+    assert.equal(w.detail, null);
+    // Asking again is the only thing left to do when nothing picked it up.
+    assert.equal(w.canRetry, true);
+  });
+
+  it('times running work from when the work started, not from when it was asked for', () => {
+    assert.equal(L.workOf({ status: 'running', startedAt: 's', requestedAt: 'q' }).since, 's');
+    assert.equal(L.workOf({ status: 'running', requestedAt: 'q' }).since, 'q');
+    assert.equal(L.workOf({ status: 'running' }).canRetry, false);
+  });
+
+  it('reports a failure with what it said, and a success as done', () => {
+    const bad = L.workOf({ status: 'failed', requestedAt: 'q', detail: 'unknown provider postmarkapp.com' });
+    assert.equal(bad.state, 'failed');
+    assert.equal(bad.detail, 'unknown provider postmarkapp.com');
+    assert.equal(bad.canRetry, true);
+    assert.equal(L.workOf({ status: 'failed' }).detail, null);
+    const good = L.workOf({ status: 'done' });
+    assert.equal(good.state, 'done');
+    assert.equal(good.canRetry, false);
+  });
+
+  it('carries what the strip needs to name the work, with defaults it can render', () => {
+    const w = L.workOf({ status: 'running', kind: 'link', host: 'resend.com', progressAt: 'p', log: 'line' });
+    assert.equal(w.kind, 'link');
+    assert.equal(w.host, 'resend.com');
+    assert.equal(w.progressAt, 'p');
+    assert.equal(w.log, 'line');
+    const bare = L.workOf({ status: 'requested' });
+    assert.equal(bare.kind, 'signin');
+    assert.equal(bare.host, null);
+    assert.equal(bare.progressAt, null);
+    assert.equal(bare.log, '');
+  });
+
+  it('is the work the strip carries, so a press has a state and not a slogan', () => {
+    const action = L.actionFor(slot, { handoffs: { email: { status: 'running', startedAt: 's' } } });
+    assert.equal(action.kind, 'asked');
+    assert.equal(action.work.state, 'running');
+  });
+});
+
+describe('what is happening to an approved link', () => {
+  it('has nothing to say about a ceremony that is not there', () => {
+    assert.equal(L.settleOf(null), null);
+    assert.equal(L.settleOf(undefined), null);
+  });
+
+  it('calls a received code queued, because nothing has exchanged it yet', () => {
+    // The page said "finishing up" here for ever. Nothing was finishing it up.
+    const w = L.settleOf({ status: 'code-received', receivedAt: 'r', detail: 'ignored while queued' });
+    assert.equal(w.state, 'queued');
+    assert.equal(w.since, 'r');
+    assert.equal(w.detail, null);
+    assert.equal(w.canRetry, false);
+  });
+
+  it('reads both words the two writers use for a running exchange', () => {
+    // `acquire.mjs` says `exchanging`; `serve.mjs` says `running`. Reading one and not the other
+    // shows live work as "nothing has finished this yet".
+    for (const status of ['exchanging', 'running']) {
+      assert.equal(L.settleOf({ status, exchangeStartedAt: 'x' }).state, 'running');
+      const state = L.ceremonyState(slot, [{ id: 'c6', credential: 'email', status }]);
+      assert.equal(state.settling.id, 'c6', `"${status}" is not treated as settling`);
+    }
+  });
+
+  it('times a running exchange from when the exchange started', () => {
+    const w = L.settleOf({ status: 'exchanging', exchangeStartedAt: 'x', receivedAt: 'r', openedAt: 'o' });
+    assert.equal(w.state, 'running');
+    assert.equal(w.since, 'x');
+    assert.equal(L.settleOf({ status: 'exchanging', receivedAt: 'r', openedAt: 'o' }).since, 'r');
+    assert.equal(L.settleOf({ status: 'exchanging', openedAt: 'o' }).since, 'o');
+  });
+
+  it('reports a failure with its reason, and offers a way back', () => {
+    const w = L.settleOf({ status: 'failed', finishedAt: 'f', detail: 'the code was already used' });
+    assert.equal(w.state, 'failed');
+    assert.equal(w.since, 'f');
+    assert.equal(w.detail, 'the code was already used');
+    assert.equal(w.canRetry, true);
+    // A failure with no reason still reports as a failure rather than as nothing.
+    assert.equal(L.settleOf({ status: 'failed' }).detail, null);
+  });
+
+  it('falls back through the times it might have, and to none at all', () => {
+    assert.equal(L.settleOf({ status: 'code-received', openedAt: 'o' }).since, 'o');
+    assert.equal(L.settleOf({ status: 'code-received', startedAt: 's' }).since, 's');
+    assert.equal(L.settleOf({ status: 'code-received' }).since, undefined);
+  });
+
+  it('is the work the strip carries, so the page renders states and not a slogan', () => {
+    const ceremonies = [{ id: 'c', credential: 'email', status: 'exchanging', exchangeStartedAt: 'x' }];
+    const action = L.actionFor(slot, { ceremonies });
+    assert.equal(action.kind, 'settling');
+    assert.equal(action.work.state, 'running');
   });
 });
 

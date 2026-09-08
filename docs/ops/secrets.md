@@ -96,6 +96,7 @@ npm run secrets:probe -- --register             # ...and prove the advertised en
 npm run secrets:serve                           # the whole thing as a local web app (no Claude needed)
 npm run secrets:coverage                        # the page's decisions, 100% or it fails
 npm run secrets:verify:page                     # click all 36 provider choices in a real browser
+npm run secrets:verify:lifecycle                # press the buttons and watch the work actually happen
 ```
 
 ### How the plan is derived
@@ -121,7 +122,8 @@ old row survives. The page trusted its `nextAction` unconditionally, so after ch
 (sign in) it still offered Resend's OAuth link — the choice registered and then decided nothing.
 A status now speaks only for the option it was computed for.
 
-Two gates keep it honest, and both were checked against the bug before being trusted:
+Three gates keep it honest, and each was checked against the bug it exists for before being
+trusted — reintroduce the defect and the gate must go red:
 
 - `secrets:coverage` runs the decisions under Node's own V8 coverage and fails below 100% on
   lines, branches and functions. No new dependency; `node --test` does it, because vitest
@@ -133,6 +135,17 @@ Two gates keep it honest, and both were checked against the bug before being tru
   bug: a live status may override an option's declared ceremony, but only for the one option it
   was computed for, so two options in a slot rendering someone else's ceremony means the choice is
   not being honoured.
+- `secrets:verify:lifecycle` presses the controls against a real server doing real work and
+  watches what happens next. It is the gate for a different failure: a control that *reports*
+  work rather than doing it. "Asked just now — Claude is on it" was written the instant a
+  hand-off record appeared and never changed, because nothing consumed hand-offs — one writer,
+  zero readers — and a frozen sentence renders exactly like a working one. Nothing is stubbed:
+  the job that runs is the job the page dispatches in earnest, and the assertion is about the
+  reporting, not the outcome. Signing in to a provider from a sandbox is expected to fail; a
+  failure that is *reported*, with a reason a person can read, is the passing case. It also
+  asserts that the run touched nothing outside its fixture store — an earlier version of this
+  check spawned the ladder against the developer's real `.secrets/`, because `--secrets` bound
+  the server and not the jobs it spawns.
 
 ## Running it yourself: `npm run secrets:serve`
 
@@ -199,15 +212,24 @@ work is under way, and is replaced by what is actually true:
 
 | State | What the strip shows |
 |---|---|
-| You asked Claude to sign in or fetch a link | *Asked 3 min ago — Claude is on it*, plus a quiet **ask again** if it stalls |
+| You asked for work and nothing has started it | *Asked 3 min ago — nothing has picked this up yet*, plus **ask again** and a line saying who could |
+| Something is doing it now | A spinner and *Signing in to account.postmarkapp.com… 40 s ago* |
+| It failed | *Failed 1 min ago*, the reason underneath, and **try again** |
 | A link is posted and you have opened it | *Opened 1 min ago — waiting for the provider*; the link stays, demoted, because approval can fail |
-| You approved and the code came back | *Approved 2 min ago — finishing up* — no control at all |
+| You approved and the code came back | *Approved 2 min ago — queued* until something exchanges it, then a spinner, then done or the reason it failed with **start over** |
 | The credential is held | The row leaves **Waiting on you** for the manifest, teal, reading `connected · 1/1 held · you approved a link` |
 
 The last row is the point of the others: `status/<slot>` carries how many of the slot's variables
 are held and which rung produced them, so "connected" is never something you have to take on
 faith after signing in somewhere. Ceremonies at `code-received` are deliberately *not* treated as
 open — offering "Approve" for something already approved is the trap this page exists to remove.
+
+**A pending state must name what is pending on.** The page said *"Asked just now — Claude is on
+it"* and *"Approved — finishing up"* for a long time, and neither sentence ever changed, because
+hand-offs and returned codes had a writer and no reader anywhere. Both now render through one
+function that has to be told which of *queued*, *running*, *done* or *failed* is true, and
+`secrets:serve` performs the work rather than only recording the request. `npm run
+secrets:verify:lifecycle` presses the buttons in a browser and fails if the text does not move.
 
 ### What the agent must watch
 
@@ -216,7 +238,7 @@ open — offering "Approve" for something already approved is the trap this page
 | `status/<credential>` | agent | live state + `nextAction` the page renders |
 | `ceremonies/<credential>` | agent | a link waiting for a human |
 | `choices/<slot>` | **the page** | which provider option is in force; mirror to `.secrets/choices.json` |
-| `handoffs/<slot>` | **the page** | `kind: signin` → run `browser-capture.mjs relay <host>`; `kind: link` → start the OAuth/device ceremony |
+| `handoffs/<slot>` | **the page** | `kind: signin` → run `browser-capture.mjs relay <recipe>` (the record's `recipe`, not its `host`: the host is the brand domain, the recipe is the dashboard the relay drives); `kind: link` → start the OAuth/device ceremony. Patch the record to `running`, then `done` or `failed` **with a reason** — the page renders those four states and nothing else |
 | `envelopes/<VAR>` | the page | a sealed value to apply |
 
 An authorization-code provider redirects back to the page, which seals the one-time code

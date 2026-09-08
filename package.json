@@ -58,7 +58,8 @@
     "assets:fetch": "NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs",
     "art:generate": "node scripts/generate-art.mjs",
     "design:sync": "node scripts/design-sync.mjs",
-    "design:sync:check": "node scripts/design-sync.mjs --check"
+    "design:sync:check": "node scripts/design-sync.mjs --check",
+    "secrets:verify:lifecycle": "node scripts/secrets/page/verify-lifecycle.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

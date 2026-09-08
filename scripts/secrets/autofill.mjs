@@ -15,10 +15,11 @@ import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { AUTOFILL } from './registry.mjs';
 import { readEnv, parseDotenv, presentNames, applyEnv } from './env-file.mjs';
+import { ENV_PATH } from './store.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
-const envPath = opt('env', '.env');
+const envPath = opt('env', ENV_PATH);
 const dry = args.includes('--dry-run');
 const force = args.includes('--force');
 
