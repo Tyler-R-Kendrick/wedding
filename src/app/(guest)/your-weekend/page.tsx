@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: 'Your Weekend', robots: { index: fals
 
 export default async function YourWeekendPage() {
   const { ctx, principal } = await uiContext();
-  if (principal.kind !== 'guest') return <GuestsOnly what="Your Weekend" />;
+  if (principal.kind !== 'guest') return <GuestsOnly what="Your Weekend" returnTo="/your-weekend" />;
   const result = await invoke(getMyItinerary, ctx, {});
   if (!result.ok) {
-    if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="Your Weekend" />;
+    if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="Your Weekend" signedIn />;
     return <FriendlyFailure what="Your Weekend" />;
   }
   return <WeekendPage data={result.value.data} />;

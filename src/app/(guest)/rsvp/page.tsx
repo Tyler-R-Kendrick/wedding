@@ -15,10 +15,10 @@ export const metadata: Metadata = { title: 'RSVP', robots: { index: false, follo
 /** Route only: resolve the principal, call the capability, render the recipe. No business logic here. */
 export default async function RsvpPage() {
   const { ctx, principal } = await uiContext();
-  if (principal.kind !== 'guest') return <GuestsOnly what="RSVP" />;
+  if (principal.kind !== 'guest') return <GuestsOnly what="RSVP" returnTo="/rsvp" />;
   const result = await invoke(getMyRsvp, ctx, {});
   if (!result.ok) {
-    if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="RSVP" />;
+    if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="RSVP" signedIn />;
     return <FriendlyFailure what="RSVP" />;
   }
   const data = result.value.data;

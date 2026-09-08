@@ -20,6 +20,8 @@ export interface ChallengeCookie {
   back?: string;
   /** Email being confirmed (change-email flow only). */
   email?: string;
+  /** ISO instant a verify lockout lifts. Set means the code below will be refused until then. */
+  lockedUntil?: string;
   kind: 'claim' | 'sign_in' | 'admin_sign_in' | 'step_up' | 'change_email';
 }
 

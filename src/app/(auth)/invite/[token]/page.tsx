@@ -19,9 +19,17 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
   const sp = await searchParams;
   const r = await invokeFromRequest<InvitationLookup>('lookup_invitation', { token }, { method: 'GET' });
   if (!r.ok) {
+    // Every other branch on this page offers a way forward; this one rendered a bare Notice with
+    // ZERO links, so a guest whose link arrived mangled — the commonest reason to land here — was
+    // told "something went wrong on our side" and given nothing to click. It is the same dead end
+    // whether the cause is a rate limit or a real fault, so both get the recovery panel.
     return (
       <AuthShell eyebrow="Your invitation" title="One moment">
         <Notice tone="error">{errorCopy(r.error.code === 'rate_limited' ? 'rate_limited' : 'internal')}</Notice>
+        <RecoveryPanel
+          title="What to do next"
+          message="Try opening the link from your invitation again. If you have already claimed your invitation, sign in with the email Sara and Tyler have for you; otherwise ask them for a fresh link."
+        />
       </AuthShell>
     );
   }

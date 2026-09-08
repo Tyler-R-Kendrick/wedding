@@ -7,10 +7,16 @@ import { guestDisplayName, listHouseholdMembers } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests } from '@/domain/identity/bindings';
 import { invitationLifecycle } from '@/domain/identity/tokens';
-import { findInvitationByToken } from '@/domain/invitations/repo';
+import { currentInvitationForHousehold, findInvitationByToken } from '@/domain/invitations/repo';
 import { consumeLimits, ipHashOf, OTP_LIMITS, RECOVERY } from './identity/shared';
 
-const input = z.object({ token: z.string().min(1).max(128) });
+// 128 is a generous cap on a link this app mints; anything longer is a mangled paste, which is a
+// NOT-FOUND, not a validation failure. As a validation error the page fell to its `!r.ok` branch and
+// rendered "Something went wrong on our side" with no links at all — the one bad-token shape with
+// no way out. Over-long input is clipped here so the handler answers `unknown` like every other
+// unrecognisable token; the lookup is a constant-time miss either way.
+const MAX_TOKEN_CHARS = 128;
+const input = z.object({ token: z.string().min(1).max(4096).transform((t) => t.slice(0, MAX_TOKEN_CHARS + 1)) });
 
 const member = z.object({
   guestId: z.string(),
@@ -64,7 +70,12 @@ export const lookupInvitation = defineCapability<z.infer<typeof input>, Invitati
     const invitation = await findInvitationByToken(db, i.token);
     if (!invitation) return ok({ data: { status: 'unknown', recovery: RECOVERY.unknown }, sources: [] });
     const lifecycle = invitationLifecycle(invitation, ctx.now);
-    if (lifecycle === 'expired' || lifecycle === 'revoked') return ok({ data: { status: lifecycle, recovery: RECOVERY[lifecycle] }, sources: [] });
+    if (lifecycle === 'expired') return ok({ data: { status: lifecycle, recovery: RECOVERY.expired }, sources: [] });
+    if (lifecycle === 'revoked') {
+      // "A newer link was sent" is only true when one actually was. A plain revoke sends nothing.
+      const live = await currentInvitationForHousehold(db, invitation.householdId);
+      return ok({ data: { status: lifecycle, recovery: live ? RECOVERY.revoked : RECOVERY.revokedNoReplacement }, sources: [] });
+    }
     const household = await getHousehold(db, invitation.householdId);
     if (!household) return ok({ data: { status: 'unknown', recovery: RECOVERY.unknown }, sources: [] });
     const members = await listHouseholdMembers(db, household.id);

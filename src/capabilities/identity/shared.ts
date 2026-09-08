@@ -159,7 +159,15 @@ export const LOCKED_MESSAGE = 'Too many incorrect codes. For your security, plea
 export const RECOVERY = {
   unknown: { title: 'We couldn’t find that invitation', message: 'The link may have been copied incompletely. Try opening it again from your invitation, or get in touch with Sara and Tyler and they will send a fresh one.' },
   expired: { title: 'This invitation link has expired', message: 'No problem — reach out to Sara and Tyler and they will send you a new link right away.' },
+  /**
+   * Two different things end a link, and telling a guest the wrong one sends them hunting for an
+   * email that will never arrive. `admin_rotate_invitation` issues a replacement;
+   * `admin_revoke_invitation` (a leak, the wrong recipient, someone un-invited) issues nothing, and
+   * this used to say "a newer link was sent" either way. The distinguishing fact is simply whether
+   * the household has a live invitation now.
+   */
   revoked: { title: 'This invitation link is no longer active', message: 'A newer link was sent for your household. Check your latest message from Sara and Tyler, or ask them for a fresh one.' },
+  revokedNoReplacement: { title: 'This invitation link is no longer active', message: 'It was cancelled, and no replacement has gone out yet. Ask Sara and Tyler for a fresh link and they will send one.' },
 } as const;
 
 /**
