@@ -204,6 +204,13 @@ jobs:
           #
           # So when adding a route here, read `src/app`, not the console index — the walk cannot
           # see what is not a link.
+          #
+          # Guest routes have the same blind spot, and the level-16 run showed it: with the admin
+          # exports warmed, `claim.spec.ts` went flaky on `page.goto('/sign-out')` — 30s test
+          # budget gone, then green on the retry. Six guest pages the specs navigate to were
+          # missing here. The list below is now every path any spec calls `page.goto` on, which is
+          # a rule that can be re-derived rather than remembered:
+          #   comm -23 <(grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u) <this list>
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
@@ -213,6 +220,7 @@ jobs:
                       /admin/seating /admin/transport /admin/travel \
                       /admin/guests/export /admin/rsvp/export \
                       /admin/media/duplicates /admin/media/import /admin/media/metrics \
+                      /ask-us /our-story /the-wedding /explore-caa /share-an-adventure /sign-out \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
