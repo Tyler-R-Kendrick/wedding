@@ -21,9 +21,10 @@
  * Starts and stops its own server on an ephemeral port; touches no committed state.
  */
 import { spawn } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync, writeFileSync, copyFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { clientRegistry } from '../registry.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -40,8 +41,42 @@ const REG = clientRegistry();
  */
 const LABEL_TO_CEREMONY = new Map(Object.entries(REG.ceremony).map(([id, c]) => [c.label.toLowerCase(), id]));
 
-const outboxPath = resolve(repoRoot, '.secrets/outbox.json');
-const status = existsSync(outboxPath) ? JSON.parse(readFileSync(outboxPath, 'utf8')).status || {} : {};
+/**
+ * Fixtures, not ambient state. An earlier run of this check passed thirty-six for thirty-six only
+ * because the real store happened to hold no ceremonies that day — and a ceremony left over from a
+ * provider you have since moved away from was exactly the bug it missed. Every slot here gets a
+ * status AND an open ceremony belonging to its FIRST option, so choosing any other option must
+ * visibly stop offering that one's work.
+ */
+const fixtureDir = mkdtempSync(join(tmpdir(), 'secret-drop-verify-'));
+process.on('exit', () => { try { rmSync(fixtureDir, { recursive: true, force: true }); } catch { /* best effort */ } });
+
+const status = {};
+const ceremonies = [];
+/** Which option each slot's fixture ceremony and status belong to. */
+const fixtureOwner = new Map();
+for (const slot of REG.slots) {
+  const owner = slot.options[0];
+  fixtureOwner.set(slot.id, owner.id);
+  status[slot.id] = {
+    credential: slot.id, option: owner.id, vars: owner.secrets, set: 0, of: owner.secrets.length,
+    state: 'waiting-on-you', method: null, nextAction: null, at: new Date().toISOString(),
+  };
+  // Only a `link` provider ever has an OAuth ceremony outstanding. Inventing one for a sign-in
+  // provider would be testing a state the ladder cannot produce.
+  if (owner.ceremony !== 'link') continue;
+  ceremonies.push({
+    id: slot.id, credential: slot.id, kind: 'oauth', method: 'oauth', status: 'waiting',
+    provider: `https://${owner.host || 'example.invalid'}`, startedAt: new Date().toISOString(),
+    verification_uri_complete: `https://${owner.host || 'example.invalid'}/authorize?fixture=1`,
+  });
+}
+/** Slots that really do have a pending ceremony, and therefore an Approve to offer its owner. */
+const withCeremony = new Set(ceremonies.map((c) => c.credential));
+writeFileSync(join(fixtureDir, 'outbox.json'), JSON.stringify({ status, ceremonies }, null, 2));
+writeFileSync(join(fixtureDir, 'choices.json'), '{}');
+const realKey = resolve(repoRoot, '.secrets/public.jwk.json');
+if (existsSync(realKey)) copyFileSync(realKey, join(fixtureDir, 'public.jwk.json'));
 
 let chromium;
 try {
@@ -51,7 +86,7 @@ try {
   process.exit(2);
 }
 
-const server = spawn(process.execPath, ['scripts/secrets/serve.mjs', '--port', String(PORT)], {
+const server = spawn(process.execPath, ['scripts/secrets/serve.mjs', '--port', String(PORT), '--secrets', fixtureDir], {
   cwd: repoRoot,
   env: { ...process.env, NODE_OPTIONS: '' },
 });
@@ -78,6 +113,23 @@ async function ready(deadlineMs = 20_000) {
 const html = await ready();
 const token = /__SECRET_DROP__=\{"token":"([^"]+)"/.exec(html)?.[1];
 if (!token) { stop(); console.error('served page carries no token'); process.exit(2); }
+
+/**
+ * Prove the fixtures are actually in play before asserting anything about them. They were not,
+ * once: an absolute `--secrets` path was pasted onto the repo root, the store came back empty, and
+ * this check reported thirty-six passes against nothing. A verification that cannot see its own
+ * setup is worse than no verification, because it reads as evidence.
+ */
+{
+  const seen = await (await fetch(`http://127.0.0.1:${PORT}/api/state`, { headers: { 'x-drop-token': token } })).json();
+  const ceremonies = Object.keys(seen.collections?.ceremonies ?? {});
+  const statuses = Object.keys(seen.collections?.status ?? {});
+  if (statuses.length !== REG.slots.length || ceremonies.length !== withCeremony.size) {
+    stop();
+    console.error(`fixtures did not reach the store: ${statuses.length}/${REG.slots.length} statuses, ${ceremonies.length}/${withCeremony.size} ceremonies.`);
+    process.exit(2);
+  }
+}
 
 const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
@@ -146,8 +198,12 @@ for (const slot of REG.slots) {
     if (got.open) {
       if (!shown) problems.push(`names no ceremony: "${got.why.trim()}"`);
       // Self-consistency: whatever ceremony it claims, that is the control it must offer.
+      // A ceremony already in flight for THIS provider replaces "Get the link" with "Approve":
+      // the link exists, so asking for it again is not the next step.
+      const pending = withCeremony.has(slot.id) && opt.id === fixtureOwner.get(slot.id);
+      const approving = got.controls.some((c) => c === 'Approve' || c === 'Approve again');
       const expected = CONTROL[shown];
-      if (expected && !got.controls.includes(expected)) {
+      if (expected && !got.controls.includes(expected) && !(pending && approving)) {
         problems.push(`says "${label}" but does not offer "${expected}" (got ${JSON.stringify(got.controls)})`);
       }
       for (const [id, control] of Object.entries(CONTROL)) {
@@ -159,6 +215,17 @@ for (const slot of REG.slots) {
         problems.push(`shows ${got.fields.length} paste fields, wants ${opt.secrets.length}`);
       }
     }
+    /**
+     * The fixture ceremony belongs to the slot's first option. Any OTHER option must not be
+     * offered it: an "Approve" link to Resend is not an answer to "I picked Postmark", and
+     * offering it is how choosing a provider came to do nothing you could see.
+     */
+    const owner = fixtureOwner.get(slot.id);
+    const stillApproving = got.controls.some((c) => c === 'Approve' || c === 'Approve again');
+    if (opt.id !== owner && stillApproving) {
+      problems.push(`offers "${owner}"'s pending approval after choosing "${opt.id}"`);
+    }
+
     if (problems.length) {
       failures++;
       console.log(`FAIL ${slot.id}/${opt.id}: ${problems.join(' | ')}`);

@@ -82,22 +82,61 @@ export function createLogic(reg) {
   }
 
   /**
+   * Which provider a ceremony or hand-off was started for.
+   *
+   * Newer records carry `option` outright. Older ones do not, but the status row was written by
+   * the same ladder run, so it names the same provider. Only when neither says is the owner
+   * unknown — and an unknown owner is not held against the record.
+   */
+  function ownerOf(record, slot, status = {}) {
+    return record?.option ?? status[slot.id]?.option ?? null;
+  }
+
+  /**
+   * Whether a record still describes the provider in force. A Resend OAuth link is not an answer
+   * to "I picked Postmark", and offering it as one is how choosing a provider came to do nothing
+   * visible: the ceremony was found first and answered for a provider nobody had selected.
+   */
+  function stillChosen(record, slot, status = {}, choices = {}) {
+    const owner = ownerOf(record, slot, status);
+    return owner === null || owner === optionFor(slot, choices).id;
+  }
+
+  /**
+   * An authorization link has a deadline. Past it the provider rejects the code, so offering
+   * "Approve" sends someone to a page that cannot work — the artifact was holding four links that
+   * had expired the previous evening.
+   */
+  function expired(ceremony, now = Date.now()) {
+    const at = Date.parse(ceremony?.expiresAt ?? '');
+    return Number.isFinite(at) && at <= now;
+  }
+
+  /**
    * A ceremony you can still act on, versus one already answered. `code-received` means the code
    * came back and is being exchanged: offering "Approve" again there sends someone to approve a
-   * thing they have already approved.
+   * thing they have already approved. Ceremonies belonging to a provider no longer chosen are not
+   * actionable at all — they are somebody else's unfinished business.
    */
-  function ceremonyState(slotId, ceremonies = []) {
-    const mine = ceremonies.filter((c) => c.credential === slotId);
+  function ceremonyState(slot, ceremonies = [], status = {}, choices = {}, now = Date.now()) {
+    const id = typeof slot === 'string' ? slot : slot.id;
+    const shaped = typeof slot === 'string' ? { id, options: [] } : slot;
+    const mine = ceremonies.filter((c) => c.credential === id
+      && stillChosen(c, shaped, status, choices)
+      && !expired(c, now));
     return {
       open: mine.find((c) => c.status === 'waiting' || !c.status) || null,
       settling: mine.find((c) => c.status === 'code-received' || c.status === 'exchanging') || null,
     };
   }
 
-  /** A hand-off Claude has been asked for and has not finished. */
-  function askedFor(slotId, handoffs = {}) {
-    const h = handoffs[slotId];
-    return h && h.status !== 'done' && h.status !== 'cancelled' ? h : null;
+  /** A hand-off Claude has been asked for, has not finished, and that is still for this provider. */
+  function askedFor(slot, handoffs = {}, status = {}, choices = {}) {
+    const id = typeof slot === 'string' ? slot : slot.id;
+    const shaped = typeof slot === 'string' ? { id, options: [] } : slot;
+    const h = handoffs[id];
+    if (!h || h.status === 'done' || h.status === 'cancelled') return null;
+    return stillChosen(h, shaped, status, choices) ? h : null;
   }
 
   /**
@@ -106,10 +145,10 @@ export function createLogic(reg) {
    */
   function actionFor(slot, { status = {}, choices = {}, ceremonies = [], handoffs = {} } = {}) {
     const opt = optionFor(slot, choices);
-    const { open, settling } = ceremonyState(slot.id, ceremonies);
+    const { open, settling } = ceremonyState(slot, ceremonies, status, choices);
     if (settling) return { kind: 'settling', ceremony: settling };
     if (open) return { kind: 'approve', ceremony: open, reopened: Boolean(open.openedAt) };
-    const asked = askedFor(slot.id, handoffs);
+    const asked = askedFor(slot, handoffs, status, choices);
     if (asked) return { kind: 'asked', handoff: asked };
     const cer = ceremonyIdFor(slot, status, choices);
     if (cer === 'signin') return { kind: 'signin', option: opt };
@@ -146,7 +185,7 @@ export function createLogic(reg) {
   }
 
   return {
-    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou,
+    optionFor, statusFor, stateOf, ceremonyIdFor, ceremonyOf, needsYou, ownerOf, stillChosen, expired,
     ceremonyState, askedFor, actionFor, allowsManualEntry, pasteFields, boundSummary,
   };
 }

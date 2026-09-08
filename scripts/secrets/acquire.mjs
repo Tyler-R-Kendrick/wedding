@@ -92,9 +92,14 @@ async function runAutofill({ dryRun }) {
 
 /* -------------------------------------------------------------- ceremonies */
 
-async function putCeremony(credId, ceremony, extra = {}) {
+/**
+ * `option` is stamped on every ceremony because a ceremony belongs to a provider, not just a slot.
+ * Without it the page found a Resend OAuth link when someone had selected Postmark and offered it
+ * as the thing to approve — so choosing a provider appeared to do nothing at all.
+ */
+async function putCeremony(credId, ceremony, extra = {}, option = null) {
   const all = await readJson(CEREMONIES, {});
-  all[credId] = { ...ceremony, ...extra, credential: credId, status: 'waiting', startedAt: new Date().toISOString() };
+  all[credId] = { ...ceremony, ...extra, credential: credId, ...(option ? { option } : {}), status: 'waiting', startedAt: new Date().toISOString() };
   await writeJson(CEREMONIES, all);
   return all[credId];
 }
@@ -142,7 +147,7 @@ async function openEnvelope(env, priv) {
 async function rungAuthmd(cred, step, ctx) {
   const result = await authmd.acquireToken(step.origin, {
     loginHint: ctx.adminEmail,
-    onCeremony: (c) => putCeremony(cred.id, c, { method: 'authmd', provider: step.origin }),
+    onCeremony: (c) => putCeremony(cred.id, c, { method: 'authmd', provider: step.origin }, cred.option ?? null),
   });
   const target = step.var || cred.vars[0];
   return { values: new Map([[target, result.access_token]]), method: 'authmd', detail: `identity type ${result.identityType}${result.claimed ? ', claimed by you' : ''}` };
@@ -174,7 +179,7 @@ async function rungDelegated(cred, step, ctx) {
     tokenEndpoint: step.token,
     scope: step.scope,
     redirectUri: step.redirect || ctx.redirectUri,
-    onCeremony: (c) => putCeremony(cred.id, c, { method: c.kind === 'device' ? 'device' : 'oauth', provider: step.origin, scope: step.scope || null }),
+    onCeremony: (c) => putCeremony(cred.id, c, { method: c.kind === 'device' ? 'device' : 'oauth', provider: step.origin, scope: step.scope || null }, cred.option ?? null),
     awaitCode: ctx.waitSeconds
       ? async (state) => {
         const deadline = Date.now() + ctx.waitSeconds * 1000;
@@ -228,7 +233,8 @@ const RUNGS = { harness: rungHarness, authmd: rungAuthmd, register: rungRegister
 
 async function runLadder(entry, ctx) {
   const { slot, option } = entry;
-  const cred = { id: slot.id, vars: option.secrets, ladder: option.ladder, host: option.host, warn: option.warn };
+  // `option` rides along so any ceremony this run starts records which provider it is for.
+  const cred = { id: slot.id, option: option.id, vars: option.secrets, ladder: option.ladder, host: option.host, warn: option.warn };
   const attempts = [];
   for (const step of cred.ladder) {
     const rung = RUNGS[step.method];

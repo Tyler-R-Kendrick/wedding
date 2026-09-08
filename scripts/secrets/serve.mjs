@@ -34,15 +34,24 @@ const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
 const port = Number(opt('port', process.env.SECRET_DROP_PORT || 4600));
 const envPath = opt('env', '.env');
+/**
+ * Where the store lives. Overridable so a check can run against fixtures it controls rather than
+ * whatever this sandbox happens to hold — the page verification passed once only because the real
+ * store had no ceremonies in it that day.
+ */
+const secretsDir = opt('secrets', '.secrets');
+// `resolve`, not `join`: an absolute --secrets path must not be pasted onto the repo root, which
+// silently pointed the store at a directory that did not exist and served empty collections.
+const inStore = (name) => resolve(repoRoot, secretsDir, name);
 
 /** Files the page's collections are projected from. Nothing else on disk is reachable. */
 const FILES = {
-  outbox: at('.secrets/outbox.json'),
-  choices: at('.secrets/choices.json'),
-  handoffs: at('.secrets/handoffs.json'),
-  applied: at('.secrets/applied.json'),
-  publicKey: at('.secrets/public.jwk.json'),
-  privateKey: at('.secrets/private.jwk.json'),
+  outbox: inStore('outbox.json'),
+  choices: inStore('choices.json'),
+  handoffs: inStore('handoffs.json'),
+  applied: inStore('applied.json'),
+  publicKey: inStore('public.jwk.json'),
+  privateKey: inStore('private.jwk.json'),
   page: at('.secrets/secret-drop.html'),
 };
 
@@ -158,7 +167,7 @@ async function writeDoc(path, op, data) {
   if (collection === 'recipients') {
     // A durable key generated in the browser. Recorded so `apply-env.mjs` can seal for it later;
     // the private half never leaves the tab it was made in.
-    const dir = at('.secrets/recipients');
+    const dir = inStore('recipients');
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `${id.replace(/[^A-Za-z0-9_-]/g, '')}.json`), JSON.stringify(data, null, 2) + '\n');
     bump();

@@ -168,36 +168,114 @@ describe('ceremonies already answered', () => {
     { id: 'c2', credential: 'other', status: 'waiting' },
   ];
   it('finds the open one for this slot only', () => {
-    assert.equal(L.ceremonyState('email', ceremonies).open.id, 'c1');
-    assert.equal(L.ceremonyState('email', ceremonies).settling, null);
+    assert.equal(L.ceremonyState(slot, ceremonies).open.id, 'c1');
+    assert.equal(L.ceremonyState(slot, ceremonies).settling, null);
   });
   it('treats a ceremony with no status as open', () => {
-    assert.equal(L.ceremonyState('email', [{ id: 'c3', credential: 'email' }]).open.id, 'c3');
+    assert.equal(L.ceremonyState(slot, [{ id: 'c3', credential: 'email' }]).open.id, 'c3');
   });
   it('treats a code already received as settling, never as open', () => {
     for (const status of ['code-received', 'exchanging']) {
-      const state = L.ceremonyState('email', [{ id: 'c4', credential: 'email', status }]);
+      const state = L.ceremonyState(slot, [{ id: 'c4', credential: 'email', status }]);
       assert.equal(state.settling.id, 'c4');
       assert.equal(state.open, null);
     }
   });
   it('finds nothing when there are no ceremonies', () => {
-    assert.equal(L.ceremonyState('email', []).open, null);
-    assert.equal(L.ceremonyState('email').open, null);
+    assert.equal(L.ceremonyState(slot, []).open, null);
+    assert.equal(L.ceremonyState(slot).open, null);
+  });
+  it('accepts a bare slot id, for callers that only have one', () => {
+    assert.equal(L.ceremonyState('email', ceremonies).open.id, 'c1');
+  });
+});
+
+/**
+ * The bug this file was extended for. A ceremony belongs to a provider, not just a slot: the
+ * artifact held a Resend OAuth link for `email`, and because `actionFor` looked for a ceremony
+ * before it looked at the choice, selecting Postmark produced "Approve" pointing at Resend.
+ * Choosing a provider appeared to do nothing.
+ */
+describe('a ceremony belongs to the provider that started it', () => {
+  const resendCeremony = [{ id: 'email', credential: 'email', status: 'waiting', openedAt: '2026-09-07T23:42:14Z' }];
+  const legacyStatus = { email: { option: 'resend', state: 'waiting-on-you', nextAction: { method: 'oauth' } } };
+
+  it('says which provider a record is for, preferring what it records over inference', () => {
+    assert.equal(L.ownerOf({ option: 'postmark' }, slot, legacyStatus), 'postmark');
+    // Older ceremonies carry no option, but the status row from the same run names the provider.
+    assert.equal(L.ownerOf({}, slot, legacyStatus), 'resend');
+    assert.equal(L.ownerOf({}, slot, {}), null);
+    assert.equal(L.ownerOf(null, slot), null);
+  });
+
+  it('holds nothing against a record whose provider cannot be determined', () => {
+    assert.equal(L.stillChosen({}, slot, {}, { email: 'postmark' }), true);
+  });
+
+  it('drops a ceremony left over from a provider no longer chosen', () => {
+    assert.equal(L.ceremonyState(slot, resendCeremony, legacyStatus, { email: 'postmark' }).open, null);
+    assert.equal(L.ceremonyState(slot, resendCeremony, legacyStatus, { email: 'byo' }).open, null);
+    // …and keeps it for the provider it actually belongs to.
+    assert.equal(L.ceremonyState(slot, resendCeremony, legacyStatus, { email: 'resend' }).open.id, 'email');
+  });
+
+  it('offers the chosen provider its own ceremony, not the previous one', () => {
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'postmark' }, ceremonies: resendCeremony }).kind, 'signin');
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'byo' }, ceremonies: resendCeremony }).kind, 'none');
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'resend' }, ceremonies: resendCeremony }).kind, 'approve');
+  });
+
+  it('uses the option a newer ceremony records, ignoring the status', () => {
+    const stamped = [{ id: 'email', credential: 'email', status: 'waiting', option: 'postmark' }];
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'postmark' }, ceremonies: stamped }).kind, 'approve');
+    assert.equal(L.actionFor(slot, { status: legacyStatus, choices: { email: 'resend' }, ceremonies: stamped }).kind, 'link');
+  });
+});
+
+describe('an authorization link has a deadline', () => {
+  const link = (expiresAt) => [{ id: 'email', credential: 'email', status: 'waiting', option: 'resend', expiresAt }];
+  const now = Date.parse('2026-09-08T02:00:00Z');
+  it('knows when one has run out', () => {
+    assert.equal(L.expired({ expiresAt: '2026-09-07T20:57:00Z' }, now), true);
+    assert.equal(L.expired({ expiresAt: '2026-09-08T03:00:00Z' }, now), false);
+    // No deadline recorded, or an unreadable one, is not a reason to discard it.
+    assert.equal(L.expired({}, now), false);
+    assert.equal(L.expired({ expiresAt: 'soon' }, now), false);
+    assert.equal(L.expired(null, now), false);
+    assert.equal(L.expired({ expiresAt: '2020-01-01T00:00:00Z' }), true);
+  });
+  it('stops offering an approval the provider will refuse', () => {
+    const choices = { email: 'resend' };
+    assert.equal(L.ceremonyState(slot, link('2026-09-07T20:57:00Z'), {}, choices, now).open, null);
+    assert.equal(L.ceremonyState(slot, link('2026-09-08T03:00:00Z'), {}, choices, now).open.id, 'email');
+  });
+  it('falls back to asking for a fresh link once the old one is dead', () => {
+    // Not "Approve" into a dead end: the provider's own ceremony, from the top.
+    const dead = link('2026-09-07T20:57:00Z');
+    assert.equal(L.ceremonyState(slot, dead, {}, { email: 'resend' }, now).open, null);
   });
 });
 
 describe('hand-offs already asked for', () => {
   it('is active while it is outstanding', () => {
+    assert.ok(L.askedFor(slot, { email: { status: 'requested' } }));
     assert.ok(L.askedFor('email', { email: { status: 'requested' } }));
   });
   it('is not active once finished or cancelled', () => {
-    assert.equal(L.askedFor('email', { email: { status: 'done' } }), null);
-    assert.equal(L.askedFor('email', { email: { status: 'cancelled' } }), null);
+    assert.equal(L.askedFor(slot, { email: { status: 'done' } }), null);
+    assert.equal(L.askedFor(slot, { email: { status: 'cancelled' } }), null);
   });
   it('is not active when there is none', () => {
-    assert.equal(L.askedFor('email', {}), null);
-    assert.equal(L.askedFor('email'), null);
+    assert.equal(L.askedFor(slot, {}), null);
+    assert.equal(L.askedFor(slot), null);
+  });
+  it('is not active once you have chosen a different provider', () => {
+    // Asking Claude to sign in to Postmark says nothing about SES; showing "Claude is on it"
+    // for a provider you have since moved away from is the same lie in a quieter form.
+    const asked = { email: { status: 'requested', option: 'postmark', kind: 'signin' } };
+    assert.ok(L.askedFor(slot, asked, {}, { email: 'postmark' }));
+    assert.equal(L.askedFor(slot, asked, {}, { email: 'byo' }), null);
+    assert.equal(L.actionFor(slot, { handoffs: asked, choices: { email: 'byo' } }).kind, 'none');
   });
 });
 
@@ -216,6 +294,9 @@ describe('the one control a strip offers', () => {
   });
   it('reports the ask rather than the button that made it', () => {
     assert.equal(L.actionFor(slot, { handoffs: { email: { status: 'requested', kind: 'signin' } } }).kind, 'asked');
+  });
+  it('ignores a ceremony for another slot entirely', () => {
+    assert.equal(L.actionFor(slot, { ceremonies: [{ id: 'x', credential: 'storage', status: 'waiting' }] }).kind, 'link');
   });
   it('prefers a live ceremony over an outstanding ask', () => {
     const both = { ceremonies: [{ id: 'c', credential: 'email', status: 'waiting' }], handoffs: { email: { status: 'requested' } } };
