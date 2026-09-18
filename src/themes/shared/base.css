@@ -144,19 +144,20 @@ body {
  *
  * This is a floor, not a style. `a:not([class])` is (0,1,1), so it outranks preflight's bare `a`
  * inside `layer(base)` and loses to every component and kit rule — `.prov a`, `.errsum__list a`,
- * `.gh-link` and the rest all keep their own treatment. It only paints what nothing else claimed.
+ * `.gh-link` and the rest all keep their own treatment.
  *
- * It paints with the LINK ROLE TOKENS, not with `--color-secondary`. Those two are the same colour
- * in Conservatory and emphatically not in Gilded Hour, whose DESIGN.md gives links Bronze
- * (`--color-tertiary`) with a gold underline and reserves Lake Blue for focus — `.site
- * :focus-visible` is `--color-secondary` thirty lines above this. Hardcoding it here would have
- * painted every unclaimed link in the one colour that design forbids for links, and in the exact
- * colour of its own focus ring.
+ * It sets the UNDERLINE AND NOTHING ELSE. It set a colour too, first `--color-secondary` and then
+ * the `--link-color` role token, and both were wrong for the same reason: a rule this general
+ * cannot know what it is painting on. The admin console proved it. `.con-window a` inherits
+ * near-black #1f2a24 from its own shell and reads 13.20:1; the colour this rule imposed made it
+ * #5c6b57, which is 4.1:1 against the tinted background `a[aria-current="page"]` sits on, and
+ * `admin-console.spec.ts` went red on a contrast violation that had never existed. The underline
+ * alone is what SC 1.4.1 actually asks for — a distinction that is not colour — and it is the only
+ * thing that is safe on every surface, themed or not. Ink stays whatever the surface already gave
+ * it, which is always at least as legible as anything this rule could choose.
  */
 a:not([class]) {
-  color: var(--link-color, var(--color-secondary, var(--color-primary)));
   text-decoration: underline;
-  text-decoration-color: var(--link-underline, currentcolor);
   text-underline-offset: 0.18em;
 }
 
