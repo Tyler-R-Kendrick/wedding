@@ -94,6 +94,10 @@
  */
 .placeholder__label {
   display: block;
+
+  /* The stamp is one sentence; `pretty` keeps it from orphaning "this:" onto a line of its own in
+     Conservatory's narrow cards. */
+  text-wrap: pretty;
   margin-bottom: var(--spacing-xs, 4px);
   font-size: var(--type-body-sm-size, 1.0625rem);
   line-height: var(--type-body-sm-line, 1.55);

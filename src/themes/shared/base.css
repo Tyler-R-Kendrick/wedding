@@ -81,11 +81,20 @@ body {
 }
 
 /* Skip link: first focusable element; visible on focus only. */
+
+/*
+ * The first control on every page, and the one a keyboard user meets first, so it carries the
+ * repo's own 44px target rather than the 24px WCAG 2.2 AA floor. `inline-flex` + centring grows
+ * the hit box without moving the type off its baseline: measured 147.8x41.5 before.
+ */
 .skip-link {
   position: absolute;
   inset-inline-start: var(--spacing-md);
   inset-block-start: var(--spacing-md);
   z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -128,8 +137,14 @@ body {
  * is a full-width action bar / elevator panel; `data-floating-menu` is a floating Menu control.
  * A design may carry both, and the reservations add.
  */
+
+/*
+ * 4.5rem, not 4.25: Gilded Hour's elevator panel measures 72px at 390px because "Explore CAA"
+ * wraps onto a second line, and 4.25rem reserved 68 of them. Four pixels is not much until it is
+ * the four that hold a line of type.
+ */
 .site[data-bottom-bar] {
-  --bottom-bar-height: 4.25rem;
+  --bottom-bar-height: 4.5rem;
 }
 
 .site[data-floating-menu] {

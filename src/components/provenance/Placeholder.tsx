@@ -69,10 +69,18 @@ export function Placeholder({ children, inline = false, label = PLACEHOLDER_LABE
   const Tag = inline ? 'span' : 'div';
   return (
     <Tag className={inline ? 'placeholder placeholder--inline' : 'placeholder'} data-placeholder="true" role="note">
-      {/* Inline, the label leads into the hint and needs punctuation, or the two run together:
-          "Sara + Tyler are still writing this the room is still to be confirmed." As a block the
-          hint is its own paragraph, so the colon would be noise there. */}
-      <span className="placeholder__label">{inline ? `${label}:` : label}</span>{' '}
+      {/* The label leads into the hint and needs punctuation, or the two run together: "Sara +
+          Tyler are still writing this the room is still to be confirmed."
+
+          The block form used to omit the colon, on the theory that a hint in its own paragraph
+          does not need one. On the page that read as damage rather than as a note: the stamp is a
+          grammatical sentence, so without punctuation it ends, and the hint below it then opens
+          lowercase and mid-thought — "Sara + Tyler are still writing this" / "dress code in one
+          sentence, with an example outfit." Eleven of those down `/the-wedding` looked like eleven
+          half-written sentences. The hints are written to follow a label (see
+          `withoutPlaceholderMarker` above, which capitalises one when it has to stand alone), so
+          the colon is what they were written for. */}
+      <span className="placeholder__label">{`${label}:`}</span>{' '}
       {inline ? <span className="placeholder__hint">{children}</span> : <p className="placeholder__hint">{children}</p>}
     </Tag>
   );

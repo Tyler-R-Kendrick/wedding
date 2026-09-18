@@ -245,6 +245,31 @@
   }
 }
 
+/*
+ * On a phone the tag stops being an object lying on the page and becomes chrome.
+ *
+ * Floating at the bottom-right it is 96x44 of opaque kraft over a 390px column, so at rest it sat
+ * on whatever line happened to be there — measured on `/the-wedding`, squarely across the
+ * dress-code card's body text, hiding words with no way for a reader to move it. `main` already
+ * reserves `--bottom-chrome`, which keeps the END of a document clear; this is the other half,
+ * for every scroll position in between.
+ *
+ * Only where there is no `.cv-bar`. When the page has quick actions the bar is already the
+ * chrome at the foot of the screen and the tag rides above it, so a second full-width plate would
+ * just be two stacked bars. `data-bottom-bar` is on the shell exactly when that bar is rendered.
+ */
+@media (width < 900px) {
+  .site:not([data-bottom-bar]) .cv-menu {
+    inset-inline: 0;
+    inset-block-end: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--spacing-sm) var(--spacing-md) calc(var(--spacing-sm) + env(safe-area-inset-bottom, 0px));
+    background: var(--color-neutral);
+    box-shadow: var(--shadow-bar-ambient);
+  }
+}
+
 .cv-bar {
   position: fixed;
   inset-inline: 0;
@@ -573,7 +598,13 @@
   animation: cv-fade var(--duration-fast) var(--ease-standard);
 }
 
+/*
+ * Not ornament: "302" alone means nothing, and at `label-caps` this was the only text on the page
+ * under the 17px floor. It takes `control-caps`, with the chips and tags, for the reason given
+ * there — small caps read smaller than their em size, not larger.
+ */
 .cv-sky__unit {
+  font-size: var(--type-control-caps-size);
   color: var(--color-sky-ink);
 }
 

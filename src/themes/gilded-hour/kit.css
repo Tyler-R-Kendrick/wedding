@@ -39,6 +39,7 @@
    */
   --gh-measure: 34rem;
   --wp-measure: var(--gh-measure);
+
 }
 
 /* ---------- type helpers ---------- */
@@ -324,6 +325,7 @@
   }
 }
 
+
 .gh-panel__cell {
   display: grid;
   place-items: center;
@@ -482,12 +484,21 @@
   padding: clamp(var(--spacing-lg), 6vw, var(--spacing-3xl)) var(--gh-gutter) var(--spacing-2xl);
 }
 
-/* Phones: the state's action stays in the first screen; the countdown follows it. */
+/*
+ * Phones: the state's action stays in the first screen. The countdown used to be moved BELOW the
+ * travel note here (`order: 2`), which put the one number the page is built around at the very
+ * bottom of the hero — and the elevator panel is `position: fixed` at the bottom of the viewport.
+ * Measured at 390x844: the countdown ran 718-788 under a panel at 772-844, so its last 16px were
+ * covered and "days to go" was gone entirely. The first thing a guest saw was a sliced number with
+ * no unit.
+ *
+ * Padding cannot fix that — a content-sized hero grows downward and the countdown stays where it
+ * is. So the order goes instead: DOM order already runs lede, countdown, actions, note, which
+ * keeps the action in the first screen and leaves the note, not the headline number, as the thing
+ * the bar may clip. `main` reserves `--bottom-chrome` (shared/base.css), so the note is never
+ * unreachable — only, at rest, partly behind the bar, which is what a bottom bar does.
+ */
 @media (width < 600px) {
-  .gh-hero__countdown-slot {
-    order: 2;
-  }
-
   .gh-hero__lede {
     font-size: var(--type-body-md-size);
     line-height: var(--type-body-md-line);
@@ -628,7 +639,15 @@
   animation: gh-fade var(--duration-base) var(--ease-settle);
 }
 
+/*
+ * The unit is not ornament, whatever the ramp says. "302" alone means nothing — "days to go" is
+ * the whole content of that block and the hero's second-largest idea — and at `label-caps` it
+ * computed to 13.81px: the smallest type on the page, under PRODUCT.md's 17px floor, in caps at
+ * 0.18em tracking, which reads smaller still. It takes `control-caps`, with the chips and the
+ * field labels, for the reason they are there.
+ */
 .gh-countdown__label {
+  font-size: var(--type-control-caps-size);
   color: var(--color-on-surface-muted);
 }
 
