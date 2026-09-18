@@ -234,7 +234,7 @@ const HANDOFF_WORK = {
 };
 
 /** Logins `cli-login.mjs` implements. Kept beside HANDOFF_WORK so the two cannot drift apart. */
-const CLI_LOGIN = new Set(['higgsfield']);
+const CLI_LOGIN = new Set(['higgsfield', 'vercel']);
 
 /** One job per key; the map is also how a second press knows not to start a duplicate. */
 const running = new Map();

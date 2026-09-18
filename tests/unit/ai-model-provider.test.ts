@@ -86,3 +86,26 @@ describe('borrowed sessions', () => {
     expect(p.name).toBe('copilot (borrowed session)');
   });
 });
+
+describe('Vercel AI Gateway', () => {
+  it('is selected by AI_GATEWAY=on with no key at all', () => {
+    // On Vercel the deployment signs with its own OIDC identity, so "no key" is the configured
+    // state rather than a missing one — the mock would be the wrong answer here.
+    const p = createAiModelProvider(env({ AI_GATEWAY: true } as Partial<ServerEnv>));
+    expect(p.name).toBe('vercel-ai-gateway');
+    expect(p.mode).toBe('live');
+    expect(p.modelIdFor('chat')).toBe('anthropic/claude-sonnet-5');
+    expect(p.modelIdFor('verifier')).toBe('anthropic/claude-haiku-4.5');
+  });
+
+  it('is selected by an explicit key, and takes model overrides', () => {
+    const p = createAiModelProvider(env({ AI_GATEWAY_API_KEY: 'vck_test', AI_CHAT_MODEL: 'openai/gpt-5' } as Partial<ServerEnv>));
+    expect(p.name).toBe('vercel-ai-gateway');
+    expect(p.modelIdFor('chat')).toBe('openai/gpt-5');
+  });
+
+  it('still yields to Anthropic, which the site is written against', () => {
+    const p = createAiModelProvider(env({ AI_GATEWAY: true, ANTHROPIC_API_KEY: 'sk-ant-test' } as Partial<ServerEnv>));
+    expect(p.name).toBe('anthropic');
+  });
+});

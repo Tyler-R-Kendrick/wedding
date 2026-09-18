@@ -130,7 +130,7 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   page appears for a `link` option only *after* an ask goes 45s unanswered, beside the ask rather
   than in place of it. Two rules that hold everywhere: no control may name a terminal command, and
   no control may repeat a request nobody answered.
-- **Every feature has its own connection, and none is ever hidden.** 14 slots, 44 options, all in
+- **Every feature has its own connection, and none is ever hidden.** 15 slots, 46 options, all in
   one list: answering a connection never files it away somewhere else, because the one you have
   just configured is the one you are most likely to want to look at again. Identity is first class with
   five real alternatives, and their ceremonies were probed on 2026-09-08 rather than assumed —

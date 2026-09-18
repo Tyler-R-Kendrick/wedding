@@ -2,7 +2,7 @@
   "name": "wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "Tyler & Sara's wedding website \u2014 design tooling, skills, and quality gates",
+  "description": "Tyler & Sara's wedding website — design tooling, skills, and quality gates",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -40,6 +40,8 @@
     "impeccable:update": "impeccable update --project --providers=claude -y",
     "lint:css": "stylelint \"src/**/*.{css,scss}\" --allow-empty-input",
     "quality": "npm run design:lint && npm run slop:detect && npm run lint:css && npm run docs:check && npm run -s assets:check && npm run -s secrets:coverage",
+    "deploy:vercel": "node scripts/deploy/vercel.mjs",
+    "deploy:vercel:plan": "node scripts/deploy/vercel.mjs --plan",
     "secrets:autofill": "node scripts/secrets/autofill.mjs",
     "secrets:plan": "node scripts/secrets/acquire.mjs plan",
     "secrets:acquire": "NODE_USE_ENV_PROXY=1 node scripts/secrets/acquire.mjs run",
@@ -90,6 +92,7 @@
     "stylelint-config-standard": "^40.0.0",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
+    "vercel": "^59.23.0",
     "vitest": "^4.1.11"
   },
   "dependencies": {

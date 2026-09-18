@@ -7,6 +7,9 @@ node_modules
 .env.*
 !.env.example
 
+# `vercel link` writes the project binding here; it is per machine, and the deploy script re-links
+.vercel/
+
 # Claude Code machine-local settings (impeccable writes its hook manifest here)
 .claude/settings.local.json
 

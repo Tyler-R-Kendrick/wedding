@@ -95,7 +95,7 @@ npm run secrets:probe                           # which providers let an agent r
 npm run secrets:probe -- --register             # ...and prove the advertised endpoints work
 npm run secrets:serve                           # the whole thing as a local web app (no Claude needed)
 npm run secrets:coverage                        # the page's decisions, 100% or it fails
-npm run secrets:verify:page                     # click all 36 provider choices in a real browser
+npm run secrets:verify:page                     # click every provider choice in a real browser
 npm run secrets:verify:lifecycle                # press the buttons and watch the work actually happen
 npm run secrets:verify:artifact                 # drive the page as the published artifact, where nothing is behind it
 ```
@@ -322,7 +322,7 @@ ceremonies have arrived, and the URL is cleaned only once it is somewhere safer.
 grew a pass that seeds a waiting ceremony and delivers the snapshot *late*, because the old stub
 answered `onSnapshot` synchronously and no real store does — which is why nothing caught this.
 
-**Every feature has its own connection.** 14 slots, 44 options.
+**Every feature has its own connection.** 15 slots, 46 options.
 
 *Identity is first class*, with five alternatives whose ceremonies were probed on 2026-09-08 rather
 than assumed. The apex domains are the trap — auth0.com, clerk.com and workos.com all publish

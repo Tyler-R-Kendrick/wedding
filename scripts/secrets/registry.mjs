@@ -222,6 +222,19 @@ const RAW_SLOTS = [
         secrets: ['OPENAI_API_KEY'],
         fills: { AI_BASE_URL: 'https://openrouter.ai/api/v1', AI_CHAT_MODEL: 'anthropic/claude-sonnet-5', AI_FAST_MODEL: 'anthropic/claude-haiku-4.5' },
         probe: { url: 'https://openrouter.ai/api/v1/models', headers: { authorization: 'Bearer {value}' } } },
+      /*
+       * Vercel's AI Gateway: every model behind one endpoint, and on a Vercel deployment no key at
+       * all — the function's own OIDC identity signs the request (`@ai-sdk/gateway` falls back to
+       * `@vercel/oidc` when AI_GATEWAY_API_KEY is unset; both ship inside `ai`, no new package).
+       * Locally the same helper mints the token from the CLI's session, so the ceremony is the
+       * Vercel sign-in the hosting slot already needs. Spend and rate limits live in the Vercel
+       * dashboard rather than in five vendor consoles.
+       */
+      { id: 'ai-gateway', name: 'Vercel AI Gateway', note: 'No key on Vercel — the deployment signs in as itself; one bill for every model',
+        host: 'vercel.com', ceremony: 'signin', handoffKind: 'cli', cli: 'vercel', pairsWith: 'hosting:vercel',
+        ladder: [{ method: 'browser', cli: 'vercel', how: '`vercel login`, streamed to the page' }, { method: 'manual' }],
+        secrets: [], fills: { AI_GATEWAY: 'on', AI_CHAT_MODEL: 'anthropic/claude-sonnet-5', AI_FAST_MODEL: 'anthropic/claude-haiku-4.5' },
+        note2: 'Needs the project linked (`hosting`) so the OIDC token has a project to be issued for.' },
       { id: 'openai', name: 'OpenAI', note: 'The reference implementation', host: 'platform.openai.com', ceremony: 'signin',
         ladder: [{ method: 'authmd', origin: 'https://platform.openai.com' }, { method: 'browser', recipe: 'openai-platform' }, { method: 'manual' }],
         secrets: ['OPENAI_API_KEY'], fills: { AI_CHAT_MODEL: 'gpt-5', AI_FAST_MODEL: 'gpt-5-mini' },
@@ -349,6 +362,36 @@ const RAW_SLOTS = [
         ],
         secrets: [], fills: {},
       },
+    ],
+  },
+  {
+    /*
+     * Where the site runs. One option because one was chosen (ADR-0008), not because the slot
+     * is decorative: without the session below, `npm run deploy:vercel` has nothing to deploy
+     * with, and the Marketplace connectors it installs (Supabase, Resend) are what make the
+     * database and email slots above "already done" on the deployed host.
+     *
+     * The credential is the CLI's session, as with Higgsfield. Probed 2026-09-18: vercel.com
+     * publishes a device_authorization_endpoint, but a client registered under RFC 7591 is
+     * refused it ("not authorized to use the Device Authorization flow") — only Vercel's own CLI
+     * client may — so `vercel login` runs the grant and `cli-login.mjs` streams the one link it
+     * prints. Nothing is sealed: the deploy script and `@vercel/oidc` both read the session where
+     * the CLI left it.
+     */
+    id: 'hosting', name: 'Hosting', need: 'launch',
+    does: 'Builds and serves the site, runs the job cron, and installs the database and email connectors',
+    without: 'Nothing is deployed; the site exists only on this machine',
+    options: [
+      { id: 'vercel', name: 'Vercel', recommended: true,
+        note: 'Sign in once; the project, GitHub link, cron, Supabase and Resend connectors follow from it',
+        host: 'vercel.com', ceremony: 'signin', handoffKind: 'cli', cli: 'vercel',
+        ladder: [
+          { method: 'mcp', server: 'Vercel', how: 'create_git_project for Tyler-R-Kendrick/wedding (the integration answered 403 on create, 2026-09-18)' },
+          { method: 'browser', cli: 'vercel', how: '`vercel login`, streamed to the page' },
+          { method: 'manual' },
+        ],
+        secrets: [], fills: {},
+        evidence: 'scripts/deploy/vercel.mjs + vercel.json' },
     ],
   },
   {

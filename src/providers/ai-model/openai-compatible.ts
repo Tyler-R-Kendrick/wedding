@@ -18,9 +18,15 @@ export const OPENAI_MODELS: Record<ModelRole, string> = {
   caption: 'gpt-5-mini',
 };
 
-type OpenAIProvider = ReturnType<typeof import('@ai-sdk/openai').createOpenAI>;
+/**
+ * What every AI SDK provider factory returns: call it with a model id, get a language model.
+ * `createOpenAI`, `createGateway` and the rest all satisfy this, which is what lets the Vercel AI
+ * Gateway reuse this adapter — the role-to-model mapping is the whole job here.
+ */
+type ModelFactory = (modelId: string) => LanguageModel;
 
 export type OpenAiCompatibleOptions = {
+  /** Empty for the AI Gateway on Vercel, where the deployment's OIDC token signs instead. */
   apiKey: string;
   /** Omit for OpenAI itself; set for any compatible gateway. */
   baseURL?: string;
@@ -28,7 +34,7 @@ export type OpenAiCompatibleOptions = {
   label?: string;
   /** Per-role model ids, when the vendor does not use OpenAI's names. */
   models?: Partial<Record<ModelRole, string>>;
-  createProvider: (options: { apiKey: string; baseURL?: string }) => OpenAIProvider;
+  createProvider: (options: { apiKey: string; baseURL?: string }) => ModelFactory;
 };
 
 export class OpenAiCompatibleModel implements AiModelProvider {
@@ -36,7 +42,7 @@ export class OpenAiCompatibleModel implements AiModelProvider {
   readonly name: string;
   readonly mode = 'live' as const;
   readonly capabilities = { chat: true, verifier: true, caption: true, streaming: true };
-  private provider?: OpenAIProvider;
+  private provider?: ModelFactory;
   private readonly models: Record<ModelRole, string>;
 
   constructor(private readonly options: OpenAiCompatibleOptions) {

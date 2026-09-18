@@ -37,6 +37,21 @@ const LOGINS = {
     status: ['account', 'status'],
     login: ['auth', 'login'],
   },
+  /*
+   * Probed 2026-09-18. vercel.com publishes RFC 8414 metadata with a device_authorization_endpoint,
+   * but a client registered under RFC 7591 is refused it ("not authorized to use the Device
+   * Authorization flow") — only Vercel's own CLI client may. So the Secret Drop cannot run the
+   * device grant itself; the CLI can. `vercel login` detects an agent, prints one link
+   * (`https://vercel.com/oauth/device?user_code=…`), polls every 5s for ten minutes, and writes
+   * the session to the CLI's data dir — which is also what `@vercel/oidc` (and so the AI Gateway
+   * provider) reads for a local OIDC token. Never pass `-d`: debug output prints the device_code.
+   */
+  vercel: {
+    name: 'Vercel',
+    bin: 'node_modules/.bin/vercel',
+    status: ['whoami'],
+    login: ['login'],
+  },
 };
 
 const [, , id, ...rest] = process.argv;

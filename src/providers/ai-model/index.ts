@@ -1,5 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createGateway } from 'ai';
 import type { ServerEnv } from '@/lib/env';
 import { AnthropicAiModel } from './anthropic';
 import { MockAiModel } from './mock';
@@ -18,11 +19,16 @@ type AiModelEnv = Pick<
   ServerEnv,
   | 'FORCE_MOCK_PROVIDERS' | 'ANTHROPIC_API_KEY' | 'ANTHROPIC_AUTH_TOKEN' | 'ANTHROPIC_BASE_URL'
   | 'OPENAI_API_KEY' | 'AI_BASE_URL' | 'AI_CHAT_MODEL' | 'AI_FAST_MODEL' | 'AI_HARNESS'
+  | 'AI_GATEWAY' | 'AI_GATEWAY_API_KEY'
 >;
 
+/** Model ids on Vercel's AI Gateway carry the vendor prefix, the same slugs OpenRouter uses. */
+export const GATEWAY_MODELS = { chat: 'anthropic/claude-sonnet-5', verifier: 'anthropic/claude-haiku-4.5', caption: 'anthropic/claude-haiku-4.5' } as const;
+
 /**
- * Anthropic when its key is present (what the site is written against), otherwise any
- * OpenAI-compatible provider — OpenAI, OpenRouter, Groq, Together, a local Ollama — selected
+ * Anthropic when its key is present (what the site is written against), otherwise Vercel's AI
+ * Gateway when selected (a key, or on Vercel no key: the deployment's OIDC identity), otherwise
+ * any OpenAI-compatible provider — OpenAI, OpenRouter, Groq, Together, a local Ollama — selected
  * by pointing AI_BASE_URL at it. Unset, everything falls back to the mock.
  */
 export function createAiModelProvider(env: AiModelEnv): AiModelProvider {
@@ -39,6 +45,20 @@ export function createAiModelProvider(env: AiModelEnv): AiModelProvider {
       { authToken: env.ANTHROPIC_AUTH_TOKEN, ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {}) },
       (options) => createAnthropic(options),
     );
+  }
+  if (env.AI_GATEWAY_API_KEY || env.AI_GATEWAY) {
+    return new OpenAiCompatibleModel({
+      apiKey: env.AI_GATEWAY_API_KEY ?? '',
+      label: 'vercel-ai-gateway',
+      models: {
+        ...GATEWAY_MODELS,
+        ...(env.AI_CHAT_MODEL ? { chat: env.AI_CHAT_MODEL } : {}),
+        ...(env.AI_FAST_MODEL ? { verifier: env.AI_FAST_MODEL, caption: env.AI_FAST_MODEL } : {}),
+      },
+      // No key -> `@ai-sdk/gateway` reads AI_GATEWAY_API_KEY, then asks `@vercel/oidc` for the
+      // deployment's token (VERCEL_OIDC_TOKEN on Vercel; the CLI session locally).
+      createProvider: ({ apiKey }) => createGateway(apiKey ? { apiKey } : {}),
+    });
   }
   if (env.OPENAI_API_KEY) {
     const models = {

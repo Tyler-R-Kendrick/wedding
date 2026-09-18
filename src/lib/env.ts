@@ -82,6 +82,13 @@ const serverSchema = z.object({
   AI_HARNESS: z.enum(['claude-code', 'codex', 'copilot', 'ollama']).optional(),
   /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
   AI_BASE_URL: optionalUrl,
+  /**
+   * Vercel AI Gateway. `AI_GATEWAY_API_KEY` is the explicit key; `AI_GATEWAY=on` selects the gateway
+   * with no key at all, in which case `@ai-sdk/gateway` signs with the deployment's OIDC token
+   * (`VERCEL_OIDC_TOKEN` on Vercel, the CLI's session locally via `@vercel/oidc`).
+   */
+  AI_GATEWAY: requiredBool(false),
+  AI_GATEWAY_API_KEY: optionalString,
   /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */
   AI_CHAT_MODEL: optionalString,
   AI_FAST_MODEL: optionalString,
@@ -155,7 +162,45 @@ export type ServerEnv = Omit<Parsed, 'TRUSTED_PROXY_HOPS'> & {
 
 const hasS3 = (e: Parsed) => !!(e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
 
-function load(source: NodeJS.ProcessEnv): ServerEnv {
+/**
+ * Names a Vercel Marketplace connector injects, read as the name the app uses.
+ *
+ * `vercel integration add supabase` (or `neon`) writes the pooled connection string as
+ * `POSTGRES_URL` (Supabase also `POSTGRES_PRISMA_URL`), never `DATABASE_URL`, and a project env
+ * cannot reference another. Reading the connector's name here means the deploy script sets
+ * nothing by hand and the connector stays the single owner of the value it rotates. An explicit
+ * `DATABASE_URL` still wins.
+ */
+export const DATABASE_URL_ALIASES = ['POSTGRES_URL', 'POSTGRES_PRISMA_URL'] as const;
+
+/**
+ * What the platform already knows, read as the names this app uses. Anything set explicitly wins;
+ * nothing here applies off Vercel, so local runs and CI are untouched.
+ *
+ *  - `DATABASE_URL` from the connector's own name (above).
+ *  - `BETTER_AUTH_URL` from the deployment's origin. Production is required to name its canonical
+ *    domain, and does (the deploy script sets it), but a preview's URL exists only once that
+ *    deployment does — and `NODE_ENV` is `production` on previews, so without this every preview
+ *    fails the required-variable check at boot. Deriving it also gets the passkey relying-party id
+ *    right for the host actually being visited, which one pinned URL cannot do for every preview.
+ */
+function withPlatformDefaults(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  let out = source;
+  if (!out.DATABASE_URL) {
+    const alias = DATABASE_URL_ALIASES.find((name) => out[name]);
+    if (alias) out = { ...out, DATABASE_URL: out[alias] };
+  }
+  if (!out.BETTER_AUTH_URL && out.VERCEL) {
+    const host = out.VERCEL_ENV === 'production'
+      ? (out.VERCEL_PROJECT_PRODUCTION_URL || out.VERCEL_URL)
+      : out.VERCEL_URL;
+    if (host) out = { ...out, BETTER_AUTH_URL: `https://${host}` };
+  }
+  return out;
+}
+
+function load(raw: NodeJS.ProcessEnv): ServerEnv {
+  const source = withPlatformDefaults(raw);
   const parsed = serverSchema.safeParse(source);
   if (!parsed.success) {
     // Names only — never echo values.

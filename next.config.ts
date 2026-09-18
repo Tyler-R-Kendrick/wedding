@@ -8,9 +8,30 @@ import { securityHeaders } from './src/lib/security-headers';
 // reasoning, and why there is no nonce, is in src/lib/security-headers.ts.
 const headerOptions = { production: process.env.NODE_ENV === 'production' };
 
+/**
+ * The browser's copy of the site origin, when the deployment is the only thing that knows it.
+ *
+ * `src/lib/env.public.ts` reads `NEXT_PUBLIC_SITE_URL` literally so Next can inline it, and
+ * `assertSameOriginJson` compares every capability POST's `Origin` against it. A preview
+ * deployment has its own hostname, so a project-wide value would make every preview reject its own
+ * forms. `VERCEL_URL` is that deployment's hostname and is present at build time.
+ *
+ * Only when the variable is unset AND we are building on Vercel: an explicit value always wins,
+ * and a build anywhere else keeps reading the variable at runtime, which is what the e2e suite
+ * (`tests/e2e/helpers/principal.ts`) relies on.
+ */
+const deploymentSiteUrl = (() => {
+  if (process.env.NEXT_PUBLIC_SITE_URL || !process.env.VERCEL) return null;
+  const host = process.env.VERCEL_ENV === 'production'
+    ? (process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL)
+    : process.env.VERCEL_URL;
+  return host ? `https://${host}` : null;
+})();
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  ...(deploymentSiteUrl ? { env: { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } } : {}),
   // Native / wasm / worker-based packages must stay outside the server bundle.
   serverExternalPackages: ['@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm'],
   // Migrations are read from disk at runtime (db:migrate, dev auto-migrate).

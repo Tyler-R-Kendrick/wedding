@@ -25,7 +25,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `LOG_LEVEL` | debug (dev), info (prod), silent (test) | logger | no |
 | `LOG_FORMAT` | pretty in dev; `json` forces JSON | logger | no |
 | `METRICS_SINK` | console (dev), db (prod), none (test) | metrics | no |
-| `DATABASE_URL` | unset -> PGlite | db client (postgres-js) | no |
+| `DATABASE_URL` | unset -> PGlite; else `POSTGRES_URL`, then `POSTGRES_PRISMA_URL` (what the Supabase and Neon connectors on Vercel inject) is read as it | db client (postgres-js) | no |
 | `PGLITE_MEMORY` | `false` (`true` in tests) | db client | no |
 | `PGLITE_DATA_DIR` | `./.data/pglite` | db client | no |
 | `DB_AUTO_MIGRATE` | on outside production | db client | no |
@@ -43,6 +43,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
+| `AI_GATEWAY` (`on`), `AI_GATEWAY_API_KEY` | unset | ai-model: Vercel AI Gateway. The key is explicit; `AI_GATEWAY=on` selects the gateway with no key and `@ai-sdk/gateway` signs with the deployment's OIDC token (locally, the CLI session). Model ids default to `anthropic/claude-sonnet-5` / `anthropic/claude-haiku-4.5`; `AI_CHAT_MODEL` / `AI_FAST_MODEL` override | no |
 | `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `EMBEDDINGS_PROVIDER` (`voyage`\|`openai`) | unset -> hashed mock | embeddings | no |
 | `MEDIA_AI_PROVIDER` (`mock`\|`anthropic`) | unset -> Anthropic vision when `ANTHROPIC_API_KEY` is set, else the deterministic mock | media-ai (captions, tags, venue class) | no |
 | `BIOMETRIC_VAULT_KEY` | unset; derived from `CONFIRMATION_SECRET` outside production (with a warning). **Required in production before `FLAG_BIOMETRICS_ENABLED` can seal anything**; 32+ chars, from a secret manager | biometric vault (AES-256-GCM), separate from every other secret | no |

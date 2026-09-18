@@ -82,3 +82,42 @@ describe('server env', () => {
     expect(e.JOBS_BATCH_SIZE).toBe(25);
   });
 });
+
+describe('what the platform already knows', () => {
+  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), RESEND_API_KEY: 're_test', EMAIL_FROM: 'Sara + Tyler <hello@example.test>', STORAGE_SIGNING_SECRET: 's'.repeat(32) };
+
+  it('reads the Vercel connector\'s own name for the database', () => {
+    // `vercel integration add supabase` writes POSTGRES_URL, never DATABASE_URL, and one project
+    // variable cannot reference another — so without this the connector provisions a database the
+    // app never opens.
+    expect(parseServerEnv({ NODE_ENV: 'test', POSTGRES_URL: 'postgres://u:p@db.example.test:6543/app' }).DATABASE_URL)
+      .toBe('postgres://u:p@db.example.test:6543/app');
+    expect(parseServerEnv({ NODE_ENV: 'test', POSTGRES_PRISMA_URL: 'postgres://u:p@db.example.test:6543/app?pgbouncer=true' }).DATABASE_URL)
+      .toBe('postgres://u:p@db.example.test:6543/app?pgbouncer=true');
+  });
+
+  it('lets an explicit DATABASE_URL win over the connector\'s name', () => {
+    const e = parseServerEnv({ NODE_ENV: 'test', DATABASE_URL: 'postgres://mine@host.example.test/app', POSTGRES_URL: 'postgres://theirs@host.example.test/app' });
+    expect(e.DATABASE_URL).toBe('postgres://mine@host.example.test/app');
+  });
+
+  it('derives BETTER_AUTH_URL from a preview deployment, which is the only thing that knows its own host', () => {
+    // NODE_ENV is production on a Vercel preview, so the required-variable check applies there too;
+    // a project-wide URL would also pin every preview's passkey relying party to another host.
+    const e = parseServerEnv({ ...prodBase, VERCEL: '1', VERCEL_ENV: 'preview', VERCEL_URL: 'wedding-git-branch.vercel.app' });
+    expect(e.BETTER_AUTH_URL).toBe('https://wedding-git-branch.vercel.app');
+  });
+
+  it('prefers the canonical domain in production, and an explicit value over both', () => {
+    // VERCEL_ENV=production also demands a real database; that guard is asserted above.
+    const onProd = { ...prodBase, DATABASE_URL: 'postgres://u:p@db.example.test:6543/app', VERCEL: '1', VERCEL_ENV: 'production' };
+    const derived = parseServerEnv({ ...onProd, VERCEL_URL: 'wedding-abc123.vercel.app', VERCEL_PROJECT_PRODUCTION_URL: 'sara-and-tyler.example' });
+    expect(derived.BETTER_AUTH_URL).toBe('https://sara-and-tyler.example');
+    const explicit = parseServerEnv({ ...onProd, BETTER_AUTH_URL: 'https://chosen.example', VERCEL_PROJECT_PRODUCTION_URL: 'sara-and-tyler.example' });
+    expect(explicit.BETTER_AUTH_URL).toBe('https://chosen.example');
+  });
+
+  it('derives nothing off Vercel, so production elsewhere still has to say its own origin', () => {
+    expect(() => parseServerEnv({ ...prodBase, VERCEL_URL: 'wedding.vercel.app' })).toThrow(/BETTER_AUTH_URL/);
+  });
+});
