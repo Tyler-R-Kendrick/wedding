@@ -1121,6 +1121,25 @@
   color: var(--color-soil);
 }
 
+/*
+ * The two airports, side by side once there is room. `cv-travel__airports` was written in the
+ * travel recipe and defined nowhere, so ORD and MDW stacked as two cards at every width —
+ * including the desktop one where comparing them is the whole point of the section.
+ */
+.cv-travel__airports {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--spacing-lg);
+  margin-block-start: var(--spacing-lg);
+  align-items: start;
+}
+
+.cv-travel__airports > .cv-card {
+  max-width: none;
+  margin-inline: 0;
+  height: 100%;
+}
+
 .cv-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));

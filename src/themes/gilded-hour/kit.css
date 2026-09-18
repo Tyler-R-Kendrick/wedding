@@ -1679,6 +1679,41 @@
   height: 100%;
 }
 
+/*
+ * The two airports, side by side once there is room.
+ *
+ * `gh-travel__airports` was written in the travel recipe and defined nowhere, so ORD and MDW
+ * stacked as two bordered boxes sharing an edge — at every width, including the desktop one where
+ * the comparison is the entire point of putting them together. Same shape as `.gh-grid` above,
+ * declared here rather than by reusing that class because the recipe holds `Card`s directly, not a
+ * list.
+ */
+.gh-travel__airports {
+  display: grid;
+  gap: var(--spacing-lg);
+  max-width: var(--gh-max);
+  margin: var(--spacing-lg) auto 0;
+}
+
+/*
+ * `margin-inline: auto` on `.gh-card` makes a grid item shrink-to-fit and centre — auto margins
+ * beat `justify-self: stretch` — so the two airports came out different widths and differently
+ * indented, one 313px at x=39 and the other 350px at x=20. In a grid the column already decides
+ * the width.
+ */
+.gh-travel__airports > .gh-card {
+  max-width: none;
+  margin-inline: 0;
+  height: 100%;
+}
+
+@media (width >= 700px) {
+  .gh-travel__airports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
 .gh-rec__inner {
   display: grid;
   gap: var(--spacing-md);

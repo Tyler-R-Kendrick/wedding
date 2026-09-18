@@ -53,8 +53,9 @@ answers in `docs/content/backlog.md` against the relevant item.
       confirmation, or have given their own.
 - [ ] **Guests in the frame.** This gate is about the vendors' rights. It is not
       consent from the people photographed, and it is **not** a route to face
-      matching — that is `BIOMETRICS_ENABLED`, a separate gate with a separate
-      legal basis (`docs/architecture/biometrics-bipa-readiness.md`).
+      matching: that feature was removed from the site entirely
+      (`docs/architecture/biometrics-bipa-readiness.md`), and bringing it back
+      would need its own legal basis, not this one.
 - [ ] **A way back.** Deleting a derivative from this site does not delete
       anything the provider retained. Know the provider's retention policy
       before the first file is sent, not after.

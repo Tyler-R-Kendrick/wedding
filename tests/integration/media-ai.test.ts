@@ -134,15 +134,14 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
     expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'outside at dusk' }))[0]).toBe('dusk');
   });
 
-  it('searches with BIOMETRICS_ENABLED explicitly off — the archive does not depend on the vault', async () => {
-    // Named rather than left incidental. Every other case in this file happens to run with the flag
-    // off, so search-without-biometrics was covered by accident; ADR-0006's whole bet is that the
-    // site ships every archive feature with the vault switched off, and a guarantee nobody asserts
-    // is one a later level can remove without noticing. Asserted against the flag set explicitly.
-    delete process.env.FLAG_BIOMETRICS_ENABLED;
+  it('searches what a photo shows, never who is in it', async () => {
+    // This used to assert that search kept working with BIOMETRICS_ENABLED off, because ADR-0006's
+    // bet was that every archive feature ships with the vault shut. The vault is gone — face
+    // matching was removed, not gated — so the guarantee is now structural rather than conditional,
+    // and what is worth asserting is that the index answers from captions and scenes alone.
     const hits = namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'first dance' }));
-    expect(hits[0], 'semantic search must answer with the vault off').toBe('dance');
-    expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'toasts' })), 'and keep answering').toContain('toast');
+    expect(hits[0], 'semantic search answers from what the picture shows').toBe('dance');
+    expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'toasts' })), 'and keeps answering').toContain('toast');
   });
 
   it('explains a hit with the terms that actually matched and the source of the text', async () => {

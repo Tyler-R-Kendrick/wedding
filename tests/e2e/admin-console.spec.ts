@@ -109,30 +109,32 @@ test('reviewing a lifecycle change explains what it does to guests and publishes
   await ctx.close();
 });
 
-test('the flags screen shows both legal gates shut and offers no way to open one', async ({ browser }) => {
+test('the flags screen shows the legal gate shut and offers no way to open it', async ({ browser }) => {
   const ctx = await contextAs(browser, 'admin');
   const page = await ctx.newPage();
   await page.goto('/admin/flags');
   const main = page.locator('#main');
-  await expect(main).toContainText('BIOMETRICS_ENABLED');
   await expect(main).toContainText('PRO_MEDIA_AI_PROCESSING');
   await expect(main).toContainText('C-09');
+  // One legal gate, not two: face matching was removed rather than held shut, so BIOMETRICS_ENABLED
+  // is gone from the flag set, the console and this assertion.
+  await expect(main).not.toContainText('BIOMETRICS_ENABLED');
   // Off switches exist; nothing on the page can turn one on.
   //
-  // This asserted `name: 'Switch off'` twice, which passed only while BOTH buttons carried that one
+  // This asserted `name: 'Switch off'`, which passed only while every button carried that one
   // accessible name — the level-14 design review's B3, since a screen reader then announced the same
   // name for two different legal gates and `<th scope="row">` is not read in focus order. Each button
   // now names its own flag, so the assertion is per-flag: stronger than a count, and it fails if the
   // labels are ever collapsed back together.
-  for (const flag of ['BIOMETRICS_ENABLED', 'PRO_MEDIA_AI_PROCESSING']) {
+  for (const flag of ['PRO_MEDIA_AI_PROCESSING']) {
     await expect(page.getByRole('button', { name: `Switch ${flag} readiness off` })).toHaveCount(1);
   }
-  await expect(page.getByRole('button', { name: /readiness off$/ })).toHaveCount(2);
+  await expect(page.getByRole('button', { name: /readiness off$/ })).toHaveCount(1);
   // The negative match is on WORDS, not substrings. `/enable/i` matched
-  // "Switch BIOMETRICS_ENABLED readiness off" — the flag's own name contains ENABLED — so once each
+  // "Switch BIOMETRICS_ENABLED readiness off" — that flag's own name contained ENABLED — so once each
   // button named its flag, a correct off-switch read as an enable control and this security
-  // assertion fired on the very thing it exists to protect. `\b` is enough because `_` is a word
-  // character, so there is no boundary inside `BIOMETRICS_ENABLED`.
+  // assertion fired on the very thing it exists to protect. The rule is kept for the next flag whose
+  // name happens to contain one of these words.
   // (No bare /open/ here: it matches the dev server's own "Open Next.js Dev Tools" overlay button,
   // which is framework furniture rather than anything this page renders.)
   for (const label of [/\bswitch on\b/i, /\benable\b/i, /\bturn on\b/i]) {
@@ -141,7 +143,7 @@ test('the flags screen shows both legal gates shut and offers no way to open one
   // Stronger than the absence of four phrasings, and immune to flag naming altogether: every
   // control in the legal-gates list is an off switch.
   const gateButtons = page.locator('.con-gate button');
-  await expect(gateButtons).toHaveCount(2);
+  await expect(gateButtons).toHaveCount(1);
   for (const name of await gateButtons.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))) {
     expect(name).toMatch(/ readiness off$/);
   }

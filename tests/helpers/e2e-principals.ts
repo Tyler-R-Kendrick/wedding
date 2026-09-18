@@ -21,8 +21,8 @@ export { TEST_AUTH_SECRET };
  * old signature. `principalHeaders` takes a SEEDED FIXTURE NAME, not a spec object: media rows carry
  * real foreign keys to `guests` and `households` as of level 10, so a synthetic id is refused by the
  * database before any guard under test runs. `customPrincipalHeaders` is for the cases the named
- * fixtures do not cover — an entitlement outside the defaults, such as `use_face_matching`, which
- * policy grants only when BIOMETRICS_ENABLED is on.
+ * fixtures do not cover — an entitlement outside the defaults that policy grants only under a
+ * flag.
  */
 export { customPrincipalHeaders, IDS, principalHeaders } from '../e2e/helpers/principal';
 export const CRON_SECRET = process.env.CRON_SECRET ?? 'e2e-cron-secret-0123456789abcdefghij';

@@ -159,6 +159,8 @@ table when published). Everything operational carries `sourceId`,
   third-party AI or biometric processing needs written confirmation first
   (`PRO_MEDIA_AI_PROCESSING` flag OFF).
 - Planner-created design materials are the planner's IP: never ingest.
-- Illinois BIPA: face matching ships behind `BIOMETRICS_ENABLED=false` with
-  consent ledger, retention/deletion, isolated vault, counsel review gate.
+- Illinois BIPA: face matching was removed rather than gated (ADR-0006,
+  superseded). The original plan, kept for the record, shipped it behind a flag
+  with a consent ledger, retention/deletion, an isolated vault and a counsel
+  review gate; the site now collects no face geometry at all.
 - Venue-kit photography and Hyatt site imagery: not reusable.

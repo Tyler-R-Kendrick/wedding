@@ -33,7 +33,16 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...opsCapabilities,
 ];
 
-registry.registerAll(BUILTIN_CAPABILITIES);
+/*
+ * Idempotent on purpose: see the note on `registry` in ./registry.ts. This line runs as an import
+ * side effect, and a dev-server module re-evaluation runs it again against a registry that is
+ * already full — new descriptor objects, identical names — which `registerAll` refuses, so every
+ * route that imports a capability answered 500 until the server was restarted. Registering what is
+ * missing keeps the duplicate check intact for the case it exists for.
+ */
+for (const capability of BUILTIN_CAPABILITIES) {
+  if (!registry.has(capability.name)) registry.register(capability);
+}
 
 export { registry, invoke, siteStatus, navigateTo };
 export { createCapabilityContext, appServices, type AppServices } from './context';
