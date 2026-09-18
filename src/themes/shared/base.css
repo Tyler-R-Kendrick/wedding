@@ -128,15 +128,27 @@ body {
   transform: none;
 }
 
-/* Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
-   provenance block placeholder (src/components/provenance), which owns `.placeholder`. */
+/*
+ * Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
+ * provenance block placeholder (src/components/provenance), which owns `.placeholder`.
+ *
+ * "Obviously" was doing work the colours did not. The fill is `--color-neutral-variant`, which is
+ * the exact colour `.gh-section--alt` paints its band, and the edge was `--color-outline` — 1.23:1
+ * against that same band, 1.55:1 against plain surface. So on an alt section the marker had no
+ * fill edge and an invisible boundary, and `TODO(Tyler & Sara)` read as ordinary copy: the precise
+ * failure PRODUCT.md's never-plausible-fiction rule exists to prevent.
+ *
+ * The edge is now drawn in the marker's own ink, which clears WCAG 2.2 SC 1.4.11 both against the
+ * fill and against every band behind it (5.49:1 Gilded Hour, 5.64:1 Conservatory). The fill stays:
+ * it is a highlight where the band differs, and the boundary carries it where it does not.
+ */
 .todo {
   display: inline;
   padding: 0.3em 0.55em;
   box-decoration-break: clone;
   background: var(--color-neutral-variant);
   color: var(--color-on-surface-muted);
-  outline: 1px dashed var(--color-outline);
+  outline: 1px dashed var(--color-on-surface-muted);
   outline-offset: -1px;
   font-style: normal;
 }
