@@ -55,16 +55,30 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
       </Prose>
     </Section>
 
-    {canUpload ? (
-      <Section id="add" ground="alt" labelledBy="add-title">
-        <SectionHeading level={2} id="add-title" title="Add yours" />
-        <Prose>
+    {/*
+      * The section is unconditional; only what it says depends on who is reading.
+      *
+      * It used to render for `canUpload` alone, so the page that exists to be the guest upload
+      * entry point told an anonymous visitor nothing about uploading — and every visitor is
+      * anonymous until they open their invitation. A guest who wanted to add a photograph had no
+      * way to learn they could, which is not a permission boundary: `/media/upload` enforces that
+      * for itself.
+      */}
+    <Section id="add" ground="alt" labelledBy="add-title">
+      <SectionHeading level={2} id="add-title" title="Add yours" />
+      <Prose>
+        {canUpload ? (
           <p>
             <Link href="/media/upload">Add your photos</Link> · <Link href="/media/mine">My uploads</Link>
           </p>
-        </Prose>
-      </Section>
-    ) : null}
+        ) : (
+          <p>
+            Guests can add their own photographs from the weekend. Open the link in your invitation to sign in, then{' '}
+            <Link href="/media/upload">add your photos</Link>.
+          </p>
+        )}
+      </Prose>
+    </Section>
   </Shell>
 );
 

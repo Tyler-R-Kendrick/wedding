@@ -131,6 +131,7 @@
   --shadow-paper-rest: 0 1px 0 rgba(42,68,48,0.06), 0 12px 32px -20px rgba(42,68,48,0.35);
   --shadow-paper-lift: 0 1px 0 rgba(42,68,48,0.06), 0 18px 40px -22px rgba(42,68,48,0.42);
   --shadow-bar-ambient: 0 -8px 24px rgba(42,68,48,0.08);
+  --shadow-bar-lift: 0 -1px 0 #c8c1ac, 0 -8px 24px rgba(42,68,48,0.08);
   --shadow-none: none;
   /* focus (design.json extensions.focus) */
   --focus-ring: 2px solid var(--color-secondary);

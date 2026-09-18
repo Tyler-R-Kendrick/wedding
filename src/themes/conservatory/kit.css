@@ -266,7 +266,14 @@
     justify-content: flex-end;
     padding: var(--spacing-sm) var(--spacing-md) calc(var(--spacing-sm) + env(safe-area-inset-bottom, 0px));
     background: var(--color-neutral);
-    box-shadow: var(--shadow-bar-ambient);
+
+    /*
+     * `bar-lift`, not `bar-ambient`. The plate is page-coloured and holds one tag at its right, so
+     * an ambient-only shadow separates nothing across the other three-quarters: at 390px on
+     * `/gifts` the band read as "via The Knot" being sliced off mid-line rather than as chrome.
+     * The hairline is what makes it an edge.
+     */
+    box-shadow: var(--shadow-bar-lift);
   }
 }
 

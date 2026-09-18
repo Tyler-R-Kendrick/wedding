@@ -1,3 +1,9 @@
+/*
+ * The guest form kit, for `.btn` on the registry links' call to action and `.measure` on the cards
+ * (`components/handoff/ExternalHandoffCard`). `(guest)` and `(admin)` import it from their
+ * layouts; this route brings it with it rather than pushing the kit onto every public page.
+ */
+import '@/components/rsvp/recipes.css';
 import type { Metadata } from 'next';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { recipes } from '../_recipes';
