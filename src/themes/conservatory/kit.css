@@ -1051,18 +1051,6 @@
   transition: text-decoration-thickness var(--duration-fast) var(--ease-standard);
 }
 
-/*
- * See the Gilded Hour kit: a link the call site declared standalone, and a heading that is a link,
- * are both the whole of their line and so are both touch targets. Placed beside the base rule to
- * keep this file in ascending specificity.
- */
-.cv-link--standalone {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  min-height: 44px;
-}
-
 .cv-link:hover {
   text-decoration-thickness: 2px;
 }
@@ -1854,14 +1842,17 @@
 /*
  * SF-4: a link that stands alone on its line is a touch target, not a word in a sentence.
  * `wedding-site-standards` §7 asks for 44 px.
+ *
+ * See the Gilded Hour kit: `--standalone` is the call site's declaration for the case CSS cannot
+ * see, the rest are standalone by construction, and both live in this one rule.
  */
+.cv-link--standalone,
 .cv-card__title .cv-link,
 .cv-result__title .cv-link,
 .cv-jar__link .cv-link,
 .cv-back .cv-tag--hang,
 .cv-faq__a p > .cv-link,
-.cv-why p > .cv-link,
-.cv-room .cv-card__title .cv-link {
+.cv-why p > .cv-link {
   display: inline-flex;
   align-items: center;
   gap: 0.35em;

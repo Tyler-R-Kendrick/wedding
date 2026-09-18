@@ -201,7 +201,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
                 <p className="mt-1">
                   {/* `Link` since level 05 merged: /share-an-adventure is a real route now, so this
                       is client-side navigation and gets prefetched, not a full document load. */}
-                  <Link className="underline underline-offset-4" href="/share-an-adventure">
+                  <Link className="inline-flex min-h-11 items-center underline underline-offset-4" href="/share-an-adventure">
                     See what we suggest for this window
                   </Link>
                 </p>

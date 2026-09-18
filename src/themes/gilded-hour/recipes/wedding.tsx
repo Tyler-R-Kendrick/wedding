@@ -41,7 +41,7 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
       <Prose>
         <Block block={data.roomsNote} />
         <p>
-          <Link href={ROUTES.exploreCaa}>{CONTENT_COPY.wedding.roomsLink} →</Link>
+          <Link href={ROUTES.exploreCaa} standalone>{CONTENT_COPY.wedding.roomsLink} →</Link>
         </p>
       </Prose>
       <Provenance provenance={data.provenance} />

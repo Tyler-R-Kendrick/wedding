@@ -1085,21 +1085,6 @@
   transition: text-decoration-color var(--duration-fast) var(--ease-engrave);
 }
 
-/*
- * A link the call site declared to be the whole of its line (`<Link standalone>`), and a heading
- * that is a link — entry, recommendation and result titles, which measured 34px. Both stand on
- * their own line by construction, so both are touch targets under the rule further down this file.
- * They sit here, beside the base, because `no-descending-specificity` wants the (0,1,0) and
- * (0,2,0) forms above `.gh-link:hover`.
- */
-.gh-link--standalone {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  min-height: 44px;
-  padding-block: 10px;
-}
-
 .gh-link:hover {
   text-decoration-color: currentcolor;
   text-decoration-thickness: 2px;
@@ -1384,7 +1369,12 @@
 /*
  * SF-4: a link that stands on its own line is a touch target. `wedding-site-standards` §7 asks for
  * 44 px; these are 44 px tall with the icon on the same line as the last word.
+ *
+ * `--standalone` is what a call site sets when only the call site can know (a link that is the
+ * whole of its paragraph); the rest are the shapes that are standalone by construction. One rule,
+ * so there is one copy of the contract rather than a modifier that has to be kept in step with it.
  */
+.gh-link--standalone,
 .gh-entry__title .gh-link,
 .gh-rec__title .gh-link,
 .gh-result__title .gh-link,

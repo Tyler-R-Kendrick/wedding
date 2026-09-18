@@ -145,10 +145,18 @@ body {
  * This is a floor, not a style. `a:not([class])` is (0,1,1), so it outranks preflight's bare `a`
  * inside `layer(base)` and loses to every component and kit rule — `.prov a`, `.errsum__list a`,
  * `.gh-link` and the rest all keep their own treatment. It only paints what nothing else claimed.
+ *
+ * It paints with the LINK ROLE TOKENS, not with `--color-secondary`. Those two are the same colour
+ * in Conservatory and emphatically not in Gilded Hour, whose DESIGN.md gives links Bronze
+ * (`--color-tertiary`) with a gold underline and reserves Lake Blue for focus — `.site
+ * :focus-visible` is `--color-secondary` thirty lines above this. Hardcoding it here would have
+ * painted every unclaimed link in the one colour that design forbids for links, and in the exact
+ * colour of its own focus ring.
  */
 a:not([class]) {
-  color: var(--color-secondary);
+  color: var(--link-color, var(--color-secondary, var(--color-primary)));
   text-decoration: underline;
+  text-decoration-color: var(--link-underline, currentcolor);
   text-underline-offset: 0.18em;
 }
 
@@ -197,11 +205,17 @@ a:not([class]) {
  */
 
 /*
- * 5rem, not 4.5: Gilded Hour's elevator panel measured 72px at 390px while its labels sat at
- * 13.005px, and 4.5rem reserved 76.5 of them. The labels are on the 17px step now (see
- * `.gh-panel__cell`), which takes the panel to 81px, so the reservation follows it to 85. The
- * margin is deliberate and small: four pixels is not much until it is the four that hold a line
- * of type.
+ * Fixed-chrome heights, PER DESIGN. Both designs read `--bottom-bar-h`, and they pin different
+ * things to the bottom of a phone, so one number cannot be right for both — `--wp-measure` below
+ * is the precedent for this shape: a default at `:root`, each `[data-theme]` overriding it with
+ * its own measured height.
+ *
+ * It was one number, tuned to Gilded Hour. Measured at 390px: Gilded Hour's elevator panel is
+ * 81px (72px until its labels moved off the 13.005px step — see `.gh-panel__cell`), and
+ * Conservatory's `.cv-bar` is 61px, one row of `.cv-btn` between two `--spacing-sm`. The shared
+ * 4.5rem therefore over-reserved Conservatory by 15px and floated its Menu 31.5px above a bar it
+ * is meant to ride `--spacing-md` (16px) above; raising it to 5rem for Gilded Hour's sake pushed
+ * that to 40px. Each design now reserves what it actually pins.
  */
 .site[data-bottom-bar] {
   --bottom-bar-height: var(--bottom-bar-h);
@@ -504,6 +518,9 @@ a:not([class]) {
 }
 
 [data-theme="gilded-hour"] {
+  /* The elevator panel: 81px measured at 390px, reserved with the same four pixels of margin it
+     has always carried. */
+  --bottom-bar-h: 5rem;
   --radius-button: var(--rounded-none);
   --heading-transform: uppercase;
   --heading-tracking: var(--type-h1-tracking);
@@ -552,6 +569,9 @@ a:not([class]) {
 }
 
 [data-theme="conservatory"] {
+  /* `.cv-bar`: 61px measured at 390px (one `.cv-btn` row between two `--spacing-sm`). 3.75rem is
+     63.75, which clears it without pushing the floating Menu off the bar it rides on. */
+  --bottom-bar-h: 3.75rem;
   --radius-button: var(--rounded-md);
   --heading-transform: none;
   --heading-tracking: normal;
