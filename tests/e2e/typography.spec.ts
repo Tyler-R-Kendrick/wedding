@@ -42,6 +42,19 @@ const DECLARED = /^"?(Cinzel|Josefin Sans|Big Shoulders Display|Gloock|Spectral|
 /** Auth journeys. Every one renders for an anonymous visitor; none of them needs a principal. */
 const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/passkey', '/claim/welcome', '/step-up'] as const;
 
+/**
+ * The routes a guest actually reads, and the ones behind the invitation.
+ *
+ * This walk covered `AUTH_ROUTES` and `ADMIN_ROUTES` and nothing else, which is how a 13.005px
+ * label in Gilded Hour's mobile elevator panel — the control a guest moves around the whole site
+ * with on a phone — rendered on every route below and passed CI from the day it landed. The
+ * chrome is the same on all of them, so one pass over both designs catches it at the source.
+ */
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/explore-caa', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure'] as const;
+
+/** Behind the invitation: the RSVP form and the three pages a guest plans their weekend from. */
+const GUEST_ROUTES = ['/rsvp', '/your-weekend', '/trip', '/transportation'] as const;
+
 /** The console. One per family of screens, plus the index; `admin-console.spec.ts` walks all 21. */
 const ADMIN_ROUTES = ['/admin', '/admin/audit', '/admin/jobs', '/admin/flags', '/admin/guests', '/admin/invitations', '/admin/events', '/admin/rsvp', '/admin/content', '/admin/travel', '/admin/media', '/admin/ai'] as const;
 
@@ -90,7 +103,7 @@ type Size = { px: number; where: string; sample: string };
  * guest has to read or operate takes `control-caps` at 1rem instead, which is what level 16 added
  * the style for. This is the one exception, named, rather than a blanket tolerance.
  */
-const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b/;
+const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b/;
 
 test.describe('every surface renders in a face this repo declares', () => {
   // One navigation per test here, but the floor tests below walk 6 and 12 routes. Same budgeting
@@ -187,4 +200,40 @@ test.describe('the 17px floor', () => {
     expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
     await ctx.close();
   });
+
+  // Both designs, because the two do not share a kit: Conservatory's menu has been on the 1rem
+  // step all along while Gilded Hour's panel was on 0.765rem, and only a walk over both sees that.
+  for (const theme of ['gilded-hour', 'conservatory'] as const) {
+    test(`the public routes · ${theme}`, async ({ browser }) => {
+      const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
+      const page = await ctx.newPage();
+      const under: string[] = [];
+      for (const route of PUBLIC_ROUTES) {
+        await page.goto(`${route}?theme=${theme}`);
+        await page.evaluate(() => document.fonts.ready);
+        for (const s of (await page.evaluate(SIZES)) as Size[]) {
+          if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
+          under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
+        }
+      }
+      expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+      await ctx.close();
+    });
+
+    test(`the guest routes · ${theme}`, async ({ browser }) => {
+      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
+      const page = await ctx.newPage();
+      const under: string[] = [];
+      for (const route of GUEST_ROUTES) {
+        await page.goto(`${route}?theme=${theme}`);
+        await page.evaluate(() => document.fonts.ready);
+        for (const s of (await page.evaluate(SIZES)) as Size[]) {
+          if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
+          under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
+        }
+      }
+      expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+      await ctx.close();
+    });
+  }
 });
