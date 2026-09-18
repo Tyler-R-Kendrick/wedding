@@ -411,7 +411,7 @@ export default function ConciergePanel({
                   ))}
                   {turn.navigate ? (
                     <p>
-                      <a href={turn.navigate.route}>
+                      <a className="link-block" href={turn.navigate.route}>
                         Open {turn.navigate.route}
                       </a>
                     </p>

@@ -53,7 +53,7 @@ export function VenueSpacePage({ data }: { data: VenueRoomData }) {
       </Section>
 
       <p className="wp-prose">
-        <Link href={ROUTES.exploreCaa}>← Explore the whole building</Link>
+        <Link className="link-block" href={ROUTES.exploreCaa}>← Explore the whole building</Link>
       </p>
     </Shell>
   );

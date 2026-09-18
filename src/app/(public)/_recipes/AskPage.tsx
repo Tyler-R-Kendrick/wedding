@@ -65,7 +65,7 @@ export function AskPage({ faq, search, concierge }: AskRecipeProps) {
               <Text block={e.answer} />
               {e.route ? (
                 <p>
-                  <Link href={e.route}>See {labelFor(e.route)} →</Link>
+                  <Link className="link-block" href={e.route}>See {labelFor(e.route)} →</Link>
                 </p>
               ) : null}
             </article>

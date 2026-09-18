@@ -105,7 +105,7 @@ export function AdventureDetailPage({ data }: { data: AdventureDetailData }) {
       ) : null}
 
       <p className="wp-prose">
-        <Link href={ROUTES.adventures}>← All adventures</Link>
+        <Link className="link-block" href={ROUTES.adventures}>← All adventures</Link>
       </p>
     </Shell>
   );

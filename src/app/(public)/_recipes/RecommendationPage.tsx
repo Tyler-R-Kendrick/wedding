@@ -9,7 +9,7 @@ export function RecommendationPage({ card }: { card: RecommendationCard }) {
       <PageIntro eyebrow="Share an Adventure" title={card.title} />
       <RecommendationCardView card={card} headingLevel={2} />
       <p className="wp-prose">
-        <Link href={ROUTES.share}>← All recommendations and itineraries</Link>
+        <Link className="link-block" href={ROUTES.share}>← All recommendations and itineraries</Link>
       </p>
     </Shell>
   );

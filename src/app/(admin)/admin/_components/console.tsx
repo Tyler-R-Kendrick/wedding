@@ -54,7 +54,7 @@ export function ConsoleGate({ what }: { what: string }) {
       <h1 className="ops-title">Administrator sign-in required</h1>
       <p>{what} is part of the admin console.</p>
       <p>
-        <Link href="/sign-in/admin">Sign in with your administrator email</Link>
+        <Link className="link-block" href="/sign-in/admin">Sign in with your administrator email</Link>
       </p>
     </main>
   );

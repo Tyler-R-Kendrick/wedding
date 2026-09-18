@@ -130,7 +130,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
             Search
           </button>
           <p className="ops-field">
-            <Link href="/admin/audit">Clear filters</Link>
+            <Link className="link-block" href="/admin/audit">Clear filters</Link>
           </p>
         </form>
       </Section>
@@ -199,7 +199,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
         </DataTable>
         {nextHref ? (
           <p>
-            <Link href={nextHref}>Older events →</Link>
+            <Link className="link-block" href={nextHref}>Older events →</Link>
           </p>
         ) : null}
       </Section>

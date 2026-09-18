@@ -162,6 +162,30 @@ a:not([class]) {
 }
 
 /*
+ * The same link, when it is the whole of its paragraph: then it is a touch target, and
+ * `wedding-site-standards` §7 asks for 44px. `scripts/check-standalone-links.mjs` fails the build
+ * on a paragraph-only link that carries neither this nor an equivalent.
+ *
+ * One class rather than a `--block` modifier in each of the five stylesheets that need it. The two
+ * theme kits are the exception and keep their own `--standalone`, because there the geometry has
+ * to sit in the same rule as the kit's other touch targets to stay in ascending specificity for
+ * stylelint. Everywhere else — the fallback recipes, the auth kit, the console, the concierge —
+ * this is it.
+ *
+ * It carries the underline as well as the geometry, because the links that need it are the ones
+ * the rule above was already underlining: adding a class to a bare anchor takes it out of
+ * `a:not([class])`, and it must not lose its affordance on the way to gaining a target.
+ */
+.link-block {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 10px;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/*
  * Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
  * provenance block placeholder (src/components/provenance), which owns `.placeholder`.
  *

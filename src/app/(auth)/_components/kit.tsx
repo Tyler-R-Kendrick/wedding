@@ -108,7 +108,7 @@ export function RecoveryPanel({ title, message }: { title: string; message: stri
         <Placeholder inline>{RECOVERY_CONTACT}</Placeholder>
       </p>
       <p>
-        <a className="auth-link" href="/sign-in">
+        <a className="auth-link link-block" href="/sign-in">
           Already claimed? Sign in with your email
         </a>
       </p>
