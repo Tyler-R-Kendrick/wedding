@@ -342,13 +342,11 @@ describe('professional media AI-rights confirmation', () => {
     for (const good of accept) expect(RIGHTS_CONFIRMATION_REF.safeParse(good).success, `must accept: ${good}`).toBe(true);
   });
 
-  it('each gate accepts the example its own error message offers', async () => {
-    // Both validators tell an admin that an ADR section is an acceptable reference, and both had a
+  it('the gate accepts the example its own error message offers', async () => {
+    // The validator tells an admin that an ADR section is an acceptable reference, and had a
     // `min(12)` that rejected one: `ADR-0006 §7` is eleven characters. A validator that refuses the
     // answer its own message asks for is a defect the message hides.
     const { RIGHTS_CONFIRMATION_REF } = await import('@/capabilities/media/admin_import_professional_media');
-    const { COUNSEL_REVIEW_REF } = await import('@/capabilities/biometrics/admin_enable_biometric_readiness');
-    expect(COUNSEL_REVIEW_REF.safeParse('ADR-0006 §7').success, 'the counsel gate must accept the ADR section it names').toBe(true);
-    expect(RIGHTS_CONFIRMATION_REF.safeParse('ADR-0005 §4').success, 'the rights gate must accept an ADR section too').toBe(true);
+    expect(RIGHTS_CONFIRMATION_REF.safeParse('ADR-0005 §4').success, 'the rights gate must accept an ADR section').toBe(true);
   });
 });

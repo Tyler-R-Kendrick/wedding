@@ -3,8 +3,6 @@
  * are OFF and require an explicit readiness switch in addition to the flag.
  */
 export const FEATURE_FLAGS = {
-  /** Illinois BIPA: production face matching stays off until counsel review + readiness. */
-  BIOMETRICS_ENABLED: false,
   /** Third-party AI processing of professionally delivered media (needs written vendor confirmation). */
   PRO_MEDIA_AI_PROCESSING: false,
   /** Floating design switcher (Gilded Hour / Conservatory) visible to everyone. */
@@ -15,7 +13,7 @@ export const FEATURE_FLAGS = {
   AI_CONCIERGE: true,
   /** Guest media uploads (QR upload page). */
   GUEST_UPLOADS: true,
-  /** Semantic media search (non-biometric). */
+  /** Semantic media search: what a photo shows, never who is in it. */
   MEDIA_SEMANTIC_SEARCH: true,
   /** Live flight/hotel search tools (adapters fall back to deep links when unconfigured). */
   TRAVEL_LIVE_SEARCH: true,
@@ -46,4 +44,4 @@ export function readFlags(env: Record<string, string | undefined>): FlagValues {
 }
 
 /** Flags that additionally require a persisted readiness switch (admin + legal) before they take effect. */
-export const READINESS_GATED: readonly FeatureFlag[] = ['BIOMETRICS_ENABLED', 'PRO_MEDIA_AI_PROCESSING'];
+export const READINESS_GATED: readonly FeatureFlag[] = ['PRO_MEDIA_AI_PROCESSING'];

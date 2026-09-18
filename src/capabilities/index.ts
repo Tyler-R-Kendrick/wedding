@@ -4,7 +4,6 @@ import { err, type Result } from '@/contracts/result';
 import { aiCapabilities } from './ai';
 import { contentCapabilities } from './content';
 import { invoke } from './invoke';
-import { biometricCapabilities } from './biometrics';
 import { mediaCapabilities } from './media';
 import { mediaAiCapabilities } from './mediaai';
 import { navigateTo } from './navigate_to';
@@ -30,7 +29,6 @@ export const BUILTIN_CAPABILITIES: readonly AnyCapability[] = [
   ...transportGiftsReservationsCapabilities,
   ...mediaCapabilities,
   ...mediaAiCapabilities,
-  ...biometricCapabilities,
   ...aiCapabilities,
   ...opsCapabilities,
 ];

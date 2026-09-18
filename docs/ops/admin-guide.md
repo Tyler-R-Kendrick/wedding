@@ -62,7 +62,7 @@ not see a guest list, a dietary need or an address.
 | `/admin/flags` | Feature flags, and the readiness switches for the two legal gates. |
 | `/admin/audit` | Who did what, when. Every administrative action and every external handoff is recorded. Codes, one-time passwords and the text of a guest's dietary needs are never in here. |
 | `/admin/jobs`, `/admin/metrics` | Background work and counters. |
-| `/admin/ai`, `/admin/concierge`, `/admin/biometrics` | The concierge's search index and answer traces; the biometric feature's status, which reads **off** and should stay that way until counsel has reviewed it. |
+| `/admin/ai`, `/admin/concierge` | The concierge's search index and answer traces. |
 
 ## Step-up
 

@@ -58,7 +58,6 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
       { href: '/admin/media', label: 'Media', blurb: 'Moderation queue, imports and duplicates.', entitlement: 'admin_media' },
       { href: '/admin/ai', label: 'Media AI', blurb: 'Captions, indexing and what the model may touch.', entitlement: 'admin_ai' },
       { href: '/admin/concierge', label: 'Concierge', blurb: 'Answer traces, grounding failures, security alerts.', entitlement: 'admin_ai' },
-      { href: '/admin/biometrics', label: 'Face matching', blurb: 'BIPA readiness, consent ledger, deletions.', entitlement: 'admin_ai' },
     ],
   },
   {
@@ -93,6 +92,5 @@ export const MEDIA_SUBNAV = [
 
 export const INTELLIGENCE_SUBNAV = [
   { href: '/admin/ai', label: 'Search index' },
-  { href: '/admin/biometrics', label: 'Face matching' },
   { href: '/admin/concierge', label: 'Concierge' },
 ] as const;

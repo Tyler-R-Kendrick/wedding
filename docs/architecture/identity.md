@@ -55,7 +55,7 @@ Guest ──< Household ──< Invitation (token hash, status, expiry, rotation
 | `view_table_assignment` | `view_event` **and** `seatingPublished` (Swarm E fact source; default false) |
 | `claim_transportation_benefit` | flag `TRANSPORT_BENEFITS`, `transportEligible` fact (Swarm G), `self` binding |
 | `view_travel_tools`, `view_private_media` | usable invitation |
-| `upload_media`, `use_face_matching`, `use_concierge` | flags `GUEST_UPLOADS`, `BIOMETRICS_ENABLED` (readiness still gated by the pipeline), `AI_CONCIERGE` |
+| `upload_media`, `use_concierge` | flags `GUEST_UPLOADS`, `AI_CONCIERGE` |
 | children, minors, merged duplicates | nothing, ever |
 | admin | owner: all `admin_*`; planner: content, guest_ops, audit, lifecycle; moderator: media, audit |
 

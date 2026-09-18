@@ -46,14 +46,13 @@ export const ConservatoryPhotosPage: ContentRecipe<PhotosProps> = ({ albums, can
       </div>
     </Section>
 
-    {/* See the note in the Gilded Hour recipe: both these pages were unreachable from the site. */}
+    {/* See the note in the Gilded Hour recipe: this page was unreachable from the site. */}
     <Section id="find" labelledBy="find-title">
       <div className="cv-section__text">
         <SectionHeading level={2} id="find-title" title="Find a photo" />
         <Prose>
           <p>
-            <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with. Signed in, you can also ask us to{' '}
-            <Link href={ROUTES.photosOfMe}>look for you in them</Link>.
+            <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with.
           </p>
         </Prose>
       </div>

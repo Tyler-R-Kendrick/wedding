@@ -17,7 +17,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
  * from a web page at all — a deploy changes them. The two readiness switches can be changed, and
  * only in one direction from here: off.
  *
- * There is no switch-on control, and its absence is the design. `BIOMETRICS_ENABLED` is turned on
+ * There is no switch-on control, and its absence is the design. A readiness-gated flag is turned on
  * from Face matching behind a counsel-review reference, a fresh session and a single-use
  * confirmation; `PRO_MEDIA_AI_PROCESSING` has no enable path anywhere in the application, because
  * backlog C-09 and V-03 (written vendor confirmation) are open, and a generic "flip any switch"

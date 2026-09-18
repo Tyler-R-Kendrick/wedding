@@ -51,10 +51,10 @@ describe('admin_flag_status', () => {
 
   it('reports a recorded justification as present without returning its text', async () => {
     const db = await getDb();
-    await setReadiness(db, { flag: 'BIOMETRICS_ENABLED', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-note', audit: new DbAuditSink(db), note: 'ADR-0006 §7 memo 2027-01-04 from counsel' });
+    await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-note', audit: new DbAuditSink(db), note: 'ADR-0006 §7 memo 2027-01-04 from counsel' });
     invalidateReadinessCache();
     const d = expectOk(await run(adminFlagStatus, admin(), {})).data;
-    const view = d.flags.find((f) => f.name === 'BIOMETRICS_ENABLED')!;
+    const view = d.flags.find((f) => f.name === 'PRO_MEDIA_AI_PROCESSING')!;
     expect(view.readiness).toBe(true);
     expect(view.hasNote).toBe(true);
     expect(view.updatedBy).toEqual({ kind: 'system', ref: 'test' });
@@ -65,16 +65,16 @@ describe('admin_flag_status', () => {
 describe('switching a readiness gate off', () => {
   it('always works, needs no reference, and audits the change', async () => {
     const db = await getDb();
-    await setReadiness(db, { flag: 'BIOMETRICS_ENABLED', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-pre', audit: new DbAuditSink(db), note: 'x'.repeat(20) });
+    await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-pre', audit: new DbAuditSink(db), note: 'x'.repeat(20) });
     invalidateReadinessCache();
-    expect(await isReady('BIOMETRICS_ENABLED', db)).toBe(true);
+    expect(await isReady('PRO_MEDIA_AI_PROCESSING', db)).toBe(true);
 
-    // A planner: `admin_lifecycle` but NOT `admin_ai`, so the biometrics-owned off switch is out of
-    // reach. Closing a legal gate must not depend on holding the entitlement that owns the feature.
-    const r = expectOk(await run(adminDisableFlagReadiness, admin(['admin_lifecycle']), { flag: 'BIOMETRICS_ENABLED' }, { requestId: 'req-flag-off' })).data;
+    // A planner: `admin_lifecycle` but NOT `admin_ai`. Closing a legal gate must not depend on
+    // holding the entitlement that owns the feature it gates.
+    const r = expectOk(await run(adminDisableFlagReadiness, admin(['admin_lifecycle']), { flag: 'PRO_MEDIA_AI_PROCESSING' }, { requestId: 'req-flag-off' })).data;
     expect(r).toMatchObject({ readiness: false, effective: false, changed: true });
     invalidateReadinessCache();
-    expect(await isReady('BIOMETRICS_ENABLED', db)).toBe(false);
+    expect(await isReady('PRO_MEDIA_AI_PROCESSING', db)).toBe(false);
     const rows = await listAuditEvents(db, { action: 'flag.changed', requestId: 'req-flag-off' });
     expect(rows[0]!.metadata).toMatchObject({ readiness: false });
   });
@@ -104,7 +104,7 @@ describe('no console path can open a legal gate', () => {
    */
   const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
-  it('setReadiness is called with ready: true in exactly one file, and it is the counsel-gated one', () => {
+  it('setReadiness is never called with ready: true anywhere in src', () => {
     const callers = files
       .map((f) => ({ file: f, text: code(readFileSync(f, 'utf8')) }))
       .filter(({ text }) => /setReadiness\s*\(/.test(text) && !/export async function setReadiness/.test(text))
@@ -115,22 +115,25 @@ describe('no console path can open a legal gate', () => {
       // No call may pass a variable: `ready: someBoolean` is how "turn it on" arrives by accident.
       expect(c.readyArgs.every((a) => a === 'true' || a === 'false'), `${c.file} passes a non-literal ready:`).toBe(true);
     }
+    // Face matching was the one feature with an in-console switch-on, behind counsel review; it is
+    // gone, and with it the only `ready: true` in the application. PRO_MEDIA_AI_PROCESSING's gate
+    // is `ownedBy: null` — no screen may flip it — so the honest assertion is now zero, not one.
     const enablers = callers.filter((c) => c.readyArgs.includes('true')).map((c) => c.file.replace(/\\/g, '/'));
-    expect(enablers).toEqual(['src/capabilities/biometrics/admin_enable_biometric_readiness.ts']);
+    expect(enablers).toEqual([]);
   });
 
-  it('the one capability that can enable a gate carries every guard, and nothing else claims to enable one', () => {
-    const enable = registry.get('admin_enable_biometric_readiness')!;
-    expect(enable.stepUp).toBe(true);
-    expect(enable.confirmation).toBe('explicit');
-    expect(enable.exposure).toEqual({ ui: true, ai: false, webmcp: false });
-    expect(enable.requires).toContain('admin_lifecycle');
-
+  it('no capability claims to enable a gate, and the one that closes them still exists', () => {
     const enablingNames = registry
       .list()
       .map((c) => c.name)
       .filter((n) => /enable.*readiness|readiness.*enable|set_.*readiness/.test(n));
-    expect(enablingNames).toEqual(['admin_enable_biometric_readiness']);
+    expect(enablingNames).toEqual([]);
+
+    // Closing one must stay available to any admin: a legal gate you cannot shut is worse than one
+    // you cannot open.
+    const disable = registry.get('admin_disable_flag_readiness')!;
+    expect(disable, 'the off switch must exist').toBeDefined();
+    expect(disable.exposure).toEqual({ ui: true, ai: false, webmcp: false });
   });
 
   it('every readiness-gated flag has a legal gate whose precondition is unmet in source', () => {

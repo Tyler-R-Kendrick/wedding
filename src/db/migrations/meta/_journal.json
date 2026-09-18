@@ -71,6 +71,13 @@
       "when": 1788810252368,
       "tag": "0009_safe_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789739488144,
+      "tag": "0010_safe_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

@@ -43,15 +43,14 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
       )}
     </Section>
 
-    {/* Outside the `canUpload` gate on purpose. Search and "photos of me" had NO inbound link from
-        anywhere in the site — a crawl of all sixteen anonymous-reachable pages found zero — so two
-        finished pages could be reached only by typing the URL. Search needs no account at all. */}
+    {/* Outside the `canUpload` gate on purpose: search had NO inbound link from anywhere in the
+        site — a crawl of all sixteen anonymous-reachable pages found zero — so a finished page
+        could be reached only by typing the URL. Search needs no account at all. */}
     <Section id="find" labelledBy="find-title">
       <SectionHeading level={2} id="find-title" title="Find a photo" />
       <Prose>
         <p>
-          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with. Signed in, you can also ask us to{' '}
-          <Link href={ROUTES.photosOfMe}>look for you in them</Link>.
+          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with.
         </p>
       </Prose>
     </Section>

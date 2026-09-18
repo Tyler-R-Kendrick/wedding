@@ -8,7 +8,6 @@ import { PROVIDER_KINDS } from '@/contracts/providers';
 import { sha256Hex } from '@/lib/crypto';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { MockAuthEmail, devInbox } from '@/providers/auth-email';
-import { MockBiometric } from '@/providers/biometric';
 import { hashedEmbedding, MockEmbeddings } from '@/providers/embeddings';
 import { MockFlights, DeepLinkOnlyFlights, skyscannerFlightsUrl } from '@/providers/flights';
 import { MockHotels } from '@/providers/hotels';
@@ -241,20 +240,6 @@ describe('media-ai + embeddings + vector index', () => {
     expect((await idx.query('test', { vector: b, k: 5 })).ok && (await idx.query('test', { vector: b, k: 5 }))).toMatchObject({ value: [{ id: 'c' }] });
     expect((await idx.upsert('test', [{ id: 'bad', vector: [1, 2] }])).ok).toBe(false);
     expect(hashedEmbedding('')).toHaveLength(256);
-  });
-});
-
-describe('biometric mock', () => {
-  it('throws feature_disabled unless ready, but always allows deletion', async () => {
-    let ready = false;
-    const p = new MockBiometric(async () => ready);
-    await expect(p.enroll({ subjectId: 's1', vector: [1, 0] })).rejects.toMatchObject({ code: 'feature_disabled' });
-    expect((await p.delete('s1')).ok).toBe(true);
-    ready = true;
-    expect((await p.enroll({ subjectId: 's1', vector: [1, 0] })).ok).toBe(true);
-    // `match` is subject-scoped: it answers "is this s1?", never "who is this?".
-    const m = await p.match({ vector: [0.9, 0.1], subjectId: 's1' });
-    expect(m.ok && m.value[0]?.subjectId).toBe('s1');
   });
 });
 

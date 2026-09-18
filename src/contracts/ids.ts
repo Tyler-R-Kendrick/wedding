@@ -28,7 +28,6 @@ export type TransportationEntitlementId = Brand<string, 'TransportationEntitleme
 export type TransportationClaimId = Brand<string, 'TransportationClaimId'>;
 export type BookingReferenceId = Brand<string, 'BookingReferenceId'>;
 export type ExternalActionId = Brand<string, 'ExternalActionId'>;
-export type BiometricConsentId = Brand<string, 'BiometricConsentId'>;
 export type AiSessionId = Brand<string, 'AiSessionId'>;
 export type AuditEventId = Brand<string, 'AuditEventId'>;
 export type JobId = Brand<string, 'JobId'>;

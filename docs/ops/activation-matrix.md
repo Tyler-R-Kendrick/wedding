@@ -8,7 +8,6 @@ Do not edit between the markers; edit the code and regenerate.
 | Flag | Default | Readiness switch also required | To change it |
 |---|---|---|---|
 | `AI_CONCIERGE` | on | no | `FLAG_AI_CONCIERGE=off` |
-| `BIOMETRICS_ENABLED` | **off** | yes — legal gate | `FLAG_BIOMETRICS_ENABLED=on` **and** the readiness switch on `/admin/flags` |
 | `DESIGN_SWITCHER` | on | no | `FLAG_DESIGN_SWITCHER=off` |
 | `GUEST_UPLOADS` | on | no | `FLAG_GUEST_UPLOADS=off` |
 | `MEDIA_SEMANTIC_SEARCH` | on | no | `FLAG_MEDIA_SEMANTIC_SEARCH=off` |
@@ -31,7 +30,6 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 |---|---|---|---|---|---|
 | `ai-model` | mock | mock | `AI_BASE_URL`<br>`AI_CHAT_MODEL`<br>`AI_FAST_MODEL`<br>`AI_GATEWAY`<br>`AI_GATEWAY_API_KEY`<br>`AI_HARNESS`<br>`ANTHROPIC_API_KEY`<br>`ANTHROPIC_AUTH_TOKEN`<br>`ANTHROPIC_BASE_URL`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY` | chat, verifier, caption, streaming |  |
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_API_KEY` | sendOtp, sendMessage |  |
-| `biometric` | mock | mock | — | extract, enroll, match, delete | mock biometric provider: detects no faces and must never be enabled in production without counsel review |
 | `cash-fund` | mock | mock | — | describeLinks |  |
 | `embeddings` | mock | mock | `EMBEDDINGS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY`<br>`VOYAGE_API_KEY` | embed |  |
 | `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY` | search, deepLink |  |

@@ -28,13 +28,6 @@ export interface LegalGate {
 }
 
 export const LEGAL_GATES: Readonly<Partial<Record<FeatureFlag, LegalGate>>> = {
-  BIOMETRICS_ENABLED: {
-    flag: 'BIOMETRICS_ENABLED',
-    backlogIds: ['X-05'],
-    requirement: 'Illinois privacy counsel has reviewed the consent text, retention schedule and vendor arrangement (ADR-0006 §7), and the retention period and counsel name are settled.',
-    ownedBy: { label: 'Face matching', route: '/admin/biometrics' },
-    preconditionMet: false,
-  },
   PRO_MEDIA_AI_PROCESSING: {
     flag: 'PRO_MEDIA_AI_PROCESSING',
     backlogIds: ['C-09', 'V-03'],

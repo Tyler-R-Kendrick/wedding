@@ -53,12 +53,12 @@ describe('lifecycle + readiness', () => {
   it('gates readiness flags on env AND the persisted row', async () => {
     const db = await getDb();
     invalidateReadinessCache();
-    const flagsOn = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on' });
-    expect(await isEnabled('BIOMETRICS_ENABLED', { flags: flagsOn, db })).toBe(false);
-    await setReadiness(db, { flag: 'BIOMETRICS_ENABLED', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-1', audit: new DbAuditSink(db) });
-    expect(await isEnabled('BIOMETRICS_ENABLED', { flags: flagsOn, db })).toBe(true);
-    expect(await isEnabled('BIOMETRICS_ENABLED', { flags: readFlags({}), db })).toBe(false);
+    const flagsOn = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on' });
+    expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: flagsOn, db })).toBe(false);
+    await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-1', audit: new DbAuditSink(db) });
+    expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: flagsOn, db })).toBe(true);
+    expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: readFlags({}), db })).toBe(false);
     expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({}), db })).toBe(true);
-    expect(await listAuditEvents(db, { action: 'flag.changed', targetId: 'BIOMETRICS_ENABLED' })).toHaveLength(1);
+    expect(await listAuditEvents(db, { action: 'flag.changed', targetId: 'PRO_MEDIA_AI_PROCESSING' })).toHaveLength(1);
   });
 });

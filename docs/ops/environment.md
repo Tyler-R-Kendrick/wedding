@@ -46,8 +46,6 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `AI_GATEWAY` (`on`), `AI_GATEWAY_API_KEY` | unset | ai-model: Vercel AI Gateway. The key is explicit; `AI_GATEWAY=on` selects the gateway with no key and `@ai-sdk/gateway` signs with the deployment's OIDC token (locally, the CLI session). Model ids default to `anthropic/claude-sonnet-5` / `anthropic/claude-haiku-4.5`; `AI_CHAT_MODEL` / `AI_FAST_MODEL` override | no |
 | `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `EMBEDDINGS_PROVIDER` (`voyage`\|`openai`) | unset -> hashed mock | embeddings | no |
 | `MEDIA_AI_PROVIDER` (`mock`\|`anthropic`) | unset -> Anthropic vision when `ANTHROPIC_API_KEY` is set, else the deterministic mock | media-ai (captions, tags, venue class) | no |
-| `BIOMETRIC_VAULT_KEY` | unset; derived from `CONFIRMATION_SECRET` outside production (with a warning). **Required in production before `FLAG_BIOMETRICS_ENABLED` can seal anything**; 32+ chars, from a secret manager | biometric vault (AES-256-GCM), separate from every other secret | no |
-| `BIOMETRIC_RETENTION_DAYS` | `365` | `biometric.sweep`: request deletion of enrolments older than this. `TODO(Tyler & Sara)`: counsel to confirm the schedule | no |
 | `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
@@ -63,7 +61,6 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `UBER_API_BASE_URL` | `https://api.uber.com` | transport-benefit `uber` mode (partner sandbox override) | no |
 | `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
 | `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
-| `REGISTRY_LINKS_JSON`, `CASH_FUND_LINKS_JSON` | unset -> placeholders | registry, cash-fund | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
 | `JOBS_INLINE_RUNNER` | `true` | dev poller | no |
 | `JOBS_POLL_INTERVAL_MS` | `2000` | dev poller | no |
@@ -110,4 +107,4 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 6. AI: `ANTHROPIC_API_KEY`; embeddings key if semantic media search is enabled.
 7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
-9. Keep `FLAG_BIOMETRICS_ENABLED` and `FLAG_PRO_MEDIA_AI_PROCESSING` off until counsel/vendor sign-off; the readiness switch is a second, persisted gate.
+9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.

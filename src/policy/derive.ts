@@ -60,7 +60,6 @@ export function deriveGuestEntitlements(input: GuestDerivationInput): Set<Entitl
   if (invited && flags.TRANSPORT_BENEFITS && facts.transportEligible && input.bindingRole === 'self') out.add('claim_transportation_benefit');
   if (invited && flags.GUEST_UPLOADS) out.add('upload_media');
   if (invited) out.add('view_private_media');
-  if (invited && flags.BIOMETRICS_ENABLED) out.add('use_face_matching');
   if (invited && flags.AI_CONCIERGE) out.add('use_concierge');
   return out;
 }

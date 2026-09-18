@@ -96,7 +96,7 @@ export interface CapabilityDescriptor<I, O> {
    *
    * The marker states an intrinsic property of the capability, not a note about which other gate
    * happens to cover it today. Several capabilities that carry it are also excluded from an admin's
-   * lists by an entitlement only guests are granted (`view_table_assignment`, `use_face_matching`)
+   * lists by an entitlement only guests are granted (`view_table_assignment`)
    * or by a flag that is off; entitlement derivation and flags both change, and the marker is what
    * stays true. Handler-level guards stay: this is one more layer, never a replacement for them.
    * Only meaningful with `auth: 'guest'`; `defineCapability` rejects it elsewhere.

@@ -170,9 +170,10 @@ Memory, Hospitality, Future.
 - Photographer/videographer works: private, non-commercial display OK;
   third-party AI or biometric processing needs written confirmation first
   (`PRO_MEDIA_AI_PROCESSING=false`).
-- Illinois BIPA: face matching ships behind `BIOMETRICS_ENABLED=false` with
-  a consent ledger, retention/deletion jobs, an isolated vault, and a
-  counsel review gate (ADR-0006).
+- Illinois BIPA: not applicable. Face matching was designed behind a counsel
+  gate and then removed at the couple's instruction — the site collects no
+  face geometry and offers no way to search photographs by who is in them
+  (ADR-0006, superseded).
 - Planner-created design materials: planner's IP, never ingested.
 - Venue-kit photography and Hyatt site imagery: not reusable.
 - Historic Michigan Boulevard District designation date is reported

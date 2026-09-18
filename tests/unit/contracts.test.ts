@@ -49,10 +49,10 @@ describe('freshnessOf', () => {
 describe('readFlags', () => {
   it('uses production-safe defaults and honours FLAG_* overrides', () => {
     const defaults = readFlags({});
-    expect(defaults.BIOMETRICS_ENABLED).toBe(false);
+    expect(defaults.PRO_MEDIA_AI_PROCESSING).toBe(false);
     expect(defaults.DESIGN_SWITCHER).toBe(true);
-    const flags = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on', NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'off', FLAG_WEBMCP: 'nonsense' });
-    expect(flags.BIOMETRICS_ENABLED).toBe(true);
+    const flags = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on', NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'off', FLAG_WEBMCP: 'nonsense' });
+    expect(flags.PRO_MEDIA_AI_PROCESSING).toBe(true);
     expect(flags.DESIGN_SWITCHER).toBe(false);
     expect(flags.WEBMCP).toBe(FEATURE_FLAGS.WEBMCP);
   });
