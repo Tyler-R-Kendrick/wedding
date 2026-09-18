@@ -355,6 +355,14 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
   external?: boolean;
+  /**
+   * The link is the whole of its line — a paragraph or list item that holds nothing else — so it
+   * is a touch target and takes the 44px treatment both kits document. It cannot be inferred in
+   * CSS: `p > a:only-child` counts ELEMENT children, so it matches an anchor sitting in a sentence
+   * just as readily, and giving those the same block geometry would break the line. The call site
+   * is the only place that knows, so the call site says.
+   */
+  standalone?: boolean;
   children: ReactNode;
 }
 

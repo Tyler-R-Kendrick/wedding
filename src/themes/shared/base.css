@@ -129,6 +129,30 @@ body {
 }
 
 /*
+ * A link nobody styled must still look like a link.
+ *
+ * Tailwind's preflight resets `a { color: inherit; text-decoration: inherit }`, so an anchor that
+ * reaches a page without a kit class inherits the sentence's own ink and no underline: measured on
+ * /your-weekend, "Rides, valet and parking" rendered rgb(28, 27, 24) with `text-decoration: none`
+ * — the exact colour and the exact decoration of the prose around it. Nothing distinguished it,
+ * which is WCAG 2.2 SC 1.4.1 with no fallback at all, not merely colour-alone.
+ *
+ * There are 21 such anchors: the weekend slot lists, the concierge's cited links and navigate
+ * actions, both admin consoles, and — the one that matters most — the RSVP error summaries in
+ * `components/rsvp/fields.tsx` and the Conservatory kit, which are the links a guest follows to
+ * repair a submission that just failed.
+ *
+ * This is a floor, not a style. `a:not([class])` is (0,1,1), so it outranks preflight's bare `a`
+ * inside `layer(base)` and loses to every component and kit rule — `.prov a`, `.errsum__list a`,
+ * `.gh-link` and the rest all keep their own treatment. It only paints what nothing else claimed.
+ */
+a:not([class]) {
+  color: var(--color-secondary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/*
  * Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
  * provenance block placeholder (src/components/provenance), which owns `.placeholder`.
  *
@@ -173,9 +197,11 @@ body {
  */
 
 /*
- * 4.5rem, not 4.25: Gilded Hour's elevator panel measures 72px at 390px because "Explore CAA"
- * wraps onto a second line, and 4.25rem reserved 68 of them. Four pixels is not much until it is
- * the four that hold a line of type.
+ * 5rem, not 4.5: Gilded Hour's elevator panel measured 72px at 390px while its labels sat at
+ * 13.005px, and 4.5rem reserved 76.5 of them. The labels are on the 17px step now (see
+ * `.gh-panel__cell`), which takes the panel to 81px, so the reservation follows it to 85. The
+ * margin is deliberate and small: four pixels is not much until it is the four that hold a line
+ * of type.
  */
 .site[data-bottom-bar] {
   --bottom-bar-height: var(--bottom-bar-h);
@@ -473,7 +499,7 @@ body {
    * scrolls and a custom property set on `.site` is invisible to it, so the reservation `main`
    * makes and the one the scroll container makes read the same two numbers.
    */
-  --bottom-bar-h: 4.5rem;
+  --bottom-bar-h: 5rem;
   --floating-menu-h: 5.25rem;
 }
 

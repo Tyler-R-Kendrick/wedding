@@ -336,11 +336,27 @@
   border-block-start: 2px solid transparent;
   background: none;
   font-family: var(--font-text);
-  font-size: var(--type-label-sm-size);
+
+  /*
+   * 17px, not 13. This panel is how a guest moves around the site on a phone, and PRODUCT.md's
+   * floor exists for exactly this control — a grandparent reading at arm's length. DESIGN.md said
+   * `label-sm` (0.765rem) here; the ramp is rem-based on a 17px root, so that rendered 13.005px,
+   * while Conservatory's equivalent menu has been on the 1rem step all along. One of the two was
+   * wrong and the audience says which. DESIGN.md's nav entry is updated to match rather than
+   * quietly contradicted.
+   *
+   * Uppercase cannot come with the larger step, and this was measured rather than assumed: at
+   * 390px each of the four cells is 98px wide, and "ADVENTURES" wants 122px at 0.03em tracking
+   * and 137px at the `control-caps` role's own 0.12em. `overflow-wrap: normal` will not break a
+   * single word, so it clipped at both. Sentence case fits inside 98px with room left, and is the
+   * easier read besides, which is the whole point of the floor. The panel grows 72px -> 81px;
+   * `--bottom-bar-h` grows with it so the reservation still clears the bar.
+   */
+  font-size: var(--type-control-caps-size);
   font-weight: var(--type-label-sm-weight);
   letter-spacing: 0.03em;
   line-height: 1.15;
-  text-transform: uppercase;
+  text-transform: none;
   text-align: center;
   color: var(--color-primary);
   text-decoration: none;
@@ -1069,6 +1085,21 @@
   transition: text-decoration-color var(--duration-fast) var(--ease-engrave);
 }
 
+/*
+ * A link the call site declared to be the whole of its line (`<Link standalone>`), and a heading
+ * that is a link — entry, recommendation and result titles, which measured 34px. Both stand on
+ * their own line by construction, so both are touch targets under the rule further down this file.
+ * They sit here, beside the base, because `no-descending-specificity` wants the (0,1,0) and
+ * (0,2,0) forms above `.gh-link:hover`.
+ */
+.gh-link--standalone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: 44px;
+  padding-block: 10px;
+}
+
 .gh-link:hover {
   text-decoration-color: currentcolor;
   text-decoration-thickness: 2px;
@@ -1354,10 +1385,18 @@
  * SF-4: a link that stands on its own line is a touch target. `wedding-site-standards` §7 asks for
  * 44 px; these are 44 px tall with the icon on the same line as the last word.
  */
+.gh-entry__title .gh-link,
+.gh-rec__title .gh-link,
+.gh-result__title .gh-link,
 .gh-back .gh-link,
 .gh-outlet__link .gh-link,
 .gh-section__action .gh-link,
 .gh-room__name .gh-link,
+/* The venue address in the footer is one of these and was missed: it stands alone on its own line
+   on every route in this design, and measured 308x41 — three pixels short of the rule directly
+   above it. It is listed here rather than last so the group stays in ascending specificity, which
+   is what `no-descending-specificity` is checking. */
+.gh-footer__place > .gh-link,
 .gh-faq__a p > .gh-link,
 .gh-why p > .gh-link {
   display: inline-flex;

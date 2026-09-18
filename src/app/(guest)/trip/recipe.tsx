@@ -233,7 +233,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
           <p>The block details (link, rate, dates, cutoff) are still coming from the planner. Travel &amp; Stay will update as soon as they are confirmed.</p>
         )}
         <p>
-          <a className="underline underline-offset-4" href="/travel#stay">
+          <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/travel#stay">
             All the details on Travel &amp; Stay
           </a>
         </p>
