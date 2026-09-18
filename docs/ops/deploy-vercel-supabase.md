@@ -55,6 +55,10 @@ Cloudflare R2, or any S3-compatible bucket.
 
 Without S3, production refuses to boot unless `STORAGE_SIGNING_SECRET` is set,
 because the committed local-filesystem signing key must never sign a real URL.
+**On Vercel it refuses either way**: a serverless invocation gets its own
+ephemeral disk, so local-fs would accept an upload and lose it, and that is a
+failure nobody sees until they go looking for a photograph. Local-fs remains a
+real choice on a host with a volume.
 
 ### 3. Secrets
 

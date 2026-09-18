@@ -78,6 +78,26 @@ describe('storage provider selection', () => {
     expect(warnings.join(' ')).toMatch(/STORAGE_SIGNING_SECRET/);
     expect(warnings.join(' ')).not.toMatch(/change-me/);
   });
+
+  it('refuses local-fs on a host whose filesystem does not survive the request', () => {
+    // A signing secret satisfies the check above, so this used to boot clean on Vercel and then
+    // drop every upload: each invocation gets its own ephemeral disk, and the route that serves a
+    // local-fs URL refuses production anyway. On a host with a real volume, local-fs still stands.
+    const prod = { ...base, isProduction: true, STORAGE_SIGNING_SECRET: 's'.repeat(32) };
+    for (const marker of ['VERCEL', 'AWS_LAMBDA_FUNCTION_NAME'] as const) {
+      const previous = process.env[marker];
+      process.env[marker] = '1';
+      try {
+        expect(() => createStorageProvider(prod), `${marker} must refuse local-fs`).toThrow(/ephemeral filesystem/);
+        // ... and S3 on the same host is fine, which is the point of refusing only the fallback.
+        expect(createStorageProvider({ ...prod, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' })).toBeInstanceOf(S3Storage);
+      } finally {
+        if (previous === undefined) delete process.env[marker];
+        else process.env[marker] = previous;
+      }
+    }
+    expect(createStorageProvider(prod), 'a host with a disk keeps local-fs').toBeInstanceOf(LocalFsStorage);
+  });
 });
 
 describe('local-fs storage', () => {

@@ -12,7 +12,7 @@ running server enforces it.
 |---|---|---|
 | `CONFIRMATION_SECRET` | `src/policy/confirmation.ts` | HMAC key for confirmation tokens, >= 16 chars. Dev default with a warning. |
 | `CRON_SECRET` | `POST /api/jobs/run` | Bearer token for the cron caller, >= 32 chars. Route returns a uniform 401 when unset or wrong. |
-| `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET` (the name the secrets autofill writes) is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
+| `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two, and on a serverless host (`VERCEL` / `AWS_LAMBDA_FUNCTION_NAME`) it must be S3: local-fs on an ephemeral disk accepts an upload and loses it, so boot fails instead. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET` (the name the secrets autofill writes) is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
 | `DATABASE_URL` | `src/db/client.ts` | Required when `VERCEL_ENV=production` (boot fails without it). Vercel previews may run on ephemeral `/tmp` PGlite. Elsewhere, production without it uses PGlite on local disk. |
 
 Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per-process buckets are not a rate limit behind a load balancer).

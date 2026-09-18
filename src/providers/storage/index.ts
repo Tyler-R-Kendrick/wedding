@@ -30,6 +30,18 @@ export function createStorageProvider(env: StorageEnv, opts: { baseUrl?: string;
     // Names only. The committed dev default must never sign production URLs.
     throw new Error('storage: production requires S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY, or STORAGE_SIGNING_SECRET for local-fs');
   }
+  /*
+   * Local-fs is a real production choice on a host with a disk. It is not one here.
+   *
+   * A serverless invocation gets an ephemeral, per-instance filesystem, so every guest photograph
+   * lands on the instance that received it and is gone by the next request — and the route that
+   * serves a local-fs URL refuses to run in production anyway. `STORAGE_SIGNING_SECRET` satisfies
+   * the check above, so this deployment used to boot clean and lose uploads silently, which is the
+   * worst shape a storage misconfiguration can take. On a VPS with a volume, nothing changes.
+   */
+  if (env.isProduction && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    throw new Error('storage: this host has an ephemeral filesystem, so local-fs would drop every upload — set S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY');
+  }
   if (!signingSecret) opts.warn?.('STORAGE_SIGNING_SECRET is not set; local-fs signed URLs use the dev default');
   return new LocalFsStorage({
     dataDir: path.resolve(/* turbopackIgnore: true */ process.cwd(), env.STORAGE_DATA_DIR),
