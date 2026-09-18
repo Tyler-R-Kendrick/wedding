@@ -138,9 +138,17 @@ const serverSchema = z.object({
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
   METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),
 
-  // --- jobs ---
-  JOBS_INLINE_RUNNER: requiredBool(true),
-  JOBS_POLL_INTERVAL_MS: intish(2_000, 100),
+  /*
+   * --- jobs ---
+   *
+   * There is no in-process poller, and there never was. `JOBS_INLINE_RUNNER` and
+   * `JOBS_POLL_INTERVAL_MS` sat here and in `.env.example` describing one, and nothing in `src/`
+   * read either name — `docs:env` did not catch it because a key defined in this schema counts as
+   * "read by the app", so the check can only catch a variable that is undocumented, never one that
+   * is documented and dead. Removed rather than implemented: the queue has two real runners, the
+   * cron routes in production and `npm run jobs:run` locally, and a third that only exists in a
+   * settings table is worse than none.
+   */
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),

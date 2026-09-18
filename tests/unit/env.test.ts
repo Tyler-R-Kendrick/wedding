@@ -6,7 +6,7 @@ describe('server env', () => {
     const e = parseServerEnv({ NODE_ENV: 'test' });
     expect(e.isTest).toBe(true);
     expect(e.DATABASE_URL).toBeUndefined();
-    expect(e.JOBS_POLL_INTERVAL_MS).toBe(2000);
+    expect(e.JOBS_BATCH_SIZE).toBe(10);
     expect(e.TRANSPORT_BENEFIT_MODE).toBe('mock');
     expect(e.PGLITE_MEMORY).toBe(false);
   });
@@ -76,9 +76,9 @@ describe('server env', () => {
   });
 
   it('parses booleans and integers from strings', () => {
-    const e = parseServerEnv({ NODE_ENV: 'test', FORCE_MOCK_PROVIDERS: 'yes', JOBS_INLINE_RUNNER: '0', JOBS_BATCH_SIZE: '25' });
+    const e = parseServerEnv({ NODE_ENV: 'test', FORCE_MOCK_PROVIDERS: 'yes', S3_FORCE_PATH_STYLE: '0', JOBS_BATCH_SIZE: '25' });
     expect(e.FORCE_MOCK_PROVIDERS).toBe(true);
-    expect(e.JOBS_INLINE_RUNNER).toBe(false);
+    expect(e.S3_FORCE_PATH_STYLE).toBe(false);
     expect(e.JOBS_BATCH_SIZE).toBe(25);
   });
 });

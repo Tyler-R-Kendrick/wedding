@@ -112,18 +112,23 @@ mock whose absence is invisible to the person it fails.
 
 ### 6. Background work
 
-`vercel.json` schedules **both** cron routes every five minutes, and Vercel adds
-`Authorization: Bearer $CRON_SECRET` to each call itself:
+`vercel.json` schedules **all three** cron routes every five minutes, and Vercel
+adds `Authorization: Bearer $CRON_SECRET` to each call itself:
 
 | Path | Why it is its own route |
 |---|---|
 | `/api/jobs/run` | the foundation's handlers, plus the housekeeping purge it keeps queued |
 | `/api/uploads/jobs/run` | media process/derive/sweep are registered in *that* route's module graph only; without it an upload never leaves "Checking" and stale uploads never expire |
+| `/api/media-ai/jobs/run` | media index/cluster, likewise; without it the search index never catches up with what was published |
 
-Scheduling only the first leaves the media queue with nothing to run it, which
+A handler that is not in a route's module graph cannot be run by that route, so
+scheduling only the first leaves two queues with nothing to run them — which
 looks like a stuck upload rather than a missing cron. The queue is DB-backed and
-idempotent, and both routes return a uniform 401 when the token is absent or
-wrong.
+idempotent, and all three routes return a uniform 401 when the token is absent
+or wrong.
+
+There is no in-process poller. Locally, `npm run jobs:run` takes one bounded
+batch; nothing else processes the queue.
 
 Nothing on the guest path depends on the runner, so a missed run delays
 housekeeping rather than breaking a page.

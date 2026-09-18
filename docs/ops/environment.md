@@ -62,9 +62,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
 | `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
-| `JOBS_INLINE_RUNNER` | `true` | dev poller | no |
-| `JOBS_POLL_INTERVAL_MS` | `2000` | dev poller | no |
-| `JOBS_BATCH_SIZE` | `10` | job runner / cron route | no |
+| `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run` | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; `FLAG_DESIGN_SWITCHER=off` removes the floating design switcher from the server render | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
