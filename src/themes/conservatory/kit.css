@@ -1924,12 +1924,20 @@
   border-block-end: 0;
 }
 
+/*
+ * An `h3`, sized as one.
+ *
+ * It took `--type-h2-size` while `.cv-h--2` clamps DOWN to that same floor, so at 390px the
+ * section heading and all thirteen questions rendered identically: 27.625px Gloock, same weight,
+ * same ink, 24px apart. A list with no level above its items. The step below is what the markup
+ * already says this is, and it keeps the display face so the FAQ still reads as Conservatory's.
+ */
 .cv-faq__q {
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--type-h2-size);
-  font-weight: var(--type-h2-weight);
-  line-height: var(--type-h2-line);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
 }
 
 .cv-faq__a {
