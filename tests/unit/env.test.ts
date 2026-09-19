@@ -27,9 +27,18 @@ describe('server env', () => {
   it('requires the signing secrets in production', () => {
     expect(() => parseServerEnv({ NODE_ENV: 'production' })).toThrow(/CONFIRMATION_SECRET/);
     expect(() => parseServerEnv({ NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32) })).toThrow(/BETTER_AUTH_SECRET/);
-    expect(() => parseServerEnv({ ...prodBase, RESEND_API_KEY: '', EMAIL_FROM: '' })).toThrow(/RESEND_API_KEY/);
     const e = parseServerEnv({ ...prodBase, STORAGE_SIGNING_SECRET: 's'.repeat(32) });
     expect(e.isProduction).toBe(true);
+  });
+
+  it('boots production without a mailer, because no page needs one to render', () => {
+    // This used to throw on RESEND_API_KEY, which took the home page, the schedule, the travel
+    // page and /api/health down for want of a credential none of them uses — a deployed site
+    // answering 500 everywhere because it could not send an e-mail. `createAuthEmailProvider`
+    // is what holds review S6's line, and the test below is that line.
+    const e = parseServerEnv({ ...prodBase, RESEND_API_KEY: '', EMAIL_FROM: '', STORAGE_SIGNING_SECRET: 's'.repeat(32) });
+    expect(e.isProduction).toBe(true);
+    expect(e.RESEND_API_KEY).toBeUndefined();
   });
 
   it('requires S3 or an explicit storage signing secret in production (names only)', () => {

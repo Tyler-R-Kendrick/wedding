@@ -229,8 +229,25 @@ function load(raw: NodeJS.ProcessEnv): ServerEnv {
   }
 
   if (isProduction && !isBuildPhase) {
-    // RESEND_API_KEY + EMAIL_FROM: production must never route one-time codes to the in-memory dev inbox (review S6).
-    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'RESEND_API_KEY', 'EMAIL_FROM'];
+    /**
+     * RESEND_API_KEY and EMAIL_FROM are deliberately NOT here, though review S6 put them here.
+     *
+     * S6's property is that production must never route a one-time code to the in-memory dev
+     * inbox, and `createAuthEmailProvider` is what enforces it: without a real mailer it THROWS
+     * rather than returning the mock, so the failure is loud and lands on the one action that
+     * needed email. That is the whole of the safety.
+     *
+     * Failing here instead made every route 500 — the home page, the schedule, the travel page,
+     * `/api/health` — for want of a credential none of them uses. A site that cannot show a guest
+     * the date of the wedding because it cannot send an e-mail is not failing safe, it is just
+     * failing, and it is how this deployment spent its first hour.
+     *
+     * The cost is that a missing mailer is now discovered when a guest asks for a code rather
+     * than at boot. `npm run deploy:vercel` closes that gap from the other side: its preflight
+     * reads this list, names anything absent, and refuses to deploy — so the fast failure happens
+     * before the deploy instead of instead of the site.
+     */
+    const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL'];
     const missing: string[] = required.filter((k) => !e[k]);
     // Storage must be S3 or a deliberately configured local-fs signing secret; the committed dev default is never used in production.
     if (!hasS3(e) && !e.STORAGE_SIGNING_SECRET && !e.DEV_STORAGE_SECRET) {
