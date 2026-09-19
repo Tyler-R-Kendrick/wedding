@@ -176,7 +176,11 @@ test.describe('semantic media search', () => {
     // The polite live region the results are announced through (the empty state is its own status).
     const announced = page.locator('p[role="status"]');
     await page.getByRole('button', { name: 'first dance' }).click();
-    await expect(announced).toContainText('results for');
+    // A semantic search round-trip, not a render: the default 5s is a bound on the SERVER, and on
+    // a contended dev server it expires with the region still reading "Searching…". What is being
+    // asserted is that the live region reports a count at all, so the bound belongs with the rest
+    // of this file's budgets rather than at the default.
+    await expect(announced).toContainText('results for', { timeout: 30_000 });
 
     // Signed in, the guest albums are searchable too.
     await context.setExtraHTTPHeaders(guest);
