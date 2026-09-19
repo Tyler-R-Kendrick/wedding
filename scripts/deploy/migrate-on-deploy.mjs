@@ -13,6 +13,14 @@
  * likely breakage of the two, and the chain here is additive by convention. A destructive
  * migration is the case to hand-roll — see the runbook.
  *
+ * A second, deliberate consequence: `db:migrate` imports src/lib/env.ts in a process that is not
+ * `next build`, so NEXT_PHASE is unset, `isBuildPhase` is false, and the full production guard
+ * runs here — demanding CONFIRMATION_SECRET, CRON_SECRET, BETTER_AUTH_SECRET, BETTER_AUTH_URL and a
+ * storage credential that the migrator itself never touches. That reads like over-coupling, and it
+ * is kept anyway, because the alternative is worse: suppress the guard and an incomplete
+ * environment builds green, deploys, and answers 500 on every route. Failing the build instead
+ * leaves the previous deployment serving. Loud, early, and with the site still up.
+ *
  * `decide` is exported separately from the runner so it is unit-testable without a database.
  */
 import { spawnSync } from 'node:child_process';

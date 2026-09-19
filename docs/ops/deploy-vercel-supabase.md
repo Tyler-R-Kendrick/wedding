@@ -38,6 +38,10 @@ search both use it).
   halfway. If migrations fail the build fails, which is the point: code deployed onto a
   database without its schema answers 500 on every route.
   Off Vercel, run `npm run db:migrate` with `DATABASE_URL` set.
+  One sharp edge: the step keys off `VERCEL`, which the CLI also sets for a local
+  `vercel build --prod` — and that pulls the production environment. Run that on a laptop and
+  it will apply the chain to the live database. Use `npm run build` locally; `vercel build`
+  is for reproducing a deployment, and `--prod` makes it reproduce this too.
   The chain is applied **before** `next build`, so a build that fails afterwards leaves the
   schema ahead of the code still serving. That is the deliberate trade: this app prerenders
   pages that read content tables, so a build compiled against the *old* schema is the more
