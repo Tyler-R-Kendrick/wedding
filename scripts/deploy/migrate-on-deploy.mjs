@@ -7,13 +7,20 @@
  * start, while someone is reading the site. `docs/ops/deploy-vercel-supabase.md` says to leave
  * that flag off in production and migrate during the deploy instead; this is that deploy step.
  *
- * Exported separately from the runner so the decision is unit-testable without a database.
+ * Ordering note: this runs BEFORE `next build`, so a build that fails afterwards leaves the
+ * schema ahead of the code still serving. That is the deliberate trade: this app prerenders
+ * pages that read content tables, so a build running against the *old* schema is the more
+ * likely breakage of the two, and the chain here is additive by convention. A destructive
+ * migration is the case to hand-roll — see the runbook.
+ *
+ * `decide` is exported separately from the runner so it is unit-testable without a database.
  */
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 /**
  * @param {Record<string, string | undefined>} env
- * @returns {{ run: boolean, reason: string, url?: string }}
+ * @returns {{ run: boolean, reason: string, url?: string, fatal?: boolean }}
  */
 export function decide(env = {}) {
   // Off Vercel this is not the migration path at all: `npm run db:migrate` is run directly, and a
@@ -30,14 +37,28 @@ export function decide(env = {}) {
   // documented way to get "prepared statement does not exist" halfway through a migration
   // (see `usesTransactionPooler` in src/db/client.ts and tests/unit/db-pooler.test.ts).
   const url = env.DATABASE_URL || env.POSTGRES_URL_NON_POOLING || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL;
-  if (!url) return { run: false, reason: 'no database URL in the build environment' };
+
+  // Fail closed. A production build with no database URL cannot produce a deployment that serves:
+  // `src/lib/env.ts` refuses to boot production on Vercel without one, so every route would 500.
+  // Skipping quietly here would ship exactly that, with a green build to say it went fine.
+  if (!url) {
+    return { run: false, fatal: true, reason: 'production build has no database URL (DATABASE_URL, POSTGRES_URL_NON_POOLING, POSTGRES_URL or POSTGRES_PRISMA_URL)' };
+  }
 
   return { run: true, reason: 'production deploy', url };
 }
 
-const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+// `pathToFileURL` rather than `file://` + argv[1]: the concatenated form does not percent-encode,
+// so a checkout path with a space or a non-ASCII character makes this false and the script a
+// silent no-op that migrates nothing and still exits 0. src/db/migrate.ts uses the same idiom.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  const { run, reason, url } = decide(process.env);
+  const { run, reason, url, fatal } = decide(process.env);
+  if (fatal) {
+    console.error(`migrate-on-deploy: ${reason}`);
+    console.error('migrate-on-deploy: refusing to build a deployment that could only answer 500');
+    process.exit(1);
+  }
   if (!run) {
     console.log(`migrate-on-deploy: skipped (${reason})`);
     process.exit(0);

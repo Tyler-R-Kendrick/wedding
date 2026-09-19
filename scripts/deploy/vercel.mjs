@@ -255,11 +255,26 @@ async function link(scope) {
   if (r.code !== 0) { say('vercel link failed; the steps below need the project linked.'); process.exit(1); }
 }
 
+/**
+ * key -> the set of targets it is set on, or `null` when the listing itself failed.
+ *
+ * Both distinctions are load-bearing. A failed listing read as an empty project makes every
+ * GENERATED secret look absent, and `variables()` pushes with `upsert=true` — so a network blip
+ * would silently rotate CONFIRMATION_SECRET and BETTER_AUTH_SECRET, invalidating every
+ * outstanding RSVP link and every session. And Vercel stores one record PER value, so a key with
+ * a different value in production and preview arrives as two records; keeping only the last one
+ * would report it missing from the target the first record covered.
+ */
 async function envKeys(project, scope) {
   if (!bearer || !project) return new Map();
   const r = await api('GET', `/v10/projects/${project.id}/env?teamId=${encodeURIComponent(scope)}`);
+  if (!r.ok) return null;
   const map = new Map();
-  for (const e of r.json?.envs || []) map.set(e.key, new Set(e.target || []));
+  for (const e of r.json?.envs || []) {
+    const targets = map.get(e.key) ?? new Set();
+    for (const t of e.target || []) targets.add(t);
+    map.set(e.key, targets);
+  }
   return map;
 }
 
@@ -288,6 +303,7 @@ async function connectors(project, scope) {
   step('5. Connectors (Vercel Marketplace)');
   if (flag('skip-integrations')) { say('Skipped (--skip-integrations).'); return new Set(); }
   const keys = await envKeys(project, scope);
+  if (!keys) { say('Could not list this project\'s variables; skipping connectors rather than installing over one that is already there.'); return new Set(); }
   const owned = new Set();
   for (const c of CONNECTORS) {
     const present = c.gives.find((k) => keys.has(k));
@@ -314,6 +330,7 @@ async function variables(project, scope, owned) {
   step('6. Variables');
   if (!bearer || !project) { say('(no token or project: skipped)'); return; }
   const keys = await envKeys(project, scope);
+  if (!keys) { say('Could not list this project\'s variables; setting none, because minting over a secret that is already there would invalidate every live session and RSVP link.'); return; }
   const q = `?teamId=${encodeURIComponent(scope)}&upsert=true`;
   const batch = [];
   const add = (key, value, targets = TARGETS, type = 'sensitive') => {
@@ -369,6 +386,14 @@ async function variables(project, scope, owned) {
     if (owned.has(key)) continue;
     const value = local.get?.(key) ?? local[key];
     if (!value) continue;
+    // src/lib/env.ts refuses to boot production with RATE_LIMIT_BACKEND=memory (per-process
+    // buckets are not a rate limit behind a load balancer). It is a perfectly ordinary value in a
+    // developer's .env, and mirroring it would deploy READY and then 500 on every route, for a
+    // reason no missing-variable check would ever name. Keep it local.
+    if (key === 'RATE_LIMIT_BACKEND' && String(value) === 'memory') {
+      say('RATE_LIMIT_BACKEND=memory is a local-only value (production refuses it); not mirroring it.');
+      continue;
+    }
     add(key, value, TARGETS, key.startsWith('NEXT_PUBLIC_') ? 'plain' : 'sensitive');
     mirrored.push(key);
   }
@@ -438,6 +463,11 @@ async function preflight(project, scope) {
   step('8. Preflight');
   if (!bearer || !project) { say('(no token or project: skipped)'); return true; }
   const keys = await envKeys(project, scope);
+  if (!keys) {
+    say('Could not list this project\'s variables, so this preflight cannot tell set from unset.');
+    say('It is not vouching for this deploy; check the production guard in src/lib/env.ts by hand.');
+    return true;
+  }
   const required = await requiredInProduction();
   if (!required) {
     say('Could not read the required set out of src/lib/env.ts — its shape must have changed.');
@@ -457,6 +487,15 @@ async function preflight(project, scope) {
       && !['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
     missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
   }
+  // A missing mailer is not a refusal. env.ts deliberately keeps RESEND_API_KEY and EMAIL_FROM
+  // out of `required` so a site with no mail still boots and still shows the date of the wedding.
+  // But `createAuthEmailProvider` throws on the one action that needs them, so RSVP sign-in is dead
+  // until both are set — say it here, rather than let a guest be the one to find out.
+  if (PROD) {
+    const noMail = ['RESEND_API_KEY', 'EMAIL_FROM'].filter((n) => !has(n));
+    if (noMail.length) say(`Warning: ${noMail.join(' and ')} not set — every page still renders, but RSVP cannot send a sign-in code.`);
+  }
+
   if (!missing.length) { say(`Everything ${target} needs is set (${wanted.length} variables, plus storage).`); return true; }
   say(`${missing.length} thing${missing.length === 1 ? '' : 's'} ${target} needs ${missing.length === 1 ? 'is' : 'are'} missing:`);
   for (const names of missing) say(`  ${names[0]}${names.length > 1 ? `  (or ${names.slice(1).join(', ')})` : ''}`);
