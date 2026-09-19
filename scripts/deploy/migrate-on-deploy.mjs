@@ -44,14 +44,23 @@ export function decide(env = {}) {
   // connector picks for us, prefer the direct one: DDL through a transaction-mode pooler is the
   // documented way to get "prepared statement does not exist" halfway through a migration
   // (see `usesTransactionPooler` in src/db/client.ts and tests/unit/db-pooler.test.ts).
-  const url = env.DATABASE_URL || env.POSTGRES_URL_NON_POOLING || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL;
+  // What the APP will resolve at runtime: DATABASE_URL, or DATABASE_URL_ALIASES in src/lib/env.ts
+  // (POSTGRES_URL, POSTGRES_PRISMA_URL). POSTGRES_URL_NON_POOLING is deliberately NOT among them.
+  // Checking this separately is the difference between migrating a database and migrating one the
+  // app can actually open: with only the non-pooling name set, the chain would apply cleanly and
+  // every route would still 500, behind a green build.
+  const appUrl = env.DATABASE_URL || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL;
 
-  // Fail closed. A production build with no database URL cannot produce a deployment that serves:
-  // `src/lib/env.ts` refuses to boot production on Vercel without one, so every route would 500.
-  // Skipping quietly here would ship exactly that, with a green build to say it went fine.
-  if (!url) {
-    return { run: false, fatal: true, reason: 'production build has no database URL (DATABASE_URL, POSTGRES_URL_NON_POOLING, POSTGRES_URL or POSTGRES_PRISMA_URL)' };
+  // Fail closed. A production build with no database the app can reach cannot produce a deployment
+  // that serves: `src/lib/env.ts` refuses to boot production on Vercel without one, so every route
+  // would 500. Skipping quietly here would ship exactly that, with a green build to say it went fine.
+  if (!appUrl) {
+    const near = env.POSTGRES_URL_NON_POOLING ? ' (POSTGRES_URL_NON_POOLING is set, but the app does not read it)' : '';
+    return { run: false, fatal: true, reason: `production build has no database URL the app can read: DATABASE_URL, POSTGRES_URL or POSTGRES_PRISMA_URL${near}` };
   }
+
+  // The migrator, though, prefers the direct connection where one exists.
+  const url = env.DATABASE_URL || env.POSTGRES_URL_NON_POOLING || appUrl;
 
   return { run: true, reason: 'production deploy', url };
 }

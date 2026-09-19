@@ -100,6 +100,17 @@ describe('migrate-on-deploy', () => {
     expect(d.reason).toMatch(/no database URL/);
   });
 
+  it('refuses a build where only the non-pooling name is set, which the app cannot read', () => {
+    // POSTGRES_URL_NON_POOLING is not in DATABASE_URL_ALIASES, so the migrator would apply the
+    // chain cleanly to a database src/lib/env.ts then refuses to boot against — green build,
+    // 500 on every route. Migrating a database and migrating one the app can open are not the
+    // same check. Mutation: derive the fatal test from the migrator's url instead of the app's.
+    const d = decide({ ...PROD, POSTGRES_URL_NON_POOLING: 'postgres://u:p@db.h.supabase.co:5432/app' });
+    expect(d.run).toBe(false);
+    expect(d.fatal).toBe(true);
+    expect(d.reason).toMatch(/POSTGRES_URL_NON_POOLING is set, but the app does not read it/);
+  });
+
   describe('the environment the migrator runs in', () => {
     it('pins the cold-start flags off, so the step cannot seed production behind its own back', () => {
       // db:migrate opens the database through connect(), which runs its OWN migrate-and-seed when

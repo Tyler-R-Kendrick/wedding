@@ -8,8 +8,8 @@ const seeded = new WeakMap<Db, Promise<void>>();
 /**
  * Lazy, memoized seeding for Swarm E: events (placeholders), RSVP settings and the placeholder
  * floor plans exist before any RSVP/seating capability reads. `seedEventsAndPlans` is idempotent
- * and belongs in the shared `seed()` (src/db/seed/seed.ts, one-line call requested from the
- * integrator); until then every Swarm E handler awaits this first. Test fixtures (fictional
+ * and is now also called from the shared `seed()` (src/db/seed/seed.ts). This stays as the
+ * belt-and-braces path for a database that was migrated but never seeded. Test fixtures (fictional
  * households) are added only under NODE_ENV=test with SEED_TEST_FIXTURES=1. Never runs in production
  * unless DB_AUTO_SEED is on (the deployer seeds explicitly).
  */
