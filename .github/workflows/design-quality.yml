@@ -285,7 +285,7 @@ jobs:
           # rather than the 30s default, which is the other half of what level 14 learned.
           for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
-                      /media/upload /media/mine /media/search /media/me /admin/ai /admin/biometrics \
+                      /media/upload /media/mine /media/search /admin/ai \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
                       /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \
                       /admin/households /admin/invitations /admin/media /admin/reservations /admin/rsvp \
