@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DATABASE_URL_ALIASES } from '@/lib/env';
-import { decide } from '../../scripts/deploy/migrate-on-deploy.mjs';
+import { childEnv, decide } from '../../scripts/deploy/migrate-on-deploy.mjs';
 
 const SCRIPT = path.resolve(process.cwd(), 'scripts/deploy/migrate-on-deploy.mjs');
 
@@ -100,8 +100,22 @@ describe('migrate-on-deploy', () => {
     expect(d.reason).toMatch(/no database URL/);
   });
 
+  describe('the environment the migrator runs in', () => {
+    it('pins the cold-start flags off, so the step cannot seed production behind its own back', () => {
+      // db:migrate opens the database through connect(), which runs its OWN migrate-and-seed when
+      // these are set. Inheriting them would migrate twice, or seed a live database, decided in
+      // src/db/client.ts rather than here.
+      // Mutation: drop either pin, or spread process.env after them.
+      const e = childEnv({ DB_AUTO_MIGRATE: '1', DB_AUTO_SEED: '1', KEEP: 'me' }, 'postgres://u:p@h/app');
+      expect(e.DB_AUTO_MIGRATE).toBe('0');
+      expect(e.DB_AUTO_SEED).toBe('0');
+      expect(e.DATABASE_URL).toBe('postgres://u:p@h/app');
+      expect(e.KEEP, 'the rest of the build environment must survive').toBe('me');
+    });
+  });
+
   describe('the runner, not just the decision', () => {
-    it('actually executes: the isMain guard fires and the skip is reported', () => {
+    it('actually executes: the isMain guard fires and the skip is reported', { timeout: 30_000 }, () => {
       // Mutation: break isMain (e.g. back to `file://${process.argv[1]}` under a path needing
       // encoding). The script would produce no output at all and still exit 0 — the silent
       // no-op this whole step exists to avoid.
@@ -110,7 +124,7 @@ describe('migrate-on-deploy', () => {
       expect(out).toContain('migrate-on-deploy: skipped (VERCEL_ENV=preview)');
     });
 
-    it('exits non-zero on a production build with no database URL', () => {
+    it('exits non-zero on a production build with no database URL', { timeout: 30_000 }, () => {
       // Mutation: exit 0 on the fatal path.
       const { status, out } = runScript({ VERCEL: '1', VERCEL_ENV: 'production' });
       expect(status).toBe(1);

@@ -48,6 +48,18 @@ search both use it).
   database, run it once and then enter the real content through `/admin/content`
   rather than re-seeding.
 
+### Previews share the production database
+
+The connector writes the same `POSTGRES_*` values to production, preview and development, so a
+preview deployment does not just build against the live database — it **serves** from it. Real
+RSVPs, names and e-mail addresses are one URL away. The build step above refuses to migrate from
+a preview, but nothing in the app stops a preview from reading.
+
+What actually keeps that closed is Vercel's deployment protection: this project is set to
+`ssoProtection: all_except_custom_domains`, so every `.vercel.app` deployment demands a Vercel
+login and only the custom domain is public. **Turning that off makes every preview URL a public
+window onto the guest list.** If previews are ever opened up, give them their own database first.
+
 `DB_AUTO_MIGRATE` and `DB_AUTO_SEED` default **off** in production. Leave them
 off: `src/db/client.ts` runs them inside `connect()`, which is once per serverless
 instance, so on Vercel a migration that runs on a cold start is a migration that runs

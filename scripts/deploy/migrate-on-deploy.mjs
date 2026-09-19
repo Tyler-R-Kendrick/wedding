@@ -48,6 +48,22 @@ export function decide(env = {}) {
   return { run: true, reason: 'production deploy', url };
 }
 
+/**
+ * The environment the migrator runs in.
+ *
+ * DB_AUTO_MIGRATE and DB_AUTO_SEED are pinned off rather than inherited: `db:migrate` opens the
+ * database through `connect()` (src/db/client.ts), which runs its own migrate-and-seed when those
+ * are on. Inherited, this step would either migrate twice or quietly seed a production database,
+ * decided three modules away from here.
+ *
+ * @param {Record<string, string | undefined>} env
+ * @param {string} url
+ * @returns {Record<string, string | undefined>}
+ */
+export function childEnv(env, url) {
+  return { ...env, DATABASE_URL: url, DB_AUTO_MIGRATE: '0', DB_AUTO_SEED: '0' };
+}
+
 // `pathToFileURL` rather than `file://` + argv[1]: the concatenated form does not percent-encode,
 // so a checkout path with a space or a non-ASCII character makes this false and the script a
 // silent no-op that migrates nothing and still exits 0. src/db/migrate.ts uses the same idiom.
@@ -66,7 +82,7 @@ if (isMain) {
   console.log('migrate-on-deploy: applying the migration chain before the build');
   // Fail the build rather than ship code onto a database that does not have its schema: that
   // combination is what answered 500 on every route the first time this site went up.
-  const r = spawnSync('npm', ['run', 'db:migrate'], { stdio: 'inherit', env: { ...process.env, DATABASE_URL: url } });
+  const r = spawnSync('npm', ['run', 'db:migrate'], { stdio: 'inherit', env: childEnv(process.env, url) });
   if (r.status !== 0) console.error('migrate-on-deploy: migrations failed; failing the build');
   process.exit(r.status ?? 1);
 }
