@@ -28,17 +28,28 @@ search both use it).
   `POSTGRES_URL` into the project itself. The app reads that name as
   `DATABASE_URL`, so no connection string is ever copied by hand and the
   connector stays the owner of the value it rotates.
-- Run the migration chain once: `npm run db:migrate` with `DATABASE_URL` set.
-  The chain in `src/db/migrations/` is the whole schema; there is no other
-  source.
+- The migration chain runs itself on deploy. `vercel.json` sets a
+  `buildCommand` of `node scripts/deploy/migrate-on-deploy.mjs && npm run build`,
+  which applies `src/db/migrations/` (the whole schema; there is no other source)
+  before the build, and **only** when `VERCEL_ENV=production` — the connector writes
+  the same `POSTGRES_*` values to preview and development, so an unguarded build step
+  would migrate the live database from a preview. It prefers
+  `POSTGRES_URL_NON_POOLING`, because DDL through a transaction-mode pooler fails
+  halfway. If migrations fail the build fails, which is the point: code deployed onto a
+  database without its schema answers 500 on every route.
+  Off Vercel, run `npm run db:migrate` with `DATABASE_URL` set.
 - Decide about seeding. `npm run db:seed` writes the brief-derived content and
   is idempotent, but it also writes the placeholder rows. On a production
   database, run it once and then enter the real content through `/admin/content`
   rather than re-seeding.
 
 `DB_AUTO_MIGRATE` and `DB_AUTO_SEED` default **off** in production. Leave them
-off: a migration that runs on a cold start is a migration that runs while
-someone is reading the site.
+off: `src/db/client.ts` runs them inside `connect()`, which is once per serverless
+instance, so on Vercel a migration that runs on a cold start is a migration that runs
+while someone is reading the site — and the seed would re-upsert every row on every cold
+start besides. The build step above is where a deploy migrates. Setting
+`DB_AUTO_MIGRATE=1` is still the way to bootstrap a database from a machine that cannot
+open a raw Postgres connection: deploy once with it on, then remove it.
 
 ### 2. Storage
 
