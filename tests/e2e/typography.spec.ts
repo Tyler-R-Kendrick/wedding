@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { contextAs } from './helpers/principal';
 
 /**
@@ -105,6 +105,42 @@ type Size = { px: number; where: string; sample: string };
  */
 const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b/;
 
+/** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
+const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required/;
+
+/**
+ * Walk a route list at the caller's viewport and return every sample under the floor — asserting,
+ * at each stop, that there was something to measure.
+ *
+ * The assertions are the point, and all four floor tests were missing them. A walk cannot tell a
+ * page from a sign-in gate by font size: `GuestsOnly` and `TripGate` are built out of
+ * `.page__title`, `.page__lede`, `.card__meta` and `.btn`, none of which sets anything under 1rem,
+ * so `under` stayed empty and PASS meant "nothing was looked at" exactly as readily as "nothing is
+ * wrong". Under `playwright.config.ts`'s default webServer — `npm run dev`, so NODE_ENV is
+ * development and TEST_AUTH_SECRET is unset — `testPrincipal` ignores the injected headers and all
+ * four guest routes answer 200 with that gate, which is how the walk added for the RSVP form, the
+ * itinerary and the trip list could go green having rendered none of them.
+ *
+ * These are the same three checks the family walks above already make, in one place.
+ */
+async function floorWalk(page: Page, routes: readonly string[], theme?: string): Promise<string[]> {
+  const under: string[] = [];
+  for (const route of routes) {
+    const url = theme ? `${route}?theme=${theme}` : route;
+    const response = await page.goto(url);
+    expect(response?.status(), `${url} did not render`).toBeLessThan(400);
+    await expect(page.getByText(GATE), `${url} rendered a sign-in gate, so nothing on it was measured`).toHaveCount(0);
+    await page.evaluate(() => document.fonts.ready);
+    const sizes = (await page.evaluate(SIZES)) as Size[];
+    expect(sizes.length, `${url} rendered no text`).toBeGreaterThan(0);
+    for (const s of sizes) {
+      if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
+      under.push(`${url} · ${s.where} · ${s.px}px · "${s.sample}"`);
+    }
+  }
+  return under;
+}
+
 test.describe('every surface renders in a face this repo declares', () => {
   // One navigation per test here, but the floor tests below walk 6 and 12 routes. Same budgeting
   // rule as `quality-sweep.spec.ts`: proportional to the work, on top of the CI warm-up list.
@@ -172,32 +208,14 @@ test.describe('the 17px floor', () => {
   test('auth journeys', async ({ browser }) => {
     const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    const under: string[] = [];
-    for (const route of AUTH_ROUTES) {
-      await page.goto(route);
-      await page.evaluate(() => document.fonts.ready);
-      for (const s of (await page.evaluate(SIZES)) as Size[]) {
-        if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
-        under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
-      }
-    }
-    expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+    expect(await floorWalk(page, AUTH_ROUTES), 'text under PRODUCT.md’s 17px floor').toEqual([]);
     await ctx.close();
   });
 
   test('the admin console', async ({ browser }) => {
     const ctx = await contextAs(browser, 'admin', { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    const under: string[] = [];
-    for (const route of ADMIN_ROUTES) {
-      await page.goto(route);
-      await page.evaluate(() => document.fonts.ready);
-      for (const s of (await page.evaluate(SIZES)) as Size[]) {
-        if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
-        under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
-      }
-    }
-    expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+    expect(await floorWalk(page, ADMIN_ROUTES), 'text under PRODUCT.md’s 17px floor').toEqual([]);
     await ctx.close();
   });
 
@@ -207,32 +225,14 @@ test.describe('the 17px floor', () => {
     test(`the public routes · ${theme}`, async ({ browser }) => {
       const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
       const page = await ctx.newPage();
-      const under: string[] = [];
-      for (const route of PUBLIC_ROUTES) {
-        await page.goto(`${route}?theme=${theme}`);
-        await page.evaluate(() => document.fonts.ready);
-        for (const s of (await page.evaluate(SIZES)) as Size[]) {
-          if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
-          under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
-        }
-      }
-      expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+      expect(await floorWalk(page, PUBLIC_ROUTES, theme), 'text under PRODUCT.md’s 17px floor').toEqual([]);
       await ctx.close();
     });
 
     test(`the guest routes · ${theme}`, async ({ browser }) => {
       const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
       const page = await ctx.newPage();
-      const under: string[] = [];
-      for (const route of GUEST_ROUTES) {
-        await page.goto(`${route}?theme=${theme}`);
-        await page.evaluate(() => document.fonts.ready);
-        for (const s of (await page.evaluate(SIZES)) as Size[]) {
-          if (s.px >= 17 || ORNAMENT.test(s.where)) continue;
-          under.push(`${route} · ${s.where} · ${s.px}px · "${s.sample}"`);
-        }
-      }
-      expect(under, 'text under PRODUCT.md’s 17px floor').toEqual([]);
+      expect(await floorWalk(page, GUEST_ROUTES, theme), 'text under PRODUCT.md’s 17px floor').toEqual([]);
       await ctx.close();
     });
   }
