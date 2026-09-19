@@ -19,7 +19,7 @@ export function StoryPage({ data }: { data: StoryPageData }) {
       ))}
       <Section id="next" title="Keep going">
         <p className="wp-prose">
-          <Link href={ROUTES.adventures}>Wander through our adventures →</Link>
+          <Link className="link-block" href={ROUTES.adventures}>Wander through our adventures →</Link>
         </p>
       </Section>
     </Shell>

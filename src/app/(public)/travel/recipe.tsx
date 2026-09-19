@@ -67,7 +67,7 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
       </h3>
       {venue.address ? (
         <p className="mt-1">
-          <a className="underline underline-offset-4" href={mapsUrl(venue.address)} target="_blank" rel="noopener noreferrer external">
+          <a className="link-block underline underline-offset-4" href={mapsUrl(venue.address)} target="_blank" rel="noopener noreferrer external">
             {venue.address}
             <span className="sr-only"> (opens in Google Maps, new tab)</span>
           </a>
@@ -115,7 +115,7 @@ function HotelCard({ hotel }: { hotel: HotelRecommendation }) {
       <h3 className="text-lg font-semibold">{hotel.name}</h3>
       {hotel.address ? (
         <p className="mt-1 text-primary">
-          <a className="underline underline-offset-4" href={mapsUrl(hotel.address)} target="_blank" rel="noopener noreferrer external">
+          <a className="link-block underline underline-offset-4" href={mapsUrl(hotel.address)} target="_blank" rel="noopener noreferrer external">
             {hotel.address}
             <span className="sr-only"> (opens in Google Maps, new tab)</span>
           </a>

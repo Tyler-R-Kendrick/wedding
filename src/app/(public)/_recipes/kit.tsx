@@ -240,7 +240,7 @@ export function RecommendationCardView({ card, headingLevel = 3 }: { card: Recom
             <Text block={card.why.text} inline />
           </p>
           <p>
-            <Link href={card.why.experienceHref}>Read the memory: {card.why.experienceTitle}</Link>
+            <Link className="link-block" href={card.why.experienceHref}>Read the memory: {card.why.experienceTitle}</Link>
           </p>
         </details>
       ) : null}

@@ -26,7 +26,7 @@ export function UnavailableCard({ heading, message, contactRoute = '/ask-us', no
       ) : null}
       <p className="mt-3 measure">{message}</p>
       <p className="mt-3">
-        <Link className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" href={contactRoute}>
+        <Link className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary link-block" href={contactRoute}>
           Ask us
         </Link>
       </p>

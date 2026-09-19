@@ -46,6 +46,16 @@ jobs:
       - name: stylelint
         run: npm run lint:css
 
+      # Level 17. `wedding-site-standards` asks 44px of a link that is the whole of its paragraph,
+      # and two mechanisms carried that rule — a call-site `standalone` prop and a hand-maintained
+      # selector list — either of which a call site could forget. Six did in one commit. This is a
+      # check, so forgetting is a red build; it reads the source rather than the page because the
+      # links that got missed sit behind `venue.block.url` and `h.bookingUrl`, which no fixture
+      # renders. Like check-css-vars above it also runs inside `npm run test:unit`, so it cannot
+      # become a gate that exists only in a workflow file.
+      - name: Every paragraph-only link carries a 44px target
+        run: npm run -s targets:check
+
       # Level 15. stylelint matches literal `font-family` values and cannot see through an
       # indirection that resolves to one: `ops.css` referenced `var(--font-sans)`, defined nowhere,
       # and the whole admin console rendered in Roboto / Helvetica Neue / Arial with every check in

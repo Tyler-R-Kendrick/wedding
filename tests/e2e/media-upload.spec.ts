@@ -47,7 +47,11 @@ async function warmRoutes(page: import('@playwright/test').Page, request: APIReq
   };
   page.on('request', onRequest);
   for (const route of ['/', '/photos', '/photos/guest-uploads', '/media/mine', '/admin/media', '/admin/media/duplicates', '/admin/media/import', '/admin/media/metrics', '/media/upload']) {
-    await page.goto(route, { waitUntil: 'networkidle' });
+    // `domcontentloaded`, not `networkidle`: the compile is what this loop is for, and the settle
+    // loop below is what waits for quiet. On a dev server the network need never go idle — HMR
+    // keeps a channel open — so `networkidle` here could hang until the 300s test budget ran out
+    // on a route the CI warm-up list had already compiled. It did, on /admin/media/duplicates.
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
   }
   for (const path of ['/api/uploads/create', '/api/uploads/resume', '/api/uploads/complete', '/api/uploads/abort', '/api/uploads/jobs/run', '/api/capabilities/list_my_uploads', '/api/capabilities/get_media_item', '/api/capabilities/admin_moderate_media', '/api/capabilities/admin_media_metrics']) {
     await request.post(path, { headers: { 'Content-Type': 'application/json' }, data: {} }).catch(() => undefined);
