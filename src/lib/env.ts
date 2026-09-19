@@ -243,9 +243,10 @@ function load(raw: NodeJS.ProcessEnv): ServerEnv {
      * failing, and it is how this deployment spent its first hour.
      *
      * The cost is that a missing mailer is now discovered when a guest asks for a code rather
-     * than at boot. `npm run deploy:vercel` closes that gap from the other side: its preflight
-     * reads this list, names anything absent, and refuses to deploy — so the fast failure happens
-     * before the deploy instead of instead of the site.
+     * than at boot. `npm run deploy:vercel` narrows that gap from the other side: its preflight
+     * refuses to deploy over anything in this list, and warns — without refusing — when the mailer
+     * is absent, because a site that cannot send mail should still go up and show the date.
+     * Nothing here makes RSVP work without it; the warning is so the gap is known, not guessed at.
      */
     const required: (keyof Parsed)[] = ['CONFIRMATION_SECRET', 'CRON_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL'];
     const missing: string[] = required.filter((k) => !e[k]);

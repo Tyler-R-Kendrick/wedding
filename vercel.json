@@ -1,9 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "buildCommand": "node scripts/deploy/migrate-on-deploy.mjs && npm run build",
   "crons": [
-    { "path": "/api/jobs/run", "schedule": "*/5 * * * *" },
-    { "path": "/api/uploads/jobs/run", "schedule": "*/5 * * * *" },
-    { "path": "/api/media-ai/jobs/run", "schedule": "*/5 * * * *" }
+    {
+      "path": "/api/jobs/run",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/uploads/jobs/run",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/media-ai/jobs/run",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }

@@ -28,17 +28,55 @@ search both use it).
   `POSTGRES_URL` into the project itself. The app reads that name as
   `DATABASE_URL`, so no connection string is ever copied by hand and the
   connector stays the owner of the value it rotates.
-- Run the migration chain once: `npm run db:migrate` with `DATABASE_URL` set.
-  The chain in `src/db/migrations/` is the whole schema; there is no other
-  source.
+- The migration chain runs itself on deploy. `vercel.json` sets a
+  `buildCommand` of `node scripts/deploy/migrate-on-deploy.mjs && npm run build`,
+  which applies `src/db/migrations/` (the whole schema; there is no other source)
+  before the build, and **only** when `VERCEL_ENV=production` — the connector writes
+  the same `POSTGRES_*` values to preview and development, so an unguarded build step
+  would migrate the live database from a preview. It prefers
+  `POSTGRES_URL_NON_POOLING`, because DDL through a transaction-mode pooler fails
+  halfway. If migrations fail the build fails, which is the point: code deployed onto a
+  database without its schema answers 500 on every route.
+  Off Vercel, run `npm run db:migrate` with `DATABASE_URL` set.
+  One sharp edge: the step keys off `VERCEL`, which the CLI also sets for a local
+  `vercel build --prod` — and that pulls the production environment. Run that on a laptop and
+  it will apply the chain to the live database. Use `npm run build` locally; `vercel build`
+  is for reproducing a deployment, and `--prod` makes it reproduce this too.
+  The chain is applied **before** `next build`, so a build that fails afterwards leaves the
+  schema ahead of the code still serving. That is the deliberate trade: this app prerenders
+  pages that read content tables, so a build compiled against the *old* schema is the more
+  likely breakage, and the chain is additive by convention. A destructive migration (a drop
+  or a rename) is the case to run by hand, in two deploys, rather than through this step.
 - Decide about seeding. `npm run db:seed` writes the brief-derived content and
   is idempotent, but it also writes the placeholder rows. On a production
   database, run it once and then enter the real content through `/admin/content`
   rather than re-seeding.
 
+### Previews share the production database
+
+The connector writes the same `POSTGRES_*` values to production, preview and development, so a
+preview deployment does not just build against the live database — it **serves** from it. Real
+RSVPs, names and e-mail addresses are one URL away. The build step above refuses to migrate from
+a preview, but nothing in the app stops a preview from reading.
+
+What actually keeps that closed is Vercel's deployment protection: this project is set to
+`ssoProtection: all_except_custom_domains`, so every `.vercel.app` deployment demands a Vercel
+login and only the custom domain is public. **Turning that off makes every preview URL a public
+window onto the guest list.** If previews are ever opened up, give them their own database first.
+
 `DB_AUTO_MIGRATE` and `DB_AUTO_SEED` default **off** in production. Leave them
-off: a migration that runs on a cold start is a migration that runs while
-someone is reading the site.
+off: `src/db/client.ts` runs them inside `connect()`, which is once per serverless
+instance, so on Vercel a migration that runs on a cold start is a migration that runs
+while someone is reading the site — and the seed would re-upsert every row on every cold
+start besides. The build step above is where a deploy migrates.
+
+To bootstrap an **empty** database from a machine that cannot open a raw Postgres
+connection, both flags are still the way: set `DB_AUTO_MIGRATE=1` **and**
+`DB_AUTO_SEED=1`, deploy once, then remove both. `DB_AUTO_MIGRATE` alone applies the
+schema and seeds nothing, which leaves the tables only `seed()` ever writes — `events`,
+the `rsvp_settings` 'current' row, `floor_plans` and the content rows — empty, and the
+pages that read them saying the site has not been set up yet. The build step migrates but
+never seeds, deliberately: a seed on every deploy is a write nobody asked for.
 
 ### 2. Storage
 
@@ -96,7 +134,9 @@ do not rely on that.
   acquires (Vercel refuses a self-registered client the device grant; its own CLI
   client is allowed, so `vercel login` runs it and the page streams the link).
 - By hand instead: import the repository into Vercel. Framework preset: Next.js.
-  No build-command override is needed.
+  The build command comes from `vercel.json`, which runs the migration step before
+  `npm run build`. It overrides the dashboard's Build Command, so changing that field in
+  Project Settings does nothing — edit the file.
 - Set the variables above for **Production**, and separately for **Preview** if
   previews should exist at all. A preview with `DATABASE_URL` pointed at the
   production database is a preview that can publish seating.

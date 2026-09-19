@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { READINESS_GATED } from '@/contracts/flags';
 import { WEDDING_DATE_ISO, WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { seedEventsAndPlans } from '@/domain/events/seed';
 import type { Db } from '../client';
 import { contentSources, featureFlags, lifecycleState, siteSettings } from '../schema';
 import { seedContent } from './content';
@@ -61,6 +62,12 @@ export async function seed(db: Db): Promise<void> {
       .values({ name: flag, readiness: false, updatedBy: { kind: 'system', component: 'seed' }, updatedAt: now })
       .onConflictDoNothing();
   }
+
+  // Events, the rsvp_settings 'current' row and the placeholder floor plans (swarm E). Requested
+  // by src/domain/events/boot.ts: until this call existed, the only writer of these tables was a
+  // lazy per-handler boot that returns early in production, so `npm run db:seed` — the runbook's
+  // production step — left them empty and every RSVP and seating read had nothing to find.
+  await seedEventsAndPlans(db, now);
 
   // Story, adventures, recommendations, venue docent, operational fields, FAQ, and the AI corpus (swarm C).
   await seedContent(db, now);

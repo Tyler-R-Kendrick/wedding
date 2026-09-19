@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { isInternalRoute } from '@/capabilities/routes';
 import { getDb } from '@/db/client';
 import { getLifecycle, getSiteSettings, listContentSources } from '@/db/repos/site';
-import { featureFlags, siteSettings } from '@/db/schema';
+import { events, floorPlans, rsvpSettings, featureFlags, siteSettings } from '@/db/schema';
 import { seed, SEED_SITE } from '@/db/seed/seed';
 import { SEED_SOURCES } from '@/db/seed/sources';
 import { ID_PATTERN } from '@/contracts/ids';
@@ -30,6 +30,18 @@ describe('seed', () => {
     expect(brief.canonicalUrl).toBe('/the-wedding');
     expect(isInternalRoute(brief.canonicalUrl!)).toBe(true);
     expect(brief.canonicalUrl).not.toMatch(/^\/docs\//);
+  });
+
+  it('covers the swarm E tables, which production has no other writer for', async () => {
+    // `ensureSwarmESeeded` (src/domain/events/boot.ts) returns early when isProduction and
+    // DB_AUTO_SEED is off, which is how production now runs — so if `seed()` does not write these,
+    // the runbook's `npm run db:seed` leaves every RSVP and seating read with nothing to find.
+    // Mutation: drop the seedEventsAndPlans call from seed().
+    const db = await getDb();
+    await seed(db);
+    expect((await db.select().from(events)).length, 'events').toBeGreaterThan(0);
+    expect((await db.select().from(floorPlans)).length, 'floor_plans').toBeGreaterThan(0);
+    expect((await db.select().from(rsvpSettings)).length, 'rsvp_settings').toBeGreaterThan(0);
   });
 
   it('never overwrites admin edits to site_settings on a reseed', async () => {
