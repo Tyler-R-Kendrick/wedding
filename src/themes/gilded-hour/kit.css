@@ -39,6 +39,7 @@
    */
   --gh-measure: 34rem;
   --wp-measure: var(--gh-measure);
+
 }
 
 /* ---------- type helpers ---------- */
@@ -324,6 +325,7 @@
   }
 }
 
+
 .gh-panel__cell {
   display: grid;
   place-items: center;
@@ -334,11 +336,27 @@
   border-block-start: 2px solid transparent;
   background: none;
   font-family: var(--font-text);
-  font-size: var(--type-label-sm-size);
+
+  /*
+   * 17px, not 13. This panel is how a guest moves around the site on a phone, and PRODUCT.md's
+   * floor exists for exactly this control — a grandparent reading at arm's length. DESIGN.md said
+   * `label-sm` (0.765rem) here; the ramp is rem-based on a 17px root, so that rendered 13.005px,
+   * while Conservatory's equivalent menu has been on the 1rem step all along. One of the two was
+   * wrong and the audience says which. DESIGN.md's nav entry is updated to match rather than
+   * quietly contradicted.
+   *
+   * Uppercase cannot come with the larger step, and this was measured rather than assumed: at
+   * 390px each of the four cells is 98px wide, and "ADVENTURES" wants 122px at 0.03em tracking
+   * and 137px at the `control-caps` role's own 0.12em. `overflow-wrap: normal` will not break a
+   * single word, so it clipped at both. Sentence case fits inside 98px with room left, and is the
+   * easier read besides, which is the whole point of the floor. The panel grows 72px -> 81px;
+   * `--bottom-bar-h` grows with it so the reservation still clears the bar.
+   */
+  font-size: var(--type-control-caps-size);
   font-weight: var(--type-label-sm-weight);
   letter-spacing: 0.03em;
   line-height: 1.15;
-  text-transform: uppercase;
+  text-transform: none;
   text-align: center;
   color: var(--color-primary);
   text-decoration: none;
@@ -482,12 +500,21 @@
   padding: clamp(var(--spacing-lg), 6vw, var(--spacing-3xl)) var(--gh-gutter) var(--spacing-2xl);
 }
 
-/* Phones: the state's action stays in the first screen; the countdown follows it. */
+/*
+ * Phones: the state's action stays in the first screen. The countdown used to be moved BELOW the
+ * travel note here (`order: 2`), which put the one number the page is built around at the very
+ * bottom of the hero — and the elevator panel is `position: fixed` at the bottom of the viewport.
+ * Measured at 390x844: the countdown ran 718-788 under a panel at 772-844, so its last 16px were
+ * covered and "days to go" was gone entirely. The first thing a guest saw was a sliced number with
+ * no unit.
+ *
+ * Padding cannot fix that — a content-sized hero grows downward and the countdown stays where it
+ * is. So the order goes instead: DOM order already runs lede, countdown, actions, note, which
+ * keeps the action in the first screen and leaves the note, not the headline number, as the thing
+ * the bar may clip. `main` reserves `--bottom-chrome` (shared/base.css), so the note is never
+ * unreachable — only, at rest, partly behind the bar, which is what a bottom bar does.
+ */
 @media (width < 600px) {
-  .gh-hero__countdown-slot {
-    order: 2;
-  }
-
   .gh-hero__lede {
     font-size: var(--type-body-md-size);
     line-height: var(--type-body-md-line);
@@ -628,7 +655,15 @@
   animation: gh-fade var(--duration-base) var(--ease-settle);
 }
 
+/*
+ * The unit is not ornament, whatever the ramp says. "302" alone means nothing — "days to go" is
+ * the whole content of that block and the hero's second-largest idea — and at `label-caps` it
+ * computed to 13.81px: the smallest type on the page, under PRODUCT.md's 17px floor, in caps at
+ * 0.18em tracking, which reads smaller still. It takes `control-caps`, with the chips and the
+ * field labels, for the reason they are there.
+ */
 .gh-countdown__label {
+  font-size: var(--type-control-caps-size);
   color: var(--color-on-surface-muted);
 }
 
@@ -1334,11 +1369,24 @@
 /*
  * SF-4: a link that stands on its own line is a touch target. `wedding-site-standards` §7 asks for
  * 44 px; these are 44 px tall with the icon on the same line as the last word.
+ *
+ * `--standalone` is what a call site sets when only the call site can know (a link that is the
+ * whole of its paragraph); the rest are the shapes that are standalone by construction. One rule,
+ * so there is one copy of the contract rather than a modifier that has to be kept in step with it.
  */
+.gh-link--standalone,
+.gh-entry__title .gh-link,
+.gh-rec__title .gh-link,
+.gh-result__title .gh-link,
 .gh-back .gh-link,
 .gh-outlet__link .gh-link,
 .gh-section__action .gh-link,
 .gh-room__name .gh-link,
+/* The venue address in the footer is one of these and was missed: it stands alone on its own line
+   on every route in this design, and measured 308x41 — three pixels short of the rule directly
+   above it. It is listed here rather than last so the group stays in ascending specificity, which
+   is what `no-descending-specificity` is checking. */
+.gh-footer__place > .gh-link,
 .gh-faq__a p > .gh-link,
 .gh-why p > .gh-link {
   display: inline-flex;
@@ -1658,6 +1706,41 @@
 .gh-grid .gh-rec {
   max-width: none;
   height: 100%;
+}
+
+/*
+ * The two airports, side by side once there is room.
+ *
+ * `gh-travel__airports` was written in the travel recipe and defined nowhere, so ORD and MDW
+ * stacked as two bordered boxes sharing an edge — at every width, including the desktop one where
+ * the comparison is the entire point of putting them together. Same shape as `.gh-grid` above,
+ * declared here rather than by reusing that class because the recipe holds `Card`s directly, not a
+ * list.
+ */
+.gh-travel__airports {
+  display: grid;
+  gap: var(--spacing-lg);
+  max-width: var(--gh-max);
+  margin: var(--spacing-lg) auto 0;
+}
+
+/*
+ * `margin-inline: auto` on `.gh-card` makes a grid item shrink-to-fit and centre — auto margins
+ * beat `justify-self: stretch` — so the two airports came out different widths and differently
+ * indented, one 313px at x=39 and the other 350px at x=20. In a grid the column already decides
+ * the width.
+ */
+.gh-travel__airports > .gh-card {
+  max-width: none;
+  margin-inline: 0;
+  height: 100%;
+}
+
+@media (width >= 700px) {
+  .gh-travel__airports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
 }
 
 .gh-rec__inner {

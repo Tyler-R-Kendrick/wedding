@@ -4,17 +4,19 @@
 // Private key: .secrets/private.jwk.json, or SECRETS_PRIVATE_KEY (base64url JSON JWK) for CI/session-start.
 // Envelope doc shape (written by the page): { name, alg: "A256GCM+RSA-OAEP-256", iv, ct, wrapped: { <kid>: <ek> }, createdAt }
 // All binary fields are base64url. Output: only variable names and lengths.
-import { readFile, readdir, writeFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { webcrypto } from 'node:crypto';
+import { applyEnv, describe, NAME_RE } from './env-file.mjs';
+import { ENV_PATH, inStore } from './store.mjs';
 
 const { subtle } = webcrypto;
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
 const flag = (n) => args.includes(`--${n}`);
 const source = args.find((a) => !a.startsWith('--') && !['.env', opt('env', '.env')].includes(a));
-const envPath = opt('env', '.env');
+const envPath = opt('env', ENV_PATH);
 if (!source) { console.error('usage: apply-env.mjs <envelopes.json | directory> [--env .env] [--dry-run]'); process.exit(2); }
 
 const b64u = { dec: (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64') };
@@ -22,7 +24,7 @@ const b64u = { dec: (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 
 async function loadPrivateKey() {
   let jwk;
   if (process.env.SECRETS_PRIVATE_KEY) jwk = JSON.parse(b64u.dec(process.env.SECRETS_PRIVATE_KEY).toString('utf8'));
-  else if (existsSync('.secrets/private.jwk.json')) jwk = JSON.parse(await readFile('.secrets/private.jwk.json', 'utf8'));
+  else if (existsSync(inStore('private.jwk.json'))) jwk = JSON.parse(await readFile(inStore('private.jwk.json'), 'utf8'));
   else { console.error('No private key: set SECRETS_PRIVATE_KEY or run scripts/secrets/keygen.mjs'); process.exit(2); }
   const { kid, createdAt, ...pure } = jwk;
   const key = await subtle.importKey('jwk', pure, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['unwrapKey']);
@@ -53,25 +55,6 @@ async function open(env, priv) {
   }
 }
 
-const NAME_RE = /^[A-Z][A-Z0-9_]{0,63}$/;
-function quote(v) { return /^[A-Za-z0-9_./:@+=,-]*$/.test(v) ? v : JSON.stringify(v); }
-
-function mergeEnv(existing, entries) {
-  const lines = existing ? existing.split('\n') : [];
-  const seen = new Set();
-  const out = lines.map((line) => {
-    const m = /^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=/.exec(line);
-    if (!m) return line;
-    const e = entries.get(m[1]);
-    if (!e) return line;
-    seen.add(m[1]);
-    return `${m[1]}=${quote(e)}`;
-  });
-  const added = [...entries.keys()].filter((k) => !seen.has(k));
-  if (added.length) { if (out.length && out[out.length - 1] !== '') out.push(''); out.push(`# added by scripts/secrets/apply-env.mjs ${new Date().toISOString()}`); for (const k of added) out.push(`${k}=${quote(entries.get(k))}`); }
-  return { text: out.join('\n').replace(/\n*$/, '\n'), updated: [...seen], added };
-}
-
 const priv = await loadPrivateKey();
 const envelopes = await loadEnvelopes(source);
 if (!envelopes.length) { console.error('No envelopes found in', source); process.exit(1); }
@@ -83,10 +66,8 @@ for (const e of envelopes) {
 }
 if (flag('dry-run')) { console.log(`Would apply ${entries.size} variable(s): ${[...entries.keys()].join(', ')}`); }
 else if (entries.size) {
-  const existing = existsSync(envPath) ? await readFile(envPath, 'utf8') : '';
-  const { text, updated, added } = mergeEnv(existing, entries);
-  await writeFile(envPath, text, { mode: 0o600 });
+  const { updated, added } = await applyEnv(entries, { path: envPath, note: 'scripts/secrets/apply-env.mjs' });
   console.log(`Applied to ${envPath}: ${entries.size} variable(s). updated=[${updated.join(', ')}] added=[${added.join(', ')}]`);
-  for (const [k, v] of entries) console.log(`  ${k}  (${v.length} chars)`);
+  for (const line of describe(entries)) console.log(`  ${line}`);
 }
 if (errors.length) { console.error('Problems:\n  ' + errors.join('\n  ')); process.exit(entries.size ? 0 : 1); }

@@ -202,7 +202,7 @@ export function UploadForm({ collection, myUploadsHref }: { collection?: string;
             {active === 0 && processing === 0 && errors === 0 ? 'All done. Sara and Tyler will review before anything is shared.' : ''}
           </p>
           <p>
-            <Link className="media-link" href={myUploadsHref}>
+            <Link className="media-link media-link--block" href={myUploadsHref}>
               See everything you have added
             </Link>
           </p>

@@ -442,6 +442,11 @@
         "purpose": "Sticky mobile action bar separation."
       },
       {
+        "name": "bar-lift",
+        "value": "0 -1px 0 #c8c1ac, 0 -8px 24px rgba(42,68,48,0.08)",
+        "purpose": "Fixed bottom chrome that is mostly empty plate: bar-ambient alone gives separation you can only see under something. The docked Menu plate is page-coloured and holds one tag at its right, so without a hairline the left three-quarters read as body text sliced off mid-line rather than as chrome. Outline hairline + the same ambient, mirroring Gilded Hour's panel-lift."
+      },
+      {
         "name": "none",
         "value": "none",
         "purpose": "Everything else: card, section washes, inputs, nav tags rely on hairlines and overlap."

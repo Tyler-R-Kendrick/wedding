@@ -74,15 +74,28 @@ const serverSchema = z.object({
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
   ANTHROPIC_API_KEY: optionalString,
+  /** OAuth bearer borrowed from a signed-in Claude Code session; sent as Authorization, not x-api-key. */
+  ANTHROPIC_AUTH_TOKEN: optionalString,
+  ANTHROPIC_BASE_URL: optionalUrl,
   OPENAI_API_KEY: optionalString,
+  /** Which local harness the credential came from, when it was borrowed rather than issued to the site. */
+  AI_HARNESS: z.enum(['claude-code', 'codex', 'copilot', 'ollama']).optional(),
+  /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
+  AI_BASE_URL: optionalUrl,
+  /**
+   * Vercel AI Gateway. `AI_GATEWAY_API_KEY` is the explicit key; `AI_GATEWAY=on` selects the gateway
+   * with no key at all, in which case `@ai-sdk/gateway` signs with the deployment's OIDC token
+   * (`VERCEL_OIDC_TOKEN` on Vercel, the CLI's session locally via `@vercel/oidc`).
+   */
+  AI_GATEWAY: requiredBool(false),
+  AI_GATEWAY_API_KEY: optionalString,
+  /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */
+  AI_CHAT_MODEL: optionalString,
+  AI_FAST_MODEL: optionalString,
   VOYAGE_API_KEY: optionalString,
   EMBEDDINGS_PROVIDER: z.enum(['openai', 'voyage']).optional(),
   /** Media intelligence (Swarm I): force the deterministic caption mock even when ANTHROPIC_API_KEY exists. */
   MEDIA_AI_PROVIDER: z.enum(['mock', 'anthropic']).optional(),
-  /** Biometric vault key (32+ chars, base64/hex). Required in production when FLAG_BIOMETRICS_ENABLED is on; dev derives one with a warning. */
-  BIOMETRIC_VAULT_KEY: optionalSecret(32),
-  /** Biometric templates are deleted at the latest this many days after enrolment (TODO(Tyler & Sara): confirm with counsel). */
-  BIOMETRIC_RETENTION_DAYS: intish(365, 1),
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalString,
   S3_ENDPOINT: optionalUrl,
@@ -122,14 +135,20 @@ const serverSchema = z.object({
   /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
   TRANSPORT_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
-  REGISTRY_LINKS_JSON: optionalString,
-  CASH_FUND_LINKS_JSON: optionalString,
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
   METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),
 
-  // --- jobs ---
-  JOBS_INLINE_RUNNER: requiredBool(true),
-  JOBS_POLL_INTERVAL_MS: intish(2_000, 100),
+  /*
+   * --- jobs ---
+   *
+   * There is no in-process poller, and there never was. `JOBS_INLINE_RUNNER` and
+   * `JOBS_POLL_INTERVAL_MS` sat here and in `.env.example` describing one, and nothing in `src/`
+   * read either name — `docs:env` did not catch it because a key defined in this schema counts as
+   * "read by the app", so the check can only catch a variable that is undocumented, never one that
+   * is documented and dead. Removed rather than implemented: the queue has two real runners, the
+   * cron routes in production and `npm run jobs:run` locally, and a third that only exists in a
+   * settings table is worse than none.
+   */
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),
@@ -147,7 +166,45 @@ export type ServerEnv = Omit<Parsed, 'TRUSTED_PROXY_HOPS'> & {
 
 const hasS3 = (e: Parsed) => !!(e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
 
-function load(source: NodeJS.ProcessEnv): ServerEnv {
+/**
+ * Names a Vercel Marketplace connector injects, read as the name the app uses.
+ *
+ * `vercel integration add supabase` (or `neon`) writes the pooled connection string as
+ * `POSTGRES_URL` (Supabase also `POSTGRES_PRISMA_URL`), never `DATABASE_URL`, and a project env
+ * cannot reference another. Reading the connector's name here means the deploy script sets
+ * nothing by hand and the connector stays the single owner of the value it rotates. An explicit
+ * `DATABASE_URL` still wins.
+ */
+export const DATABASE_URL_ALIASES = ['POSTGRES_URL', 'POSTGRES_PRISMA_URL'] as const;
+
+/**
+ * What the platform already knows, read as the names this app uses. Anything set explicitly wins;
+ * nothing here applies off Vercel, so local runs and CI are untouched.
+ *
+ *  - `DATABASE_URL` from the connector's own name (above).
+ *  - `BETTER_AUTH_URL` from the deployment's origin. Production is required to name its canonical
+ *    domain, and does (the deploy script sets it), but a preview's URL exists only once that
+ *    deployment does — and `NODE_ENV` is `production` on previews, so without this every preview
+ *    fails the required-variable check at boot. Deriving it also gets the passkey relying-party id
+ *    right for the host actually being visited, which one pinned URL cannot do for every preview.
+ */
+function withPlatformDefaults(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  let out = source;
+  if (!out.DATABASE_URL) {
+    const alias = DATABASE_URL_ALIASES.find((name) => out[name]);
+    if (alias) out = { ...out, DATABASE_URL: out[alias] };
+  }
+  if (!out.BETTER_AUTH_URL && out.VERCEL) {
+    const host = out.VERCEL_ENV === 'production'
+      ? (out.VERCEL_PROJECT_PRODUCTION_URL || out.VERCEL_URL)
+      : out.VERCEL_URL;
+    if (host) out = { ...out, BETTER_AUTH_URL: `https://${host}` };
+  }
+  return out;
+}
+
+function load(raw: NodeJS.ProcessEnv): ServerEnv {
+  const source = withPlatformDefaults(raw);
   const parsed = serverSchema.safeParse(source);
   if (!parsed.success) {
     // Names only — never echo values.

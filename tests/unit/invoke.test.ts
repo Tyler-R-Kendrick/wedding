@@ -169,8 +169,8 @@ describe('invoke pipeline', () => {
     if (!r.ok) expect(r.error.code).toBe('feature_disabled');
     expect((await invoke(flagged, ctx().c, { text: 'hi' })).ok).toBe(true);
 
-    const bio = defineCapability<{ text: string }, { text: string }>({ ...echo, name: 'bio', flag: 'BIOMETRICS_ENABLED' });
-    const flagOn = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on' });
+    const bio = defineCapability<{ text: string }, { text: string }>({ ...echo, name: 'bio', flag: 'PRO_MEDIA_AI_PROCESSING' });
+    const flagOn = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on' });
     const noReadiness = ctx({ flags: flagOn });
     expect((await invoke(bio, noReadiness.c, { text: 'hi' })).ok).toBe(false);
     const notReady = ctx({ flags: flagOn }, { readiness: async () => false });

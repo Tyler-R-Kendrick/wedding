@@ -14,7 +14,6 @@ export const ENTITLEMENTS = [
   'view_travel_tools',
   'upload_media',
   'view_private_media',
-  'use_face_matching',
   'use_concierge',
   'admin_content',
   'admin_guest_ops',

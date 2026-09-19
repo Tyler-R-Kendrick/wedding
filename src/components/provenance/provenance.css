@@ -2,10 +2,11 @@
  * Provenance UI (ADR-0011): source badges, freshness badges, and typed placeholder blocks.
  * Tokens only. Every color falls back to a variable the foundation already defines.
  *
- * These rules are unlayered, so they outrank anything a theme puts in layer(components). The two
- * inks a theme may need to repaint (the placeholder annotation and the external-source badge) are
- * therefore exposed as slots: a theme sets `--prov-note-ink` / `--prov-external-ink|line` on its
- * root and the value flows in by inheritance instead of by a losing override.
+ * These rules are unlayered, so they outrank anything a theme puts in layer(components). The
+ * colours a theme may need to repaint (the placeholder annotation and its boundary, and the
+ * external-source badge) are therefore exposed as slots: a theme sets `--prov-note-ink` /
+ * `--prov-placeholder-line` / `--prov-external-ink|line` on its root and the value flows in by
+ * inheritance instead of by a losing override.
  */
 .prov {
   display: flex;
@@ -73,18 +74,61 @@
   flex-basis: 100%;
 }
 
+/*
+ * The badge and the source it labels are one wrapping row, not two inline runs.
+ *
+ * `.prov__source` was a plain span, so the badge — `inline-flex`, `min-height: 28px` plus two 1px
+ * borders, 30px in all — sat inside an inline line box of 1.4 x 18.0625px = 25.3px and overflowed
+ * it by nearly 5px. Whenever the pair wrapped, the badge printed over the link beneath it. Twenty
+ * seven of them render on `/explore-caa` alone. As a flex row the badge's own height sets the
+ * row's, which is what it should have been doing.
+ */
+.prov__source {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 4px);
+  align-items: center;
+}
+
+/*
+ * A cited source is a link a guest taps, and it measured 199x19 in Gilded Hour — twelve times on
+ * `/explore-caa`. WCAG 2.2 AA asks 24; this repo asks 44, and the outlet links in the Gilded Hour
+ * kit already take exactly this treatment. The padding grows the hit box without moving the text
+ * off its baseline.
+ */
 .prov a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 10px;
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
 
+/*
+ * An editorial gap has to look like one on every band either design can put behind it. It did not.
+ *
+ * The boundary was `--color-tertiary` — the accent, which is gold in Conservatory (#d4b24a) over a
+ * `--color-neutral-variant` fill (#eae2ce): 1.58:1, where WCAG 2.2 SC 1.4.11 asks 3. And the fill
+ * was `--color-neutral-variant`, which is the exact colour `.gh-section--alt` paints its band, so
+ * on seven routes the box had no fill edge either and the marker dissolved into the section. A gap
+ * nobody can see reads as finished copy, which is the one thing a placeholder must never do.
+ *
+ * So the boundary is ink, not ornament. `--color-on-surface-muted` clears 3:1 against the fill
+ * (6.69:1 Gilded Hour, 6.85:1 Conservatory) and against every band behind it (5.48:1 and 5.63:1 on
+ * the alt band, more on the lighter ones), and it is drawn at 2px so a guest reading at arm's
+ * length sees an edge rather than a hairline. It stays a dash on all four sides: a thick rule down
+ * one side would read as a card with an accent, and this is not a card — it is a hole in the copy.
+ * The fill is `--color-surface`, which no band paints itself, so the box reads as an inset wherever
+ * the band differs and is held by its boundary where it does not.
+ */
 .placeholder {
   display: block;
   margin: var(--spacing-md, 16px) 0;
   padding: var(--spacing-md, 16px);
-  border: 1px dashed var(--color-tertiary, var(--color-primary));
-  background: var(--color-neutral-variant, var(--color-neutral));
+  border: 2px dashed var(--prov-placeholder-line, var(--color-on-surface-muted, var(--color-primary)));
+  background: var(--color-surface, var(--color-neutral));
   color: var(--color-on-surface, var(--color-primary));
 }
 
@@ -94,6 +138,10 @@
  */
 .placeholder__label {
   display: block;
+
+  /* The stamp is one sentence; `pretty` keeps it from orphaning "this:" onto a line of its own in
+     Conservatory's narrow cards. */
+  text-wrap: pretty;
   margin-bottom: var(--spacing-xs, 4px);
   font-size: var(--type-body-sm-size, 1.0625rem);
   line-height: var(--type-body-sm-line, 1.55);

@@ -23,7 +23,7 @@ describe('seed', () => {
     expect(kit.sourceType).toBe('venue-document');
     expect(freshnessOf({ verifiedAt: kit.verifiedAt.toISOString(), validUntil: kit.validUntil?.toISOString() }, FRESHNESS_POLICIES.operational, new Date('2027-01-15T00:00:00Z'))).toBe('expired');
     const flags = await db.select().from(featureFlags);
-    expect(flags.map((f) => f.name).sort()).toEqual(['BIOMETRICS_ENABLED', 'PRO_MEDIA_AI_PROCESSING']);
+    expect(flags.map((f) => f.name).sort()).toEqual(['PRO_MEDIA_AI_PROCESSING']);
     expect(flags.every((f) => f.readiness === false)).toBe(true);
     // The brief citation points guests at a public route, not a repository path.
     const brief = sources.find((s) => s.id === SEED_SITE.sourceId)!;

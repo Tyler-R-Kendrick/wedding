@@ -65,13 +65,12 @@ describe('deriveGuestEntitlements matrix', () => {
     expect(e.has('view_event')).toBe(true);
   });
 
-  it('follows feature flags for uploads, concierge, transport, and biometrics', () => {
-    const flags = readFlags({ FLAG_GUEST_UPLOADS: 'off', FLAG_AI_CONCIERGE: 'off', FLAG_TRANSPORT_BENEFITS: 'off', FLAG_BIOMETRICS_ENABLED: 'on' });
+  it('follows feature flags for uploads, concierge and transport', () => {
+    const flags = readFlags({ FLAG_GUEST_UPLOADS: 'off', FLAG_AI_CONCIERGE: 'off', FLAG_TRANSPORT_BENEFITS: 'off' });
     const e = deriveGuestEntitlements(base({ flags }));
     expect(e.has('upload_media')).toBe(false);
     expect(e.has('use_concierge')).toBe(false);
     expect(e.has('claim_transportation_benefit')).toBe(false);
-    expect(e.has('use_face_matching')).toBe(true);
   });
 
   it('a manager binding role or an explicit managedBy makes a manager even when the household points elsewhere', () => {

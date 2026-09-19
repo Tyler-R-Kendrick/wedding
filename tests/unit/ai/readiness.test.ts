@@ -23,7 +23,7 @@ const gated = defineCapability({
   kind: 'read',
   auth: 'anonymous',
   requires: [],
-  flag: 'BIOMETRICS_ENABLED',
+  flag: 'PRO_MEDIA_AI_PROCESSING',
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },
   input: z.object({}).optional(),
@@ -35,12 +35,12 @@ const plain = defineCapability({ ...gated, name: 'plain_read', flag: undefined }
 
 const reg = new CapabilityRegistryImpl();
 reg.registerAll([gated, plain]);
-const flagsOn = readFlags({ FLAG_BIOMETRICS_ENABLED: 'on' });
+const flagsOn = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on' });
 
 describe('readiness-aware derived lists', () => {
   it('counts a gated flag as unready when the switch is off, and fails closed with no service', async () => {
-    expect([...(await unreadyGatedFlags(flagsOn, async () => false))]).toEqual(['BIOMETRICS_ENABLED']);
-    expect([...(await unreadyGatedFlags(flagsOn, undefined))]).toEqual(['BIOMETRICS_ENABLED']);
+    expect([...(await unreadyGatedFlags(flagsOn, async () => false))]).toEqual(['PRO_MEDIA_AI_PROCESSING']);
+    expect([...(await unreadyGatedFlags(flagsOn, undefined))]).toEqual(['PRO_MEDIA_AI_PROCESSING']);
     expect([...(await unreadyGatedFlags(flagsOn, async () => true))]).toEqual([]);
     // A flag that is off in the environment is already excluded by the flag filter: never asked about.
     let asked = 0;

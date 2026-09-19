@@ -182,3 +182,247 @@ describe('concierge panel', () => {
     expect(document.querySelector('.cq__log')?.hasAttribute('role')).toBe(false);
   });
 });
+
+/**
+ * The on-device path in the browser. `LanguageModel` is a global in Chrome; stubbing it is exactly
+ * what a supporting browser looks like from here. What matters is that the panel asks for evidence,
+ * writes the sentences locally, sends the draft back for verification, and — whenever any of that
+ * fails — still ends up showing the server's own verified answer.
+ */
+describe('the concierge on the guest\'s own device', () => {
+  const evidence: ConciergeEvent[] = [
+    { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+    { type: 'status', stage: 'routing', tools: ['site_status'] },
+    { type: 'evidence', system: 'Answer only from the evidence.', userTurn: 'Q: when?\n\n[S1] The wedding is on Saturday, July 17, 2027.' },
+  ];
+
+  /** A fetch that answers the evidence request first and the draft request second. */
+  function stubTwoPhase(second: ConciergeEvent[] = grounded) {
+    const bodies: Record<string, unknown>[] = [];
+    const encoder = new TextEncoder();
+    const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      bodies.push(body);
+      const events = body.mode === 'evidence' ? evidence : second;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (const e of events) controller.enqueue(encoder.encode(encodeEvent(e)));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+      );
+    });
+    return { fetch, bodies };
+  }
+
+  /** Records what the device was grounded with, so a test can prove it was not the bare question. */
+  function stubDevice(prompt: (input: string) => Promise<string>) {
+    const seen = { system: '', asked: '' };
+    vi.stubGlobal('LanguageModel', {
+      availability: async () => 'available',
+      create: async (options?: { initialPrompts?: { role: string; content: string }[] }) => {
+        seen.system = options?.initialPrompts?.find((p) => p.role === 'system')?.content ?? '';
+        return {
+          prompt: (input: string) => { seen.asked = input; return prompt(input); },
+          destroy: () => {},
+        };
+      },
+    });
+    return seen;
+  }
+
+  it('asks for evidence, answers on device, and sends the draft back to be verified', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    const seen = stubDevice(async () => 'The wedding is on Saturday, July 17, 2027 [S1].');
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]).toMatchObject({ mode: 'evidence', message: 'when is the wedding?' });
+    // The device answered under the server's closed-world contract, from the server's evidence —
+    // not from the bare question, which is the whole difference between this and a chatbot.
+    expect(seen.system).toBe('Answer only from the evidence.');
+    expect(seen.asked).toContain('[S1] The wedding is on Saturday, July 17, 2027.');
+    // The second request carries the draft and the session the first one opened.
+    expect(bodies[1]).toMatchObject({ draft: 'The wedding is on Saturday, July 17, 2027 [S1].', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV' });
+    expect(bodies[1]).not.toHaveProperty('mode');
+  });
+
+  it('falls back to the server when the device cannot answer', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    stubDevice(async () => { throw new Error('out of memory'); });
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    // Still two requests, but the second one asks the server to write the answer itself.
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).not.toHaveProperty('draft');
+  });
+
+  it('does not ask twice when the server refused before handing over evidence', async () => {
+    const refusal: ConciergeEvent[] = [
+      { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+      { type: 'refusal', message: 'That is personal to your invitation.', links: [{ label: 'Sign in', href: '/your-weekend' }] },
+      { type: 'done', status: 'refused', dropped: 0, latencyMs: 4 },
+    ];
+    const encoder = new TextEncoder();
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body ?? '{}')));
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (const e of refusal) controller.enqueue(encoder.encode(encodeEvent(e)));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    stubDevice(async () => 'anything at all');
+    await open();
+    await ask('which table am I at?');
+    await screen.findByText(/personal to your invitation/);
+    expect(bodies).toHaveLength(1);
+  });
+
+  /**
+   * The stage line is a live region, and a design review measured what the two-phase path did to
+   * it: nine announcements where the server alone makes four, running backwards through
+   * routing/retrieving a second time — which tells a blind guest the concierge restarted. These
+   * lock the sequence in both outcomes.
+   */
+  describe('what the stage line announces', () => {
+    const withStages = (extra: ConciergeEvent[]): ConciergeEvent[] => [
+      { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
+      { type: 'status', stage: 'routing', tools: ['site_status'] },
+      { type: 'status', stage: 'retrieving' },
+      { type: 'status', stage: 'generating' },
+      ...extra,
+    ];
+    const evidenceWithStages = withStages([
+      { type: 'evidence', system: 'Answer only from the evidence.', userTurn: 'Q\n\n[S1] July 17, 2027.' },
+    ]);
+    const answerWithStages = withStages([
+      { type: 'status', stage: 'verifying' },
+      { type: 'text', text: 'The wedding is on Saturday, July 17, 2027 [S1].' },
+      { type: 'done', status: 'grounded', dropped: 0, latencyMs: 11 },
+    ]);
+
+    /** Every distinct string the stage element holds, in order. */
+    function recordStages(): string[] {
+      const seen: string[] = [];
+      const observer = new MutationObserver(() => {
+        const text = document.querySelector('[data-testid="concierge-status"]')?.textContent?.trim();
+        if (text && text !== seen[seen.length - 1]) seen.push(text);
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      return seen;
+    }
+
+    /**
+     * One event per macrotask. The other stubs enqueue the whole stream at once, which React 19
+     * batches into a single render — fine when the assertion is the final answer, useless when it
+     * is the sequence of stages, because every intermediate one is coalesced away.
+     */
+    function stubPhases(second: ConciergeEvent[]) {
+      const encoder = new TextEncoder();
+      return vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+        const events = body.mode === 'evidence' ? evidenceWithStages : second;
+        let i = 0;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              await new Promise((resolve) => setTimeout(resolve, 1));
+              if (i >= events.length) return controller.close();
+              controller.enqueue(encoder.encode(encodeEvent(events[i]!)));
+              i += 1;
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } },
+        );
+      });
+    }
+
+    it('moves forward only, and never narrates a step that is not happening', async () => {
+      vi.stubGlobal('fetch', stubPhases(answerWithStages));
+      // A tick of thinking, as any real model takes. Resolving instantly makes React batch the
+      // on-device stage away with the one after it — which is the right outcome for a device that
+      // fast (a 5ms announcement is churn, not information) but says nothing about the sequence.
+      stubDevice(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return 'The wedding is on Saturday, July 17, 2027 [S1].';
+      });
+      const seen = recordStages();
+      await open();
+      await ask('when is the wedding?');
+      await screen.findByText(/July 17, 2027/);
+
+      // "Writing an answer…" never appears: the server stops at the seam in phase 1 and only
+      // verifies in phase 2. Routing and retrieving are announced once, not twice.
+      expect(seen).not.toContain('Writing an answer…');
+      expect(seen.filter((s) => s === 'Looking for the right pages…')).toHaveLength(1);
+      expect(seen.filter((s) => s === 'Reading what the site knows…')).toHaveLength(1);
+      // Monotonic: once the device has spoken, nothing earlier is announced again.
+      const device = seen.indexOf('Writing an answer on your device…');
+      expect(device).toBeGreaterThan(-1);
+      expect(seen.slice(device)).not.toContain('Looking for the right pages…');
+      expect(seen.slice(device)).not.toContain('Reading what the site knows…');
+    });
+
+    it('does not claim to be checking sentences the device never wrote', async () => {
+      vi.stubGlobal('fetch', stubPhases(answerWithStages));
+      stubDevice(async () => { throw new Error('out of memory'); });
+      const seen = recordStages();
+      await open();
+      await ask('when is the wedding?');
+      await screen.findByText(/July 17, 2027/);
+
+      // The device failed, so the server generates after all — that stage is true and stays. What
+      // must not happen is announcing verification before there is anything to verify.
+      const device = seen.indexOf('Writing an answer on your device…');
+      const verifying = seen.indexOf('Checking every sentence against its source…');
+      const generating = seen.indexOf('Writing an answer…');
+      expect(device).toBeGreaterThan(-1);
+      expect(generating).toBeGreaterThan(device);
+      expect(verifying).toBeGreaterThan(generating);
+      expect(seen.slice(device)).not.toContain('Looking for the right pages…');
+    });
+  });
+
+  it('does not make a guest wait for a model download — the server answers, the download starts', async () => {
+    const { fetch, bodies } = stubTwoPhase();
+    vi.stubGlobal('fetch', fetch);
+    const created: string[] = [];
+    vi.stubGlobal('LanguageModel', {
+      availability: async () => 'downloadable',
+      create: async () => { created.push('create'); return { prompt: async () => 'never used', destroy: () => {} }; },
+    });
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    // One request, straight to the server: no evidence round-trip for a model that is not there yet.
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).not.toHaveProperty('mode');
+    expect(bodies[0]).not.toHaveProperty('draft');
+    // …but the download was kicked off, so the next question can be answered on the device.
+    await waitFor(() => expect(created).toHaveLength(1));
+  });
+
+  it('uses the server alone on a browser with no Prompt API', async () => {
+    const fetch = stubStream(grounded);
+    vi.stubGlobal('fetch', fetch);
+    await open();
+    await ask('when is the wedding?');
+    await screen.findByText(/July 17, 2027/);
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).not.toHaveProperty('mode');
+  });
+});

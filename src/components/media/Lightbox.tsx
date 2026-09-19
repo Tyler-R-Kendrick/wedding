@@ -126,7 +126,7 @@ export function Lightbox({ items }: { items: GalleryItem[] }) {
               {detail?.licenseNote ? <p className="media-lightbox__credit">{detail.licenseNote}</p> : null}
               {detail?.webFull ? (
                 <p>
-                  <a className="media-link" href={detail.webFull.url} download>
+                  <a className="media-link media-link--block" href={detail.webFull.url} download>
                     Download full size
                   </a>
                 </p>

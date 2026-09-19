@@ -40,7 +40,7 @@ export async function isEnabled(flag: FeatureFlag, opts: { flags?: FlagValues; d
 
 /**
  * Admin mutation: flips the readiness row and audits it. Callers authorize first.
- * `note` records what authorises the switch (for BIOMETRICS_ENABLED, the counsel review) on the
+ * `note` records what authorises the switch (for a legal gate, the sign-off it rests on) on the
  * row itself; switching off clears it, so a stale reference can never appear to justify a live gate.
  */
 export async function setReadiness(

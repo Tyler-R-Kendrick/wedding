@@ -4,7 +4,7 @@
  * Fallback ladder: supported API → provider deep link → admin-configured URL → honest unavailable state.
  */
 export const PROVIDER_KINDS = [
-  'auth-email', 'storage', 'video', 'media-ai', 'embeddings', 'vector-index', 'biometric', 'ai-model',
+  'auth-email', 'storage', 'video', 'media-ai', 'embeddings', 'vector-index', 'ai-model',
   'flights', 'hotels', 'transport-benefit', 'registry', 'cash-fund', 'reservations', 'maps', 'rate-limit', 'jobs',
 ] as const;
 export type ProviderKind = (typeof PROVIDER_KINDS)[number];

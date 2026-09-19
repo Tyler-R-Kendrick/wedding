@@ -13,8 +13,6 @@ const execFileAsync = promisify(execFile);
 // assets reference `guests` and `households` for real since level 10, so the insert fails on the
 // constraint long before the capability under test is reached. Levels 08, 09 and 10 each learned
 // this from the database rather than from the test.
-// `use_face_matching` is passed explicitly because it is deliberately NOT a default entitlement —
-// policy grants it only to an invited guest while BIOMETRICS_ENABLED is on.
 // Household C, NOT A1. Both this journey and level 10's `media-upload.spec.ts` run against the same
 // NODE_ENV=test server and the same database, so a guest's upload list is shared state between
 // them: on A1 this spec's upload appeared in that spec's "my uploads" and it failed asserting 4
@@ -24,7 +22,7 @@ const guest = customPrincipalHeaders({
   guestId: IDS.C1,
   householdId: IDS.householdC,
   actsFor: [IDS.C1],
-  entitlements: ['upload_media', 'view_private_media', 'use_face_matching'],
+  entitlements: ['upload_media', 'view_private_media'],
 });
 const aiAdmin = customPrincipalHeaders({ kind: 'admin', adminId: IDS.admin, entitlements: ['admin_media', 'admin_ai', 'admin_lifecycle', 'upload_media'] });
 
@@ -84,7 +82,7 @@ async function call<T>(request: APIRequestContext, baseURL: string, url: string,
 async function warmRoutes(request: APIRequestContext) {
   // Until a route has compiled, the dev server answers the app's HTML 404 for it. Poll each one
   // until it replies as an API (any JSON body) before the journey starts.
-  const apis = ['/api/uploads/create', '/api/uploads/complete', '/api/capabilities/search_media', '/api/capabilities/admin_moderate_media', '/api/biometrics/draft', '/api/biometrics/delete', '/api/uploads/jobs/run', '/api/media-ai/jobs/run'];
+  const apis = ['/api/uploads/create', '/api/uploads/complete', '/api/capabilities/search_media', '/api/capabilities/admin_moderate_media', '/api/uploads/jobs/run', '/api/media-ai/jobs/run'];
   for (const url of apis) {
     for (let attempt = 0; attempt < 30; attempt++) {
       const body = await request
@@ -95,7 +93,7 @@ async function warmRoutes(request: APIRequestContext) {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
-  for (const url of ['/media/search', '/media/me', '/admin/ai', '/admin/biometrics']) {
+  for (const url of ['/media/search', '/admin/ai']) {
     await request.get(url).catch(() => undefined);
   }
 }
@@ -109,7 +107,7 @@ async function runMediaJobs(request: APIRequestContext, times = 4) {
   }
 }
 
-test.describe('semantic search and the face-matching opt-in', () => {
+test.describe('semantic media search', () => {
   test.describe.configure({ mode: 'serial' });
   // ONE project. `serial` orders the tests within a file; it does not stop Playwright running the
   // whole file once per viewport project, so three copies of this journey were uploading the same
@@ -204,51 +202,12 @@ test.describe('semantic search and the face-matching opt-in', () => {
     expect(blocking, blocking.map((v) => `${v.id}: ${v.help}`).join('\n')).toEqual([]);
   });
 
-  test('with biometrics off, the guest page says so and offers no opt-in at all', async ({ page, context, baseURL }) => {
-    await context.setExtraHTTPHeaders(guest);
-    await page.goto('/media/me');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Photos of me');
-    const main = page.getByRole('main');
-    await expect(main).toContainText('switched off');
-    await expect(main).not.toContainText('biometric identifier');
-    await expect(page.getByRole('button', { name: /agree/i })).toHaveCount(0);
-    await expect(page.getByRole('checkbox')).toHaveCount(0);
-    // Search is offered instead, and needs no permission from anyone.
-    await expect(page.getByRole('link', { name: 'Search the photos' }).first()).toBeVisible();
-
-    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-    const blocking = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-    expect(blocking, blocking.map((v) => `${v.id}: ${v.help}`).join('\n')).toEqual([]);
-
-    // The consent endpoint refuses the opt-in, but deletion still works with the feature off.
-    const draft = await context.request.post('/api/biometrics/draft', { headers: apiHeaders(guest, baseURL!), data: { input: { adultAttested: true } } });
-    // feature_disabled is a 404: a switched-off feature does not advertise itself (ADR-0006 §1).
-    expect(draft.status()).toBe(404);
-    expect((await draft.json()).error.code).toBe('feature_disabled');
-    const del = await context.request.post('/api/biometrics/delete', { headers: apiHeaders(guest, baseURL!), data: { input: {}, idempotencyKey: 'E2EAIDELETION0000000000000' } });
-    expect(del.status(), await del.text()).toBe(200);
-  });
-
-  test('the admin pages report the index and the readiness gate', async ({ page, context }) => {
+  test('the admin page reports the search index', async ({ page, context }) => {
     await context.setExtraHTTPHeaders(aiAdmin);
     await page.goto('/admin/ai');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Search index');
     await expect(page.getByRole('main')).toContainText('Indexable items');
-
-    await page.getByRole('link', { name: 'Face matching' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Face matching');
-    const main = page.getByRole('main');
-    await expect(main).toContainText('privacy counsel');
-    await expect(main).toContainText('readiness switch');
-    // Turning it on is impossible without a counsel reference.
-    const switchOn = page.getByRole('button', { name: 'Switch readiness on' });
-    await expect(switchOn).toBeDisabled();
-
-    // Wait for the title before scanning. This arrived at the page through a client-side navigation
-    // (the "Face matching" link above), and axe run mid-navigation reported `document-title`
-    // serious — "Documents must have <title>" — on a page that does define one. Asserting the title
-    // is both the fix for the race and a stronger check than the one axe was making.
-    await expect(page).toHaveTitle(/Face matching/);
+    await expect(page).toHaveTitle(/Search index/);
 
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     const blocking = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');

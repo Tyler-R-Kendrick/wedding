@@ -91,10 +91,9 @@ describe('principal resolver', () => {
     // effectively `public`. It is `readOnlyHint: true` and `untrustedContentHint: true`, the latter
     // because a hit carries guest captions and model-suggested text.
     //
-    // Not anonymous, and worth stating because this is the level that could have got it wrong: all
-    // TWELVE biometric capabilities are `ui: true, ai: false, webmcp: false`, so no assistant and no
-    // WebMCP client can enrol a face, run a match, read a consent, or trigger a deletion. Nothing
-    // face-related appears on any list below.
+    // Face matching is gone entirely — the couple asked for it to be removed, so there is no
+    // consent ledger, no enrolment, no match and no admin gate for any surface to expose. Nothing
+    // face-related appears on any list below because nothing face-related exists.
     // Level 12 adds three concierge capabilities. Two are anonymous and flag-gated (`AI_CONCIERGE`):
     // `ask_concierge`, which is `ai: false` so the concierge can never call itself, and
     // `search_wedding_information`, the retrieval tool that IS on the AI surface. The third,
@@ -129,17 +128,14 @@ describe('principal resolver', () => {
     // `confirmation: 'inline'`. Swarm H chose that itself, and it is the right line: an upload is
     // the one thing on this site a guest cannot recreate.
     const guest = await principalFor({ cookie: amara.cookie });
-    // Level 11 adds five guest names. Three are the biometric ones a guest keeps EVEN WITH THE
-    // FEATURE OFF — read my consent, withdraw it, ask for deletion — because those obligations
-    // outlive the feature (ADR-0006 §5); the four that would actually touch a face all require
-    // `use_face_matching`, which policy grants only to an invited guest while BIOMETRICS_ENABLED is
-    // on, so they are absent here as they should be. The other two are reads: `search_media`, and
-    // `suggest_alt_text`, which proposes alt text for a guest's own upload and is
-    // `ui: true, ai: false, webmcp: false` — a suggestion a person accepts, never applied for them.
-    expect(names({ principal: guest })).toEqual(['abort_upload', 'add_trip_item', 'ask_concierge', 'claim_identity', 'claim_my_transportation_benefit', 'complete_upload', 'create_upload', 'delete_my_travel_profile', 'delete_my_upload', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_biometric_consent', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_biometric_deletion', 'request_otp', 'resume_upload', 'revoke_biometric_consent', 'search_media', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'suggest_alt_text', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
+    // Level 11 adds two guest names, both reads: `search_media`, and `suggest_alt_text`, which
+    // proposes alt text for a guest's own upload and is `ui: true, ai: false, webmcp: false` — a
+    // suggestion a person accepts, never applied for them. The three biometric names that used to
+    // sit here (read my consent, withdraw it, ask for deletion) went with the feature.
+    expect(names({ principal: guest })).toEqual(['abort_upload', 'add_trip_item', 'ask_concierge', 'claim_identity', 'claim_my_transportation_benefit', 'complete_upload', 'create_upload', 'delete_my_travel_profile', 'delete_my_upload', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'lookup_invitation', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'resume_upload', 'search_media', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'suggest_alt_text', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_otp']);
     // `search_media` is the ONE level-11 capability an assistant may call. It is a read, its hits
     // are re-checked per asset against the caller's own ACL, and its output is marked untrusted
-    // because it carries guest captions and model-suggested text. Nothing biometric is here.
+    // because it carries guest captions and model-suggested text.
     expect(names({ principal: guest, exposure: 'ai' })).toEqual(['add_trip_item', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_media', 'search_travel_options', 'search_wedding_information', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
     expect(names({ principal: guest, exposure: 'webmcp' })).toEqual(['add_trip_item', 'ask_concierge', 'claim_my_transportation_benefit', 'delete_my_travel_profile', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'open_booking_link', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'remove_trip_item', 'search_media', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'update_my_travel_profile']);
     await grantAdmin(`owner+rs4@example.test`, 'owner');
@@ -157,12 +153,10 @@ describe('principal resolver', () => {
     // action, the professional import, and the duplicates and metrics views. All five are
     // `auth: 'admin'` behind `admin_media`, the entitlement that matches what they touch: guest
     // photographs and the vendors' originals. None is exposed to an assistant.
-    // 53 -> 60: level 11 adds seven admin capabilities, counted rather than accepted — three for
-    // media AI (`admin_apply_media_text`, `admin_media_ai_status`, `admin_reindex_media`) and four
-    // for the biometric gate (`admin_biometric_status`, `admin_delete_biometric_data`,
-    // `admin_enable_biometric_readiness`, `admin_disable_biometric_readiness`). The assertion below
-    // is the one that matters: not one of the sixty reaches an assistant.
-    // 60 -> 70: level 14's ten `admin_`-prefixed console capabilities — `admin_lifecycle_status`,
+    // 53 -> 56: level 11 adds three admin capabilities for media AI (`admin_apply_media_text`,
+    // `admin_media_ai_status`, `admin_reindex_media`). Its four biometric-gate capabilities went
+    // with the feature. The assertion below is the one that matters: not one reaches an assistant.
+    // 56 -> 66: level 14's ten `admin_`-prefixed console capabilities — `admin_lifecycle_status`,
     // `admin_publish_lifecycle` (`admin_lifecycle`); `admin_search_audit` (`admin_audit`);
     // `admin_jobs_overview`, `admin_retry_job`, `admin_cancel_job`, `admin_ops_metrics`,
     // `admin_provider_status` (`admin_integrations`); `admin_flag_status`,
@@ -171,22 +165,19 @@ describe('principal resolver', () => {
     // level. Every one of the eleven is `ui: true, ai: false, webmcp: false`, which is what the
     // second assertion checks and what matters: publishing a lifecycle state, retrying a job and
     // moving a readiness switch are not things an assistant may reach for.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(66);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
-    // is true, so seven of them were listed for an admin whose handler then refuses:
-    // claim_identity, get_my_biometric_consent, get_my_household, get_my_invitation,
-    // request_biometric_deletion, revoke_biometric_consent, update_my_contact. The three biometric
-    // ones are the surprise: they carry no `flag` on purpose, because revoking consent and
-    // requesting deletion must stay reachable when the feature is off (BIPA), so they were listed
-    // for an admin today rather than only hypothetically. `guestIdentityRequired` refuses all seven
-    // in authorize(). What remains is the honest list: capabilities an admin can genuinely run.
+    // is true, so several of them were listed for an admin whose handler then refuses:
+    // claim_identity, get_my_household, get_my_invitation, update_my_contact.
+    // `guestIdentityRequired` refuses each in authorize(). What remains is the honest list:
+    // capabilities an admin can genuinely run.
     // `prepare_reservation`, `register_passkey`, `step_up` and `suggest_alt_text` are `auth: 'guest'`
     // in the sense of "a signed-in principal", and each admits an admin by design.
     // `names()` above already drops `site_*` and `navigate_to`, which every principal can reach.
     expect(names({ principal: ap }).filter((n) => !n.startsWith('admin_'))).toEqual([
-      'ask_concierge', 'draft_biometric_readiness', 'draft_lifecycle_transition', 'find_adventures',
+      'ask_concierge', 'draft_lifecycle_transition', 'find_adventures',
       'get_content_record', 'get_faq', 'get_media_clusters', 'get_media_item',
       'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts',
       'list_adventures', 'list_ai_traces', 'list_content_records', 'list_gallery', 'list_gift_links',

@@ -8,8 +8,19 @@ import { searchAction, type SearchFormState } from './actions';
 import { HandoffList } from './handoff';
 
 const INITIAL: SearchFormState = { status: 'idle', values: {} };
-const INPUT = 'mt-1 block w-full min-h-11 rounded-sm border border-primary/40 bg-neutral px-3 py-2 text-base text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-const BUTTON = 'inline-flex min-h-11 items-center rounded-sm border border-primary bg-primary px-5 py-2 text-base font-medium text-neutral disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+
+/*
+ * The guest form kit, not a second set of controls.
+ *
+ * These two forms are the only place on the site where a guest types into a public page, and they
+ * were built from raw Tailwind utilities: a hard-coded border colour, padding, radius and focus
+ * ring that answered to neither design. `.inp`, `.fld` and `.btn` are the same classes the RSVP
+ * form uses (`components/rsvp/recipes.css`, imported by this route below); they are written
+ * against the design tokens, so Gilded Hour and Conservatory each restyle them without this file
+ * changing, and the 44px targets and focus rings come from one place rather than two.
+ */
+const INPUT = 'inp';
+const BUTTON = 'btn btn--primary';
 
 type Defaults = Partial<Record<string, string>>;
 
@@ -25,18 +36,18 @@ function Field({ label, name, issue, children, hint }: { label: string; name: st
   const errId = issue ? `${id}-err` : undefined;
   const describedBy = [hintId, errId].filter(Boolean).join(' ') || undefined;
   return (
-    <div>
-      <label htmlFor={id} className="block text-base font-medium">
+    <div className={issue ? 'fld fld--error' : 'fld'}>
+      <label htmlFor={id} className="fld__label">
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="hint">
+        <p id={hintId} className="fld__hint">
           {hint}
         </p>
       ) : null}
       {children({ id, describedBy, invalid: !!issue })}
       {issue ? (
-        <p id={errId} className="mt-1 font-medium text-primary" role="alert">
+        <p id={errId} className="fld__error" role="alert">
           {issue}
         </p>
       ) : null}
@@ -48,8 +59,8 @@ function Field({ label, name, issue, children, hint }: { label: string; name: st
 function ErrorSummary({ state }: { state: SearchFormState }) {
   if (state.status !== 'error') return null;
   return (
-    <div role="alert" className="rounded-sm border border-primary p-3">
-      <p className="font-medium">{state.error.message}</p>
+    <div role="alert" className="errsum" tabIndex={-1}>
+      <h3 className="errsum__title">{state.error.message}</h3>
       {state.error.issues.length ? (
         <ul className="mt-1 list-disc pl-5">
           {state.error.issues.map((i) => (
@@ -162,7 +173,7 @@ export function FlightSearchForm({ defaults = {} }: { defaults?: Defaults }) {
   return (
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="flights" />
-      <p id={helpId} className="hint">
+      <p id={helpId} className="fld__hint">
         We only search when you press the button, and nothing is booked or charged here. Prices come from the partner and change often.
       </p>
       <ErrorSummary state={state} />
@@ -226,7 +237,7 @@ export function HotelSearchForm({ defaults = {} }: { defaults?: Defaults }) {
   return (
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="hotels" />
-      <p id={helpId} className="hint">
+      <p id={helpId} className="fld__hint">
         Live rates near the venue, only when you ask. The wedding block above has its own link once the planner confirms it.
       </p>
       <ErrorSummary state={state} />

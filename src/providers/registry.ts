@@ -1,14 +1,11 @@
 import type { ProviderDescriptor, ProviderKind, ProviderMode } from '@/contracts/providers';
 import type { Db } from '@/db/client';
 import { env } from '@/lib/env';
-import { isEnabled } from '@/lib/flags';
 import { logger } from '@/lib/logger';
 import type { AiModelProvider } from './ai-model/types';
 import { createAiModelProvider } from './ai-model';
 import type { AuthEmailProvider } from './auth-email/types';
 import { createAuthEmailProvider } from './auth-email';
-import type { BiometricProvider } from './biometric/types';
-import { createBiometricProvider } from './biometric';
 import type { CashFundProvider, RegistryProvider } from './registry/types';
 import { createCashFundProvider } from './cash-fund';
 import { createRegistryProvider } from './registry/index';
@@ -45,7 +42,6 @@ export interface ProviderMap {
   'media-ai': MediaAiProvider;
   embeddings: EmbeddingsProvider;
   'vector-index': VectorIndexProvider;
-  biometric: BiometricProvider;
   'ai-model': AiModelProvider;
   flights: FlightsProvider;
   hotels: HotelsProvider;
@@ -72,13 +68,12 @@ const factories: Factories = {
   'media-ai': (d) => createMediaAiProvider(env, { languageModel: () => resolve('ai-model', d).getLanguageModel('caption') }),
   embeddings: () => createEmbeddingsProvider(env),
   'vector-index': (d) => createVectorIndexProvider({ dims: resolve('embeddings', d).dims, db: d.db, forceMock: env.FORCE_MOCK_PROVIDERS }),
-  biometric: (d) => createBiometricProvider({ readiness: () => isEnabled('BIOMETRICS_ENABLED', { db: d.db }) }),
   'ai-model': () => createAiModelProvider(env),
   flights: () => createFlightsProvider(env),
   hotels: () => createHotelsProvider(env),
   'transport-benefit': () => createTransportBenefitProvider(env),
-  registry: () => createRegistryProvider(env),
-  'cash-fund': () => createCashFundProvider(env),
+  registry: () => createRegistryProvider(),
+  'cash-fund': () => createCashFundProvider(),
   reservations: () => createReservationsProvider(),
   maps: () => createMapsProvider(),
   'rate-limit': (d) => createRateLimitProvider(env, { db: d.db }),
@@ -101,7 +96,7 @@ function resolve<K extends ProviderKind>(kind: K, deps: RegistryDeps): ProviderM
   if (hit) return hit as ProviderMap[K];
   const built = factories[kind](deps) as ProviderMap[K];
   // DB-backed kinds are only cached once the db is present, so an early call does not pin the fallback.
-  const needsDb = kind === 'vector-index' || kind === 'rate-limit' || kind === 'jobs' || kind === 'biometric';
+  const needsDb = kind === 'vector-index' || kind === 'rate-limit' || kind === 'jobs';
   if (!needsDb || deps.db) (c as Record<string, unknown>)[kind] = built;
   return built;
 }

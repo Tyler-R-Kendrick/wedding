@@ -261,10 +261,10 @@ function Button({ variant = 'primary', href, type = 'button', loading, provider,
   );
 }
 
-function Link({ href, external, children, className, ...rest }: LinkProps) {
+function Link({ href, external, standalone, children, className, ...rest }: LinkProps) {
   const ext = external ?? /^https?:/.test(href);
   return (
-    <a className={`gh-link${className ? ` ${className}` : ''}`} href={href} rel={ext ? 'noopener' : undefined} {...rest}>
+    <a className={`gh-link${standalone ? ' gh-link--standalone' : ''}${className ? ` ${className}` : ''}`} href={href} rel={ext ? 'noopener' : undefined} {...rest}>
       {children}
       {ext ? <ExternalMark /> : null}
     </a>

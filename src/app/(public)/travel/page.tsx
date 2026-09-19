@@ -1,4 +1,11 @@
 import type { Metadata } from 'next';
+/*
+ * The guest form kit. `(guest)` and `(admin)` import it from their layouts; this is the one public
+ * route with a form a guest fills in, and its controls are written against the same `.fld` /
+ * `.inp` / `.btn` classes (see `search-form.tsx`), so the route brings them with it rather than
+ * pushing the guest kit onto every public page.
+ */
+import '@/components/rsvp/recipes.css';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
 import { currentPrincipal, runAsUi } from './_shared/server';
 import { recipes } from '../_recipes';

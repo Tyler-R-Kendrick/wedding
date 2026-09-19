@@ -80,10 +80,39 @@ async function connectPglite(): Promise<Db> {
   return Object.assign(base, { driver: 'pglite' as const, vectorAvailable, close: () => client.close() }) as unknown as Db;
 }
 
+/**
+ * Is this connection string a transaction-mode pooler?
+ *
+ * postgres-js creates prepared statements for every static query (`prepare` defaults to true,
+ * node_modules/postgres/README.md:1165), and PgBouncer in transaction mode cannot serve them: the
+ * connection a `PREPARE` landed on is not the one the `EXECUTE` gets. The failure is not at boot —
+ * it is an intermittent "prepared statement does not exist" once traffic arrives, which is the
+ * worst possible time to discover it.
+ *
+ * `docs/ops/deploy-vercel-supabase.md` mandates Supabase's **pooled** string, and the Marketplace
+ * connector injects exactly that, so this is the deployed configuration rather than an edge case.
+ * Recognised: Supabase (`…pooler.supabase.com`, port 6543), Neon's pooler (`…-pooler.…`), and the
+ * explicit `?pgbouncer=true` flag every provider documents.
+ */
+export function usesTransactionPooler(url: string): boolean {
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return false; }
+  if (parsed.searchParams.get('pgbouncer') === 'true') return true;
+  if (parsed.port === '6543') return true;
+  return /(^|[.-])pooler\./i.test(parsed.hostname);
+}
+
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import('postgres');
   const { drizzle } = await import('drizzle-orm/postgres-js');
-  const client = postgres(url, { max: 10, idle_timeout: 20, connect_timeout: 10 });
+  const pooled = usesTransactionPooler(url);
+  if (pooled) logger.info({ prepare: false }, 'transaction-mode pooler detected; prepared statements disabled');
+  const client = postgres(url, {
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+    ...(pooled ? { prepare: false } : {}),
+  });
   const base = drizzle({ client, schema });
   let vectorAvailable = false;
   try {

@@ -134,15 +134,14 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
     expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'outside at dusk' }))[0]).toBe('dusk');
   });
 
-  it('searches with BIOMETRICS_ENABLED explicitly off — the archive does not depend on the vault', async () => {
-    // Named rather than left incidental. Every other case in this file happens to run with the flag
-    // off, so search-without-biometrics was covered by accident; ADR-0006's whole bet is that the
-    // site ships every archive feature with the vault switched off, and a guarantee nobody asserts
-    // is one a later level can remove without noticing. Asserted against the flag set explicitly.
-    delete process.env.FLAG_BIOMETRICS_ENABLED;
+  it('searches what a photo shows, never who is in it', async () => {
+    // This used to assert that search kept working with BIOMETRICS_ENABLED off, because ADR-0006's
+    // bet was that every archive feature ships with the vault shut. The vault is gone — face
+    // matching was removed, not gated — so the guarantee is now structural rather than conditional,
+    // and what is worth asserting is that the index answers from captions and scenes alone.
     const hits = namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'first dance' }));
-    expect(hits[0], 'semantic search must answer with the vault off').toBe('dance');
-    expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'toasts' })), 'and keep answering').toContain('toast');
+    expect(hits[0], 'semantic search answers from what the picture shows').toBe('dance');
+    expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'toasts' })), 'and keeps answering').toContain('toast');
   });
 
   it('explains a hit with the terms that actually matched and the source of the text', async () => {
@@ -342,13 +341,11 @@ describe('professional media AI-rights confirmation', () => {
     for (const good of accept) expect(RIGHTS_CONFIRMATION_REF.safeParse(good).success, `must accept: ${good}`).toBe(true);
   });
 
-  it('each gate accepts the example its own error message offers', async () => {
-    // Both validators tell an admin that an ADR section is an acceptable reference, and both had a
+  it('the gate accepts the example its own error message offers', async () => {
+    // The validator tells an admin that an ADR section is an acceptable reference, and had a
     // `min(12)` that rejected one: `ADR-0006 §7` is eleven characters. A validator that refuses the
     // answer its own message asks for is a defect the message hides.
     const { RIGHTS_CONFIRMATION_REF } = await import('@/capabilities/media/admin_import_professional_media');
-    const { COUNSEL_REVIEW_REF } = await import('@/capabilities/biometrics/admin_enable_biometric_readiness');
-    expect(COUNSEL_REVIEW_REF.safeParse('ADR-0006 §7').success, 'the counsel gate must accept the ADR section it names').toBe(true);
-    expect(RIGHTS_CONFIRMATION_REF.safeParse('ADR-0005 §4').success, 'the rights gate must accept an ADR section too').toBe(true);
+    expect(RIGHTS_CONFIRMATION_REF.safeParse('ADR-0005 §4').success, 'the rights gate must accept an ADR section').toBe(true);
   });
 });

@@ -30,7 +30,9 @@ function assertPlaceholdersMarked(container: HTMLElement, hints: string[], expec
     // No aria-label / aria-hidden pair — the visible text is the accessible name (review SF-1).
     const stamp = b.querySelector('.placeholder__label');
     expect(stamp, 'placeholder block has no visible stamp').not.toBeNull();
-    expect(stamp!.textContent).toMatch(/Sara \+ Tyler are still writing this/i);
+    // The colon is part of it: the stamp is a grammatical sentence, so without punctuation it
+    // reads as finished and the lowercase hint under it reads as a broken second one.
+    expect(stamp!.textContent).toMatch(/Sara \+ Tyler are still writing this:/i);
     expect(stamp!.getAttribute('aria-hidden')).toBeNull();
     expect(b.getAttribute('aria-label')).toBeNull();
   }

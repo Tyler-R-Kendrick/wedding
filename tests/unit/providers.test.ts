@@ -8,7 +8,6 @@ import { PROVIDER_KINDS } from '@/contracts/providers';
 import { sha256Hex } from '@/lib/crypto';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { MockAuthEmail, devInbox } from '@/providers/auth-email';
-import { MockBiometric } from '@/providers/biometric';
 import { hashedEmbedding, MockEmbeddings } from '@/providers/embeddings';
 import { MockFlights, DeepLinkOnlyFlights, skyscannerFlightsUrl } from '@/providers/flights';
 import { MockHotels } from '@/providers/hotels';
@@ -78,6 +77,26 @@ describe('storage provider selection', () => {
     expect(createStorageProvider(base, { warn: (m) => warnings.push(m) })).toBeInstanceOf(LocalFsStorage);
     expect(warnings.join(' ')).toMatch(/STORAGE_SIGNING_SECRET/);
     expect(warnings.join(' ')).not.toMatch(/change-me/);
+  });
+
+  it('refuses local-fs on a host whose filesystem does not survive the request', () => {
+    // A signing secret satisfies the check above, so this used to boot clean on Vercel and then
+    // drop every upload: each invocation gets its own ephemeral disk, and the route that serves a
+    // local-fs URL refuses production anyway. On a host with a real volume, local-fs still stands.
+    const prod = { ...base, isProduction: true, STORAGE_SIGNING_SECRET: 's'.repeat(32) };
+    for (const marker of ['VERCEL', 'AWS_LAMBDA_FUNCTION_NAME'] as const) {
+      const previous = process.env[marker];
+      process.env[marker] = '1';
+      try {
+        expect(() => createStorageProvider(prod), `${marker} must refuse local-fs`).toThrow(/ephemeral filesystem/);
+        // ... and S3 on the same host is fine, which is the point of refusing only the fallback.
+        expect(createStorageProvider({ ...prod, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' })).toBeInstanceOf(S3Storage);
+      } finally {
+        if (previous === undefined) delete process.env[marker];
+        else process.env[marker] = previous;
+      }
+    }
+    expect(createStorageProvider(prod), 'a host with a disk keeps local-fs').toBeInstanceOf(LocalFsStorage);
   });
 });
 
@@ -241,20 +260,6 @@ describe('media-ai + embeddings + vector index', () => {
     expect((await idx.query('test', { vector: b, k: 5 })).ok && (await idx.query('test', { vector: b, k: 5 }))).toMatchObject({ value: [{ id: 'c' }] });
     expect((await idx.upsert('test', [{ id: 'bad', vector: [1, 2] }])).ok).toBe(false);
     expect(hashedEmbedding('')).toHaveLength(256);
-  });
-});
-
-describe('biometric mock', () => {
-  it('throws feature_disabled unless ready, but always allows deletion', async () => {
-    let ready = false;
-    const p = new MockBiometric(async () => ready);
-    await expect(p.enroll({ subjectId: 's1', vector: [1, 0] })).rejects.toMatchObject({ code: 'feature_disabled' });
-    expect((await p.delete('s1')).ok).toBe(true);
-    ready = true;
-    expect((await p.enroll({ subjectId: 's1', vector: [1, 0] })).ok).toBe(true);
-    // `match` is subject-scoped: it answers "is this s1?", never "who is this?".
-    const m = await p.match({ vector: [0.9, 0.1], subjectId: 's1' });
-    expect(m.ok && m.value[0]?.subjectId).toBe('s1');
   });
 });
 

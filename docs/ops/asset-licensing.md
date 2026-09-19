@@ -141,9 +141,9 @@ Two classes of real photographs will arrive:
    photographer retains copyright; the couple has **personal, non-commercial
    online display rights**. Third-party AI or biometric processing of these
    files requires the photographer's **written confirmation first**
-   (`PRO_MEDIA_AI_PROCESSING` flag stays OFF until then), and any face
-   matching stays behind `BIOMETRICS_ENABLED=false` with the BIPA consent
-   ledger (brief §7).
+   (`PRO_MEDIA_AI_PROCESSING` flag stays OFF until then). Face matching is not
+   a question here at all: the site has none, and the feature was removed
+   rather than gated (ADR-0006, superseded).
 
 Procedure when a batch arrives:
 

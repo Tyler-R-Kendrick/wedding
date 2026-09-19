@@ -12,7 +12,7 @@ running server enforces it.
 |---|---|---|
 | `CONFIRMATION_SECRET` | `src/policy/confirmation.ts` | HMAC key for confirmation tokens, >= 16 chars. Dev default with a warning. |
 | `CRON_SECRET` | `POST /api/jobs/run` | Bearer token for the cron caller, >= 32 chars. Route returns a uniform 401 when unset or wrong. |
-| `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET` (the name the secrets autofill writes) is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
+| `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two, and on a serverless host (`VERCEL` / `AWS_LAMBDA_FUNCTION_NAME`) it must be S3: local-fs on an ephemeral disk accepts an upload and loses it, so boot fails instead. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET` (the name the secrets autofill writes) is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
 | `DATABASE_URL` | `src/db/client.ts` | Required when `VERCEL_ENV=production` (boot fails without it). Vercel previews may run on ephemeral `/tmp` PGlite. Elsewhere, production without it uses PGlite on local disk. |
 
 Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per-process buckets are not a rate limit behind a load balancer).
@@ -25,7 +25,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `LOG_LEVEL` | debug (dev), info (prod), silent (test) | logger | no |
 | `LOG_FORMAT` | pretty in dev; `json` forces JSON | logger | no |
 | `METRICS_SINK` | console (dev), db (prod), none (test) | metrics | no |
-| `DATABASE_URL` | unset -> PGlite | db client (postgres-js) | no |
+| `DATABASE_URL` | unset -> PGlite; else `POSTGRES_URL`, then `POSTGRES_PRISMA_URL` (what the Supabase and Neon connectors on Vercel inject) is read as it | db client (postgres-js) | no |
 | `PGLITE_MEMORY` | `false` (`true` in tests) | db client | no |
 | `PGLITE_DATA_DIR` | `./.data/pglite` | db client | no |
 | `DB_AUTO_MIGRATE` | on outside production | db client | no |
@@ -43,10 +43,9 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
+| `AI_GATEWAY` (`on`), `AI_GATEWAY_API_KEY` | unset | ai-model: Vercel AI Gateway. The key is explicit; `AI_GATEWAY=on` selects the gateway with no key and `@ai-sdk/gateway` signs with the deployment's OIDC token (locally, the CLI session). Model ids default to `anthropic/claude-sonnet-5` / `anthropic/claude-haiku-4.5`; `AI_CHAT_MODEL` / `AI_FAST_MODEL` override | no |
 | `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `EMBEDDINGS_PROVIDER` (`voyage`\|`openai`) | unset -> hashed mock | embeddings | no |
 | `MEDIA_AI_PROVIDER` (`mock`\|`anthropic`) | unset -> Anthropic vision when `ANTHROPIC_API_KEY` is set, else the deterministic mock | media-ai (captions, tags, venue class) | no |
-| `BIOMETRIC_VAULT_KEY` | unset; derived from `CONFIRMATION_SECRET` outside production (with a warning). **Required in production before `FLAG_BIOMETRICS_ENABLED` can seal anything**; 32+ chars, from a secret manager | biometric vault (AES-256-GCM), separate from every other secret | no |
-| `BIOMETRIC_RETENTION_DAYS` | `365` | `biometric.sweep`: request deletion of enrolments older than this. `TODO(Tyler & Sara)`: counsel to confirm the schedule | no |
 | `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
@@ -62,11 +61,8 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `UBER_API_BASE_URL` | `https://api.uber.com` | transport-benefit `uber` mode (partner sandbox override) | no |
 | `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
 | `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
-| `REGISTRY_LINKS_JSON`, `CASH_FUND_LINKS_JSON` | unset -> placeholders | registry, cash-fund | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
-| `JOBS_INLINE_RUNNER` | `true` | dev poller | no |
-| `JOBS_POLL_INTERVAL_MS` | `2000` | dev poller | no |
-| `JOBS_BATCH_SIZE` | `10` | job runner / cron route | no |
+| `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run` | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; `FLAG_DESIGN_SWITCHER=off` removes the floating design switcher from the server render | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
@@ -109,4 +105,4 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 6. AI: `ANTHROPIC_API_KEY`; embeddings key if semantic media search is enabled.
 7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
-9. Keep `FLAG_BIOMETRICS_ENABLED` and `FLAG_PRO_MEDIA_AI_PROCESSING` off until counsel/vendor sign-off; the readiness switch is a second, persisted gate.
+9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.

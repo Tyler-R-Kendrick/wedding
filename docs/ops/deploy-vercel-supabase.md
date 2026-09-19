@@ -19,7 +19,15 @@ search both use it).
 
 - Create the project. Take the **pooled** connection string for `DATABASE_URL`;
   a serverless function opens and drops connections constantly and will exhaust
-  a direct pool.
+  a direct pool. The client recognises a transaction-mode pooler (port 6543,
+  a `pooler.` host, or `?pgbouncer=true`) and turns prepared statements off for
+  it — PgBouncer cannot serve a statement prepared on another connection, and the
+  failure arrives as an intermittent error once guests do, not at boot.
+- Or skip all of this: `npm run deploy:vercel` installs the Supabase connector
+  from the Vercel Marketplace, which provisions the database and writes
+  `POSTGRES_URL` into the project itself. The app reads that name as
+  `DATABASE_URL`, so no connection string is ever copied by hand and the
+  connector stays the owner of the value it rotates.
 - Run the migration chain once: `npm run db:migrate` with `DATABASE_URL` set.
   The chain in `src/db/migrations/` is the whole schema; there is no other
   source.
@@ -47,6 +55,10 @@ Cloudflare R2, or any S3-compatible bucket.
 
 Without S3, production refuses to boot unless `STORAGE_SIGNING_SECRET` is set,
 because the committed local-filesystem signing key must never sign a real URL.
+**On Vercel it refuses either way**: a serverless invocation gets its own
+ephemeral disk, so local-fs would accept an upload and lose it, and that is a
+failure nobody sees until they go looking for a photograph. Local-fs remains a
+real choice on a host with a volume.
 
 ### 3. Secrets
 
@@ -61,7 +73,10 @@ laptop.
 | `AUDIT_HASH_KEY` | ≥ 16 | audit fingerprints (derived from `CONFIRMATION_SECRET` if unset) |
 
 `BETTER_AUTH_URL` and `NEXT_PUBLIC_SITE_URL` must both be the **canonical
-public origin**. Getting this wrong is the single most common deployment
+public origin** in production. Leave them unset for previews: each preview has
+its own hostname, one pinned value would make every preview reject its own forms
+and pin its passkey relying party to another host, so both are derived from the
+deployment (`src/lib/env.ts`, `next.config.ts`) when unset on Vercel. Getting this wrong is the single most common deployment
 failure in this codebase: `BETTER_AUTH_URL` sets the passkey relying-party id,
 and `NEXT_PUBLIC_SITE_URL` is what the same-origin check compares the browser's
 `Origin` against — a mismatch makes every capability POST a 403 with no useful
@@ -73,8 +88,15 @@ do not rely on that.
 
 ### 4. The application
 
-- Import the repository into Vercel. Framework preset: Next.js. No build-command
-  override is needed.
+- `npm run deploy:vercel` does the whole of this section: it creates the project
+  linked to the GitHub repository, turns on Fluid compute and the OIDC issuer,
+  installs the Marketplace connectors, sets the variables below, and deploys.
+  `npm run deploy:vercel:plan` says what it would do and writes nothing. Its only
+  credential is the Vercel CLI session, which the Secret Drop's Hosting strip
+  acquires (Vercel refuses a self-registered client the device grant; its own CLI
+  client is allowed, so `vercel login` runs it and the page streams the link).
+- By hand instead: import the repository into Vercel. Framework preset: Next.js.
+  No build-command override is needed.
 - Set the variables above for **Production**, and separately for **Preview** if
   previews should exist at all. A preview with `DATABASE_URL` pointed at the
   production database is a preview that can publish seating.
@@ -94,10 +116,23 @@ mock whose absence is invisible to the person it fails.
 
 ### 6. Background work
 
-A Vercel cron hitting `POST /api/jobs/run` with
-`Authorization: Bearer $CRON_SECRET`. Every few minutes is enough; the queue is
-DB-backed and idempotent, and the route returns a uniform 401 when the token is
-absent or wrong.
+`vercel.json` schedules **all three** cron routes every five minutes, and Vercel
+adds `Authorization: Bearer $CRON_SECRET` to each call itself:
+
+| Path | Why it is its own route |
+|---|---|
+| `/api/jobs/run` | the foundation's handlers, plus the housekeeping purge it keeps queued |
+| `/api/uploads/jobs/run` | media process/derive/sweep are registered in *that* route's module graph only; without it an upload never leaves "Checking" and stale uploads never expire |
+| `/api/media-ai/jobs/run` | media index/cluster, likewise; without it the search index never catches up with what was published |
+
+A handler that is not in a route's module graph cannot be run by that route, so
+scheduling only the first leaves two queues with nothing to run them — which
+looks like a stuck upload rather than a missing cron. The queue is DB-backed and
+idempotent, and all three routes return a uniform 401 when the token is absent
+or wrong.
+
+There is no in-process poller. Locally, `npm run jobs:run` takes one bounded
+batch; nothing else processes the queue.
 
 Nothing on the guest path depends on the runner, so a missed run delays
 housekeeping rather than breaking a page.

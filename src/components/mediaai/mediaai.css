@@ -3,7 +3,7 @@
  * under the floor set because grandparents are a primary audience. The uppercase micro-labels stay
  * at 0.75rem, as they do on every other surface.
  *
- * Media intelligence surfaces (Swarm I): search, opt-in face matching, admin AI + biometrics.
+ * Media intelligence surfaces (Swarm I): search and the admin AI screens.
  * Extends Swarm H's media.css vocabulary; token-only (DESIGN.md variables with token fallbacks).
  * Mobile (390px) first; 17px body inherited; 44px targets; reduced motion respected via media.css.
  */

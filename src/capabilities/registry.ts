@@ -55,5 +55,27 @@ export class CapabilityRegistryImpl implements CapabilityRegistry {
   }
 }
 
-export const registry = new CapabilityRegistryImpl();
+/**
+ * One registry per process, including across a hot reload.
+ *
+ * `src/capabilities/index.ts` calls `registerAll` as an import side effect, and `register` throws
+ * when a name arrives twice carrying a different object — which is exactly what a real collision
+ * looks like, and exactly what a dev-server module re-evaluation also looks like: the new module
+ * instance builds new descriptor objects with the same names, the module-scoped registry from the
+ * previous evaluation is still alive behind them, and every route that imports a capability
+ * answers 500 with `capability "list_my_events" is already registered`. Recovering needs a
+ * restart, because touching a file only re-evaluates again.
+ *
+ * The check itself is right and stays: two different capabilities answering to one name is a bug
+ * worth refusing to boot over. What was wrong is that populating the registry was not idempotent.
+ * So the instance is pinned to `globalThis` — the same thing Next.js documents for a database
+ * client — so that a re-evaluation finds the registry it already filled rather than a second empty
+ * one, and `index.ts` registers only the names that are missing. A genuine collision still throws,
+ * because two different descriptors never share a name in the same build.
+ */
+const GLOBAL_KEY = Symbol.for('wedding.capabilityRegistry');
+type RegistryHost = typeof globalThis & { [GLOBAL_KEY]?: CapabilityRegistryImpl };
+
+export const registry: CapabilityRegistryImpl =
+  (globalThis as RegistryHost)[GLOBAL_KEY] ?? ((globalThis as RegistryHost)[GLOBAL_KEY] = new CapabilityRegistryImpl());
 export const registerCapability = <C extends AnyCapability>(c: C): C => registry.register(c);

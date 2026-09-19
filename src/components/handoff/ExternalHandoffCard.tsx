@@ -46,7 +46,19 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
       {meta ? <div className="mt-2 hint">{meta}</div> : null}
       <p className="mt-4">
         <a
-          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-button,2px)] bg-primary px-7 py-3 text-base text-neutral no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          /*
+           * `.btn` (components/rsvp/recipes.css), not Tailwind utilities. This is the only action
+           * on `/gifts`, and it shipped `px-7 py-3 text-base` — Tailwind's own scale, which
+           * survives beside the named steps because nothing resets it — so the page's CTA answered
+           * to neither DESIGN.md while every other control on it is tracked and uppercase in
+           * Gilded Hour. `.btn` is written against the tokens, so each design restyles it.
+           *
+           * The better end state is the active theme kit's `Button variant="external"`, which
+           * already carries each design's padding, type and radius and emits its own external mark.
+           * That needs a theme threaded into this shared card, which several routes render; this
+           * change removes the hard-coded scale without that refactor.
+           */
+          className="btn btn--primary"
           href={handoff.url}
           target={handoff.opensNewTab ? '_blank' : undefined}
           rel="noopener noreferrer external"

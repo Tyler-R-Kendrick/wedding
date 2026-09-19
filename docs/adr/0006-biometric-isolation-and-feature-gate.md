@@ -2,10 +2,19 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | **Superseded 2026-09-18 — the feature was removed** |
 | Date | 2026-09-05 |
 | Deciders | Tyler (integrator), design/SDLC swarm; counsel review pending |
 | Related | ADR-0005, ADR-0008, `docs/design/brief.md` §7 |
+
+> **Superseded.** The couple asked for photo-grouping-by-face to be removed, so
+> it is gone rather than gated: the capabilities, the consent ledger, the vault,
+> the retention jobs, the admin screen, the `biometric` database schema and the
+> `BIOMETRICS_ENABLED` flag were all deleted (migration `0010`). The site now
+> collects no face geometry at all, which is a stronger answer to everything
+> below than any gate. The record is kept because the reasoning still applies to
+> anything that would reintroduce it: **do not**, without counsel, consent and a
+> decision to revisit this ADR.
 
 ## Context
 
@@ -21,7 +30,7 @@ biometric services without written confirmation (brief §7).
 1. **`BIOMETRICS_ENABLED=false`** is the default in every environment, and
    the gate has **two** halves, both of which must be open: the env flag,
    and a persisted readiness switch an admin turns on while recording the
-   counsel review that authorises it (`src/domain/biometrics/gate.ts`).
+   counsel review that authorises it (the gate module, since removed).
    Either one closed means `feature_disabled`, and the check is made on
    every call, not once at boot.
 
@@ -42,10 +51,10 @@ biometric services without written confirmation (brief §7).
      feature. That is a better answer than the original "no UI hints at the
      feature", and it is the one that shipped.
 
-   What IS guaranteed, and asserted by
-   `tests/integration/biometrics-review/verified-invariants.test.ts`: with
-   either half of the gate closed, no template is computed, stored or
-   compared, and the provider seam records zero biometric work.
+   What WAS guaranteed, and asserted by the verified-invariants suite (since
+   removed with the feature): with either half of the gate closed, no template
+   was computed, stored or compared, and the provider seam recorded zero
+   biometric work.
 2. **Separate vault.** Face embeddings, detections, and consent records
    live in their own schema (`biometrics.*` tables) and their own storage
    prefix (`biometrics/`), with a separate encryption key from the media

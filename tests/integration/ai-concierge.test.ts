@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { runConcierge } from '@/ai/concierge';
+import type { ConciergeEvent } from '@/ai/events';
 import { AI_PURGE_JOB_TYPE, appendTurns, enqueueAiPurge, loadOrCreateSession, purgeAiSessions } from '@/ai/session';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { askConcierge } from '@/capabilities/ask_concierge';
@@ -323,5 +324,74 @@ describe('citation integrity across turns', () => {
     // Every marker in the new answer resolves to a source of this answer, never a stale one.
     const used = new Set((second.text.match(/S\d+/g) ?? []));
     for (const marker of used) expect(second.sources.map((s) => s.marker)).toContain(marker);
+  });
+});
+
+/**
+ * The on-device path. The registry's first option for the concierge is the guest's own browser,
+ * which means the server has to be able to stop just before generation, hand over the contract and
+ * the evidence, and then verify what comes back exactly as it verifies its own model. These are the
+ * two halves and, more importantly, the guarantee that the second half believes nothing.
+ */
+describe('evidence mode (a model in the guest\'s browser)', () => {
+  const evidenceFor = async (question: string, principal: Principal = anonymous) => {
+    const events: ConciergeEvent[] = [];
+    const result = await runConcierge({ ctx: await ctxFor(principal), question, registry, mode: 'evidence', emit: (e) => { events.push(e); } });
+    return { result, events, evidence: events.find((e) => e.type === 'evidence') };
+  };
+
+  it('hands over the contract and the evidence instead of generating', async () => {
+    const { result, evidence } = await evidenceFor('When is the wedding?');
+    expect(evidence).toBeDefined();
+    // The closed-world contract, so an on-device model is bound by the same rules.
+    expect(evidence?.system).toMatch(/\[S\d|source|evidence/i);
+    // The evidence carries the question and at least one markered block to cite.
+    expect(evidence?.userTurn).toContain('When is the wedding?');
+    expect(evidence?.userTurn).toMatch(/S1/);
+    expect(result.text).toBe('');
+  });
+
+  it('writes no answer row and no session turn for a half-finished exchange', async () => {
+    const db = await getDb();
+    const { result } = await evidenceFor('When is the wedding?');
+    const rows = await db.select().from(aiAnswers).where(eq(aiAnswers.id, result.answerId));
+    expect(rows).toHaveLength(0);
+    const [session] = await db.select().from(aiSessions).where(eq(aiSessions.id, result.sessionId));
+    // The session exists (it was created to hold the exchange) but carries no turn yet: the phase
+    // that produces an answer writes both, so a guest whose device fails leaves nothing behind.
+    expect(session?.turns ?? []).toHaveLength(0);
+  });
+
+  it('still refuses before the seam — a device never gets evidence it may not see', async () => {
+    const { evidence, result } = await evidenceFor('Which table am I at?', anonymous);
+    expect(evidence).toBeUndefined();
+    expect(result.refusal?.message).toBeTruthy();
+  });
+
+  it('verifies a draft the device wrote, and keeps what the sources support', async () => {
+    // The server's own verified answer, handed back as if a browser had written it. Retrieval is
+    // re-run and it has to survive on the strength of those fresh sources, not on being echoed.
+    const server = await ask('When is the wedding?');
+    expect(server.text).toContain('July 17, 2027');
+    const replayed = await runConcierge({ ctx: await ctxFor(anonymous), question: 'When is the wedding?', registry, draft: server.text });
+    expect(replayed.status).not.toBe('refused');
+    expect(replayed.text).toContain('July 17, 2027');
+    for (const marker of new Set(replayed.text.match(/S\d+/g) ?? [])) expect(replayed.sources.map((s) => s.marker)).toContain(marker);
+  });
+
+  it('drops a fabricated sentence rather than showing what a device invented', async () => {
+    const invented = 'The ceremony starts at 4:00 pm in the Rose Room and the dress code is white tie. [S1]';
+    const result = await runConcierge({ ctx: await ctxFor(anonymous), question: 'When is the wedding?', registry, draft: invented });
+    expect(result.text).not.toMatch(/Rose Room|white tie/i);
+    expect(result.text).not.toMatch(/\b4(:00)?\s?pm\b/i);
+  });
+
+  it('persists the on-device answer as an ordinary trace, so the admin sees one pipeline', async () => {
+    const db = await getDb();
+    const server = await ask('When is the wedding?');
+    const replayed = await runConcierge({ ctx: await ctxFor(anonymous), question: 'When is the wedding?', registry, draft: server.text });
+    const [row] = await db.select().from(aiAnswers).where(eq(aiAnswers.id, replayed.answerId));
+    expect(row).toBeDefined();
+    expect(row?.verifier?.claims).toBeGreaterThan(0);
   });
 });

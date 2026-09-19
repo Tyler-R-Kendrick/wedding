@@ -39,7 +39,7 @@ export default async function UploadPage() {
           <MediaSection title="What happens next" id="next">
             <p className="media-lede">Each file is checked and prepared in web sizes with the location data removed. You can see the state of everything you have added under &ldquo;My uploads&rdquo;, and remove anything of yours at any time.</p>
             <p>
-              <Link className="media-link" href="/media/mine">
+              <Link className="media-link media-link--block" href="/media/mine">
                 My uploads
               </Link>
             </p>

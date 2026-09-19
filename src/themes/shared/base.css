@@ -9,6 +9,29 @@ html {
   text-size-adjust: 100%;
 }
 
+/*
+ * Anchors and focus land above the fixed chrome, not behind it (WCAG 2.2 SC 2.4.11).
+ *
+ * `scroll-padding-block-end` was declared on `.site`, a flex child that never scrolls, so it did
+ * nothing at all: measured at 390px on `/photos`, the bar sat on the "Find a photo" heading and
+ * the first half of its sentence, and tabbing to the link inside put focus entirely underneath.
+ *
+ * Per theme, because each design pins something different, and `data-theme` is already mirrored
+ * onto `<html>` before paint. Each reserves the MOST its design can show on a phone: Gilded Hour
+ * the elevator panel, Conservatory its floating Menu plus a bar on routes that have quick actions.
+ * Reserving too much lands a target a little further up the screen; reserving too little puts it
+ * back under the bar, which is the failure.
+ */
+@media (width < 900px) {
+  :root[data-theme='gilded-hour'] {
+    scroll-padding-block-end: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root[data-theme='conservatory'] {
+    scroll-padding-block-end: calc(var(--bottom-bar-h) + var(--floating-menu-h) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* No font-family here: `--font-text` is not defined at this scope (see globals.css). */
 body {
   min-height: 100dvh;
@@ -31,7 +54,6 @@ body {
   color: var(--color-primary);
   accent-color: var(--color-secondary);
   caret-color: var(--color-secondary);
-  scroll-padding-block-end: var(--bottom-chrome);
 }
 
 .site ::selection {
@@ -81,11 +103,20 @@ body {
 }
 
 /* Skip link: first focusable element; visible on focus only. */
+
+/*
+ * The first control on every page, and the one a keyboard user meets first, so it carries the
+ * repo's own 44px target rather than the 24px WCAG 2.2 AA floor. `inline-flex` + centring grows
+ * the hit box without moving the type off its baseline: measured 147.8x41.5 before.
+ */
 .skip-link {
   position: absolute;
   inset-inline-start: var(--spacing-md);
   inset-block-start: var(--spacing-md);
   z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -97,15 +128,60 @@ body {
   transform: none;
 }
 
-/* Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
-   provenance block placeholder (src/components/provenance), which owns `.placeholder`. */
+/*
+ * A link nobody styled must still look like a link.
+ *
+ * Tailwind's preflight resets `a { color: inherit; text-decoration: inherit }`, so an anchor that
+ * reaches a page without a kit class inherits the sentence's own ink and no underline: measured on
+ * /your-weekend, "Rides, valet and parking" rendered rgb(28, 27, 24) with `text-decoration: none`
+ * — the exact colour and the exact decoration of the prose around it. Nothing distinguished it,
+ * which is WCAG 2.2 SC 1.4.1 with no fallback at all, not merely colour-alone.
+ *
+ * There are 21 such anchors: the weekend slot lists, the concierge's cited links and navigate
+ * actions, both admin consoles, and — the one that matters most — the RSVP error summaries in
+ * `components/rsvp/fields.tsx` and the Conservatory kit, which are the links a guest follows to
+ * repair a submission that just failed.
+ *
+ * This is a floor, not a style. `a:not([class])` is (0,1,1), so it outranks preflight's bare `a`
+ * inside `layer(base)` and loses to every component and kit rule — `.prov a`, `.errsum__list a`,
+ * `.gh-link` and the rest all keep their own treatment.
+ *
+ * It sets the UNDERLINE AND NOTHING ELSE. It set a colour too, first `--color-secondary` and then
+ * the `--link-color` role token, and both were wrong for the same reason: a rule this general
+ * cannot know what it is painting on. The admin console proved it. `.con-window a` inherits
+ * near-black #1f2a24 from its own shell and reads 13.20:1; the colour this rule imposed made it
+ * #5c6b57, which is 4.1:1 against the tinted background `a[aria-current="page"]` sits on, and
+ * `admin-console.spec.ts` went red on a contrast violation that had never existed. The underline
+ * alone is what SC 1.4.1 actually asks for — a distinction that is not colour — and it is the only
+ * thing that is safe on every surface, themed or not. Ink stays whatever the surface already gave
+ * it, which is always at least as legible as anything this rule could choose.
+ */
+a:not([class]) {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/*
+ * Editorial TODO marker: obviously a placeholder, never plausible prose. Distinct from the
+ * provenance block placeholder (src/components/provenance), which owns `.placeholder`.
+ *
+ * "Obviously" was doing work the colours did not. The fill is `--color-neutral-variant`, which is
+ * the exact colour `.gh-section--alt` paints its band, and the edge was `--color-outline` — 1.23:1
+ * against that same band, 1.55:1 against plain surface. So on an alt section the marker had no
+ * fill edge and an invisible boundary, and `TODO(Tyler & Sara)` read as ordinary copy: the precise
+ * failure PRODUCT.md's never-plausible-fiction rule exists to prevent.
+ *
+ * The edge is now drawn in the marker's own ink, which clears WCAG 2.2 SC 1.4.11 both against the
+ * fill and against every band behind it (5.49:1 Gilded Hour, 5.64:1 Conservatory). The fill stays:
+ * it is a highlight where the band differs, and the boundary carries it where it does not.
+ */
 .todo {
   display: inline;
   padding: 0.3em 0.55em;
   box-decoration-break: clone;
   background: var(--color-neutral-variant);
   color: var(--color-on-surface-muted);
-  outline: 1px dashed var(--color-outline);
+  outline: 1px dashed var(--color-on-surface-muted);
   outline-offset: -1px;
   font-style: normal;
 }
@@ -128,12 +204,26 @@ body {
  * is a full-width action bar / elevator panel; `data-floating-menu` is a floating Menu control.
  * A design may carry both, and the reservations add.
  */
+
+/*
+ * Fixed-chrome heights, PER DESIGN. Both designs read `--bottom-bar-h`, and they pin different
+ * things to the bottom of a phone, so one number cannot be right for both — `--wp-measure` below
+ * is the precedent for this shape: a default at `:root`, each `[data-theme]` overriding it with
+ * its own measured height.
+ *
+ * It was one number, tuned to Gilded Hour. Measured at 390px: Gilded Hour's elevator panel is
+ * 81px (72px until its labels moved off the 13.005px step — see `.gh-panel__cell`), and
+ * Conservatory's `.cv-bar` is 61px, one row of `.cv-btn` between two `--spacing-sm`. The shared
+ * 4.5rem therefore over-reserved Conservatory by 15px and floated its Menu 31.5px above a bar it
+ * is meant to ride `--spacing-md` (16px) above; raising it to 5rem for Gilded Hour's sake pushed
+ * that to 40px. Each design now reserves what it actually pins.
+ */
 .site[data-bottom-bar] {
-  --bottom-bar-height: 4.25rem;
+  --bottom-bar-height: var(--bottom-bar-h);
 }
 
 .site[data-floating-menu] {
-  --floating-menu-height: 5.25rem;
+  --floating-menu-height: var(--floating-menu-h);
 }
 
 .site[data-bottom-bar] main,
@@ -418,9 +508,20 @@ body {
 :root {
   --wp-measure: 42rem;
   --wp-frame: 46rem;
+
+  /*
+   * Fixed-chrome heights. They live at the root because `html` is the element that actually
+   * scrolls and a custom property set on `.site` is invisible to it, so the reservation `main`
+   * makes and the one the scroll container makes read the same two numbers.
+   */
+  --bottom-bar-h: 5rem;
+  --floating-menu-h: 5.25rem;
 }
 
 [data-theme="gilded-hour"] {
+  /* The elevator panel: 81px measured at 390px, reserved with the same four pixels of margin it
+     has always carried. */
+  --bottom-bar-h: 5rem;
   --radius-button: var(--rounded-none);
   --heading-transform: uppercase;
   --heading-tracking: var(--type-h1-tracking);
@@ -469,6 +570,9 @@ body {
 }
 
 [data-theme="conservatory"] {
+  /* `.cv-bar`: 61px measured at 390px (one `.cv-btn` row between two `--spacing-sm`). 3.75rem is
+     63.75, which clears it without pushing the floating Menu off the bar it rides on. */
+  --bottom-bar-h: 3.75rem;
   --radius-button: var(--rounded-md);
   --heading-transform: none;
   --heading-tracking: normal;

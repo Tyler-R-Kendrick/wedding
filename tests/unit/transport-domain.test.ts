@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { describe, expect, it } from 'vitest';
 import type { GuestId, HouseholdId } from '@/contracts/ids';
 import { isAllowedRedirect } from '@/lib/redirects';
@@ -21,7 +22,23 @@ describe('transport vault', () => {
     expect(sealed.startsWith(`v1.${v.keyId}.`)).toBe(true);
     expect(v.unseal(sealed)).toEqual({ ok: true, value: 'UBER-CODE-1234' });
     expect(v.seal('UBER-CODE-1234')).not.toBe(sealed); // fresh iv every time
-    const tampered = sealed.slice(0, -2) + (sealed.endsWith('A') ? 'BB' : 'AA');
+    // Tamper in the ciphertext BYTES, not in base64url characters.
+    //
+    // This rewrote the last two characters of the sealed string instead, and that is not reliably
+    // tampering: the GCM tag is 16 bytes, base64url-encodes to 22 characters, and 22 % 4 === 2, so
+    // the final character carries only two significant bits and the decoder throws the other four
+    // away. Whenever the replacement agreed with the original on the bits that survive — last two
+    // characters "A?" with ? in B/C/D, or "BA" when the string already ended in "A" — the
+    // "tampered" payload decoded to the identical bytes. The vault was then right to unseal it and
+    // this assertion failed anyway. Measured over 300,000 seals: 1,180 of them, 0.393%, or about
+    // one run in 254.
+    //
+    // Flipping a bit of the decoded ciphertext is tampering by construction: 0 of the same 300,000
+    // were a no-op. The assertion is unchanged and now means what it says.
+    const parts = sealed.split('.');
+    const ciphertext = Buffer.from(parts[3] as string, 'base64url');
+    ciphertext.writeUInt8(ciphertext.readUInt8(0) ^ 0x01, 0);
+    const tampered = [parts[0], parts[1], parts[2], ciphertext.toString('base64url'), parts[4]].join('.');
     expect(v.unseal(tampered).ok).toBe(false);
     const other = new Vault('another-vault-material-0123456789');
     const r = other.unseal(sealed);

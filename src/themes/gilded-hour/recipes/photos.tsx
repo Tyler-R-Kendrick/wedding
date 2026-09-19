@@ -43,29 +43,42 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
       )}
     </Section>
 
-    {/* Outside the `canUpload` gate on purpose. Search and "photos of me" had NO inbound link from
-        anywhere in the site — a crawl of all sixteen anonymous-reachable pages found zero — so two
-        finished pages could be reached only by typing the URL. Search needs no account at all. */}
+    {/* Outside the `canUpload` gate on purpose: search had NO inbound link from anywhere in the
+        site — a crawl of all sixteen anonymous-reachable pages found zero — so a finished page
+        could be reached only by typing the URL. Search needs no account at all. */}
     <Section id="find" labelledBy="find-title">
       <SectionHeading level={2} id="find-title" title="Find a photo" />
       <Prose>
         <p>
-          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with. Signed in, you can also ask us to{' '}
-          <Link href={ROUTES.photosOfMe}>look for you in them</Link>.
+          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with.
         </p>
       </Prose>
     </Section>
 
-    {canUpload ? (
-      <Section id="add" ground="alt" labelledBy="add-title">
-        <SectionHeading level={2} id="add-title" title="Add yours" />
-        <Prose>
+    {/*
+      * The section is unconditional; only what it says depends on who is reading.
+      *
+      * It used to render for `canUpload` alone, so the page that exists to be the guest upload
+      * entry point told an anonymous visitor nothing about uploading — and every visitor is
+      * anonymous until they open their invitation. A guest who wanted to add a photograph had no
+      * way to learn they could, which is not a permission boundary: `/media/upload` enforces that
+      * for itself.
+      */}
+    <Section id="add" ground="alt" labelledBy="add-title">
+      <SectionHeading level={2} id="add-title" title="Add yours" />
+      <Prose>
+        {canUpload ? (
           <p>
             <Link href="/media/upload">Add your photos</Link> · <Link href="/media/mine">My uploads</Link>
           </p>
-        </Prose>
-      </Section>
-    ) : null}
+        ) : (
+          <p>
+            Guests can add their own photographs from the weekend. Open the link in your invitation to sign in, then{' '}
+            <Link href="/media/upload">add your photos</Link>.
+          </p>
+        )}
+      </Prose>
+    </Section>
   </Shell>
 );
 

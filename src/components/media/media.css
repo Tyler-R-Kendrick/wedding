@@ -163,6 +163,17 @@
    rendered Lake Blue #2E5B7B while its Bronze `--color-tertiary` went unused; Conservatory asks for
    leaf-deep text with a pollen underline. Same class of defect as `.media-album a` at level 10:
    shared CSS deciding something a design owns. The role tokens are in themes/shared/base.css. */
+
+/* The link is the whole of its paragraph, so it is a touch target and not a run of prose: it
+   measured 17px in Gilded Hour and 26px in Conservatory, both under SC 2.5.8's 24 in the first
+   case and under this repo's 44 in both. */
+.media-link--block {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 10px;
+}
+
 .media-link {
   color: var(--media-link-color, var(--color-secondary, var(--color-primary)));
   text-decoration: underline;

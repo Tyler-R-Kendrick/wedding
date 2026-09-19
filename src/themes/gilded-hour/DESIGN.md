@@ -422,8 +422,14 @@ watercolored.
 - **link**: Bronze text with a 1px gold underline offset 0.2em; on hover
   the underline becomes Bronze and 2px. Never changes to blue.
 - **nav / nav-current**: uppercase Josefin labels on marble; the current
-  page is Lake Blue with a 1px gold underline. The mobile elevator panel
-  uses `label-sm` (13px, 0.04em) under simple line icons.
+  page is Lake Blue with a 1px gold underline. The mobile elevator panel is
+  the exception: sentence-case Josefin at the `control-caps` size (1rem —
+  17px, the ramp is rem-based on a 17px root) under simple line icons. It
+  used to be `label-sm`, which rendered 13.005px, and this is the control a
+  guest navigates the whole site with on a phone — under PRODUCT.md's floor
+  for the audience the floor was written for. Uppercase cannot come with the
+  larger step: at 390px "ADVENTURES" wants 122px of a 98px cell and a single
+  word will not break, so the case changes rather than the size.
 - **hero**: names in Cinzel `display-xl` on the axis, the sunburst behind
   them at low opacity, the date in `numeral` (07 · 17 · 27) and the place in
   `label-caps`, the countdown in `numeral-xl`, one Bronze RSVP button.

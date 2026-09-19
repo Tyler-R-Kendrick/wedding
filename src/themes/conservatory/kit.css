@@ -245,6 +245,38 @@
   }
 }
 
+/*
+ * On a phone the tag stops being an object lying on the page and becomes chrome.
+ *
+ * Floating at the bottom-right it is 96x44 of opaque kraft over a 390px column, so at rest it sat
+ * on whatever line happened to be there — measured on `/the-wedding`, squarely across the
+ * dress-code card's body text, hiding words with no way for a reader to move it. `main` already
+ * reserves `--bottom-chrome`, which keeps the END of a document clear; this is the other half,
+ * for every scroll position in between.
+ *
+ * Only where there is no `.cv-bar`. When the page has quick actions the bar is already the
+ * chrome at the foot of the screen and the tag rides above it, so a second full-width plate would
+ * just be two stacked bars. `data-bottom-bar` is on the shell exactly when that bar is rendered.
+ */
+@media (width < 900px) {
+  .site:not([data-bottom-bar]) .cv-menu {
+    inset-inline: 0;
+    inset-block-end: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--spacing-sm) var(--spacing-md) calc(var(--spacing-sm) + env(safe-area-inset-bottom, 0px));
+    background: var(--color-neutral);
+
+    /*
+     * `bar-lift`, not `bar-ambient`. The plate is page-coloured and holds one tag at its right, so
+     * an ambient-only shadow separates nothing across the other three-quarters: at 390px on
+     * `/gifts` the band read as "via The Knot" being sliced off mid-line rather than as chrome.
+     * The hairline is what makes it an edge.
+     */
+    box-shadow: var(--shadow-bar-lift);
+  }
+}
+
 .cv-bar {
   position: fixed;
   inset-inline: 0;
@@ -573,7 +605,13 @@
   animation: cv-fade var(--duration-fast) var(--ease-standard);
 }
 
+/*
+ * Not ornament: "302" alone means nothing, and at `label-caps` this was the only text on the page
+ * under the 17px floor. It takes `control-caps`, with the chips and tags, for the reason given
+ * there — small caps read smaller than their em size, not larger.
+ */
 .cv-sky__unit {
+  font-size: var(--type-control-caps-size);
   color: var(--color-sky-ink);
 }
 
@@ -1088,6 +1126,25 @@
   margin-block-start: var(--spacing-sm);
   font-size: var(--type-body-sm-size);
   color: var(--color-soil);
+}
+
+/*
+ * The two airports, side by side once there is room. `cv-travel__airports` was written in the
+ * travel recipe and defined nowhere, so ORD and MDW stacked as two cards at every width —
+ * including the desktop one where comparing them is the whole point of the section.
+ */
+.cv-travel__airports {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--spacing-lg);
+  margin-block-start: var(--spacing-lg);
+  align-items: start;
+}
+
+.cv-travel__airports > .cv-card {
+  max-width: none;
+  margin-inline: 0;
+  height: 100%;
 }
 
 .cv-gallery {
@@ -1785,12 +1842,17 @@
 /*
  * SF-4: a link that stands alone on its line is a touch target, not a word in a sentence.
  * `wedding-site-standards` §7 asks for 44 px.
+ *
+ * See the Gilded Hour kit: `--standalone` is the call site's declaration for the case CSS cannot
+ * see, the rest are standalone by construction, and both live in this one rule.
  */
+.cv-link--standalone,
+.cv-card__title .cv-link,
+.cv-result__title .cv-link,
 .cv-jar__link .cv-link,
 .cv-back .cv-tag--hang,
 .cv-faq__a p > .cv-link,
-.cv-why p > .cv-link,
-.cv-room .cv-card__title .cv-link {
+.cv-why p > .cv-link {
   display: inline-flex;
   align-items: center;
   gap: 0.35em;
@@ -1867,12 +1929,20 @@
   border-block-end: 0;
 }
 
+/*
+ * An `h3`, sized as one.
+ *
+ * It took `--type-h2-size` while `.cv-h--2` clamps DOWN to that same floor, so at 390px the
+ * section heading and all thirteen questions rendered identically: 27.625px Gloock, same weight,
+ * same ink, 24px apart. A list with no level above its items. The step below is what the markup
+ * already says this is, and it keeps the display face so the FAQ still reads as Conservatory's.
+ */
 .cv-faq__q {
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--type-h2-size);
-  font-weight: var(--type-h2-weight);
-  line-height: var(--type-h2-line);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
 }
 
 .cv-faq__a {

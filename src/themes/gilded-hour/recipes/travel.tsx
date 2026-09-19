@@ -111,13 +111,13 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
         </dl>
         {venue.block?.url ? (
           <p>
-            <Link href={venue.block.url} external>
+            <Link href={venue.block.url} external standalone>
               Book in the room block
             </Link>
           </p>
         ) : null}
         <p>
-          <Link href={facts.venue.url} external>
+          <Link href={facts.venue.url} external standalone>
             Visit the hotel website
           </Link>
         </p>
@@ -148,7 +148,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
                 </Prose>
                 {h.bookingUrl ? (
                   <p>
-                    <Link href={h.bookingUrl} external>
+                    <Link href={h.bookingUrl} external standalone>
                       Check rates
                     </Link>
                   </p>
@@ -206,7 +206,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
           .
         </p>
         <p>
-          <Link href={tripHref}>Your trip →</Link>
+          <Link href={tripHref} standalone>Your trip →</Link>
         </p>
       </Prose>
       <Prose>

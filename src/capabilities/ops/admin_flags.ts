@@ -50,9 +50,9 @@ const statusOutput = z.object({
 export type FlagStatusView = z.infer<typeof statusOutput>;
 
 const ENABLEMENT_REASON =
-  'Readiness switches cannot be turned on from this page. Both are legal gates whose precondition is a document this application cannot see: ' +
-  'BIOMETRICS_ENABLED is switched on only from Face matching, behind a counsel-review reference, a fresh session and a single-use confirmation; ' +
-  'PRO_MEDIA_AI_PROCESSING has no enable path anywhere in the app, and gets one when backlog C-09 and V-03 close.';
+  'Readiness switches cannot be turned on from this page, or from anywhere else in the application. ' +
+  'PRO_MEDIA_AI_PROCESSING is a legal gate whose precondition is a document this application cannot see — written confirmation from both vendors — ' +
+  'and it gets an enable path when backlog C-09 and V-03 close, not before.';
 
 /**
  * Both halves of every feature gate: the environment flag and, for the two readiness-gated flags,
@@ -88,20 +88,18 @@ const disableOutput = z.object({ flag: flagName, envValue: z.boolean(), readines
  * The off switch, and only the off switch.
  *
  * Deliberately the weakest door in the console — no confirmation token, no reference, no feature
- * flag, no step-up — for the same reason a guest's withdrawal of biometric consent is
- * unconditional: turning a legal gate OFF must never be blocked by a missing precondition, and must
- * not depend on holding the entitlement that owns the feature. `admin_disable_biometric_readiness`
- * already exists but requires `admin_ai`, which a planner does not hold; this one requires
- * `admin_lifecycle`, so whoever is running the site on the day can always close the gate.
+ * flag, no step-up: turning a legal gate OFF must never be blocked by a missing precondition, and
+ * must not depend on holding the entitlement that owns the feature it gates. It requires
+ * `admin_lifecycle`, so whoever is running the site on the day can always close a gate.
  *
  * There is no matching enable capability, and that is the point: `setReadiness(…, ready: true)` has
- * exactly one caller in the whole application, behind counsel review on `/admin/biometrics`.
- * `tests/integration/ops-flags.test.ts` fails if a second one appears.
+ * no caller anywhere in the application. `tests/integration/ops-flags.test.ts` fails if one
+ * appears.
  */
 export const adminDisableFlagReadiness = defineCapability<z.infer<typeof disableInput>, z.infer<typeof disableOutput>>({
   name: 'admin_disable_flag_readiness',
   title: 'Switch a readiness gate off',
-  description: 'Turns the persisted readiness switch of a legally gated feature (BIOMETRICS_ENABLED, PRO_MEDIA_AI_PROCESSING) off, immediately, clearing the justification recorded on the row. There is no corresponding switch-on: that is not something this console can do. Admins only.',
+  description: 'Turns the persisted readiness switch of a legally gated feature (PRO_MEDIA_AI_PROCESSING) off, immediately, clearing the justification recorded on the row. There is no corresponding switch-on: that is not something this console can do. Admins only.',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_lifecycle'],

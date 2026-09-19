@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ProvenanceViewData } from '@/domain/content/views';
 import './provenance.css';
 
@@ -9,8 +8,19 @@ const TRUST_LABEL: Record<ProvenanceViewData['trustClass'], string> = {
 };
 
 /**
- * "Based on …": the source title, linked to the official page for external data or to the
- * page the fact lives on. External data is always labelled (ADR-0011 rule 1).
+ * "Based on …": the source title, linked only when there is somewhere to go. External data is
+ * always labelled (ADR-0011 rule 1).
+ *
+ * An internal source used to render as a `<Link>` to `provenance.url`, and that URL is
+ * `publicUrlFor(row, route)` — the route the record itself renders on. So on `/our-story` the
+ * page carried seven links reading "Tyler's brief 2026-09-04", one per chapter, each pointing at
+ * `/our-story#<the section it sat in>`: pressing one moved a guest to where they already were.
+ * Seven promises of a source, each delivering nothing.
+ *
+ * The route is still right for the capability envelope, where a citation exists so an assistant
+ * can name the page a fact lives on (`toRecordCitation`, same helper). It is wrong as a control.
+ * A source a guest cannot open — an authored brief, a vendor contract, a venue PDF — is named,
+ * not linked; only a real `https://` destination gets an anchor.
  */
 export function SourceBadge({ provenance, showVersion = false }: { provenance: ProvenanceViewData; showVersion?: boolean }) {
   const label = TRUST_LABEL[provenance.trustClass];
@@ -22,8 +32,6 @@ export function SourceBadge({ provenance, showVersion = false }: { provenance: P
         <a href={provenance.url} rel="noopener noreferrer" target="_blank">
           {provenance.sourceTitle}
         </a>
-      ) : provenance.url ? (
-        <Link href={provenance.url}>{provenance.sourceTitle}</Link>
       ) : (
         <span>{provenance.sourceTitle}</span>
       )}
