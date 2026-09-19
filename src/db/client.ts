@@ -123,6 +123,14 @@ async function connectPostgres(url: string): Promise<Db> {
       const rows = await base.execute(sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`);
       vectorAvailable = Array.isArray(rows) ? rows.length > 0 : ((rows as { rows?: unknown[] }).rows?.length ?? 0) > 0;
     } catch {
+      // Both probes failing says nothing on its own: a database that simply has no pgvector and a
+      // database nothing can reach look identical from here. So ask the simplest question there is
+      // and let THAT one throw. Swallowing it returned a handle for a server this never reached and
+      // logged 'database ready' about it, and the caller's only symptom was node exiting 13 on an
+      // unsettled top-level await, with a warning pointing at an import three lines earlier. A
+      // failed production deploy cost an hour to that: DNS failure, refused connection and wrong
+      // credentials were one indistinguishable exit code.
+      await base.execute(sql`SELECT 1`);
       vectorAvailable = false;
     }
   }
