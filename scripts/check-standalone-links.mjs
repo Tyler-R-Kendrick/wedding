@@ -30,7 +30,12 @@
  *               class carries the geometry wherever it appears, so the anchor wearing it is done.
  *   onAncestor  A rule with a combinator — `.wp-brand a`, `.gh-back .gh-link`,
  *               `.gh-why p > .gh-link`. The LEADING classes are what make the rule apply; the
- *               anchor is sized only inside them.
+ *               anchor is sized only inside them, and only if it IS the thing the rule sizes.
+ *               So onAncestor maps each leading class to the rule's final compound, and a scope
+ *               accepts a link only when that compound could match it. `.wp-why summary` sizes a
+ *               `<summary>` and can never size an anchor, so `wp-why` shelters nothing — before
+ *               this, it sheltered every link under a `<details class="wp-why">`, including one
+ *               of the thirteen this very change had to fix.
  *
  * Reading a scoped rule as if its last compound covered on its own is how the first version of
  * this gate let every kit link through. `.gh-entry__title .gh-link` and nine rules like it put
@@ -52,12 +57,56 @@ const SCOPE_LINES = 12; // How far above a <p> an ancestor's className may sit. 
 
 const CLASSES_IN_SELECTOR = /\.([a-zA-Z][\w-]*)/g;
 
+/**
+ * Split on the characters in `at`, but only where parentheses and brackets are balanced. A plain
+ * `split(',')` cuts `:is(p, td) a` into `:is(p` and `td) a`, and a plain split on whitespace cuts
+ * it again — after which `.foo:not(.bar)` donates `bar` as if a rule named it. No rule in this
+ * tree has both a functional pseudo-class and a 44px min-height, but `.ops :is(p, td, dd, li,
+ * figcaption) a` exists and is exactly where someone would add one.
+ */
+function splitOutside(text, at) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '(' || ch === '[') depth += 1;
+    else if (ch === ')' || ch === ']') depth -= 1;
+    else if (depth === 0 && at.test(ch)) {
+      parts.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
 /** Split a selector on its combinators: `.gh-why p > .gh-link` -> ['.gh-why', 'p', '.gh-link']. */
-const compoundsOf = (selector) => selector.split(/\s*[\s>+~]\s*/).filter(Boolean);
+const compoundsOf = (selector) => splitOutside(selector, /[\s>+~]/);
+
+/** A compound without its pseudo-class arguments, so `:not(.bar)` cannot donate `bar`. */
+const bare = (compound) => compound.replace(/\([^()]*\)/g, '');
+
+/** The element name a compound names, if it names one: `.gh-link` -> null, `a:hover` -> 'a'. */
+const elementOf = (compound) => /^([a-zA-Z][\w-]*)/.exec(bare(compound))?.[1] ?? null;
+
+/** `a`, `a:hover` and `.gh-link` can all be an anchor; `summary` and `input` cannot. */
+const subjectCouldBeAnchor = (compound) => {
+  const element = elementOf(compound);
+  return element === null || element === 'a';
+};
+
+/** Does the rule this compound ends actually size THIS anchor? */
+const subjectMatches = (compound, classes) => {
+  if (!subjectCouldBeAnchor(compound)) return false;
+  const wanted = [...bare(compound).matchAll(CLASSES_IN_SELECTOR)].map(([, cls]) => cls);
+  return wanted.every((cls) => classes.includes(cls));
+};
 
 export function coverage(cwd = '.') {
   const onSelf = new Set();
-  const onAncestor = new Set();
+  /** class -> the final compounds of the rules it scopes, e.g. 'gh-back' -> Set{'.gh-link'}. */
+  const onAncestor = new Map();
   for (const file of globSync('src/**/*.css', { cwd })) {
     // Comments first: a rule preceded by `/* … scripts/x.mjs … */` otherwise donates `mjs`.
     const css = readFileSync(`${cwd}/${file}`, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ');
@@ -66,15 +115,21 @@ export function coverage(cwd = '.') {
       if (!min) continue;
       const px = min[2] === 'rem' ? parseFloat(min[1]) * ROOT_FONT_PX : parseFloat(min[1]);
       if (px < MIN_TARGET_PX) continue;
-      for (const selector of selectors.split(',')) {
-        const trimmed = selector.trim();
-        if (!trimmed || trimmed.startsWith('@')) continue;
+      for (const trimmed of splitOutside(selectors, /,/)) {
+        if (trimmed.startsWith('@')) continue;
         const compounds = compoundsOf(trimmed);
+        const subject = compounds[compounds.length - 1];
         if (compounds.length === 1) {
-          for (const [, cls] of compounds[0].matchAll(CLASSES_IN_SELECTOR)) onSelf.add(cls);
-        } else {
-          for (const compound of compounds.slice(0, -1)) {
-            for (const [, cls] of compound.matchAll(CLASSES_IN_SELECTOR)) onAncestor.add(cls);
+          for (const [, cls] of bare(subject).matchAll(CLASSES_IN_SELECTOR)) onSelf.add(cls);
+          continue;
+        }
+        // A rule whose subject is some other element can never size an anchor. Eight rules in this
+        // tree are that shape (`.wp-why summary`, `.wp-field input`, `.media-field textarea`, …).
+        if (!subjectCouldBeAnchor(subject)) continue;
+        for (const compound of compounds.slice(0, -1)) {
+          for (const [, cls] of bare(compound).matchAll(CLASSES_IN_SELECTOR)) {
+            if (!onAncestor.has(cls)) onAncestor.set(cls, new Set());
+            onAncestor.get(cls).add(subject);
           }
         }
       }
@@ -83,15 +138,22 @@ export function coverage(cwd = '.') {
   return { onSelf, onAncestor };
 }
 
-/** A <p> whose entire content is one link. */
-const PARAGRAPH_LINK = /<p(\s[^>]*)?>\s*(<(Link|a)\b[^>]*>)([\s\S]*?)<\/\3>\s*<\/p>/g;
+/**
+ * A <p> whose entire content is one link.
+ *
+ * The body cannot cross a paragraph boundary. An untempered `[\s\S]*?` backtracks past its own
+ * `</p>` to the next `</a></p>` anywhere in the file, and `matchAll` then resumes AFTER that
+ * region — so a standalone link sitting below a `<p><a>…</a> trailing prose</p>` was never tested.
+ * Two such runaways are live in the theme kits' photos recipes (21 and 15 lines).
+ */
+const PARAGRAPH_LINK = /<p(\s[^>]*)?>\s*(<(Link|a)\b[^>]*>)((?:(?!<\/p>|<p[\s>])[\s\S])*?)<\/\3>\s*<\/p>/g;
 
 /**
  * `standalone` or `standalone={true}` and nothing else. `\bstandalone\b` alone also matched
  * `standalone={false}` and `standalone={isWide}`, which is an opt-out from a rule whose reason for
  * existing is that call sites opt out by accident.
  */
-const MARKED_STANDALONE = /\bstandalone(?![\w-])\s*(?![=])|\bstandalone\s*=\s*\{\s*true\s*\}/;
+const MARKED_STANDALONE = /\bstandalone(?![\w-])(?!\s*=)|\bstandalone\s*=\s*\{\s*true\s*\}/;
 
 const classesIn = (attrs) => (/className="([^"]*)"/.exec(attrs ?? '')?.[1] ?? '').split(/\s+/).filter(Boolean);
 
@@ -114,13 +176,21 @@ export function findUnmarked(cwd = '.') {
     const lines = src.split('\n');
     for (const m of src.matchAll(PARAGRAPH_LINK)) {
       const [, pAttrs, openTag, tag, inner] = m;
-      // Text with an element inside it is a sentence, not a bare link.
-      if (!inner.trim().startsWith('<') && inner.includes('<')) continue;
+      // The one thing the body can still hold that makes this a sentence is a SECOND link: the
+      // lazy match spans `<a>Chicago</a> or <a>Evanston</a>`, and giving those block geometry
+      // would break the line (SC 2.5.8 exempts a link inside a sentence).
+      //
+      // The old test — any element inside a body that does not start with one — read a label's
+      // own markup as prose. `<a>{venue.address}<span className="sr-only"> (opens in Google Maps,
+      // new tab)</span></a>` is one link and nothing else, and a visually-hidden suffix is not a
+      // sentence. Four live links on /travel were exempted that way, each measuring 17px.
+      if (inner.includes(`</${tag}>`)) continue;
       if (MARKED_STANDALONE.test(openTag)) continue;
       const line = src.slice(0, m.index).split('\n').length;
-      if ([...scopeClasses(lines, line, pAttrs)].some((c) => onAncestor.has(c))) continue;
       const classes = classesIn(openTag);
-      if (classes.some((c) => c.endsWith('--block') || c === 'min-h-11' || onSelf.has(c))) continue;
+      if (classes.some((c) => c === 'min-h-11' || onSelf.has(c))) continue;
+      const scoped = [...scopeClasses(lines, line, pAttrs)].flatMap((c) => [...(onAncestor.get(c) ?? [])]);
+      if (scoped.some((compound) => subjectMatches(compound, classes))) continue;
       findings.push({
         file,
         line,
@@ -139,10 +209,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error(`\n${findings.length} link${findings.length === 1 ? ' is' : 's are'} the whole of a <p> with no ${MIN_TARGET_PX}px target:\n`);
     for (const f of findings) console.error(`  ${f.file}:${f.line}  <${f.tag} class="${f.classes}">  "${f.text}"`);
     console.error(`
-Give it one: <Link standalone>, a \`--block\` modifier, a class whose own rule sets
-min-height: ${MIN_TARGET_PX}px, or a scope that sizes it — whose className must be on the <p> or
-within ${SCOPE_LINES} lines above it. A link INSIDE a sentence is exempt (WCAG 2.2 SC 2.5.8) and is
-never matched by this check.
+Give it one: <Link standalone>, a class whose own rule sets min-height: ${MIN_TARGET_PX}px, or a
+scope that sizes anchors — whose className must be on the <p> or within ${SCOPE_LINES} lines above
+it. A class ending \`--block\` is not enough on its own; it needs the rule. A link INSIDE a sentence
+is exempt (WCAG 2.2 SC 2.5.8) and is never matched by this check.
 `);
     process.exit(2);
   }

@@ -113,7 +113,7 @@ function FlightResults({ outcome }: { outcome: FlightSearchOutcome }) {
             {f.pricedAt ? <p className="hint">Price seen at {formatChicagoTime(f.pricedAt)}</p> : null}
             {f.bookingUrl ? (
               <p className="mt-2">
-                <a className="underline underline-offset-4" href={f.bookingUrl} target="_blank" rel="noopener noreferrer external">
+                <a className="link-block underline underline-offset-4" href={f.bookingUrl} target="_blank" rel="noopener noreferrer external">
                   Continue on {f.bookingProvider ?? 'the partner site'}
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
@@ -152,7 +152,7 @@ function HotelResults({ outcome }: { outcome: HotelSearchOutcome }) {
             {h.walkMinutesToVenue !== undefined ? <p className="mt-1">{h.walkMinutesToVenue} min walk to the CAA</p> : null}
             {h.bookingUrl ? (
               <p className="mt-2">
-                <a className="underline underline-offset-4" href={h.bookingUrl} target="_blank" rel="noopener noreferrer external">
+                <a className="link-block underline underline-offset-4" href={h.bookingUrl} target="_blank" rel="noopener noreferrer external">
                   {h.isVenue ? 'Visit the hotel website' : 'Continue to book'}
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
