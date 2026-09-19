@@ -25,9 +25,12 @@
  *   6. Variables    the site's own secrets, generated here if the project lacks them; the public
  *                   origin; and what the Secret Drop already acquired into .env, mirrored as
  *                   sensitive variables — minus anything a connector now owns.
- *   7. Cron         vercel.json carries it (GET /api/jobs/run every five minutes; Vercel sends
- *                   `Authorization: Bearer $CRON_SECRET` itself). Nothing to do but say so.
- *   8. Deploy       `vercel deploy` (or `--prod`), then wait for READY and read the build log if
+ *   7. Cron         vercel.json carries them (Vercel sends `Authorization: Bearer $CRON_SECRET`
+ *                   itself). Nothing to do but read the file out.
+ *   8. Preflight    every variable src/lib/env.ts requires in production is present, or stop. A
+ *                   build goes READY whether or not the app can boot; the first run of this
+ *                   script proved that by serving 500 on every route.
+ *   9. Deploy       `vercel deploy` (or `--prod`), then wait for READY and read the build log if
  *                   it is not.
  *
  * Vercel Connect (the OIDC-to-provider-token exchange, `vercel connect create <service>`) is for
@@ -38,7 +41,7 @@
  */
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -65,6 +68,10 @@ const CONNECTORS = [
 /** Secrets the site needs in every deployed environment; generated here when the project has none. */
 const GENERATED = [
   ['CONFIRMATION_SECRET', 32], ['CRON_SECRET', 48], ['BETTER_AUTH_SECRET', 32], ['HEALTH_TOKEN', 32], ['AUDIT_HASH_KEY', 32],
+  // src/lib/env.ts refuses production without S3 or a signing secret, and a project this script
+  // has just created has neither — so every fresh deploy it made could only ever 500. It is a
+  // generated value like the five above, not something anyone has to go and find.
+  ['STORAGE_SIGNING_SECRET', 32],
 ];
 
 /**
@@ -320,12 +327,39 @@ async function variables(project, scope, owned) {
   // The site's own secrets: generated here, once.
   for (const [key, bytes] of GENERATED) add(key, randomBytes(bytes).toString('base64url'));
 
-  // The canonical public origin: a custom domain if one is attached, else the .vercel.app one.
+  // The canonical public origin: a custom domain if one is attached, else a .vercel.app domain
+  // this project ACTUALLY has — never `${project.name}.vercel.app` inferred from the name.
+  //
+  // That inference is what this deploy shipped first, and `.vercel.app` is a global namespace: for
+  // a project called `wedding` it resolved to a stranger's live wedding site, HTTP 200. It is the
+  // value of BETTER_AUTH_URL, so it is the passkey relying-party id and the origin auth is checked
+  // against, and of NEXT_PUBLIC_SITE_URL, so it is the address in every e-mail a guest receives.
+  // A name nobody here owns is the worst of the three places this could have been wrong.
   const domains = await api('GET', `/v9/projects/${project.id}/domains?teamId=${encodeURIComponent(scope)}`);
-  const custom = (domains.json?.domains || []).map((d) => d.name).find((n) => !n.endsWith('.vercel.app'));
-  const origin = `https://${custom || `${project.name}.vercel.app`}`;
-  add('BETTER_AUTH_URL', origin, ['production'], 'plain');
-  add('NEXT_PUBLIC_SITE_URL', origin, ['production'], 'plain');
+  // A failed listing is not an empty one: reporting "no domain is attached" for a network error
+  // would quietly leave the origin on whatever it was, which is the bug this block is about.
+  const listed = domains.ok ? (domains.json?.domains || []) : null;
+  if (!listed) say('Could not list this project\'s domains; leaving the public origin alone.');
+  // Only a domain that SERVES this project's production branch can be its origin. A redirect
+  // sends the passkey relying party somewhere else, an unverified domain is not ours yet, and a
+  // branch domain serves something other than production.
+  const usable = (listed || []).filter((d) => d.name && !d.redirect && d.verified !== false && !d.gitBranch);
+  const names = usable.map((d) => d.name);
+  const host = names.find((n) => !n.endsWith('.vercel.app')) ?? names.find((n) => n.endsWith('.vercel.app'));
+  if (listed && !host) {
+    say('No domain is attached to this project, so the public origin cannot be derived.');
+    say(`Attach one — \`vercel domains add <domain> ${project.name}\` — and re-run.`);
+    say('Leaving BETTER_AUTH_URL and NEXT_PUBLIC_SITE_URL unset.');
+  } else if (host) {
+    // Origin variables RECONCILE rather than only fill a gap: `add` skips a key the project
+    // already has, which would strand both of these on the first host the project ever had, and
+    // attaching the real domain later would silently change nothing.
+    const origin = `https://${host}`;
+    for (const key of ['BETTER_AUTH_URL', 'NEXT_PUBLIC_SITE_URL']) {
+      batch.push({ key, value: origin, type: 'plain', target: ['production'] });
+    }
+    say(`Public origin: ${origin}${names.length > 1 ? ` (of ${names.length} domains on this project)` : ''}`);
+  }
   // Previews take their origin from VERCEL_URL (src/lib/env.ts derives both when unset).
 
   // What the Secret Drop already acquired, minus what a connector now owns.
@@ -354,11 +388,87 @@ async function variables(project, scope, owned) {
 
 function cron() {
   step('7. Cron');
-  say('vercel.json: GET /api/jobs/run every five minutes. Vercel adds `Authorization: Bearer $CRON_SECRET` to each call itself.');
+  // Read the file rather than restate it: this said `/api/jobs/run` alone while vercel.json
+  // declared three, and one cron covering two job routes is a defect this repo has already had
+  // once — uploads sat in "Checking" because nothing ran /api/uploads/jobs/run.
+  let crons = [];
+  try {
+    crons = JSON.parse(readFileSync(join(repoRoot, 'vercel.json'), 'utf8')).crons ?? [];
+  } catch {
+    say('vercel.json could not be read; check its cron entries by hand.');
+    return;
+  }
+  if (!crons.length) { say('vercel.json declares no crons.'); return; }
+  say(`vercel.json declares ${crons.length} cron${crons.length === 1 ? '' : 's'}; Vercel adds \`Authorization: Bearer $CRON_SECRET\` to each call itself.`);
+  for (const c of crons) say(`  GET ${c.path}  ${c.schedule}`);
+}
+
+/**
+ * What `src/lib/env.ts` refuses to boot production without, read out of that file rather than
+ * copied into this one. A copy would rot the first time someone adds a variable to the check, and
+ * rot here is expensive: the whole point of the preflight below is to be right about this list.
+ */
+async function requiredInProduction() {
+  const src = await readFile(join(repoRoot, 'src/lib/env.ts'), 'utf8');
+  const block = /const required:[^=]*=\s*\[([\s\S]*?)\]/.exec(src);
+  const keys = block ? [...block[1].matchAll(/'([A-Z][A-Z0-9_]*)'/g)].map((m) => m[1]) : [];
+  // Nothing parsed means the shape of that file changed. Say so; do not report an empty set as a
+  // clean bill of health, and do not let the DATABASE_URL push below disguise it as one.
+  if (!keys.length) return null;
+  // Named in the same guard but outside that array, and only for a production target.
+  if (src.includes("missing.push('DATABASE_URL")) keys.push('DATABASE_URL');
+  // A connector never writes `DATABASE_URL`: `vercel integration add supabase` writes
+  // `POSTGRES_URL`, and env.ts reads it under the name the app uses. Checking for the literal key
+  // reported a database that was demonstrably connected — the first version of this preflight did
+  // exactly that, while the deployment's own error named RESEND_API_KEY alone.
+  const aliased = /DATABASE_URL_ALIASES\s*=\s*\[([^\]]*)\]/.exec(src);
+  const aliases = aliased ? [...aliased[1].matchAll(/'([A-Z][A-Z0-9_]*)'/g)].map((m) => m[1]) : [];
+  return keys.map((key) => (key === 'DATABASE_URL' ? [key, ...aliases] : [key]));
+}
+
+/**
+ * Do not ship a deployment that provably cannot serve a request.
+ *
+ * The first deploy of this project built READY and then answered 500 on every route, including
+ * `/api/health`, because the instrumentation hook throws when a required variable is absent — and
+ * a connector that did not finish leaves exactly that hole. READY is a statement about the build,
+ * not about the app, so the build succeeding is not evidence of anything a guest would notice.
+ */
+async function preflight(project, scope) {
+  step('8. Preflight');
+  if (!bearer || !project) { say('(no token or project: skipped)'); return true; }
+  const keys = await envKeys(project, scope);
+  const required = await requiredInProduction();
+  if (!required) {
+    say('Could not read the required set out of src/lib/env.ts — its shape must have changed.');
+    say('This preflight cannot vouch for the deploy; check the production guard there by hand.');
+    return true;
+  }
+  const target = PROD ? 'production' : 'preview';
+  const has = (name) => keys.get(name)?.has(target);
+  const satisfied = (names) => names.some(has);
+  // A preview derives its own origin from VERCEL_URL (src/lib/env.ts), so it is not owed one.
+  const wanted = PROD ? required : required.filter((names) => names[0] !== 'BETTER_AUTH_URL');
+  const missing = wanted.filter((names) => !satisfied(names));
+  // The same guard in env.ts refuses two more things, and a deploy that trips either of them
+  // 500s exactly as loudly as a missing key. Modelling only the `required` array would let this
+  // wave through the failure it exists to catch.
+  if (!has('STORAGE_SIGNING_SECRET') && !has('DEV_STORAGE_SECRET')
+      && !['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
+    missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
+  }
+  if (!missing.length) { say(`Everything ${target} needs is set (${wanted.length} variables, plus storage).`); return true; }
+  say(`${missing.length} thing${missing.length === 1 ? '' : 's'} ${target} needs ${missing.length === 1 ? 'is' : 'are'} missing:`);
+  for (const names of missing) say(`  ${names[0]}${names.length > 1 ? `  (or ${names.slice(1).join(', ')})` : ''}`);
+  say('');
+  say('The build would go READY and every route would answer 500, which is what happened the first');
+  say('time this ran. Set them (a connector, the Secret Drop, or `vercel env add`) and re-run.');
+  say('To deploy anyway: --skip-preflight.');
+  return false;
 }
 
 async function deploy(scope) {
-  step(PROD ? '8. Deploy (production)' : '8. Deploy (preview)');
+  step(PROD ? '9. Deploy (production)' : '9. Deploy (preview)');
   if (PLAN) { say(`Would run: vercel deploy --yes${PROD ? ' --prod' : ''} --scope ${scope}`); return; }
   const r = await vercel(['deploy', '--yes', ...(PROD ? ['--prod'] : []), '--scope', scope]);
   const url = (r.out.match(/https:\/\/[a-z0-9.-]+\.vercel\.app/g) || []).pop();
@@ -392,4 +502,10 @@ await link(scope);
 const owned = await connectors(project, scope);
 await variables(project, scope, owned);
 cron();
-await deploy(scope);
+// `--skip-preflight` skips it, rather than paying for it and printing a refusal before deploying
+// anyway; and a plan reports without ever failing, because a plan writes nothing to fail about.
+let cleared = true;
+if (flag('skip-preflight')) { step('8. Preflight'); say('Skipped (--skip-preflight).'); }
+else cleared = await preflight(project, scope);
+if (cleared || PLAN) await deploy(scope);
+else process.exit(1);

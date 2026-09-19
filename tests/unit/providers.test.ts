@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PROVIDER_KINDS } from '@/contracts/providers';
 import { sha256Hex } from '@/lib/crypto';
 import { isAllowedRedirect } from '@/lib/redirects';
-import { MockAuthEmail, devInbox } from '@/providers/auth-email';
+import { MockAuthEmail, createAuthEmailProvider, devInbox } from '@/providers/auth-email';
 import { hashedEmbedding, MockEmbeddings } from '@/providers/embeddings';
 import { MockFlights, DeepLinkOnlyFlights, skyscannerFlightsUrl } from '@/providers/flights';
 import { MockHotels } from '@/providers/hotels';
@@ -52,6 +52,31 @@ describe('provider registry', () => {
       const h = await getProvider(kind).health();
       expect(h.status, kind).toBe('up');
     }
+  });
+});
+
+describe('auth-email selection', () => {
+  const key = { RESEND_API_KEY: 're_test', EMAIL_FROM: 'Sara + Tyler <no-reply@example.test>', FORCE_MOCK_PROVIDERS: false };
+
+  /**
+   * Review S6: production must never route a one-time code to the in-memory dev inbox. This is
+   * where that holds. `src/lib/env.ts` used to ALSO refuse to boot without a mailer, which took
+   * every route down — the home page and /api/health included — for a credential only this path
+   * uses; narrowing that guard is only safe because refusing here is loud rather than silent.
+   */
+  it('refuses the mock mailer on a production host', () => {
+    expect(() => createAuthEmailProvider({ ...key, RESEND_API_KEY: undefined, isProduction: true }))
+      .toThrow(/production requires RESEND_API_KEY/);
+    expect(() => createAuthEmailProvider({ ...key, EMAIL_FROM: undefined, isProduction: true }))
+      .toThrow(/production requires RESEND_API_KEY/);
+    // FORCE_MOCK_PROVIDERS must not be a way around it either.
+    expect(() => createAuthEmailProvider({ ...key, FORCE_MOCK_PROVIDERS: true, isProduction: true }))
+      .toThrow(/the mock mailer is refused/);
+  });
+
+  it('uses the mock off production, and Resend whenever it is configured', () => {
+    expect(createAuthEmailProvider({ ...key, RESEND_API_KEY: undefined, isProduction: false })).toBeInstanceOf(MockAuthEmail);
+    expect(createAuthEmailProvider({ ...key, isProduction: true })).not.toBeInstanceOf(MockAuthEmail);
   });
 });
 
