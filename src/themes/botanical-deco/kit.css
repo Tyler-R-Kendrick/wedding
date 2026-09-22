@@ -838,8 +838,29 @@
     display: none;
   }
 
+  /* A short phone (iPhone 14 in a browser: 390 x 664) must still show the names, the date, the
+     place and the first action before the action bar; the portrait gives up height, not faces. */
+  .bd-hero__media {
+    aspect-ratio: auto;
+    block-size: min(81vw, 35svh);
+    max-block-size: none;
+  }
+
+  .bd-hero .bd-head__rule {
+    margin-block: 4px;
+  }
+
   .bd-hero__copy {
+    padding-block-start: var(--spacing-md);
     padding-inline-start: max(var(--bd-gutter), 52px);
+  }
+
+  .bd-hero__kicker {
+    margin-block-end: 2px;
+  }
+
+  .bd-hero__place {
+    margin-block-end: var(--spacing-sm);
   }
 
   .bd-hero__title {
@@ -2631,7 +2652,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .bd-reader[data-enhanced] .bd-reader__chapter:not([hidden]) {
+  .bd-reader__chapter[data-entering] {
     animation: bd-reader-in var(--duration-reveal) var(--ease-settle);
   }
 }

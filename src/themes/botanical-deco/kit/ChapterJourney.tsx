@@ -37,6 +37,8 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
     () => '',
   );
   const [picked, setPicked] = useState<number | null>(null);
+  // Only a chapter a guest chose fades in; the one on screen at load is at rest (and measurable).
+  const [moved, setMoved] = useState(false);
   const tabs = useRef<Array<HTMLButtonElement | null>>([]);
   const fromHash = stops.findIndex((s) => `#${s.slug}` === hash);
   const current = fromHash >= 0 ? fromHash : (picked ?? 0);
@@ -48,6 +50,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
       if (!stop) return;
       window.history.replaceState(window.history.state, '', `#${stop.slug}`);
       setPicked(next);
+      setMoved(true);
       if (focus) tabs.current[next]?.focus();
       // On a phone the reader sits under the whole list: bring the opened chapter into view.
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -118,6 +121,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
               role={enhanced ? 'tabpanel' : undefined}
               aria-labelledby={enhanced ? `${s.slug}-tab` : `${s.slug}-title`}
               hidden={enhanced && i !== current}
+              data-entering={moved && i === current ? '' : undefined}
             >
               {chapter}
               {enhanced && (prev || next) ? (
