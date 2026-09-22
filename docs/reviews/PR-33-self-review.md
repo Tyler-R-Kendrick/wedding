@@ -98,7 +98,7 @@ find, and where it went:
 | `navigate_to` described only the two proposals to AI and WebMCP clients | Describes the approved default and the proposals. |
 | A test comment claimed unit coverage for the switcher action | Comment corrected to what is covered. |
 | `/trip` gave this design Gilded Hour's eyebrow class | `bd-eyebrow`. |
-| Home said "Where we will say “I do.”" and "See you in Chicago" in every lifecycle state | Past tense and no sign once the site is in its "remember" mode; no new copy invented. |
+| Home said "Where we will say “I do.”" and "See you in Chicago" in every lifecycle state | Past tense and no sign once the site is in its "remember" mode; no new copy invented. The "still writing this" label on the times and rooms stays in every state: it is still true afterwards. A first attempt hid it, and `tests/ui/home.test.tsx` (every state marks its unknowns) caught that. |
 | Portrait alt text described generated images as scenes, as if photographs | Every alt now begins "Generated portrait of…", matching `/credits`. |
 | After an inline RSVP on Your Weekend, the page's badges stay stale until reload | **Follow-up.** Refreshing would replace the confirmation (which restates the answers and the e-mail) with the summary; the answers are saved correctly either way. |
 

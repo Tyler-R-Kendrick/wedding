@@ -123,11 +123,9 @@ function Schedule({ data }: { data: HomeData }) {
           ))}
         </ol>
       </div>
-      {data.lifecycle.mode === 'remember' ? null : (
-        <p className="bd-schedule__todo">
-          <Placeholder inline>the times and the rooms.</Placeholder>
-        </p>
-      )}
+      <p className="bd-schedule__todo">
+        <Placeholder inline>the times and the rooms.</Placeholder>
+      </p>
     </div>
   );
 }
