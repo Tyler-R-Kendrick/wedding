@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke, siteStatus, invokeByName } from '@/capabilities';
 import { getDb } from '@/db/client';
+import { siteSettings } from '@/db/schema/site';
 import { getLifecycle, setLifecycle } from '@/db/repos/site';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isEnabled, invalidateReadinessCache, setReadiness } from '@/lib/flags';
@@ -23,6 +24,21 @@ describe('site_status capability', () => {
     const rows = await listAuditEvents(db, { requestId: 'req-site-1' });
     expect(rows[0]).toMatchObject({ action: 'capability.invoked', targetId: 'site_status', metadata: { surface: 'ai' } });
     expect(rows[0]!.metadata).not.toHaveProperty('inputHash'); // reads carry no input fingerprint
+  });
+
+  it('reports the design guests see, not a default a pre-approval seed left in the database', async () => {
+    // Production was seeded before Sara and Tyler approved Botanical–Deco, and the seed never
+    // overwrites: its row still says gilded-hour and lists only the two proposals.
+    const db = await getDb();
+    const [before] = await db.select().from(siteSettings);
+    await db.update(siteSettings).set({ defaultTheme: 'gilded-hour', themes: ['gilded-hour', 'conservatory'] });
+    try {
+      const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-site-legacy' });
+      const r = await invoke(siteStatus, ctx, {});
+      expect(r.ok && r.value.data).toMatchObject({ theme: { active: 'botanical-deco' }, defaultTheme: 'botanical-deco', themes: ['botanical-deco', 'gilded-hour', 'conservatory'] });
+    } finally {
+      await db.update(siteSettings).set({ defaultTheme: before!.defaultTheme, themes: before!.themes });
+    }
   });
 
   it('is reachable by name and unknown names are not found', async () => {

@@ -35,9 +35,12 @@ function Strip({ data }: { data: HomeData }) {
         <p className="bd-strip__text">
           A weekend in {data.site.venue.city}, with our favorite people. The day, the building, the city and getting here are gathered on this site, and fill in as each detail is settled.
         </p>
-        <p className="bd-script bd-strip__sign" aria-hidden="true">
-          See you in Chicago
-        </p>
+        {/* A line for the weeks before the weekend; after it (mode "remember") there is nobody to see there. */}
+        {data.lifecycle.mode === 'remember' ? null : (
+          <p className="bd-script bd-strip__sign" aria-hidden="true">
+            See you in Chicago
+          </p>
+        )}
       </div>
 
       <article className="bd-strip__tile bd-strip__tile--story">
@@ -55,7 +58,7 @@ function Strip({ data }: { data: HomeData }) {
         <div className="bd-strip__body">
           <p className="bd-eyebrow">The venue</p>
           <h2 className="bd-strip__title bd-italic">Chicago Athletic Association</h2>
-          <p>Venetian Gothic on Michigan Avenue since 1893, restored as a hotel. Where we will say “I do.”</p>
+          <p>Venetian Gothic on Michigan Avenue since 1893, restored as a hotel. {data.lifecycle.mode === 'remember' ? 'Where we said “I do.”' : 'Where we will say “I do.”'}</p>
           <More href={ROUTES.caa}>Explore the venue</More>
         </div>
       </article>
@@ -120,9 +123,11 @@ function Schedule({ data }: { data: HomeData }) {
           ))}
         </ol>
       </div>
-      <p className="bd-schedule__todo">
-        <Placeholder inline>the times and the rooms.</Placeholder>
-      </p>
+      {data.lifecycle.mode === 'remember' ? null : (
+        <p className="bd-schedule__todo">
+          <Placeholder inline>the times and the rooms.</Placeholder>
+        </p>
+      )}
     </div>
   );
 }

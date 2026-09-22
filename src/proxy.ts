@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
-import { parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
+import { isLastingThemeChoice, parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
 /** `RSVP_OPEN` or `RSVP_OPEN.<exp>.<sig>`; anything else is dropped before it reaches a route. */
@@ -43,7 +43,7 @@ export function proxy(request: NextRequest) {
 
   response.headers.set(THEME_HEADER, theme);
   if (source === 'query' && parseThemeCookie(cookieTheme).theme !== theme) {
-    response.cookies.set({ name: THEME_COOKIE, value: themeCookieValue(theme), ...themeCookieOptions(url.protocol === 'https:') });
+    response.cookies.set({ name: THEME_COOKIE, value: themeCookieValue(theme), ...themeCookieOptions(url.protocol === 'https:', isLastingThemeChoice(theme)) });
   } else if (stale) {
     // A design preference stored before Sara and Tyler approved Botanical–Deco (see resolveTheme).
     // It is already being ignored; clearing it stops it riding along on every request.

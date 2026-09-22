@@ -14,7 +14,7 @@ const input = z.object({
   route: z.string().min(1).max(200),
   /** Optional element id / anchor to highlight after navigating. */
   highlight: z.string().regex(/^[a-z0-9-]{1,64}$/).optional(),
-  /** Optional visual theme to switch to ("gilded-hour" | "conservatory"); the UI stores it as a device cookie. */
+  /** Optional visual theme: "botanical-deco" (the approved design, the default) or one of the earlier proposals ("gilded-hour" | "conservatory"). */
   theme: z.string().max(40).optional(),
   /** Admins only: preview the site in another lifecycle state; returns a signed preview token. */
   lifecycle: z.enum(LIFECYCLE_STATES).optional(),
@@ -34,7 +34,7 @@ export const navigateTo = defineCapability<z.infer<typeof input>, NavigateToOutp
   description:
     'Navigate to a page on this wedding site by its internal path (for example "/travel" or "/rsvp"). ' +
     'Use it when a guest asks where something is. It only opens pages on this site, never external links, ' +
-    'and it changes nothing. It can also switch the visual design ("gilded-hour" or "conservatory") for this device, ' +
+    'and it changes nothing. It can also switch the visual design for this device ("botanical-deco" is the approved default; "gilded-hour" and "conservatory" are the earlier proposals), ' +
     'and, for administrators only, issue a preview of another lifecycle state.',
   kind: 'navigate',
   auth: 'anonymous',

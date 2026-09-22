@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_THEME, isLegacyThemeId, isThemeId, listThemes, THEME_IDS, THEME_META } from '@/themes/registry';
-import { parseThemeCookie, resolveTheme, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
+import { isLastingThemeChoice, parseThemeCookie, resolveTheme, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import { isPersonalizedRoute, isStaticPublicRoute } from '@/themes/routes';
 
 /*
@@ -45,6 +45,16 @@ describe('resolveTheme', () => {
 
   it('stores the choice as a device cookie: a year, lax, http-only', () => {
     expect(themeCookieOptions(true)).toMatchObject({ path: '/', sameSite: 'lax', httpOnly: true, secure: true, maxAge: 60 * 60 * 24 * 365 });
+  });
+
+  it('remembers an earlier proposal only for the session, never for a year', () => {
+    // With the switcher off nothing on the page leads back; an old review link must not keep a
+    // guest on a rejected design after the browser closes.
+    expect(isLastingThemeChoice('botanical-deco')).toBe(true);
+    expect(isLastingThemeChoice('gilded-hour')).toBe(false);
+    expect(isLastingThemeChoice('conservatory')).toBe(false);
+    expect(themeCookieOptions(true, false)).not.toHaveProperty('maxAge');
+    expect(themeCookieOptions(true, false)).toMatchObject({ path: '/', sameSite: 'lax', httpOnly: true, secure: true });
   });
 });
 

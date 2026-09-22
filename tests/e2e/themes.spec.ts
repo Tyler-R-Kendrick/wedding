@@ -39,6 +39,17 @@ test.describe('theme resolution', () => {
     expect(invalid.headers()['set-cookie'] ?? '').not.toContain('neon');
   });
 
+  test('an earlier proposal is remembered for the session only; the approved design for a year', async ({ request }) => {
+    // With the switcher off nothing on the page leads back from a rejected design, so an old review
+    // link must not keep a relative on it after the browser closes: no Max-Age, no Expires.
+    const proposal = (await request.get('/?theme=gilded-hour')).headers()['set-cookie'] ?? '';
+    expect(proposal).toContain('theme=v2.gilded-hour');
+    expect(proposal).not.toMatch(/Max-Age|Expires/i);
+    const approved = (await request.get('/?theme=botanical-deco')).headers()['set-cookie'] ?? '';
+    expect(approved).toContain('theme=v2.botanical-deco');
+    expect(approved).toMatch(/Max-Age=31536000/i);
+  });
+
   test('a design chosen before the approval is cleared, not honoured', async ({ playwright, baseURL }) => {
     // The old switcher stored a bare id. A guest carrying one gets the approved design and the
     // stale cookie is deleted; nothing on the page is left pointing at a design the couple rejected.
@@ -122,8 +133,10 @@ for (const theme of THEMES) {
  * guests see one design and nothing offers to swap it. The three switcher journeys that lived here
  * (keyboard switch, switch from a shared link, switch twice without a stale cache) exercised a
  * control that no longer renders; they were replaced by the assertions below rather than skipped
- * on a flag no CI server sets. The switcher's server action keeps its unit coverage, and an
- * explicit `?theme=` link — how the proposals stay reviewable — is covered under 'theme resolution'.
+ * on a flag no CI server sets. The switcher's server action has no test of its own while the flag
+ * is off; it writes the cookie through the same `themeCookieValue` / `themeCookieOptions` the proxy
+ * uses, which tests/unit/themes/resolve.test.ts covers. An explicit `?theme=` link — how the
+ * proposals stay reviewable — is covered under 'theme resolution'.
  */
 test.describe('shell chrome', () => {
   test('no design choice is offered to guests, on a desktop or a phone', async ({ page }) => {

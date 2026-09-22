@@ -82,7 +82,31 @@ of the diff.
   render below 14px. They duplicate the list beside the map and are hidden from
   assistive tech.
 
-## 4. Validation (local, on the final head)
+## 4. Pre-merge code review
+
+An independent adversarial code review of the whole diff ran before merging, looking for what
+would break or leak in production. It found **no blockers**: no guest data reachable anonymously,
+the test-principal gate untouched, `/credits` built only from committed, bundled JSON, no new
+`dangerouslySetInnerHTML` or redirect sinks, and hydration-safe client components. What it did
+find, and where it went:
+
+| Finding | Resolution |
+|---|---|
+| A `?theme=gilded-hour` link kept a guest on a rejected design for a year (the switcher is off, so nothing leads back) | Only the approved design is stored as a lasting cookie; a proposal is remembered for the session. Unit and e2e tests. |
+| Curly quotes broke placeholder sentence splitting: a settled sentence opening with “ was shown as "still writing this" | The splitter recognises “ and ‘. Test fails on the old splitter, passes on the new. |
+| `site_status` reported a pre-approval database's raw `defaultTheme: gilded-hour` beside `theme.active: botanical-deco` | It reports the effective default and list. Integration test with a legacy row, as production has. |
+| `navigate_to` described only the two proposals to AI and WebMCP clients | Describes the approved default and the proposals. |
+| A test comment claimed unit coverage for the switcher action | Comment corrected to what is covered. |
+| `/trip` gave this design Gilded Hour's eyebrow class | `bd-eyebrow`. |
+| Home said "Where we will say “I do.”" and "See you in Chicago" in every lifecycle state | Past tense and no sign once the site is in its "remember" mode; no new copy invented. |
+| Portrait alt text described generated images as scenes, as if photographs | Every alt now begins "Generated portrait of…", matching `/credits`. |
+| After an inline RSVP on Your Weekend, the page's badges stay stale until reload | **Follow-up.** Refreshing would replace the confirmation (which restates the answers and the e-mail) with the summary; the answers are saved correctly either way. |
+
+Production note: capacity notes live in the database, seeded before this PR, and the seed never
+overwrites. On kendrick.wedding they keep the old "kit figures" wording until edited in
+`/admin/content`; the code, the seed and the tests carry the new wording.
+
+## 5. Validation (local, on the final head)
 
 See the PR description's table: typecheck, eslint, `npm run quality`, 748 unit/UI
 tests, 267 integration tests, every production Playwright spec on a fresh

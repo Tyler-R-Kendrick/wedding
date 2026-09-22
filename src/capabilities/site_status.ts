@@ -126,8 +126,11 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
           available: listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline })),
           switcherEnabled: ctx.flags.DESIGN_SWITCHER,
         },
-        themes: site.themes,
-        defaultTheme: site.defaultTheme,
+        // What the site serves, not the row as a pre-approval seed left it: an existing database keeps
+        // `gilded-hour` and a list without `botanical-deco` (the seed never overwrites), and an agent
+        // reading those beside `theme.active` would be told two different things.
+        themes: [...THEME_IDS],
+        defaultTheme: persisted ?? DEFAULT_THEME,
       },
       sources,
     });

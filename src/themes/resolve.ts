@@ -14,7 +14,10 @@ import type { ThemeId } from './types';
  * `stale: true`) and the proxy clears it. A bare `botanical-deco` is harmless and still honoured.
  *
  * An explicit `?theme=gilded-hour` link keeps working exactly as before — it is how the earlier
- * proposals stay reviewable — and is remembered as `v2.gilded-hour` for the rest of the visit.
+ * proposals stay reviewable — and is remembered as `v2.gilded-hour` for the rest of the visit, and
+ * no longer: with the switcher off there is nothing on the page to leave a rejected design by, so a
+ * relative who opens an old review link must not be kept on it for a year. Only the approved design
+ * is stored as a lasting preference.
  */
 export const THEME_COOKIE = 'theme';
 export const THEME_QUERY = 'theme';
@@ -59,13 +62,21 @@ export function resolveTheme(input: { query?: string | null; cookie?: string | n
   return { theme: input.fallback ?? DEFAULT_THEME, source: 'default', ...(stale ? { stale: true } : {}) };
 }
 
-/** Cookie attributes shared by the proxy and the switcher's server action. */
-export function themeCookieOptions(secure: boolean) {
+/**
+ * Cookie attributes shared by the proxy and the switcher's server action. `lasting: false` gives a
+ * session cookie (no Max-Age), which the browser drops when it closes.
+ */
+export function themeCookieOptions(secure: boolean, lasting = true) {
   return {
     path: '/',
-    maxAge: THEME_COOKIE_MAX_AGE_SECONDS,
+    ...(lasting ? { maxAge: THEME_COOKIE_MAX_AGE_SECONDS } : {}),
     sameSite: 'lax' as const,
     httpOnly: true,
     secure,
   };
+}
+
+/** Only the approved design is kept beyond the visit; an earlier proposal is remembered for the session. */
+export function isLastingThemeChoice(theme: ThemeId): boolean {
+  return theme === DEFAULT_THEME;
 }

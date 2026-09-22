@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import { navFor } from '@/domain/lifecycle/nav';
-import { curlyQuotes, guestText } from '@/domain/content/text';
+import { curlyQuotes, guestText, splitPlaceholderText } from '@/domain/content/text';
 
 /**
  * What the site claims about ITSELF, and about the reader's standing with it.
@@ -57,6 +57,13 @@ describe('editorial metadata never reaches a guest', () => {
     expect(curlyQuotes('Sara said it — "yes".')).toBe('Sara said it — “yes”.');
     // already typeset copy is left alone
     expect(curlyQuotes('It’s “settled”.')).toBe('It’s “settled”.');
+  });
+
+  it('still splits a settled sentence that opens with a curly quote from the placeholder before it', () => {
+    // The placeholder renderer splits text that guestText has already typeset. The splitter knew
+    // only straight quotes, so this settled fact would have been shown as "still writing this".
+    const text = guestText('TODO(Tyler & Sara): shuttle times. "Rideshare" pickup is on Madison St.');
+    expect(splitPlaceholderText(text)).toEqual({ settled: ['“Rideshare” pickup is on Madison St.'], hints: ['TODO(Tyler & Sara): shuttle times.'] });
   });
 
   it('has no note in the seed that tells the couple what to do', () => {
