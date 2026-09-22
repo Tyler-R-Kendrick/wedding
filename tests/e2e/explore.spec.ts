@@ -70,6 +70,52 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
+  test('the story opens one chapter at a time: pointer, keyboard, steps and deep links', async ({ page }) => {
+    await page.goto('/our-story');
+    const tabs = page.getByRole('tablist', { name: 'Chapters' });
+    const first = tabs.getByRole('tab', { name: /The connection/ });
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#the-connection')).toBeVisible();
+    await expect(page.locator('#love')).toBeHidden();
+
+    // Arrow keys move along the line and open what they land on; the URL follows, so it can be shared.
+    await first.focus();
+    await page.keyboard.press('ArrowRight');
+    const second = tabs.getByRole('tab', { name: /Our life together/ });
+    await expect(second).toBeFocused();
+    await expect(second).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#our-life-together')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await expect(page).toHaveURL(/#our-life-together$/);
+    await page.keyboard.press('End');
+    await expect(tabs.getByRole('tab', { name: /What marriage means/ })).toBeFocused();
+    await expect(page.locator('#what-marriage-means')).toBeVisible();
+
+    // Each open chapter offers the neighbouring ones by name.
+    await page.getByRole('button', { name: /^Previous chapter: The proposal/ }).click();
+    await expect(page.locator('#the-proposal')).toBeVisible();
+    await expect(page.locator('#what-marriage-means')).toBeHidden();
+
+    // An assistant's citation (/our-story#love) opens that chapter, not the first one.
+    await page.goto('/our-story#love');
+    await expect(page.locator('#love-tab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#love')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await axe(page);
+  });
+
+  test('without script the chapter links still open their chapter', async ({ browser }, testInfo) => {
+    const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto('/our-story');
+    await expect(page.locator('#the-connection')).toBeVisible();
+    await expect(page.locator('#love')).toBeHidden();
+    await page.locator('a[href="#love"]').click();
+    await expect(page.locator('#love')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await ctx.close();
+  });
+
   test('share an adventure composes a plan for the time available', async ({ page }) => {
     await page.goto('/share-an-adventure');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
