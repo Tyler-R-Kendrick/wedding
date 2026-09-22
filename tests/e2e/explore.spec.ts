@@ -154,9 +154,11 @@ test.describe('explore journey', () => {
     // to the couple, printed under the capacities a guest is reading. Changed deliberately, to the
     // guarantee behind it: the numbers are marked as the venue's own and not yet confirmed, and the
     // caption is not somebody's task. The third test in the repository to pin that string; the
-    // other two are in tests/integration/{content,weekend}.test.ts.
+    // other two are in tests/integration/{content,weekend}.test.ts. "Kit" itself went later: it is
+    // the planner's word for the venue's wedding packet, and a guest read it as jargon.
     const caption = page.locator('table caption');
-    await expect(caption).toContainText(/kit figures/i);
+    await expect(caption).toContainText(/venue.s own figures/i);
+    await expect(caption).not.toContainText(/\bkit\b/i);
     await expect(caption).toContainText(/not confirmed/i);
     await expect(caption).not.toContainText(/\bverify\b|before publishing/i);
     await axe(page);
