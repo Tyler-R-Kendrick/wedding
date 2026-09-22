@@ -269,3 +269,24 @@
     }
   }
 }
+
+/* Botanical–Deco's own controls on the sign-in journey: squared corners, the Deep Gold primary and
+   a gold underline on the field, as on every other page of the approved design. */
+[data-theme="botanical-deco"] .auth-shell {
+  --auth-radius: var(--rounded-sm, 2px);
+}
+
+[data-theme="botanical-deco"] .auth-button {
+  margin-block-start: var(--spacing-sm, 8px);
+  border-radius: var(--rounded-sm, 2px);
+}
+
+[data-theme="botanical-deco"] .auth-button-primary {
+  color: var(--color-on-gold-deep);
+  background: var(--color-gold-deep);
+}
+
+[data-theme="botanical-deco"] .auth-input {
+  background: var(--color-surface);
+  border-block-end-color: var(--color-gold-deep);
+}

@@ -9,7 +9,11 @@
   "buildPath": "comp",
   "detector": {
     "ignoreRules": [
-      "cream-palette"
+      "cream-palette",
+      "kicker-above-heading",
+      "all-caps-body",
+      "italic-serif-display",
+      "hero-eyebrow-chip"
     ],
     "ignoreFiles": [
       "node_modules/**",
@@ -31,7 +35,11 @@
     "waivers": {
       "cream-palette": "docs/design/brief.md §4 pins the grounds: Gilded Hour is white Carrara marble (#F8F6F1), Conservatory is creme herbarium paper (#F4EEDF). The brief wins over the saturated-pattern warning (impeccable SKILL.md: 'The brief wins').",
       "src/themes/*/fonts.css": "Metric-matched fallback faces ('Cinzel Fallback' etc.) are @font-face names for local() fallbacks, not DESIGN.md families; stylelint still bans the anti-reference fonts there.",
-      "playwright-report/**": "Generated Playwright HTML report (gitignored). Its inlined Ubuntu/Droid Sans Mono/Helvetica and grey literals are the reporter's own chrome, not this site's design system."
+      "playwright-report/**": "Generated Playwright HTML report (gitignored). Its inlined Ubuntu/Droid Sans Mono/Helvetica and grey literals are the reporter's own chrome, not this site's design system.",
+      "kicker-above-heading": "The approved Botanical–Deco pages (Sara and Tyler's sign-off) set a short tracked label above each title; kept only where the approved images have one. docs/design/approved-botanical-deco/detector-waivers.md.",
+      "all-caps-body": "The approved Botanical–Deco date, place and page subtitles are single tracked-caps lines at the 17px control-caps step, never paragraphs. docs/design/approved-botanical-deco/detector-waivers.md.",
+      "italic-serif-display": "The approved Explore page sets 'Chicago' as one italic Bodoni display word (REF-EXPLORE); it is the only italic display on the site. docs/design/approved-botanical-deco/detector-waivers.md.",
+      "hero-eyebrow-chip": "REF-EXPLORE sets 'SARA + TYLER' in tracked capitals above the page title; the companion page heads keep that one line and nothing else above their H1. docs/design/approved-botanical-deco/detector-waivers.md."
     }
   }
 }

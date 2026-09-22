@@ -121,7 +121,7 @@ test.describe('the guest surfaces are themed', () => {
       const ctx = await contextAs(browser, 'A1');
       const page = await ctx.newPage();
       const seen: Record<string, string> = {};
-      for (const theme of ['gilded-hour', 'conservatory']) {
+      for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
         await page.goto(`${route}?theme=${theme}`);
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         // The heading resolves to a real, theme-specific face — not the browser's serif default.
@@ -130,6 +130,7 @@ test.describe('the guest surfaces are themed', () => {
         seen[theme] = font;
       }
       expect(seen['gilded-hour'], 'both designs resolved to the same heading face').not.toBe(seen['conservatory']);
+      expect(seen['botanical-deco'], 'the approved design resolved to a proposal\'s heading face').not.toBe(seen['gilded-hour']);
       await ctx.close();
     });
   }
@@ -150,7 +151,7 @@ test.describe('the guest surfaces are themed', () => {
      */
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    for (const theme of ['gilded-hour', 'conservatory']) {
+    for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
       for (const route of ['/rsvp', '/your-weekend']) {
         await page.goto(`${route}?theme=${theme}`);
         const boxes = await page.locator('header a').evaluateAll((els) =>
@@ -173,7 +174,7 @@ test.describe('the guest surfaces are themed', () => {
   // pages rendered their running copy in the browser's default serif for the whole pre-hydration
   // window — and permanently for a guest browsing without JavaScript. Measured before this test
   // existed: 12 of 14 text elements on /rsvp and 55 of 66 on /your-weekend, in both designs.
-  for (const theme of ['gilded-hour', 'conservatory']) {
+  for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     test(`${theme} styles the running copy with script disabled, not only the headings`, async ({ browser }) => {
       const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
       const page = await ctx.newPage();
@@ -182,7 +183,7 @@ test.describe('the guest surfaces are themed', () => {
         // Not `html`: without script nothing carries the attribute there, and that is the point.
         await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
         const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
-          const themed = /Cinzel|Josefin|Spectral|Gloock|Cardo|Big Shoulders/i;
+          const themed = /Cinzel|Josefin|Spectral|Gloock|Cardo|Big Shoulders|Bodoni Moda|Newsreader|Ms Madi/i;
           const holdsText = (e: Element) =>
             !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
             [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());

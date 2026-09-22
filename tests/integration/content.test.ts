@@ -37,7 +37,8 @@ describe('story + adventures visibility', () => {
     if (!r.ok) return;
     expect(r.value.data.sections.map((s) => s.chapter)).toEqual(['met', 'connection', 'relationship', 'love', 'future', 'engagement', 'marriage']);
     const met = r.value.data.sections[0]!;
-    expect(met.paragraphs[0]).toEqual({ text: "We met at Allison and Jamie's wedding.", placeholder: false });
+    // guestText sets typographer's quotes on the way out; the record keeps what was typed.
+    expect(met.paragraphs[0]).toEqual({ text: 'We met at Allison and Jamie’s wedding.', placeholder: false });
     expect(met.paragraphs.some((p) => p.placeholder)).toBe(true);
     for (const s of r.value.sources) {
       expect(s.url).toMatch(/^\/our-story#/);
@@ -148,7 +149,7 @@ describe('CAA docent', () => {
     // unconfirmed figures - so assert that, and that the note is no longer a task for someone.
     for (const space of d.spaces) {
       const note = space.capacities.note ?? '';
-      expect(note).toMatch(/kit figures/i);
+      expect(note).toMatch(/venue's own figures/i);
       expect(note).toMatch(/not confirmed/i);
       expect(note).not.toMatch(/\bverify\b|before publishing/i);
     }

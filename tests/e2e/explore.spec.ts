@@ -28,8 +28,10 @@ async function follow(page: Page, name: string) {
 test.describe('explore journey', () => {
   test('story → adventure → linked recommendation → directions handoff', async ({ page }) => {
     await page.goto('/our-story');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Our Story');
-    await expect(page.getByText("We met at Allison and Jamie's wedding.")).toBeVisible();
+    // The approved design titles the page with its editorial headline; the page is still "Our Story".
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
+    await expect(page).toHaveTitle(/Our Story/);
+    await expect(page.getByText('We met at Allison and Jamie’s wedding.')).toBeVisible();
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
@@ -68,6 +70,52 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
+  test('the story opens one chapter at a time: pointer, keyboard, steps and deep links', async ({ page }) => {
+    await page.goto('/our-story');
+    const tabs = page.getByRole('tablist', { name: 'Chapters' });
+    const first = tabs.getByRole('tab', { name: /The connection/ });
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#the-connection')).toBeVisible();
+    await expect(page.locator('#love')).toBeHidden();
+
+    // Arrow keys move along the line and open what they land on; the URL follows, so it can be shared.
+    await first.focus();
+    await page.keyboard.press('ArrowRight');
+    const second = tabs.getByRole('tab', { name: /Our life together/ });
+    await expect(second).toBeFocused();
+    await expect(second).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#our-life-together')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await expect(page).toHaveURL(/#our-life-together$/);
+    await page.keyboard.press('End');
+    await expect(tabs.getByRole('tab', { name: /What marriage means/ })).toBeFocused();
+    await expect(page.locator('#what-marriage-means')).toBeVisible();
+
+    // Each open chapter offers the neighbouring ones by name.
+    await page.getByRole('button', { name: /^Previous chapter: The proposal/ }).click();
+    await expect(page.locator('#the-proposal')).toBeVisible();
+    await expect(page.locator('#what-marriage-means')).toBeHidden();
+
+    // An assistant's citation (/our-story#love) opens that chapter, not the first one.
+    await page.goto('/our-story#love');
+    await expect(page.locator('#love-tab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#love')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await axe(page);
+  });
+
+  test('without script the chapter links still open their chapter', async ({ browser }, testInfo) => {
+    const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto('/our-story');
+    await expect(page.locator('#the-connection')).toBeVisible();
+    await expect(page.locator('#love')).toBeHidden();
+    await page.locator('a[href="#love"]').click();
+    await expect(page.locator('#love')).toBeVisible();
+    await expect(page.locator('#the-connection')).toBeHidden();
+    await ctx.close();
+  });
+
   test('share an adventure composes a plan for the time available', async ({ page }) => {
     await page.goto('/share-an-adventure');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -84,7 +132,9 @@ test.describe('explore journey', () => {
 
   test('explore CAA lists current outlets with dates and never the closed ones', async ({ page }) => {
     await page.goto('/explore-caa');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Chicago Athletic Association Hotel');
+    // The approved page is "Explore CAA + Chicago"; the building's own name leads the venue section.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explore CAA + Chicago');
+    await expect(page.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 })).toBeVisible();
     await expect(page.locator('#fact-built-1893')).toContainText('Built in 1893');
     await expect(page.locator('[data-key="outlet.cindys"]')).toBeVisible();
     await expect(page.locator('[data-key="outlet.cindys"] [data-freshness]')).toContainText('September 5, 2026');
@@ -104,9 +154,11 @@ test.describe('explore journey', () => {
     // to the couple, printed under the capacities a guest is reading. Changed deliberately, to the
     // guarantee behind it: the numbers are marked as the venue's own and not yet confirmed, and the
     // caption is not somebody's task. The third test in the repository to pin that string; the
-    // other two are in tests/integration/{content,weekend}.test.ts.
+    // other two are in tests/integration/{content,weekend}.test.ts. "Kit" itself went later: it is
+    // the planner's word for the venue's wedding packet, and a guest read it as jargon.
     const caption = page.locator('table caption');
-    await expect(caption).toContainText(/kit figures/i);
+    await expect(caption).toContainText(/venue.s own figures/i);
+    await expect(caption).not.toContainText(/\bkit\b/i);
     await expect(caption).toContainText(/not confirmed/i);
     await expect(caption).not.toContainText(/\bverify\b|before publishing/i);
     await axe(page);

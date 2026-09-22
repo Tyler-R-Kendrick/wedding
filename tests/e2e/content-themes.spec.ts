@@ -8,7 +8,8 @@ import AxeBuilder from '@axe-core/playwright';
  * WCAG 2.2 AA at 390 / 768 / 1440.
  */
 
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+/** The approved design, then the two proposals it superseded (still reachable by `?theme=`). */
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 type Theme = (typeof THEMES)[number];
 
 /** Reserved by the fixed bottom chrome (elevator panel / two-action bar), so it is not "in the fold". */
@@ -17,12 +18,15 @@ const PHONE = { width: 390, height: 844 };
 interface PageCase {
   key: string;
   path: string;
-  h1: string | RegExp;
+  /** One H1 for every design, or per design where the approved composition titles the page itself. */
+  h1: string | RegExp | Record<Theme, string | RegExp>;
   /**
    * What the page exists to deliver first. `control: true` targets are tapped, so the whole
    * control must sit in the first screen; reading targets only have to start there.
    */
   primary: (page: Page) => Locator;
+  /** Where the approved design leads with something else in the first screen. */
+  primaryFor?: Partial<Record<Theme, (page: Page) => Locator>>;
   control?: boolean;
   /** Markup only the correct theme kit produces, asserted per theme. */
   signature: Record<Theme, string>;
@@ -32,9 +36,9 @@ const PAGES: PageCase[] = [
   {
     key: 'our-story',
     path: '/our-story',
-    h1: 'Our Story',
+    h1: { 'botanical-deco': 'How we found our way to forever', 'gilded-hour': 'Our Story', conservatory: 'Our Story' },
     primary: (p) => p.getByRole('heading', { name: 'How we met', level: 2 }),
-    signature: { 'gilded-hour': '.gh-spine .gh-plaque--act', conservatory: '.cv-stem .cv-stem__leaf' },
+    signature: { 'botanical-deco': '.bd-journey__line .bd-journey__bead', 'gilded-hour': '.gh-spine .gh-plaque--act', conservatory: '.cv-stem .cv-stem__leaf' },
   },
   {
     key: 'our-adventures',
@@ -42,14 +46,14 @@ const PAGES: PageCase[] = [
     h1: 'The places that shaped us',
     primary: (p) => p.locator('main').getByRole('link', { name: 'All', exact: true }),
     control: true,
-    signature: { 'gilded-hour': '.gh-ledger .gh-entry__num', conservatory: '.cv-mount .cv-pressed[data-flower]' },
+    signature: { 'botanical-deco': '.bd-ledger .bd-entry[data-adventure]', 'gilded-hour': '.gh-ledger .gh-entry__num', conservatory: '.cv-mount .cv-pressed[data-flower]' },
   },
   {
     key: 'adventure-detail',
     path: '/our-adventures/starved-rock',
     h1: 'Starved Rock',
     primary: (p) => p.getByRole('heading', { name: 'The memory', level: 2 }),
-    signature: { 'gilded-hour': '.gh-diptych .gh-diptych__leaf', conservatory: '.cv-voices .cv-voice' },
+    signature: { 'botanical-deco': '.bd-diptych .bd-diptych__leaf', 'gilded-hour': '.gh-diptych .gh-diptych__leaf', conservatory: '.cv-voices .cv-voice' },
   },
   {
     key: 'share-an-adventure',
@@ -58,7 +62,7 @@ const PAGES: PageCase[] = [
     // 22,600 px at 390: the page's first action is the jump list, not the itinerary filter below it
     primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
     control: true,
-    signature: { 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
+    signature: { 'botanical-deco': '.bd-stops .bd-stops__num', 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
   },
   {
     key: 'recommendation',
@@ -66,21 +70,23 @@ const PAGES: PageCase[] = [
     h1: 'Starved Rock State Park',
     primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
     control: true,
-    signature: { 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
+    signature: { 'botanical-deco': '.bd-rec .bd-rec__inner', 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
   },
   {
     key: 'explore-caa',
     path: '/explore-caa',
-    h1: 'Chicago Athletic Association Hotel',
+    h1: { 'botanical-deco': 'Explore CAA + Chicago', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
     primary: (p) => p.locator('[id^="fact-"]').first(),
-    signature: { 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
+    // The approved page opens on the couple, then the venue: its introduction starts in the first screen.
+    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }) },
+    signature: { 'botanical-deco': '.bd-venue__frames .bd-venue__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
   },
   {
     key: 'venue-space',
     path: '/explore-caa/white-city-ballroom',
     h1: 'White City Ballroom',
     primary: (p) => p.locator('#look li').first(),
-    signature: { 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },
+    signature: { 'botanical-deco': '.bd-docent .bd-docent__num', 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },
   },
   {
     key: 'the-wedding',
@@ -88,7 +94,7 @@ const PAGES: PageCase[] = [
     h1: 'The Wedding',
     primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
     control: true,
-    signature: { 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
+    signature: { 'botanical-deco': '.bd-programme .bd-date', 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
   },
   {
     key: 'ask-us',
@@ -96,7 +102,7 @@ const PAGES: PageCase[] = [
     h1: 'Questions, answered',
     primary: (p) => p.locator('main form[role="search"]').getByRole('button', { name: 'Search' }),
     control: true,
-    signature: { 'gilded-hour': '.gh-faq .gh-faq__entry', conservatory: '.cv-faq .cv-faq__entry' },
+    signature: { 'botanical-deco': '.bd-faq .bd-faq__entry', 'gilded-hour': '.gh-faq .gh-faq__entry', conservatory: '.cv-faq .cv-faq__entry' },
   },
 ];
 
@@ -125,15 +131,15 @@ for (const theme of THEMES) {
       test('landmarks, heading and the theme\'s own structure', async ({ page }) => {
         await page.goto(`${c.path}?theme=${theme}`);
         await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(c.h1);
+        const h1 = typeof c.h1 === 'string' || c.h1 instanceof RegExp ? c.h1 : c.h1[theme];
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1);
         await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
         await expect(page.locator('main#main')).toBeAttached();
         await expect(page.getByRole('contentinfo')).toBeAttached();
         // exactly one H1, and the theme's own markup — the two kits never converge on one structure
         await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
         await expect(page.locator(c.signature[theme]).first()).toBeAttached();
-        const other = THEMES.find((t) => t !== theme)!;
-        await expect(page.locator(c.signature[other])).toHaveCount(0);
+        for (const other of THEMES.filter((t) => t !== theme)) await expect(page.locator(c.signature[other])).toHaveCount(0);
         // placeholders stay visibly marked and the raw marker never reaches a guest
         const text = await page.locator('main').innerText();
         expect(text).not.toContain('TODO(Tyler & Sara)');
@@ -150,7 +156,7 @@ for (const theme of THEMES) {
         test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
         await page.setViewportSize(PHONE);
         await page.goto(`${c.path}?theme=${theme}`);
-        const target = c.primary(page).first();
+        const target = (c.primaryFor?.[theme] ?? c.primary)(page).first();
         await expect(target).toBeVisible();
         const box = (await target.boundingBox())!;
         const fold = await foldHeight(page);
@@ -179,8 +185,13 @@ for (const theme of THEMES) {
 }
 
 test.describe('content pages keep their structure across a design switch', () => {
-  test('the same route answers in either design and never mixes the two', async ({ request }) => {
+  test('the same route answers in any design and never mixes them', async ({ request }) => {
     for (const c of PAGES) {
+      const approved = await request.get(`${c.path}?theme=botanical-deco`);
+      expect(approved.headers()['x-theme'], c.key).toBe('botanical-deco');
+      const bd = await approved.text();
+      expect(bd, c.key).toContain('data-theme="botanical-deco"');
+      expect(bd, c.key).not.toMatch(/data-theme="(gilded-hour|conservatory)"/);
       const gilded = await request.get(`${c.path}?theme=gilded-hour`);
       expect(gilded.headers()['x-theme'], c.key).toBe('gilded-hour');
       expect(await gilded.text(), c.key).toContain('data-theme="gilded-hour"');
@@ -199,7 +210,7 @@ test.describe('content pages keep their structure across a design switch', () =>
  * elevator panel and Conservatory reserved nothing for its floating Menu tag, so the tag landed on
  * the line-ends of the measure. Both designs now declare what they pin and reserve its height.
  */
-test.describe('bottom chrome is reserved in both designs', () => {
+test.describe('bottom chrome is reserved in every design', () => {
   for (const theme of THEMES) {
     test(`${theme}: main reserves at least the height of its fixed bottom control`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'mobile', 'phone chrome only');

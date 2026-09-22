@@ -1,0 +1,31 @@
+{
+  "generated": "scripts/design-sync.mjs",
+  "source": "src/themes/botanical-deco/DESIGN.md",
+  "colors": {
+    "primary": "#292720",
+    "on-primary": "#fbf9f3",
+    "secondary": "#2b3f4c",
+    "on-secondary": "#fbf9f3",
+    "tertiary": "#75552d",
+    "on-tertiary": "#fbf9f3",
+    "gold": "#b39463",
+    "gold-deep": "#8c6d43",
+    "on-gold-deep": "#fdfcf8",
+    "gilt": "#d6bd8e",
+    "moss": "#525a44",
+    "on-moss": "#fbf9f3",
+    "dusk": "#5e7385",
+    "on-dusk": "#fbf9f3",
+    "dusty": "#8b9eab",
+    "blush": "#d4aba7",
+    "champagne": "#c9ac9b",
+    "neutral": "#f8f5ee",
+    "neutral-variant": "#efe9dd",
+    "surface": "#fdfcf8",
+    "on-surface": "#292720",
+    "on-surface-muted": "#59554d",
+    "outline": "#e2d8c7",
+    "error": "#8a2c22",
+    "on-error": "#fff6f2"
+  }
+}

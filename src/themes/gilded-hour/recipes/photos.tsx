@@ -50,7 +50,7 @@ export const GildedPhotosPage: ContentRecipe<PhotosProps> = ({ albums, canUpload
       <SectionHeading level={2} id="find-title" title="Find a photo" />
       <Prose>
         <p>
-          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, who you were with.
+          <Link href={ROUTES.photoSearch}>Search the photos</Link> by what you remember — a place, a moment, a colour.
         </p>
       </Prose>
     </Section>

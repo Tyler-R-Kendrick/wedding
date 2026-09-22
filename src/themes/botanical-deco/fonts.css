@@ -1,0 +1,81 @@
+/*
+ * Botanical–Deco — self-hosted OFL faces (files + OFL-*.txt in public/fonts/botanical-deco).
+ *
+ * Bodoni Moda (display, roman + italic, wght 400–700) is the high-contrast Didone the approved
+ * references use for "SARA + TYLER", "Same People. A Bigger Chapter." and the italic card titles.
+ * Newsreader (text, pinned to the 16pt optical size so the file is 44 KB instead of 132 KB) is the
+ * editorial prose and — set in capitals with tracking — the serif small labels, nav and buttons the
+ * references use; the approved design has no sans at all. Ms Madi is the one sparse handwritten
+ * accent ("A brighter together"); it is decorative, `aria-hidden`, and its words always exist as
+ * real text beside it.
+ *
+ * Only the two roman files are preloaded (≈90 KB); the italics and the script swap in on use.
+ * Fallbacks are metric-matched to the Liberation Serif (Times New Roman) clone: size-adjust from the
+ * frequency-weighted lowercase advance, ascent/descent from hhea divided by that adjustment.
+ */
+@font-face {
+  font-family: "Bodoni Moda";
+  src: url("/fonts/botanical-deco/bodoni-moda-wght.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bodoni Moda";
+  src: url("/fonts/botanical-deco/bodoni-moda-italic-wght.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bodoni Moda Fallback";
+  src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
+  size-adjust: 115.45%;
+  ascent-override: 97.45%;
+  descent-override: 34.65%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: Newsreader;
+  src: url("/fonts/botanical-deco/newsreader-text.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Newsreader;
+  src: url("/fonts/botanical-deco/newsreader-text-italic.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Newsreader Fallback";
+  src: local("Times New Roman"), local("TimesNewRoman"), local("Liberation Serif"), local("Tinos");
+  size-adjust: 105.7%;
+  ascent-override: 69.54%;
+  descent-override: 25.07%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Ms Madi";
+  src: url("/fonts/botanical-deco/ms-madi-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ms Madi Fallback";
+  src: local("Times New Roman Italic"), local("TimesNewRoman-Italic"), local("Liberation Serif Italic"), local("Tinos Italic");
+  size-adjust: 75.1%;
+  ascent-override: 119.84%;
+  descent-override: 55.93%;
+  line-gap-override: 0%;
+}

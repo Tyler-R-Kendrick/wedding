@@ -50,10 +50,13 @@ describe('readFlags', () => {
   it('uses production-safe defaults and honours FLAG_* overrides', () => {
     const defaults = readFlags({});
     expect(defaults.PRO_MEDIA_AI_PROCESSING).toBe(false);
-    expect(defaults.DESIGN_SWITCHER).toBe(true);
-    const flags = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on', NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'off', FLAG_WEBMCP: 'nonsense' });
+    // Off since Sara and Tyler approved one design: guests see it, and nothing offers to swap it.
+    expect(defaults.DESIGN_SWITCHER).toBe(false);
+    const flags = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on', NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'on', FLAG_WEBMCP: 'nonsense' });
     expect(flags.PRO_MEDIA_AI_PROCESSING).toBe(true);
-    expect(flags.DESIGN_SWITCHER).toBe(false);
+    // The override still works both ways, for a review session that wants the proposals side by side.
+    expect(flags.DESIGN_SWITCHER).toBe(true);
+    expect(readFlags({ NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'off' }).DESIGN_SWITCHER).toBe(false);
     expect(flags.WEBMCP).toBe(FEATURE_FLAGS.WEBMCP);
   });
 });

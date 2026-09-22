@@ -83,7 +83,7 @@ function ItemCard({ item, highlighted, theme }: { item: TripItem; highlighted: b
     // favour of Spectral's real small capitals ("instead of shouting uppercase").
     <li aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
       <GuestCard theme={theme} title={item.title}>
-        <p className={theme === 'conservatory' ? 'cv-eyebrow' : 'gh-eyebrow'}>
+        <p className={theme === 'conservatory' ? 'cv-eyebrow' : theme === 'botanical-deco' ? 'bd-eyebrow' : 'gh-eyebrow'}>
           {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
           {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
         </p>

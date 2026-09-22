@@ -64,7 +64,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
 | `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run` | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
-| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; `FLAG_DESIGN_SWITCHER=off` removes the floating design switcher from the server render | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
+| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; the design switcher is off by default since the couple approved Botanical–Deco — `FLAG_DESIGN_SWITCHER=on` brings the chooser back for reviewing the two superseded proposals | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_API_TOKEN`, `CLOUDFLARE_STREAM_CUSTOMER_CODE` | unset -> ffmpeg/mock | video delivery via Cloudflare Stream (skeleton); all three required | no |
 | `MEDIA_MAX_IMAGE_MB` | `40` | media: per-file cap for images | no |
@@ -78,7 +78,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | absolute links, signed dev URLs |
-| `NEXT_PUBLIC_DEFAULT_THEME` | `gilded-hour` | initial theme |
+| `NEXT_PUBLIC_DEFAULT_THEME` | `botanical-deco` | initial theme (the design Sara and Tyler approved) |
 | `NEXT_PUBLIC_FLAG_<NAME>` | flag defaults | browser mirror of a feature flag |
 
 ## Tooling / tests

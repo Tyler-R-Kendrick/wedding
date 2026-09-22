@@ -16,7 +16,7 @@ import { contextAs, principalHeaders } from './helpers/principal';
  * only mean anything on `next start`), and the client-bundle budget is `bundle.spec.ts` for the
  * same reason. What is deliberately NOT here is in the level-16 self-review.
  */
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 const GUEST_ROUTES = ['/rsvp', '/your-weekend', '/transportation', '/trip'] as const;
 
 /**
@@ -223,7 +223,8 @@ test.describe('the guest tree wears the design end to end', () => {
       test.skip(testInfo.project.name === 'tablet', 'phone + desktop are the review viewports');
       const ctx = await contextAs(browser, 'A1');
       const page = await ctx.newPage();
-      const shellClass = theme === 'gilded-hour' ? 'gh' : 'cv';
+      const shellClass = theme === 'gilded-hour' ? 'gh' : theme === 'conservatory' ? 'cv' : 'bd';
+      const headerClass = theme === 'botanical-deco' ? 'bd-masthead' : `${shellClass}-header`;
       for (const route of GUEST_ROUTES) {
         await page.goto(`${route}?theme=${theme}`);
         // The design's own shell, not the guest kit's: one `<main>`, the kit's ground class, and
@@ -231,7 +232,7 @@ test.describe('the guest tree wears the design end to end', () => {
         // — the same content in a different site.
         await expect(page.locator(`.site.${shellClass}`), `${route} is not inside the ${theme} shell`).toHaveCount(1);
         await expect(page.locator('main#main')).toHaveCount(1);
-        await expect(page.locator(`header.${shellClass}-header`)).toHaveCount(1);
+        await expect(page.locator(`header.${headerClass}`)).toHaveCount(1);
         await expect(page.locator(`footer.${shellClass}-footer`)).toHaveCount(1);
         await expect(page.locator('.wp-header, .wp-footer'), `${route} still renders the guest kit chrome`).toHaveCount(0);
 
@@ -276,6 +277,8 @@ test.describe('the guest tree wears the design end to end', () => {
         shapes[theme] = await page.locator('main#main').evaluate((main) => [...main.querySelectorAll('*')].map((e) => e.tagName).join(','));
       }
       expect(shapes['gilded-hour'], `${route} renders identical structure under both designs`).not.toBe(shapes['conservatory']);
+      expect(shapes['botanical-deco'], `${route} renders the approved design with a proposal's structure`).not.toBe(shapes['gilded-hour']);
+      expect(shapes['botanical-deco'], `${route} renders the approved design with a proposal's structure`).not.toBe(shapes['conservatory']);
     }
     await ctx.close();
   });

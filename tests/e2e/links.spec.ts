@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
  * the part it cannot see, because a link inside a page component is not in the nav model. Both
  * designs, because a theme kit can render links the other does not.
  */
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 const ROUTES = ['/', '/our-story', '/our-adventures', '/share-an-adventure', '/the-wedding', '/explore-caa', '/travel', '/gifts', '/ask-us', '/transportation', '/trip', '/rsvp', '/your-weekend'];
 
 test.describe('no dead internal links', () => {

@@ -18,7 +18,7 @@ async function flightsMode(request: APIRequestContext): Promise<string> {
   return body.providers?.flights ?? "unknown";
 }
 
-const THEMES = ["gilded-hour", "conservatory"] as const;
+const THEMES = ["botanical-deco", "gilded-hour", "conservatory"] as const;
 
 test.describe("Travel & Stay", () => {
   // Parameterised by design on purpose. This spec used to `goto('/travel')` with no `?theme=`, so

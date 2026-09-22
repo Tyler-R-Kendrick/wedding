@@ -14,6 +14,7 @@
 export function splitSentences(text: string): string[] {
   const normalized = text.replace(/\s+/g, ' ').trim();
   if (!normalized) return [];
-  const parts = normalized.split(/(?<=[.!?](?:\s*\[S\d+(?:\s*,\s*S\d+)*\])*)\s+(?=[A-Z0-9"'(\[])/);
+  // Opening quotes in both forms: guest copy is set with typographer's quotes (guestText).
+  const parts = normalized.split(/(?<=[.!?](?:\s*\[S\d+(?:\s*,\s*S\d+)*\])*)\s+(?=[A-Z0-9"'“‘(\[])/);
   return parts.map((p) => p.trim()).filter(Boolean);
 }

@@ -1,0 +1,860 @@
+/*
+ * Botanical–Deco on the guest routes (/your-weekend, /rsvp, /trip, /transportation, /media/*).
+ *
+ * UNLAYERED on purpose, and imported by the guest layout straight after `components/rsvp/recipes.css`.
+ * The theme kits live in `@layer components`, and an unlayered rule beats a layered one whatever its
+ * specificity — so every override of the shared guest recipe (`.page`, `.btn--primary`,
+ * `.choice__opt`) written in kit.css silently lost to the shared rule it was meant to replace. Every
+ * selector here is scoped to `[data-theme="botanical-deco"]`, so the earlier proposals are untouched.
+ */
+
+/* ---------- guest forms in this design (the real RSVP form, /trip, /transportation) ---------- */
+[data-theme="botanical-deco"] {
+  --wp-frame: 60rem;
+}
+
+/* Every guest page opens like the approved ones: a Bodoni caps title over a short gold rule. */
+[data-theme="botanical-deco"] .page__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.125rem, 1.4rem + 1.9vw, 3rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  font-variation-settings: "opsz" 18;
+}
+
+[data-theme="botanical-deco"] .page > .page__title::after {
+  content: "";
+  display: block;
+  inline-size: 44px;
+  block-size: 1px;
+  margin-block-start: var(--spacing-md);
+  background: var(--color-gold);
+}
+
+[data-theme="botanical-deco"] .btn--primary {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+}
+
+[data-theme="botanical-deco"] .btn--primary:hover {
+  background: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+}
+
+[data-theme="botanical-deco"] .btn--secondary {
+  border-width: 1px;
+  border-color: var(--color-gold);
+}
+
+/* The approved reply's choices: a moss pill for the chosen answer, a quiet outline for the other. */
+[data-theme="botanical-deco"] .choice__opt {
+  border-radius: var(--rounded-pill);
+  border-color: var(--color-outline);
+  padding-inline: var(--spacing-sm) var(--spacing-md);
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+[data-theme="botanical-deco"] .choice__opt input {
+  accent-color: var(--color-moss);
+}
+
+/* The two answers as one segmented control on a single row, each half a 44px target. */
+[data-theme="botanical-deco"] .choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  gap: 0;
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt {
+  min-block-size: 44px;
+  border-radius: 0;
+  text-wrap: balance;
+}
+
+/* Both answers need about 376px on one row. In any narrower column — a phone, or the Weekend's
+   middle column on a laptop — they split into two equal halves, each label wrapping inside its
+   own half, never one under the other. Measured on the fieldset, not the window. */
+[data-theme="botanical-deco"] .fld:has(> .choice) {
+  container-type: inline-size;
+}
+
+@container (width < 380px) {
+  [data-theme="botanical-deco"] .choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt:first-child {
+  border-start-start-radius: var(--rounded-pill);
+  border-end-start-radius: var(--rounded-pill);
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt:last-child {
+  border-start-end-radius: var(--rounded-pill);
+  border-end-end-radius: var(--rounded-pill);
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt + .choice__opt {
+  margin-inline-start: -1px;
+}
+
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:checked) {
+  background: var(--color-moss);
+  border-color: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:checked) input {
+  accent-color: var(--color-on-moss);
+}
+
+/* Focus shows on the chosen answer too: an Ink ring outside the moss pill, 3:1 against the paper. */
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:focus-visible) {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/*
+ * Ask only what the answer calls for. A meal and a guest of their own matter only once someone is
+ * coming, and a guest's name and meal only once there is a guest. Without :has() every field shows,
+ * as it did before; the server still validates either way.
+ */
+[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > .fld:has(select),
+[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > fieldset.fld:has(input[type="checkbox"]),
+[data-theme="botanical-deco"] fieldset.fld:has(> .choice__opt input[type="checkbox"]:not(:checked)) > .fld {
+  display: none;
+}
+
+[data-theme="botanical-deco"] .inp {
+  border-radius: var(--rounded-sm);
+  border-color: var(--color-outline);
+  border-block-end-color: var(--color-gold-deep);
+  background: var(--color-surface);
+}
+
+/* ---------- your weekend ---------- */
+[data-theme="botanical-deco"] .page.bd-weekend {
+  max-width: none;
+  padding: 0 0 var(--spacing-3xl);
+}
+
+.bd-wkhero {
+  position: relative;
+  display: grid;
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  overflow: clip;
+  border-block-end: var(--bd-hair);
+}
+
+.bd-wkhero__media {
+  position: relative;
+  aspect-ratio: 348 / 286;
+  max-block-size: 42svh;
+  overflow: hidden;
+}
+
+.bd-wkhero__media :is(picture, img) {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* Never across a face (DESIGN.md): on a phone and a tablet the portrait is all faces, so the line
+   waits for the width where it can sit on the city to the couple's left. */
+.bd-wkhero__script {
+  position: absolute;
+  display: none;
+  inset-block-start: 9%;
+  inset-inline-start: 14%;
+  max-inline-size: 12rem;
+  font-family: var(--font-accent);
+  font-size: clamp(1.875rem, 1rem + 1.4vw, 2.625rem);
+  line-height: 0.95;
+  color: var(--color-surface);
+  text-shadow: 0 1px 14px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  transform: rotate(-10deg);
+  text-wrap: balance;
+}
+
+.bd-wkhero__words {
+  display: none;
+}
+
+.bd-wkhero__copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 6px;
+  padding: var(--spacing-lg) var(--bd-gutter);
+  padding-inline-start: max(var(--bd-gutter), 52px);
+}
+
+.bd-wkhero__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.5rem + 2.3vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  font-variation-settings: "opsz" 18;
+}
+
+.bd-wkhero__sub {
+  max-width: 24rem;
+  font-size: var(--type-control-caps-size);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@media (width >= 768px) {
+  .bd-wkhero {
+    grid-template-columns: minmax(0, 38fr) minmax(0, 62fr);
+    min-block-size: clamp(300px, 22vw, 340px);
+  }
+
+  .bd-wkhero__media {
+    position: absolute;
+    inset-block: 0;
+    inset-inline: 38% 0;
+    aspect-ratio: auto;
+    max-block-size: none;
+    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 16%);
+  }
+
+  .bd-wkhero__copy {
+    grid-column: 1;
+    padding-inline-start: clamp(56px, 8vw, 132px);
+  }
+}
+
+@media (width >= 1100px) {
+  .bd-wkhero__script {
+    display: block;
+  }
+
+  .bd-wkhero__media {
+    inset-inline: 36% 12.5%;
+    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 14%, var(--color-primary) 94%, transparent);
+  }
+
+  .bd-wkhero__words {
+    position: absolute;
+    z-index: 2;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 2px;
+    inline-size: 13.5%;
+    padding-inline: clamp(12px, 1.8vw, 36px);
+    background: linear-gradient(90deg, color-mix(in oklab, var(--color-champagne) 22%, var(--color-neutral-variant)), var(--color-neutral-variant));
+    border-inline-start: var(--bd-gold-hair);
+    font-family: var(--font-display);
+
+    /* aria-hidden carving, scaled with its column so "beautiful" fits at 1100. */
+    font-size: clamp(var(--type-label-caps-size), 0.1rem + 0.95vw, 1.0625rem);
+    letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.2em);
+    line-height: 1.5;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .bd-wkhero__words > span {
+    display: block;
+  }
+}
+
+/* The utility tabs: squared, hairline-divided, the current one in moss. */
+.bd-tabs {
+  display: grid;
+  gap: var(--spacing-md);
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  padding: var(--spacing-md) var(--bd-gutter) 0;
+}
+
+.bd-tabs ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  border: var(--bd-hair);
+  background: var(--color-surface);
+  scrollbar-width: thin;
+}
+
+.bd-tabs li + li {
+  border-inline-start: var(--bd-hair);
+}
+
+.bd-tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding-inline: clamp(14px, 1.8vw, 30px);
+  font-size: var(--type-control-caps-size);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.bd-tabs a:hover {
+  background: var(--color-neutral-variant);
+}
+
+.bd-tabs a[aria-current] {
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.bd-tabs__icon {
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bd-tabs__words {
+  display: none;
+  white-space: nowrap;
+}
+
+@media (width >= 1100px) {
+  .bd-tabs {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    padding-inline: clamp(40px, 3.8vw, 56px) var(--bd-gutter);
+  }
+
+  .bd-tabs ul {
+    overflow: visible;
+  }
+}
+
+@media (width >= 1560px) {
+  /* aria-hidden ornament: small and tracked so it fits beside the tabs rather than being clipped. */
+  .bd-tabs__words {
+    display: block;
+    justify-self: end;
+    font-size: var(--type-label-caps-size);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  .bd-tabs__words span {
+    margin-inline: 0.8em;
+    color: var(--color-tertiary);
+  }
+}
+
+.bd-weekend__notices {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
+}
+
+/* The workspace: itinerary, the reply, the modules. */
+.bd-workspace {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-xl);
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  padding: var(--spacing-xl) var(--bd-gutter);
+}
+
+.bd-workspace > .bd-bloom,
+.bd-workspace__skyline {
+  display: none;
+}
+
+.bd-itin {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+  container: itin / inline-size;
+}
+
+.bd-itin__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--spacing-sm) var(--spacing-lg);
+}
+
+.bd-itin__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.5rem + 1.8vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.bd-itin__script {
+  font-family: var(--font-accent);
+  font-size: clamp(1.875rem, 1.5rem + 1vw, 2.5rem);
+  line-height: 1;
+  color: var(--color-gold-deep);
+  transform: rotate(-8deg);
+  text-wrap: balance;
+}
+
+.bd-itin__lede {
+  max-width: 32rem;
+  color: var(--color-on-surface-muted);
+}
+
+.bd-itin__events {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-event {
+  scroll-margin-block-start: 96px;
+}
+
+.bd-event__details {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline);
+}
+
+.bd-event__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.bd-event__summary::-webkit-details-marker {
+  display: none;
+}
+
+.bd-event__photo {
+  display: none;
+}
+
+.bd-event__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bd-event__name {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: 1.15;
+}
+
+.bd-event__when,
+.bd-event__where {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.bd-event__where {
+  text-transform: capitalize;
+}
+
+.bd-event__chev {
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border: 1px solid var(--color-gold);
+  border-radius: 50%;
+}
+
+.bd-event__chev::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-inline-end: 1.5px solid var(--color-gold-deep);
+  border-block-end: 1.5px solid var(--color-gold-deep);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--duration-base) var(--ease-settle);
+}
+
+.bd-event__details[open] .bd-event__chev::before {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.bd-event__more {
+  display: grid;
+  gap: 6px;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+  border-block-start: var(--bd-hair);
+  padding-block-start: var(--spacing-md);
+}
+
+.bd-event__label {
+  display: inline-block;
+  min-inline-size: 4rem;
+  font-style: italic;
+  color: var(--color-tertiary);
+}
+
+.bd-event__household {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The reply: an invitation card, the one action that matters most before the day. */
+.bd-reply {
+  position: relative;
+  align-self: start;
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline), var(--shadow-lift);
+}
+
+.bd-reply__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding-block-end: var(--spacing-sm);
+  border-block-end: var(--bd-gold-hair);
+}
+
+.bd-reply__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 2rem + 1.4vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.bd-reply__by {
+  display: grid;
+  justify-items: end;
+  text-align: end;
+}
+
+/* An unknown deadline is a note, not a date: it reads from the left across the panel. */
+.bd-reply__by:has(.placeholder) {
+  flex-basis: 100%;
+  justify-items: start;
+  text-align: start;
+}
+
+.bd-reply__date {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+.bd-reply__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bd-reply__household {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+}
+
+.bd-reply__intro,
+.bd-reply__closed {
+  color: var(--color-on-surface-muted);
+}
+
+.bd-reply__answers {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-reply__answer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding-block: var(--spacing-sm);
+  border-block-end: var(--bd-hair);
+}
+
+.bd-reply__event {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+}
+
+.bd-reply__submit {
+  inline-size: 100%;
+}
+
+.bd-reply__thanks {
+  font-style: italic;
+  text-align: center;
+  color: var(--color-on-surface-muted);
+}
+
+/* The form's own sections sit inside the card: their titles step down, their cards flatten. */
+.bd-reply .bd-gsec {
+  margin-block-start: var(--spacing-md);
+}
+
+.bd-reply .bd-gsec__title {
+  font-size: var(--type-title-size);
+}
+
+.bd-reply .bd-gcard {
+  padding: var(--spacing-md) 0;
+  box-shadow: none;
+  border-block-start: var(--bd-hair);
+  border-radius: 0;
+}
+
+.bd-reply .actions .btn {
+  inline-size: 100%;
+}
+
+/* "Review your answers" holds one line across a phone's column. */
+@media (width < 600px) {
+  .bd-reply .actions .btn {
+    padding-inline: var(--spacing-md);
+    letter-spacing: 0.08em;
+  }
+}
+
+/* The modules. */
+.bd-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--spacing-md);
+  align-content: start;
+  min-width: 0;
+}
+
+.bd-module {
+  position: relative;
+  display: grid;
+  align-content: start;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline);
+  overflow: hidden;
+}
+
+.bd-module--wide {
+  grid-column: 1 / -1;
+}
+
+.bd-module__photo img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 5 / 2;
+  object-fit: cover;
+}
+
+.bd-module:not(.bd-module--wide) .bd-module__photo img {
+  aspect-ratio: 16 / 10;
+}
+
+.bd-module__body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+}
+
+.bd-module__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.bd-module__text,
+.bd-module__items {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.bd-module__items {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-module .fp {
+  inline-size: 100%;
+  margin-block-start: var(--spacing-sm);
+}
+
+.bd-bloom--module {
+  inset-inline-end: -8px;
+  inset-block-end: -8px;
+  inline-size: 72px;
+  opacity: 0.9;
+}
+
+@media (width >= 900px) {
+  .bd-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .bd-modules {
+    grid-column: 1 / -1;
+  }
+
+  .bd-event__photo {
+    display: block;
+    inline-size: clamp(64px, 6vw, 120px);
+    block-size: 88px;
+    overflow: hidden;
+  }
+
+  .bd-event__photo img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .bd-event__summary {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+  }
+}
+
+/* Beside a narrow itinerary column the photo squeezed the event's words to one per line; the date
+   tile says the same thing, so the photo is the one that goes. */
+@container itin (width < 420px) {
+  .bd-event__photo {
+    display: none;
+  }
+
+  .bd-event__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}
+
+@media (width >= 1280px) {
+  .bd-workspace {
+    grid-template-columns: minmax(0, 33fr) minmax(0, 37fr) minmax(0, 28fr);
+    gap: var(--spacing-lg);
+    padding-inline: clamp(88px, 6.4vw, 96px);
+  }
+
+  .bd-module__body {
+    padding: var(--spacing-md);
+  }
+
+  .bd-module__title {
+    font-size: var(--type-title-size);
+  }
+
+  /* One module per row in the side column. REF-WEEKEND pairs them two-up, but at the 17px floor
+     no pair card is wide enough for its own link ("Getting there", "Photos + video"), which then
+     broke a word per line. Parity exception PX-24. */
+  .bd-modules {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bd-module:not(.bd-module--wide) .bd-module__photo img {
+    aspect-ratio: 5 / 2;
+  }
+
+  .bd-workspace > .bd-bloom {
+    display: block;
+  }
+
+  .bd-bloom--ws-left {
+    inset-inline-start: 0;
+    inset-block-start: var(--spacing-lg);
+    inline-size: 84px;
+  }
+
+  .bd-bloom--ws-right {
+    inset-inline-end: 0;
+    inset-block-start: var(--spacing-lg);
+    inline-size: 48px;
+  }
+
+  .bd-workspace__skyline {
+    position: absolute;
+    display: block;
+    inset-inline-start: 8px;
+    inset-block-end: var(--spacing-lg);
+    inline-size: 84px;
+    block-size: 240px;
+    background: var(--art-skyline) no-repeat 21% bottom / auto 60%;
+    opacity: 0.6;
+  }
+}
+
+/* On a phone the columns stay in source order, so reading order and focus order are the same one
+   (WCAG 2.4.3): the page's title and the itinerary first, the reply after it. The "RSVP" tab above
+   jumps straight to the reply. */
+
+/*
+ * Printing Your Weekend gives the plan, not the screen: the itinerary first with each event's
+ * details open, the reply reduced to its status line, and no colour portrait, tabs or photographs.
+ * Colours and grounds are handled for the whole design in kit.css.
+ */
+@media print {
+  .bd-wkhero__media,
+  .bd-wkhero__script,
+  .bd-tabs,
+  .bd-reply form,
+  .bd-reply__intro,
+  .bd-reply__answers,
+  .bd-reply__submit,
+  .bd-event__photo,
+  .bd-event__chev,
+  .bd-module__photo {
+    display: none !important;
+  }
+
+  .bd-workspace {
+    display: block;
+  }
+
+  .bd-workspace > * + * {
+    margin-block-start: var(--spacing-lg);
+  }
+
+  .bd-event__details::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+}

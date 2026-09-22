@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "designId": "botanical-deco",
+  "authority": "Sara and Tyler approved these four page designs, and only these. Approval is visual, not factual: every generated fact in them is corrected in parity-exceptions.json.",
+  "storage": "The images are NOT in this repository. It is public, and the Our Story reference contains the couple's own snapshots. They live with the private handoff bundle; scripts/botanical-deco-media.mjs reads them from BOTANICAL_DECO_REFERENCES (outside the repo) and refuses any file whose hash differs from the one below.",
+  "coordinateConvention": "Crop boxes are [left, top, right, bottom] in source pixels of the 1448x1086 original (browser chrome included in the top 64 px).",
+  "references": [
+    { "id": "REF-HOME", "route": "/", "file": "sara_and_tyler_a_brighter_together.png", "width": 1448, "height": 1086, "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a", "recipe": "src/themes/botanical-deco/recipes/home.tsx" },
+    { "id": "REF-STORY", "route": "/our-story", "file": "sara_tyler_our_story.png", "width": 1448, "height": 1086, "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980", "recipe": "src/themes/botanical-deco/recipes/story.tsx" },
+    { "id": "REF-EXPLORE", "route": "/explore-caa", "file": "sara_and_tyler_explore_chicago.png", "width": 1448, "height": 1086, "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd", "recipe": "src/themes/botanical-deco/recipes/explore-caa.tsx" },
+    { "id": "REF-WEEKEND", "route": "/your-weekend", "file": "sara_tyler_s_chicago_wedding_weekend.png", "width": 1448, "height": 1086, "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6", "recipe": "src/themes/botanical-deco/weekend.tsx" }
+  ]
+}

@@ -37,7 +37,7 @@ const BANNED = /^"?(Inter|Roboto|Arial|Helvetica( Neue)?|Space Grotesk|Fraunces|
 const DEFAULTED = /^("?Times( New Roman)?"?|serif|sans-serif|monospace|system-ui|-apple-system|ui-sans-serif|ui-serif|BlinkMacSystemFont)$/i;
 
 /** The faces this repo ships or deliberately falls back to, plus the console's monospace. */
-const DECLARED = /^"?(Cinzel|Josefin Sans|Big Shoulders Display|Gloock|Spectral|Cardo|Newsreader|Libre Caslon Display|ui-monospace)"?$/i;
+const DECLARED = /^"?(Cinzel|Josefin Sans|Big Shoulders Display|Gloock|Spectral|Cardo|Newsreader|Libre Caslon Display|Bodoni Moda|Ms Madi|ui-monospace)"?$/i;
 
 /** Auth journeys. Every one renders for an anonymous visitor; none of them needs a principal. */
 const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/passkey', '/claim/welcome', '/step-up'] as const;
@@ -103,7 +103,7 @@ type Size = { px: number; where: string; sample: string };
  * guest has to read or operate takes `control-caps` at 1rem instead, which is what level 16 added
  * the style for. This is the one exception, named, rather than a blanket tolerance.
  */
-const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b/;
+const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
 
 /** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
 const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required/;
@@ -192,13 +192,14 @@ test.describe('every surface renders in a face this repo declares', () => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
     const seen: Record<string, string> = {};
-    for (const theme of ['gilded-hour', 'conservatory']) {
+    for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
       await page.goto(`/claim/verify?theme=${theme}`);
       await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
       seen[theme] = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
       expect(seen[theme], `/claim/verify @ ${theme} has no fallback stack behind its heading face`).toContain(',');
     }
     expect(seen['gilded-hour'], 'both designs resolved to the same heading face on the claim journey').not.toBe(seen['conservatory']);
+    expect(seen['botanical-deco'], 'the approved design resolved to a proposal\'s heading face on the claim journey').not.toBe(seen['gilded-hour']);
     await ctx.close();
   });
 });
@@ -221,7 +222,7 @@ test.describe('the 17px floor', () => {
 
   // Both designs, because the two do not share a kit: Conservatory's menu has been on the 1rem
   // step all along while Gilded Hour's panel was on 0.765rem, and only a walk over both sees that.
-  for (const theme of ['gilded-hour', 'conservatory'] as const) {
+  for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
     test(`the public routes · ${theme}`, async ({ browser }) => {
       const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
       const page = await ctx.newPage();

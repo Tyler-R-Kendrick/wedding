@@ -3,11 +3,15 @@ import type { LifecycleState } from '@/contracts/lifecycle';
 import type { ContentKit, ContentRecipes } from './content-types';
 
 /**
- * Theme engine contracts (ADR-0009). One domain, two themes: routes, data, capabilities and
+ * Theme engine contracts (ADR-0009). One domain, several themes: routes, data, capabilities and
  * copy are theme-agnostic; a theme owns expression only. Every kit component has the same
- * props, accessible name, focus order and states in both themes; markup and CSS may differ.
+ * props, accessible name, focus order and states in every theme; markup and CSS may differ.
+ *
+ * `botanical-deco` is the design Sara and Tyler approved (docs/design/approved-botanical-deco/) and
+ * the default. `gilded-hour` and `conservatory` were the two proposals it superseded; they stay as
+ * explicit-preview compatibility surfaces (`?theme=gilded-hour`), never the ordinary experience.
  */
-export type ThemeId = 'gilded-hour' | 'conservatory';
+export type ThemeId = 'botanical-deco' | 'gilded-hour' | 'conservatory';
 
 export interface ThemeFontFile {
   family: string;
@@ -28,11 +32,11 @@ export interface MotionSpec {
 
 /** Structural signature, asserted by tests so the two themes stay structurally different. */
 export interface ThemeStructure {
-  layout: 'centered-axis' | 'left-weighted-sheet';
-  navDesktop: 'frieze' | 'tag-rail';
-  navMobile: 'elevator-panel' | 'menu-tag-and-two-action-bar';
-  sections: 'numbered-acts' | 'washes-and-fern-dividers';
-  ornament: 'gold-geometry' | 'line-art-foliage';
+  layout: 'centered-axis' | 'left-weighted-sheet' | 'portrait-led-editorial-split';
+  navDesktop: 'frieze' | 'tag-rail' | 'monogram-masthead';
+  navMobile: 'elevator-panel' | 'menu-tag-and-two-action-bar' | 'monogram-sheet-and-action-bar';
+  sections: 'numbered-acts' | 'washes-and-fern-dividers' | 'photo-strips-and-colour-bands';
+  ornament: 'gold-geometry' | 'line-art-foliage' | 'edge-botanicals-and-gold-rules';
 }
 
 export interface ThemeMeta {

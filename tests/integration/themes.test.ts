@@ -14,8 +14,9 @@ describe('site_status (theme + lifecycle extensions)', () => {
     const r = await invoke(siteStatus, ctx, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.data.theme).toMatchObject({ active: 'conservatory', switcherEnabled: true });
-    expect(r.value.data.theme.available.map((t) => t.id)).toEqual(['gilded-hour', 'conservatory']);
+    // An explicit view still reaches an earlier proposal; the switcher is off since the approval.
+    expect(r.value.data.theme).toMatchObject({ active: 'conservatory', switcherEnabled: false });
+    expect(r.value.data.theme.available.map((t) => t.id)).toEqual(['botanical-deco', 'gilded-hour', 'conservatory']);
     expect(r.value.data.countdown.days).toBeGreaterThan(0);
     expect(r.value.data.navigation.primary.length).toBeGreaterThan(0);
     expect(r.value.data.lifecycle).toMatchObject({ state: 'TEASER', preview: false, persistedState: 'TEASER' });
@@ -26,7 +27,7 @@ describe('site_status (theme + lifecycle extensions)', () => {
   it('falls back to the default theme for unknown view themes and ignores previews for non-admins', async () => {
     const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-theme-2', view: { theme: 'neon', lifecycle: 'RSVP_OPEN' } });
     const r = await invoke(siteStatus, ctx, {});
-    expect(r.ok && r.value.data.theme.active).toBe('gilded-hour');
+    expect(r.ok && r.value.data.theme.active).toBe('botanical-deco');
     expect(r.ok && r.value.data.lifecycle.state).toBe('TEASER');
     expect(r.ok && r.value.data.lifecycle.preview).toBe(false);
   });

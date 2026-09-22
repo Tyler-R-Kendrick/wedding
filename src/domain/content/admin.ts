@@ -170,7 +170,7 @@ export const TABLE_SPECS: Record<ContentTableName, TableSpec> = {
       { name: 'order', label: 'Order', type: 'number', required: true },
       { name: 'character', label: 'Character', type: 'textarea', required: true },
       { name: 'features', label: 'Features', type: 'json', help: stringList },
-      { name: 'capacities', label: 'Capacities', type: 'json', required: true, help: 'JSON { ceremony, dinnerDance, reception, note } — keep "kit figure" in the note until verified' },
+      { name: 'capacities', label: 'Capacities', type: 'json', required: true, help: 'JSON { ceremony, dinnerDance, reception, note } — until verified, the note says these are the venue\'s own figures' },
       { name: 'lookForThis', label: 'Look for this', type: 'json', help: stringList },
       ...PROVENANCE_FIELDS,
     ],

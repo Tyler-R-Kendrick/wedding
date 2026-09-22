@@ -1,0 +1,1540 @@
+{
+  "schema": 1,
+  "generator": "scripts/botanical-deco-media.mjs",
+  "items": [
+    {
+      "id": "botanical.cluster-tl",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-EXPLORE, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-EXPLORE",
+        "file": "sara_and_tyler_explore_chicago.png",
+        "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd",
+        "box": [
+          0,
+          108,
+          152,
+          340
+        ]
+      },
+      "intrinsic": {
+        "width": 152,
+        "height": 232
+      },
+      "aspect": 0.6552,
+      "anchored": [
+        "left",
+        "top"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/cluster-tl-152.webp",
+          "format": "webp",
+          "width": 152,
+          "bytes": 11738,
+          "sha256": "f0433bc949604c163c42bac9d9b87397bc05b04c45b2531d553efc9aa89d93cb"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/cluster-tl-304.webp",
+          "format": "webp",
+          "width": 304,
+          "bytes": 31984,
+          "sha256": "770300371b955e43b3190b8f45b9a92b0beabc47b5ab9d549e80d30fed9a605e"
+        }
+      ]
+    },
+    {
+      "id": "botanical.corner-tl",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-STORY, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-STORY",
+        "file": "sara_tyler_our_story.png",
+        "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
+        "box": [
+          0,
+          111,
+          138,
+          389
+        ]
+      },
+      "intrinsic": {
+        "width": 138,
+        "height": 278
+      },
+      "aspect": 0.4964,
+      "anchored": [
+        "left",
+        "top"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/corner-tl-138.webp",
+          "format": "webp",
+          "width": 138,
+          "bytes": 14396,
+          "sha256": "c4b16c9b1ee3b45b8450dda89860d6097d67b4e332a6197df2391db892b52010"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/corner-tl-276.webp",
+          "format": "webp",
+          "width": 276,
+          "bytes": 41348,
+          "sha256": "e7abba3d243bfce8d5a5b60a85a0373e389117e0d04fe86792f86336fb3a9967"
+        }
+      ]
+    },
+    {
+      "id": "botanical.edge-left",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-WEEKEND, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-WEEKEND",
+        "file": "sara_tyler_s_chicago_wedding_weekend.png",
+        "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
+        "box": [
+          0,
+          440,
+          92,
+          760
+        ]
+      },
+      "intrinsic": {
+        "width": 92,
+        "height": 320
+      },
+      "aspect": 0.2875,
+      "anchored": [
+        "left"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/edge-left-92.webp",
+          "format": "webp",
+          "width": 92,
+          "bytes": 7382,
+          "sha256": "d150b240c63eccb04af0ae0321e6bf0a85c3e46185d3c0de19ae8edfab7aab5a"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/edge-left-184.webp",
+          "format": "webp",
+          "width": 184,
+          "bytes": 21812,
+          "sha256": "8762eb15cc61190fc6c9868c8c77778422ed777b6911b913d6486f187b7b17ae"
+        }
+      ]
+    },
+    {
+      "id": "botanical.edge-left-tall",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-HOME, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          0,
+          532,
+          88,
+          858
+        ]
+      },
+      "intrinsic": {
+        "width": 88,
+        "height": 326
+      },
+      "aspect": 0.2699,
+      "anchored": [
+        "left"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/edge-left-tall-88.webp",
+          "format": "webp",
+          "width": 88,
+          "bytes": 8344,
+          "sha256": "dfcb7583108f2218a2259fc6f8c8480a491e96101af848824a5eaebc6f57c87e"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/edge-left-tall-176.webp",
+          "format": "webp",
+          "width": 176,
+          "bytes": 26624,
+          "sha256": "3a45616d8685385005cafde8a13740a282896157ca6dd9c4edcf59d61dbd08b5"
+        }
+      ]
+    },
+    {
+      "id": "botanical.edge-right",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-HOME, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          1325,
+          718,
+          1448,
+          861
+        ]
+      },
+      "intrinsic": {
+        "width": 123,
+        "height": 143
+      },
+      "aspect": 0.8601,
+      "anchored": [
+        "right"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/edge-right-123.webp",
+          "format": "webp",
+          "width": 123,
+          "bytes": 5862,
+          "sha256": "71d468efa5229e188ca0a51d5a96656efa506c61376cb74900c002097e089273"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/edge-right-246.webp",
+          "format": "webp",
+          "width": 246,
+          "bytes": 18540,
+          "sha256": "1309a335998b9751336561a8c060c30675a3918d001105794120afabb0f2b80b"
+        }
+      ]
+    },
+    {
+      "id": "botanical.sprig-right",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-STORY, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-STORY",
+        "file": "sara_tyler_our_story.png",
+        "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
+        "box": [
+          1318,
+          606,
+          1446,
+          752
+        ]
+      },
+      "intrinsic": {
+        "width": 128,
+        "height": 146
+      },
+      "aspect": 0.8767,
+      "anchored": [
+        "right"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/sprig-right-128.webp",
+          "format": "webp",
+          "width": 128,
+          "bytes": 6400,
+          "sha256": "f164b6e51e12452dc3d7c8df8e44573c1a52d9b2e8438a96e74d32db5044d674"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/sprig-right-256.webp",
+          "format": "webp",
+          "width": 256,
+          "bytes": 18356,
+          "sha256": "4ed7ddcbec36637559446a981b92206386eb38c80c0bfce910ece7721aa18f49"
+        }
+      ]
+    },
+    {
+      "id": "botanical.vine-right",
+      "kind": "ornament",
+      "sourceType": "generated-ornament",
+      "provenance": "Painted botanical from the approved design reference REF-WEEKEND, paper keyed to transparency. Decorative only.",
+      "interim": true,
+      "interimReason": "Lifted at the mockup's native resolution; replace with a high-resolution cutout from the same brief (media-briefs.md, botanical.edges).",
+      "parent": {
+        "reference": "REF-WEEKEND",
+        "file": "sara_tyler_s_chicago_wedding_weekend.png",
+        "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
+        "box": [
+          1396,
+          446,
+          1448,
+          1036
+        ]
+      },
+      "intrinsic": {
+        "width": 52,
+        "height": 590
+      },
+      "aspect": 0.0881,
+      "anchored": [
+        "right"
+      ],
+      "alt": "",
+      "credit": "Generated botanical, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/botanical/vine-right-52.webp",
+          "format": "webp",
+          "width": 52,
+          "bytes": 11846,
+          "sha256": "113d47c5ecc0843202f2ea59be6e9f31b1b04a17eb42fc1d2e21c24e4cee9f0d"
+        },
+        {
+          "src": "/media/botanical-deco/botanical/vine-right-104.webp",
+          "format": "webp",
+          "width": 104,
+          "bytes": 35304,
+          "sha256": "2291eb9b4df8fbb357d0e64d5391e66a02b39704306e68af9d5e6fb5a6890c9b"
+        }
+      ]
+    },
+    {
+      "id": "city.lakefront-adler",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Skyline 2022 2.jpg by Sea Cow — CC BY-SA 4.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-skyline-2022-2.jpg",
+        "sha256": "b400fc8c099be8f02105c46178162a3c040f90d9ad2d39a3baf6f298e74560ad",
+        "box": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1080
+      },
+      "aspect": 1.7778,
+      "focal": [
+        0.55,
+        0.6
+      ],
+      "alt": "Aerial view of the Adler Planetarium at the tip of Northerly Island, with the harbor and the downtown skyline across the water.",
+      "caption": "The Adler and the lakefront",
+      "credit": "\"Chicago Skyline 2022 2.jpg\" by Sea Cow, licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Skyline_2022_2.jpg). Resized by Wikimedia to 1920×1080 from the 3965×2230 original; no other changes. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/lakefront-adler-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 30703,
+          "sha256": "88541b4a1e4c191760f5b7f732f8fb4614e606fe35297e71107edc3232d942f8"
+        },
+        {
+          "src": "/media/botanical-deco/city/lakefront-adler-640.jpg",
+          "format": "jpg",
+          "width": 640,
+          "bytes": 48725,
+          "sha256": "e138f90d3ca38de6a7f2113288c7cd5daed53581b3b09d820f82ef5dc32a3f16"
+        },
+        {
+          "src": "/media/botanical-deco/city/lakefront-adler-1280.avif",
+          "format": "avif",
+          "width": 1280,
+          "bytes": 125295,
+          "sha256": "ed4fc19c834b2a820f8a4d69ef1d9d8c9de864a2093cd4b99b97bfc18e2be13b"
+        },
+        {
+          "src": "/media/botanical-deco/city/lakefront-adler-1280.jpg",
+          "format": "jpg",
+          "width": 1280,
+          "bytes": 195195,
+          "sha256": "6bda90b45e95f74c0297994c510d060395f4fca037918a2e39da406a1c83dec5"
+        }
+      ]
+    },
+    {
+      "id": "city.north-pond",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "The Lincoln Park North Pond (6097472770).jpg by vxla — CC BY 2.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/the-lincoln-park-north-pond-6097472770.jpg",
+        "sha256": "326fae3a3bd92218e6d41f38009df8b1fab7343e1347d5bbdc6a20c2210a9582",
+        "box": [
+          0,
+          0,
+          1920,
+          1440
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1440
+      },
+      "aspect": 1.3333,
+      "focal": [
+        0.45,
+        0.55
+      ],
+      "alt": "North Pond in Lincoln Park seen through summer reeds, the city's towers rising beyond the trees.",
+      "caption": "North Pond, Lincoln Park",
+      "credit": "\"The Lincoln Park North Pond (6097472770).jpg\" by vxla, licensed under CC BY 2.0 (https://creativecommons.org/licenses/by/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:The_Lincoln_Park_North_Pond_(6097472770).jpg). Resized by Wikimedia to 1920×1440 from the 4000×3000 original; no other changes.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/north-pond-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 42775,
+          "sha256": "504e7ba55143d6157c3c0d51cacbd701f39073e9845b0460230c7ac7d35df50c"
+        },
+        {
+          "src": "/media/botanical-deco/city/north-pond-640.jpg",
+          "format": "jpg",
+          "width": 640,
+          "bytes": 64909,
+          "sha256": "7f764df436781fe0d5cb303b7ebff6673a338324fc6f80facd05f0afae6dec56"
+        },
+        {
+          "src": "/media/botanical-deco/city/north-pond-1280.avif",
+          "format": "avif",
+          "width": 1280,
+          "bytes": 141221,
+          "sha256": "3542b13694ea6a25d0b771f404d16842fb66b525770cdf9c603f49556ea7ae31"
+        },
+        {
+          "src": "/media/botanical-deco/city/north-pond-1280.jpg",
+          "format": "jpg",
+          "width": 1280,
+          "bytes": 224957,
+          "sha256": "17234d6b87781e60699295e00e5736e89d46dad3495a9de8ac17cce756f40f7c"
+        }
+      ]
+    },
+    {
+      "id": "city.river",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "Looking east along the Chicago River toward the Marshall Suloway Bridge (52041188396).jpg by Chris Rycroft from Cambridge, Massachusetts, United States — CC BY 2.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/looking-east-along-the-chicago-river-toward-the-marshall-suloway-bridge-52041188396.jpg",
+        "sha256": "19792352f5fc13e2bee7e5e5d2dac3069cf69b3bc6f020401878766fe0fcc53a",
+        "box": [
+          0,
+          0,
+          1920,
+          1280
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1280
+      },
+      "aspect": 1.5,
+      "focal": [
+        0.5,
+        0.62
+      ],
+      "alt": "The Chicago River on a foggy night: a lit bascule bridge, warm reflections on the water and towers fading into the mist.",
+      "caption": "The Chicago River after dark",
+      "credit": "\"Looking east along the Chicago River toward the Marshall Suloway Bridge (52041188396).jpg\" by Chris Rycroft from Cambridge, Massachusetts, United States, licensed under CC BY 2.0 (https://creativecommons.org/licenses/by/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Looking_east_along_the_Chicago_River_toward_the_Marshall_Suloway_Bridge_(52041188396).jpg). Resized by Wikimedia to 1920×1280 from the 6240×4160 original; no other changes.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/river-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 42056,
+          "sha256": "baec022ac4910fbade6cce050f4c07457212d4151ee673bed975041f9247da6a"
+        },
+        {
+          "src": "/media/botanical-deco/city/river-640.jpg",
+          "format": "jpg",
+          "width": 640,
+          "bytes": 61164,
+          "sha256": "edd67781aa6792d7fa68535c86efb6bc930a21cbd27fd78d70b69c8165da061e"
+        },
+        {
+          "src": "/media/botanical-deco/city/river-1280.avif",
+          "format": "avif",
+          "width": 1280,
+          "bytes": 142488,
+          "sha256": "78b9b733f51e4ed5f6135dd8e8ce0576f4ccb3dd5665cbba890bbfcc32740865"
+        },
+        {
+          "src": "/media/botanical-deco/city/river-1280.jpg",
+          "format": "jpg",
+          "width": 1280,
+          "bytes": 222715,
+          "sha256": "0eca5aee6c2ed1883cf392703602c42647a323e3771865b852ac54c651ca8b85"
+        }
+      ]
+    },
+    {
+      "id": "city.riverwalk",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago river from Michigan avenue bridge at night.jpg by Monk - Ihar Mahaniok — CC BY-SA 3.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-river-from-michigan-avenue-bridge-at-night.jpg",
+        "sha256": "4e49049cd2f62d84f6245c61244f9aeb5d5aba5f932921edbff29446fab9c0a1",
+        "box": [
+          0,
+          0,
+          1920,
+          1272
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1272
+      },
+      "aspect": 1.5094,
+      "focal": [
+        0.42,
+        0.62
+      ],
+      "alt": "The Chicago River at night from the Michigan Avenue bridge: towers lit gold on both banks and the Riverwalk's lamplit terraces along the water.",
+      "caption": "The river from the Michigan Avenue bridge",
+      "credit": "\"Chicago river from Michigan avenue bridge at night.jpg\" by Monk - Ihar Mahaniok, licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_river_from_Michigan_avenue_bridge_at_night.jpg). Resized by Wikimedia to 1920×1272 from the 4794×3175 original; no other changes. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/riverwalk-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 39167,
+          "sha256": "5f45c0f5c5b174dfa5474b6620b263a090b1902f1c7caff820cf1c0a8ae240c7"
+        },
+        {
+          "src": "/media/botanical-deco/city/riverwalk-640.jpg",
+          "format": "jpg",
+          "width": 640,
+          "bytes": 60712,
+          "sha256": "d4f67b54e90dd214494bcd0ba551a1c3a36add87e6fc5bf4c7665775a5accbb8"
+        },
+        {
+          "src": "/media/botanical-deco/city/riverwalk-1280.avif",
+          "format": "avif",
+          "width": 1280,
+          "bytes": 129222,
+          "sha256": "01d96f9b299031964263075440be91e65329ae7ade9e2fb80fc9f456d15c3e64"
+        },
+        {
+          "src": "/media/botanical-deco/city/riverwalk-1280.jpg",
+          "format": "jpg",
+          "width": 1280,
+          "bytes": 211943,
+          "sha256": "4e4f02bf18a34a938abe1b9267bd8a37f3407dae96ad74bea6c8fa0b7c0104b9"
+        }
+      ]
+    },
+    {
+      "id": "city.skyline",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Skyline - view from Alder Planetarium at sunset, Illinois, USA (43511551295).jpg by Romain Pontida — CC BY-SA 2.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-skyline-view-from-alder-planetarium-at-sunset-illinois-usa-43511551295.jpg",
+        "sha256": "450e1b7b2d1304399a8fa9b1f11b1c91fb99d307c8f9fc1f34a0b169104aaa95",
+        "box": [
+          0,
+          0,
+          3840,
+          986
+        ]
+      },
+      "intrinsic": {
+        "width": 3840,
+        "height": 986
+      },
+      "aspect": 3.8945,
+      "focal": [
+        0.5,
+        0.6
+      ],
+      "alt": "The Chicago skyline across the lake at dusk, seen from the Adler Planetarium.",
+      "caption": "The skyline from the Adler at dusk",
+      "credit": "\"Chicago Skyline - view from Alder Planetarium at sunset, Illinois, USA (43511551295).jpg\" by Romain Pontida, licensed under CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Skyline_-_view_from_Alder_Planetarium_at_sunset,_Illinois,_USA_(43511551295).jpg). Resized by Wikimedia to 3840×986 from the 14404×3698 original; no other changes. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/skyline-1440.avif",
+          "format": "avif",
+          "width": 1440,
+          "bytes": 60359,
+          "sha256": "1dc72046a4518acc0b818480d3bf83fa03b6219b4ca901e33d9272610369a1dc"
+        },
+        {
+          "src": "/media/botanical-deco/city/skyline-1440.jpg",
+          "format": "jpg",
+          "width": 1440,
+          "bytes": 99316,
+          "sha256": "86c5e4ac816af07f2e3d2fcb3095e49c7d17b3a812be0ffcbf56815e9da3baeb"
+        },
+        {
+          "src": "/media/botanical-deco/city/skyline-2560.avif",
+          "format": "avif",
+          "width": 2560,
+          "bytes": 190552,
+          "sha256": "2fe654af0ff7c20c1d77324a853cbb0ad7b7c83f060135158a228f711c3f7edc"
+        },
+        {
+          "src": "/media/botanical-deco/city/skyline-2560.jpg",
+          "format": "jpg",
+          "width": 2560,
+          "bytes": 304477,
+          "sha256": "5f1f126b57d5b0c419471b67f58e810520fe1e2419a70c1112c18ad7d63ec428"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.explore",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-EXPLORE. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-EXPLORE",
+        "file": "sara_and_tyler_explore_chicago.png",
+        "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd",
+        "box": [
+          580,
+          108,
+          1280,
+          445
+        ]
+      },
+      "intrinsic": {
+        "width": 700,
+        "height": 337
+      },
+      "aspect": 2.0772,
+      "focal": [
+        0.5,
+        0.38
+      ],
+      "alt": "Generated portrait of Sara and Tyler by the Chicago River at dusk, the city lit up behind them.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-880.avif",
+          "format": "avif",
+          "width": 880,
+          "bytes": 24977,
+          "sha256": "7c901fe04446d5a8fb79fdbca750507adbb909aa8e3b206108fb5108c6f1cbb7"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-880.jpg",
+          "format": "jpg",
+          "width": 880,
+          "bytes": 53837,
+          "sha256": "4dfa0f285130c374b22102c2f873f37ff537df2ad652503e95651698543d2ae7"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-1400.avif",
+          "format": "avif",
+          "width": 1400,
+          "bytes": 40891,
+          "sha256": "a4e71130f6dde2871c7369726606bb923c0f3787dec44503819f80fe0e3b6c88"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-1400.jpg",
+          "format": "jpg",
+          "width": 1400,
+          "bytes": 98139,
+          "sha256": "e61fd3b3c03e6f5e973cb675e4ef066adcb216914eee6e6215e203d2b46b55cc"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.explore.mobile",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-EXPLORE. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-EXPLORE",
+        "file": "sara_and_tyler_explore_chicago.png",
+        "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd",
+        "box": [
+          760,
+          108,
+          1210,
+          445
+        ]
+      },
+      "intrinsic": {
+        "width": 450,
+        "height": 337
+      },
+      "aspect": 1.3353,
+      "focal": [
+        0.45,
+        0.36
+      ],
+      "alt": "Generated portrait of Sara and Tyler by the Chicago River at dusk.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-mobile-590.avif",
+          "format": "avif",
+          "width": 590,
+          "bytes": 17362,
+          "sha256": "de69117d6f220663ad955bbe3cf9d517ef1286435e3dd2d93e3bc6cdd41c74c1"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-mobile-590.jpg",
+          "format": "jpg",
+          "width": 590,
+          "bytes": 37056,
+          "sha256": "03b0c3fbc7dc30c30ffc67e4bff4697c05e8110d2ec9e2c7c6a6d6da149dbace"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-mobile-1040.avif",
+          "format": "avif",
+          "width": 1040,
+          "bytes": 31244,
+          "sha256": "3097aba6707c2fc436d8c34dbddbb6aafa5e5f0e38dceafdf412933e3cd2d7c8"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-explore-mobile-1040.jpg",
+          "format": "jpg",
+          "width": 1040,
+          "bytes": 76115,
+          "sha256": "b2f9f10d328423653c139edb829f7f9d7bfc3fed87e707272f32050b620517dd"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.formal",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-HOME. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          520,
+          118,
+          1265,
+          525
+        ]
+      },
+      "intrinsic": {
+        "width": 745,
+        "height": 407
+      },
+      "aspect": 1.8305,
+      "focal": [
+        0.46,
+        0.4
+      ],
+      "alt": "Generated portrait of Sara and Tyler cheek to cheek on a bridge over the Chicago River, the towers of downtown glowing behind them.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-930.avif",
+          "format": "avif",
+          "width": 930,
+          "bytes": 27845,
+          "sha256": "2dcd1e05831439c24714a9e5185978696ac28c382198924889dad5e07185b1fc"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-930.jpg",
+          "format": "jpg",
+          "width": 930,
+          "bytes": 59972,
+          "sha256": "15aed997681d5007bbbc56ecc7a5158c3b19f8589066ecabb6729578788e2a8e"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-1490.avif",
+          "format": "avif",
+          "width": 1490,
+          "bytes": 44943,
+          "sha256": "f220be905ce3fdf337c9ce0fac24ff600b96d23ce1d6354b60a32771e2cf5cb7"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-1490.jpg",
+          "format": "jpg",
+          "width": 1490,
+          "bytes": 110536,
+          "sha256": "647bb04d9f1a61fba69ee424ed098c9bd4b40e490e6f1dbb80dcda0bf494c0b7"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.formal.mobile",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-HOME. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          620,
+          118,
+          1120,
+          525
+        ]
+      },
+      "intrinsic": {
+        "width": 500,
+        "height": 407
+      },
+      "aspect": 1.2285,
+      "focal": [
+        0.5,
+        0.36
+      ],
+      "alt": "Generated portrait of Sara and Tyler cheek to cheek on a bridge over the Chicago River.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-mobile-650.avif",
+          "format": "avif",
+          "width": 650,
+          "bytes": 20699,
+          "sha256": "151bc83a173e1046e9ed3359bc5c927ab39991bb7aa664a4bc1b7a8d2ba83002"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-mobile-650.jpg",
+          "format": "jpg",
+          "width": 650,
+          "bytes": 43877,
+          "sha256": "65e5db3d8c7d093df9c7084131b25325088a72fa21af6b83eec8fbd7990a6f34"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-mobile-1150.avif",
+          "format": "avif",
+          "width": 1150,
+          "bytes": 36656,
+          "sha256": "719565463d977e70e5b42dd9132ff1bce5eead855415db033ad1e993dd2087d0"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-formal-mobile-1150.jpg",
+          "format": "jpg",
+          "width": 1150,
+          "bytes": 89917,
+          "sha256": "e17fcf9a772aa56526b88932c2e808ef1eb6a61e3be56000d1d14cef7789c284"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.story",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-STORY. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-STORY",
+        "file": "sara_tyler_our_story.png",
+        "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
+        "box": [
+          545,
+          110,
+          1288,
+          390
+        ]
+      },
+      "intrinsic": {
+        "width": 743,
+        "height": 280
+      },
+      "aspect": 2.6536,
+      "focal": [
+        0.4,
+        0.42
+      ],
+      "alt": "Generated portrait of Sara laughing up at Tyler as he smiles back, the Chicago skyline soft behind them.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-story-930.avif",
+          "format": "avif",
+          "width": 930,
+          "bytes": 22798,
+          "sha256": "96ba76d7851b35e2e36e06a92f920e4803c8b07dd14500ad58b98673fa42bbea"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-930.jpg",
+          "format": "jpg",
+          "width": 930,
+          "bytes": 43826,
+          "sha256": "c86e975c338bf136bd4fadbc8f9f0ad1a36d8e2b4b7d510e740993bef8384678"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-1490.avif",
+          "format": "avif",
+          "width": 1490,
+          "bytes": 36194,
+          "sha256": "c67d1683033f8f9970d02d549cefe645f3327300aa2bf41842ee0e0481031c5d"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-1490.jpg",
+          "format": "jpg",
+          "width": 1490,
+          "bytes": 81970,
+          "sha256": "4a6caf99435b2e886c63ccedb54ebacfe95a7db21333d2587352639162266153"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.story.mobile",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-STORY. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-STORY",
+        "file": "sara_tyler_our_story.png",
+        "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
+        "box": [
+          590,
+          110,
+          1060,
+          390
+        ]
+      },
+      "intrinsic": {
+        "width": 470,
+        "height": 280
+      },
+      "aspect": 1.6786,
+      "focal": [
+        0.45,
+        0.4
+      ],
+      "alt": "Generated portrait of Sara laughing up at Tyler as he smiles back.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-story-mobile-610.avif",
+          "format": "avif",
+          "width": 610,
+          "bytes": 18240,
+          "sha256": "ff24821fc89069ee0057c51e580309eb86ea333745ed3fb1446e82b9c2668599"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-mobile-610.jpg",
+          "format": "jpg",
+          "width": 610,
+          "bytes": 33257,
+          "sha256": "fa76898711d6f5953766d7d1aed602908723180e734fe488c35ecde4f791922f"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-mobile-1080.avif",
+          "format": "avif",
+          "width": 1080,
+          "bytes": 31214,
+          "sha256": "12fb2a155661f20b685b948d01dafe6b6425cd180aff964ddeccc74b37e0bae7"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-story-mobile-1080.jpg",
+          "format": "jpg",
+          "width": 1080,
+          "bytes": 69464,
+          "sha256": "a2e4868a7cefe1db4d1d77522ee14a7da4c604645e07d900a46599e190bd423f"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.weekend",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-WEEKEND. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-WEEKEND",
+        "file": "sara_tyler_s_chicago_wedding_weekend.png",
+        "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
+        "box": [
+          452,
+          112,
+          938,
+          398
+        ]
+      },
+      "intrinsic": {
+        "width": 486,
+        "height": 286
+      },
+      "aspect": 1.6993,
+      "focal": [
+        0.55,
+        0.38
+      ],
+      "alt": "Generated portrait of Sara and Tyler smiling together on a bridge over the Chicago River.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-680.avif",
+          "format": "avif",
+          "width": 680,
+          "bytes": 16507,
+          "sha256": "af854c0b221572976c34ef4aa8993a573854fb47970f8627f029d7e57f0ebeca"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-680.jpg",
+          "format": "jpg",
+          "width": 680,
+          "bytes": 35565,
+          "sha256": "3f271a2452c854acd83de34cad39309073df23e3a18561b9d3913826a977c89d"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-1070.avif",
+          "format": "avif",
+          "width": 1070,
+          "bytes": 26842,
+          "sha256": "bc9d21ed55cc71246be0bd3541ba1b96adb6996bba6de909b4606a9e7cdb10c9"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-1070.jpg",
+          "format": "jpg",
+          "width": 1070,
+          "bytes": 64477,
+          "sha256": "f42fc695e0f1fc91da7ac462d85510972ebe3b38a1b2493dbb04c2f81b658cdb"
+        }
+      ]
+    },
+    {
+      "id": "couple.hero.weekend.mobile",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-WEEKEND. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-WEEKEND",
+        "file": "sara_tyler_s_chicago_wedding_weekend.png",
+        "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
+        "box": [
+          590,
+          112,
+          938,
+          398
+        ]
+      },
+      "intrinsic": {
+        "width": 348,
+        "height": 286
+      },
+      "aspect": 1.2168,
+      "focal": [
+        0.45,
+        0.36
+      ],
+      "alt": "Generated portrait of Sara and Tyler smiling together on a bridge over the Chicago River.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-mobile-490.avif",
+          "format": "avif",
+          "width": 490,
+          "bytes": 12740,
+          "sha256": "e2cca89a88c83ae52080c75cbd0c27b0662a6956245354348717b3bc2e5e8fe4"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-mobile-490.jpg",
+          "format": "jpg",
+          "width": 490,
+          "bytes": 27229,
+          "sha256": "91554ad241b44288decc5b660ee61a00eef9e8f3c8541cd76c5a5d902a311e11"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-mobile-900.avif",
+          "format": "avif",
+          "width": 900,
+          "bytes": 23981,
+          "sha256": "760e4195443ac479fb7f6efba50bcf92848280cddb996a9cffa879c2920f28bc"
+        },
+        {
+          "src": "/media/botanical-deco/couple/hero-weekend-mobile-900.jpg",
+          "format": "jpg",
+          "width": 900,
+          "bytes": 58585,
+          "sha256": "cbc64754607b0e65d056c558a390235781a04d17d6a6fa3afdb012faf2369eca"
+        }
+      ]
+    },
+    {
+      "id": "couple.lakefront",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-HOME. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          561,
+          862,
+          889,
+          1025
+        ]
+      },
+      "intrinsic": {
+        "width": 328,
+        "height": 163
+      },
+      "aspect": 2.0123,
+      "focal": [
+        0.9,
+        0.4
+      ],
+      "alt": "Generated portrait of Sara and Tyler on the Lake Michigan shore with the downtown skyline across the water.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/lakefront-490.avif",
+          "format": "avif",
+          "width": 490,
+          "bytes": 9401,
+          "sha256": "701b2c73c30acd903a7f959eeca128912ff766eb1be6fd6e66e04ec6925ee6a8"
+        },
+        {
+          "src": "/media/botanical-deco/couple/lakefront-490.jpg",
+          "format": "jpg",
+          "width": 490,
+          "bytes": 19251,
+          "sha256": "b98071f44776bf8d877f0ab1b5bcc59d2a8439f6655a6d348b4c56ecc9a4bc16"
+        },
+        {
+          "src": "/media/botanical-deco/couple/lakefront-850.avif",
+          "format": "avif",
+          "width": 850,
+          "bytes": 15909,
+          "sha256": "5d8c11c96b9ff3f27f65199cbf5729c09f780d073bb1bb93b7c27a2d82792ed5"
+        },
+        {
+          "src": "/media/botanical-deco/couple/lakefront-850.jpg",
+          "format": "jpg",
+          "width": 850,
+          "bytes": 37653,
+          "sha256": "ab1b1e8becfb36e4d1b754207a89042dfd3523c75146152234104e57d3eb1e94"
+        }
+      ]
+    },
+    {
+      "id": "couple.story.monochrome",
+      "kind": "couple",
+      "sourceType": "generated-portrayal",
+      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-HOME. Not a documentary photograph of any event.",
+      "interim": true,
+      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
+      "parent": {
+        "reference": "REF-HOME",
+        "file": "sara_and_tyler_a_brighter_together.png",
+        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
+        "box": [
+          421,
+          528,
+          724,
+          746
+        ]
+      },
+      "intrinsic": {
+        "width": 303,
+        "height": 218
+      },
+      "aspect": 1.3899,
+      "focal": [
+        0.55,
+        0.4
+      ],
+      "alt": "Generated black-and-white portrait: Sara looking up at Tyler, both smiling.",
+      "credit": "Generated portrayal, approved by Sara and Tyler",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/couple/story-monochrome-450.avif",
+          "format": "avif",
+          "width": 450,
+          "bytes": 8633,
+          "sha256": "60bf9f66051ea94f8220653855a270d19f210df408fffcdbde92179c92f0d140"
+        },
+        {
+          "src": "/media/botanical-deco/couple/story-monochrome-450.jpg",
+          "format": "jpg",
+          "width": 450,
+          "bytes": 17185,
+          "sha256": "cb1b7f2f5396208a9f2954011e4f5be60edf870fa14b9e623733d873c8e4a981"
+        },
+        {
+          "src": "/media/botanical-deco/couple/story-monochrome-790.avif",
+          "format": "avif",
+          "width": 790,
+          "bytes": 14591,
+          "sha256": "dca4fb8bff20f54e3410bc38e02b499e3846fe2d65b54c50495aa93fd3c8cf97"
+        },
+        {
+          "src": "/media/botanical-deco/couple/story-monochrome-790.jpg",
+          "format": "jpg",
+          "width": 790,
+          "bytes": 34010,
+          "sha256": "4141a553ad89902dc2ab5e2bf6160737d212152fcb5cb1b485e3df7bed5dde81"
+        }
+      ]
+    },
+    {
+      "id": "place.starved-rock",
+      "kind": "city",
+      "sourceType": "licensed-photograph",
+      "provenance": "French Canyon - Starved Rock - panoramio.jpg by hakkun — CC BY-SA 3.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/french-canyon-starved-rock-panoramio.jpg",
+        "sha256": "476c3589aad593ab457c11a0ae4b1da2d3e8ce0cc1ffae62e623a6136b1c535b",
+        "box": [
+          0,
+          0,
+          1920,
+          1280
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1280
+      },
+      "aspect": 1.5,
+      "focal": [
+        0.45,
+        0.5
+      ],
+      "alt": "French Canyon at Starved Rock State Park: a narrow sandstone gorge between moss-covered walls.",
+      "caption": "French Canyon, Starved Rock",
+      "credit": "\"French Canyon - Starved Rock - panoramio.jpg\" by hakkun, licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:French_Canyon_-_Starved_Rock_-_panoramio.jpg). Resized by Wikimedia to 1920×1280 from the 5184×3456 original; no other changes. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/city/place-starved-rock-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 41800,
+          "sha256": "c9a96a20fbafad7742bebcd05f922b72b49c90cd77d633f48cd9e68a19b42b91"
+        },
+        {
+          "src": "/media/botanical-deco/city/place-starved-rock-640.jpg",
+          "format": "jpg",
+          "width": 640,
+          "bytes": 57106,
+          "sha256": "b8274662b39f49358dc1f4ce2e278355e5e8f66d035e8a086296e76cce99d4dd"
+        },
+        {
+          "src": "/media/botanical-deco/city/place-starved-rock-1280.avif",
+          "format": "avif",
+          "width": 1280,
+          "bytes": 160831,
+          "sha256": "6c736cfcfc3fd89786661f48376a0b6cd18f1c361f7ae46890ed77275ecd2473"
+        },
+        {
+          "src": "/media/botanical-deco/city/place-starved-rock-1280.jpg",
+          "format": "jpg",
+          "width": 1280,
+          "bytes": 221726,
+          "sha256": "49e6834649f1378600ceb3b068e3a92c1f50a1b68044d2821c8033a47d2fa82c"
+        }
+      ]
+    },
+    {
+      "id": "venue.exterior",
+      "kind": "venue",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Athletic Association Building 12 South Michigan Avenue.jpg by Beyond My Ken — CC BY-SA 4.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-athletic-association-building-12-south-michigan-avenue.jpg",
+        "sha256": "60e1472ef8bcadc4a2d17b3139ab1feec96adf5e8ef86c5c8481f8fd0d9bdb42",
+        "box": [
+          0,
+          330,
+          1513,
+          1590
+        ]
+      },
+      "intrinsic": {
+        "width": 1513,
+        "height": 1260
+      },
+      "aspect": 1.2008,
+      "focal": [
+        0.5,
+        0.45
+      ],
+      "alt": "The Chicago Athletic Association building on Michigan Avenue: red brick and pale stone, tiers of pointed Venetian Gothic windows above the street.",
+      "caption": "A landmark on Michigan Avenue since 1893",
+      "credit": "\"Chicago Athletic Association Building 12 South Michigan Avenue.jpg\" by Beyond My Ken, licensed under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Athletic_Association_Building_12_South_Michigan_Avenue.jpg). No changes made. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/venue/exterior-520.avif",
+          "format": "avif",
+          "width": 520,
+          "bytes": 36851,
+          "sha256": "ed0a5237f54d8f3f154c1581d96b734f53371bde573a500ad5f9ac9707f3cf7b"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-520.jpg",
+          "format": "jpg",
+          "width": 520,
+          "bytes": 65889,
+          "sha256": "2342b72eea24365096a38e8c688247c02b53eaad70175d6f15ca10e40b1ab246"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-1040.avif",
+          "format": "avif",
+          "width": 1040,
+          "bytes": 99212,
+          "sha256": "376b4b5b4a40c85eb30d531150d89ab31c34555e15e7497a9fd350bfd5e2beb8"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-1040.jpg",
+          "format": "jpg",
+          "width": 1040,
+          "bytes": 204647,
+          "sha256": "6ba786e7cc8fc57f3c0f765516d6491650089fc0a411ec6af04f00a993fe011e"
+        }
+      ]
+    },
+    {
+      "id": "venue.exterior-green",
+      "kind": "venue",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Athletic Association Building.JPG by Lhoaxt — CC BY-SA 3.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-athletic-association-building.jpg",
+        "sha256": "b9944c81f0c258a0dd9a5a3351a997acc1180a5067a65cdacca526cc59796995",
+        "box": [
+          0,
+          180,
+          1536,
+          1460
+        ]
+      },
+      "intrinsic": {
+        "width": 1536,
+        "height": 1280
+      },
+      "aspect": 1.2,
+      "focal": [
+        0.5,
+        0.5
+      ],
+      "alt": "The Chicago Athletic Association building in summer, trees along Michigan Avenue in front of its brick and stone facade.",
+      "caption": "From Michigan Avenue in summer",
+      "credit": "\"Chicago Athletic Association Building.JPG\" by Lhoaxt, licensed under CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Athletic_Association_Building.JPG). No changes made. Derivatives must be shared under the same license.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/venue/exterior-green-520.avif",
+          "format": "avif",
+          "width": 520,
+          "bytes": 21622,
+          "sha256": "65349e0c755274267dad71d9e6f7ba16452a1fa701dcde9988ac1bb0642e65c1"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-green-520.jpg",
+          "format": "jpg",
+          "width": 520,
+          "bytes": 41173,
+          "sha256": "253b430e0b26d81d331f330dc3dc22c913bd37a7ec01284a905efd88eb05f71e"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-green-1040.avif",
+          "format": "avif",
+          "width": 1040,
+          "bytes": 59189,
+          "sha256": "a39ba9aaaee7fbd4f41127b479fbc3006426a7d751d7801d753634e6512ad6bc"
+        },
+        {
+          "src": "/media/botanical-deco/venue/exterior-green-1040.jpg",
+          "format": "jpg",
+          "width": 1040,
+          "bytes": 120200,
+          "sha256": "0fbce7922c5c7ebb92b4b3f167af89bca48c2b7e2f8a51052d75a863ccb9ee7a"
+        }
+      ]
+    },
+    {
+      "id": "venue.facade",
+      "kind": "venue",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Athletic Association (15430675040).jpg by Tony Hisgett from Birmingham, UK — CC BY 2.0. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-athletic-association-15430675040.jpg",
+        "sha256": "52c74ccb92297598294ef19984ea3fccb09805847c9b05e70554b261395555b4",
+        "box": [
+          0,
+          0,
+          1920,
+          1511
+        ]
+      },
+      "intrinsic": {
+        "width": 1920,
+        "height": 1511
+      },
+      "aspect": 1.2707,
+      "focal": [
+        0.5,
+        0.4
+      ],
+      "alt": "Close view of the facade: carved stone tracery and rows of pointed arches between bands of red brick.",
+      "caption": "Venetian Gothic tracery, after the Doge’s Palace",
+      "credit": "\"Chicago Athletic Association (15430675040).jpg\" by Tony Hisgett from Birmingham, UK, licensed under CC BY 2.0 (https://creativecommons.org/licenses/by/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Athletic_Association_(15430675040).jpg). Resized by Wikimedia to 1920×1511 from the 4280×3368 original; no other changes.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/venue/facade-520.avif",
+          "format": "avif",
+          "width": 520,
+          "bytes": 31555,
+          "sha256": "3168ecab4177f360ad807370ae92742b6448f0d9ecf9606529309cc6664a924f"
+        },
+        {
+          "src": "/media/botanical-deco/venue/facade-520.jpg",
+          "format": "jpg",
+          "width": 520,
+          "bytes": 59383,
+          "sha256": "58bc3e6c4b5750bc8439bada72bc8ecf277b076b29ec30af350144ddbbb122d6"
+        },
+        {
+          "src": "/media/botanical-deco/venue/facade-1040.avif",
+          "format": "avif",
+          "width": 1040,
+          "bytes": 102772,
+          "sha256": "6042f4e72c65028970fdf719c51d119b447e2d157fe323a61c44d80bf15e7d13"
+        },
+        {
+          "src": "/media/botanical-deco/venue/facade-1040.jpg",
+          "format": "jpg",
+          "width": 1040,
+          "bytes": 203806,
+          "sha256": "3473e01e03c75dc578e102880035de093ae84c8411089237131f6debf87d322d"
+        }
+      ]
+    },
+    {
+      "id": "venue.historic",
+      "kind": "venue",
+      "sourceType": "licensed-photograph",
+      "provenance": "Chicago Athletic Association building 1897.png by History of Chicago 1897 — Public domain. Cropped and resized; subject verified from the Commons description.",
+      "interim": false,
+      "parent": {
+        "ledgerFile": "public/assets/commons/chicago-athletic-association-building-1897.png",
+        "sha256": "aa1c644ae31a85e4abe516ee574937cb90fe61d81c21751fd9bdc70f6acece78",
+        "box": [
+          0,
+          60,
+          818,
+          1160
+        ]
+      },
+      "intrinsic": {
+        "width": 818,
+        "height": 1100
+      },
+      "aspect": 0.7436,
+      "focal": [
+        0.55,
+        0.45
+      ],
+      "alt": "An 1897 photograph of the Chicago Athletic Association building on Michigan Avenue, four years after it opened.",
+      "caption": "The building in 1897",
+      "credit": "\"Chicago Athletic Association building 1897.png\" by History of Chicago 1897, Public domain (PD US expired), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Athletic_Association_building_1897.png). No changes made.",
+      "scope": "public",
+      "files": [
+        {
+          "src": "/media/botanical-deco/venue/historic-480.avif",
+          "format": "avif",
+          "width": 480,
+          "bytes": 39841,
+          "sha256": "da7319a2c2e232061fba5eb0658097c02d20ba19c4ea7aa0be635e91584ad43c"
+        },
+        {
+          "src": "/media/botanical-deco/venue/historic-480.jpg",
+          "format": "jpg",
+          "width": 480,
+          "bytes": 64819,
+          "sha256": "76b2c33358cc05a43fdab1b938e0e0e2b473dac85770c6ffde21d6095a4587c7"
+        },
+        {
+          "src": "/media/botanical-deco/venue/historic-818.avif",
+          "format": "avif",
+          "width": 818,
+          "bytes": 88605,
+          "sha256": "95eb2f567ae9edfc2d72bb5f192e7e84d6a13738e427b42dcc43c94ffa0d05ae"
+        },
+        {
+          "src": "/media/botanical-deco/venue/historic-818.jpg",
+          "format": "jpg",
+          "width": 818,
+          "bytes": 155037,
+          "sha256": "cb91f351225b79f2aeec271e9780b869e9b93d3aee90938c7f4fc954e2f139a1"
+        }
+      ]
+    }
+  ]
+}

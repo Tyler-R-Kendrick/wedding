@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke, siteStatus, invokeByName } from '@/capabilities';
 import { getDb } from '@/db/client';
+import { siteSettings } from '@/db/schema/site';
 import { getLifecycle, setLifecycle } from '@/db/repos/site';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isEnabled, invalidateReadinessCache, setReadiness } from '@/lib/flags';
@@ -15,14 +16,29 @@ describe('site_status capability', () => {
     expect(r.value.data).toMatchObject({
       lifecycle: { state: 'TEASER', mode: 'explore', suggested: expect.any(String) },
       wedding: { coupleDisplayName: 'Sara + Tyler', date: '2027-07-17', timezone: 'America/Chicago', venueName: 'Chicago Athletic Association Hotel' },
-      themes: ['gilded-hour', 'conservatory'],
-      defaultTheme: 'gilded-hour',
+      themes: ['botanical-deco', 'gilded-hour', 'conservatory'],
+      defaultTheme: 'botanical-deco',
     });
     expect(r.value.sources[0]).toMatchObject({ title: "Tyler's brief 2026-09-04" });
     const db = await getDb();
     const rows = await listAuditEvents(db, { requestId: 'req-site-1' });
     expect(rows[0]).toMatchObject({ action: 'capability.invoked', targetId: 'site_status', metadata: { surface: 'ai' } });
     expect(rows[0]!.metadata).not.toHaveProperty('inputHash'); // reads carry no input fingerprint
+  });
+
+  it('reports the design guests see, not a default a pre-approval seed left in the database', async () => {
+    // Production was seeded before Sara and Tyler approved Botanical–Deco, and the seed never
+    // overwrites: its row still says gilded-hour and lists only the two proposals.
+    const db = await getDb();
+    const [before] = await db.select().from(siteSettings);
+    await db.update(siteSettings).set({ defaultTheme: 'gilded-hour', themes: ['gilded-hour', 'conservatory'] });
+    try {
+      const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-site-legacy' });
+      const r = await invoke(siteStatus, ctx, {});
+      expect(r.ok && r.value.data).toMatchObject({ theme: { active: 'botanical-deco' }, defaultTheme: 'botanical-deco', themes: ['botanical-deco', 'gilded-hour', 'conservatory'] });
+    } finally {
+      await db.update(siteSettings).set({ defaultTheme: before!.defaultTheme, themes: before!.themes });
+    }
   });
 
   it('is reachable by name and unknown names are not found', async () => {
@@ -58,7 +74,9 @@ describe('lifecycle + readiness', () => {
     await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-1', audit: new DbAuditSink(db) });
     expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: flagsOn, db })).toBe(true);
     expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: readFlags({}), db })).toBe(false);
-    expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({}), db })).toBe(true);
+    // Env-only flags need no readiness row: off by default since the approval, on when asked for.
+    expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({}), db })).toBe(false);
+    expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({ NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'on' }), db })).toBe(true);
     expect(await listAuditEvents(db, { action: 'flag.changed', targetId: 'PRO_MEDIA_AI_PROCESSING' })).toHaveLength(1);
   });
 });

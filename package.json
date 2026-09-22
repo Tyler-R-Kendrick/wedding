@@ -31,6 +31,7 @@
     "design:export:tailwind": "design.md export --format css-tailwind DESIGN.md",
     "design:export:dtcg": "design.md export --format dtcg DESIGN.md",
     "design:export:css": "design.md export --format css-vars DESIGN.md",
+    "demos:record": "node scripts/demos/record.mjs",
     "design:diff": "design.md diff",
     "slop:detect": "impeccable detect .",
     "slop:detect:json": "impeccable detect --json .",

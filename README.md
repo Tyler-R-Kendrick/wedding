@@ -1,8 +1,21 @@
 # Tyler & Sara — wedding website
 
-A wedding website that is meant to be *very* well designed. This repo
-currently contains the design toolchain, design system, and quality gates;
-the site itself is the next step.
+A wedding website that is meant to be *very* well designed: Sara and Tyler's
+weekend at the Chicago Athletic Association, in the Botanical–Deco design they
+approved. Next.js 16, React 19 and Tailwind v4, with the design toolchain and
+quality gates that built it.
+
+## See it
+
+[![Home](docs/demos/home.gif)](docs/demos/home.mp4)
+
+[![Our Story: the chapter reader](docs/demos/our-story.gif)](docs/demos/our-story.mp4)
+
+More in [`docs/demos/`](docs/demos/README.md): Explore CAA + Chicago, Your
+Weekend with the RSVP, and the phone view. They are recorded from the running
+site with Vercel's [webreel](https://github.com/vercel-labs/webreel) and
+[agent-browser](https://github.com/vercel-labs/agent-browser)
+(`npm run demos:record`; see [how](docs/ops/demos.md)).
 
 ## What's here
 
@@ -25,9 +38,9 @@ claude                       # then: /impeccable shape home   (or read CLAUDE.md
 ## Workflow
 
 1. Fill the `TODO(Tyler & Sara)` items in `PRODUCT.md` (date, venue, logistics).
-2. Pick the stack (Astro or Next.js + Tailwind v4 recommended) and scaffold into `src/`.
-3. `npm run design:export:tailwind > src/styles/theme.css` — tokens flow from `DESIGN.md`.
-4. Build each route with `/impeccable craft <route>`; review with `design-review <route>`.
-5. Ship when `design-review` scores ≥ 7 on every axis (Usability ≥ 8) and CI is green.
+2. `npm run dev` serves the site on http://localhost:3000 (PGlite, migrated and seeded on start).
+3. Build each route with `/impeccable craft <route>`; review with `design-review <route>`.
+4. Ship when `design-review` scores ≥ 7 on every axis (Usability ≥ 8) and CI is green.
+5. When a page visibly changes, re-record its demo (`npm run demos:record -- <name>`).
 
 See `CLAUDE.md` for the full agent guide and `docs/research/` for the tooling research.

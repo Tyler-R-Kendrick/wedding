@@ -1,0 +1,213 @@
+[
+  {
+    "id": "venue.exterior",
+    "kind": "venue",
+    "file": "public/assets/commons/chicago-athletic-association-building-12-south-michigan-avenue.jpg",
+    "box": [
+      0,
+      330,
+      1513,
+      1590
+    ],
+    "widths": [
+      520,
+      1040
+    ],
+    "focal": [
+      0.5,
+      0.45
+    ],
+    "alt": "The Chicago Athletic Association building on Michigan Avenue: red brick and pale stone, tiers of pointed Venetian Gothic windows above the street.",
+    "caption": "A landmark on Michigan Avenue since 1893"
+  },
+  {
+    "id": "venue.facade",
+    "kind": "venue",
+    "file": "public/assets/commons/chicago-athletic-association-15430675040.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1511
+    ],
+    "widths": [
+      520,
+      1040
+    ],
+    "focal": [
+      0.5,
+      0.4
+    ],
+    "alt": "Close view of the facade: carved stone tracery and rows of pointed arches between bands of red brick.",
+    "caption": "Venetian Gothic tracery, after the Doge’s Palace"
+  },
+  {
+    "id": "venue.historic",
+    "kind": "venue",
+    "file": "public/assets/commons/chicago-athletic-association-building-1897.png",
+    "box": [
+      0,
+      60,
+      818,
+      1160
+    ],
+    "widths": [
+      480,
+      818
+    ],
+    "focal": [
+      0.55,
+      0.45
+    ],
+    "alt": "An 1897 photograph of the Chicago Athletic Association building on Michigan Avenue, four years after it opened.",
+    "caption": "The building in 1897",
+    "modulate": {}
+  },
+  {
+    "id": "venue.exterior-green",
+    "kind": "venue",
+    "file": "public/assets/commons/chicago-athletic-association-building.jpg",
+    "box": [
+      0,
+      180,
+      1536,
+      1460
+    ],
+    "widths": [
+      520,
+      1040
+    ],
+    "focal": [
+      0.5,
+      0.5
+    ],
+    "alt": "The Chicago Athletic Association building in summer, trees along Michigan Avenue in front of its brick and stone facade.",
+    "caption": "From Michigan Avenue in summer"
+  },
+  {
+    "id": "city.skyline",
+    "kind": "city",
+    "file": "public/assets/commons/chicago-skyline-view-from-alder-planetarium-at-sunset-illinois-usa-43511551295.jpg",
+    "box": [
+      0,
+      0,
+      3840,
+      986
+    ],
+    "widths": [
+      1440,
+      2560
+    ],
+    "focal": [
+      0.5,
+      0.6
+    ],
+    "alt": "The Chicago skyline across the lake at dusk, seen from the Adler Planetarium.",
+    "caption": "The skyline from the Adler at dusk"
+  },
+  {
+    "id": "city.riverwalk",
+    "kind": "city",
+    "file": "public/assets/commons/chicago-river-from-michigan-avenue-bridge-at-night.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1272
+    ],
+    "widths": [
+      640,
+      1280
+    ],
+    "focal": [
+      0.42,
+      0.62
+    ],
+    "alt": "The Chicago River at night from the Michigan Avenue bridge: towers lit gold on both banks and the Riverwalk's lamplit terraces along the water.",
+    "caption": "The river from the Michigan Avenue bridge"
+  },
+  {
+    "id": "city.river",
+    "kind": "city",
+    "file": "public/assets/commons/looking-east-along-the-chicago-river-toward-the-marshall-suloway-bridge-52041188396.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1280
+    ],
+    "widths": [
+      640,
+      1280
+    ],
+    "focal": [
+      0.5,
+      0.62
+    ],
+    "alt": "The Chicago River on a foggy night: a lit bascule bridge, warm reflections on the water and towers fading into the mist.",
+    "caption": "The Chicago River after dark"
+  },
+  {
+    "id": "city.north-pond",
+    "kind": "city",
+    "file": "public/assets/commons/the-lincoln-park-north-pond-6097472770.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1440
+    ],
+    "widths": [
+      640,
+      1280
+    ],
+    "focal": [
+      0.45,
+      0.55
+    ],
+    "alt": "North Pond in Lincoln Park seen through summer reeds, the city's towers rising beyond the trees.",
+    "caption": "North Pond, Lincoln Park"
+  },
+  {
+    "id": "city.lakefront-adler",
+    "kind": "city",
+    "file": "public/assets/commons/chicago-skyline-2022-2.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "widths": [
+      640,
+      1280
+    ],
+    "focal": [
+      0.55,
+      0.6
+    ],
+    "alt": "Aerial view of the Adler Planetarium at the tip of Northerly Island, with the harbor and the downtown skyline across the water.",
+    "caption": "The Adler and the lakefront"
+  },
+  {
+    "id": "place.starved-rock",
+    "kind": "city",
+    "file": "public/assets/commons/french-canyon-starved-rock-panoramio.jpg",
+    "box": [
+      0,
+      0,
+      1920,
+      1280
+    ],
+    "widths": [
+      640,
+      1280
+    ],
+    "focal": [
+      0.45,
+      0.5
+    ],
+    "alt": "French Canyon at Starved Rock State Park: a narrow sandstone gorge between moss-covered walls.",
+    "caption": "French Canyon, Starved Rock"
+  }
+]

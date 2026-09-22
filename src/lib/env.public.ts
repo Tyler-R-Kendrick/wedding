@@ -7,7 +7,7 @@ export const publicEnv = {
   /** Canonical origin used to build absolute links (signed dev URLs, share links). */
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, ''),
   /** Default theme id when no preference is stored. Themes are owned by the design swarm. */
-  defaultTheme: process.env.NEXT_PUBLIC_DEFAULT_THEME || 'gilded-hour',
+  defaultTheme: process.env.NEXT_PUBLIC_DEFAULT_THEME || 'botanical-deco',
   /**
    * Try the guest's own browser for the concierge before any hosted model. On a browser with
    * the Prompt API this costs nothing, needs no key, and keeps the question on their device;

@@ -5,6 +5,7 @@ import { highlightIdFor } from '@/capabilities/seating/show_my_table_on_floorpla
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { Badge } from '@/components/rsvp/fields';
 import { formatDeadline } from '@/domain/events/format';
+import { BotanicalWeekendPage, type WeekendReply } from '@/themes/botanical-deco/weekend';
 import { GuestCard, GuestNotice, GuestSection } from '@/themes/guest';
 import type { ThemeId } from '@/themes/types';
 
@@ -15,7 +16,10 @@ import type { ThemeId } from '@/themes/types';
  * `.card` pair — see `src/themes/guest.tsx` for why one shared recipe wearing two palettes was a
  * blocker rather than a shortcut.
  */
-export function WeekendPage({ data, theme }: { data: MyItinerary; theme: ThemeId }) {
+export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: ThemeId; reply?: WeekendReply }) {
+  // The approved design's Weekend is its own composition (three-column workspace, the reply inline);
+  // the two earlier proposals keep this shared recipe.
+  if (theme === 'botanical-deco') return <BotanicalWeekendPage data={data} reply={reply} />;
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const table = data.seating.table;
   return (
