@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import { navFor } from '@/domain/lifecycle/nav';
-import { guestText } from '@/domain/content/text';
+import { curlyQuotes, guestText } from '@/domain/content/text';
 
 /**
  * What the site claims about ITSELF, and about the reader's standing with it.
@@ -43,8 +43,20 @@ describe('editorial metadata never reaches a guest', () => {
     expect(guestText('The dress code (backlog C-01).')).toBe('The dress code.');
     expect(guestText('See backlog P-02 for more.')).toBe('See for more.');
     // an ordinary parenthetical survives
-    expect(guestText('Cindy\'s (the rooftop) opens at 11.')).toBe('Cindy\'s (the rooftop) opens at 11.');
+    expect(guestText('Cindy\'s (the rooftop) opens at 11.')).toBe('Cindy’s (the rooftop) opens at 11.');
     expect(guestText('Ride the 146 (bus) north.')).toBe('Ride the 146 (bus) north.');
+  });
+
+  it('sets typographer\'s quotes on everything a guest reads', () => {
+    // A design review counted 18 straight quotes against 6 curly on /explore-caa: the admin editors
+    // and the seed files are typed on a keyboard, so the quotes are set once, in guestText.
+    expect(guestText("We met at Allison and Jamie's wedding.")).toBe('We met at Allison and Jamie’s wedding.');
+    expect(guestText('We said "I love you." at Starved Rock.')).toBe('We said “I love you.” at Starved Rock.');
+    expect(curlyQuotes("The Jameses' table, 'the good one', since '27.")).toBe('The Jameses’ table, ‘the good one’, since ’27.');
+    expect(curlyQuotes('("Better together")')).toBe('(“Better together”)');
+    expect(curlyQuotes('Sara said it — "yes".')).toBe('Sara said it — “yes”.');
+    // already typeset copy is left alone
+    expect(curlyQuotes('It’s “settled”.')).toBe('It’s “settled”.');
   });
 
   it('has no note in the seed that tells the couple what to do', () => {
@@ -53,7 +65,12 @@ describe('editorial metadata never reaches a guest', () => {
     const spaces = readFileSync('src/content/seed/venue-spaces.json', 'utf8');
     expect(spaces).not.toContain('verify with the planner');
     expect(spaces).not.toContain('before publishing as fact');
-    expect(spaces).toContain("venue's own kit figures");
+    expect(spaces).toContain("venue's own figures");
+    // "Kit" is the planner's word for the venue's wedding packet; a guest reads it as jargon. Source
+    // keys may keep it: they are metadata, never rendered.
+    for (const space of JSON.parse(spaces) as { capacities: { note: string }; lookForThis: string[] }[]) {
+      for (const text of [space.capacities.note, ...space.lookForThis]) expect(text).not.toMatch(/\bkit\b/i);
+    }
     const itineraries = readFileSync('src/content/seed/itineraries.json', 'utf8');
     expect(itineraries).not.toMatch(/\((?:[CPVX]-\d{1,3})\)/);
   });

@@ -52,7 +52,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
       />
       <div className="bd-travel__airports">
         {facts.airports.map((a) => (
-          <Card key={a.code} title={a.code} headingLevel={3} label={a.name}>
+          <Card key={a.code} title={a.name} headingLevel={3} label={a.code}>
             <Prose>{a.note ? <p>{a.note}</p> : null}</Prose>
           </Card>
         ))}
@@ -200,10 +200,13 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
         </p>
         <p>
           Accessibility and transit directions are on the{" "}
-          <Link href={facts.venue.faqUrl} external>
-            hotel&rsquo;s FAQ page
-          </Link>
-          .
+          {/* The full stop stays with the link's arrow rather than starting a line of its own. */}
+          <span className="bd-nowrap">
+            <Link href={facts.venue.faqUrl} external>
+              hotel&rsquo;s FAQ page
+            </Link>
+            .
+          </span>
         </p>
         <p>
           <Link href={tripHref} standalone>Your trip →</Link>

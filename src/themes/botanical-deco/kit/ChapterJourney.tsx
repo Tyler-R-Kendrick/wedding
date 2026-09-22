@@ -13,6 +13,26 @@ const onHash = (notify: () => void) => {
   window.addEventListener('hashchange', notify);
   return () => window.removeEventListener('hashchange', notify);
 };
+// A printed story carries every chapter. The panels are switched with `hidden`, which Tailwind's
+// preflight enforces with an !important in its base layer that no print rule can outrank, so the
+// reader itself stops hiding them while the page prints.
+let printing = false;
+const onPrint = (notify: () => void) => {
+  const start = () => {
+    printing = true;
+    notify();
+  };
+  const end = () => {
+    printing = false;
+    notify();
+  };
+  window.addEventListener('beforeprint', start);
+  window.addEventListener('afterprint', end);
+  return () => {
+    window.removeEventListener('beforeprint', start);
+    window.removeEventListener('afterprint', end);
+  };
+};
 
 /**
  * The approved journey band as a reader: the beads on the gold line choose which chapter opens in
@@ -35,6 +55,11 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
     onHash,
     () => window.location.hash,
     () => '',
+  );
+  const inPrint = useSyncExternalStore(
+    onPrint,
+    () => printing,
+    () => false,
   );
   const [picked, setPicked] = useState<number | null>(null);
   // Only a chapter a guest chose fades in; the one on screen at load is at rest (and measurable).
@@ -139,7 +164,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
               className="bd-reader__chapter"
               role={enhanced ? 'tabpanel' : undefined}
               aria-labelledby={enhanced ? `${s.slug}-tab` : `${s.slug}-title`}
-              hidden={enhanced && i !== current}
+              hidden={enhanced && !inPrint && i !== current}
               data-entering={moved && i === current ? '' : undefined}
             >
               {chapter}

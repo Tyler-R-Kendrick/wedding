@@ -17,6 +17,35 @@ import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, hand
  */
 
 /**
+ * A link's last word and its trailing mark, kept on one line: an arrow alone at the start of a line
+ * reads as a stray glyph (review N7). A word joiner does not hold an inline SVG to its word in
+ * Chromium, so the two share a no-wrap span.
+ */
+export function withTail(children: ReactNode, mark: ReactNode): ReactNode {
+  if (typeof children !== 'string') {
+    return (
+      <>
+        {children}
+        {mark}
+      </>
+    );
+  }
+  const text = children.trimEnd();
+  const i = text.lastIndexOf(' ');
+  // One span around the whole label: several links are flex boxes (for their 44px target), and a
+  // bare text node beside the no-wrap span would become a column of its own and lose its space.
+  return (
+    <span>
+      {i > 0 ? text.slice(0, i + 1) : null}
+      <span className="bd-nowrap">
+        {i > 0 ? text.slice(i + 1) : text}
+        {mark}
+      </span>
+    </span>
+  );
+}
+
+/**
  * The visible link text names the destination ("… on chicagoathletichotel.com", "Open directions in
  * Google Maps"), so the mark only announces that the link leaves the site. `opens` is a display
  * name for the cases where the text cannot carry it — never a raw provider slug.
@@ -305,8 +334,7 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
             Hours and menus:{' '}
             {card.operational.url ? (
               <a className="bd-link" href={card.operational.url} {...OFFICIAL_LINK_ATTRS}>
-                {`${card.operational.label} on ${destinationLabel(card.operational.url)}`}
-                <ExternalMark />
+                {withTail(`${guestText(card.operational.label)} on ${destinationLabel(card.operational.url)}`, <ExternalMark />)}
               </a>
             ) : (
               card.operational.label
@@ -459,8 +487,7 @@ function OutletRow({ field }: { field: OperationalFieldView }) {
       {open ? (
         <p className="bd-outlet__link">
           <a className="bd-link" href={open} {...OFFICIAL_LINK_ATTRS}>
-            {`${field.label} on ${destinationLabel(open)}`}
-            <ExternalMark />
+            {withTail(`${guestText(field.label)} on ${destinationLabel(open)}`, <ExternalMark />)}
           </a>
         </p>
       ) : null}

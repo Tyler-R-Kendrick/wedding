@@ -90,7 +90,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
                 const item = firstMedia(m.ids);
                 if (!item) return null;
                 return (
-                  <li key={m.kicker} className={`bd-memories__item${m.kicker === 'Starved Rock' ? ' bd-memories__item--tall' : ''}`}>
+                  <li key={m.kicker} className="bd-memories__item">
                     <figure>
                       <Photo id={m.ids} sizes="(min-width: 1100px) 17vw, (min-width: 768px) 33vw, 100vw" />
                       <figcaption>

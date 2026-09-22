@@ -23,6 +23,8 @@ export interface CityPin {
   name: string;
   lat: number;
   lon: number;
+  /** Where the map label sits; "below" for a place that lies on the river line it would cross. */
+  label?: 'above' | 'below';
 }
 
 const FRAME = { north: 41.8935, south: 41.861, west: -87.642, east: -87.598 };
@@ -79,6 +81,8 @@ const RIVER: [number, number][][] = [
 
 const path = (pts: [number, number][]) => pts.map(([la, lo], i) => `${i ? 'L' : 'M'}${px(la, lo).join(' ')}`).join('');
 const WATER = `${path(SHORE)}L${W} ${H}L${W} 0Z`;
+/** Under the pier the shoreline draws out into the lake, so the strip is named rather than left to read as a flaw. */
+const PIER = px(41.8903, -87.6062);
 
 export function CityGuide({ places, venue, guide, children }: { places: CityPin[]; venue: { name: string; lat: number; lon: number }; guide: ReactNode; children: ReactNode }) {
   // `chosen` is what a guest picked on the map: it persists and drives aria-pressed. `hovered` is
@@ -126,6 +130,9 @@ export function CityGuide({ places, venue, guide, children }: { places: CityPin[
             <text x={W - 12} y={H * 0.62} className="bd-citymap__lake" textAnchor="end" aria-hidden="true">
               Lake Michigan
             </text>
+            <text x={PIER[0]} y={PIER[1] + 10} className="bd-citymap__pier" textAnchor="middle" aria-hidden="true">
+              Navy Pier
+            </text>
             <g className="bd-citymap__venue" transform={`translate(${vx} ${vy})`}>
               <rect x="-6" y="-6" width="12" height="12" transform="rotate(45)" />
               <text x="-12" y="4" textAnchor="end" aria-hidden="true">
@@ -149,7 +156,7 @@ export function CityGuide({ places, venue, guide, children }: { places: CityPin[
                 <g key={p.id} className="bd-citymap__pin" data-active={active === p.id ? 'true' : undefined} transform={`translate(${x} ${y})`}>
                   <circle r="11" className="bd-citymap__halo" />
                   <circle r="6" />
-                  <text x={x > W * 0.6 ? -12 : 12} y="-8" textAnchor={x > W * 0.6 ? 'end' : 'start'} aria-hidden="true">
+                  <text x={x > W * 0.6 ? -12 : 12} y={p.label === 'below' ? 22 : -8} textAnchor={x > W * 0.6 ? 'end' : 'start'} aria-hidden="true">
                     {p.name}
                   </text>
                 </g>

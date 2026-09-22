@@ -75,8 +75,14 @@
   text-wrap: balance;
 }
 
-@media (width < 600px) {
-  /* Two equal halves on a phone, each label wrapping inside its own half, never one under the other. */
+/* Both answers need about 376px on one row. In any narrower column — a phone, or the Weekend's
+   middle column on a laptop — they split into two equal halves, each label wrapping inside its
+   own half, never one under the other. Measured on the fieldset, not the window. */
+[data-theme="botanical-deco"] .fld:has(> .choice) {
+  container-type: inline-size;
+}
+
+@container (width < 380px) {
   [data-theme="botanical-deco"] .choice {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -175,6 +181,7 @@
   color: var(--color-surface);
   text-shadow: 0 1px 14px color-mix(in oklab, var(--color-primary) 60%, transparent);
   transform: rotate(-10deg);
+  text-wrap: balance;
 }
 
 .bd-wkhero__words {
@@ -256,7 +263,7 @@
     font-family: var(--font-display);
 
     /* aria-hidden carving, scaled with its column so "beautiful" fits at 1100. */
-    font-size: clamp(0.75rem, 0.1rem + 0.95vw, 1.0625rem);
+    font-size: clamp(var(--type-label-caps-size), 0.1rem + 0.95vw, 1.0625rem);
     letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.2em);
     line-height: 1.5;
     text-transform: uppercase;
@@ -349,7 +356,7 @@
   .bd-tabs__words {
     display: block;
     justify-self: end;
-    font-size: 0.75rem;
+    font-size: var(--type-label-caps-size);
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--color-primary);
@@ -387,6 +394,7 @@
   align-content: start;
   gap: var(--spacing-md);
   min-width: 0;
+  container: itin / inline-size;
 }
 
 .bd-itin__head {
@@ -410,6 +418,7 @@
   line-height: 1;
   color: var(--color-gold-deep);
   transform: rotate(-8deg);
+  text-wrap: balance;
 }
 
 .bd-itin__lede {
@@ -636,6 +645,14 @@
   inline-size: 100%;
 }
 
+/* "Review your answers" holds one line across a phone's column. */
+@media (width < 600px) {
+  .bd-reply .actions .btn {
+    padding-inline: var(--spacing-md);
+    letter-spacing: 0.08em;
+  }
+}
+
 /* The modules. */
 .bd-modules {
   display: grid;
@@ -738,6 +755,18 @@
   }
 }
 
+/* Beside a narrow itinerary column the photo squeezed the event's words to one per line; the date
+   tile says the same thing, so the photo is the one that goes. */
+@container itin (width < 420px) {
+  .bd-event__photo {
+    display: none;
+  }
+
+  .bd-event__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}
+
 @media (width >= 1280px) {
   .bd-workspace {
     grid-template-columns: minmax(0, 33fr) minmax(0, 37fr) minmax(0, 28fr);
@@ -753,9 +782,16 @@
     font-size: var(--type-title-size);
   }
 
+  /* One module per row in the side column. REF-WEEKEND pairs them two-up, but at the 17px floor
+     no pair card is wide enough for its own link ("Getting there", "Photos + video"), which then
+     broke a word per line. Parity exception PX-24. */
   .bd-modules {
     grid-column: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bd-module:not(.bd-module--wide) .bd-module__photo img {
+    aspect-ratio: 5 / 2;
   }
 
   .bd-workspace > .bd-bloom {
@@ -789,3 +825,36 @@
 /* On a phone the columns stay in source order, so reading order and focus order are the same one
    (WCAG 2.4.3): the page's title and the itinerary first, the reply after it. The "RSVP" tab above
    jumps straight to the reply. */
+
+/*
+ * Printing Your Weekend gives the plan, not the screen: the itinerary first with each event's
+ * details open, the reply reduced to its status line, and no colour portrait, tabs or photographs.
+ * Colours and grounds are handled for the whole design in kit.css.
+ */
+@media print {
+  .bd-wkhero__media,
+  .bd-wkhero__script,
+  .bd-tabs,
+  .bd-reply form,
+  .bd-reply__intro,
+  .bd-reply__answers,
+  .bd-reply__submit,
+  .bd-event__photo,
+  .bd-event__chev,
+  .bd-module__photo {
+    display: none !important;
+  }
+
+  .bd-workspace {
+    display: block;
+  }
+
+  .bd-workspace > * + * {
+    margin-block-start: var(--spacing-lg);
+  }
+
+  .bd-event__details::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+}

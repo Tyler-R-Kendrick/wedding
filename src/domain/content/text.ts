@@ -27,9 +27,28 @@ export interface TextBlock {
  */
 export const BACKLOG_REF = /\s*\((?:[^()]*\s)?backlog[^()]*\)|\s*\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b|\s*\((?:[CPVX]-\d{1,3})(?:,\s*[CPVX]-\d{1,3})*\)/gi;
 
-/** Scrubs ticket references from any string that is about to be shown to a guest. */
+/**
+ * Typographer's quotes. Copy is typed in the admin editors and in seed files with the keyboard's
+ * straight quotes, and a design review counted 18 straight against 6 curly on one page. So they are
+ * set here, once, for every string a guest reads, rather than asked of every author.
+ *
+ * Order matters: apostrophes inside and at the end of words first ("Jamie's", "the Jameses'"),
+ * then the abbreviated year ("'27"), then opening quotes after a space or bracket; whatever is left
+ * closes.
+ */
+export function curlyQuotes(text: string): string {
+  return text
+    .replace(/([\p{L}\p{N}])'(?=[\p{L}\p{N}])/gu, '$1’')
+    .replace(/(^|[\s([{—–-])'(?=\d{2}\b)/gu, '$1’')
+    .replace(/(^|[\s([{“—–-])'(?=\S)/gu, '$1‘')
+    .replace(/'/g, '’')
+    .replace(/(^|[\s([{‘—–-])"(?=\S)/gu, '$1“')
+    .replace(/"/g, '”');
+}
+
+/** Scrubs ticket references from any string that is about to be shown to a guest, and sets its quotes. */
 export function guestText(text: string): string {
-  return text.replace(BACKLOG_REF, '').replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+  return curlyQuotes(text.replace(BACKLOG_REF, '').replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim());
 }
 
 export function textBlock(text: string, forcePlaceholder = false): TextBlock {

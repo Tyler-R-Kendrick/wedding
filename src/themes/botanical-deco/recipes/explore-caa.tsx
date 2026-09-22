@@ -43,6 +43,7 @@ function cityPlaces(): CityPlace[] {
       why: 'Walk the river under its bridges, right in the Loop. A true Chicago favorite of ours.',
       lat: 41.8877,
       lon: -87.628,
+      label: 'below',
       directions: mapsUrlFor('Chicago Riverwalk, Chicago, IL'),
       media: tile(['city.riverwalk', 'city.river']),
     },
@@ -168,7 +169,7 @@ export const BotanicalExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ data, 
           <span className="bd-city__skyline" aria-hidden="true" />
         </div>
         <CityGuide
-          places={places.map(({ id, name, lat, lon }) => ({ id, name, lat, lon }))}
+          places={places.map(({ id, name, lat, lon, label }) => ({ id, name, lat, lon, label }))}
           venue={{ name: 'The hotel', lat: 41.8815, lon: -87.6246 }}
           guide={
             <p className="bd-citymap__guide">

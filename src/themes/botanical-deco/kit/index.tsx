@@ -16,7 +16,7 @@ import type {
   StatProps, TextareaProps, ThemeComponentKit, TimelineProps,
 } from '@/themes/types';
 import { Botanical, Photo } from '../media';
-import { content } from './content';
+import { content, withTail } from './content';
 import { Countdown } from './Countdown';
 
 /*
@@ -324,8 +324,7 @@ function Link({ href, external, standalone, children, className, ...rest }: Link
   const ext = external ?? /^https?:/.test(href);
   return (
     <a className={`bd-link${standalone ? ' bd-link--standalone' : ''}${className ? ` ${className}` : ''}`} href={href} rel={ext ? 'noopener' : undefined} {...rest}>
-      {children}
-      {ext ? <ExternalMark /> : null}
+      {ext ? withTail(children, <ExternalMark />) : children}
     </a>
   );
 }

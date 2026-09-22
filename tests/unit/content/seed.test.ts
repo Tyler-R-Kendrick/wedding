@@ -37,11 +37,11 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     expect(isPlaceholderText(starved.tylerMemory)).toBe(true);
   });
 
-  it('every itinerary is a draft and the kit spaces carry "kit figure" capacity notes', () => {
+  it('every itinerary is a draft and the kit spaces say their capacities are the venue\'s own, unconfirmed', () => {
     expect(seed.itineraries.every((i) => i.draft)).toBe(true);
     expect(seed.itineraries.map((i) => i.bucket).sort()).toEqual(['2-3-h', '45-min', 'architecture', 'food-drink', 'friday-afternoon', 'saturday-morning', 'stay-inside-caa', 'with-kids']);
     expect(seed.venueSpaces).toHaveLength(4);
-    for (const s of seed.venueSpaces) expect(s.capacities.note.toLowerCase()).toContain('kit figure');
+    for (const s of seed.venueSpaces) expect(s.capacities.note).toMatch(/venue's own figures.*not confirmed/);
   });
 
   it('the closed outlets are expired records; current outlets link to official pages checked today', () => {

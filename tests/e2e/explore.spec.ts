@@ -31,7 +31,7 @@ test.describe('explore journey', () => {
     // The approved design titles the page with its editorial headline; the page is still "Our Story".
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
     await expect(page).toHaveTitle(/Our Story/);
-    await expect(page.getByText("We met at Allison and Jamie's wedding.")).toBeVisible();
+    await expect(page.getByText('We met at Allison and Jamie’s wedding.')).toBeVisible();
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);

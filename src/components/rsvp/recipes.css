@@ -527,7 +527,9 @@ a:focus-visible,
     padding: 0;
   }
 
-  a[href]::after {
+  /* Only where a printed page needs it: an address to type. "/travel" on paper leads nowhere, and
+     the monogram printed "(/)". */
+  a[href^="http"]::after {
     content: " (" attr(href) ")";
   }
 }

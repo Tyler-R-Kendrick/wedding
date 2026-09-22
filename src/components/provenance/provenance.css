@@ -7,6 +7,11 @@
  * external-source badge) are therefore exposed as slots: a theme sets `--prov-note-ink` /
  * `--prov-placeholder-line` / `--prov-external-ink|line` on its root and the value flows in by
  * inheritance instead of by a losing override.
+ *
+ * The badge's frame is a slot too (`--prov-badge-line`, `--prov-badge-pad`, `--prov-badge-min`,
+ * `--prov-badge-transform`, `--prov-badge-tracking`): where a design lists many sourced records
+ * side by side, it may set the same words as one quiet line instead of three framed chips. The
+ * words themselves never change.
  */
 .prov {
   display: flex;
@@ -27,9 +32,9 @@
   display: inline-flex;
   gap: var(--spacing-xs, 4px);
   align-items: center;
-  min-height: 28px;
-  padding: 2px 10px;
-  border: 1px solid var(--color-outline, var(--color-primary));
+  min-height: var(--prov-badge-min, 28px);
+  padding: var(--prov-badge-pad, 2px 10px);
+  border: 1px solid var(--prov-badge-line, var(--color-outline, var(--color-primary)));
   border-radius: var(--rounded-sm, 2px);
 
   /*
@@ -45,14 +50,14 @@
    */
   font-size: var(--type-control-caps-size, 1rem);
   font-weight: var(--type-control-caps-weight, 500);
-  letter-spacing: var(--type-control-caps-tracking, 0.06em);
+  letter-spacing: var(--prov-badge-tracking, var(--type-control-caps-tracking, 0.06em));
   font-feature-settings: var(--type-control-caps-features, normal);
-  text-transform: var(--label-transform, uppercase);
+  text-transform: var(--prov-badge-transform, var(--label-transform, uppercase));
   white-space: nowrap;
 }
 
 .prov__badge--ok {
-  border-color: var(--color-secondary, var(--color-primary));
+  border-color: var(--prov-badge-line, var(--color-secondary, var(--color-primary)));
   color: var(--color-secondary, var(--color-primary));
 }
 
@@ -62,7 +67,7 @@
 }
 
 .prov__badge--bad {
-  border-color: var(--color-error, var(--color-primary));
+  border-color: var(--prov-badge-line, var(--color-error, var(--color-primary)));
   color: var(--color-error, var(--color-primary));
 }
 
