@@ -1,0 +1,274 @@
+{
+  "about": "agent-browser steps for the guest demo, run by scripts/demos/record.mjs against the NODE_ENV=test server as the seeded fixture household (Dev and Eve Fixture). Each `run` is one agent-browser command; `note` is what the viewer should see.",
+  "viewport": [
+    1440,
+    900
+  ],
+  "steps": [
+    {
+      "run": [
+        "wait",
+        "1800"
+      ],
+      "note": "Your Weekend: the greeting, the tabs, the itinerary"
+    },
+    {
+      "run": [
+        "hover",
+        "nav.bd-tabs a[href='#reply']"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "600"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        "nav.bd-tabs a[href='#reply']"
+      ],
+      "note": "the RSVP lives on the same page"
+    },
+    {
+      "run": [
+        "wait",
+        "1400"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#status-01E2EGSTB10000000000000000-01SDEVENTCEREMNY0000000000-accepted)"
+      ],
+      "note": "one tap per person per event"
+    },
+    {
+      "run": [
+        "wait",
+        "700"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        ".choice__opt:has(#status-01E2EGSTB20000000000000000-01SDEVENTCCKTAS00000000000-accepted)"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "500"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#status-01E2EGSTB10000000000000000-01SDEVENTCCKTAS00000000000-accepted)"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "600"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#status-01E2EGSTB20000000000000000-01SDEVENTCCKTAS00000000000-accepted)"
+      ],
+      "note": "the cocktail hour, for both of them"
+    },
+    {
+      "run": [
+        "wait",
+        "700"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        ".choice__opt:has(#status-01E2EGSTB20000000000000000-01SDEVENTRECEPTN0000000000-accepted)"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "500"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#status-01E2EGSTB10000000000000000-01SDEVENTRECEPTN0000000000-accepted)"
+      ],
+      "note": "the meal question appears only once someone is coming"
+    },
+    {
+      "run": [
+        "wait",
+        "1000"
+      ]
+    },
+    {
+      "run": [
+        "select",
+        "#meal-01E2EGSTB10000000000000000-01SDEVENTRECEPTN0000000000",
+        "01E2EMEAGARDEN000000000000"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "800"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#p1-01E2EGSTB10000000000000000-01SDEVENTRECEPTN0000000000)"
+      ],
+      "note": "a guest's name and meal appear only when there is a guest"
+    },
+    {
+      "run": [
+        "wait",
+        "1300"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#p1-01E2EGSTB10000000000000000-01SDEVENTRECEPTN0000000000)"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "700"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        ".choice__opt:has(#status-01E2EGSTB20000000000000000-01SDEVENTRECEPTN0000000000-accepted)"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        ".choice__opt:has(#status-01E2EGSTB20000000000000000-01SDEVENTRECEPTN0000000000-accepted)"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "900"
+      ]
+    },
+    {
+      "run": [
+        "select",
+        "#meal-01E2EGSTB20000000000000000-01SDEVENTRECEPTN0000000000",
+        "01E2EMEAFSH000000000000000"
+      ],
+      "note": "a meal for each guest"
+    },
+    {
+      "run": [
+        "wait",
+        "800"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        "#dietary-01E2EGSTB10000000000000000"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "400"
+      ]
+    },
+    {
+      "run": [
+        "type",
+        "#dietary-01E2EGSTB10000000000000000",
+        "No shellfish, please."
+      ],
+      "note": "needs go to the caterer and the planner, nobody else"
+    },
+    {
+      "run": [
+        "wait",
+        "900"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        "#reply button[value='draft']"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "400"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        "#reply button[value='draft']"
+      ],
+      "note": "nothing is saved until the answers are reviewed"
+    },
+    {
+      "run": [
+        "wait",
+        "2200"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        "#reply button[value='confirm']"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "1200"
+      ]
+    },
+    {
+      "run": [
+        "click",
+        "#reply button[value='confirm']"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "1500"
+      ]
+    },
+    {
+      "run": [
+        "scrollintoview",
+        "#reply"
+      ]
+    },
+    {
+      "run": [
+        "wait",
+        "2600"
+      ],
+      "note": "answered, and said back in plain words"
+    }
+  ]
+}

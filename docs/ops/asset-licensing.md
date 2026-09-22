@@ -82,7 +82,9 @@ temporary page fills while the real photographs are pending.
   public/assets/commons/   Wikimedia CC/PD, committed       (scripts/fetch-commons.mjs)
   public/assets/generated/ fal.ai / Higgsfield              — does not exist; no key is
                            + generated.json                   configured and nothing has
-                                                              been generated
+                                                              been generated here
+  public/media/botanical-deco/  crops of the approved design   see §1d
+                           + manifest.json
   ```
 - **Never** shipped as a "photo of the couple", of a guest, of the wedding
   party, or of a vendor's work. **Never** presented as a real photograph of
@@ -93,6 +95,38 @@ temporary page fills while the real photographs are pending.
   from the professional photographers' files (see §4).
 - Every generated placeholder is tracked in `docs/content/backlog.md` as a
   `TODO(Tyler & Sara)` so it is replaced before launch.
+
+### 1d. The approved Botanical–Deco imagery
+
+The portraits of Sara and Tyler and the painted flowers on the Botanical–Deco
+pages were not generated in this repository. They are **crops of the four
+approved design images** (REF-HOME, REF-STORY, REF-EXPLORE, REF-WEEKEND) that
+Sara and Tyler signed off, made in their own design sessions outside this
+repository. The portraits are generated portrayals they authorised, not
+photographs of any event; the site says so on `/credits`.
+
+- **What made them:** the couple's design sessions. The tool and the prompts
+  were not part of the handoff, so they are not recorded here and must not be
+  guessed. If the couple want them on file, they belong in this section.
+- **The record, per image:** `public/media/botanical-deco/manifest.json`, written
+  by `scripts/botanical-deco-media.mjs`. Each item names its `sourceType`
+  (`generated-portrayal`, `generated-ornament` or `licensed-photograph`), the
+  parent reference and that file's SHA-256, the crop box, the alt text, the
+  credit line and an `interim` flag with the reason. The reference images
+  themselves stay in the non-public review context and are never committed.
+- **Interim:** every crop is at the mockup's own resolution. The replacement
+  briefs are in `docs/design/approved-botanical-deco/media-briefs.md`.
+- The licensed photographs among them (the building, the city, Starved Rock)
+  are ordinary §1b ledger entries.
+
+### 1e. Demo recordings
+
+`docs/demos/` holds screen recordings of the site made by
+`scripts/demos/record.mjs` (see [demos](demos.md)). They show the pages as they
+are, so they contain the images above: the licensed photographs keep the
+credits listed in `public/assets/ATTRIBUTIONS.md`, and the portraits remain
+generated portrayals. A recording is never cut to present a portrait as a
+photograph, and the guest recording uses the seeded test household only.
 
 ## 2. License allowlist
 

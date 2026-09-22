@@ -1,0 +1,78 @@
+{
+  "$schema": "https://webreel.dev/schema/v1.json",
+  "outDir": ".out",
+  "baseUrl": "http://localhost:3330",
+  "defaultDelay": 700,
+  "videos": {
+    "home": {
+      "url": "/",
+      "viewport": { "width": 1440, "height": 900 },
+      "waitFor": ".bd-hero",
+      "output": "home.mp4",
+      "thumbnail": { "time": 1 },
+      "steps": [
+        { "action": "pause", "ms": 1800, "description": "the hero: portrait, date, place" },
+        { "action": "moveTo", "selector": "a.bd-nav__link[href=\"/our-story\"]", "delay": 900 },
+        { "action": "scroll", "y": 470, "delay": 1800, "description": "the welcome strip" },
+        { "action": "scroll", "y": 360, "delay": 2000, "description": "the band, the day's schedule, the footer" },
+        { "action": "moveTo", "text": "Photo credits", "delay": 900 },
+        { "action": "scroll", "y": -830, "delay": 1200 },
+        { "action": "click", "selector": "a.bd-nav__link[href=\"/our-story\"]", "delay": 1800, "description": "on to Our Story" }
+      ]
+    },
+    "our-story": {
+      "url": "/our-story",
+      "viewport": { "width": 1440, "height": 900 },
+      "waitFor": ".bd-journey",
+      "output": "our-story.mp4",
+      "thumbnail": { "time": 1 },
+      "steps": [
+        { "action": "pause", "ms": 1500 },
+        { "action": "scroll", "y": 440, "delay": 1800, "description": "how we met, and a few pictures" },
+        { "action": "scroll", "y": 560, "delay": 1500, "description": "the chapter reader" },
+        { "action": "click", "selector": "#our-life-together-tab", "delay": 2200 },
+        { "action": "click", "selector": "#love-tab", "delay": 2200 },
+        { "action": "key", "key": "ArrowRight", "label": "→", "delay": 2000, "description": "the tabs answer the arrow keys" },
+        { "action": "key", "key": "ArrowRight", "label": "→", "delay": 2000 },
+        { "action": "click", "selector": ".bd-reader__step--next", "within": ".bd-reader__chapter:not([hidden])", "delay": 2200, "description": "or step from chapter to chapter" },
+        { "action": "scroll", "y": 520, "delay": 1500, "description": "the places that matter" },
+        { "action": "moveTo", "selector": ".bd-places__link", "delay": 1400 }
+      ]
+    },
+    "explore-caa": {
+      "url": "/explore-caa",
+      "viewport": { "width": 1440, "height": 900 },
+      "waitFor": ".bd-cityguide",
+      "output": "explore-caa.mp4",
+      "thumbnail": { "time": 1 },
+      "steps": [
+        { "action": "pause", "ms": 1500 },
+        { "action": "scroll", "y": 500, "delay": 1500, "description": "the venue" },
+        { "action": "scroll", "y": 500, "delay": 1200, "description": "our Chicago" },
+        { "action": "moveTo", "selector": "[data-place=\"riverwalk\"]", "delay": 1400, "description": "each place lights its pin" },
+        { "action": "moveTo", "selector": "[data-place=\"north-pond\"]", "delay": 1400 },
+        { "action": "moveTo", "selector": "[data-place=\"lakefront-adler\"]", "delay": 1400 },
+        { "action": "click", "selector": ".bd-citymap__choose[data-pin=\"north-pond\"]", "delay": 2000, "description": "and each pin picks its place" },
+        { "action": "scroll", "y": 620, "delay": 1600, "description": "the ribbon" },
+        { "action": "scroll", "y": 900, "delay": 1600, "description": "the building's history" },
+        { "action": "scroll", "y": 1400, "delay": 1800, "description": "what to look for" }
+      ]
+    },
+    "phone": {
+      "url": "/",
+      "viewport": { "width": 390, "height": 844 },
+      "waitFor": ".bd-hero",
+      "output": "phone.mp4",
+      "thumbnail": { "time": 1 },
+      "steps": [
+        { "action": "pause", "ms": 1800, "description": "the first screen on a phone" },
+        { "action": "scroll", "y": 700, "delay": 1300 },
+        { "action": "scroll", "y": 700, "delay": 1300 },
+        { "action": "scroll", "y": 700, "delay": 1300 },
+        { "action": "scroll", "y": 700, "delay": 1300 },
+        { "action": "scroll", "y": 700, "delay": 1300 },
+        { "action": "scroll", "y": 700, "delay": 1800, "description": "the footer, above the RSVP bar" }
+      ]
+    }
+  }
+}

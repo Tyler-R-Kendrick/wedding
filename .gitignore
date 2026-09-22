@@ -74,3 +74,8 @@ next-env.d.ts
 docs/design/critiques/screens/
 .vercel
 .env*
+
+# Demo recorder working files (scripts/demos/record.mjs); the encoded demos live in docs/demos
+demos/.out/
+demos/.webreel/
+demos/.webreel.local.json
