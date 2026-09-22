@@ -14,7 +14,7 @@ describe('seed', () => {
     const db = await getDb();
     await seed(db); // second run
     const site = await getSiteSettings(db);
-    expect(site).toMatchObject({ coupleDisplayName: 'Sara + Tyler', weddingDate: '2027-07-17', timezone: 'America/Chicago', venueName: SEED_SITE.venueName, themes: ['gilded-hour', 'conservatory'] });
+    expect(site).toMatchObject({ coupleDisplayName: 'Sara + Tyler', weddingDate: '2027-07-17', timezone: 'America/Chicago', venueName: SEED_SITE.venueName, themes: ['botanical-deco', 'gilded-hour', 'conservatory'], defaultTheme: 'botanical-deco' });
     expect((await getLifecycle(db))?.state).toBe('TEASER');
     const sources = await listContentSources(db);
     expect(sources).toHaveLength(SEED_SOURCES.length);

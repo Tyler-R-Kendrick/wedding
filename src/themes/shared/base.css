@@ -23,6 +23,7 @@ html {
  * back under the bar, which is the failure.
  */
 @media (width < 900px) {
+  :root[data-theme='botanical-deco'],
   :root[data-theme='gilded-hour'] {
     scroll-padding-block-end: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px));
   }
@@ -540,6 +541,31 @@ a:not([class]) {
    */
   --bottom-bar-h: 5rem;
   --floating-menu-h: 5.25rem;
+}
+
+/*
+ * Botanical–Deco, the approved design. Squared invitation buttons, sentence-case Bodoni headings,
+ * real uppercase with wide tracking on the short labels only, left-set editorial columns, a fine
+ * hairline frame on photographs rather than a mat, and Bronze links with a gold underline.
+ */
+[data-theme="botanical-deco"] {
+  /* `.bd-bar`: one row of 44px cells between two `--spacing-sm`, plus the hairline. */
+  --bottom-bar-h: 4.25rem;
+  --radius-button: var(--rounded-sm);
+  --heading-transform: none;
+  --heading-tracking: normal;
+  --control-transform: uppercase;
+  --label-transform: uppercase;
+  --media-justify: start;
+  --media-align: start;
+  --media-grid-inline: 0;
+  --media-rule-size: 8rem;
+  --media-tile-frame: 1px solid var(--color-outline, currentcolor);
+  --media-tile-pad: 0px;
+  --link-color: var(--color-tertiary);
+  --link-underline: var(--color-gold);
+  --media-link-color: var(--link-color);
+  --media-link-underline: var(--link-underline);
 }
 
 [data-theme="gilded-hour"] {

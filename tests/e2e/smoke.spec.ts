@@ -5,7 +5,8 @@ test.describe('smoke', () => {
   test('home renders the names and date without blocking axe violations', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sara + Tyler');
-    await expect(page.locator('time[datetime="2027-07-17"]')).toBeVisible();
+    // The date appears more than once (hero, the day's schedule, the footer); the first is the hero's.
+    await expect(page.locator('time[datetime="2027-07-17"]').first()).toBeVisible();
     await expect(page.getByRole('main')).toContainText('Chicago');
 
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();

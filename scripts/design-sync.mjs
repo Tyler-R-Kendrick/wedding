@@ -19,8 +19,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const THEMES = ['gilded-hour', 'conservatory'];
-const DEFAULT_THEME = 'gilded-hour';
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'];
+/**
+ * Whose values the Tailwind v4 `@theme` block (imported unscoped by globals.css) carries. This is NOT
+ * the site's default design — that is `DEFAULT_THEME` in src/themes/registry.ts, now Botanical Deco.
+ * It stays on Gilded Hour because the admin console and the auth kit read Tailwind utilities outside
+ * any `[data-theme]` element; moving the base would recolour those surfaces as collateral of a public
+ * redesign, which the approved handoff explicitly forbids ("do not globally recolor them").
+ */
+const TAILWIND_BASE_THEME = 'gilded-hour';
 const CHECK = process.argv.includes('--check');
 
 /** Family -> full stack. The "<Family> Fallback" faces are metric-matched local() fonts declared in fonts.css. */
@@ -31,6 +38,9 @@ const FAMILY_STACKS = {
   Gloock: '"Gloock", "Gloock Fallback", "Times New Roman", serif',
   Spectral: '"Spectral", "Spectral Fallback", "Times New Roman", serif',
   Cardo: '"Cardo", "Cardo Fallback", "Times New Roman", serif',
+  'Bodoni Moda': '"Bodoni Moda", "Bodoni Moda Fallback", "Times New Roman", serif',
+  Newsreader: '"Newsreader", "Newsreader Fallback", "Times New Roman", serif',
+  'Ms Madi': '"Ms Madi", "Ms Madi Fallback", cursive',
 };
 
 const bin = path.join(ROOT, 'node_modules', '.bin', 'design.md');
@@ -190,7 +200,7 @@ for (const id of THEMES) {
   outputs.push({ file: path.join(ROOT, 'src', 'themes', id, 'theme.css'), content: generateTheme(id) });
   outputs.push({ file: path.join(ROOT, 'src', 'themes', id, 'tokens.generated.json'), content: generateTokensJson(id) });
 }
-outputs.push({ file: path.join(ROOT, 'src', 'themes', DEFAULT_THEME, 'tailwind.theme.css'), content: generateTailwindTheme(DEFAULT_THEME) });
+outputs.push({ file: path.join(ROOT, 'src', 'themes', TAILWIND_BASE_THEME, 'tailwind.theme.css'), content: generateTailwindTheme(TAILWIND_BASE_THEME) });
 
 let stale = 0;
 for (const { file, content } of outputs) {

@@ -12,7 +12,7 @@ import { toSiteFacts } from '@/domain/lifecycle/facts';
 import { navFor } from '@/domain/lifecycle/nav';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { resolveLifecycle } from '@/domain/lifecycle/state';
-import { DEFAULT_THEME, isThemeId, listThemes, THEME_IDS } from '@/themes/registry';
+import { DEFAULT_THEME, isLegacyThemeId, isThemeId, listThemes, THEME_IDS } from '@/themes/registry';
 import { requireService } from './services';
 
 const input = z.object({}).optional();
@@ -93,7 +93,11 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
     const countdown = countdownView(ctx.now, site.weddingDate, site.timezone);
     const nav = navFor(lifecycle.state, { venue: facts.venue, claimed: ctx.principal.kind === 'guest' });
     const requested = ctx.view?.theme?.toLowerCase();
-    const active = isThemeId(requested) ? requested : isThemeId(site.defaultTheme) ? site.defaultTheme : DEFAULT_THEME;
+    // A persisted default naming one of the superseded proposals predates the couple's approval (the
+    // seed wrote `gilded-hour` until then) and is ignored, exactly as a pre-approval theme cookie is:
+    // an agent asking what the site looks like gets the design guests actually see.
+    const persisted = isThemeId(site.defaultTheme) && !isLegacyThemeId(site.defaultTheme) ? site.defaultTheme : null;
+    const active = isThemeId(requested) ? requested : (persisted ?? DEFAULT_THEME);
     return ok({
       data: {
         lifecycle: {

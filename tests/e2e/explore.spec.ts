@@ -28,7 +28,9 @@ async function follow(page: Page, name: string) {
 test.describe('explore journey', () => {
   test('story → adventure → linked recommendation → directions handoff', async ({ page }) => {
     await page.goto('/our-story');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Our Story');
+    // The approved design titles the page with its editorial headline; the page is still "Our Story".
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
+    await expect(page).toHaveTitle(/Our Story/);
     await expect(page.getByText("We met at Allison and Jamie's wedding.")).toBeVisible();
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
@@ -84,7 +86,9 @@ test.describe('explore journey', () => {
 
   test('explore CAA lists current outlets with dates and never the closed ones', async ({ page }) => {
     await page.goto('/explore-caa');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Chicago Athletic Association Hotel');
+    // The approved page is "Explore CAA + Chicago"; the building's own name leads the venue section.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explore CAA + Chicago');
+    await expect(page.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 })).toBeVisible();
     await expect(page.locator('#fact-built-1893')).toContainText('Built in 1893');
     await expect(page.locator('[data-key="outlet.cindys"]')).toBeVisible();
     await expect(page.locator('[data-key="outlet.cindys"] [data-freshness]')).toContainText('September 5, 2026');

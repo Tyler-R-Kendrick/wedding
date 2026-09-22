@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-22T00:00:00Z",
+  "title": "Design System: Botanical Deco",
+  "source": "src/themes/botanical-deco/DESIGN.md",
+  "extensions": {
+    "fonts": [
+      {
+        "family": "Bodoni Moda",
+        "license": "OFL",
+        "designer": "Owen Earl (indestructible type*)",
+        "axes": "wght 400..700, roman + italic",
+        "use": "display: names, page titles, section and card titles",
+        "verified": "2026-09-22 via fonts.googleapis.com css2, latin subset"
+      },
+      {
+        "family": "Newsreader",
+        "license": "OFL",
+        "designer": "Production Type",
+        "axes": "wght 400..600 at opsz 16 (pinned), roman + italic",
+        "use": "prose, labels, nav, buttons (tracked capitals)",
+        "verified": "2026-09-22 via fonts.googleapis.com css2, latin subset, opsz pinned to 16"
+      },
+      {
+        "family": "Ms Madi",
+        "license": "OFL",
+        "designer": "Robert Leuschke (TypeSETit)",
+        "axes": "static 400",
+        "use": "one decorative handwritten accent per view; aria-hidden; words also present as text",
+        "verified": "2026-09-22 via fonts.googleapis.com css2, latin subset"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "lift",
+        "value": "0 18px 40px -24px rgba(41,39,32,0.28)",
+        "purpose": "The RSVP panel and the mobile menu sheet: the thing a guest is acting on."
+      },
+      {
+        "name": "hairline",
+        "value": "inset 0 0 0 1px #E2D8C7",
+        "purpose": "Sheet edge on the ivory ground; paper, not elevation."
+      }
+    ],
+    "focus": {
+      "ring": "0 0 0 2px #FDFCF8, 0 0 0 4px #2B3F4C",
+      "offset": "2px"
+    },
+    "motion": [
+      {
+        "name": "duration-fast",
+        "value": "160ms",
+        "purpose": "Control feedback: hover, focus, underline, choice state (140–220 ms per the handoff)."
+      },
+      {
+        "name": "duration-base",
+        "value": "280ms",
+        "purpose": "Sheets and drawers, photo-tile lift (240–400 ms)."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "560ms",
+        "purpose": "The single initial reveal of an opening: portrait settles, botanicals ease in from the margin (≤600 ms)."
+      },
+      {
+        "name": "ease-settle",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Default easing: quick start, soft landing, no overshoot or bounce."
+      },
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "State changes."
+      },
+      {
+        "name": "stagger-step",
+        "value": "70ms",
+        "purpose": "Between the hero copy lines on first paint; five steps at most."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "390px",
+        "purpose": "Design canvas for phones: dedicated portrait crop, invitation under it, single column."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Two-column editorial strips; weekend becomes two columns."
+      },
+      {
+        "name": "lg",
+        "value": "1100px",
+        "purpose": "Full masthead nav; split hero; three-column weekend workspace."
+      },
+      {
+        "name": "xl",
+        "value": "1448px",
+        "purpose": "The approved images' width; content stops growing here."
+      }
+    ],
+    "ornaments": [
+      {
+        "name": "monogram",
+        "file": "public/assets/art/botanical-deco/monogram-icon.svg",
+        "use": "Masthead and footer. Original S|T mark; not the CAA logo."
+      },
+      {
+        "name": "skyline",
+        "file": "public/assets/art/botanical-deco/skyline-line.svg",
+        "use": "Footer ribbon and the weekend margin: a fine, schematic line drawing. Decorative, not surveyed."
+      },
+      {
+        "name": "deco-corner",
+        "file": "public/assets/art/botanical-deco/deco-corner.svg",
+        "use": "Stepped gold corner on the moss band and the journey panel."
+      },
+      {
+        "name": "deco-rule",
+        "file": "public/assets/art/botanical-deco/deco-rule.svg",
+        "use": "Under section titles: a short gold rule with a lozenge. Once per heading, never as a divider between every block."
+      }
+    ],
+    "themeContrast": {
+      "supersedes": [
+        "gilded-hour",
+        "conservatory"
+      ],
+      "note": "Approved by Sara and Tyler; the two earlier proposals remain reachable only by an explicit ?theme= link."
+    }
+  }
+}

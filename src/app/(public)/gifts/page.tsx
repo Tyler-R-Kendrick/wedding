@@ -4,6 +4,7 @@
  * layouts; this route brings it with it rather than pushing the kit onto every public page.
  */
 import '@/components/rsvp/recipes.css';
+import '@/themes/botanical-deco/guest.css';
 import type { Metadata } from 'next';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { recipes } from '../_recipes';

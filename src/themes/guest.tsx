@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { GuestCard as BdCard, GuestNotice as BdNotice, GuestSection as BdSection } from './botanical-deco/guest';
 import { GuestCard as GhCard, GuestNotice as GhNotice, GuestSection as GhSection } from './gilded-hour/guest';
 import { GuestCard as CvCard, GuestNotice as CvNotice, GuestSection as CvSection } from './conservatory/guest';
 import type { ThemeId } from './types';
@@ -56,11 +57,11 @@ export interface GuestCardProps {
 }
 
 export function GuestSection({ theme, ...props }: GuestSectionProps & { theme: ThemeId }) {
-  return theme === 'conservatory' ? <CvSection {...props} /> : <GhSection {...props} />;
+  return theme === 'botanical-deco' ? <BdSection {...props} /> : theme === 'conservatory' ? <CvSection {...props} /> : <GhSection {...props} />;
 }
 
 export function GuestCard({ theme, ...props }: GuestCardProps & { theme: ThemeId }) {
-  return theme === 'conservatory' ? <CvCard {...props} /> : <GhCard {...props} />;
+  return theme === 'botanical-deco' ? <BdCard {...props} /> : theme === 'conservatory' ? <CvCard {...props} /> : <GhCard {...props} />;
 }
 
 /**
@@ -69,5 +70,5 @@ export function GuestCard({ theme, ...props }: GuestCardProps & { theme: ThemeId
  * were themed: in that state the notice IS the page.
  */
 export function GuestNotice({ theme, ...props }: GuestNoticeProps & { theme: ThemeId }) {
-  return theme === 'conservatory' ? <CvNotice {...props} /> : <GhNotice {...props} />;
+  return theme === 'botanical-deco' ? <BdNotice {...props} /> : theme === 'conservatory' ? <CvNotice {...props} /> : <GhNotice {...props} />;
 }

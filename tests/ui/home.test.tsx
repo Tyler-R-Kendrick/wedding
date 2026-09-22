@@ -57,10 +57,10 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
 
   it('hides the countdown on the wedding day and shows it in TEASER', () => {
     const teaser = render(<>{t.recipes.home(homeData(theme, 'TEASER'))}</>);
-    expect(teaser.container.querySelector('.gh-countdown, .cv-sky')).not.toBeNull();
+    expect(teaser.container.querySelector('.gh-countdown, .cv-sky, .bd-countdown')).not.toBeNull();
     teaser.unmount();
     const today = render(<>{t.recipes.home(homeData(theme, 'WEDDING_DAY'))}</>);
-    expect(today.container.querySelector('.gh-countdown, .cv-sky')).toBeNull();
+    expect(today.container.querySelector('.gh-countdown, .cv-sky, .bd-countdown')).toBeNull();
     expect(today.container.querySelector('#now')).not.toBeNull();
     today.unmount();
   });
@@ -76,7 +76,32 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
   });
 });
 
-describe('the two themes are structurally different', () => {
+describe('the approved design has its own structure', () => {
+  it('Botanical–Deco opens on the couple and an invitation, then the editorial strip and the moss band, with no numbered acts', () => {
+    const bd = render(<>{getTheme('botanical-deco').recipes.home(homeData('botanical-deco', 'TEASER'))}</>);
+    // The portrait, not flowers, carries the page: a real <picture> with the formal crop and a phone crop.
+    const hero = bd.container.querySelector('.bd-hero');
+    expect(hero?.querySelector('picture[data-media="couple.hero.formal"] source[media]')).not.toBeNull();
+    expect(within(hero as HTMLElement).getByText('Join us for our wedding')).toBeTruthy();
+    // Four different jobs in the strip, the moss schedule, the second portrait, the gallery invitation.
+    expect(bd.container.querySelectorAll('.bd-strip__tile').length).toBe(3);
+    expect(bd.container.querySelector('.bd-strip__welcome')).not.toBeNull();
+    expect(bd.container.querySelector('.bd-schedule')).not.toBeNull();
+    expect(bd.container.querySelector('picture[data-media="couple.lakefront"]')).not.toBeNull();
+    // Only the confirmed day is scheduled, and its weekday is derived: no invented 16th or 18th.
+    const schedule = bd.container.querySelector('.bd-schedule') as HTMLElement;
+    expect(schedule.textContent).not.toMatch(/Jul 16|Jul 18|Welcome drinks|Farewell brunch/i);
+    expect(schedule.querySelectorAll('time[datetime="2027-07-17"]').length).toBeGreaterThan(0);
+    // No generated years, no college days, no Sarah.
+    expect(bd.container.textContent).not.toMatch(/college|\b20(17|18|20|22|24)\b|Sarah/);
+    // Decoration is decoration: botanicals are hidden from assistive technology.
+    for (const img of bd.container.querySelectorAll('img.bd-bloom')) expect(img.getAttribute('alt')).toBe('');
+    expect(bd.container.querySelector('.gh-plaque--act, .cv-pressed, .gh-panel, .cv-rail')).toBeNull();
+    bd.unmount();
+  });
+});
+
+describe('the two earlier proposals are structurally different', () => {
   it('Gilded Hour numbers its acts on one axis with an elevator panel; Conservatory mounts pressed cards on a tag rail', () => {
     const gh = render(<>{getTheme('gilded-hour').recipes.home(homeData('gilded-hour', 'TEASER'))}</>);
     expect(gh.container.querySelectorAll('.gh-plaque--act').length).toBe(3);

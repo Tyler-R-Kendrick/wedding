@@ -11,7 +11,7 @@ import { contextAs } from './helpers/principal';
  * while `get_my_trip` requires it. Production was never affected; the test-only entitlement list had
  * drifted from the real one, so the spec was quietly asserting the same page in both roles.
  */
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 
 test.describe('Your trip (signed in)', () => {
   for (const theme of THEMES) {

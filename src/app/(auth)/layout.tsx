@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { preload } from 'react-dom';
+import { Monogram } from '@/themes/botanical-deco/kit';
+import { Botanical } from '@/themes/botanical-deco/media';
 import { getThemeMeta } from '@/themes/registry';
 import { getRequestTheme } from '@/themes/server';
 import './auth.css';
@@ -36,6 +38,17 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
     // JavaScript off, which is the state levels 14 and 15 both found rendering in a default face.
     <div className="auth-root" data-theme={theme}>
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.theme=${JSON.stringify(theme)};` }} />
+      {/* The approved design's calm invitation access: the S|T monogram home, a painted spray at the
+          edge, and the journey itself unchanged underneath. */}
+      {theme === 'botanical-deco' ? (
+        <div className="bd-authhead">
+          <Botanical id="botanical.corner-tl" className="bd-bloom--auth" />
+          <a className="bd-masthead__home" href="/">
+            <Monogram />
+            <span className="sr-only">Sara + Tyler: Home</span>
+          </a>
+        </div>
+      ) : null}
       {children}
     </div>
   );

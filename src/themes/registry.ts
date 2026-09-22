@@ -1,3 +1,4 @@
+import botanicalDecoTokens from './botanical-deco/tokens.generated.json';
 import conservatoryTokens from './conservatory/tokens.generated.json';
 import gildedHourTokens from './gilded-hour/tokens.generated.json';
 import type { ThemeId, ThemeMeta } from './types';
@@ -7,12 +8,53 @@ import type { ThemeId, ThemeMeta } from './types';
  * Component kits and recipes live behind `getTheme` in `./index.ts` (server only).
  * Token values live in each theme's DESIGN.md (exported by `npm run design:sync`); nothing here is a color.
  */
-export const THEME_IDS = ['gilded-hour', 'conservatory'] as const satisfies readonly ThemeId[];
+export const THEME_IDS = ['botanical-deco', 'gilded-hour', 'conservatory'] as const satisfies readonly ThemeId[];
 
-/** Decision 1 in docs/design/design-doc.md §11: Gilded Hour until Tyler & Sara choose. */
-export const DEFAULT_THEME: ThemeId = 'gilded-hour';
+/**
+ * Decision 1 in docs/design/design-doc.md §11 was "Gilded Hour until Tyler & Sara choose". They chose:
+ * the Botanical–Deco synthesis in docs/design/approved-botanical-deco/. It is the default for every
+ * guest, and the design switcher is off by default (`FLAG_DESIGN_SWITCHER`), because the approved
+ * experience is one design, not a choice between two.
+ */
+export const DEFAULT_THEME: ThemeId = 'botanical-deco';
+
+/**
+ * The two proposals the approved design superseded. They stay compatible — `/t/gilded-hour`, an
+ * explicit `?theme=gilded-hour` preview link — but a stored preference for one of them from before
+ * the approval is not honoured (see `resolveTheme`), so no returning guest keeps seeing a rejected
+ * design without asking for it.
+ */
+export const LEGACY_THEME_IDS = ['gilded-hour', 'conservatory'] as const satisfies readonly ThemeId[];
 
 export const THEME_META: Record<ThemeId, ThemeMeta> = {
+  'botanical-deco': {
+    id: 'botanical-deco',
+    name: 'Botanical Deco',
+    tagline: 'Ivory blossoms and olive leaves, fine gold Deco rules, Chicago architecture — and Sara and Tyler at the centre.',
+    designMd: 'src/themes/botanical-deco/DESIGN.md',
+    colorScheme: 'light',
+    themeColor: botanicalDecoTokens.colors.neutral,
+    icon: { svg: '/icons/botanical-deco.svg', apple: '/icons/botanical-deco-180.png' },
+    // Only the two roman files are preloaded; the italics and the script accent swap in on use.
+    fonts: [
+      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-wght.woff2', weight: '400 700', style: 'normal' },
+      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-text.woff2', weight: '400 600', style: 'normal' },
+    ],
+    structure: {
+      layout: 'portrait-led-editorial-split',
+      navDesktop: 'monogram-masthead',
+      navMobile: 'monogram-sheet-and-action-bar',
+      sections: 'photo-strips-and-colour-bands',
+      ornament: 'edge-botanicals-and-gold-rules',
+    },
+    motion: {
+      pageEnter: 'the portrait settles from 1.03 scale and the edge botanicals ease in from the margin, once, ≤560 ms',
+      sectionReveal: 'none: every band is visible at rest; a gold rule may draw under a heading once',
+      interaction: 'a gold rule extends under links; photo tiles lift 2 px and their image eases to 1.03',
+      dialog: 'the sheet rises 16 px into place over 280 ms',
+      reducedMotion: 'no scale, translate or drawing; state changes are instantaneous or a ≤120 ms fade',
+    },
+  },
   'gilded-hour': {
     id: 'gilded-hour',
     name: 'Gilded Hour',
@@ -74,6 +116,10 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value);
+}
+
+export function isLegacyThemeId(value: unknown): boolean {
+  return typeof value === 'string' && (LEGACY_THEME_IDS as readonly string[]).includes(value);
 }
 
 export function getThemeMeta(id: ThemeId): ThemeMeta {

@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+/** The approved design first; the two superseded proposals stay reachable by an explicit link. */
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 
 async function axeClean(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
@@ -10,31 +11,43 @@ async function axeClean(page: Page) {
 }
 
 test.describe('theme resolution', () => {
-  test('default is Gilded Hour and data-theme is in the server HTML (no flash)', async ({ request }) => {
+  test('default is the approved Botanical–Deco and data-theme is in the server HTML (no flash)', async ({ request }) => {
     const res = await request.get('/');
     expect(res.status()).toBe(200);
-    expect(res.headers()['x-theme']).toBe('gilded-hour');
+    expect(res.headers()['x-theme']).toBe('botanical-deco');
     const html = await res.text();
-    expect(html).toContain('data-theme="gilded-hour"');
+    expect(html).toContain('data-theme="botanical-deco"');
+    expect(html).not.toContain('data-theme="gilded-hour"');
     expect(html).not.toContain('data-theme="conservatory"');
-    // production SSR emits one <link rel="preload"> per file from the resource hint; dev carries the hint in the flight payload
-    const preloads = html.match(/<link[^>]+rel="preload"[^>]+\/fonts\/gilded-hour\/[^>]*>/g) ?? [];
-    const hints = html.match(/HL\[\\"\/fonts\/gilded-hour\//g) ?? [];
-    expect(preloads.length + hints.length).toBeGreaterThanOrEqual(3);
-    expect(preloads.length).toBeLessThanOrEqual(3);
-    expect(html).not.toMatch(/\/fonts\/conservatory\//);
+    // Only the two faces the first paint needs are preloaded (Bodoni Moda, Newsreader).
+    const preloads = html.match(/<link[^>]+rel="preload"[^>]+\/fonts\/botanical-deco\/[^>]*>/g) ?? [];
+    const hints = html.match(/HL\[\\"\/fonts\/botanical-deco\//g) ?? [];
+    expect(preloads.length + hints.length).toBeGreaterThanOrEqual(2);
+    expect(preloads.length).toBeLessThanOrEqual(2);
+    expect(html).not.toMatch(/\/fonts\/(gilded-hour|conservatory)\//);
   });
 
-  test('?theme= wins, is remembered on the device, and invalid values are ignored', async ({ request }) => {
+  test('?theme= reaches an earlier proposal, is remembered in the current format, and invalid values are ignored', async ({ request }) => {
     const q = await request.get('/?theme=conservatory');
     expect(q.headers()['x-theme']).toBe('conservatory');
     expect(await q.text()).toContain('data-theme="conservatory"');
-    expect(q.headers()['set-cookie']).toContain('theme=conservatory');
+    expect(q.headers()['set-cookie']).toContain('theme=v2.conservatory');
     const c = await request.get('/');
     expect(c.headers()['x-theme']).toBe('conservatory');
     const invalid = await request.get('/?theme=neon');
     expect(invalid.headers()['x-theme']).toBe('conservatory');
     expect(invalid.headers()['set-cookie'] ?? '').not.toContain('neon');
+  });
+
+  test('a design chosen before the approval is cleared, not honoured', async ({ playwright, baseURL }) => {
+    // The old switcher stored a bare id. A guest carrying one gets the approved design and the
+    // stale cookie is deleted; nothing on the page is left pointing at a design the couple rejected.
+    const ctx = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: 'theme=gilded-hour' } });
+    const res = await ctx.get('/');
+    expect(res.headers()['x-theme']).toBe('botanical-deco');
+    expect(await res.text()).toContain('data-theme="botanical-deco"');
+    expect(res.headers()['set-cookie'] ?? '').toMatch(/theme=;|theme=(?:;|$)|Max-Age=0|Expires=Thu, 01 Jan 1970/i);
+    await ctx.dispose();
   });
 
   test('lifecycle preview is refused for non-admins and never cached', async ({ request }) => {
@@ -68,10 +81,10 @@ for (const theme of THEMES) {
       };
       await inFold('h1');
       await inFold('time[datetime="2027-07-17"]');
-      await inFold('.gh-hero__actions a, .cv-hero__actions a');
+      await inFold('.bd-hero__actions a, .gh-hero__actions a, .cv-hero__actions a');
       if (viewport.width < 900) {
         // the state's quick actions / elevator panel are fixed at the bottom and never cover focus
-        const bar = page.locator('.gh-panel, .cv-bar, .cv-menu').first();
+        const bar = page.locator('.bd-bar, .gh-panel, .cv-bar, .cv-menu').first();
         await expect(bar).toBeVisible();
       }
       await axeClean(page);
@@ -104,70 +117,34 @@ for (const theme of THEMES) {
   });
 }
 
-test.describe('design switcher', () => {
-  /** The visible trigger: frieze/rail on desktop, footer on phones (the Menu sheet carries an inline copy). */
-  const trigger = (page: Page, name: RegExp) => page.getByRole('button', { name }).locator('visible=true').first();
-
-  test('switches the design with the keyboard and persists across reloads', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('.site[data-theme="gilded-hour"]')).toBeAttached();
-    const open = trigger(page, /Design: Gilded Hour/);
-    await open.scrollIntoViewIfNeeded();
-    await open.focus();
-    await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: 'Choose a design' });
-    await expect(dialog).toBeVisible();
-    // initial focus lands on the current design
-    await expect(dialog.getByRole('button', { name: /Gilded Hour/ })).toBeFocused();
-    await dialog.getByRole('button', { name: /Conservatory/ }).click();
-    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached({ timeout: 15_000 });
-    await expect(page.locator('[data-theme="gilded-hour"]')).toHaveCount(0);
-    await page.reload();
-    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached();
-    // Escape closes the dialog and returns focus to the trigger
-    const reopen = trigger(page, /Design: Conservatory/);
-    await reopen.scrollIntoViewIfNeeded();
-    await reopen.click();
-    await expect(page.getByRole('dialog', { name: 'Choose a design' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Choose a design' })).toBeHidden();
-    await expect(reopen).toBeFocused();
+/*
+ * The design switcher is off (FLAG_DESIGN_SWITCHER) since Sara and Tyler approved Botanical–Deco:
+ * guests see one design and nothing offers to swap it. The three switcher journeys that lived here
+ * (keyboard switch, switch from a shared link, switch twice without a stale cache) exercised a
+ * control that no longer renders; they were replaced by the assertions below rather than skipped
+ * on a flag no CI server sets. The switcher's server action keeps its unit coverage, and an
+ * explicit `?theme=` link — how the proposals stay reviewable — is covered under 'theme resolution'.
+ */
+test.describe('shell chrome', () => {
+  test('no design choice is offered to guests, on a desktop or a phone', async ({ page }) => {
+    for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(size);
+      await page.goto('/');
+      await expect(page.locator('.site[data-theme="botanical-deco"]')).toBeAttached();
+      await expect(page.getByRole('button', { name: /^Design:/ })).toHaveCount(0);
+      await expect(page.locator('.switcher')).toHaveCount(0);
+    }
   });
 
-  test('works from a shared ?theme= link: the query is dropped and the choice wins', async ({ page }) => {
-    await page.goto('/?theme=gilded-hour');
-    await expect(page.locator('.site[data-theme="gilded-hour"]')).toBeAttached();
-    const open = trigger(page, /Design: Gilded Hour/);
-    await open.scrollIntoViewIfNeeded();
-    await open.click();
-    await page.getByRole('dialog', { name: 'Choose a design' }).getByRole('button', { name: /Conservatory/ }).click();
-    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached({ timeout: 15_000 });
-    await expect(page).toHaveURL(/^[^?]*\/$/);
-    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe('conservatory');
-    await expect(page.locator('[data-theme="gilded-hour"]')).toHaveCount(0);
-    await page.reload();
-    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached();
-  });
-
-  test('switches twice in one session: the second choice is not served from cache', async ({ page }) => {
+  test('the phone action bar labels are whole and visible at 390', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await expect(page.locator('.site[data-theme="gilded-hour"]')).toBeAttached();
-    const pick = async (from: RegExp, to: RegExp, expectTheme: string) => {
-      const open = trigger(page, from);
-      await open.scrollIntoViewIfNeeded();
-      await open.click();
-      await page.getByRole('dialog', { name: 'Choose a design' }).getByRole('button', { name: to }).click();
-      await expect(page.locator(`.site[data-theme="${expectTheme}"]`)).toBeAttached({ timeout: 15_000 });
-      await expect(page.locator('#design-announcer')).toContainText(/Design changed to/);
-    };
-    await pick(/Design: Gilded Hour/, /Conservatory/, 'conservatory');
-    await pick(/Design: Conservatory/, /Gilded Hour/, 'gilded-hour');
-    await pick(/Design: Gilded Hour/, /Conservatory/, 'conservatory');
-    await page.reload();
-    await expect(page.locator('.site[data-theme="conservatory"]')).toBeAttached();
-    // the clean public URL is never shared-cacheable: it depends on the theme cookie
-    const res = await page.request.get('/');
-    expect(res.headers()['cache-control']).toContain('no-store');
+    const cells = page.locator('.bd-bar__cell > span');
+    await expect(cells.first()).toBeVisible();
+    const clipped = await cells.evaluateAll((spans) =>
+      spans.map((el) => ({ text: el.textContent?.trim() ?? '', overflow: el.scrollWidth - el.clientWidth })).filter((s) => s.overflow > 1),
+    );
+    expect(clipped).toEqual([]);
   });
 
   test('the phone Menu sheet opens with focus at its top, not on the design option', async ({ page }) => {

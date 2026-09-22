@@ -1,0 +1,30 @@
+{
+  "theme": "botanical-deco",
+  "license": "Generated in-repo (scripts/art); no third-party rights",
+  "assets": [
+    {
+      "file": "skyline-line.svg",
+      "alt": "",
+      "width": 902,
+      "height": 150
+    },
+    {
+      "file": "deco-corner.svg",
+      "alt": "",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "file": "deco-rule.svg",
+      "alt": "",
+      "width": 120,
+      "height": 12
+    },
+    {
+      "file": "monogram-icon.svg",
+      "alt": "Sara and Tyler",
+      "width": 64,
+      "height": 64
+    }
+  ]
+}

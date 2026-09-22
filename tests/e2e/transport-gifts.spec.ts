@@ -15,7 +15,7 @@ import { BASE_URL, IDS, principalHeaders } from './helpers/principal';
  */
 const PARTNER_HOSTS = /(^|\.)(uber\.com|zola\.com|theknot\.com|withjoy\.com|google\.com|apple\.com|opentable\.com|resy\.com|chicagoathletichotel\.com|hyatt\.com)$/;
 
-const THEMES = ['gilded-hour', 'conservatory'] as const;
+const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 
 const apiAs = (name: 'A1' | 'A2' | 'admin') => ({ ...principalHeaders(name), origin: BASE_URL, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' });
 

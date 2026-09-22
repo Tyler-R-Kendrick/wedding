@@ -1,0 +1,712 @@
+/*
+ * Botanical–Deco on the guest routes (/your-weekend, /rsvp, /trip, /transportation, /media/*).
+ *
+ * UNLAYERED on purpose, and imported by the guest layout straight after `components/rsvp/recipes.css`.
+ * The theme kits live in `@layer components`, and an unlayered rule beats a layered one whatever its
+ * specificity — so every override of the shared guest recipe (`.page`, `.btn--primary`,
+ * `.choice__opt`) written in kit.css silently lost to the shared rule it was meant to replace. Every
+ * selector here is scoped to `[data-theme="botanical-deco"]`, so the earlier proposals are untouched.
+ */
+
+/* ---------- guest forms in this design (the real RSVP form, /trip, /transportation) ---------- */
+[data-theme="botanical-deco"] {
+  --wp-frame: 60rem;
+}
+
+[data-theme="botanical-deco"] .page__title {
+  font-weight: 400;
+}
+
+[data-theme="botanical-deco"] .btn--primary {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+}
+
+[data-theme="botanical-deco"] .btn--primary:hover {
+  background: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+}
+
+[data-theme="botanical-deco"] .btn--secondary {
+  border-width: 1px;
+  border-color: var(--color-gold);
+}
+
+/* The approved reply's choices: a moss pill for the chosen answer, a quiet outline for the other. */
+[data-theme="botanical-deco"] .choice__opt {
+  border-radius: var(--rounded-pill);
+  border-color: var(--color-outline);
+  padding-inline: var(--spacing-sm) var(--spacing-md);
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+[data-theme="botanical-deco"] .choice__opt input {
+  accent-color: var(--color-moss);
+}
+
+[data-theme="botanical-deco"] .choice__opt:has(input:checked) {
+  background: var(--color-moss);
+  border-color: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+[data-theme="botanical-deco"] .choice__opt:has(input:checked) input {
+  accent-color: var(--color-on-moss);
+}
+
+[data-theme="botanical-deco"] .inp {
+  border-radius: var(--rounded-sm);
+  border-color: var(--color-outline);
+  border-block-end-color: var(--color-gold-deep);
+  background: var(--color-surface);
+}
+
+/* ---------- your weekend ---------- */
+[data-theme="botanical-deco"] .page.bd-weekend {
+  max-width: none;
+  padding: 0 0 var(--spacing-3xl);
+}
+
+.bd-wkhero {
+  position: relative;
+  display: grid;
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  overflow: clip;
+  border-block-end: var(--bd-hair);
+}
+
+.bd-wkhero__media {
+  position: relative;
+  aspect-ratio: 348 / 286;
+  max-block-size: 42svh;
+  overflow: hidden;
+}
+
+.bd-wkhero__media :is(picture, img) {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.bd-wkhero__script {
+  position: absolute;
+  inset-block-end: 12%;
+  inset-inline-end: 3%;
+  max-inline-size: 14rem;
+  font-family: var(--font-accent);
+  font-size: clamp(2rem, 1.5rem + 1.6vw, 3.25rem);
+  line-height: 0.95;
+  color: var(--color-surface);
+  text-shadow: 0 1px 14px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  transform: rotate(-10deg);
+}
+
+.bd-wkhero__words {
+  display: none;
+}
+
+.bd-wkhero__copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 6px;
+  padding: var(--spacing-lg) var(--bd-gutter);
+  padding-inline-start: max(var(--bd-gutter), 52px);
+}
+
+.bd-wkhero__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.5rem + 2.3vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  font-variation-settings: "opsz" 26;
+}
+
+.bd-wkhero__sub {
+  max-width: 24rem;
+  font-size: var(--type-control-caps-size);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@media (width >= 768px) {
+  .bd-wkhero {
+    grid-template-columns: minmax(0, 38fr) minmax(0, 62fr);
+    min-block-size: clamp(300px, 22vw, 340px);
+  }
+
+  .bd-wkhero__media {
+    position: absolute;
+    inset-block: 0;
+    inset-inline: 30% 0;
+    aspect-ratio: auto;
+    max-block-size: none;
+    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 16%);
+  }
+
+  .bd-wkhero__copy {
+    grid-column: 1;
+    padding-inline-start: clamp(56px, 8vw, 132px);
+  }
+}
+
+@media (width >= 1100px) {
+  .bd-wkhero__media {
+    inset-inline-end: 12.5%;
+    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 14%, var(--color-primary) 94%, transparent);
+  }
+
+  .bd-wkhero__words {
+    position: absolute;
+    z-index: 2;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 2px;
+    inline-size: 13.5%;
+    padding-inline: clamp(20px, 2.2vw, 40px);
+    background: linear-gradient(90deg, color-mix(in oklab, var(--color-champagne) 22%, var(--color-neutral-variant)), var(--color-neutral-variant));
+    border-inline-start: var(--bd-gold-hair);
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    letter-spacing: 0.2em;
+    line-height: 1.5;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .bd-wkhero__words > span {
+    display: block;
+  }
+}
+
+/* The utility tabs: squared, hairline-divided, the current one in moss. */
+.bd-tabs {
+  display: grid;
+  gap: var(--spacing-md);
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  padding: var(--spacing-md) var(--bd-gutter) 0;
+}
+
+.bd-tabs ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  border: var(--bd-hair);
+  background: var(--color-surface);
+  scrollbar-width: thin;
+}
+
+.bd-tabs li + li {
+  border-inline-start: var(--bd-hair);
+}
+
+.bd-tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding-inline: clamp(14px, 1.8vw, 30px);
+  font-size: var(--type-control-caps-size);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.bd-tabs a:hover {
+  background: var(--color-neutral-variant);
+}
+
+.bd-tabs a[aria-current] {
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.bd-tabs__icon {
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bd-tabs__words {
+  display: none;
+  white-space: nowrap;
+}
+
+@media (width >= 1100px) {
+  .bd-tabs {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    padding-inline: clamp(40px, 3.8vw, 56px) var(--bd-gutter);
+  }
+
+  .bd-tabs ul {
+    overflow: visible;
+  }
+}
+
+@media (width >= 1560px) {
+  /* aria-hidden ornament: small and tracked so it fits beside the tabs rather than being clipped. */
+  .bd-tabs__words {
+    display: block;
+    justify-self: end;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  .bd-tabs__words span {
+    margin-inline: 0.8em;
+    color: var(--color-gold-deep);
+  }
+}
+
+.bd-weekend__notices {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
+}
+
+/* The workspace: itinerary, the reply, the modules. */
+.bd-workspace {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-xl);
+  max-width: var(--bd-max);
+  margin-inline: auto;
+  padding: var(--spacing-xl) var(--bd-gutter);
+}
+
+.bd-workspace > .bd-bloom,
+.bd-workspace__skyline {
+  display: none;
+}
+
+.bd-itin {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.bd-itin__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--spacing-sm) var(--spacing-lg);
+}
+
+.bd-itin__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.5rem + 1.8vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.bd-itin__script {
+  font-family: var(--font-accent);
+  font-size: clamp(1.875rem, 1.5rem + 1vw, 2.5rem);
+  line-height: 1;
+  color: var(--color-gold-deep);
+  transform: rotate(-8deg);
+}
+
+.bd-itin__lede {
+  max-width: 32rem;
+  color: var(--color-on-surface-muted);
+}
+
+.bd-itin__events {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-event {
+  scroll-margin-block-start: 96px;
+}
+
+.bd-event__details {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline);
+}
+
+.bd-event__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.bd-event__summary::-webkit-details-marker {
+  display: none;
+}
+
+.bd-event__photo {
+  display: none;
+}
+
+.bd-event__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bd-event__name {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: 1.15;
+}
+
+.bd-event__when,
+.bd-event__where {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.bd-event__where {
+  text-transform: capitalize;
+}
+
+.bd-event__chev {
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border: 1px solid var(--color-gold);
+  border-radius: 50%;
+}
+
+.bd-event__chev::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-inline-end: 1.5px solid var(--color-gold-deep);
+  border-block-end: 1.5px solid var(--color-gold-deep);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--duration-base) var(--ease-settle);
+}
+
+.bd-event__details[open] .bd-event__chev::before {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.bd-event__more {
+  display: grid;
+  gap: 6px;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+  border-block-start: var(--bd-hair);
+  padding-block-start: var(--spacing-md);
+}
+
+.bd-event__label {
+  display: inline-block;
+  min-inline-size: 4rem;
+  font-style: italic;
+  color: var(--color-tertiary);
+}
+
+.bd-event__household {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The reply: an invitation card, the one action that matters most before the day. */
+.bd-reply {
+  position: relative;
+  align-self: start;
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline), var(--shadow-lift);
+}
+
+.bd-reply__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding-block-end: var(--spacing-sm);
+  border-block-end: var(--bd-gold-hair);
+}
+
+.bd-reply__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 2rem + 1.4vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.bd-reply__by {
+  display: grid;
+  justify-items: end;
+  text-align: end;
+}
+
+.bd-reply__date {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+.bd-reply__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bd-reply__household {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+}
+
+.bd-reply__intro,
+.bd-reply__closed {
+  color: var(--color-on-surface-muted);
+}
+
+.bd-reply__answers {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-reply__answer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding-block: var(--spacing-sm);
+  border-block-end: var(--bd-hair);
+}
+
+.bd-reply__event {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+}
+
+.bd-reply__submit {
+  inline-size: 100%;
+}
+
+.bd-reply__thanks {
+  font-style: italic;
+  text-align: center;
+  color: var(--color-on-surface-muted);
+}
+
+/* The form's own sections sit inside the card: their titles step down, their cards flatten. */
+.bd-reply .bd-gsec {
+  margin-block-start: var(--spacing-md);
+}
+
+.bd-reply .bd-gsec__title {
+  font-size: var(--type-title-size);
+}
+
+.bd-reply .bd-gcard {
+  padding: var(--spacing-md) 0;
+  box-shadow: none;
+  border-block-start: var(--bd-hair);
+  border-radius: 0;
+}
+
+.bd-reply .actions .btn {
+  inline-size: 100%;
+}
+
+/* The modules. */
+.bd-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--spacing-md);
+  align-content: start;
+  min-width: 0;
+}
+
+.bd-module {
+  position: relative;
+  display: grid;
+  align-content: start;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline);
+  overflow: hidden;
+}
+
+.bd-module--wide {
+  grid-column: 1 / -1;
+}
+
+.bd-module__photo img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 5 / 2;
+  object-fit: cover;
+}
+
+.bd-module:not(.bd-module--wide) .bd-module__photo img {
+  aspect-ratio: 16 / 10;
+}
+
+.bd-module__body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+}
+
+.bd-module__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.bd-module__text,
+.bd-module__items {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.bd-module__items {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-module .fp {
+  inline-size: 100%;
+  margin-block-start: var(--spacing-sm);
+}
+
+.bd-bloom--module {
+  inset-inline-end: -8px;
+  inset-block-end: -8px;
+  inline-size: 72px;
+  opacity: 0.9;
+}
+
+@media (width >= 900px) {
+  .bd-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .bd-modules {
+    grid-column: 1 / -1;
+  }
+
+  .bd-event__photo {
+    display: block;
+    inline-size: 120px;
+    block-size: 88px;
+    overflow: hidden;
+  }
+
+  .bd-event__photo img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .bd-event__summary {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+  }
+}
+
+@media (width >= 1280px) {
+  .bd-workspace {
+    grid-template-columns: minmax(0, 36fr) minmax(0, 28fr) minmax(0, 31fr);
+    gap: var(--spacing-lg);
+    padding-inline: clamp(88px, 6.4vw, 96px);
+  }
+
+  .bd-module__body {
+    padding: var(--spacing-md);
+  }
+
+  .bd-module__title {
+    font-size: var(--type-title-size);
+  }
+
+  .bd-modules {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bd-workspace > .bd-bloom {
+    display: block;
+  }
+
+  .bd-bloom--ws-left {
+    inset-inline-start: 0;
+    inset-block-start: var(--spacing-lg);
+    inline-size: 84px;
+  }
+
+  .bd-bloom--ws-right {
+    inset-inline-end: 0;
+    inset-block-start: var(--spacing-lg);
+    inline-size: 48px;
+  }
+
+  .bd-workspace__skyline {
+    position: absolute;
+    display: block;
+    inset-inline-start: 8px;
+    inset-block-end: var(--spacing-lg);
+    inline-size: 84px;
+    block-size: 240px;
+    background: var(--art-skyline) no-repeat 21% bottom / auto 60%;
+    opacity: 0.6;
+  }
+}
+
+/* An unanswered reply comes first on a phone; on wider screens the columns keep their order. */
+.bd-weekend[data-reply-pending] .bd-reply {
+  order: -1;
+}
+
+@media (width >= 900px) {
+  .bd-weekend[data-reply-pending] .bd-reply {
+    order: 0;
+  }
+}

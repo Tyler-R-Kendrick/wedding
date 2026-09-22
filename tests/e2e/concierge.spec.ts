@@ -133,7 +133,7 @@ test.describe('concierge on Ask Us', () => {
  * measurably different widths for the same conversation; what must NOT differ is that a guest can
  * open it, ask, and be given a cited answer with no marker leaking through.
  */
-for (const theme of ['gilded-hour', 'conservatory'] as const) {
+for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
   test.describe(`concierge in ${theme}`, () => {
     test('opens, answers with citations, and shows the guest no authoring markers', async ({ page }) => {
       await page.goto(`/ask-us?theme=${theme}`);

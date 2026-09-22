@@ -1,3 +1,4 @@
+import { botanicalDeco } from './botanical-deco';
 import { conservatory } from './conservatory';
 import { gildedHour } from './gilded-hour';
 import { DEFAULT_THEME, isThemeId } from './registry';
@@ -7,7 +8,7 @@ export { DEFAULT_THEME, THEME_IDS, THEME_META, isThemeId, listThemes, getThemeMe
 export { resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions } from './resolve';
 export type * from './types';
 
-const THEMES: Record<ThemeId, ThemeDefinition> = { 'gilded-hour': gildedHour, conservatory };
+const THEMES: Record<ThemeId, ThemeDefinition> = { 'botanical-deco': botanicalDeco, 'gilded-hour': gildedHour, conservatory };
 
 /** Full theme (kit + recipes). Server components and the render harness only; never the proxy. */
 export function getTheme(id: string | undefined | null): ThemeDefinition {

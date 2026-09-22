@@ -8,6 +8,7 @@ import { getThemeMeta } from '@/themes/registry';
 import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
 import '@/components/rsvp/recipes.css';
+import '@/themes/botanical-deco/guest.css';
 
 export const dynamic = 'force-dynamic';
 

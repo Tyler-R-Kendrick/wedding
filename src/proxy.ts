@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
-import { resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions } from '@/themes/resolve';
+import { parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
 /** `RSVP_OPEN` or `RSVP_OPEN.<exp>.<sig>`; anything else is dropped before it reaches a route. */
@@ -18,7 +18,7 @@ const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const cookieTheme = request.cookies.get(THEME_COOKIE)?.value;
-  const { theme, source } = resolveTheme({ query: url.searchParams.get(THEME_QUERY), cookie: cookieTheme });
+  const { theme, source, stale } = resolveTheme({ query: url.searchParams.get(THEME_QUERY), cookie: cookieTheme });
   const previewRaw = url.searchParams.get(PREVIEW_QUERY) ?? request.cookies.get(PREVIEW_COOKIE)?.value ?? null;
   const preview = previewRaw && PREVIEW_SHAPE.test(previewRaw) ? previewRaw : null;
 
@@ -42,8 +42,12 @@ export function proxy(request: NextRequest) {
   }
 
   response.headers.set(THEME_HEADER, theme);
-  if (source === 'query' && cookieTheme !== theme) {
-    response.cookies.set({ name: THEME_COOKIE, value: theme, ...themeCookieOptions(url.protocol === 'https:') });
+  if (source === 'query' && parseThemeCookie(cookieTheme).theme !== theme) {
+    response.cookies.set({ name: THEME_COOKIE, value: themeCookieValue(theme), ...themeCookieOptions(url.protocol === 'https:') });
+  } else if (stale) {
+    // A design preference stored before Sara and Tyler approved Botanical–Deco (see resolveTheme).
+    // It is already being ignored; clearing it stops it riding along on every request.
+    response.cookies.delete(THEME_COOKIE);
   }
   // The response to a clean public URL depends on the theme cookie, so neither a shared cache nor the
   // browser may reuse it across choices (a cached RSC payload defeated the second in-session switch);

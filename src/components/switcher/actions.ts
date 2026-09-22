@@ -5,7 +5,7 @@ import { createCapabilityContext, invoke, navigateTo } from '@/capabilities';
 import { env } from '@/lib/env';
 import { getPrincipal } from '@/lib/principal';
 import { getRequestId } from '@/lib/request';
-import { THEME_COOKIE, themeCookieOptions } from '@/themes/resolve';
+import { THEME_COOKIE, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import type { ThemeId } from '@/themes/types';
 
 export interface SetThemeResult {
@@ -29,6 +29,7 @@ export async function setThemeAction(formData: FormData): Promise<SetThemeResult
   const chosen = result.value.data.theme;
   if (!chosen) return { ok: false, message: 'That design is not available.' };
   const jar = await cookies();
-  jar.set(THEME_COOKIE, chosen, themeCookieOptions(env.isProduction));
+  // Versioned, so it is honoured by resolveTheme (a bare id is treated as a pre-approval preference).
+  jar.set(THEME_COOKIE, themeCookieValue(chosen), themeCookieOptions(env.isProduction));
   return { ok: true, theme: chosen };
 }

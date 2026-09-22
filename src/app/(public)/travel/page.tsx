@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
  * pushing the guest kit onto every public page.
  */
 import '@/components/rsvp/recipes.css';
+import '@/themes/botanical-deco/guest.css';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
 import { currentPrincipal, runAsUi } from './_shared/server';
 import { recipes } from '../_recipes';

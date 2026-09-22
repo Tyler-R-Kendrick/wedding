@@ -18,8 +18,8 @@ export const SEED_SITE = {
   venueName: 'Chicago Athletic Association Hotel',
   venueAddress: '12 S Michigan Ave, Chicago, IL 60603',
   venueUrl: 'https://www.chicagoathletichotel.com/',
-  themes: ['gilded-hour', 'conservatory'],
-  defaultTheme: 'gilded-hour',
+  themes: ['botanical-deco', 'gilded-hour', 'conservatory'],
+  defaultTheme: 'botanical-deco',
   sourceId: BRIEF_SOURCE_ID,
 } as const;
 
