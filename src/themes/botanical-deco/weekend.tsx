@@ -207,7 +207,7 @@ function Modules({ data }: { data: MyItinerary }) {
         </div>
       </article>
       <article className="bd-module">
-        <Photo id="city.riverwalk" sizes="(min-width: 1100px) 13vw, 50vw" className="bd-module__photo" alt="" />
+        <Photo id="city.lakefront-adler" sizes="(min-width: 1100px) 13vw, 50vw" className="bd-module__photo" alt="" />
         <div className="bd-module__body">
           <p className="bd-kicker">Explore Chicago</p>
           <h2 className="bd-module__title">Make a weekend of it</h2>

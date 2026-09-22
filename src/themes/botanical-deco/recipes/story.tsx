@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Fragment } from 'react';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, StoryProps } from '@/themes/content-types';
@@ -35,9 +36,9 @@ const MEMORIES = [
 ] as const;
 
 const PLACES = [
-  { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.' },
-  { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.' },
-  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.' },
+  { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: ROUTES.exploreCaa },
+  { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.', href: `${ROUTES.adventures}/starved-rock` },
+  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.share },
 ] as const;
 
 /**
@@ -123,13 +124,11 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
           <ChapterJourney
             label="Chapters"
             stops={rest.map((c) => ({ slug: c.slug, label: chapterLabel(c.chapter), title: c.title }))}
-            chapters={rest.map((c, i) => (
+            chapters={rest.map((c) => (
               <Fragment key={c.id}>
                 <div className="bd-reader__head">
-                  <p className="bd-eyebrow">
-                    Chapter {i + 2} of {data.sections.length} · {chapterLabel(c.chapter)}
-                  </p>
-                  <h3 id={`${c.slug}-title`} className="bd-h bd-reader__title">
+                  <p className="bd-eyebrow">{chapterLabel(c.chapter)}</p>
+                  <h3 id={`${c.slug}-title`} className="bd-h bd-reader__title" tabIndex={-1}>
                     {c.title}
                   </h3>
                   <StatusFlags placeholder={flagged(c)} />
@@ -150,16 +149,18 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
           <h2 id="places-title" className="bd-places__title">
             Places that shaped us
           </h2>
-          <p className="bd-places__text">A few of the places that shaped this story, and the adventures still to come. Each has its own page, with the memory and how to go there yourself.</p>
+          <p className="bd-places__text">A few of the places that shaped this story, and the adventures still to come.</p>
         </div>
         <ul className="bd-places__tiles">
           {PLACES.filter((p) => firstMedia(p.ids)).map((p) => (
             <li key={p.name} className="bd-places__tile">
-              <Photo id={p.ids} sizes="(min-width: 1100px) 21vw, (min-width: 768px) 33vw, 100vw" alt="" className="bd-places__photo" />
-              <p className="bd-places__caption">
-                <span className="bd-places__name">{p.name}</span>
-                <span className="bd-places__line">{p.line}</span>
-              </p>
+              <Link className="bd-places__link" href={p.href}>
+                <Photo id={p.ids} sizes="(min-width: 1100px) 21vw, (min-width: 768px) 33vw, 100vw" alt="" className="bd-places__photo" />
+                <span className="bd-places__caption">
+                  <span className="bd-places__name">{p.name}</span>
+                  <span className="bd-places__line">{p.line}</span>
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

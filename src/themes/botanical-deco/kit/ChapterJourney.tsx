@@ -43,18 +43,39 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
   const fromHash = stops.findIndex((s) => `#${s.slug}` === hash);
   const current = fromHash >= 0 ? fromHash : (picked ?? 0);
 
+  /**
+   * `from` says where the choice came from, because focus and scrolling follow it:
+   * - `key`: arrow keys on the tab list. Focus moves along the tabs and the page stays put, so the
+   *   focused tab never leaves the screen.
+   * - `click`: a pointer on a tab. On a phone the reader sits below the whole list, so it is brought
+   *   into view only when it starts below the screen.
+   * - `step`: the previous/next buttons at the foot of a chapter. Focus goes to the new chapter's
+   *   title, where the reading continues, not back up to a tab the guest cannot see.
+   */
   const select = useCallback(
-    (i: number, focus = false) => {
+    (i: number, from: 'key' | 'click' | 'step') => {
       const next = (i + stops.length) % stops.length;
       const stop = stops[next];
       if (!stop) return;
       window.history.replaceState(window.history.state, '', `#${stop.slug}`);
       setPicked(next);
       setMoved(true);
-      if (focus) tabs.current[next]?.focus();
-      // On a phone the reader sits under the whole list: bring the opened chapter into view.
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      window.requestAnimationFrame(() => document.getElementById(stop.slug)?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }));
+      if (from === 'key') {
+        tabs.current[next]?.focus();
+        return;
+      }
+      window.requestAnimationFrame(() => {
+        const panel = document.getElementById(stop.slug);
+        if (!panel) return;
+        if (from === 'step') {
+          document.getElementById(`${stop.slug}-title`)?.focus();
+          return;
+        }
+        if (panel.getBoundingClientRect().top > window.innerHeight - 120) {
+          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          panel.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+        }
+      });
     },
     [stops],
   );
@@ -70,7 +91,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
     }[e.key];
     if (to === undefined) return;
     e.preventDefault();
-    select(to, true);
+    select(to, 'key');
   };
 
   return (
@@ -90,17 +111,15 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
                 aria-controls={s.slug}
                 tabIndex={i === current ? 0 : -1}
                 className="bd-journey__link"
-                onClick={() => select(i)}
+                onClick={() => select(i, 'click')}
                 onKeyDown={(e) => onKey(e, i)}
               >
                 <span className="bd-journey__bead" aria-hidden="true" />
-                <span className="bd-kicker">{s.label}</span>
                 <span className="bd-journey__name">{s.title}</span>
               </button>
             ) : (
               <a className="bd-journey__link" href={`#${s.slug}`}>
                 <span className="bd-journey__bead" aria-hidden="true" />
-                <span className="bd-kicker">{s.label}</span>
                 <span className="bd-journey__name">{s.title}</span>
               </a>
             )}
@@ -127,7 +146,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
               {enhanced && (prev || next) ? (
                 <nav className="bd-reader__steps" aria-label="More chapters">
                   {prev ? (
-                    <button type="button" className="bd-reader__step bd-reader__step--prev" onClick={() => select(i - 1, true)}>
+                    <button type="button" className="bd-reader__step bd-reader__step--prev" onClick={() => select(i - 1, 'step')}>
                       <span className="bd-reader__arrow" aria-hidden="true">
                         ←
                       </span>
@@ -138,7 +157,7 @@ export function ChapterJourney({ stops, chapters, label }: { stops: JourneyStop[
                     <span />
                   )}
                   {next ? (
-                    <button type="button" className="bd-reader__step bd-reader__step--next" onClick={() => select(i + 1, true)}>
+                    <button type="button" className="bd-reader__step bd-reader__step--next" onClick={() => select(i + 1, 'step')}>
                       <span className="sr-only">Next chapter: </span>
                       {next.title}
                       <span className="bd-reader__arrow" aria-hidden="true">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FocusEvent, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
 
 /**
  * The Chicago band's guide: three places Sara and Tyler love, as a list and as a map, each
@@ -81,19 +81,25 @@ const path = (pts: [number, number][]) => pts.map(([la, lo], i) => `${i ? 'L' : 
 const WATER = `${path(SHORE)}L${W} ${H}L${W} 0Z`;
 
 export function CityGuide({ places, venue, guide, children }: { places: CityPin[]; venue: { name: string; lat: number; lon: number }; guide: ReactNode; children: ReactNode }) {
-  const [active, setActive] = useState<string | null>(null);
+  // `chosen` is what a guest picked on the map: it persists and drives aria-pressed. `hovered` is
+  // where the pointer or focus is in the list, and only lights things while it is there.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const active = hovered ?? chosen;
   const root = useRef<HTMLDivElement>(null);
   const uid = useId();
   const [vx, vy] = px(venue.lat, venue.lon);
   const entry = (id: string) => root.current?.querySelector<HTMLElement>(`[data-place="${id}"]`) ?? null;
-  const pick = (e: SyntheticEvent) => setActive((e.target as HTMLElement).closest<HTMLElement>('[data-place]')?.dataset.place ?? null);
+  const pick = (e: SyntheticEvent) => setHovered((e.target as HTMLElement).closest<HTMLElement>('[data-place]')?.dataset.place ?? null);
+  const leave = (e: FocusEvent | MouseEvent) => {
+    if (e.type === 'blur' && e.currentTarget.contains((e as FocusEvent).relatedTarget as Node | null)) return;
+    setHovered(null);
+  };
   const choose = (id: string) => {
-    setActive(id);
+    setChosen(id);
+    setHovered(null);
     const el = entry(id);
-    el?.scrollIntoView({
-      block: 'nearest',
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+    el?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     el?.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
   };
   // The entries are server-rendered, so the highlight is an attribute set on them, not a prop.
@@ -105,7 +111,7 @@ export function CityGuide({ places, venue, guide, children }: { places: CityPin[
   }, [active]);
   return (
     <div className="bd-cityguide" ref={root} data-active={active ?? undefined}>
-      <ul className="bd-cityguide__list" aria-label="A few of our favorite places" onMouseOver={pick} onMouseLeave={() => setActive(null)} onFocus={pick}>
+      <ul className="bd-cityguide__list" aria-label="A few of our favorite places" onMouseOver={pick} onMouseLeave={leave} onFocus={pick} onBlur={leave}>
         {children}
       </ul>
       <figure className="bd-citymap">
@@ -159,11 +165,12 @@ export function CityGuide({ places, venue, guide, children }: { places: CityPin[
                   key={p.id}
                   type="button"
                   className="bd-citymap__choose"
+                  data-pin={p.id}
                   style={{
                     left: `${(x / W) * 100}%`,
                     top: `${(y / H) * 100}%`,
                   }}
-                  aria-pressed={active === p.id}
+                  aria-pressed={chosen === p.id}
                   onClick={() => choose(p.id)}
                 >
                   <span className="sr-only">Show {p.name} in the list</span>

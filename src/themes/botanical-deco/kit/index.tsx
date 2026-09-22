@@ -206,11 +206,21 @@ function ActionBar({ nav }: { nav: NavProps['nav'] }) {
  * The light architectural footer: the fine skyline at the left, the couple's facts as one tracked
  * line, the monogram at the right. The skyline is decoration (schematic, not surveyed).
  */
+/** The professional photographs and films live on these pages; their rights note belongs there. */
+const PRO_MEDIA_PATHS = /^\/(?:photos|media)(?:\/|$)/;
+
 function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
         <span className="bd-footer__skyline" aria-hidden="true" />
+        <p className="bd-footer__motto">
+          Chicago <span aria-hidden="true">+</span> people <span aria-hidden="true">+</span> love <span aria-hidden="true">+</span> brighter together
+        </p>
+        <p className="bd-footer__mark" aria-hidden="true">
+          <span className="bd-footer__rule" />
+          <Monogram />
+        </p>
         <p className="bd-footer__facts">
           <span>{site.coupleDisplayName}</span>
           <span className="bd-footer__sep" aria-hidden="true" />
@@ -218,18 +228,21 @@ function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
           <span className="bd-footer__sep" aria-hidden="true" />
           <span>{site.venue.city}</span>
         </p>
-        <p className="bd-footer__mark" aria-hidden="true">
-          <span className="bd-footer__rule" />
-          <Monogram />
-        </p>
         <p className="bd-footer__place">
           {site.venue.name},{' '}
           <a className="bd-link" href={site.venue.mapsUrl} rel="noopener">
-            {site.venue.address}
-            <ExternalMark provider={site.venue.mapsProvider} />
+            <span className="bd-nowrap">
+              {site.venue.address}
+              <ExternalMark provider={site.venue.mapsProvider} />
+            </span>
           </a>
         </p>
-        <p className="bd-footer__rights">{rightsNote}</p>
+        <p className="bd-footer__credits">
+          <a className="bd-link bd-link--standalone" href="/credits">
+            Photo credits
+          </a>
+        </p>
+        {rightsNote ? <p className="bd-footer__rights">{rightsNote}</p> : null}
         <ul className="bd-footer__print">
           {printUrls.map((p) => (
             <li key={p.url}>
@@ -267,7 +280,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
-        rightsNote={RIGHTS_NOTE}
+        rightsNote={PRO_MEDIA_PATHS.test(frame.nav.currentPath) ? RIGHTS_NOTE : ''}
         printUrls={printUrls}
       />
     </div>
@@ -620,7 +633,7 @@ function Hero({ content, site, state }: HeroProps) {
       <p className="bd-hero__words" aria-hidden="true">
         <span>Good</span> <span>people</span> <span>beautiful</span> <span>places</span> <span>great</span> <span>love</span>
       </p>
-      <Botanical id="botanical.edge-left-tall" className="bd-bloom--hero-left" priority />
+      <Botanical id="botanical.corner-tl" className="bd-bloom--hero-left" priority />
       <Botanical id="botanical.edge-right" className="bd-bloom--hero-right" />
       <div className="bd-hero__copy">
         {/* The approved hero opens with a short tracked line above the names; here it is the one the

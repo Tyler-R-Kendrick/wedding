@@ -27,7 +27,7 @@ function Strip({ data }: { data: HomeData }) {
   return (
     <section className="bd-strip" aria-label="Welcome">
       <div className="bd-strip__welcome">
-        <Botanical id="botanical.edge-left-tall" className="bd-bloom--strip" />
+        <Botanical id="botanical.edge-left" className="bd-bloom--strip" />
         <p className="bd-eyebrow">Welcome</p>
         <h2 className="bd-h bd-h--2 bd-strip__headline">
           Same people. <br />A bigger chapter.
@@ -102,19 +102,24 @@ function Schedule({ data }: { data: HomeData }) {
           <Countdown {...data.countdown} />
         </div>
       ) : null}
-      <ol className="bd-schedule__list" aria-label={`${day.long}, in order`}>
-        {parts.map((p) => (
-          <li key={p.id} className="bd-schedule__row">
-            <time className="bd-schedule__day" dateTime={data.site.date.iso}>
-              {day.month} {day.day}
-            </time>
-            <span className="bd-schedule__what">
+      <div className="bd-schedule__day-block">
+        {/* One date for the one confirmed day, with its weekday derived from the date itself. */}
+        <time className="bd-schedule__day" dateTime={data.site.date.iso}>
+          <span className="sr-only">{day.long}</span>
+          <span aria-hidden="true">{day.weekday}</span>
+          <span aria-hidden="true">
+            {day.month} {day.day}
+          </span>
+        </time>
+        <ol className="bd-schedule__list" aria-label={`${day.long}, in order`}>
+          {parts.map((p) => (
+            <li key={p.id} className="bd-schedule__row">
               <span className="bd-schedule__name">{p.name}</span>
               {notes[p.id] ? <span className="bd-schedule__note">{notes[p.id]}</span> : null}
-            </span>
-          </li>
-        ))}
-      </ol>
+            </li>
+          ))}
+        </ol>
+      </div>
       <p className="bd-schedule__todo">
         <Placeholder inline>the times and the rooms.</Placeholder>
       </p>
@@ -139,7 +144,11 @@ function Band({ data }: { data: HomeData }) {
           <p>A few of our favorite moments so far, and many more to come.</p>
           <More href={ROUTES.photos}>View gallery</More>
         </div>
-        <Botanical id="botanical.sprig-right" className="bd-bloom--band" />
+        {/* The approved still life of white flowers: no gallery photographs exist yet, so the slot
+            keeps its size and holds a painted sprig from the same set (PX-08). */}
+        <figure className="bd-band__still" aria-hidden="true">
+          <Botanical id="botanical.cluster-tl" className="bd-bloom--still" />
+        </figure>
         <p className="bd-band__words" aria-hidden="true">
           <span>Same</span> <span>adventure</span> <span>always</span>
         </p>

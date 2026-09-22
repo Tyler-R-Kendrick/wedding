@@ -13,8 +13,25 @@
   --wp-frame: 60rem;
 }
 
+/* Every guest page opens like the approved ones: a Bodoni caps title over a short gold rule. */
 [data-theme="botanical-deco"] .page__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.125rem, 1.4rem + 1.9vw, 3rem);
   font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  font-variation-settings: "opsz" 18;
+}
+
+[data-theme="botanical-deco"] .page > .page__title::after {
+  content: "";
+  display: block;
+  inline-size: 44px;
+  block-size: 1px;
+  margin-block-start: var(--spacing-md);
+  background: var(--color-gold);
 }
 
 [data-theme="botanical-deco"] .btn--primary {
@@ -45,14 +62,67 @@
   accent-color: var(--color-moss);
 }
 
-[data-theme="botanical-deco"] .choice__opt:has(input:checked) {
+/* The two answers as one segmented control on a single row, each half a 44px target. */
+[data-theme="botanical-deco"] .choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  gap: 0;
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt {
+  min-block-size: 44px;
+  border-radius: 0;
+  text-wrap: balance;
+}
+
+@media (width < 600px) {
+  /* Two equal halves on a phone, each label wrapping inside its own half, never one under the other. */
+  [data-theme="botanical-deco"] .choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt:first-child {
+  border-start-start-radius: var(--rounded-pill);
+  border-end-start-radius: var(--rounded-pill);
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt:last-child {
+  border-start-end-radius: var(--rounded-pill);
+  border-end-end-radius: var(--rounded-pill);
+}
+
+[data-theme="botanical-deco"] .choice .choice__opt + .choice__opt {
+  margin-inline-start: -1px;
+}
+
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:checked) {
   background: var(--color-moss);
   border-color: var(--color-moss);
   color: var(--color-on-moss);
 }
 
-[data-theme="botanical-deco"] .choice__opt:has(input:checked) input {
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:checked) input {
   accent-color: var(--color-on-moss);
+}
+
+/* Focus shows on the chosen answer too: an Ink ring outside the moss pill, 3:1 against the paper. */
+:is([data-theme="botanical-deco"] .choice, [data-theme="botanical-deco"] .fld) .choice__opt:has(input:focus-visible) {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/*
+ * Ask only what the answer calls for. A meal and a guest of their own matter only once someone is
+ * coming, and a guest's name and meal only once there is a guest. Without :has() every field shows,
+ * as it did before; the server still validates either way.
+ */
+[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > .fld:has(select),
+[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > fieldset.fld:has(input[type="checkbox"]),
+[data-theme="botanical-deco"] fieldset.fld:has(> .choice__opt input[type="checkbox"]:not(:checked)) > .fld {
+  display: none;
 }
 
 [data-theme="botanical-deco"] .inp {
@@ -91,13 +161,16 @@
   object-fit: cover;
 }
 
+/* Never across a face (DESIGN.md): on a phone and a tablet the portrait is all faces, so the line
+   waits for the width where it can sit on the city to the couple's left. */
 .bd-wkhero__script {
   position: absolute;
-  inset-block-end: 12%;
-  inset-inline-end: 3%;
-  max-inline-size: 14rem;
+  display: none;
+  inset-block-start: 9%;
+  inset-inline-start: 14%;
+  max-inline-size: 12rem;
   font-family: var(--font-accent);
-  font-size: clamp(2rem, 1.5rem + 1.6vw, 3.25rem);
+  font-size: clamp(1.875rem, 1rem + 1.4vw, 2.625rem);
   line-height: 0.95;
   color: var(--color-surface);
   text-shadow: 0 1px 14px color-mix(in oklab, var(--color-primary) 60%, transparent);
@@ -125,7 +198,7 @@
   font-weight: 500;
   line-height: 1;
   text-transform: uppercase;
-  font-variation-settings: "opsz" 26;
+  font-variation-settings: "opsz" 18;
 }
 
 .bd-wkhero__sub {
@@ -145,7 +218,7 @@
   .bd-wkhero__media {
     position: absolute;
     inset-block: 0;
-    inset-inline: 30% 0;
+    inset-inline: 38% 0;
     aspect-ratio: auto;
     max-block-size: none;
     mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 16%);
@@ -158,8 +231,12 @@
 }
 
 @media (width >= 1100px) {
+  .bd-wkhero__script {
+    display: block;
+  }
+
   .bd-wkhero__media {
-    inset-inline-end: 12.5%;
+    inset-inline: 36% 12.5%;
     mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 14%, var(--color-primary) 94%, transparent);
   }
 
@@ -173,12 +250,14 @@
     justify-items: start;
     gap: 2px;
     inline-size: 13.5%;
-    padding-inline: clamp(20px, 2.2vw, 40px);
+    padding-inline: clamp(12px, 1.8vw, 36px);
     background: linear-gradient(90deg, color-mix(in oklab, var(--color-champagne) 22%, var(--color-neutral-variant)), var(--color-neutral-variant));
     border-inline-start: var(--bd-gold-hair);
     font-family: var(--font-display);
-    font-size: 1.0625rem;
-    letter-spacing: 0.2em;
+
+    /* aria-hidden carving, scaled with its column so "beautiful" fits at 1100. */
+    font-size: clamp(0.75rem, 0.1rem + 0.95vw, 1.0625rem);
+    letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.2em);
     line-height: 1.5;
     text-transform: uppercase;
     color: var(--color-tertiary);
@@ -278,7 +357,7 @@
 
   .bd-tabs__words span {
     margin-inline: 0.8em;
-    color: var(--color-gold-deep);
+    color: var(--color-tertiary);
   }
 }
 
@@ -477,6 +556,13 @@
   text-align: end;
 }
 
+/* An unknown deadline is a note, not a date: it reads from the left across the panel. */
+.bd-reply__by:has(.placeholder) {
+  flex-basis: 100%;
+  justify-items: start;
+  text-align: start;
+}
+
 .bd-reply__date {
   font-family: var(--font-display);
   font-size: 1.125rem;
@@ -636,7 +722,7 @@
 
   .bd-event__photo {
     display: block;
-    inline-size: 120px;
+    inline-size: clamp(64px, 6vw, 120px);
     block-size: 88px;
     overflow: hidden;
   }
@@ -654,7 +740,7 @@
 
 @media (width >= 1280px) {
   .bd-workspace {
-    grid-template-columns: minmax(0, 36fr) minmax(0, 28fr) minmax(0, 31fr);
+    grid-template-columns: minmax(0, 33fr) minmax(0, 37fr) minmax(0, 28fr);
     gap: var(--spacing-lg);
     padding-inline: clamp(88px, 6.4vw, 96px);
   }
@@ -700,13 +786,6 @@
   }
 }
 
-/* An unanswered reply comes first on a phone; on wider screens the columns keep their order. */
-.bd-weekend[data-reply-pending] .bd-reply {
-  order: -1;
-}
-
-@media (width >= 900px) {
-  .bd-weekend[data-reply-pending] .bd-reply {
-    order: 0;
-  }
-}
+/* On a phone the columns stay in source order, so reading order and focus order are the same one
+   (WCAG 2.4.3): the page's title and the itinerary first, the reply after it. The "RSVP" tab above
+   jumps straight to the reply. */

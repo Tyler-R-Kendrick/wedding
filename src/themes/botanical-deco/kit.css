@@ -24,11 +24,9 @@
   --bd-hair: 1px solid var(--color-outline);
   --bd-gold-hair: 1px solid var(--color-gold);
 
-  /* A very quiet paper grain: two soft washes, no image request, no texture tile to repeat. */
-  background:
-    radial-gradient(120% 60% at 0% 0%, color-mix(in oklab, var(--color-surface) 70%, transparent), transparent 60%),
-    radial-gradient(90% 50% at 100% 100%, color-mix(in oklab, var(--color-neutral-variant) 55%, transparent), transparent 70%),
-    var(--color-neutral);
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-neutral);
   color: var(--color-primary);
   font-family: var(--font-text);
   font-size: var(--type-body-md-size);
@@ -41,6 +39,22 @@
    * shows while every hairline stays a visible stroke. Newsreader and Ms Madi have no such axis.
    */
   font-variation-settings: "opsz" 18;
+}
+
+/*
+ * A very quiet paper grain: two soft washes, no image request, no texture tile to repeat. It sits on
+ * a fixed layer behind the page rather than on .bd itself, so every line of text resolves against an
+ * opaque Paper ground (contrast checkers composite a translucent gradient over nothing).
+ */
+.bd::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in oklab, var(--color-surface) 70%, transparent), transparent 60%),
+    radial-gradient(90% 50% at 100% 100%, color-mix(in oklab, var(--color-neutral-variant) 55%, transparent), transparent 70%);
 }
 
 .bd-main {
@@ -199,6 +213,7 @@
 }
 
 .bd-external {
+  display: inline-block;
   inline-size: 0.9em;
   block-size: 0.9em;
   margin-inline-start: 0.3em;
@@ -723,8 +738,10 @@
   padding: var(--spacing-lg) var(--bd-gutter) var(--spacing-xl);
 }
 
+/* The only line above the fold that says "wedding" is set at the size a guest reads, not as ornament. */
 .bd-hero__kicker {
   margin-block-end: var(--spacing-sm);
+  font-size: var(--type-control-caps-size);
 }
 
 .bd-hero__title {
@@ -741,7 +758,7 @@
 .bd-hero__title,
 .bd-pagehero__title,
 .bd-pagehead__title {
-  font-variation-settings: "opsz" 26;
+  font-variation-settings: "opsz" 18;
 }
 
 /* The plus in Newsreader: Bodoni's hairline cross all but vanishes at this size. */
@@ -812,11 +829,13 @@
   letter-spacing: 0.06em;
 }
 
+/* The corner cluster, turned to rise from the bottom-left of the invitation. */
 .bd-bloom--hero-left {
   inset-inline-start: 0;
-  inset-block-end: -30px;
-  inline-size: clamp(56px, 6vw, 88px);
+  inset-block-end: 0;
+  inline-size: clamp(64px, 7vw, 120px);
   block-size: auto;
+  scale: 1 -1;
 }
 
 .bd-bloom--hero-right {
@@ -908,13 +927,15 @@
     justify-items: start;
     gap: 2px;
     inline-size: 13.5%;
-    padding-inline: clamp(20px, 2.2vw, 40px);
+    padding-inline: clamp(12px, 1.8vw, 36px);
     background:
       linear-gradient(90deg, color-mix(in oklab, var(--color-champagne) 22%, var(--color-neutral-variant)), var(--color-neutral-variant));
     border-inline-start: var(--bd-gold-hair);
     font-family: var(--font-display);
-    font-size: 1.125rem;
-    letter-spacing: 0.2em;
+
+    /* aria-hidden carving: scaled with its 13.5% column so "beautiful" is never cut at 1100-1280. */
+    font-size: clamp(0.75rem, 0.1rem + 0.95vw, 1.125rem);
+    letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.2em);
     line-height: 1.5;
     text-transform: uppercase;
     color: var(--color-tertiary);
@@ -993,8 +1014,9 @@
   letter-spacing: 0.3em;
 }
 
+/* Kept to the paper: past about 27vw the lede would run onto the photograph's feathered edge. */
 .bd-pagehero__lede {
-  max-width: 30rem;
+  max-width: min(30rem, 100%);
   margin-block-start: var(--spacing-sm);
   color: var(--color-on-surface-muted);
 }
@@ -1066,7 +1088,18 @@
   }
 }
 
+@media (width >= 768px) {
+  .bd-pagehero__lede {
+    max-width: min(24rem, 27vw);
+  }
+}
+
 @media (width >= 1100px) {
+  /* "How we / found our way / to forever" in three lines, as approved. */
+  .bd-pagehero__title {
+    font-size: min(3.25rem, 3.15vw);
+  }
+
   .bd-pagehero--words .bd-pagehero__media {
     inset-inline-end: 11%;
     mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 14%, var(--color-primary) 92%, transparent);
@@ -1082,12 +1115,14 @@
     justify-items: start;
     gap: 10px;
     inline-size: 12%;
-    padding-inline: var(--spacing-lg);
+    padding-inline: clamp(12px, 1.6vw, 24px);
     background: color-mix(in oklab, var(--color-neutral-variant) 70%, var(--color-surface));
     border-inline-start: var(--bd-gold-hair);
     font-family: var(--font-display);
-    font-size: 1.0625rem;
-    letter-spacing: 0.18em;
+
+    /* aria-hidden carving: scaled with the column so "beautiful" is never cut at 1100-1280. */
+    font-size: clamp(0.75rem, 0.1rem + 0.95vw, 1.0625rem);
+    letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.18em);
     line-height: 1.6;
     text-transform: uppercase;
     color: var(--color-tertiary);
@@ -1163,10 +1198,18 @@
 }
 
 /* ---------- footer ---------- */
+
+/* Paper, as DESIGN.md sets it: skyline, the approved motto and the monogram on one line, then the
+   facts a guest looks for at the foot of a page. */
 .bd-footer {
   position: relative;
-  background: var(--color-surface);
+  background: var(--color-neutral-variant);
   border-block-start: var(--bd-hair);
+}
+
+/* On a phone the action bar is fixed over the bottom of the viewport: the last line must clear it. */
+.bd[data-bottom-bar] .bd-footer {
+  padding-block-end: calc(var(--bottom-bar-height, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
 .bd-footer__inner {
@@ -1185,15 +1228,31 @@
   background: var(--art-skyline) no-repeat left bottom / contain;
 }
 
+.bd-footer__motto {
+  font-family: var(--font-display);
+  font-size: var(--type-control-caps-size);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-wrap: balance;
+}
+
+.bd-footer__motto span {
+  margin-inline: 0.5em;
+  font-family: var(--font-text);
+  color: var(--color-tertiary);
+}
+
 .bd-footer__facts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--type-control-caps-size);
+  font-size: var(--type-body-sm-size);
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--color-primary);
 }
 
 .bd-footer__sep {
@@ -1220,10 +1279,15 @@
 }
 
 .bd-footer__place,
+.bd-footer__credits,
 .bd-footer__rights {
   max-width: 44rem;
   font-size: var(--type-body-sm-size);
-  color: var(--color-on-surface-muted);
+  color: var(--color-primary);
+}
+
+.bd-nowrap {
+  white-space: nowrap;
 }
 
 .bd-footer__print {
@@ -1233,26 +1297,50 @@
   list-style: none;
 }
 
-@media (width >= 900px) {
-  .bd-footer__inner {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
+@media (width < 900px) {
+  /* The diamonds only separate facts on one line; stacked, they would dangle. */
+  .bd-footer__sep {
+    display: none;
   }
 
   .bd-footer__facts {
-    justify-content: center;
+    flex-direction: column;
+    align-items: start;
+    gap: 2px;
+  }
+}
+
+@media (width >= 900px) {
+  .bd-footer__inner {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--spacing-xl);
+  }
+
+  .bd-footer__motto {
+    text-align: center;
   }
 
   .bd-footer__mark {
     justify-content: end;
   }
 
+  .bd-footer__facts,
   .bd-footer__place {
-    grid-column: 1 / 3;
+    grid-column: 1 / -1;
+  }
+
+  .bd-footer__facts {
+    padding-block-start: var(--spacing-md);
+    border-block-start: var(--bd-hair);
+  }
+
+  .bd-footer__credits {
+    grid-column: 1;
   }
 
   .bd-footer__rights {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
   }
 }
 
@@ -1698,6 +1786,9 @@
   inset-block-start: 50%;
   translate: 0 -50%;
   inline-size: clamp(52px, 6vw, 88px);
+
+  /* The interim cut-out keeps a sliver of mockup at its top edge; the flowers start below it. */
+  clip-path: inset(7% 0 0 0);
 }
 
 .bd-bloom--strip-right {
@@ -1845,30 +1936,36 @@
   list-style: none;
 }
 
-.bd-schedule__row {
+/* The one day, once: weekday over date in a cell that spans the three parts beside it. */
+.bd-schedule__day-block {
   display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  align-items: center;
+  grid-template-columns: 4.75rem 1fr;
+  align-items: stretch;
   gap: var(--spacing-md);
 }
 
-.bd-schedule__row + .bd-schedule__row {
-  padding-block-start: var(--spacing-sm);
-}
-
 .bd-schedule__day {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 2px;
+  padding-inline-end: var(--spacing-md);
+  border-inline-end: 1px solid color-mix(in oklab, var(--color-gilt) 70%, transparent);
   font-family: var(--font-display);
   font-size: 1.125rem;
   letter-spacing: 0.08em;
+  line-height: 1.2;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.bd-schedule__what {
+.bd-schedule__row {
   display: grid;
   gap: 2px;
-  padding-inline-start: var(--spacing-md);
-  border-inline-start: 1px solid color-mix(in oklab, var(--color-gilt) 70%, transparent);
+}
+
+.bd-schedule__row + .bd-schedule__row {
+  padding-block-start: var(--spacing-sm);
 }
 
 .bd-schedule__name {
@@ -1913,13 +2010,14 @@
 
 .bd-band__script {
   position: absolute;
-  inset-block-start: 9%;
-  inset-inline-start: 6%;
+  inset-block-start: 4%;
+  inset-inline-start: 4%;
+  max-inline-size: 7.5rem;
   font-family: var(--font-accent);
-  font-size: clamp(2.25rem, 1.8rem + 1.4vw, 3.25rem);
+  font-size: clamp(1.875rem, 1.5rem + 0.8vw, 2.375rem);
   line-height: 0.9;
-  color: var(--color-surface);
-  text-shadow: 0 1px 12px color-mix(in oklab, var(--color-primary) 55%, transparent);
+  color: var(--color-gold-deep);
+  text-shadow: 0 0 10px var(--color-surface), 0 0 22px var(--color-surface);
   transform: rotate(-12deg);
 }
 
@@ -1958,6 +2056,20 @@
   display: none;
 }
 
+/* The still life beside the gallery invitation (PX-08): a paper tile holding a painted cluster. */
+.bd-band__still {
+  display: none;
+  margin: 0;
+}
+
+.bd-bloom--still {
+  position: static;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: left top;
+}
+
 @media (width >= 900px) {
   .bd-band {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1965,23 +2077,9 @@
 
   .bd-schedule {
     grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-  }
-}
-
-@media (width >= 1100px) {
-  .bd-band {
-    grid-template-columns: minmax(0, 46fr) minmax(0, 27fr) minmax(0, 27fr);
-    min-block-size: 250px;
-  }
-
-  .bd-schedule {
-    grid-column: auto;
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
     gap: var(--spacing-sm) var(--spacing-lg);
-    padding-block: var(--spacing-lg);
-    padding-inline: clamp(96px, 7.4vw, 112px) var(--spacing-lg);
   }
 
   .bd-schedule__intro {
@@ -1990,8 +2088,45 @@
     align-self: center;
   }
 
-  :is(.bd-schedule__count, .bd-schedule__list, .bd-schedule__todo) {
+  :is(.bd-schedule__count, .bd-schedule__day-block, .bd-schedule__todo) {
     grid-column: 2;
+  }
+
+  .bd-band__gallery {
+    grid-template-columns: minmax(0, 1fr) 120px;
+  }
+
+  .bd-band__gallery .bd-more {
+    white-space: nowrap;
+  }
+
+  .bd-band__still {
+    display: block;
+    align-self: stretch;
+    margin-block: calc(var(--spacing-xl) * -1);
+    margin-inline-end: calc(var(--bd-gutter) * -1);
+    overflow: hidden;
+    background: var(--color-neutral);
+    border-inline-start: var(--bd-hair);
+  }
+
+  .bd-bloom--band {
+    display: none;
+  }
+}
+
+/* One line of moss, photograph and gallery only from 1280: at 1100 the three shared 1100px and every
+   line in the schedule wrapped two or three times. */
+@media (width >= 1280px) {
+  .bd-band {
+    grid-template-columns: minmax(0, 46fr) minmax(0, 22fr) minmax(0, 32fr);
+    min-block-size: 250px;
+  }
+
+  .bd-schedule {
+    grid-column: auto;
+    padding-block: var(--spacing-lg);
+    padding-inline: clamp(96px, 7.4vw, 112px) var(--spacing-lg);
   }
 
   .bd-schedule .bd-decoframe {
@@ -2032,12 +2167,11 @@
   }
 
   .bd-band__gallery {
-    padding-inline: var(--spacing-lg) calc(104px + var(--spacing-md));
+    padding-inline: var(--spacing-lg) 104px;
   }
 
-  .bd-bloom--band {
-    inset-inline-end: 104px;
-    inset-block: auto 0;
+  .bd-band__still {
+    margin-inline-end: 0;
   }
 }
 
@@ -2240,8 +2374,9 @@
 
 .bd-spread__script {
   position: absolute;
-  inset-block-start: 8%;
-  inset-inline-start: 7%;
+  inset-block-start: 5%;
+  inset-inline-start: 4%;
+  max-inline-size: 8rem;
   font-family: var(--font-accent);
   font-size: clamp(2.25rem, 1.8rem + 1.4vw, 3.25rem);
   line-height: 0.9;
@@ -2328,23 +2463,19 @@
   }
 }
 
-@media (width >= 1100px) {
+/* Three columns only once the story column can hold its own title: between 1100 and 1280 the
+   narrow track let "How we met" run under the first picture. */
+@media (width >= 1280px) {
   .bd-spread {
-    grid-template-columns: minmax(0, 25fr) minmax(0, 21fr) minmax(0, 54fr);
+    grid-template-columns: minmax(0, 25fr) minmax(0, 27fr) minmax(0, 48fr);
   }
 
-  /* At full width the portrait fills its column's height instead of riding down it. */
+  /* A square, as the approved spread has it: both faces in frame, not a sliver of a tall crop. */
   .bd-spread__portrait {
     position: relative;
     inset-block-start: auto;
     grid-column: 1;
-    align-self: stretch;
-  }
-
-  .bd-spread__portrait :is(picture, img) {
-    block-size: 100%;
-    min-block-size: 420px;
-    aspect-ratio: auto;
+    align-self: start;
   }
 
   .bd-spread__narrative {
@@ -2637,7 +2768,7 @@
 
 .bd-reader__arrow {
   font-family: var(--font-text);
-  color: var(--color-gold-deep);
+  color: var(--color-tertiary);
   transition: translate var(--duration-fast) var(--ease-settle);
 }
 
@@ -2653,8 +2784,13 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .bd-reader__chapter[data-entering] {
-    animation: bd-reader-in var(--duration-reveal) var(--ease-settle);
+    animation: bd-reader-in 220ms var(--ease-settle);
   }
+}
+
+.bd-reader__title:focus-visible {
+  outline: 2px solid var(--color-gold-deep);
+  outline-offset: 4px;
 }
 
 @keyframes bd-reader-in {
@@ -2697,7 +2833,7 @@
 
 .bd-places__tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: 6px;
   margin: 0;
   padding: 0;
@@ -2720,6 +2856,8 @@
   transition: transform var(--duration-reveal) var(--ease-settle);
 }
 
+/* Ivory type on a photograph needs its own ground: an ink plate under the whole caption (never less
+   than 80% ink behind a letter), feathered into the picture above it. */
 .bd-places__caption {
   position: absolute;
   inset-inline: 0;
@@ -2727,10 +2865,31 @@
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
-  background: linear-gradient(to top, color-mix(in oklab, var(--color-primary) 82%, transparent), transparent);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
+  background: color-mix(in oklab, var(--color-primary) 84%, transparent);
   color: var(--color-on-primary);
   text-align: center;
+}
+
+.bd-places__caption::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 100%;
+  block-size: 40px;
+  background: linear-gradient(to top, color-mix(in oklab, var(--color-primary) 84%, transparent), transparent);
+}
+
+.bd-places__link {
+  display: block;
+  block-size: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.bd-places__link:focus-visible {
+  outline: 3px solid var(--color-gold-deep);
+  outline-offset: 3px;
 }
 
 .bd-places__name {
@@ -2830,17 +2989,25 @@
 
 .bd-venue__frame figure {
   display: grid;
-  grid-template-rows: auto 1fr;
-  align-content: start;
+  grid-template-rows: 1fr auto;
   block-size: 100%;
   background: var(--color-surface);
 }
 
-.bd-venue__frame img {
+.bd-venue__frame :is(picture, img) {
   display: block;
   inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 220px;
   aspect-ratio: 11 / 10;
   object-fit: cover;
+}
+
+@media (width >= 1100px) {
+  /* In the strip the row's height is the intro's; the photographs fill it instead of floating. */
+  .bd-venue__frame :is(picture, img) {
+    aspect-ratio: auto;
+  }
 }
 
 .bd-venue__frame figcaption {
@@ -2873,8 +3040,9 @@
   place-items: center;
   inline-size: 72px;
   block-size: 84px;
-  border: 1px solid color-mix(in oklab, var(--color-on-dusk) 70%, transparent);
-  clip-path: polygon(50% 0, 100% 22%, 100% 78%, 50% 100%, 0 78%, 0 22%);
+
+  /* The stepped hexagon is drawn, not clipped: a clip-path cut a bordered box into two posts and two stubs. */
+  background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 84'%3E%3Cpath d='M36 1 71 19.5v45L36 83 1 64.5v-45Z' fill='none' stroke='%23e9e3d6' stroke-opacity='.7'/%3E%3C/svg%3E");
   font-family: var(--font-display);
   font-size: 1.25rem;
   letter-spacing: 0.12em;
@@ -3003,8 +3171,8 @@
 }
 
 .bd-cityguide__entry[data-active="true"] {
-  transform: translateY(-4px);
-  box-shadow: 0 0 0 2px var(--color-gilt), var(--shadow-lift);
+  outline: 2px solid var(--color-gilt);
+  outline-offset: 0;
 }
 
 .bd-cityguide__media img {
@@ -3130,6 +3298,19 @@
   opacity: 1;
 }
 
+/* The lit pin: a Deep Gold dot in an Ink ring, and its name in bold, visible at arm's length. */
+.bd-citymap__pin[data-active="true"] circle:not(.bd-citymap__halo) {
+  fill: var(--color-gold-deep);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.bd-citymap__pin[data-active="true"] text,
+.bd-citymap__offmap[data-active="true"] text {
+  font-weight: 700;
+  fill: var(--color-primary);
+}
+
 .bd-citymap__offmap path {
   fill: none;
   stroke: var(--color-gold-deep);
@@ -3137,7 +3318,8 @@
 }
 
 .bd-citymap__offmap[data-active="true"] path {
-  stroke-width: 2.5;
+  stroke: var(--color-primary);
+  stroke-width: 3;
 }
 
 .bd-citymap__controls {
@@ -3243,7 +3425,7 @@
 }
 
 .bd-ribbon--photo::after {
-  --veil-hi: color-mix(in oklab, var(--color-surface) 86%, transparent);
+  --veil-hi: color-mix(in oklab, var(--color-surface) 88%, transparent);
   --veil-lo: color-mix(in oklab, var(--color-surface) 80%, transparent);
 
   content: "";
@@ -3272,7 +3454,7 @@
 
 .bd-ribbon__sub {
   font-size: var(--type-body-sm-size);
-  color: var(--color-on-surface-muted);
+  color: var(--color-primary);
 }
 
 .bd-ribbon__words,
@@ -3323,6 +3505,12 @@
 .bd-prov {
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
+}
+
+/* The couple's own words are signed, quietly: not a badge, and not the name of an internal brief. */
+.bd-prov--own {
+  font-style: italic;
+  color: var(--color-tertiary);
 }
 
 .bd-flags {
@@ -3511,7 +3699,7 @@
 .bd-docent__num {
   font-family: var(--font-display);
   font-size: 1.25rem;
-  color: var(--color-gold-deep);
+  color: var(--color-tertiary);
   font-variant-numeric: lining-nums;
 }
 
@@ -3589,7 +3777,7 @@
   padding: var(--spacing-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-hairline);
-  border-block-start: 3px solid var(--color-gold);
+  border-block-start: 1px solid var(--color-gold);
 }
 
 .bd-room__name {
@@ -3681,17 +3869,20 @@
   background: var(--color-neutral-variant);
 }
 
+/* A real heading, so it is set in type a guest reads: the script is ornament and stays aria-hidden. */
 .bd-diptych__voice {
-  font-family: var(--font-accent);
-  font-size: var(--type-script-size);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--type-title-size);
   font-weight: 400;
-  line-height: 1;
-  color: var(--color-gold-deep);
+  line-height: 1.2;
+  color: var(--color-tertiary);
 }
 
 .bd-programme {
   display: grid;
   gap: var(--spacing-xl);
+  max-inline-size: 46rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4005,4 +4196,9 @@
   .bd-strip__tile:hover .bd-strip__photo img {
     transform: none;
   }
+}
+
+/* The concierge's introduction keeps the page's reading measure. */
+.bd .cq__intro {
+  max-inline-size: 38rem;
 }

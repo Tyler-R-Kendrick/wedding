@@ -91,7 +91,16 @@ function ProseBlock({ blocks, lead, children }: { blocks: readonly TextBlockView
   );
 }
 
+/**
+ * Where a fact came from. External sources keep the full labelled line with their freshness
+ * (ADR-0011: external data is always labelled and dated). The couple's own words are signed as
+ * theirs, and that is all: the name of the internal brief they were taken from and its ISO date
+ * told a guest nothing and read as an editor's note.
+ */
 function Provenance({ provenance, freshness = false }: { provenance: ProvenanceViewData; freshness?: boolean }) {
+  if (provenance.trustClass === 'TRUSTED_WEDDING' && !provenance.external && !provenance.url?.startsWith('https://')) {
+    return <p className="bd-prov bd-prov--own">From Sara + Tyler</p>;
+  }
   return (
     <div className="bd-prov">
       <ProvenanceLine provenance={provenance}>{freshness ? <FreshnessBadge provenance={provenance} /> : null}</ProvenanceLine>
