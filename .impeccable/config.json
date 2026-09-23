@@ -31,7 +31,17 @@
       "playwright-report/**",
       "src/themes/*/fonts.css"
     ],
-    "ignoreValues": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/themes/botanical-deco/recipes/adventures.tsx"
+        ],
+        "createdAt": "2026-09-22T23:54:08.300Z",
+        "reason": "Claude: dynamic src from AdventureCard.cover, rendered only when repo.ts coverOf() found a site-path or https src"
+      }
+    ],
     "waivers": {
       "cream-palette": "docs/design/brief.md §4 pins the grounds: Gilded Hour is white Carrara marble (#F8F6F1), Conservatory is creme herbarium paper (#F4EEDF). The brief wins over the saturated-pattern warning (impeccable SKILL.md: 'The brief wins').",
       "src/themes/*/fonts.css": "Metric-matched fallback faces ('Cinzel Fallback' etc.) are @font-face names for local() fallbacks, not DESIGN.md families; stylelint still bans the anti-reference fonts there.",

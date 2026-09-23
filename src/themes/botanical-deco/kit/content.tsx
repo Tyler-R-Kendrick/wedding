@@ -235,12 +235,20 @@ function MetaList({ items }: Parameters<ContentKit['MetaList']>[0]) {
   );
 }
 
-function AdventureList({ items }: Parameters<ContentKit['AdventureList']>[0]) {
+/** "01", "02": an adventure's number in the ledger and on its pin. */
+export const adventureNumber = (i: number) => String(i + 1).padStart(2, '0');
+
+function AdventureList({ items, onMap }: Parameters<ContentKit['AdventureList']>[0]) {
   return (
-    <ul className="bd-ledger" aria-label="Adventures">
+    <ul className={onMap ? 'bd-ledger bd-ledger--atlas' : 'bd-ledger'} aria-label="Adventures">
       {items.map((a, i) => (
-        <li key={a.id} className="bd-ledger__row">
+        <li key={a.id} className="bd-ledger__row" data-atlas-row={onMap ? a.id : undefined}>
           <article className="bd-entry" data-adventure={a.slug} data-index={i}>
+            {onMap ? (
+              <span className="bd-entry__num" aria-hidden="true">
+                {adventureNumber(i)}
+              </span>
+            ) : null}
             <div className="bd-entry__body">
               <h2 className="bd-entry__title">
                 <a className="bd-link" href={a.href}>
@@ -253,11 +261,22 @@ function AdventureList({ items }: Parameters<ContentKit['AdventureList']>[0]) {
               </p>
               <MetaList
                 items={[
-                  ...(a.placeName ? [{ label: 'Where', value: a.placeName }] : []),
+                  ...(a.placeName ? [{ label: 'Where', value: a.where ? `${a.placeName}, ${a.where}` : a.placeName }] : []),
                   ...(a.dateLabel ? [{ label: 'When', value: <Block block={a.dateLabel} inline /> }] : []),
                   ...(a.tags.length ? [{ label: 'Motifs', value: a.tags.map(humanize).join(', ') }] : []),
                 ]}
               />
+              {onMap?.has(a.id) ? (
+                <button type="button" className="bd-entry__show" data-atlas-show={a.id}>
+                  <svg className="bd-atlas__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                    <path d="M10 18c-2-4-6-6.5-6-10.5a6 6 0 0 1 12 0c0 4-4 6.5-6 10.5Z" />
+                    <circle cx="10" cy="7.5" r="2" />
+                  </svg>
+                  Show<span className="sr-only"> {a.title}</span> on the map
+                </button>
+              ) : onMap ? (
+                <p className="bd-entry__unpinned">Not on the map yet.</p>
+              ) : null}
             </div>
           </article>
         </li>
