@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor } from '@/domain/lifecycle/nav';
+import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { providerLabel } from '@/themes/shared/content';
 import { renderCopy } from '@/themes/shared/copy';
@@ -209,7 +209,7 @@ function ActionBar({ nav }: { nav: NavProps['nav'] }) {
 /** The professional photographs and films live on these pages; their rights note belongs there. */
 const PRO_MEDIA_PATHS = /^\/(?:photos|media)(?:\/|$)/;
 
-function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
+function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
@@ -240,6 +240,11 @@ function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
         <p className="bd-footer__credits">
           <a className="bd-link bd-link--standalone" href="/credits">
             Photo credits
+          </a>
+        </p>
+        <p className="bd-footer__credits">
+          <a className="bd-link bd-link--standalone" href={account.href}>
+            {account.label}
           </a>
         </p>
         {rightsNote ? <p className="bd-footer__rights">{rightsNote}</p> : null}
@@ -280,6 +285,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
+        account={frame.nav.account}
         rightsNote={PRO_MEDIA_PATHS.test(frame.nav.currentPath) ? RIGHTS_NOTE : ''}
         printUrls={printUrls}
       />

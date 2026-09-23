@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Accepted; gifts of money amended by [ADR-0013](0013-gifts-of-money-go-person-to-person.md) |
 | Date | 2026-09-05 |
 | Deciders | Tyler (integrator), design/SDLC swarm |
 | Related | ADR-0002, ADR-0007, `docs/design/brief.md` §1, §3.1, §3.5 |
@@ -72,6 +72,7 @@ redemption.
 
 ## Compliance
 
-- `grep -rnEi "stripe|paypal|card_number|cvv" src` is empty.
+- `grep -rnEi "stripe|card_number|cvv" src` is empty. (`paypal` was in this grep; since
+  ADR-0013 it appears in `src` as a hand-off rail for gifts of money, never as a processor.)
 - Every `external` capability declares its ladder and has a test for the
   `unavailable` rung.

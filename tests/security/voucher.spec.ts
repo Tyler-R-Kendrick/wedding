@@ -68,7 +68,12 @@ test.describe('voucher security', () => {
       // testing anything, and this one guards a claim that matters — the site is never the merchant
       // of record — so it needs to be true for a reason, not by luck of the hash.
       const document = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
-      expect(document, route).not.toMatch(/card\s*number|cvv|cvc|expir(y|ation)\s*date|stripe|paypal/i);
+      expect(document, route).not.toMatch(/card\s*number|cvv|cvc|expir(y|ation)\s*date|stripe/i);
+      // PayPal may be NAMED on /gifts now: it is one of the places a guest sends a gift from their own
+      // account to the couple's (ADR-0013), exactly as Uber is named on /transportation. What would
+      // make the site a merchant is a processor's checkout running in the page, so that is the check —
+      // against the raw HTML, where a script tag would be, by URLs no framework nonce can spell.
+      expect(html, route).not.toMatch(/js\.stripe\.com|checkout\.stripe\.com|paypal\.com\/sdk\/js|paypalobjects\.com\/api\/checkout|venmo\.com\/[^"']*sdk/i);
       // Form controls are never inside a script, so this one keeps the whole document.
       expect(html, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
     }

@@ -51,7 +51,11 @@ answered before its stage.
   two of you, vows to the community, children drawing what love looks like —
   are recorded as ideas, not as plans.*
 - **C-06** the registry → Admin → **Gifts**. *We have not named a provider.
-  The page is built and empty; the moment you pick one it fills in.*
+  The page is built and empty; the moment you pick one it fills in.* Gifts of money
+  are separate and need no provider: enter your Venmo username, PayPal.Me name,
+  $Cashtag, Zelle email or phone, or a mailing address for checks, and the four
+  funds (honeymoon, home, adoption, next adventures) appear with a button for each.
+  Reword or hide any fund there too.
 - **C-10 / V-02** the band or DJ, and **V-01** the menu → Admin → **Content**
   and **Events**
 

@@ -18,6 +18,7 @@ from [`../design/brief.md`](../design/brief.md); unknowns are `TODO(Tyler & Sara
 | [0010](0010-stacked-prs-adversarial-self-review.md) | Stacked PRs with adversarial self-review | Accepted | 17-level stack `claude/wedding-NN-<slug>`; self-review between levels; no force-push; swarm integration protocol |
 | [0011](0011-content-provenance-and-freshness.md) | Content provenance and freshness | Accepted | `sourceId`/`sourceType`/`verifiedAt`/`validFrom|validUntil`/`trustClass`/`contentVersion`; stale-data UI; CAA closed outlets as the canonical example |
 | [0012](0012-site-lifecycle-state-machine.md) | Site lifecycle state machine | Accepted | TEASER → … → ARCHIVE; manual override beats wall clock; admin preview |
+| [0013](0013-gifts-of-money-go-person-to-person.md) | Gifts of money go person to person | Proposed | Funds (honeymoon, home, adoption, next adventures) hand off to the couple's own Zelle / Venmo / PayPal / Cash App / mailed check; no processor, no escrow, no guest fee from a bank or balance; Zelle and address shown only to invited guests |
 
 ## Adding an ADR
 

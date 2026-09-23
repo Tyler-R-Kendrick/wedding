@@ -12,7 +12,7 @@ import { toSiteFacts } from './facts';
 import { getPreviewSecret } from './secret';
 import { resolveLifecycle } from './state';
 
-export { navFor, homeLabelFor } from './nav';
+export { navFor, homeLabelFor, SIGN_IN, SIGN_OUT } from './nav';
 export { countdownView, daysUntil, dateFacts, formatLongDate, motifDate } from './countdown';
 export { resolveLifecycle } from './state';
 export { mintPreviewToken, verifyPreviewToken, parsePreviewValue } from './preview';

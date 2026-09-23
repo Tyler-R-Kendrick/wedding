@@ -29,6 +29,18 @@ const CONSOLE_PAGES = [
   { path: '/admin/flags', heading: 'Feature flags' },
 ] as const;
 
+/*
+ * The two walks below each make seven navigations, and the admin one runs axe on every page. The
+ * 30s default fitted them on an idle server; in CI they share a dev server with the other
+ * TEST_SERVER_SPECS on two workers, and on 2026-09-23 both timed out on [mobile] mid-walk
+ * (`page.goto('/admin/lifecycle')`, `/admin/jobs`) with every route already in the warm-up list —
+ * then passed 12/12 locally under the same arrangement. The budget now matches the work, as
+ * quality-sweep.spec.ts does for its walks: headroom for a busy runner, not cover for a cold
+ * compile.
+ */
+const WALK = 90_000;
+const WALK_WITH_AXE = 150_000;
+
 const axeClean = async (page: import('@playwright/test').Page) => {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
@@ -36,6 +48,7 @@ const axeClean = async (page: import('@playwright/test').Page) => {
 };
 
 test('every console page turns an anonymous visitor away without rendering any of it', async ({ browser }) => {
+  test.setTimeout(WALK);
   const ctx = await contextAs(browser, null);
   const page = await ctx.newPage();
   for (const { path } of CONSOLE_PAGES) {
@@ -52,6 +65,7 @@ test('every console page turns an anonymous visitor away without rendering any o
 
 test('an admin reaches every console page, and each one is accessible at phone and desktop width', async ({ browser }, testInfo) => {
   test.skip(testInfo.project.name === 'tablet', 'phone + desktop are the review viewports');
+  test.setTimeout(WALK_WITH_AXE);
   const ctx = await contextAs(browser, 'admin');
   const page = await ctx.newPage();
   for (const { path, heading } of CONSOLE_PAGES) {

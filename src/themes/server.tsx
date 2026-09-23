@@ -31,8 +31,9 @@ export interface FrameInput {
 /** Everything a recipe needs besides its own content: facts, lifecycle, countdown, nav, switcher. */
 export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   const [site, lifecycle, countdown] = await Promise.all([getSiteFacts(), getLifecycleView(input.lifecycle), getCountdown()]);
-  const claimed = input.lifecycle?.principal?.kind === 'guest';
-  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, claimed });
+  const kind = input.lifecycle?.principal?.kind;
+  const claimed = kind === 'guest';
+  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, claimed, signedIn: kind === 'guest' || kind === 'admin' });
   return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 

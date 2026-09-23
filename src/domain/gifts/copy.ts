@@ -21,6 +21,16 @@ export const GIFTS_COPY = {
    */
   registryPending: 'where to find our wishlist, once we have chosen where to keep it',
   adventurePending: 'how to help with our next adventures, once we have set it up',
+  /**
+   * Gifts of money (ADR-0013). Each goes straight to the couple's own account on a network the guest
+   * already uses; the site is not in the path of the money, so it cannot charge a fee or hold it.
+   */
+  fundsIntro: 'If you would like to give toward something, pick what it is for and send it however suits you. It goes from your account to ours. This site never touches it, holds it, or takes a cut.',
+  waysHeading: 'Ways to send it',
+  waysIntro: 'Paying from a bank account or an app balance is free on every one of these. Paying by card can cost you a fee on some of them, and each says so below.',
+  needsInvitation: 'Open this page from your invitation link to see where to send it.',
+  confirmName: 'Check that the name reads',
+  venmoPrivacy: 'Venmo shows payments to your friends unless you choose Private before you send.',
   /** With nothing to click yet, the one thing a guest can do here is reach us. */
   askIntro: 'In the meantime, if you would like to give something and cannot wait for us to decide,',
   askLabel: 'ask us',
@@ -36,9 +46,16 @@ export const GIFTS_COPY = {
  * keep a registry — beside a placeholder on the same page saying they have not chosen where. The
  * page now shows the intro only next to real links; this is what everyone else is told.
  */
-export function giftsStatement(counts: { registry: number; adventures: number }): string {
+export function giftsStatement(counts: { registry: number; adventures: number; funds?: readonly string[]; rails?: readonly string[] }): string {
   const parts: string[] = [GIFTS_COPY.lede];
-  if (!counts.registry && !counts.adventures) {
+  const funds = counts.funds ?? [];
+  const rails = counts.rails ?? [];
+  if (funds.length && rails.length) {
+    // A way to give exists, so the sentences about nothing being set up would be false.
+    parts.push(counts.registry ? GIFTS_COPY.registryIntro : 'There is no wishlist to link to yet — Sara and Tyler have not chosen where to keep one.');
+    parts.push(`You can give toward ${list(funds.map((f) => `“${f}”`))}, sent from your own account straight to Sara and Tyler's with ${list(rails, 'or')}. This site never touches or holds the money. Paying from a bank account or an app balance is free; some apps add a fee for paying by card.`);
+    if (counts.adventures) parts.push(GIFTS_COPY.adventureIntro);
+  } else if (!counts.registry && !counts.adventures) {
     parts.push('Sara and Tyler have not chosen where to keep either list yet. The Gifts page will carry the links as soon as they do, and nothing is expected of you before then.');
   } else {
     if (counts.registry) parts.push(GIFTS_COPY.registryIntro);
@@ -48,6 +65,12 @@ export function giftsStatement(counts: { registry: number; adventures: number })
   }
   parts.push(GIFTS_COPY.handoffNote);
   return parts.join(' ');
+}
+
+/** "a, b and c" — or "a, b or c" with `joiner`. */
+export function list(items: readonly string[], joiner = 'and'): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} ${joiner} ${items[items.length - 1]}`;
 }
 
 export const FORBIDDEN_GIFT_WORDS = [/cash\s*fund/i, /\bdonat(e|ion|ions)\b/i, /\$\s?\d/];

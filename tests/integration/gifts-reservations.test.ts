@@ -1,10 +1,11 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { adminListExternalActions } from '@/capabilities/admin_external_actions';
-import { adminUpsertGiftLink } from '@/capabilities/admin_gifts';
+import { adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
 import { adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
 import { getReservationOptions } from '@/capabilities/get_reservation_options';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
+import { openGiftFund } from '@/capabilities/open_gift_fund';
 import { openGiftLink } from '@/capabilities/open_gift_link';
 import { openReservationLink } from '@/capabilities/open_reservation_link';
 import { prepareReservation } from '@/capabilities/prepare_reservation';
@@ -12,7 +13,8 @@ import type { AdminId, AuthIdentityId, GuestId, HouseholdId, IdempotencyKey } fr
 import { newId } from '@/contracts/ids';
 import type { AdminPrincipal, GuestPrincipal, Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
-import { externalActionRecords, giftLinks, reservationVenues } from '@/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { externalActionRecords, giftFunds, giftLinks, giftPaymentRails, reservationVenues } from '@/db/schema';
 import { FORBIDDEN_GIFT_WORDS } from '@/domain/gifts/copy';
 import { listAuditEvents } from '@/lib/audit';
 import { resetProviders } from '@/providers/registry';
@@ -119,6 +121,222 @@ describe('gifts', () => {
   });
 });
 
+describe('gifts of money (ADR-0013)', () => {
+  const ZELLE = 'sara.and.tyler@example.com';
+  const STREET = '1 Example Street';
+
+  it('shows no funds until there is a way to give, then all four defaults', async () => {
+    const before = await run(listGiftLinksCapability, anon, {});
+    expect(before.ok && [before.value.data.funds, before.value.data.rails]).toEqual([[], []]);
+
+    for (const [rail, handle, recipientName] of [
+      ['venmo', '@Sara-Tyler', 'Sara + Tyler'],
+      ['zelle', ZELLE, 'Sara Example'],
+      ['check', ['Sara + Tyler', STREET, 'Chicago, IL 60603'], 'Sara + Tyler'],
+    ] as const) {
+      const r = await run(adminUpsertGiftRail, admin, { rail, handle, recipientName }, { idempotencyKey: key() });
+      expect(r.ok, rail).toBe(true);
+    }
+
+    const r = await run(listGiftLinksCapability, anon, {});
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const { funds, rails, statement } = r.value.data;
+    expect(funds.map((f) => f.id)).toEqual(['honeymoon', 'home', 'adoption', 'next-adventures']);
+    expect(funds[0]!.links).toEqual([
+      expect.objectContaining({ rail: 'venmo', providerDisplayName: 'Venmo', host: 'venmo.com', url: 'https://venmo.com/Sara-Tyler?txn=pay&note=Our%20honeymoon%20(wedding%20gift)', opensNewTab: true }),
+    ]);
+    expect(rails.map((x) => [x.rail, x.mode, x.needsInvitation])).toEqual([
+      ['zelle', 'direct', true],
+      ['venmo', 'link', false],
+      ['check', 'direct', true],
+    ]);
+    expect(statement).toContain('Venmo');
+    expect(statement).toContain('never touches or holds the money');
+    const text = JSON.stringify(r.value.data);
+    for (const re of FORBIDDEN_GIFT_WORDS) expect(text).not.toMatch(re);
+  });
+
+  it('never hands an anonymous visitor (or the concierge answering one) an email, phone or address', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const r = await run(listGiftLinksCapability, anon, {}, { surface });
+      const text = JSON.stringify(r);
+      expect(text, surface).not.toContain(ZELLE);
+      expect(text, surface).not.toContain(STREET);
+      expect(text, surface).not.toContain('Sara Example');
+    }
+    const asGuest = await run(listGiftLinksCapability, guest, {});
+    expect(asGuest.ok).toBe(true);
+    if (!asGuest.ok) return;
+    const zelle = asGuest.value.data.rails.find((x) => x.rail === 'zelle');
+    expect(zelle).toMatchObject({ needsInvitation: false, recipientName: 'Sara Example' });
+    expect(zelle?.instructions).toContain(ZELLE);
+    expect(asGuest.value.data.rails.find((x) => x.rail === 'check')?.instructions).toBe(`Make it out to Sara + Tyler and mail it to:\nSara + Tyler\n${STREET}\nChicago, IL 60603`);
+  });
+
+  it('stops showing personal details once an invitation is revoked, though the session lives on', async () => {
+    // The resolver derives no entitlements for a guest whose invitation was revoked or expired, but
+    // their session is still a `guest` one. The couple's address must go with the invitation.
+    const revoked: GuestPrincipal = { ...guest, entitlements: new Set() };
+    const r = await run(listGiftLinksCapability, revoked, {});
+    expect(r.ok).toBe(true);
+    const text = JSON.stringify(r);
+    expect(text).not.toContain(ZELLE);
+    expect(text).not.toContain(STREET);
+    expect(r.ok && r.value.data.rails.filter((x) => x.needsInvitation).map((x) => x.rail)).toEqual(['zelle', 'check']);
+  });
+
+  it('keeps what a save leaves out: a fund’s place and words, a rail’s payee', async () => {
+    const fund = async (input: Record<string, unknown>) => {
+      const r = await run(adminUpsertGiftFund, admin, input, { idempotencyKey: key() });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      return r.ok ? r.value.data : null;
+    };
+    // A default hidden by its first row keeps its built-in words.
+    expect(await fund({ id: 'home', title: 'Our home', active: false })).toMatchObject({ description: 'Toward a house of our own.', sortOrder: 10, active: false });
+    expect(await fund({ id: 'home', title: 'Our home', sortOrder: 55, description: 'A porch, eventually.' })).toMatchObject({ sortOrder: 55, description: 'A porch, eventually.' });
+    expect(await fund({ id: 'home', title: 'Our first home' })).toMatchObject({ title: 'Our first home', sortOrder: 55, description: 'A porch, eventually.' });
+    // Back to the built-in default (no row), which later tests read.
+    await (await getDb()).delete(giftFunds).where(eq(giftFunds.id, 'home'));
+
+    const rail = await run(adminUpsertGiftRail, admin, { rail: 'venmo', handle: '@Sara-Tyler' }, { idempotencyKey: key() });
+    expect(rail.ok && rail.value.data.recipientName).toBe('Sara + Tyler');
+  });
+
+  it('never invents who a check is made out to', async () => {
+    const db = await getDb();
+    await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'check'));
+    const noName = await run(adminUpsertGiftRail, admin, { rail: 'check', handle: ['Sara + Tyler', STREET, 'Chicago, IL 60603'] }, { idempotencyKey: key() });
+    expect(!noName.ok && noName.error.details).toMatchObject({ issues: [{ path: 'recipientName' }] });
+    // A row with no payee (written before this rule, or by hand) says where to mail it, and nothing more.
+    await db.insert(giftPaymentRails).values({ rail: 'check', handle: `${STREET}\nChicago, IL 60603`, recipientName: null, active: true, sortOrder: 40, updatedBy: { kind: 'system', component: 'test' } });
+    const r = await run(listGiftLinksCapability, guest, {});
+    expect(r.ok && r.value.data.rails.find((x) => x.rail === 'check')?.instructions).toBe(`Mail it to:\n${STREET}\nChicago, IL 60603`);
+    expect(JSON.stringify(r)).not.toContain('Sara or Tyler');
+    const withName = await run(adminUpsertGiftRail, admin, { rail: 'check', handle: ['Sara + Tyler', STREET, 'Chicago, IL 60603'], recipientName: 'Sara + Tyler' }, { idempotencyKey: key() });
+    expect(withName.ok).toBe(true);
+  });
+
+  it('lets the couple rename, hide and add funds; the defaults need no row', async () => {
+    expect((await run(adminUpsertGiftFund, admin, { id: 'adoption', title: 'Growing our family', active: false }, { idempotencyKey: key() })).ok).toBe(true);
+    expect((await run(adminUpsertGiftFund, admin, { id: 'date-nights', title: 'Date nights', description: 'Dinner somewhere new.', sortOrder: 15 }, { idempotencyKey: key() })).ok).toBe(true);
+    const r = await run(listGiftLinksCapability, anon, {});
+    expect(r.ok && r.value.data.funds.map((f) => f.id)).toEqual(['honeymoon', 'home', 'date-nights', 'next-adventures']);
+    const adminView = await run(adminListGiftLinks, admin, {});
+    expect(adminView.ok && adminView.value.data.funds.map((f) => [f.id, f.active, f.origin])).toEqual([
+      ['honeymoon', true, 'default'],
+      ['home', true, 'default'],
+      ['date-nights', true, 'admin'],
+      ['adoption', false, 'admin'],
+      ['next-adventures', true, 'default'],
+    ]);
+    // restore, so later assertions read the defaults
+    await run(adminUpsertGiftFund, admin, { id: 'adoption', title: 'Growing our family', description: 'Toward adoption, and the family we hope to grow.' }, { idempotencyKey: key() });
+    await run(adminUpsertGiftFund, admin, { id: 'date-nights', title: 'Date nights', active: false }, { idempotencyKey: key() });
+  });
+
+  it('validates every handle, and only admins can set one', async () => {
+    for (const [rail, handle] of [
+      ['venmo', 'https://evil.example/'],
+      ['paypal', 'not a name'],
+      ['cashapp', '$123'],
+      ['zelle', 'call me'],
+    ] as const) {
+      const r = await run(adminUpsertGiftRail, admin, { rail, handle }, { idempotencyKey: key() });
+      expect(!r.ok && r.error.code, `${rail} ${handle}`).toBe('validation');
+    }
+    const asGuest = await run(adminUpsertGiftRail, guest, { rail: 'venmo', handle: '@someone-else' }, { idempotencyKey: key() });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+    const r = await run(listGiftLinksCapability, anon, {});
+    expect(r.ok && r.value.data.funds[0]!.links[0]!.url).toContain('venmo.com/Sara-Tyler');
+  });
+
+  it('records a hand-off to Venmo (host only), never a payment; Zelle has nothing to open', async () => {
+    const r = await run(openGiftFund, anon, { fundId: 'home', rail: 'venmo' }, { requestId: 'req-fund-open' });
+    expect(r.ok && r.value.handoffUrl).toBe('https://venmo.com/Sara-Tyler?txn=pay&note=Our%20home%20(wedding%20gift)');
+    const db = await getDb();
+    const rec = (await db.select().from(externalActionRecords)).find((x) => x.kind === 'gift_fund');
+    expect(rec).toMatchObject({ status: 'initiated', provider: 'venmo', urlHost: 'venmo.com', targetType: 'gift_fund', targetId: 'home', requestId: 'req-fund-open' });
+    expect(JSON.stringify(rec)).not.toContain('txn=pay');
+    expect((await run(openGiftFund, anon, { fundId: 'home', rail: 'zelle' })).ok).toBe(false);
+    expect((await run(openGiftFund, anon, { fundId: 'adoption', rail: 'paypal' })).ok).toBe(false);
+    expect((await run(openGiftFund, anon, { fundId: 'date-nights', rail: 'venmo' })).ok).toBe(false);
+    expect((await run(openGiftFund, anon, { fundId: '../etc', rail: 'venmo' })).ok).toBe(false);
+  });
+
+  it('drops a tampered rail row whose handle would build a link off the allowlist', async () => {
+    const db = await getDb();
+    await db.insert(giftPaymentRails).values({ rail: 'cashapp', handle: 'x/../../evil.example', active: true, sortOrder: 30, updatedBy: { kind: 'system', component: 'test' } });
+    const r = await run(listGiftLinksCapability, anon, {});
+    expect(r.ok && r.value.data.funds[0]!.links.map((l) => l.rail)).toEqual(['venmo']);
+    expect(JSON.stringify(r)).not.toContain('evil.example');
+    await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'cashapp'));
+  });
+
+  it('caps the number of funds, and at the cap the concierge can still read the whole page', async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const id = `extra-fund-${i}`;
+      const r = await run(adminUpsertGiftFund, admin, { id, title: `A fund with a long enough title ${i}`.padEnd(80, '.'), description: 'x'.repeat(200) }, { idempotencyKey: key() });
+      if (!r.ok) {
+        expect(r.error.details).toMatchObject({ issues: [{ path: 'id' }] });
+        break;
+      }
+      ids.push(id);
+    }
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.length).toBeLessThan(30); // the cap refused one
+    const db = await getDb();
+    // Every rail configured, so every fund carries every link.
+    for (const [rail, handle] of [['paypal', 'SaraTyler'], ['cashapp', '$SaraTyler']] as const) {
+      expect((await run(adminUpsertGiftRail, admin, { rail, handle }, { idempotencyKey: key() })).ok, rail).toBe(true);
+    }
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const r = await run(listGiftLinksCapability, guest, {}, { surface });
+      expect(r.ok, `${surface} ${JSON.stringify(r).slice(0, 300)}`).toBe(true);
+      // Room left for registry links on top of a full set of funds.
+      expect(r.ok && JSON.stringify(r.value.data).length, surface).toBeLessThan(26_000);
+    }
+    await db.delete(giftFunds).where(inArray(giftFunds.id, ids));
+    await db.delete(giftPaymentRails).where(inArray(giftPaymentRails.rail, ['paypal', 'cashapp']));
+  });
+
+  it('keeps /admin/gifts up when a rail row names a rail this build does not know', async () => {
+    const db = await getDb();
+    await db.execute(sql`INSERT INTO gift_payment_rails (rail, handle, active, sort_order, updated_by) VALUES ('carrier-pigeon', 'coop 4', true, 99, '{"kind":"system","component":"test"}'::jsonb)`);
+    try {
+      const a = await run(adminListGiftLinks, admin, {});
+      expect(a.ok, JSON.stringify(a)).toBe(true);
+      expect(a.ok && a.value.data.rails.map((x) => x.rail)).not.toContain('carrier-pigeon');
+      const g = await run(listGiftLinksCapability, guest, {});
+      expect(g.ok && g.value.data.rails.map((x) => x.rail)).not.toContain('carrier-pigeon');
+    } finally {
+      await db.execute(sql`DELETE FROM gift_payment_rails WHERE rail = 'carrier-pigeon'`);
+    }
+  });
+
+  it('keeps /gifts and /admin/gifts up on a database the migration has not reached (a preview)', async () => {
+    // Previews never run migrations (scripts/deploy/migrate-on-deploy.mjs). Take the tables away for
+    // real, so this is the error Postgres actually raises rather than a stand-in for it.
+    const db = await getDb();
+    await db.execute(sql`ALTER TABLE gift_payment_rails RENAME TO gift_payment_rails_hidden`);
+    await db.execute(sql`ALTER TABLE gift_funds RENAME TO gift_funds_hidden`);
+    try {
+      const r = await run(listGiftLinksCapability, anon, {});
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      expect(r.ok && [r.value.data.funds, r.value.data.rails]).toEqual([[], []]);
+      expect(r.ok && r.value.data.links.length).toBeGreaterThan(0); // the registry links still show
+      const a = await run(adminListGiftLinks, admin, {});
+      expect(a.ok && a.value.data.fundsAvailable).toBe(false);
+    } finally {
+      await db.execute(sql`ALTER TABLE gift_payment_rails_hidden RENAME TO gift_payment_rails`);
+      await db.execute(sql`ALTER TABLE gift_funds_hidden RENAME TO gift_funds`);
+    }
+    const back = await run(adminListGiftLinks, admin, {});
+    expect(back.ok && back.value.data.fundsAvailable).toBe(true);
+  });
+});
+
 describe('reservations ladder', () => {
   it('answers with the url rung for Cindy’s and an honest unavailable rung for the placeholder', async () => {
     const r = await run(getReservationOptions, anon, {});
@@ -199,9 +417,9 @@ describe('reservations ladder', () => {
 
   it('exposes the external action log to admins with audit access only', async () => {
     const r = await run(adminListExternalActions, admin, {});
-    // 3 gift opens (knot, the same on the ai surface, knot again from the guard test), 1 reservation
-    // link (resy), 2 preparations (resy, unavailable tampered venue).
-    expect(r.ok && r.value.data.records.map((x) => x.kind).sort()).toEqual(['gift_link', 'gift_link', 'gift_link', 'reservation_link', 'reservation_prepare', 'reservation_prepare']);
+    // 3 gift opens (knot, the same on the ai surface, knot again from the guard test), 1 hand-off to
+    // Venmo for a fund, 1 reservation link (resy), 2 preparations (resy, unavailable tampered venue).
+    expect(r.ok && r.value.data.records.map((x) => x.kind).sort()).toEqual(['gift_fund', 'gift_link', 'gift_link', 'gift_link', 'reservation_link', 'reservation_prepare', 'reservation_prepare']);
     expect(r.ok && r.value.data.records.filter((x) => x.kind === 'reservation_prepare').map((x) => x.provider).sort()).toEqual(['none', 'resy']);
     expect(JSON.stringify(r)).not.toMatch(/seats=|Pat Example/);
     const filtered = await run(adminListExternalActions, admin, { kind: 'reservation_link' });

@@ -12,9 +12,15 @@ these screens.
 
 1. Your email address must be in `ADMIN_EMAILS`, or an existing owner must have
    granted you a role on `/admin/guests`.
-2. Go to `/sign-in/admin` and ask for a code. It arrives by email in a
+2. Click **Sign in** (top of every page, last item in the Menu on a phone,
+   and in the footer), then **Sara or Tyler? Sign in to manage the site** —
+   or go straight to `/sign-in/admin` — and ask for a code. It arrives by email in a
    deployment; in local development it lands in the dev inbox at
    `/api/dev/inbox` and is printed to the server log.
+   A deployment can only send codes once it has an email service:
+   `RESEND_API_KEY` and `EMAIL_FROM` in Vercel (the "Guest email" slot in
+   `docs/ops/secrets.md`). Without them the sign-in page says it can't send
+   codes yet, for every address alike, rather than claiming one is on its way.
 3. Anything that changes money, identity or publication asks you to prove it is
    still you (a fresh code or your passkey) if your session is more than five
    minutes old. That is deliberate — see "Step-up" below.
@@ -52,7 +58,7 @@ not see a guest list, a dietary need or an address.
 | Screen | What it is for |
 |---|---|
 | `/admin/media` | The upload queue. Everything a guest uploads waits here until it is approved. Approve, reject or delete; nothing appears in the public gallery otherwise. |
-| `/admin/gifts`, `/admin/reservations`, `/admin/transport`, `/admin/travel` | The registry and cash-fund links, restaurant handoffs, ride benefits and travel recommendations you offer. All of them link out to the vendor who owns the transaction — this site never takes a payment. |
+| `/admin/gifts`, `/admin/reservations`, `/admin/transport`, `/admin/travel` | The registry links, restaurant handoffs, ride benefits and travel recommendations you offer. All of them link out to the vendor who owns the transaction — this site never takes a payment. On Gifts you also set where gifts of money go: your own Venmo username, PayPal.Me name, $Cashtag, Zelle email or phone, and a mailing address for checks. Enter just the name; the site builds the link. A check also needs the name it is made out to. The four funds (honeymoon, home, adoption, next adventures) are built in; save one with the same id to reword or hide it, and up to 12 funds in all. A field you leave empty when saving keeps what it had. Guests pay no fee from a bank account or app balance, and the money lands in your accounts, never here. |
 
 ### Diagnostics
 

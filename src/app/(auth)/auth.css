@@ -202,6 +202,12 @@
   text-underline-offset: 0.2em;
 }
 
+/* Inside muted hint text colour alone does not mark a link (WCAG 1.4.1): the admin sign-in link on
+   /sign-in sat in grey copy and read as plain text. */
+.auth-hint .auth-link {
+  text-decoration: underline;
+}
+
 .auth-input:focus-visible,
 .auth-select:focus-visible,
 .auth-button:focus-visible,

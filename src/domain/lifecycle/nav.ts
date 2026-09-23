@@ -53,10 +53,17 @@ const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
  * `domain/routes.ts` that the FAQ's route links use too.
  */
 
+/** Constant across states: a guest may need to sign back in, and the couple need a way to the console. */
+export const SIGN_IN: NavItem = { label: 'Sign in', href: '/sign-in' };
+/** Where the frame knows the reader has a session (the guest area, the admin preview). */
+export const SIGN_OUT: NavItem = { label: 'Sign out', href: '/sign-out' };
+
 export interface NavOptions {
   currentPath?: string;
   /** Once a household has claimed its invitation the item reads "Your Weekend" (design-doc §11 decision 7). */
   claimed?: boolean;
+  /** A guest or admin session is known to this render; prerendered public pages never know it. */
+  signedIn?: boolean;
   venue?: VenueFacts;
 }
 
@@ -103,6 +110,7 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
     more: shipped(spec.more).map(item),
     sticky: sticky.filter((i) => i.external || isBuiltRoute(i.href)),
     currentPath: opts.currentPath ?? '/',
+    account: opts.signedIn ? SIGN_OUT : SIGN_IN,
   };
 }
 
