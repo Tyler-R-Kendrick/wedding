@@ -266,7 +266,8 @@ export function toAdventureCard(row: AdventureMemoryRow, ctx: ReadContext, place
     ...(where ? { where } : {}),
     ...(coordinates ? { coordinates } : {}),
     ...(cover ? { cover } : {}),
-    counts: { photos: row.media.length, paragraphs: row.memory.filter((p) => !isPlaceholderText(p)).length },
+    // A media ref with only alt text is a placeholder for a photo, not a photo.
+    counts: { photos: row.media.filter((m) => !!m.src).length, paragraphs: row.memory.filter((p) => !isPlaceholderText(p)).length },
     dateLabel: dateLabel(row),
     ...(row.season ? { season: row.season } : {}),
     ...(row.timeOfDay ? { timeOfDay: row.timeOfDay } : {}),

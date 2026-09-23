@@ -105,7 +105,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   const uid = useId();
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
-  const [frame, setFrame] = useState({ width: DEFAULT_WIDTH, aspect: DEFAULT_ASPECT, measured: false });
+  const [frame, setFrame] = useState({ width: DEFAULT_WIDTH, aspect: DEFAULT_ASPECT });
   const [view, setViewState] = useState<AtlasView>(START);
   const [chosen, setChosen] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -163,7 +163,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       const { width, height } = el.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width / height;
-      setFrame({ width, aspect, measured: true });
+      setFrame({ width, aspect });
       setView(moved.current ? clampView(viewRef.current, aspect) : homeView(aspect, points));
     };
     measure();
@@ -221,6 +221,9 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     },
     [points, aspect, fly, reveal],
   );
+
+  // A filter can take away the chosen adventure; fall back to the key rather than an empty panel.
+  if (chosen !== null && !points.some((p) => p.id === chosen)) setChosen(null);
 
   // The postcards and the ledger are server-rendered; the chosen one is marked with an attribute.
   // A layout effect, so the postcard is displayed before `reveal` tries to focus it.
@@ -311,12 +314,11 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   // A plain wheel scrolls the page past the map; Ctrl/⌘ + wheel (and a trackpad pinch) zooms it.
   const onWheel = (e: WheelEvent<HTMLDivElement>) => {
     if (!e.ctrlKey && !e.metaKey) return;
-    e.preventDefault();
     const p = local(e);
     moved.current = true;
     jump(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.01), aspect, p.x / p.w, p.y / p.h));
   };
-  // React's onWheel is passive, so preventDefault needs a native listener.
+  // React's onWheel is passive, so stopping the browser's own page zoom needs a native listener.
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
