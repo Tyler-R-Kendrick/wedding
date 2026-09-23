@@ -10,7 +10,7 @@ export function RsvpConfirmation({ result, theme }: { result: SubmitRsvpOutput; 
   for (const line of result.lines) byEvent.set(line.eventName, [...(byEvent.get(line.eventName) ?? []), line]);
   return (
     <div>
-      <GuestNotice theme={theme} tone="success" title="Thank you — you are all set">
+      <GuestNotice theme={theme} tone="success" title="Thank you — that is saved">
         <p id="done-title" tabIndex={-1}>
           Here is what we have for your household.
         </p>
@@ -29,12 +29,21 @@ export function RsvpConfirmation({ result, theme }: { result: SubmitRsvpOutput; 
         </GuestCard>
       ))}
       {result.needsRecordedFor.length ? <p>Notes recorded for {result.needsRecordedFor.join(', ')}. Only the caterer and planner see them.</p> : null}
-      <p>{result.emailQueued ? 'A confirmation is on its way to your e-mail. ' : ''}To change anything, come back to this page{result.editableUntil ? ` before ${formatDeadline(result.editableUntil)}` : ' while RSVPs are open'} — your latest answers always win.</p>
       <p>
+        {result.emailQueued ? 'A confirmation is on its way to your e-mail. ' : ''}To change anything, come back to{' '}
+        <Link href="/rsvp">your RSVP</Link>
+        {result.editableUntil ? ` before ${formatDeadline(result.editableUntil)}` : ' while RSVPs are open'} — your latest answers always win.
+      </p>
+      {/* The parts of an RSVP open at different times, so "done" here is done with THIS part: the
+          RSVP page is where the guest sees what is left, and what opens later. */}
+      <div className="actions">
+        <Link className="btn btn--primary" href="/rsvp">
+          Back to your RSVP
+        </Link>
         <Link className="btn btn--secondary" href="/your-weekend">
           See your weekend
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

@@ -7,7 +7,8 @@ import { getLifecycle } from '@/db/repos/site';
 import { guestNeeds, guests, households, rsvpResponses, rsvpSettings, type EventEntitlementRow, type EventRow, type GuestNeedsRow, type GuestRow, type HouseholdRow, type MealOptionRow, type RsvpResponseRow, type RsvpWindowMode } from '@/db/schema';
 import { computeRsvpWindow, getRsvpSettings, listEntitlementsForGuests, listEvents, listMealOptionsForEvents } from '@/domain/events';
 import type { RsvpWindow } from '@/domain/events/window';
-import type { HouseholdRsvpInput } from './types';
+import type { RsvpPart } from './parts';
+import type { HouseholdRsvpInput, RsvpOnFile } from './types';
 
 /** Everything the RSVP surfaces need for one set of guests, loaded in one place. */
 export interface HouseholdRsvpContext {
@@ -69,11 +70,22 @@ export async function loadHouseholdRsvpContext(db: Db, input: { guestIds: readon
 export async function persistHouseholdRsvp(
   db: Db,
   input: HouseholdRsvpInput,
-  meta: { submittedBy: PrincipalRef; via: 'guest' | 'admin'; now: Date; mealVersionByEvent: ReadonlyMap<string, number> },
+  meta: {
+    submittedBy: PrincipalRef;
+    via: 'guest' | 'admin';
+    now: Date;
+    mealVersionByEvent: ReadonlyMap<string, number>;
+    /** The parts this submission answered. Default: all. A meal not answered keeps its menu version. */
+    parts?: ReadonlySet<RsvpPart>;
+  },
 ): Promise<{ responses: RsvpResponseRow[] }> {
+  const answeredMeal = meta.parts ? meta.parts.has('meal') : true;
   return db.transaction(async (tx) => {
     const out: RsvpResponseRow[] = [];
     for (const r of input.responses) {
+      // Validation marks the rows that answered the plus-one question; a row it never saw (an
+      // older caller) counts as answered when the plus-one part was, as it always did.
+      const answeredPlusOne = r.plusOneAnswered ?? (meta.parts ? meta.parts.has('plusOne') : true);
       const values = {
         id: newId(),
         guestId: r.guestId,
@@ -84,6 +96,8 @@ export async function persistHouseholdRsvp(
         plusOneAttending: r.plusOne?.attending ?? false,
         plusOneName: r.plusOne?.attending ? r.plusOne.name : null,
         plusOneMealOptionId: r.plusOne?.attending ? r.plusOne.mealOptionId : null,
+        // A decline makes the question moot; re-accepting asks it again.
+        plusOneAnsweredAt: r.status === 'accepted' && answeredPlusOne ? meta.now : null,
         version: 1,
         submittedBy: meta.submittedBy,
         submittedVia: meta.via,
@@ -98,10 +112,14 @@ export async function persistHouseholdRsvp(
           set: {
             status: values.status,
             mealOptionId: values.mealOptionId,
-            mealOptionsVersion: values.mealOptionsVersion,
+            // A meal carried over from an older menu keeps the version it was chosen from, so it
+            // still reads as stale; stamping today's version on it would hide that the menu changed.
+            ...(answeredMeal || r.status !== 'accepted' ? { mealOptionsVersion: values.mealOptionsVersion } : {}),
             plusOneAttending: values.plusOneAttending,
             plusOneName: values.plusOneName,
             plusOneMealOptionId: values.plusOneMealOptionId,
+            // Not answered this time and still coming: keep when it was last answered.
+            ...(answeredPlusOne || r.status !== 'accepted' ? { plusOneAnsweredAt: values.plusOneAnsweredAt } : {}),
             version: sql`${rsvpResponses.version} + 1`,
             submittedBy: values.submittedBy,
             submittedVia: values.submittedVia,
@@ -120,6 +138,16 @@ export async function persistHouseholdRsvp(
     }
     return { responses: out };
   });
+}
+
+/** The household's answers keyed `${guestId}::${eventId}`, for carrying over the parts a submission does not answer. */
+export function onFileMap(responses: readonly RsvpResponseRow[]): Map<string, RsvpOnFile> {
+  return new Map(
+    responses.map((r) => [
+      `${r.guestId}::${r.eventId}`,
+      { status: r.status, mealOptionId: r.mealOptionId, plusOne: r.plusOneAttending || r.plusOneAnsweredAt ? { attending: r.plusOneAttending, name: r.plusOneName, mealOptionId: r.plusOneMealOptionId } : null },
+    ]),
+  );
 }
 
 export async function listAllResponses(db: Db): Promise<RsvpResponseRow[]> {

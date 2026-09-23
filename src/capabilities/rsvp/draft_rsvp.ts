@@ -5,8 +5,8 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
 import { stableHash } from '@/lib/crypto';
-import { buildProposal, type HouseholdRsvpInput } from '@/domain/rsvp';
-import { loadForPrincipal, namesFor, validateFor } from './context';
+import { buildProposal, orderParts, type HouseholdRsvpDraft } from '@/domain/rsvp';
+import { loadForPrincipal, namesFor, resolveParts, validateFor } from './context';
 import { draftInputSchema, proposalSchema, submitInputSchema, type DraftRsvpInput } from './schemas';
 import { requireGuestPrincipal, windowSchema } from './shared';
 
@@ -19,12 +19,12 @@ const output = z.object({
 export type DraftRsvpOutput = z.infer<typeof output>;
 
 /** Draft inputs are normalized to the strict submission shape before hashing. */
-export function toHouseholdInput(i: DraftRsvpInput): HouseholdRsvpInput {
+export function toHouseholdInput(i: DraftRsvpInput): HouseholdRsvpDraft {
   return {
     responses: i.responses.map((r) => ({
       guestId: r.guestId,
       eventId: r.eventId,
-      status: r.status,
+      status: r.status ?? null,
       mealOptionId: r.mealOptionId ?? null,
       plusOne: r.plusOne ? { attending: r.plusOne.attending, name: r.plusOne.name ?? null, mealOptionId: r.plusOne.mealOptionId ?? null } : null,
     })),
@@ -55,9 +55,13 @@ export const draftRsvp = defineCapability<DraftRsvpInput, DraftRsvpOutput>({
     const { confirmation } = appServices(ctx);
     if (!confirmation) return err(new CapabilityError('internal', 'Something went wrong on our side. Please try again in a moment.'));
     const hc = await loadForPrincipal(ctx, p.value);
-    const validated = validateFor(hc, p.value.actsFor, 'guest', toHouseholdInput(i));
+    const parts = resolveParts(ctx.flags, hc, i.parts);
+    const validated = validateFor(hc, p.value.actsFor, 'guest', toHouseholdInput(i), parts.ok ? parts.value : new Set(i.parts ?? []));
+    // Precedence: someone else's guest is `forbidden` before anything is said about what is open.
+    if (!validated.ok && validated.error.code === 'forbidden') return err(validated.error);
+    if (!parts.ok) return err(parts.error);
     if (!validated.ok) return err(validated.error);
-    const submission = submitInputSchema.parse(validated.value);
+    const submission = submitInputSchema.parse({ parts: orderParts(parts.value), ...validated.value });
     const proposal = buildProposal(submission, namesFor(hc));
     // Bound to the issuing surface: only a token drafted on the website can be redeemed there (assistants' drafts are read-only proposals).
     const issued = confirmation.issue({ capability: 'submit_rsvp', principalRef: toPrincipalRef(ctx.principal), payloadHash: stableHash(submission), surface: ctx.surface ?? 'ui' }, { now: ctx.now });

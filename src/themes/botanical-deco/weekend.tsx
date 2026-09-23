@@ -6,6 +6,7 @@ import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { Badge } from '@/components/rsvp/fields';
 import { RsvpForm, type RsvpFormProps } from '@/components/rsvp/RsvpForm';
+import { replyLabel, RsvpTaskList } from '@/components/rsvp/RsvpTaskList';
 import { formatDeadline } from '@/domain/events/format';
 import { GuestNotice } from './guest';
 import { DateTile } from './kit/content';
@@ -66,8 +67,10 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
           ) : null}
         </p>
       </header>
+      {/* The task list below says where each part stands; a count beside the name as well said it twice. */}
       <p className="bd-reply__status">
-        <span className="bd-reply__household">{data.greeting.householdName}</span> <RsvpStatus rsvp={data.rsvp} />
+        <span className="bd-reply__household">{data.greeting.householdName}</span>
+        {!reply && w.open && data.rsvp.canAnswer ? null : <> <RsvpStatus rsvp={data.rsvp} /></>}
       </p>
       {reply ? (
         <>
@@ -76,22 +79,12 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
         </>
       ) : w.open && data.rsvp.canAnswer ? (
         <>
-          <ul className="bd-reply__answers">
-            {data.events.map((e) => (
-              <li key={e.id} className="bd-reply__answer">
-                <span className="bd-reply__event">{e.name}</span>
-                <span className="bd-reply__who">
-                  {e.household
-                    .filter((h) => h.isSelf || data.rsvp.scope === 'household')
-                    .map((h) => (h.status === 'accepted' ? 'Attending' : h.status === 'declined' ? 'Not attending' : 'No answer yet'))
-                    .join(', ')}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* The profile's view of the reply: each part of it, what is done and what opens later.
+              The event-by-event answers are in the itinerary beside it. */}
+          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
           <p>
             <Link className="bd-btn bd-btn--primary bd-reply__submit" href="/rsvp">
-              {data.rsvp.status === 'not_started' ? 'RSVP now' : 'Review or change your RSVP'}
+              {replyLabel(data.rsvp)}
             </Link>
           </p>
         </>

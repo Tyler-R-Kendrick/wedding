@@ -293,7 +293,7 @@ jobs:
           # walked five times over, two designs). Every route either was already here or is added
           # above (`/ask-us`), and both specs carry a timeout proportional to their navigations
           # rather than the 30s default, which is the other half of what level 14 learned.
-          for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
+          for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp /rsvp/attending /rsvp/meals \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /admin/ai \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \

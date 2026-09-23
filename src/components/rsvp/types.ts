@@ -1,5 +1,13 @@
 import type { DraftRsvpOutput, SubmitRsvpInput, SubmitRsvpOutput } from '@/capabilities/rsvp';
 
+type SubmittedRow = SubmitRsvpInput['responses'][number];
+
+/** What the guest last entered. A row from a page that does not ask attendance has no status. */
+export interface RsvpFormValues {
+  responses: Array<Omit<SubmittedRow, 'status'> & { status: SubmittedRow['status'] | null }>;
+  needs: SubmitRsvpInput['needs'];
+}
+
 export type RsvpFormState =
   | {
       stage: 'form';
@@ -8,7 +16,7 @@ export type RsvpFormState =
       /** Non-field messages (closed window, expired review, backend trouble). */
       messages: string[];
       /** Previously entered values to re-fill the form with. */
-      values: SubmitRsvpInput | null;
+      values: RsvpFormValues | null;
       failure: boolean;
     }
   | { stage: 'review'; proposal: DraftRsvpOutput['proposal']; submission: SubmitRsvpInput; token: string; expiresAt: string; idempotencyKey: string; editableUntil: string | null }

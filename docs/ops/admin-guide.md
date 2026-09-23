@@ -76,6 +76,29 @@ a venue is the most likely way this site gets misused, and the five-minute
 window is the difference between someone reading a screen and someone changing
 the guest list.
 
+## Opening the RSVP one part at a time
+
+A reply has four parts — **who is coming**, **bringing a guest**, **meals**, and
+optional **dietary and access notes** — and each opens on its own. Guests see
+all of them on `/rsvp` as a list: what is done, what is next, and what "opens
+later", so nobody is surprised when meals arrive a month after they said yes.
+
+| Part | Opens when | Held shut by |
+|---|---|---|
+| Who is coming (and notes) | the RSVP window is open | `FLAG_RSVP_ATTENDANCE=off` |
+| Bringing a guest | the window is open, for invitations that include one | `FLAG_RSVP_PLUS_ONES=off` |
+| Meals | the window is open **and** a menu is published in `/admin/events` | `FLAG_RSVP_MEALS=off`, or no menu yet |
+
+All three flags are on by default, so today nothing changes until you hold a
+part back. To ship attendance first, deploy with `FLAG_RSVP_MEALS=off` (and
+`FLAG_RSVP_PLUS_ONES=off` if plus-ones are not settled); guests who reply see
+meals as "opens later". Remove the flag, or publish the menu, and `/rsvp` asks
+those guests for their meals alone — their attendance is never asked again or
+changed. `/admin/flags` shows what is in effect.
+
+Publishing a new menu marks earlier meal choices "the menu changed — choose
+again" on the guest's list; nothing else about their reply moves.
+
 ## Two things to be careful with
 
 **Revoking an invitation** invalidates the link for the whole household. Anyone

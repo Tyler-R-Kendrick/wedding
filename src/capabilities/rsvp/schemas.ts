@@ -1,16 +1,26 @@
 import { z } from 'zod';
 import { RSVP_STATUSES } from '@/db/schema';
+import { RSVP_PARTS } from '@/domain/rsvp/parts';
 import { MAX_NEEDS_CHARS, MAX_PLUS_ONE_NAME_CHARS } from '@/domain/rsvp/types';
 import { idSchema, windowSchema } from './shared';
 
+export const partSchema = z.enum(RSVP_PARTS);
+const partsSchema = z.array(partSchema).min(1).max(RSVP_PARTS.length);
+
 /** Lenient draft input: optional fields become null during normalization. */
 export const draftInputSchema = z.object({
+  /**
+   * Which parts of the RSVP this answers: `attendance`, `plusOne`, `meal`, `notes`. Every field of a
+   * part not listed is ignored and the answer on file is kept. Default: every part open right now.
+   */
+  parts: partsSchema.optional(),
   responses: z
     .array(
       z.object({
         guestId: idSchema,
         eventId: idSchema,
-        status: z.enum(RSVP_STATUSES),
+        /** Required when answering attendance; ignored otherwise (the answer on file is used). */
+        status: z.enum(RSVP_STATUSES).nullable().optional(),
         mealOptionId: z.string().max(64).nullable().optional(),
         plusOne: z.object({ attending: z.boolean(), name: z.string().max(200).nullable().optional(), mealOptionId: z.string().max(64).nullable().optional() }).nullable().optional(),
       }),
@@ -20,8 +30,14 @@ export const draftInputSchema = z.object({
 });
 export type DraftRsvpInput = z.infer<typeof draftInputSchema>;
 
-/** Strict, fully-normalized submission: exactly what `draft_rsvp` returned, so the payload hash matches the token. */
+/**
+ * Strict, fully-normalized submission: exactly what `draft_rsvp` returned, so the payload hash
+ * matches the token. Rows are the merged answer (the parts named in `parts` from the guest, the rest
+ * from what was on file at draft time); submit re-reads the file for the rest, so an answer someone
+ * else in the household saved in between is not overwritten by a stale copy.
+ */
 export const submitInputSchema = z.object({
+  parts: partsSchema,
   responses: z
     .array(
       z.object({
@@ -32,7 +48,6 @@ export const submitInputSchema = z.object({
         plusOne: z.object({ attending: z.boolean(), name: z.string().max(MAX_PLUS_ONE_NAME_CHARS).nullable(), mealOptionId: z.string().max(64).nullable() }).nullable(),
       }),
     )
-    .min(1)
     .max(60),
   needs: z.array(z.object({ guestId: idSchema, dietary: z.string().max(MAX_NEEDS_CHARS).nullable(), accessibility: z.string().max(MAX_NEEDS_CHARS).nullable() })).max(30),
 });

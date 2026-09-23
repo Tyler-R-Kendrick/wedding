@@ -27,6 +27,12 @@ export const rsvpResponses = pgTable(
     plusOneAttending: boolean('plus_one_attending').notNull().default(false),
     plusOneName: text('plus_one_name'),
     plusOneMealOptionId: text('plus_one_meal_option_id').references(() => mealOptions.id, { onDelete: 'set null' }),
+    /**
+     * When the plus-one question was last answered for this row. `plus_one_attending = false` alone
+     * cannot tell "not bringing anyone" from "never asked" — and once the parts of an RSVP ship
+     * separately, a guest who answered attendance before plus-ones opened has never been asked.
+     */
+    plusOneAnsweredAt: timestamp('plus_one_answered_at', { withTimezone: true, mode: 'date' }),
     version: integer('version').notNull().default(1),
     submittedBy: jsonb('submitted_by').$type<PrincipalRef>().notNull(),
     submittedVia: text('submitted_via').$type<RsvpChannel>().notNull().default('guest'),

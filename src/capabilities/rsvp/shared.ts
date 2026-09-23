@@ -10,6 +10,7 @@ import { PLUS_ONE_POLICIES, RSVP_WINDOW_MODES, type EventRow, type MealOptionRow
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import { BRIEF_SOURCE_ID } from '@/db/seed/sources';
 import { currentMealOptions } from '@/domain/events';
+import { RSVP_PARTS } from '@/domain/rsvp/parts';
 
 export const idSchema = z.string().regex(ID_PATTERN, 'must be an id');
 
@@ -86,6 +87,17 @@ export function toEventView(e: EventRow, allMeals: readonly MealOptionRow[]): Ev
 }
 
 export const plusOnePolicySchema = z.enum(PLUS_ONE_POLICIES);
+
+/** One part of the RSVP as the guest surfaces show it (see `src/domain/rsvp/parts.ts`). */
+export const partProgressSchema = z.object({
+  part: z.enum(RSVP_PARTS),
+  state: z.enum(['open', 'later', 'not_applicable']),
+  reason: z.enum(['not_released', 'menu_pending']).nullable(),
+  status: z.enum(['not_started', 'in_progress', 'done', 'needs_attention', 'waiting', 'not_needed', 'optional', 'later']),
+  expected: z.number(),
+  answered: z.number(),
+  attention: z.number(),
+});
 
 /** Event facts trace to the brief until the couple confirms them (ADR-0011). */
 export const briefCitation = (verifiedAt: Date): Citation => ({ sourceId: BRIEF_SOURCE_ID as Citation['sourceId'], title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: verifiedAt.toISOString() });

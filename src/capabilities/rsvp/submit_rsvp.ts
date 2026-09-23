@@ -3,8 +3,8 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { eDb } from '@/capabilities/rsvp/db';
 import { publicEnv } from '@/lib/env.public';
-import { buildConfirmationEmail, buildProposal, persistHouseholdRsvp, queueRsvpConfirmation } from '@/domain/rsvp';
-import { loadForPrincipal, namesFor, validateFor } from './context';
+import { buildConfirmationEmail, buildProposal, orderParts, persistHouseholdRsvp, queueRsvpConfirmation } from '@/domain/rsvp';
+import { loadForPrincipal, namesFor, resolveParts, validateFor } from './context';
 import { submitInputSchema, submitOutputSchema, type SubmitRsvpInput, type SubmitRsvpOutput } from './schemas';
 import { requireGuestPrincipal } from './shared';
 
@@ -38,13 +38,17 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     const db = await eDb(ctx);
     const actor = toPrincipalRef(ctx.principal);
 
-    // Re-validate at submit time: the window may have closed or the menu changed since the draft.
+    // Re-validate at submit time: the window may have closed, a part been switched off, or the menu
+    // changed since the draft. Parts not being answered are re-read from the file, not the draft.
     const hc = await loadForPrincipal(ctx, p.value);
-    const validated = validateFor(hc, p.value.actsFor, 'guest', i);
+    const parts = resolveParts(ctx.flags, hc, i.parts);
+    const validated = validateFor(hc, p.value.actsFor, 'guest', i, parts.ok ? parts.value : new Set(i.parts));
+    if (!validated.ok && validated.error.code === 'forbidden') return err(validated.error);
+    if (!parts.ok) return err(parts.error);
     if (!validated.ok) return err(validated.error);
 
     const mealVersionByEvent = new Map(hc.entitledEvents.map((e) => [e.id, e.mealOptionsVersion]));
-    await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent });
+    await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent, parts: parts.value });
     const proposal = buildProposal(validated.value, namesFor(hc));
     const householdId = hc.household?.id ?? p.value.householdId;
 
@@ -55,7 +59,7 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
       target: { type: 'household', id: householdId },
       outcome: 'success',
       requestId: ctx.requestId,
-      metadata: { responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, noteRows: validated.value.needs.length, via: 'guest' },
+      metadata: { parts: orderParts(parts.value).join(','), responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, noteRows: validated.value.needs.length, via: 'guest' },
     });
 
     const self = hc.guests.find((g) => g.id === p.value.guestId);

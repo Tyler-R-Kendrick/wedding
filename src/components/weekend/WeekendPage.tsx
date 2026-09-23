@@ -4,6 +4,7 @@ import type { MyItinerary } from '@/capabilities/rsvp';
 import { highlightIdFor } from '@/capabilities/seating/show_my_table_on_floorplan';
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { Badge } from '@/components/rsvp/fields';
+import { replyLabel, RsvpTaskList } from '@/components/rsvp/RsvpTaskList';
 import { formatDeadline } from '@/domain/events/format';
 import { BotanicalWeekendPage, type WeekendReply } from '@/themes/botanical-deco/weekend';
 import { GuestCard, GuestNotice, GuestSection } from '@/themes/guest';
@@ -34,6 +35,9 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
       ))}
 
       <GuestSection theme={theme} id="rsvp" index={0} title="RSVP">
+        {/* Once anything is answered and the window is open, the task list below is the status; a
+            count here as well said it twice. The badge stays for every state without the list. */}
+        {data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status !== 'not_started' ? null : (
         <p>
           {/* "for everyone" is only true when the counts cover more than one person. They are built
               from `actsFor`, so a non-manager who answers for themselves alone used to read that
@@ -48,14 +52,18 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
             <Badge tone="pending">Not answered yet</Badge>
           )}
         </p>
+        )}
         {/* A delegate may not answer, and `derive.ts` strips `rsvp_self` from exactly that role, so
             offering the primary button on the window alone put a 403 behind it. */}
         {data.rsvp.window.open && data.rsvp.canAnswer ? (
-          <p>
-            <Link className="btn btn--primary" href="/rsvp">
-              {data.rsvp.status === 'not_started' ? 'RSVP now' : 'Review or change your RSVP'}
-            </Link>
-          </p>
+          <>
+            <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="weekend-task" labelledBy="rsvp-title" />
+            <p>
+              <Link className="btn btn--primary" href="/rsvp">
+                {replyLabel(data.rsvp)}
+              </Link>
+            </p>
+          </>
         ) : (
           // Says the same thing /rsvp says, for the same reason — including the case that matters:
           // `lifecycle` means RSVPs have not opened yet, and telling a guest they are "closed"

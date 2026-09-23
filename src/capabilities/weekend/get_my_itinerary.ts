@@ -8,8 +8,9 @@ import { NOTICE_SEVERITIES, RSVP_STATUSES } from '@/db/schema';
 import { formatEventDate, formatEventWindow, listActiveNotices } from '@/domain/events';
 import { getLifecycle } from '@/db/repos/site';
 import { resolveWeekendSlots, WEEKEND_SLOT_KINDS } from '@/domain/weekend';
-import { loadForPrincipal } from '@/capabilities/rsvp/context';
-import { briefCitation, eventViewSchema, GUEST_READ_MAX_CHARS, requireGuestPrincipal, windowSchema } from '@/capabilities/rsvp/shared';
+import { loadForPrincipal, progressFor } from '@/capabilities/rsvp/context';
+import { briefCitation, eventViewSchema, GUEST_READ_MAX_CHARS, partProgressSchema, requireGuestPrincipal, windowSchema } from '@/capabilities/rsvp/shared';
+import { nextParts, RSVP_PARTS } from '@/domain/rsvp/parts';
 import { myTableSchema, readPublishedTable, readSeatingState, SEATING_MESSAGE, type SeatingState } from '@/capabilities/seating/get_my_table';
 
 const input = z.object({}).optional();
@@ -47,6 +48,9 @@ const output = z.object({
      * answered, while the rest of the household had not. Ben and Eve are exactly this guest.
      */
     scope: z.enum(['self', 'household']),
+    /** Each part of the RSVP (attendance, plus-one, meal, notes): open or not, and how far along. */
+    parts: z.array(partProgressSchema),
+    next: z.array(z.enum(RSVP_PARTS)),
   }),
   events: z.array(
     eventViewSchema.extend({
@@ -105,6 +109,7 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
     const answered = expectedPairs.filter((en) => responseKey.has(`${en.guestId}::${en.eventId}`)).length;
     const status = answered === 0 ? 'not_started' : answered < expectedPairs.length ? 'partial' : 'complete';
     const guestName = new Map(hc.guests.map((g) => [g.id, guestDisplayName(g)]));
+    const parts = progressFor(ctx.flags, hc);
     return ok({
       data: {
         greeting: { firstName: self?.firstName ?? 'there', householdName: hc.household?.name ?? 'Your household' },
@@ -116,6 +121,8 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
           expected: expectedPairs.length,
           canAnswer: p.value.entitlements.has('rsvp_self') || p.value.entitlements.has('manage_household_rsvp'),
           scope: new Set(expectedPairs.map((en) => en.guestId)).size > 1 ? ('household' as const) : ('self' as const),
+          parts,
+          next: nextParts(parts),
         },
         events: hc.entitledEvents.map((e) => ({
           ...toEventViewLocal(e, hc.mealOptions),
