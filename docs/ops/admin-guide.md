@@ -87,14 +87,14 @@ later", so nobody is surprised when meals arrive a month after they said yes.
 |---|---|---|
 | Who is coming (and notes) | the RSVP window is open | `FLAG_RSVP_ATTENDANCE=off` |
 | Bringing a guest | the window is open, for invitations that include one | `FLAG_RSVP_PLUS_ONES=off` |
-| Meals | the window is open **and** a menu is published in `/admin/events` | `FLAG_RSVP_MEALS=off`, or no menu yet |
+| Meals | the window is open, a menu is published in `/admin/events`, **and** `FLAG_RSVP_MEALS=on` | ships **off** until the menu is set |
 
-All three flags are on by default, so today nothing changes until you hold a
-part back. To ship attendance first, deploy with `FLAG_RSVP_MEALS=off` (and
-`FLAG_RSVP_PLUS_ONES=off` if plus-ones are not settled); guests who reply see
-meals as "opens later". Remove the flag, or publish the menu, and `/rsvp` asks
-those guests for their meals alone — their attendance is never asked again or
-changed. `/admin/flags` shows what is in effect.
+Attendance and plus-ones are on by default. **Meals ship off**: guests who reply
+now see meals as "opens once the menu is set" and are not asked. When the menu
+is set, publish it in `/admin/events` and deploy with `FLAG_RSVP_MEALS=on`;
+`/rsvp` then asks those guests for their meals alone — their attendance is never
+asked again or changed. To hold plus-ones back too, deploy with
+`FLAG_RSVP_PLUS_ONES=off`. `/admin/flags` shows what is in effect.
 
 Publishing a new menu marks earlier meal choices "the menu changed — choose
 again" on the guest's list; nothing else about their reply moves.

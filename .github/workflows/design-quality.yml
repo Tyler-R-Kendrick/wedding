@@ -314,6 +314,8 @@ jobs:
           # Playwright treats the server above as external and does not start its own.
           BASE_URL: http://localhost:3000
           SEED_TEST_FIXTURES: '1'
+          # Meals ship off until the menu is set; the RSVP journey exercises them, as a deploy will once it is.
+          FLAG_RSVP_MEALS: 'on'
           # CI-only placeholders. The dev bearer opens the dev routes on this runner only, and the
           # test-auth secret enables the principal injector; both are refused on a production host.
           DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real

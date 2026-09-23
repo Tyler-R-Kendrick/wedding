@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FEATURE_FLAGS, type FlagValues } from '@/contracts/flags';
+import { FEATURE_FLAGS, readFlags, type FlagValues } from '@/contracts/flags';
 import { computeRsvpWindow } from '@/domain/events/window';
 import { nextParts, rsvpProgress, type ProgressInput, type RsvpPart } from '@/domain/rsvp/parts';
 import type { RsvpOnFile, RsvpValidationContext } from '@/domain/rsvp/types';
@@ -11,7 +11,8 @@ import { validateHouseholdRsvp } from '@/domain/rsvp/validate';
  * only the parts it names — everything else is carried over from the file, unjudged.
  */
 
-const flags = (over: Partial<FlagValues> = {}): FlagValues => ({ ...FEATURE_FLAGS, ...over });
+/** Every part released, as the tests below reason about it; the shipped default is pinned separately. */
+const flags = (over: Partial<FlagValues> = {}): FlagValues => ({ ...FEATURE_FLAGS, RSVP_MEALS: true, ...over });
 const byPart = (p: ReturnType<typeof rsvpProgress>) => Object.fromEntries(p.map((x) => [x.part, x])) as Record<RsvpPart, (typeof p)[number]>;
 
 const events = [
@@ -40,6 +41,17 @@ const row = (guestId: string, eventId: string, over: Partial<ProgressInput['resp
   ...over,
 });
 const base: ProgressInput = { entitlements, events, mealOptions, responses: [], needs: [] };
+
+describe('the shipped release', () => {
+  it('holds meals shut until the menu is set, and tells guests that is why', () => {
+    expect(readFlags({}).RSVP_MEALS).toBe(false);
+    expect(readFlags({ FLAG_RSVP_MEALS: 'on' }).RSVP_MEALS).toBe(true);
+    const shipped = byPart(rsvpProgress(readFlags({}), { ...base, mealOptions: [] }));
+    expect(shipped.attendance.state).toBe('open');
+    expect(shipped.meal).toMatchObject({ state: 'later', reason: 'menu_pending' });
+    expect(nextParts(rsvpProgress(readFlags({}), { ...base, mealOptions: [] }))).not.toContain('meal');
+  });
+});
 
 describe('rsvpProgress: each part is released by its own flag and its own data', () => {
   it('holds a part shut when its flag is off, and says which wait it is', () => {

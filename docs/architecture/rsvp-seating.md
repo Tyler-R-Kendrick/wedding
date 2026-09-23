@@ -59,7 +59,7 @@ guest (a task list, one page per part). `src/domain/rsvp/parts.ts` is the whole 
 |---|---|---|---|
 | `attendance` | `status` | `RSVP_ATTENDANCE` | — |
 | `plusOne` | `plus_one_attending`, `plus_one_name`, `plus_one_answered_at` | `RSVP_PLUS_ONES` | not on the invitation (`plusOnePolicy: none` everywhere) → `not_applicable` |
-| `meal` | `meal_option_id` (+version), `plus_one_meal_option_id` | `RSVP_MEALS` | no event with a meal → `not_applicable`; no menu published for the current version → `later` / `menu_pending` |
+| `meal` | `meal_option_id` (+version), `plus_one_meal_option_id` | `RSVP_MEALS` (ships **off** until the menu is set) | no event with a meal → `not_applicable`; no menu published for the current version → `later` / `menu_pending` |
 | `notes` | `guest_needs` | `RSVP_ATTENDANCE` | — |
 
 **Writes are per part.** `draft_rsvp` takes `parts` (default: every part open now; naming a closed one

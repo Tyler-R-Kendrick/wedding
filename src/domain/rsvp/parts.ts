@@ -132,7 +132,9 @@ export function rsvpProgress(flags: Pick<FlagValues, FeatureFlag>, input: Progre
     }
   }
   const mealState: PartState = mealEvents.length === 0 ? 'not_applicable' : released('meal') && menuReady ? 'open' : 'later';
-  const meal = finish({ part: 'meal', state: mealState, reason: mealState !== 'later' ? null : released('meal') ? 'menu_pending' : 'not_released', expected: mealExpected, answered: mealAnswered, attention: mealStale });
+  // With no menu yet, that is the reason a guest is given — whether or not meals are also switched
+  // off: "opens once the menu is set" is true and tells them what they are waiting for.
+  const meal = finish({ part: 'meal', state: mealState, reason: mealState !== 'later' ? null : !menuReady ? 'menu_pending' : 'not_released', expected: mealExpected, answered: mealAnswered, attention: mealStale });
 
   // Notes: optional, one row per guest.
   const guestIds = new Set(expectedPairs.map((en) => en.guestId));

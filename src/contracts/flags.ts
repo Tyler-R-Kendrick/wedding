@@ -32,8 +32,12 @@ export const FEATURE_FLAGS = {
   RSVP_ATTENDANCE: true,
   /** Plus-ones, where an invitation includes one. Off: the question is not asked and nothing is written. */
   RSVP_PLUS_ONES: true,
-  /** Meal choices. Also held shut by the data until a menu is published for an event with a meal. */
-  RSVP_MEALS: true,
+  /**
+   * Meal choices. OFF until the menu is set: guests see meals as "opens once the menu is set" and
+   * are never asked. Turn on (`FLAG_RSVP_MEALS=on`) once the menu is published in /admin/events —
+   * it is also held shut by the data until a menu exists for an event with a meal.
+   */
+  RSVP_MEALS: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
