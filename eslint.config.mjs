@@ -18,6 +18,12 @@ export default defineConfig([
     },
   },
   {
+    // The demo recorder's preloads are CommonJS on purpose: `node --require` loads them before
+    // webreel's ESM, to patch the CommonJS DevTools client it imports (docs/ops/demos.md).
+    files: ['demos/**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
     // Providers are leaves: they never import domain logic, capabilities, or app code.
     files: ['src/providers/**/*.ts'],
     rules: {

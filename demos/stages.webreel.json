@@ -1,0 +1,152 @@
+{
+  "$schema": "https://webreel.dev/schema/v1.json",
+  "outDir": ".out",
+  "defaultDelay": 900,
+  "videos": {
+    "stages-by-subdomain": {
+      "url": "http://dev.kendrick.localhost:3000/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "waitFor": ".hub",
+      "output": "stages-by-subdomain.mp4",
+      "thumbnail": {
+        "time": 1
+      },
+      "steps": [
+        {
+          "action": "pause",
+          "ms": 2200,
+          "description": "dev.kendrick.localhost: the hub, and the address of every stage"
+        },
+        {
+          "action": "click",
+          "selector": ".hub-stages a[data-stage=\"sitemap\"]",
+          "delay": 2200,
+          "description": "sitemap.dev.kendrick.localhost: stage 1"
+        },
+        {
+          "action": "navigate",
+          "url": "http://sitemap.dev.kendrick.localhost:3000/rsvp",
+          "delay": 2000,
+          "description": "a page, at stage 1: sitemap.dev.kendrick.localhost/rsvp"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(2) > a",
+          "delay": 2200,
+          "description": "the same page at wireframe.dev.kendrick.localhost"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(3) > a",
+          "delay": 2000,
+          "description": "skeleton.dev.kendrick.localhost: clickable"
+        },
+        {
+          "action": "wait",
+          "selector": ".st-tasks__link",
+          "timeout": 10000
+        },
+        {
+          "action": "click",
+          "selector": ".st-tasks__link",
+          "delay": 2200,
+          "description": "a flow, clicked through at stage 3"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(4) > a",
+          "delay": 2000,
+          "description": "placeholder.dev.kendrick.localhost: the real designs"
+        },
+        {
+          "action": "select",
+          "selector": ".pl-picker__select",
+          "value": "gilded-hour",
+          "delay": 2200,
+          "description": "the theme picker"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(5) > a",
+          "delay": 2400,
+          "description": "and the real site: kendrick.localhost, without dev."
+        },
+        {
+          "action": "navigate",
+          "url": "http://dev.kendrick.localhost:3000/rsvp",
+          "delay": 2200,
+          "description": "the hub host serves the hub alone: 404"
+        },
+        {
+          "action": "navigate",
+          "url": "http://dev.kendrick.localhost:3000/",
+          "delay": 1200
+        },
+        {
+          "action": "scroll",
+          "y": 760,
+          "delay": 2400,
+          "description": "the board: every page at every stage, and its sign-offs"
+        }
+      ]
+    },
+    "stages-by-path": {
+      "url": "http://localhost:3000/stages",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "waitFor": ".hub",
+      "output": "stages-by-path.mp4",
+      "thumbnail": {
+        "time": 1
+      },
+      "steps": [
+        {
+          "action": "pause",
+          "ms": 2000,
+          "description": "a preview's /stages: the same hub, linking by path"
+        },
+        {
+          "action": "click",
+          "selector": ".hub-stages a[data-stage=\"skeleton\"]",
+          "delay": 2000,
+          "description": "/skeleton"
+        },
+        {
+          "action": "click",
+          "selector": "#st-nav a[href$=\"/rsvp\"]",
+          "delay": 2000,
+          "description": "/skeleton/rsvp"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(2) > a",
+          "delay": 2000,
+          "description": "/wireframe/rsvp"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(4) > a",
+          "delay": 2000,
+          "description": "/placeholder/rsvp"
+        },
+        {
+          "action": "click",
+          "selector": ".st-bar__stages li:nth-child(5) > a",
+          "delay": 2400,
+          "description": "and /rsvp is the real site, on the same host"
+        },
+        {
+          "action": "navigate",
+          "url": "http://localhost:3000/_stages/_hub/index.html",
+          "delay": 2200,
+          "description": "the assembled files are never served directly: 404"
+        }
+      ]
+    }
+  }
+}
