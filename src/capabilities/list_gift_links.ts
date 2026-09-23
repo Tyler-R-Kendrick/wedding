@@ -115,7 +115,7 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
       // A database the gifts-of-money migration has not reached yet (a preview): the registry links
       // still show, and the section says what is still to come, exactly as with nothing configured.
       if (!isMissingGiftTable(e)) throw e;
-      logger.warn('gift funds unavailable: migration 0011 has not been applied to this database');
+      logger.warn('gift funds unavailable: migration 0012 (gift_funds_and_rails) has not been applied to this database');
       return { funds: [], rails: [] };
     });
     const [links, { funds, rails }] = await Promise.all([listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') }), fundsOrNothing]);

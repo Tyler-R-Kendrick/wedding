@@ -47,13 +47,18 @@ test('a household manager sees only their household; another household is never 
   expect(JSON.stringify(b2.body)).not.toContain(IDS.B1); // a non-manager sees only themselves
   expect(JSON.stringify(stabilize(b2.body), null, 2)).toMatchSnapshot('b2-get_my_rsvp.json');
 
+  // Every page of the reply, including the per-part pages: B2 is not the manager, so not even
+  // the rest of her own household appears, and another household never does.
   const ctx = await contextAs(browser, 'B2');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/rsvp`);
-  const html = await page.content();
-  expect(html).toContain('Eve');
-  expect(html).not.toContain('Testhouse');
-  expect(html).not.toContain('Dev Fixture');
+  for (const route of ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/rsvp/notes']) {
+    await page.goto(`${BASE_URL}${route}`);
+    const html = await page.content();
+    // /rsvp/meals and /rsvp/notes only name people once there is something to ask them.
+    if (route === '/rsvp' || route === '/rsvp/attending') expect(html, route).toContain('Eve');
+    expect(html, route).not.toContain('Testhouse');
+    expect(html, route).not.toContain('Dev Fixture');
+  }
   await ctx.close();
 });
 

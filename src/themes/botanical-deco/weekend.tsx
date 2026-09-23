@@ -6,6 +6,7 @@ import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { Badge } from '@/components/rsvp/fields';
 import { RsvpForm, type RsvpFormProps } from '@/components/rsvp/RsvpForm';
+import { replyLabel, RsvpTaskList } from '@/components/rsvp/RsvpTaskList';
 import { formatDeadline } from '@/domain/events/format';
 import { GuestNotice } from './guest';
 import { DateTile } from './kit/content';
@@ -66,36 +67,33 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
           ) : null}
         </p>
       </header>
+      {/* The task list below says where each part stands; a count beside the name as well said it twice. */}
       <p className="bd-reply__status">
-        <span className="bd-reply__household">{data.greeting.householdName}</span> <RsvpStatus rsvp={data.rsvp} />
+        <span className="bd-reply__household">{data.greeting.householdName}</span>
+        {!reply && w.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? null : <> <RsvpStatus rsvp={data.rsvp} /></>}
       </p>
       {reply ? (
         <>
           <p className="bd-reply__intro">We would be honored to have you with us. Please tell us your plans for each event below.</p>
+          {/* Not interactive (the form is right here), but it shows a first-time guest every part of
+              the reply — including the ones that open later — before they start. */}
+          <RsvpTaskList parts={data.rsvp.parts} interactive={false} idPrefix="reply-task" labelledBy="reply-title" />
           <RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" />
         </>
-      ) : w.open && data.rsvp.canAnswer ? (
+      ) : w.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? (
         <>
-          <ul className="bd-reply__answers">
-            {data.events.map((e) => (
-              <li key={e.id} className="bd-reply__answer">
-                <span className="bd-reply__event">{e.name}</span>
-                <span className="bd-reply__who">
-                  {e.household
-                    .filter((h) => h.isSelf || data.rsvp.scope === 'household')
-                    .map((h) => (h.status === 'accepted' ? 'Attending' : h.status === 'declined' ? 'Not attending' : 'No answer yet'))
-                    .join(', ')}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* The profile's view of the reply: each part of it, what is done and what opens later.
+              The event-by-event answers are in the itinerary beside it. */}
+          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
           <p>
             <Link className="bd-btn bd-btn--primary bd-reply__submit" href="/rsvp">
-              {data.rsvp.status === 'not_started' ? 'RSVP now' : 'Review or change your RSVP'}
+              {replyLabel(data.rsvp)}
             </Link>
           </p>
         </>
-      ) : w.reason === 'lifecycle' ? (
+      ) : w.reason === 'lifecycle' || (w.open && data.rsvp.canAnswer) ? (
+        // An open window for someone who may answer, with no part of the reply released yet, is
+        // "not open yet", never "closed".
         <p className="bd-reply__closed">RSVPs are not open yet — Sara and Tyler will send word when it is time to reply.</p>
       ) : (
         <p className="bd-reply__closed">
@@ -294,7 +292,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
           </p>
         </div>
         <p className="bd-wkhero__words" aria-hidden="true">
-          <span>Good</span> <span>people</span> <span>beautiful</span> <span>places</span> <span>great</span> <span>love</span>
+          <span>Love</span> <span>peace</span> <span>happiness</span>
         </p>
         <Botanical id="botanical.corner-tl" className="bd-bloom--pagehero" priority />
         <div className="bd-wkhero__copy">
@@ -304,7 +302,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
             in Chicago
           </p>
           <span className="bd-head__rule" aria-hidden="true" />
-          <p className="bd-wkhero__sub">Great people. Beautiful places. Brighter together.</p>
+          <p className="bd-wkhero__sub">Love, peace &amp; happiness.</p>
         </div>
       </section>
 
@@ -322,7 +320,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
           ))}
         </ul>
         <p className="bd-tabs__words" aria-hidden="true">
-          Chicago <span>+</span> People <span>+</span> Love <span>+</span> Brighter together
+          Love <span>+</span> Peace <span>+</span> Happiness <span>+</span> Chicago
         </p>
       </nav>
 

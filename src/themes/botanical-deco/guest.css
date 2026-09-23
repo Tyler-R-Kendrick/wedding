@@ -124,10 +124,17 @@
  * Ask only what the answer calls for. A meal and a guest of their own matter only once someone is
  * coming, and a guest's name and meal only once there is a guest. Without :has() every field shows,
  * as it did before; the server still validates either way.
+ *
+ * Only in a card that ASKS whether someone is coming. The parts of an RSVP open separately, so a
+ * card on the meals page has no attendance question at all — the guest is already coming — and
+ * "not :checked" is true of a radio that does not exist: every meal select on that page vanished.
  */
-[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > .fld:has(select),
-[data-theme="botanical-deco"] .bd-gcard:not(:has(.choice input[value="accepted"]:checked)) > fieldset.fld:has(input[type="checkbox"]),
 [data-theme="botanical-deco"] fieldset.fld:has(> .choice__opt input[type="checkbox"]:not(:checked)) > .fld {
+  display: none;
+}
+
+[data-theme="botanical-deco"] .bd-gcard:has(.choice input[value="accepted"]):not(:has(.choice input[value="accepted"]:checked)) > .fld:has(select),
+[data-theme="botanical-deco"] .bd-gcard:has(.choice input[value="accepted"]):not(:has(.choice input[value="accepted"]:checked)) > fieldset.fld:has(input[type="checkbox"]) {
   display: none;
 }
 
@@ -527,6 +534,14 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* The RSVP task list's "to do" status wears the design's selected-choice Moss, the same fill a
+   chosen answer has in the form below it. */
+[data-theme="botanical-deco"] .tasks .badge--pending {
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
 }
 
 /* The reply: an invitation card, the one action that matters most before the day. */

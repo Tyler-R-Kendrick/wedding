@@ -179,7 +179,11 @@ export interface ContentKit {
   /** Label/value facts as a definition list. */
   MetaList: (p: { items: { label: string; value: ReactNode }[] }) => ReactNode;
   /** Our Adventures archive entries (`article[data-adventure]`). */
-  AdventureList: (p: { items: AdventureCard[] }) => ReactNode;
+  /**
+   * `onMap`: the ids the page's atlas has pinned. When given, rows are numbered to match their pins,
+   * a pinned row offers "Show on the map", and an unpinned one says it is not on the map yet.
+   */
+  AdventureList: (p: { items: AdventureCard[]; onMap?: ReadonlySet<string> }) => ReactNode;
   /**
    * The practical card (`article[data-recommendation]`) with handoffs and the memory layer.
    * `headingLevel` places the card in the page's outline: 2 when the card is the page's subject,

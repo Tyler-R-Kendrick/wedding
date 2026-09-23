@@ -12,6 +12,9 @@ Do not edit between the markers; edit the code and regenerate.
 | `GUEST_UPLOADS` | on | no | `FLAG_GUEST_UPLOADS=off` |
 | `MEDIA_SEMANTIC_SEARCH` | on | no | `FLAG_MEDIA_SEMANTIC_SEARCH=off` |
 | `PRO_MEDIA_AI_PROCESSING` | **off** | yes — legal gate | `FLAG_PRO_MEDIA_AI_PROCESSING=on` **and** the readiness switch on `/admin/flags` |
+| `RSVP_ATTENDANCE` | on | no | `FLAG_RSVP_ATTENDANCE=off` |
+| `RSVP_MEALS` | **off** | no | `FLAG_RSVP_MEALS=on` |
+| `RSVP_PLUS_ONES` | on | no | `FLAG_RSVP_PLUS_ONES=off` |
 | `TRANSPORT_BENEFITS` | on | no | `FLAG_TRANSPORT_BENEFITS=off` |
 | `TRAVEL_LIVE_SEARCH` | on | no | `FLAG_TRAVEL_LIVE_SEARCH=off` |
 | `WEBMCP` | on | no | `FLAG_WEBMCP=off` |

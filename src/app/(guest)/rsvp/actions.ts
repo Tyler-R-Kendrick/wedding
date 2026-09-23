@@ -1,10 +1,11 @@
 'use server';
 
 import { invoke } from '@/capabilities';
-import { draftRsvp, submitRsvp, type SubmitRsvpInput } from '@/capabilities/rsvp';
+import { draftRsvp, submitRsvp } from '@/capabilities/rsvp';
 import { submitInputSchema } from '@/capabilities/rsvp/schemas';
 import { ID_PATTERN, newId } from '@/contracts/ids';
-import { fieldNames, type RsvpFormState } from '@/components/rsvp/types';
+import { RSVP_PARTS, type RsvpPart } from '@/domain/rsvp/parts';
+import { fieldNames, type RsvpFormState, type RsvpFormValues } from '@/components/rsvp/types';
 import { uiContext } from '../_shared/principal';
 
 const RETRY = 'We could not save that just now. Please try again in a moment — and if it keeps happening, reach Sara and Tyler directly.';
@@ -16,39 +17,46 @@ const str = (fd: FormData, key: string): string | null => {
   return t.length ? t : null;
 };
 
-/** Rebuilds the draft input from the form. Only (guest, event) pairs with an answer are included. */
+const ROW_FIELD = /^(status|meal|p1|p1name|p1meal):([^:]+):([^:]+)$/;
+
+/**
+ * Rebuilds the draft input from the form. A form asks only some parts of the RSVP (`parts`, one
+ * hidden input each), so a row is whatever (guest, event) any rendered field names: the meals page
+ * has no attendance radios, and its rows are built from the meal selects alone. When attendance IS
+ * asked, a person left unanswered is left out, as before — a partial household reply is allowed.
+ */
 function parseDraft(fd: FormData) {
-  const responses: Array<{ guestId: string; eventId: string; status: 'accepted' | 'declined'; mealOptionId: string | null; plusOne: { attending: boolean; name: string | null; mealOptionId: string | null } | null }> = [];
-  const needs: Array<{ guestId: string; dietary: string | null; accessibility: string | null }> = [];
+  const parts = fd.getAll('parts').filter((p): p is RsvpPart => typeof p === 'string' && (RSVP_PARTS as readonly string[]).includes(p));
+  const asksAttendance = parts.length === 0 || parts.includes('attendance');
+  const rows = new Map<string, { guestId: string; eventId: string }>();
   const guests = new Set<string>();
   for (const key of new Set([...fd.keys()])) {
-    const m = /^status:([^:]+):([^:]+)$/.exec(key);
+    const m = ROW_FIELD.exec(key);
     if (m) {
-      const [, g, e] = m as unknown as [string, string, string];
-      if (!ID_PATTERN.test(g) || !ID_PATTERN.test(e)) continue;
-      const status = str(fd, key);
-      if (status !== 'accepted' && status !== 'declined') continue;
-      const wantsPlusOne = str(fd, fieldNames.plusOne(g, e)) === 'yes';
-      const hasPlusOneFields = fd.has(fieldNames.plusOne(g, e)) || fd.has(fieldNames.plusOneName(g, e)) || fd.has(fieldNames.plusOneMeal(g, e));
-      responses.push({
-        guestId: g,
-        eventId: e,
-        status,
-        mealOptionId: str(fd, fieldNames.meal(g, e)),
-        plusOne: hasPlusOneFields ? { attending: wantsPlusOne, name: str(fd, fieldNames.plusOneName(g, e)), mealOptionId: str(fd, fieldNames.plusOneMeal(g, e)) } : null,
-      });
-      guests.add(g);
+      const [, , g, e] = m as unknown as [string, string, string, string];
+      if (ID_PATTERN.test(g) && ID_PATTERN.test(e)) rows.set(`${g}:${e}`, { guestId: g, eventId: e });
       continue;
     }
     const n = /^(dietary|accessibility):([^:]+)$/.exec(key);
     if (n && ID_PATTERN.test(n[2]!)) guests.add(n[2]!);
   }
-  for (const g of guests) {
-    const dietary = str(fd, fieldNames.dietary(g));
-    const accessibility = str(fd, fieldNames.accessibility(g));
-    if (fd.has(fieldNames.dietary(g)) || fd.has(fieldNames.accessibility(g))) needs.push({ guestId: g, dietary, accessibility });
+  const responses: Array<{ guestId: string; eventId: string; status: 'accepted' | 'declined' | null; mealOptionId: string | null; plusOne: { attending: boolean; name: string | null; mealOptionId: string | null } | null }> = [];
+  for (const { guestId: g, eventId: e } of rows.values()) {
+    const raw = str(fd, fieldNames.status(g, e));
+    const status = raw === 'accepted' || raw === 'declined' ? raw : null;
+    if (asksAttendance && !status) continue;
+    const hasPlusOneFields = fd.has(fieldNames.plusOne(g, e)) || fd.has(fieldNames.plusOneName(g, e)) || fd.has(fieldNames.plusOneMeal(g, e));
+    responses.push({
+      guestId: g,
+      eventId: e,
+      status,
+      mealOptionId: str(fd, fieldNames.meal(g, e)),
+      plusOne: hasPlusOneFields ? { attending: str(fd, fieldNames.plusOne(g, e)) === 'yes', name: str(fd, fieldNames.plusOneName(g, e)), mealOptionId: str(fd, fieldNames.plusOneMeal(g, e)) } : null,
+    });
   }
-  return { responses, needs };
+  const needs: Array<{ guestId: string; dietary: string | null; accessibility: string | null }> = [];
+  for (const g of guests) needs.push({ guestId: g, dietary: str(fd, fieldNames.dietary(g)), accessibility: str(fd, fieldNames.accessibility(g)) });
+  return { ...(parts.length ? { parts } : {}), responses, needs };
 }
 
 /** Maps capability issue paths (`responses.2.plusOne.name`) onto form field names. */
@@ -82,10 +90,8 @@ function mapIssues(issues: Array<{ path: string; message: string }>, input: Retu
   return { errors, messages };
 }
 
-const toValues = (input: ReturnType<typeof parseDraft>): SubmitRsvpInput => ({
-  responses: input.responses.map((r) => ({ ...r, plusOne: r.plusOne ?? null })),
-  needs: input.needs,
-});
+/** What to re-fill the form with after a failed draft: exactly what the guest entered. */
+const toValues = (input: ReturnType<typeof parseDraft>): RsvpFormValues => ({ responses: input.responses, needs: input.needs });
 
 /** One action, three intents: draft (review), confirm (submit), edit (back to the form). */
 export async function rsvpAction(_prev: RsvpFormState, fd: FormData): Promise<RsvpFormState> {
