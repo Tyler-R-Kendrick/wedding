@@ -19,7 +19,7 @@ the private identity inputs stay in the private handoff bundle.
 | `couple.hero.explore` (+ `.mobile`) | Explore hero | ≈ 2.08 / 1.34 | The two together by the Chicago River at dusk with the city lit; Tyler in a suit and tie. |
 | `couple.hero.weekend` (+ `.mobile`) | Your Weekend header | ≈ 1.70 / 1.22 | The same riverfront setting as the Home hero, a different moment; compact. |
 | `couple.story.monochrome` | Home strip, Story spread | ≈ 1.39 (square crop used on Story) | Black-and-white: Sara looking up at Tyler, both smiling, soft light. |
-| `couple.lakefront` | Home band, Story strip | ≈ 2.0 | Sara and Tyler on the Lake Michigan shore near the Adler, the skyline across the water; casual clothes. |
+| ~~`couple.lakefront`~~ | removed | — | Retired at the couple's request: the interim crop was upscaled from a thumbnail in the mockup and read as heavily AI-edited. Home and Our Story now use the licensed lakefront photograph (`city.lakefront-adler`). Do not bring the slot back without a real photograph or a Soul-consistent generation the couple approves. |
 
 First-meeting clothing, if a story image of the wedding where they met is made: Tyler in a
 blue-and-white striped seersucker button-down, sleeves rolled, red/burgundy shorts; Sara in the

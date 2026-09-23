@@ -707,18 +707,23 @@
 }
 
 /* ---------- home hero ---------- */
+
+/* The one registered property on the page: lets the hero's day count run up from zero once. */
+@property --bd-shown {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
 .bd-hero {
   position: relative;
   display: grid;
-  overflow: clip;
   background: var(--color-neutral);
   border-block-end: var(--bd-hair);
 }
 
 .bd-hero__media {
   position: relative;
-  aspect-ratio: 500 / 407;
-  max-block-size: 56svh;
   overflow: hidden;
 }
 
@@ -727,10 +732,6 @@
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-}
-
-.bd-hero__words {
-  display: none;
 }
 
 .bd-hero__copy {
@@ -751,7 +752,7 @@
 
 .bd-hero__title {
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 1.5rem + 2.6vw, 3.25rem);
+  font-size: clamp(2.5rem, 1.2rem + 3.4vw, 4.25rem);
   font-weight: var(--type-display-xl-weight);
   line-height: var(--type-display-xl-line);
   letter-spacing: var(--type-display-xl-tracking);
@@ -835,6 +836,64 @@
   letter-spacing: 0.06em;
 }
 
+/* The day count: a Sheet plate with a gold hairline and stepped corners, over the portrait's lower
+   right where there is only suit and railing. */
+.bd-hero__count {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 18px 12px;
+  background: var(--color-surface);
+  border: var(--bd-gold-hair);
+  box-shadow: 0 0 0 4px var(--color-surface), 0 0 0 5px color-mix(in oklab, var(--color-gold) 55%, transparent);
+  text-align: center;
+}
+
+.bd-countdown--hero {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+}
+
+.bd-countdown--hero .bd-countdown__num {
+  --bd-shown: var(--bd-days);
+
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.6rem + 2.6vw, 4.5rem);
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--color-primary);
+}
+
+.bd-countdown__digits::after {
+  content: counter(bd-days);
+  counter-reset: bd-days var(--bd-shown);
+}
+
+.bd-countdown--hero .bd-countdown__label {
+  font-family: var(--font-text);
+  font-size: var(--type-control-caps-size);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.bd-hero__theme {
+  display: none;
+  margin: 0;
+  padding-block-start: 10px;
+  border-block-start: var(--bd-gold-hair);
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
 /* The corner cluster, turned to rise from the bottom-left of the invitation. */
 .bd-bloom--hero-left {
   inset-inline-start: 0;
@@ -844,31 +903,40 @@
   scale: 1 -1;
 }
 
-.bd-bloom--hero-right {
-  z-index: 3;
-  inset-inline-end: 0;
-  inset-block-end: -6px;
-  inline-size: clamp(80px, 9vw, 150px);
-  block-size: auto;
-}
-
-@media (width < 768px) {
+/* Stacked below 1100px: side by side any narrower, the invitation ran across Sara's face. */
+@media (width < 1100px) {
   .bd-bloom--hero-left {
-    inset-block-end: 0;
     inline-size: 52px;
     opacity: 0.9;
   }
 
-  .bd-bloom--hero-right {
-    display: none;
-  }
-
   /* A short phone (iPhone 14 in a browser: 390 x 664) must still show the names, the date, the
      place and the first action before the action bar; the portrait gives up height, not faces. */
+  .bd-hero {
+    --bd-hero-photo: min(81vw, 35svh);
+  }
+
+  /* A tablet has the height a phone does not: the whole portrait, not a letterbox of it. */
+  @media (width >= 768px) {
+    .bd-hero {
+      --bd-hero-photo: min(56vw, 60svh);
+    }
+  }
+
   .bd-hero__media {
-    aspect-ratio: auto;
-    block-size: min(81vw, 35svh);
-    max-block-size: none;
+    block-size: var(--bd-hero-photo);
+  }
+
+  /* On the phone the plate sits on the photograph's lower corner, never over the invitation. */
+  .bd-hero__count {
+    inset-block-start: calc(var(--bd-hero-photo) - 12px);
+    inset-inline-end: var(--bd-gutter);
+    translate: 0 -100%;
+    padding: 8px 12px 6px;
+  }
+
+  .bd-countdown--hero .bd-countdown__num {
+    font-size: 2.25rem;
   }
 
   .bd-hero .bd-head__rule {
@@ -893,70 +961,38 @@
   }
 }
 
-@media (width >= 768px) {
+@media (width >= 1100px) {
   .bd-hero {
-    grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
-    min-block-size: clamp(430px, 31vw, 480px);
+    grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+    min-block-size: clamp(540px, 46vw, 700px);
   }
 
   .bd-hero__media {
     position: absolute;
     inset-block: 0;
-    inset-inline: 32% 0;
-    aspect-ratio: auto;
-    max-block-size: none;
+    inset-inline: max(34%, 480px) 0;
 
     /* The portrait dissolves into the paper under the invitation: faces stay clear of every word. */
-    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 20%);
+    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 16%);
   }
 
   .bd-hero__copy {
     grid-column: 1;
-    padding-block: var(--spacing-xl);
+    padding-block: var(--spacing-xl) calc(var(--spacing-xl) * 1.5);
     padding-inline: clamp(24px, 6.4vw, 104px) var(--spacing-md);
   }
+
+  .bd-hero__count {
+    inset-inline-end: clamp(20px, 3.5vw, 56px);
+    inset-block-end: clamp(20px, 3.5vw, 48px);
+    padding: 18px 26px 16px;
+  }
+
 }
 
-@media (width >= 1100px) {
-  .bd-hero__media {
-    inset-inline: 34% 12.5%;
-    mask-image: linear-gradient(to right, transparent 0, var(--color-primary) 18%, var(--color-primary) 94%, transparent);
-  }
-
-  .bd-hero__words {
-    position: absolute;
-    z-index: 2;
-    inset-block: 0;
-    inset-inline-end: 0;
-    display: grid;
-    align-content: center;
-    justify-items: start;
-    gap: 2px;
-    inline-size: 13.5%;
-    padding-inline: clamp(12px, 1.8vw, 36px);
-    background:
-      linear-gradient(90deg, color-mix(in oklab, var(--color-champagne) 22%, var(--color-neutral-variant)), var(--color-neutral-variant));
-    border-inline-start: var(--bd-gold-hair);
-    font-family: var(--font-display);
-
-    /* aria-hidden carving: scaled with its 13.5% column so "beautiful" is never cut at 1100-1280. */
-    font-size: clamp(var(--type-label-caps-size), 0.1rem + 0.95vw, 1.125rem);
-    letter-spacing: clamp(0.08em, -0.1em + 0.25vw, 0.2em);
-    line-height: 1.5;
-    text-transform: uppercase;
-    color: var(--color-tertiary);
-  }
-
-  .bd-hero__words > span {
+@media (width >= 768px) {
+  .bd-hero__theme {
     display: block;
-  }
-
-  .bd-hero__words::after {
-    content: "";
-    inline-size: 40px;
-    block-size: 1px;
-    margin-block-start: var(--spacing-sm);
-    background: var(--color-gold);
   }
 }
 
@@ -1756,160 +1792,267 @@
   color: var(--color-on-moss);
 }
 
-/* ---------- home: the editorial strip ---------- */
-.bd-strip {
+/* ---------- home: the theme ---------- */
+
+/* Air first: the page used to go straight from the opening into a four-column strip. The theme gets
+   the width to itself, with the introduction pinned while its three words come in beside it. */
+.bd-theme {
+  position: relative;
+  padding-block: clamp(72px, 12vw, 160px);
+  overflow: clip;
+}
+
+.bd-theme__inner {
+  display: grid;
+  gap: var(--spacing-xl);
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: max(var(--bd-gutter), 52px) var(--bd-gutter);
+}
+
+.bd-theme__intro {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: var(--spacing-sm);
+}
+
+.bd-theme__title {
+  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  line-height: 1.04;
+}
+
+.bd-theme__lede {
+  max-width: 30rem;
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-theme__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-theme__item {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-sm);
+  padding-block: clamp(32px, 7vw, 88px);
+}
+
+.bd-theme__item + .bd-theme__item {
+  border-block-start: var(--bd-hair);
+}
+
+.bd-theme__word {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 1.8rem + 5vw, 6rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  color: var(--color-primary);
+}
+
+.bd-theme__rule {
+  display: block;
+  inline-size: 72px;
+  block-size: 1px;
+  background: var(--color-gold);
+  transform-origin: left center;
+}
+
+.bd-theme__line {
+  max-width: 32rem;
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-bloom--theme {
+  inset-inline-start: 0;
+  inset-block-start: clamp(56px, 10vw, 140px);
+  inline-size: clamp(44px, 5vw, 88px);
+
+  /* The interim cut-out keeps flecks of mockup above the sprig; the flowers start below them. */
+  clip-path: inset(9% 0 0 0);
+}
+
+@media (width >= 900px) {
+  .bd-theme__inner {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(48px, 7vw, 120px);
+    padding-inline: clamp(96px, 8vw, 128px) var(--bd-gutter);
+  }
+
+  /* Pinned under the top of the window while the three words scroll past it. */
+  .bd-theme__intro {
+    position: sticky;
+    inset-block-start: clamp(48px, 12vh, 120px);
+    align-self: start;
+  }
+
+  .bd-theme__item {
+    min-block-size: min(46svh, 420px);
+    align-content: center;
+  }
+
+  .bd-theme__item:first-child {
+    padding-block-start: 0;
+  }
+}
+
+/* ---------- home: what we want to share ---------- */
+.bd-share {
+  display: grid;
+  gap: clamp(64px, 10vw, 144px);
+  padding-block: clamp(64px, 10vw, 128px) clamp(72px, 12vw, 160px);
+  background: var(--color-surface);
+  border-block: var(--bd-hair);
+}
+
+.bd-share__head {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-sm);
+  inline-size: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
+}
+
+.bd-share__title {
+  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  line-height: 1.04;
+}
+
+.bd-share__item {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr;
-  max-width: var(--bd-max);
+  gap: var(--spacing-lg);
+  inline-size: 100%;
+  max-width: 1200px;
   margin-inline: auto;
-  background: var(--color-surface);
-  border-block-end: var(--bd-hair);
+  padding-inline: var(--bd-gutter);
 }
 
-.bd-strip > * {
-  position: relative;
-  min-width: 0;
+.bd-share__photo {
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-neutral-variant);
 }
 
-.bd-strip__welcome {
+/* Each photograph at its own proportions: nothing is cut to fit a tile. */
+.bd-share__photo img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  transition: transform var(--duration-reveal) var(--ease-settle);
+}
+
+.bd-share__body {
   display: grid;
   align-content: center;
   justify-items: start;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xl) var(--bd-gutter) var(--spacing-xl) max(var(--bd-gutter), 72px);
-  background: var(--color-neutral);
-  overflow: clip;
 }
 
-.bd-strip__headline {
-  font-size: clamp(1.875rem, 1.3rem + 0.9vw, 2.25rem);
-  text-wrap: wrap;
-  line-height: 1.04;
-  margin-block-end: var(--spacing-sm);
-}
-
-.bd-strip__text {
-  max-width: 26rem;
-  color: var(--color-on-surface-muted);
-}
-
-.bd-strip__sign {
-  margin-block-start: var(--spacing-sm);
-  font-size: clamp(2rem, 1.6rem + 1vw, 2.5rem);
-  transform: rotate(-4deg);
-  transform-origin: left center;
-}
-
-.bd-bloom--strip {
-  inset-inline-start: 0;
-  inset-block-start: 50%;
-  translate: 0 -50%;
-  inline-size: clamp(52px, 6vw, 88px);
-
-  /* The interim cut-out keeps a sliver of mockup at its top edge; the flowers start below it. */
-  clip-path: inset(7% 0 0 0);
-}
-
-.bd-bloom--strip-right {
-  z-index: 2;
-  inset-inline-end: 0;
-  inset-block-end: 0;
-  inline-size: clamp(64px, 8vw, 123px);
-}
-
-.bd-strip__tile {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  border-block-start: var(--bd-hair);
-}
-
-.bd-strip__photo {
-  display: block;
-  overflow: hidden;
-}
-
-.bd-strip__photo img {
-  display: block;
-  inline-size: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  transition: transform var(--duration-reveal) var(--ease-settle);
-}
-
-.bd-strip__body {
-  display: grid;
-  align-content: start;
-  justify-items: start;
-  gap: 6px;
-  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-xl);
-}
-
-.bd-strip__body > p:not([class]) {
-  color: var(--color-on-surface-muted);
+.bd-share__body > p:not([class]) {
   max-width: 30rem;
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
 }
 
-.bd-strip__title {
+.bd-share__name {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 1.3rem + 0.6vw, 2rem);
+  font-size: clamp(1.875rem, 1.3rem + 1.6vw, 2.75rem);
   font-weight: 400;
-  line-height: 1.1;
+  line-height: 1.08;
 }
 
-@media (width >= 768px) {
-  .bd-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .bd-strip__tile {
-    border-inline-start: var(--bd-hair);
-  }
+/* The city runs edge to edge: a panorama, shown whole on wide screens. */
+.bd-share__item--city {
+  max-width: none;
+  padding-inline: 0;
 }
 
-@media (width >= 1100px) {
-  .bd-strip {
-    grid-template-columns: minmax(0, 29fr) minmax(0, 21fr) minmax(0, 23fr) minmax(0, 27fr);
+.bd-share__item--city img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.bd-share__item--city .bd-share__body {
+  padding-inline: var(--bd-gutter);
+}
+
+@media (width >= 900px) {
+  .bd-share__item {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: center;
+    gap: var(--spacing-lg);
   }
 
-  .bd-strip__tile {
-    border-block-start: 0;
+  .bd-share__item--story .bd-share__photo {
+    grid-column: 1 / span 7;
   }
 
-  .bd-strip__photo img {
+  .bd-share__item--story .bd-share__body {
+    grid-column: 9 / -1;
+  }
+
+  /* The building, taller and narrower, on the other side and set lower than its text. */
+  .bd-share__item--venue .bd-share__photo {
+    grid-column: 7 / -1;
+    grid-row: 1;
+    margin-block-start: clamp(40px, 6vw, 96px);
+  }
+
+  .bd-share__item--venue .bd-share__body {
+    grid-column: 1 / span 5;
+    grid-row: 1;
+    padding-inline-start: clamp(0px, 4vw, 64px);
+  }
+
+  .bd-share__item--city {
+    display: block;
+  }
+
+  .bd-share__item--city img {
     aspect-ratio: auto;
-    block-size: clamp(190px, 15vw, 220px);
+    max-block-size: 70svh;
+    object-fit: cover;
   }
 
-  .bd-strip__tile--story .bd-strip__photo img {
-    block-size: clamp(210px, 16.5vw, 240px);
-  }
-
-  .bd-strip__welcome {
-    padding-inline: clamp(72px, 6vw, 88px) var(--spacing-lg);
-  }
-
-  /* Four columns share the width; below 1440px the tiles give their links the room to stay whole. */
-  .bd-strip__body {
-    padding-inline: clamp(var(--spacing-md), 3.2vw - 24px, var(--spacing-lg));
+  /* A Sheet plate lifted over the water's lower left, like a caption card laid on a print. */
+  .bd-share__body--plate {
+    position: relative;
+    z-index: 1;
+    max-width: 30rem;
+    margin-block-start: clamp(-120px, -8vw, -64px);
+    margin-inline-start: max(var(--bd-gutter), calc((100vw - 1200px) / 2 + var(--bd-gutter)));
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl) !important;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
+    border-block-start: 2px solid var(--color-gold);
   }
 }
 
 /* ---------- home: the band ---------- */
 .bd-band {
-  display: grid;
-  grid-template-columns: 1fr;
-  max-width: var(--bd-max);
-  margin-inline: auto;
-  border-block-end: var(--bd-hair);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
 }
 
 .bd-schedule {
   position: relative;
   display: grid;
   gap: var(--spacing-lg);
-  padding: var(--spacing-xl) var(--bd-gutter);
-  background: var(--color-moss);
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: clamp(64px, 9vw, 120px) var(--bd-gutter);
   color: var(--color-on-moss);
   overflow: clip;
 }
@@ -1955,7 +2098,7 @@
 .bd-schedule__list {
   display: grid;
   align-content: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1990,12 +2133,13 @@
 }
 
 .bd-schedule__row + .bd-schedule__row {
-  padding-block-start: var(--spacing-sm);
+  padding-block-start: var(--spacing-md);
+  border-block-start: 1px solid color-mix(in oklab, var(--color-gilt) 35%, transparent);
 }
 
 .bd-schedule__name {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   line-height: 1.2;
 }
 
@@ -2003,10 +2147,6 @@
   font-size: var(--type-body-sm-size);
   font-style: italic;
   line-height: 1.35;
-}
-
-.bd-schedule__count {
-  font-size: var(--type-body-sm-size);
 }
 
 /* The one typed placeholder on the moss: the provenance block reads its fill, ink and boundary from
@@ -2020,70 +2160,66 @@
   margin: 0;
 }
 
-.bd-band__photo {
-  position: relative;
-  min-block-size: 240px;
-  overflow: hidden;
+@media (width >= 900px) {
+  .bd-schedule {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: var(--spacing-md) clamp(48px, 6vw, 96px);
+    padding-inline: clamp(120px, 10vw, 152px) var(--bd-gutter);
+  }
+
+  .bd-schedule__intro {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  :is(.bd-schedule__day-block, .bd-schedule__todo) {
+    grid-column: 2;
+  }
+
+  .bd-schedule .bd-decoframe {
+    display: grid;
+    inset-block: clamp(40px, 6vw, 80px);
+    inset-inline-start: var(--bd-gutter);
+  }
 }
 
-.bd-band__photo :is(picture, img) {
-  display: block;
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-}
-
-.bd-band__script {
-  position: absolute;
-  inset-block-start: 4%;
-  inset-inline-start: 4%;
-  max-inline-size: 7.5rem;
-  font-family: var(--font-accent);
-  font-size: clamp(1.875rem, 1.5rem + 0.8vw, 2.375rem);
-  line-height: 0.9;
-  color: var(--color-gold-deep);
-  text-shadow: 0 0 10px var(--color-surface), 0 0 22px var(--color-surface);
-  transform: rotate(-12deg);
-  text-wrap: balance;
-}
-
-.bd-band__gallery {
-  position: relative;
+/* ---------- home: the closing invitation ---------- */
+.bd-closing {
   display: grid;
-  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xl) var(--bd-gutter);
-  background: var(--color-surface);
-  overflow: clip;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: clamp(72px, 10vw, 136px) var(--bd-gutter);
 }
 
-.bd-band__gallery-text {
-  position: relative;
-  z-index: 2;
+.bd-closing__text {
   display: grid;
   justify-items: start;
-  gap: 6px;
+  gap: var(--spacing-sm);
 }
 
-.bd-band__gallery-text > p:not([class]) {
+.bd-closing__title {
+  font-size: clamp(2rem, 1.3rem + 2vw, 3rem);
+  line-height: 1.06;
+}
+
+.bd-closing__text > p:not([class]) {
+  max-width: 30rem;
   color: var(--color-on-surface-muted);
-  max-width: 17rem;
 }
 
-.bd-bloom--band {
-  inset-inline-end: 0;
-  inset-block-start: 0;
-  inline-size: clamp(72px, 7vw, 104px);
-  opacity: 0.95;
+.bd-closing__sign {
+  margin-block-start: var(--spacing-md);
+  font-size: clamp(2.25rem, 1.8rem + 1.2vw, 3rem);
+  transform: rotate(-4deg);
+  transform-origin: left center;
 }
 
-.bd-band__words {
-  display: none;
-}
-
-/* The still life beside the gallery invitation (PX-08): a paper tile holding a painted cluster. */
-.bd-band__still {
+/* The painted cluster, shown whole on its paper instead of cropped to a tile. */
+.bd-closing__still {
   display: none;
   margin: 0;
 }
@@ -2091,113 +2227,19 @@
 .bd-bloom--still {
   position: static;
   inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-  object-position: left top;
+  block-size: auto;
 }
 
-@media (width >= 900px) {
-  .bd-band {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+@media (width >= 768px) {
+  .bd-closing {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    padding-inline: clamp(96px, 8vw, 128px) var(--bd-gutter);
   }
 
-  .bd-schedule {
-    grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    align-items: center;
-    gap: var(--spacing-sm) var(--spacing-lg);
-  }
-
-  .bd-schedule__intro {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    align-self: center;
-  }
-
-  :is(.bd-schedule__count, .bd-schedule__day-block, .bd-schedule__todo) {
-    grid-column: 2;
-  }
-
-  .bd-band__gallery {
-    grid-template-columns: minmax(0, 1fr) 120px;
-  }
-
-  .bd-band__gallery .bd-more {
-    white-space: nowrap;
-  }
-
-  .bd-band__still {
+  .bd-closing__still {
     display: block;
-    align-self: stretch;
-    margin-block: calc(var(--spacing-xl) * -1);
-    margin-inline-end: calc(var(--bd-gutter) * -1);
-    overflow: hidden;
-    background: var(--color-neutral);
-    border-inline-start: var(--bd-hair);
-  }
-
-  .bd-bloom--band {
-    display: none;
-  }
-}
-
-/* One line of moss, photograph and gallery only from 1280: at 1100 the three shared 1100px and every
-   line in the schedule wrapped two or three times. */
-@media (width >= 1280px) {
-  .bd-band {
-    grid-template-columns: minmax(0, 46fr) minmax(0, 22fr) minmax(0, 32fr);
-    min-block-size: 250px;
-  }
-
-  .bd-schedule {
-    grid-column: auto;
-    padding-block: var(--spacing-lg);
-    padding-inline: clamp(96px, 7.4vw, 112px) var(--spacing-lg);
-  }
-
-  .bd-schedule .bd-decoframe {
-    display: grid;
-    inset-block: 18px;
-    inset-inline-start: 22px;
-  }
-
-  .bd-band__words {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-end: 0;
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 4px;
-    inline-size: 118px;
-    border-inline-start: var(--bd-hair);
-
-    /* aria-hidden ornament, like the hero's carved words: the ornamental step (PX-22), tracked just
-       enough that the longest word ("adventure") fits its column instead of being clipped. */
-    font-size: var(--type-label-caps-size);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-on-surface-muted);
-  }
-
-  .bd-band__words > span {
-    display: block;
-  }
-
-  .bd-band__words::after {
-    content: "";
-    inline-size: 32px;
-    block-size: 1px;
-    margin-block-start: var(--spacing-sm);
-    background: var(--color-gold);
-  }
-
-  .bd-band__gallery {
-    padding-inline: var(--spacing-lg) 118px;
-  }
-
-  .bd-band__still {
-    margin-inline-end: 0;
+    justify-self: end;
+    inline-size: min(100%, 300px);
   }
 }
 
@@ -2317,15 +2359,6 @@
 .bd-schedule__title {
   font-size: clamp(1.875rem, 1.3rem + 0.8vw, 2.25rem);
   line-height: 1.05;
-}
-
-.bd-schedule :is(.bd-countdown, .bd-countdown__num, .bd-countdown__label) {
-  margin: 0;
-  color: inherit;
-}
-
-.bd-schedule .bd-countdown__num {
-  font-size: 1.25rem;
 }
 
 .bd-btn--moss {
@@ -4271,7 +4304,7 @@
   text-underline-offset: 0.2em;
 }
 
-.bd-strip__tile:hover .bd-strip__photo img {
+.bd-share__item:hover .bd-share__photo img {
   transform: scale(1.03);
 }
 
@@ -4281,7 +4314,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bd-places__tile:hover .bd-places__photo img,
-  .bd-strip__tile:hover .bd-strip__photo img {
+  .bd-share__item:hover .bd-share__photo img {
     transform: none;
   }
 }
@@ -4289,6 +4322,110 @@
 /* The concierge's introduction keeps the page's reading measure. */
 .bd .cq__intro {
   max-inline-size: 38rem;
+}
+
+/* ---------- motion: arrival and scroll ---------- */
+
+/*
+ * The page used to arrive all at once and stay still. Now the opening settles in on load (the
+ * portrait eases back from a slight zoom, the gold rules draw, the day count runs up once) and each
+ * later section plays its entrance once as it is scrolled to (kit/Reveal.tsx marks it): words rise
+ * into place, photographs open out from a narrower frame, the gold rules draw.
+ *
+ * Nothing on the first screen ever fades: an invitation that is briefly low-contrast, or a hero that
+ * is invisible for its first frames, costs grandparents legibility and costs everyone LCP. Nothing
+ * rests half-revealed, nothing bounces, and every step is opacity, translate, scale, clip-path or a
+ * transform on the compositor. Reduced motion, no scripting and print all get the page as drawn.
+ */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .bd-hero__media img {
+    animation: bd-settle 1.8s var(--ease-settle) both;
+  }
+
+  .bd-hero .bd-head__rule {
+    transform-origin: left center;
+    animation: bd-draw 0.9s var(--ease-settle) 0.2s both;
+  }
+
+  .bd-countdown--hero .bd-countdown__num {
+    animation: bd-count 1.6s var(--ease-settle) 0.3s both;
+  }
+
+  .bd [data-reveal-state="pending"] {
+    opacity: 0;
+    translate: 0 36px;
+  }
+
+  .bd [data-reveal-state="in"] {
+    animation: bd-reveal 0.9s var(--ease-settle) both;
+  }
+
+  .bd [data-reveal="photo"][data-reveal-state="pending"] {
+    translate: none;
+    clip-path: inset(10% 8% 10% 8%);
+  }
+
+  .bd [data-reveal="photo"][data-reveal-state="in"] {
+    animation: bd-unveil 1.3s var(--ease-settle) both;
+  }
+
+  .bd [data-reveal="photo"][data-reveal-state] img {
+    scale: 1.12;
+  }
+
+  .bd [data-reveal="photo"][data-reveal-state="in"] img {
+    animation: bd-zoom 1.8s var(--ease-settle) both;
+  }
+
+  .bd-theme__item[data-reveal-state="pending"] .bd-theme__rule {
+    transform: scaleX(0);
+  }
+
+  .bd-theme__item[data-reveal-state="in"] .bd-theme__rule {
+    animation: bd-draw 0.9s var(--ease-settle) 0.35s both;
+  }
+}
+
+@keyframes bd-settle {
+  from { scale: 1.06; }
+}
+
+@keyframes bd-count {
+  from { --bd-shown: 0; }
+}
+
+@keyframes bd-reveal {
+  from {
+    opacity: 0;
+    translate: 0 36px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes bd-unveil {
+  from {
+    opacity: 1;
+    clip-path: inset(10% 8% 10% 8%);
+  }
+
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+  }
+}
+
+@keyframes bd-zoom {
+  from { scale: 1.12; }
+  to { scale: 1; }
+}
+
+@keyframes bd-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 /* ---------- print ---------- */
@@ -4319,7 +4456,8 @@
   .bd-masthead__motto,
   .bd-journey__line,
   .bd-reader__steps,
-  .bd-band__still {
+  .bd-closing__still,
+  .bd-hero__count {
     display: none !important;
   }
 

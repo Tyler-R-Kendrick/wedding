@@ -17,7 +17,7 @@ import type {
 } from '@/themes/types';
 import { Botanical, Photo } from '../media';
 import { content, withTail } from './content';
-import { Countdown } from './Countdown';
+import { Countdown, HeroCountdown } from './Countdown';
 
 /*
  * Botanical–Deco kit: the design Sara and Tyler approved (docs/design/approved-botanical-deco/).
@@ -215,7 +215,7 @@ function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
       <div className="bd-footer__inner">
         <span className="bd-footer__skyline" aria-hidden="true" />
         <p className="bd-footer__motto">
-          Chicago <span aria-hidden="true">+</span> people <span aria-hidden="true">+</span> love <span aria-hidden="true">+</span> brighter together
+          Love <span aria-hidden="true">+</span> peace <span aria-hidden="true">+</span> happiness <span aria-hidden="true">+</span> Chicago
         </p>
         <p className="bd-footer__mark" aria-hidden="true">
           <span className="bd-footer__rule" />
@@ -613,27 +613,24 @@ export function Names({ names }: { names: string }) {
 }
 
 /**
- * Home's opening: the invitation on quiet ivory across the left two-fifths, Sara and Tyler on the
- * riverfront across the centre-right, the words from the bridge pillar on their own panel at the
- * right edge, flowers entering from both outer edges. Names, the wedding wording, the date, the
- * venue and the state's two actions are all live text; none of it sits on a face. On a phone the
- * portrait comes first in its own crop and the invitation directly under it, in the first screen.
- * The countdown and the state's travel note live in the schedule band below (see recipes/home).
+ * Home's opening: the invitation on quiet ivory across the left, Sara and Tyler on the riverfront
+ * across the rest, running to the page edge (the carved-words column that used to cut the portrait
+ * off at the right is gone), flowers entering from the lower left. Names, the wedding wording, the
+ * date, the venue and the state's two actions are all live text; none of it sits on a face.
+ *
+ * The day count is a plate set over the lower right of the portrait, clear of both faces: the one
+ * number every guest wants from the first screen. It carries the wedding's theme under a gold rule.
+ * On a phone the portrait comes first and the plate sits on its lower corner, so the invitation
+ * still starts directly under the photograph, in the first screen.
  */
-function Hero({ content, site, state }: HeroProps) {
+function Hero({ content, site, countdown, state }: HeroProps) {
   const isToday = state === 'WEDDING_DAY';
   return (
     <section className="bd-hero" aria-labelledby="hero-title">
       <div className="bd-hero__media">
-        <Photo id="couple.hero.formal" mobileId="couple.hero.formal.mobile" sizes="(min-width: 768px) 52vw, 100vw" priority />
+        <Photo id="couple.hero.formal" mobileId="couple.hero.formal.mobile" sizes="(min-width: 1100px) 66vw, 100vw" priority />
       </div>
-      {/* The approved image carved these words into a bridge pillar. Real architecture is not
-          relettered here: they are live type on a stone-coloured panel of their own. */}
-      <p className="bd-hero__words" aria-hidden="true">
-        <span>Good</span> <span>people</span> <span>beautiful</span> <span>places</span> <span>great</span> <span>love</span>
-      </p>
       <Botanical id="botanical.corner-tl" className="bd-bloom--hero-left" priority />
-      <Botanical id="botanical.edge-right" className="bd-bloom--hero-right" />
       <div className="bd-hero__copy">
         {/* The approved hero opens with a short tracked line above the names; here it is the one the
             handoff asks for near the names. See docs/design/approved-botanical-deco/detector-waivers.md. */}
@@ -670,6 +667,12 @@ function Hero({ content, site, state }: HeroProps) {
           ) : null}
         </p>
       </div>
+      {content.showCountdown ? (
+        <div className="bd-hero__count">
+          <HeroCountdown {...countdown} />
+          <p className="bd-hero__theme">Love, peace &amp; happiness</p>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -678,12 +681,12 @@ export interface PageHeroProps {
   eyebrow?: string;
   /** The page's one H1. */
   title: ReactNode;
-  /** Tracked lines under the gold rule ("Sara + Tyler", "Same people. A bigger chapter."). */
+  /** Tracked lines under the gold rule ("Sara + Tyler", "Love, peace & happiness"). */
   sub?: string[];
   lede?: ReactNode;
   photo: string;
   mobilePhoto?: string;
-  /** The bridge-pillar words, set as live type on a panel at the right edge. */
+  /** The theme words (love, peace, happiness), set as live type on a panel at the right edge. */
   words?: string[];
   actions?: ReactNode;
   /** A single decorative handwritten line over the photograph; the words also appear as text. */

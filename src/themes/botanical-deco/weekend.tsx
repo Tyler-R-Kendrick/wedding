@@ -294,7 +294,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
           </p>
         </div>
         <p className="bd-wkhero__words" aria-hidden="true">
-          <span>Good</span> <span>people</span> <span>beautiful</span> <span>places</span> <span>great</span> <span>love</span>
+          <span>Love</span> <span>peace</span> <span>happiness</span>
         </p>
         <Botanical id="botanical.corner-tl" className="bd-bloom--pagehero" priority />
         <div className="bd-wkhero__copy">

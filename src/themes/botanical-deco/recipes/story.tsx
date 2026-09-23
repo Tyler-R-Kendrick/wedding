@@ -30,9 +30,9 @@ const { ProseBlock, StatusFlags, Provenance } = content;
  * place under the wrong name.
  */
 const MEMORIES = [
-  { ids: ['couple.lakefront'], kicker: 'Exploring together', caption: 'The lakefront, one of our favorite places in Chicago.' },
+  { ids: ['city.lakefront-adler'], kicker: 'Exploring together', caption: 'The lakefront by the Adler, one of our favorite places in Chicago.' },
   { ids: ['place.starved-rock'], kicker: 'Starved Rock', caption: 'Where we first said “I love you.”' },
-  { ids: ['city.lakefront-adler', 'city.river', 'city.riverwalk'], kicker: 'All the joy', caption: 'A city we keep coming back to.' },
+  { ids: ['city.river', 'city.riverwalk'], kicker: 'All the joy', caption: 'A city we keep coming back to.' },
 ] as const;
 
 const PLACES = [
@@ -64,7 +64,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
         sub={[frame.site.coupleDisplayName, 'Same people. A bigger chapter.']}
         photo="couple.hero.story"
         mobilePhoto="couple.hero.story.mobile"
-        words={['Good', 'people', 'beautiful', 'places', 'great', 'love']}
+        words={['Love', 'peace', 'happiness']}
       />
 
       {first ? (

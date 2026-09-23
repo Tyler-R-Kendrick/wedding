@@ -103,7 +103,7 @@ export const BotanicalExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ data, 
         lede="From a historic landmark to a world-class city: the places we can’t wait to share with you."
         photo="couple.hero.explore"
         mobilePhoto="couple.hero.explore.mobile"
-        words={['Same', 'people', 'a bigger', 'Chicago', 'adventure']}
+        words={['Love', 'peace', 'happiness']}
         actions={
           <Button variant="secondary" href={ROUTES.wedding}>
             See the weekend
@@ -154,7 +154,7 @@ export const BotanicalExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ data, 
             ))}
           </ul>
           <p className="bd-venue__words" aria-hidden="true">
-            Good people · beautiful places · great love
+            Love · peace · happiness
           </p>
         </nav>
       </section>
@@ -203,7 +203,7 @@ export const BotanicalExploreCaaPage: ContentRecipe<ExploreCaaProps> = ({ data, 
       <section className={`bd-ribbon${skyline ? ' bd-ribbon--photo' : ''}`} aria-labelledby="ribbon-title">
         {skyline ? <Photo id="city.skyline" sizes="100vw" className="bd-ribbon__photo" alt="" /> : <span className="bd-ribbon__drawing" aria-hidden="true" />}
         <p className="bd-ribbon__words" aria-hidden="true">
-          <span>Chicago</span> <span>people</span> <span>love</span> <span>brighter together</span>
+          <span>Love</span> <span>peace</span> <span>happiness</span> <span>Chicago</span>
         </p>
         <div className="bd-ribbon__center">
           <h2 id="ribbon-title" className="bd-ribbon__title">
