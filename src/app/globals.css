@@ -16,6 +16,7 @@
 @import "../themes/conservatory/fonts.css";
 @import "../themes/shared/base.css" layer(base);
 @import "../themes/botanical-deco/kit.css" layer(components);
+@import "../themes/botanical-deco/ride.css" layer(components);
 @import "../themes/gilded-hour/kit.css" layer(components);
 @import "../themes/conservatory/kit.css" layer(components);
 @import "../themes/shared/print.css";

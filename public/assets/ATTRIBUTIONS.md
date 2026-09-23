@@ -1,6 +1,6 @@
 # Third-party image attributions
 
-Generated from `public/assets/attributions.json` by `scripts/fetch-commons.mjs` / `scripts/fetch-openverse.mjs` — do not edit by hand; re-run the script. Policy: `docs/ops/asset-licensing.md`. Last generated 2026-09-22T19:34:04.788Z.
+Generated from `public/assets/attributions.json` by `scripts/fetch-commons.mjs` / `scripts/fetch-openverse.mjs` — do not edit by hand; re-run the script. Policy: `docs/ops/asset-licensing.md`. Last generated 2026-09-22T23:50:19.988Z.
 
 Every file under `public/assets/commons/` must appear here. Entries marked *not downloaded* have metadata but no bytes on disk yet (download failed or was skipped); re-run the script to fetch them.
 
@@ -17,6 +17,15 @@ Every file under `public/assets/commons/` must appear here. Entries marked *not 
 | `commons/chicago-skyline-view-from-alder-planetarium-at-sunset-illinois-usa-43511551295.jpg` | Chicago Skyline - view from Alder Planetarium at sunset, Illinois, USA (43511551295).jpg | [Romain Pontida](https://www.flickr.com/people/105106606@N05) | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Chicago_Skyline_-_view_from_Alder_Planetarium_at_sunset,_Illinois,_USA_(43511551295).jpg) | 3840×986 | 2026-09-22 | botanical-deco city.skyline — wide Chicago skyline at dusk from the lakefront (closing panoramic ribbon); placeholder only |
 | `commons/french-canyon-starved-rock-panoramio.jpg` | French Canyon - Starved Rock - panoramio.jpg | [hakkun](https://web.archive.org/web/20161102192658/http://www.panoramio.com/user/593016?with_photo_id=116234359) | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:French_Canyon_-_Starved_Rock_-_panoramio.jpg) | 1920×1280 | 2026-09-22 | botanical-deco place.starved-rock — Starved Rock State Park canyon/bluff (slot candidate) |
 | `commons/looking-east-along-the-chicago-river-toward-the-marshall-suloway-bridge-52041188396.jpg` | Looking east along the Chicago River toward the Marshall Suloway Bridge (52041188396).jpg | [Chris Rycroft from Cambridge, Massachusetts, United States](https://www.flickr.com/people/193316968@N06) | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Looking_east_along_the_Chicago_River_toward_the_Marshall_Suloway_Bridge_(52041188396).jpg) | 1920×1280 | 2026-09-22 | botanical-deco city.river — Chicago River with bridges and towers, downtown (slot candidate) |
+| `commons/openverse-07acfc79-a8eb-439f-8340-fdba6c4d56ce.jpg` | Barns and Storehouses | [Image Catalog](https://www.flickr.com/photos/132795455@N08) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [flickr via Openverse](https://www.flickr.com/photos/132795455@N08/23834812489) | 1024×807 | 2026-09-22 | Our Story timeline — placeholder for the "Richardson Farm" station until the couple's Paired photo replaces it |
+| `commons/openverse-0a5c6a0b-a959-4440-ac41-a05205573073.webp` | Steak Dinner | Unknown | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [rawpixel via Openverse](https://www.rawpixel.com/image/5968545/steak-dinner) | 1024×680 | 2026-09-22 | Our Story timeline — placeholder for the "Michael Jordan's Steakhouse" station until the couple's Paired photo replaces it |
+| `commons/openverse-1bd02025-fc88-43ac-8abd-2b8ca62ec7e5.webp` | Sunrise Lake Michigan Chicago Shown | U.S. National Archives | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [rawpixel via Openverse](https://www.rawpixel.com/image/8802929/photo-image-cloud-sunset-sky) | 1024×691 | 2026-09-22 | Our Story timeline — placeholder for the "Greater together than alone" station until the couple's Paired photo replaces it |
+| `commons/openverse-1d05b38a-cee0-42a6-a289-9df2910f1abd.jpg` | Project 365 #199: 180713 Harvest Time! | [comedy_nose](https://www.flickr.com/photos/23408922@N07) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) | [flickr via Openverse](https://www.flickr.com/photos/23408922@N07/9315096869) | 1024×682 | 2026-09-22 | Our Story timeline — placeholder for the "Gardening together" station until the couple's Paired photo replaces it |
+| `commons/openverse-3c56dd7f-e22e-4e20-9a74-08b9a363660c.jpg` | Diamond Ring | [Anne Edgar](https://stocksnap.io/author/40511) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [stocksnap via Openverse](https://stocksnap.io/photo/diamond-ring-V6XSRDWN2G) | 960×640 | 2026-09-22 | Our Story timeline — placeholder for the "The proposal" station until the couple's Paired photo replaces it |
+| `commons/openverse-3ee715e3-9c59-406a-bf4d-b4501adbc330.webp` | Decorated wedding reception table | Unknown | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [rawpixel via Openverse](https://www.rawpixel.com/image/5925661/photo-image-flowers-public-domain-celebration) | 1024×683 | 2026-09-22 | Our Story timeline — placeholder for the "Allison and Jamie's wedding" station until the couple's Paired photo replaces it |
+| `commons/openverse-6b70e09a-7a82-4656-bc05-57b4b9da5fc3.jpg` | Wine Tasting | [Kelly Ishmael](https://mindingmynest.com) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [stocksnap via Openverse](https://stocksnap.io/photo/wine-tasting-T8FNYMYTHK) | 960×640 | 2026-09-22 | Our Story timeline — placeholder for the "Food tastings" station until the couple's Paired photo replaces it |
+| `commons/openverse-7ce84247-ecd1-4a8b-b174-41cc4f224c24.jpg` | Portrait of an ice cream cone III | [tom.oeste](https://www.flickr.com/photos/133941717@N06) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) | [flickr via Openverse](https://www.flickr.com/photos/133941717@N06/19046734962) | 1024×683 | 2026-09-22 | Our Story timeline — placeholder for the "Museum of Ice Cream" station until the couple's Paired photo replaces it |
+| `commons/openverse-db1018a2-8689-4e8c-8ea5-8fa6383ddac4.webp` | Bright-red canoes Lake Monona Madison | Carol M Highsmith | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [rawpixel via Openverse](https://www.rawpixel.com/image/3093818/free-photo-image-red-blue-madison-wisconsin-america) | 1024×683 | 2026-09-22 | Our Story timeline — placeholder for the "Madison waterfront" station until the couple's Paired photo replaces it |
 | `commons/the-lincoln-park-north-pond-6097472770.jpg` | The Lincoln Park North Pond (6097472770).jpg | [vxla](https://www.flickr.com/people/14812197@N00) | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:The_Lincoln_Park_North_Pond_(6097472770).jpg) | 1920×1440 | 2026-09-22 | botanical-deco city.north-pond — North Pond, the pond in Lincoln Park (not the restaurant) (slot candidate) |
 
 ## Attribution lines
@@ -42,11 +51,25 @@ Credit as below wherever the image appears (caption, credits page, or a `<figcap
 - `commons/looking-east-along-the-chicago-river-toward-the-marshall-suloway-bridge-52041188396.jpg` — "Looking east along the Chicago River toward the Marshall Suloway Bridge (52041188396).jpg" by Chris Rycroft from Cambridge, Massachusetts, United States, licensed under CC BY 2.0 (https://creativecommons.org/licenses/by/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Looking_east_along_the_Chicago_River_toward_the_Marshall_Suloway_Bridge_(52041188396).jpg). Resized by Wikimedia to 1920×1280 from the 6240×4160 original; no other changes.
 - `commons/the-lincoln-park-north-pond-6097472770.jpg` — "The Lincoln Park North Pond (6097472770).jpg" by vxla, licensed under CC BY 2.0 (https://creativecommons.org/licenses/by/2.0), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:The_Lincoln_Park_North_Pond_(6097472770).jpg). Resized by Wikimedia to 1920×1440 from the 4000×3000 original; no other changes.
 
+### CC0 (no attribution required)
+
+Credit is optional; we give it anyway.
+
+- `commons/openverse-07acfc79-a8eb-439f-8340-fdba6c4d56ce.jpg` — "Barns and Storehouses" by Image Catalog, CC0 1.0, via flickr via Openverse (https://www.flickr.com/photos/132795455@N08/23834812489). No changes made.
+- `commons/openverse-0a5c6a0b-a959-4440-ac41-a05205573073.webp` — "Steak Dinner" by Unknown, CC0 1.0, via rawpixel via Openverse (https://www.rawpixel.com/image/5968545/steak-dinner). No changes made.
+- `commons/openverse-1bd02025-fc88-43ac-8abd-2b8ca62ec7e5.webp` — "Sunrise Lake Michigan Chicago Shown" by U.S. National Archives, CC0 1.0, via rawpixel via Openverse (https://www.rawpixel.com/image/8802929/photo-image-cloud-sunset-sky). No changes made.
+- `commons/openverse-3c56dd7f-e22e-4e20-9a74-08b9a363660c.jpg` — "Diamond Ring" by Anne Edgar, CC0 1.0, via stocksnap via Openverse (https://stocksnap.io/photo/diamond-ring-V6XSRDWN2G). No changes made.
+- `commons/openverse-3ee715e3-9c59-406a-bf4d-b4501adbc330.webp` — "Decorated wedding reception table" by Unknown, CC0 1.0, via rawpixel via Openverse (https://www.rawpixel.com/image/5925661/photo-image-flowers-public-domain-celebration). No changes made.
+- `commons/openverse-6b70e09a-7a82-4656-bc05-57b4b9da5fc3.jpg` — "Wine Tasting" by Kelly Ishmael, CC0 1.0, via stocksnap via Openverse (https://stocksnap.io/photo/wine-tasting-T8FNYMYTHK). No changes made.
+- `commons/openverse-db1018a2-8689-4e8c-8ea5-8fa6383ddac4.webp` — "Bright-red canoes Lake Monona Madison" by Carol M Highsmith, CC0 1.0, via rawpixel via Openverse (https://www.rawpixel.com/image/3093818/free-photo-image-red-blue-madison-wisconsin-america). No changes made.
+
 ### Public domain (no attribution required)
 
 Credit is optional; we give it anyway and keep the provenance link.
 
 - `commons/chicago-athletic-association-building-1897.png` — "Chicago Athletic Association building 1897.png" by History of Chicago 1897, Public domain (PD US expired), via Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Chicago_Athletic_Association_building_1897.png). No changes made.
+- `commons/openverse-1d05b38a-cee0-42a6-a289-9df2910f1abd.jpg` — "Project 365 #199: 180713 Harvest Time!" by comedy_nose, Public domain (Public Domain Mark), via flickr via Openverse (https://www.flickr.com/photos/23408922@N07/9315096869). No changes made.
+- `commons/openverse-7ce84247-ecd1-4a8b-b174-41cc4f224c24.jpg` — "Portrait of an ice cream cone III" by tom.oeste, Public domain (Public Domain Mark), via flickr via Openverse (https://www.flickr.com/photos/133941717@N06/19046734962). No changes made.
 
 ## Provenance detail
 
@@ -154,6 +177,95 @@ Credit is optional; we give it anyway and keep the provenance link.
 - License: CC BY 2.0 — <https://creativecommons.org/licenses/by/2.0>
 - Retrieved: 2026-09-22T19:07:45.336Z; sha256 `19792352f5fc13e2bee7e5e5d2dac3069cf69b3bc6f020401878766fe0fcc53a`; 681326 bytes; 1920×1280 image/jpeg
 - Intended use: botanical-deco city.river — Chicago River with bridges and towers, downtown (slot candidate)
+
+### `commons/openverse-07acfc79-a8eb-439f-8340-fdba6c4d56ce.jpg`
+
+- Source page: <https://www.flickr.com/photos/132795455@N08/23834812489>
+- Original file: <https://live.staticflickr.com/1500/23834812489_8040025479_b.jpg> (1024×807)
+- Credit / origin: flickr (<https://api.openverse.org/v1/images/07acfc79-a8eb-439f-8340-fdba6c4d56ce/>)
+- Description: agriculture, barn, country, countryside, farm, field, house, storehouse
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:49:52.774Z; sha256 `b846790f64afdcecd86a4c137821b184a32a813158b13ecdf518c82c0296b55f`; 150304 bytes; 1024×807 image/jpeg
+- Intended use: Our Story timeline — placeholder for the "Richardson Farm" station until the couple's Paired photo replaces it
+
+### `commons/openverse-0a5c6a0b-a959-4440-ac41-a05205573073.webp`
+
+- Source page: <https://www.rawpixel.com/image/5968545/steak-dinner>
+- Original file: <https://images.rawpixel.com/editor_1024/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvaXM4MjI1LWltYWdlLWt3eXM2NXNhLmpwZw.jpg> (4288×2848)
+- Credit / origin: rawpixel (<https://api.openverse.org/v1/images/0a5c6a0b-a959-4440-ac41-a05205573073/>)
+- Description: food, furniture, glass, plate, restaurant, table, white
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:49:57.216Z; sha256 `5e98aa21c75c0e1f8c634452fbda7119c2d18b85f194eaec111d3f0796d8adf6`; 279376 bytes; 1024×680 image/webp
+- Intended use: Our Story timeline — placeholder for the "Michael Jordan's Steakhouse" station until the couple's Paired photo replaces it
+
+### `commons/openverse-1bd02025-fc88-43ac-8abd-2b8ca62ec7e5.webp`
+
+- Source page: <https://www.rawpixel.com/image/8802929/photo-image-cloud-sunset-sky>
+- Original file: <https://images.rawpixel.com/editor_1024/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAzL2ZsODY3NDg5MjcyOS1pbWFnZS5qcGc.jpg> (3000×2025)
+- Credit / origin: rawpixel (<https://api.openverse.org/v1/images/1bd02025-fc88-43ac-8abd-2b8ca62ec7e5/>)
+- Description: chicago, chicago skyline, chicago vintage, cloud, light, scenery, sky, sunset
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:50:15.255Z; sha256 `ff301483e1a32b64f20407da712f4bcdd66df3efe77d5f83d31ea17d89c3219f`; 206594 bytes; 1024×691 image/webp
+- Intended use: Our Story timeline — placeholder for the "Greater together than alone" station until the couple's Paired photo replaces it
+
+### `commons/openverse-1d05b38a-cee0-42a6-a289-9df2910f1abd.jpg`
+
+- Source page: <https://www.flickr.com/photos/23408922@N07/9315096869>
+- Original file: <https://live.staticflickr.com/3697/9315096869_e5eec7c2b6_b.jpg> (1024×682)
+- Credit / origin: flickr (<https://api.openverse.org/v1/images/1d05b38a-cee0-42a6-a289-9df2910f1abd/>)
+- Description: basket, homegrown, produce, project365, vegetables
+- License: Public domain — <https://creativecommons.org/publicdomain/mark/1.0/> (source tag: Public Domain Mark)
+- Retrieved: 2026-09-22T23:50:05.737Z; sha256 `bbcea9610e32463cd8a67e0cd41bd4f3d05597674c00cdf344a4ea8fb371ef60`; 210588 bytes; 1024×682 image/jpeg
+- Intended use: Our Story timeline — placeholder for the "Gardening together" station until the couple's Paired photo replaces it
+
+### `commons/openverse-3c56dd7f-e22e-4e20-9a74-08b9a363660c.jpg`
+
+- Source page: <https://stocksnap.io/photo/diamond-ring-V6XSRDWN2G>
+- Original file: <https://cdn.stocksnap.io/img-thumbs/960w/V6XSRDWN2G.jpg> (5758×3839)
+- Credit / origin: stocksnap (<https://api.openverse.org/v1/images/3c56dd7f-e22e-4e20-9a74-08b9a363660c/>)
+- Description: blur, diamond, jewelry, ring
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:50:19.372Z; sha256 `fda2fdc4f595361db01347d294400f0a785092abdc403085b7537cc5092fee1f`; 43748 bytes; 960×640 image/jpeg
+- Intended use: Our Story timeline — placeholder for the "The proposal" station until the couple's Paired photo replaces it
+
+### `commons/openverse-3ee715e3-9c59-406a-bf4d-b4501adbc330.webp`
+
+- Source page: <https://www.rawpixel.com/image/5925661/photo-image-flowers-public-domain-celebration>
+- Original file: <https://images.rawpixel.com/editor_1024/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcHgxMDQ2ODEzLWltYWdlLWt3dnk3a3c2LmpwZw.jpg> (6000×4000)
+- Credit / origin: rawpixel (<https://api.openverse.org/v1/images/3ee715e3-9c59-406a-bf4d-b4501adbc330/>)
+- Description: dinner party, table, wedding, wedding decor, wedding dinner, wedding photos, wedding table, wedding table decoration
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:49:44.114Z; sha256 `ecfbf1152b6f6b2b9dace881212bf30fa6d6d0d87169f761cb2bc1bf3d555837`; 258636 bytes; 1024×683 image/webp
+- Intended use: Our Story timeline — placeholder for the "Allison and Jamie's wedding" station until the couple's Paired photo replaces it
+
+### `commons/openverse-6b70e09a-7a82-4656-bc05-57b4b9da5fc3.jpg`
+
+- Source page: <https://stocksnap.io/photo/wine-tasting-T8FNYMYTHK>
+- Original file: <https://cdn.stocksnap.io/img-thumbs/960w/T8FNYMYTHK.jpg> (5472×3648)
+- Credit / origin: stocksnap (<https://api.openverse.org/v1/images/6b70e09a-7a82-4656-bc05-57b4b9da5fc3/>)
+- Description: alcohol, bottles, drink, event, glass, glasses, glassware, menu, party, restaurant, table, tasting
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:50:01.387Z; sha256 `423528c41520c5056712b31065afc9a8d0d23f688102899a5c39996900b2b8a1`; 535336 bytes; 960×640 image/jpeg
+- Intended use: Our Story timeline — placeholder for the "Food tastings" station until the couple's Paired photo replaces it
+
+### `commons/openverse-7ce84247-ecd1-4a8b-b174-41cc4f224c24.jpg`
+
+- Source page: <https://www.flickr.com/photos/133941717@N06/19046734962>
+- Original file: <https://live.staticflickr.com/415/19046734962_8227917848_b.jpg> (1024×683)
+- Credit / origin: flickr (<https://api.openverse.org/v1/images/7ce84247-ecd1-4a8b-b174-41cc4f224c24/>)
+- License: Public domain — <https://creativecommons.org/publicdomain/mark/1.0/> (source tag: Public Domain Mark)
+- Retrieved: 2026-09-22T23:49:48.326Z; sha256 `ea17d902c86ee41122c932cce510a2703d3559b101f6696b711812a95eb07fb2`; 136079 bytes; 1024×683 image/jpeg
+- Intended use: Our Story timeline — placeholder for the "Museum of Ice Cream" station until the couple's Paired photo replaces it
+
+### `commons/openverse-db1018a2-8689-4e8c-8ea5-8fa6383ddac4.webp`
+
+- Source page: <https://www.rawpixel.com/image/3093818/free-photo-image-red-blue-madison-wisconsin-america>
+- Original file: <https://images.rawpixel.com/editor_1024/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcGQyMDctMy0wMzAuanBn.jpg> (7000×4667)
+- Credit / origin: rawpixel (<https://api.openverse.org/v1/images/db1018a2-8689-4e8c-8ea5-8fa6383ddac4/>)
+- Description: canoe, highsmith kayak, kayak, madison, madison wisconsin, nature photo, wisconsin
+- License: CC0 1.0 — <https://creativecommons.org/publicdomain/zero/1.0/>
+- Retrieved: 2026-09-22T23:50:10.367Z; sha256 `904a63ff99e6f489f4ec537b2763ecb4e0d6948b2a7b548d8d45229264e41e95`; 423086 bytes; 1024×683 image/webp
+- Intended use: Our Story timeline — placeholder for the "Madison waterfront" station until the couple's Paired photo replaces it
 
 ### `commons/the-lincoln-park-north-pond-6097472770.jpg`
 

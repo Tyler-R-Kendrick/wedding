@@ -101,6 +101,17 @@ export const SEED_SOURCES: readonly SeedSource[] = [
     trustClass: 'EXTERNAL_DATA',
     notes: 'Official state page for the park where the couple first said "I love you" (trail, date, wording unknown). Link-checked 2026-09-05 (HTTP 200).',
   },
+  {
+    id: seedId<ContentSourceId>(109),
+    sourceType: 'authored',
+    title: "Sara and Tyler's Paired timeline",
+    // Citations link guests to the page the timeline is told on, never to the app or a repository path.
+    canonicalUrl: '/our-story',
+    documentName: 'Paired app timeline export (imported by scripts/import-paired.mjs)',
+    verifiedAt: BRIEF_DATE,
+    trustClass: 'TRUSTED_WEDDING',
+    notes: 'The couple kept their relationship timeline in the Paired app. Dates, titles and notes are theirs; nothing is inferred. verifiedAt on each imported row is the import time.',
+  },
 ];
 
 export const BRIEF_SOURCE_ID = SEED_SOURCES[0]!.id;

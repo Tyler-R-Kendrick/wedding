@@ -2,6 +2,7 @@ import { CONTENT_TABLES, type ContentTableName } from '@/db/schema/content';
 import type { KnowledgeKind, KnowledgeRecordInsert } from '@/db/schema/knowledge';
 import type { Db } from '@/db/client';
 import { knowledgeRecords } from '@/db/schema';
+import { isMissingTable } from '@/db/missing-table';
 import { withoutPlaceholders } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 
@@ -53,6 +54,9 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
   };
 
   for (const s of rows.story_sections) push('story', 'story_sections', s, s.title, `${ROUTES.story}#${s.slug}`, s.paragraphs);
+  for (const t of rows.timeline_moments) {
+    push('story', 'timeline_moments', t, t.title, `${ROUTES.story}#${t.slug}`, [t.note, t.occurredOn ? `When: ${t.occurredOn}` : null, t.locationLabel ? `Where: ${t.locationLabel}` : null]);
+  }
   const placeById = new Map(rows.places.map((p) => [p.id, p]));
   for (const a of rows.adventure_memories) {
     const place = a.placeId ? placeById.get(a.placeId) : undefined;
@@ -74,6 +78,15 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
 export async function projectKnowledge(db: Db, now: Date = new Date()): Promise<number> {
   const rows: Rows = {
     story_sections: await db.select().from(CONTENT_TABLES.story_sections),
+    // Tolerates a database that has not run the migration adding this table yet (a preview reads the
+    // production database and never migrates); an admin save there must not 500 after it committed.
+    timeline_moments: await db
+      .select()
+      .from(CONTENT_TABLES.timeline_moments)
+      .catch((e: unknown) => {
+        if (isMissingTable(e, 'timeline_moments')) return [];
+        throw e;
+      }),
     places: await db.select().from(CONTENT_TABLES.places),
     adventure_memories: await db.select().from(CONTENT_TABLES.adventure_memories),
     recommendations: await db.select().from(CONTENT_TABLES.recommendations),

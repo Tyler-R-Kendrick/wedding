@@ -85,7 +85,14 @@
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": true,
+    "media": [
+      {
+        "alt": "The Chicago skyline across Lake Michigan at sunrise, the sky pink and gold.",
+        "src": "/media/timeline/greater-together-921.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ]
   },
   {
     "slug": "the-proposal",
@@ -101,7 +108,14 @@
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": true,
+    "media": [
+      {
+        "alt": "A close-up of a pale pink diamond ring resting on sparkling beads.",
+        "src": "/media/timeline/the-proposal-853.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ]
   },
   {
     "slug": "what-marriage-means",

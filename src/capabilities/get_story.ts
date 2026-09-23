@@ -3,8 +3,9 @@ import { defineCapability } from '@/contracts/capability';
 import { ok } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { createReadContext } from '@/domain/content/read-context';
-import { storySectionViewSchema } from '@/domain/content/views';
+import { storySectionViewSchema, timelineMomentViewSchema } from '@/domain/content/views';
 import { getStory as readStory } from '@/domain/story/repo';
+import { getTimeline } from '@/domain/timeline/repo';
 import { ROUTES } from '@/domain/routes';
 import { requireService } from './services';
 
@@ -13,6 +14,7 @@ const output = z.object({
   route: z.string(),
   title: z.string(),
   sections: z.array(storySectionViewSchema),
+  timeline: z.array(timelineMomentViewSchema),
 });
 export type StoryPageData = z.infer<typeof output>;
 
@@ -20,8 +22,9 @@ export const getStory = defineCapability<z.infer<typeof input>, StoryPageData>({
   name: 'get_story',
   title: 'Our Story',
   description:
-    "Returns Sara and Tyler's story as short authored chapters (how they met, the connection, their life together, love, the future, the engagement, what marriage means). " +
-    'Chapters marked placeholder are not yet written; never present placeholder text as fact. Read only.',
+    "Returns Sara and Tyler's story as short authored chapters (how they met, the connection, their life together, love, the future, the engagement, what marriage means) " +
+    'and the timeline of remembered moments along them (each with a chapter, and a date only when the couple recorded one). ' +
+    'Chapters and moments marked placeholder are not yet written; never present placeholder text as fact, and never guess a missing date. Read only.',
   kind: 'read',
   auth: 'anonymous',
   requires: [],
@@ -29,11 +32,11 @@ export const getStory = defineCapability<z.infer<typeof input>, StoryPageData>({
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 12_000,
+  maxOutputChars: 24_000,
   async handler(ctx) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
-    const { sections, sources } = await readStory(rctx);
-    return ok({ data: { route: ROUTES.story, title: 'Our Story', sections }, sources });
+    const [story, timeline] = await Promise.all([readStory(rctx), getTimeline(rctx)]);
+    return ok({ data: { route: ROUTES.story, title: 'Our Story', sections: story.sections, timeline: timeline.moments }, sources: [...story.sources, ...timeline.sources] });
   },
 });

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Paragraphs } from '@/components/provenance';
 import type { StoryPageData } from '@/capabilities/get_story';
 import { ROUTES } from '@/domain/routes';
+import { TimelineStops } from '@/themes/shared/timeline';
 import { DraftBadge, PageIntro, Provenance, Section, Shell } from './kit';
 
 export function StoryPage({ data }: { data: StoryPageData }) {
@@ -17,6 +18,11 @@ export function StoryPage({ data }: { data: StoryPageData }) {
           </div>
         </Section>
       ))}
+      {data.timeline.length ? (
+        <Section id="along-the-way" title="Along the way">
+          <TimelineStops sections={data.sections} moments={data.timeline} classes={{ prose: 'wp-prose' }} />
+        </Section>
+      ) : null}
       <Section id="next" title="Keep going">
         <p className="wp-prose">
           <Link className="link-block" href={ROUTES.adventures}>Wander through our adventures →</Link>

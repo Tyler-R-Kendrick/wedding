@@ -27,6 +27,14 @@
   --color-outline: #e2d8c7;
   --color-error: #8a2c22;
   --color-on-error: #fff6f2;
+  --color-line-red: #a3352b;
+  --color-line-blue: #1f5d8c;
+  --color-line-brown: #6b4631;
+  --color-line-pink: #a3426a;
+  --color-line-green: #3d6b3a;
+  --color-line-orange: #9e5019;
+  --color-line-gold: #806238;
+  --color-on-line: #fbf9f3;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;

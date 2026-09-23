@@ -1,15 +1,16 @@
-import { sql } from 'drizzle-orm';
+import { and, eq, like, notInArray, or, sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db } from '../client';
-import { loadContentSeed, SOURCE_KEYS, type ProvenanceSeed } from '@/content';
+import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed } from '@/content';
 import { projectKnowledge } from '@/domain/knowledge/projection';
 import {
-  adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, venueFacts, venueSpaces,
+  adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
+  type TimelineMomentRow,
 } from '../schema';
 import { seedId } from './sources';
 
 /** Stable id ranges per table so the seed is idempotent and recognisable in audit rows. */
-const ID_BASE = { story: 200, places: 300, adventures: 400, recommendations: 500, itineraries: 600, venueSpaces: 700, venueFacts: 800, operational: 900, faq: 1000 } as const;
+const ID_BASE = { story: 200, places: 300, adventures: 400, recommendations: 500, itineraries: 600, venueSpaces: 700, venueFacts: 800, operational: 900, faq: 1000, timeline: 1100 } as const;
 
 const toDate = (s: string | undefined) => (s ? new Date(s) : null);
 
@@ -40,6 +41,55 @@ function provenance(p: ProvenanceSeed, now: Date) {
 }
 
 /**
+ * The timeline stations exactly as `db:seed` writes them. Also read directly by the timeline repo
+ * when the table has not been migrated yet (a preview deployment reads the production database and
+ * never migrates), so the page shows what the seed would, not a 500.
+ */
+export function timelineSeedRows(seed: ContentSeed, now: Date): TimelineMomentRow[] {
+  return seed.timeline.map((t) => ({
+    id: timelineSeedId(t.slug), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
+    note: t.note, media: t.media, adventureSlug: t.adventureSlug ?? null, externalRef: t.externalRef ?? null, ...provenance(t, now), contentVersion: 1, createdAt: now,
+  }));
+}
+
+/**
+ * A station's id follows its slug, never its position in timeline.json: an import that re-dates the
+ * line reorders the file, and a positional id would rewrite one stop's row with another stop's slug
+ * (tripping the unique slug index, or silently landing on a row an admin edited).
+ */
+function timelineSeedId(slug: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < slug.length; i++) h = Math.imul(h ^ slug.charCodeAt(i), 0x01000193) >>> 0;
+  return seedId(ID_BASE.timeline * 1_000_000_000_000 + h);
+}
+
+/**
+ * Upserts the timeline by slug and removes the stations the seed no longer has — but only rows the
+ * seed or the Paired import wrote and nobody has edited since (contentVersion 1). A station typed in
+ * /admin/content, or an edited one, is never touched.
+ */
+export async function seedTimeline(db: Db, seed: ContentSeed, now: Date): Promise<void> {
+  const rows = timelineSeedRows(seed, now);
+  for (const row of rows) {
+    const { id: _id, createdAt: _createdAt, ...update } = row;
+    await db
+      .insert(timelineMoments)
+      .values(row)
+      .onConflictDoUpdate({ target: timelineMoments.slug, set: update, setWhere: sql`${timelineMoments.contentVersion} = 1` });
+  }
+  const keep = rows.map((r) => r.slug);
+  await db
+    .delete(timelineMoments)
+    .where(
+      and(
+        eq(timelineMoments.contentVersion, 1),
+        or(like(timelineMoments.editedBy, 'seed:%'), eq(timelineMoments.editedBy, 'import:paired')),
+        keep.length ? notInArray(timelineMoments.slug, keep) : undefined,
+      ),
+    );
+}
+
+/**
  * Upserts the brief-derived content (src/content/seed/*.json) and re-projects the AI corpus.
  * Idempotent. Seeded rows never overwrite an admin edit: a row whose contentVersion > 1 is left alone.
  */
@@ -55,6 +105,7 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
   for (const [i, s] of seed.story.entries()) {
     await upsert(storySections, { id: seedId(ID_BASE.story + i), slug: s.slug, chapter: s.chapter, order: s.order, title: s.title, paragraphs: s.paragraphs, media: s.media, ...provenance(s, now) });
   }
+  await seedTimeline(db, seed, now);
   for (const [i, p] of seed.places.entries()) {
     await upsert(places, {
       id: seedId(ID_BASE.places + i), slug: p.slug, name: p.name, kind: p.kind, address: p.address ?? null, city: p.city ?? null, region: p.region ?? null,

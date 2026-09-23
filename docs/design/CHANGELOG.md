@@ -4,6 +4,27 @@ One entry per accepted design change. Token changes cite the
 `npx design.md diff` output; direction changes cite the critique or the
 couple's decision. Newest first. Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md) Stage 9.
 
+## 2026-09-22 — Our Story becomes a ride on the Sara + Tyler Line
+
+**Asked for by Tyler:** Our Story as a timeline you travel through, not a page
+you scroll down, with a control that reads like a CTA train line diagram.
+
+- **Direction:** `docs/design/inspo/our-story-timeline.md` — references
+  (Oryzo, Explore Primland, Cartier Watches & Wonders, the Awwwards z-axis
+  gallery and scrolling-timeline elements, monopo's *The Memories We Shared*)
+  and the CTA car-card conventions from Dennis McClendon's 1993 map.
+- **Tokens (Botanical Deco `DESIGN.md`):** `colors.line-red|blue|brown|pink|green|orange|gold`
+  and `on-line`, each ≥ 4.5:1 on Ivory and Paper so station names can wear
+  their line's colour; components `line-*`, `station-name-*`, `ride-stage`.
+  `npm run design:lint` 0 errors / 0 warnings.
+- **Composition:** parity exception PX-29 replaces the approved spread and
+  journey band (PX-09/10/11/13 superseded); the opening and places strip stay.
+- **Motion:** native scroll only; one custom property drives depth, drift,
+  haze, the sleepers and the train; a dwell plateau at every station; reduced
+  motion, no script and print get the same list laid flat as a strip map.
+- **Content:** stations are `timeline_moments` records, ready for the couple's
+  Paired export (`docs/content/paired-timeline.md`, backlog C-11).
+
 ## 2026-09-05 — Baseline: brief consolidated, two themes chosen, SDLC established
 
 **Level:** `claude/wedding-02-design-sdlc` (stack level 02, on top of the

@@ -45,3 +45,21 @@ The approved Home strip, Explore triptych and Weekend workspace are rectangular,
 They are four (or three) different jobs at different widths, not a repeated feature-card grid, and
 the approved Weekend workspace genuinely needs related cards. The source scan of `npm run
 slop:detect` exits 0 on this build.
+
+## Our Story ride: `clipped-overflow-container`, `cramped-padding`, `repeating-stripes-gradient`
+
+The ride (docs/design/inspo/our-story-timeline.md) is the one surface where these three are the
+design rather than drift. They were the only findings left after the 2026-09-23 design review's
+fixes (15 → 3 in URL mode against `/our-story`):
+
+- **clipped-overflow-container** — `.bd-ride__stage` / `.bd-ride__window` are a camera window. Cards
+  slide out of it sideways as the train leaves them; the window must clip them at its edge.
+- **cramped-padding** — the car card (the CTA line diagram) runs flush across the top of the stage,
+  like the strip map above a train's doors. Every card inside the window has its own inset.
+- **repeating-stripes-gradient** — the floor's railway sleepers, 20% gilt, rotated into perspective
+  under the track and masked out toward the horizon. Not a texture on any readable surface.
+
+The review's `content-hidden-at-rest` finding (cards at opacity 0 down the track) no longer fires:
+the scenery is `aria-hidden`, and "Read it as a list" lays every stop flat for anyone who wants
+them all at once.
+
