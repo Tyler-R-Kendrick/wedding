@@ -51,4 +51,13 @@ npm run db:seed
 - Re-running the import updates the same stations (each keeps `paired:<id>`).
   `db:seed` never overwrites a station someone edited in `/admin/content`.
 
+## Production, the first time
+
+A deploy applies migrations but never seeds (docs/ops/deploy-vercel-supabase.md), so after the
+branch that added `timeline_moments` merges, the table exists and is empty. Run `npm run db:seed`
+once against production (idempotent; it never overwrites a row edited in `/admin/content`), or
+enter the stations in `/admin/content/timeline_moments`. Until the table exists at all — a
+preview reads the production database and never migrates — the page serves the bundled seed
+stations rather than failing.
+
 Close backlog item C-11 when the ride reads true end to end.

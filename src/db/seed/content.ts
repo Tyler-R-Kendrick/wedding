@@ -1,10 +1,11 @@
 import { sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db } from '../client';
-import { loadContentSeed, SOURCE_KEYS, type ProvenanceSeed } from '@/content';
+import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed } from '@/content';
 import { projectKnowledge } from '@/domain/knowledge/projection';
 import {
   adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
+  type TimelineMomentRow,
 } from '../schema';
 import { seedId } from './sources';
 
@@ -40,6 +41,18 @@ function provenance(p: ProvenanceSeed, now: Date) {
 }
 
 /**
+ * The timeline stations exactly as `db:seed` writes them. Also read directly by the timeline repo
+ * when the table has not been migrated yet (a preview deployment reads the production database and
+ * never migrates), so the page shows what the seed would, not a 500.
+ */
+export function timelineSeedRows(seed: ContentSeed, now: Date): TimelineMomentRow[] {
+  return seed.timeline.map((t, i) => ({
+    id: seedId(ID_BASE.timeline + i), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
+    note: t.note, media: t.media, adventureSlug: t.adventureSlug ?? null, externalRef: t.externalRef ?? null, ...provenance(t, now), contentVersion: 1, createdAt: now,
+  }));
+}
+
+/**
  * Upserts the brief-derived content (src/content/seed/*.json) and re-projects the AI corpus.
  * Idempotent. Seeded rows never overwrite an admin edit: a row whose contentVersion > 1 is left alone.
  */
@@ -55,12 +68,7 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
   for (const [i, s] of seed.story.entries()) {
     await upsert(storySections, { id: seedId(ID_BASE.story + i), slug: s.slug, chapter: s.chapter, order: s.order, title: s.title, paragraphs: s.paragraphs, media: s.media, ...provenance(s, now) });
   }
-  for (const [i, t] of seed.timeline.entries()) {
-    await upsert(timelineMoments, {
-      id: seedId(ID_BASE.timeline + i), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
-      note: t.note, media: t.media, adventureSlug: t.adventureSlug ?? null, externalRef: t.externalRef ?? null, ...provenance(t, now),
-    });
-  }
+  for (const row of timelineSeedRows(seed, now)) await upsert(timelineMoments, row);
   for (const [i, p] of seed.places.entries()) {
     await upsert(places, {
       id: seedId(ID_BASE.places + i), slug: p.slug, name: p.name, kind: p.kind, address: p.address ?? null, city: p.city ?? null, region: p.region ?? null,
