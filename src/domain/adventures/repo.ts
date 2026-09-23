@@ -228,9 +228,34 @@ function dateLabel(row: AdventureMemoryRow) {
   return optionalText(row.dateApprox);
 }
 
+/**
+ * Where the atlas pins a memory. Its own coordinates win (a trailhead inside a big park), then its
+ * place's. A pair is used only when both halves exist — a lone latitude is not a location.
+ */
+export function adventureCoordinates(row: Pick<AdventureMemoryRow, 'lat' | 'lng'>, place?: Pick<PlaceRow, 'lat' | 'lng'>): AdventureCard['coordinates'] {
+  const pair = (lat: number | null | undefined, lng: number | null | undefined) =>
+    typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : undefined;
+  return pair(row.lat, row.lng) ?? (place ? pair(place.lat, place.lng) : undefined);
+}
+
+/** "Utica, IL" from the place record; nothing when either part is still a placeholder. */
+function whereLabel(place: PlaceRow | undefined): string | undefined {
+  const parts = [place?.city, place?.region].filter((p): p is string => !!p && !isPlaceholderText(p));
+  return parts.length ? parts.join(', ') : undefined;
+}
+
+/** A cover the page can draw: a site path or an https URL, never a data: or javascript: string. */
+function coverOf(row: AdventureMemoryRow): AdventureCard['cover'] {
+  const m = row.media.find((x) => !!x.src && (/^\/(?!\/)/.test(x.src) || /^https:\/\//.test(x.src)));
+  return m?.src ? { alt: m.alt, src: m.src, ...(m.caption ? { caption: m.caption } : {}) } : undefined;
+}
+
 export function toAdventureCard(row: AdventureMemoryRow, ctx: ReadContext, placeMap: Map<string, PlaceRow>): AdventureCard {
   const place = row.placeId ? placeMap.get(row.placeId) : undefined;
   const route = `${ROUTES.adventures}/${row.slug}`;
+  const coordinates = adventureCoordinates(row, place);
+  const where = whereLabel(place);
+  const cover = coverOf(row);
   return {
     id: row.id,
     slug: row.slug,
@@ -238,6 +263,10 @@ export function toAdventureCard(row: AdventureMemoryRow, ctx: ReadContext, place
     title: row.title,
     summary: textBlock(row.summary),
     ...(place ? { placeName: place.name } : {}),
+    ...(where ? { where } : {}),
+    ...(coordinates ? { coordinates } : {}),
+    ...(cover ? { cover } : {}),
+    counts: { photos: row.media.length, paragraphs: row.memory.filter((p) => !isPlaceholderText(p)).length },
     dateLabel: dateLabel(row),
     ...(row.season ? { season: row.season } : {}),
     ...(row.timeOfDay ? { timeOfDay: row.timeOfDay } : {}),
