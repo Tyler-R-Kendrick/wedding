@@ -53,7 +53,17 @@
   letter-spacing: var(--prov-badge-tracking, var(--type-control-caps-tracking, 0.06em));
   font-feature-settings: var(--type-control-caps-features, normal);
   text-transform: var(--prov-badge-transform, var(--label-transform, uppercase));
-  white-space: nowrap;
+
+  /*
+   * One line where it fits, words wrapping where it does not. This used to be `nowrap`, and at
+   * 390px "CHECKED SEPTEMBER 5, 2026" in tracked control-caps is 346px of unbreakable min-content:
+   * it widened its card, the card widened the grid's `auto` track, and on /share-an-adventure every
+   * paragraph ran 4–20px past the viewport, clipped by the body's `overflow-x: clip` (impeccable
+   * detect --viewport 390x844, `body-text-viewport-edge`, 45 findings).
+   */
+  flex-wrap: wrap;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
 }
 
 .prov__badge--ok {

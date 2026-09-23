@@ -63,3 +63,31 @@ The review's `content-hidden-at-rest` finding (cards at opacity 0 down the track
 the scenery is `aria-hidden`, and "Read it as a list" lays every stop flat for anyone who wants
 them all at once.
 
+
+## URL-scan waivers, 2026-09-23 (`text-occlusion`, `first-viewport-column-overflow`, `heading-rhythm`)
+
+A rendered scan of 17 routes in all three designs at 390, 820, 1280 and 1440px (51 pages each,
+guest routes signed in as the e2e fixture household) found 45 + 15 + 6 + 5 findings. These were
+fixed at the source: a nowrap provenance badge that pushed `/share-an-adventure` off a phone
+screen, an ivory script line reading 2.6:1 on the weekend photograph, and line lengths of 89–102
+characters in the Gilded Hour ledger, the Botanical footer and the guest notices. Three remain,
+each waived for one rule on one page in `.impeccable/config.json` (`detector.ignoreValues`, with
+the reason in each entry):
+
+- **`text-occlusion` on `/your-weekend`, 820px.** The "covered" text is inside a collapsed
+  `<details class="bd-event__details">` (`checkVisibility()` is false). Chromium keeps layout
+  boxes for closed `<details>` content, and they sit under the next event's date tile. Opened,
+  nothing overlaps. Taking the content out of layout (`display: none`) would silence the detector,
+  but it would also stop find-in-page from opening an event to show "dress code", so the markup
+  stays as it is.
+- **`first-viewport-column-overflow` on `/your-weekend`, 1280px.** This is the approved REF-WEEKEND
+  three-column workspace. PX-24 moved its side column to one card per row, which makes it about
+  1.8 viewports tall beside a one-third-viewport RSVP card. From 1280px the RSVP card is sticky
+  under the masthead, unless it holds the form, so it travels with the reader instead of floating
+  over empty paper. Rebalancing the three columns would change the approved layout, and that is
+  Sara and Tyler's decision.
+- **`heading-rhythm` on `/gifts` (Conservatory), 1280px and up.** Each section heading sits in a
+  two-column head, with its content beside it rather than below. The 159px under the heading is
+  the gap to the next section, and a purely vertical measure reads that as the heading belonging
+  to the block above. Both sections are placeholders until the couple chooses where the registry
+  lives.

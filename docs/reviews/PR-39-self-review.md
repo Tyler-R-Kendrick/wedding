@@ -81,5 +81,23 @@ Each scenario was run against `.githooks/pre-commit` itself.
 The PR's first push passed every CI job: design quality, typecheck/lint/unit/integration/build,
 and Playwright smoke.
 
-impeccable 4.1.0 is published. The lockfile stays on 4.0.0, because `CLAUDE.md` makes tool
-updates a reviewed step of their own.
+impeccable was then bumped to 4.1.0 (CLI engine 0.1.5) at Tyler's request, which the `CLAUDE.md`
+rule on tool updates asks for.
+
+## 4. Design lint pass on 4.1.0
+
+Tyler asked for every impeccable and design-lint finding to be addressed. On 4.1.0:
+
+- **Source scan:** 0 anti-patterns and 15 advisories, all `design-system-font-size`. Eleven
+  were fluid or pixel sizes off the Botanical Deco ramp. They now run between `--type-*` tokens,
+  and one new step was added: `display-2xl`, 6rem, for the three theme words. The other four were
+  15px placeholder-kit text, now `body-sm` at 17px.
+- **Rendered scan:** 17 routes in all three designs at 390, 820, 1280 and 1440px, guest routes
+  signed in. Before the fixes it found 45 + 15 + 6 + 5 findings: an overflow at 390px, a 2.6:1
+  script line, and line lengths of 89–102 characters. All were fixed at the source. Three
+  false positives or design-owned trade-offs remain, each waived for one rule on one page; see
+  `docs/design/approved-botanical-deco/detector-waivers.md`.
+- **The gate itself:** off-scale sizes, colours and radii were advisory, so nothing ever failed on
+  them. `scripts/check-design-drift.mjs` now fails on them in the pre-commit hook, in
+  `npm run quality`, and in CI. `npm run slop:detect:rendered` makes the rendered scan one
+  command.

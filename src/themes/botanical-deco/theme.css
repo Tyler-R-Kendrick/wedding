@@ -55,6 +55,12 @@
   --font-newsreader: "Newsreader", "Newsreader Fallback", "Times New Roman", serif;
   --font-ms-madi: "Ms Madi", "Ms Madi Fallback", cursive;
   /* type styles: --type-<style>-{family,size,weight,line,tracking,features} */
+  --type-display-2xl-family: "Bodoni Moda", "Bodoni Moda Fallback", "Times New Roman", serif;
+  --type-display-2xl-size: 6rem;
+  --type-display-2xl-weight: 400;
+  --type-display-2xl-line: 0.95;
+  --type-display-2xl-tracking: -0.01em;
+  --type-display-2xl-features: normal;
   --type-display-xl-family: "Bodoni Moda", "Bodoni Moda Fallback", "Times New Roman", serif;
   --type-display-xl-size: 4.25rem;
   --type-display-xl-weight: 500;

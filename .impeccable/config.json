@@ -43,6 +43,33 @@
         ],
         "createdAt": "2026-09-22T23:54:08.300Z",
         "reason": "Claude: dynamic src from AdventureCard.cover, rendered only when repo.ts coverOf() found a site-path or https src"
+      },
+      {
+        "rule": "text-occlusion",
+        "value": "*",
+        "files": [
+          "**/your-weekend*"
+        ],
+        "createdAt": "2026-09-23T16:37:46.953Z",
+        "reason": "Claude: false positive, measured 2026-09-23. The 'covered' text is inside collapsed <details class=bd-event__details> (checkVisibility() false); Chromium keeps layout boxes for closed details content, under the next event. Opened, nothing overlaps. Kept findable by Ctrl+F, so not display:none. See detector-waivers.md."
+      },
+      {
+        "rule": "heading-rhythm",
+        "value": "*",
+        "files": [
+          "**/gifts?theme=conservatory*"
+        ],
+        "createdAt": "2026-09-23T16:37:46.964Z",
+        "reason": "Claude: two-column section head at >=1280px; each h2 binds to the block BESIDE it (its placeholder), and the 159px below is the gap to the next section, which a vertical measure reads as crowding. Sections are placeholders until the couple chooses a registry (TODO). See detector-waivers.md."
+      },
+      {
+        "rule": "first-viewport-column-overflow",
+        "value": "*",
+        "files": [
+          "**/your-weekend*"
+        ],
+        "createdAt": "2026-09-23T16:37:46.975Z",
+        "reason": "Claude: approved REF-WEEKEND three-column workspace, whose side column went one-up in PX-24; the short RSVP column is sticky under the masthead at >=1280px (guest.css) so it never floats over empty paper. Rebalancing the columns is the couple's call. See detector-waivers.md."
       }
     ],
     "waivers": {

@@ -23,7 +23,9 @@
  *                         mistake this check exists for.
  *   3. impeccable detect  staged UI files, plus all of src/ when DESIGN.md or .impeccable/config.json
  *                         is staged, since a token change can put untouched components in drift.
- *                         Uses .impeccable/config.json ignores and waivers, exactly like CI.
+ *                         Anti-patterns block, and so does any size, colour or radius off the
+ *                         DESIGN.md scale (`check-design-drift.mjs`: the detector only advises on
+ *                         those). Uses .impeccable/config.json ignores and waivers, exactly like CI.
  *   4. stylelint          staged CSS (the banned-font and named-colour rules live here).
  *
  * Checks 3 and 4 read the working tree (and 3 reads the working-copy DESIGN.md as its context).
@@ -38,6 +40,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { classify, detect, format } from './check-design-drift.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -143,8 +146,7 @@ if (staged.some((f) => DESIGN_SYNC_FILES.test(f))) {
 const contextChanged = staged.some((f) => DETECTOR_CONTEXT.test(f));
 const uiFiles = staged.filter((f) => UI_FILE.test(f) && existsSync(path.join(ROOT, f)));
 const detectTargets = contextChanged ? ['src/', ...uiFiles.filter((f) => !f.startsWith('src/'))] : uiFiles;
-const impeccable = detectTargets.length && locate('impeccable', 'impeccable');
-if (impeccable) {
+if (detectTargets.length) {
   if (contextChanged) {
     partial(staged.filter((f) => DETECTOR_CONTEXT.test(f)), 'impeccable (design context)');
     const wip = [
@@ -156,17 +158,16 @@ if (impeccable) {
     partial(uiFiles, 'impeccable');
   }
   const label = contextChanged ? 'src/ + staged UI files (design context changed)' : `${uiFiles.length} staged file(s)`;
-  const r = run(impeccable, ['detect', '--no-advisory', ...detectTargets]);
-  if (r.status === 0) {
-    say(`impeccable      ${label}: clean`);
+  const result = detect(detectTargets);
+  if (result.error) {
+    failures.push(`impeccable detect: ${result.error}`);
   } else {
-    say(`impeccable      ${label}:`);
-    say(r.out.replace(/^/gm, '  '));
-    failures.push(
-      r.status === 2
-        ? 'impeccable detect: fix the findings above, or record a waiver with `.claude/skills/impeccable/scripts/impeccable hooks ignore-value … --reason "…"`'
-        : `impeccable detect could not scan a target (${r.status === null ? 'failed to start' : `exit ${r.status}`})`,
-    );
+    const { primary, drift, notes: copy } = classify(result.findings);
+    say(`impeccable      ${label}: ${primary.length} anti-pattern(s), ${drift.length} off the DESIGN.md scale`);
+    for (const f of [...primary, ...drift]) say(`  ${format(f)}`);
+    for (const f of copy) say(`  note ${format(f)}`);
+    if (primary.length) failures.push('impeccable detect: fix the anti-patterns above, or waive a false positive with `impeccable hooks ignore-value … --reason "…"`');
+    if (drift.length) failures.push('impeccable detect: use a DESIGN.md token for each value above, or add the step to DESIGN.md and run `npm run design:sync`');
   }
 }
 
