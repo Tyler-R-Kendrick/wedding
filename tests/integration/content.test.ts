@@ -46,6 +46,31 @@ describe('story + adventures visibility', () => {
     }
   });
 
+  it('get_story carries the timeline in line order, undated until the couple supply dates', async () => {
+    const r = await invoke(getStory, await ctxFor(anonymous, 'ai'), {});
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const { timeline } = r.value.data;
+    expect(timeline.map((m) => m.slug)).toEqual([
+      'allison-and-jamies-wedding', 'museum-of-ice-cream', 'richardson-farm', 'michael-jordans-steakhouse', 'food-tastings', 'gardening-together', 'madison-waterfront', 'starved-rock',
+    ]);
+    // Nothing is dated until the Paired export lands: a guessed year is worse than none.
+    expect(timeline.every((m) => m.occurredOn === undefined)).toBe(true);
+    const rock = timeline.find((m) => m.slug === 'starved-rock')!;
+    expect(rock).toMatchObject({ chapter: 'love', adventureRoute: '/our-adventures/starved-rock', placeholder: false, note: { placeholder: false } });
+    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.note.placeholder).toBe(true);
+    expect(r.value.sources.some((s) => s.url === '/our-story#starved-rock')).toBe(true);
+    // Every stand-in photograph resolves to a file the ride's manifest knows.
+    for (const m of timeline) for (const media of m.media) expect(media.src).toMatch(/^\/media\/timeline\/[a-z0-9-]+-\d+\.jpg$/);
+  });
+
+  it('projects timeline stations into the concierge corpus without their TODOs', async () => {
+    const rows = await (await getDb()).select().from(knowledgeRecords);
+    const station = rows.find((k) => k.id.startsWith('timeline_moments:') && k.route === '/our-story#starved-rock');
+    expect(station?.content).toContain('I love you');
+    expect(rows.some((k) => k.id.startsWith('timeline_moments:') && k.content.includes('TODO'))).toBe(false);
+  });
+
   it('private-draft memories never leak to anonymous, guests, or the AI surface (even for admins)', async () => {
     const forAnon = await invoke(listAdventures, await ctxFor(anonymous), {});
     const forGuest = await invoke(listAdventures, await ctxFor(guest), {});

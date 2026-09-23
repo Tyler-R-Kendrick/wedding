@@ -38,7 +38,9 @@ const PAGES: PageCase[] = [
     path: '/our-story',
     h1: { 'botanical-deco': 'How we found our way to forever', 'gilded-hour': 'Our Story', conservatory: 'Our Story' },
     primary: (p) => p.getByRole('heading', { name: 'How we met', level: 2 }),
-    signature: { 'botanical-deco': '.bd-journey__line .bd-journey__bead', 'gilded-hour': '.gh-spine .gh-plaque--act', conservatory: '.cv-stem .cv-stem__leaf' },
+    // The approved opening leads into the ride; its boarding sign is the first thing to reach.
+    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: /^Ride the .+ Line$/, level: 2 }) },
+    signature: { 'botanical-deco': '.bd-ride-map .bd-ride-map__dot', 'gilded-hour': '.gh-spine .gh-plaque--act', conservatory: '.cv-stem .cv-stem__leaf' },
   },
   {
     key: 'our-adventures',

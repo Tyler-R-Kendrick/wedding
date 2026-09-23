@@ -1,0 +1,179 @@
+[
+  {
+    "slug": "allison-and-jamies-wedding",
+    "chapter": "met",
+    "order": 1,
+    "title": "Allison and Jamie's wedding",
+    "note": "Flirty glances across the room, and an immediate connection.",
+    "media": [
+      {
+        "alt": "A wedding reception table set with roses, glassware and white chair covers.",
+        "src": "/media/timeline/allison-and-jamies-wedding-911.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "allison-and-jamies-wedding",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "museum-of-ice-cream",
+    "chapter": "relationship",
+    "order": 2,
+    "title": "Museum of Ice Cream",
+    "note": "TODO(Tyler & Sara): the date and one line about the visit, from Paired.",
+    "media": [
+      {
+        "alt": "A scoop of raspberry sorbet in a cone, held up against a pale wall.",
+        "src": "/media/timeline/museum-of-ice-cream-911.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "museum-of-ice-cream",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "richardson-farm",
+    "chapter": "relationship",
+    "order": 3,
+    "title": "Richardson Farm",
+    "note": "TODO(Tyler & Sara): the date and one line about the day at the farm, from Paired.",
+    "media": [
+      {
+        "alt": "White barns beyond a field of ripe grain under a grey sky.",
+        "src": "/media/timeline/richardson-farm-1024.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "richardson-farm",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "michael-jordans-steakhouse",
+    "chapter": "relationship",
+    "order": 4,
+    "title": "Michael Jordan's Steakhouse",
+    "note": "TODO(Tyler & Sara): the date and one line about the dinner, from Paired.",
+    "media": [
+      {
+        "alt": "A plated steak with greens beside wine glasses on a dark restaurant table.",
+        "src": "/media/timeline/michael-jordans-steakhouse-907.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "michael-jordans-steakhouse",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "food-tastings",
+    "chapter": "relationship",
+    "order": 5,
+    "title": "Food tastings",
+    "note": "TODO(Tyler & Sara): when and where, from Paired.",
+    "media": [
+      {
+        "alt": "Wine bottles and empty tasting glasses lined up on a wooden bar with tasting sheets.",
+        "src": "/media/timeline/food-tastings-853.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "food-tastings",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "gardening-together",
+    "chapter": "relationship",
+    "order": 6,
+    "title": "Gardening together",
+    "note": "TODO(Tyler & Sara): when the garden started, from Paired.",
+    "media": [
+      {
+        "alt": "A garden harvest in a green tub: red potatoes, beets, courgettes and beans.",
+        "src": "/media/timeline/gardening-together-909.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "gardening-together",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "madison-waterfront",
+    "chapter": "relationship",
+    "order": 7,
+    "title": "Madison waterfront",
+    "note": "TODO(Tyler & Sara): the date and one line about the waterfront, from Paired.",
+    "media": [
+      {
+        "alt": "Bright red kayaks on a wooden dock at the edge of Lake Monona in Madison, Wisconsin.",
+        "src": "/media/timeline/madison-waterfront-911.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "madison-waterfront",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "starved-rock",
+    "chapter": "love",
+    "order": 8,
+    "title": "Starved Rock",
+    "note": "We said “I love you” for the first time.",
+    "locationLabel": "Starved Rock State Park",
+    "media": [
+      {
+        "alt": "French Canyon at Starved Rock State Park: sandstone walls and green trees around a narrow canyon.",
+        "src": "/media/timeline/starved-rock-1024.jpg",
+        "caption": "Stand-in photograph until ours arrives."
+      }
+    ],
+    "adventureSlug": "starved-rock",
+    "sourceKey": "brief",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "seed:brief-2026-09-04",
+    "visibility": "public",
+    "placeholder": false
+  }
+]

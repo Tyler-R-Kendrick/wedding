@@ -14,6 +14,8 @@ export const SOURCE_KEYS = {
   'caa-web': seedId<ContentSourceId>(103),
   /** Illinois DNR page for Starved Rock State Park (official-web, EXTERNAL_DATA). */
   'starved-rock-web': seedId<ContentSourceId>(108),
+  /** The couple's Paired timeline (authored, TRUSTED_WEDDING); rows arrive via scripts/import-paired.mjs. */
+  paired: seedId<ContentSourceId>(109),
 } as const;
 
 export type SourceKey = keyof typeof SOURCE_KEYS;
@@ -29,4 +31,5 @@ export const EDITED_BY = {
   brief: 'seed:brief-2026-09-04',
   kit: 'seed:caa-kit-2025-26',
   linkCheck: 'seed:link-check-2026-09-05',
+  paired: 'import:paired',
 } as const;

@@ -119,6 +119,27 @@ photographs of any event; the site says so on `/credits`.
 - The licensed photographs among them (the building, the city, Starved Rock)
   are ordinary §1b ledger entries.
 
+### 1d′. Our Story timeline stand-ins
+
+The stations on `/our-story` show openly licensed photographs of the *kind* of
+place each memory names (a reception table, an ice-cream cone, Lake Monona in
+Madison, French Canyon at Starved Rock) until the couple's Paired photos
+replace them. Each one:
+
+- was fetched through `scripts/fetch-openverse.mjs` / `fetch-commons.mjs`, so it
+  is in `public/assets/attributions.json` and on `/credits`;
+- is re-encoded by `node scripts/timeline-media.mjs placeholders` into
+  `public/media/timeline/` with a manifest item naming its ledger id and hash,
+  `standIn: true`, and the credit line its licence requires (shown on the card
+  for CC BY / BY-SA; the Starved Rock crop stays CC BY-SA 3.0);
+- carries a visible "Stand-in photo" label on the page, and alt text that
+  describes the picture rather than the memory it stands in for.
+
+No stand-in is a portrait of a stranger. The couple's own photos arrive only
+through `scripts/import-paired.mjs --with-photos`, an explicit opt-in because
+this repository is public (`docs/content/paired-timeline.md`).
+`npm run assets:check` verifies both the ledger and the timeline manifest.
+
 ### 1e. Demo recordings
 
 `docs/demos/` holds screen recordings of the site made by

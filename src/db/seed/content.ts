@@ -4,12 +4,12 @@ import type { Db } from '../client';
 import { loadContentSeed, SOURCE_KEYS, type ProvenanceSeed } from '@/content';
 import { projectKnowledge } from '@/domain/knowledge/projection';
 import {
-  adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, venueFacts, venueSpaces,
+  adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
 } from '../schema';
 import { seedId } from './sources';
 
 /** Stable id ranges per table so the seed is idempotent and recognisable in audit rows. */
-const ID_BASE = { story: 200, places: 300, adventures: 400, recommendations: 500, itineraries: 600, venueSpaces: 700, venueFacts: 800, operational: 900, faq: 1000 } as const;
+const ID_BASE = { story: 200, places: 300, adventures: 400, recommendations: 500, itineraries: 600, venueSpaces: 700, venueFacts: 800, operational: 900, faq: 1000, timeline: 1100 } as const;
 
 const toDate = (s: string | undefined) => (s ? new Date(s) : null);
 
@@ -54,6 +54,12 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
 
   for (const [i, s] of seed.story.entries()) {
     await upsert(storySections, { id: seedId(ID_BASE.story + i), slug: s.slug, chapter: s.chapter, order: s.order, title: s.title, paragraphs: s.paragraphs, media: s.media, ...provenance(s, now) });
+  }
+  for (const [i, t] of seed.timeline.entries()) {
+    await upsert(timelineMoments, {
+      id: seedId(ID_BASE.timeline + i), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
+      note: t.note, media: t.media, adventureSlug: t.adventureSlug ?? null, externalRef: t.externalRef ?? null, ...provenance(t, now),
+    });
   }
   for (const [i, p] of seed.places.entries()) {
     await upsert(places, {

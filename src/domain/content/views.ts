@@ -220,6 +220,22 @@ export const storySectionViewSchema = z.object({
 });
 export type StorySectionView = z.infer<typeof storySectionViewSchema>;
 
+/** One station on the Our Story line. `occurredOn` is as precise as the couple's record is. */
+export const timelineMomentViewSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  chapter: z.enum(STORY_CHAPTERS),
+  title: z.string(),
+  occurredOn: z.string().optional(),
+  locationLabel: z.string().optional(),
+  note: textBlockSchema,
+  media: z.array(mediaViewSchema),
+  adventureRoute: z.string().optional(),
+  placeholder: z.boolean(),
+  provenance: provenanceViewSchema,
+});
+export type TimelineMomentView = z.infer<typeof timelineMomentViewSchema>;
+
 export const faqViewSchema = z.object({
   id: z.string(),
   slug: z.string(),

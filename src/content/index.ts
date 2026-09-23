@@ -5,6 +5,7 @@ import operationalFieldsJson from './seed/operational-fields.json';
 import placesJson from './seed/places.json';
 import recommendationsJson from './seed/recommendations.json';
 import storyJson from './seed/story.json';
+import timelineJson from './seed/timeline.json';
 import venueFactsJson from './seed/venue-facts.json';
 import venueSpacesJson from './seed/venue-spaces.json';
 import { contentSeedSchema, type ContentSeed } from './schemas';
@@ -20,6 +21,7 @@ export * from './sources';
 export function loadContentSeed(): ContentSeed {
   const parsed = contentSeedSchema.safeParse({
     story: storyJson,
+    timeline: timelineJson,
     places: placesJson,
     adventures: adventuresJson,
     recommendations: recommendationsJson,
@@ -54,7 +56,9 @@ export function crossReferenceProblems(seed: ContentSeed): string[] {
   const adventureSlugs = unique('adventures.slug', seed.adventures.map((a) => a.slug));
   const recommendationSlugs = unique('recommendations.slug', seed.recommendations.map((r) => r.slug));
   const operationalKeys = unique('operationalFields.key', seed.operationalFields.map((o) => o.key));
-  unique('story.slug', seed.story.map((s) => s.slug));
+  const storySlugs = unique('story.slug', seed.story.map((s) => s.slug));
+  unique('timeline.slug', seed.timeline.map((t) => t.slug));
+  unique('timeline.externalRef', seed.timeline.flatMap((t) => (t.externalRef ? [t.externalRef] : [])));
   unique('itineraries.slug', seed.itineraries.map((i) => i.slug));
   unique('venueSpaces.slug', seed.venueSpaces.map((v) => v.slug));
   unique('venueFacts.slug', seed.venueFacts.map((v) => v.slug));
@@ -63,6 +67,11 @@ export function crossReferenceProblems(seed: ContentSeed): string[] {
   for (const a of seed.adventures) {
     if (a.placeSlug && !placeSlugs.has(a.placeSlug)) problems.push(`adventures.${a.slug}.placeSlug: unknown place "${a.placeSlug}"`);
     for (const r of a.relatedRecommendationSlugs) if (!recommendationSlugs.has(r)) problems.push(`adventures.${a.slug}.relatedRecommendationSlugs: unknown recommendation "${r}"`);
+  }
+  for (const t of seed.timeline) {
+    // Chapters and stations share one page and one set of #anchors.
+    if (storySlugs.has(t.slug)) problems.push(`timeline.${t.slug}: slug is already a story chapter's anchor on /our-story`);
+    if (t.adventureSlug && !adventureSlugs.has(t.adventureSlug)) problems.push(`timeline.${t.slug}.adventureSlug: unknown adventure "${t.adventureSlug}"`);
   }
   for (const r of seed.recommendations) {
     if (r.placeSlug && !placeSlugs.has(r.placeSlug)) problems.push(`recommendations.${r.slug}.placeSlug: unknown place "${r.placeSlug}"`);

@@ -37,6 +37,7 @@ describe('knowledge projection + static search', () => {
     places: [],
     adventure_memories: [],
     recommendations: [],
+    timeline_moments: [],
     itinerary_templates: [],
     venue_spaces: [],
     venue_facts: [],

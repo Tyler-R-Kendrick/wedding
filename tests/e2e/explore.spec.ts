@@ -70,50 +70,54 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('the story opens one chapter at a time: pointer, keyboard, steps and deep links', async ({ page }) => {
+  test('the story is a ride: the map jumps, the buttons step, a citation lands on its station', async ({ page }) => {
     await page.goto('/our-story');
-    const tabs = page.getByRole('tablist', { name: 'Chapters' });
-    const first = tabs.getByRole('tab', { name: /The connection/ });
-    await expect(first).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#the-connection')).toBeVisible();
-    await expect(page.locator('#love')).toBeHidden();
+    const ride = page.locator('.bd-ride');
+    await expect(ride).toHaveAttribute('data-mode', 'ride');
+    const map = page.getByRole('navigation', { name: /^Stations on the .+ Line$/ });
+    // Every station is on the car card, in order, from the night they met to the Loop.
+    const stations = map.getByRole('link');
+    await expect(stations.first()).toHaveAccessibleName(/Red Line: How we met/);
+    await expect(stations.last()).toHaveAccessibleName(/The Loop/);
+    const sign = page.locator('.bd-ride__sign');
 
-    // Arrow keys move along the line and open what they land on; the URL follows, so it can be shared.
-    await first.focus();
-    await page.keyboard.press('ArrowRight');
-    const second = tabs.getByRole('tab', { name: /Our life together/ });
-    await expect(second).toBeFocused();
-    await expect(second).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#our-life-together')).toBeVisible();
-    await expect(page.locator('#the-connection')).toBeHidden();
-    await expect(page).toHaveURL(/#our-life-together$/);
-    await page.keyboard.press('End');
-    await expect(tabs.getByRole('tab', { name: /What marriage means/ })).toBeFocused();
-    await expect(page.locator('#what-marriage-means')).toBeVisible();
+    // Tapping a station rides the train there; the URL follows so it can be shared.
+    await map.getByRole('link', { name: /^Starved Rock/ }).click();
+    await expect(page).toHaveURL(/#starved-rock$/);
+    await expect(map.getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
+    await expect(sign).toContainText('This isStarved Rock');
+    // Only the station at the platform can be read or tabbed into; the rest are scenery.
+    await expect(page.locator('#starved-rock')).not.toHaveAttribute('inert', /.*/);
+    await expect(page.locator('#love')).toHaveAttribute('inert', '');
+    await expect(page.getByRole('heading', { name: 'Starved Rock', level: 3 })).toBeVisible();
 
-    // Each open chapter offers the neighbouring ones by name.
-    await page.getByRole('button', { name: /^Previous chapter: The proposal/ }).click();
-    await expect(page.locator('#the-proposal')).toBeVisible();
-    await expect(page.locator('#what-marriage-means')).toBeHidden();
+    // The two buttons step one station at a time, for anyone who would rather press than scroll.
+    await page.getByRole('button', { name: /Next stop/ }).click();
+    await expect(map.getByRole('link', { name: /Greater together than alone/ })).toHaveAttribute('aria-current', 'location');
+    await page.getByRole('button', { name: /Back a stop/ }).click();
+    await expect(map.getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
+    // Arriving is announced once the train has settled.
+    await expect(page.locator('.bd-ride__sign [aria-live="polite"]')).toHaveText(/This is Starved Rock\./);
 
-    // An assistant's citation (/our-story#love) opens that chapter, not the first one.
+    // An assistant's citation (/our-story#love) lands on that transfer, not on the first stop.
     await page.goto('/our-story#love');
-    await expect(page.locator('#love-tab')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#love')).toBeVisible();
-    await expect(page.locator('#the-connection')).toBeHidden();
+    await expect(map.getByRole('link', { name: /Pink Line: Love/ })).toHaveAttribute('aria-current', 'location');
+    await expect(page.getByRole('heading', { name: 'Love', level: 3 })).toBeVisible();
     await axe(page);
   });
 
-  test('without script the chapter links still open their chapter', async ({ browser }, testInfo) => {
-    const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, javaScriptEnabled: false });
-    const page = await ctx.newPage();
-    await page.goto('/our-story');
-    await expect(page.locator('#the-connection')).toBeVisible();
-    await expect(page.locator('#love')).toBeHidden();
-    await page.locator('a[href="#love"]').click();
-    await expect(page.locator('#love')).toBeVisible();
-    await expect(page.locator('#the-connection')).toBeHidden();
-    await ctx.close();
+  test('reduced motion and no script lay the same line flat, every stop readable', async ({ browser }, testInfo) => {
+    for (const options of [{ reducedMotion: 'reduce' as const }, { javaScriptEnabled: false }]) {
+      const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, ...options });
+      const page = await ctx.newPage();
+      await page.goto('/our-story#love');
+      await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
+      for (const id of ['how-we-met', 'allison-and-jamies-wedding', 'love', 'starved-rock', 'the-loop']) await expect(page.locator(`#${id}`)).toBeVisible();
+      await expect(page.locator('.bd-ride [inert]')).toHaveCount(0);
+      await expect(page.locator('#love')).toBeInViewport();
+      if (options.reducedMotion) await axe(page);
+      await ctx.close();
+    }
   });
 
   test('share an adventure composes a plan for the time available', async ({ page }) => {

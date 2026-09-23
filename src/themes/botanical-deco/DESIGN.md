@@ -35,6 +35,14 @@ colors:
   outline: "#E2D8C7"
   error: "#8A2C22"
   on-error: "#FFF6F2"
+  line-red: "#A3352B"
+  line-blue: "#1F5D8C"
+  line-brown: "#6B4631"
+  line-pink: "#A3426A"
+  line-green: "#3D6B3A"
+  line-orange: "#9E5019"
+  line-gold: "#806238"
+  on-line: "#FBF9F3"
 typography:
   display-xl:
     fontFamily: Bodoni Moda
@@ -225,6 +233,39 @@ components:
   bloom-tint-warm:
     backgroundColor: "{colors.champagne}"
     textColor: "{colors.primary}"
+  line-red:
+    backgroundColor: "{colors.line-red}"
+    textColor: "{colors.on-line}"
+  line-blue:
+    backgroundColor: "{colors.line-blue}"
+    textColor: "{colors.on-line}"
+  line-brown:
+    backgroundColor: "{colors.line-brown}"
+    textColor: "{colors.on-line}"
+  line-pink:
+    backgroundColor: "{colors.line-pink}"
+    textColor: "{colors.on-line}"
+  line-green:
+    backgroundColor: "{colors.line-green}"
+    textColor: "{colors.on-line}"
+  line-orange:
+    backgroundColor: "{colors.line-orange}"
+    textColor: "{colors.on-line}"
+  line-gold:
+    backgroundColor: "{colors.line-gold}"
+    textColor: "{colors.on-line}"
+  station-name-gold:
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.line-gold}"
+  station-name-pink:
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.line-pink}"
+  station-name-orange:
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.line-orange}"
+  ride-stage:
+    backgroundColor: "{colors.secondary}"
+    textColor: "{colors.on-secondary}"
 ---
 
 # Botanical Deco — Design System
@@ -293,6 +334,29 @@ state of a choice (7.1:1 with Ivory type). **Dusk** `#5E7385` is the local
 navigation panel on Explore. *Exception (accessibility):* the approved panel is
 a lighter dusty blue (`#8B9EAB`, kept as **Dusty** for decoration) whose white
 labels fail contrast; Dusk keeps the hue and passes 4.9:1.
+
+### Transit lines (Our Story)
+
+Our Story is ridden as a CTA 'L' line (docs/design/inspo/our-story-timeline.md).
+Each story chapter is a line with the colour of its CTA namesake, pulled toward
+the palette and darkened until **station names set in the line colour pass
+4.5:1 on Ivory and on Paper** — Dennis McClendon's rule that a station's name
+wears its line's colour. The sign plates carry **On-line** `#FBF9F3` on the
+colour (≥ 5.2:1 on every line).
+
+| Chapter | Line | Token |
+|---|---|---|
+| How we met | Red | `line-red` `#A3352B` |
+| The connection | Blue | `line-blue` `#1F5D8C` |
+| Our life together | Brown | `line-brown` `#6B4631` |
+| Love | Pink | `line-pink` `#A3426A` |
+| Greater together | Green | `line-green` `#3D6B3A` |
+| The proposal | Orange | `line-orange` `#9E5019` |
+| What marriage means | Gold (the Loop) | `line-gold` `#806238` |
+
+The line colours appear only on the ride and its car-card map; they are never a
+page accent anywhere else. The stage the memories pass through is Chicago Blue
+(`ride-stage`), the city at dusk.
 
 ## Typography
 
