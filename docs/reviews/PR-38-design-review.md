@@ -42,3 +42,19 @@ couple's Paired timeline is imported (backlog C-11); every station says honestly
 - **Preview 500.** Previews read the production database and never migrate, so `timeline_moments`
   did not exist there; the repo now serves the bundled seed stations until it does
   (`tests/integration/timeline-unmigrated.test.ts`).
+
+## Self-review (code), 2026-09-23
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | Re-seeding inserted timeline stops and never updated or pruned them, so a reordered or renamed seed left stale stations | Fixed. Upsert by slug and prune seed/import rows the seed no longer lists; admin-edited rows (`contentVersion > 1`) and hand-typed rows are left alone (`tests/integration/timeline-seed.test.ts`). |
+| 2 | The knowledge projection read `timeline_moments` without the missing-table fallback, so the concierge would fail on a preview | Fixed. Shared `isMissingTable()` (`src/db/missing-table.ts`); both readers fall back. |
+| 3 | A station slug could equal a story chapter's id or `the-loop`, giving two elements one anchor | Fixed. The seed validator refuses it, `timelineAnchors()` suffixes any collision, and the importer never mints one. |
+| 4 | Gilded Hour, Conservatory and the fallback recipe dropped the timeline entirely | Fixed. Each renders the stations as an "Along the way" list (`src/themes/shared/timeline.tsx`). |
+| 5 | A key, wheel or touch did not interrupt a scripted glide | Fixed. Anything outside the ride's own controls cancels it. |
+| 6 | `get_story` read story and timeline one after the other | Fixed. In parallel. |
+| 7–10 | Paired import: midnight-UTC dates slipped a day; one-character titles, 200-character places and duplicate refs produced rows the seed rejects; a new stop could take an existing stop's slug | Fixed, each with a unit test. |
+
+Merged main twice (#36, #37): #36's migration 0011 kept, the timeline table regenerated as 0012;
+#37's theme words kept on the Story hero, and this PR's parity exception renumbered PX-25 → PX-29
+because #37 took PX-25.

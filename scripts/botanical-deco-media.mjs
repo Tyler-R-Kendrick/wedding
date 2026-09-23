@@ -66,8 +66,6 @@ const COUPLE = [
     alt: 'Generated portrait of Sara and Tyler smiling together on a bridge over the Chicago River.' },
   { id: 'couple.story.monochrome', ref: 'REF-HOME', box: [421, 528, 724, 746], scales: [1.5, 2.6], focal: [0.55, 0.4],
     alt: 'Generated black-and-white portrait: Sara looking up at Tyler, both smiling.' },
-  { id: 'couple.lakefront', ref: 'REF-HOME', box: [561, 862, 889, 1025], scales: [1.5, 2.6], focal: [0.9, 0.4],
-    alt: 'Generated portrait of Sara and Tyler on the Lake Michigan shore with the downtown skyline across the water.' },
 ];
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');

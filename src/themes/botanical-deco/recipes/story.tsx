@@ -194,7 +194,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
         sub={[frame.site.coupleDisplayName, 'Same people. A bigger chapter.']}
         photo="couple.hero.story"
         mobilePhoto="couple.hero.story.mobile"
-        words={['Good', 'people', 'beautiful', 'places', 'great', 'love']}
+        words={['Love', 'peace', 'happiness']}
       />
 
       <StoryRide

@@ -385,10 +385,14 @@ the typography gate already exempts by class (`bd-eyebrow`).
 - **Portrait-led split openings.** Home is a wide riverfront scene; Our Story,
   Explore and Your Weekend use a shorter panoramic version. Live text takes the
   left two-fifths on an ivory wash; the couple fill the centre-right.
-- **Editorial strips, not card rows.** Beneath the Home opening sit four
-  columns of different widths and jobs: an authored welcome, a monochrome
-  story image, a real CAA photograph, a Chicago entry. Photo tiles are
-  rectangular and adjacent because that is what was approved.
+- **Home unfolds; it does not arrive all at once.** Under the opening (which
+  carries the day count on a plate over the portrait) comes the theme, *Love,
+  peace & happiness*, as three large italic words that enter one at a time
+  beside a pinned introduction; then the three things the couple most want to
+  share (the story, the building, the city) at three different scales, each
+  photograph at its own proportions so nothing is cut at a tile edge; then the
+  moss schedule and a closing gallery invitation. Generous air between them:
+  the earlier four-column strip read as claustrophobic (PX-27).
 - **Colour bands carry rhythm.** Moss for the weekend schedule, Chicago Blue for
   the city, Paper for the footer. Sections are separated by these bands and by
   fine gold rules, not by identical whitespace.
@@ -398,6 +402,14 @@ the typography gate already exempts by class (`bd-eyebrow`).
 - Max content width 1448px, the width of the approved images. Mobile first at
   390px: the invitation copy sits directly under a dedicated mobile crop of the
   portrait, within the first screen.
+
+## Motion
+
+The opening settles on load (the portrait eases back from a slight zoom, the
+gold rules draw, the day count runs up once) without fading any text. Later
+sections play one entrance each as they scroll in: words rise, photographs
+open out from a narrower frame. Nothing rests half-revealed, nothing bounces,
+and reduced motion, no scripting and print get the page as drawn.
 
 ## Elevation & Depth
 
@@ -432,7 +444,7 @@ schedule band, and in 1px gold rules — never heavy frames, never sunbursts.
 - **Choices**: segmented pills; the selected option is Moss with Ivory text and
   a dot, the other is Sheet with Ink.
 - **Footer**: Paper band with a fine line-drawn skyline at the left, the words
-  "Chicago + People + Love + A brighter together" in tracked caps, the
+  "Love + Peace + Happiness + Chicago" in tracked caps (the theme), the
   monogram at the right, and the media credits.
 
 ## Do's and Don'ts

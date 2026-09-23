@@ -292,7 +292,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
           </p>
         </div>
         <p className="bd-wkhero__words" aria-hidden="true">
-          <span>Good</span> <span>people</span> <span>beautiful</span> <span>places</span> <span>great</span> <span>love</span>
+          <span>Love</span> <span>peace</span> <span>happiness</span>
         </p>
         <Botanical id="botanical.corner-tl" className="bd-bloom--pagehero" priority />
         <div className="bd-wkhero__copy">
@@ -302,7 +302,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
             in Chicago
           </p>
           <span className="bd-head__rule" aria-hidden="true" />
-          <p className="bd-wkhero__sub">Great people. Beautiful places. Brighter together.</p>
+          <p className="bd-wkhero__sub">Love, peace &amp; happiness.</p>
         </div>
       </section>
 
@@ -320,7 +320,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
           ))}
         </ul>
         <p className="bd-tabs__words" aria-hidden="true">
-          Chicago <span>+</span> People <span>+</span> Love <span>+</span> Brighter together
+          Love <span>+</span> Peace <span>+</span> Happiness <span>+</span> Chicago
         </p>
       </nav>
 

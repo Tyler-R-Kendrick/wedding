@@ -77,17 +77,25 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
 });
 
 describe('the approved design has its own structure', () => {
-  it('Botanical–Deco opens on the couple and an invitation, then the editorial strip and the moss band, with no numbered acts', () => {
+  it('Botanical–Deco opens on the couple, a day count and an invitation, then the theme, what they want to share and the moss band', () => {
     const bd = render(<>{getTheme('botanical-deco').recipes.home(homeData('botanical-deco', 'TEASER'))}</>);
     // The portrait, not flowers, carries the page: a real <picture> with the formal crop and a phone crop.
-    const hero = bd.container.querySelector('.bd-hero');
-    expect(hero?.querySelector('picture[data-media="couple.hero.formal"] source[media]')).not.toBeNull();
-    expect(within(hero as HTMLElement).getByText('Join us for our wedding')).toBeTruthy();
-    // Four different jobs in the strip, the moss schedule, the second portrait, the gallery invitation.
-    expect(bd.container.querySelectorAll('.bd-strip__tile').length).toBe(3);
-    expect(bd.container.querySelector('.bd-strip__welcome')).not.toBeNull();
+    const hero = bd.container.querySelector('.bd-hero') as HTMLElement;
+    expect(hero.querySelector('picture[data-media="couple.hero.formal"] source[media]')).not.toBeNull();
+    expect(within(hero).getByText('Join us for our wedding')).toBeTruthy();
+    // The day count is in the opening, as real text (the client re-counts from today's date).
+    const count = hero.querySelector('.bd-countdown--hero') as HTMLElement;
+    expect(count.textContent?.replace(/\s+/g, ' ').trim()).toMatch(/^\d+ days? to go$/);
+    expect(hero.textContent).toContain('Love, peace & happiness');
+    // The carved-words column that cut the portrait off is gone, and so are its words.
+    expect(bd.container.textContent).not.toMatch(/beautiful places|great love/i);
+    // The theme, as three words, and the three things they want to share.
+    const theme = bd.container.querySelector('.bd-theme') as HTMLElement;
+    expect([...theme.querySelectorAll('h3')].map((h) => h.textContent)).toEqual(['Love', 'Peace', 'Happiness']);
+    expect(bd.container.querySelectorAll('.bd-share__item').length).toBe(3);
     expect(bd.container.querySelector('.bd-schedule')).not.toBeNull();
-    expect(bd.container.querySelector('picture[data-media="couple.lakefront"]')).not.toBeNull();
+    // The retired lakefront crop is not used anywhere.
+    expect(bd.container.querySelector('picture[data-media="couple.lakefront"]')).toBeNull();
     // Only the confirmed day is scheduled, and its weekday is derived: no invented 16th or 18th.
     const schedule = bd.container.querySelector('.bd-schedule') as HTMLElement;
     expect(schedule.textContent).not.toMatch(/Jul 16|Jul 18|Welcome drinks|Farewell brunch/i);

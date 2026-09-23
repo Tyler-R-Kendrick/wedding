@@ -17,7 +17,7 @@ you scroll down, with a control that reads like a CTA train line diagram.
   and `on-line`, each ≥ 4.5:1 on Ivory and Paper so station names can wear
   their line's colour; components `line-*`, `station-name-*`, `ride-stage`.
   `npm run design:lint` 0 errors / 0 warnings.
-- **Composition:** parity exception PX-25 replaces the approved spread and
+- **Composition:** parity exception PX-29 replaces the approved spread and
   journey band (PX-09/10/11/13 superseded); the opening and places strip stay.
 - **Motion:** native scroll only; one custom property drives depth, drift,
   haze, the sleepers and the train; a dwell plateau at every station; reduced
