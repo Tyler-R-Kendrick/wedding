@@ -536,6 +536,14 @@
   list-style: none;
 }
 
+/* The RSVP task list's "to do" status wears the design's selected-choice Moss, the same fill a
+   chosen answer has in the form below it. */
+[data-theme="botanical-deco"] .tasks .badge--pending {
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
 /* The reply: an invitation card, the one action that matters most before the day. */
 .bd-reply {
   position: relative;

@@ -75,6 +75,9 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
       {reply ? (
         <>
           <p className="bd-reply__intro">We would be honored to have you with us. Please tell us your plans for each event below.</p>
+          {/* Not interactive (the form is right here), but it shows a first-time guest every part of
+              the reply — including the ones that open later — before they start. */}
+          <RsvpTaskList parts={data.rsvp.parts} interactive={false} idPrefix="reply-task" labelledBy="reply-title" />
           <RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" />
         </>
       ) : w.open && data.rsvp.canAnswer ? (

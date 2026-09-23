@@ -448,9 +448,18 @@ a:focus-visible,
 
 .tasks__link,
 .tasks__label {
-  font-family: var(--type-h3-family, inherit);
-  font-size: var(--type-body-md-size, 1.0625rem);
-  font-weight: 600;
+  font-family: var(--type-title-family, var(--type-h3-family, inherit));
+  font-size: var(--type-title-size, var(--type-body-md-size, 1.0625rem));
+  font-weight: var(--type-title-weight, 600);
+  line-height: var(--type-title-line, 1.3);
+}
+
+/* A row that can be opened says so the way every other link here does — underlined — and does not
+   rely on ink versus muted grey alone to tell it from a row that cannot. */
+.tasks__link {
+  text-decoration: underline;
+  text-decoration-color: var(--color-tertiary, currentcolor);
+  text-underline-offset: 0.18em;
 }
 
 .tasks__label {
@@ -467,9 +476,17 @@ a:focus-visible,
   background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
-.tasks__item--link:has(.tasks__link:focus-visible) {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
+/* One focus ring, on the row the link's target covers. Only where :has() works: without it the
+   link keeps its own ring, rather than keyboard users getting none. */
+@supports selector(:has(a)) {
+  .tasks .tasks__link:focus-visible {
+    outline: none;
+  }
+
+  .tasks__item--link:has(.tasks__link:focus-visible) {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .tasks__hint {
@@ -480,6 +497,20 @@ a:focus-visible,
 
 .tasks__status {
   flex: 0 0 auto;
+}
+
+/* The next thing to do is the one status that stands out: a heavier primary border. What cannot be
+   started yet, or is optional, is plain muted words with no box (GOV.UK's "cannot start yet"). */
+.tasks .badge--pending {
+  border: 2px solid var(--color-primary);
+  font-weight: 600;
+}
+
+.tasks .badge--info {
+  padding-inline: 0;
+  border-color: transparent;
+  background: none;
+  color: var(--color-on-surface-muted);
 }
 
 .review {

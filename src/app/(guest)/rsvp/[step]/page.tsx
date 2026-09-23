@@ -58,17 +58,21 @@ export default async function RsvpStepPage({ params }: { params: Params }) {
             your other answers are saved.
           </p>
         </GuestNotice>
-      ) : progress.status === 'waiting' || progress.status === 'not_needed' ? (
-        <GuestNotice theme={theme} tone="info" title={progress.status === 'waiting' ? 'Tell us who is coming first' : 'Nothing to answer here'}>
-          <p>
-            {progress.status === 'waiting' ? (
-              <>
-                This is asked about the people who are coming. <Link href="/rsvp/attending">Tell us who is coming</Link>, then come back.
-              </>
-            ) : (
-              'Nobody this applies to is coming, so there is nothing to choose.'
-            )}
-          </p>
+      ) : progress.status === 'waiting' ? (
+        <>
+          <GuestNotice theme={theme} tone="info" title="Tell us who is coming first">
+            <p>This is asked about the people who are coming.</p>
+          </GuestNotice>
+          {/* The one way forward is the page's primary action, not a link inside a sentence. */}
+          <div className="actions">
+            <Link className="btn btn--primary" href="/rsvp/attending">
+              Tell us who is coming
+            </Link>
+          </div>
+        </>
+      ) : progress.status === 'not_needed' ? (
+        <GuestNotice theme={theme} tone="info" title="Nothing to answer here">
+          <p>Nobody this applies to is coming, so there is nothing to choose.</p>
         </GuestNotice>
       ) : (
         <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} theme={theme} parts={[part]} />
