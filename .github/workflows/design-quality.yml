@@ -229,6 +229,25 @@ jobs:
           RATE_LIMIT_BACKEND: db
           TRUSTED_PROXY_HOPS: '1'
 
+      - name: Swap for the dev server's warm-up peak
+        # Measured, not guessed. Warming every route the next step lists takes `next dev`
+        # (Turbopack) to ~13.8 GB resident, ~17 GB counting its transient peak, on a machine with
+        # 16 GB. Out of memory, the kernel takes the runner agent, and that is "the runner has
+        # received a shutdown signal": #38's PR run and two runs on #35 died that way inside the
+        # next step, with no other run in the repository at the time, so the concurrency group
+        # above is not the whole story. Reproduced in a 16 GB sandbox (the server died at 13.4 GB,
+        # on /admin/rsvp/export, 45 routes in) and fixed there by 10 GB of swap. Turbopack frees
+        # most of it once idle, so swap only has to carry the peak, not the steady state.
+        run: |
+          dir=/mnt
+          [ "$(df --output=avail -BG "$dir" | tail -1 | tr -dc 0-9)" -ge 20 ] || dir="$RUNNER_TEMP"
+          sudo swapoff -a || true
+          sudo fallocate -l 16G "$dir/ci-swapfile"
+          sudo chmod 600 "$dir/ci-swapfile"
+          sudo mkswap "$dir/ci-swapfile"
+          sudo swapon "$dir/ci-swapfile"
+          free -m
+
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
         # Two things exist only here, and both are deliberate:
         #   * the dev inbox and fixtures route — refused outright under NODE_ENV=production
