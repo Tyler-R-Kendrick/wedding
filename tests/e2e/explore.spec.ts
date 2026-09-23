@@ -77,15 +77,21 @@ test.describe('explore journey', () => {
     const map = page.getByRole('navigation', { name: /^Stations on the .+ Line$/ });
     // Every station is on the car card, in order, from the night they met to the Loop.
     const stations = map.getByRole('link');
-    await expect(stations.first()).toHaveAccessibleName(/Red Line: How we met/);
+    await expect(stations.first()).toHaveAccessibleName(/^How we met/);
     await expect(stations.last()).toHaveAccessibleName(/The Loop/);
-    const sign = page.locator('.bd-ride__sign');
+    // The chapters are told by colour alone: no "Red Line" or "Blue Line" is printed anywhere on the ride.
+    await expect(ride).not.toContainText(/(Red|Blue|Brown|Pink|Green|Orange|Gold) Line/);
+    const bar = page.locator('.bd-ride__bar');
 
     // Tapping a station rides the train there; the URL follows so it can be shared.
     await map.getByRole('link', { name: /^Starved Rock/ }).click();
     await expect(page).toHaveURL(/#starved-rock$/);
     await expect(map.getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
-    await expect(sign).toContainText('This isStarved Rock');
+    await expect(bar).toContainText('Next stopGreater together than alone');
+    // The moment's words come before its picture, in the page and on screen.
+    const words = await page.locator('#starved-rock .bd-stopcard__title').boundingBox();
+    const picture = await page.locator('#starved-rock .bd-stopcard__media').boundingBox();
+    expect(words && picture && (words.x + words.width <= picture.x + 1 || words.y + words.height <= picture.y + 1), 'words lead the picture').toBe(true);
     // Only the station at the platform is exposed; the scenery is hidden from assistive technology
     // and out of the tab order, but its words stay in the page for find-in-page.
     await expect(page.locator('#starved-rock')).not.toHaveAttribute('aria-hidden', /.*/);
@@ -99,11 +105,11 @@ test.describe('explore journey', () => {
     await page.getByRole('button', { name: /Back a stop/ }).click();
     await expect(map.getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
     // Arriving is announced once the train has settled.
-    await expect(page.locator('.bd-ride__sign [aria-live="polite"]')).toHaveText(/This is Starved Rock\./);
+    await expect(page.locator('.bd-ride__bar [aria-live="polite"]')).toHaveText(/This is Starved Rock\. Next stop, Greater together than alone\./);
 
     // An assistant's citation (/our-story#love) lands on that transfer, not on the first stop.
     await page.goto('/our-story#love');
-    await expect(map.getByRole('link', { name: /Pink Line: Love/ })).toHaveAttribute('aria-current', 'location');
+    await expect(map.getByRole('link', { name: /^Love$/ })).toHaveAttribute('aria-current', 'location');
     await expect(page.getByRole('heading', { name: 'Love', level: 3 })).toBeVisible();
     await axe(page);
   });

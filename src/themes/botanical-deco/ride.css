@@ -3,28 +3,49 @@
  *
  * Two layouts over one ordered list:
  *   flat  — the server's, and the one for no script, reduced motion, "Read it as a list" and print:
- *           a stations list, then each stop a readable sheet beside its coloured line.
- *   ride  — a sticky Chicago-blue stage the camera travels through. Script writes one number, --p
- *           (the train's position in stops), on the stage; everything below is arithmetic on it.
+ *           the line laid across the top, then each stop a readable sheet beside its coloured line.
+ *   ride  — a sticky ivory stage: the line across the top, one moment at a time under it, and the
+ *           Back / Next bar at its foot. Per frame, script writes --p (the train's position in
+ *           stops) on the train alone and --d (a moment's distance from it) on the two or three
+ *           moments near it; everything that moves is arithmetic on those, by transform and opacity.
+ *           Nothing is written high in the tree, so a frame restyles a handful of elements, not the page.
  * Line colours are DESIGN.md tokens (colors.line-*); nothing here is a colour literal.
  *
- * Order is base diagram → flat → ride (phone) → ride (short window) → ride (desktop): each layer
- * refines the one before it for the same elements, which is exactly what no-descending-specificity
- * objects to.
+ * Order is base → flat → ride → ride (compact line) → ride (wide window): each layer refines the one
+ * before it for the same elements, which is exactly what no-descending-specificity objects to.
  */
 /* stylelint-disable no-descending-specificity */
+
+/* A moment's distance from the train, written per frame on its two moving layers only. Not inherited,
+   so a change restyles those layers and none of the paragraphs inside them. */
+@property --d {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --ad {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
 
 .bd-ride {
   --p: 0;
   --dwell: 0.6;
-  --train-track: 0;
-  --map-gap: 56px;
+  --map-gap: 64px;
+  --map-first: 32px;
   --ride-top: 0px;
   --ride-h: calc(100svh - var(--ride-top));
   --line-c: var(--color-line-red);
 
+  /* The car card's geometry: how far down the strip the line runs, and the room its names take. */
+  --map-h: 170px;
+  --line-y: calc(var(--map-h) - 30px);
+  --col: 64px;
+  --names-reach: 15rem;
+
   position: relative;
-  padding-block: var(--spacing-3xl) var(--spacing-2xl);
 }
 
 .bd-ride [data-line="red"],
@@ -48,34 +69,28 @@
 .bd-ride [data-line="gold"],
 .bd-ride[data-line="gold"] { --line-c: var(--color-line-gold); }
 
-/* ---------- intro ---------- */
-.bd-ride__intro {
-  max-width: var(--bd-max);
-  margin-inline: auto;
-  padding-inline: var(--bd-inset);
-  display: grid;
-  gap: var(--spacing-sm);
+/* ---------- the head: what this is, and the way out of the ride ---------- */
+.bd-ride__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--bd-gutter) 0;
 }
 
 .bd-ride__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-line);
+  color: var(--color-primary);
   text-wrap: balance;
-}
-
-.bd-ride__lede {
-  max-width: var(--bd-measure);
-  font-size: var(--type-body-lg-size);
-  line-height: var(--type-body-lg-line);
-  color: var(--color-on-surface-muted);
 }
 
 /* "Read it as a list": the way out for anyone who would rather not ride, and who has never heard of
    the operating system's reduced-motion setting. Without script there is nothing to switch. */
-.bd-ride__mode {
-  max-width: var(--bd-max);
-  margin: var(--spacing-sm) auto 0;
-  padding-inline: var(--bd-inset);
-}
-
 .bd-ride__mode-btn {
   min-height: 44px;
   padding: 0;
@@ -83,77 +98,139 @@
   background: none;
   color: var(--color-tertiary);
   font: inherit;
-  font-size: var(--type-body-md-size);
+  font-size: var(--type-body-sm-size);
   text-decoration: underline;
   text-decoration-color: var(--color-gold);
   text-underline-offset: 0.25em;
   cursor: pointer;
 }
 
+.bd-ride__count {
+  display: none;
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  line-height: var(--type-label-caps-line);
+  text-transform: uppercase;
+  color: var(--color-on-surface-muted);
+}
+
 .bd-ride__mode-btn:hover {
   text-decoration-thickness: 2px;
 }
 
-.bd-ride__rail {
-  margin-top: var(--spacing-xl);
-}
-
-/* ---------- the stop cards (both layouts) ---------- */
+/* ---------- the stop cards (both layouts): words first, then the picture ---------- */
 .bd-stopcard {
   position: relative;
   display: grid;
-  background: var(--color-surface);
+  gap: var(--spacing-lg);
   color: var(--color-primary);
-  box-shadow: var(--shadow-hairline);
   text-align: left;
 }
 
-/* Every card leads with its line's plate, the way a CTA platform sign carries the line colour. */
-.bd-stopcard__plate {
+.bd-stopcard__text {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bd-stopcard__meta {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
-  padding: 12px var(--spacing-lg);
-  background: var(--line-c);
-  color: var(--color-on-line);
-}
-
-.bd-stopcard__plate .bd-eyebrow {
-  color: inherit;
-}
-
-.bd-stopcard__plate-line {
-  display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 10px;
   font-size: var(--type-control-caps-size);
   font-weight: var(--type-control-caps-weight);
   letter-spacing: var(--type-control-caps-tracking);
+  line-height: var(--type-control-caps-line);
   text-transform: uppercase;
+  color: var(--color-tertiary);
 }
 
 .bd-stopcard__bullet {
   flex: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--color-on-line);
+  background: var(--line-c);
+  box-shadow: 0 0 0 3px var(--color-neutral), 0 0 0 4px var(--line-c);
+}
+
+.bd-stopcard--terminal .bd-stopcard__bullet {
+  border-radius: var(--rounded-sm);
+}
+
+.bd-stopcard__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+  color: var(--color-primary);
+  text-wrap: balance;
+}
+
+.bd-stopcard .bd-prose {
+  max-width: var(--bd-measure);
+}
+
+.bd-stopcard__where,
+.bd-stopcard__note {
+  max-width: var(--bd-measure);
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.bd-stopcard__text > .bd-more {
+  justify-self: start;
+}
+
+.bd-stopcard__actions {
+  padding-top: var(--spacing-xs);
+}
+
+/* A chapter without a picture: its number, set large in the Didone inside a gold ring. Ornament only. */
+.bd-stopcard__numeral {
+  display: none;
+}
+
+.bd-ride[data-mode="ride"] .bd-stopcard__numeral {
+  place-items: center;
+  justify-self: center;
+  width: clamp(9rem, 22cqw, 15rem);
+  aspect-ratio: 1;
+  border: var(--bd-gold-hair);
+  border-radius: 50%;
+  outline: var(--bd-gold-hair);
+  outline-offset: 10px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--type-display-2xl-size);
+  line-height: 1;
+  color: var(--color-tertiary);
+  opacity: clamp(0, calc(1 - var(--ad) * 1.6), 1);
+  transform: translate3d(calc(var(--d) * 160px), 0, 0);
 }
 
 .bd-stopcard__media {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   margin: 0;
-  background: var(--color-neutral-variant);
+}
+
+.bd-stopcard__media picture {
+  display: contents;
 }
 
 .bd-stopcard__media img {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
+  background: var(--color-neutral-variant);
 }
 
 .bd-stopcard__standin {
@@ -168,7 +245,8 @@
 }
 
 .bd-stopcard__credit {
-  padding: var(--spacing-sm) var(--spacing-lg) 0;
+  flex: none;
+  padding-top: var(--spacing-xs);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
@@ -182,62 +260,19 @@
   text-underline-offset: 0.2em;
 }
 
-.bd-stopcard__body {
-  display: grid;
-  gap: 10px;
-  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
-}
-
-.bd-stopcard__title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-size: var(--type-h3-size);
-  line-height: var(--type-h3-line);
-  color: var(--color-primary);
-}
-
-.bd-stopcard__when {
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-  letter-spacing: 0.02em;
-  color: var(--color-on-surface-muted);
-}
-
-.bd-stopcard__note {
-  font-size: var(--type-body-md-size);
-  line-height: var(--type-body-md-line);
-}
-
-.bd-stopcard__actions {
-  padding-top: var(--spacing-xs);
-}
-
-.bd-stopcard .bd-prose {
-  max-width: none;
-}
-
-/* ---------- the car card: a CTA line diagram ---------- */
+/* ---------- the car card: a CTA line diagram laid across the stage ---------- */
 .bd-ride-map {
-  background: var(--color-surface);
-  color: var(--color-primary);
-}
-
-.bd-ride-map__title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--type-title-size);
-  line-height: var(--type-title-line);
-  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-sm);
-  border-bottom: var(--bd-hair);
+  position: relative;
+  min-width: 0;
+  border-bottom: var(--bd-gold-hair);
 }
 
 /* A real scroller with its bar hidden: the ride recentres it on the train, a guest can swipe it to a
    far station, and a tabbed station scrolls into view by itself (WCAG 2.4.11). */
 .bd-ride-map__viewport {
   position: relative;
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow: auto hidden;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
 }
 
@@ -247,29 +282,29 @@
 
 .bd-ride-map__list {
   position: relative;
-  list-style: none;
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  height: var(--map-h);
   margin: 0;
-  padding: var(--spacing-md) 0;
+  padding: 0 var(--names-reach) 0 var(--bd-gutter);
+  list-style: none;
 }
 
 .bd-ride-map__stop {
-  --axis: 26px;
-  --track-step: 16px;
-  --x: calc(var(--axis) + var(--t) * var(--track-step));
-  --fx: calc(var(--axis) + var(--ft) * var(--track-step));
-
   position: relative;
-  height: 56px;
+  flex: 1 0 var(--col);
+  height: 100%;
 }
 
-/* The segment to the next stop, on this stop's track, in this stop's line colour. */
+/* The segment to the next stop, in this stop's line colour: where the chapter changes, so does the line. */
 .bd-ride-map__stop::before {
   content: "";
   position: absolute;
-  left: calc(var(--x) - 3px);
-  top: 16px;
-  width: 6px;
-  height: 100%;
+  left: 50%;
+  top: calc(var(--line-y) - 4px);
+  width: 100%;
+  height: 8px;
   background: var(--line-c);
 }
 
@@ -278,13 +313,16 @@
 }
 
 .bd-ride-map__link {
-  display: block;
-  height: 100%;
-  padding: 4px var(--spacing-md) 0 calc(var(--axis) + var(--track-step) + 30px);
+  position: absolute;
+  inset: 0;
   color: var(--line-c);
   text-decoration: none;
   font-size: var(--type-body-sm-size);
-  line-height: 1.4;
+  line-height: 1.3;
+}
+
+.bd-ride-map__link:focus-visible {
+  outline-offset: -3px;
 }
 
 .bd-ride-map__link:hover .bd-ride-map__name {
@@ -292,85 +330,63 @@
   text-underline-offset: 3px;
 }
 
-.bd-ride-map__link:focus-visible {
-  outline-offset: -2px;
-}
-
 /* Ordinary station: a white circle with a dark ring. */
 .bd-ride-map__dot {
   position: absolute;
-  left: var(--x);
-  top: 16px;
-  width: 16px;
-  height: 16px;
+  left: 50%;
+  top: var(--line-y);
+  width: 18px;
+  height: 18px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--color-surface);
   border: 3px solid var(--color-primary);
+  transition: background-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
 
-.bd-ride-map__stop[data-kind="origin"] .bd-ride-map__dot,
-.bd-ride-map__stop[data-kind="transfer"] .bd-ride-map__dot {
+/* Where a chapter begins: McClendon's hollow transfer ring, drawn wide across the change of colour. */
+.bd-ride-map__stop:is([data-kind="origin"], [data-kind="transfer"]) .bd-ride-map__dot {
+  width: 30px;
+  height: 20px;
   border-width: 4px;
-}
-
-/*
- * Transfer: McClendon's hollow dumbbell — two rings joined, one on the track the train arrives on and
- * one on the track it leaves by.
- */
-.bd-ride-map__stop[data-from] .bd-ride-map__dot {
-  left: calc(min(var(--x), var(--fx)) - 8px);
-  width: calc(16px + max(var(--x), var(--fx)) - min(var(--x), var(--fx)));
-  transform: translateY(-50%);
-  border-radius: 999px;
+  border-radius: var(--rounded-pill);
 }
 
 /* The Loop: the line's end, drawn as the square loop it runs into. */
-.bd-ride-map__stop[data-kind="terminal"] .bd-ride-map__dot,
-.bd-ride-map__stop[data-kind="terminal"][data-from] .bd-ride-map__dot {
-  left: calc(var(--x) - 11px);
-  top: 5px;
-  width: 22px;
-  height: 22px;
-  transform: none;
-  border-radius: var(--rounded-md);
+.bd-ride-map__stop[data-kind="terminal"] .bd-ride-map__dot {
+  width: 24px;
+  height: 24px;
   border: 4px solid var(--line-c);
-  background: var(--color-surface);
+  border-radius: var(--rounded-md);
 }
 
+/* Names wear their line's colour and lean up the card, the way they do above a car's doors. */
 .bd-ride-map__name {
-  display: block;
+  position: absolute;
+  left: calc(50% + 4px);
+  bottom: calc(var(--map-h) - var(--line-y) + 16px);
+  max-width: 15em;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  transform: rotate(-24deg);
+  transform-origin: left bottom;
 }
 
-.bd-ride-map__stop[data-kind="origin"] .bd-ride-map__name,
-.bd-ride-map__stop[data-kind="transfer"] .bd-ride-map__name,
-.bd-ride-map__stop[data-kind="terminal"] .bd-ride-map__name {
+.bd-ride-map__stop:is([data-kind="origin"], [data-kind="transfer"], [data-kind="terminal"]) .bd-ride-map__name {
   font-weight: 600;
 }
 
-.bd-ride-map__line {
+.bd-ride-map__when {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.bd-ride-map__line::after {
-  content: ": ";
-}
-
-.bd-ride-map__when {
-  display: block;
-  color: var(--color-on-surface-muted);
 }
 
 .bd-ride-map__when::before {
-  content: " ";
+  content: ", ";
 }
 
 .bd-ride-map__train {
@@ -383,23 +399,32 @@
   padding: 0;
 }
 
-/* ---------- FLAT: a stations list, then the strip map laid down the page ---------- */
+/* ---------- FLAT: the line across the top, then every stop as a sheet down the page ---------- */
+.bd-ride[data-mode="flat"] {
+  padding-block: var(--spacing-xl) var(--spacing-2xl);
+}
+
 .bd-ride[data-mode="flat"] .bd-ride__stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-xl);
   max-width: var(--bd-max);
   margin-inline: auto;
-  padding-inline: var(--bd-gutter);
 }
 
 .bd-ride[data-mode="flat"] .bd-ride-map {
-  max-width: 28rem;
+  margin-inline: var(--bd-gutter);
+  background: var(--color-surface);
   box-shadow: var(--shadow-hairline);
+  border-bottom: 0;
 }
 
-.bd-ride[data-mode="flat"] .bd-ride__floor,
-.bd-ride[data-mode="flat"] .bd-ride__sign {
+.bd-ride[data-mode="flat"] .bd-ride__bar {
   display: none;
+}
+
+.bd-ride[data-mode="flat"] .bd-ride__track {
+  padding-inline: var(--bd-gutter);
 }
 
 .bd-ride[data-mode="flat"] .bd-ride__stop {
@@ -407,7 +432,13 @@
 
   position: relative;
   padding: 0 0 var(--spacing-2xl) 64px;
-  max-width: 46rem;
+  max-width: 64rem;
+}
+
+.bd-ride[data-mode="flat"] .bd-stopcard {
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hairline);
 }
 
 /* The line runs from this stop's dot to the next one's. */
@@ -439,8 +470,8 @@
 }
 
 .bd-ride[data-mode="flat"] .bd-ride__stop:is([data-kind="transfer"], [data-kind="origin"])::after {
-  height: 38px;
-  border-radius: 999px;
+  height: 32px;
+  border-radius: var(--rounded-pill);
 }
 
 .bd-ride[data-mode="flat"] .bd-ride__stop[data-kind="terminal"]::after {
@@ -450,47 +481,18 @@
   border: 5px solid var(--line-c);
 }
 
-@media (width >= 1100px) {
-  .bd-ride[data-mode="flat"] .bd-ride__stage {
-    grid-template-columns: 300px minmax(0, 1fr);
+@media (width >= 900px) {
+  .bd-ride[data-mode="flat"] .bd-stopcard:has(.bd-stopcard__media) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
     align-items: start;
-  }
-
-  .bd-ride[data-mode="flat"] .bd-ride-map {
-    position: sticky;
-    top: 96px;
+    gap: var(--spacing-xl);
   }
 }
 
-/* ---------- RIDE: the stage the camera travels through ---------- */
-.bd-ride[data-mode="ride"] {
-  padding-bottom: 0;
-}
-
+/* ---------- RIDE: the stage the train carries you along ---------- */
 .bd-ride[data-mode="ride"] .bd-ride__rail {
   position: relative;
   height: calc((var(--stops) - 1 + var(--dwell)) * var(--step-factor) * var(--ride-h) + var(--ride-h));
-}
-
-/* A proximity snap at the middle of every platform: a fling settles on a station, not between two. */
-html:has(.bd-ride[data-mode="ride"]) {
-  scroll-snap-type: y proximity;
-}
-
-.bd-ride__snaps {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.bd-ride__snap {
-  position: absolute;
-  left: 0;
-  top: calc((var(--i) + var(--dwell) / 2) * var(--step-factor) * var(--ride-h));
-  width: 1px;
-  height: 1px;
-  scroll-snap-align: start;
-  scroll-margin-top: var(--ride-top);
 }
 
 .bd-ride[data-mode="ride"] .bd-ride__stage {
@@ -498,11 +500,10 @@ html:has(.bd-ride[data-mode="ride"]) {
   top: var(--ride-top);
   height: var(--ride-h);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  background: var(--color-secondary);
-  color: var(--color-on-secondary);
+  background: var(--color-neutral);
 }
 
 /* The phone's own action bar steps aside while the stage is pinned, and comes back after the Loop. */
@@ -511,106 +512,19 @@ html[data-ride-pinned] .bd-bar {
   transform: translateY(110%);
 }
 
-/* Car card on a phone: a horizontal strip across the top, the train fixed mid-strip and the line
-   sliding under it, the current station named under its dot. */
-.bd-ride[data-mode="ride"] .bd-ride-map {
-  min-width: 0;
-  position: relative;
-  z-index: 2;
-  border-bottom: var(--bd-hair);
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__title {
-  display: none;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__viewport {
-  height: 84px;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__list {
-  display: flex;
-  height: 100%;
-  width: max-content;
-  padding: 0 12px;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop {
-  --axis: 20px;
-  --track-step: 14px;
-  --y: calc(var(--axis) + var(--t) * var(--track-step));
-  --fy: calc(var(--axis) + var(--ft) * var(--track-step));
-
-  flex: none;
-  width: 56px;
-  height: 100%;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop::before {
-  left: 50%;
-  top: calc(var(--y) - 3px);
-  width: 100%;
-  height: 6px;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__link {
-  padding: 0;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__dot {
-  left: 50%;
-  top: var(--y);
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-from] .bd-ride-map__dot {
-  left: 50%;
-  top: calc(min(var(--y), var(--fy)) - 8px);
-  width: 16px;
-  height: calc(16px + max(var(--y), var(--fy)) - min(var(--y), var(--fy)));
-  transform: translateX(-50%);
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-kind="terminal"] .bd-ride-map__dot {
-  top: calc(var(--y) - 11px);
-  left: calc(50% - 11px);
-  width: 22px;
-  height: 22px;
-  transform: none;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__name {
+/* The train: a "you are here" pointer under the line, carried along it by transform alone. */
+.bd-ride[data-mode="ride"] .bd-ride-map__train {
+  display: block;
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__name {
-  left: 50%;
-  top: 50px;
-  width: max-content;
-  max-width: 70vw;
-  height: auto;
-  clip-path: none;
-  transform: translateX(-50%);
-  color: var(--line-c);
-  font-weight: 600;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current][data-align="start"] .bd-ride-map__name {
-  left: 4px;
-  transform: none;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current][data-align="end"] .bd-ride-map__name {
-  left: auto;
-  right: 4px;
-  transform: none;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__when {
-  display: none;
+  z-index: 1;
+  left: var(--map-first);
+  top: calc(var(--line-y) + 16px);
+  width: 0;
+  height: 0;
+  border-inline: 8px solid transparent;
+  border-bottom: 10px solid var(--color-primary);
+  transform: translateX(calc(var(--p) * var(--map-gap) - 50%));
+  pointer-events: none;
 }
 
 .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__dot {
@@ -618,147 +532,213 @@ html[data-ride-pinned] .bd-bar {
   box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-primary);
 }
 
-/* The train: a "you are here" pointer riding the line. */
-.bd-ride[data-mode="ride"] .bd-ride-map__train {
-  display: block;
-  position: absolute;
-  z-index: 1;
-  left: calc(12px + var(--p) * var(--map-gap) + var(--map-gap) / 2);
-  top: calc(20px + var(--train-track) * 14px - 11px);
-  width: 0;
-  height: 0;
-  transform: translate(-50%, -100%);
-  border-inline: 7px solid transparent;
-  border-top: 9px solid var(--color-primary);
-  transition: top var(--duration-base) var(--ease-settle);
-  pointer-events: none;
+.bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__name {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-underline-offset: 4px;
 }
 
-/* The window: perspective, sleepers running under the camera, the skyline drifting at the horizon.
-   Both move by transform (mod() keeps the tiles seamless), never by repainting a background. */
+/* The window: one moment at a time, and nothing behind it. */
 .bd-ride__window {
   position: relative;
 }
 
 .bd-ride[data-mode="ride"] .bd-ride__window {
   overflow: hidden;
-  perspective: 1100px;
-  perspective-origin: 50% 40%;
-}
-
-.bd-ride[data-mode="ride"] .bd-ride__window::before {
-  content: "";
-  position: absolute;
-  left: -400px;
-  right: -400px;
-  top: calc(40% - 64px);
-  height: 64px;
-  background-image: var(--art-skyline);
-  background-repeat: repeat-x;
-  background-size: 385px 64px;
-  opacity: 0.45;
-  transform: translateX(calc(mod(var(--p) * 48px, 385px) * -1));
-  pointer-events: none;
-}
-
-.bd-ride__floor {
-  --rail: color-mix(in oklab, var(--color-gilt) 55%, transparent);
-  --sleeper: color-mix(in oklab, var(--color-gilt) 20%, transparent);
-
-  position: absolute;
-  left: -60%;
-  right: -60%;
-  top: 40%;
-  height: 170%;
-  overflow: hidden;
-  transform-origin: top center;
-  transform: rotateX(80deg);
-  background-image: linear-gradient(90deg, transparent calc(50% - 76px), var(--rail) calc(50% - 76px) calc(50% - 70px), transparent calc(50% - 70px) calc(50% + 70px), var(--rail) calc(50% + 70px) calc(50% + 76px), transparent calc(50% + 76px));
-  mask-image: linear-gradient(to bottom, transparent, var(--color-primary) 22%);
-  pointer-events: none;
-}
-
-.bd-ride__floor::before {
-  content: "";
-  position: absolute;
-  left: calc(50% - 120px);
-  width: 240px;
-  top: -110px;
-  bottom: 0;
-  background-image: repeating-linear-gradient(180deg, var(--sleeper) 0 18px, transparent 18px 110px);
-  transform: translateY(mod(var(--p) * 660px, 110px));
+  container-type: size;
 }
 
 .bd-ride[data-mode="ride"] .bd-ride__track {
   position: absolute;
-  inset: 0 0 var(--sign-h, 88px);
-  transform-style: preserve-3d;
+  inset: 0;
 }
 
 /*
- * Every stop sits at its own depth. --d is how many stops ahead of the train it is: 0 at the
- * platform, 1 at the next station, negative once passed. Ahead, stations wait left and right of the
- * track like platforms and signs (transfers) hang above it; at the platform a card comes to the
- * centre and squares up; passed, it slides out of the window sideways while still opaque (a sign
- * rises out of view), so the departing card never ghosts across the arriving one.
+ * --d is how many stops ahead of the train a moment is: 0 at the platform, 1 at the next station,
+ * negative once passed. Riding forward, the moment you are leaving drifts left and is gone before the
+ * next one drifts in from the right, so words never cross words; the picture travels further than
+ * the words, which is the only depth the ride needs. Only the stops either side of the platform are
+ * drawn at all.
  */
 .bd-ride[data-mode="ride"] .bd-ride__stop {
-  --d: calc(var(--i) - var(--p));
-  --ahead: clamp(0, var(--d), 1);
-  --far: max(0, calc(var(--d) - 1));
-  --past: max(0, calc(var(--d) * -1));
-  --lane: 60vw;
-  --depth: 1500px;
-  --hang: 0vh;
-  --lift: 0vh;
-  --exit: 120vw;
-
   position: absolute;
-  left: 50%;
-  top: 50%;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  width: min(34rem, 86vw);
-  max-height: calc(100% - 24px);
-  transform:
-    translate(-50%, -50%)
-    translate3d(
-      calc(var(--side) * (var(--ahead) * var(--lane) + var(--past) * var(--exit))),
-      calc(var(--ahead) * -4vh - var(--ahead) * var(--hang) - var(--past) * var(--lift)),
-      calc((var(--ahead) + var(--far)) * var(--depth) * -1 + var(--past) * 160px)
-    )
-    rotateY(calc(var(--side) * (var(--ahead) * -18deg + var(--past) * 12deg)));
-  opacity: min(clamp(0, calc(1.6 - var(--far) * 0.5), 1), clamp(0, calc(1 - (var(--past) - 0.55) * 3), 1));
+  justify-content: center;
+  padding: clamp(16px, 5cqh, 56px) var(--bd-gutter);
+  visibility: hidden;
   pointer-events: none;
 }
 
-.bd-ride[data-mode="ride"] .bd-ride__stop:not([data-kind="station"]) {
-  --hang: 34vh;
-  --lift: 110vh;
-}
-
 .bd-ride[data-mode="ride"] .bd-ride__stop[data-near] {
-  will-change: transform, opacity;
+  visibility: visible;
 }
 
-.bd-ride[data-mode="ride"] .bd-ride__platform {
-  min-height: 0;
+/* An express ride (a jump of more than one stop) shows only the moment it leaves and the one it reaches. */
+.bd-ride[data-mode="ride"] .bd-ride__stage[data-express] .bd-ride__stop {
+  visibility: hidden;
+}
+
+.bd-ride[data-mode="ride"] .bd-ride__stage[data-express] .bd-ride__stop[data-express-end] {
+  visibility: visible;
 }
 
 .bd-ride[data-mode="ride"] .bd-ride__stop[data-state="here"] {
   pointer-events: auto;
 }
 
+.bd-ride[data-mode="ride"] .bd-ride__stop[data-near] :is(.bd-stopcard__text, .bd-stopcard__media, .bd-stopcard__numeral) {
+  will-change: transform, opacity;
+}
+
+.bd-ride[data-mode="ride"] :is(.bd-stopcard__text, .bd-stopcard__media, .bd-stopcard__numeral) {
+  --d: calc(var(--i) - var(--p));
+  --ad: max(var(--d), var(--d) * -1);
+}
+
+.bd-ride[data-mode="ride"] .bd-stopcard__text {
+  flex: none;
+  opacity: clamp(0, calc(1 - var(--ad) * 2), 1);
+  transform: translate3d(calc(var(--d) * 72px), 0, 0);
+}
+
+/* Stacked, the picture takes what the words leave (flex-basis); side by side it sizes itself. */
+.bd-ride[data-mode="ride"] .bd-stopcard__media {
+  flex: 0 1 clamp(120px, 44cqh, 460px);
+  min-height: 96px;
+  opacity: clamp(0, calc(1 - var(--ad) * 1.6), 1);
+  transform: translate3d(calc(var(--d) * 160px), 0, 0);
+}
+
+.bd-ride[data-mode="ride"] .bd-ride__platform {
+  width: min(100%, 72rem);
+  height: 100%;
+  min-height: 0;
+}
+
+/* Stacked (a phone, a tall tablet): the words at their own height, the picture takes what is left. */
+.bd-ride[data-mode="ride"] .bd-stopcard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-lg);
+}
+
+.bd-ride[data-mode="ride"] .bd-stopcard__media img {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.bd-ride[data-mode="ride"] .bd-stopcard .bd-prose {
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.bd-ride[data-mode="ride"] .bd-stopcard__title {
+  font-size: clamp(var(--type-h2-size), 1rem + 3cqw, var(--type-display-lg-size));
+  line-height: var(--type-h1-line);
+}
+
+/* Side by side once the window is wider than tall: the words on the left, where the eye lands first,
+   the picture on the right, framed in a gold hairline. */
+@container (aspect-ratio > 5 / 4) and (width >= 720px) {
+  .bd-ride[data-mode="ride"] .bd-stopcard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: center;
+    gap: clamp(var(--spacing-xl), 6cqw, var(--spacing-3xl));
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__numeral {
+    display: grid;
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__text {
+    gap: var(--spacing-md);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard .bd-prose {
+    font-size: var(--type-body-lg-size);
+    line-height: var(--type-body-lg-line);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__media {
+    height: auto;
+    max-height: 100%;
+    padding: 10px;
+    border: var(--bd-gold-hair);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__media img {
+    flex: none;
+    height: auto;
+    max-height: min(62cqh, 100cqh - 2 * clamp(16px, 5cqh, 56px) - 72px);
+    aspect-ratio: 4 / 3;
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__standin {
+    left: 20px;
+    top: 20px;
+  }
+}
+
+/* A short window keeps every word on screen by stepping the type down the ramp before anything scrolls. */
+@container (aspect-ratio > 5 / 4) and (width >= 720px) and (height < 600px) {
+  .bd-ride[data-mode="ride"] .bd-stopcard .bd-prose {
+    font-size: var(--type-body-md-size);
+    line-height: var(--type-body-md-line);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__title {
+    font-size: var(--type-h1-size);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__text {
+    gap: 10px;
+  }
+}
+
+/* A short phone window (browser bars showing): the words step down to the 17px floor, never below. */
+@container (height < 540px) {
+  .bd-ride[data-mode="ride"] .bd-stopcard .bd-prose {
+    font-size: var(--type-body-sm-size);
+    line-height: var(--type-body-sm-line);
+    gap: var(--spacing-sm);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard__title {
+    font-size: var(--type-h2-size);
+    line-height: var(--type-h2-line);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-stopcard {
+    gap: var(--spacing-md);
+  }
+}
+
+/* A moment that would not fit lets its picture go first (StoryRide measures and sets data-tight). */
+.bd-ride[data-mode="ride"] .bd-ride__stop[data-tight] .bd-stopcard__media {
+  display: none;
+}
+
+/* A moment taller than its window scrolls on its own, and says so where the words stop. No overscroll
+   containment: at the end of the words the same swipe carries on down the line. */
 .bd-ride[data-mode="ride"] .bd-ride__stop[data-overflow] .bd-ride__platform {
   overflow-y: auto;
-  overscroll-behavior: contain;
+}
+
+.bd-ride[data-mode="ride"] .bd-ride__stop[data-overflow] .bd-stopcard {
+  height: auto;
 }
 
 .bd-ride[data-mode="ride"] .bd-ride__stop[data-overflow="more"] .bd-ride__platform {
   mask-image: linear-gradient(to bottom, var(--color-primary) calc(100% - 72px), transparent);
 }
 
-/* The card is taller than its window: say so, where the words stop. */
 .bd-ride__more {
   position: absolute;
   left: 50%;
@@ -778,81 +758,64 @@ html[data-ride-pinned] .bd-bar {
   margin-left: 4px;
 }
 
-.bd-ride[data-mode="ride"] .bd-ride__stop .bd-stopcard {
-  box-shadow: var(--shadow-lift);
+/* The foot of the stage: what the car would say next, then Back and Next together under the thumb. */
+.bd-ride__bar {
+  position: relative;
+  z-index: 2;
+  padding: 10px var(--bd-gutter) max(10px, env(safe-area-inset-bottom));
+  border-top: var(--bd-gold-hair);
+  background: var(--color-neutral);
 }
 
-/* The announcement board: what the car would say, and two big buttons for anyone who would rather
-   press than scroll. One row, even on a phone. */
-.bd-ride__sign {
-  position: absolute;
-  z-index: 2;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.bd-ride__controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: 10px var(--spacing-md) max(10px, env(safe-area-inset-bottom));
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  gap: var(--spacing-sm);
+  max-width: 72rem;
+  margin-inline: auto;
 }
 
-.bd-ride__sign-text {
+.bd-ride__next {
+  flex: 1;
   display: grid;
+  justify-items: start;
   min-width: 0;
 }
 
-.bd-ride__sign-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--type-control-caps-size);
-  font-weight: var(--type-control-caps-weight);
-  letter-spacing: var(--type-control-caps-tracking);
-  line-height: 1.4;
+.bd-ride__next-kicker {
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  line-height: var(--type-label-caps-line);
   text-transform: uppercase;
-  color: var(--color-gilt);
+  color: var(--color-on-surface-muted);
 }
 
-.bd-ride__sign-bullet {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--line-c);
-  box-shadow: 0 0 0 2px var(--color-on-primary);
-}
-
-.bd-ride__sign-name {
+.bd-ride__next-name {
+  max-width: 100%;
   font-family: var(--font-display);
   font-style: italic;
   font-size: var(--type-title-size);
   line-height: var(--type-title-line);
+  color: var(--line-c);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.bd-ride__controls {
-  flex: none;
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
 .bd-ride__btn {
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
   min-width: 48px;
   min-height: 48px;
-  padding: 0 var(--spacing-md);
-  border: 1px solid var(--color-gilt);
+  padding: 0 var(--spacing-lg);
+  border: 1px solid var(--color-gold);
   border-radius: var(--rounded-sm);
-  background: transparent;
-  color: var(--color-on-primary);
+  background: var(--color-surface);
+  color: var(--color-primary);
   font: inherit;
   font-size: var(--type-control-caps-size);
   letter-spacing: 0.06em;
@@ -860,19 +823,78 @@ html[data-ride-pinned] .bd-bar {
   transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
+.bd-ride__btn--next {
+  border-color: var(--color-gold-deep);
+  background: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+}
+
 .bd-ride__btn:hover:not(:disabled) {
-  background: var(--color-on-primary);
-  color: var(--color-primary);
+  background: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-on-tertiary);
 }
 
 .bd-ride__btn:focus-visible {
-  outline: 2px solid var(--color-gilt);
+  outline: 2px solid var(--color-tertiary);
   outline-offset: 2px;
 }
 
 .bd-ride__btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
+}
+
+/* ---------- RIDE on a phone or a short window: the compact car card ---------- */
+@media (width < 768px), (height < 820px) {
+  .bd-ride[data-mode="ride"] {
+    --map-h: 76px;
+    --line-y: 24px;
+    --col: 44px;
+    --names-reach: 0px;
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride-map__list {
+    padding-inline: 50%;
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride-map__stop {
+    flex: 0 0 var(--col);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride-map__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    transform: none;
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__name {
+    left: 50%;
+    bottom: auto;
+    top: calc(var(--line-y) + 18px);
+    width: max-content;
+    max-width: 78vw;
+    height: auto;
+    clip-path: none;
+    transform: translateX(-50%);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride-map__train {
+    top: calc(var(--line-y) - 26px);
+    border-bottom: 0;
+    border-top: 10px solid var(--color-primary);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride__head {
+    padding-top: var(--spacing-xs);
+  }
+
+  .bd-ride[data-mode="ride"] .bd-ride__title {
+    font-size: var(--type-title-size);
+    line-height: var(--type-title-line);
+  }
 }
 
 @media (width < 600px) {
@@ -890,162 +912,40 @@ html[data-ride-pinned] .bd-bar {
     white-space: nowrap;
   }
 
-  .bd-ride[data-mode="ride"] .bd-ride__stop {
-    --lane: 88vw;
+  .bd-ride[data-mode="ride"] .bd-stopcard {
+    gap: var(--spacing-md);
   }
 
-  .bd-ride[data-mode="ride"] .bd-stopcard__media img {
-    aspect-ratio: 2 / 1;
+  .bd-ride[data-mode="ride"] .bd-stopcard__text {
+    gap: 8px;
   }
 
-  .bd-ride[data-mode="ride"] .bd-stopcard__body {
-    padding: 12px var(--spacing-md) var(--spacing-md);
+  /* One row on a phone: how far along the line you are, and the way out. The ride's name is still the
+     section's heading for assistive technology; the page title right above says the rest. */
+  .bd-ride[data-mode="ride"] .bd-ride__head {
+    flex-wrap: nowrap;
+    align-items: center;
+    padding-top: 0;
   }
 
-  .bd-ride[data-mode="ride"] .bd-stopcard__plate {
-    padding: 10px var(--spacing-md);
-  }
-}
-
-/* A short window (a phone with the browser's own bars showing) keeps every word: a sign drops its
-   picture and a station's picture gets shallower before anything has to scroll. */
-@media (height <= 820px) {
-  .bd-ride[data-mode="ride"] .bd-stopcard--sign .bd-stopcard__media {
-    display: none;
-  }
-}
-
-@media (height <= 720px) {
-  .bd-ride[data-mode="ride"] .bd-stopcard__media img {
-    aspect-ratio: 3 / 1;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-stopcard__body {
-    gap: 6px;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-stopcard__title {
-    font-size: var(--type-title-size);
-    line-height: var(--type-title-line);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride__stop {
-    max-height: calc(100% - 12px);
-  }
-}
-
-/* ---------- desktop: the car card becomes the vertical line diagram beside the window ---------- */
-@media (width >= 1100px) {
-  .bd-ride[data-mode="ride"] .bd-ride__stage {
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-columns: 320px minmax(0, 1fr);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    min-height: 0;
-    border-bottom: 0;
-    border-right: var(--bd-hair);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__title {
-    display: block;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__viewport {
-    height: auto;
-    min-height: 0;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__list {
-    display: block;
-    height: auto;
-    width: auto;
-    padding: var(--spacing-md) 0;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop {
-    --axis: 26px;
-    --track-step: 16px;
-
-    width: auto;
-    height: 56px;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop::before {
-    left: calc(var(--x) - 3px);
-    top: 16px;
-    width: 6px;
-    height: 100%;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__link {
-    padding: 4px var(--spacing-md) 0 calc(var(--axis) + var(--track-step) + 30px);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__dot {
-    left: var(--x);
-    top: 16px;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-from] .bd-ride-map__dot {
-    left: calc(min(var(--x), var(--fx)) - 8px);
-    top: 16px;
-    width: calc(16px + max(var(--x), var(--fx)) - min(var(--x), var(--fx)));
-    height: 16px;
-    transform: translateY(-50%);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-kind="terminal"] .bd-ride-map__dot {
-    left: calc(var(--x) - 11px);
-    top: 5px;
-    width: 22px;
-    height: 22px;
-    transform: none;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__name,
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__name,
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current][data-align] .bd-ride-map__name {
-    position: static;
-    width: auto;
-    max-width: none;
-    height: auto;
+  .bd-ride[data-mode="ride"] .bd-ride__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     overflow: hidden;
-    clip-path: none;
-    transform: none;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__when {
+  .bd-ride[data-mode="ride"] .bd-ride__count {
     display: block;
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__stop[data-current] .bd-ride-map__link {
-    background: var(--color-neutral);
-  }
-
-  .bd-ride[data-mode="ride"] .bd-ride-map__train {
-    left: calc(26px + var(--train-track) * 16px - 12px);
-    top: calc(var(--spacing-md) + 16px + var(--p) * var(--map-gap));
-    transform: translate(-100%, -50%);
-    border-block: 7px solid transparent;
-    border-inline: 9px solid transparent;
-    border-inline-end: 0;
-    border-inline-start-color: var(--color-primary);
-    transition: left var(--duration-base) var(--ease-settle);
-  }
-
-  .bd-ride__sign {
-    padding-inline: var(--spacing-xl);
   }
 }
 
 @media print {
   .bd-ride-map,
-  .bd-ride__sign,
-  .bd-ride__floor,
-  .bd-ride__mode {
+  .bd-ride__bar,
+  .bd-ride__mode-btn {
     display: none;
   }
 

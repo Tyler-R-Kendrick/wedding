@@ -18,25 +18,31 @@ const { ProseBlock, StatusFlags, Provenance } = content;
 /**
  * Our Story, as a ride on the Sara + Tyler Line (docs/design/inspo/our-story-timeline.md).
  *
- * The approved panoramic opening stays. Under it the story is a CTA 'L' line: each chapter is a line
- * with its CTA colour, the couple's remembered moments (the Paired timeline, `timeline_moments`) are
- * its stations, the chapter's own words are the transfer where the train changes line, and the line
- * ends at the Loop on the wedding day. The approved "places that shaped us" band is the exit.
+ * The approved panoramic opening stays, and the line starts directly under it, so the first screen
+ * already shows where the ride goes. Each chapter has a CTA colour, the couple's remembered moments
+ * (the Paired timeline, `timeline_moments`) are its stations, the chapter's own words are where the
+ * line changes colour, and the line ends at the Loop on the wedding day. The approved "places that
+ * shaped us" band is the exit.
+ *
+ * Every moment leads with its words — what happened, when, where — and the picture follows (Sara's
+ * ask: the memory is what catches the eye, not the photograph). Line names ("Red Line") are never
+ * printed; the colour alone carries the way-finding, as it does on the platform.
  *
  * Nothing on the line is invented. A station without a date shows none; stand-in photographs say so
  * on the picture; the terminal's date and venue come from the site facts, never typed here.
  */
 
-const LINES: Record<StoryChapter, { key: LineKey; name: string }> = {
-  met: { key: 'red', name: 'Red Line' },
-  connection: { key: 'blue', name: 'Blue Line' },
-  relationship: { key: 'brown', name: 'Brown Line' },
-  love: { key: 'pink', name: 'Pink Line' },
-  future: { key: 'green', name: 'Green Line' },
-  engagement: { key: 'orange', name: 'Orange Line' },
-  marriage: { key: 'gold', name: 'Gold Line' },
+const LINES: Record<StoryChapter, LineKey> = {
+  met: 'red',
+  connection: 'blue',
+  relationship: 'brown',
+  love: 'pink',
+  future: 'green',
+  engagement: 'orange',
+  marriage: 'gold',
 };
 const CHAPTER_ORDER = Object.keys(LINES) as StoryChapter[];
+const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 
 const PLACES = [
   { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: ROUTES.exploreCaa },
@@ -48,23 +54,24 @@ const PLACES = [
 const sectionFlagged = (s: StorySectionView) => s.placeholder && !s.paragraphs.some((p) => p.placeholder);
 const momentFlagged = (m: TimelineMomentView) => m.placeholder && !m.note.placeholder;
 
-function Bullet() {
-  return <span className="bd-stopcard__bullet" aria-hidden="true" />;
+const PHOTO_SIZES = '(min-width: 1100px) 36rem, (min-width: 768px) 60vw, 92vw';
+
+/** The line above a moment's title: a bullet in the chapter's colour, then what places it. */
+function Meta({ children }: { children: ReactNode }) {
+  return (
+    <p className="bd-stopcard__meta">
+      <span className="bd-stopcard__bullet" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
+  );
 }
 
-function SignCard({ section, stop }: { section: StorySectionView; stop: RideStop }) {
+function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; stop: RideStop; ordinal: number }) {
   const photo = section.media.find((m) => m.src);
   return (
-    <article className="bd-stopcard bd-stopcard--sign" aria-labelledby={`${stop.slug}-title`}>
-      <header className="bd-stopcard__plate">
-        <span className="bd-eyebrow bd-stopcard__plate-kicker">{stop.kind === 'origin' ? 'Board here' : 'Transfer here'}</span>
-        <span className="bd-stopcard__plate-line">
-          <Bullet />
-          {stop.lineName}
-        </span>
-      </header>
-      {photo?.src ? <TimelinePhoto src={photo.src} alt={photo.alt} sizes="(min-width: 1100px) 34rem, 88vw" /> : null}
-      <div className="bd-stopcard__body">
+    <article className="bd-stopcard bd-stopcard--chapter" aria-labelledby={`${stop.slug}-title`}>
+      <div className="bd-stopcard__text">
+        <Meta>Chapter {ORDINALS[ordinal] ?? ordinal + 1}</Meta>
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
           {section.title}
         </h3>
@@ -72,37 +79,41 @@ function SignCard({ section, stop }: { section: StorySectionView; stop: RideStop
         <ProseBlock blocks={section.paragraphs} />
         <Provenance provenance={section.provenance} />
       </div>
+      {photo?.src ? (
+        <TimelinePhoto src={photo.src} alt={photo.alt} sizes={PHOTO_SIZES} />
+      ) : (
+        // Where a chapter has no picture, the Deco numeral holds its place; the words already say it.
+        <span className="bd-stopcard__numeral" aria-hidden="true">
+          {ordinal + 1}
+        </span>
+      )}
     </article>
   );
 }
 
-function StationCard({ moment, stop }: { moment: TimelineMomentView; stop: RideStop }) {
+function StationCard({ moment, stop, chapter }: { moment: TimelineMomentView; stop: RideStop; chapter?: string }) {
   const photo = moment.media.find((m) => m.src);
   const when = formatPartialDate(moment.occurredOn);
   return (
     <article className="bd-stopcard" aria-labelledby={`${stop.slug}-title`}>
-      <header className="bd-stopcard__plate bd-stopcard__plate--station">
-        <span className="bd-stopcard__plate-line">
-          <Bullet />
-          {stop.lineName}
-        </span>
-      </header>
-      {photo?.src ? <TimelinePhoto src={photo.src} alt={photo.alt} sizes="(min-width: 1100px) 34rem, 88vw" /> : null}
-      <div className="bd-stopcard__body">
+      <div className="bd-stopcard__text">
+        <Meta>
+          {when ? <time dateTime={moment.occurredOn}>{when}</time> : chapter}
+          {moment.locationLabel ? (
+            <>
+              <span aria-hidden="true"> · </span>
+              {moment.locationLabel}
+            </>
+          ) : null}
+        </Meta>
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
           {moment.title}
         </h3>
-        {when || moment.locationLabel ? (
-          <p className="bd-stopcard__when">
-            {when ? <time dateTime={moment.occurredOn}>{when}</time> : null}
-            {when && moment.locationLabel ? <span aria-hidden="true"> · </span> : null}
-            {moment.locationLabel ? <span>{moment.locationLabel}</span> : null}
-          </p>
-        ) : null}
         <StatusFlags placeholder={momentFlagged(moment)} />
         <ProseBlock blocks={[moment.note]} />
         {moment.adventureRoute ? <More href={moment.adventureRoute}>Read the memory</More> : null}
       </div>
+      {photo?.src ? <TimelinePhoto src={photo.src} alt={photo.alt} sizes={PHOTO_SIZES} /> : null}
     </article>
   );
 }
@@ -116,54 +127,29 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
 
   present.forEach((chapter, ci) => {
     const line = LINES[chapter];
-    const track = (ci % 2) as 0 | 1;
-    const prev = stops.at(-1);
-    const from = prev && prev.line !== line.key ? { line: prev.line, track: prev.track } : undefined;
     const section = data.sections.find((s) => s.chapter === chapter);
     if (section) {
-      const stop: RideStop = { slug: section.slug, kind: stops.length ? 'transfer' : 'origin', line: line.key, lineName: line.name, track, ...(from ? { from } : {}), name: section.title };
+      const stop: RideStop = { slug: section.slug, kind: stops.length ? 'transfer' : 'origin', line, name: section.title };
       stops.push(stop);
-      cards.push(<SignCard key={stop.slug} section={section} stop={stop} />);
+      cards.push(<ChapterCard key={stop.slug} section={section} stop={stop} ordinal={ci} />);
     }
     for (const moment of data.timeline.filter((m) => m.chapter === chapter)) {
-      const before = stops.at(-1);
-      const arriving = before && before.line !== line.key ? { line: before.line, track: before.track } : undefined;
       const when = formatPartialDate(moment.occurredOn);
-      const stop: RideStop = { slug: anchors.get(moment.id) ?? moment.slug, kind: 'station', line: line.key, lineName: line.name, track, ...(arriving ? { from: arriving } : {}), name: moment.title, ...(when ? { when } : {}) };
+      const stop: RideStop = { slug: anchors.get(moment.id) ?? moment.slug, kind: 'station', line, name: moment.title, ...(when ? { when } : {}) };
       stops.push(stop);
-      cards.push(<StationCard key={stop.slug} moment={moment} stop={stop} />);
+      cards.push(<StationCard key={stop.slug} moment={moment} stop={stop} {...(section ? { chapter: section.title } : {})} />);
     }
   });
 
-  const last = stops.at(-1);
-  const terminal: RideStop = {
-    slug: 'the-loop',
-    kind: 'terminal',
-    line: 'gold',
-    lineName: LINES.marriage.name,
-    track: last?.track ?? 0,
-    ...(last && last.line !== 'gold' ? { from: { line: last.line, track: last.track } } : {}),
-    name: 'The Loop',
-    when: frame.site.date.motif,
-  };
-  stops.push(terminal);
+  stops.push({ slug: 'the-loop', kind: 'terminal', line: 'gold', name: 'The Loop', when: frame.site.date.motif });
   cards.push(
     <article key="the-loop" className="bd-stopcard bd-stopcard--terminal" aria-labelledby="the-loop-title">
-      <header className="bd-stopcard__plate">
-        <span className="bd-eyebrow bd-stopcard__plate-kicker">End of the line</span>
-        <span className="bd-stopcard__plate-line">
-          <Bullet />
-          The Loop
-        </span>
-      </header>
-      <figure className="bd-stopcard__media">
-        <Photo id="venue.exterior" sizes="(min-width: 1100px) 34rem, 88vw" />
-      </figure>
-      <div className="bd-stopcard__body">
+      <div className="bd-stopcard__text">
+        <Meta>End of the line · The Loop</Meta>
         <h3 id="the-loop-title" className="bd-stopcard__title">
           <time dateTime={frame.site.date.iso.slice(0, 10)}>{frame.site.date.long}</time>
         </h3>
-        <p className="bd-stopcard__when">
+        <p className="bd-stopcard__where">
           {frame.site.venue.name},{' '}
           <a className="bd-stopcard__map" href={frame.site.venue.mapsUrl} rel="noopener">
             {frame.site.venue.address}
@@ -177,6 +163,9 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
           </Button>
         </p>
       </div>
+      <figure className="bd-stopcard__media">
+        <Photo id="venue.exterior" sizes={PHOTO_SIZES} />
+      </figure>
     </article>,
   );
 
@@ -195,20 +184,17 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
         photo="couple.hero.story"
         mobilePhoto="couple.hero.story.mobile"
         words={['Love', 'peace', 'happiness']}
+        lede="Every stop on the line below is a memory, in the order we lived them. Scroll to ride from the night we met to the wedding day, or tap a station to jump ahead."
       />
 
       <StoryRide
         stops={stops}
         cards={cards}
         lineName={lineName}
-        intro={
-          <header className="bd-ride__intro">
-            <p className="bd-eyebrow">All aboard</p>
-            <h2 id="ride-title" className="bd-h bd-h--2 bd-ride__title">
-              Ride the {lineName}
-            </h2>
-            <p className="bd-ride__lede">Every stop is a memory, in the order we lived them. Scroll to ride from the night we met to the Loop, or tap a station on the map to jump ahead.</p>
-          </header>
+        title={
+          <>
+            Ride the <span className="bd-nowrap">{lineName}</span>
+          </>
         }
       />
 

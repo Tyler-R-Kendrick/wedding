@@ -4,6 +4,34 @@ One entry per accepted design change. Token changes cite the
 `npx design.md diff` output; direction changes cite the critique or the
 couple's decision. Newest first. Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md) Stage 9.
 
+## 2026-09-23 — The Sara + Tyler Line, redone to match the design
+
+**Asked for by Tyler and Sara:** the ride did not feel smooth or like the rest of
+the site; the line diagram should be a horizontal timeline; the ride should fit
+the first screen; no "Red Line / Blue Line" labels; each moment's words first,
+its picture after (Sara); no choppy transitions; and a moment, once arrived at,
+should be the whole focus rather than the train backdrop.
+
+- **Stage:** Ivory (`ride-stage` → `colors.neutral` / `colors.primary`); the
+  Chicago-blue stage, 3D floor, sleepers and skyline are gone. The line runs
+  straight under the opening, so it is on the first screen at every size.
+- **Line:** a horizontal CTA car card at every size — names angled above the
+  line on tall screens, a compact strip with the current name on phones and
+  windows under 820px tall. Line names are never printed; colour alone.
+- **Moments:** meta line, Bodoni title and words first; the photograph in a
+  gold hairline frame to the right (wide) or below (stacked). A chapter with no
+  picture shows its number in a gold ring. A moment that would not fit lets its
+  picture go before any words scroll; short windows step the type down the ramp
+  (never under 17px).
+- **Motion:** the moment being left drifts left and fades before the next drifts
+  in, words never over words; per frame only the train and the two or three
+  moments near it restyle (`--d` is a registered, non-inherited property). CSS
+  scroll snap is replaced by a gentle settle after `scrollend` (snap pulled every
+  mouse-wheel notch back); button rides ease the train, not the scroll; jumps of
+  more than one stop run express. Measured on a production build: 60fps wheel
+  scrolling at 390, 820 and 1440 with a 4× CPU slowdown, no long animation frames.
+- **Waivers:** `repeating-stripes-gradient` removed (no more sleepers).
+
 ## 2026-09-22 — Our Story becomes a ride on the Sara + Tyler Line
 
 **Asked for by Tyler:** Our Story as a timeline you travel through, not a page

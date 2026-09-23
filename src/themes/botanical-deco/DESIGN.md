@@ -270,8 +270,8 @@ components:
     backgroundColor: "{colors.neutral}"
     textColor: "{colors.line-orange}"
   ride-stage:
-    backgroundColor: "{colors.secondary}"
-    textColor: "{colors.on-secondary}"
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.primary}"
 ---
 
 # Botanical Deco — Design System
@@ -361,8 +361,11 @@ colour (≥ 5.2:1 on every line).
 | What marriage means | Gold (the Loop) | `line-gold` `#806238` |
 
 The line colours appear only on the ride and its car-card map; they are never a
-page accent anywhere else. The stage the memories pass through is Chicago Blue
-(`ride-stage`), the city at dusk.
+page accent anywhere else, and a line is never *named* on the page ("Red Line"):
+the colour alone carries the way-finding. The stage the moments pass through is
+Ivory (`ride-stage`), the same paper as the page, so a moment at its station is
+the only thing in view: its words first, its photograph in a gold hairline frame
+beside or below them.
 
 ## Typography
 
