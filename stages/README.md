@@ -138,7 +138,7 @@ The wedding site's own Vercel project serves the stages too, so there is nothing
 How it fits together:
 
 - **Assembled into the app.** `npm run stages:assemble` builds each stage as a static export into
-  `public/_stages/`, twice: at a host root (`_hosts/<stage>/`, for the subdomains) and under
+  the app's `public/` folder, under `_stages` (build output, gitignored), twice: at a host root (`_hosts/<stage>/`, for the subdomains) and under
   `/<stage>` (for paths), plus the hub (`scripts/stages/hub.ts`). The Vercel build
   (`vercel.json`) runs it with `--for-vercel`, which builds only what that environment serves:
   subdomain builds for production, path builds for previews. Two stages build at a time, which
