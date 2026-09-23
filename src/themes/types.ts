@@ -88,6 +88,12 @@ export interface NavModel {
   /** Sticky / quick actions for the state (mobile bottom bar). */
   sticky: NavItem[];
   currentPath: string;
+  /**
+   * The one way into a session, for guests and the couple alike: "Sign in" → /sign-in, whatever the
+   * lifecycle state. Public pages are prerendered per design and cannot know who is reading, so the
+   * label names the door rather than a state; /sign-in itself says who you are if you already are.
+   */
+  account?: NavItem;
 }
 
 export interface DateFacts {

@@ -12,7 +12,9 @@ these screens.
 
 1. Your email address must be in `ADMIN_EMAILS`, or an existing owner must have
    granted you a role on `/admin/guests`.
-2. Go to `/sign-in/admin` and ask for a code. It arrives by email in a
+2. Click **Sign in** (top of every page, last item in the Menu on a phone,
+   and in the footer), then **Sara or Tyler? Sign in to manage the site** —
+   or go straight to `/sign-in/admin` — and ask for a code. It arrives by email in a
    deployment; in local development it lands in the dev inbox at
    `/api/dev/inbox` and is printed to the server log.
 3. Anything that changes money, identity or publication asks you to prove it is

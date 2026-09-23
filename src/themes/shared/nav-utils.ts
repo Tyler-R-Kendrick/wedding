@@ -37,6 +37,7 @@ export function bottomCells(nav: NavModel, max: number): NavItem[] {
   return out;
 }
 
+/** Every page link a shell lists, in state order, then the way to sign in (always last). */
 export function allItems(nav: NavModel): NavItem[] {
-  return [...nav.primary, ...nav.more];
+  return [...nav.primary, ...nav.more, ...(nav.account ? [nav.account] : [])];
 }

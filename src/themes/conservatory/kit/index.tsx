@@ -1,7 +1,7 @@
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor } from '@/domain/lifecycle/nav';
+import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
@@ -135,7 +135,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
+function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
   return (
     <footer className="cv-footer">
       <div className="cv-footer__inner">
@@ -147,6 +147,11 @@ function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
           <a className="cv-link" href={site.venue.mapsUrl} rel="noopener">
             {site.venue.address}
             <ExternalMark provider={site.venue.mapsProvider} />
+          </a>
+        </p>
+        <p className="cv-footer__signin">
+          <a className="cv-link cv-link--standalone" href={account.href}>
+            {account.label}
           </a>
         </p>
         <p className="cv-footer__rights">{rightsNote}</p>
@@ -187,6 +192,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="conservatory" themes={THEME_OPTIONS} /> : null}
+        account={frame.nav.account}
         rightsNote={RIGHTS_NOTE}
         printUrls={printUrls}
       />

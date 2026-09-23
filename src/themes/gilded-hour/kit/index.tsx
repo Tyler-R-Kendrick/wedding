@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor } from '@/domain/lifecycle/nav';
+import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
@@ -177,7 +177,7 @@ function Panel({ nav }: { nav: NavProps['nav'] }) {
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
+function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
   return (
     <footer className="gh-footer">
       <div className="gh-footer__inner">
@@ -191,6 +191,11 @@ function Footer({ site, switcher, rightsNote, printUrls }: FooterProps) {
           <a className="gh-link" href={site.venue.mapsUrl} rel="noopener">
             {site.venue.address}
             <ExternalMark provider={site.venue.mapsProvider} />
+          </a>
+        </p>
+        <p className="gh-footer__signin">
+          <a className="gh-link gh-link--standalone" href={account.href}>
+            {account.label}
           </a>
         </p>
         <p className="gh-footer__rights">{rightsNote}</p>
@@ -231,6 +236,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
+        account={frame.nav.account}
         rightsNote={RIGHTS_NOTE}
         printUrls={printUrls}
       />
