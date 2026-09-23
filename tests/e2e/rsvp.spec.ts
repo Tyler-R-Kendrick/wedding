@@ -56,15 +56,24 @@ test('a household manager answers for the whole household, reviews inline, confi
   await axeClean(page);
 
   await page.getByRole('button', { name: 'Confirm and send' }).click();
-  await expect(page.getByText('Thank you — you are all set')).toBeVisible();
+  // "Saved", not "all set": the parts of an RSVP open at different times, and Ada left the
+  // cocktail hour unanswered, so the reply is not finished.
+  await expect(page.getByText('Thank you — that is saved')).toBeVisible();
   await expect(page.locator('#main')).toContainText('Ada Testhouse');
-  await expect(page.locator('#main')).toContainText('come back to this page');
+  await expect(page.locator('#main')).toContainText('come back to your RSVP');
   await axeClean(page);
 
-  // A second visit shows what is on file and the weekend reflects it.
+  // A second visit shows where each part stands, and the weekend reflects it.
+  await page.goto('/rsvp');
+  const tasks = page.getByRole('list', { name: 'Where things stand' });
+  const task = (name: string) => tasks.getByRole('listitem').filter({ has: page.getByRole('link', { name, exact: true }) });
+  await expect(task('Who is coming')).toContainText(/\d of \d done/);
+  await expect(task('Dietary and access needs')).toContainText('Added');
+  // Household A's invitation has no plus-ones, so the part is not offered at all.
+  await expect(tasks).not.toContainText('Bringing a guest');
   await page.goto('/your-weekend');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Ada');
-  await expect(page.locator('#main')).toContainText('Review or change your RSVP');
+  await expect(page.locator('#main')).toContainText('Continue your RSVP');
   await axeClean(page);
   await ctx.close();
 });
@@ -103,6 +112,31 @@ test('errors are inline text, summarised, and focused; nothing is saved until co
   await axeClean(page);
   await page.goto('/your-weekend');
   await expect(page.locator('#main')).toContainText('Not answered yet');
+  await ctx.close();
+});
+
+test('each part has its own page that asks only that part and keeps the rest', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'A1');
+  const page = await ctx.newPage();
+  await page.goto('/rsvp/meals');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Meals');
+  // Only the people already coming to an event with a meal, and no attendance question at all.
+  await expect(page.getByLabel('Meal for Ada', { exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: /attend the/ })).toHaveCount(0);
+  await expect(page.locator('#main')).not.toContainText('Cleo');
+  await axeClean(page);
+  await page.getByLabel('Meal for Ada', { exact: true }).selectOption({ index: 2 });
+  await page.getByRole('button', { name: 'Review your answers' }).click();
+  await expect(page.getByRole('heading', { name: 'Please check your answers' })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm and send' }).click();
+  await expect(page.getByText('Thank you — that is saved')).toBeVisible();
+  // Attendance was not part of that answer and did not move.
+  await page.goto('/rsvp/attending');
+  await expect(page.getByRole('group', { name: 'Will Cleo attend the reception?' }).getByLabel('No, cannot make it')).toBeChecked();
+
+  // A part this invitation does not include has no page.
+  const missing = await page.goto('/rsvp/guest');
+  expect(missing?.status()).toBe(404);
   await ctx.close();
 });
 

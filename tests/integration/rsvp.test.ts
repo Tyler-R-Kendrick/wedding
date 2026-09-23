@@ -92,7 +92,7 @@ describe('household RSVP through draft -> confirm -> submit', () => {
     expect(serializedAudit).not.toContain('NEEDS-SECRET');
     expect(serializedAudit).not.toContain('gluten');
     expect(serializedAudit).not.toContain(FIXTURE_MEALS[0].label);
-    expect(audit.find((a) => a.action === 'rsvp.submitted')?.metadata).toEqual({ responses: 4, accepted: 3, noteRows: 1, via: 'guest' });
+    expect(audit.find((a) => a.action === 'rsvp.submitted')?.metadata).toEqual({ parts: 'attendance,meal,notes', responses: 4, accepted: 3, noteRows: 1, via: 'guest' });
 
     const stored = await db.select().from(idempotencyKeys);
     expect(JSON.stringify(stored)).not.toContain('NEEDS-SECRET');

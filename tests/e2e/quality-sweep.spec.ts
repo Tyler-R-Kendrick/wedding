@@ -17,7 +17,7 @@ import { contextAs, principalHeaders } from './helpers/principal';
  * same reason. What is deliberately NOT here is in the level-16 self-review.
  */
 const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-const GUEST_ROUTES = ['/rsvp', '/your-weekend', '/transportation', '/trip'] as const;
+const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/transportation', '/trip'] as const;
 
 /**
  * Budgets proportional to the work, not the 30s default.

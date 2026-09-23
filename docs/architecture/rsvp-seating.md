@@ -44,11 +44,46 @@ Rules enforced **in the handler** (never by hidden UI):
 - `actsFor`: every `guestId` in responses and needs must be in `GuestPrincipal.actsFor`; anything else is `forbidden`.
 - Entitlement: every (guest, event) pair must exist in `event_entitlements`; unknown events look the same (`forbidden`).
 - Window: `computeRsvpWindow(settings, lifecycle, now)`; closed → `conflict { reason: 'rsvp_closed' }`. Admin corrections skip it.
-- Meals: required when attending an event with meals; must belong to the event's **current** version (`stale_meal` otherwise).
+- Meals: when the `meal` part is answered, required for everyone attending an event with a published menu; must belong to the event's **current** version (`stale_meal` otherwise). Not answered → carried over (see Parts).
 - Plus-one: `none` rejects a guest; `named` requires a name; both require a meal when the event has meals.
 - The draft's `submission` is the exact input `submit_rsvp` expects; the pipeline verifies the token against its hash, consumes the nonce, and only the `ui` surface can redeem it (`submit_rsvp` is not exposed to AI/WebMCP at all — assistants draft, guests confirm on the website).
 - Idempotency: the pipeline reserves `idempotencyKey` before the handler; same key + payload replays, different payload conflicts. The UI embeds a per-render ULID key.
 - Precedence when several things are wrong: forbidden > closed > validation.
+
+## Parts: attendance, plus-one, meal, notes
+
+The RSVP ships in parts that are released independently — for delivery (a flag each) and for the
+guest (a task list, one page per part). `src/domain/rsvp/parts.ts` is the whole model.
+
+| Part | Fields it owns | Released by | Also held by data |
+|---|---|---|---|
+| `attendance` | `status` | `RSVP_ATTENDANCE` | — |
+| `plusOne` | `plus_one_attending`, `plus_one_name`, `plus_one_answered_at` | `RSVP_PLUS_ONES` | not on the invitation (`plusOnePolicy: none` everywhere) → `not_applicable` |
+| `meal` | `meal_option_id` (+version), `plus_one_meal_option_id` | `RSVP_MEALS` (ships **off** until the menu is set) | no event with a meal → `not_applicable`; no menu published for the current version → `later` / `menu_pending` |
+| `notes` | `guest_needs` | `RSVP_ATTENDANCE` | — |
+
+**Writes are per part.** `draft_rsvp` takes `parts` (default: every part open now; naming a closed one
+is `conflict { reason: 'part_not_open' }`). Validation reads each answered part from the input and
+**carries every other part over from the file**, unjudged — a stale meal is not this submission's to
+reject. The returned `submission` is the merged row plus `parts`; `submit_rsvp` re-reads the file for
+the parts it is not answering, so a draft cannot overwrite an answer saved in between. A decline
+clears the row's plus-one and meals. A meal carried over keeps the menu version it was chosen from, so
+it still reads as stale. `plus_one_answered_at` distinguishes "not bringing anyone" from "never asked"
+(migration 0011 backfills it for accepted rows, which the single form always asked).
+
+**Progress** (`rsvpProgress`) is per part: `open` / `later` / `not_applicable`, a status
+(`not_started`, `in_progress`, `done`, `needs_attention`, `waiting`, `not_needed`, `optional`, `later`)
+and counts. `get_my_rsvp` and `get_my_itinerary` return it as `parts` plus `next` — the open parts
+still wanting an answer, which `/rsvp` asks in one form. While attendance is unfinished, `next`
+includes every open part, so a first reply with everything released is one form, one review and one
+confirmation, exactly as before the split.
+
+**Guest surfaces.** `/rsvp`: the task list (GOV.UK Design System task-list pattern,
+`components/rsvp/RsvpTaskList.tsx`) and, below it, the form for `next`. `/rsvp/attending`,
+`/rsvp/guest`, `/rsvp/meals`, `/rsvp/notes`: one part each, for changing it; a part not on the
+invitation is a 404, one not open yet says why. Your Weekend's reply panel shows the same list.
+Tests: `tests/unit/rsvp/parts.test.ts`, `tests/integration/rsvp-parts.test.ts` (a staged release end
+to end), `tests/e2e/rsvp.spec.ts`.
 
 ## Your Weekend (`get_my_itinerary`)
 
@@ -72,8 +107,8 @@ Unregistered slots render an honest placeholder; a throwing provider renders `un
 | Name | Kind | Auth | Requires | Confirmation / idempotency | Exposure |
 |---|---|---|---|---|---|
 | `list_my_events` | read | guest | `view_event` | — | ui, ai, webmcp |
-| `get_my_rsvp` | read | guest | `rsvp_self` | — (needs only on `ui`) | ui, ai, webmcp |
-| `draft_rsvp` | draft | guest | `rsvp_self` | issues token for `submit_rsvp` | ui, ai, webmcp |
+| `get_my_rsvp` | read | guest | `rsvp_self` | — (needs only on `ui`); returns `parts` + `next` | ui, ai, webmcp |
+| `draft_rsvp` | draft | guest | `rsvp_self` | issues token for `submit_rsvp`; takes `parts` | ui, ai, webmcp |
 | `submit_rsvp` | action | guest | `rsvp_self` | explicit (single-use, ui-only) / key required | ui |
 | `get_my_itinerary` | read | guest | `view_private_schedule` | — | ui, ai, webmcp |
 | `get_my_table` | read | guest | `view_table_assignment` | — | ui, ai, webmcp |

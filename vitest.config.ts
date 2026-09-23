@@ -10,6 +10,14 @@ const alias = {
 
 const baseEnv = { NODE_ENV: 'test', PGLITE_MEMORY: '1', LOG_LEVEL: 'silent', METRICS_SINK: 'none' } as const;
 
+/**
+ * Meals ship switched off until the menu is set (`RSVP_MEALS`). The capability suites exercise the
+ * whole reply, so they opt meals in the way a deploy will once the menu exists; the shipped default
+ * is pinned in tests/unit/rsvp/parts.test.ts, and tests/integration/rsvp-parts.test.ts switches
+ * each part off and on itself.
+ */
+const capabilityEnv = { ...baseEnv, FLAG_RSVP_MEALS: 'on' } as const;
+
 export default defineConfig({
   test: {
     projects: [
@@ -23,7 +31,7 @@ export default defineConfig({
           name: 'integration',
           include: ['tests/integration/**/*.test.ts'],
           environment: 'node',
-          env: baseEnv,
+          env: capabilityEnv,
           setupFiles: ['tests/integration/setup.ts'],
           testTimeout: 30_000,
           hookTimeout: 60_000,
@@ -35,7 +43,7 @@ export default defineConfig({
           name: 'evals',
           include: ['tests/evals/**/*.eval.test.ts'],
           environment: 'node',
-          env: baseEnv,
+          env: capabilityEnv,
           // The per-case report is the deliverable, so it must reach the CI log on a pass too.
           disableConsoleIntercept: true,
           setupFiles: ['tests/evals/setup.ts'],
