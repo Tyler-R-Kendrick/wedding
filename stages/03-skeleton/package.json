@@ -1,0 +1,23 @@
+{
+  "name": "@wedding/skeleton",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stage 3: every wireframe as a clickable skeleton. Bones come from boneyard, laid out from the wireframe itself. Reads @wedding/wireframe; stage 4 reads this.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.ts",
+    "./skeleton.css": "./lib/skeleton.css"
+  },
+  "dependencies": {
+    "@wedding/sitemap": "*",
+    "@wedding/wireframe": "*",
+    "boneyard-js": "^1.10.0"
+  },
+  "scripts": {
+    "dev": "next dev --webpack -p 3103",
+    "build": "next build --webpack",
+    "start": "node ../../scripts/stages/serve.mjs out 3103",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

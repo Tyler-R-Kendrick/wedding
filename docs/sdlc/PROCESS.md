@@ -23,6 +23,11 @@ once per session before UI work; `DESIGN.md` (per theme) beats any skill's
 taste; mobile 390px first; WCAG 2.2 AA; no raw hex or `font-family`
 literals in components; never read or print `.env`.
 
+Structure comes before any of this: a page is placed in the sitemap, drawn as a
+wireframe, made clickable as a skeleton and tried in every design with stand-in
+content, each a separate deployable project (`../../stages/README.md`). The
+stages below take a surface from there to shipped.
+
 ## The nine stages at a glance
 
 | # | Stage | Primary artefact | Gate |

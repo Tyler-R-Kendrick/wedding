@@ -1,0 +1,161 @@
+/*
+ * The pipeline's drafting sheet: the one token layer stages 1–3 draw with, and the semantic names
+ * stage 4 remaps onto each design (stages/04-placeholder/app/themes.css). Every value is a step of
+ * the root DESIGN.md scale, so a lo-fi stage never invents a colour, size or radius of its own.
+ *
+ *   --st-*        what a stage component may read. Nothing below the stage kits reads a raw value.
+ */
+:root {
+  /* DESIGN.md colors: neutral, surface, primary, on-surface-muted, outline, neutral-variant, tertiary */
+  --st-paper: #F6F1E9;
+  --st-surface: #FBF8F3;
+  --st-ink: #1F2A24;
+  --st-ink-muted: #5A5E58;
+  --st-line: #CFC5B6;
+  --st-fill: #E8DFD2;
+  --st-mark: #A94A34;
+  --st-on-mark: #FBF7F1;
+  --st-on-ink: #F6F1E9;
+
+  /* Families: no webfont at the lo-fi stages. A drawing should not argue about typefaces. */
+  --st-font-text: "Georgia", "Times New Roman", serif;
+  --st-font-display: "Georgia", "Times New Roman", serif;
+  --st-font-note: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+
+  /* DESIGN.md typography sizes */
+  --st-size-display: 3rem;
+  --st-size-h1: 2.25rem;
+  --st-size-h2: 1.625rem;
+  --st-size-h3: 1.25rem;
+  --st-size-body: 1.0625rem;
+  --st-size-small: 1rem;
+  --st-size-label: 0.75rem;
+
+  /* DESIGN.md rounded + spacing */
+  --st-radius: 2px;
+  --st-radius-md: 6px;
+  --st-radius-pill: 999px;
+  --st-space-xs: 4px;
+  --st-space-sm: 8px;
+  --st-space-md: 16px;
+  --st-space-lg: 24px;
+  --st-space-xl: 40px;
+  --st-space-2xl: 64px;
+  --st-measure: 44rem;
+  --st-page: 72rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--st-paper);
+  color: var(--st-ink);
+  font-family: var(--st-font-text);
+  font-size: var(--st-size-body);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--st-mark);
+  outline-offset: 2px;
+}
+
+.st-skip {
+  position: absolute;
+  left: var(--st-space-md);
+  top: -100px;
+  background: var(--st-ink);
+  color: var(--st-on-ink);
+  padding: var(--st-space-sm) var(--st-space-md);
+}
+
+.st-skip:focus {
+  top: var(--st-space-md);
+}
+
+/* ── Stage bar: which fidelity you are looking at, and the same page at the others ───────────── */
+.st-bar {
+  background: var(--st-ink);
+  color: var(--st-on-ink);
+  font-family: var(--st-font-note);
+  font-size: var(--st-size-small);
+  line-height: 1.4;
+}
+
+.st-bar__inner {
+  max-width: var(--st-page);
+  margin: 0 auto;
+  padding: var(--st-space-sm) var(--st-space-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-sm) var(--st-space-lg);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.st-bar__here {
+  margin: 0;
+}
+
+.st-bar__question {
+  display: block;
+  opacity: 0.8;
+}
+
+.st-bar__stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.st-bar__stages a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--st-space-sm);
+  border-radius: var(--st-radius);
+  text-decoration: none;
+}
+
+.st-bar__stages a:hover {
+  text-decoration: underline;
+}
+
+.st-bar__stages a[aria-current="page"] {
+  background: var(--st-on-ink);
+  color: var(--st-ink);
+}
+
+.st-note {
+  font-family: var(--st-font-note);
+  font-size: var(--st-size-small);
+  color: var(--st-mark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
