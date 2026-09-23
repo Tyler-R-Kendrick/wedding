@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores([
     '.next/**', 'node_modules/**', '.data/**', '.claude/**', '.impeccable/**', 'coverage/**',
     'playwright-report/**', 'test-results/**', 'src/db/migrations/**', 'scripts/**', 'docs/**', 'next-env.d.ts',
+    'stages/*/.next/**', 'stages/*/out/**', 'stages/*/next-env.d.ts', 'stages/04-placeholder/public/**',
   ]),
   ...asArray(nextVitals),
   ...asArray(nextTs),

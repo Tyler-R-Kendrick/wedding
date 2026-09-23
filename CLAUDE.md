@@ -69,6 +69,26 @@ touching any UI. The site itself is not built yet; the tooling is.
    Optional comp generator; needs `STITCH_API_KEY`. `taste-design` can
    draft an alternative DESIGN.md to compare against ours.
 
+## The build pipeline (stages/)
+
+A page is made in five fidelities, each its own project with its own dev
+server, tests, build and deployment, each built from the one before it:
+**sitemap** (`stages/01-sitemap`, :3101) → **wireframe** (`02-wireframe`,
+:3102) → **skeleton** (`03-skeleton`, :3103, clickable, content as boneyard
+bones) → **placeholder** (`04-placeholder`, :3104, stand-in copy in every real
+design, theme picker) → **real** (this app, :3000). Settle each stage's
+question before moving down; fix a problem at the stage that owns it (a wrong
+flow is a wireframe fix, not a skeleton patch). Changes cascade down only:
+`stages/01-sitemap/lib/sitemap.ts` is the page list every stage reads, the real
+nav takes its labels from it, and `tests/unit/stages/sitemap-routes.test.ts`
+fails when `src/app` and the sitemap disagree. A new page starts in the
+sitemap. Guide: `stages/README.md`.
+
+```bash
+npm run dev:sitemap | dev:wireframe | dev:skeleton | dev:placeholder
+npm run stages:dev · stages:test · stages:typecheck · stages:build · stages:serve
+```
+
 ## Commands
 
 ```bash

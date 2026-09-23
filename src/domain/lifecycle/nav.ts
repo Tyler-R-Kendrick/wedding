@@ -1,3 +1,4 @@
+import { navLabel, page as sitemapPage } from '@wedding/sitemap';
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { isBuiltRoute } from '@/domain/routes';
 import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
@@ -9,21 +10,20 @@ import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
  */
 type PageKey = 'home' | 'story' | 'adventures' | 'share' | 'wedding' | 'caa' | 'weekend' | 'travel' | 'transport' | 'gifts' | 'photos' | 'ask' | 'rsvp';
 
-const PAGES: Record<PageKey, NavItem> = {
-  home: { label: 'Home', href: '/' },
-  story: { label: 'Our Story', href: '/our-story' },
-  adventures: { label: 'Our Adventures', href: '/our-adventures' },
-  share: { label: 'Share an Adventure', href: '/share-an-adventure' },
-  wedding: { label: 'The Wedding', href: '/the-wedding' },
-  caa: { label: 'Explore CAA', href: '/explore-caa' },
-  weekend: { label: 'Your Weekend', href: '/your-weekend' },
-  travel: { label: 'Travel & Stay', href: '/travel' },
-  transport: { label: 'Transportation', href: '/transportation' },
-  gifts: { label: 'Gifts', href: '/gifts' },
-  photos: { label: 'Photos & Video', href: '/photos' },
-  ask: { label: 'Ask Us', href: '/ask-us' },
-  rsvp: { label: 'RSVP', href: '/rsvp' },
-};
+const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'share', 'wedding', 'caa', 'weekend', 'travel', 'transport', 'gifts', 'photos', 'ask', 'rsvp'];
+
+/**
+ * Labels and paths come from the sitemap (stages/01-sitemap/lib/sitemap.ts), the first stage of
+ * the pipeline in stages/README.md: rename a page there and the wireframe, skeleton, placeholder
+ * and this navigation all follow. The keys ARE sitemap page ids, so `page()` throws at import if
+ * one of them leaves the sitemap, rather than rendering a link to nowhere.
+ */
+const PAGES = Object.fromEntries(
+  PAGE_KEYS.map((key) => {
+    const p = sitemapPage(key);
+    return [key, { label: navLabel(p), href: p.path }];
+  }),
+) as Record<PageKey, NavItem>;
 
 interface StateNav {
   primary: PageKey[];

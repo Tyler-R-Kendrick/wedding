@@ -1,0 +1,26 @@
+{
+  "name": "@wedding/placeholder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stage 4: the skeleton filled with labelled placeholder content, in every design, with a theme picker. Reads @wedding/skeleton and src/themes/*.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.ts"
+  },
+  "dependencies": {
+    "@wedding/sitemap": "*",
+    "@wedding/skeleton": "*",
+    "@wedding/wireframe": "*"
+  },
+  "scripts": {
+    "predev": "node scripts/sync-themes.mjs",
+    "dev": "next dev --webpack -p 3104",
+    "prebuild": "node scripts/sync-themes.mjs",
+    "build": "next build --webpack",
+    "start": "node ../../scripts/stages/serve.mjs out 3104",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "pretypecheck": "node scripts/sync-themes.mjs",
+    "pretest": "node scripts/sync-themes.mjs"
+  }
+}

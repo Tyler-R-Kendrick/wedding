@@ -1,0 +1,86 @@
+name: stages
+
+# The design pipeline (stages/README.md): sitemap → wireframe → skeleton → placeholder, each its
+# own project. The jobs are chained in pipeline order because each stage imports the one above it:
+# a broken sitemap fails here, at stage 1, instead of as a strange render three stages later.
+# The real app (stage 5) is held to the sitemap by tests/unit/stages/, in design-quality.yml.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_USE_ENV_PROXY: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  sitemap:
+    name: 1 · sitemap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w @wedding/sitemap
+      - run: npx vitest run --project stage:sitemap
+      - run: node scripts/check-design-drift.mjs stages/01-sitemap
+      - run: npm run build -w @wedding/sitemap
+
+  wireframe:
+    name: 2 · wireframe
+    needs: sitemap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w @wedding/wireframe
+      - run: npx vitest run --project stage:wireframe
+      - run: node scripts/check-design-drift.mjs stages/02-wireframe
+      - run: npm run build -w @wedding/wireframe
+
+  skeleton:
+    name: 3 · skeleton
+    needs: wireframe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w @wedding/skeleton
+      - run: npx vitest run --project stage:skeleton
+      - run: node scripts/check-design-drift.mjs stages/03-skeleton
+      - run: npm run build -w @wedding/skeleton
+
+  placeholder:
+    name: 4 · placeholder
+    needs: skeleton
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w @wedding/placeholder
+      - run: npx vitest run --project stage:placeholder
+      - run: node scripts/check-design-drift.mjs stages/04-placeholder
+      - run: npm run build -w @wedding/placeholder

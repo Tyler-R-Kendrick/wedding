@@ -21,6 +21,8 @@ const capabilityEnv = { ...baseEnv, FLAG_RSVP_MEALS: 'on' } as const;
 export default defineConfig({
   test: {
     projects: [
+      // The pipeline stages (stages/README.md), each its own project: `vitest run --project "stage:*"`.
+      'stages/*/vitest.config.ts',
       {
         resolve: { alias },
         test: { name: 'unit', include: ['tests/unit/**/*.test.ts', 'tests/contract/**/*.test.ts'], environment: 'node', env: baseEnv },
