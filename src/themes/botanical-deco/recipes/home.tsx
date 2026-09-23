@@ -32,13 +32,13 @@ function Theme({ data }: { data: HomeData }) {
   const words = [
     {
       word: 'Love',
-      line: 'Everyone on our list is part of how we got here. This weekend is as much about you as it is about us.',
+      line: 'Every one of you is part of how we got here. This weekend is as much about you as it is about us.',
     },
     {
       word: 'Peace',
       line: after
-        ? 'No guesswork and no rush: a weekend to slow down with the people we love.'
-        : 'No guesswork and no rush. What you need to know lives on this site and fills in as each detail is settled. Come relaxed.',
+        ? 'No rush and no guesswork: a weekend to slow down, catch up and simply be together.'
+        : 'No rush and no guesswork: a weekend to slow down, catch up and simply be together. Everything practical is on this site as it is settled, so you can come relaxed.',
     },
     {
       word: 'Happiness',
@@ -50,7 +50,6 @@ function Theme({ data }: { data: HomeData }) {
       <Botanical id="botanical.edge-left-tall" className="bd-bloom--theme" />
       <div className="bd-theme__inner">
         <div className="bd-theme__intro">
-          <p className="bd-eyebrow">Our theme</p>
           <h2 className="bd-h bd-h--2 bd-theme__title" id="theme-title">
             Love, peace <br />
             &amp; happiness
@@ -60,7 +59,7 @@ function Theme({ data }: { data: HomeData }) {
             We have been lucky. A city we love, adventures that changed us, and people who made every one of them better.{' '}
             {after
               ? 'Thank you for letting us share them with you.'
-              : `Not everyone we love has been able to share them with us yet, so this ${data.site.date.weekday} in ${data.site.venue.city}, we are bringing you along.`}
+              : `Not everyone we love has been able to share them with us yet, so on ${data.site.date.long}, we are bringing you along to ${data.site.venue.city}.`}
           </p>
         </div>
         <ol className="bd-theme__list">
@@ -87,7 +86,6 @@ function Share({ data }: { data: HomeData }) {
   return (
     <section className="bd-share" aria-labelledby="share-title">
       <header className="bd-share__head" data-reveal="">
-        <p className="bd-eyebrow">Shared with you</p>
         <h2 className="bd-h bd-h--2 bd-share__title" id="share-title">
           {remember ? 'What we shared' : 'What we can’t wait to share'}
         </h2>
@@ -190,29 +188,31 @@ function Band({ data }: { data: HomeData }) {
   );
 }
 
-/** The closing invitation: the gallery, and the one handwritten line on the page. */
+/**
+ * The closing invitation: the gallery, and the one handwritten line on the page. The painted cluster
+ * is a corner cut-out, so it enters from the section's top right corner, turned so its cut edges lie
+ * along the page edge instead of showing as a cropped rectangle.
+ */
 function Closing({ data }: { data: HomeData }) {
   const remember = data.lifecycle.mode === 'remember';
   return (
     <section className="bd-closing" aria-labelledby="closing-title">
+      <Botanical id="botanical.cluster-tl" className="bd-bloom--closing" />
       <div className="bd-closing__text" data-reveal="">
         <p className="bd-eyebrow">Gallery</p>
         <h2 className="bd-h bd-h--2 bd-closing__title" id="closing-title">
           Our memories, <br />
           and yours to come
         </h2>
-        <p>A few of our favorite moments so far. After the weekend, the photographs from it will live here too, yours included.</p>
-        <More href={ROUTES.photos}>View gallery</More>
+        {/* No gallery photographs exist yet (PX-08): say what the page will hold, not what it holds. */}
+        <p>{remember ? 'Photographs from the weekend gather here as they come in, ours and yours.' : 'Photographs from our adventures will gather here, and after the weekend the ones from it will too, yours included.'}</p>
+        <More href={ROUTES.photos}>{remember ? 'View the gallery' : 'Visit the gallery'}</More>
         {remember ? null : (
           <p className="bd-script bd-closing__sign" aria-hidden="true">
             See you in Chicago
           </p>
         )}
       </div>
-      {/* No gallery photographs exist yet (PX-08): a painted cluster from the same set, shown whole. */}
-      <figure className="bd-closing__still" aria-hidden="true" data-reveal="">
-        <Botanical id="botanical.cluster-tl" className="bd-bloom--still" />
-      </figure>
     </section>
   );
 }

@@ -32,7 +32,7 @@ const { ProseBlock, StatusFlags, Provenance } = content;
 const MEMORIES = [
   { ids: ['city.lakefront-adler'], kicker: 'Exploring together', caption: 'The lakefront by the Adler, one of our favorite places in Chicago.' },
   { ids: ['place.starved-rock'], kicker: 'Starved Rock', caption: 'Where we first said “I love you.”' },
-  { ids: ['city.river', 'city.riverwalk'], kicker: 'All the joy', caption: 'A city we keep coming back to.' },
+  { ids: ['city.riverwalk'], kicker: 'All the joy', caption: 'A city we keep coming back to.' },
 ] as const;
 
 const PLACES = [

@@ -19,6 +19,9 @@
 
 .bd {
   --bd-max: 1448px;
+
+  /* The reading column under the Home opening: every section below the hero starts on this line. */
+  --bd-col: 1200px;
   --bd-gutter: clamp(16px, 3.4vw, 56px);
   --bd-inset: clamp(16px, 8vw, 118px);
   --bd-hair: 1px solid var(--color-outline);
@@ -427,8 +430,11 @@
   .bd-masthead__inner--gt7:not(.bd-masthead__inner--gt8) .bd-masthead__menu {
     display: none;
   }
+}
 
-  /* The couple's line in script, when the pages leave room for it. */
+/* The couple's line in script ("Love, peace & happiness"), only where the pages leave room for it:
+   at 1440 it pushed the nav into the monogram. */
+@media (width >= 1600px) {
   .bd-masthead__inner:not(.bd-masthead__inner--gt6) .bd-masthead__motto {
     display: inline-flex;
   }
@@ -752,7 +758,7 @@
 
 .bd-hero__title {
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 1.2rem + 3.4vw, 4.25rem);
+  font-size: clamp(2.5rem, 0.6rem + 3.4vw, 4.25rem);
   font-weight: var(--type-display-xl-weight);
   line-height: var(--type-display-xl-line);
   letter-spacing: var(--type-display-xl-tracking);
@@ -894,6 +900,12 @@
   white-space: nowrap;
 }
 
+@media (width >= 768px) {
+  .bd-hero__theme {
+    display: block;
+  }
+}
+
 /* The corner cluster, turned to rise from the bottom-left of the invitation. */
 .bd-bloom--hero-left {
   inset-inline-start: 0;
@@ -988,12 +1000,6 @@
     padding: 18px 26px 16px;
   }
 
-}
-
-@media (width >= 768px) {
-  .bd-hero__theme {
-    display: block;
-  }
 }
 
 /* ---------- editorial page hero (Story, Explore, Weekend) ---------- */
@@ -1805,9 +1811,9 @@
 .bd-theme__inner {
   display: grid;
   gap: var(--spacing-xl);
-  max-width: 1200px;
+  max-width: var(--bd-col);
   margin-inline: auto;
-  padding-inline: max(var(--bd-gutter), 52px) var(--bd-gutter);
+  padding-inline: var(--bd-gutter);
 }
 
 .bd-theme__intro {
@@ -1872,7 +1878,9 @@
   text-wrap: pretty;
 }
 
+/* Only where the column leaves a margin for it: never over the words. */
 .bd-bloom--theme {
+  display: none;
   inset-inline-start: 0;
   inset-block-start: clamp(56px, 10vw, 140px);
   inline-size: clamp(44px, 5vw, 88px);
@@ -1885,7 +1893,6 @@
   .bd-theme__inner {
     grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     gap: clamp(48px, 7vw, 120px);
-    padding-inline: clamp(96px, 8vw, 128px) var(--bd-gutter);
   }
 
   /* Pinned under the top of the window while the three words scroll past it. */
@@ -1905,6 +1912,12 @@
   }
 }
 
+@media (width >= 1360px) {
+  .bd-bloom--theme {
+    display: block;
+  }
+}
+
 /* ---------- home: what we want to share ---------- */
 .bd-share {
   display: grid;
@@ -1919,7 +1932,7 @@
   justify-items: start;
   gap: var(--spacing-sm);
   inline-size: 100%;
-  max-width: 1200px;
+  max-width: var(--bd-col);
   margin-inline: auto;
   padding-inline: var(--bd-gutter);
 }
@@ -1934,7 +1947,7 @@
   display: grid;
   gap: var(--spacing-lg);
   inline-size: 100%;
-  max-width: 1200px;
+  max-width: var(--bd-col);
   margin-inline: auto;
   padding-inline: var(--bd-gutter);
 }
@@ -1984,7 +1997,7 @@
   object-fit: cover;
 }
 
-.bd-share__item--city .bd-share__body {
+.bd-share__item--city > .bd-share__body {
   padding-inline: var(--bd-gutter);
 }
 
@@ -1995,8 +2008,9 @@
     gap: var(--spacing-lg);
   }
 
+  /* Six columns, not seven: the portrait is an interim crop and is kept at its own sharpness. */
   .bd-share__item--story .bd-share__photo {
-    grid-column: 1 / span 7;
+    grid-column: 1 / span 6;
   }
 
   .bd-share__item--story .bd-share__body {
@@ -2020,20 +2034,20 @@
     display: block;
   }
 
+  /* The panorama whole, at its own proportions. */
   .bd-share__item--city img {
     aspect-ratio: auto;
-    max-block-size: 70svh;
-    object-fit: cover;
   }
 
-  /* A Sheet plate lifted over the water's lower left, like a caption card laid on a print. */
-  .bd-share__body--plate {
+  /* A Sheet plate lifted over the water's lower left, like a caption card laid on a print; its left
+     edge is the reading column's (the item is full width, so 100% here is the page's width). */
+  .bd-share__item--city > .bd-share__body--plate {
     position: relative;
     z-index: 1;
     max-width: 30rem;
     margin-block-start: clamp(-120px, -8vw, -64px);
-    margin-inline-start: max(var(--bd-gutter), calc((100vw - 1200px) / 2 + var(--bd-gutter)));
-    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl) !important;
+    margin-inline-start: max(var(--bd-gutter), calc((100% - var(--bd-col)) / 2 + var(--bd-gutter)));
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
     background: var(--color-surface);
     box-shadow: var(--shadow-hairline);
     border-block-start: 2px solid var(--color-gold);
@@ -2044,17 +2058,17 @@
 .bd-band {
   background: var(--color-moss);
   color: var(--color-on-moss);
+  overflow: clip;
 }
 
 .bd-schedule {
   position: relative;
   display: grid;
   gap: var(--spacing-lg);
-  max-width: 1200px;
+  max-width: var(--bd-col);
   margin-inline: auto;
   padding: clamp(64px, 9vw, 120px) var(--bd-gutter);
   color: var(--color-on-moss);
-  overflow: clip;
 }
 
 .bd-schedule :is(.bd-h, .bd-eyebrow, .bd-more) {
@@ -2165,7 +2179,6 @@
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: center;
     gap: var(--spacing-md) clamp(48px, 6vw, 96px);
-    padding-inline: clamp(120px, 10vw, 152px) var(--bd-gutter);
   }
 
   .bd-schedule__intro {
@@ -2178,27 +2191,33 @@
     grid-column: 2;
   }
 
+}
+
+/* The stepped frame stands in the margin, outside the reading column, where there is one. */
+@media (width >= 1360px) {
   .bd-schedule .bd-decoframe {
     display: grid;
     inset-block: clamp(40px, 6vw, 80px);
-    inset-inline-start: var(--bd-gutter);
+    inset-inline-start: calc(var(--bd-gutter) - 96px);
   }
 }
 
 /* ---------- home: the closing invitation ---------- */
 .bd-closing {
-  display: grid;
-  gap: var(--spacing-xl);
-  align-items: center;
-  max-width: 1200px;
-  margin-inline: auto;
-  padding: clamp(72px, 10vw, 136px) var(--bd-gutter);
+  position: relative;
+  padding-block: clamp(72px, 10vw, 136px);
+  overflow: clip;
 }
 
 .bd-closing__text {
+  position: relative;
+  z-index: 2;
   display: grid;
   justify-items: start;
   gap: var(--spacing-sm);
+  max-width: var(--bd-col);
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
 }
 
 .bd-closing__title {
@@ -2218,29 +2237,17 @@
   transform-origin: left center;
 }
 
-/* The painted cluster, shown whole on its paper instead of cropped to a tile. */
-.bd-closing__still {
-  display: none;
-  margin: 0;
-}
-
-.bd-bloom--still {
-  position: static;
-  inline-size: 100%;
+/* The painted corner cluster, mirrored so its two cut edges lie along the top and the right of the
+   page: it enters from the corner, the way the approved flowers do, and is never a cropped tile. */
+.bd-bloom--closing {
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: clamp(88px, 17vw, 260px);
   block-size: auto;
-}
+  scale: -1 1;
 
-@media (width >= 768px) {
-  .bd-closing {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    padding-inline: clamp(96px, 8vw, 128px) var(--bd-gutter);
-  }
-
-  .bd-closing__still {
-    display: block;
-    justify-self: end;
-    inline-size: min(100%, 300px);
-  }
+  /* Its third cut edge, the bottom, dissolves into the paper instead of ending in a straight line. */
+  mask-image: linear-gradient(to bottom, var(--color-primary) 72%, transparent);
 }
 
 /* ---------- home: the details index ---------- */
@@ -4347,8 +4354,12 @@
     animation: bd-draw 0.9s var(--ease-settle) 0.2s both;
   }
 
-  .bd-countdown--hero .bd-countdown__num {
-    animation: bd-count 1.6s var(--ease-settle) 0.3s both;
+  /* Only where @property is supported: unregistered, the count would sit at 0 for a second. No
+     @supports test exists for it; allow-discrete shipped after it in every engine. */
+  @supports (transition-behavior: allow-discrete) {
+    .bd-countdown--hero .bd-countdown__num {
+      animation: bd-count 1.6s var(--ease-settle) 0.3s both;
+    }
   }
 
   .bd [data-reveal-state="pending"] {
@@ -4456,7 +4467,6 @@
   .bd-masthead__motto,
   .bd-journey__line,
   .bd-reader__steps,
-  .bd-closing__still,
   .bd-hero__count {
     display: none !important;
   }

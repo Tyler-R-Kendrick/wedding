@@ -178,7 +178,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
       </nav>
       <p className="bd-masthead__motto" aria-hidden="true">
         <span className="bd-masthead__rule" />
-        <span className="bd-script">Brighter together</span>
+        <span className="bd-script">Love, peace &amp; happiness</span>
       </p>
     </div>
   );
@@ -619,7 +619,8 @@ export function Names({ names }: { names: string }) {
  * date, the venue and the state's two actions are all live text; none of it sits on a face.
  *
  * The day count is a plate set over the lower right of the portrait, clear of both faces: the one
- * number every guest wants from the first screen. It carries the wedding's theme under a gold rule.
+ * number every guest wants from the first screen, with the wedding's theme under a gold rule (from a
+ * tablet up; on a phone the theme is the very next section).
  * On a phone the portrait comes first and the plate sits on its lower corner, so the invitation
  * still starts directly under the photograph, in the first screen.
  */
@@ -628,7 +629,7 @@ function Hero({ content, site, countdown, state }: HeroProps) {
   return (
     <section className="bd-hero" aria-labelledby="hero-title">
       <div className="bd-hero__media">
-        <Photo id="couple.hero.formal" mobileId="couple.hero.formal.mobile" sizes="(min-width: 1100px) 66vw, 100vw" priority />
+        <Photo id="couple.hero.formal" mobileId="couple.hero.formal.mobile" sizes="(min-width: 1100px) 90vw, 100vw" priority />
       </div>
       <Botanical id="botanical.corner-tl" className="bd-bloom--hero-left" priority />
       <div className="bd-hero__copy">
@@ -668,10 +669,9 @@ function Hero({ content, site, countdown, state }: HeroProps) {
         </p>
       </div>
       {content.showCountdown ? (
-        <div className="bd-hero__count">
-          <HeroCountdown {...countdown} />
+        <HeroCountdown {...countdown}>
           <p className="bd-hero__theme">Love, peace &amp; happiness</p>
-        </div>
+        </HeroCountdown>
       ) : null}
     </section>
   );
