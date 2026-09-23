@@ -4,72 +4,127 @@ import { PreviewBanner } from '@/themes/shared/PreviewBanner';
 import type { HomeData, HomeSection } from '@/themes/types';
 import { DecoFrame, kit, More } from '../kit';
 import { dateParts } from '../kit/content';
+import { Reveal } from '../kit/Reveal';
 import { Botanical, Photo } from '../media';
 
-const { Shell, Hero, Button, Stat, Timeline, MapHandoff, Text, Countdown } = kit;
+const { Shell, Hero, Button, Stat, Timeline, MapHandoff, Text } = kit;
 
 /**
- * Home, as approved (REF-HOME): the riverfront portrait opening; an asymmetric editorial strip of
- * four different jobs — a welcome, the story, the building, the city — at four different widths;
- * a band that joins the moss schedule, a second portrait and the gallery invitation; then the light
- * architectural footer. No feature cards, no numbered acts.
+ * Home. The approved opening (the couple on the riverfront, the invitation beside them, now with the
+ * day count on the portrait), and then a page that unfolds as a guest scrolls instead of arriving
+ * all at once: the wedding's theme — love, peace and happiness — as three words that come in one at
+ * a time beside a pinned introduction; the three things Sara and Tyler most want to share, each at
+ * its own scale and with its photograph whole; the moss schedule; and a closing invitation.
  *
- * What the approved image said that was not true is corrected in place, keeping the slot: the
- * story entry says where they met (a wedding) instead of "college days"; the schedule lists the
- * parts of the one confirmed day instead of an invented welcome party and brunch; the venue tile is
- * a real photograph of the building instead of a generated room. docs/design/approved-botanical-deco/
- * parity-exceptions.json lists each one.
+ * Sara and Tyler's brief for the words: they have been lucky, and this weekend is about sharing those
+ * places and experiences with the people they love who have not had them yet. Every sentence below
+ * says so without inventing a fact; what is not settled stays a typed placeholder.
+ *
+ * What the approved image said that was not true stays corrected: the story entry says where they
+ * met (a wedding), the schedule lists only the one confirmed day, and the venue is a real photograph
+ * of the building. docs/design/approved-botanical-deco/parity-exceptions.json lists each one.
  */
 
 const ROUTES = { story: '/our-story', caa: '/explore-caa', guide: '/share-an-adventure', wedding: '/the-wedding', photos: '/photos' } as const;
 
-function Strip({ data }: { data: HomeData }) {
+function Theme({ data }: { data: HomeData }) {
+  const after = data.lifecycle.mode === 'remember';
+  const words = [
+    {
+      word: 'Love',
+      line: 'Every one of you is part of how we got here. This weekend is as much about you as it is about us.',
+    },
+    {
+      word: 'Peace',
+      line: after
+        ? 'No rush and no guesswork: a weekend to slow down, catch up and simply be together.'
+        : 'No rush and no guesswork: a weekend to slow down, catch up and simply be together. Everything practical is on this site as it is settled, so you can come relaxed.',
+    },
+    {
+      word: 'Happiness',
+      line: `The places that made us happy, shared with you: the river and its bridges, the lakefront, a Venetian Gothic landmark on Michigan Avenue. Then dinner, toasts and dancing.`,
+    },
+  ];
   return (
-    <section className="bd-strip" aria-label="Welcome">
-      <div className="bd-strip__welcome">
-        <Botanical id="botanical.edge-left" className="bd-bloom--strip" />
-        <p className="bd-eyebrow">Welcome</p>
-        <h2 className="bd-h bd-h--2 bd-strip__headline">
-          Same people. <br />A bigger chapter.
-        </h2>
-        <p className="bd-strip__text">
-          A weekend in {data.site.venue.city}, with our favorite people. The day, the building, the city and getting here are gathered on this site, and fill in as each detail is settled.
-        </p>
-        {/* A line for the weeks before the weekend; after it (mode "remember") there is nobody to see there. */}
-        {data.lifecycle.mode === 'remember' ? null : (
-          <p className="bd-script bd-strip__sign" aria-hidden="true">
-            See you in Chicago
+    <section className="bd-theme" aria-labelledby="theme-title">
+      <Botanical id="botanical.edge-left-tall" className="bd-bloom--theme" />
+      <div className="bd-theme__inner">
+        <div className="bd-theme__intro">
+          <h2 className="bd-h bd-h--2 bd-theme__title" id="theme-title">
+            Love, peace <br />
+            &amp; happiness
+          </h2>
+          <span className="bd-head__rule" aria-hidden="true" />
+          <p className="bd-theme__lede">
+            We have been lucky. A city we love, adventures that changed us, and people who made every one of them better.{' '}
+            {after
+              ? 'Thank you for letting us share them with you.'
+              : `Not everyone we love has been able to share them with us yet, so on ${data.site.date.long}, we are bringing you along to ${data.site.venue.city}.`}
           </p>
-        )}
+        </div>
+        <ol className="bd-theme__list">
+          {words.map((w) => (
+            <li key={w.word} className="bd-theme__item" data-reveal="">
+              <h3 className="bd-theme__word">{w.word}</h3>
+              <span className="bd-theme__rule" aria-hidden="true" />
+              <p className="bd-theme__line">{w.line}</p>
+            </li>
+          ))}
+        </ol>
       </div>
+    </section>
+  );
+}
 
-      <article className="bd-strip__tile bd-strip__tile--story">
-        <Photo id="couple.story.monochrome" sizes="(min-width: 1100px) 21vw, (min-width: 768px) 50vw, 100vw" className="bd-strip__photo bd-strip__photo--mono" />
-        <div className="bd-strip__body">
+/**
+ * What we want to share: three entries at three different scales — the story beside a large
+ * portrait, the building beside a tall photograph, the city as a panorama across the full width.
+ * Each photograph keeps its own proportions, so no face, spire or skyline is cut at a tile edge.
+ */
+function Share({ data }: { data: HomeData }) {
+  const remember = data.lifecycle.mode === 'remember';
+  return (
+    <section className="bd-share" aria-labelledby="share-title">
+      <header className="bd-share__head" data-reveal="">
+        <h2 className="bd-h bd-h--2 bd-share__title" id="share-title">
+          {remember ? 'What we shared' : 'What we can’t wait to share'}
+        </h2>
+      </header>
+
+      <article className="bd-share__item bd-share__item--story">
+        <figure className="bd-share__photo" data-reveal="photo">
+          <Photo id="couple.story.monochrome" sizes="(min-width: 900px) 52vw, 100vw" />
+        </figure>
+        <div className="bd-share__body" data-reveal="">
           <p className="bd-eyebrow">Our story</p>
-          <h2 className="bd-strip__title">How it all started</h2>
-          <p>At Allison and Jamie’s wedding: flirty glances across the room, and a connection that was immediate.</p>
+          <h3 className="bd-share__name">How it all started</h3>
+          <p>At Allison and Jamie’s wedding: flirty glances across the room, and a connection that was immediate. Weddings have been good to us; we hope this one is good to you.</p>
           <More href={ROUTES.story}>Read our story</More>
         </div>
       </article>
 
-      <article className="bd-strip__tile bd-strip__tile--venue">
-        <Photo id={['venue.exterior', 'venue.facade']} sizes="(min-width: 1100px) 23vw, (min-width: 768px) 50vw, 100vw" className="bd-strip__photo" />
-        <div className="bd-strip__body">
+      <article className="bd-share__item bd-share__item--venue">
+        <figure className="bd-share__photo" data-reveal="photo">
+          <Photo id={['venue.exterior', 'venue.facade']} sizes="(min-width: 900px) 40vw, 100vw" />
+        </figure>
+        <div className="bd-share__body" data-reveal="">
           <p className="bd-eyebrow">The venue</p>
-          <h2 className="bd-strip__title bd-italic">Chicago Athletic Association</h2>
-          <p>Venetian Gothic on Michigan Avenue since 1893, restored as a hotel. {data.lifecycle.mode === 'remember' ? 'Where we said “I do.”' : 'Where we will say “I do.”'}</p>
+          <h3 className="bd-share__name bd-italic">Chicago Athletic Association</h3>
+          <p>
+            Venetian Gothic on Michigan Avenue since 1893, restored as a hotel. {remember ? 'Where we said “I do.”' : 'Where we will say “I do.”'} Carved limestone, stained glass, marble floors, and Millennium Park out the windows.
+          </p>
           <More href={ROUTES.caa}>Explore the venue</More>
         </div>
       </article>
 
-      <article className="bd-strip__tile bd-strip__tile--city">
-        <Photo id={['city.riverwalk', 'city.river', 'venue.facade']} sizes="(min-width: 1100px) 27vw, (min-width: 768px) 50vw, 100vw" className="bd-strip__photo" />
-        <Botanical id="botanical.edge-right" className="bd-bloom--strip-right" />
-        <div className="bd-strip__body">
+      <article className="bd-share__item bd-share__item--city">
+        <figure className="bd-share__photo" data-reveal="photo">
+          <Photo id={['city.skyline', 'city.lakefront-adler', 'city.river']} sizes="100vw" />
+        </figure>
+        <div className="bd-share__body bd-share__body--plate" data-reveal="">
           <p className="bd-eyebrow">Explore Chicago</p>
-          <h2 className="bd-strip__title">A city we love</h2>
-          <p>The river and its bridges, North Pond, the lakefront by the Adler: a few of our favorite places, and how to reach them.</p>
+          <h3 className="bd-share__name">A city we love</h3>
+          <p>The river and its bridges, North Pond, the lakefront by the Adler: a few of our favorite places, and how to reach them from the hotel.</p>
           <More href={ROUTES.guide}>Get our guide</More>
         </div>
       </article>
@@ -100,11 +155,6 @@ function Schedule({ data }: { data: HomeData }) {
         <p>A ceremony, dinner, toasts and dancing, all on one Saturday.</p>
         <More href={ROUTES.wedding}>See the full schedule</More>
       </div>
-      {data.content.showCountdown ? (
-        <div className="bd-schedule__count">
-          <Countdown {...data.countdown} />
-        </div>
-      ) : null}
       <div className="bd-schedule__day-block">
         {/* One date for the one confirmed day, with its weekday derived from the date itself. */}
         <time className="bd-schedule__day" dateTime={data.site.date.iso}>
@@ -132,29 +182,36 @@ function Schedule({ data }: { data: HomeData }) {
 
 function Band({ data }: { data: HomeData }) {
   return (
-    <section className="bd-band" aria-labelledby="schedule-title">
+    <section className="bd-band" aria-labelledby="schedule-title" data-reveal="">
       <Schedule data={data} />
-      <figure className="bd-band__photo">
-        <Photo id="couple.lakefront" sizes="(min-width: 1100px) 30vw, 100vw" />
-        <figcaption className="bd-band__script" aria-hidden="true">
-          Better together
-        </figcaption>
-      </figure>
-      <div className="bd-band__gallery">
-        <div className="bd-band__gallery-text">
-          <p className="bd-eyebrow">Gallery</p>
-          <h2 className="bd-strip__title">Our memories</h2>
-          <p>A few of our favorite moments so far, and many more to come.</p>
-          <More href={ROUTES.photos}>View gallery</More>
-        </div>
-        {/* The approved still life of white flowers: no gallery photographs exist yet, so the slot
-            keeps its size and holds a painted sprig from the same set (PX-08). */}
-        <figure className="bd-band__still" aria-hidden="true">
-          <Botanical id="botanical.cluster-tl" className="bd-bloom--still" />
-        </figure>
-        <p className="bd-band__words" aria-hidden="true">
-          <span>Same</span> <span>adventure</span> <span>always</span>
-        </p>
+    </section>
+  );
+}
+
+/**
+ * The closing invitation: the gallery, and the one handwritten line on the page. The painted cluster
+ * is a corner cut-out, so it enters from the section's top right corner, turned so its cut edges lie
+ * along the page edge instead of showing as a cropped rectangle.
+ */
+function Closing({ data }: { data: HomeData }) {
+  const remember = data.lifecycle.mode === 'remember';
+  return (
+    <section className="bd-closing" aria-labelledby="closing-title">
+      <Botanical id="botanical.cluster-tl" className="bd-bloom--closing" />
+      <div className="bd-closing__text" data-reveal="">
+        <p className="bd-eyebrow">Gallery</p>
+        <h2 className="bd-h bd-h--2 bd-closing__title" id="closing-title">
+          Our memories, <br />
+          and yours to come
+        </h2>
+        {/* No gallery photographs exist yet (PX-08): say what the page will hold, not what it holds. */}
+        <p>{remember ? 'Photographs from the weekend gather here as they come in, ours and yours.' : 'Photographs from our adventures will gather here, and after the weekend the ones from it will too, yours included.'}</p>
+        <More href={ROUTES.photos}>{remember ? 'View the gallery' : 'Visit the gallery'}</More>
+        {remember ? null : (
+          <p className="bd-script bd-closing__sign" aria-hidden="true">
+            See you in Chicago
+          </p>
+        )}
       </div>
     </section>
   );
@@ -165,7 +222,7 @@ function Band({ data }: { data: HomeData }) {
  * for — the RSVP line, the day's running order on the day itself, a ride home — as a quiet index
  * under the band, never as a second hero. Each keeps its anchor (`/#now` is the phone bar's "Now").
  */
-/** Sections the strip above already is: the story tile, the venue tile, the city tile. */
+/** Sections the entries above already are: the story, the venue, the city. */
 const IN_THE_STRIP = new Set(['our-story', 'the-building', 'adventures']);
 
 function Details({ data }: { data: HomeData }) {
@@ -236,9 +293,12 @@ export function BotanicalHomePage(data: HomeData) {
   return (
     <Shell frame={data} banner={<PreviewBanner lifecycle={data.lifecycle} />}>
       <Hero content={data.content} site={data.site} countdown={data.countdown} state={data.lifecycle.state} />
-      <Strip data={data} />
+      <Theme data={data} />
+      <Share data={data} />
       <Band data={data} />
       <Details data={data} />
+      <Closing data={data} />
+      <Reveal />
     </Shell>
   );
 }

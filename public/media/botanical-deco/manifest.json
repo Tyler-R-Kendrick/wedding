@@ -639,16 +639,16 @@
         "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd",
         "box": [
           580,
-          108,
+          111,
           1280,
-          445
+          441
         ]
       },
       "intrinsic": {
         "width": 700,
-        "height": 337
+        "height": 331
       },
-      "aspect": 2.0772,
+      "aspect": 2.118,
       "focal": [
         0.5,
         0.38
@@ -661,29 +661,29 @@
           "src": "/media/botanical-deco/couple/hero-explore-880.avif",
           "format": "avif",
           "width": 880,
-          "bytes": 24977,
-          "sha256": "7c901fe04446d5a8fb79fdbca750507adbb909aa8e3b206108fb5108c6f1cbb7"
+          "bytes": 23227,
+          "sha256": "9018d114b215854817be721b0754c82c0c65461cc6716f913f2e6b4b2b4235a0"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-880.jpg",
           "format": "jpg",
           "width": 880,
-          "bytes": 53837,
-          "sha256": "4dfa0f285130c374b22102c2f873f37ff537df2ad652503e95651698543d2ae7"
+          "bytes": 49902,
+          "sha256": "b45640520b1ec57ac80a772fdf825caa3f653e86ce0e8c36843bb66c285812d4"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-1400.avif",
           "format": "avif",
           "width": 1400,
-          "bytes": 40891,
-          "sha256": "a4e71130f6dde2871c7369726606bb923c0f3787dec44503819f80fe0e3b6c88"
+          "bytes": 39834,
+          "sha256": "088cee666e524f0c69b32604b59fc3f98c97e02ee0f5e48d75dc34ef6ad1b4d1"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-1400.jpg",
           "format": "jpg",
           "width": 1400,
-          "bytes": 98139,
-          "sha256": "e61fd3b3c03e6f5e973cb675e4ef066adcb216914eee6e6215e203d2b46b55cc"
+          "bytes": 92770,
+          "sha256": "10a569986ec03d9320ba758657713adf99b86ea7201836f8ce4327d40d3938fc"
         }
       ]
     },
@@ -700,16 +700,16 @@
         "sha256": "deb13636d93dece0b55ca0fc8fbd2d9f57dcb7e3a2c78b9ce12440363df3d2fd",
         "box": [
           760,
-          108,
-          1210,
-          445
+          110,
+          1209,
+          444
         ]
       },
       "intrinsic": {
-        "width": 450,
-        "height": 337
+        "width": 449,
+        "height": 334
       },
-      "aspect": 1.3353,
+      "aspect": 1.345,
       "focal": [
         0.45,
         0.36
@@ -722,29 +722,29 @@
           "src": "/media/botanical-deco/couple/hero-explore-mobile-590.avif",
           "format": "avif",
           "width": 590,
-          "bytes": 17362,
-          "sha256": "de69117d6f220663ad955bbe3cf9d517ef1286435e3dd2d93e3bc6cdd41c74c1"
+          "bytes": 16289,
+          "sha256": "a0d934e1bcbc8d9ebc6d418e3117754808f6b9a087a3a9e618dc0300c9a1c093"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-mobile-590.jpg",
           "format": "jpg",
           "width": 590,
-          "bytes": 37056,
-          "sha256": "03b0c3fbc7dc30c30ffc67e4bff4697c05e8110d2ec9e2c7c6a6d6da149dbace"
+          "bytes": 34725,
+          "sha256": "feef8f8cdba020a65a337697ecedd0f24fb25166643be1245cdc530d35e81993"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-mobile-1040.avif",
           "format": "avif",
           "width": 1040,
-          "bytes": 31244,
-          "sha256": "3097aba6707c2fc436d8c34dbddbb6aafa5e5f0e38dceafdf412933e3cd2d7c8"
+          "bytes": 30387,
+          "sha256": "d67213b85483454e00ba5a9a9ae911bb71f53a564d1a3f63a1a1f2eb9de0dc6e"
         },
         {
           "src": "/media/botanical-deco/couple/hero-explore-mobile-1040.jpg",
           "format": "jpg",
           "width": 1040,
-          "bytes": 76115,
-          "sha256": "b2f9f10d328423653c139edb829f7f9d7bfc3fed87e707272f32050b620517dd"
+          "bytes": 73888,
+          "sha256": "eca01a36b7030a19442abda998de8eec738bdaa57f19036c71822b2f350aa1b0"
         }
       ]
     },
@@ -823,15 +823,15 @@
         "box": [
           620,
           118,
-          1120,
+          1116,
           525
         ]
       },
       "intrinsic": {
-        "width": 500,
+        "width": 496,
         "height": 407
       },
-      "aspect": 1.2285,
+      "aspect": 1.2179,
       "focal": [
         0.5,
         0.36
@@ -844,29 +844,29 @@
           "src": "/media/botanical-deco/couple/hero-formal-mobile-650.avif",
           "format": "avif",
           "width": 650,
-          "bytes": 20699,
-          "sha256": "151bc83a173e1046e9ed3359bc5c927ab39991bb7aa664a4bc1b7a8d2ba83002"
+          "bytes": 19301,
+          "sha256": "3a43690cb9c822a62210c03c3e6cdf3d0a39864b866be7374b1c33d6a8180c8a"
         },
         {
           "src": "/media/botanical-deco/couple/hero-formal-mobile-650.jpg",
           "format": "jpg",
           "width": 650,
-          "bytes": 43877,
-          "sha256": "65e5db3d8c7d093df9c7084131b25325088a72fa21af6b83eec8fbd7990a6f34"
+          "bytes": 41551,
+          "sha256": "9f203e77b210ade808efb3cd3c82dc2bdc657d4e060f00df02101a0762daeb0f"
         },
         {
           "src": "/media/botanical-deco/couple/hero-formal-mobile-1150.avif",
           "format": "avif",
           "width": 1150,
-          "bytes": 36656,
-          "sha256": "719565463d977e70e5b42dd9132ff1bce5eead855415db033ad1e993dd2087d0"
+          "bytes": 35651,
+          "sha256": "2e219092dc9f49511bb0879080dcfaa7f3fbfeba893dcad63f41d7f96fe980db"
         },
         {
           "src": "/media/botanical-deco/couple/hero-formal-mobile-1150.jpg",
           "format": "jpg",
           "width": 1150,
-          "bytes": 89917,
-          "sha256": "e17fcf9a772aa56526b88932c2e808ef1eb6a61e3be56000d1d14cef7789c284"
+          "bytes": 88040,
+          "sha256": "47f06845f6ae5e728357987a9e511aa30598c00ab50c1e869e789ac52916a075"
         }
       ]
     },
@@ -882,17 +882,17 @@
         "file": "sara_tyler_our_story.png",
         "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
         "box": [
-          545,
-          110,
-          1288,
-          390
+          549,
+          112,
+          1283,
+          388
         ]
       },
       "intrinsic": {
-        "width": 743,
-        "height": 280
+        "width": 734,
+        "height": 275
       },
-      "aspect": 2.6536,
+      "aspect": 2.6649,
       "focal": [
         0.4,
         0.42
@@ -905,29 +905,29 @@
           "src": "/media/botanical-deco/couple/hero-story-930.avif",
           "format": "avif",
           "width": 930,
-          "bytes": 22798,
-          "sha256": "96ba76d7851b35e2e36e06a92f920e4803c8b07dd14500ad58b98673fa42bbea"
+          "bytes": 20949,
+          "sha256": "8b0d9d447f3af5f58160e7656d598592ab134dcf58ff330ab9fa11cba9f694f4"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-930.jpg",
           "format": "jpg",
           "width": 930,
-          "bytes": 43826,
-          "sha256": "c86e975c338bf136bd4fadbc8f9f0ad1a36d8e2b4b7d510e740993bef8384678"
+          "bytes": 40793,
+          "sha256": "e0cce461d0535899c05b123aacbfaa2450b6f463a04479b4474121194f8f819b"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-1490.avif",
           "format": "avif",
           "width": 1490,
-          "bytes": 36194,
-          "sha256": "c67d1683033f8f9970d02d549cefe645f3327300aa2bf41842ee0e0481031c5d"
+          "bytes": 34357,
+          "sha256": "ece67f57bb5fe168ae51accce0f59a7613a31800d753001c314077d2d3e87e93"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-1490.jpg",
           "format": "jpg",
           "width": 1490,
-          "bytes": 81970,
-          "sha256": "4a6caf99435b2e886c63ccedb54ebacfe95a7db21333d2587352639162266153"
+          "bytes": 77015,
+          "sha256": "fcc22a5777ad1e267a9810d56097f551b61cbf7b138e2f4b12cad459d96422f6"
         }
       ]
     },
@@ -944,16 +944,16 @@
         "sha256": "0239e1569b50b345a567d3f4225ae5fc37560187a9db171fecd7b1aa274d9980",
         "box": [
           590,
-          110,
+          112,
           1060,
-          390
+          388
         ]
       },
       "intrinsic": {
         "width": 470,
-        "height": 280
+        "height": 276
       },
-      "aspect": 1.6786,
+      "aspect": 1.7035,
       "focal": [
         0.45,
         0.4
@@ -966,29 +966,29 @@
           "src": "/media/botanical-deco/couple/hero-story-mobile-610.avif",
           "format": "avif",
           "width": 610,
-          "bytes": 18240,
-          "sha256": "ff24821fc89069ee0057c51e580309eb86ea333745ed3fb1446e82b9c2668599"
+          "bytes": 16323,
+          "sha256": "21054538fa342c938a35394c1b847d6c734790fb601283d25226f1bc6caa7400"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-mobile-610.jpg",
           "format": "jpg",
           "width": 610,
-          "bytes": 33257,
-          "sha256": "fa76898711d6f5953766d7d1aed602908723180e734fe488c35ecde4f791922f"
+          "bytes": 30356,
+          "sha256": "a755a6f408bac4a0e5296bc4274503dc790dc9cabbaae7dde2182912a5a9c36f"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-mobile-1080.avif",
           "format": "avif",
           "width": 1080,
-          "bytes": 31214,
-          "sha256": "12fb2a155661f20b685b948d01dafe6b6425cd180aff964ddeccc74b37e0bae7"
+          "bytes": 30555,
+          "sha256": "132058309f8bf0a1843be8e103d743c53ebc1170186f6268c7e5a15901026d0c"
         },
         {
           "src": "/media/botanical-deco/couple/hero-story-mobile-1080.jpg",
           "format": "jpg",
           "width": 1080,
-          "bytes": 69464,
-          "sha256": "a2e4868a7cefe1db4d1d77522ee14a7da4c604645e07d900a46599e190bd423f"
+          "bytes": 65452,
+          "sha256": "3e6819de9e4b36bf2ec8a1f93c1365d965b0b299d29f994ba37bd099d367ac7b"
         }
       ]
     },
@@ -1004,17 +1004,17 @@
         "file": "sara_tyler_s_chicago_wedding_weekend.png",
         "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
         "box": [
-          452,
-          112,
+          457,
+          114,
           938,
           398
         ]
       },
       "intrinsic": {
-        "width": 486,
-        "height": 286
+        "width": 481,
+        "height": 284
       },
-      "aspect": 1.6993,
+      "aspect": 1.6933,
       "focal": [
         0.55,
         0.38
@@ -1027,29 +1027,29 @@
           "src": "/media/botanical-deco/couple/hero-weekend-680.avif",
           "format": "avif",
           "width": 680,
-          "bytes": 16507,
-          "sha256": "af854c0b221572976c34ef4aa8993a573854fb47970f8627f029d7e57f0ebeca"
+          "bytes": 15821,
+          "sha256": "f902dc73ef06bacf984cb02a253422176fdb4d31833daa74b00ad728014a2a46"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-680.jpg",
           "format": "jpg",
           "width": 680,
-          "bytes": 35565,
-          "sha256": "3f271a2452c854acd83de34cad39309073df23e3a18561b9d3913826a977c89d"
+          "bytes": 34844,
+          "sha256": "0f8107d1234e0634e4c91c89c3251d0a4e5b84eabc5ab316300695fbde2d15e0"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-1070.avif",
           "format": "avif",
           "width": 1070,
-          "bytes": 26842,
-          "sha256": "bc9d21ed55cc71246be0bd3541ba1b96adb6996bba6de909b4606a9e7cdb10c9"
+          "bytes": 26329,
+          "sha256": "38170fb16eb37d4562f9b725d1620888aac1467a29152719eedcee7525ab59b8"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-1070.jpg",
           "format": "jpg",
           "width": 1070,
-          "bytes": 64477,
-          "sha256": "f42fc695e0f1fc91da7ac462d85510972ebe3b38a1b2493dbb04c2f81b658cdb"
+          "bytes": 62876,
+          "sha256": "35d77093e5487ceeb93ac7ee537791ca450992ed6a6f7ade10117ae5a6bcf139"
         }
       ]
     },
@@ -1066,16 +1066,16 @@
         "sha256": "3579846a32a088be1df84323e57b3afbd2be48a0477799c98fa0145a2526a9d6",
         "box": [
           590,
-          112,
+          114,
           938,
           398
         ]
       },
       "intrinsic": {
         "width": 348,
-        "height": 286
+        "height": 285
       },
-      "aspect": 1.2168,
+      "aspect": 1.2228,
       "focal": [
         0.45,
         0.36
@@ -1088,90 +1088,29 @@
           "src": "/media/botanical-deco/couple/hero-weekend-mobile-490.avif",
           "format": "avif",
           "width": 490,
-          "bytes": 12740,
-          "sha256": "e2cca89a88c83ae52080c75cbd0c27b0662a6956245354348717b3bc2e5e8fe4"
+          "bytes": 11986,
+          "sha256": "2b72111021294235c9e129944abface7815494864993c44a6bdf7d0741f2a549"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-mobile-490.jpg",
           "format": "jpg",
           "width": 490,
-          "bytes": 27229,
-          "sha256": "91554ad241b44288decc5b660ee61a00eef9e8f3c8541cd76c5a5d902a311e11"
+          "bytes": 25841,
+          "sha256": "42c63b73f480520e0e45c28fdd9f50c99805d6fd34ac072b0bc5450b334e01ca"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-mobile-900.avif",
           "format": "avif",
           "width": 900,
-          "bytes": 23981,
-          "sha256": "760e4195443ac479fb7f6efba50bcf92848280cddb996a9cffa879c2920f28bc"
+          "bytes": 23600,
+          "sha256": "50b58d86a14e3d64b1ac5e0f95cbb7e4a730a3feca89ac669d28264d8e111292"
         },
         {
           "src": "/media/botanical-deco/couple/hero-weekend-mobile-900.jpg",
           "format": "jpg",
           "width": 900,
-          "bytes": 58585,
-          "sha256": "cbc64754607b0e65d056c558a390235781a04d17d6a6fa3afdb012faf2369eca"
-        }
-      ]
-    },
-    {
-      "id": "couple.lakefront",
-      "kind": "couple",
-      "sourceType": "generated-portrayal",
-      "provenance": "Generated portrayal of Sara and Tyler (authorised by them), cropped from the approved design reference REF-HOME. Not a documentary photograph of any event.",
-      "interim": true,
-      "interimReason": "No authorised image-generation provider is configured; this is a crop of the approved mockup at its native resolution, upscaled. Replace with the high-resolution portrait in docs/design/approved-botanical-deco/media-briefs.md.",
-      "parent": {
-        "reference": "REF-HOME",
-        "file": "sara_and_tyler_a_brighter_together.png",
-        "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
-        "box": [
-          561,
-          862,
-          889,
-          1025
-        ]
-      },
-      "intrinsic": {
-        "width": 328,
-        "height": 163
-      },
-      "aspect": 2.0123,
-      "focal": [
-        0.9,
-        0.4
-      ],
-      "alt": "Generated portrait of Sara and Tyler on the Lake Michigan shore with the downtown skyline across the water.",
-      "credit": "Generated portrayal, approved by Sara and Tyler",
-      "scope": "public",
-      "files": [
-        {
-          "src": "/media/botanical-deco/couple/lakefront-490.avif",
-          "format": "avif",
-          "width": 490,
-          "bytes": 9401,
-          "sha256": "701b2c73c30acd903a7f959eeca128912ff766eb1be6fd6e66e04ec6925ee6a8"
-        },
-        {
-          "src": "/media/botanical-deco/couple/lakefront-490.jpg",
-          "format": "jpg",
-          "width": 490,
-          "bytes": 19251,
-          "sha256": "b98071f44776bf8d877f0ab1b5bcc59d2a8439f6655a6d348b4c56ecc9a4bc16"
-        },
-        {
-          "src": "/media/botanical-deco/couple/lakefront-850.avif",
-          "format": "avif",
-          "width": 850,
-          "bytes": 15909,
-          "sha256": "5d8c11c96b9ff3f27f65199cbf5729c09f780d073bb1bb93b7c27a2d82792ed5"
-        },
-        {
-          "src": "/media/botanical-deco/couple/lakefront-850.jpg",
-          "format": "jpg",
-          "width": 850,
-          "bytes": 37653,
-          "sha256": "ab1b1e8becfb36e4d1b754207a89042dfd3523c75146152234104e57d3eb1e94"
+          "bytes": 56333,
+          "sha256": "48a379e530c9dd7e4d030dddde07c6c46ca37196d1628875a6630d63fce8df7b"
         }
       ]
     },
@@ -1187,17 +1126,17 @@
         "file": "sara_and_tyler_a_brighter_together.png",
         "sha256": "53bcd6b2780087382ee0297962866ca28ca8b9a5fdac0c2337c55abec929e68a",
         "box": [
-          421,
-          528,
+          423,
+          530,
           724,
           746
         ]
       },
       "intrinsic": {
-        "width": 303,
-        "height": 218
+        "width": 301,
+        "height": 216
       },
-      "aspect": 1.3899,
+      "aspect": 1.3986,
       "focal": [
         0.55,
         0.4
@@ -1210,29 +1149,29 @@
           "src": "/media/botanical-deco/couple/story-monochrome-450.avif",
           "format": "avif",
           "width": 450,
-          "bytes": 8633,
-          "sha256": "60bf9f66051ea94f8220653855a270d19f210df408fffcdbde92179c92f0d140"
+          "bytes": 7879,
+          "sha256": "d98f4f0f39a5ac7c6f9efdf9ea4e6e747a8930ab6b6294d235e4e309b9301223"
         },
         {
           "src": "/media/botanical-deco/couple/story-monochrome-450.jpg",
           "format": "jpg",
           "width": 450,
-          "bytes": 17185,
-          "sha256": "cb1b7f2f5396208a9f2954011e4f5be60edf870fa14b9e623733d873c8e4a981"
+          "bytes": 15799,
+          "sha256": "1f5bb721fe1747154612358463622a5aa3cf4e98d5ac87182c8743125fe2cb29"
         },
         {
           "src": "/media/botanical-deco/couple/story-monochrome-790.avif",
           "format": "avif",
           "width": 790,
-          "bytes": 14591,
-          "sha256": "dca4fb8bff20f54e3410bc38e02b499e3846fe2d65b54c50495aa93fd3c8cf97"
+          "bytes": 13924,
+          "sha256": "4b7e9b48bdacb0f1bea8d19c1070b302c09bc411cf4f18e8a9833ec5506cb25e"
         },
         {
           "src": "/media/botanical-deco/couple/story-monochrome-790.jpg",
           "format": "jpg",
           "width": 790,
-          "bytes": 34010,
-          "sha256": "4141a553ad89902dc2ab5e2bf6160737d212152fcb5cb1b485e3df7bed5dde81"
+          "bytes": 32841,
+          "sha256": "b3beea9f26006ed049c27797816307d6c3baead993a62d328ce022dd658ad5bb"
         }
       ]
     },
