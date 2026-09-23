@@ -109,7 +109,8 @@ jobs:
           PGLITE_MEMORY: '1'
       # The app's own rewrites (src/lib/stage-hosting.ts) serve the stages; the probe asks for the
       # hub and each stage at both addresses, every script, stylesheet and font they reference,
-      # and that the wedding site's own home page is untouched.
+      # the 404s (the hub host's other paths, /_stages/ itself), and that the wedding site's own
+      # home page is untouched. The wait asks for the hub by its host: /_stages/… is never served.
       - name: Probe the stages through the running app
         env:
           CI: 'true'
@@ -126,5 +127,5 @@ jobs:
           RATE_LIMIT_BACKEND: db
         run: |
           npm run -s start &
-          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3000/_stages/_hub/index.html && break; sleep 2; done
+          for i in $(seq 1 60); do curl -sf -o /dev/null -H 'Host: dev.kendrick.localhost' http://127.0.0.1:3000/ && break; sleep 2; done
           npm run -s stages:probe

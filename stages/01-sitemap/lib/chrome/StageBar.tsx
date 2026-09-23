@@ -6,6 +6,7 @@ import { STAGES, hubHref, stage, stageHref, type Here, type StageId } from '../p
 const noSubscribe = () => () => {};
 const readHere = () => `${window.location.protocol}//${window.location.host}`;
 
+/** undefined, not an empty Here, before the browser has an address: the build's own origin applies. */
 function parse(origin: string): Here | undefined {
   if (!origin) return undefined;
   const [protocol, host] = origin.split('//');

@@ -10,6 +10,7 @@ async function load(basePath?: string) {
 afterEach(() => {
   delete process.env.NEXT_PUBLIC_BASE_PATH;
   delete process.env.NEXT_PUBLIC_STAGE_URL_REAL;
+  delete process.env.NEXT_PUBLIC_STAGES_DEV_ORIGIN;
 });
 
 describe('stage addressing', () => {
@@ -50,6 +51,16 @@ describe('stage addressing', () => {
     process.env.NEXT_PUBLIC_STAGE_URL_REAL = 'https://saraandtyler.example/';
     const { stageHref } = await load();
     expect(stageHref('real', '/rsvp', { protocol: 'https:', host: 'sitemap.dev.other.example' })).toBe('https://saraandtyler.example/rsvp');
+  });
+
+  it('a subdomain build links to the subdomains before the browser has an address (static HTML, no JS yet)', async () => {
+    process.env.NEXT_PUBLIC_STAGES_DEV_ORIGIN = 'https://dev.kendrick.wedding';
+    const { stageHref, hubHref } = await load();
+    expect(stageHref('wireframe', '/rsvp')).toBe('https://wireframe.dev.kendrick.wedding/rsvp');
+    expect(stageHref('real', '/rsvp')).toBe('https://kendrick.wedding/rsvp');
+    expect(hubHref()).toBe('https://dev.kendrick.wedding/');
+    // Once the browser knows better (a different dev domain), its address wins.
+    expect(stageHref('wireframe', '/rsvp', { protocol: 'http:', host: 'sitemap.dev.localhost:3000' })).toBe('http://wireframe.dev.localhost:3000/rsvp');
   });
 
   it('does not mistake an ordinary subdomain for a stage host', async () => {

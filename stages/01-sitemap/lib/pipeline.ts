@@ -60,6 +60,19 @@ export interface Here {
   host: string;
 }
 
+/**
+ * Where a subdomain build will be served (`https://dev.kendrick.wedding`), set by
+ * scripts/stages/assemble.mjs for its host-root builds only. The static HTML is rendered before
+ * any browser has an address to read, and without this its links would be the dev ports until
+ * JavaScript ran: dead links for anyone on a slow connection or without scripts.
+ */
+function builtFor(): Here | undefined {
+  const origin = process.env.NEXT_PUBLIC_STAGES_DEV_ORIGIN;
+  if (!origin) return undefined;
+  const url = new URL(origin);
+  return { protocol: url.protocol, host: url.host };
+}
+
 const STAGE_HOST = /^(sitemap|wireframe|skeleton|placeholder|dev)\.(.+)$/;
 
 /**
@@ -82,7 +95,7 @@ export function devHostOf(host: string): string | null {
  *   paths   <preview>/sitemap/rsvp        → /wireframe/rsvp, and real is /rsvp, on the same host
  *   ports   localhost:3101                → http://localhost:3102/rsvp (`npm run stages:dev`)
  */
-export function stageHref(target: StageId, path: string, here?: Here): string {
+export function stageHref(target: StageId, path: string, here: Here | undefined = builtFor()): string {
   const explicit = configured(target);
   if (explicit) return `${explicit.replace(/\/$/, '')}${path}`;
 
@@ -96,7 +109,7 @@ export function stageHref(target: StageId, path: string, here?: Here): string {
 }
 
 /** The hub: every stage, and every page's progress through them. Null on bare dev ports. */
-export function hubHref(here?: Here): string | null {
+export function hubHref(here: Here | undefined = builtFor()): string | null {
   const devHost = here ? devHostOf(here.host) : null;
   if (here && devHost) return `${here.protocol}//${devHost}/`;
   return BASE_PATH ? '/stages' : null;

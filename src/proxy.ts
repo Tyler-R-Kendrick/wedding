@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
   // The design pipeline's stages (src/lib/stage-hosting.ts) are static drafts with no theme or
   // lifecycle of their own; next.config's rewrites serve them. Rewriting `/` onto the theme tree
   // here would show the wedding home page on sitemap.dev.<domain>.
-  if (isStageHost(request.headers.get('host')) || isStagePath(url.pathname)) return NextResponse.next();
+  if (isStageHost(request.headers.get('host')) || isStagePath(url.pathname, { production: process.env.VERCEL_ENV === 'production' })) return NextResponse.next();
   const cookieTheme = request.cookies.get(THEME_COOKIE)?.value;
   const { theme, source, stale } = resolveTheme({ query: url.searchParams.get(THEME_QUERY), cookie: cookieTheme });
   const previewRaw = url.searchParams.get(PREVIEW_QUERY) ?? request.cookies.get(PREVIEW_COOKIE)?.value ?? null;

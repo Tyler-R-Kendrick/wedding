@@ -60,7 +60,7 @@ npm run stages:typecheck       # in pipeline order; stops at the first stage tha
 npm run stages:build           # static exports in pipeline order → stages/*/out/
 npm run stages:serve           # serve those exports on 3101–3104, as a static host would
 npm run stages:assemble        # every stage, both ways, plus the hub → public/_stages/ (served by the app)
-npm run dev                    # then: http://dev.localhost:3000, http://sitemap.dev.localhost:3000/rsvp
+npm run dev                    # then: http://dev.kendrick.localhost:3000, http://sitemap.dev.kendrick.localhost:3000/rsvp
 npm run stages:probe           # check every address and asset, against the running app
 npm run stages:signoff -- <stage> <pageId> --by <name>
 node scripts/stages/run.mjs build skeleton placeholder    # just some stages
@@ -145,20 +145,29 @@ How it fits together:
   adds about a minute to a deploy.
 - **Routed by the app.** `next.config.ts` takes its `beforeFiles` rewrites from
   `src/lib/stage-hosting.ts`. A host that starts `<stage>.dev.` gets that stage, `/_next`
-  included. `dev.` gets the hub. Outside production, `/<stage>/…` and `/stages` work on any host.
-  kendrick.wedding itself never serves them. `src/proxy.ts` steps aside for these requests, and
-  every response is `X-Robots-Tag: noindex`.
+  included, and a 404 for any page the sitemap lacks. `dev.` gets the hub at `/` and nothing
+  else: every other path there is a 404, never the wedding app under a second name. Outside
+  production, `/<stage>/…` and `/stages` work on any host. The assembled files are never served
+  at `/_stages/…` directly, so kendrick.wedding itself never shows them. `src/proxy.ts` steps
+  aside for these requests, and every response is `X-Robots-Tag: noindex`.
 - **Links need no configuration.** The stage bar and the hub work out every link from the
   address you are on (`stageHref()` in `01-sitemap/lib/pipeline.ts`). On
   `sitemap.dev.kendrick.wedding`, "Wireframe" is `wireframe.dev.kendrick.wedding` and "Real" is
-  `kendrick.wedding`. On a preview they are `/wireframe/…` and `/…` on the same host.
+  `kendrick.wedding`. On a preview they are `/wireframe/…` and `/…` on the same host, and the
+  preview's hub links there too, never to production. The subdomain builds also know their dev
+  domain at build time, so their static HTML carries the right links before any script runs.
 - **Local is the same app.** `npm run stages:assemble && npm run dev`, then open
-  `http://dev.localhost:3000` or `http://sitemap.dev.localhost:3000/rsvp` (browsers resolve every
-  `*.localhost` to your machine), or `http://localhost:3000/sitemap`.
+  `http://dev.kendrick.localhost:3000` or `http://sitemap.dev.kendrick.localhost:3000/rsvp`, with
+  the real site at `http://kendrick.localhost:3000`: production's shape on your machine. Browsers
+  resolve every `*.localhost` to it and treat it as secure over plain http, so nothing is upgraded
+  to https (the site's CSP asks for that on any other name). `http://localhost:3000/sitemap`
+  works too.
 - **Checked.** `tests/unit/stages/stage-hosting.test.ts` replays the rewrites with Next's own
   matcher. `npm run stages:probe` asks a running app for the hub and every stage at both
-  addresses, and every script, stylesheet and font they reference. CI runs it against
-  `next start` (`stages.yml`, job 5).
+  addresses, every script, stylesheet and font they reference, and the 404s (the hub host's other
+  paths, `/_stages/…`, an unknown stage page). CI runs it against `next start` (`stages.yml`,
+  job 5). `docs/demos/stages-by-subdomain.mp4` and `stages-by-path.mp4` are the same walk,
+  recorded in a browser (`npm run demos:stages`, docs/ops/demos.md).
 - **Domains.** `dev.kendrick.wedding` and `*.dev.kendrick.wedding` belong on the wedding project.
   kendrick.wedding is on Vercel's nameservers, so the wildcard needs no DNS work.
   `npm run deploy:vercel` attaches both (step 7, "Stage domains"), and never takes a stage host

@@ -91,7 +91,7 @@ wireframe changes. Guide: `stages/README.md`.
 ```bash
 npm run dev:sitemap | dev:wireframe | dev:skeleton | dev:placeholder
 npm run stages:dev · stages:test · stages:typecheck · stages:build · stages:serve
-npm run stages:assemble && npm run dev   # http://dev.localhost:3000, http://sitemap.dev.localhost:3000
+npm run stages:assemble && npm run dev   # http://dev.kendrick.localhost:3000, http://sitemap.dev.kendrick.localhost:3000
 npm run stages:probe                     # every stage address and asset, against the running app
 npm run stages:signoff -- <wireframe|skeleton|placeholder> <pageId> --by <name>
 ```

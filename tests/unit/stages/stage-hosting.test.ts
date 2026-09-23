@@ -32,9 +32,19 @@ describe('stage hosting rewrites', () => {
     expect(resolve('/_next/static/chunks/a.js', 'placeholder.dev.localhost:3000')).toBe('/_stages/_hosts/placeholder/_next/static/chunks/a.js');
   });
 
-  it('serve the hub at dev.<domain>/ only', () => {
+  it('serve the hub at dev.<domain>/, and nothing else there: never the wedding app under a second name', () => {
     expect(resolve('/', 'dev.kendrick.wedding')).toBe('/_stages/_hub/index.html');
-    expect(resolve('/rsvp', 'dev.kendrick.wedding')).toBe('/rsvp');
+    for (const path of ['/rsvp', '/admin', '/api/auth/session', '/our-story']) expect(resolve(path, 'dev.kendrick.wedding', true), path).toBe('/_stages-not-served');
+    // The app's own assets stay reachable there, so its 404 page is styled.
+    expect(resolve('/_next/static/chunks/a.js', 'dev.kendrick.wedding')).toBe('/_next/static/chunks/a.js');
+  });
+
+  it('never serve the assembled files directly, on any host', () => {
+    for (const host of ['kendrick.wedding', 'wedding-git-x.vercel.app', 'dev.kendrick.wedding', 'localhost:3000']) {
+      expect(resolve('/_stages/_hub/index.html', host), host).toBe('/_stages-not-served');
+      expect(resolve('/_stages/_hosts/sitemap/index.html', host, true), host).toBe('/_stages-not-served');
+    }
+    expect(resolve('/_stages/_hosts/sitemap/index.html', 'sitemap.dev.kendrick.wedding')).toBe('/_stages/_hosts/sitemap/_stages-not-served.html');
   });
 
   it('leave the wedding site itself alone', () => {
@@ -56,8 +66,10 @@ describe('stage hosting rewrites', () => {
   });
 
   it('never rewrite a path twice', () => {
-    expect(resolve('/_stages/_hosts/sitemap/icon.svg', 'sitemap.dev.kendrick.wedding')).toBe('/_stages/_hosts/sitemap/icon.svg');
-    expect(resolve('/_stages/sitemap/rsvp.html', 'localhost:3000')).toBe('/_stages/sitemap/rsvp.html');
+    // Each rule sees the one before it's result: a file rewrite must not then match the page rule.
+    expect(resolve('/icon.svg', 'sitemap.dev.kendrick.wedding')).toBe('/_stages/_hosts/sitemap/icon.svg');
+    expect(resolve('/sitemap/icon.svg', 'localhost:3000')).toBe('/_stages/sitemap/icon.svg');
+    expect(resolve('/sitemap/rsvp', 'localhost:3000')).toBe('/_stages/sitemap/rsvp.html');
   });
 
   it('tell the proxy which requests are the stages', () => {
@@ -66,9 +78,12 @@ describe('stage hosting rewrites', () => {
     expect(isStageHost('dev.localhost:3000')).toBe(true);
     expect(isStageHost('kendrick.wedding')).toBe(false);
     expect(isStageHost('devon.example')).toBe(false);
-    expect(isStagePath('/sitemap/rsvp')).toBe(true);
-    expect(isStagePath('/stages')).toBe(true);
-    expect(isStagePath('/sitemaps')).toBe(false);
-    expect(isStagePath('/rsvp')).toBe(false);
+    const preview = { production: false };
+    expect(isStagePath('/sitemap/rsvp', preview)).toBe(true);
+    expect(isStagePath('/stages', preview)).toBe(true);
+    expect(isStagePath('/sitemaps', preview)).toBe(false);
+    expect(isStagePath('/rsvp', preview)).toBe(false);
+    // Production serves no stage by path, so the proxy treats /sitemap like any other request.
+    expect(isStagePath('/sitemap/rsvp', { production: true })).toBe(false);
   });
 });
