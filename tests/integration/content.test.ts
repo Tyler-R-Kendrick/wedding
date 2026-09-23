@@ -1,3 +1,4 @@
+import { loadContentSeed } from '@/content';
 import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
@@ -80,14 +81,27 @@ describe('story + adventures visibility', () => {
     const forAdminMcp = await invoke(listAdventures, await ctxFor(admin(), 'webmcp'), {});
     const forAdminUi = await invoke(listAdventures, await ctxFor(admin()), {});
     const forAdminNoEnt = await invoke(listAdventures, await ctxFor(admin(['admin_audit'])), {});
+    const seeded = loadContentSeed().adventures;
+    const publicSlugs = seeded.filter((a) => a.visibility === 'public').map((a) => a.slug).sort();
+    const draftSlugs = seeded.filter((a) => a.visibility === 'private-draft').map((a) => a.slug);
+    // The brief's drafts plus the photos that show someone who has not agreed to be on the site yet.
+    expect(draftSlugs).toEqual(expect.arrayContaining(['museum-of-ice-cream', 'allison-and-jamies-wedding', 'libertyville-2024-09-21']));
+    expect(publicSlugs).toContain('starved-rock');
     for (const r of [forAnon, forGuest, forAdminAi, forAdminMcp, forAdminNoEnt]) {
-      expect(r.ok).toBe(true);
+      expect(r.ok ? 'ok' : JSON.stringify(r.error)).toBe('ok');
       if (!r.ok) return;
-      expect(r.value.data.items.map((i) => i.slug)).toEqual(['starved-rock']);
-      expect(r.value.data.total).toBe(1);
+      const slugs = r.value.data.items.map((i) => i.slug);
+      // The UI lists them all; the AI surfaces get the newest dozen, never a draft.
+      if (r === forAnon || r === forGuest || r === forAdminNoEnt) expect([...slugs].sort()).toEqual(publicSlugs);
+      else {
+        expect(slugs.length).toBe(Math.min(12, publicSlugs.length));
+        expect(r.value.data.matching).toBe(publicSlugs.length);
+      }
+      for (const s of slugs) expect(publicSlugs).toContain(s);
+      expect(r.value.data.total).toBe(publicSlugs.length);
+      for (const d of draftSlugs) expect(r.value.data.items.some((i) => i.slug === d)).toBe(false);
     }
-    expect(forAdminUi.ok && forAdminUi.value.data.items.length).toBe(8);
-    expect(forAdminUi.ok && forAdminUi.value.data.items.every((i) => i.placeholder)).toBe(true);
+    expect(forAdminUi.ok && forAdminUi.value.data.items.length).toBe(seeded.length);
   });
 
   it('show_adventure hides drafts as not_found and exposes Starved Rock without an invented trail or date', async () => {

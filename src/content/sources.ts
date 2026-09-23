@@ -16,6 +16,8 @@ export const SOURCE_KEYS = {
   'starved-rock-web': seedId<ContentSourceId>(108),
   /** The couple's Paired timeline (authored, TRUSTED_WEDDING); rows arrive via scripts/import-paired.mjs. */
   paired: seedId<ContentSourceId>(109),
+  /** The couple's own phone photos behind Our Adventures (authored, TRUSTED_WEDDING); see docs/content/adventure-photos.json. */
+  photos: seedId<ContentSourceId>(110),
 } as const;
 
 export type SourceKey = keyof typeof SOURCE_KEYS;

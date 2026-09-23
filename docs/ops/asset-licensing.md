@@ -164,6 +164,18 @@ credit is required, and the map's caption credits it anyway.
   it reproduces the file; nothing is hand-edited.
 - **Not imagery:** the file holds unpainted paths only. It is not a photograph
   or a generated image, so it takes no §1b ledger entry and no §1c prompt.
+- **The Midwest close-up** (`public/assets/atlas/midwest.svg`), drawn instead of
+  the world inside a rectangle around Lake Michigan so the map can open on
+  Chicago and zoom to street scale there, comes from `node
+  scripts/generate-atlas-region.mjs`: Natural Earth **1:10m** land, lakes,
+  rivers, roads, urban areas and state lines (public domain, as above), plus
+  the **City of Chicago's "Boundaries - Community Areas"** (City of Chicago
+  Data Portal, open data; fetched from the public mirror in
+  `RandomFractals/ChicagoCrimes`), whose outer edge is the city's own
+  lakefront, and the downtown Chicago River as traced for Explore's map. The
+  caption credits both. Same projection and drawing units as `world.svg`;
+  re-running the script reproduces the file and
+  `src/themes/shared/atlas/region.generated.ts`.
 - **Pin positions** come from the `lat`/`lng` of adventure and place records
   (`src/content/seed/places.json`, `/admin/content`). The three seeded values
   (the CAA, Millennium Park, Starved Rock State Park) match the coordinates
@@ -243,6 +255,21 @@ Procedure when a batch arrives:
 5. Photos of guests: only after the guest has agreed (RSVP consent field or
    direct message); children only with a parent's agreement. Keep a note in
    `photos.json`'s `consent` field.
+
+**Our Adventures, one adventure per photo (2026-09-23).** The couple's own
+phone photos live in `public/assets/photos/adventures/` as 1600px WebP
+renditions with every EXIF/XMP field (GPS included) stripped; the originals
+stay outside the repo. `docs/content/adventure-photos.json` is the manifest:
+file, adventure, original file name, date, where the pin came from
+(`exif-gps` — the photo's GPS, reverse-geocoded against OpenStreetMap to
+name the business; `landmark-in-photo` — a sign or marquee in the frame;
+`unknown`), people and consent. Homes are pinned to two decimals (about a
+kilometre), never to the door. A photo that shows anyone besides Sara and
+Tyler is `consent: "pending…"`: its rendition is **not in the repo at all**
+(`file: null`; `public/` is served to anyone, and so is this repository), its
+adventure's media carries alt text only, and the adventure is a
+`private-draft`. When that person agrees (point 5 above), add the rendition,
+set `file` and the media `src`, and publish the adventure.
 
 Never upload professional deliverables to fal.ai, Higgsfield, Stitch, or any
 other third-party generator, even "just to test", until the written

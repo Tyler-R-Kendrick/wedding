@@ -254,7 +254,7 @@ export function toAdventureCard(row: AdventureMemoryRow, ctx: ReadContext, place
   const place = row.placeId ? placeMap.get(row.placeId) : undefined;
   const route = `${ROUTES.adventures}/${row.slug}`;
   const coordinates = adventureCoordinates(row, place);
-  const where = whereLabel(place);
+  const where = whereLabel(place) ?? (row.locationLabel && !isPlaceholderText(row.locationLabel) ? row.locationLabel : undefined);
   const cover = coverOf(row);
   return {
     id: row.id,
@@ -284,6 +284,9 @@ export interface ListAdventuresOptions {
   limit?: number;
 }
 
+/** How many adventure cards fit an AI or WebMCP answer (list_adventures' 16,000-character budget). */
+export const AI_ADVENTURE_LIMIT = 12;
+
 export async function listAdventures(ctx: ReadContext, opts: ListAdventuresOptions = {}) {
   const [rows, placeMap] = await Promise.all([ctx.db.select().from(adventureMemories).orderBy(asc(adventureMemories.title)), visiblePlaces(ctx)]);
   const visible = filterVisible(rows, ctx.principal, ctx.surface, ctx.now).sort((a, b) => {
@@ -299,9 +302,12 @@ export async function listAdventures(ctx: ReadContext, opts: ListAdventuresOptio
   let filtered = visible;
   if (opts.tag) filtered = filtered.filter((r) => r.tags.includes(opts.tag!));
   if (opts.season) filtered = filtered.filter((r) => r.season === opts.season);
-  const items = filtered.slice(0, opts.limit ?? 100).map((r) => toAdventureCard(r, ctx, placeMap));
-  const sources = dedupeCitations(filtered.slice(0, opts.limit ?? 100).map((r) => memoryCitation(r, ctx)));
-  return { items, tags, seasons, total: visible.length, sources };
+  // One card per photo makes the list long; the AI surfaces get the newest dozen (and the total) so
+  // the answer stays inside their output budget, as find_adventures does.
+  const limit = ctx.surface === 'ui' ? (opts.limit ?? 100) : Math.min(opts.limit ?? AI_ADVENTURE_LIMIT, AI_ADVENTURE_LIMIT);
+  const items = filtered.slice(0, limit).map((r) => toAdventureCard(r, ctx, placeMap));
+  const sources = dedupeCitations(filtered.slice(0, limit).map((r) => memoryCitation(r, ctx)));
+  return { items, tags, seasons, total: visible.length, matching: filtered.length, sources };
 }
 
 export async function getAdventure(ctx: ReadContext, slug: string): Promise<{ detail: AdventureDetail; sources: Citation[] } | undefined> {

@@ -1,5 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+
+const PUBLIC_ADVENTURES = (JSON.parse(readFileSync('src/content/seed/adventures.json', 'utf8')) as { slug: string; visibility: string }[]).filter((a) => a.visibility === 'public').map((a) => a.slug);
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
@@ -39,9 +42,11 @@ test.describe('explore journey', () => {
     await follow(page, 'Our Adventures');
     await expect(page).toHaveURL(/\/our-adventures$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    // Only the public memory is listed; the private drafts never render.
-    await expect(page.locator('[data-adventure]')).toHaveCount(1);
+    // Only public memories are listed; the private drafts (the brief's, and photos that show someone
+    // who has not agreed to be on the site yet) never render.
+    await expect(page.locator('[data-adventure]')).toHaveCount(PUBLIC_ADVENTURES.length);
     await expect(page.getByText('Museum of Ice Cream')).toHaveCount(0);
+    await expect(page.getByText('The Lion King at the Cadillac Palace')).toHaveCount(0);
     await axe(page);
 
     await page.getByRole('link', { name: 'Starved Rock', exact: true }).click();
@@ -248,7 +253,10 @@ test.describe('explore journey', () => {
     const res = await request.post('/api/capabilities/list_adventures', { data: { input: {} } });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.data.items.map((i: { slug: string }) => i.slug)).toEqual(['starved-rock']);
+    const slugs: string[] = body.data.items.map((i: { slug: string }) => i.slug);
+    expect(slugs.length).toBeGreaterThan(0);
+    for (const s of slugs) expect(PUBLIC_ADVENTURES).toContain(s);
+    expect(slugs).not.toContain('museum-of-ice-cream');
     expect(body.sources.every((s: { url?: string }) => !s.url?.startsWith('/docs/'))).toBe(true);
     const hidden = await request.post('/api/capabilities/show_adventure', { data: { input: { slug: 'museum-of-ice-cream' } } });
     expect(hidden.status()).toBe(404);

@@ -112,6 +112,17 @@ export const SEED_SOURCES: readonly SeedSource[] = [
     trustClass: 'TRUSTED_WEDDING',
     notes: 'The couple kept their relationship timeline in the Paired app. Dates, titles and notes are theirs; nothing is inferred. verifiedAt on each imported row is the import time.',
   },
+  {
+    id: seedId<ContentSourceId>(110),
+    sourceType: 'authored',
+    title: "Sara and Tyler's adventure photos",
+    canonicalUrl: '/our-adventures',
+    documentName: 'Phone photos shared 2026-09-23 (manifest: docs/content/adventure-photos.json)',
+    verifiedAt: '2026-09-23T00:00:00.000Z',
+    trustClass: 'TRUSTED_WEDDING',
+    notes:
+      "One adventure per photo. Date and pin come from each photo's EXIF (GPS reverse-geocoded against OpenStreetMap to name the business), or from a sign or marquee in the frame; homes are rounded to about a kilometre. Richardson Farm's address is from its own site. Memories are left for the couple to write.",
+  },
 ];
 
 export const BRIEF_SOURCE_ID = SEED_SOURCES[0]!.id;

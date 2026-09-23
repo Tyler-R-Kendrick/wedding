@@ -6,18 +6,25 @@ import {
   ATLAS_W,
   MAX_ZOOM,
   MIN_ZOOM,
+  REGION,
+  WORLD_MAX_ZOOM,
   clampView,
   clusterPoints,
   fitView,
   homeView,
+  inRegion,
   inseparable,
   lerpView,
   panBy,
   project,
+  unitsPerKm,
   viewBox,
+  worldView,
   zoomAt,
   type AtlasCluster,
+  type AtlasFocus,
   type AtlasView,
+  type TargetRule,
 } from '@/themes/shared/atlas/projection';
 
 /**
@@ -32,7 +39,10 @@ import {
  * zoom has buttons, and every gesture has a keyboard equivalent.
  *
  * The world is one cached file (public/assets/atlas/world.svg) drawn through <use>, so its ~160 KB
- * of coastline is fetched once and never rides in the HTML or the RSC payload.
+ * of coastline is fetched once and never rides in the HTML or the RSC payload. Around Lake Michigan a
+ * second file (midwest.svg: 1:10m lakes, rivers and interstates, and the City of Chicago's own
+ * lakefront) is drawn instead, which is what lets the map open on the neighbourhoods around the
+ * venue and zoom to street scale there. Each file is clipped to its side of REGION.
  */
 
 export interface AtlasPin {
@@ -52,12 +62,21 @@ export interface AtlasVenue {
 }
 
 const WORLD = '/assets/atlas/world.svg';
+const MIDWEST = '/assets/atlas/midwest.svg';
+/** Home frames the venue and every pin within REACH_KM of it, never tighter than MIN_SPAN_KM across. */
+const REACH_KM = 16;
+const MIN_SPAN_KM = 9;
+/** Interstates and rivers once the frame is a region, not a continent; community areas once it is a city. */
+const ROADS_ZOOM = 20;
+const DISTRICTS_ZOOM = 400;
 /** The frame before it is measured: the drawing's own shape, so the server render and the first paint agree. */
 const DEFAULT_ASPECT = ATLAS_W / ATLAS_H;
 const DEFAULT_WIDTH = 1000;
 const STEP = 1.8;
 const START: AtlasView = { cx: ATLAS_W / 2, cy: ATLAS_H / 2, k: 1 };
 const LABEL_ZOOM = 3;
+/** Every marker's button is 44px square; a lone pin's sits 14px up, on the pin's head. */
+const TARGET: TargetRule<Point> = { sizePx: 44, lift: (m) => (m.length === 1 && m[0]?.kind === 'pin' ? 14 : 0) };
 
 type Point = { id: string; x: number; y: number; kind: 'pin' | 'venue'; title: string; number?: string };
 
@@ -76,8 +95,8 @@ function placeLabels(clusters: AtlasCluster<Point>[], chosen: string | null, all
     const { sx, sy } = screen(c);
     return { x0: sx - 16, x1: sx + 16, y0: sy - 32, y1: sy + 12 };
   });
-  // The zoom buttons' corner (three 44px buttons, 8px in from the top right) and the compass's.
-  taken.push({ x0: width - 60, x1: width, y0: 0, y1: 150 }, { x0: 0, x1: 52, y0: height - 60, y1: height });
+  // The zoom buttons' corner (four 44px buttons, 8px in from the top right) and the compass's.
+  taken.push({ x0: width - 60, x1: width, y0: 0, y1: 200 }, { x0: 0, x1: 52, y0: height - 60, y1: height });
   const sides = new Map<string, 'left' | 'right'>();
   const singles = clusters.filter((c) => c.members.length === 1).sort((a, b) => Number(b.members[0]?.id === chosen) - Number(a.members[0]?.id === chosen));
   for (const c of singles) {
@@ -103,6 +122,7 @@ const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('
 
 export function AdventureAtlas({ pins, venue, overview, postcards, children }: { pins: AtlasPin[]; venue: AtlasVenue; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
   const uid = useId();
+  const clipId = `atlas-clip-${uid.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState({ width: DEFAULT_WIDTH, aspect: DEFAULT_ASPECT });
@@ -125,6 +145,10 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     ],
     [pins, venue],
   );
+  const focus = useMemo<AtlasFocus>(() => {
+    const u = unitsPerKm(venue.lat);
+    return { ...project(venue.lat, venue.lng), reach: REACH_KM * u, minSpan: MIN_SPAN_KM * u };
+  }, [venue]);
 
   // ---------------------------------------------------------------------------------- moving
   const stop = () => {
@@ -164,19 +188,19 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       if (!width || !height) return;
       const aspect = width / height;
       setFrame({ width, aspect });
-      setView(moved.current ? clampView(viewRef.current, aspect) : homeView(aspect, points));
+      setView(moved.current ? clampView(viewRef.current, aspect) : homeView(aspect, points, focus));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     setReady(true);
     return () => ro.disconnect();
-  }, [points, setView]);
+  }, [points, focus, setView]);
 
   const { aspect, width } = frame;
   const vb = viewBox(view, aspect);
   const upp = ATLAS_W / view.k / width; // drawing units per screen pixel
-  const clusters = useMemo(() => clusterPoints(points, view.k, width), [points, view.k, width]);
+  const clusters = useMemo(() => clusterPoints(points, view.k, width, 30, TARGET), [points, view.k, width]);
 
   const zoomBy = (factor: number) => {
     moved.current = true;
@@ -184,7 +208,11 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   };
   const goHome = () => {
     moved.current = false;
-    fly(homeView(aspect, points));
+    fly(homeView(aspect, points, focus));
+  };
+  const goWorld = () => {
+    moved.current = true;
+    fly(worldView(aspect, points));
   };
 
   // ---------------------------------------------------------------------------------- choosing
@@ -204,8 +232,12 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     if (!first) return;
     if (c.members.length === 1) return choosePoint(first);
     moved.current = true;
-    // One place, several memories: zooming cannot separate them, so open the first of them.
-    if (inseparable(c.members, width)) return reveal(c.members.find((m) => m.kind === 'pin')?.id ?? first.id);
+    // One place (or one block), several memories: zooming cannot part them, so each press opens the
+    // next, the wedding's own card included when it shares the spot.
+    if (inseparable(c.members, width, 30, TARGET)) {
+      const at = c.members.findIndex((m) => m.id === chosen);
+      return reveal((c.members[(at + 1) % c.members.length] ?? first).id);
+    }
     fly(fitView(c.members, aspect, { pad: 0.3 }));
   };
 
@@ -215,11 +247,20 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       const p = points.find((q) => q.id === id);
       if (!p) return;
       moved.current = true;
-      fly(clampView({ cx: p.x, cy: p.y, k: Math.max(viewRef.current.k, 6) }, aspect));
+      // Close in around the venue; out in the world, only as deep as the world is drawn.
+      let k = inRegion(p.x, p.y) ? Math.max(viewRef.current.k, homeView(aspect, points, focus).k) : Math.min(Math.max(viewRef.current.k, 6), WORLD_MAX_ZOOM);
+      // Then deeper, until its pin stands on its own (or shares a spot no zoom can split).
+      const deepest = inRegion(p.x, p.y) ? MAX_ZOOM : WORLD_MAX_ZOOM;
+      const alone = (z: number) => {
+        const mine = clusterPoints(points, z, width, 30, TARGET).find((c) => c.members.some((m) => m.id === id));
+        return !mine || mine.members.length === 1 || inseparable(mine.members, width, 30, TARGET);
+      };
+      while (k < deepest && !alone(k)) k = Math.min(deepest, k * STEP);
+      fly(clampView({ cx: p.x, cy: p.y, k }, aspect));
       canvas.current?.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
       reveal(id, false);
     },
-    [points, aspect, fly, reveal],
+    [points, focus, aspect, width, fly, reveal],
   );
 
   // A filter can take away the chosen adventure; fall back to the key rather than an empty panel.
@@ -266,7 +307,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     if ((e.target as HTMLElement).closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // One finger on a phone scrolls the page until the map is zoomed in; two always pinch.
-    if (e.pointerType === 'touch' && pointers.current.size === 0 && viewRef.current.k <= homeView(aspect, points).k + 0.01) {
+    if (e.pointerType === 'touch' && pointers.current.size === 0 && viewRef.current.k <= worldView(aspect, points).k + 0.01) {
       pointers.current.set(e.pointerId, local(e));
       return;
     }
@@ -348,11 +389,17 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       case '_': e.preventDefault(); return zoomBy(1 / STEP);
       case '0':
       case 'Home': e.preventDefault(); return goHome();
+      case '9':
+      case 'End': e.preventDefault(); return goWorld();
     }
   };
 
   // ---------------------------------------------------------------------------------- drawing
-  const home = homeView(aspect, points);
+  const home = homeView(aspect, points, focus);
+  const world = worldView(aspect, points);
+  const atWorld = Math.abs(view.k - world.k) < 0.01 && Math.abs(view.cx - world.cx) < 0.5 && Math.abs(view.cy - world.cy) < 0.5;
+  const R = REGION;
+  const regionInView = R.x < vb.x + vb.w && vb.x < R.x + R.w && R.y < vb.y + vb.h && vb.y < R.y + R.h;
   const atHome = Math.abs(view.k - home.k) < 0.01 && Math.abs(view.cx - home.cx) < 0.5 && Math.abs(view.cy - home.cy) < 0.5;
   const inView = (x: number, y: number) => x >= vb.x - 20 * upp && x <= vb.x + vb.w + 20 * upp && y >= vb.y - 20 * upp && y <= vb.y + vb.h + 20 * upp;
   const pct = (x: number, y: number) => ({ left: `${((x - vb.x) / vb.w) * 100}%`, top: `${((y - vb.y) / vb.h) * 100}%` });
@@ -366,6 +413,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       return m.kind === 'venue' ? `${m.title}, where we are getting married` : `${m.number}. ${m.title}`;
     }
     const names = c.members.map((m) => (m.kind === 'venue' ? 'our wedding' : m.title));
+    if (inseparable(c.members, width, 30, TARGET)) return `${c.members.length} memories too close together to part: ${names.join(', ')}. Choose it again for the next one.`;
     return `${c.members.length} places close together: ${names.join(', ')}. Zoom in to see them.`;
   };
 
@@ -379,8 +427,8 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             tabIndex={0}
             role="region"
             aria-roledescription="map"
-            aria-label="Map of our adventures. Arrow keys move the map; plus and minus zoom; 0 shows the whole map. The same adventures are listed below it."
-            data-zoomed={view.k > home.k + 0.01 ? 'true' : undefined}
+            aria-label="Map of our adventures, opening on Chicago around the venue. Arrow keys move the map; plus and minus zoom; 0 comes back to the venue; 9 shows the whole world. The same adventures are listed below it."
+            data-zoomed={view.k > world.k + 0.01 ? 'true' : undefined}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -390,14 +438,38 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             onKeyDown={onKeyDown}
           >
             <svg className="bd-atlas__svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+              <defs>
+                {/* The world everywhere but the close-up's rectangle; the close-up only inside it. */}
+                <clipPath id={`${clipId}-world`}>
+                  <path clipRule="evenodd" d={`M0 0H${ATLAS_W}V${ATLAS_H}H0Z M${R.x} ${R.y}h${R.w}v${R.h}h${-R.w}Z`} />
+                </clipPath>
+                <clipPath id={`${clipId}-region`}>
+                  <rect x={R.x} y={R.y} width={R.w} height={R.h} />
+                </clipPath>
+              </defs>
               <use href={`${WORLD}#outline`} className="bd-atlas__sea" />
               <use href={`${WORLD}#graticule`} className="bd-atlas__grid" />
               <use href={`${WORLD}#tropics`} className="bd-atlas__tropics" />
               <use href={`${WORLD}#equator`} className="bd-atlas__equator" />
-              <use href={`${WORLD}#land`} className="bd-atlas__land" />
-              <use href={`${WORLD}#lakes`} className="bd-atlas__lakes" />
-              <use href={`${WORLD}#borders`} className="bd-atlas__borders" />
-              {view.k >= 2.5 ? <use href={`${WORLD}#states`} className="bd-atlas__states" /> : null}
+              <g clipPath={`url(#${clipId}-world)`}>
+                <use href={`${WORLD}#land`} className="bd-atlas__land" />
+                <use href={`${WORLD}#lakes`} className="bd-atlas__lakes" />
+                <use href={`${WORLD}#borders`} className="bd-atlas__borders" />
+                {view.k >= 2.5 ? <use href={`${WORLD}#states`} className="bd-atlas__states" /> : null}
+              </g>
+              {regionInView ? (
+                <g clipPath={`url(#${clipId}-region)`}>
+                  <use href={`${MIDWEST}#land`} className="bd-atlas__region-land" />
+                  <use href={`${MIDWEST}#urban`} className="bd-atlas__urban" />
+                  <use href={`${MIDWEST}#lakes`} className="bd-atlas__lakes" />
+                  <use href={`${MIDWEST}#shore`} className="bd-atlas__shore" />
+                  <use href={`${MIDWEST}#city`} className="bd-atlas__city" />
+                  {view.k >= DISTRICTS_ZOOM ? <use href={`${MIDWEST}#city`} className="bd-atlas__districts" /> : null}
+                  {view.k >= ROADS_ZOOM ? <use href={`${MIDWEST}#rivers`} className="bd-atlas__rivers" /> : null}
+                  {view.k >= ROADS_ZOOM ? <use href={`${MIDWEST}#roads`} className="bd-atlas__roads" /> : null}
+                  {view.k >= 2.5 ? <use href={`${MIDWEST}#states`} className="bd-atlas__states" /> : null}
+                </g>
+              ) : null}
               {clusters.map((c) => {
                 if (!inView(c.x, c.y)) return null;
                 const single = c.members.length === 1 ? c.members[0] : null;
@@ -460,7 +532,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
               })}
             </div>
             <div className="bd-atlas__zoom" role="group" aria-label="Zoom">
-              <button type="button" className="bd-atlas__zoombtn" onClick={() => zoomBy(STEP)} disabled={view.k >= MAX_ZOOM - 0.01} aria-label="Zoom in">
+              <button type="button" className="bd-atlas__zoombtn" onClick={() => zoomBy(STEP)} disabled={view.k >= MAX_ZOOM - 0.01 || clampView({ ...view, k: view.k * STEP }, aspect).k <= view.k + 0.01} aria-label="Zoom in">
                 <svg className="bd-atlas__icon" viewBox="0 0 20 20" aria-hidden="true">
                   <path d="M10 4v12M4 10h12" />
                 </svg>
@@ -470,7 +542,12 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                   <path d="M4 10h12" />
                 </svg>
               </button>
-              <button type="button" className="bd-atlas__zoombtn" onClick={goHome} disabled={atHome} aria-label="Show the whole map">
+              <button type="button" className="bd-atlas__zoombtn" onClick={goHome} disabled={atHome} aria-label="Back to Chicago and the venue">
+                <svg className="bd-atlas__icon" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 3l7 7-7 7-7-7Z" />
+                </svg>
+              </button>
+              <button type="button" className="bd-atlas__zoombtn" onClick={goWorld} disabled={atWorld} aria-label="Show the whole world">
                 <svg className="bd-atlas__icon" viewBox="0 0 20 20" aria-hidden="true">
                   <ellipse cx="10" cy="10" rx="8" ry="5.5" />
                   <path d="M2 10h16M10 4.5v11" />
@@ -486,7 +563,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             </span>
           </div>
           <figcaption id={`${uid}-caption`} className="bd-atlas__note">
-            Drag to move. Zoom with + and −, a pinch, a double-click, or Ctrl (⌘ on a Mac) and scroll. Coastlines from Natural Earth.
+            Drag to move. Zoom with + and −, a pinch, a double-click, or Ctrl (⌘ on a Mac) and scroll. Coastlines, lakes and roads from Natural Earth; Chicago’s lakefront and community areas from the City of Chicago.
           </figcaption>
         </figure>
         <aside className="bd-atlas__panel" aria-label="The chosen adventure">

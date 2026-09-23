@@ -28,6 +28,8 @@ test.describe('no dead internal links', () => {
 
   for (const theme of THEMES) {
     test(`every same-origin link on a guest-reachable page resolves (${theme})`, async ({ page, request }) => {
+      // Our Adventures links one page per photo (60-odd), and every one of them is requested.
+      test.slow();
       const seen = new Map<string, string[]>();
       for (const route of ROUTES) {
         const res = await page.goto(`${route}?theme=${theme}`);
