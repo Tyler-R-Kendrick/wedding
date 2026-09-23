@@ -27,7 +27,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
  * Riding, it behaves like a carousel for assistive technology: the car card is the list of every
  * station (one tab stop, arrow keys move along it, the current one `aria-current="location"`), the
  * station at the platform is the one exposed section, and a polite live region says where the train
- * has stopped. The others stay in the page, so find-in-page still reaches their words.
+ * has stopped. The moments off the platform are not drawn, so find-in-page reaches them only in
+ * "Read it as a list", which lays every word out at once.
  */
 
 export type LineKey = 'red' | 'blue' | 'brown' | 'pink' | 'green' | 'orange' | 'gold';
@@ -137,6 +138,9 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   const geo = useRef<Geometry | null>(null);
   /** A guest is swiping, pointing at or tabbing through the car card: leave its scroll alone. */
   const mapHold = useRef(false);
+  /** The last scroll came from the guest's own wheel, finger or key, not from the ride moving itself. */
+  const userDriven = useRef(false);
+  const touchRelease = useRef(0);
   const flight = useRef<{ raf: number; to: number } | null>(null);
   /** A jump of more than one stop runs express: only the moment you leave and the one you reach are shown. */
   const express = useRef<{ from: number; to: number } | null>(null);
@@ -151,7 +155,17 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   const n = stops.length;
   const factor = stepFactor(n);
 
+  /** The stop a guest was at when they switched between riding and reading, to land them on it again. */
+  const resume = useRef<number | null>(null);
   const chooseList = (value: boolean) => {
+    if (ride) resume.current = flight.current?.to ?? at.index;
+    else {
+      // Reading the list: the stop whose section crosses the upper part of the window is where they are.
+      const items = [...(root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop') ?? [])];
+      const line = window.innerHeight * 0.4;
+      const i = items.findLastIndex((li) => li.getBoundingClientRect().top <= line);
+      resume.current = Math.max(0, i);
+    }
     setListChoice(value);
     try {
       window.localStorage.setItem(LIST_KEY, value ? '1' : '0');
@@ -184,10 +198,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   }, [endExpress]);
 
   /**
-   * Ride to stop `i`. The scroll is driven here rather than by the browser's smooth scroll, which
-   * covers any distance in ~150 ms and turns a seven-stop jump into a flicker of seven moments.
-   */
-  /**
    * Ride the train to stop `next` over `duration` ms. The scroll is driven here rather than by the
    * browser's smooth scroll, which covers any distance in ~150 ms, and it is eased on the train's
    * position rather than on the scroll: it moves from the first frame to the last, instead of idling
@@ -199,6 +209,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       const y = scrollTargetFor(next);
       if (!g || y == null) return;
       cancelFlight();
+      userDriven.current = false;
       const pFrom = trainPosition((window.scrollY + g.rideTop - g.railTop) / g.step, n);
       const travelled = next - pFrom;
       if (Math.abs(travelled) < 1e-3) {
@@ -247,6 +258,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       if (y == null) return;
       if (instant || window.matchMedia(REDUCE).matches) {
         cancelFlight();
+        userDriven.current = false;
         window.scrollTo({ top: y, behavior: 'instant' });
         return;
       }
@@ -265,6 +277,8 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     let last = { index: -1, docked: false, toward: 0 };
     let lastP = 0;
     let lastPinned: boolean | null = null;
+    /** The station the train last stood at, until the guest themselves moves it off. */
+    let standing: number | null = null;
     // The two layers of each moment that move: its words and its picture. --d is registered as not
     // inherited (ride.css), so writing it restyles these few elements, not every paragraph inside them.
     const layers = [...el.querySelectorAll<HTMLElement>('.bd-ride__stop')].map((li) => [...li.querySelectorAll<HTMLElement>('.bd-stopcard__text, .bd-stopcard__media, .bd-stopcard__numeral')]);
@@ -301,6 +315,8 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       const p = trainPosition(raw, n);
       const index = Math.round(p);
       const docked = Math.abs(p - index) < 0.002;
+      if (docked) standing = index;
+      else if (userDriven.current) standing = null;
       // The car card keeps the train mid-strip and the line slides under it. It is a real scroller, so
       // a guest can swipe to a far station and focus scrolls to a tabbed one; while they do, it is theirs.
       // (Scroll is written before any style, so it never forces a restyle mid-frame.)
@@ -349,17 +365,14 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     const remeasure = () => {
       // A train standing at a station stays there when the page reflows above or around it (a font or a
       // picture arriving late, a rotated phone): the scroll follows the platform, not the old pixels.
-      const before = geo.current;
-      let dockedAt: number | null = null;
-      if (before && !flight.current) {
-        const p = trainPosition((window.scrollY + before.rideTop - before.railTop) / before.step, n);
-        const pinnedNow = window.scrollY + before.rideTop >= before.railTop - 1 && window.scrollY + before.rideTop + before.stageH <= before.railTop + before.railH + 1;
-        if (pinnedNow && Math.abs(p - Math.round(p)) < 0.002) dockedAt = Math.round(p);
-      }
+      const keep = flight.current ? null : standing;
       measure();
-      const after = geo.current;
-      if (dockedAt != null && after && before && (after.railTop !== before.railTop || after.step !== before.step || after.rideTop !== before.rideTop)) {
-        window.scrollTo({ top: after.railTop - after.rideTop + (dockedAt + DWELL / 2) * after.step, behavior: 'instant' });
+      const g = geo.current;
+      if (keep != null && g) {
+        const y = window.scrollY;
+        const pinnedNow = y + g.rideTop >= g.railTop - 1 && y + g.rideTop + g.stageH <= g.railTop + g.railH + 1;
+        const p = trainPosition((y + g.rideTop - g.railTop) / g.step, n);
+        if (pinnedNow && Math.abs(p - keep) > 0.002) window.scrollTo({ top: g.railTop - g.rideTop + (keep + DWELL / 2) * g.step, behavior: 'instant' });
       }
       schedule();
     };
@@ -386,7 +399,9 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       const i = Math.floor(p);
       const f = p - i;
       if (f < 0.002 || f > 0.998) return;
-      const target = heading > 0 ? (f > 0.2 ? i + 1 : i) : heading < 0 ? (f < 0.8 ? i : i + 1) : Math.round(p);
+      // Heading only counts when the guest was the one scrolling; after the ride moved itself (a deep
+      // link, a reflow), the nearest station is the right one.
+      const target = !userDriven.current ? Math.round(p) : heading > 0 ? (f > 0.2 ? i + 1 : i) : heading < 0 ? (f < 0.8 ? i : i + 1) : Math.round(p);
       fly(target, 280 + 560 * Math.abs(target - p));
     };
     const settleSoon = (ms = 220) => {
@@ -417,12 +432,15 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     // ride — except presses on the ride's own controls, which queue the next stop instead.
     const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
     const ownControl = (t: EventTarget | null) => t instanceof Element && Boolean(t.closest('.bd-ride__controls, .bd-ride-map'));
-    const interrupt = () => cancelFlight();
+    const interrupt = () => {
+      userDriven.current = true;
+      cancelFlight();
+    };
     const interruptKey = (e: globalThis.KeyboardEvent) => {
-      if (SCROLL_KEYS.has(e.key) && !ownControl(e.target)) cancelFlight();
+      if (SCROLL_KEYS.has(e.key) && !ownControl(e.target)) interrupt();
     };
     const interruptPointer = (e: Event) => {
-      if (!ownControl(e.target)) cancelFlight();
+      if (!ownControl(e.target)) interrupt();
     };
     remeasure();
     const ro = new ResizeObserver(remeasure);
@@ -467,14 +485,62 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   // A deep link (`/our-story#starved-rock`) lands on its station once the ride has its height.
   useEffect(() => {
     if (!ride) return;
+    let target = -1;
+    let until = 0;
     const jumpToHash = () => {
-      const i = stops.findIndex((s) => `#${s.slug}` === window.location.hash);
-      if (i >= 0) go(i, true);
+      target = stops.findIndex((s) => `#${s.slug}` === window.location.hash);
+      if (target < 0) return;
+      until = performance.now() + 1500;
+      go(target, true);
+    };
+    // The browser scrolls to the fragment itself, smoothly (the site's scroll-behavior), in the flat
+    // page it rendered before the ride took over; that animation can finish after the ride has jumped.
+    // For a moment after landing, unless the guest has scrolled, a scroll that ends elsewhere is put
+    // back on the station the link named.
+    const holdLanding = () => {
+      // Not once the guest has chosen somewhere else: every ride they ask for rewrites the hash.
+      if (target < 0 || performance.now() > until || userDriven.current || flight.current) return;
+      if (window.location.hash !== `#${stops[target]?.slug}`) return;
+      const g = geo.current;
+      if (!g) return;
+      const p = trainPosition((window.scrollY + g.rideTop - g.railTop) / g.step, n);
+      if (Math.abs(p - target) > 0.002) go(target, true);
     };
     jumpToHash();
+    window.addEventListener('scrollend', holdLanding);
+    window.addEventListener('load', holdLanding);
     window.addEventListener('hashchange', jumpToHash);
-    return () => window.removeEventListener('hashchange', jumpToHash);
+    return () => {
+      window.removeEventListener('scrollend', holdLanding);
+      window.removeEventListener('load', holdLanding);
+      window.removeEventListener('hashchange', jumpToHash);
+    };
+  }, [ride, go, stops, n]);
+
+  // Switching between riding and reading keeps the guest's place: the ride docks at the stop they were
+  // reading, the list opens at the stop they were riding, and focus goes with them.
+  useEffect(() => {
+    const i = resume.current;
+    if (i == null) return;
+    resume.current = null;
+    const stop = stops[i];
+    if (!stop) return;
+    if (ride) {
+      go(i, true);
+      return;
+    }
+    const li = document.getElementById(stop.slug);
+    if (!li) return;
+    li.scrollIntoView({ block: 'start', behavior: 'instant' });
+    li.setAttribute('tabindex', '-1');
+    li.focus({ preventScroll: true });
   }, [ride, go, stops]);
+
+  // A pending release of the strip, from a touch that just ended, never outlives the page.
+  useEffect(() => {
+    const pending = touchRelease;
+    return () => window.clearTimeout(pending.current);
+  }, []);
 
   // Announce arrivals only once the train has settled, and only while the ride is on screen: scrolling
   // past five stations is not five interruptions, and nothing is announced from the hero.
@@ -487,7 +553,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   }, [ride, at, pinned, stops]);
 
   // Only the station at the platform takes focus; links inside moments passing by are taken out of
-  // the tab order (their words stay in the page for find-in-page).
+  // the tab order.
   useEffect(() => {
     const track = root.current?.querySelector('.bd-ride__track');
     if (!track) return;
@@ -559,9 +625,12 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     const next = Math.min(Math.max(to, 0), n - 1);
     mapList.current?.querySelectorAll<HTMLAnchorElement>('.bd-ride-map__link')[next]?.focus();
   };
-  const onMapFocus = (i: number) => {
+  const onMapFocus = (e: FocusEvent<HTMLAnchorElement>, i: number) => {
     mapHold.current = true;
     setFocusIdx(i);
+    // A station reached from the keyboard comes to the middle of the strip, name and all (WCAG 2.4.11).
+    // Not one that was tapped: moving the strip between finger-down and finger-up would lose the tap.
+    if (e.currentTarget.matches(':focus-visible')) e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' });
   };
   const onMapBlur = (e: FocusEvent<HTMLElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -570,6 +639,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     reframe.current();
   };
   const holdMap = () => {
+    window.clearTimeout(touchRelease.current);
     mapHold.current = true;
   };
   const releaseMap = () => {
@@ -621,7 +691,10 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
               onPointerEnter={holdMap}
               onPointerLeave={releaseMap}
               onTouchStart={holdMap}
-              onTouchEnd={() => window.setTimeout(releaseMap, 1500)}
+              onTouchEnd={() => {
+                window.clearTimeout(touchRelease.current);
+                touchRelease.current = window.setTimeout(releaseMap, 1500);
+              }}
             >
               <ol ref={mapList} className="bd-ride-map__list">
                 {stops.map((s, i) => (
@@ -638,16 +711,17 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
                     <a
                       className="bd-ride-map__link"
                       href={`#${s.slug}`}
+                      // Named here, so a compact strip can drop the names it does not show.
+                      aria-label={s.when ? `${s.name}, ${s.when}` : s.name}
                       aria-current={ride && i === at.index ? 'location' : undefined}
                       tabIndex={tabbable === null ? undefined : i === tabbable ? 0 : -1}
                       onClick={(e) => onMapClick(e, i)}
                       onKeyDown={(e) => onMapKey(e, i)}
-                      onFocus={() => onMapFocus(i)}
+                      onFocus={(e) => onMapFocus(e, i)}
                     >
                       <span className="bd-ride-map__dot" aria-hidden="true" />
-                      <span className="bd-ride-map__name">
+                      <span className="bd-ride-map__name" aria-hidden="true">
                         {s.name}
-                        {s.when ? <span className="bd-ride-map__when">{s.when}</span> : null}
                       </span>
                     </a>
                   </li>

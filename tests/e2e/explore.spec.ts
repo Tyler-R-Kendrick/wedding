@@ -137,11 +137,15 @@ test.describe('explore journey', () => {
     await expect(map.getByRole('link', { name: /The Loop/ })).toHaveAttribute('aria-current', 'location');
   });
 
-  test('"Read it as a list" lays the line flat, and the choice is remembered', async ({ page }) => {
-    await page.goto('/our-story');
+  test('"Read it as a list" lays the line flat, keeps your place, and the choice is remembered', async ({ page }) => {
+    await page.goto('/our-story#starved-rock');
     await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'ride');
+    await expect(page.getByRole('navigation', { name: /^Stations on the .+ Line$/ }).getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
     await page.getByRole('button', { name: 'Read it as a list' }).click();
     await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
+    // The list opens where the ride was, and focus goes with the guest.
+    await expect(page.locator('#starved-rock')).toBeInViewport();
+    await expect(page.locator('#starved-rock')).toBeFocused();
     await expect(page.getByRole('button', { name: 'Ride the line instead' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.bd-ride [aria-hidden="true"].bd-ride__stop')).toHaveCount(0);
     await page.reload();
