@@ -17,6 +17,10 @@ these screens.
    or go straight to `/sign-in/admin` — and ask for a code. It arrives by email in a
    deployment; in local development it lands in the dev inbox at
    `/api/dev/inbox` and is printed to the server log.
+   A deployment can only send codes once it has an email service:
+   `RESEND_API_KEY` and `EMAIL_FROM` in Vercel (the "Guest email" slot in
+   `docs/ops/secrets.md`). Without them the sign-in page says it can't send
+   codes yet, for every address alike, rather than claiming one is on its way.
 3. Anything that changes money, identity or publication asks you to prove it is
    still you (a fresh code or your passkey) if your session is more than five
    minutes old. That is deliberate — see "Step-up" below.

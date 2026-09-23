@@ -13,6 +13,7 @@ import { resolveAdminRoles } from '@/domain/identity/principal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import { findInvitationByToken } from '@/domain/invitations/repo';
 import { OTP_PURPOSE_HEADER } from '@/lib/auth';
+import { afterResponse } from '@/lib/after-response';
 import { env } from '@/lib/env';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, holdToFloor, ipHashOf, logOtp, otpBuckets, RECOVERY } from './identity/shared';
@@ -86,6 +87,15 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
   output,
   async handler(ctx, i) {
     const startedMs = performance.now();
+    // No mailer, no code — say so before anything depends on the address, so every caller gets the
+    // same answer and enumeration resistance holds. This used to return "sent" and fail in the
+    // background: on a deploy without RESEND_API_KEY / EMAIL_FROM nobody could sign in, and every
+    // one of them was told a code was on its way.
+    const mailer = mailerProblem(ctx);
+    if (mailer) {
+      appServices(ctx).logger?.error({ reason: mailer }, 'otp not sent: no auth-email provider');
+      return err(new CapabilityError('provider_unavailable', 'Sign-in codes cannot be sent yet: this site has no email service set up.', { reason: 'mail_not_configured' }));
+    }
     const { db, auth } = await authOf(ctx);
     const next = isSafeReturnPath(i.next) ? i.next : undefined;
     let email: string | null = null;
@@ -163,14 +173,17 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     if (email) {
       const headers = new Headers({ [OTP_PURPOSE_HEADER]: payload.kind === 'admin_sign_in' ? 'admin_sign_in' : payload.kind === 'step_up' ? 'step_up' : 'sign_in' });
       const purpose = payload.kind;
-      void callAuth({ setCookies: [] }, () => auth.api.sendVerificationOTP({ body: { email: email!, type: 'sign-in' }, headers }))
-        .then(async (sent) => {
-          if (!sent.ok) appServices(ctx).logger?.warn({ code: sent.error.code, purpose }, 'otp send failed');
-          await logOtp(ctx, { emailHash, purpose, kind: 'send', outcome: sent.ok ? 'sent' : 'suppressed' });
-        })
-        .catch((e) => appServices(ctx).logger?.warn({ err: e }, 'otp send threw'));
+      // After the response, not `void`: see `afterResponse` — a bare promise can be frozen mid-send.
+      afterResponse(() =>
+        callAuth({ setCookies: [] }, () => auth.api.sendVerificationOTP({ body: { email: email!, type: 'sign-in' }, headers }))
+          .then(async (sent) => {
+            if (!sent.ok) appServices(ctx).logger?.warn({ code: sent.error.code, purpose }, 'otp send failed');
+            await logOtp(ctx, { emailHash, purpose, kind: 'send', outcome: sent.ok ? 'sent' : 'suppressed' });
+          })
+          .catch((e) => appServices(ctx).logger?.warn({ err: e }, 'otp send threw')),
+      );
     } else {
-      void logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' });
+      afterResponse(() => logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' }));
     }
     const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { ...payload, email }, { now: ctx.now });
     // Identical shape for known and unknown addresses; the mask is of the address the caller typed (or the one on file for claims).
@@ -180,3 +193,13 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     return ok({ data: { sent: true, challenge: token, expiresAt, deliveredTo: maskEmail(shown), deliveredFor, claimedFor, lockedUntil: lock.locked ? (lock.until ?? null) : null }, sources: [] });
   },
 });
+
+/** Why no one-time code can be sent at all (independent of the address), or null when a mailer exists. */
+function mailerProblem(ctx: Parameters<typeof appServices>[0]): string | null {
+  try {
+    appServices(ctx).providers('auth-email');
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : 'auth-email provider unavailable';
+  }
+}

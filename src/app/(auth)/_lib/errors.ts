@@ -16,6 +16,7 @@ export const ERROR_COPY: Record<string, string> = {
   conflict: 'That person has already claimed their invitation with another email. If that’s wrong, please get in touch with Sara and Tyler.',
   step_up_required: 'For your security, please confirm it’s you first.',
   provider_unavailable: 'We couldn’t send the code just now. Please try again in a moment.',
+  mail_off: 'We can’t send sign-in codes yet — the site’s email isn’t set up. Please try again later, or get in touch with Sara and Tyler.',
   internal: 'Something went wrong on our side. Please try again in a moment.',
 };
 
@@ -32,6 +33,7 @@ export function errorCode(error: { code: string; details?: Record<string, unknow
     if (error.details?.issues) return 'code';
     return 'validation';
   }
+  if (error.code === 'provider_unavailable' && error.details?.reason === 'mail_not_configured') return 'mail_off';
   if (error.code === 'rate_limited' && typeof error.message === 'string' && /incorrect codes/.test(error.message)) return 'locked';
   return error.code in ERROR_COPY ? error.code : 'internal';
 }
