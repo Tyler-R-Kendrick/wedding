@@ -37,7 +37,7 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
       <GuestSection theme={theme} id="rsvp" index={0} title="RSVP">
         {/* Once anything is answered and the window is open, the task list below is the status; a
             count here as well said it twice. The badge stays for every state without the list. */}
-        {data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status !== 'not_started' ? null : (
+        {data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status !== 'not_started' && data.rsvp.parts.some((p) => p.state === 'open') ? null : (
         <p>
           {/* "for everyone" is only true when the counts cover more than one person. They are built
               from `actsFor`, so a non-manager who answers for themselves alone used to read that
@@ -55,7 +55,7 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
         )}
         {/* A delegate may not answer, and `derive.ts` strips `rsvp_self` from exactly that role, so
             offering the primary button on the window alone put a 403 behind it. */}
-        {data.rsvp.window.open && data.rsvp.canAnswer ? (
+        {data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? (
           <>
             <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="weekend-task" labelledBy="rsvp-title" />
             <p>
@@ -69,7 +69,8 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
           // `lifecycle` means RSVPs have not opened yet, and telling a guest they are "closed"
           // during the teaser is false. Keeping the two pages in step is why this branches on the
           // same field rather than on `open` alone.
-          data.rsvp.window.reason === 'lifecycle' ? (
+          // An open window with no part released yet is "not open yet" too, never "closed".
+          data.rsvp.window.reason === 'lifecycle' || (data.rsvp.window.open && data.rsvp.canAnswer) ? (
             <p className="card__meta">RSVPs are not open yet — Sara and Tyler will send word when it is time to reply.</p>
           ) : (
             <p className="card__meta">RSVPs are closed. If something changed, reach Sara and Tyler. <Placeholder inline>their contact details</Placeholder></p>

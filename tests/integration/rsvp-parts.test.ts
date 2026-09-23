@@ -123,6 +123,13 @@ describe('each part of the RSVP opens on its own', () => {
     expect(part(expectOk(await run(getMyRsvp, C1, {})).data, 'notes')).toMatchObject({ status: 'done' });
   });
 
+  it('confirms a one-part save by restating the whole reply on file, not only the rows it touched', async () => {
+    const done = await answer({ parts: ['notes'], responses: [], needs: [{ guestId: FX.guestC1, dietary: null, accessibility: 'Step-free route, please' }] });
+    expect(done.data.lines.map((l) => l.eventName)).toEqual(['Ceremony', 'Reception']);
+    expect(done.data.needsRecordedFor).toEqual(['Fin Solo']);
+    expect(JSON.stringify(done.data)).not.toContain('Step-free');
+  });
+
   it('with every part switched off, nothing can be drafted and the guest is told replies are not open', async () => {
     for (const f of ['FLAG_RSVP_ATTENDANCE', 'FLAG_RSVP_PLUS_ONES', 'FLAG_RSVP_MEALS']) vi.stubEnv(f, 'off');
     const mine = expectOk(await run(getMyRsvp, C1, {})).data;

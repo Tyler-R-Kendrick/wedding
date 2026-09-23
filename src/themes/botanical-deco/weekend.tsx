@@ -70,7 +70,7 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
       {/* The task list below says where each part stands; a count beside the name as well said it twice. */}
       <p className="bd-reply__status">
         <span className="bd-reply__household">{data.greeting.householdName}</span>
-        {!reply && w.open && data.rsvp.canAnswer ? null : <> <RsvpStatus rsvp={data.rsvp} /></>}
+        {!reply && w.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? null : <> <RsvpStatus rsvp={data.rsvp} /></>}
       </p>
       {reply ? (
         <>
@@ -80,7 +80,7 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
           <RsvpTaskList parts={data.rsvp.parts} interactive={false} idPrefix="reply-task" labelledBy="reply-title" />
           <RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" />
         </>
-      ) : w.open && data.rsvp.canAnswer ? (
+      ) : w.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? (
         <>
           {/* The profile's view of the reply: each part of it, what is done and what opens later.
               The event-by-event answers are in the itinerary beside it. */}
@@ -91,7 +91,9 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
             </Link>
           </p>
         </>
-      ) : w.reason === 'lifecycle' ? (
+      ) : w.reason === 'lifecycle' || (w.open && data.rsvp.canAnswer) ? (
+        // An open window for someone who may answer, with no part of the reply released yet, is
+        // "not open yet", never "closed".
         <p className="bd-reply__closed">RSVPs are not open yet — Sara and Tyler will send word when it is time to reply.</p>
       ) : (
         <p className="bd-reply__closed">

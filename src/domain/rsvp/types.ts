@@ -21,6 +21,8 @@ export interface RsvpResponseInput {
    * `plus_one_answered_at`). Not part of the hashed submission — the schema strips it.
    */
   plusOneAnswered?: boolean;
+  /** Set by validation: this row's meals were chosen now, from the current menu (so they are stamped with its version). */
+  mealAnswered?: boolean;
 }
 
 /** SENSITIVE: never logged, never in audit metadata, never in idempotency responses. */

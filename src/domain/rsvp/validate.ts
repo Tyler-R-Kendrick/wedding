@@ -86,12 +86,19 @@ export function validateHouseholdRsvp(raw: HouseholdRsvpDraft, ctx: RsvpValidati
 
     const normalized: RsvpResponseInput = { guestId: r.guestId, eventId: r.eventId, status, mealOptionId: null, plusOne: null };
     if (status === 'accepted') {
-      normalized.mealOptionId = parts.has('meal') ? checkMeal(r.mealOptionId, `${path}.mealOptionId`, 'Please choose a meal.') : (kept?.mealOptionId ?? null);
+      // A meal is answered only where this event has a menu to choose from. Where it has none yet —
+      // a new menu version not published — the form asked nothing, so what is on file is carried,
+      // unjudged, and keeps the version it was chosen from; a meal sent for it anyway is refused.
+      const answersMeal = parts.has('meal') && menu;
+      if (parts.has('meal') && !menu) checkMeal(r.mealOptionId, `${path}.mealOptionId`, '');
+      normalized.mealOptionId = answersMeal ? checkMeal(r.mealOptionId, `${path}.mealOptionId`, 'Please choose a meal.') : (kept?.mealOptionId ?? null);
+      normalized.mealAnswered = answersMeal;
 
       // Who the plus-one is (attending + name) is the plus-one part; what they eat is the meal part.
-      // A row answers the plus-one question only when it carries one: a draft that leaves it out
-      // keeps what is on file rather than recording "not bringing anyone" by omission.
-      const answersPlusOne = parts.has('plusOne') && entitlement.plusOnePolicy !== 'none' && r.plusOne != null;
+      // A guest's row answers the plus-one question only when it carries one: a draft that leaves it
+      // out keeps what is on file rather than recording "not bringing anyone" by omission. An admin
+      // correction is the whole row as the couple want it, so there no plus-one means no plus-one.
+      const answersPlusOne = parts.has('plusOne') && entitlement.plusOnePolicy !== 'none' && (r.plusOne != null || ctx.mode === 'admin');
       let who: { attending: boolean; name: string | null } | null = null;
       if (entitlement.plusOnePolicy === 'none') {
         if (parts.has('plusOne') && r.plusOne?.attending === true) invalid.push({ path: `${path}.plusOne`, message: 'This invitation does not include a guest.', code: 'invalid' });
@@ -110,7 +117,8 @@ export function validateHouseholdRsvp(raw: HouseholdRsvpDraft, ctx: RsvpValidati
       normalized.plusOneAnswered = answersPlusOne;
 
       if (who?.attending) {
-        const plusMeal = parts.has('meal') ? checkMeal(r.plusOne?.mealOptionId, `${path}.plusOne.mealOptionId`, 'Please choose a meal for your guest.') : kept?.plusOne?.attending ? kept.plusOne.mealOptionId : null;
+        if (parts.has('meal') && !menu) checkMeal(r.plusOne?.mealOptionId, `${path}.plusOne.mealOptionId`, '');
+        const plusMeal = answersMeal ? checkMeal(r.plusOne?.mealOptionId, `${path}.plusOne.mealOptionId`, 'Please choose a meal for your guest.') : kept?.plusOne?.attending ? kept.plusOne.mealOptionId : null;
         normalized.plusOne = { attending: true, name: who.name, mealOptionId: plusMeal };
       } else if (who) {
         normalized.plusOne = { attending: false, name: null, mealOptionId: null };

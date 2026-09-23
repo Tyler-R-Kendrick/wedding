@@ -69,8 +69,11 @@ describe('rsvpProgress: each part is released by its own flag and its own data',
 
   it('leaves off parts the invitation does not include, rather than promising them later', () => {
     const p = byPart(rsvpProgress(flags(), { ...base, entitlements: entitlements.map((e) => ({ ...e, plusOnePolicy: 'none' as const })), events: events.map((e) => ({ ...e, hasMeal: false })) }));
-    expect(p.plusOne.state).toBe('not_applicable');
-    expect(p.meal.state).toBe('not_applicable');
+    // `status` too: an assistant reading it alone must not say plus-ones "open later".
+    expect(p.plusOne).toMatchObject({ state: 'not_applicable', status: 'not_applicable', reason: null });
+    expect(p.meal).toMatchObject({ state: 'not_applicable', status: 'not_applicable', reason: null });
+    const nothing = byPart(rsvpProgress(flags({ RSVP_ATTENDANCE: false }), { ...base, entitlements: [] }));
+    expect(nothing.attendance).toMatchObject({ state: 'not_applicable', status: 'not_applicable', reason: null });
   });
 
   it('waits on attendance, then counts only the people who are coming', () => {
@@ -172,6 +175,22 @@ describe('validateHouseholdRsvp with parts: write only what was answered', () =>
     expect(r.ok && r.value.needs).toEqual([]);
     const notesOnly = validateHouseholdRsvp({ responses: [], needs: [{ guestId: 'G2', dietary: 'x', accessibility: null }] }, ctx(['notes']));
     expect(notesOnly.ok && notesOnly.value.needs).toEqual([{ guestId: 'G2', dietary: 'x', accessibility: null }]);
+  });
+
+  it('keeps a meal on file when meals are answered but this event has no menu for its current version', () => {
+    const onFile = { 'G2::E-REC': { status: 'accepted' as const, mealOptionId: 'M-OLD', plusOne: null } };
+    const noCurrentMenu = { ...ctx(['meal'], onFile), mealOptions: mealOptions.filter((m) => m.version === 1) };
+    const r = validateHouseholdRsvp({ responses: [{ guestId: 'G2', eventId: 'E-REC', status: null, mealOptionId: null, plusOne: null }], needs: [] }, noCurrentMenu);
+    // Nothing was asked about it, so it is not wiped — and it is not marked as chosen now, so it
+    // keeps the version it was chosen from and still reads "the menu changed" once one exists.
+    expect(r.ok && r.value.responses[0]).toMatchObject({ mealOptionId: 'M-OLD', mealAnswered: false });
+  });
+
+  it('lets an admin correction remove a plus-one by sending none', () => {
+    const onFile = { 'G1::E-REC': { status: 'accepted' as const, mealOptionId: 'M-BEEF', plusOne: { attending: true, name: 'Robin', mealOptionId: 'M-VEG' } } };
+    const admin = { ...ctx(['attendance', 'plusOne', 'meal', 'notes'], onFile), mode: 'admin' as const };
+    const r = validateHouseholdRsvp({ responses: [{ guestId: 'G1', eventId: 'E-REC', status: 'accepted', mealOptionId: 'M-BEEF', plusOne: null }], needs: [] }, admin);
+    expect(r.ok && r.value.responses[0]).toMatchObject({ plusOne: { attending: false, name: null, mealOptionId: null }, plusOneAnswered: true });
   });
 
   it('does not demand a meal for an event whose menu is not published yet', () => {

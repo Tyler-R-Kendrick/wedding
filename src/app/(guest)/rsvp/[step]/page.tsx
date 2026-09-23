@@ -39,6 +39,7 @@ export default async function RsvpStepPage({ params }: { params: Params }) {
   const data = result.value.data;
   const progress = data.parts.find((p) => p.part === part);
   if (!progress || progress.state === 'not_applicable') notFound();
+  const attendanceOpen = data.parts.some((p) => p.part === 'attendance' && p.state === 'open');
 
   return (
     <div className="page">
@@ -57,6 +58,12 @@ export default async function RsvpStepPage({ params }: { params: Params }) {
             {progress.reason === 'menu_pending' ? 'Meal choices open once the menu is set.' : 'Sara and Tyler will send word when it opens.'} Nothing is needed from you today —
             your other answers are saved.
           </p>
+        </GuestNotice>
+      ) : progress.status === 'waiting' && !attendanceOpen ? (
+        // Waiting on an answer that cannot be given yet: say so, rather than send the guest to a
+        // page that will only tell them it is not open.
+        <GuestNotice theme={theme} tone="info" title="This opens after replies do">
+          <p>This is asked about the people who are coming. Sara and Tyler will send word when it is time to reply. Nothing is needed from you today.</p>
         </GuestNotice>
       ) : progress.status === 'waiting' ? (
         <>

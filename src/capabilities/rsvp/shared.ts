@@ -93,7 +93,7 @@ export const partProgressSchema = z.object({
   part: z.enum(RSVP_PARTS),
   state: z.enum(['open', 'later', 'not_applicable']),
   reason: z.enum(['not_released', 'menu_pending']).nullable(),
-  status: z.enum(['not_started', 'in_progress', 'done', 'needs_attention', 'waiting', 'not_needed', 'optional', 'later']),
+  status: z.enum(['not_started', 'in_progress', 'done', 'needs_attention', 'waiting', 'not_needed', 'optional', 'later', 'not_applicable']),
   expected: z.number(),
   answered: z.number(),
   attention: z.number(),

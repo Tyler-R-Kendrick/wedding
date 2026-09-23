@@ -47,8 +47,10 @@ export type PartLaterReason = 'not_released' | 'menu_pending';
  * - `waiting`: open, but nothing to answer until someone says they are coming.
  * - `not_needed`: open, attendance is complete, and nobody it applies to is coming.
  * - `optional`: notes — never required, `done` once any are on file.
+ * - `not_applicable`: not on this invitation. Never `later`: an assistant reading `status` alone
+ *   must not tell a guest with no plus-one that plus-ones "open later".
  */
-export type PartStatus = 'not_started' | 'in_progress' | 'done' | 'needs_attention' | 'waiting' | 'not_needed' | 'optional' | 'later';
+export type PartStatus = 'not_started' | 'in_progress' | 'done' | 'needs_attention' | 'waiting' | 'not_needed' | 'optional' | 'later' | 'not_applicable';
 
 export interface PartProgress {
   part: RsvpPart;
@@ -80,13 +82,14 @@ export function rsvpProgress(flags: Pick<FlagValues, FeatureFlag>, input: Progre
   const eventById = new Map(input.events.map((e) => [e.id, e]));
   const key = (g: string, e: string) => `${g}::${e}`;
   const response = new Map(input.responses.map((r) => [key(r.guestId, r.eventId), r]));
-  const expectedPairs = input.entitlements.filter((en) => eventById.get(en.eventId)?.rsvpRequired !== false && eventById.has(en.eventId));
+  const expectedPairs = input.entitlements.filter((en) => eventById.get(en.eventId)?.rsvpRequired === true);
   const accepted = expectedPairs.filter((en) => response.get(key(en.guestId, en.eventId))?.status === 'accepted');
   const attendanceAnswered = expectedPairs.filter((en) => response.has(key(en.guestId, en.eventId))).length;
   const attendanceComplete = expectedPairs.length > 0 && attendanceAnswered === expectedPairs.length;
 
   const released = (part: RsvpPart) => flags[RSVP_PART_FLAG[part]] === true;
   const statusOf = (p: Omit<PartProgress, 'status'>): PartStatus => {
+    if (p.state === 'not_applicable') return 'not_applicable';
     if (p.state !== 'open') return 'later';
     if (p.part === 'notes') return p.answered > 0 ? 'done' : 'optional';
     if (p.expected === 0) return attendanceComplete ? 'not_needed' : 'waiting';
@@ -97,7 +100,8 @@ export function rsvpProgress(flags: Pick<FlagValues, FeatureFlag>, input: Progre
   const finish = (p: Omit<PartProgress, 'status'>): PartProgress => ({ ...p, status: statusOf(p) });
 
   // Attendance
-  const attendance = finish({ part: 'attendance', state: expectedPairs.length === 0 ? 'not_applicable' : released('attendance') ? 'open' : 'later', reason: released('attendance') ? null : 'not_released', expected: expectedPairs.length, answered: attendanceAnswered, attention: 0 });
+  const attendanceState: PartState = expectedPairs.length === 0 ? 'not_applicable' : released('attendance') ? 'open' : 'later';
+  const attendance = finish({ part: 'attendance', state: attendanceState, reason: attendanceState === 'later' ? 'not_released' : null, expected: expectedPairs.length, answered: attendanceAnswered, attention: 0 });
 
   // Plus-ones: only where the invitation includes one; counted over the rows where someone is coming.
   const withPlusOne = expectedPairs.filter((en) => en.plusOnePolicy !== 'none');
@@ -139,7 +143,8 @@ export function rsvpProgress(flags: Pick<FlagValues, FeatureFlag>, input: Progre
   // Notes: optional, one row per guest.
   const guestIds = new Set(expectedPairs.map((en) => en.guestId));
   const notesOnFile = input.needs.filter((n) => guestIds.has(n.guestId) && (n.dietary || n.accessibility)).length;
-  const notes = finish({ part: 'notes', state: expectedPairs.length === 0 ? 'not_applicable' : released('notes') ? 'open' : 'later', reason: released('notes') ? null : 'not_released', expected: guestIds.size, answered: notesOnFile, attention: 0 });
+  const notesState: PartState = expectedPairs.length === 0 ? 'not_applicable' : released('notes') ? 'open' : 'later';
+  const notes = finish({ part: 'notes', state: notesState, reason: notesState === 'later' ? 'not_released' : null, expected: guestIds.size, answered: notesOnFile, attention: 0 });
 
   return [attendance, plusOne, meal, notes];
 }

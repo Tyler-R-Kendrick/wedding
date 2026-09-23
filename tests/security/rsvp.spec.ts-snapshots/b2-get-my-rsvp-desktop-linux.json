@@ -22,7 +22,7 @@
         "part": "plusOne",
         "state": "not_applicable",
         "reason": null,
-        "status": "later",
+        "status": "not_applicable",
         "expected": 0,
         "answered": 0,
         "attention": 0

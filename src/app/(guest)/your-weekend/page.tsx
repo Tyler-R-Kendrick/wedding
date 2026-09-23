@@ -29,7 +29,9 @@ export default async function YourWeekendPage() {
   // Once anything is on file, the centre shows what is on file and links to /rsvp to review or change
   // it — a half-finished household is finished there, with its answers in front of it.
   let reply: WeekendReply | undefined;
-  if (theme === 'botanical-deco' && data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status === 'not_started') {
+  // Only when there is a question to ask: with attendance not released, `next` is empty and the form
+  // would be a submit button with nothing above it that can only fail.
+  if (theme === 'botanical-deco' && data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status === 'not_started' && data.rsvp.next.includes('attendance')) {
     const rsvp = await loadRsvp(ctx);
     if (rsvp) reply = { data: rsvp, action: rsvpAction, idempotencyKey: newId() };
   }

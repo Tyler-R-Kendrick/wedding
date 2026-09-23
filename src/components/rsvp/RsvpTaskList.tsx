@@ -52,6 +52,8 @@ function statusOf(p: Part): { tone: 'yes' | 'no' | 'pending' | 'stale' | 'info';
       return { tone: 'info', text: 'Optional' };
     case 'later':
       return { tone: 'info', text: p.reason === 'menu_pending' ? 'Opens once the menu is set' : 'Opens later' };
+    case 'not_applicable':
+      return { tone: 'info', text: 'Not on your invitation' };
   }
 }
 

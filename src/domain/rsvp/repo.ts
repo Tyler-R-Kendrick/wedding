@@ -75,17 +75,17 @@ export async function persistHouseholdRsvp(
     via: 'guest' | 'admin';
     now: Date;
     mealVersionByEvent: ReadonlyMap<string, number>;
-    /** The parts this submission answered. Default: all. A meal not answered keeps its menu version. */
+    /** The parts this submission answered, for rows validation did not mark. A meal not answered keeps its menu version. */
     parts?: ReadonlySet<RsvpPart>;
   },
 ): Promise<{ responses: RsvpResponseRow[] }> {
-  const answeredMeal = meta.parts ? meta.parts.has('meal') : true;
   return db.transaction(async (tx) => {
     const out: RsvpResponseRow[] = [];
     for (const r of input.responses) {
       // Validation marks the rows that answered the plus-one question; a row it never saw (an
       // older caller) counts as answered when the plus-one part was, as it always did.
       const answeredPlusOne = r.plusOneAnswered ?? (meta.parts ? meta.parts.has('plusOne') : true);
+      const answeredMeal = r.mealAnswered ?? (meta.parts ? meta.parts.has('meal') : true);
       const values = {
         id: newId(),
         guestId: r.guestId,
