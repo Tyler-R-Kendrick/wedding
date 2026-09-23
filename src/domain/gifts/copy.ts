@@ -67,7 +67,8 @@ export function giftsStatement(counts: { registry: number; adventures: number; f
   return parts.join(' ');
 }
 
-function list(items: readonly string[], joiner = 'and'): string {
+/** "a, b and c" — or "a, b or c" with `joiner`. */
+export function list(items: readonly string[], joiner = 'and'): string {
   if (items.length <= 1) return items.join('');
   return `${items.slice(0, -1).join(', ')} ${joiner} ${items[items.length - 1]}`;
 }

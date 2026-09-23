@@ -49,9 +49,10 @@ self-reported tally on top of Venmo; it adds nothing to the money's path.
    - Zelle and checks have no link: the page shows the enrolled email or phone, or the mailing
      address, and the guest sends from their own bank or by post.
 
-   Each host is pinned in the redirect allowlist to that one shape (`venmo.com` exactly,
-   `www.paypal.com/paypalme/`, `cash.app/$`), so neither a configured gift link nor a tampered
-   row can reach a sign-in page or a checkout on the same host. Handles are validated on write
+   Each host is pinned in the redirect allowlist to that one shape (`venmo.com` with a single
+   username-shaped path segment, `www.paypal.com/paypalme/`, `cash.app/$`), so neither a configured
+   gift link nor a tampered row can reach a sign-in page, a settings page or a checkout on the same
+   host. Handles are validated on write
    **and** re-validated on read, the same rule the allowlist already applies to URLs.
 3. **No amounts, ever.** No `amount` parameter, no goals, no progress bars (ADR-0004 §6). The site
    could not total contributions honestly anyway: it never learns of them.
@@ -59,14 +60,18 @@ self-reported tally on top of Venmo; it adds nothing to the money's path.
    its source and the date it was read (ADR-0011). "No fee" is true from a bank account or app
    balance on all five; Venmo and Cash App add 3% on a credit card and PayPal adds 2.9% plus a
    fixed fee on any card. The site does not claim what it cannot guarantee.
-5. **Zelle and mailing details are personal.** They are shown only to a guest who arrived through
-   their invitation (a `guest` principal) and to admins. An anonymous visitor, a crawler, and the
+5. **Zelle and mailing details are personal.** They are shown only to a guest whose invitation is
+   live (a `guest` principal holding `view_event`, so a revoked or expired invitation takes them
+   away even while its session lasts) and to admins. A check needs the payee the couple enter; the
+   site never supplies a name of its own. An anonymous visitor, a crawler, and the
    AI concierge answering one receive the rail and its fee, never the email, phone or address. The
    Venmo, PayPal and Cash App handles are public profile links by design and are shown to everyone.
    `/gifts` is now a personalized route (`Cache-Control: private, no-store`).
 6. **Funds are content, not money.** `honeymoon`, `home`, `adoption` and `next-adventures` are
    defaults in code (`src/domain/gifts/funds.ts`) so they exist with no seed; a `gift_funds` row with
-   the same id replaces a default's words, order or visibility, and a new id adds one. With no way
+   the same id replaces a default's words, order or visibility, and a new id adds one (up to 12 in
+   all, which keeps `list_gift_links` inside what the concierge may be handed). A save changes only
+   the fields it carries. With no way
    to give configured, no funds are shown: a list of reasons to give with no way to give is a dead end.
 7. **A registry of things stays delegated** exactly as ADR-0004 had it (`gift_links`, Zola / The
    Knot / Joy). A couple who would rather keep their funds on Joy can still link a Joy page as an

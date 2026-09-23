@@ -5,7 +5,7 @@ import { ok } from '@/contracts/result';
 import { seedId } from '@/db/seed/sources';
 import { guestHandoffSchema } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { GIFTS_COPY, giftsStatement, isMissingGiftTable, listGiftFunds, listGiftLinks, type GiftFunds } from '@/domain/gifts';
+import { GIFTS_COPY, giftsStatement, isMissingGiftTable, listGiftFunds, listGiftLinks, RAILS, type GiftFunds } from '@/domain/gifts';
 import { logger } from '@/lib/logger';
 import { appServices } from './context';
 
@@ -108,7 +108,9 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 12_000,
+  // Sized for MAX_GIFT_FUNDS funds at full length on every rail, plus registry links
+  // (tests/unit/gift-rails.test.ts measures it).
+  maxOutputChars: 32_000,
   async handler(ctx) {
     const { db, providers } = appServices(ctx);
     const fundsOrNothing = listGiftFunds(db, ctx.principal).catch((e: unknown): GiftFunds => {
@@ -123,7 +125,7 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
       registry: links.filter((l) => l.kind === 'registry' && !l.placeholder).length,
       adventures: links.filter((l) => l.kind === 'adventure-fund' && !l.placeholder).length,
       funds: funds.map((f) => f.title),
-      rails: rails.map((r) => (r.rail === 'check' ? 'a check by mail' : r.displayName)),
+      rails: rails.map((r) => RAILS[r.rail].inSentence),
     };
     return ok({ data: { copy: GIFTS_COPY, links, funds, rails, statement: giftsStatement(counts) }, sources: [BRIEF_CITATION] });
   },

@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm';
-import type { Principal, PrincipalRef } from '@/contracts/principal';
+import { hasEntitlement, type Principal, type PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { giftFunds, giftPaymentRails, type GiftFundRow, type GiftPaymentRailRow, type GiftRail } from '@/db/schema';
 import { toGuestHandoff, type GuestHandoff } from '../external/handoff';
@@ -50,18 +50,39 @@ export async function listGiftFundEntries(db: Db): Promise<GiftFundEntry[]> {
 
 const fromRow = (r: GiftFundRow): GiftFundEntry => ({ id: r.id, title: r.title, description: r.description, active: r.active, sortOrder: r.sortOrder, origin: 'admin' });
 
+/** Most funds there can be, the defaults included. Keeps `list_gift_links` inside its output budget. */
+export const MAX_GIFT_FUNDS = 12;
+
+/**
+ * Creates or changes one fund. A field left out keeps its current value: re-saving a fund with a new
+ * title keeps its description and its place. On a first save, a default keeps its place and a new
+ * fund goes after the defaults.
+ */
 export async function upsertGiftFund(
   db: Db,
   input: { id: string; title: string; description?: string; active?: boolean; sortOrder?: number; updatedBy: PrincipalRef },
   now: Date = new Date(),
 ): Promise<GiftFundRow> {
-  // Saving a default without an order keeps its place; a new fund goes after the defaults.
   const defaultAt = DEFAULT_GIFT_FUNDS.findIndex((d) => d.id === input.id);
-  const sortOrder = input.sortOrder ?? (defaultAt >= 0 ? defaultAt * 10 : 100);
-  const values = { id: input.id, title: input.title, description: input.description ?? null, active: input.active ?? true, sortOrder, updatedBy: input.updatedBy, createdAt: now, updatedAt: now };
-  const { id: _id, createdAt: _c, ...update } = values;
+  const fallback = DEFAULT_GIFT_FUNDS[defaultAt];
+  const values = {
+    id: input.id,
+    title: input.title,
+    description: input.description ?? fallback?.description ?? null,
+    active: input.active ?? true,
+    sortOrder: input.sortOrder ?? (defaultAt >= 0 ? defaultAt * 10 : 100),
+    updatedBy: input.updatedBy,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const update = definedOnly({ title: input.title, description: input.description, active: input.active, sortOrder: input.sortOrder, updatedBy: input.updatedBy, updatedAt: now });
   const [row] = await db.insert(giftFunds).values(values).onConflictDoUpdate({ target: giftFunds.id, set: update }).returning();
   return row!;
+}
+
+/** The fields a caller actually supplied, so an upsert never overwrites a value with "not given". */
+function definedOnly<T extends Record<string, unknown>>(o: T): Partial<T> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
 export async function listGiftRailRows(db: Db, opts: { includeInactive?: boolean } = {}): Promise<GiftPaymentRailRow[]> {
@@ -72,13 +93,14 @@ export async function listGiftRailRows(db: Db, opts: { includeInactive?: boolean
     .orderBy(asc(giftPaymentRails.sortOrder), asc(giftPaymentRails.rail));
 }
 
+/** Creates or changes one rail. A field left out (the payee name, the order) keeps its current value. */
 export async function upsertGiftRail(
   db: Db,
   input: { rail: GiftRail; handle: string; recipientName?: string; active?: boolean; sortOrder?: number; updatedBy: PrincipalRef },
   now: Date = new Date(),
 ): Promise<GiftPaymentRailRow> {
   const values = { rail: input.rail, handle: input.handle, recipientName: input.recipientName ?? null, active: input.active ?? true, sortOrder: input.sortOrder ?? RAIL_ORDER.indexOf(input.rail) * 10, updatedBy: input.updatedBy, createdAt: now, updatedAt: now };
-  const { rail: _r, createdAt: _c, ...update } = values;
+  const update = definedOnly({ handle: input.handle, recipientName: input.recipientName, active: input.active, sortOrder: input.sortOrder, updatedBy: input.updatedBy, updatedAt: now });
   const [row] = await db.insert(giftPaymentRails).values(values).onConflictDoUpdate({ target: giftPaymentRails.rail, set: update }).returning();
   return row!;
 }
@@ -133,8 +155,12 @@ export function isMissingGiftTable(e: unknown): boolean {
   return false;
 }
 
-/** Anyone who reached the site through an invitation, and admins. Never an anonymous visitor. */
-const seesPersonal = (p: Principal) => p.kind === 'guest' || p.kind === 'admin';
+/**
+ * A guest whose invitation is live (it is what grants `view_event`), and admins. Never an anonymous
+ * visitor, and never a guest whose invitation was revoked: their session outlives the invitation, but
+ * the resolver derives no entitlements for them, and the couple's address must not outlive it either.
+ */
+const seesPersonal = (p: Principal) => (p.kind === 'guest' && hasEntitlement(p, 'view_event')) || p.kind === 'admin';
 
 /**
  * The funds and the ways to give, for this viewer. With no rail configured there is nothing to
@@ -145,7 +171,8 @@ export async function listGiftFunds(db: Db, principal: Principal): Promise<GiftF
   // Configuration in the database is not trusted either (the same rule `toGuestHandoff` applies to
   // URLs): a handle is re-validated on the way out, so a row written behind the capability layer
   // cannot smuggle a path into a link or a stranger's details onto the page.
-  const railRows = (await listGiftRailRows(db)).flatMap((r) => {
+  const [allRails, allFunds] = await Promise.all([listGiftRailRows(db), listGiftFundEntries(db)]);
+  const railRows = allRails.flatMap((r) => {
     if (!RAILS[r.rail]) return [];
     const parsed = parseRailHandle(r.rail, r.handle);
     return parsed.ok ? [{ ...r, handle: parsed.handle }] : [];
@@ -166,7 +193,7 @@ export async function listGiftFunds(db: Db, principal: Principal): Promise<GiftF
       needsInvitation: hidden,
     };
   });
-  const entries = (await listGiftFundEntries(db)).filter((f) => f.active);
+  const entries = allFunds.filter((f) => f.active);
   const funds = entries.map((f) => {
     const links: GiftFundLink[] = [];
     for (const r of railRows) {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GiftRail } from '@/db/schema';
+import { GIFT_RAILS, type GiftRail } from '@/db/schema';
 
 /**
  * The payment networks a gift of money can travel over (ADR-0013), and everything the site knows
@@ -30,6 +30,10 @@ export interface RailSpec {
   fee: string;
   /** How to send, for `direct` rails; `{handle}` and `{name}` are filled in. */
   instructions?: string;
+  /** The same instructions for when the couple have not entered a payee name. Never an invented one. */
+  instructionsWithoutName?: string;
+  /** The rail as it reads in a sentence: "send it with Zelle or a check by mail". */
+  inSentence: string;
   source: { url: string; verifiedAt: string };
 }
 
@@ -55,6 +59,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
       .pipe(z.union([z.email(), z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/)])),
     fee: 'Zelle itself charges no fee and moves money straight from your bank to ours. A few banks add their own, so check with yours if you are unsure.',
     instructions: 'Open your own bank’s app or website, choose Zelle, and send to {handle}.',
+    inSentence: 'Zelle',
     source: { url: 'https://www.zelle.com/faq', verifiedAt: VERIFIED },
   },
   venmo: {
@@ -73,6 +78,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     // No `amount`: the site never suggests one (ADR-0004 §6).
     url: (handle, note) => `https://venmo.com/${encodeURIComponent(handle)}?txn=pay&note=${encodeURIComponent(note)}`,
     fee: 'Free from your Venmo balance, bank account or debit card. Venmo adds 3% if you pay with a credit card.',
+    inSentence: 'Venmo',
     source: { url: 'https://venmo.com/resources/our-fees/', verifiedAt: VERIFIED },
   },
   paypal: {
@@ -88,6 +94,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     // paypal.me/<name> 301s here; linking the destination skips a hop and keeps the allowlist to one host.
     url: (handle) => `https://www.paypal.com/paypalme/${encodeURIComponent(handle)}`,
     fee: 'Free from your PayPal balance or bank account when you choose “Friends and Family”. PayPal adds a fee if you pay with a card.',
+    inSentence: 'PayPal',
     source: { url: 'https://www.paypal.com/us/digital-wallet/paypal-consumer-fees', verifiedAt: VERIFIED },
   },
   cashapp: {
@@ -103,6 +110,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     // Cash App documents cash.app/$cashtag as the payment URL every $Cashtag gets.
     url: (handle) => `https://cash.app/$${encodeURIComponent(handle)}`,
     fee: 'Free from your Cash App balance or debit card. Cash App adds 3% if you pay with a credit card.',
+    inSentence: 'Cash App',
     source: { url: 'https://cash.app/help/3123-what-is-a-cashtag', verifiedAt: VERIFIED },
   },
   check: {
@@ -123,11 +131,14 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
       .pipe(z.string().min(10, 'Enter the full mailing address, one line per row.').max(300)),
     fee: 'No fee.',
     instructions: 'Make it out to {name} and mail it to:\n{handle}',
+    instructionsWithoutName: 'Mail it to:\n{handle}',
+    inSentence: 'a check by mail',
     source: { url: '/gifts', verifiedAt: VERIFIED },
   },
 };
 
-export const RAIL_ORDER: readonly GiftRail[] = ['zelle', 'venmo', 'paypal', 'cashapp', 'check'];
+/** Display order: the schema's own list, so adding a rail is one edit. */
+export const RAIL_ORDER: readonly GiftRail[] = GIFT_RAILS;
 
 export function parseRailHandle(rail: GiftRail, raw: string): { ok: true; handle: string } | { ok: false; message: string } {
   const r = RAILS[rail].handle.safeParse(raw);
@@ -135,8 +146,14 @@ export function parseRailHandle(rail: GiftRail, raw: string): { ok: true; handle
   return { ok: false, message: r.error.issues[0]?.message ?? `That is not a valid ${RAILS[rail].displayName} detail.` };
 }
 
-/** Fills a `direct` rail's instructions. A check with no payee falls back to the couple's names. */
+/**
+ * Fills a `direct` rail's instructions. A payee the couple did not enter is left out rather than
+ * guessed: a check made out to a name nobody chose can bounce. Both placeholders are filled in one
+ * pass by a replacer function, so a `$&`, `{name}` or `{handle}` typed into an address or a name is
+ * text, never a pattern.
+ */
 export function railInstructions(spec: RailSpec, handle: string, recipientName: string | null): string | null {
-  if (!spec.instructions) return null;
-  return spec.instructions.replace('{handle}', handle).replace('{name}', recipientName ?? 'Sara or Tyler');
+  const template = recipientName ? spec.instructions : (spec.instructionsWithoutName ?? spec.instructions);
+  if (!template) return null;
+  return template.replace(/\{(name|handle)\}/g, (_, key: string) => (key === 'name' ? (recipientName ?? '') : handle));
 }

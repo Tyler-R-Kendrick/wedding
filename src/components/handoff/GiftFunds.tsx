@@ -1,9 +1,6 @@
 import type { GiftLinks } from '@/capabilities/list_gift_links';
-
-function list(items: readonly string[]): string {
-  if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} or ${items[items.length - 1]}`;
-}
+import { list } from '@/domain/gifts/copy';
+import { RAILS } from '@/domain/gifts/rails';
 
 /**
  * Gifts of money (ADR-0013): what they can go toward, and how to send one.
@@ -60,7 +57,7 @@ export function GiftFunds({ data }: { data: Pick<GiftLinks, 'copy' | 'funds' | '
             ) : null}
             {direct.length ? (
               <p className="mt-3 measure hint">
-                {f.links.length ? 'Prefer' : 'Send it with'} {list(direct.map((r) => (r.rail === 'check' ? 'a check' : r.displayName)))}
+                {f.links.length ? 'Prefer' : 'Send it with'} {list(direct.map((r) => RAILS[r.rail].inSentence), 'or')}
                 {f.links.length ? '? See' : ': see'} <a href="#gifts-ways-title">{copy.waysHeading.toLowerCase()}</a>.
               </p>
             ) : null}

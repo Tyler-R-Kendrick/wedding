@@ -12,6 +12,8 @@ export interface AllowedHost {
   pathPrefix?: string;
   /** Match this hostname only, no subdomains (for pinned partner hosts like www.google.com). */
   exact?: boolean;
+  /** The whole path must match, for a host with no fixed prefix to pin (a username at the root). */
+  pathPattern?: RegExp;
 }
 
 export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
@@ -23,7 +25,9 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'withjoy.com' },
   // Gifts of money go to the couple's own account (ADR-0013). Each rail is pinned to the one shape
   // its link is built in (`src/domain/gifts/rails.ts`): Venmo's pay link, PayPal.Me, a $Cashtag.
-  { host: 'venmo.com', exact: true },
+  // Venmo's has no prefix (venmo.com/<username>), so its path must be exactly one username-shaped
+  // segment: never /u/…/settings, /code, /account/…, or anything nested.
+  { host: 'venmo.com', exact: true, pathPattern: /^\/[A-Za-z0-9_-]{5,30}$/ },
   { host: 'www.paypal.com', pathPrefix: '/paypalme/', exact: true },
   { host: 'cash.app', pathPrefix: '/$', exact: true },
   // Maps only, on the pinned hosts: never google.com/search, docs.google.com, or apple.com/iphone.
@@ -67,6 +71,7 @@ export function assertAllowedRedirect(url: string | URL): Result<URL, Capability
   for (const entry of ALLOWED_REDIRECT_HOSTS) {
     if (!hostMatches(hostname, entry)) continue;
     if (entry.pathPrefix && !parsed.pathname.startsWith(entry.pathPrefix)) continue;
+    if (entry.pathPattern && !entry.pathPattern.test(parsed.pathname)) continue;
     return ok(parsed);
   }
   return err(new CapabilityError('forbidden', 'This link is not on our list of trusted partners.', { host: hostname }));

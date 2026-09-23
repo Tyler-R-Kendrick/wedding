@@ -104,9 +104,10 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
 }
 
 function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
-  // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave line.
-  const inline = nav.primary.length + nav.more.length <= 6;
-  const sideItems = inline ? allItems(nav) : nav.primary;
+  // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave
+  // line. "Sign in" counts toward the six and always stays in the frieze, never on the architrave.
+  const inline = allItems(nav).length <= 6;
+  const sideItems = inline ? allItems(nav) : [...nav.primary, ...(nav.account ? [nav.account] : [])];
   const architrave = inline ? [] : nav.more;
   const half = Math.ceil(sideItems.length / 2);
   const left = sideItems.slice(0, half);

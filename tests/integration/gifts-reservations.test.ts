@@ -13,8 +13,8 @@ import type { AdminId, AuthIdentityId, GuestId, HouseholdId, IdempotencyKey } fr
 import { newId } from '@/contracts/ids';
 import type { AdminPrincipal, GuestPrincipal, Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
-import { eq, sql } from 'drizzle-orm';
-import { externalActionRecords, giftLinks, giftPaymentRails, reservationVenues } from '@/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { externalActionRecords, giftFunds, giftLinks, giftPaymentRails, reservationVenues } from '@/db/schema';
 import { FORBIDDEN_GIFT_WORDS } from '@/domain/gifts/copy';
 import { listAuditEvents } from '@/lib/audit';
 import { resetProviders } from '@/providers/registry';
@@ -174,6 +174,49 @@ describe('gifts of money (ADR-0013)', () => {
     expect(asGuest.value.data.rails.find((x) => x.rail === 'check')?.instructions).toBe(`Make it out to Sara + Tyler and mail it to:\nSara + Tyler\n${STREET}\nChicago, IL 60603`);
   });
 
+  it('stops showing personal details once an invitation is revoked, though the session lives on', async () => {
+    // The resolver derives no entitlements for a guest whose invitation was revoked or expired, but
+    // their session is still a `guest` one. The couple's address must go with the invitation.
+    const revoked: GuestPrincipal = { ...guest, entitlements: new Set() };
+    const r = await run(listGiftLinksCapability, revoked, {});
+    expect(r.ok).toBe(true);
+    const text = JSON.stringify(r);
+    expect(text).not.toContain(ZELLE);
+    expect(text).not.toContain(STREET);
+    expect(r.ok && r.value.data.rails.filter((x) => x.needsInvitation).map((x) => x.rail)).toEqual(['zelle', 'check']);
+  });
+
+  it('keeps what a save leaves out: a fund’s place and words, a rail’s payee', async () => {
+    const fund = async (input: Record<string, unknown>) => {
+      const r = await run(adminUpsertGiftFund, admin, input, { idempotencyKey: key() });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      return r.ok ? r.value.data : null;
+    };
+    // A default hidden by its first row keeps its built-in words.
+    expect(await fund({ id: 'home', title: 'Our home', active: false })).toMatchObject({ description: 'Toward a house of our own.', sortOrder: 10, active: false });
+    expect(await fund({ id: 'home', title: 'Our home', sortOrder: 55, description: 'A porch, eventually.' })).toMatchObject({ sortOrder: 55, description: 'A porch, eventually.' });
+    expect(await fund({ id: 'home', title: 'Our first home' })).toMatchObject({ title: 'Our first home', sortOrder: 55, description: 'A porch, eventually.' });
+    // Back to the built-in default (no row), which later tests read.
+    await (await getDb()).delete(giftFunds).where(eq(giftFunds.id, 'home'));
+
+    const rail = await run(adminUpsertGiftRail, admin, { rail: 'venmo', handle: '@Sara-Tyler' }, { idempotencyKey: key() });
+    expect(rail.ok && rail.value.data.recipientName).toBe('Sara + Tyler');
+  });
+
+  it('never invents who a check is made out to', async () => {
+    const db = await getDb();
+    await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'check'));
+    const noName = await run(adminUpsertGiftRail, admin, { rail: 'check', handle: ['Sara + Tyler', STREET, 'Chicago, IL 60603'] }, { idempotencyKey: key() });
+    expect(!noName.ok && noName.error.details).toMatchObject({ issues: [{ path: 'recipientName' }] });
+    // A row with no payee (written before this rule, or by hand) says where to mail it, and nothing more.
+    await db.insert(giftPaymentRails).values({ rail: 'check', handle: `${STREET}\nChicago, IL 60603`, recipientName: null, active: true, sortOrder: 40, updatedBy: { kind: 'system', component: 'test' } });
+    const r = await run(listGiftLinksCapability, guest, {});
+    expect(r.ok && r.value.data.rails.find((x) => x.rail === 'check')?.instructions).toBe(`Mail it to:\n${STREET}\nChicago, IL 60603`);
+    expect(JSON.stringify(r)).not.toContain('Sara or Tyler');
+    const withName = await run(adminUpsertGiftRail, admin, { rail: 'check', handle: ['Sara + Tyler', STREET, 'Chicago, IL 60603'], recipientName: 'Sara + Tyler' }, { idempotencyKey: key() });
+    expect(withName.ok).toBe(true);
+  });
+
   it('lets the couple rename, hide and add funds; the defaults need no row', async () => {
     expect((await run(adminUpsertGiftFund, admin, { id: 'adoption', title: 'Growing our family', active: false }, { idempotencyKey: key() })).ok).toBe(true);
     expect((await run(adminUpsertGiftFund, admin, { id: 'date-nights', title: 'Date nights', description: 'Dinner somewhere new.', sortOrder: 15 }, { idempotencyKey: key() })).ok).toBe(true);
@@ -228,6 +271,48 @@ describe('gifts of money (ADR-0013)', () => {
     expect(r.ok && r.value.data.funds[0]!.links.map((l) => l.rail)).toEqual(['venmo']);
     expect(JSON.stringify(r)).not.toContain('evil.example');
     await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'cashapp'));
+  });
+
+  it('caps the number of funds, and at the cap the concierge can still read the whole page', async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const id = `extra-fund-${i}`;
+      const r = await run(adminUpsertGiftFund, admin, { id, title: `A fund with a long enough title ${i}`.padEnd(80, '.'), description: 'x'.repeat(200) }, { idempotencyKey: key() });
+      if (!r.ok) {
+        expect(r.error.details).toMatchObject({ issues: [{ path: 'id' }] });
+        break;
+      }
+      ids.push(id);
+    }
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.length).toBeLessThan(30); // the cap refused one
+    const db = await getDb();
+    // Every rail configured, so every fund carries every link.
+    for (const [rail, handle] of [['paypal', 'SaraTyler'], ['cashapp', '$SaraTyler']] as const) {
+      expect((await run(adminUpsertGiftRail, admin, { rail, handle }, { idempotencyKey: key() })).ok, rail).toBe(true);
+    }
+    for (const surface of ['ai', 'webmcp'] as const) {
+      const r = await run(listGiftLinksCapability, guest, {}, { surface });
+      expect(r.ok, `${surface} ${JSON.stringify(r).slice(0, 300)}`).toBe(true);
+      // Room left for registry links on top of a full set of funds.
+      expect(r.ok && JSON.stringify(r.value.data).length, surface).toBeLessThan(26_000);
+    }
+    await db.delete(giftFunds).where(inArray(giftFunds.id, ids));
+    await db.delete(giftPaymentRails).where(inArray(giftPaymentRails.rail, ['paypal', 'cashapp']));
+  });
+
+  it('keeps /admin/gifts up when a rail row names a rail this build does not know', async () => {
+    const db = await getDb();
+    await db.execute(sql`INSERT INTO gift_payment_rails (rail, handle, active, sort_order, updated_by) VALUES ('carrier-pigeon', 'coop 4', true, 99, '{"kind":"system","component":"test"}'::jsonb)`);
+    try {
+      const a = await run(adminListGiftLinks, admin, {});
+      expect(a.ok, JSON.stringify(a)).toBe(true);
+      expect(a.ok && a.value.data.rails.map((x) => x.rail)).not.toContain('carrier-pigeon');
+      const g = await run(listGiftLinksCapability, guest, {});
+      expect(g.ok && g.value.data.rails.map((x) => x.rail)).not.toContain('carrier-pigeon');
+    } finally {
+      await db.execute(sql`DELETE FROM gift_payment_rails WHERE rail = 'carrier-pigeon'`);
+    }
   });
 
   it('keeps /gifts and /admin/gifts up on a database the migration has not reached (a preview)', async () => {

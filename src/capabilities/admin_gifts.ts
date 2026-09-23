@@ -7,7 +7,7 @@ import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, parseRailHandle, RAILS, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
+import { isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
 import { appServices } from './context';
 import { giftLinkViewSchema } from './list_gift_links';
 
@@ -96,6 +96,11 @@ export const adminUpsertGiftFund = defineCapability<z.infer<typeof fundInput>, z
   output: fundSchema,
   async handler(ctx, i) {
     const { db } = appServices(ctx);
+    const existing = await listGiftFundEntries(db);
+    if (!existing.some((f) => f.id === i.id) && existing.length >= MAX_GIFT_FUNDS) {
+      const message = `There can be up to ${MAX_GIFT_FUNDS} funds. Hide or rename one instead of adding another.`;
+      return err(new CapabilityError('validation', message, { issues: [{ path: 'id', message }] }));
+    }
     const row = await upsertGiftFund(db, { ...i, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_fund', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { active: row.active } });
     return ok({ data: { id: row.id, title: row.title, description: row.description, active: row.active, sortOrder: row.sortOrder, origin: 'admin' as const }, sources: [] });
@@ -114,6 +119,8 @@ const railInput = z.object({
 const railRowSchema = z.object({ rail: z.enum(GIFT_RAILS), displayName: z.string(), handle: z.string(), recipientName: z.string().nullable(), active: z.boolean(), sortOrder: z.number(), updatedAt: z.string() });
 
 const toRailRow = (r: Awaited<ReturnType<typeof upsertGiftRail>>) => ({ rail: r.rail, displayName: RAILS[r.rail].displayName, handle: r.handle, recipientName: r.recipientName, active: r.active, sortOrder: r.sortOrder, updatedAt: r.updatedAt.toISOString() });
+/** A row this build no longer knows (written by hand, or a rail since removed) is left out, not fatal. */
+const knownRail = (r: { rail: string }) => Object.hasOwn(RAILS, r.rail);
 
 /**
  * Admin: where a gift of money goes (ADR-0013) — the couple's own Venmo, PayPal.Me, $Cashtag, Zelle
@@ -144,6 +151,14 @@ export const adminUpsertGiftRail = defineCapability<z.infer<typeof railInput>, z
       if (!allowed.ok) return err(new CapabilityError('validation', allowed.error.message, { issues: [{ path: 'handle', message: allowed.error.message }] }));
     }
     const { db } = appServices(ctx);
+    // A check is made out to someone, and only the couple know to whom: no name, no check rail.
+    if (i.rail === 'check' && !i.recipientName) {
+      const current = (await listGiftRailRows(db, { includeInactive: true })).find((r) => r.rail === 'check');
+      if (!current?.recipientName) {
+        const message = 'Enter the name checks should be made out to.';
+        return err(new CapabilityError('validation', message, { issues: [{ path: 'recipientName', message }] }));
+      }
+    }
     const row = await upsertGiftRail(db, { rail: i.rail, handle: parsed.handle, recipientName: i.recipientName, active: i.active, sortOrder: i.sortOrder, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_rail', id: row.rail }, outcome: 'success', requestId: ctx.requestId, metadata: { active: row.active } });
     return ok({ data: toRailRow(row), sources: [] });
@@ -181,7 +196,7 @@ export const adminListGiftLinks = defineCapability<unknown, z.infer<typeof listO
       }),
     ]);
     const [funds, rails] = money ?? [[], []];
-    return ok({ data: { rows: rows.map(toRow), effective, funds, rails: rails.map(toRailRow), fundsAvailable: money !== null }, sources: [] });
+    return ok({ data: { rows: rows.map(toRow), effective, funds, rails: rails.filter(knownRail).map(toRailRow), fundsAvailable: money !== null }, sources: [] });
   },
 });
 

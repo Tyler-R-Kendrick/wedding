@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { sendSignInCode } from '../_lib/actions';
 import { currentPrincipal } from '../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
@@ -18,6 +19,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   // to people who already are. Say so and send them on, rather than asking for a code they don't need.
   const principal = await currentPrincipal();
   if (principal.kind === 'guest' || principal.kind === 'admin') {
+    // A link that asked for sign-in on the way somewhere (`?next=/rsvp`) goes there: nothing to do here.
+    // (`/sign-in` itself is a safe path too, and would loop.)
+    if (isSafeReturnPath(sp.next) && sp.next.split('?')[0]!.replace(/\/+$/, '') !== '/sign-in') redirect(sp.next);
     return (
       <AuthShell eyebrow="Welcome back" title="You’re already signed in" lede={<p>Pick up where you left off.</p>}>
         <Actions>
@@ -34,6 +38,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
             Sign out
           </Link>
         </Actions>
+        {/* A couple who claimed their own invitation are signed in as a guest; the console is a separate sign-in. */}
+        {principal.kind === 'guest' ? <AdminSignInHint /> : null}
       </AuthShell>
     );
   }
@@ -50,13 +56,19 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         </Actions>
       </form>
       <p className="auth-hint">If you receive nothing within a minute, check spam — or open your invitation link again to start fresh.</p>
-      {/* The couple sign in to the console through a separate, allowlisted flow (admin_sign_in). */}
-      <p className="auth-hint">
-        Sara or Tyler?{' '}
-        <Link className="auth-link" href="/sign-in/admin">
-          Sign in to manage the site
-        </Link>
-      </p>
+      <AdminSignInHint />
     </AuthShell>
+  );
+}
+
+/** The couple sign in to the console through a separate, allowlisted flow (admin_sign_in). */
+function AdminSignInHint() {
+  return (
+    <p className="auth-hint">
+      Sara or Tyler?{' '}
+      <Link className="auth-link" href="/sign-in/admin">
+        Sign in to manage the site
+      </Link>
+    </p>
   );
 }

@@ -123,7 +123,7 @@ export default async function AdminGiftsPage() {
             fields={[
               { name: 'id', label: 'Id (slug)', type: 'text', required: true, help: 'honeymoon, home, adoption and next-adventures are built in. A new id adds a fund.' },
               { name: 'title', label: 'Title', type: 'text', required: true },
-              { name: 'description', label: 'One line about it', type: 'text' },
+              { name: 'description', label: 'One line about it', type: 'text', help: 'Leave empty to keep what it says now.' },
               { name: 'sortOrder', label: 'Order', type: 'number', min: 0, max: 1000, help: 'Built in: 0, 10, 20, 30. Leave empty to keep a fund where it is.' },
               { name: 'active', label: 'Shown to guests', type: 'checkbox', defaultValue: true },
             ]}
@@ -175,7 +175,7 @@ export default async function AdminGiftsPage() {
                 ],
               },
               { name: 'handle', label: 'Username, email, phone or address', type: 'lines', required: true, help: 'Venmo: @username. PayPal: your PayPal.Me name. Cash App: $Cashtag. Zelle: the email or US mobile number you enrolled. Check: the mailing address, one line per row.' },
-              { name: 'recipientName', label: 'Name guests should see', type: 'text', help: 'As the app shows it, or who a check is made out to, so guests know they have the right person.' },
+              { name: 'recipientName', label: 'Name guests should see', type: 'text', help: 'As the app shows it, or who a check is made out to, so guests know they have the right person. Required for checks. Leave empty to keep the current name.' },
               { name: 'active', label: 'Shown to guests', type: 'checkbox', defaultValue: true },
             ]}
           />

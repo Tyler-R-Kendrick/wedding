@@ -55,6 +55,14 @@ test.describe('claim journey', () => {
     // hardcoded origin here used to do on every port but one.
     expect((await cap(request, 'register_passkey', { step: 'list' }, { cookie: `${rotated.name}=${rotated.value}` })).status()).toBe(422);
 
+    // Every header's "Sign in" reaches signed-in guests too: they are told so, still offered the
+    // console's own sign-in (the couple may have claimed their invitation), and a `next` is honoured.
+    await page.goto('/sign-in');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('You’re already signed in');
+    await expect(page.getByRole('link', { name: 'Sign in to manage the site' })).toHaveAttribute('href', '/sign-in/admin');
+    await page.goto('/sign-in?next=%2Frsvp');
+    await expect(page).toHaveURL(/\/rsvp(\/|$)/);
+
     // Sign out ends the session.
     await page.goto('/sign-out');
     await page.getByRole('button', { name: 'Sign out' }).click();

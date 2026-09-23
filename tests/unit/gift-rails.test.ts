@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GIFT_RAILS } from '@/db/schema';
 import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY, giftsStatement } from '@/domain/gifts/copy';
 import { DEFAULT_GIFT_FUNDS, isMissingGiftTable } from '@/domain/gifts/funds';
-import { parseRailHandle, RAILS } from '@/domain/gifts/rails';
+import { parseRailHandle, RAILS, railInstructions } from '@/domain/gifts/rails';
 import { isAllowedRedirect } from '@/lib/redirects';
 
 const handle = (rail: Parameters<typeof parseRailHandle>[0], raw: string) => {
@@ -60,9 +60,19 @@ describe('gift rails (ADR-0013)', () => {
   it('pins each payment host to the one link shape the site builds', () => {
     // A configured gift LINK (the older kind) can point at any allowlisted URL; these must not let
     // one reach a sign-in page, a checkout, or another path on the same host.
-    for (const url of ['https://www.paypal.com/signin', 'https://www.paypal.com/checkoutnow?token=x', 'https://paypal.com/paypalme/x', 'https://cash.app/login', 'https://evil.cash.app/$x', 'https://account.venmo.com/pay', 'https://evil.venmo.com/x']) {
+    for (const url of ['https://www.paypal.com/signin', 'https://www.paypal.com/checkoutnow?token=x', 'https://paypal.com/paypalme/x', 'https://cash.app/login', 'https://evil.cash.app/$x', 'https://account.venmo.com/pay', 'https://evil.venmo.com/x', 'https://venmo.com/u/anyone/settings', 'https://venmo.com/code?user_id=1', 'https://venmo.com/', 'https://venmo.com/Sara-Tyler/extra']) {
       expect(isAllowedRedirect(url), url).toBe(false);
     }
+    expect(isAllowedRedirect('https://venmo.com/Sara-Tyler?txn=pay&note=x')).toBe(true);
+  });
+
+  it('fills instructions with what the couple typed, literally, and never a payee they did not name', () => {
+    // `$&`, `$'` and `{name}` in a String.replace replacement are patterns; here they must be text.
+    expect(railInstructions(RAILS.check, "1 Main $' St\n{name} Lane", "Sara $& Tyler")).toBe("Make it out to Sara $& Tyler and mail it to:\n1 Main $' St\n{name} Lane");
+    expect(railInstructions(RAILS.check, '1 Main St', '{handle}')).toBe('Make it out to {handle} and mail it to:\n1 Main St');
+    expect(railInstructions(RAILS.check, '1 Main St', null)).toBe('Mail it to:\n1 Main St');
+    expect(railInstructions(RAILS.zelle, 'us@example.com', null)).toBe('Open your own bank’s app or website, choose Zelle, and send to us@example.com.');
+    expect(railInstructions(RAILS.venmo, 'Sara-Tyler', null)).toBeNull();
   });
 
   it('keeps personal details personal and says what each network charges', () => {
