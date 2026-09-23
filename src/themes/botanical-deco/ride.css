@@ -48,6 +48,12 @@
   position: relative;
 }
 
+/* No smooth scrolling on the ride's page: the browser's own glide to a `#stop` link would still be
+   running when the ride lands on that stop, and would carry it past. The ride has its own motion. */
+html:has(.bd-ride) {
+  scroll-behavior: auto;
+}
+
 .bd-ride [data-line="red"],
 .bd-ride[data-line="red"] { --line-c: var(--color-line-red); }
 

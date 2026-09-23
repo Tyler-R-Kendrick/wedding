@@ -210,15 +210,22 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       if (!g || y == null) return;
       cancelFlight();
       userDriven.current = false;
-      const pFrom = trainPosition((window.scrollY + g.rideTop - g.railTop) / g.step, n);
+      const fromY = window.scrollY;
+      const pFrom = trainPosition((fromY + g.rideTop - g.railTop) / g.step, n);
+      // Off the stage (still in the opening, or already past the Loop) there is no train to ease yet:
+      // the scroll itself glides to the platform, rather than cutting a screen in its first frame.
+      const onStage = fromY + g.rideTop >= g.railTop - 1 && fromY + g.rideTop + g.stageH <= g.railTop + g.railH + 1;
       const travelled = next - pFrom;
-      if (Math.abs(travelled) < 1e-3) {
+      if (Math.abs(travelled) < 1e-3 && Math.abs(fromY - y) < 1) {
         window.scrollTo({ top: y, behavior: 'instant' });
         return;
       }
       const ms = duration ?? rideDuration(travelled);
       const start = performance.now();
-      if (Math.ceil(Math.max(pFrom, next)) - Math.floor(Math.min(pFrom, next)) > 1) {
+      const docked = Math.abs(pFrom - Math.round(pFrom)) < 0.002;
+      // Express only from a train standing at a platform: a second tap mid-run carries on normally,
+      // so the moment already half in view never snaps.
+      if (onStage && docked && Math.abs(next - Math.round(pFrom)) > 1) {
         // Express: the stations between flash past on the line, not on the stage.
         const origin = Math.round(pFrom);
         express.current = { from: origin, to: next };
@@ -229,7 +236,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       }
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / ms);
-        const top = t < 1 ? g.railTop - g.rideTop + rawScrollFor(pFrom + travelled * glide(t)) * g.step : y;
+        const top = t >= 1 ? y : onStage ? g.railTop - g.rideTop + rawScrollFor(pFrom + travelled * glide(t)) * g.step : fromY + (y - fromY) * glide(t);
         window.scrollTo({ top, behavior: 'instant' });
         if (t < 1) flight.current = { raf: window.requestAnimationFrame(tick), to: next };
         else {
@@ -315,8 +322,10 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       const p = trainPosition(raw, n);
       const index = Math.round(p);
       const docked = Math.abs(p - index) < 0.002;
+      // Any scroll that is not the ride moving itself (a wheel, the scrollbar, find-in-page, a screen
+      // reader) takes the train off the station it stood at.
       if (docked) standing = index;
-      else if (userDriven.current) standing = null;
+      else if (!flight.current) standing = null;
       // The car card keeps the train mid-strip and the line slides under it. It is a real scroller, so
       // a guest can swipe to a far station and focus scrolls to a tabbed one; while they do, it is theirs.
       // (Scroll is written before any style, so it never forces a restyle mid-frame.)
@@ -349,7 +358,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       lastP = p;
       if (index !== last.index || docked !== last.docked || toward !== last.toward) {
         if (index !== last.index) el.dataset.line = stops[index]?.line ?? 'red';
-        st.dataset.docked = docked ? 'true' : 'false';
         last = { index, docked, toward };
         setAt(last);
       }
@@ -410,7 +418,8 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     };
     const hasScrollEnd = 'onscrollend' in window;
     const onScroll = () => {
-      schedule();
+      // A button ride draws its own frames (renderNow), so its scrolls need no second pass.
+      if (!flight.current) schedule();
       const y = window.scrollY;
       if (!flight.current && y !== lastY) heading = Math.sign(y - lastY);
       lastY = y;
@@ -452,7 +461,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     window.addEventListener('touchcancel', release);
     window.addEventListener('pointerdown', hold);
     window.addEventListener('pointerup', release);
-    window.addEventListener('pointercancel', release);
     window.addEventListener('resize', remeasure);
     window.addEventListener('wheel', interrupt, { passive: true });
     window.addEventListener('touchstart', interruptPointer, { passive: true });
@@ -467,7 +475,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       window.removeEventListener('touchcancel', release);
       window.removeEventListener('pointerdown', hold);
       window.removeEventListener('pointerup', release);
-      window.removeEventListener('pointercancel', release);
       window.clearTimeout(settleTimer);
       window.removeEventListener('resize', remeasure);
       window.removeEventListener('wheel', interrupt);
@@ -575,10 +582,14 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     const fitAll = () => {
       raf = 0;
       const items = root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop') ?? [];
+      // All writes, then all reads, then all writes: one layout for the whole line, not one per stop.
       items.forEach((li) => delete li.dataset.tight);
-      items.forEach((li) => {
+      const tight = [...items].map((li) => {
         const platform = li.querySelector<HTMLElement>('.bd-ride__platform');
-        if (platform && li.querySelector('.bd-stopcard__media') && platform.scrollHeight > platform.clientHeight + 2) li.dataset.tight = '';
+        return Boolean(platform && li.querySelector('.bd-stopcard__media') && platform.scrollHeight > platform.clientHeight + 2);
+      });
+      items.forEach((li, i) => {
+        if (tight[i]) li.dataset.tight = '';
       });
     };
     const soon = () => {
@@ -654,7 +665,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
   const current = stops[at.index];
   const upcoming = at.docked ? stops[at.index + 1] : stops[at.toward];
   const tabbable = enhanced ? (focusIdx ?? (ride ? at.index : 0)) : null;
-  const align = (i: number) => (i < 1 ? 'start' : i > n - 2 ? 'end' : undefined);
 
   return (
     <section
@@ -667,7 +677,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
       style={{ '--stops': n, '--step-factor': factor, '--dwell': DWELL } as CSSProperties}
     >
       <div ref={rail} className="bd-ride__rail">
-        <div ref={stage} className="bd-ride__stage" data-docked="true">
+        <div ref={stage} className="bd-ride__stage">
           <header className="bd-ride__head">
             <h2 id="ride-title" className="bd-ride__title">
               {title}
@@ -703,10 +713,7 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
                     className="bd-ride-map__stop"
                     data-kind={s.kind}
                     data-line={s.line}
-                    data-next-line={stops[i + 1]?.line}
                     data-current={ride && i === at.index ? '' : undefined}
-                    data-passed={ride && i < at.index ? '' : undefined}
-                    data-align={align(i)}
                   >
                     <a
                       className="bd-ride-map__link"

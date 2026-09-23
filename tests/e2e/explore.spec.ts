@@ -90,8 +90,10 @@ test.describe('explore journey', () => {
     await expect(bar).toContainText('Next stopGreater together than alone');
     // The moment's words come before its picture, in the page and on screen.
     const words = await page.locator('#starved-rock .bd-stopcard__title').boundingBox();
+    // (A moment too tall for a short window drops its picture before any words: then there is none.)
     const picture = await page.locator('#starved-rock .bd-stopcard__media').boundingBox();
-    expect(words && picture && (words.x + words.width <= picture.x + 1 || words.y + words.height <= picture.y + 1), 'words lead the picture').toBe(true);
+    expect(words, 'the words are on the stage').not.toBeNull();
+    if (words && picture) expect(words.x + words.width <= picture.x + 1 || words.y + words.height <= picture.y + 1, 'words lead the picture').toBe(true);
     // Only the station at the platform is exposed; the scenery is hidden from assistive technology
     // and out of the tab order, but its words stay in the page for find-in-page.
     await expect(page.locator('#starved-rock')).not.toHaveAttribute('aria-hidden', /.*/);

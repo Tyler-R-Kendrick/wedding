@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { StoryChapter } from '@/db/schema/content';
 import type { StorySectionView, TimelineMomentView } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
@@ -94,18 +94,21 @@ function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; st
 function StationCard({ moment, stop, chapter }: { moment: TimelineMomentView; stop: RideStop; chapter?: string }) {
   const photo = moment.media.find((m) => m.src);
   const when = formatPartialDate(moment.occurredOn);
+  // What places the moment: its date (else its chapter's name), then where it happened; only what is known.
+  const placing: ReactNode[] = [when ? <time dateTime={moment.occurredOn}>{when}</time> : chapter, moment.locationLabel].filter(Boolean);
   return (
     <article className="bd-stopcard" aria-labelledby={`${stop.slug}-title`}>
       <div className="bd-stopcard__text">
-        <Meta>
-          {when ? <time dateTime={moment.occurredOn}>{when}</time> : chapter}
-          {moment.locationLabel ? (
-            <>
-              <span aria-hidden="true"> · </span>
-              {moment.locationLabel}
-            </>
-          ) : null}
-        </Meta>
+        {placing.length ? (
+          <Meta>
+            {placing.map((part, i) => (
+              <Fragment key={i}>
+                {i ? <span aria-hidden="true"> · </span> : null}
+                {part}
+              </Fragment>
+            ))}
+          </Meta>
+        ) : null}
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
           {moment.title}
         </h3>
