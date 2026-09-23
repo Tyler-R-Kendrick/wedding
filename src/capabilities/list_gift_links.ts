@@ -4,7 +4,8 @@ import type { ContentSourceId } from '@/contracts/ids';
 import { ok } from '@/contracts/result';
 import { seedId } from '@/db/seed/sources';
 import { guestHandoffSchema } from '@/domain/external/schemas';
-import { GIFTS_COPY, giftsStatement, listGiftLinks } from '@/domain/gifts';
+import { GIFT_RAILS } from '@/db/schema';
+import { GIFTS_COPY, giftsStatement, listGiftFunds, listGiftLinks } from '@/domain/gifts';
 import { appServices } from './context';
 
 const input = z.object({}).optional();
@@ -16,6 +17,31 @@ export const giftLinkViewSchema = guestHandoffSchema.extend({
   placeholder: z.boolean(),
   origin: z.enum(['admin', 'configured', 'placeholder']),
   verifiedAt: z.string().nullable(),
+});
+
+const railEnum = z.enum(GIFT_RAILS);
+
+export const giftFundLinkSchema = guestHandoffSchema.extend({ rail: railEnum });
+
+/** A fund and one hand-off per link rail (ADR-0013). */
+export const giftFundViewSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  links: z.array(giftFundLinkSchema),
+});
+
+export const giftRailViewSchema = z.object({
+  rail: railEnum,
+  displayName: z.string(),
+  mode: z.enum(['link', 'direct']),
+  fee: z.string(),
+  /** Where the fee line was read, and when (ADR-0011). */
+  source: z.object({ url: z.string(), verifiedAt: z.string() }),
+  recipientName: z.string().nullable(),
+  /** Null when the details are personal and the viewer did not arrive through an invitation. */
+  instructions: z.string().nullable(),
+  needsInvitation: z.boolean(),
 });
 
 const output = z.object({
@@ -33,11 +59,24 @@ const output = z.object({
     // never names a provider the couple have not chosen (brief §2: Registry is NOT settled).
     registryPending: z.string(),
     adventurePending: z.string(),
+    fundsIntro: z.string(),
+    waysHeading: z.string(),
+    waysIntro: z.string(),
+    needsInvitation: z.string(),
+    confirmName: z.string(),
+    venmoPrivacy: z.string(),
     askIntro: z.string(),
     askLabel: z.string(),
     thanks: z.string(),
   }),
   links: z.array(giftLinkViewSchema),
+  /**
+   * What a gift of money can go toward, and the ways to send it. Empty until the couple add at least
+   * one way to give in /admin/gifts. Zelle and mailing details are personal: an anonymous viewer (and
+   * the concierge answering one) gets the rail and its fee, never the email, phone or address.
+   */
+  funds: z.array(giftFundViewSchema),
+  rails: z.array(giftRailViewSchema),
   /**
    * The gift arrangements in prose, computed from what is actually configured.
    *
@@ -58,8 +97,9 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
   name: 'list_gift_links',
   title: 'Gift links',
   description:
-    'Where to find the couple’s wishlist and how to help with their next adventures: the registry provider links they have configured. ' +
-    'Reads only. Purchases and gifts happen on the provider’s own site; this never takes payment and never suggests amounts.',
+    'Where to find the couple’s wishlist and how to help with their next adventures: the registry provider links they have configured, ' +
+    'the funds a gift of money can go toward (honeymoon, home, adoption, next adventures) and the ways to send one (Zelle, Venmo, PayPal, Cash App, a check), each with what that network charges. ' +
+    'Reads only. Money goes from the guest’s own account straight to the couple’s; this never takes payment, never holds money, and never suggests amounts.',
   kind: 'read',
   auth: 'anonymous',
   requires: [],
@@ -67,11 +107,16 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
   exposure: { ui: true, ai: true, webmcp: true },
   input,
   output,
-  maxOutputChars: 6_000,
+  maxOutputChars: 12_000,
   async handler(ctx) {
     const { db, providers } = appServices(ctx);
-    const links = await listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') });
-    const counts = { registry: links.filter((l) => l.kind === 'registry' && !l.placeholder).length, adventures: links.filter((l) => l.kind === 'adventure-fund' && !l.placeholder).length };
-    return ok({ data: { copy: GIFTS_COPY, links, statement: giftsStatement(counts) }, sources: [BRIEF_CITATION] });
+    const [links, { funds, rails }] = await Promise.all([listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') }), listGiftFunds(db, ctx.principal)]);
+    const counts = {
+      registry: links.filter((l) => l.kind === 'registry' && !l.placeholder).length,
+      adventures: links.filter((l) => l.kind === 'adventure-fund' && !l.placeholder).length,
+      funds: funds.map((f) => f.title),
+      rails: rails.map((r) => (r.rail === 'check' ? 'a check by mail' : r.displayName)),
+    };
+    return ok({ data: { copy: GIFTS_COPY, links, funds, rails, statement: giftsStatement(counts) }, sources: [BRIEF_CITATION] });
   },
 });

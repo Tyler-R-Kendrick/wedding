@@ -21,6 +21,11 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'theknot.com' },
   { host: 'zola.com' },
   { host: 'withjoy.com' },
+  // Gifts of money go to the couple's own account (ADR-0013). Each rail is pinned to the one shape
+  // its link is built in (`src/domain/gifts/rails.ts`): Venmo's pay link, PayPal.Me, a $Cashtag.
+  { host: 'venmo.com', exact: true },
+  { host: 'www.paypal.com', pathPrefix: '/paypalme/', exact: true },
+  { host: 'cash.app', pathPrefix: '/$', exact: true },
   // Maps only, on the pinned hosts: never google.com/search, docs.google.com, or apple.com/iphone.
   { host: 'www.google.com', pathPrefix: '/maps/', exact: true },
   { host: 'maps.google.com', exact: true },

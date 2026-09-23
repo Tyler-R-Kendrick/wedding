@@ -23,6 +23,7 @@ import { draftMyTransportationClaim } from './draft_my_transportation_claim';
 import { getMyTransportationOptions } from './get_my_transportation_options';
 import { getReservationOptions } from './get_reservation_options';
 import { listGiftLinksCapability } from './list_gift_links';
+import { openGiftFund } from './open_gift_fund';
 import { openGiftLink } from './open_gift_link';
 import { openReservationLink } from './open_reservation_link';
 import { prepareReservation } from './prepare_reservation';
@@ -41,6 +42,7 @@ export const transportGiftsReservationsCapabilities: readonly AnyCapability[] = 
   claimMyTransportationBenefit,
   listGiftLinksCapability,
   openGiftLink,
+  openGiftFund,
   getReservationOptions,
   prepareReservation,
   openReservationLink,
@@ -56,6 +58,7 @@ export {
   claimMyTransportationBenefit,
   listGiftLinksCapability,
   openGiftLink,
+  openGiftFund,
   getReservationOptions,
   prepareReservation,
   openReservationLink,

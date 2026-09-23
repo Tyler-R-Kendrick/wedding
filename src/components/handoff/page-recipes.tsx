@@ -5,6 +5,7 @@ import { Placeholder, placeholderHint } from '@/components/provenance/Placeholde
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
 import { ClaimBenefitFlow } from './ClaimBenefitFlow';
 import { ExternalHandoffCard } from './ExternalHandoffCard';
+import { GiftFunds } from './GiftFunds';
 import { GiftLinkCard } from './GiftLinkCard';
 import { HandoffClickRecorder } from './HandoffClickRecorder';
 import { RedemptionCard } from './RedemptionCard';
@@ -152,7 +153,8 @@ export type GiftsPageData = GiftLinks;
 export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
   const registry = data.links.filter((l) => l.kind === 'registry');
   const adventures = data.links.filter((l) => l.kind === 'adventure-fund');
-  const pending = !registry.length || !adventures.length || data.links.some((l) => l.placeholder);
+  const funds = data.funds.length > 0;
+  const pending = !registry.length || (!adventures.length && !funds) || data.links.some((l) => l.placeholder);
   return (
     <main id="main" className="bg-neutral text-primary">
       <HandoffClickRecorder />
@@ -176,13 +178,18 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         <h2 id="gifts-adventures" className="text-2xl">
           {data.copy.adventureHeading}
         </h2>
+        {funds ? (
+          <div className="mt-3">
+            <GiftFunds data={data} />
+          </div>
+        ) : null}
         {adventures.length ? <p className="mt-3 measure">{data.copy.adventureIntro}</p> : null}
         <div className="mt-4">
-          {adventures.length ? adventures.map((l) => <GiftLinkCard key={l.id} link={l} />) : <Placeholder>{data.copy.adventurePending}</Placeholder>}
+          {adventures.length ? adventures.map((l) => <GiftLinkCard key={l.id} link={l} />) : funds ? null : <Placeholder>{data.copy.adventurePending}</Placeholder>}
         </div>
       </section>
       <footer className={SECTION}>
-        {data.links.length ? <p className="measure hint">{data.copy.handoffNote}</p> : null}
+        {data.links.length || funds ? <p className="measure hint">{data.copy.handoffNote}</p> : null}
         {pending ? (
           <div className="mt-2 measure">
             <Placeholder>{data.copy.placeholderNote}</Placeholder>

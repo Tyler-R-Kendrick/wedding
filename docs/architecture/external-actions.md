@@ -41,6 +41,7 @@ flowchart LR
 | `claim_my_transportation_benefit` | transaction | guest | `claim_transportation_benefit` | **yes** | **explicit** (ui-only redemption) | **yes** | ui · ai · webmcp (models get `confirmation_required {requires_ui}`) |
 | `list_gift_links` | read | anonymous | – | – | – | – | ui · ai · webmcp |
 | `open_gift_link` | external | anonymous | – | – | inline | no (anonymous cannot hold keys; the record is a log, not a commitment) | ui · ai · webmcp |
+| `open_gift_fund` | external | anonymous | – | – | inline | no (as above; the site never learns whether a gift was sent) | ui · ai · webmcp |
 | `get_reservation_options` | read | anonymous | – | – | – | – | ui · ai · webmcp |
 | `prepare_reservation` | draft | guest | – | – | issues a token only when an API rung can commit (none yet) | – | ui · ai · webmcp |
 | `open_reservation_link` | external | anonymous | – | – | inline | no | ui · ai · webmcp |
@@ -50,6 +51,8 @@ flowchart LR
 | `admin_list_transportation_entitlements` | read | admin | `admin_guest_ops` | – | – | – | ui |
 | `admin_upsert_gift_link` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_list_gift_links` | read | admin | `admin_content` | – | – | – | ui |
+| `admin_upsert_gift_fund` | action | admin | `admin_content` | – | inline | yes | ui |
+| `admin_upsert_gift_rail` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_upsert_reservation_venue` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_list_reservation_venues` | read | admin | `admin_content` | – | – | – | ui |
 | `admin_list_external_actions` | read | admin | `admin_audit` | – | – | – | ui |
@@ -96,13 +99,27 @@ flowchart LR
 
 ## Gifts
 
-`gift_links` (admin) → `REGISTRY_LINKS_JSON` / `CASH_FUND_LINKS_JSON` (env) → built-in
-`TODO(Tyler & Sara)` placeholders, per kind. Copy is fixed by the brief
+`gift_links` (admin) → the built-in empty state, per kind. (`REGISTRY_LINKS_JSON` /
+`CASH_FUND_LINKS_JSON` were a second copy and are gone.) Copy is fixed by the brief
 (`src/domain/gifts/copy.ts`): "Help us with our next adventures", presence first, never
 "cash fund" / "donate", no amounts — tests assert it. Every link is validated against the
 redirect allowlist when written **and** when read (a tampered row is dropped). The gifts page
 renders one `ExternalHandoffCard` per link naming the provider; there is no iframe, no form,
 no purchase state (no provider API is integrated; ADR-0004 §5 "check with the provider").
+
+### Gifts of money (ADR-0013)
+
+Funds (`honeymoon`, `home`, `adoption`, `next-adventures` in code; `gift_funds` rows override or add)
+× ways to give (`gift_payment_rails`: `zelle`, `venmo`, `paypal`, `cashapp`, `check`). The admin
+enters a **handle**, never a URL; `src/domain/gifts/rails.ts` validates it and builds the network's
+documented link (Venmo pay link with the fund as its note, PayPal.Me, `cash.app/$cashtag`). Handles
+are re-validated at read time and every built link still passes the allowlist, where each payment
+host is pinned to that one path shape. Zelle and check details are personal: `listGiftFunds` returns
+them only to `guest` and `admin` principals, so anonymous, `ai` and `webmcp` readers get the rail and
+its fee line but never an email, phone or address, and `/gifts` is served `private, no-store`. Each
+rail carries its network's fee in the network's words with source and `verifiedAt`. No rail → no
+funds on the page. `open_gift_fund` records a `gift_fund` hand-off (host only). The site never
+learns whether money was sent.
 
 ## Reservations
 
@@ -151,7 +168,7 @@ gate at read time. Tests: `tests/unit/transport-domain.test.ts`, `tests/unit/red
 | `/transportation` (benefit section) | `get_my_transportation_options` | guest; benefits filtered by `principal.guestId`; secrets ui-only | `transport-claims.test.ts` "shows the benefit… only to its owner", ai/webmcp hidden |
 | Review and claim | `draft_my_transportation_claim` | `claim_transportation_benefit`; own entitlement else `not_found` | same file; `voucher.spec.ts` |
 | Confirm and claim | `claim_my_transportation_benefit` | `claim_transportation_benefit` + step-up + ui confirmation + key; handler: owner, eligible, window, one claim | double-claim, cross-household, manager, minor, stale, anonymous, ai surface, unique index |
-| `/gifts` | `list_gift_links` / `open_gift_link` | anonymous; allowlist at read | `gifts-reservations.test.ts`, `redirect.spec.ts` |
+| `/gifts` | `list_gift_links` / `open_gift_link` / `open_gift_fund` | anonymous; allowlist at read; Zelle and address only for `guest` / `admin` | `gifts-reservations.test.ts`, `gift-rails.test.ts`, `redirect.spec.ts` |
 | Reservation cards | `get_reservation_options` / `open_reservation_link` / `prepare_reservation` | anonymous / anonymous / guest | ladder rungs, unavailable, tampered row, contact name absent |
 | `/admin/transport` | `admin_list_*`, `admin_assign_*`, `admin_revoke_*`, `admin_upload_*` | `admin_guest_ops` / `admin_integrations` | guest → forbidden; upload counts only |
 | `/admin/gifts`, `/admin/reservations` | `admin_upsert_*`, `admin_list_*` | `admin_content`; allowlist at write | EVIL URL matrix → `validation`; guest → forbidden |

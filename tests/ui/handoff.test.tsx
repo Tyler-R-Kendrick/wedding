@@ -83,12 +83,50 @@ describe('handoff cards', () => {
 
   it('gifts recipe frames "next adventures", names each provider, and never says cash fund or donate', () => {
     const link = { ...handoff, id: 'r', kind: 'registry' as const, note: null, placeholder: true, origin: 'placeholder' as const, verifiedAt: null };
-    render(<GiftsPageRecipe data={{ copy: GIFTS_COPY, statement: giftsStatement({ registry: 1, adventures: 1 }), links: [link, { ...link, id: 'a', kind: 'adventure-fund' as const, providerDisplayName: 'Joy', provider: 'withjoy' }] }} />);
+    render(<GiftsPageRecipe data={{ copy: GIFTS_COPY, statement: giftsStatement({ registry: 1, adventures: 1 }), links: [link, { ...link, id: 'a', kind: 'adventure-fund' as const, providerDisplayName: 'Joy', provider: 'withjoy' }], funds: [], rails: [] }} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Help us with our next adventures');
     expect(screen.getByText(/via Zola/)).toBeTruthy();
     expect(screen.getByText(/via Joy/)).toBeTruthy();
     const text = document.body.textContent ?? '';
     for (const re of FORBIDDEN_GIFT_WORDS) expect(text).not.toMatch(re);
     expect(document.querySelectorAll('input')).toHaveLength(0); // never a checkout form
+  });
+
+  it('gifts of money: one button per app on each fund, fees said plainly, personal details gated', () => {
+    const venmo = (fund: string) => ({ rail: 'venmo' as const, provider: 'venmo', providerDisplayName: 'Venmo', label: 'Give with Venmo', url: `https://venmo.com/Sara-Tyler?txn=pay&note=${encodeURIComponent(fund)}`, host: 'venmo.com', opensNewTab: true, disclosure: 'This opens Venmo.' });
+    const source = { url: 'https://venmo.com/resources/our-fees/', verifiedAt: '2026-09-22' };
+    render(
+      <GiftsPageRecipe
+        data={{
+          copy: GIFTS_COPY,
+          statement: '',
+          links: [],
+          funds: [
+            { id: 'honeymoon', title: 'Our honeymoon', description: 'Toward the first trip of our married life.', links: [venmo('Our honeymoon')] },
+            { id: 'home', title: 'Our home', description: null, links: [venmo('Our home')] },
+          ],
+          rails: [
+            { rail: 'zelle', displayName: 'Zelle', mode: 'direct', fee: 'Zelle itself charges no fee.', source, recipientName: null, instructions: null, needsInvitation: true },
+            { rail: 'venmo', displayName: 'Venmo', mode: 'link', fee: 'Venmo adds 3% if you pay with a credit card.', source, recipientName: 'Sara + Tyler', instructions: null, needsInvitation: false },
+          ],
+        }}
+      />,
+    );
+    const buttons = screen.getAllByRole('link', { name: /Give with Venmo/ });
+    expect(buttons).toHaveLength(2);
+    // Same visible label on every fund, so the accessible name carries which fund it is for.
+    expect(buttons[0]!.textContent).toContain('toward Our honeymoon');
+    expect(buttons[1]!.getAttribute('href')).toContain('note=Our%20home');
+    expect(buttons[0]!.getAttribute('rel')).toContain('noopener');
+    expect(buttons[0]!.dataset.recordCapability).toBe('open_gift_fund');
+    expect(screen.getByRole('heading', { name: 'Ways to send it' })).toBeTruthy();
+    expect(screen.getByText(GIFTS_COPY.needsInvitation)).toBeTruthy();
+    expect(screen.getByText(/Venmo adds 3%/)).toBeTruthy();
+    expect(screen.getAllByText(/Prefer Zelle\?/)).toHaveLength(2);
+    // With a way to give, the "still to come" note for this section is gone.
+    expect(document.body.textContent).not.toContain(GIFTS_COPY.adventurePending);
+    const text = document.body.textContent ?? '';
+    for (const re of FORBIDDEN_GIFT_WORDS) expect(text).not.toMatch(re);
+    expect(document.querySelectorAll('input, form')).toHaveLength(0);
   });
 });

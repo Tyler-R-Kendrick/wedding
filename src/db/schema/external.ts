@@ -1,7 +1,7 @@
 import { index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import type { PrincipalRef } from '@/contracts/principal';
 
-export const EXTERNAL_ACTION_KINDS = ['gift_link', 'reservation_link', 'reservation_prepare', 'transport_claim'] as const;
+export const EXTERNAL_ACTION_KINDS = ['gift_link', 'gift_fund', 'reservation_link', 'reservation_prepare', 'transport_claim'] as const;
 export type ExternalActionKind = (typeof EXTERNAL_ACTION_KINDS)[number];
 export const EXTERNAL_ACTION_STATUSES = ['initiated', 'prepared', 'committed', 'failed'] as const;
 export type ExternalActionStatus = (typeof EXTERNAL_ACTION_STATUSES)[number];

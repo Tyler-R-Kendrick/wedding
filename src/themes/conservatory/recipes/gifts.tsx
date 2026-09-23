@@ -1,4 +1,6 @@
+import { GiftFunds } from '@/components/handoff/GiftFunds';
 import { GiftLinkCard } from '@/components/handoff/GiftLinkCard';
+import { HandoffClickRecorder } from '@/components/handoff/HandoffClickRecorder';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, GiftsProps } from '@/themes/content-types';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
@@ -19,9 +21,14 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
   const adventures = data.links.filter((l) => l.kind === 'adventure-fund');
   // A section with no configured links is the normal state today: the couple have not chosen a
   // provider, so the page says that rather than naming one. `pending` also drives the closing note.
-  const pending = !registry.length || !adventures.length || data.links.some((l) => l.placeholder);
+  // Gifts of money (ADR-0013) fill the adventures section on their own; a registry provider's
+  // adventure link is optional beside them.
+  const funds = data.funds.length > 0;
+  const pending = !registry.length || (!adventures.length && !funds) || data.links.some((l) => l.placeholder);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
+      {/* Records a hand-off when a gift link is clicked; the link works without it. */}
+      <HandoffClickRecorder />
       <PageHead eyebrow={data.copy.eyebrow} title={data.copy.title} lede={data.copy.lede} />
 
       <Section id="gifts-registry" labelledBy="gifts-registry-title">
@@ -48,20 +55,24 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
 
       <Section id="gifts-adventures" ground="wash" labelledBy="gifts-adventures-title">
         <SectionHeading level={2} id="gifts-adventures-title" title={data.copy.adventureHeading} />
+        {funds ? (
+          <Prose>
+            <GiftFunds data={data} />
+          </Prose>
+        ) : null}
         {adventures.length ? (
           <Prose>
             <p>{data.copy.adventureIntro}</p>
           </Prose>
         ) : null}
-        {adventures.length ? (
-          adventures.map((l) => <GiftLinkCard key={l.id} link={l} />)
-        ) : (
+        {adventures.length ? adventures.map((l) => <GiftLinkCard key={l.id} link={l} />) : null}
+        {!adventures.length && !funds ? (
           <Prose>
             <p>
               <Placeholder block todo={data.copy.adventurePending} />
             </p>
           </Prose>
-        )}
+        ) : null}
       </Section>
 
       <Section id="gifts-note">
@@ -70,7 +81,7 @@ export const ConservatoryGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }
               links, and it ships in the capability response the concierge reads, so it is
               conditional on there being a link rather than always printed. What replaces it is the
               one thing a guest can actually do here while the couple are still deciding. */}
-          {data.links.length ? <p>{data.copy.handoffNote}</p> : null}
+          {data.links.length || funds ? <p>{data.copy.handoffNote}</p> : null}
           {pending ? (
             <p>
               <Placeholder block todo={data.copy.placeholderNote} />

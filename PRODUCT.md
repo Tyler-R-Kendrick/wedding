@@ -249,7 +249,7 @@ the app does not serve, so the two cannot drift again.
 | RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message | Act | RSVP_OPEN |
 | Travel & Stay | `/travel` | Airports, CAA block, alternative hotels, neighbourhood, weather expectations | Inform + Act | SAVE_THE_DATE |
 | Transportation | `/transportation` | Valet, transit, rides and voucher, parking, accessibility | Inform + Act | INVITATIONS_OPEN |
-| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards | Act | RSVP_OPEN |
+| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards; funds (honeymoon, home, adoption, next adventures) given person to person via Zelle / Venmo / PayPal / Cash App / check (ADR-0013) | Act | RSVP_OPEN |
 | Photos & Video | `/photos` | Engagement photos, guest uploads, professional galleries by rights | Celebrate | TEASER |
 | Ask Us | `/ask-us` | Grounded concierge with citations | Inform | TEASER |
 | Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | INVITATIONS_OPEN |
