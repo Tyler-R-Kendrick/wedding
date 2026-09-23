@@ -45,7 +45,7 @@ stages/01-sitemap/lib/sitemap.ts        PAGES: id, path, title, audience, visibl
 - **Change a skeleton component** → stage 4 changes with it (it renders stage
   3's kit unchanged; only its content and tokens differ).
 - **Change a design token** (`src/themes/<id>/DESIGN.md` → `npm run design:sync`)
-  → stage 4 copies the new `theme.css` on its next build (`scripts/sync-themes.mjs`).
+  → stage 4 copies the new `theme.css` on its next build (`stages/04-placeholder/scripts/sync-themes.mjs`).
 
 Changes never flow *up*: a stage cannot edit what it reads. If stage 3 shows
 that a wireframe is wrong, fix the wireframe.
