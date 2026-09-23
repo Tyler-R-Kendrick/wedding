@@ -23,6 +23,23 @@ export const CONTENT_COPY = {
     filter: 'Filter adventures',
     empty: 'Nothing matches that filter yet. More adventures are being written.',
     borrow: 'Borrow a few for your weekend on',
+    atlas: {
+      eyebrow: 'The atlas',
+      title: 'Everywhere it has taken us',
+      pinned: (pinned: number, total: number) =>
+        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. Choose a pin to read about it, or find it in the list below.`,
+      keyPin: 'An adventure, numbered as in the list',
+      keyCluster: 'Several close together: choose it to zoom in',
+      keyVenue: 'Where we are getting married',
+      open: 'Read the whole adventure',
+      close: 'Back to the whole map',
+      counts: (photos: number, paragraphs: number) =>
+        photos || paragraphs
+          ? [paragraphs ? `${paragraphs} ${paragraphs === 1 ? 'journal page' : 'journal pages'}` : '', photos ? `${photos} ${photos === 1 ? 'photograph' : 'photographs'}` : ''].filter(Boolean).join(' · ')
+          : 'Photographs and journal pages are still to come.',
+      venueEyebrow: 'Where it all leads',
+      venueMore: 'Explore the venue',
+    },
   },
   adventureDetail: {
     memory: 'The memory',

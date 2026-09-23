@@ -23,6 +23,21 @@ export const FEATURE_FLAGS = {
   TRAVEL_LIVE_SEARCH: true,
   /** Transportation benefit claims (Uber vouchers / manual codes). */
   TRANSPORT_BENEFITS: true,
+  /**
+   * The three parts of an RSVP ship independently (docs/architecture/rsvp-seating.md › Parts).
+   * Each flag releases one part; the RSVP window still decides whether anything can be answered.
+   * Attendance is the prerequisite: a guest's guest and meal are asked about someone who is coming.
+   * Dietary and accessibility notes ride with attendance.
+   */
+  RSVP_ATTENDANCE: true,
+  /** Plus-ones, where an invitation includes one. Off: the question is not asked and nothing is written. */
+  RSVP_PLUS_ONES: true,
+  /**
+   * Meal choices. OFF until the menu is set: guests see meals as "opens once the menu is set" and
+   * are never asked. Turn on (`FLAG_RSVP_MEALS=on`) once the menu is published in /admin/events —
+   * it is also held shut by the data until a menu exists for an event with a meal.
+   */
+  RSVP_MEALS: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

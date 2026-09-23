@@ -52,8 +52,8 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/pass
  */
 const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/explore-caa', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure'] as const;
 
-/** Behind the invitation: the RSVP form and the three pages a guest plans their weekend from. */
-const GUEST_ROUTES = ['/rsvp', '/your-weekend', '/trip', '/transportation'] as const;
+/** Behind the invitation: the RSVP, two of its per-part pages, and the three pages a guest plans their weekend from. */
+const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation'] as const;
 
 /** The console. One per family of screens, plus the index; `admin-console.spec.ts` walks all 21. */
 const ADMIN_ROUTES = ['/admin', '/admin/audit', '/admin/jobs', '/admin/flags', '/admin/guests', '/admin/invitations', '/admin/events', '/admin/rsvp', '/admin/content', '/admin/travel', '/admin/media', '/admin/ai'] as const;

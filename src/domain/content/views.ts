@@ -134,6 +134,14 @@ export const adventureCardSchema = z.object({
   title: z.string(),
   summary: textBlockSchema,
   placeName: z.string().optional(),
+  /** "Utica, IL": the place's town and region, for the atlas. */
+  where: z.string().optional(),
+  /** Where the atlas pins it: the memory's own coordinates, else its place's. Absent until someone knows. */
+  coordinates: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
+  /** The first photograph with a source, when there is one; the atlas shows it on the adventure's page. */
+  cover: mediaViewSchema.extend({ src: z.string() }).optional(),
+  /** How many photographs and journal paragraphs the full entry holds, so a summary can say so. */
+  counts: z.object({ photos: z.number().int(), paragraphs: z.number().int() }).optional(),
   dateLabel: textBlockSchema.optional(),
   season: z.enum(SEASONS).optional(),
   timeOfDay: z.enum(TIMES_OF_DAY).optional(),

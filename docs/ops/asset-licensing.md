@@ -149,6 +149,27 @@ credits listed in `public/assets/ATTRIBUTIONS.md`, and the portraits remain
 generated portrayals. A recording is never cut to present a portrait as a
 photograph, and the guest recording uses the seeded test household only.
 
+### 1f. Cartographic data: the Our Adventures atlas
+
+The world under Our Adventures (`public/assets/atlas/world.svg`) is drawn from
+**Natural Earth** 1:50m vector data, v5.1.2: land, lakes, country boundary lines
+and US/Canadian state lines. Natural Earth is in the **public domain**
+(<https://www.naturalearthdata.com/about/terms-of-use/>); no permission or
+credit is required, and the map's caption credits it anyway.
+
+- **What made it:** `node scripts/generate-atlas.mjs` fetches the four GeoJSON
+  layers from `cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2`,
+  projects them on Equal Earth, simplifies them for the map's zoom range and
+  writes the SVG plus `src/themes/shared/atlas/frame.generated.ts`. Re-running
+  it reproduces the file; nothing is hand-edited.
+- **Not imagery:** the file holds unpainted paths only. It is not a photograph
+  or a generated image, so it takes no §1b ledger entry and no §1c prompt.
+- **Pin positions** come from the `lat`/`lng` of adventure and place records
+  (`src/content/seed/places.json`, `/admin/content`). The three seeded values
+  (the CAA, Millennium Park, Starved Rock State Park) match the coordinates
+  Wikipedia gives for each on 2026-09-22; the CAA's are the ones Explore's
+  Chicago map already uses.
+
 ## 2. License allowlist
 
 | License | Accepted | What we owe | Where recorded |

@@ -3,8 +3,8 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { eDb } from '@/capabilities/rsvp/db';
 import { publicEnv } from '@/lib/env.public';
-import { buildConfirmationEmail, buildProposal, persistHouseholdRsvp, queueRsvpConfirmation } from '@/domain/rsvp';
-import { loadForPrincipal, namesFor, validateFor } from './context';
+import { buildConfirmationEmail, buildProposal, orderParts, persistHouseholdRsvp, queueRsvpConfirmation, type HouseholdRsvpContext, type HouseholdRsvpInput } from '@/domain/rsvp';
+import { loadForPrincipal, namesFor, resolveParts, validateFor } from './context';
 import { submitInputSchema, submitOutputSchema, type SubmitRsvpInput, type SubmitRsvpOutput } from './schemas';
 import { requireGuestPrincipal } from './shared';
 
@@ -38,13 +38,17 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     const db = await eDb(ctx);
     const actor = toPrincipalRef(ctx.principal);
 
-    // Re-validate at submit time: the window may have closed or the menu changed since the draft.
+    // Re-validate at submit time: the window may have closed, a part been switched off, or the menu
+    // changed since the draft. Parts not being answered are re-read from the file, not the draft.
     const hc = await loadForPrincipal(ctx, p.value);
-    const validated = validateFor(hc, p.value.actsFor, 'guest', i);
+    const parts = resolveParts(ctx.flags, hc, i.parts);
+    const validated = validateFor(hc, p.value.actsFor, 'guest', i, parts.ok ? parts.value : new Set(i.parts));
+    if (!validated.ok && validated.error.code === 'forbidden') return err(validated.error);
+    if (!parts.ok) return err(parts.error);
     if (!validated.ok) return err(validated.error);
 
     const mealVersionByEvent = new Map(hc.entitledEvents.map((e) => [e.id, e.mealOptionsVersion]));
-    await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent });
+    await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent, parts: parts.value });
     const proposal = buildProposal(validated.value, namesFor(hc));
     const householdId = hc.household?.id ?? p.value.householdId;
 
@@ -55,14 +59,20 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
       target: { type: 'household', id: householdId },
       outcome: 'success',
       requestId: ctx.requestId,
-      metadata: { responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, noteRows: validated.value.needs.length, via: 'guest' },
+      metadata: { parts: orderParts(parts.value).join(','), responses: validated.value.responses.length, accepted: proposal.lines.filter((l) => l.status === 'accepted').length, noteRows: validated.value.needs.length, via: 'guest' },
     });
+
+    // "Here is what we have for your household" is the whole reply as it now stands, not only the
+    // rows this submission touched: a notes-only or meals-only save used to restate nothing, or
+    // leave out everyone who had declined. Read back from the file, in the caller's scope only.
+    const saved = await loadForPrincipal(ctx, p.value);
+    const onFile = buildProposal(onFileReply(saved), namesFor(saved));
 
     const self = hc.guests.find((g) => g.id === p.value.guestId);
     const editableUntil = hc.window.deadlineAt;
     let emailQueued = false;
     if (self) {
-      const email = buildConfirmationEmail(proposal, {
+      const email = buildConfirmationEmail(onFile, {
         firstName: self.firstName,
         editableUntil: editableUntil ? new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(editableUntil)) : null,
         rsvpUrl: `${publicEnv.siteUrl}/rsvp`,
@@ -72,8 +82,20 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     }
 
     return ok({
-      data: { submittedAt: ctx.now.toISOString(), householdId, lines: proposal.lines, needsRecordedFor: proposal.needsRecordedFor, emailQueued, window: hc.window, editableUntil },
+      data: { submittedAt: ctx.now.toISOString(), householdId, lines: onFile.lines, needsRecordedFor: onFile.needsRecordedFor, emailQueued, window: hc.window, editableUntil },
       sources: [],
     });
   },
 });
+
+/** Every answer on file for the household context, as a reply: events in display order, then guests. */
+function onFileReply(hc: HouseholdRsvpContext): HouseholdRsvpInput {
+  const eventOrder = new Map(hc.entitledEvents.map((e, i) => [e.id, i]));
+  const guestOrder = new Map(hc.guests.map((g, i) => [g.id, i]));
+  const responses = hc.responses
+    .filter((r) => eventOrder.has(r.eventId) && guestOrder.has(r.guestId))
+    .sort((a, b) => eventOrder.get(a.eventId)! - eventOrder.get(b.eventId)! || guestOrder.get(a.guestId)! - guestOrder.get(b.guestId)!)
+    .map((r) => ({ guestId: r.guestId, eventId: r.eventId, status: r.status, mealOptionId: r.mealOptionId, plusOne: r.plusOneAttending ? { attending: true, name: r.plusOneName, mealOptionId: r.plusOneMealOptionId } : null }));
+  const needs = hc.needs.filter((n) => guestOrder.has(n.guestId)).map((n) => ({ guestId: n.guestId, dietary: n.dietary, accessibility: n.accessibility }));
+  return { responses, needs };
+}

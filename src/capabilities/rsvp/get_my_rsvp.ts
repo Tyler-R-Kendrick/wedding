@@ -4,12 +4,20 @@ import { defineCapability } from '@/contracts/capability';
 import { err, ok } from '@/contracts/result';
 import { RSVP_STATUSES } from '@/db/schema';
 import { formatEventDate, formatEventWindow } from '@/domain/events';
-import { loadForPrincipal } from './context';
-import { briefCitation, eventViewSchema, GUEST_READ_MAX_CHARS, plusOnePolicySchema, requireGuestPrincipal, toEventView, windowSchema } from './shared';
+import { nextParts, RSVP_PARTS } from '@/domain/rsvp';
+import { loadForPrincipal, progressFor } from './context';
+import { briefCitation, eventViewSchema, GUEST_READ_MAX_CHARS, partProgressSchema, plusOnePolicySchema, requireGuestPrincipal, toEventView, windowSchema } from './shared';
 
 const input = z.object({}).optional();
 const output = z.object({
   window: windowSchema,
+  /**
+   * The parts of the RSVP — attendance, plusOne, meal, notes — each with whether it is open, and how
+   * much of it this household has answered. `not_applicable` parts are not on this invitation.
+   */
+  parts: z.array(partProgressSchema),
+  /** The parts still wanting an answer that can be asked together in one form, in order. */
+  next: z.array(z.enum(RSVP_PARTS)),
   household: z.object({ id: z.string(), name: z.string() }),
   guests: z.array(z.object({ guestId: z.string(), displayName: z.string(), firstName: z.string(), isMinor: z.boolean(), isSelf: z.boolean() })),
   events: z.array(eventViewSchema.extend({ whenText: z.string(), dateText: z.string(), invited: z.array(z.object({ guestId: z.string(), plusOnePolicy: plusOnePolicySchema })) })),
@@ -23,6 +31,8 @@ const output = z.object({
       /** The menu changed since this choice; the guest should choose again. */
       mealStale: z.boolean(),
       plusOne: z.object({ attending: z.boolean(), name: z.string().nullable(), mealOptionId: z.string().nullable(), mealLabel: z.string().nullable() }).nullable(),
+      /** The plus-one question has been answered for this row (bringing someone or not). */
+      plusOneAnswered: z.boolean(),
       updatedAt: z.string(),
       version: z.number(),
     }),
@@ -64,15 +74,19 @@ export const getMyRsvp = defineCapability<z.infer<typeof input>, MyRsvp>({
         mealOptionId: r.mealOptionId,
         mealLabel: r.mealOptionId ? (mealLabel.get(r.mealOptionId) ?? null) : null,
         mealStale: r.mealOptionId !== null && r.mealOptionsVersion !== eventById.get(r.eventId)!.mealOptionsVersion,
+        plusOneAnswered: r.plusOneAnsweredAt !== null,
         plusOne: r.plusOneAttending || r.plusOneName ? { attending: r.plusOneAttending, name: r.plusOneName, mealOptionId: r.plusOneMealOptionId, mealLabel: r.plusOneMealOptionId ? (mealLabel.get(r.plusOneMealOptionId) ?? null) : null } : null,
         updatedAt: r.updatedAt.toISOString(),
         version: r.version,
       }));
     const last = hc.responses.reduce<Date | null>((acc, r) => (!acc || r.updatedAt > acc ? r.updatedAt : acc), null);
     const surface = ctx.surface ?? 'ui';
+    const parts = progressFor(ctx.flags, hc);
     return ok({
       data: {
         window: hc.window,
+        parts,
+        next: nextParts(parts),
         household: { id: hc.household?.id ?? p.value.householdId, name: hc.household?.name ?? 'Your household' },
         guests: hc.guests.map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), firstName: g.firstName, isMinor: g.isMinor, isSelf: g.id === p.value.guestId })),
         events: hc.entitledEvents.map((e) => ({
