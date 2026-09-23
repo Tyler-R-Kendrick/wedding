@@ -78,3 +78,31 @@ the geometry and the colour, which is where it lives on the real map anyway.
   passes 4.5:1 on Ivory, because station names are set in it.
 - **Truth:** no invented dates, places or captions. A station with no date
   says "Date from Paired", not a plausible year.
+
+## 5. Revision, 2026-09-23 — the ride matches the design
+
+Tyler and Sara's review of the first build: it did not feel smooth or like the
+rest of the site, the "train backdrop" competed with the memories, and the
+cards led with photographs. What changed, and what it replaces above:
+
+- **No depth, no backdrop.** The stage is the page's own Ivory. The Z-depth
+  fly-through (§1 Oryzo, the z-axis gallery) and the floor and skyline (§3.2)
+  are gone: a moment at its station is the only thing on the stage. Travel is a
+  horizontal drift — the moment you leave slides left and fades before the next
+  slides in from the right, its picture moving a little further than its words.
+- **The car card is horizontal everywhere** (§2), as it is above a car's doors:
+  a fat line in each chapter's colour, names angled above it on tall screens, a
+  compact strip with the current name on phones and short windows. Line names
+  ("Red Line") are never printed: the colour is the way-finding.
+- **Words first.** Each moment is a meta line (chapter, or date · place), its
+  title in italic Bodoni, then its words; the photograph follows in a gold
+  hairline frame. Sara's ask: the memory is what catches the eye.
+- **It fits.** The line starts directly under the opening, so the first screen
+  shows it; the pinned stage fits one viewport, stepping the type down the ramp
+  and then letting a picture go before any words have to scroll.
+- **Settling, not snapping.** CSS scroll snap caught almost every position on a
+  ride this long and pulled each mouse-wheel notch back. When scrolling stops
+  between two stations, the train now rolls on to the nearer platform — never
+  while a finger or button is down. The guardrails in §4 still hold; "one custom
+  property" is now two: `--p` on the train and `--d` on the moments beside it.
+
