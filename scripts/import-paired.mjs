@@ -41,6 +41,8 @@ const STORY = join(ROOT, 'src', 'content', 'seed', 'story.json');
 export const CHAPTERS = ['met', 'connection', 'relationship', 'love', 'future', 'engagement', 'marriage'];
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 const TODO = 'TODO(Tyler & Sara)';
+/** Anchors the page owns outside the timeline: the terminal. */
+export const RESERVED_SLUGS = ['the-loop'];
 
 /** Milestones named in words, in line order. The first that matches a stop's title/note sets its line. */
 const MILESTONES = [
@@ -119,6 +121,9 @@ export function parsePartialDate(input) {
   }
   const s = String(input).trim();
   let m;
+  // A bare date exported as an instant ("2022-06-04T00:00:00.000Z") is a calendar day, not a moment:
+  // moving it into Chicago would print June 3. Only a real time of day is read in Chicago.
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})T00:00(?::00(?:\.0+)?)?(?:Z|[+-]00:?00)?$/))) return ymd(m[1], m[2], m[3]);
   if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})T/))) return chicagoDay(new Date(s)) ?? `${m[1]}-${m[2]}-${m[3]}`;
   if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return ymd(m[1], m[2], m[3]);
   if ((m = s.match(/^(\d{4})-(\d{1,2})$/))) return ym(m[1], m[2]);
@@ -190,6 +195,10 @@ export function normalize(records) {
       problems.push(`entry ${i + 1}: no title — skipped`);
       return;
     }
+    if (title.length < 2) {
+      problems.push(`entry ${i + 1} "${title}": a station name needs at least two characters — skipped`);
+      return;
+    }
     const rawDate = pick(r, 'date');
     const occurredOn = parsePartialDate(rawDate);
     if (rawDate != null && rawDate !== '' && !occurredOn) problems.push(`entry ${i + 1} "${title}": could not read the date "${rawDate}" — imported undated`);
@@ -200,12 +209,20 @@ export function normalize(records) {
       title: title.slice(0, 80),
       occurredOn,
       note: String(pick(r, 'note') ?? '').trim(),
-      locationLabel: String(pick(r, 'location') ?? '').trim() || undefined,
+      locationLabel: String(pick(r, 'location') ?? '').trim().slice(0, 120) || undefined,
       photos: photosOf(pick(r, 'photo')),
       chapter: chapter && CHAPTERS.includes(norm(chapter)) ? norm(chapter) : undefined,
       externalRef: `paired:${id != null && id !== '' ? String(id).replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 120) : `${occurredOn ?? 'undated'}-${slugify(title)}`}`,
     });
   });
+  // Two id-less entries with the same title and date would share a ref; the second gets a suffix.
+  const refs = new Set();
+  for (const stop of stops) {
+    let ref = stop.externalRef;
+    for (let n = 2; refs.has(ref); n++) ref = `${stop.externalRef}-${n}`;
+    refs.add(ref);
+    stop.externalRef = ref;
+  }
   stops.sort((a, b) => (a.occurredOn && b.occurredOn ? a.occurredOn.localeCompare(b.occurredOn) || a.index - b.index : a.occurredOn ? -1 : b.occurredOn ? 1 : a.index - b.index));
   return { stops, problems };
 }
@@ -247,15 +264,22 @@ export function merge(existing, imported, { now, storySlugs = new Set(), photoSr
   const byRef = new Map(existing.filter((r) => r.externalRef).map((r) => [r.externalRef, r]));
   const standIns = new Map(existing.filter((r) => !r.externalRef).map((r) => [slugify(r.title), r]));
   const used = new Set();
-  const taken = new Set([...storySlugs]);
+  // A stop that already exists keeps its slug (links and citations point at it), so every existing
+  // slug is reserved before a new stop is named; so are the chapters' anchors and the terminal's.
+  const priors = imported.map((s) => byRef.get(s.externalRef) ?? standIns.get(slugify(s.title)));
+  const taken = new Set([...storySlugs, ...RESERVED_SLUGS, ...existing.map((r) => r.slug)]);
   const report = { updated: [], replaced: [], added: [], keptStandIns: [] };
   const rows = [];
-  for (const s of imported) {
-    const prior = byRef.get(s.externalRef) ?? standIns.get(slugify(s.title));
+  for (const [i, s] of imported.entries()) {
+    const prior = priors[i];
     if (prior) used.add(prior);
-    let slug = prior?.slug ?? slugify(s.title);
-    for (let n = 2; taken.has(slug); n++) slug = `${slugify(s.title)}-${n}`;
-    taken.add(slug);
+    let slug = prior?.slug;
+    if (!slug) {
+      const base = slugify(s.title);
+      slug = base;
+      for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+      taken.add(slug);
+    }
     const src = photoSrc(s, slug);
     const media = src ? [{ alt: src.alt, src: src.src }] : (prior?.media ?? []);
     const note = s.note || `${TODO}: a line about this, if you'd like one.`;

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { and, eq, like, notInArray, or, sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db } from '../client';
 import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed } from '@/content';
@@ -46,10 +46,47 @@ function provenance(p: ProvenanceSeed, now: Date) {
  * never migrates), so the page shows what the seed would, not a 500.
  */
 export function timelineSeedRows(seed: ContentSeed, now: Date): TimelineMomentRow[] {
-  return seed.timeline.map((t, i) => ({
-    id: seedId(ID_BASE.timeline + i), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
+  return seed.timeline.map((t) => ({
+    id: timelineSeedId(t.slug), slug: t.slug, chapter: t.chapter, order: t.order, title: t.title, occurredOn: t.occurredOn ?? null, locationLabel: t.locationLabel ?? null,
     note: t.note, media: t.media, adventureSlug: t.adventureSlug ?? null, externalRef: t.externalRef ?? null, ...provenance(t, now), contentVersion: 1, createdAt: now,
   }));
+}
+
+/**
+ * A station's id follows its slug, never its position in timeline.json: an import that re-dates the
+ * line reorders the file, and a positional id would rewrite one stop's row with another stop's slug
+ * (tripping the unique slug index, or silently landing on a row an admin edited).
+ */
+function timelineSeedId(slug: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < slug.length; i++) h = Math.imul(h ^ slug.charCodeAt(i), 0x01000193) >>> 0;
+  return seedId(ID_BASE.timeline * 1_000_000_000_000 + h);
+}
+
+/**
+ * Upserts the timeline by slug and removes the stations the seed no longer has — but only rows the
+ * seed or the Paired import wrote and nobody has edited since (contentVersion 1). A station typed in
+ * /admin/content, or an edited one, is never touched.
+ */
+export async function seedTimeline(db: Db, seed: ContentSeed, now: Date): Promise<void> {
+  const rows = timelineSeedRows(seed, now);
+  for (const row of rows) {
+    const { id: _id, createdAt: _createdAt, ...update } = row;
+    await db
+      .insert(timelineMoments)
+      .values(row)
+      .onConflictDoUpdate({ target: timelineMoments.slug, set: update, setWhere: sql`${timelineMoments.contentVersion} = 1` });
+  }
+  const keep = rows.map((r) => r.slug);
+  await db
+    .delete(timelineMoments)
+    .where(
+      and(
+        eq(timelineMoments.contentVersion, 1),
+        or(like(timelineMoments.editedBy, 'seed:%'), eq(timelineMoments.editedBy, 'import:paired')),
+        keep.length ? notInArray(timelineMoments.slug, keep) : undefined,
+      ),
+    );
 }
 
 /**
@@ -68,7 +105,7 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
   for (const [i, s] of seed.story.entries()) {
     await upsert(storySections, { id: seedId(ID_BASE.story + i), slug: s.slug, chapter: s.chapter, order: s.order, title: s.title, paragraphs: s.paragraphs, media: s.media, ...provenance(s, now) });
   }
-  for (const row of timelineSeedRows(seed, now)) await upsert(timelineMoments, row);
+  await seedTimeline(db, seed, now);
   for (const [i, p] of seed.places.entries()) {
     await upsert(places, {
       id: seedId(ID_BASE.places + i), slug: p.slug, name: p.name, kind: p.kind, address: p.address ?? null, city: p.city ?? null, region: p.region ?? null,

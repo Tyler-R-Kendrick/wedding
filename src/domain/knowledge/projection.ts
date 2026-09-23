@@ -2,6 +2,7 @@ import { CONTENT_TABLES, type ContentTableName } from '@/db/schema/content';
 import type { KnowledgeKind, KnowledgeRecordInsert } from '@/db/schema/knowledge';
 import type { Db } from '@/db/client';
 import { knowledgeRecords } from '@/db/schema';
+import { isMissingTable } from '@/db/missing-table';
 import { withoutPlaceholders } from '@/domain/content/text';
 import { ROUTES } from '@/domain/routes';
 
@@ -77,7 +78,15 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
 export async function projectKnowledge(db: Db, now: Date = new Date()): Promise<number> {
   const rows: Rows = {
     story_sections: await db.select().from(CONTENT_TABLES.story_sections),
-    timeline_moments: await db.select().from(CONTENT_TABLES.timeline_moments),
+    // Tolerates a database that has not run the migration adding this table yet (a preview reads the
+    // production database and never migrates); an admin save there must not 500 after it committed.
+    timeline_moments: await db
+      .select()
+      .from(CONTENT_TABLES.timeline_moments)
+      .catch((e: unknown) => {
+        if (isMissingTable(e, 'timeline_moments')) return [];
+        throw e;
+      }),
     places: await db.select().from(CONTENT_TABLES.places),
     adventure_memories: await db.select().from(CONTENT_TABLES.adventure_memories),
     recommendations: await db.select().from(CONTENT_TABLES.recommendations),

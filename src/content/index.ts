@@ -71,6 +71,7 @@ export function crossReferenceProblems(seed: ContentSeed): string[] {
   for (const t of seed.timeline) {
     // Chapters and stations share one page and one set of #anchors.
     if (storySlugs.has(t.slug)) problems.push(`timeline.${t.slug}: slug is already a story chapter's anchor on /our-story`);
+    if (t.slug === 'the-loop') problems.push(`timeline.${t.slug}: slug is the terminal's anchor on /our-story`);
     if (t.adventureSlug && !adventureSlugs.has(t.adventureSlug)) problems.push(`timeline.${t.slug}.adventureSlug: unknown adventure "${t.adventureSlug}"`);
   }
   for (const r of seed.recommendations) {

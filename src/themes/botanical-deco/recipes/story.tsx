@@ -6,6 +6,7 @@ import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, StoryProps } from '@/themes/content-types';
 import { formatPartialDate } from '@/themes/shared/format';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
+import { timelineAnchors } from '@/themes/shared/timeline';
 import { kit, More, PageHero } from '../kit';
 import { StoryRide, type LineKey, type RideStop } from '../kit/StoryRide';
 import { Botanical, Photo, firstMedia } from '../media';
@@ -110,6 +111,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
   const lineName = `${frame.site.coupleDisplayName} Line`;
   const stops: RideStop[] = [];
   const cards: ReactNode[] = [];
+  const anchors = timelineAnchors(data.sections, data.timeline);
   const present = CHAPTER_ORDER.filter((c) => data.sections.some((s) => s.chapter === c) || data.timeline.some((m) => m.chapter === c));
 
   present.forEach((chapter, ci) => {
@@ -127,7 +129,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
       const before = stops.at(-1);
       const arriving = before && before.line !== line.key ? { line: before.line, track: before.track } : undefined;
       const when = formatPartialDate(moment.occurredOn);
-      const stop: RideStop = { slug: moment.slug, kind: 'station', line: line.key, lineName: line.name, track, ...(arriving ? { from: arriving } : {}), name: moment.title, ...(when ? { when } : {}) };
+      const stop: RideStop = { slug: anchors.get(moment.id) ?? moment.slug, kind: 'station', line: line.key, lineName: line.name, track, ...(arriving ? { from: arriving } : {}), name: moment.title, ...(when ? { when } : {}) };
       stops.push(stop);
       cards.push(<StationCard key={stop.slug} moment={moment} stop={stop} />);
     }

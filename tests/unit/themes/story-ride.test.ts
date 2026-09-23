@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DWELL, rideDuration, stepFactor, trainPosition } from '@/themes/botanical-deco/kit/StoryRide';
 import { formatPartialDate } from '@/themes/shared/format';
+import { timelineAnchors } from '@/themes/shared/timeline';
 
 describe('Our Story ride', () => {
   it('stops the train at every station before it moves on', () => {
@@ -44,5 +45,16 @@ describe('Our Story ride', () => {
     expect(formatPartialDate('2023')).toBe('2023');
     expect(formatPartialDate('2023-05')).toBe('May 2023');
     expect(formatPartialDate('2023-05-06')).toBe('May 6, 2023');
+  });
+});
+
+describe('timeline anchors', () => {
+  const prov = {} as never;
+  const section = (slug: string) => ({ id: slug, slug, chapter: 'love' as const, title: slug, paragraphs: [], media: [], placeholder: false, provenance: prov });
+  const moment = (id: string, slug: string) => ({ id, slug, chapter: 'love' as const, title: slug, note: { text: 'x', placeholder: false }, media: [], placeholder: false, provenance: prov });
+
+  it('keeps chapters and the terminal on their anchors and moves a colliding station aside', () => {
+    const anchors = timelineAnchors([section('love')], [moment('1', 'love'), moment('2', 'the-loop'), moment('3', 'starved-rock'), moment('4', 'starved-rock')]);
+    expect([...anchors.values()]).toEqual(['love-2', 'the-loop-2', 'starved-rock', 'starved-rock-2']);
   });
 });

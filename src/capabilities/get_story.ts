@@ -36,8 +36,7 @@ export const getStory = defineCapability<z.infer<typeof input>, StoryPageData>({
   async handler(ctx) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
-    const story = await readStory(rctx);
-    const timeline = await getTimeline(rctx);
+    const [story, timeline] = await Promise.all([readStory(rctx), getTimeline(rctx)]);
     return ok({ data: { route: ROUTES.story, title: 'Our Story', sections: story.sections, timeline: timeline.moments }, sources: [...story.sources, ...timeline.sources] });
   },
 });

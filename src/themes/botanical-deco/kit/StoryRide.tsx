@@ -279,21 +279,34 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       measure();
       schedule();
     };
-    // A guest's own wheel, touch or key takes the train back from a button-driven ride.
+    // A guest's own wheel, touch, pointer or scrolling key takes the train back from a button-driven
+    // ride — except presses on the ride's own controls, which queue the next stop instead.
+    const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+    const ownControl = (t: EventTarget | null) => t instanceof Element && Boolean(t.closest('.bd-ride__controls, .bd-ride-map'));
     const interrupt = () => cancelFlight();
+    const interruptKey = (e: globalThis.KeyboardEvent) => {
+      if (SCROLL_KEYS.has(e.key) && !ownControl(e.target)) cancelFlight();
+    };
+    const interruptPointer = (e: Event) => {
+      if (!ownControl(e.target)) cancelFlight();
+    };
     remeasure();
     const ro = new ResizeObserver(remeasure);
     ro.observe(document.body);
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', remeasure);
     window.addEventListener('wheel', interrupt, { passive: true });
-    window.addEventListener('touchstart', interrupt, { passive: true });
+    window.addEventListener('touchstart', interruptPointer, { passive: true });
+    window.addEventListener('keydown', interruptKey);
+    window.addEventListener('pointerdown', interruptPointer);
     return () => {
       ro.disconnect();
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', remeasure);
       window.removeEventListener('wheel', interrupt);
-      window.removeEventListener('touchstart', interrupt);
+      window.removeEventListener('touchstart', interruptPointer);
+      window.removeEventListener('keydown', interruptKey);
+      window.removeEventListener('pointerdown', interruptPointer);
       if (frame) window.cancelAnimationFrame(frame);
       cancelFlight();
       delete document.documentElement.dataset.ridePinned;

@@ -14,6 +14,9 @@ describe('Paired import', () => {
     expect(parsePartialDate('2022')).toBe('2022');
     // An instant is the calendar day in Chicago, not in UTC.
     expect(parsePartialDate('2022-06-05T03:00:00Z')).toBe('2022-06-04');
+    // …but a bare date exported as midnight UTC is that calendar day, not the evening before in Chicago.
+    expect(parsePartialDate('2022-06-04T00:00:00.000Z')).toBe('2022-06-04');
+    expect(parsePartialDate('2022-06-04T00:00Z')).toBe('2022-06-04');
     expect(parsePartialDate('2022-02-30')).toBeNull();
     expect(parsePartialDate('someday')).toBeNull();
     expect(parsePartialDate('')).toBeNull();
@@ -29,13 +32,13 @@ describe('Paired import', () => {
 
   it('sorts by date, keeps undated stops last, and reports what it could not read', () => {
     const { stops, problems } = normalize([
-      { title: 'B', date: '2023' },
+      { title: 'Second', date: '2023' },
       { title: 'Undated' },
-      { title: 'A', date: '2022-01-02' },
+      { title: 'First', date: '2022-01-02' },
       { title: 'Bad date', date: 'soon' },
       { note: 'no title' },
     ]);
-    expect(stops.map((s: { title: string }) => s.title)).toEqual(['A', 'B', 'Undated', 'Bad date']);
+    expect(stops.map((s: { title: string }) => s.title)).toEqual(['First', 'Second', 'Undated', 'Bad date']);
     expect(problems).toEqual(['entry 4 "Bad date": could not read the date "soon" — imported undated', 'entry 5: no title — skipped']);
   });
 
@@ -69,5 +72,32 @@ describe('Paired import', () => {
     const { rows } = merge([], assignChapters(stops), { now: new Date(), storySlugs: new Set(['love']) });
     expect(rows[0]?.slug).toBe('love-2');
     expect(slugify("Michael Jordan's Steakhouse")).toBe('michael-jordans-steakhouse');
+  });
+
+  it('never writes a row the seed would reject: short titles skipped, long places clamped, duplicate refs split', () => {
+    const { stops, problems } = normalize([
+      { title: 'Z', date: '2023' },
+      { title: 'Date night', location: 'x'.repeat(200) },
+      { title: 'Date night' },
+    ]);
+    expect(problems).toEqual(['entry 1 "Z": a station name needs at least two characters — skipped']);
+    expect(stops.map((s: { externalRef: string }) => s.externalRef)).toEqual(['paired:undated-date-night', 'paired:undated-date-night-2']);
+    const { rows } = merge([], assignChapters(stops), { now: new Date('2026-09-22T00:00:00Z') });
+    for (const r of rows) expect(timelineMomentSeedSchema.safeParse(r).success, r.slug).toBe(true);
+    expect(new Set(rows.map((r: { slug: string }) => r.slug)).size).toBe(rows.length);
+  });
+
+  it('a new stop never takes an existing stop\'s slug, nor the terminal\'s', () => {
+    const existing = [{ slug: 'dinner', chapter: 'relationship', order: 1, title: 'Dinner', note: 'Ours.', media: [], externalRef: 'paired:5', sourceKey: 'paired', sourceType: 'authored', verifiedAt: '2026-09-01T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING', editedBy: 'import:paired', visibility: 'public', placeholder: false }];
+    const { stops } = normalize([
+      { id: 9, title: 'Dinner', date: '2020-01-01' },
+      { id: 5, title: 'Dinner', date: '2021-01-01' },
+      { id: 7, title: 'The Loop', date: '2022-01-01' },
+    ]);
+    const { rows } = merge(existing, assignChapters(stops), { now: new Date() });
+    const byRef = Object.fromEntries(rows.map((r: { externalRef: string; slug: string }) => [r.externalRef, r.slug]));
+    expect(byRef['paired:5']).toBe('dinner');
+    expect(byRef['paired:9']).toBe('dinner-2');
+    expect(byRef['paired:7']).toBe('the-loop-2');
   });
 });

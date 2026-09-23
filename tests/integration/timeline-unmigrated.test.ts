@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { getStory } from '@/capabilities/content';
 import { getDb } from '@/db/client';
+import { projectKnowledge } from '@/domain/knowledge/projection';
 
 /**
  * A preview deployment reads the production database and never migrates it
@@ -20,5 +21,10 @@ describe('Our Story before timeline_moments is migrated', () => {
     expect(r.value.data.sections).toHaveLength(7);
     expect(r.value.data.timeline.map((m) => m.slug)).toContain('starved-rock');
     expect(r.value.data.timeline.map((m) => m.slug)[0]).toBe('allison-and-jamies-wedding');
+  });
+
+  it('re-projects the concierge corpus without it, so an admin save there cannot 500 after committing', async () => {
+    const db = await getDb();
+    await expect(projectKnowledge(db)).resolves.toBeGreaterThan(0);
   });
 });
