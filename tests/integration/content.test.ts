@@ -58,6 +58,8 @@ describe('story + adventures visibility', () => {
     expect(timeline.every((m) => m.occurredOn === undefined)).toBe(true);
     const rock = timeline.find((m) => m.slug === 'starved-rock')!;
     expect(rock).toMatchObject({ chapter: 'love', adventureRoute: '/our-adventures/starved-rock', placeholder: false, note: { placeholder: false } });
+    // A station links only to an adventure the reader can open: the unpublished drafts are named, not linked.
+    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.adventureRoute).toBeUndefined();
     expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.note.placeholder).toBe(true);
     expect(r.value.sources.some((s) => s.url === '/our-story#starved-rock')).toBe(true);
     // Every stand-in photograph resolves to a file the ride's manifest knows.

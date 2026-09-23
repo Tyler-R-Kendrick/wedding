@@ -86,9 +86,11 @@ test.describe('explore journey', () => {
     await expect(page).toHaveURL(/#starved-rock$/);
     await expect(map.getByRole('link', { name: /^Starved Rock/ })).toHaveAttribute('aria-current', 'location');
     await expect(sign).toContainText('This isStarved Rock');
-    // Only the station at the platform can be read or tabbed into; the rest are scenery.
-    await expect(page.locator('#starved-rock')).not.toHaveAttribute('inert', /.*/);
-    await expect(page.locator('#love')).toHaveAttribute('inert', '');
+    // Only the station at the platform is exposed; the scenery is hidden from assistive technology
+    // and out of the tab order, but its words stay in the page for find-in-page.
+    await expect(page.locator('#starved-rock')).not.toHaveAttribute('aria-hidden', /.*/);
+    await expect(page.locator('#love')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#the-loop a').first()).toHaveAttribute('tabindex', '-1');
     await expect(page.getByRole('heading', { name: 'Starved Rock', level: 3 })).toBeVisible();
 
     // The two buttons step one station at a time, for anyone who would rather press than scroll.
@@ -106,6 +108,43 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
+  test('the car card is one tab stop: arrow keys walk it, the focused station stays on screen, Enter rides', async ({ page }) => {
+    await page.goto('/our-story#allison-and-jamies-wedding');
+    const map = page.getByRole('navigation', { name: /^Stations on the .+ Line$/ });
+    await expect(map.getByRole('link', { name: /Allison and Jamie/ })).toHaveAttribute('aria-current', 'location');
+    // Exactly one station takes Tab: the one the train is at.
+    await expect(map.locator('a[tabindex="0"]')).toHaveCount(1);
+    await map.getByRole('link', { name: /Allison and Jamie/ }).focus();
+    for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowDown');
+    const focused = map.getByRole('link', { name: /^Starved Rock/ });
+    await expect(focused).toBeFocused();
+    // WCAG 2.4.11: the focused link is not hidden off the edge of the strip.
+    const box = await focused.boundingBox();
+    const vp = await map.locator('.bd-ride-map__viewport').boundingBox();
+    expect(box && vp && box.x >= vp.x - 1 && box.x + box.width <= vp.x + vp.width + 1 && box.y >= vp.y - 1 && box.y + box.height <= vp.y + vp.height + 1, 'focused station is inside the car card').toBe(true);
+    await page.keyboard.press('Home');
+    await expect(map.getByRole('link', { name: /How we met/ })).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(map.getByRole('link', { name: /The Loop/ })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/#the-loop$/);
+    await expect(map.getByRole('link', { name: /The Loop/ })).toHaveAttribute('aria-current', 'location');
+  });
+
+  test('"Read it as a list" lays the line flat, and the choice is remembered', async ({ page }) => {
+    await page.goto('/our-story');
+    await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'ride');
+    await page.getByRole('button', { name: 'Read it as a list' }).click();
+    await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
+    await expect(page.getByRole('button', { name: 'Ride the line instead' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.bd-ride [aria-hidden="true"].bd-ride__stop')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
+    await page.getByRole('button', { name: 'Ride the line instead' }).click();
+    await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'ride');
+    await axe(page);
+  });
+
   test('reduced motion and no script lay the same line flat, every stop readable', async ({ browser }, testInfo) => {
     for (const options of [{ reducedMotion: 'reduce' as const }, { javaScriptEnabled: false }]) {
       const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, ...options });
@@ -113,7 +152,9 @@ test.describe('explore journey', () => {
       await page.goto('/our-story#love');
       await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
       for (const id of ['how-we-met', 'allison-and-jamies-wedding', 'love', 'starved-rock', 'the-loop']) await expect(page.locator(`#${id}`)).toBeVisible();
-      await expect(page.locator('.bd-ride [inert]')).toHaveCount(0);
+      await expect(page.locator('.bd-ride [inert], .bd-ride__stop[aria-hidden]')).toHaveCount(0);
+      // The stations list the intro promises is there in every mode.
+      await expect(page.getByRole('navigation', { name: /^Stations on the .+ Line$/ }).getByRole('link', { name: /Starved Rock/ })).toBeVisible();
       await expect(page.locator('#love')).toBeInViewport();
       if (options.reducedMotion) await axe(page);
       await ctx.close();

@@ -80,12 +80,14 @@ function StationCard({ moment, stop }: { moment: TimelineMomentView; stop: RideS
   const when = formatPartialDate(moment.occurredOn);
   return (
     <article className="bd-stopcard" aria-labelledby={`${stop.slug}-title`}>
-      {photo?.src ? <TimelinePhoto src={photo.src} alt={photo.alt} sizes="(min-width: 1100px) 34rem, 88vw" /> : null}
-      <div className="bd-stopcard__body">
-        <p className="bd-eyebrow bd-stopcard__line">
+      <header className="bd-stopcard__plate bd-stopcard__plate--station">
+        <span className="bd-stopcard__plate-line">
           <Bullet />
           {stop.lineName}
-        </p>
+        </span>
+      </header>
+      {photo?.src ? <TimelinePhoto src={photo.src} alt={photo.alt} sizes="(min-width: 1100px) 34rem, 88vw" /> : null}
+      <div className="bd-stopcard__body">
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
           {moment.title}
         </h3>
@@ -160,7 +162,11 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
           <time dateTime={frame.site.date.iso.slice(0, 10)}>{frame.site.date.long}</time>
         </h3>
         <p className="bd-stopcard__when">
-          {frame.site.venue.name}, {frame.site.venue.address}
+          {frame.site.venue.name},{' '}
+          <a className="bd-stopcard__map" href={frame.site.venue.mapsUrl} rel="noopener">
+            {frame.site.venue.address}
+            <span className="bd-stopcard__map-provider"> · directions in {frame.site.venue.mapsProvider}</span>
+          </a>
         </p>
         <p className="bd-stopcard__note">Everyone off here. The next chapter starts with all of you in the room.</p>
         <p className="bd-stopcard__actions">

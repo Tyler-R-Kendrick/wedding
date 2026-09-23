@@ -57,18 +57,16 @@ export function TimelinePhoto({ src, alt, sizes, className }: TimelinePhotoProps
         // eslint-disable-next-line @next/next/no-img-element -- a path outside the manifest has no size set to offer
         <img src={src} alt={alt} loading="lazy" decoding="async" />
       )}
-      {item?.standIn || item?.credit ? (
+      {item?.standIn ? <span className="bd-stopcard__standin">Stand-in photo</span> : null}
+      {item?.credit ? (
         <figcaption className="bd-stopcard__credit">
-          {item.standIn ? <span className="bd-eyebrow bd-stopcard__standin">Stand-in photo</span> : null}
-          {item.credit ? (
-            item.creditUrl ? (
-              <a className="bd-eyebrow bd-stopcard__license" href={item.creditUrl} rel="noopener noreferrer" target="_blank">
-                {item.credit}
-              </a>
-            ) : (
-              <span className="bd-eyebrow bd-stopcard__license">{item.credit}</span>
-            )
-          ) : null}
+          {item.creditUrl ? (
+            <a className="bd-stopcard__license" href={item.creditUrl} rel="noopener noreferrer">
+              {item.credit}
+            </a>
+          ) : (
+            item.credit
+          )}
         </figcaption>
       ) : null}
     </figure>

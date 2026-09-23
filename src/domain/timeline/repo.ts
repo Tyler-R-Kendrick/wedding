@@ -1,7 +1,7 @@
 import { asc } from 'drizzle-orm';
 import { loadContentSeed } from '@/content';
 import type { Citation } from '@/contracts/provenance';
-import { timelineMoments, type TimelineMomentRow } from '@/db/schema';
+import { adventureMemories, timelineMoments, type TimelineMomentRow } from '@/db/schema';
 import { dedupeCitations, toProvenanceView, toRecordCitation } from '@/domain/content/provenance';
 import type { ReadContext } from '@/domain/content/read-context';
 import { textBlock } from '@/domain/content/text';
@@ -11,7 +11,11 @@ import { ROUTES } from '@/domain/routes';
 import { timelineSeedRows } from '@/db/seed/content';
 import { logger } from '@/lib/logger';
 
-export function toTimelineMomentView(row: TimelineMomentRow, ctx: ReadContext): TimelineMomentView {
+/**
+ * `linkable` is the set of Our Adventures slugs this reader can open. A station names its adventure
+ * whether or not that memory is published yet; it links only to one that is, never to a 404.
+ */
+export function toTimelineMomentView(row: TimelineMomentRow, ctx: ReadContext, linkable: ReadonlySet<string> = new Set()): TimelineMomentView {
   const route = `${ROUTES.story}#${row.slug}`;
   return {
     id: row.id,
@@ -22,7 +26,7 @@ export function toTimelineMomentView(row: TimelineMomentRow, ctx: ReadContext): 
     ...(row.locationLabel ? { locationLabel: row.locationLabel } : {}),
     note: textBlock(row.note),
     media: row.media.map((m) => ({ alt: m.alt, ...(m.caption ? { caption: m.caption } : {}), ...(m.src ? { src: m.src } : {}) })),
-    ...(row.adventureSlug ? { adventureRoute: `${ROUTES.adventures}/${row.adventureSlug}` } : {}),
+    ...(row.adventureSlug && linkable.has(row.adventureSlug) ? { adventureRoute: `${ROUTES.adventures}/${row.adventureSlug}` } : {}),
     placeholder: row.placeholder,
     provenance: toProvenanceView(row, { route, sources: ctx.sources, now: ctx.now }),
   };
@@ -30,9 +34,13 @@ export function toTimelineMomentView(row: TimelineMomentRow, ctx: ReadContext): 
 
 /** The stations in the couple's order (`order`), which the importer sets from the Paired dates. */
 export async function getTimeline(ctx: ReadContext): Promise<{ moments: TimelineMomentView[]; sources: Citation[] }> {
-  const rows = await readRows(ctx);
+  const [rows, adventures] = await Promise.all([
+    readRows(ctx),
+    ctx.db.select({ slug: adventureMemories.slug, visibility: adventureMemories.visibility, validFrom: adventureMemories.validFrom, validUntil: adventureMemories.validUntil }).from(adventureMemories),
+  ]);
   const visible = filterVisible(rows, ctx.principal, ctx.surface, ctx.now);
-  const moments = visible.map((r) => toTimelineMomentView(r, ctx));
+  const linkable = new Set(filterVisible(adventures, ctx.principal, ctx.surface, ctx.now).map((a) => a.slug));
+  const moments = visible.map((r) => toTimelineMomentView(r, ctx, linkable));
   const sources = dedupeCitations(
     visible.map((r) => toRecordCitation(r, { route: `${ROUTES.story}#${r.slug}`, title: `Our Story › ${r.title}`, recordRef: { type: 'timeline_moments', id: r.id }, now: ctx.now })),
   );
