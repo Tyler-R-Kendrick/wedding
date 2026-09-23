@@ -34,6 +34,9 @@
   --st-space-lg: var(--spacing-lg);
   --st-space-xl: var(--spacing-xl);
   --st-space-2xl: var(--spacing-2xl);
+
+  /* Running text wears the design's body colour; --st-ink (its primary) stays for controls. */
+  color: var(--color-on-surface);
 }
 
 .pl-site {
@@ -43,6 +46,7 @@
   font-family: var(--st-font-text);
   font-size: var(--st-size-body);
 }
+
 
 .pl-picker {
   display: flex;

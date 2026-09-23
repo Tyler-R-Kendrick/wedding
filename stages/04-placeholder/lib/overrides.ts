@@ -6,5 +6,5 @@
 export const OVERRIDES: Record<string, string> = {
   '*/site/name': 'Sara + Tyler',
   '*/site/footer': 'Footer: how to reach us, photo credits, and the way to sign in.',
-  'home/hero/lede': 'Date · place: TODO(Tyler & Sara) until the brief confirms both on the page.',
+  'home/hero/lede': 'Date · place. The real ones arrive with the real content, at stage 5.',
 };

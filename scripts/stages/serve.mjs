@@ -24,10 +24,16 @@ const TYPES = {
   '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.ico': 'image/x-icon',
 };
 
+/** The file a request path names, or null: malformed or escaping paths are simply not found. */
 function resolve(urlPath) {
-  const clean = path.normalize(decodeURIComponent(urlPath.split('?')[0])).replace(/^(\.\.[/\\])+/, '');
-  const abs = path.join(root, clean);
-  if (!abs.startsWith(root)) return null;
+  let decoded;
+  try {
+    decoded = decodeURIComponent(new URL(urlPath, 'http://localhost').pathname);
+  } catch {
+    return null;
+  }
+  const abs = path.join(root, path.normalize(decoded));
+  if (abs !== root && !abs.startsWith(root + path.sep)) return null;
   for (const candidate of [abs, path.join(abs, 'index.html'), `${abs}.html`]) {
     if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
   }

@@ -51,7 +51,7 @@ const DESIGN_SYNC_FILES =
 const DETECTOR_CONTEXT = /^(DESIGN\.md|\.impeccable\/config\.json|src\/themes\/[^/]+\/(DESIGN\.md|design\.json))$/;
 /** impeccable's hook extension list (reference/hooks.md), plus .mdx pages. */
 const UI_FILE = /\.(tsx|jsx|ts|js|mjs|html|vue|svelte|astro|css|scss|sass|less|mdx)$/;
-const CSS_FILE = /^src\/.*\.(css|scss)$/;
+const CSS_FILE = /^(src\/.*|stages\/[^/]+\/(app|lib)\/.*)\.(css|scss)$/;
 
 function git(...args) {
   const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
