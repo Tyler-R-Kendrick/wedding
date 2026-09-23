@@ -181,7 +181,7 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
 - Every commit passes the **pre-commit design gate** (`.githooks/pre-commit` →
   `scripts/precommit.mjs`): Google `design.md lint` on each staged DESIGN.md (errors and
   WCAG-contrast warnings block), `design:sync --check` when tokens change, `impeccable detect`
-  on staged UI files (all of `src/` when DESIGN.md or `.impeccable/config.json` changes), and
+  on staged UI files (plus all of `src/` when DESIGN.md or `.impeccable/config.json` changes), and
   stylelint on staged CSS. A finding is fixed, or waived through `impeccable hooks ignore-value`
   with a reason; `--no-verify` is not a way to land UI work.
 - Placeholder facts use `TODO(Tyler & Sara)`; never plausible fiction.

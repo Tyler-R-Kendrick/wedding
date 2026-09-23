@@ -85,7 +85,7 @@
           },
           {
             "type": "command",
-            "command": "cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/install-git-hooks.mjs >/dev/null 2>&1 || true",
+            "command": "cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/install-git-hooks.mjs 2>&1 || true",
             "timeout": 10,
             "statusMessage": "Wiring the pre-commit design gate (.githooks)"
           }

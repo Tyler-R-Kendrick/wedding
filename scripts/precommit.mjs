@@ -15,30 +15,36 @@
  *                         do `contrast-ratio` warnings: CLAUDE.md holds the site to WCAG 2.2 AA and
  *                         every DESIGN.md is at 0 warnings, so the hook keeps it there (CI only
  *                         requires 0 errors). Other warnings are printed.
- *   2. design:sync        DESIGN.md / design.json / generated theme CSS staged -> the generated
- *                         files must match their DESIGN.md (`design-sync.mjs --check`).
- *   3. impeccable detect  staged UI files; all of src/ when DESIGN.md or .impeccable/config.json
+ *   2. design:sync        a theme's DESIGN.md / design.json, its generated CSS, the generator or the
+ *                         lockfile staged -> the generated files must match (`design-sync.mjs
+ *                         --check`). That script reads the working tree, so when any of its inputs
+ *                         or outputs differs from the index the check cannot vouch for the commit
+ *                         and blocks instead: "regenerated but forgot to stage theme.css" is the
+ *                         mistake this check exists for.
+ *   3. impeccable detect  staged UI files, plus all of src/ when DESIGN.md or .impeccable/config.json
  *                         is staged, since a token change can put untouched components in drift.
  *                         Uses .impeccable/config.json ignores and waivers, exactly like CI.
  *   4. stylelint          staged CSS (the banned-font and named-colour rules live here).
  *
- * Checks 2-4 read the working tree. A file staged with further unstaged edits is named in the
- * output so nobody mistakes a pass on the working copy for a pass on the commit.
+ * Checks 3 and 4 read the working tree (and 3 reads the working-copy DESIGN.md as its context).
+ * Any file they read that differs from the index, untracked files under src/ included, is named in
+ * the output so nobody mistakes a result on the working copy for a result on the commit.
  *
- * Skip once with `git commit --no-verify`; CI will still run everything.
+ * A finding is fixed, or waived with `impeccable hooks ignore-value … --reason`; CLAUDE.md rules out
+ * `--no-verify` for UI work.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const BIN = (name) => path.join(ROOT, 'node_modules', '.bin', name);
 
 const DESIGN_MD = /^(DESIGN\.md|src\/themes\/[^/]+\/DESIGN\.md)$/;
-const DESIGN_SYNC_INPUTS =
-  /^(DESIGN\.md|scripts\/design-sync\.mjs|src\/themes\/[^/]+\/(DESIGN\.md|design\.json|theme\.css|tailwind\.theme\.css|tokens\.generated\.json))$/;
+/** Everything `design-sync.mjs` reads or writes, plus what decides its output. */
+const DESIGN_SYNC_FILES =
+  /^(package-lock\.json|scripts\/design-sync\.mjs|src\/themes\/[^/]+\/(DESIGN\.md|design\.json|theme\.css|tailwind\.theme\.css|tokens\.generated\.json))$/;
 const DETECTOR_CONTEXT = /^(DESIGN\.md|\.impeccable\/config\.json|src\/themes\/[^/]+\/(DESIGN\.md|design\.json))$/;
 /** impeccable's hook extension list (reference/hooks.md), plus .mdx pages. */
 const UI_FILE = /\.(tsx|jsx|ts|js|mjs|html|vue|svelte|astro|css|scss|sass|less|mdx)$/;
@@ -51,6 +57,23 @@ function git(...args) {
 }
 const list = (out) => out.split('\0').filter(Boolean);
 
+/**
+ * A package's CLI, run as `node <its bin script>`. node_modules/.bin holds sh shims on POSIX and
+ * .cmd shims on Windows, and spawnSync can launch neither portably; the script itself runs anywhere.
+ */
+function tool(pkg, binName) {
+  const manifest = path.join(ROOT, 'node_modules', pkg, 'package.json');
+  if (!existsSync(manifest)) return null;
+  const { bin } = JSON.parse(readFileSync(manifest, 'utf8'));
+  const rel = typeof bin === 'string' ? bin : bin?.[binName];
+  return rel ? path.join(path.dirname(manifest), rel) : null;
+}
+function run(script, args) {
+  const r = spawnSync(process.execPath, [script, ...args], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const out = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim();
+  return { status: r.error ? null : r.status, stdout: r.stdout ?? '', out: r.error ? String(r.error) : out };
+}
+
 const staged = list(git('diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'));
 const unstaged = new Set(list(git('diff', '--name-only', '-z')));
 
@@ -58,88 +81,104 @@ const failures = [];
 const notes = [];
 const say = (line = '') => process.stdout.write(`${line}\n`);
 
-function requireBin(name) {
-  if (existsSync(BIN(name))) return true;
-  failures.push(`${name} is not installed — run \`npm ci\` first.`);
-  return false;
+function locate(pkg, binName) {
+  const script = tool(pkg, binName);
+  if (!script) failures.push(`${binName} is not installed — run \`npm ci\` first.`);
+  return script;
 }
-function partial(files) {
+function partial(files, what) {
   const both = files.filter((f) => unstaged.has(f));
-  if (both.length) notes.push(`checked the working copy of ${both.join(', ')} (it has unstaged edits too)`);
+  if (both.length) notes.push(`${what} read the working copy of ${both.join(', ')}, which differs from what is staged`);
 }
 
 // 1. design.md lint, on the staged blob --------------------------------------------------------
 const designFiles = staged.filter((f) => DESIGN_MD.test(f));
-if (designFiles.length && requireBin('design.md')) {
+const designMd = designFiles.length && locate('@google/design.md', 'design.md');
+if (designMd) {
   // The staged blob goes through a temp file: `design.md lint -` and /dev/stdin both fail under
   // spawnSync (and Windows has no /dev/stdin).
   const tmp = mkdtempSync(path.join(os.tmpdir(), 'precommit-design-'));
-  for (const [i, file] of designFiles.entries()) {
-    const copy = path.join(tmp, `${i}-DESIGN.md`);
-    writeFileSync(copy, git('show', `:${file}`));
-    const r = spawnSync(BIN('design.md'), ['lint', copy], { cwd: ROOT, encoding: 'utf8' });
-    let report;
-    try {
-      report = JSON.parse(r.stdout);
-    } catch {
-      failures.push(`design.md lint ${file}: could not run (${(r.stderr || r.stdout).trim().split('\n').at(-1)})`);
-      continue;
+  try {
+    for (const [i, file] of designFiles.entries()) {
+      const copy = path.join(tmp, `${i}-DESIGN.md`);
+      writeFileSync(copy, git('show', `:${file}`));
+      const r = run(designMd, ['lint', copy]);
+      let report = null;
+      try {
+        report = JSON.parse(r.stdout);
+      } catch {}
+      if (!report?.summary) {
+        failures.push(`design.md lint ${file}: could not run (${r.out.split('\n').at(-1) || `exit ${r.status}`})`);
+        continue;
+      }
+      const { errors, warnings } = report.summary;
+      say(`design.md lint  ${file}: ${errors} error(s), ${warnings} warning(s)`);
+      for (const f of report.findings.filter((x) => x.severity !== 'info')) {
+        say(`  ${f.severity.padEnd(7)} ${f.rule}${f.path ? ` @ ${f.path}` : ''}: ${f.message}`);
+      }
+      if (errors > 0 || r.status !== 0) failures.push(`design.md lint: ${file} has ${errors} error(s)`);
+      const contrast = report.findings.filter((x) => x.rule === 'contrast-ratio' && x.severity !== 'info').length;
+      if (contrast) failures.push(`design.md lint: ${file} has ${contrast} pairing(s) below WCAG AA contrast`);
     }
-    const { errors, warnings } = report.summary;
-    say(`design.md lint  ${file}: ${errors} error(s), ${warnings} warning(s)`);
-    for (const f of report.findings.filter((x) => x.severity !== 'info')) {
-      say(`  ${f.severity.padEnd(7)} ${f.rule}${f.path ? ` @ ${f.path}` : ''}: ${f.message}`);
-    }
-    if (errors > 0 || r.status !== 0) failures.push(`design.md lint: ${file} has ${errors} error(s)`);
-    const contrast = report.findings.filter((x) => x.rule === 'contrast-ratio' && x.severity !== 'info').length;
-    if (contrast) failures.push(`design.md lint: ${file} has ${contrast} pairing(s) below WCAG AA contrast`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
-  rmSync(tmp, { recursive: true, force: true });
 }
 
 // 2. Generated theme CSS matches DESIGN.md --------------------------------------------------------
-if (staged.some((f) => DESIGN_SYNC_INPUTS.test(f))) {
-  const r = spawnSync(process.execPath, ['scripts/design-sync.mjs', '--check'], { cwd: ROOT, encoding: 'utf8' });
-  const stale = `${r.stdout}${r.stderr}`.split('\n').filter((l) => l && !/up to date$/.test(l));
-  say(`design:sync     generated theme files ${r.status === 0 ? 'match DESIGN.md' : 'are STALE'}`);
-  for (const l of stale) say(`  ${l}`);
-  if (r.status !== 0) failures.push('design:sync: run `npm run design:sync` and stage the regenerated files');
+if (staged.some((f) => DESIGN_SYNC_FILES.test(f))) {
+  const drifted = [...unstaged].filter((f) => DESIGN_SYNC_FILES.test(f));
+  if (drifted.length) {
+    say(`design:sync     cannot vouch for the commit: ${drifted.join(', ')} differ(s) from what is staged`);
+    failures.push('design:sync: run `npm run design:sync`, then stage the theme files it writes along with their DESIGN.md');
+  } else {
+    const r = run(path.join(ROOT, 'scripts', 'design-sync.mjs'), ['--check']);
+    say(`design:sync     generated theme files ${r.status === 0 ? 'match DESIGN.md' : 'are STALE'}`);
+    for (const l of r.out.split('\n').filter((l) => l && !/up to date$/.test(l))) say(`  ${l}`);
+    if (r.status !== 0) failures.push('design:sync: run `npm run design:sync` and stage the regenerated files');
+  }
 }
 
 // 3. impeccable detect --------------------------------------------------------------------------
 const contextChanged = staged.some((f) => DETECTOR_CONTEXT.test(f));
 const uiFiles = staged.filter((f) => UI_FILE.test(f) && existsSync(path.join(ROOT, f)));
-const detectTargets = contextChanged ? ['src/'] : uiFiles;
-if (detectTargets.length && requireBin('impeccable')) {
-  partial(contextChanged ? staged.filter((f) => f.startsWith('src/')) : uiFiles);
-  const label = contextChanged ? 'src/ (design context changed)' : `${uiFiles.length} staged file(s)`;
-  const r = spawnSync(BIN('impeccable'), ['detect', '--no-advisory', ...detectTargets], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
-  // impeccable prints findings to stderr and keeps stdout for --json.
-  const out = `${r.stdout}${r.stderr}`.trim();
+const detectTargets = contextChanged ? ['src/', ...uiFiles.filter((f) => !f.startsWith('src/'))] : uiFiles;
+const impeccable = detectTargets.length && locate('impeccable', 'impeccable');
+if (impeccable) {
+  if (contextChanged) {
+    partial(staged.filter((f) => DETECTOR_CONTEXT.test(f)), 'impeccable (design context)');
+    const wip = [
+      ...[...unstaged].filter((f) => f.startsWith('src/')),
+      ...list(git('ls-files', '--others', '--exclude-standard', '-z', '--', 'src')),
+    ];
+    if (wip.length) notes.push(`impeccable scanned all of src/, including uncommitted work in ${wip.join(', ')}`);
+  } else {
+    partial(uiFiles, 'impeccable');
+  }
+  const label = contextChanged ? 'src/ + staged UI files (design context changed)' : `${uiFiles.length} staged file(s)`;
+  const r = run(impeccable, ['detect', '--no-advisory', ...detectTargets]);
   if (r.status === 0) {
     say(`impeccable      ${label}: clean`);
   } else {
     say(`impeccable      ${label}:`);
-    say(out.replace(/^/gm, '  '));
+    say(r.out.replace(/^/gm, '  '));
     failures.push(
       r.status === 2
-        ? 'impeccable detect: fix the findings above, or record a waiver with `.claude/skills/impeccable/scripts/impeccable hooks ignore-value …`'
-        : `impeccable detect could not scan a target (exit ${r.status})`,
+        ? 'impeccable detect: fix the findings above, or record a waiver with `.claude/skills/impeccable/scripts/impeccable hooks ignore-value … --reason "…"`'
+        : `impeccable detect could not scan a target (${r.status === null ? 'failed to start' : `exit ${r.status}`})`,
     );
   }
 }
 
 // 4. stylelint ----------------------------------------------------------------------------------
 const cssFiles = staged.filter((f) => CSS_FILE.test(f) && existsSync(path.join(ROOT, f)));
-if (cssFiles.length && requireBin('stylelint')) {
-  partial(cssFiles);
-  const r = spawnSync(BIN('stylelint'), ['--allow-empty-input', ...cssFiles], { cwd: ROOT, encoding: 'utf8' });
+const stylelint = cssFiles.length && locate('stylelint', 'stylelint');
+if (stylelint) {
+  partial(cssFiles, 'stylelint');
+  const r = run(stylelint, ['--allow-empty-input', ...cssFiles]);
   say(`stylelint       ${cssFiles.length} staged file(s): ${r.status === 0 ? 'clean' : 'findings'}`);
   if (r.status !== 0) {
-    say(`${r.stdout}${r.stderr}`.trim().replace(/^/gm, '  '));
+    say(r.out.replace(/^/gm, '  '));
     failures.push('stylelint: fix the findings above');
   }
 }
@@ -148,6 +187,7 @@ for (const n of notes) say(`note: ${n}`);
 if (failures.length) {
   say('\npre-commit design gate FAILED:');
   for (const f of failures) say(`  - ${f}`);
-  say('\nBypass once with `git commit --no-verify` (CI still runs every check).');
+  say('\nFix the finding, or waive a false positive with a reason. `--no-verify` is not a way to land');
+  say('UI work (CLAUDE.md); CI runs every one of these checks on the pull request regardless.');
   process.exit(1);
 }

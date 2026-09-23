@@ -17,10 +17,16 @@ in-memory database instead; `DATABASE_URL` switches to a real Postgres.
 staged files only: Google's `design.md lint` on any staged DESIGN.md (read from the index; errors
 and WCAG contrast warnings block), `design:sync --check` when tokens or generated theme CSS change,
 `impeccable detect` on staged UI files (all of `src/` when DESIGN.md or `.impeccable/config.json`
-changes), and stylelint on staged CSS. A commit that touches no UI adds nothing. `npm run precommit`
-runs it by hand; `git commit --no-verify` skips it once, and CI still runs every check. The
-installer does nothing under `CI`, outside a git work tree, or when the clone already has its own
-`core.hooksPath`.
+changes, plus any staged UI files outside it), and stylelint on staged CSS. A commit that touches
+no UI adds nothing. `npm run precommit` runs it by hand. A finding is fixed, or waived through
+`impeccable hooks ignore-value … --reason`; `--no-verify` is not a way to land UI work, and CI runs
+every check on the pull request regardless.
+
+The installer never displaces hooks you already rely on. It does nothing under `CI`, outside a git
+work tree, when `core.hooksPath` is already set at any scope (a global secret scanner, say), or when
+`.git/hooks` holds real hooks (git-lfs). To opt a clone out for good, including against the Claude
+SessionStart hook that re-runs the installer: `git config hooks.designGate false && git config
+--unset core.hooksPath`.
 
 Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI) export
 `NODE_USE_ENV_PROXY=1` before `npm install` so postinstall downloads succeed.
