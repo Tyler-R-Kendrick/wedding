@@ -45,3 +45,15 @@ describe('wireframes', () => {
     expect(ids).toContain('split-1.0.facts-1'); // a derived one carries its path
   });
 });
+
+describe('fingerprints', () => {
+  it('are stable, ignore key order and status, and change with content', async () => {
+    const { fingerprint } = await import('../lib');
+    const w = wireframeFor('rsvp');
+    expect(fingerprint(w)).toMatch(/^[0-9a-f]{8}$/);
+    expect(fingerprint({ ...w, status: 'approved' })).toBe(fingerprint(w));
+    const reordered = { ...w, blocks: w.blocks.map((b) => Object.fromEntries(Object.entries(b).reverse()) as typeof b) };
+    expect(fingerprint(reordered)).toBe(fingerprint(w));
+    expect(fingerprint({ ...w, blocks: [...w.blocks, { kind: 'prose', label: 'New' }] })).not.toBe(fingerprint(w));
+  });
+});

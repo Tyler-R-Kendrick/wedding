@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
 import { isLastingThemeChoice, parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
+import { isStageHost, isStagePath } from '@/lib/stage-hosting';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
 /** `RSVP_OPEN` or `RSVP_OPEN.<exp>.<sig>`; anything else is dropped before it reaches a route. */
@@ -17,6 +18,10 @@ const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
  */
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
+  // The design pipeline's stages (src/lib/stage-hosting.ts) are static drafts with no theme or
+  // lifecycle of their own; next.config's rewrites serve them. Rewriting `/` onto the theme tree
+  // here would show the wedding home page on sitemap.dev.<domain>.
+  if (isStageHost(request.headers.get('host')) || isStagePath(url.pathname)) return NextResponse.next();
   const cookieTheme = request.cookies.get(THEME_COOKIE)?.value;
   const { theme, source, stale } = resolveTheme({ query: url.searchParams.get(THEME_QUERY), cookie: cookieTheme });
   const previewRaw = url.searchParams.get(PREVIEW_QUERY) ?? request.cookies.get(PREVIEW_COOKIE)?.value ?? null;

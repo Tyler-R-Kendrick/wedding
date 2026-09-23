@@ -1,0 +1,4 @@
+{
+  "$comment": "Who settled each page at each stage. Add entries with `npm run stages:signoff -- <wireframe|skeleton|placeholder> <pageId> --by <name>`; each records the wireframe fingerprint it approved and shows as stale on the dev hub's board once that wireframe changes. History is kept: the latest entry per page and stage counts. See stages/README.md, Sign-offs.",
+  "signoffs": []
+}

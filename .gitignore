@@ -79,3 +79,6 @@ docs/design/critiques/screens/
 demos/.out/
 demos/.webreel/
 demos/.webreel.local.json
+
+# The design pipeline's stages, assembled into the app by `npm run stages:assemble` (src/lib/stage-hosting.ts)
+public/_stages/

@@ -18,6 +18,9 @@ const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.resolve(HERE, '../..');
 const THEMES = path.join(REPO, 'src/themes');
 const OUT_CSS = path.join(HERE, 'app/themes');
+/** Under a path prefix (stages/next.config.base.ts) the copied CSS must point at prefixed files. */
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const prefixed = (css) => (BASE ? css.replace(/url\((["']?)\/(fonts|assets)\//g, `url($1${BASE}/$2/`) : css);
 /** The approved design leads the picker; the rest follow alphabetically. */
 const DEFAULT = 'botanical-deco';
 
@@ -41,7 +44,7 @@ const meta = [];
 for (const id of ids) {
   const dir = path.join(THEMES, id);
   const css = ['fonts.css', 'theme.css'].filter((f) => existsSync(path.join(dir, f))).map((f) => readFileSync(path.join(dir, f), 'utf8'));
-  writeFileSync(path.join(OUT_CSS, `${id}.css`), `/* Copied from src/themes/${id}/ by scripts/sync-themes.mjs. Do not edit. */\n${css.join('\n')}`);
+  writeFileSync(path.join(OUT_CSS, `${id}.css`), `/* Copied from src/themes/${id}/ by scripts/sync-themes.mjs. Do not edit. */\n${prefixed(css.join('\n'))}`);
   for (const sub of ['fonts', 'assets/art']) {
     const from = path.join(REPO, 'public', sub, id);
     const to = path.join(HERE, 'public', sub, id);

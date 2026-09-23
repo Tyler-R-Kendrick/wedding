@@ -83,12 +83,15 @@
     "stages:dev": "node scripts/stages/run.mjs dev",
     "stages:build": "node scripts/stages/run.mjs build",
     "stages:test": "vitest run --project \"stage:*\"",
-    "stages:typecheck": "node scripts/stages/run.mjs typecheck",
+    "stages:typecheck": "node scripts/stages/run.mjs typecheck && tsc -p scripts/stages/tsconfig.json",
     "stages:serve": "node scripts/stages/run.mjs start",
     "dev:sitemap": "npm run dev -w @wedding/sitemap",
     "dev:wireframe": "npm run dev -w @wedding/wireframe",
     "dev:skeleton": "npm run dev -w @wedding/skeleton",
-    "dev:placeholder": "npm run dev -w @wedding/placeholder"
+    "dev:placeholder": "npm run dev -w @wedding/placeholder",
+    "stages:assemble": "node scripts/stages/assemble.mjs",
+    "stages:signoff": "node --import tsx scripts/stages/signoff.ts",
+    "stages:probe": "node scripts/stages/probe.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

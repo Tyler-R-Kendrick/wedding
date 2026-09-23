@@ -82,11 +82,18 @@ flow is a wireframe fix, not a skeleton patch). Changes cascade down only:
 `stages/01-sitemap/lib/sitemap.ts` is the page list every stage reads, the real
 nav takes its labels from it, and `tests/unit/stages/sitemap-routes.test.ts`
 fails when `src/app` and the sitemap disagree. A new page starts in the
-sitemap. Guide: `stages/README.md`.
+sitemap. The wedding app also serves every stage (`src/lib/stage-hosting.ts`):
+`<stage>.dev.kendrick.wedding`, the hub and board at `dev.kendrick.wedding`, and `/<stage>` plus
+`/stages` on previews and locally. A settled stage
+is recorded with `npm run stages:signoff`; the sign-off goes stale on the board when the page's
+wireframe changes. Guide: `stages/README.md`.
 
 ```bash
 npm run dev:sitemap | dev:wireframe | dev:skeleton | dev:placeholder
 npm run stages:dev · stages:test · stages:typecheck · stages:build · stages:serve
+npm run stages:assemble && npm run dev   # http://dev.localhost:3000, http://sitemap.dev.localhost:3000
+npm run stages:probe                     # every stage address and asset, against the running app
+npm run stages:signoff -- <wireframe|skeleton|placeholder> <pageId> --by <name>
 ```
 
 ## Commands

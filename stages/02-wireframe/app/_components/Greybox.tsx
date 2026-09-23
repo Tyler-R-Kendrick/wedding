@@ -1,5 +1,6 @@
 import { href, navLabel, navPages, page as sitemapPage, type SitemapPage } from '@wedding/sitemap';
 import { blockId, type Action, type Block, type Field, type Wireframe } from '@wedding/wireframe';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 /**
@@ -36,7 +37,7 @@ function Box({ label, aspect = 'wide' }: { label: string; aspect?: 'wide' | 'por
 function Button({ a }: { a: Action }) {
   const cls = `gb-button gb-button--${a.variant ?? 'secondary'}`;
   const to = linkTo(a.to);
-  if (to) return <a className={cls} href={to}>{a.label}</a>;
+  if (to) return <Link className={cls} href={to}>{a.label}</Link>;
   return <span className={cls}>{a.label} <span className="gb-ext">↗ {a.external}</span></span>;
 }
 
@@ -121,7 +122,7 @@ export function BlockView({ b, id }: { b: Block; id: string }) {
             {Array.from({ length: b.count }, (_, i) => (
               <li key={i} className="gb-item">
                 {b.media && <Box label={b.item} aspect="square" />}
-                {to ? <a href={to}>{b.item} {i + 1}</a> : <span>{b.item} {i + 1}</span>}
+                {to ? <Link href={to}>{b.item} {i + 1}</Link> : <span>{b.item} {i + 1}</span>}
                 <Lines n={1} last={0.8} />
               </li>
             ))}
@@ -145,7 +146,7 @@ export function BlockView({ b, id }: { b: Block; id: string }) {
           <div className="gb-form">
             {b.fields.map((f) => <FieldDrawing key={f.label} f={f} />)}
             <p className="gb-actions">
-              {b.next ? <a className="gb-button gb-button--primary" href={linkTo(b.next)}>{b.submit}</a> : <span className="gb-button gb-button--primary">{b.submit}</span>}
+              {b.next ? <Link className="gb-button gb-button--primary" href={linkTo(b.next)!}>{b.submit}</Link> : <span className="gb-button gb-button--primary">{b.submit}</span>}
             </p>
           </div>
         </Frame>
@@ -157,7 +158,7 @@ export function BlockView({ b, id }: { b: Block; id: string }) {
           <ol className="gb-tasks">
             {b.tasks.map((t) => (
               <li key={t.title}>
-                {t.to ? <a href={linkTo(t.to)}>{t.title}</a> : <span>{t.title}</span>}
+                {t.to ? <Link href={linkTo(t.to)!}>{t.title}</Link> : <span>{t.title}</span>}
                 <span className="gb-status">status</span>
               </li>
             ))}
@@ -242,11 +243,11 @@ export function SiteFrame({ current, children }: { current: SitemapPage; childre
   return (
     <div className="gb-site">
       <header className="gb-header">
-        <a className="gb-brand" href="/">Site name</a>
+        <Link className="gb-brand" href="/">Site name</Link>
         <nav aria-label="Site">
           <ul className="gb-nav">
             {navPages().map((p) => (
-              <li key={p.id}><a href={href(p)} aria-current={p.id === current.id ? 'page' : undefined}>{navLabel(p)}</a></li>
+              <li key={p.id}><Link href={href(p)} aria-current={p.id === current.id ? 'page' : undefined}>{navLabel(p)}</Link></li>
             ))}
           </ul>
         </nav>

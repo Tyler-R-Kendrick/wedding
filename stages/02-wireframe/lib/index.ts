@@ -117,3 +117,21 @@ export function coverage(): Coverage {
   }
   return c;
 }
+
+/**
+ * A short, stable hash of what a page's wireframe says (its blocks and notes, not its status).
+ * A sign-off records the fingerprint it approved (stages/signoffs.json), so when the wireframe
+ * changes afterwards, every sign-off on that page reads as stale on the dev hub's board: the
+ * cascade, applied to approvals. FNV-1a over canonical JSON; not a security hash.
+ */
+export function fingerprint(w: Wireframe): string {
+  const canonical = JSON.stringify({ blocks: w.blocks, notes: w.notes ?? [] }, (_k, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v,
+  );
+  let h = 0x811c9dc5;
+  for (let i = 0; i < canonical.length; i++) {
+    h ^= canonical.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}

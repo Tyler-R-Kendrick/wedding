@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { SECTIONS, href, pagesIn } from '@wedding/sitemap';
 import { StageBar } from '@wedding/sitemap/chrome';
 import { coverage, validateWireframes, wireframeFor } from '@wedding/wireframe';
@@ -31,7 +32,7 @@ export default function Index() {
                 const w = wireframeFor(p.id);
                 return (
                   <li key={p.id}>
-                    <a href={href(p)}>{p.title}</a> <code>{p.path}</code>{' '}
+                    <Link href={href(p)}>{p.title}</Link> <code>{p.path}</code>{' '}
                     <span className={`gb-pill gb-pill--${w.status}`}>{w.status === 'derived' ? 'not drawn' : w.status}</span>
                   </li>
                 );
