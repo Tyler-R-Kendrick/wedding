@@ -2074,6 +2074,8 @@
 }
 
 .gh-outlet p {
+  /* A ledger row spans the column; its sentences keep the measure (89 characters a line at 820px). */
+  max-width: var(--gh-measure);
   margin: 0;
 }
 

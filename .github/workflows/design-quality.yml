@@ -40,8 +40,11 @@ jobs:
       - name: Check DESIGN.md exports cleanly to Tailwind v4 @theme
         run: npm run design:export:tailwind > /dev/null
 
-      - name: impeccable detect (deterministic anti-slop rules over src/, the version in package-lock)
-        run: npx --no-install impeccable detect src/
+      # impeccable only ADVISES when a size, colour or radius is off the DESIGN.md scale, and an
+      # advisory never changes its exit code: fifteen off-ramp font sizes accumulated with this step
+      # green, one of them 15px text under the 17px floor. check-design-drift.mjs fails on those too.
+      - name: impeccable detect (anti-slop rules + DESIGN.md scale drift over src/, the version in package-lock)
+        run: node scripts/check-design-drift.mjs src/
 
       - name: stylelint
         run: npm run lint:css

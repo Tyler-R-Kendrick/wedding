@@ -52,10 +52,17 @@ is the primary canvas.
 
 ### 2. Deterministic detector (always)
 ```bash
-npx impeccable detect --json "$TARGET"     # file/dir, or the URL
+node scripts/check-design-drift.mjs "$TARGET"          # file/dir: anti-patterns AND off-scale values
+npm run slop:detect:rendered -- /route                 # a route: every design, 390/820/1280/1440
 ```
-Exit 2 = findings. Every finding is a **blocker** unless a documented
-waiver exists in `.impeccable/config.json`.
+Every finding is a **blocker** unless a documented waiver exists in
+`.impeccable/config.json`. That includes a `design-system-*` size, colour or
+radius off the DESIGN.md scale, which bare `impeccable detect` reports only as
+an "advisory". For a route, the rendered scan is the one that counts: the source
+scan cannot see layout, and on 2026-09-23 only the rendered scan caught an
+overflow at 390px, a 2.6:1 script line and 102-character lines. It needs a
+running server (`BASE_URL`, default :3000); a `NODE_ENV=test` server with
+`TEST_AUTH_SECRET` also covers the guest routes instead of their sign-in gate.
 
 ### 3. Design-token conformance (always)
 ```bash

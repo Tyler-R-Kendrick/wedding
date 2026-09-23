@@ -44,6 +44,12 @@ colors:
   line-gold: "#806238"
   on-line: "#FBF9F3"
 typography:
+  display-2xl:
+    fontFamily: Bodoni Moda
+    fontSize: 6rem
+    fontWeight: 400
+    lineHeight: 0.95
+    letterSpacing: -0.01em
   display-xl:
     fontFamily: Bodoni Moda
     fontSize: 4.25rem
@@ -379,6 +385,13 @@ Two families and one accent.
 decorative captions — an explicit readability adaptation the handoff requires.
 Only eyebrow labels above a heading use `label-caps` (13px): the ornament tier
 the typography gate already exempts by class (`bd-eyebrow`).
+
+**Fluid sizes run between ramp steps, never to a number of their own.** A
+heading that grows with the viewport is `clamp(<step>, …, <step>)` on the
+`--type-*-size` tokens, so `impeccable detect` can hold every endpoint to this
+ramp. `display-2xl` (6rem, italic Bodoni) exists for one element only: the
+three theme words on Home, *Love, peace & happiness*, which the couple asked to
+read as the page's centrepiece (PX-26/27).
 
 ## Layout
 

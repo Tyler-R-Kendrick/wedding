@@ -58,7 +58,7 @@
 .wp-nav a {
   padding: 0 var(--spacing-xs, 4px);
   border-bottom: 2px solid transparent;
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, 1.0625rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -272,7 +272,7 @@
 .wp-handoff__disclosure {
   flex-basis: 100%;
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, 1.0625rem);
   color: var(--color-on-surface-muted, var(--color-primary));
 }
 
@@ -393,7 +393,7 @@
 .wp-footer {
   padding: var(--spacing-lg, 24px) var(--spacing-md, 16px);
   border-top: 1px solid var(--color-outline, var(--color-primary));
-  font-size: 0.9375rem;
+  font-size: var(--type-body-sm-size, 1.0625rem);
   color: var(--color-on-surface-muted, var(--color-primary));
 }
 
@@ -431,6 +431,6 @@
   .wp-handoff::after,
   .wp-prose a[href^="http"]::after {
     content: " (" attr(href) ")";
-    font-size: 0.9375rem;
+    font-size: var(--type-body-sm-size, 1.0625rem);
   }
 }

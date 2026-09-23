@@ -867,7 +867,7 @@
   --bd-shown: var(--bd-days);
 
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 1.6rem + 2.6vw, 4.5rem);
+  font-size: clamp(var(--type-h1-size), 1.713rem + 2.275vw, var(--type-display-xl-size));
   font-weight: 400;
   line-height: 1;
   font-variant-numeric: lining-nums tabular-nums;
@@ -1342,7 +1342,8 @@
 .bd-footer__place,
 .bd-footer__credits,
 .bd-footer__rights {
-  max-width: 44rem;
+  /* The design's measure, not a column: at 44rem the one-line venue address ran 92 characters. */
+  max-width: var(--bd-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-primary);
 }
@@ -1824,7 +1825,7 @@
 }
 
 .bd-theme__title {
-  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  font-size: clamp(var(--type-h1-size), 1.99rem + 1.56vw, var(--type-display-lg-size));
   line-height: 1.04;
 }
 
@@ -1856,7 +1857,7 @@
 
 .bd-theme__word {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 1.8rem + 5vw, 6rem);
+  font-size: clamp(var(--type-display-lg-size), 2.15rem + 4.583vw, var(--type-display-2xl-size));
   font-style: italic;
   font-weight: 400;
   line-height: 0.95;
@@ -1938,7 +1939,7 @@
 }
 
 .bd-share__title {
-  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  font-size: clamp(var(--type-h1-size), 1.99rem + 1.56vw, var(--type-display-lg-size));
   line-height: 1.04;
 }
 
@@ -1981,7 +1982,7 @@
 
 .bd-share__name {
   font-family: var(--font-display);
-  font-size: clamp(1.875rem, 1.3rem + 1.6vw, 2.75rem);
+  font-size: clamp(var(--type-h2-size), 1.464rem + 1.143vw, var(--type-h1-size));
   font-weight: 400;
   line-height: 1.08;
 }
@@ -2221,7 +2222,7 @@
 }
 
 .bd-closing__title {
-  font-size: clamp(2rem, 1.3rem + 2vw, 3rem);
+  font-size: clamp(var(--type-h2-size), 0.913rem + 2.75vw, var(--type-display-lg-size));
   line-height: 1.06;
 }
 
@@ -2232,7 +2233,7 @@
 
 .bd-closing__sign {
   margin-block-start: var(--spacing-md);
-  font-size: clamp(2.25rem, 1.8rem + 1.2vw, 3rem);
+  font-size: clamp(var(--type-script-size), 1.65rem + 1.6vw, var(--type-display-lg-size));
   transform: rotate(-4deg);
   transform-origin: left center;
 }
@@ -2363,6 +2364,11 @@
   font-size: var(--type-title-size);
 }
 
+/* A notice spans its column (972px beside the RSVP form); its sentences keep the measure. */
+.bd-gnotice__body {
+  max-width: var(--bd-measure);
+}
+
 .bd-schedule__title {
   font-size: clamp(1.875rem, 1.3rem + 0.8vw, 2.25rem);
   line-height: 1.05;
@@ -2385,7 +2391,7 @@
   inset-block-start: 22%;
   inset-inline-end: 12%;
   font-family: var(--font-accent);
-  font-size: clamp(2.25rem, 1.6rem + 2vw, 3.25rem);
+  font-size: clamp(var(--type-script-size), 1.6rem + 2vw, var(--type-display-lg-size));
   line-height: 0.95;
   color: var(--color-surface);
   text-shadow: 0 1px 14px color-mix(in oklab, var(--color-primary) 60%, transparent);
@@ -4070,7 +4076,7 @@
 
 .bd-atlas__num {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--type-label-caps-size);
   font-variant-numeric: lining-nums;
   fill: var(--color-on-gold-deep);
 }
@@ -4100,7 +4106,7 @@
 }
 
 .bd-atlas__marker[data-kind="cluster"] .bd-atlas__num {
-  font-size: 16px;
+  font-size: var(--type-body-sm-size);
   fill: var(--color-on-secondary);
 }
 

@@ -12,6 +12,23 @@ applies `src/db/migrations`, and runs the idempotent seed (site row, lifecycle `
 readiness rows, provenance sources from the brief). `PGLITE_MEMORY=1` uses a throwaway
 in-memory database instead; `DATABASE_URL` switches to a real Postgres.
 
+`npm install` also runs `prepare`, which points git at `.githooks/` (`git config core.hooksPath
+.githooks`). From then on every commit runs the design gate in `scripts/precommit.mjs` over the
+staged files only: Google's `design.md lint` on any staged DESIGN.md (read from the index; errors
+and WCAG contrast warnings block), `design:sync --check` when tokens or generated theme CSS change,
+`impeccable detect` on staged UI files (all of `src/` when DESIGN.md or `.impeccable/config.json`
+changes, plus any staged UI files outside it; a size, colour or radius off the DESIGN.md scale blocks
+as well as an anti-pattern, via `scripts/check-design-drift.mjs`), and stylelint on staged CSS. A commit that touches
+no UI adds nothing. `npm run precommit` runs it by hand. A finding is fixed, or waived through
+`impeccable hooks ignore-value … --reason`; `--no-verify` is not a way to land UI work, and CI runs
+every check on the pull request regardless.
+
+The installer never displaces hooks you already rely on. It does nothing under `CI`, outside a git
+work tree, when `core.hooksPath` is already set at any scope (a global secret scanner, say), or when
+`.git/hooks` holds real hooks (git-lfs). To opt a clone out for good, including against the Claude
+SessionStart hook that re-runs the installer: `git config hooks.designGate false && git config
+--unset core.hooksPath`.
+
 Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI) export
 `NODE_USE_ENV_PROXY=1` before `npm install` so postinstall downloads succeed.
 
@@ -64,3 +81,22 @@ npm run verify             # everything CI runs except e2e
 - Job handler: `registerJobHandler('feature.task', handler)` from a module that the app imports.
 - Route: `src/capabilities/routes.ts` for `navigate_to`, `src/app/<route>/page.tsx` for the page.
 - Dependencies are frozen at this level; ask the foundation owner before adding a package.
+
+## The rendered design scan
+
+The source scans read CSS and JSX and cannot see a layout. `npm run slop:detect:rendered` runs
+impeccable against the live pages: every public route in all three designs at 390, 820, 1280 and
+1440px. It uses `BASE_URL` (default `http://localhost:3000`). To cover the guest routes too, which
+otherwise show their sign-in gate, start the server the way the e2e suite does and pass the same
+secret:
+
+```bash
+NODE_ENV=test TEST_AUTH_SECRET=e2e-test-secret-0123456789 SEED_TEST_FIXTURES=1 \
+  NEXT_PUBLIC_SITE_URL=http://localhost:3100 PGLITE_MEMORY=1 npm run dev -- -p 3100
+BASE_URL=http://localhost:3100 TEST_AUTH_SECRET=e2e-test-secret-0123456789 npm run slop:detect:rendered
+```
+
+Narrow it with `--viewports 390x844`, `--themes conservatory`, or route arguments (`-- /gifts`).
+It finds Playwright's Chromium itself (set `IMPECCABLE_BROWSER` to override) and adds
+`--no-sandbox` when it runs as root.
+

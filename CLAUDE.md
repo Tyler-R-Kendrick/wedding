@@ -76,9 +76,13 @@ npm run design:lint            # Google design.md linter (structure + WCAG contr
 npm run design:export:tailwind # DESIGN.md → Tailwind v4 @theme CSS
 npm run design:export:dtcg     # DESIGN.md → W3C design tokens JSON
 npm run slop:detect            # impeccable's 61 anti-slop rules over the repo (exit 2 = findings)
+npm run design:drift           # the same, plus any size/colour/radius off the DESIGN.md scale (what CI and quality run)
+npm run slop:detect:rendered   # rendered scan: every route × design × 390/820/1280/1440 (needs a server, BASE_URL)
 npm run lint:css               # stylelint (bans Inter/Roboto/Arial/Helvetica/Fraunces/… in CSS)
 npm run test:a11y              # axe-core WCAG 2.2 AA via Playwright (needs BASE_URL)
 npm run quality                # design:lint + slop:detect + lint:css (what CI runs)
+npm run precommit              # the pre-commit design gate over staged files (git runs it for you)
+npm run hooks:install          # point git at .githooks/ (npm install already does, via `prepare`)
 npm run skills:list            # installed agent skills
 npm run skills:update          # update skills from their repos (skills-lock.json)
 node scripts/fal-generate.mjs "prompt"   # quick fal.ai image for a mood board (needs FAL_KEY)
@@ -176,6 +180,14 @@ npm run secrets:verify:artifact   # the page as the published artifact: every co
   Cormorant; no purple gradients, glassmorphism, glows, bento grids,
   hero + 3 cards, bounce easing.
 - Before calling a page done: run `design-review`, then `npm run quality`.
+- Every commit passes the **pre-commit design gate** (`.githooks/pre-commit` →
+  `scripts/precommit.mjs`): Google `design.md lint` on each staged DESIGN.md (errors and
+  WCAG-contrast warnings block), `design:sync --check` when tokens change, `impeccable detect`
+  on staged UI files (plus all of `src/` when DESIGN.md or `.impeccable/config.json` changes;
+  anti-patterns and off-scale sizes, colours and radii both block), and stylelint on staged CSS.
+- A fluid size runs between ramp steps: `clamp(var(--type-<step>-size), …, var(--type-<step>-size))`.
+  A size the ramp lacks goes into that theme's DESIGN.md first (then `npm run design:sync`). A finding is fixed, or waived through `impeccable hooks ignore-value`
+  with a reason; `--no-verify` is not a way to land UI work.
 - Placeholder facts use `TODO(Tyler & Sara)`; never plausible fiction.
 
 ## Stack (chosen; level 03 foundation)
