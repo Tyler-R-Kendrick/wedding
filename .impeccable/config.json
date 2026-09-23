@@ -15,8 +15,7 @@
       "italic-serif-display",
       "hero-eyebrow-chip",
       "clipped-overflow-container",
-      "cramped-padding",
-      "repeating-stripes-gradient"
+      "cramped-padding"
     ],
     "ignoreFiles": [
       "node_modules/**",
@@ -85,9 +84,8 @@
       "all-caps-body": "The approved Botanical–Deco date, place and page subtitles are single tracked-caps lines at the 17px control-caps step, never paragraphs. docs/design/approved-botanical-deco/detector-waivers.md.",
       "italic-serif-display": "The approved Explore page sets 'Chicago' as one italic Bodoni display word (REF-EXPLORE); it is the only italic display on the site. docs/design/approved-botanical-deco/detector-waivers.md.",
       "hero-eyebrow-chip": "REF-EXPLORE sets 'SARA + TYLER' in tracked capitals above the page title; the companion page heads keep that one line and nothing else above their H1. docs/design/approved-botanical-deco/detector-waivers.md.",
-      "clipped-overflow-container": "Our Story's ride stage (.bd-ride__stage, .bd-ride__window) is a camera window: memories slide out of it and must be clipped at its edge. No other surface clips a positioned child. docs/design/approved-botanical-deco/detector-waivers.md.",
-      "cramped-padding": "The ride's car card (the CTA line diagram) runs edge to edge across the top of the stage by design, like the strip map above a train's doors; the cards inside the window carry their own inset. docs/design/approved-botanical-deco/detector-waivers.md.",
-      "repeating-stripes-gradient": "The ride's floor sleepers are the one repeating gradient: railway ties at 20% gilt under a 3D track, masked to the horizon, never a surface texture. docs/design/approved-botanical-deco/detector-waivers.md.",
+      "clipped-overflow-container": "Our Story's ride stage (.bd-ride__stage, .bd-ride__window) shows one moment at a time: the moment being left drifts out sideways as the next drifts in, and the window clips them at its edge. The line diagram above it is a horizontal scroller that keeps the train centred. No other surface clips a positioned child. docs/design/approved-botanical-deco/detector-waivers.md.",
+      "cramped-padding": "The ride's car card (the CTA line diagram) runs edge to edge across the top of the stage by design, like the strip map above a train's doors; the moments under it carry their own inset. docs/design/approved-botanical-deco/detector-waivers.md.",
       "stages/*/out/**": "Static exports of the pipeline stages, and public/_stages/ which assembles them into the wedding app (gitignored build output). Their sources are scanned; stage 4's export inlines each design's own DESIGN.md colours, which are judged in src/themes/, not against the root scale.",
       "stages/04-placeholder/app/themes/**": "Copies of src/themes/<id>/theme.css + fonts.css made by stages/04-placeholder/scripts/sync-themes.mjs (gitignored). The originals are scanned in src/themes/."
     }

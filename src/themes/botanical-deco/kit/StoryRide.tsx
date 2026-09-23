@@ -5,22 +5,30 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
 /**
  * Our Story as a ride on the 'L' (docs/design/inspo/our-story-timeline.md).
  *
- * The page is as tall as the ride; a sticky stage holds every stop at its own depth down a track, and
- * native scroll moves the camera forward through them. One rAF-throttled listener writes one custom
- * property, `--p` (the train's position in stops); CSS turns it into every card's depth, drift and
- * haze, the sleepers running under the floor, and the train on the car-card map. Scroll maps to `--p`
- * with plateaus — a short run of travel, then a longer stretch stopped at the station — and a native
- * proximity snap settles a fling on the nearest platform, so nobody has to read a memory while it moves.
+ * The page is as tall as the ride; a sticky ivory stage holds the line and one moment at a time, and
+ * native scroll moves the train along the line. One rAF-throttled listener writes the train's position
+ * (`--p`, on the train) and each nearby moment's distance from it (`--d`, on that moment); CSS turns
+ * those into the train on the line and each moment's drift and fade. Scroll maps to `--p` with
+ * plateaus — a short run of travel, then a longer stretch stopped at the station — and when scrolling
+ * stops between two stations the train rolls on to the nearer platform, so nobody has to read a memory
+ * while it moves. Stopped, the moment is the whole stage: its words first, its picture beside or under
+ * them, nothing behind.
  *
- * It works without script and without motion. The server renders the same ordered list flat: a
- * stations list and each stop a readable section beside its line, every stop a `#slug` anchor (an
- * assistant's citation `/our-story#love` lands on it). Script upgrades that to the ride only when the
- * guest has not asked for reduced motion and has not chosen "Read it as a list"; the page prints flat.
+ * The line is a CTA car card laid horizontally, as it is above the doors: a fat line in each chapter's
+ * colour, a white circle per station, a wide ring where a chapter begins, the square Loop at the end,
+ * and the station names angled above it. On a phone (or a short window) the strip keeps the train
+ * mid-screen, the line slides under it, and only the current name is written out.
  *
- * Riding, it behaves like a carousel for assistive technology: the car-card map is the list of every
+ * It works without script and without motion. The server renders the same ordered list flat: the
+ * line, then each stop a readable section, every stop a `#slug` anchor (an assistant's citation
+ * `/our-story#love` lands on it). Script upgrades that to the ride only when the guest has not asked
+ * for reduced motion and has not chosen "Read it as a list"; the page prints flat.
+ *
+ * Riding, it behaves like a carousel for assistive technology: the car card is the list of every
  * station (one tab stop, arrow keys move along it, the current one `aria-current="location"`), the
  * station at the platform is the one exposed section, and a polite live region says where the train
- * has stopped. The others stay in the page, so find-in-page still reaches their words.
+ * has stopped. The moments off the platform are not drawn, so find-in-page reaches them only in
+ * "Read it as a list", which lays every word out at once.
  */
 
 export type LineKey = 'red' | 'blue' | 'brown' | 'pink' | 'green' | 'orange' | 'gold';
@@ -29,16 +37,11 @@ export type StopKind = 'origin' | 'transfer' | 'station' | 'terminal';
 export interface RideStop {
   slug: string;
   kind: StopKind;
+  /** The chapter's colour on the line. Never named on the page: the colour is the way-finding. */
   line: LineKey;
-  /** "Pink Line" */
-  lineName: string;
-  /** Which of the two parallel tracks the stop's line runs on in the diagram. */
-  track: 0 | 1;
-  /** The line (and track) the train arrives on, for a transfer's dumbbell. */
-  from?: { line: LineKey; track: 0 | 1 };
-  /** Station name on the map and in the announcement. */
+  /** Station name on the line and in the announcement. */
   name: string;
-  /** Short date for the map, when there is one. */
+  /** Short date for the line, when there is one. */
   when?: string;
 }
 
@@ -59,6 +62,22 @@ export function trainPosition(raw: number, stops: number): number {
   if (i >= stops - 1) return stops - 1;
   return f < DWELL ? i : i + ease((f - DWELL) / (1 - DWELL));
 }
+
+/** Inverse of the ease: how far through a run the train is when it has covered `y` of it. */
+const easeInverse = (y: number) => (y < 0.5 ? Math.sqrt(y / 2) : 1 - Math.sqrt(2 * (1 - y)) / 2);
+
+/**
+ * The raw scroll (in stops) that puts the train at `p`: the start of a station's plateau when it is
+ * exactly at a station, the point along the run otherwise. `trainPosition(rawScrollFor(p)) === p`.
+ */
+export function rawScrollFor(p: number): number {
+  const i = Math.floor(p);
+  const f = p - i;
+  return f < 1e-6 ? i : i + DWELL + easeInverse(f) * (1 - DWELL);
+}
+
+/** Ease for a button ride, applied to the train itself: it pulls away and brakes, and never sits still. */
+const glide = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 /** How long a button- or map-driven ride takes: long enough to see the stations pass, never a cut. */
 export const rideDuration = (stopsTravelled: number) => Math.min(2400, 650 + 260 * Math.max(1, Math.abs(stopsTravelled)));
@@ -92,10 +111,10 @@ interface Geometry {
   stageH: number;
   step: number;
   railH: number;
-  map: { vertical: boolean; gap: number; first: number; size: number; total: number } | null;
+  map: { gap: number; first: number; size: number; total: number } | null;
 }
 
-export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]; cards: ReactNode[]; lineName: string; intro: ReactNode }) {
+export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]; cards: ReactNode[]; lineName: string; title: ReactNode }) {
   // Flat on the server, without script, with reduced motion, and while printing.
   const motionOk = useSyncExternalStore(
     onMotionChange,
@@ -119,8 +138,15 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
   const geo = useRef<Geometry | null>(null);
   /** A guest is swiping, pointing at or tabbing through the car card: leave its scroll alone. */
   const mapHold = useRef(false);
+  /** The last scroll came from the guest's own wheel, finger or key, not from the ride moving itself. */
+  const userDriven = useRef(false);
+  const touchRelease = useRef(0);
   const flight = useRef<{ raf: number; to: number } | null>(null);
+  /** A jump of more than one stop runs express: only the moment you leave and the one you reach are shown. */
+  const express = useRef<{ from: number; to: number } | null>(null);
   const reframe = useRef<() => void>(() => {});
+  /** Draw the ride for the current scroll position now, in this frame (a button ride calls it after scrolling). */
+  const renderNow = useRef<() => void>(() => {});
   const [at, setAt] = useState({ index: 0, docked: true, toward: 0 });
   const [pinned, setPinned] = useState(false);
   const [announced, setAnnounced] = useState('');
@@ -129,7 +155,17 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
   const n = stops.length;
   const factor = stepFactor(n);
 
+  /** The stop a guest was at when they switched between riding and reading, to land them on it again. */
+  const resume = useRef<number | null>(null);
   const chooseList = (value: boolean) => {
+    if (ride) resume.current = flight.current?.to ?? at.index;
+    else {
+      // Reading the list: the stop whose section crosses the upper part of the window is where they are.
+      const items = [...(root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop') ?? [])];
+      const line = window.innerHeight * 0.4;
+      const i = items.findLastIndex((li) => li.getBoundingClientRect().top <= line);
+      resume.current = Math.max(0, i);
+    }
     setListChoice(value);
     try {
       window.localStorage.setItem(LIST_KEY, value ? '1' : '0');
@@ -145,17 +181,76 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     return g.railTop - g.rideTop + (i + DWELL / 2) * g.step;
   }, []);
 
+  const endExpress = useCallback(() => {
+    const ex = express.current;
+    if (!ex) return;
+    express.current = null;
+    delete stage.current?.dataset.express;
+    root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop[data-express-end]').forEach((li) => delete li.dataset.expressEnd);
+  }, []);
+
   const cancelFlight = useCallback(() => {
     if (!flight.current) return;
     window.cancelAnimationFrame(flight.current.raf);
     flight.current = null;
-    document.documentElement.style.removeProperty('scroll-snap-type');
-  }, []);
+    endExpress();
+    renderNow.current();
+  }, [endExpress]);
 
   /**
-   * Ride to stop `i`. The scroll is driven here rather than by the browser's smooth scroll, which
-   * covers any distance in ~150 ms and turns a seven-stop jump into a flicker of seven cards.
+   * Ride the train to stop `next` over `duration` ms. The scroll is driven here rather than by the
+   * browser's smooth scroll, which covers any distance in ~150 ms, and it is eased on the train's
+   * position rather than on the scroll: it moves from the first frame to the last, instead of idling
+   * through the rest of the platform and then lurching.
    */
+  const fly = useCallback(
+    (next: number, duration?: number) => {
+      const g = geo.current;
+      const y = scrollTargetFor(next);
+      if (!g || y == null) return;
+      cancelFlight();
+      userDriven.current = false;
+      const fromY = window.scrollY;
+      const pFrom = trainPosition((fromY + g.rideTop - g.railTop) / g.step, n);
+      // Off the stage (still in the opening, or already past the Loop) there is no train to ease yet:
+      // the scroll itself glides to the platform, rather than cutting a screen in its first frame.
+      const onStage = fromY + g.rideTop >= g.railTop - 1 && fromY + g.rideTop + g.stageH <= g.railTop + g.railH + 1;
+      const travelled = next - pFrom;
+      if (Math.abs(travelled) < 1e-3 && Math.abs(fromY - y) < 1) {
+        window.scrollTo({ top: y, behavior: 'instant' });
+        return;
+      }
+      const ms = duration ?? rideDuration(travelled);
+      const start = performance.now();
+      const docked = Math.abs(pFrom - Math.round(pFrom)) < 0.002;
+      // Express only from a train standing at a platform: a second tap mid-run carries on normally,
+      // so the moment already half in view never snaps.
+      if (onStage && docked && Math.abs(next - Math.round(pFrom)) > 1) {
+        // Express: the stations between flash past on the line, not on the stage.
+        const origin = Math.round(pFrom);
+        express.current = { from: origin, to: next };
+        const items = root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop');
+        items?.[origin]?.setAttribute('data-express-end', '');
+        items?.[next]?.setAttribute('data-express-end', '');
+        if (stage.current) stage.current.dataset.express = '';
+      }
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / ms);
+        const top = t >= 1 ? y : onStage ? g.railTop - g.rideTop + rawScrollFor(pFrom + travelled * glide(t)) * g.step : fromY + (y - fromY) * glide(t);
+        window.scrollTo({ top, behavior: 'instant' });
+        if (t < 1) flight.current = { raf: window.requestAnimationFrame(tick), to: next };
+        else {
+          flight.current = null;
+          endExpress();
+        }
+        renderNow.current();
+      };
+      flight.current = { raf: window.requestAnimationFrame(tick), to: next };
+    },
+    [n, scrollTargetFor, cancelFlight, endExpress],
+  );
+
+  /** Ride to stop `i`, and put it in the address bar so it can be shared. */
   const go = useCallback(
     (i: number, instant = false) => {
       const next = Math.min(Math.max(i, 0), n - 1);
@@ -168,31 +263,15 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       }
       const y = scrollTargetFor(next);
       if (y == null) return;
-      cancelFlight();
       if (instant || window.matchMedia(REDUCE).matches) {
+        cancelFlight();
+        userDriven.current = false;
         window.scrollTo({ top: y, behavior: 'instant' });
         return;
       }
-      const from = window.scrollY;
-      const g = geo.current;
-      const travelled = g ? Math.round((y - from) / g.step) : 1;
-      const duration = rideDuration(travelled);
-      const start = performance.now();
-      // A proximity snap would pull every intermediate frame back to a platform.
-      document.documentElement.style.setProperty('scroll-snap-type', 'none');
-      const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const k = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-        window.scrollTo({ top: from + (y - from) * k, behavior: 'instant' });
-        if (t < 1) flight.current = { raf: window.requestAnimationFrame(tick), to: next };
-        else {
-          flight.current = null;
-          document.documentElement.style.removeProperty('scroll-snap-type');
-        }
-      };
-      flight.current = { raf: window.requestAnimationFrame(tick), to: next };
+      fly(next);
     },
-    [n, ride, scrollTargetFor, stops, cancelFlight],
+    [n, ride, scrollTargetFor, stops, cancelFlight, fly],
   );
 
   // The engine: geometry on resize, one custom property per frame, React state only on a new station.
@@ -205,6 +284,13 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     let last = { index: -1, docked: false, toward: 0 };
     let lastP = 0;
     let lastPinned: boolean | null = null;
+    /** The station the train last stood at, until the guest themselves moves it off. */
+    let standing: number | null = null;
+    // The two layers of each moment that move: its words and its picture. --d is registered as not
+    // inherited (ride.css), so writing it restyles these few elements, not every paragraph inside them.
+    const layers = [...el.querySelectorAll<HTMLElement>('.bd-ride__stop')].map((li) => [...li.querySelectorAll<HTMLElement>('.bd-stopcard__text, .bd-stopcard__media, .bd-stopcard__numeral')]);
+    const setD = (i: number, d: number) => layers[i]?.forEach((layer) => layer.style.setProperty('--d', d.toFixed(4)));
+    const train = el.querySelector<HTMLElement>('.bd-ride-map__train');
 
     const measure = () => {
       // The stage sits under the sticky masthead (desktop). The phone action bar is hidden while the
@@ -220,15 +306,9 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       if (list && vp && list.children.length > 2) {
         const a = list.children[0] as HTMLElement;
         const b = list.children[1] as HTMLElement;
-        const vertical = b.offsetTop !== a.offsetTop;
-        map = {
-          vertical,
-          gap: vertical ? b.offsetTop - a.offsetTop : b.offsetLeft - a.offsetLeft,
-          first: vertical ? a.offsetTop : a.offsetLeft,
-          size: vertical ? vp.clientHeight : vp.clientWidth,
-          total: vertical ? vp.scrollHeight : vp.scrollWidth,
-        };
+        map = { gap: b.offsetLeft - a.offsetLeft, first: a.offsetLeft, size: vp.clientWidth, total: vp.scrollWidth };
         st.style.setProperty('--map-gap', `${map.gap}px`);
+        st.style.setProperty('--map-first', `${a.offsetLeft + a.offsetWidth / 2}px`);
       }
       geo.current = { railTop: rect.top + window.scrollY, rideTop, stageH, step: stageH * factor, railH: rect.height, map };
     };
@@ -240,20 +320,31 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       const y = window.scrollY;
       const raw = (y + g.rideTop - g.railTop) / g.step;
       const p = trainPosition(raw, n);
-      st.style.setProperty('--p', p.toFixed(4));
       const index = Math.round(p);
       const docked = Math.abs(p - index) < 0.002;
-      // Between stations the train runs on the track of the stop it left; stopped, on the stop's own.
-      const segment = Math.min(Math.floor(p + 0.0001), n - 1);
-      st.style.setProperty('--train-track', String(stops[docked ? index : segment]?.track ?? 0));
+      // Any scroll that is not the ride moving itself (a wheel, the scrollbar, find-in-page, a screen
+      // reader) takes the train off the station it stood at.
+      if (docked) standing = index;
+      else if (!flight.current) standing = null;
       // The car card keeps the train mid-strip and the line slides under it. It is a real scroller, so
       // a guest can swipe to a far station and focus scrolls to a tabbed one; while they do, it is theirs.
+      // (Scroll is written before any style, so it never forces a restyle mid-frame.)
       const vp = mapViewport.current;
       if (g.map && vp && !mapHold.current) {
-        const { gap, first, size, total, vertical } = g.map;
-        const offset = total <= size ? 0 : Math.max(0, Math.min(total - size, first + p * gap + gap / 2 - size / 2));
-        if (vertical) vp.scrollTop = offset;
-        else vp.scrollLeft = offset;
+        const { gap, first, size, total } = g.map;
+        const left = total <= size ? 0 : Math.max(0, Math.min(total - size, first + p * gap + gap / 2 - size / 2));
+        if (Math.abs(vp.scrollLeft - left) > 0.5) vp.scrollLeft = left;
+      }
+      // Each moment near the train gets its own distance from it, --d; nothing else restyles per frame.
+      train?.style.setProperty('--p', p.toFixed(4));
+      const ex = express.current;
+      if (ex) {
+        const k = Math.min(1, Math.max(0, (p - ex.from) / (ex.to - ex.from)));
+        const dir = Math.sign(ex.to - ex.from);
+        setD(ex.from, -k * dir);
+        setD(ex.to, (1 - k) * dir);
+      } else {
+        for (let i = Math.max(0, Math.floor(p) - 1); i <= Math.min(n - 1, Math.ceil(p) + 1); i++) setD(i, i - p);
       }
       const isPinned = y + g.rideTop >= g.railTop - 1 && y + g.rideTop + g.stageH <= g.railTop + g.railH + 1;
       if (isPinned !== lastPinned) {
@@ -275,25 +366,101 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       if (!frame) frame = window.requestAnimationFrame(frameFn);
     };
     reframe.current = schedule;
+    renderNow.current = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frameFn();
+    };
     const remeasure = () => {
+      // A train standing at a station stays there when the page reflows above or around it (a font or a
+      // picture arriving late, a rotated phone): the scroll follows the platform, not the old pixels.
+      const keep = flight.current ? null : standing;
       measure();
+      const g = geo.current;
+      if (keep != null && g) {
+        const y = window.scrollY;
+        const pinnedNow = y + g.rideTop >= g.railTop - 1 && y + g.rideTop + g.stageH <= g.railTop + g.railH + 1;
+        const p = trainPosition((y + g.rideTop - g.railTop) / g.step, n);
+        if (pinnedNow && Math.abs(p - keep) > 0.002) window.scrollTo({ top: g.railTop - g.rideTop + (keep + DWELL / 2) * g.step, behavior: 'instant' });
+      }
       schedule();
     };
+    /*
+     * Settling. When a guest stops scrolling with the train between two stations, it rolls on to the
+     * one it was heading for (or back to the one it barely left) — gently, and only once their hand is
+     * off: never while a finger is on the glass or a button is held, never mid-fling. A train already
+     * standing at a platform is left exactly where it is. This replaces CSS scroll snap, which on a
+     * ride this long catches almost every position and pulls each notch of a mouse wheel back.
+     */
+    let settleTimer = 0;
+    let held = false;
+    let heading = 0;
+    let lastY = window.scrollY;
+    const settle = () => {
+      window.clearTimeout(settleTimer);
+      settleTimer = 0;
+      const g = geo.current;
+      if (!g || flight.current || held) return;
+      const railStart = g.railTop - g.rideTop;
+      const y = window.scrollY;
+      if (y < railStart || y > railStart + g.railH - g.stageH) return;
+      const p = trainPosition((y - railStart) / g.step, n);
+      const i = Math.floor(p);
+      const f = p - i;
+      if (f < 0.002 || f > 0.998) return;
+      // Heading only counts when the guest was the one scrolling; after the ride moved itself (a deep
+      // link, a reflow), the nearest station is the right one.
+      const target = !userDriven.current ? Math.round(p) : heading > 0 ? (f > 0.2 ? i + 1 : i) : heading < 0 ? (f < 0.8 ? i : i + 1) : Math.round(p);
+      fly(target, 280 + 560 * Math.abs(target - p));
+    };
+    const settleSoon = (ms = 220) => {
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(settle, ms);
+    };
+    const hasScrollEnd = 'onscrollend' in window;
+    const onScroll = () => {
+      // A button ride draws its own frames (renderNow), so its scrolls need no second pass.
+      if (!flight.current) schedule();
+      const y = window.scrollY;
+      if (!flight.current && y !== lastY) heading = Math.sign(y - lastY);
+      lastY = y;
+      // Without scrollend, every scroll restarts the wait; with it, a settle already waiting (a finger
+      // just lifted, momentum still carrying the page) waits for the page to come to rest.
+      if (!flight.current && (!hasScrollEnd || settleTimer)) settleSoon();
+    };
+    const onScrollEnd = () => settleSoon(140);
+    const hold = () => {
+      held = true;
+      window.clearTimeout(settleTimer);
+    };
+    const release = () => {
+      held = false;
+      settleSoon();
+    };
+
     // A guest's own wheel, touch, pointer or scrolling key takes the train back from a button-driven
     // ride — except presses on the ride's own controls, which queue the next stop instead.
     const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
     const ownControl = (t: EventTarget | null) => t instanceof Element && Boolean(t.closest('.bd-ride__controls, .bd-ride-map'));
-    const interrupt = () => cancelFlight();
+    const interrupt = () => {
+      userDriven.current = true;
+      cancelFlight();
+    };
     const interruptKey = (e: globalThis.KeyboardEvent) => {
-      if (SCROLL_KEYS.has(e.key) && !ownControl(e.target)) cancelFlight();
+      if (SCROLL_KEYS.has(e.key) && !ownControl(e.target)) interrupt();
     };
     const interruptPointer = (e: Event) => {
-      if (!ownControl(e.target)) cancelFlight();
+      if (!ownControl(e.target)) interrupt();
     };
     remeasure();
     const ro = new ResizeObserver(remeasure);
     ro.observe(document.body);
-    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scrollend', onScrollEnd);
+    window.addEventListener('touchstart', hold, { passive: true });
+    window.addEventListener('touchend', release);
+    window.addEventListener('touchcancel', release);
+    window.addEventListener('pointerdown', hold);
+    window.addEventListener('pointerup', release);
     window.addEventListener('resize', remeasure);
     window.addEventListener('wheel', interrupt, { passive: true });
     window.addEventListener('touchstart', interruptPointer, { passive: true });
@@ -301,7 +468,14 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     window.addEventListener('pointerdown', interruptPointer);
     return () => {
       ro.disconnect();
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scrollend', onScrollEnd);
+      window.removeEventListener('touchstart', hold);
+      window.removeEventListener('touchend', release);
+      window.removeEventListener('touchcancel', release);
+      window.removeEventListener('pointerdown', hold);
+      window.removeEventListener('pointerup', release);
+      window.clearTimeout(settleTimer);
       window.removeEventListener('resize', remeasure);
       window.removeEventListener('wheel', interrupt);
       window.removeEventListener('touchstart', interruptPointer);
@@ -311,20 +485,69 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       cancelFlight();
       delete document.documentElement.dataset.ridePinned;
       reframe.current = () => {};
+      renderNow.current = () => {};
     };
-  }, [ride, factor, n, stops, cancelFlight]);
+  }, [ride, factor, n, stops, cancelFlight, fly]);
 
   // A deep link (`/our-story#starved-rock`) lands on its station once the ride has its height.
   useEffect(() => {
     if (!ride) return;
+    let target = -1;
+    let until = 0;
     const jumpToHash = () => {
-      const i = stops.findIndex((s) => `#${s.slug}` === window.location.hash);
-      if (i >= 0) go(i, true);
+      target = stops.findIndex((s) => `#${s.slug}` === window.location.hash);
+      if (target < 0) return;
+      until = performance.now() + 1500;
+      go(target, true);
+    };
+    // The browser scrolls to the fragment itself, smoothly (the site's scroll-behavior), in the flat
+    // page it rendered before the ride took over; that animation can finish after the ride has jumped.
+    // For a moment after landing, unless the guest has scrolled, a scroll that ends elsewhere is put
+    // back on the station the link named.
+    const holdLanding = () => {
+      // Not once the guest has chosen somewhere else: every ride they ask for rewrites the hash.
+      if (target < 0 || performance.now() > until || userDriven.current || flight.current) return;
+      if (window.location.hash !== `#${stops[target]?.slug}`) return;
+      const g = geo.current;
+      if (!g) return;
+      const p = trainPosition((window.scrollY + g.rideTop - g.railTop) / g.step, n);
+      if (Math.abs(p - target) > 0.002) go(target, true);
     };
     jumpToHash();
+    window.addEventListener('scrollend', holdLanding);
+    window.addEventListener('load', holdLanding);
     window.addEventListener('hashchange', jumpToHash);
-    return () => window.removeEventListener('hashchange', jumpToHash);
+    return () => {
+      window.removeEventListener('scrollend', holdLanding);
+      window.removeEventListener('load', holdLanding);
+      window.removeEventListener('hashchange', jumpToHash);
+    };
+  }, [ride, go, stops, n]);
+
+  // Switching between riding and reading keeps the guest's place: the ride docks at the stop they were
+  // reading, the list opens at the stop they were riding, and focus goes with them.
+  useEffect(() => {
+    const i = resume.current;
+    if (i == null) return;
+    resume.current = null;
+    const stop = stops[i];
+    if (!stop) return;
+    if (ride) {
+      go(i, true);
+      return;
+    }
+    const li = document.getElementById(stop.slug);
+    if (!li) return;
+    li.scrollIntoView({ block: 'start', behavior: 'instant' });
+    li.setAttribute('tabindex', '-1');
+    li.focus({ preventScroll: true });
   }, [ride, go, stops]);
+
+  // A pending release of the strip, from a touch that just ended, never outlives the page.
+  useEffect(() => {
+    const pending = touchRelease;
+    return () => window.clearTimeout(pending.current);
+  }, []);
 
   // Announce arrivals only once the train has settled, and only while the ride is on screen: scrolling
   // past five stations is not five interruptions, and nothing is announced from the hero.
@@ -336,8 +559,8 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     return () => window.clearTimeout(t);
   }, [ride, at, pinned, stops]);
 
-  // Only the station at the platform takes focus; links inside cards sliding past are taken out of the
-  // tab order (their words stay in the page for find-in-page).
+  // Only the station at the platform takes focus; links inside moments passing by are taken out of
+  // the tab order.
   useEffect(() => {
     const track = root.current?.querySelector('.bd-ride__track');
     if (!track) return;
@@ -350,9 +573,40 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     });
   }, [ride, at.index]);
 
-  // Does the card at the platform fit its window? If not it scrolls on its own, says so, and takes focus.
+  // Words before pictures, in the fit too: a moment too tall for its window lets its picture go before
+  // any of its words have to scroll. Measured for every stop at once (they are all laid out, hidden or
+  // not), on arrival and on every resize, so a picture never vanishes mid-transition.
   useEffect(() => {
     if (!ride) return;
+    let raf = 0;
+    const fitAll = () => {
+      raf = 0;
+      const items = root.current?.querySelectorAll<HTMLElement>('.bd-ride__stop') ?? [];
+      // All writes, then all reads, then all writes: one layout for the whole line, not one per stop.
+      items.forEach((li) => delete li.dataset.tight);
+      const tight = [...items].map((li) => {
+        const platform = li.querySelector<HTMLElement>('.bd-ride__platform');
+        return Boolean(platform && li.querySelector('.bd-stopcard__media') && platform.scrollHeight > platform.clientHeight + 2);
+      });
+      items.forEach((li, i) => {
+        if (tight[i]) li.dataset.tight = '';
+      });
+    };
+    const soon = () => {
+      if (!raf) raf = window.requestAnimationFrame(fitAll);
+    };
+    fitAll();
+    window.addEventListener('resize', soon);
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', soon);
+    };
+  }, [ride]);
+
+  // Does the moment at the platform fit its window? If not it scrolls on its own, says so, and takes focus.
+  // Asked only once the train has stopped: measuring mid-run would force a layout inside a moving frame.
+  useEffect(() => {
+    if (!ride || !at.docked) return;
     const check = () => {
       const platform = root.current?.querySelector<HTMLElement>(`.bd-ride__stop:nth-child(${at.index + 1}) .bd-ride__platform`);
       if (!platform) return;
@@ -366,7 +620,7 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       window.clearTimeout(t);
       window.removeEventListener('resize', check);
     };
-  }, [ride, at.index]);
+  }, [ride, at.index, at.docked]);
 
   const onMapClick = (e: MouseEvent<HTMLAnchorElement>, i: number) => {
     if (!ride) return;
@@ -374,7 +628,7 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     go(i);
   };
 
-  /** Arrow keys walk the map (one tab stop, like any list of choices); Enter rides there. */
+  /** Arrow keys walk the line (one tab stop, like any list of choices); Enter rides there. */
   const onMapKey = (e: KeyboardEvent<HTMLAnchorElement>, i: number) => {
     const to = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: n - 1 }[e.key];
     if (to === undefined) return;
@@ -382,9 +636,12 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     const next = Math.min(Math.max(to, 0), n - 1);
     mapList.current?.querySelectorAll<HTMLAnchorElement>('.bd-ride-map__link')[next]?.focus();
   };
-  const onMapFocus = (i: number) => {
+  const onMapFocus = (e: FocusEvent<HTMLAnchorElement>, i: number) => {
     mapHold.current = true;
     setFocusIdx(i);
+    // A station reached from the keyboard comes to the middle of the strip, name and all (WCAG 2.4.11).
+    // Not one that was tapped: moving the strip between finger-down and finger-up would lose the tap.
+    if (e.currentTarget.matches(':focus-visible')) e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' });
   };
   const onMapBlur = (e: FocusEvent<HTMLElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -393,6 +650,7 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
     reframe.current();
   };
   const holdMap = () => {
+    window.clearTimeout(touchRelease.current);
     mapHold.current = true;
   };
   const releaseMap = () => {
@@ -405,9 +663,8 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
   const step = (delta: number) => go((flight.current?.to ?? at.index) + delta);
 
   const current = stops[at.index];
-  const heading = stops[at.toward] ?? current;
+  const upcoming = at.docked ? stops[at.index + 1] : stops[at.toward];
   const tabbable = enhanced ? (focusIdx ?? (ride ? at.index : 0)) : null;
-  const align = (i: number) => (i < 2 ? 'start' : i > n - 3 ? 'end' : undefined);
 
   return (
     <section
@@ -419,28 +676,35 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
       aria-labelledby="ride-title"
       style={{ '--stops': n, '--step-factor': factor, '--dwell': DWELL } as CSSProperties}
     >
-      {intro}
-      {enhanced && motionOk ? (
-        <p className="bd-ride__mode">
-          <button type="button" className="bd-ride__mode-btn" aria-pressed={asList} onClick={() => chooseList(!asList)}>
-            {asList ? 'Ride the line instead' : 'Read it as a list'}
-          </button>
-        </p>
-      ) : null}
       <div ref={rail} className="bd-ride__rail">
-        {ride ? <RideSnaps n={n} /> : null}
         <div ref={stage} className="bd-ride__stage">
+          <header className="bd-ride__head">
+            <h2 id="ride-title" className="bd-ride__title">
+              {title}
+            </h2>
+            {ride ? (
+              <p className="bd-ride__count" aria-hidden="true">
+                Stop {at.index + 1} of {n}
+              </p>
+            ) : null}
+            {enhanced && motionOk ? (
+              <button type="button" className="bd-ride__mode-btn" aria-pressed={asList} onClick={() => chooseList(!asList)}>
+                {asList ? 'Ride the line instead' : 'Read it as a list'}
+              </button>
+            ) : null}
+          </header>
+
           <nav className="bd-ride-map" aria-label={`Stations on the ${lineName}`} onBlur={onMapBlur}>
-            <p className="bd-ride-map__title" aria-hidden="true">
-              {lineName}
-            </p>
             <div
               ref={mapViewport}
               className="bd-ride-map__viewport"
               onPointerEnter={holdMap}
               onPointerLeave={releaseMap}
               onTouchStart={holdMap}
-              onTouchEnd={() => window.setTimeout(releaseMap, 1500)}
+              onTouchEnd={() => {
+                window.clearTimeout(touchRelease.current);
+                touchRelease.current = window.setTimeout(releaseMap, 1500);
+              }}
             >
               <ol ref={mapList} className="bd-ride-map__list">
                 {stops.map((s, i) => (
@@ -449,25 +713,22 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
                     className="bd-ride-map__stop"
                     data-kind={s.kind}
                     data-line={s.line}
-                    data-from={s.from?.line}
                     data-current={ride && i === at.index ? '' : undefined}
-                    data-align={align(i)}
-                    style={{ '--t': s.track, '--ft': s.from?.track ?? s.track } as CSSProperties}
                   >
                     <a
                       className="bd-ride-map__link"
                       href={`#${s.slug}`}
+                      // Named here, so a compact strip can drop the names it does not show.
+                      aria-label={s.when ? `${s.name}, ${s.when}` : s.name}
                       aria-current={ride && i === at.index ? 'location' : undefined}
                       tabIndex={tabbable === null ? undefined : i === tabbable ? 0 : -1}
                       onClick={(e) => onMapClick(e, i)}
                       onKeyDown={(e) => onMapKey(e, i)}
-                      onFocus={() => onMapFocus(i)}
+                      onFocus={(e) => onMapFocus(e, i)}
                     >
                       <span className="bd-ride-map__dot" aria-hidden="true" />
-                      <span className="bd-ride-map__name">
-                        {s.kind === 'transfer' || s.kind === 'origin' ? <span className="bd-ride-map__line">{s.lineName}</span> : null}
+                      <span className="bd-ride-map__name" aria-hidden="true">
                         {s.name}
-                        {s.when ? <span className="bd-ride-map__when">{s.when}</span> : null}
                       </span>
                     </a>
                   </li>
@@ -478,12 +739,10 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
           </nav>
 
           <div className="bd-ride__window">
-            <div className="bd-ride__floor" aria-hidden="true" />
             <ol className="bd-ride__track" aria-label={`${lineName}, in order`}>
               {cards.map((card, i) => {
                 const s = stops[i];
                 if (!s) return null;
-                const side = s.kind === 'station' ? (i % 2 === 0 ? 1 : -1) : 0;
                 const here = ride && i === at.index;
                 const over = here && overflow?.index === i;
                 return (
@@ -494,11 +753,11 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
                     data-kind={s.kind}
                     data-line={s.line}
                     data-state={!ride ? undefined : here ? 'here' : i < at.index ? 'passed' : 'ahead'}
-                    data-near={ride && Math.abs(i - at.index) <= 2 ? '' : undefined}
+                    data-near={ride && Math.abs(i - at.index) <= 1 ? '' : undefined}
                     data-overflow={over ? (overflow?.more ? 'more' : 'end') : undefined}
-                    style={{ '--i': i, '--side': side } as CSSProperties}
-                    // Riding, the station at the platform is the one exposed section; the scenery sliding
-                    // past is hidden from assistive technology and out of the tab order (effect above).
+                    style={{ '--i': i } as CSSProperties}
+                    // Riding, the station at the platform is the one exposed section; the moments on
+                    // either side are hidden from assistive technology and out of the tab order.
                     aria-hidden={ride && !here ? true : undefined}
                   >
                     <div
@@ -525,52 +784,45 @@ export function StoryRide({ stops, cards, lineName, intro }: { stops: RideStop[]
                 );
               })}
             </ol>
-
-            {ride && current ? (
-              <div className="bd-ride__sign" data-line={at.docked ? current.line : (heading?.line ?? current.line)}>
-                <p className="bd-ride__sign-text" aria-hidden="true">
-                  <span className="bd-ride__sign-kicker">
-                    <span className="bd-ride__sign-bullet" />
-                    {at.docked ? (current.kind === 'terminal' ? 'End of the line' : 'This is') : 'Next stop'}
-                  </span>
-                  <span className="bd-ride__sign-name">{at.docked ? current.name : heading?.name}</span>
-                </p>
-                <p className="sr-only" aria-live="polite">
-                  {announced}
-                </p>
-                <div className="bd-ride__controls">
-                  <button type="button" className="bd-ride__btn" onClick={() => step(-1)} disabled={at.index === 0}>
-                    <span aria-hidden="true">←</span>
-                    <span className="bd-ride__btn-label">Back a stop</span>
-                  </button>
-                  <button type="button" className="bd-ride__btn bd-ride__btn--next" onClick={() => step(1)} disabled={at.index >= n - 1}>
-                    <span className="bd-ride__btn-label">Next stop</span>
-                    <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
+
+          {ride && current ? (
+            <div className="bd-ride__bar">
+              <p className="sr-only" aria-live="polite">
+                {announced}
+              </p>
+              <div className="bd-ride__controls">
+                <p className="bd-ride__next" aria-hidden="true">
+                  {upcoming && (at.docked ? at.index < n - 1 : true) ? (
+                    <>
+                      <span className="bd-ride__next-kicker">{at.docked ? 'Next stop' : 'Arriving at'}</span>
+                      <span className="bd-ride__next-name" data-line={upcoming.line}>
+                        {upcoming.name}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="bd-ride__next-kicker">End of the line</span>
+                  )}
+                </p>
+                <button type="button" className="bd-ride__btn" onClick={() => step(-1)} disabled={at.index === 0}>
+                  <span aria-hidden="true">←</span>
+                  <span className="bd-ride__btn-label">Back a stop</span>
+                </button>
+                <button type="button" className="bd-ride__btn bd-ride__btn--next" onClick={() => step(1)} disabled={at.index >= n - 1}>
+                  <span className="bd-ride__btn-label">Next stop</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
   );
 }
 
-/** One snap target per platform, mid-plateau, so a fling settles on a station rather than between two. */
-function RideSnaps({ n }: { n: number }) {
-  return (
-    <div className="bd-ride__snaps" aria-hidden="true">
-      {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="bd-ride__snap" style={{ '--i': i } as CSSProperties} />
-      ))}
-    </div>
-  );
-}
-
-/** What the car would say: "This is Starved Rock. Transfer to the Green Line." */
+/** What the car would say: "This is Starved Rock. Next stop, Greater together than alone." */
 function announcement(stop: RideStop, next: RideStop | undefined): string {
   if (stop.kind === 'terminal') return `This is ${stop.name}, the end of the line.`;
-  const here = stop.kind === 'transfer' || stop.kind === 'origin' ? `This is the ${stop.lineName}: ${stop.name}.` : `This is ${stop.name}.`;
-  return next && next.line !== stop.line && next.kind !== 'terminal' ? `${here} Next, transfer to the ${next.lineName}.` : here;
+  return next ? `This is ${stop.name}. Next stop, ${next.name}.` : `This is ${stop.name}.`;
 }

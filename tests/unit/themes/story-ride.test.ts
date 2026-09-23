@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DWELL, rideDuration, stepFactor, trainPosition } from '@/themes/botanical-deco/kit/StoryRide';
+import { DWELL, rawScrollFor, rideDuration, stepFactor, trainPosition } from '@/themes/botanical-deco/kit/StoryRide';
 import { formatPartialDate } from '@/themes/shared/format';
 import { timelineAnchors } from '@/themes/shared/timeline';
 
@@ -26,6 +26,14 @@ describe('Our Story ride', () => {
     expect(rideDuration(-3)).toBe(rideDuration(3));
     expect(rideDuration(7)).toBeGreaterThan(rideDuration(1));
     expect(rideDuration(40)).toBe(2400);
+  });
+
+  it('can put the train anywhere on the line, so a button ride eases the train and not the scroll', () => {
+    // Every position the train can be in maps back to a scroll that puts it exactly there, and a station
+    // maps to the start of its platform (not the middle of the run): no dead time before the train moves.
+    for (let p = 0; p <= 4; p += 0.05) expect(trainPosition(rawScrollFor(p), 5)).toBeCloseTo(p, 6);
+    expect(rawScrollFor(2)).toBe(2);
+    expect(rawScrollFor(2.5)).toBeCloseTo(2 + DWELL + (1 - DWELL) / 2, 6);
   });
 
   it('never runs off either end of the line', () => {

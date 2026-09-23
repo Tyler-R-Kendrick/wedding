@@ -46,22 +46,21 @@ They are four (or three) different jobs at different widths, not a repeated feat
 the approved Weekend workspace genuinely needs related cards. The source scan of `npm run
 slop:detect` exits 0 on this build.
 
-## Our Story ride: `clipped-overflow-container`, `cramped-padding`, `repeating-stripes-gradient`
+## Our Story ride: `clipped-overflow-container`, `cramped-padding`
 
-The ride (docs/design/inspo/our-story-timeline.md) is the one surface where these three are the
-design rather than drift. They were the only findings left after the 2026-09-23 design review's
-fixes (15 → 3 in URL mode against `/our-story`):
+The ride (docs/design/inspo/our-story-timeline.md) is the one surface where these two are the
+design rather than drift:
 
-- **clipped-overflow-container** — `.bd-ride__stage` / `.bd-ride__window` are a camera window. Cards
-  slide out of it sideways as the train leaves them; the window must clip them at its edge.
+- **clipped-overflow-container** — `.bd-ride__stage` / `.bd-ride__window` show one moment at a time.
+  The moment being left drifts out sideways as the next drifts in; the window clips them at its
+  edge. The line diagram is a horizontal scroller that keeps the train centred on a phone.
 - **cramped-padding** — the car card (the CTA line diagram) runs flush across the top of the stage,
-  like the strip map above a train's doors. Every card inside the window has its own inset.
-- **repeating-stripes-gradient** — the floor's railway sleepers, 20% gilt, rotated into perspective
-  under the track and masked out toward the horizon. Not a texture on any readable surface.
+  like the strip map above a train's doors. Every moment under it has its own inset.
 
-The review's `content-hidden-at-rest` finding (cards at opacity 0 down the track) no longer fires:
-the scenery is `aria-hidden`, and "Read it as a list" lays every stop flat for anyone who wants
-them all at once.
+`repeating-stripes-gradient` was waived for the floor's railway sleepers until the 2026-09-23
+redesign removed the 3D floor (and the Chicago-blue stage) altogether; the waiver went with it.
+The review's `content-hidden-at-rest` finding still does not fire: moments off the platform are
+`aria-hidden`, and "Read it as a list" lays every stop flat for anyone who wants them all at once.
 
 
 ## URL-scan waivers, 2026-09-23 (`text-occlusion`, `first-viewport-column-overflow`, `heading-rhythm`)
