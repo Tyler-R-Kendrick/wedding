@@ -1,0 +1,20 @@
+{
+  "name": "@wedding/wireframe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stage 2: a lo-fi wireframe of every sitemap page. Reads @wedding/sitemap; stage 3 reads this.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.ts"
+  },
+  "dependencies": {
+    "@wedding/sitemap": "*"
+  },
+  "scripts": {
+    "dev": "next dev --webpack -p 3102",
+    "build": "next build --webpack",
+    "start": "node ../../scripts/stages/serve.mjs out 3102",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

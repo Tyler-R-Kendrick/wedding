@@ -2,11 +2,14 @@
   "name": "wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "Tyler & Sara's wedding website — design tooling, skills, and quality gates",
+  "description": "Tyler & Sara's wedding website \u2014 design tooling, skills, and quality gates",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
+  "workspaces": [
+    "stages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +17,7 @@
     "prepare": "node scripts/install-git-hooks.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:unit": "vitest run --project unit --project ui",
+    "test:unit": "vitest run --project unit --project ui --project \"stage:*\"",
     "test:integration": "vitest run --project integration",
     "test:evals": "vitest run --project evals",
     "test:e2e": "playwright test tests/e2e",
@@ -43,7 +46,7 @@
     "skills:update": "skills update -p -y",
     "impeccable:update": "impeccable update --project --providers=claude -y",
     "targets:check": "node scripts/check-standalone-links.mjs",
-    "lint:css": "stylelint \"src/**/*.{css,scss}\" --allow-empty-input",
+    "lint:css": "stylelint \"src/**/*.{css,scss}\" \"stages/*/{app,lib}/**/*.css\" --ignore-pattern \"stages/04-placeholder/app/themes/**\" --allow-empty-input",
     "quality": "npm run design:lint && npm run -s design:drift && npm run lint:css && npm run -s targets:check && npm run docs:check && npm run -s assets:check && npm run -s secrets:coverage",
     "precommit": "node scripts/precommit.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
@@ -76,7 +79,16 @@
     "design:sync": "node scripts/design-sync.mjs",
     "design:sync:check": "node scripts/design-sync.mjs --check",
     "secrets:verify:lifecycle": "node scripts/secrets/page/verify-lifecycle.mjs",
-    "secrets:verify:artifact": "node scripts/secrets/page/verify-artifact.mjs"
+    "secrets:verify:artifact": "node scripts/secrets/page/verify-artifact.mjs",
+    "stages:dev": "node scripts/stages/run.mjs dev",
+    "stages:build": "node scripts/stages/run.mjs build",
+    "stages:test": "vitest run --project \"stage:*\"",
+    "stages:typecheck": "node scripts/stages/run.mjs typecheck",
+    "stages:serve": "node scripts/stages/run.mjs start",
+    "dev:sitemap": "npm run dev -w @wedding/sitemap",
+    "dev:wireframe": "npm run dev -w @wedding/wireframe",
+    "dev:skeleton": "npm run dev -w @wedding/skeleton",
+    "dev:placeholder": "npm run dev -w @wedding/placeholder"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -115,6 +127,7 @@
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
     "@tailwindcss/postcss": "^4.3.3",
+    "@wedding/sitemap": "*",
     "ai": "^7.0.93",
     "better-auth": "^1.7.2",
     "clsx": "^2.1.1",

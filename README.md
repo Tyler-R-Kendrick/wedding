@@ -37,6 +37,10 @@ claude                       # then: /impeccable shape home   (or read CLAUDE.md
 
 ## Workflow
 
+Every page goes sitemap → wireframe → skeleton → placeholder → real, each
+stage its own deployable project in [`stages/`](stages/README.md) that builds on
+the one before it (`npm run stages:dev` runs all four).
+
 1. Fill the `TODO(Tyler & Sara)` items in `PRODUCT.md` (date, venue, logistics).
 2. `npm run dev` serves the site on http://localhost:3000 (PGlite, migrated and seeded on start).
 3. Build each route with `/impeccable craft <route>`; review with `design-review <route>`.

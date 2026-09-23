@@ -46,6 +46,7 @@
     ".data",
     ".claude",
     "docs",
-    "scripts"
+    "scripts",
+    "stages"
   ]
 }

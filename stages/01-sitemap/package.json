@@ -1,0 +1,19 @@
+{
+  "name": "@wedding/sitemap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stage 1: the sitemap every later stage and the real app read. Deploys as a browsable map.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.ts",
+    "./chrome": "./lib/chrome/index.ts",
+    "./stage.css": "./lib/chrome/stage.css"
+  },
+  "scripts": {
+    "dev": "next dev --webpack -p 3101",
+    "build": "next build --webpack",
+    "start": "node ../../scripts/stages/serve.mjs out 3101",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}
