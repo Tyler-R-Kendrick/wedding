@@ -131,3 +131,66 @@ describe('each part of the RSVP opens on its own', () => {
     expect(expectErr(await run(draftRsvp, C1, { responses: [{ guestId: FX.guestC1, eventId: E.ceremony, status: 'accepted' }] }))).toMatchObject({ code: 'conflict', details: { reason: 'part_not_open' } });
   });
 });
+
+/**
+ * The parts added new ways in — `parts` on a draft, carry-over from the file, per-part progress —
+ * and each is held to the same boundary as the whole reply: a guest reads and writes only the
+ * people they act for (their household if they manage it, otherwise themselves). Nothing here may
+ * be answerable, readable or countable across it.
+ */
+describe('the household boundary holds for every part', () => {
+  const A1 = fixturePrincipal('A1');
+  const A2 = fixturePrincipal('A2');
+  const B1 = fixturePrincipal('B1');
+  const snapshot = async () => JSON.stringify(await db.select().from(rsvpResponses));
+
+  it('refuses a meal, a plus-one or notes for another household, whichever part is named, and writes nothing', async () => {
+    const before = await snapshot();
+    for (const [parts, row] of [
+      [['meal'], { guestId: FX.guestA1, eventId: E.reception, mealOptionId: FX.mealBeef }],
+      [['plusOne'], { guestId: FX.guestA1, eventId: E.reception, plusOne: { attending: true, name: 'Intruder' } }],
+      [['attendance'], { guestId: FX.guestA1, eventId: E.ceremony, status: 'declined' }],
+    ] as const) {
+      const e = expectErr(await run(draftRsvp, B1, { parts, responses: [row] }));
+      expect(e.code, `parts ${parts.join()}`).toBe('forbidden');
+      expect(JSON.stringify(e)).not.toContain('Testhouse');
+    }
+    const notes = expectErr(await run(draftRsvp, B1, { parts: ['notes'], responses: [], needs: [{ guestId: FX.guestA2, dietary: 'x', accessibility: null }] }));
+    expect(notes.code).toBe('forbidden');
+    expect(await snapshot()).toBe(before);
+  });
+
+  it('refuses a non-manager answering any part for someone else in their own household', async () => {
+    for (const parts of [['meal'], ['attendance'], ['notes']] as const) {
+      const input = parts[0] === 'notes'
+        ? { parts, responses: [], needs: [{ guestId: FX.guestA1, dietary: 'x', accessibility: null }] }
+        : { parts, responses: [{ guestId: FX.guestA1, eventId: E.reception, status: 'declined', mealOptionId: FX.mealBeef }] };
+      expect(expectErr(await run(draftRsvp, A2, input)).code, `parts ${parts.join()}`).toBe('forbidden');
+    }
+  });
+
+  it('counts and carries over only the people the caller acts for', async () => {
+    const b1 = expectOk(await run(getMyRsvp, B1, {})).data;
+    const b1Weekend = expectOk(await run(getMyItinerary, B1, {})).data;
+    for (const out of [JSON.stringify(b1), JSON.stringify(b1Weekend)]) {
+      for (const id of [FX.guestA1, FX.guestA2, FX.guestA3, FX.guestC1]) expect(out).not.toContain(id);
+      expect(out).not.toContain('Testhouse');
+    }
+    // Ben (A2, not the manager) sees progress over himself alone, not over Ada's household.
+    const ben = expectOk(await run(getMyRsvp, A2, {})).data;
+    expect(ben.guests.map((g) => g.guestId)).toEqual([FX.guestA2]);
+    expect(part(ben, 'attendance')).toMatchObject({ expected: 3 });
+    expect(JSON.stringify(ben)).not.toContain(FX.guestA1);
+    // A draft's merged submission is built from the caller's own file only.
+    const draft = expectOk(await run(draftRsvp, A1, { parts: ['attendance'], responses: [{ guestId: FX.guestA1, eventId: E.ceremony, status: 'accepted' }] }));
+    expect(JSON.stringify(draft.data)).not.toContain(FX.guestB1);
+  });
+
+  it('rejects a submission tampered to add someone else, even with a valid token for the rest', async () => {
+    const draft = expectOk(await run(draftRsvp, B1, { parts: ['attendance'], responses: [{ guestId: FX.guestB1, eventId: E.ceremony, status: 'accepted' }] }));
+    const tampered = { ...draft.data.submission, responses: [...draft.data.submission.responses, { guestId: FX.guestA1, eventId: E.ceremony, status: 'declined', mealOptionId: null, plusOne: null }] };
+    const before = await snapshot();
+    expect(expectErr(await run(submitRsvp, B1, tampered, { confirmationToken: draft.confirmation!.token })).code).toBe('confirmation_required');
+    expect(await snapshot()).toBe(before);
+  });
+});

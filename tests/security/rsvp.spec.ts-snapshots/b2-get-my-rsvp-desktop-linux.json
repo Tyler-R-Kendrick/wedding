@@ -8,6 +8,49 @@
       "deadlineAt": null,
       "lifecycle": "TEASER"
     },
+    "parts": [
+      {
+        "part": "attendance",
+        "state": "open",
+        "reason": null,
+        "status": "not_started",
+        "expected": 2,
+        "answered": 0,
+        "attention": 0
+      },
+      {
+        "part": "plusOne",
+        "state": "not_applicable",
+        "reason": null,
+        "status": "later",
+        "expected": 0,
+        "answered": 0,
+        "attention": 0
+      },
+      {
+        "part": "meal",
+        "state": "open",
+        "reason": null,
+        "status": "waiting",
+        "expected": 0,
+        "answered": 0,
+        "attention": 0
+      },
+      {
+        "part": "notes",
+        "state": "open",
+        "reason": null,
+        "status": "optional",
+        "expected": 1,
+        "answered": 0,
+        "attention": 0
+      }
+    ],
+    "next": [
+      "attendance",
+      "meal",
+      "notes"
+    ],
     "household": {
       "id": "01E2EHHB000000000000000000",
       "name": "Fixture household"
