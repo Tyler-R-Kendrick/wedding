@@ -12,6 +12,16 @@ applies `src/db/migrations`, and runs the idempotent seed (site row, lifecycle `
 readiness rows, provenance sources from the brief). `PGLITE_MEMORY=1` uses a throwaway
 in-memory database instead; `DATABASE_URL` switches to a real Postgres.
 
+`npm install` also runs `prepare`, which points git at `.githooks/` (`git config core.hooksPath
+.githooks`). From then on every commit runs the design gate in `scripts/precommit.mjs` over the
+staged files only: Google's `design.md lint` on any staged DESIGN.md (read from the index; errors
+and WCAG contrast warnings block), `design:sync --check` when tokens or generated theme CSS change,
+`impeccable detect` on staged UI files (all of `src/` when DESIGN.md or `.impeccable/config.json`
+changes), and stylelint on staged CSS. A commit that touches no UI adds nothing. `npm run precommit`
+runs it by hand; `git commit --no-verify` skips it once, and CI still runs every check. The
+installer does nothing under `CI`, outside a git work tree, or when the clone already has its own
+`core.hooksPath`.
+
 Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI) export
 `NODE_USE_ENV_PROXY=1` before `npm install` so postinstall downloads succeed.
 

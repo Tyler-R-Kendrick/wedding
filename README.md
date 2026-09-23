@@ -23,13 +23,13 @@ site with Vercel's [webreel](https://github.com/vercel-labs/webreel) and
 - **`PRODUCT.md`** — who the site is for and what it must do (impeccable's product brief).
 - **`.claude/skills/`** — 21 agent skills: [impeccable](https://impeccable.style) (23 design commands + 61-rule anti-slop detector), [hallmark](https://github.com/nutlope/hallmark), [design-anti-slop](https://github.com/prathameshagrawal/design-anti-slop), Anthropic's [frontend-design](https://github.com/anthropics/skills), Vercel's [web-design-guidelines](https://github.com/vercel-labs/agent-skills), [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), [design-motion-principles](https://github.com/kylezantos/design-motion-principles), Addy Osmani's [web-quality-skills](https://github.com/addyosmani/web-quality-skills), [Higgsfield](https://github.com/higgsfield-ai/skills) generate + Soul ID, Google [Stitch](https://github.com/google-labs-code/stitch-skills) design-md / taste-design / enhance-prompt / site-md, plus two custom skills: `wedding-site-standards` and `design-review`.
 - **`.mcp.json`** — [fal.ai](https://fal.ai/docs/documentation/setting-up/mcp), [Higgsfield](https://higgsfield.ai/mcp), Google Stitch, Playwright, Context7.
-- **Linters & CI** — `@google/design.md`, `impeccable detect`, stylelint, axe-core via Playwright; `.github/workflows/design-quality.yml`.
+- **Linters & CI** — `@google/design.md`, `impeccable detect`, stylelint, axe-core via Playwright; `.github/workflows/design-quality.yml`. The same design linters run as a git pre-commit hook over staged files (`.githooks/pre-commit`, `scripts/precommit.mjs`).
 
 ## Quickstart
 
 ```bash
 nvm use                      # Node 22
-npm install
+npm install                  # also wires git's pre-commit design gate (.githooks/)
 cp .env.example .env         # add FAL_KEY / STITCH_API_KEY; Higgsfield uses `npx higgsfield auth login`
 npm run quality              # DESIGN.md lint + anti-slop detect + stylelint
 claude                       # then: /impeccable shape home   (or read CLAUDE.md)

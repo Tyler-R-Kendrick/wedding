@@ -1,0 +1,16 @@
+#!/bin/sh
+# Design gate: Google design.md lint + impeccable detect (+ design:sync drift, stylelint) over the
+# staged files. The logic is in scripts/precommit.mjs; `npm install` points git here through the
+# `prepare` script (scripts/install-git-hooks.mjs). Bypass once with `git commit --no-verify`.
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node is not on PATH, so the design gate cannot run." >&2
+  echo "pre-commit: open a shell with Node >= 22 (see .nvmrc) or commit with --no-verify." >&2
+  exit 1
+fi
+
+# NODE_OPTIONS is cleared for the same reason the SessionStart hook clears it: some sandboxes
+# export `--import tsx`, which Node rejects there, and none of these checks need it.
+exec env -u NODE_OPTIONS node scripts/precommit.mjs
