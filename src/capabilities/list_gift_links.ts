@@ -5,7 +5,8 @@ import { ok } from '@/contracts/result';
 import { seedId } from '@/db/seed/sources';
 import { guestHandoffSchema } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { GIFTS_COPY, giftsStatement, listGiftFunds, listGiftLinks } from '@/domain/gifts';
+import { GIFTS_COPY, giftsStatement, isMissingGiftTable, listGiftFunds, listGiftLinks, type GiftFunds } from '@/domain/gifts';
+import { logger } from '@/lib/logger';
 import { appServices } from './context';
 
 const input = z.object({}).optional();
@@ -110,7 +111,14 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
   maxOutputChars: 12_000,
   async handler(ctx) {
     const { db, providers } = appServices(ctx);
-    const [links, { funds, rails }] = await Promise.all([listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') }), listGiftFunds(db, ctx.principal)]);
+    const fundsOrNothing = listGiftFunds(db, ctx.principal).catch((e: unknown): GiftFunds => {
+      // A database the gifts-of-money migration has not reached yet (a preview): the registry links
+      // still show, and the section says what is still to come, exactly as with nothing configured.
+      if (!isMissingGiftTable(e)) throw e;
+      logger.warn('gift funds unavailable: migration 0011 has not been applied to this database');
+      return { funds: [], rails: [] };
+    });
+    const [links, { funds, rails }] = await Promise.all([listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') }), fundsOrNothing]);
     const counts = {
       registry: links.filter((l) => l.kind === 'registry' && !l.placeholder).length,
       adventures: links.filter((l) => l.kind === 'adventure-fund' && !l.placeholder).length,

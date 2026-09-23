@@ -13,7 +13,7 @@ import type { AdminId, AuthIdentityId, GuestId, HouseholdId, IdempotencyKey } fr
 import { newId } from '@/contracts/ids';
 import type { AdminPrincipal, GuestPrincipal, Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { externalActionRecords, giftLinks, giftPaymentRails, reservationVenues } from '@/db/schema';
 import { FORBIDDEN_GIFT_WORDS } from '@/domain/gifts/copy';
 import { listAuditEvents } from '@/lib/audit';
@@ -228,6 +228,27 @@ describe('gifts of money (ADR-0013)', () => {
     expect(r.ok && r.value.data.funds[0]!.links.map((l) => l.rail)).toEqual(['venmo']);
     expect(JSON.stringify(r)).not.toContain('evil.example');
     await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'cashapp'));
+  });
+
+  it('keeps /gifts and /admin/gifts up on a database the migration has not reached (a preview)', async () => {
+    // Previews never run migrations (scripts/deploy/migrate-on-deploy.mjs). Take the tables away for
+    // real, so this is the error Postgres actually raises rather than a stand-in for it.
+    const db = await getDb();
+    await db.execute(sql`ALTER TABLE gift_payment_rails RENAME TO gift_payment_rails_hidden`);
+    await db.execute(sql`ALTER TABLE gift_funds RENAME TO gift_funds_hidden`);
+    try {
+      const r = await run(listGiftLinksCapability, anon, {});
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      expect(r.ok && [r.value.data.funds, r.value.data.rails]).toEqual([[], []]);
+      expect(r.ok && r.value.data.links.length).toBeGreaterThan(0); // the registry links still show
+      const a = await run(adminListGiftLinks, admin, {});
+      expect(a.ok && a.value.data.fundsAvailable).toBe(false);
+    } finally {
+      await db.execute(sql`ALTER TABLE gift_payment_rails_hidden RENAME TO gift_payment_rails`);
+      await db.execute(sql`ALTER TABLE gift_funds_hidden RENAME TO gift_funds`);
+    }
+    const back = await run(adminListGiftLinks, admin, {});
+    expect(back.ok && back.value.data.fundsAvailable).toBe(true);
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GIFT_RAILS } from '@/db/schema';
 import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY, giftsStatement } from '@/domain/gifts/copy';
-import { DEFAULT_GIFT_FUNDS } from '@/domain/gifts/funds';
+import { DEFAULT_GIFT_FUNDS, isMissingGiftTable } from '@/domain/gifts/funds';
 import { parseRailHandle, RAILS } from '@/domain/gifts/rails';
 import { isAllowedRedirect } from '@/lib/redirects';
 
@@ -89,5 +89,14 @@ describe('gift rails (ADR-0013)', () => {
     expect(s).toContain('no wishlist to link to yet');
     expect(s).not.toContain('have not chosen where to keep either list');
     for (const re of FORBIDDEN_GIFT_WORDS) expect(s).not.toMatch(re);
+  });
+
+  it('recognises a database the gifts-of-money migration has not reached, and nothing else', () => {
+    // Previews never migrate (scripts/deploy/migrate-on-deploy.mjs), so /gifts must survive this.
+    expect(isMissingGiftTable({ code: '42P01' })).toBe(true);
+    expect(isMissingGiftTable(Object.assign(new Error('Failed query'), { cause: { code: '42P01' } }))).toBe(true);
+    expect(isMissingGiftTable({ code: '42703' })).toBe(false);
+    expect(isMissingGiftTable(new Error('connection refused'))).toBe(false);
+    expect(isMissingGiftTable(undefined)).toBe(false);
   });
 });

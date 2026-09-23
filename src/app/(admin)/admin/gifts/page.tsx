@@ -75,6 +75,15 @@ export default async function AdminGiftsPage() {
             </table>
           </ScrollRegion>
           </Section>
+          {!result.value.data.fundsAvailable ? (
+            <Section title="Gifts of money" id="gift-funds">
+              <Note>
+                This copy of the site is running on a database that has not had the gifts-of-money update yet. That update
+                runs when the change is deployed to the live site; after that, the funds and ways to give appear here.
+              </Note>
+            </Section>
+          ) : (
+            <>
           <Section title="Gifts of money: what they go toward" id="gift-funds">
           <Note>
             Guests give toward a fund with their own Venmo, PayPal, Cash App, Zelle or a check. The money goes from their
@@ -171,6 +180,8 @@ export default async function AdminGiftsPage() {
             ]}
           />
           </Section>
+            </>
+          )}
           <Section title="Add or change a link" id="gift-forms">
             <AdminCapabilityForm
               capability="admin_upsert_gift_link"

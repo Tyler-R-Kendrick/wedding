@@ -7,7 +7,7 @@ import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, parseRailHandle, RAILS, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
+import { isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, parseRailHandle, RAILS, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
 import { appServices } from './context';
 import { giftLinkViewSchema } from './list_gift_links';
 
@@ -150,7 +150,14 @@ export const adminUpsertGiftRail = defineCapability<z.infer<typeof railInput>, z
   },
 });
 
-const listOutput = z.object({ rows: z.array(rowSchema), effective: z.array(giftLinkViewSchema), funds: z.array(fundSchema), rails: z.array(railRowSchema) });
+const listOutput = z.object({
+  rows: z.array(rowSchema),
+  effective: z.array(giftLinkViewSchema),
+  funds: z.array(fundSchema),
+  rails: z.array(railRowSchema),
+  /** False when this database predates the gifts-of-money migration (a preview; see `isMissingGiftTable`). */
+  fundsAvailable: z.boolean(),
+});
 
 export const adminListGiftLinks = defineCapability<unknown, z.infer<typeof listOutput>>({
   name: 'admin_list_gift_links',
@@ -165,13 +172,16 @@ export const adminListGiftLinks = defineCapability<unknown, z.infer<typeof listO
   output: listOutput,
   async handler(ctx) {
     const { db, providers } = appServices(ctx);
-    const [rows, effective, funds, rails] = await Promise.all([
+    const [rows, effective, money] = await Promise.all([
       listGiftLinkRows(db, { includeInactive: true }),
       listGiftLinks(db, { registry: providers('registry'), cashFund: providers('cash-fund') }),
-      listGiftFundEntries(db),
-      listGiftRailRows(db, { includeInactive: true }),
+      Promise.all([listGiftFundEntries(db), listGiftRailRows(db, { includeInactive: true })]).catch((e: unknown) => {
+        if (!isMissingGiftTable(e)) throw e;
+        return null;
+      }),
     ]);
-    return ok({ data: { rows: rows.map(toRow), effective, funds, rails: rails.map(toRailRow) }, sources: [] });
+    const [funds, rails] = money ?? [[], []];
+    return ok({ data: { rows: rows.map(toRow), effective, funds, rails: rails.map(toRailRow), fundsAvailable: money !== null }, sources: [] });
   },
 });
 

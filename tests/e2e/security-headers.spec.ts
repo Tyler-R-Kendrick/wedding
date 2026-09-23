@@ -132,7 +132,8 @@ test.describe('security headers', () => {
    * caller is, so the status of the personalized routes below does not matter.
    */
   test('personalized and theme-resolved URLs forbid a shared cache from keeping them', async ({ request }) => {
-    const PERSONALIZED = ['/your-weekend', '/rsvp', '/trip', '/transportation', '/media/mine'];
+    // `/gifts` shows Zelle and mailing details to invited guests (ADR-0013).
+    const PERSONALIZED = ['/your-weekend', '/rsvp', '/trip', '/transportation', '/media/mine', '/gifts'];
     for (const path of [...PERSONALIZED, '/', '/the-wedding']) {
       const res = await request.get(path);
       const cc = res.headers()['cache-control'] ?? '';

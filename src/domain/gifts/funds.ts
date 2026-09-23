@@ -118,6 +118,21 @@ export interface GiftFunds {
   rails: GiftRailView[];
 }
 
+/**
+ * True when a query failed because a gifts-of-money table is not in this database yet (Postgres
+ * `42P01`, undefined_table), directly or wrapped by drizzle as `cause`.
+ *
+ * Migrations run only on production deploys (`scripts/deploy/migrate-on-deploy.mjs`), so a preview
+ * build of this change runs against a database without `gift_funds` / `gift_payment_rails`. That must
+ * not take the registry links down with it: callers treat this one failure as "nothing configured".
+ */
+export function isMissingGiftTable(e: unknown): boolean {
+  for (let cur: unknown = e, depth = 0; cur && depth < 4; cur = (cur as { cause?: unknown }).cause, depth++) {
+    if ((cur as { code?: unknown }).code === '42P01') return true;
+  }
+  return false;
+}
+
 /** Anyone who reached the site through an invitation, and admins. Never an anonymous visitor. */
 const seesPersonal = (p: Principal) => p.kind === 'guest' || p.kind === 'admin';
 
