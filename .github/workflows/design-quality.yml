@@ -293,7 +293,7 @@ jobs:
           # walked five times over, two designs). Every route either was already here or is added
           # above (`/ask-us`), and both specs carry a timeout proportional to their navigations
           # rather than the 30s default, which is the other half of what level 14 learned.
-          for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp \
+          for path in / /sign-in /sign-in/admin /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp /rsvp/attending /rsvp/meals \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /admin/ai \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
@@ -314,6 +314,8 @@ jobs:
           # Playwright treats the server above as external and does not start its own.
           BASE_URL: http://localhost:3000
           SEED_TEST_FIXTURES: '1'
+          # Meals ship off until the menu is set; the RSVP journey exercises them, as a deploy will once it is.
+          FLAG_RSVP_MEALS: 'on'
           # CI-only placeholders. The dev bearer opens the dev routes on this runner only, and the
           # test-auth secret enables the principal injector; both are refused on a production host.
           DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real
