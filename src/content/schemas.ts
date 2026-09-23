@@ -59,6 +59,24 @@ export const storySectionSeedSchema = provenanceSeedSchema
   })
   .superRefine(placeholderInvariant);
 
+/** "YYYY-MM-DD", "YYYY-MM" or "YYYY" — as precise as the source, never padded to look exact. */
+export const partialDate = z.string().regex(/^\d{4}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?)?$/, 'YYYY, YYYY-MM or YYYY-MM-DD');
+
+export const timelineMomentSeedSchema = provenanceSeedSchema
+  .extend({
+    slug,
+    chapter: z.enum(STORY_CHAPTERS),
+    order: z.number().int().min(1),
+    title: z.string().min(2).max(80),
+    occurredOn: partialDate.optional(),
+    locationLabel: z.string().min(2).max(120).optional(),
+    note: z.string().min(2).max(600),
+    media: z.array(mediaRef).default([]),
+    adventureSlug: slug.optional(),
+    externalRef: z.string().regex(/^[a-z]+:[A-Za-z0-9._-]{1,120}$/).optional(),
+  })
+  .superRefine(placeholderInvariant);
+
 export const placeSeedSchema = provenanceSeedSchema
   .extend({
     slug,
@@ -193,6 +211,7 @@ export const faqEntrySeedSchema = provenanceSeedSchema
 
 export const contentSeedSchema = z.object({
   story: z.array(storySectionSeedSchema),
+  timeline: z.array(timelineMomentSeedSchema),
   places: z.array(placeSeedSchema),
   adventures: z.array(adventureMemorySeedSchema),
   recommendations: z.array(recommendationSeedSchema),
@@ -204,6 +223,7 @@ export const contentSeedSchema = z.object({
 });
 
 export type StorySectionSeed = z.infer<typeof storySectionSeedSchema>;
+export type TimelineMomentSeed = z.infer<typeof timelineMomentSeedSchema>;
 export type PlaceSeed = z.infer<typeof placeSeedSchema>;
 export type AdventureMemorySeed = z.infer<typeof adventureMemorySeedSchema>;
 export type RecommendationSeed = z.infer<typeof recommendationSeedSchema>;
@@ -217,6 +237,7 @@ export type ContentSeed = z.infer<typeof contentSeedSchema>;
 /** Editable shapes for the admin editors: the seed schema minus the source key, plus the source id. */
 export const editableSchemas = {
   story_sections: storySectionSeedSchema,
+  timeline_moments: timelineMomentSeedSchema,
   places: placeSeedSchema,
   adventure_memories: adventureMemorySeedSchema,
   recommendations: recommendationSeedSchema,

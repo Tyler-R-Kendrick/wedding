@@ -28,6 +28,7 @@ in which the fact first renders to guests.
 | [ ] | C-08 | which adventures are public and their copy/photos | TEASER | Our Adventures, Share an Adventure memory layer | Known places: Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening, Madison waterfront, Starved Rock (first "I love you" — trail/date/wording unknown) |
 | [ ] | C-09 | permission for third-party AI processing of professional media | POST_WEDDING (before any processing) | Photos & Video AI features, biometrics (ADR-0006) | Written confirmation from Brooke Alaina Photography and Oakhouse Visuals; `PRO_MEDIA_AI_PROCESSING` stays `false` until then |
 | [ ] | C-10 | band/DJ and music | RSVP_OPEN | The Wedding, Timeline ("six songs of open dancing" photo coverage), FAQ | References NOT settled: Stella Katherine Cole, Haley Reinhart, Puddles Pity Party, Postmodern Jukebox, Michael Bublé; "Simply the Best" (Billie Anne) noted for the aisle |
+| [ ] | C-11 | Paired timeline export (dates, titles, notes; photos optional) | TEASER | Our Story ride (every station's date, the order of the line, stand-in photos) | Import with `npm run timeline:import -- <export>` — see [`paired-timeline.md`](./paired-timeline.md). Until then every station is undated and ten stand-in photos (licensed, in `public/assets/attributions.json`) fill the cards |
 
 ## Planner (Bustle & Lace, with CAA)
 

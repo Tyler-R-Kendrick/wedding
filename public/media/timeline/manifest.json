@@ -1,0 +1,496 @@
+{
+  "schema": 1,
+  "generator": "scripts/timeline-media.mjs",
+  "items": [
+    {
+      "id": "timeline.allison-and-jamies-wedding",
+      "src": "/media/timeline/allison-and-jamies-wedding-911.jpg",
+      "intrinsic": {
+        "width": 911,
+        "height": 683
+      },
+      "files": [
+        {
+          "src": "/media/timeline/allison-and-jamies-wedding-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 19782,
+          "sha256": "5e993e3f41c16a7a6c81d5c5c9136bd6592a1462e905691c3112355a9aa9e325"
+        },
+        {
+          "src": "/media/timeline/allison-and-jamies-wedding-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 36395,
+          "sha256": "b229e3c90bd1374a2d8398e0cf33ff01d80e58fd3a423fb0684c10e7a2d80551"
+        },
+        {
+          "src": "/media/timeline/allison-and-jamies-wedding-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 36661,
+          "sha256": "b627a3e100845062857ae116493488e2d581f5176c348a4fb82e9f7b1210c57b"
+        },
+        {
+          "src": "/media/timeline/allison-and-jamies-wedding-911.jpg",
+          "format": "jpg",
+          "width": 911,
+          "bytes": 73446,
+          "sha256": "9273ee5377acfe13ccbd73405c72144f03ca8d3f568fb476b856ba79d20578e0"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "A wedding reception table set with roses, glassware and white chair covers.",
+      "ledger": {
+        "id": "openverse-3ee715e3-9c59-406a-bf4d-b4501adbc330",
+        "file": "public/assets/commons/openverse-3ee715e3-9c59-406a-bf4d-b4501adbc330.webp",
+        "sha256": "ecfbf1152b6f6b2b9dace881212bf30fa6d6d0d87169f761cb2bc1bf3d555837"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.food-tastings",
+      "src": "/media/timeline/food-tastings-853.jpg",
+      "intrinsic": {
+        "width": 853,
+        "height": 640
+      },
+      "files": [
+        {
+          "src": "/media/timeline/food-tastings-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 16708,
+          "sha256": "3e4930694c9761c8cd2b4f98afeb64ed2cc795ab27d5731e2a0b1589bd0292a6"
+        },
+        {
+          "src": "/media/timeline/food-tastings-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 35513,
+          "sha256": "5bacae303b09a4bafb244b4626c67f673ccbc40d00fbb129c163180dd42230aa"
+        },
+        {
+          "src": "/media/timeline/food-tastings-853.avif",
+          "format": "avif",
+          "width": 853,
+          "bytes": 27856,
+          "sha256": "92a64e5389194b9f3de3b4eea6c1867d6600b9ac9be7951b0537f63defb8f215"
+        },
+        {
+          "src": "/media/timeline/food-tastings-853.jpg",
+          "format": "jpg",
+          "width": 853,
+          "bytes": 63628,
+          "sha256": "a020890c1fc5c9edfc3535ae1893b1aa28b9d4cd6f7f2261f811448e0453d97b"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "Wine bottles and empty tasting glasses lined up on a wooden bar with tasting sheets.",
+      "ledger": {
+        "id": "openverse-6b70e09a-7a82-4656-bc05-57b4b9da5fc3",
+        "file": "public/assets/commons/openverse-6b70e09a-7a82-4656-bc05-57b4b9da5fc3.jpg",
+        "sha256": "423528c41520c5056712b31065afc9a8d0d23f688102899a5c39996900b2b8a1"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.gardening-together",
+      "src": "/media/timeline/gardening-together-909.jpg",
+      "intrinsic": {
+        "width": 909,
+        "height": 682
+      },
+      "files": [
+        {
+          "src": "/media/timeline/gardening-together-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 34163,
+          "sha256": "919e4c553bc9cc86f642ebe2c1d23bdd86f4fe09504a5c6c41bc8399677d810b"
+        },
+        {
+          "src": "/media/timeline/gardening-together-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 56121,
+          "sha256": "23c4b2fb2b17511a9e79e5c494297f7ee02575d3675883e736fc67080fa296ff"
+        },
+        {
+          "src": "/media/timeline/gardening-together-909.avif",
+          "format": "avif",
+          "width": 909,
+          "bytes": 69556,
+          "sha256": "6101f41c5340beb842cb9308d3945d10d864d3b02e71137e3c317b859d2bfc7f"
+        },
+        {
+          "src": "/media/timeline/gardening-together-909.jpg",
+          "format": "jpg",
+          "width": 909,
+          "bytes": 122213,
+          "sha256": "e88fb02eed0d6965af6bbe1a85e308408bd1826e6b2a4aa303ba8f1c6989264f"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "A garden harvest in a green tub: red potatoes, beets, courgettes and beans.",
+      "ledger": {
+        "id": "openverse-1d05b38a-cee0-42a6-a289-9df2910f1abd",
+        "file": "public/assets/commons/openverse-1d05b38a-cee0-42a6-a289-9df2910f1abd.jpg",
+        "sha256": "bbcea9610e32463cd8a67e0cd41bd4f3d05597674c00cdf344a4ea8fb371ef60"
+      },
+      "license": "Public domain",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.greater-together",
+      "src": "/media/timeline/greater-together-921.jpg",
+      "intrinsic": {
+        "width": 921,
+        "height": 691
+      },
+      "files": [
+        {
+          "src": "/media/timeline/greater-together-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 10538,
+          "sha256": "d52ac6f2050f40eba954249e7c471fa34c7160c658adc286bb41144df05ca31f"
+        },
+        {
+          "src": "/media/timeline/greater-together-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 18987,
+          "sha256": "365df7dde121b851db44b4a2b0f9af9fa5bf5d85b4c9959b24bf7b44fa14ccd8"
+        },
+        {
+          "src": "/media/timeline/greater-together-921.avif",
+          "format": "avif",
+          "width": 921,
+          "bytes": 22325,
+          "sha256": "d0d2acd2a37dc37a8ef50ad7dd9140a1f208a903d3f145ddb8ae6a84ffd83399"
+        },
+        {
+          "src": "/media/timeline/greater-together-921.jpg",
+          "format": "jpg",
+          "width": 921,
+          "bytes": 42573,
+          "sha256": "d9c8f33ed1e66765c1634e28da6fb5b1880d35e7bb5b84e3bf0fa55479d75158"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "The Chicago skyline across Lake Michigan at sunrise, the sky pink and gold.",
+      "ledger": {
+        "id": "openverse-1bd02025-fc88-43ac-8abd-2b8ca62ec7e5",
+        "file": "public/assets/commons/openverse-1bd02025-fc88-43ac-8abd-2b8ca62ec7e5.webp",
+        "sha256": "ff301483e1a32b64f20407da712f4bcdd66df3efe77d5f83d31ea17d89c3219f"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.madison-waterfront",
+      "src": "/media/timeline/madison-waterfront-911.jpg",
+      "intrinsic": {
+        "width": 911,
+        "height": 683
+      },
+      "files": [
+        {
+          "src": "/media/timeline/madison-waterfront-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 24933,
+          "sha256": "1b7245482d1dbdcab25194f0f343f3feb905ea7b1bdc2e452a58369d6f290595"
+        },
+        {
+          "src": "/media/timeline/madison-waterfront-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 43905,
+          "sha256": "8879664cd8d70a3dba980d2eae6fe865c7b769b0cc0add8ad63f324eff4a106f"
+        },
+        {
+          "src": "/media/timeline/madison-waterfront-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 56726,
+          "sha256": "d92ed5e7abff86b927c9c5903601662deacada1d5e6e1a465bd9d711cf2def36"
+        },
+        {
+          "src": "/media/timeline/madison-waterfront-911.jpg",
+          "format": "jpg",
+          "width": 911,
+          "bytes": 104105,
+          "sha256": "34127f4e6196fafb5c11fa220d2a0a90415eacd1ab419b8a89315e160f9475fb"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "Bright red kayaks on a wooden dock at the edge of Lake Monona in Madison, Wisconsin.",
+      "ledger": {
+        "id": "openverse-db1018a2-8689-4e8c-8ea5-8fa6383ddac4",
+        "file": "public/assets/commons/openverse-db1018a2-8689-4e8c-8ea5-8fa6383ddac4.webp",
+        "sha256": "904a63ff99e6f489f4ec537b2763ecb4e0d6948b2a7b548d8d45229264e41e95"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.michael-jordans-steakhouse",
+      "src": "/media/timeline/michael-jordans-steakhouse-907.jpg",
+      "intrinsic": {
+        "width": 907,
+        "height": 680
+      },
+      "files": [
+        {
+          "src": "/media/timeline/michael-jordans-steakhouse-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 18670,
+          "sha256": "8e42c8ac594ccc0e21cb4a6daa8ca2d6aac34d30f1a09cffd735a2bd54317591"
+        },
+        {
+          "src": "/media/timeline/michael-jordans-steakhouse-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 35691,
+          "sha256": "231665973bda35c547fa446409c128182f976d7faa57b6a174152f3edd58eccc"
+        },
+        {
+          "src": "/media/timeline/michael-jordans-steakhouse-907.avif",
+          "format": "avif",
+          "width": 907,
+          "bytes": 37550,
+          "sha256": "6c7a5510e14134d599c706b9a2b6bbe3ecfc9e1c48581e7213a9e4e261460edf"
+        },
+        {
+          "src": "/media/timeline/michael-jordans-steakhouse-907.jpg",
+          "format": "jpg",
+          "width": 907,
+          "bytes": 74284,
+          "sha256": "f26957bae130eaf0fe05e27d4d9a1b45b142bd8f383beed319c659b0ada029a3"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "A plated steak with greens beside wine glasses on a dark restaurant table.",
+      "ledger": {
+        "id": "openverse-0a5c6a0b-a959-4440-ac41-a05205573073",
+        "file": "public/assets/commons/openverse-0a5c6a0b-a959-4440-ac41-a05205573073.webp",
+        "sha256": "5e98aa21c75c0e1f8c634452fbda7119c2d18b85f194eaec111d3f0796d8adf6"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.museum-of-ice-cream",
+      "src": "/media/timeline/museum-of-ice-cream-911.jpg",
+      "intrinsic": {
+        "width": 911,
+        "height": 683
+      },
+      "files": [
+        {
+          "src": "/media/timeline/museum-of-ice-cream-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 15791,
+          "sha256": "715815d685d50078dba1bde10647bc0a8e2a751b26d2ac29e0b544a1eecc203a"
+        },
+        {
+          "src": "/media/timeline/museum-of-ice-cream-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 26385,
+          "sha256": "a73d5f6fa2b2b6eb43a407ee5d7e2032b3a34b623a44b13378b4eedb02a0faa7"
+        },
+        {
+          "src": "/media/timeline/museum-of-ice-cream-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 33461,
+          "sha256": "257847070193bbfc8120a8cdeda06b8d8604b10a22082272bed65a0dc8fa61bb"
+        },
+        {
+          "src": "/media/timeline/museum-of-ice-cream-911.jpg",
+          "format": "jpg",
+          "width": 911,
+          "bytes": 57981,
+          "sha256": "479587994069a9e986a7937cc47cc6ae300dc8b5602950a343b5302c7d44a06d"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "A scoop of raspberry sorbet in a cone, held up against a pale wall.",
+      "ledger": {
+        "id": "openverse-7ce84247-ecd1-4a8b-b174-41cc4f224c24",
+        "file": "public/assets/commons/openverse-7ce84247-ecd1-4a8b-b174-41cc4f224c24.jpg",
+        "sha256": "ea17d902c86ee41122c932cce510a2703d3559b101f6696b711812a95eb07fb2"
+      },
+      "license": "Public domain",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.richardson-farm",
+      "src": "/media/timeline/richardson-farm-1024.jpg",
+      "intrinsic": {
+        "width": 1024,
+        "height": 768
+      },
+      "files": [
+        {
+          "src": "/media/timeline/richardson-farm-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 14328,
+          "sha256": "8d025730ae23f87b12fe7374d1190f1208fe2bd1b7db3385210ef10ccdae09ee"
+        },
+        {
+          "src": "/media/timeline/richardson-farm-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 22548,
+          "sha256": "21306d71786970c641cc8059b4fca1e813e6a7067f11139c48b1ae23070df99f"
+        },
+        {
+          "src": "/media/timeline/richardson-farm-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 40958,
+          "sha256": "eabec46036f50b4b16f98369420898c1b6e350817501c0471ffd360df40ae0fc"
+        },
+        {
+          "src": "/media/timeline/richardson-farm-1024.jpg",
+          "format": "jpg",
+          "width": 1024,
+          "bytes": 65889,
+          "sha256": "dee6136c7ce0ec7e9e27881eca96762d25bb4b3915533e7b085b2086fbb16611"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "White barns beyond a field of ripe grain under a grey sky.",
+      "ledger": {
+        "id": "openverse-07acfc79-a8eb-439f-8340-fdba6c4d56ce",
+        "file": "public/assets/commons/openverse-07acfc79-a8eb-439f-8340-fdba6c4d56ce.jpg",
+        "sha256": "b846790f64afdcecd86a4c137821b184a32a813158b13ecdf518c82c0296b55f"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    },
+    {
+      "id": "timeline.starved-rock",
+      "src": "/media/timeline/starved-rock-1024.jpg",
+      "intrinsic": {
+        "width": 1024,
+        "height": 768
+      },
+      "files": [
+        {
+          "src": "/media/timeline/starved-rock-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 35318,
+          "sha256": "080006918215f99e0aef8e7144fc884eca279e8d0e26935d1505a59e13f8f62c"
+        },
+        {
+          "src": "/media/timeline/starved-rock-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 47837,
+          "sha256": "0e80b5813f80635a2eac9c1a903b9a6d4188db3a57c0b958d9e5efbe22f7de39"
+        },
+        {
+          "src": "/media/timeline/starved-rock-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 115389,
+          "sha256": "fbbee752785cb8269c82226517d57a40c3ebdbb430aa4031cb2ef5dbaa01eeb0"
+        },
+        {
+          "src": "/media/timeline/starved-rock-1024.jpg",
+          "format": "jpg",
+          "width": 1024,
+          "bytes": 155658,
+          "sha256": "b92b3a5a849eed3e70b6591f94c242aed39dbc6a8ca12d462c4be5d59d5261c5"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "French Canyon at Starved Rock State Park: sandstone walls and green trees around a narrow canyon.",
+      "ledger": {
+        "id": "french-canyon-starved-rock-panoramio",
+        "file": "public/assets/commons/french-canyon-starved-rock-panoramio.jpg",
+        "sha256": "476c3589aad593ab457c11a0ae4b1da2d3e8ce0cc1ffae62e623a6136b1c535b"
+      },
+      "license": "CC BY-SA 3.0",
+      "credit": "Photo: hakkun, CC BY-SA 3.0 (this crop is shared under the same licence)",
+      "creditUrl": "https://commons.wikimedia.org/wiki/File:French_Canyon_-_Starved_Rock_-_panoramio.jpg"
+    },
+    {
+      "id": "timeline.the-proposal",
+      "src": "/media/timeline/the-proposal-853.jpg",
+      "intrinsic": {
+        "width": 853,
+        "height": 640
+      },
+      "files": [
+        {
+          "src": "/media/timeline/the-proposal-560.avif",
+          "format": "avif",
+          "width": 560,
+          "bytes": 11339,
+          "sha256": "7720d78340c31e8b5d97c21a39e3c064f548f6d2032de89c39b3d10ac3b78739"
+        },
+        {
+          "src": "/media/timeline/the-proposal-560.jpg",
+          "format": "jpg",
+          "width": 560,
+          "bytes": 22325,
+          "sha256": "adf784ca70e42499c2291054f3693f22bbb2f56789e7da71309b3e8fddaeac06"
+        },
+        {
+          "src": "/media/timeline/the-proposal-853.avif",
+          "format": "avif",
+          "width": 853,
+          "bytes": 18867,
+          "sha256": "b8a98ff95bace7a12e1df6ed81838beb3218f47f3a254709f9d522b013471f7c"
+        },
+        {
+          "src": "/media/timeline/the-proposal-853.jpg",
+          "format": "jpg",
+          "width": 853,
+          "bytes": 40846,
+          "sha256": "a32da6800cbe2cd51720e0c9bfdee1f3ce60d06394319d92f830fd05f198857a"
+        }
+      ],
+      "standIn": true,
+      "sourceType": "licensed-photograph",
+      "alt": "A close-up of a pale pink diamond ring resting on sparkling beads.",
+      "ledger": {
+        "id": "openverse-3c56dd7f-e22e-4e20-9a74-08b9a363660c",
+        "file": "public/assets/commons/openverse-3c56dd7f-e22e-4e20-9a74-08b9a363660c.jpg",
+        "sha256": "fda2fdc4f595361db01347d294400f0a785092abdc403085b7537cc5092fee1f"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null
+    }
+  ]
+}

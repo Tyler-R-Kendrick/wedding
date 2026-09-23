@@ -26,6 +26,14 @@
     "on-surface-muted": "#59554d",
     "outline": "#e2d8c7",
     "error": "#8a2c22",
-    "on-error": "#fff6f2"
+    "on-error": "#fff6f2",
+    "line-red": "#a3352b",
+    "line-blue": "#1f5d8c",
+    "line-brown": "#6b4631",
+    "line-pink": "#a3426a",
+    "line-green": "#3d6b3a",
+    "line-orange": "#9e5019",
+    "line-gold": "#806238",
+    "on-line": "#fbf9f3"
   }
 }

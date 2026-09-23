@@ -23,20 +23,19 @@
     "our-story": {
       "url": "/our-story",
       "viewport": { "width": 1440, "height": 900 },
-      "waitFor": ".bd-journey",
+      "waitFor": ".bd-ride[data-mode=\"ride\"]",
       "output": "our-story.mp4",
-      "thumbnail": { "time": 1 },
+      "thumbnail": { "time": 6 },
       "steps": [
         { "action": "pause", "ms": 1500 },
-        { "action": "scroll", "y": 440, "delay": 1800, "description": "how we met, and a few pictures" },
-        { "action": "scroll", "y": 560, "delay": 1500, "description": "the chapter reader" },
-        { "action": "click", "selector": "#our-life-together-tab", "delay": 2200 },
-        { "action": "click", "selector": "#love-tab", "delay": 2200 },
-        { "action": "key", "key": "ArrowRight", "label": "→", "delay": 2000, "description": "the tabs answer the arrow keys" },
-        { "action": "key", "key": "ArrowRight", "label": "→", "delay": 2000 },
-        { "action": "click", "selector": ".bd-reader__step--next", "within": ".bd-reader__chapter:not([hidden])", "delay": 2200, "description": "or step from chapter to chapter" },
-        { "action": "scroll", "y": 520, "delay": 1500, "description": "the places that matter" },
-        { "action": "moveTo", "selector": ".bd-places__link", "delay": 1400 }
+        { "action": "scroll", "y": 700, "delay": 1800, "description": "all aboard the Sara + Tyler Line" },
+        { "action": "scroll", "y": 330, "delay": 1600, "description": "scroll rides the train to the next memory" },
+        { "action": "scroll", "y": 330, "delay": 1600 },
+        { "action": "scroll", "y": 330, "delay": 1600, "description": "a transfer changes line with the chapter" },
+        { "action": "scroll", "y": 330, "delay": 1600 },
+        { "action": "click", "selector": ".bd-ride-map__stop a[href=\"#starved-rock\"]", "delay": 3200, "description": "tap a station on the car card to ride there" },
+        { "action": "click", "selector": ".bd-ride__btn--next", "delay": 2600, "description": "or step one stop at a time" },
+        { "action": "click", "selector": ".bd-ride-map__stop a[href=\"#the-loop\"]", "delay": 3600, "description": "end of the line: the Loop, 07 · 17 · 27" }
       ]
     },
     "explore-caa": {

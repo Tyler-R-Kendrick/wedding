@@ -84,6 +84,35 @@ export const storySections = pgTable(
   (t) => [uniqueIndex('story_sections_slug_idx').on(t.slug), index('story_sections_order_idx').on(t.order)],
 );
 
+/**
+ * Our Story as a line: one row per remembered moment, strung in order along the chapter it belongs
+ * to (the chapter is the "line" the guest rides on /our-story). Seeded as labelled placeholders until
+ * the couple's Paired timeline is imported (`scripts/import-paired.mjs`); an imported row keeps the
+ * Paired id in `externalRef` so a second import updates it instead of adding a twin.
+ */
+export const timelineMoments = pgTable(
+  'timeline_moments',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    chapter: text('chapter').$type<StoryChapter>().notNull(),
+    order: integer('order').notNull(),
+    title: text('title').notNull(),
+    /** "YYYY-MM-DD", "YYYY-MM" or "YYYY": as precise as the source is, never more. Null = not known yet. */
+    occurredOn: text('occurred_on'),
+    locationLabel: text('location_label'),
+    /** One or two short sentences in the couple's voice. Placeholder text contains "TODO(Tyler & Sara)". */
+    note: text('note').notNull(),
+    media: jsonb('media').$type<MediaRef[]>().notNull().default([]),
+    /** The Our Adventures memory this stop opens, when there is one. */
+    adventureSlug: text('adventure_slug'),
+    /** "paired:<id>" for imported rows. */
+    externalRef: text('external_ref'),
+    ...provenanceColumns,
+  },
+  (t) => [uniqueIndex('timeline_moments_slug_idx').on(t.slug), index('timeline_moments_order_idx').on(t.order), uniqueIndex('timeline_moments_external_ref_idx').on(t.externalRef)],
+);
+
 export const PLACE_KINDS = ['venue', 'restaurant', 'park', 'museum', 'farm', 'waterfront', 'neighborhood', 'home', 'other'] as const;
 export type PlaceKind = (typeof PLACE_KINDS)[number];
 
@@ -324,6 +353,7 @@ export const contentRevisions = pgTable(
 );
 
 export type StorySectionRow = typeof storySections.$inferSelect;
+export type TimelineMomentRow = typeof timelineMoments.$inferSelect;
 export type PlaceRow = typeof places.$inferSelect;
 export type AdventureMemoryRow = typeof adventureMemories.$inferSelect;
 export type RecommendationRow = typeof recommendations.$inferSelect;
@@ -343,6 +373,7 @@ export type ProvenanceRow = Pick<
 /** All content tables keyed by their SQL name, for schema tests and the generic editor. */
 export const CONTENT_TABLES = {
   story_sections: storySections,
+  timeline_moments: timelineMoments,
   places,
   adventure_memories: adventureMemories,
   recommendations,

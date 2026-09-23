@@ -53,6 +53,7 @@ describe('typed placeholders never render as facts', () => {
         { id: '1', slug: 'how-we-met', chapter: 'met', title: 'How we met', paragraphs: [fact("We met at Allison and Jamie's wedding."), todo('who noticed whom first')], media: [], placeholder: true, provenance: prov() },
         { id: '2', slug: 'the-proposal', chapter: 'engagement', title: 'The proposal', paragraphs: [todo('the engagement story')], media: [], placeholder: true, provenance: prov() },
       ],
+      timeline: [],
     };
     const { container } = render(<StoryPage data={data} />);
     assertPlaceholdersMarked(container, ['who noticed whom first', 'the engagement story'], 2);
