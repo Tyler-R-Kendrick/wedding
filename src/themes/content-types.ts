@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { FindAdventuresData } from '@/capabilities/find_adventures';
 import type { FaqPageData } from '@/capabilities/get_faq';
 import type { StoryPageData } from '@/capabilities/get_story';
-import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
+import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
@@ -20,7 +20,7 @@ import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import type { PageFrame } from './types';
 
 /*
- * Level-05 content pages (Our Story, Our Adventures, Share an Adventure, Explore CAA, The Wedding,
+ * Level-05 content pages (Our Story, Our Adventures, Share an Adventure, Our Venue, The Wedding,
  * Ask Us). Swarm C's capability outputs and view shapes are the contract; these props mirror
  * `src/app/(public)/_recipes` structurally so the dispatch there type-checks against both sides.
  * A theme adds `frame` (facts, lifecycle, nav, switcher) and owns expression only.
@@ -45,8 +45,8 @@ export interface GuideProps {
 export interface RecommendationProps {
   card: RecommendationCard;
 }
-export interface ExploreCaaProps {
-  data: ExploreCaaPageData;
+export interface OurVenueProps {
+  data: OurVenuePageData;
 }
 export interface VenueSpaceProps {
   data: VenueRoomData;
@@ -126,7 +126,7 @@ export interface ContentRecipes {
   adventureDetail: ContentRecipe<AdventureDetailProps>;
   guide: ContentRecipe<GuideProps>;
   recommendation: ContentRecipe<RecommendationProps>;
-  exploreCaa: ContentRecipe<ExploreCaaProps>;
+  ourVenue: ContentRecipe<OurVenueProps>;
   venueSpace: ContentRecipe<VenueSpaceProps>;
   wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;

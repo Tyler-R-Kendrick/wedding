@@ -82,7 +82,7 @@ export const BotanicalWeddingPage: ContentRecipe<WeddingProps> = ({
           <Prose>
             <Block block={data.roomsNote} />
             <p>
-              <Link href={ROUTES.exploreCaa} standalone>
+              <Link href={ROUTES.ourVenue} standalone>
                 {CONTENT_COPY.wedding.roomsLink} →
               </Link>
             </p>

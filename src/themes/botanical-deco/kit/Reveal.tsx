@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 
 /**
- * Lets the home page unfold as a guest scrolls. Every `[data-reveal]` element that starts wholly
- * below the first screen is marked `pending` (held just out of place) and plays its entrance once,
- * when it scrolls into view; anything with so much as its top edge on screen at load is left exactly
- * as the server drew it, so nothing a guest can already see ever disappears.
+ * Lets a page (Home, Our Venue) unfold as a guest scrolls. Every `[data-reveal]` element that
+ * starts wholly below the first screen is marked `pending` (held just out of place) and plays its
+ * entrance once, when it scrolls into view; anything with so much as its top edge on screen at load
+ * is left exactly as the server drew it, so nothing a guest can already see ever disappears.
  *
  * Time-based on purpose, not scroll-linked: a scroll-linked fade leaves whatever is half in view
  * sitting half transparent for as long as the guest stops there. Keyboard focus reveals its section

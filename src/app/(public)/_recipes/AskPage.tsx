@@ -86,7 +86,7 @@ function labelFor(route: string): string {
   const base = route.split('#')[0] ?? route;
   const known: Record<string, string> = {
     [ROUTES.wedding]: 'The Wedding',
-    [ROUTES.exploreCaa]: 'Explore CAA',
+    [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
     [ROUTES.travel]: 'Travel & Stay',
     [ROUTES.gifts]: 'Gifts',

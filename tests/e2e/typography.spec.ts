@@ -50,7 +50,7 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/pass
  * with on a phone — rendered on every route below and passed CI from the day it landed. The
  * chrome is the same on all of them, so one pass over both designs catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/explore-caa', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure'] as const;
 
 /** Behind the invitation: the RSVP, two of its per-part pages, and the three pages a guest plans their weekend from. */
 const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation'] as const;

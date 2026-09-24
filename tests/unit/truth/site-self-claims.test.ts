@@ -48,7 +48,7 @@ describe('editorial metadata never reaches a guest', () => {
   });
 
   it('sets typographer\'s quotes on everything a guest reads', () => {
-    // A design review counted 18 straight quotes against 6 curly on /explore-caa: the admin editors
+    // A design review counted 18 straight quotes against 6 curly on /our-venue: the admin editors
     // and the seed files are typed on a keyboard, so the quotes are set once, in guestText.
     expect(guestText("We met at Allison and Jamie's wedding.")).toBe('We met at Allison and Jamie’s wedding.');
     expect(guestText('We said "I love you." at Starved Rock.')).toBe('We said “I love you.” at Starved Rock.');
@@ -68,7 +68,7 @@ describe('editorial metadata never reaches a guest', () => {
 
   it('has no note in the seed that tells the couple what to do', () => {
     // "Kit figure — verify with the planner before publishing as fact." rendered four times on
-    // /explore-caa. A guest needs the provenance, not the couple's task list.
+    // /our-venue. A guest needs the provenance, not the couple's task list.
     const spaces = readFileSync('src/content/seed/venue-spaces.json', 'utf8');
     expect(spaces).not.toContain('verify with the planner');
     expect(spaces).not.toContain('before publishing as fact');

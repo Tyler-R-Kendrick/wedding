@@ -29,7 +29,7 @@ that shaped the story.
 
 [![Our Story, the chapter reader](our-story.gif)](our-story.mp4)
 
-## Explore CAA + Chicago
+## Our Venue + Chicago
 
 The venue, then the city guide: pointing at a place lights its pin on the map, and choosing a pin
 picks its place. Then the ribbon, the building's history and the list of things to look for.

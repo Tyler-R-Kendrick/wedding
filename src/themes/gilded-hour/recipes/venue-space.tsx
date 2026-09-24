@@ -15,15 +15,15 @@ export const GildedVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ data, fra
   const { space } = data;
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={guestText(space.character)} />
+      <PageHead eyebrow={CONTENT_COPY.ourVenue.eyebrow} title={space.name} lede={guestText(space.character)} />
 
       <Section id="look" labelledBy="look-title">
-        <SectionHeading level={2} id="look-title" title={CONTENT_COPY.exploreCaa.roomLookFor} />
+        <SectionHeading level={2} id="look-title" title={CONTENT_COPY.ourVenue.roomLookFor} />
         <LookForList items={space.lookForThis.map((text, i) => ({ id: `look-${i}`, text }))} label="Look for this" />
       </Section>
 
       <Section id="features" ground="alt" labelledBy="features-title">
-        <SectionHeading level={2} id="features-title" title={CONTENT_COPY.exploreCaa.roomFeatures} />
+        <SectionHeading level={2} id="features-title" title={CONTENT_COPY.ourVenue.roomFeatures} />
         <Prose>
           <ul className="gh-list">
             {space.features.map((f, i) => (
@@ -34,14 +34,14 @@ export const GildedVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ data, fra
       </Section>
 
       <Section id="capacity" labelledBy="capacity-title">
-        <SectionHeading level={2} id="capacity-title" title={CONTENT_COPY.exploreCaa.roomCapacity} />
+        <SectionHeading level={2} id="capacity-title" title={CONTENT_COPY.ourVenue.roomCapacity} />
         <Prose>
           <Block block={data.roomsNotConfirmed} />
         </Prose>
         <CapacityTable capacities={space.capacities} />
         <Provenance provenance={space.provenance} freshness />
         <Prose>
-          <BackLink href={ROUTES.exploreCaa}>{CONTENT_COPY.exploreCaa.wholeBuilding}</BackLink>
+          <BackLink href={ROUTES.ourVenue}>{CONTENT_COPY.ourVenue.wholeBuilding}</BackLink>
         </Prose>
       </Section>
     </Shell>

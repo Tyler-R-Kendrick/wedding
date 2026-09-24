@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import type { ComponentType, ReactNode } from 'react';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
-import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
+import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { GiftsProps, PhotoAlbumProps, PhotosProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
@@ -17,7 +17,7 @@ import type { PageFrame } from '@/themes/types';
 import { AdventureDetailPage } from './AdventureDetailPage';
 import { AdventuresPage, type AdventuresRecipeProps } from './AdventuresPage';
 import { AskPage, type AskRecipeProps } from './AskPage';
-import { ExploreCaaPage } from './ExploreCaaPage';
+import { OurVenuePage } from './OurVenuePage';
 import { GuidePage, type GuideRecipeProps } from './GuidePage';
 import { RecommendationPage } from './RecommendationPage';
 import { StoryPage } from './StoryPage';
@@ -39,7 +39,7 @@ export interface PageRecipes {
   AdventureDetailPage: ComponentType<{ data: AdventureDetailData }>;
   GuidePage: ComponentType<GuideRecipeProps>;
   RecommendationPage: ComponentType<{ card: RecommendationCard }>;
-  ExploreCaaPage: ComponentType<{ data: ExploreCaaPageData }>;
+  OurVenuePage: ComponentType<{ data: OurVenuePageData }>;
   VenueSpacePage: ComponentType<{ data: VenueSpaceData }>;
   WeddingPage: ComponentType<{ data: WeddingPageData }>;
   AskPage: ComponentType<AskRecipeProps>;
@@ -59,7 +59,7 @@ export const placeholderRecipes: PageRecipes = {
   AdventureDetailPage,
   GuidePage,
   RecommendationPage,
-  ExploreCaaPage,
+  OurVenuePage,
   VenueSpacePage,
   WeddingPage,
   AskPage,
@@ -103,8 +103,8 @@ export const themedRecipes: PageRecipes = {
   AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage),
   GuidePage: themed('guide', ROUTES.share, GuidePage),
   RecommendationPage: themed('recommendation', ROUTES.share, RecommendationPage),
-  ExploreCaaPage: themed('exploreCaa', ROUTES.exploreCaa, ExploreCaaPage),
-  VenueSpacePage: themed('venueSpace', ROUTES.exploreCaa, VenueSpacePage),
+  OurVenuePage: themed('ourVenue', ROUTES.ourVenue, OurVenuePage),
+  VenueSpacePage: themed('venueSpace', ROUTES.ourVenue, VenueSpacePage),
   WeddingPage: themed('wedding', ROUTES.wedding, WeddingPage),
   AskPage: themed('ask', ROUTES.ask, AskPage),
   TravelPage: themed('travel', ROUTES.travel, TravelPage),

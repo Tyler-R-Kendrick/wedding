@@ -17,7 +17,7 @@ export const knowledgeRecords = pgTable(
     /** "<table>:<recordId>" so re-projection is an upsert. */
     id: text('id').primaryKey(),
     kind: text('kind').$type<KnowledgeKind>().notNull(),
-    /** Internal route the citation links to (e.g. "/explore-caa#history"). */
+    /** Internal route the citation links to (e.g. "/our-venue#history"). */
     route: text('route').notNull(),
     title: text('title').notNull(),
     /** Plain text, already flattened; placeholders are excluded (a TODO is not knowledge). */

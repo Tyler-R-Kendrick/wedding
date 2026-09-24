@@ -59,7 +59,7 @@ export const CONTACT_LINK: AnswerLink = { label: 'Reach Sara and Tyler', href: C
 
 const ROUTE_LABELS: Record<string, string> = {
   [ROUTES.wedding]: 'The Wedding',
-  [ROUTES.exploreCaa]: 'Explore CAA',
+  [ROUTES.ourVenue]: 'Our Venue',
   [ROUTES.story]: 'Our Story',
   [ROUTES.adventures]: 'Our Adventures',
   [ROUTES.share]: 'Share an Adventure',

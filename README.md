@@ -11,7 +11,7 @@ quality gates that built it.
 
 [![Our Story: the chapter reader](docs/demos/our-story.gif)](docs/demos/our-story.mp4)
 
-More in [`docs/demos/`](docs/demos/README.md): Explore CAA + Chicago, Your
+More in [`docs/demos/`](docs/demos/README.md): Our Venue + Chicago, Your
 Weekend with the RSVP, and the phone view. They are recorded from the running
 site with Vercel's [webreel](https://github.com/vercel-labs/webreel) and
 [agent-browser](https://github.com/vercel-labs/agent-browser)

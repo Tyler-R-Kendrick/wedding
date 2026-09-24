@@ -8,7 +8,7 @@ export const INTERNAL_ROUTES = [
   '/our-adventures',
   '/share-an-adventure',
   '/the-wedding',
-  '/explore-caa',
+  '/our-venue',
   '/your-weekend',
   '/travel',
   '/transportation',
@@ -29,7 +29,7 @@ export const INTERNAL_ROUTES = [
 export type InternalRoute = (typeof INTERNAL_ROUTES)[number];
 
 /** Dynamic route prefixes (e.g. `/our-adventures/<slug>`). */
-export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/explore-caa/', '/photos/'] as const;
+export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/our-venue/', '/photos/'] as const;
 
 const SAFE_SEGMENT = /^[a-z0-9-]+$/;
 

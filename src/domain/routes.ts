@@ -7,7 +7,7 @@ export const ROUTES = {
   adventures: '/our-adventures',
   share: '/share-an-adventure',
   wedding: '/the-wedding',
-  exploreCaa: '/explore-caa',
+  ourVenue: '/our-venue',
   ask: '/ask-us',
   travel: '/travel',
   transportation: '/transportation',

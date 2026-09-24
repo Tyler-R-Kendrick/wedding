@@ -67,9 +67,9 @@ export function buildKnowledgeRecords(rows: Rows, now: Date): KnowledgeRecordIns
     push('recommendation', 'recommendations', r, r.title, `${ROUTES.share}/${r.slug}`, [r.what, r.distanceFromCaa, r.cost, r.accessibility, place && !place.placeholder ? `Place: ${place.name}${place.address ? `, ${place.address}` : ''}` : null]);
   }
   for (const i of rows.itinerary_templates) push('itinerary', 'itinerary_templates', i, i.title, `${ROUTES.share}#${i.slug}`, [i.intro]);
-  for (const v of rows.venue_spaces) push('venue-space', 'venue_spaces', v, v.name, `${ROUTES.exploreCaa}/${v.slug}`, [v.character, ...v.lookForThis, `Capacities are ${v.capacities.note}`]);
-  for (const f of rows.venue_facts) push('venue-fact', 'venue_facts', f, f.statement, `${ROUTES.exploreCaa}#${f.category === 'look-for-this' ? 'look-for-this' : 'history'}`, [f.statement]);
-  for (const o of rows.operational_fields) push('operational', 'operational_fields', o, o.label, `${ROUTES.exploreCaa}#${o.kind === 'outlet' || o.kind === 'amenity' ? 'outlets' : 'getting-here'}`, [o.value, o.note]);
+  for (const v of rows.venue_spaces) push('venue-space', 'venue_spaces', v, v.name, `${ROUTES.ourVenue}/${v.slug}`, [v.character, ...v.lookForThis, `Capacities are ${v.capacities.note}`]);
+  for (const f of rows.venue_facts) push('venue-fact', 'venue_facts', f, f.statement, `${ROUTES.ourVenue}#${f.category === 'look-for-this' ? 'look-for-this' : 'history'}`, [f.statement]);
+  for (const o of rows.operational_fields) push('operational', 'operational_fields', o, o.label, `${ROUTES.ourVenue}#${o.kind === 'outlet' || o.kind === 'amenity' ? 'outlets' : 'getting-here'}`, [o.value, o.note]);
   for (const q of rows.faq_entries) push('faq', 'faq_entries', q, q.question, `${ROUTES.ask}#${q.slug}`, [q.answer]);
   return out;
 }

@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { Text } from '@/components/provenance';
-import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
+import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import { ROUTES } from '@/domain/routes';
 import { OperationalRow, PageIntro, Provenance, Section, Shell } from './kit';
 
-export function ExploreCaaPage({ data }: { data: ExploreCaaPageData }) {
+export function OurVenuePage({ data }: { data: OurVenuePageData }) {
   const hook = data.history[0];
   return (
-    <Shell current={ROUTES.exploreCaa}>
-      <PageIntro eyebrow="Explore CAA" title={data.venueName} lede={hook ? hook.statement : undefined} />
+    <Shell current={ROUTES.ourVenue}>
+      <PageIntro eyebrow="Our Venue" title={data.venueName} lede={hook ? hook.statement : undefined} />
 
       <Section id="history" number="01" title="The building">
         <div className="wp-prose">

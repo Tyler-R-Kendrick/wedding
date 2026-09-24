@@ -49,6 +49,14 @@ const nextConfig: NextConfig = {
     // security headers do not, so the two sets never override each other.
     return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...rightsHeaders(), ...stageHeaders(stageFramingHeaders(headerOptions))];
   },
+  // The venue page was "Explore CAA" at /explore-caa until it became Our Venue. Links already shared
+  // and citations already stored keep working; the browser carries the #fragment across.
+  async redirects() {
+    return [
+      { source: '/explore-caa', destination: '/our-venue', permanent: true },
+      { source: '/explore-caa/:slug', destination: '/our-venue/:slug', permanent: true },
+    ];
+  },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.
   async rewrites() {

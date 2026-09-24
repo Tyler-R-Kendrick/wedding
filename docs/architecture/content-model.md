@@ -60,8 +60,8 @@ pass `assertAllowedRedirect` before they are returned.
 ## Pages and the recipe seam
 
 Routes (mirroring `src/capabilities/routes.ts`): `/our-story`, `/our-adventures`,
-`/our-adventures/[slug]`, `/share-an-adventure`, `/share-an-adventure/[slug]`, `/explore-caa`,
-`/explore-caa/[slug]`, `/the-wedding`, `/ask-us`. Each page resolves the principal, invokes
+`/our-adventures/[slug]`, `/share-an-adventure`, `/share-an-adventure/[slug]`, `/our-venue`,
+`/our-venue/[slug]`, `/the-wedding`, `/ask-us`. Each page resolves the principal, invokes
 capabilities, and renders `recipes.<Page>` from `src/app/(public)/_recipes/index.ts`. The
 placeholder recipes there are token-only server components; Swarm B's integrator points
 `recipes` at the theme kit's recipes (typed by `PageRecipes`) and deletes the placeholder files.

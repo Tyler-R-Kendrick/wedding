@@ -39,7 +39,7 @@
       ]
     },
     "explore-caa": {
-      "url": "/explore-caa",
+      "url": "/our-venue",
       "viewport": { "width": 1440, "height": 900 },
       "waitFor": ".bd-cityguide",
       "output": "explore-caa.mp4",

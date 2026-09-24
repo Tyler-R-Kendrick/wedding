@@ -75,17 +75,17 @@ const PAGES: PageCase[] = [
     signature: { 'botanical-deco': '.bd-rec .bd-rec__inner', 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
   },
   {
-    key: 'explore-caa',
-    path: '/explore-caa',
-    h1: { 'botanical-deco': 'Explore CAA + Chicago', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
+    key: 'our-venue',
+    path: '/our-venue',
+    h1: { 'botanical-deco': 'Our Venue', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
     primary: (p) => p.locator('[id^="fact-"]').first(),
     // The approved page opens on the couple, then the venue: its introduction starts in the first screen.
     primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }) },
-    signature: { 'botanical-deco': '.bd-venue__frames .bd-venue__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
+    signature: { 'botanical-deco': '.bd-place__frames .bd-place__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
   },
   {
     key: 'venue-space',
-    path: '/explore-caa/white-city-ballroom',
+    path: '/our-venue/white-city-ballroom',
     h1: 'White City Ballroom',
     primary: (p) => p.locator('#look li').first(),
     signature: { 'botanical-deco': '.bd-docent .bd-docent__num', 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },

@@ -5,7 +5,7 @@ import { kit } from '../kit';
 import { GildedAdventureDetailPage } from './adventure-detail';
 import { GildedAdventuresPage } from './adventures';
 import { GildedAskPage } from './ask';
-import { GildedExploreCaaPage } from './explore-caa';
+import { GildedOurVenuePage } from './our-venue';
 import { GildedGiftsPage } from './gifts';
 import { GildedPhotoAlbumPage, GildedPhotosPage } from './photos';
 import { GildedGuidePage } from './guide';
@@ -28,7 +28,7 @@ export const content: ContentRecipes = {
   adventureDetail: GildedAdventureDetailPage,
   guide: GildedGuidePage,
   recommendation: GildedRecommendationPage,
-  exploreCaa: GildedExploreCaaPage,
+  ourVenue: GildedOurVenuePage,
   venueSpace: GildedVenueSpacePage,
   wedding: GildedWeddingPage,
   travel: GildedTravelPage,

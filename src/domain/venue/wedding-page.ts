@@ -54,7 +54,7 @@ export async function getWeddingPageData(ctx: CapabilityContext): Promise<Weddin
     ...(directions ? { directions } : {}),
     events,
     dressCode: events[0]!.dressCode,
-    roomsNote: textBlock('TODO(Tyler & Sara): which of the four kit spaces hosts each part of the day is not confirmed (backlog P-01). Explore CAA describes the candidates.'),
+    roomsNote: textBlock('TODO(Tyler & Sara): which of the four kit spaces hosts each part of the day is not confirmed (backlog P-01). Our Venue describes the candidates.'),
     provenance,
     sources: status.value.sources,
   };

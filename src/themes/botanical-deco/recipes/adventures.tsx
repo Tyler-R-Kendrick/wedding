@@ -170,7 +170,7 @@ function VenuePostcard({ site }: { site: PageFrame['site'] }) {
           <span>The wedding</span>
           <Arrow />
         </a>
-        <Link href={ROUTES.exploreCaa} standalone>
+        <Link href={ROUTES.ourVenue} standalone>
           {COPY.venueMore}
         </Link>
       </div>

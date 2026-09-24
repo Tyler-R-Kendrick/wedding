@@ -8,10 +8,10 @@ import type { OperationalFieldView, VenueFactView, VenueSpaceView } from '@/doma
 import { canSeeExpired, filterVisible, isValidAt } from '@/domain/content/visibility';
 import { ROUTES } from '@/domain/routes';
 
-const HISTORY_ROUTE = `${ROUTES.exploreCaa}#history`;
-const LOOK_ROUTE = `${ROUTES.exploreCaa}#look-for-this`;
-const OUTLETS_ROUTE = `${ROUTES.exploreCaa}#outlets`;
-const GETTING_HERE_ROUTE = `${ROUTES.exploreCaa}#getting-here`;
+const HISTORY_ROUTE = `${ROUTES.ourVenue}#history`;
+const LOOK_ROUTE = `${ROUTES.ourVenue}#look-for-this`;
+const OUTLETS_ROUTE = `${ROUTES.ourVenue}#outlets`;
+const GETTING_HERE_ROUTE = `${ROUTES.ourVenue}#getting-here`;
 
 export const operationalRoute = (row: Pick<OperationalFieldRow, 'kind'>) => (row.kind === 'outlet' || row.kind === 'amenity' ? OUTLETS_ROUTE : GETTING_HERE_ROUTE);
 
@@ -31,7 +31,7 @@ export function toOperationalFieldView(row: OperationalFieldRow, ctx: ReadContex
 }
 
 export function toVenueSpaceView(row: VenueSpaceRow, ctx: ReadContext): VenueSpaceView {
-  const route = `${ROUTES.exploreCaa}/${row.slug}`;
+  const route = `${ROUTES.ourVenue}/${row.slug}`;
   return {
     id: row.id,
     slug: row.slug,
@@ -79,9 +79,9 @@ export async function getVenueFacts(ctx: ReadContext, opts: VenueFactsOptions = 
   const outlets = operational.filter((o) => o.kind === 'outlet' || o.kind === 'amenity');
   const gettingHere = operational.filter((o) => o.kind !== 'outlet' && o.kind !== 'amenity');
   const sources = dedupeCitations([
-    ...facts.map((f) => toRecordCitation(f, { route: f.category === 'look-for-this' ? LOOK_ROUTE : HISTORY_ROUTE, title: `Explore CAA › ${f.statement}`, recordRef: { type: 'venue_facts', id: f.id }, now: ctx.now })),
-    ...spaces.map((s) => toRecordCitation(s, { route: `${ROUTES.exploreCaa}/${s.slug}`, title: `Explore CAA › ${s.name}`, recordRef: { type: 'venue_spaces', id: s.id }, now: ctx.now })),
-    ...operational.map((o) => toRecordCitation(o, { route: operationalRoute(o), title: `Explore CAA › ${o.label}`, recordRef: { type: 'operational_fields', id: o.id }, now: ctx.now })),
+    ...facts.map((f) => toRecordCitation(f, { route: f.category === 'look-for-this' ? LOOK_ROUTE : HISTORY_ROUTE, title: `Our Venue › ${f.statement}`, recordRef: { type: 'venue_facts', id: f.id }, now: ctx.now })),
+    ...spaces.map((s) => toRecordCitation(s, { route: `${ROUTES.ourVenue}/${s.slug}`, title: `Our Venue › ${s.name}`, recordRef: { type: 'venue_spaces', id: s.id }, now: ctx.now })),
+    ...operational.map((o) => toRecordCitation(o, { route: operationalRoute(o), title: `Our Venue › ${o.label}`, recordRef: { type: 'operational_fields', id: o.id }, now: ctx.now })),
   ]);
   return {
     history: facts.filter((f) => f.category !== 'look-for-this').map((f) => toVenueFactView(f, ctx)),
@@ -100,7 +100,7 @@ export async function getVenueSpace(ctx: ReadContext, slug: string): Promise<{ s
   if (!row || filterVisible([row], ctx.principal, ctx.surface, ctx.now).length === 0) return undefined;
   return {
     space: toVenueSpaceView(row, ctx),
-    sources: [toRecordCitation(row, { route: `${ROUTES.exploreCaa}/${row.slug}`, title: `Explore CAA › ${row.name}`, recordRef: { type: 'venue_spaces', id: row.id }, now: ctx.now })],
+    sources: [toRecordCitation(row, { route: `${ROUTES.ourVenue}/${row.slug}`, title: `Our Venue › ${row.name}`, recordRef: { type: 'venue_spaces', id: row.id }, now: ctx.now })],
   };
 }
 

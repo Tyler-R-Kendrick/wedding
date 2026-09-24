@@ -99,7 +99,7 @@ export const BotanicalGuidePage: ContentRecipe<GuideProps> = ({ itineraries, rec
         ))}
         <Prose>
           <p className="bd-muted">
-            {CONTENT_COPY.guide.hours} <Link href={`${ROUTES.exploreCaa}#outlets`}>Explore CAA</Link>
+            {CONTENT_COPY.guide.hours} <Link href={`${ROUTES.ourVenue}#outlets`}>Our Venue</Link>
             {CONTENT_COPY.guide.hoursTail}
           </p>
         </Prose>

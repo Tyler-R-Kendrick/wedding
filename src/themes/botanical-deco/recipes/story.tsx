@@ -45,7 +45,7 @@ const CHAPTER_ORDER = Object.keys(LINES) as StoryChapter[];
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 
 const PLACES = [
-  { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: ROUTES.exploreCaa },
+  { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: `${ROUTES.ourVenue}#city` },
   { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.', href: `${ROUTES.adventures}/starved-rock` },
   { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.share },
 ] as const;
