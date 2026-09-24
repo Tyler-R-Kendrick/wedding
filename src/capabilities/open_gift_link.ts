@@ -24,7 +24,8 @@ export const openGiftLink = defineCapability<z.infer<typeof input>, z.infer<type
     'Hands the guest off to a registry or gift provider (Zola, The Knot, Joy, …) by returning the allowlisted link to open in a new tab. ' +
     'Use it only when the guest asks to go to the registry. It records the handoff; it never buys, reserves, or confirms anything.',
   kind: 'external',
-  auth: 'anonymous',
+  // Signed in only: the registry and the photos live behind the account menu, and so does their data.
+  auth: 'guest',
   requires: [],
   confirmation: 'inline',
   idempotent: false,

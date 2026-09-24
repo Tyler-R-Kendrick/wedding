@@ -37,8 +37,9 @@ test.describe('redirect allowlist', () => {
   };
 
   test('handoff capabilities only ever return partner hosts, and unknown ids never leak a URL', async ({ request }) => {
+    // The registry is behind the signed-in account menu, so its capabilities are called as a guest.
     for (const name of ['list_gift_links', 'get_reservation_options']) {
-      const res = await request.post(`/api/capabilities/${name}`, { data: { input: {} } });
+      const res = await request.post(`/api/capabilities/${name}`, { headers: headers('A1'), data: { input: {} } });
       expect(res.status()).toBe(200);
       const text = await res.text();
       for (const m of text.matchAll(/"url":"([^"]+)"/g)) {
@@ -49,12 +50,12 @@ test.describe('redirect allowlist', () => {
       }
     }
     await withGiftLink(request, `redir-hosts-${Date.now()}`, async (linkId) => {
-      const gift = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } } });
+      const gift = await request.post('/api/capabilities/open_gift_link', { headers: headers('A1'), data: { input: { linkId } } });
       expect(gift.status()).toBe(200);
       expect(new URL((await gift.json()).handoffUrl).hostname).toMatch(PARTNER_HOSTS);
     });
     for (const linkId of ['nope', '../../etc/passwd', 'javascript:alert(1)', 'https://evil.example']) {
-      const res = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } } });
+      const res = await request.post('/api/capabilities/open_gift_link', { headers: headers('A1'), data: { input: { linkId } } });
       expect([404, 422], linkId).toContain(res.status());
       expect(await res.text()).not.toContain('evil');
     }
@@ -67,7 +68,7 @@ test.describe('redirect allowlist', () => {
 
   test('the capability route never redirects', async ({ request }) => {
     await withGiftLink(request, `redir-noredirect-${Date.now()}`, async (linkId) => {
-      const res = await request.post('/api/capabilities/open_gift_link', { data: { input: { linkId } }, maxRedirects: 0 });
+      const res = await request.post('/api/capabilities/open_gift_link', { headers: headers('A1'), data: { input: { linkId } }, maxRedirects: 0 });
       expect(res.status()).toBe(200);
       expect(res.headers()['location']).toBeUndefined();
     });
@@ -81,8 +82,11 @@ test.describe('redirect allowlist', () => {
       const venue = await request.post('/api/capabilities/admin_upsert_reservation_venue', { headers: headers('admin'), data: { input: { id: `evil-${stamp}`, name: 'x', url }, idempotencyKey: `redir-v-${stamp}-${i}` } });
       expect(venue.status(), url).toBe(422);
     }
-    const list = await request.post('/api/capabilities/list_gift_links', { data: { input: {} } });
+    const list = await request.post('/api/capabilities/list_gift_links', { headers: headers('A1'), data: { input: {} } });
+    expect(list.status()).toBe(200);
     expect(await list.text()).not.toContain('evil');
+    // And nobody signed out gets the list at all.
+    expect((await request.post('/api/capabilities/list_gift_links', { headers: headers(), data: { input: {} } })).status()).toBe(401);
     const guestAttempt = await request.post('/api/capabilities/admin_upsert_gift_link', { headers: headers('A1'), data: { input: { id: `g-${stamp}`, kind: 'registry', provider: 'zola', label: 'x', url: 'https://www.zola.com/' }, idempotencyKey: `redir-guest-${stamp}` } });
     expect(guestAttempt.status()).toBe(403);
   });

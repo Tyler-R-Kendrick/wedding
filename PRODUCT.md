@@ -242,6 +242,12 @@ than none — every agent that reads this file starts from it.
 `tests/e2e/links.spec.ts` now walks this table and fails on a route it names that
 the app does not serve, so the two cannot drift again.
 
+**Account menu only**: the household's pages (Your Weekend, RSVP, Transportation,
+Gifts, Photos & Video) are listed in the signed-in account menu and nowhere else in the
+site's chrome — not the public navigation, the Menu sheet or the quick-action bar. An
+anonymous visitor sees "Sign in" in that place. Gifts and Photos & Video also refuse an
+anonymous request (the page sends them to sign in and back; the capabilities answer 401).
+
 | Surface | Route | Job | Visitor mode | Visible from |
 |---|---|---|---|---|
 | Home | `/` | Names, date, place, state-specific primary action, story teaser | Inform + Act | TEASER |
@@ -250,12 +256,12 @@ the app does not serve, so the two cannot drift again.
 | Share an Adventure | `/share-an-adventure` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | SAVE_THE_DATE |
 | The Wedding | `/the-wedding` | Ceremony, cocktail hour, reception; rooms, times, dress code (all TODO), accessibility | Inform | INVITATIONS_OPEN |
 | Explore CAA | `/explore-caa` | Docent: building, spaces, history with provenance, live outlet links, "look for this", floor plan with your table | Celebrate + Inform | TEASER |
-| Your Weekend | `/your-weekend` | Authenticated hub: invitation, RSVP status, table, benefits, preferences | Act | INVITATIONS_OPEN |
-| RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message | Act | RSVP_OPEN |
+| Your Weekend | `/your-weekend` | Authenticated hub: invitation, RSVP status, table, benefits, preferences. **Account menu only** | Act | INVITATIONS_OPEN |
+| RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message. **Account menu only** | Act | RSVP_OPEN |
 | Travel & Stay | `/travel` | Airports, CAA block, alternative hotels, neighbourhood, weather expectations | Inform + Act | SAVE_THE_DATE |
-| Transportation | `/transportation` | Valet, transit, rides and voucher, parking, accessibility | Inform + Act | INVITATIONS_OPEN |
-| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards; funds (honeymoon, home, adoption, next adventures) given person to person via Zelle / Venmo / PayPal / Cash App / check (ADR-0013) | Act | RSVP_OPEN |
-| Photos & Video | `/photos` | Engagement photos, guest uploads, professional galleries by rights | Celebrate | TEASER |
+| Transportation | `/transportation` | Valet, transit, rides and voucher, parking, accessibility. **Account menu only** | Inform + Act | INVITATIONS_OPEN |
+| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards; funds (honeymoon, home, adoption, next adventures) given person to person via Zelle / Venmo / PayPal / Cash App / check (ADR-0013). **Signed in, account menu only** | Act | RSVP_OPEN |
+| Photos & Video | `/photos` | Engagement photos, guest uploads, professional galleries by rights. **Signed in, account menu only** | Celebrate | TEASER |
 | Ask Us | `/ask-us` | Grounded concierge with citations | Inform | TEASER |
 | Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | INVITATIONS_OPEN |
 | Claim | `/claim/verify` | Email OTP → binding; optional passkey (`/claim/welcome`, `/claim/passkey`) | Gate | INVITATIONS_OPEN |

@@ -29,9 +29,10 @@ export const searchMediaCapability = defineCapability<z.infer<typeof input>, Sea
     'Finds published photos and videos by meaning ("first dance", "toasts", "flowers on the table", "outside at dusk"). ' +
     'Returns only items the caller may see, each with the album it came from and the source of the description ' +
     '(a guest caption, an AI suggestion, or album metadata). Never invents descriptions and never uses face recognition. ' +
-    'Anonymous visitors search public albums only.',
+    'Signed-in guests and the couple only; an anonymous caller is refused.',
   kind: 'read',
-  auth: 'anonymous',
+  // Signed in only, like the albums it searches: the photos and video sit behind the account menu.
+  auth: 'guest',
   requires: [],
   flag: 'MEDIA_SEMANTIC_SEARCH',
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },

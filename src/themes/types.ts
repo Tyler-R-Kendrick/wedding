@@ -90,10 +90,19 @@ export interface NavModel {
   currentPath: string;
   /**
    * The one way into a session, for guests and the couple alike: "Sign in" → /sign-in, whatever the
-   * lifecycle state. Public pages are prerendered per design and cannot know who is reading, so the
-   * label names the door rather than a state; /sign-in itself says who you are if you already are.
+   * lifecycle state. Signed in, the same place becomes the account menu (`member`, then Sign out).
    */
   account?: NavItem;
+  /**
+   * The household's own pages for this state — RSVP, Your Weekend, Transportation, Gifts, Photos &
+   * Video. Listed ONLY inside the signed-in account menu, never in `primary`, `more` or `sticky`.
+   */
+  member?: NavItem[];
+  /**
+   * `true`/`false` when this render knows whether there is a session (the guest area, the admin
+   * preview). Undefined on prerendered public pages: the account menu asks in the browser.
+   */
+  signedIn?: boolean;
 }
 
 export interface DateFacts {

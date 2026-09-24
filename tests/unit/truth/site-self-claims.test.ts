@@ -23,12 +23,11 @@ describe('the public nav', () => {
       expect(labels, state).not.toContain('Claim your invitation');
       for (const l of labels) expect(l, `${state}: ${l}`).not.toMatch(/^Claim\b/);
     }
-    // The destination is still offered where the lifecycle wants it, and the sticky CTA does not
-    // repeat the words the primary nav already uses for the same href.
+    // Nor does it offer the invitation itself: Your Weekend is the household's page, and lives in
+    // the signed-in account menu with the RSVP.
     const open = navFor('INVITATIONS_OPEN');
-    expect(open.sticky.map((i) => i.label)).toContain('Open your invitation');
-    expect(open.primary.map((i) => i.label)).toContain('Your invitation');
-    expect(open.sticky.every((i) => !open.primary.some((p) => p.label === i.label))).toBe(true);
+    expect([...open.sticky, ...open.primary, ...open.more].map((i) => i.href)).not.toContain('/your-weekend');
+    expect((open.member ?? []).map((i) => i.label)).toContain('Your Weekend');
   });
 });
 

@@ -102,7 +102,8 @@ export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, G
     'the funds a gift of money can go toward (honeymoon, home, adoption, next adventures) and the ways to send one (Zelle, Venmo, PayPal, Cash App, a check), each with what that network charges. ' +
     'Reads only. Money goes from the guest’s own account straight to the couple’s; this never takes payment, never holds money, and never suggests amounts.',
   kind: 'read',
-  auth: 'anonymous',
+  // Signed in only: the registry and the photos live behind the account menu, and so does their data.
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

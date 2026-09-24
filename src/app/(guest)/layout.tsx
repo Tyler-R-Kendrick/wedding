@@ -39,9 +39,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * `Shell` renders `<main id="main">`, so the pages under it render a plain `<div className="page">`
  * — one `main` per document, which `tests/e2e` and axe both check.
  *
- * The principal is resolved here so the nav is the CLAIMED one for a signed-in guest: `navFor`
- * takes `claimed` from `lifecycle.principal`, and building the frame without it gave these
- * routes — the only routes a guest reaches BY being claimed — the anonymous navigation.
+ * The principal is resolved here so the frame knows whether the reader is signed in: the account
+ * menu then opens on the household's pages at first paint, rather than showing "Sign in" to a
+ * guest on the very routes a guest reaches by being signed in.
  */
 export default async function GuestLayout({ children }: { children: ReactNode }) {
   const theme = await getRequestTheme();

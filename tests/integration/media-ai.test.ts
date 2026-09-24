@@ -161,10 +161,11 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
     const mine = namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'first dance' }));
     expect(mine).not.toContain('not-published');
     expect(mine).not.toContain('someone-elses');
-    // Anonymous visitors search public albums only.
-    const publicOnly = await call<SearchMediaResult>(anon, 'search_media', { query: 'the proposal by the lake' });
-    expect(namesOf(publicOnly)).toEqual(['lakefront']);
-    expect(namesOf(await call<SearchMediaResult>(anon, 'search_media', { query: 'first dance' }))).toEqual([]);
+    // Anonymous visitors do not search at all: the photos sit behind the signed-in account menu.
+    const refused = await call<SearchMediaResult>(anon, 'search_media', { query: 'the proposal by the lake' });
+    expect(!refused.ok && refused.error.code).toBe('unauthenticated');
+    // A guest still finds the public album's items alongside the guest albums'.
+    expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'the proposal by the lake' }))).toContain('lakefront');
     // "private" is owner-scoped, not hidden-from-everyone: its own owner still finds it.
     const theirs = namesOf(await call<SearchMediaResult>(guestB, 'search_media', { query: 'first dance' }));
     expect(theirs).toContain('dance');
