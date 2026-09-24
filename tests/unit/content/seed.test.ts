@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { rightsXmp } from '../../../scripts/stamp-photo-rights.mjs';
 import { adventureMemorySeedSchema, crossReferenceProblems, isPlaceholderText, loadContentSeed, PLACEHOLDER_MARKER, storySectionSeedSchema } from '@/content';
 
 const seed = loadContentSeed();
@@ -129,15 +130,19 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
 });
 
 describe("the couple's adventure photos", () => {
-  it('are published without any EXIF, GPS or XMP metadata', async () => {
+  it('are published without EXIF or GPS, carrying only the rights statement as XMP', async () => {
     const sharp = (await import('sharp')).default;
+    const expected = rightsXmp();
+    expect(expected).toContain('DMI-PROHIBITED');
+    expect(expected).not.toMatch(/exif:|GPS|tiff:|xmp:CreateDate/i);
     const dir = join(process.cwd(), 'public/assets/photos/adventures');
     const files = (await import('node:fs')).readdirSync(dir).filter((f) => f.endsWith('.webp'));
     expect(files).toHaveLength(47);
     for (const f of files) {
       const meta = await sharp(join(dir, f)).metadata();
       expect(meta.exif, f).toBeUndefined();
-      expect(meta.xmp, f).toBeUndefined();
+      // `npm run photos:stamp` writes it; nothing else (camera, date, place) may ride along.
+      expect(meta.xmp?.toString('utf8'), f).toBe(expected);
       expect(Math.max(meta.width ?? 0, meta.height ?? 0), f).toBeLessThanOrEqual(1600);
     }
   });

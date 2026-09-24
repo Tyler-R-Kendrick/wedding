@@ -7,7 +7,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: { default: 'Sara + Tyler', template: '%s | Sara + Tyler' },
   description: 'Sara and Tyler are getting married in Chicago on Saturday, July 17, 2027.',
-  robots: { index: false, follow: false },
+  // noai/noimageai: the couple's photos and words are not for AI training (LICENSE, src/lib/rights.ts).
+  robots: 'noindex, nofollow, noai, noimageai',
 };
 
 export const viewport: Viewport = {

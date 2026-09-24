@@ -258,8 +258,9 @@ Procedure when a batch arrives:
 
 **Our Adventures, one adventure per photo (2026-09-23).** The couple's own
 phone photos live in `public/assets/photos/adventures/` as 1600px WebP
-renditions with every EXIF/XMP field (GPS included) stripped; the originals
-stay outside the repo. `docs/content/adventure-photos.json` is the manifest:
+renditions with every EXIF/XMP field (GPS included) stripped, then stamped
+with the rights statement below as their only metadata; the originals stay
+outside the repo. `docs/content/adventure-photos.json` is the manifest:
 file, adventure, original file name, date, where the pin came from
 (`exif-gps` — the photo's GPS, reverse-geocoded against OpenStreetMap to
 name the business; `landmark-in-photo` — a sign or marquee in the frame;
@@ -274,6 +275,42 @@ set `file` and the media `src`, and publish the adventure.
 Never upload professional deliverables to fal.ai, Higgsfield, Stitch, or any
 other third-party generator, even "just to test", until the written
 confirmation exists in the repo's private records.
+
+### 4a. The couple's photographs are all rights reserved
+
+Sara and Tyler's own photographs and likeness are **not** open content, and
+the repository's MIT licence does not reach them: `LICENSE` scopes MIT to the
+source code and reserves, with no licence to anyone, every photograph of or by
+the couple (`public/assets/photos/`), every portrayal of them, photographed or
+generated (`public/media/botanical-deco/couple/`), and their personal writing
+(`src/content/seed/`, `docs/content/`). Text and data mining and AI training
+are reserved expressly (EU Directive 2019/790 art. 4(3)). The reservation is
+published in every form a crawler or dataset builder is asked to read:
+
+| Signal | Where | What it says |
+|---|---|---|
+| Licence text | `LICENSE`, `public/assets/photos/LICENSE.txt` | All rights reserved; no TDM, no AI training |
+| Human statement | `/credits#rights` | The same, in the couple's voice |
+| Embedded XMP | every WebP in `public/assets/photos/` | `dc:rights`, `xmpRights:Owner`, `xmpRights:UsageTerms`, `xmpRights:WebStatement` → `/credits#rights`, `plus:DataMining` = `DMI-PROHIBITED` |
+| robots.txt | `src/app/robots.ts` → `src/lib/rights.ts` | AI crawlers (GPTBot, ClaudeBot, Google-Extended, CCBot, …) refused the whole site; every crawler refused the couple's images |
+| Headers | `next.config.ts` → `rightsHeaders()` | `tdm-reservation: 1` everywhere; `X-Robots-Tag: noai, noimageai` everywhere, plus `noindex, noimageindex` on the couple's images |
+| TDMRep | `public/.well-known/tdmrep.json` | `tdm-reservation: 1` for the whole origin |
+| Page meta | `src/app/layout.tsx` | `noindex, nofollow, noai, noimageai` |
+
+The wording lives once, in `src/content/photo-rights.json`; `/credits` and
+`npm run photos:stamp` read it. **Every new photo of the couple is stamped
+before it is committed** (`npm run photos:stamp`, lossless: the WebP container
+is edited and the image bitstream is copied untouched). `npm run
+assets:check` and `tests/unit/content/seed.test.ts` fail on a photo that lacks
+the current statement or carries any other metadata.
+
+None of this is enforcement: a crawler can ignore robots.txt and a header, and
+a scraper can strip XMP. It makes the reservation explicit and machine-readable,
+which is the form the EU's TDM exception asks a rightsholder to use, and the
+crawlers named publish that they honour it.
+The same reservation binds this project: the couple's photos are never sent to
+fal.ai, Higgsfield, Stitch or any other third-party model, except to train a
+Higgsfield Soul the couple have asked for themselves (CLAUDE.md, point 6).
 
 ## 5. How the ledger is enforced
 
@@ -313,5 +350,7 @@ NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --list-only --category "Cate
 NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs "art deco sunburst brass" --license cc0,pdm --page-size 10
 NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> [--allow-by] --use "…"
 node scripts/fetch-commons.mjs --check                                    # ledger gate
+npm run photos:stamp                                                      # embed the rights statement in the couple's photos
+node scripts/stamp-photo-rights.mjs --check                               # every photo carries it (part of assets:check)
 FAL_KEY=… node scripts/fal-generate.mjs "<prompt>" --out .impeccable/review/x.png   # mood only
 ```

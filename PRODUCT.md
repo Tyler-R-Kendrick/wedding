@@ -87,6 +87,11 @@ permanent archive of a shared weekend. It should feel like a keepsake.
   charts, floor plans, budget, run-of-day, website guidance, room-block
   guidance, vendor management, design support, rehearsal, day-of). Their
   design materials are their IP and are never ingested.
+- **The couple's own photos and likeness:** all rights reserved (Tyler
+  Kendrick). Not covered by the repo's MIT licence, not licensed to anyone,
+  and reserved from text and data mining and AI training, in `LICENSE`, at
+  `/credits#rights`, in each photo's XMP, and in robots.txt and response
+  headers (`docs/ops/asset-licensing.md` 4a).
 - **Vendors:** Brooke Alaina Photography (two photographers, ≈6 h second
   shooter, getting-ready through six songs of open dancing,
   photojournalistic; photographer retains copyright, couple has personal

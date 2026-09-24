@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { generatedImageCredits, licensedPhotoCredits, PROFESSIONAL_MEDIA_NOTE } from '@/domain/media/credits';
 import { ROUTES } from '@/domain/routes';
+import rights from '@/content/photo-rights.json';
 import { getTheme } from '@/themes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
 
@@ -27,6 +28,16 @@ export default async function CreditsPage() {
           </h1>
           <p className="credits__lede">The building and the city are shown in photographs their photographers share under open licences. Each is credited here, with its licence and a link to the original.</p>
         </header>
+
+        {/* The page each photo's embedded rights statement links to (src/content/photo-rights.json). */}
+        <section id="rights" className="credits__section" aria-labelledby="credits-ours">
+          <h2 id="credits-ours" className="credits__h2">
+            Our own photographs
+          </h2>
+          <p>
+            The photographs of Sara and Tyler, and the portraits of them, are ours. {rights.notice} They are here for our guests to enjoy, and they are not licensed to anyone for anything else. Please don’t copy, repost or sell them, and don’t use them to train or prompt an AI model.
+          </p>
+        </section>
 
         <section className="credits__section" aria-labelledby="credits-photos">
           <h2 id="credits-photos" className="credits__h2">

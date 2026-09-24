@@ -1,0 +1,14 @@
+Photographs of Sara and Tyler
+© Tyler Kendrick. All rights reserved.
+
+Every image in this folder is a private photograph of Sara and Tyler, shown on
+kendrick.wedding for their guests. None of them is licensed to anyone: not
+under the MIT licence that covers this site's source code, and not under any
+other licence.
+
+No permission is granted to copy, adapt, publish, sell or otherwise use these
+images, commercially or otherwise, and none is granted to use them for text and
+data mining or to train, fine-tune, evaluate or prompt any AI or
+machine-learning model. The rightsholder reserves these rights under Article
+4(3) of EU Directive 2019/790. The same statement is embedded in each file's
+XMP metadata and published at https://kendrick.wedding/credits#rights.

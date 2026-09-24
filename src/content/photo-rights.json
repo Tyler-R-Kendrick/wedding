@@ -1,0 +1,8 @@
+{
+  "about": "The rights statement for Sara and Tyler's own photographs and likeness. One copy, read by /credits, by scripts/stamp-photo-rights.mjs (which embeds it in every photo file) and by the tests. See LICENSE and docs/ops/asset-licensing.md section 4.",
+  "owner": "Tyler Kendrick",
+  "notice": "© Tyler Kendrick. All rights reserved.",
+  "usageTerms": "All rights reserved. No licence is granted to copy, adapt, publish, sell or otherwise use this image, commercially or otherwise, and no licence is granted to use it for text and data mining or to train, fine-tune, evaluate or prompt any AI or machine-learning model. Viewing it on kendrick.wedding is the only permitted use.",
+  "webStatement": "https://kendrick.wedding/credits#rights",
+  "dataMining": "http://ns.useplus.org/ldf/vocab/DMI-PROHIBITED"
+}
