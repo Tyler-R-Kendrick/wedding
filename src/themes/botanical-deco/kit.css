@@ -4007,12 +4007,24 @@
   outline-offset: 2px;
 }
 
-.bd-atlas__svg {
+.bd-atlas__svg,
+.bd-atlas__pins {
   position: absolute;
   inset: 0;
   display: block;
   inline-size: 100%;
   block-size: 100%;
+}
+
+/* The markers are drawn in screen pixels above the base map; only their buttons take a press. */
+.bd-atlas__pins {
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Layers too deep or too shallow for this zoom, and markers well off the frame: not drawn at all. */
+.bd-atlas [data-off] {
+  display: none;
 }
 
 /* Strokes below are screen pixels: world.svg marks every path non-scaling, so the coast stays a hairline at every zoom. */
@@ -4102,7 +4114,7 @@
   stroke-linejoin: round;
 }
 
-/* Markers are drawn in screen pixels inside a group scaled back from the zoom. */
+/* Markers are drawn in screen pixels (.bd-atlas__pins), each group translated to its point. */
 .bd-atlas__drop {
   fill: var(--color-gold-deep);
   stroke: var(--color-surface);
@@ -4184,6 +4196,8 @@
 
 .bd-atlas__target {
   position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
   inline-size: 44px;
   block-size: 44px;
   margin: -22px 0 0 -22px;

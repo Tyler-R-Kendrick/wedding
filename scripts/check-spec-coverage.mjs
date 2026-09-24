@@ -16,6 +16,9 @@ import { pathToFileURL } from 'node:url';
 export const PRODUCTION_SPECS = [
   'tests/e2e/content-themes.spec.ts',
   'tests/e2e/explore.spec.ts',
+  // The Our Adventures atlas: anonymous, and its frame-cost and layer checks mean something only
+  // against a production build (a dev server's React is several times slower per render).
+  'tests/e2e/atlas.spec.ts',
   'tests/e2e/smoke.spec.ts',
   'tests/e2e/themes.spec.ts',
   // Level 08: /travel and /trip are public and guest-gated respectively, and the spec only needs an
