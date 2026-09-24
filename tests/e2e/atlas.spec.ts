@@ -53,12 +53,13 @@ test.describe('the adventures atlas', () => {
     await expect(openPostcard(page)).toContainText('Starved Rock');
     // The roads fill the frame: drawn only when the frame lies inside the close-up, so no seam.
     await expect(page.locator('use.bd-atlas__roads')).not.toHaveAttribute('data-off', '');
-    const box = (await canvas(page).boundingBox())!;
-    const pin = (await page.locator('.bd-atlas__target[aria-pressed="true"]').boundingBox())!;
-    const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    // Centred on the pin (its button sits 14px up, on the pin's head), not held against an edge.
-    expect(Math.abs(pin.x + pin.width / 2 - centre.x)).toBeLessThan(box.width * 0.1);
-    expect(Math.abs(pin.y + pin.height / 2 + 14 - centre.y)).toBeLessThan(box.height * 0.15);
+    // Centred on the pin, not held against an edge. Compared in drawing units (the pin's point and
+    // the view's middle), not screen boxes: "show on the map" also scrolls the page smoothly, and
+    // two bounding boxes read a moment apart disagree by however far it scrolled in between.
+    const [x, y, w, h] = (await viewBoxOf(page))!.split(' ').map(Number) as [number, number, number, number];
+    const [px, py] = (await page.locator('.bd-atlas__target[aria-pressed="true"]').getAttribute('data-at'))!.split(' ').map(Number) as [number, number];
+    expect(Math.abs(px - (x + w / 2))).toBeLessThan(w * 0.1);
+    expect(Math.abs(py - (y + h / 2))).toBeLessThan(h * 0.1);
   });
 
   test('a drag moves the map and opens nothing; a tap on a pin opens its postcard with its photo on the way', async ({ page }) => {
