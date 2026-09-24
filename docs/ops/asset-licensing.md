@@ -272,6 +272,12 @@ adventure's media carries alt text only, and the adventure is a
 `private-draft`. When that person agrees (point 5 above), add the rendition,
 set `file` and the media `src`, and publish the adventure.
 
+The postcards beside the atlas draw each photo through `srcset`: an 800px-wide copy in
+`public/assets/photos/adventures/800/`, written by `node scripts/photo-renditions.mjs` (which also
+records every original's real width in `src/content/photo-sizes.json`), and the original. A new
+photo gets its copy the same way, then `npm run photos:stamp`, so the copy carries the rights
+statement too (4a).
+
 Never upload professional deliverables to fal.ai, Higgsfield, Stitch, or any
 other third-party generator, even "just to test", until the written
 confirmation exists in the repo's private records.

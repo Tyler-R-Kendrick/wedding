@@ -47,7 +47,17 @@ const nextConfig: NextConfig = {
     // and `media-src` in security-headers.ts are justified BY that per-route sandbox.
     // The rights headers (no AI training, no text and data mining; src/lib/rights.ts) set keys the
     // security headers do not, so the two sets never override each other.
-    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...rightsHeaders(), ...stageHeaders(stageFramingHeaders(headerOptions))];
+    return [
+      { source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) },
+      ...rightsHeaders(),
+      ...stageHeaders(stageFramingHeaders(headerOptions)),
+      // The atlas files are addressed by content hash (src/themes/shared/atlas/files.ts), so a
+      // returning guest never re-downloads the map. Only the hashed address is immutable: a request
+      // without `?v=` (a stage's captured page) revalidates as before. Photos keep their names: a
+      // day, then revalidate.
+      { source: '/assets/atlas/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/assets/photos/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }] },
+    ];
   },
   // The venue page was "Explore CAA" at /explore-caa until it became Our Venue. Links already shared
   // and citations already stored keep working; the browser carries the #fragment across.
