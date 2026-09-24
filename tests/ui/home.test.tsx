@@ -69,9 +69,14 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
     const { container, unmount } = render(<>{t.recipes.home(homeData(theme, 'RSVP_OPEN'))}</>);
     const main = screen.getByRole('main');
     const rsvp = within(main).getAllByRole('link', { name: /^RSVP/ });
-    expect(rsvp[0]?.getAttribute('href')).toBe('/rsvp');
+    // Through the sign-in door: the RSVP is behind the account menu, and /sign-in sends a guest who
+    // is already signed in straight on to it.
+    expect(rsvp[0]?.getAttribute('href')).toBe('/sign-in?next=%2Frsvp');
     const html = container.innerHTML;
-    expect(html.indexOf('/rsvp')).toBeLessThan(html.indexOf('/gifts'));
+    expect(html.indexOf('%2Frsvp')).toBeLessThan(html.indexOf('%2Fgifts'));
+    // No link in the page body goes to a household page directly.
+    const direct = within(main).getAllByRole('link').map((a) => a.getAttribute('href') ?? '').filter((h) => /^\/(rsvp|your-weekend|transportation|gifts|photos)(\/|$|\?)/.test(h));
+    expect(direct).toEqual([]);
     unmount();
   });
 });

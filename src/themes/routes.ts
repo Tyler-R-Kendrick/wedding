@@ -9,8 +9,9 @@ export const STATIC_PUBLIC_ROUTES = ['/'] as const;
 
 /** Personalized areas: responses are always `Cache-Control: private, no-store`. */
 // `/gifts` shows Zelle and mailing details to a guest who arrived by invitation (ADR-0013), so a
-// cache must never hand one guest's render to the next visitor.
-export const PERSONALIZED_ROUTE_PREFIXES = ['/your-weekend', '/rsvp', '/admin', '/i/', '/claim', '/gifts'] as const;
+// cache must never hand one guest's render to the next visitor. `/photos` and `/media` are signed-in
+// only too (the account menu): a render carries that guest's albums and short-lived signed links.
+export const PERSONALIZED_ROUTE_PREFIXES = ['/your-weekend', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media'] as const;
 
 export function isStaticPublicRoute(pathname: string): boolean {
   return (STATIC_PUBLIC_ROUTES as readonly string[]).includes(pathname);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { SIGN_IN, SIGN_OUT } from '@/domain/lifecycle/account';
 import type { NavItem, NavModel } from '@/themes/types';
 
 /**
@@ -24,33 +25,55 @@ import type { NavItem, NavModel } from '@/themes/types';
  * - `link`: the footer. "Sign in" or "Sign out".
  */
 
-const SIGN_OUT: NavItem = { label: 'Sign out', href: '/sign-out' };
 const TRIGGER_LABEL = 'Your account';
 
 let probe: Promise<boolean> | null = null;
 
-/** One request per page, whichever instance asks first. A failure reads as signed out. */
-function sessionProbe(): Promise<boolean> {
-  probe ??= fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
-    .then((r) => (r.ok ? (r.json() as Promise<{ signedIn?: unknown }>) : { signedIn: false }))
-    .then((b) => b.signedIn === true)
-    .catch(() => false);
-  return probe;
+/**
+ * One request per page, whichever instance asks first. Only an answer is kept: a failed request
+ * reads as signed out for now and is forgotten, so the next instance (or the next page) asks again
+ * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
+ */
+function sessionProbe(fresh = false): Promise<boolean> {
+  if (fresh) probe = null;
+  if (probe) return probe;
+  const asked = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } }).then(async (r) => {
+    if (!r.ok) throw new Error(`session probe: ${r.status}`);
+    return ((await r.json()) as { signedIn?: unknown }).signedIn === true;
+  });
+  probe = asked;
+  return asked.catch(() => {
+    if (probe === asked) probe = null;
+    return false;
+  });
 }
 
 function useSignedIn(known: boolean | undefined): boolean {
-  const [signedIn, setSignedIn] = useState(known ?? false);
+  const [probed, setProbed] = useState(false);
+  // A page restored from the back/forward cache kept the menu it had when it was left — after a
+  // sign-out in between, that is a menu of pages the reader can no longer open. Ask again then,
+  // whatever the server knew when it rendered.
+  const [restored, setRestored] = useState<boolean | null>(null);
   useEffect(() => {
-    if (known !== undefined) return;
     let live = true;
-    void sessionProbe().then((v) => {
-      if (live) setSignedIn(v);
-    });
+    if (known === undefined) {
+      void sessionProbe().then((v) => {
+        if (live) setProbed(v);
+      });
+    }
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      void sessionProbe(true).then((v) => {
+        if (live) setRestored(v);
+      });
+    };
+    window.addEventListener('pageshow', onShow);
     return () => {
       live = false;
+      window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return known ?? signedIn;
+  return restored ?? known ?? probed;
 }
 
 export interface AccountMenuClassNames {
@@ -70,7 +93,7 @@ export interface AccountMenuProps {
 
 export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
   const signedIn = useSignedIn(nav.signedIn);
-  const signIn = nav.account ?? { label: 'Sign in', href: '/sign-in' };
+  const signIn = nav.account ?? SIGN_IN;
   if (!signedIn) {
     return (
       <a className={classNames.link} href={signIn.href} aria-current={nav.currentPath === signIn.href ? 'page' : undefined}>
@@ -157,7 +180,7 @@ function Popover({ items, currentPath, classNames }: { items: NavItem[]; current
         className={`account-menu__trigger ${classNames.link}`}
         aria-expanded={open}
         aria-controls={panelId}
-        data-current={current ? '' : undefined}
+        aria-current={current ? 'true' : undefined}
         onClick={() => setOpen((v) => !v)}
       >
         {TRIGGER_LABEL}

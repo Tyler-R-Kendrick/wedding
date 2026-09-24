@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
+import { SIGN_IN } from '@/domain/lifecycle/account';
+import { homeLabelFor } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
@@ -186,13 +187,17 @@ function Panel({ nav }: { nav: NavProps['nav'] }) {
   return (
     <nav className="gh-panel" aria-label="Quick actions" style={{ ['--cells' as string]: cells.length }}>
       {cells.map((item) => (
-        <NavLink key={item.href} item={item} nav={nav} className={`gh-panel__cell${item.label === 'RSVP' || item.label === 'Add photos' ? ' gh-panel__cell--accent' : ''}`} short />
+        <NavLink key={item.href} item={item} nav={nav} className="gh-panel__cell" short />
       ))}
     </nav>
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
+const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], currentPath: '', account: SIGN_IN };
+
+// `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
+// without a frame, and then it is the plain way in.
+function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="gh-footer">
       <div className="gh-footer__inner">
@@ -209,7 +214,7 @@ function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { 
           </a>
         </p>
         <p className="gh-footer__signin">
-          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'gh-link gh-link--standalone', item: 'gh-link' }} />
+          <AccountMenu nav={nav} variant="link" classNames={{ link: 'gh-link gh-link--standalone', item: 'gh-link' }} />
         </p>
         <p className="gh-footer__rights">{rightsNote}</p>
         <ul className="gh-footer__print">

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { GalleryPage } from '@/capabilities/media';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { hasEntitlement } from '@/contracts/principal';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { recipes } from '../_recipes';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ const COPY = {
  */
 export default async function PhotosPage() {
   const principal = await currentPrincipal();
-  if (principal.kind === 'anonymous') redirect(`/sign-in?next=${encodeURIComponent('/photos')}`);
+  if (principal.kind === 'anonymous') redirect(throughSignIn('/photos'));
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', {}, principal);
   return (
     <recipes.PhotosPage

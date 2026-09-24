@@ -78,7 +78,7 @@ type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0]
  * switcher flag) and renders that theme's recipe. A theme without a recipe for the page falls back
  * to Swarm C's placeholder recipe, so unknown themes never break a route.
  */
-function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>): ComponentType<PropsOf<K>> {
+function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean } = {}): ComponentType<PropsOf<K>> {
   const Themed = async (props: PropsOf<K>): Promise<ReactNode> => {
     const theme = await getRequestTheme();
     const recipe = selectContentRecipe(getTheme(theme), key);
@@ -88,7 +88,10 @@ function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallbac
     }
     const h = await headers();
     const preview = h.get(PREVIEW_HEADER);
-    const lifecycle = preview ? { principal: await getPrincipal(new Request('http://wedding.local/', { headers: h })), preview: { value: preview, source: 'query' as const } } : undefined;
+    // A signed-in-only page (behind the account menu) hands the frame its principal, so the menu is
+    // open at first paint instead of reading "Sign in" until the browser asks /api/session.
+    const principal = preview || opts.signedIn ? await getPrincipal(new Request('http://wedding.local/', { headers: h })) : undefined;
+    const lifecycle = principal ? { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) } : undefined;
     const frame = await buildPageFrame({ theme, currentPath, ...(lifecycle ? { lifecycle } : {}) });
     const render = recipe as unknown as (p: PropsOf<K> & { frame: PageFrame }) => ReactNode;
     return render({ ...props, frame });
@@ -108,9 +111,9 @@ export const themedRecipes: PageRecipes = {
   WeddingPage: themed('wedding', ROUTES.wedding, WeddingPage),
   AskPage: themed('ask', ROUTES.ask, AskPage),
   TravelPage: themed('travel', ROUTES.travel, TravelPage),
-  GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage),
-  PhotosPage: themed('photos', ROUTES.photos, PhotosPage),
-  PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage),
+  GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage, { signedIn: true }),
+  PhotosPage: themed('photos', ROUTES.photos, PhotosPage, { signedIn: true }),
+  PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage, { signedIn: true }),
 };
 
 /** Swap point: the theme kit's recipes, with the placeholders as the fallback for unknown themes. */

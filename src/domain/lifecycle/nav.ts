@@ -1,6 +1,7 @@
 import { navLabel, page as sitemapPage } from '@wedding/sitemap';
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { isBuiltRoute } from '@/domain/routes';
+import { SIGN_IN, SIGN_OUT } from './account';
 import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
 
 /**
@@ -77,10 +78,7 @@ const MEMBER_BY_STATE: Record<LifecycleState, MemberKey[]> = {
  * browser prefetching a route that did not exist.
  */
 
-/** Constant across states: a guest may need to sign back in, and the couple need a way to the console. */
-export const SIGN_IN: NavItem = { label: 'Sign in', href: '/sign-in' };
-/** The last entry in the account menu, under the household's own pages. */
-export const SIGN_OUT: NavItem = { label: 'Sign out', href: '/sign-out' };
+export { SIGN_IN, SIGN_OUT };
 
 export interface NavOptions {
   currentPath?: string;

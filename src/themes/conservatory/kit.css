@@ -225,13 +225,15 @@
   transform: rotate(1.5deg);
 }
 
-.cv-tag.is-current {
+.cv-tag.is-current,
+.cv-tag[aria-current="true"] {
   background: var(--color-primary);
   color: var(--color-on-primary);
   transform: rotate(3deg);
 }
 
-.cv-tag.is-current::before {
+.cv-tag.is-current::before,
+.cv-tag[aria-current="true"]::before {
   background: var(--color-tertiary);
   box-shadow: none;
 }
@@ -381,7 +383,8 @@
   text-decoration: none;
 }
 
-.cv-menu__link.is-current {
+.cv-menu__link.is-current,
+.cv-menu__link[aria-current="page"] {
   background: var(--color-primary);
   color: var(--color-on-primary);
 }

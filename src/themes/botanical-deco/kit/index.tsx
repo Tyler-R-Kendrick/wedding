@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
+import { SIGN_IN } from '@/domain/lifecycle/account';
+import { homeLabelFor } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { providerLabel } from '@/themes/shared/content';
 import { renderCopy } from '@/themes/shared/copy';
@@ -205,7 +206,7 @@ function ActionBar({ nav }: { nav: NavProps['nav'] }) {
   return (
     <nav className="bd-bar" aria-label="Quick actions" style={{ ['--cells' as string]: cells.length }}>
       {cells.map((item) => (
-        <NavLink key={item.href} item={item} nav={nav} className={`bd-bar__cell${item.label === 'RSVP' || item.label === 'Add photos' ? ' bd-bar__cell--accent' : ''}`} short />
+        <NavLink key={item.href} item={item} nav={nav} className="bd-bar__cell" short />
       ))}
     </nav>
   );
@@ -218,7 +219,11 @@ function ActionBar({ nav }: { nav: NavProps['nav'] }) {
 /** The professional photographs and films live on these pages; their rights note belongs there. */
 const PRO_MEDIA_PATHS = /^\/(?:photos|media)(?:\/|$)/;
 
-function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
+const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], currentPath: '', account: SIGN_IN };
+
+// `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
+// without a frame, and then it is the plain way in.
+function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
@@ -252,7 +257,7 @@ function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { 
           </a>
         </p>
         <p className="bd-footer__credits">
-          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'bd-link bd-link--standalone', item: 'bd-link' }} />
+          <AccountMenu nav={nav} variant="link" classNames={{ link: 'bd-link bd-link--standalone', item: 'bd-link' }} />
         </p>
         {rightsNote ? <p className="bd-footer__rights">{rightsNote}</p> : null}
         <ul className="bd-footer__print">

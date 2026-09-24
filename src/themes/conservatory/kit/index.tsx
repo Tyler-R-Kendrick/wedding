@@ -1,7 +1,8 @@
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
 import { providerLabel } from '@/themes/shared/content';
 import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
-import { homeLabelFor, SIGN_IN } from '@/domain/lifecycle/nav';
+import { SIGN_IN } from '@/domain/lifecycle/account';
+import { homeLabelFor } from '@/domain/lifecycle/nav';
 import { listThemes } from '@/themes/registry';
 import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
@@ -140,7 +141,11 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
+const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], currentPath: '', account: SIGN_IN };
+
+// `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
+// without a frame, and then it is the plain way in.
+function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="cv-footer">
       <div className="cv-footer__inner">
@@ -155,7 +160,7 @@ function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { 
           </a>
         </p>
         <p className="cv-footer__signin">
-          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'cv-link cv-link--standalone', item: 'cv-link' }} />
+          <AccountMenu nav={nav} variant="link" classNames={{ link: 'cv-link cv-link--standalone', item: 'cv-link' }} />
         </p>
         <p className="cv-footer__rights">{rightsNote}</p>
         <ul className="cv-footer__print">

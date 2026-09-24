@@ -34,10 +34,11 @@ describe('home content by lifecycle state', () => {
     expect(homeContent(site, 'SAVE_THE_DATE').sections.map((s) => s.act)).toEqual(['adventure', 'place', 'memory', 'hospitality', 'future']);
     expect(homeContent(site, 'TEASER').showCountdown).toBe(true);
     expect(homeContent(site, 'RSVP_OPEN').sections[0]?.id).toBe('rsvp');
-    expect(homeContent(site, 'RSVP_OPEN').primary).toMatchObject({ href: '/rsvp', variant: 'accent' });
+    // The household's pages are behind the account menu: Home reaches them through the sign-in door.
+    expect(homeContent(site, 'RSVP_OPEN').primary).toMatchObject({ href: '/sign-in?next=%2Frsvp', variant: 'accent' });
     expect(homeContent(site, 'WEDDING_DAY').primary.href).toBe('#now');
     expect(homeContent(site, 'WEDDING_DAY').showCountdown).toBe(false);
-    expect(homeContent(site, 'POST_WEDDING').primary.href).toBe('/photos');
+    expect(homeContent(site, 'POST_WEDDING').primary.href).toBe('/sign-in?next=%2Fphotos');
     expect(homeContent(site, 'ARCHIVE').showCountdown).toBe(false);
   });
 });

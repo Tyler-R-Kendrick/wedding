@@ -1,3 +1,4 @@
+import { destinationOf } from '@/domain/lifecycle/account';
 import type { SVGProps } from 'react';
 
 /** Authored line icons, one stroke weight, used by the Gilded Hour elevator panel and external links. */
@@ -31,7 +32,9 @@ export function Icon({ name, ...rest }: { name: IconName } & SVGProps<SVGSVGElem
 }
 
 /** Route → icon for the elevator panel. */
-export function iconForHref(href: string): IconName {
+export function iconForHref(link: string): IconName {
+  // A household page reached through the sign-in door keeps that page's icon.
+  const href = destinationOf(link);
   if (href === '/' || href.startsWith('/#')) return 'home';
   if (href.startsWith('/rsvp')) return 'rsvp';
   if (href.startsWith('/your-weekend')) return 'calendar';

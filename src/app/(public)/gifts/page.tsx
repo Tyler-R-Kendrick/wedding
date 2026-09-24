@@ -7,10 +7,10 @@ import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { currentPrincipal } from '@/components/media/server';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { recipes } from '../_recipes';
 import { invokeForPage } from '@/components/handoff/server';
+import { throughSignIn } from '@/domain/lifecycle/account';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +18,9 @@ export const metadata: Metadata = { title: 'Gifts', robots: { index: false, foll
 
 /** "Help us with our next adventures": explicit provider handoffs, never a checkout. */
 export default async function GiftsPage() {
+  const { principal, result } = await invokeForPage(listGiftLinksCapability, {});
   // Behind the account menu: an anonymous visitor signs in first and comes straight back here.
-  if ((await currentPrincipal()).kind === 'anonymous') redirect(`/sign-in?next=${encodeURIComponent('/gifts')}`);
-  const { result } = await invokeForPage(listGiftLinksCapability, {});
+  if (principal.kind === 'anonymous') redirect(throughSignIn('/gifts'));
   if (!result.ok) {
     return (
       <main id="main" className="mx-auto w-full max-w-[42rem] px-5 py-10">

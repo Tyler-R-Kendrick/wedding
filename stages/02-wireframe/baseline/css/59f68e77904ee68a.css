@@ -1417,6 +1417,10 @@
     display: flex;
   }
 
+  .account-menu--inline {
+    padding-block-start: var(--spacing-md);
+  }
+
   .account-menu__label {
     margin: 0 0 var(--spacing-xs);
   }
@@ -1733,11 +1737,11 @@
     transform: scaleX(0);
   }
 
-  .bd-nav__link:hover:after, .bd-nav__link[aria-current="page"]:after {
+  .bd-nav__link:hover:after, .bd-nav__link[aria-current="page"]:after, .bd-nav__link[aria-current="true"]:after {
     transform: scaleX(1);
   }
 
-  .bd-nav__link[aria-current="page"] {
+  .bd-nav__link[aria-current="page"], .bd-nav__link[aria-current="true"] {
     color: var(--color-tertiary);
   }
 
@@ -1968,12 +1972,6 @@
 
   .bd-bar__cell svg {
     display: none;
-  }
-
-  .bd-bar__cell--accent {
-    background: var(--color-moss);
-    border-color: var(--color-moss);
-    color: var(--color-on-moss);
   }
 
   .bd-bar__cell[aria-current="page"] {
@@ -5402,12 +5400,21 @@
     outline-offset: 2px;
   }
 
-  .bd-atlas__svg {
+  .bd-atlas__svg, .bd-atlas__pins {
     block-size: 100%;
     inline-size: 100%;
     display: block;
     position: absolute;
     inset: 0;
+  }
+
+  .bd-atlas__pins {
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .bd-atlas [data-off] {
+    display: none;
   }
 
   .bd-atlas__sea {
@@ -5675,6 +5682,8 @@
     margin: -22px 0 0 -22px;
     padding: 0;
     position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
   }
 
   .bd-atlas__target:hover {
@@ -7190,7 +7199,7 @@
     border-color: var(--color-gold);
   }
 
-  .gh-nav__link[aria-current="page"] {
+  .gh-nav__link[aria-current="page"], .gh-nav__link[aria-current="true"] {
     color: var(--color-secondary);
     border-color: var(--color-gold);
   }
@@ -7319,10 +7328,6 @@
   .gh-panel__cell[aria-current="page"] {
     color: var(--color-secondary);
     border-block-start-color: var(--color-gold);
-  }
-
-  .gh-panel__cell--accent {
-    color: var(--color-tertiary);
   }
 
   .gh-panel__cell:focus-visible {
@@ -9439,13 +9444,13 @@
     transform: rotate(1.5deg);
   }
 
-  .cv-tag.is-current {
+  .cv-tag.is-current, .cv-tag[aria-current="true"] {
     background: var(--color-primary);
     color: var(--color-on-primary);
     transform: rotate(3deg);
   }
 
-  .cv-tag.is-current:before {
+  .cv-tag.is-current:before, .cv-tag[aria-current="true"]:before {
     background: var(--color-tertiary);
     box-shadow: none;
   }
@@ -9579,7 +9584,7 @@
     display: flex;
   }
 
-  .cv-menu__link.is-current {
+  .cv-menu__link.is-current, .cv-menu__link[aria-current="page"] {
     background: var(--color-primary);
     color: var(--color-on-primary);
   }
