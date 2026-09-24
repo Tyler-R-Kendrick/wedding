@@ -295,7 +295,8 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     return finish({ status: 'error', text: '', sources: [], refusal: { message: REFUSAL.unavailable, links: [CONTACT_LINK] } });
   }
 
-  // --- verify (second pass with a live provider), then the deterministic gates
+  // --- verify (a model pass only when a caller supplies live models; the site never does), then
+  // the deterministic gates
   await emit({ type: 'status', stage: 'verifying' });
   let survivors = kept;
   let method: AiVerifierSummary['method'] = 'deterministic';

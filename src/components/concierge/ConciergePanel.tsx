@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { askOnDevice, isSupported, openSession, probe } from "@/lib/ai/browser-model";
+import { askOnDevice, isSupported, prepare, probe } from "@/lib/ai/browser-model";
 import { publicEnv } from "@/lib/env.public";
 import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
 import "./concierge.css";
@@ -72,7 +72,7 @@ async function readyOnDevice(): Promise<boolean> {
   if (state === "available") return true;
   if (state === "downloadable" || state === "downloading") {
     // Fire and forget: nothing here awaits the download, and a failure is not this turn's problem.
-    void openSession().then((session) => session?.destroy?.()).catch(() => {});
+    void prepare();
   }
   return false;
 }

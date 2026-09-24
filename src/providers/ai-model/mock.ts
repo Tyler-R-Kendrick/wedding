@@ -2,7 +2,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import { okConfig, upHealth } from '../base';
 import type { AiModelProvider, ModelRole } from './types';
 
-export const MOCK_REPLY = 'This is the mock concierge. Configure ANTHROPIC_API_KEY to talk to a real model.';
+export const MOCK_REPLY = 'This is the mock concierge. It gives this same reply to every question.';
 
 /** Deterministic stub model from `ai/test`; answers every prompt with MOCK_REPLY. */
 export function mockLanguageModel(modelId: string, reply: string = MOCK_REPLY): MockLanguageModelV4 {

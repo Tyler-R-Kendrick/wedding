@@ -45,7 +45,7 @@ describe('server env', () => {
     expect(() => parseServerEnv(prodBase)).toThrow(/STORAGE_SIGNING_SECRET/);
     expect(() => parseServerEnv({ ...prodBase, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k' })).toThrow(/S3_SECRET_ACCESS_KEY/);
     expect(parseServerEnv({ ...prodBase, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 'value-must-not-leak' }).isProduction).toBe(true);
-    // DEV_STORAGE_SECRET (written by the secrets autofill) is accepted as the signing secret.
+    // DEV_STORAGE_SECRET (an older name for STORAGE_SIGNING_SECRET) is accepted as the signing secret.
     expect(parseServerEnv({ ...prodBase, DEV_STORAGE_SECRET: 'd'.repeat(32) }).isProduction).toBe(true);
     try {
       parseServerEnv({ ...prodBase, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k' });

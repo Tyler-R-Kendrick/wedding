@@ -24,7 +24,6 @@ or if the activation matrix drifts from the code that switches things on.
 | [Deploying](ops/deploy-vercel-supabase.md) | Vercel + Supabase + R2, in the order that works. |
 | [Environment variables](ops/environment.md) | Every variable, its default and who reads it. |
 | [Activation matrix](ops/activation-matrix.md) | What is switched off, and exactly what turns it on. Generated from the code. |
-| [Secrets](ops/secrets.md) | How keys reach this repository without being committed. |
 | [Asset licensing](ops/asset-licensing.md) | Where every image came from and what we owe for it. |
 | [Professional media rights](ops/professional-media-rights.md) | The photographer/videographer gate on AI processing. |
 

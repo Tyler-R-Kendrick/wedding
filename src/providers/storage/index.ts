@@ -13,8 +13,28 @@ export const DEV_STORAGE_SIGNING_SECRET = 'dev-only-storage-signing-secret-chang
 
 type StorageEnv = Pick<ServerEnv, 'FORCE_MOCK_PROVIDERS' | 'S3_ENDPOINT' | 'S3_REGION' | 'S3_BUCKET' | 'S3_ACCESS_KEY_ID' | 'S3_SECRET_ACCESS_KEY' | 'S3_FORCE_PATH_STYLE' | 'STORAGE_DATA_DIR' | 'STORAGE_SIGNING_SECRET' | 'isProduction'> & Partial<Pick<ServerEnv, 'DEV_STORAGE_SECRET'>>;
 
+/**
+ * True for Amazon's own S3 hosts. The site never stores anything with AWS: the S3 API is how it
+ * talks to R2, Backblaze B2, Supabase Storage or a MinIO, and with no endpoint the AWS SDK would
+ * pick Amazon for itself — so a missing endpoint counts as AWS too.
+ */
+export function isAwsEndpoint(endpoint: string | undefined): boolean {
+  if (!endpoint) return true;
+  try {
+    const host = new URL(endpoint).hostname.toLowerCase();
+    return host === 'amazonaws.com' || host.endsWith('.amazonaws.com') || host.endsWith('.amazonaws.com.cn');
+  } catch {
+    return true;
+  }
+}
+
 export function createStorageProvider(env: StorageEnv, opts: { baseUrl?: string; warn?: (msg: string) => void } = {}): StorageProvider {
   if (!env.FORCE_MOCK_PROVIDERS && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY) {
+    // Refused here, not at boot: every page but the ones that store a file keeps working, and the
+    // upload that needed storage fails with this sentence instead of reaching Amazon.
+    if (isAwsEndpoint(env.S3_ENDPOINT)) {
+      throw new Error('storage: S3_ENDPOINT must name R2, Backblaze B2, Supabase Storage or MinIO — this site does not use AWS');
+    }
     return new S3Storage({
       endpoint: env.S3_ENDPOINT,
       region: env.S3_REGION,
@@ -24,7 +44,7 @@ export function createStorageProvider(env: StorageEnv, opts: { baseUrl?: string;
       forcePathStyle: env.S3_FORCE_PATH_STYLE,
     });
   }
-  // DEV_STORAGE_SECRET is the name the secrets autofill writes; it is an alias of STORAGE_SIGNING_SECRET.
+  // DEV_STORAGE_SECRET is an older name for STORAGE_SIGNING_SECRET, still honoured.
   const signingSecret = env.STORAGE_SIGNING_SECRET ?? env.DEV_STORAGE_SECRET;
   if (env.isProduction && !signingSecret) {
     // Names only. The committed dev default must never sign production URLs.

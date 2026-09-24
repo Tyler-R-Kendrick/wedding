@@ -31,15 +31,15 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 
 | Kind | Implementation | Mode | Variables its source reads | Operations available | Notes |
 |---|---|---|---|---|---|
-| `ai-model` | mock | mock | `AI_BASE_URL`<br>`AI_CHAT_MODEL`<br>`AI_FAST_MODEL`<br>`AI_GATEWAY`<br>`AI_GATEWAY_API_KEY`<br>`AI_HARNESS`<br>`ANTHROPIC_API_KEY`<br>`ANTHROPIC_AUTH_TOKEN`<br>`ANTHROPIC_BASE_URL`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY` | chat, verifier, caption, streaming |  |
+| `ai-model` | mock | mock | — | chat, verifier, caption, streaming |  |
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_API_KEY` | sendOtp, sendMessage |  |
 | `cash-fund` | mock | mock | — | describeLinks |  |
-| `embeddings` | mock | mock | `EMBEDDINGS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`OPENAI_API_KEY`<br>`VOYAGE_API_KEY` | embed |  |
+| `embeddings` | mock | mock | — | embed |  |
 | `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY` | search, deepLink |  |
 | `hotels` | mock | mock | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER` | search, deepLink |  |
 | `jobs` | unavailable | unavailable | — | — | jobs provider requires a database; call getProvider("jobs", { db }) |
 | `maps` | deep-link | deep-link | — | directionsUrl, staticMapUrl |  |
-| `media-ai` | mock | mock | `ANTHROPIC_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`MEDIA_AI_PROVIDER` | caption, describeScenes, tags, annotate |  |
+| `media-ai` | mock | mock | — | caption, describeScenes, tags, annotate |  |
 | `rate-limit` | memory | mock | `FORCE_MOCK_PROVIDERS`<br>`RATE_LIMIT_BACKEND` | consume |  |
 | `registry` | mock | mock | — | describeLinks |  |
 | `reservations` | mock | deep-link | — | deepLink, url |  |

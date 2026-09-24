@@ -84,12 +84,12 @@ planner or a vendor. Start at `docs/content/for-sara-and-tyler.md`.
 | Data | Drizzle 0.45; PGlite (`memory://` in tests, `.data/pglite` in dev, `/tmp` on serverless) with `@electric-sql/pglite-pgvector`; Supabase Postgres in production via `DATABASE_URL` (project not created yet: Tyler deferred the $10/month plan) |
 | Auth | Better Auth 1.7 (`emailOTP`, `@better-auth/passkey`, `@better-auth/drizzle-adapter`), 5-minute step-up window, invitation link = discovery only |
 | Storage | S3-compatible adapter (Cloudflare R2 in production), local filesystem in dev; private originals, signed reads, EXIF/GPS stripped from derivatives |
-| AI | Vercel AI SDK 7; Anthropic (`claude-sonnet-5` chat/verifier, `claude-haiku-4-5` captions), mocks in CI; embeddings via Voyage or OpenAI |
+| AI | Vercel AI SDK 7 with `@browser-ai/core`: the guest's own browser model (Prompt API) writes each answer and the server verifies it; no hosted model anywhere (a browser without one gets an answer quoted from the site's pages); embeddings in-process |
 | Hosting | Vercel (project link attempted: the connector returned 403 "no permission to create the project"; needs Tyler to grant it or create the project once in the dashboard) + Supabase + R2 |
 | Themes | `gilded-hour` (default) and `conservatory`; switcher visible to everyone (`FLAG_DESIGN_SWITCHER`), `?theme=` links, cookie |
 | Placeholders | Procedural SVG art (`scripts/art/*`) + Wikimedia Commons CC/PD photos with a hash-verified ledger; AI imagery never shipped as a "photo of the couple" |
 | Branching | Stacked PRs; squash-merge at the bottom of the stack; after each squash, rebase the next level with `git rebase --onto origin/main <old-base-head>` |
-| Secrets | Local values auto-filled by `scripts/secrets/autofill.mjs`; account keys via Secret Drop; no provider in our stack supports auth.md anonymous registration yet (`scripts/secrets/authmd-discover.mjs`) |
+| Secrets | Set in Vercel (Marketplace connectors or `vercel env add`) and, locally, `.env`; local development needs none. The Secret Drop was removed |
 
 ## 4. Architecture in one screen
 

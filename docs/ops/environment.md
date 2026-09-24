@@ -33,7 +33,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `CONFIRMATION_SECRET` | dev default (warns) | policy/confirmation; also signs admin lifecycle-preview tokens (`src/domain/lifecycle/preview.ts`) | no |
 | `CRON_SECRET` | unset (route 401) | api/jobs/run | no |
 | `STORAGE_SIGNING_SECRET` | dev default (warns); required in production unless S3 is configured | storage local-fs signed URLs | no |
-| `DEV_STORAGE_SECRET` | unset | alias of `STORAGE_SIGNING_SECRET` (written by the secrets autofill); `STORAGE_SIGNING_SECRET` wins when both are set | no |
+| `DEV_STORAGE_SECRET` | unset | older name for `STORAGE_SIGNING_SECRET`, still honoured; `STORAGE_SIGNING_SECRET` wins when both are set | no |
 | `DEV_INBOX_TOKEN` | unset | bearer that unlocks `GET/DELETE /api/dev/inbox` and `POST /api/dev/identity` off a local dev server (e.g. previews with the mock mailer); without it the inbox answers only when `NODE_ENV=development` and neither `VERCEL` nor `CI` is set | no |
 | `HEALTH_TOKEN` | unset | bearer that unlocks the provider/driver inventory on `/api/health` (admin principals see it without a token); `{ ok, db, time }` stays public | no |
 | `AUDIT_HASH_KEY` | derived from `CONFIRMATION_SECRET` | HMAC key for the audit `inputHash` fingerprint | no |
@@ -42,12 +42,8 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `TEST_AUTH_SECRET` | unset | `src/lib/auth/test-principal.ts`: enables `x-test-principal` injection **only** under `NODE_ENV=test`; never set on a deployed host | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
-| `ANTHROPIC_API_KEY` | unset -> mock model | ai-model | no |
-| `AI_GATEWAY` (`on`), `AI_GATEWAY_API_KEY` | unset | ai-model: Vercel AI Gateway. The key is explicit; `AI_GATEWAY=on` selects the gateway with no key and `@ai-sdk/gateway` signs with the deployment's OIDC token (locally, the CLI session). Model ids default to `anthropic/claude-sonnet-5` / `anthropic/claude-haiku-4.5`; `AI_CHAT_MODEL` / `AI_FAST_MODEL` override | no |
-| `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `EMBEDDINGS_PROVIDER` (`voyage`\|`openai`) | unset -> hashed mock | embeddings | no |
-| `MEDIA_AI_PROVIDER` (`mock`\|`anthropic`) | unset -> Anthropic vision when `ANTHROPIC_API_KEY` is set, else the deterministic mock | media-ai (captions, tags, venue class) | no |
 | `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
-| `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage | no |
+| `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage: R2, Backblaze B2, Supabase Storage or MinIO. `S3_ENDPOINT` is required with the keys, and an Amazon endpoint (or none, which the AWS SDK would resolve to Amazon) is refused: the site does not use AWS | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
 | `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
 | `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`booking`\|`duffel-stays`) | mock | hotels: fixtures; unavailable + Booking.com/Hyatt links; Booking.com Demand API; Duffel Stays | no |
@@ -80,6 +76,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | absolute links, signed dev URLs |
 | `NEXT_PUBLIC_DEFAULT_THEME` | `botanical-deco` | initial theme (the design Sara and Tyler approved) |
 | `NEXT_PUBLIC_FLAG_<NAME>` | flag defaults | browser mirror of a feature flag |
+| `NEXT_PUBLIC_AI_BROWSER_MODEL` (`on`\|`off`) | `on` | the concierge writes answers on the guest's device (Prompt API); `off`, or a browser without it, gets the server's answer quoted from the site's own pages. No hosted model is used either way |
 
 ## Tooling / tests
 
@@ -100,9 +97,9 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 1. `DATABASE_URL` (Postgres with the `vector` extension available if semantic search is wanted).
 2. `CONFIRMATION_SECRET`, `CRON_SECRET` (32+ random chars each), and either the `S3_*` set or `STORAGE_SIGNING_SECRET` (boot fails with neither).
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET` (32+ random chars) and `ADMIN_EMAILS` for the couple.
-4. Storage: the four `S3_*` variables (+ `S3_ENDPOINT` for R2/MinIO).
+4. Storage: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` for R2, B2, Supabase Storage or MinIO (never AWS).
 5. Email: `RESEND_API_KEY`, `EMAIL_FROM`.
-6. AI: `ANTHROPIC_API_KEY`; embeddings key if semantic media search is enabled.
+6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set.
 7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
 9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.

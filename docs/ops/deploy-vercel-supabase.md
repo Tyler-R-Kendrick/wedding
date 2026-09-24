@@ -141,9 +141,7 @@ do not rely on that.
   linked to the GitHub repository, turns on Fluid compute and the OIDC issuer,
   installs the Marketplace connectors, sets the variables below, and deploys.
   `npm run deploy:vercel:plan` says what it would do and writes nothing. Its only
-  credential is the Vercel CLI session, which the Secret Drop's Hosting strip
-  acquires (Vercel refuses a self-registered client the device grant; its own CLI
-  client is allowed, so `vercel login` runs it and the page streams the link).
+  credential is the Vercel CLI session (`npx vercel login`), or `VERCEL_TOKEN` in CI.
 - By hand instead: import the repository into Vercel. Framework preset: Next.js.
   The build command comes from `vercel.json`, which runs the migration step before
   `npm run build`. It overrides the dashboard's Build Command, so changing that field in

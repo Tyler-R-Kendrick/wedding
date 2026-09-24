@@ -51,7 +51,7 @@ const serverSchema = z.object({
   CONFIRMATION_SECRET: optionalSecret(16),
   CRON_SECRET: optionalSecret(32),
   STORAGE_SIGNING_SECRET: optionalSecret(16),
-  /** Alias written by the secrets autofill; used as the local-fs signing secret when STORAGE_SIGNING_SECRET is unset. */
+  /** Older name for STORAGE_SIGNING_SECRET, still honoured: the local-fs signing secret when that is unset. */
   DEV_STORAGE_SECRET: optionalSecret(16),
   BETTER_AUTH_SECRET: optionalSecret(16),
   BETTER_AUTH_URL: optionalUrl,
@@ -73,31 +73,12 @@ const serverSchema = z.object({
 
   // --- providers (all optional; mock when absent) ---
   FORCE_MOCK_PROVIDERS: requiredBool(false),
-  ANTHROPIC_API_KEY: optionalString,
-  /** OAuth bearer borrowed from a signed-in Claude Code session; sent as Authorization, not x-api-key. */
-  ANTHROPIC_AUTH_TOKEN: optionalString,
-  ANTHROPIC_BASE_URL: optionalUrl,
-  OPENAI_API_KEY: optionalString,
-  /** Which local harness the credential came from, when it was borrowed rather than issued to the site. */
-  AI_HARNESS: z.enum(['claude-code', 'codex', 'copilot', 'ollama']).optional(),
-  /** Point at any OpenAI-compatible gateway (OpenRouter, Groq, Together, a local Ollama). Unset -> api.openai.com. */
-  AI_BASE_URL: optionalUrl,
-  /**
-   * Vercel AI Gateway. `AI_GATEWAY_API_KEY` is the explicit key; `AI_GATEWAY=on` selects the gateway
-   * with no key at all, in which case `@ai-sdk/gateway` signs with the deployment's OIDC token
-   * (`VERCEL_OIDC_TOKEN` on Vercel, the CLI's session locally via `@vercel/oidc`).
-   */
-  AI_GATEWAY: requiredBool(false),
-  AI_GATEWAY_API_KEY: optionalString,
-  /** Model ids for the two tiers when the gateway does not use OpenAI's names (OpenRouter prefixes the vendor). */
-  AI_CHAT_MODEL: optionalString,
-  AI_FAST_MODEL: optionalString,
-  VOYAGE_API_KEY: optionalString,
-  EMBEDDINGS_PROVIDER: z.enum(['openai', 'voyage']).optional(),
-  /** Media intelligence (Swarm I): force the deterministic caption mock even when ANTHROPIC_API_KEY exists. */
-  MEDIA_AI_PROVIDER: z.enum(['mock', 'anthropic']).optional(),
+  // No AI provider reads a key: the concierge is written in the guest's browser and everything the
+  // server does with language (retrieval, verification, captions) runs in-process. A leftover
+  // ANTHROPIC_API_KEY, OPENAI_API_KEY or AI_GATEWAY_API_KEY is ignored (src/providers/ai-model).
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalString,
+  /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,
   S3_REGION: z.string().default('auto'),
   S3_BUCKET: optionalString,
