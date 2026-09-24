@@ -1,3 +1,50 @@
+This repository holds two kinds of material under two different terms. The MIT
+licence below covers the source code only. It does not cover the photographs,
+likeness or personal writing listed under "Reserved content", which are not
+licensed to anyone.
+
+================================================================================
+Reserved content: all rights reserved
+================================================================================
+
+Copyright (c) Tyler Kendrick. All rights reserved.
+
+The following are NOT covered by the MIT licence or by any other licence, open
+or otherwise:
+
+  - every photograph of, or taken by, Sara and Tyler, including everything under
+    public/assets/photos/ and any later photographs of the couple added to this
+    repository or to the site;
+  - every image portraying Sara or Tyler, photographed or generated, including
+    public/media/botanical-deco/couple/;
+  - the couple's personal writing: their story, memories, adventure titles,
+    summaries and captions (for example src/content/seed/ and docs/content/).
+
+No permission is granted to copy, modify, publish, distribute, sublicense or
+sell this content, in whole or in part, for commercial or non-commercial
+purposes. No permission is granted to use it for text and data mining, or to
+collect, scrape or ingest it to train, fine-tune, evaluate, ground or prompt
+any artificial-intelligence or machine-learning system, or to build any
+dataset. Under Article 4(3) of EU Directive 2019/790 the rightsholder expressly
+reserves these rights, in machine-readable form as well: robots.txt,
+/.well-known/tdmrep.json, the `tdm-reservation` and `X-Robots-Tag` response
+headers, and the XMP rights statement embedded in each photograph.
+
+The site may be viewed in a browser at kendrick.wedding. Viewing it grants no
+rights in its content. Forking or cloning this repository grants none either:
+a fork must not republish the reserved content.
+
+Third-party material keeps its own licence and is not claimed here: the openly
+licensed photographs credited in public/assets/ATTRIBUTIONS.md, the fonts
+(SIL Open Font License), map data (Natural Earth, City of Chicago open data),
+and anything else whose licence is recorded in docs/ops/asset-licensing.md.
+Photographs delivered by the wedding's professional photographers remain the
+photographers' copyright under their own terms.
+
+================================================================================
+Source code: MIT licence
+================================================================================
+
 MIT License
 
 Copyright (c) 2026 Tyler Kendrick
@@ -19,3 +66,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+"Software" above means the source code, configuration, tests and tooling in
+this repository. It excludes the reserved content listed at the top of this
+file.

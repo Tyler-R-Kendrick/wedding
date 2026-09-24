@@ -9,15 +9,27 @@
     "saraMemory": "TODO(Tyler & Sara): Sara remembers…",
     "tylerMemory": "TODO(Tyler & Sara): Tyler remembers…",
     "placeSlug": "starved-rock-state-park",
-    "tags": ["adventure", "place", "memory"],
-    "relatedRecommendationSlugs": ["starved-rock-state-park"],
+    "tags": [
+      "adventure",
+      "place",
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [
+      "starved-rock-state-park"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": true,
+    "media": [
+      {
+        "alt": "Sara and Tyler in French Canyon at Starved Rock.",
+        "src": "/assets/photos/adventures/starved-rock.webp"
+      }
+    ]
   },
   {
     "slug": "allison-and-jamies-wedding",
@@ -26,7 +38,10 @@
     "memory": [
       "TODO(Tyler & Sara): the evening you met, as you each remember it."
     ],
-    "tags": ["memory", "hospitality"],
+    "tags": [
+      "memory",
+      "hospitality"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
@@ -38,38 +53,67 @@
   {
     "slug": "museum-of-ice-cream",
     "title": "Museum of Ice Cream",
-    "summary": "TODO(Tyler & Sara): one line about the visit.",
+    "summary": "The Museum of Ice Cream.",
     "memory": [
       "TODO(Tyler & Sara): the memory, if you want to share it."
     ],
     "placeSlug": "museum-of-ice-cream",
-    "tags": ["adventure", "place"],
-    "relatedRecommendationSlugs": ["museum-of-ice-cream"],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [
+      "museum-of-ice-cream"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
     "visibility": "private-draft",
-    "placeholder": true
+    "placeholder": true,
+    "media": [
+      {
+        "alt": "Sara and Tyler, masked, in the pink rooms of the Museum of Ice Cream.",
+        "src": "/assets/photos/adventures/museum-of-ice-cream.webp"
+      }
+    ],
+    "dateExact": "2022-09-11",
+    "season": "autumn",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): which Museum of Ice Cream (the photo has no location in it)"
   },
   {
     "slug": "richardson-farm",
-    "title": "Richardson Farm",
-    "summary": "TODO(Tyler & Sara): one line about the day at the farm.",
+    "title": "Richardson Farm, 2022",
+    "summary": "Pumpkin season at Richardson Farm, 2022.",
     "memory": [
       "TODO(Tyler & Sara): the memory, if you want to share it."
     ],
     "placeSlug": "richardson-farm",
-    "tags": ["adventure", "place"],
-    "relatedRecommendationSlugs": ["richardson-farm"],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [
+      "richardson-farm"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
     "visibility": "private-draft",
-    "placeholder": true
+    "placeholder": true,
+    "media": [
+      {
+        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
+        "src": "/assets/photos/adventures/richardson-farm.webp"
+      }
+    ],
+    "dateExact": "2022-10-08",
+    "season": "autumn",
+    "timeOfDay": "morning"
   },
   {
     "slug": "michael-jordans-steakhouse",
@@ -79,8 +123,13 @@
       "TODO(Tyler & Sara): the memory, if you want to share it."
     ],
     "placeSlug": "michael-jordans-steakhouse",
-    "tags": ["hospitality", "memory"],
-    "relatedRecommendationSlugs": ["michael-jordans-steakhouse"],
+    "tags": [
+      "hospitality",
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [
+      "michael-jordans-steakhouse"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
@@ -97,7 +146,10 @@
       "TODO(Tyler & Sara): where, what you tasted, and what you argued about."
     ],
     "locationLabel": "TODO(Tyler & Sara): where",
-    "tags": ["hospitality", "adventure"],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
@@ -114,7 +166,10 @@
       "TODO(Tyler & Sara): what you grow, and what keeps dying."
     ],
     "placeSlug": "our-garden",
-    "tags": ["memory", "future"],
+    "tags": [
+      "memory",
+      "future"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
@@ -131,12 +186,1680 @@
       "TODO(Tyler & Sara): the memory, if you want to share it."
     ],
     "placeSlug": "madison-waterfront",
-    "tags": ["place", "memory"],
+    "tags": [
+      "place",
+      "memory"
+    ],
     "sourceKey": "brief",
     "sourceType": "authored",
     "verifiedAt": "2026-09-04T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
     "editedBy": "seed:brief-2026-09-04",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "alinea-2026-02-13-a",
+    "title": "Alinea: the booth",
+    "dateExact": "2026-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.91344,
+    "lng": -87.64817,
+    "summary": "An evening at Alinea, 1723 N Halsted.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in a booth at Alinea, a dessert painted across the table.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-a.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "alinea-2026-02-13-b",
+    "title": "Alinea: the glass balloon",
+    "dateExact": "2026-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.91349,
+    "lng": -87.64808,
+    "summary": "An evening at Alinea, 1723 N Halsted.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie at Alinea behind a glass balloon.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-b.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "alinea-2026-02-13-c",
+    "title": "Alinea: the kitchen",
+    "dateExact": "2026-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.91342,
+    "lng": -87.64795,
+    "summary": "An evening at Alinea, 1723 N Halsted: in the kitchen.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler standing in the Alinea kitchen beside the chefs.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-c.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "carnivale-2026-07-19",
+    "title": "Carnivale",
+    "dateExact": "2026-07-19",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "Fulton Market, Chicago",
+    "lat": 41.88697,
+    "lng": -87.64576,
+    "summary": "Carnivale, 702 W Fulton, under the \"Love Always Wins\" mural.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in front of the \"Love Always Wins\" mural at Carnivale.",
+        "src": "/assets/photos/adventures/carnivale-2026-07-19.webp"
+      }
+    ],
+    "tags": [
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "ever-2025-02-13-a",
+    "title": "Ever: the sign",
+    "dateExact": "2025-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Fulton Market, Chicago",
+    "lat": 41.88658,
+    "lng": -87.66048,
+    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler beside the Ever sign on a dark brick wall.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-a.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "ever-2025-02-13-b",
+    "title": "Ever: the table",
+    "dateExact": "2025-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Fulton Market, Chicago",
+    "lat": 41.88694,
+    "lng": -87.66057,
+    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler at a candlelit table at Ever.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-b.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "ever-2025-02-13-c",
+    "title": "Ever: the dark wall",
+    "dateExact": "2025-02-13",
+    "season": "winter",
+    "timeOfDay": "night",
+    "locationLabel": "Fulton Market, Chicago",
+    "lat": 41.88688,
+    "lng": -87.66028,
+    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler against a dark wall at Ever.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-c.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "teatro-zinzanni-2025-02-14",
+    "title": "Teatro ZinZanni",
+    "dateExact": "2025-02-14",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "The Loop, Chicago",
+    "lat": 41.88515,
+    "lng": -87.62876,
+    "summary": "Valentine's Day at Teatro ZinZanni: \"Truly Madly Deeply\".",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie under the Teatro ZinZanni \"Truly Madly Deeply\" sign.",
+        "src": "/assets/photos/adventures/teatro-zinzanni-2025-02-14.webp"
+      }
+    ],
+    "tags": [
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "smyth-2024-11-21",
+    "title": "Smyth",
+    "dateExact": "2024-11-21",
+    "season": "autumn",
+    "timeOfDay": "night",
+    "locationLabel": "West Loop, Chicago",
+    "lat": 41.88489,
+    "lng": -87.66072,
+    "summary": "Smyth, 177 N Ada (upstairs from The Loyalist).",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler by the open kitchen at Smyth.",
+        "src": "/assets/photos/adventures/smyth-2024-11-21.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "credit-union-1-arena-2024-11-22",
+    "title": "Credit Union 1 Arena",
+    "dateExact": "2024-11-22",
+    "season": "autumn",
+    "timeOfDay": "night",
+    "locationLabel": "University Village, Chicago",
+    "lat": 41.87492,
+    "lng": -87.65623,
+    "summary": "A night at Credit Union 1 Arena, 525 S Racine.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie with a friend in the stands at Credit Union 1 Arena."
+      }
+    ],
+    "tags": [
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "duet-dance-studio-2024-02-17",
+    "title": "Duet Dance Studio",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Wicker Park, Chicago",
+    "lat": 41.91076,
+    "lng": -87.6878,
+    "summary": "Dancing at Duet Dance Studio, 2412 W North Ave.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler mid-dance in front of a \"Dirty Dancing\" chalk mural.",
+        "src": "/assets/photos/adventures/duet-dance-studio-2024-02-17.webp"
+      }
+    ],
+    "tags": [
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "esme-2024-02-17-a",
+    "title": "Esmé: the dining room",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.92209,
+    "lng": -87.63883,
+    "summary": "Dinner at Esmé, 2200 N Clark.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in the Esmé dining room.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-a.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "esme-2024-02-17-b",
+    "title": "Esmé: making faces",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.92209,
+    "lng": -87.63883,
+    "summary": "Dinner at Esmé, 2200 N Clark.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler making faces under a painted face at Esmé.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-b.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "esme-2024-02-17-c",
+    "title": "Esmé: the line drawings",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.92205,
+    "lng": -87.63889,
+    "summary": "Dinner at Esmé, 2200 N Clark.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara in the Esmé dining room under line-drawn faces.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-c.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "esme-2024-02-17-d",
+    "title": "Esmé: the placemat",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "night",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.92209,
+    "lng": -87.63883,
+    "summary": "Dinner at Esmé, 2200 N Clark.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara at the table at Esmé, a face-shaped placemat in front of her.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-d.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "christkindlmarket-2023-12-07",
+    "title": "Christkindlmarket",
+    "dateExact": "2023-12-07",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Daley Plaza, Chicago",
+    "lat": 41.88381,
+    "lng": -87.62992,
+    "summary": "Mulled wine at Christkindlmarket in Daley Plaza.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler holding Christkindlmarket mugs in front of an ornament stall.",
+        "src": "/assets/photos/adventures/christkindlmarket-2023-12-07.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "grant-park-2023-09-02",
+    "title": "Grant Park",
+    "dateExact": "2023-09-02",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "locationLabel": "The Loop, Chicago",
+    "lat": 41.87464,
+    "lng": -87.61949,
+    "summary": "An afternoon in Grant Park.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie under a tree in Grant Park.",
+        "src": "/assets/photos/adventures/grant-park-2023-09-02.webp"
+      }
+    ],
+    "tags": [
+      "place",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "cadillac-palace-2023-01-08",
+    "title": "The Lion King at the Cadillac Palace",
+    "dateExact": "2023-01-08",
+    "season": "winter",
+    "timeOfDay": "afternoon",
+    "locationLabel": "The Loop, Chicago",
+    "lat": 41.8849,
+    "lng": -87.6337,
+    "summary": "The Lion King at the Cadillac Palace Theatre, 151 W Randolph.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four friends on Randolph Street under the Cadillac Palace marquee for The Lion King."
+      }
+    ],
+    "tags": [
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "wrigley-field-2025-07-24",
+    "title": "Wrigley Field",
+    "dateExact": "2025-07-24",
+    "season": "summer",
+    "timeOfDay": "afternoon",
+    "locationLabel": "Wrigleyville, Chicago",
+    "lat": 41.9474,
+    "lng": -87.656,
+    "summary": "A Cubs game at Wrigley Field.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four friends in Cubs gear in front of the Wrigley Field marquee."
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "river-west-2025-08-24",
+    "title": "River West",
+    "dateExact": "2025-08-24",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "River West, Chicago",
+    "lat": 41.89,
+    "lng": -87.66,
+    "summary": "A summer afternoon in River West.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie on a wooden balcony above a River West street.",
+        "src": "/assets/photos/adventures/river-west-2025-08-24.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "new-years-eve-2023",
+    "title": "New Year's Eve 2023",
+    "dateExact": "2023-12-31",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.93,
+    "lng": -87.67,
+    "summary": "New Year's Eve, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler striking a pose in a hallway, dressed up for New Year's Eve.",
+        "src": "/assets/photos/adventures/new-years-eve-2023.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "chicago-botanic-garden-2025-03-14",
+    "title": "Chicago Botanic Garden, 2025",
+    "dateExact": "2025-03-14",
+    "season": "spring",
+    "timeOfDay": "afternoon",
+    "locationLabel": "Glencoe, IL",
+    "lat": 42.14711,
+    "lng": -87.78981,
+    "summary": "The Chicago Botanic Garden in March.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie under a flowered arch at the Chicago Botanic Garden.",
+        "src": "/assets/photos/adventures/chicago-botanic-garden-2025-03-14.webp"
+      }
+    ],
+    "tags": [
+      "place",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "chicago-botanic-garden-2024-03-22",
+    "title": "Chicago Botanic Garden, 2024",
+    "dateExact": "2024-03-22",
+    "season": "spring",
+    "timeOfDay": "afternoon",
+    "locationLabel": "Glencoe, IL",
+    "lat": 42.14716,
+    "lng": -87.78983,
+    "summary": "The Chicago Botanic Garden in March, with family.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four people in a greenhouse doorway at the Chicago Botanic Garden."
+      }
+    ],
+    "tags": [
+      "place",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "libertyville-2024-09-21",
+    "title": "Libertyville",
+    "dateExact": "2024-09-21",
+    "season": "autumn",
+    "timeOfDay": "evening",
+    "locationLabel": "Libertyville, IL",
+    "lat": 42.28622,
+    "lng": -87.95508,
+    "summary": "An evening out with friends in downtown Libertyville.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Eight friends lined up on a Libertyville street."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "new-years-eve-2025",
+    "title": "New Year's Eve 2025",
+    "dateExact": "2025-12-31",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Libertyville, IL",
+    "lat": 42.26,
+    "lng": -87.96,
+    "summary": "New Year's Eve, 2025.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Friends around a dinner table on New Year's Eve, one in a \"Happy New Year\" tiara."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "new-years-eve-2024",
+    "title": "New Year's Eve 2024",
+    "dateExact": "2024-12-31",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Arlington Heights, IL",
+    "lat": 42.12,
+    "lng": -87.99,
+    "summary": "New Year's Eve, 2024.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Friends around a dinner table under a chandelier on New Year's Eve."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "richardson-farm-2023-10-21",
+    "title": "Richardson Farm, 2023",
+    "dateExact": "2023-10-21",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "placeSlug": "richardson-farm",
+    "locationLabel": "Spring Grove, IL",
+    "lat": 42.4691,
+    "lng": -88.2157,
+    "summary": "Pumpkin season at Richardson Farm, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
+        "src": "/assets/photos/adventures/richardson-farm-2023-10-21.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "richardson-farm-2024-10-27",
+    "title": "Richardson Farm, 2024",
+    "dateExact": "2024-10-27",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "placeSlug": "richardson-farm",
+    "locationLabel": "Spring Grove, IL",
+    "lat": 42.46906,
+    "lng": -88.21579,
+    "summary": "Pumpkin season at Richardson Farm, 2024.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
+        "src": "/assets/photos/adventures/richardson-farm-2024-10-27.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "richardson-farm-2025-10-11-a",
+    "title": "Richardson Farm, 2025: the corn maze",
+    "dateExact": "2025-10-11",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "placeSlug": "richardson-farm",
+    "locationLabel": "Spring Grove, IL",
+    "lat": 42.46774,
+    "lng": -88.2151,
+    "summary": "Pumpkin season at Richardson Farm, 2025: above the corn maze.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara on a lookout above the corn maze at Richardson Farm.",
+        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-a.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "richardson-farm-2025-10-11-b",
+    "title": "Richardson Farm, 2025: the pumpkin house",
+    "dateExact": "2025-10-11",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "placeSlug": "richardson-farm",
+    "locationLabel": "Spring Grove, IL",
+    "lat": 42.46906,
+    "lng": -88.21577,
+    "summary": "Pumpkin season at Richardson Farm, 2025.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
+        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-b.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "door-county-2024-09-24",
+    "title": "Door County",
+    "dateExact": "2024-09-24",
+    "season": "autumn",
+    "timeOfDay": "evening",
+    "locationLabel": "Door County, WI",
+    "lat": 44.9,
+    "lng": -87.39,
+    "summary": "Sunset by a fire in Door County.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sunset over the water in Door County, a fire pit in the foreground.",
+        "src": "/assets/photos/adventures/door-county-2024-09-24.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "eleven-madison-park-2025-08-07-a",
+    "title": "Eleven Madison Park: the doors",
+    "dateExact": "2025-08-07",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "New York, NY",
+    "lat": 40.74147,
+    "lng": -73.98771,
+    "summary": "Eleven Madison Park, 11 Madison Ave.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler outside the Art Deco doors of Eleven Madison Park.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-a.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "eleven-madison-park-2025-08-07-b",
+    "title": "Eleven Madison Park: the kitchen",
+    "dateExact": "2025-08-07",
+    "season": "summer",
+    "timeOfDay": "night",
+    "locationLabel": "New York, NY",
+    "lat": 40.74166,
+    "lng": -73.98703,
+    "summary": "Eleven Madison Park, 11 Madison Ave: in the kitchen.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in the Eleven Madison Park kitchen.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-b.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "eleven-madison-park-2025-08-07-c",
+    "title": "Eleven Madison Park: the dining room",
+    "dateExact": "2025-08-07",
+    "season": "summer",
+    "timeOfDay": "night",
+    "locationLabel": "New York, NY",
+    "lat": 40.74174,
+    "lng": -73.98715,
+    "summary": "Eleven Madison Park, 11 Madison Ave.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler with the Eleven Madison Park team in the dining room.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-c.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "ocean-beach-nj-2025-08-16",
+    "title": "The Jersey Shore",
+    "dateExact": "2025-08-16",
+    "season": "summer",
+    "timeOfDay": "morning",
+    "locationLabel": "Ocean Beach, NJ",
+    "lat": 39.98,
+    "lng": -74.06,
+    "summary": "A morning at the beach house on the Jersey Shore.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four people under a \"Beach House\" sign."
+      }
+    ],
+    "tags": [
+      "travel",
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": false
+  },
+  {
+    "slug": "hestia-2026-02-19",
+    "title": "Hestia",
+    "dateExact": "2026-02-19",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Austin, TX",
+    "lat": 30.26694,
+    "lng": -97.75024,
+    "summary": "Hestia, 607 W 3rd St, Austin.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler with the team in front of the hearth at Hestia.",
+        "src": "/assets/photos/adventures/hestia-2026-02-19.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "fresno-2024-12-22",
+    "title": "Fresno",
+    "dateExact": "2024-12-22",
+    "season": "winter",
+    "timeOfDay": "afternoon",
+    "locationLabel": "Fresno, CA",
+    "lat": 36.81,
+    "lng": -119.85,
+    "summary": "Christmas week with family in Fresno.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A cozy selfie on the couch.",
+        "src": "/assets/photos/adventures/fresno-2024-12-22.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "fresno-christmas-2025",
+    "title": "Christmas in Fresno",
+    "dateExact": "2025-12-25",
+    "season": "winter",
+    "timeOfDay": "morning",
+    "locationLabel": "Fresno, CA",
+    "lat": 36.84,
+    "lng": -119.78,
+    "summary": "Christmas morning in Fresno.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in fleece on Christmas morning.",
+        "src": "/assets/photos/adventures/fresno-christmas-2025.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "tunnel-tree-2025-12-29",
+    "title": "The Tunnel Tree",
+    "dateExact": "2025-12-29",
+    "season": "winter",
+    "timeOfDay": "morning",
+    "locationLabel": "Fresno, CA",
+    "lat": 36.7698,
+    "lng": -119.71999,
+    "summary": "The Tunnel Tree at Fresno Yosemite International Airport.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie inside the hollow of the Tunnel Tree.",
+        "src": "/assets/photos/adventures/tunnel-tree-2025-12-29.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "noma-2025-06-24",
+    "title": "Noma",
+    "dateExact": "2025-06-24",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "Copenhagen, Denmark",
+    "lat": 55.68251,
+    "lng": 12.61083,
+    "summary": "Noma, Copenhagen.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in front of a wall of dried flowers at Noma.",
+        "src": "/assets/photos/adventures/noma-2025-06-24.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "geranium-2025-06-26",
+    "title": "Geranium",
+    "dateExact": "2025-06-26",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "Copenhagen, Denmark",
+    "lat": 55.70371,
+    "lng": 12.57203,
+    "summary": "Geranium, Copenhagen, above Fælledparken.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler at a window table at Geranium, dessert in front of them.",
+        "src": "/assets/photos/adventures/geranium-2025-06-26.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "tivoli-gardens-2025-06-30-a",
+    "title": "Tivoli Gardens: the willow",
+    "dateExact": "2025-06-30",
+    "season": "summer",
+    "timeOfDay": "night",
+    "locationLabel": "Copenhagen, Denmark",
+    "lat": 55.67371,
+    "lng": 12.56988,
+    "summary": "An evening at Tivoli Gardens.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara kissing Tyler on the cheek under a willow at Tivoli Gardens.",
+        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-a.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "tivoli-gardens-2025-06-30-b",
+    "title": "Tivoli Gardens: the Nimb",
+    "dateExact": "2025-06-30",
+    "season": "summer",
+    "timeOfDay": "night",
+    "locationLabel": "Copenhagen, Denmark",
+    "lat": 55.67371,
+    "lng": 12.56663,
+    "summary": "Tivoli Gardens at night, by the Nimb.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler kissing in front of the lit-up Nimb palace at Tivoli.",
+        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-b.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "zurich-airport-2025-07-02",
+    "title": "Zurich Airport",
+    "dateExact": "2025-07-02",
+    "season": "summer",
+    "timeOfDay": "afternoon",
+    "locationLabel": "Zurich, Switzerland",
+    "lat": 47.46055,
+    "lng": 8.5541,
+    "summary": "On a Swiss flight out of Zurich.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in the cabin of a Swiss airplane.",
+        "src": "/assets/photos/adventures/zurich-airport-2025-07-02.webp"
+      }
+    ],
+    "tags": [
+      "travel"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "photo-2022-11-13",
+    "title": "November 13, 2022",
+    "dateExact": "2022-11-13",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "A selfie from November 13, 2022.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler cheek to cheek in a selfie outdoors.",
+        "src": "/assets/photos/adventures/photo-2022-11-13.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2022-12-03",
+    "title": "December 3, 2022",
+    "dateExact": "2022-12-03",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "An evening among holiday lights, December 3, 2022.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in front of a wall of twinkle lights.",
+        "src": "/assets/photos/adventures/photo-2022-12-03.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-04-02",
+    "title": "April 2, 2023",
+    "dateExact": "2023-04-02",
+    "season": "spring",
+    "timeOfDay": "afternoon",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "A lakeshore still banked with snow, April 2, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie by a lake with snow piled on the shore.",
+        "src": "/assets/photos/adventures/photo-2023-04-02.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-05-03",
+    "title": "May 3, 2023",
+    "dateExact": "2023-05-03",
+    "season": "spring",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "A cabin in the woods, the day before Starved Rock.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in front of a small black cabin in the woods.",
+        "src": "/assets/photos/adventures/photo-2023-05-03.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-05-23",
+    "title": "May 23, 2023",
+    "dateExact": "2023-05-23",
+    "season": "spring",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Pretzel-bun burgers on the grass, May 23, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Two pretzel-bun burgers held up over the grass.",
+        "src": "/assets/photos/adventures/photo-2023-05-23.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-07-22",
+    "title": "July 22, 2023",
+    "dateExact": "2023-07-22",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Among the vines, July 22, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara in a sun hat and Tyler in sunglasses in front of a vineyard.",
+        "src": "/assets/photos/adventures/photo-2023-07-22.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-08-07",
+    "title": "August 7, 2023",
+    "dateExact": "2023-08-07",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "At the ballpark, August 7, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in the stands at a ballgame.",
+        "src": "/assets/photos/adventures/photo-2023-08-07.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2023-08-19",
+    "title": "August 19, 2023",
+    "dateExact": "2023-08-19",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "A beach at sunset with friends, August 19, 2023.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four friends on a beach at sunset."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2024-06-02",
+    "title": "June 2, 2024",
+    "dateExact": "2024-06-02",
+    "season": "summer",
+    "timeOfDay": "morning",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "A morning out with family, June 2, 2024.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Four people on a pool deck in the morning sun."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-2024-06-30",
+    "title": "June 30, 2024",
+    "dateExact": "2024-06-30",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Friends on the steps, June 30, 2024.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Five friends sitting on stone steps."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-friends-at-home",
+    "title": "Friends around the table",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "An evening with friends.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Friends crowded around a table, laughing."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-friends-mural",
+    "title": "Friends by a mural",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Friends in front of a painted mural.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Seven friends in front of a colorful mural."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "private-draft",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-happily-ever-after",
+    "title": "Happily Ever After",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Sara with a \"Happily Ever After\" sign.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara holding a \"Happily Ever After\" sign in front of a green tinsel curtain.",
+        "src": "/assets/photos/adventures/photo-happily-ever-after.webp"
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": true
+  },
+  {
+    "slug": "photo-christmas-tree",
+    "title": "By the Christmas tree",
+    "locationLabel": "TODO(Tyler & Sara): where this was (the photo has no location in it)",
+    "summary": "Friends by a big Christmas tree.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Six friends in front of a tall, lit Christmas tree."
+      }
+    ],
+    "tags": [
+      "memory"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
     "visibility": "private-draft",
     "placeholder": true
   }

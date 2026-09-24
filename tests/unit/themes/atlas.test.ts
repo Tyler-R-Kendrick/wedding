@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { adventureCoordinates } from '@/domain/adventures/repo';
 import { ATLAS_FRAME, ATLAS_LAYERS } from '@/themes/shared/atlas/frame.generated';
-import { ATLAS_H, ATLAS_W, MAX_ZOOM, clampView, clusterPoints, fitView, homeView, inseparable, lerpView, panBy, project, viewBox, zoomAt } from '@/themes/shared/atlas/projection';
+import { REGION_FRAME, REGION_LAYERS } from '@/themes/shared/atlas/region.generated';
+import { ATLAS_H, ATLAS_W, MAX_ZOOM, WORLD_MAX_ZOOM, clampView, clusterPoints, fitView, homeView, inRegion, inseparable, lerpView, panBy, project, unitsPerKm, viewBox, worldView, zoomAt } from '@/themes/shared/atlas/projection';
 
 const WIDE = ATLAS_W / ATLAS_H;
 const PHONE = 5 / 4;
@@ -61,7 +62,7 @@ describe('atlas views', () => {
     const vb = viewBox(v, WIDE);
     expect(vb.x).toBeGreaterThanOrEqual(0);
     expect(vb.y + vb.h).toBeLessThanOrEqual(ATLAS_H + 1e-9);
-    expect(clampView({ cx: 0, cy: 0, k: 100 }, WIDE).k).toBe(MAX_ZOOM);
+    expect(clampView({ cx: 0, cy: 0, k: 100 }, WIDE).k).toBe(WORLD_MAX_ZOOM);
     expect(clampView({ cx: 0, cy: 0, k: 0.1 }, WIDE).k).toBe(1);
   });
 
@@ -123,8 +124,8 @@ describe('atlas clusters', () => {
   });
 
   it('knows when two memories share one place', () => {
-    expect(inseparable([chicago, { ...chicago }], 1000)).toBe(true);
-    expect(inseparable([chicago, starvedRock], 1000)).toBe(false);
+    expect(inseparable([{ id: 'a', ...chicago }, { id: 'b', ...chicago }], 1000)).toBe(true);
+    expect(inseparable([{ id: 'a', ...chicago }, { id: 'b', ...starvedRock }], 1000)).toBe(false);
   });
 });
 
@@ -140,5 +141,91 @@ describe('where an adventure is pinned', () => {
     expect(adventureCoordinates({ lat: 91, lng: 0 })).toBeUndefined();
     expect(adventureCoordinates({ lat: Number.NaN, lng: 0 })).toBeUndefined();
     expect(adventureCoordinates({ lat: null, lng: null })).toBeUndefined();
+  });
+});
+
+describe('the Midwest close-up', () => {
+  const venue = chicago;
+  const u = unitsPerKm(41.8815);
+  const focus = { ...venue, reach: 16 * u, minSpan: 9 * u };
+  const alinea = project(41.9134, -87.6481);
+  const wrigley = project(41.9474, -87.656);
+  const copenhagen = project(55.6825, 12.6108);
+
+  it('covers the venue, Starved Rock and Door County, and matches the file the generator wrote', () => {
+    for (const p of [venue, starvedRock, project(44.9, -87.39)]) expect(inRegion(p.x, p.y)).toBe(true);
+    expect(inRegion(copenhagen.x, copenhagen.y)).toBe(false);
+    const svg = readFileSync(join(process.cwd(), 'public/assets/atlas/midwest.svg'), 'utf8');
+    expect(svg).toContain(`viewBox="${REGION_FRAME.x} ${REGION_FRAME.y} ${REGION_FRAME.w} ${REGION_FRAME.h}"`);
+    for (const layer of REGION_LAYERS) expect(svg).toMatch(new RegExp(`<path id="${layer}" vector-effect="non-scaling-stroke" d="M`));
+    expect(svg).not.toMatch(/\b(fill|stroke)="/);
+  });
+
+  it('opens on the venue and the pins around it, not the whole world', () => {
+    for (const aspect of [WIDE, PHONE]) {
+      const v = homeView(aspect, [alinea, wrigley, starvedRock, copenhagen], focus);
+      const vb = viewBox(v, aspect);
+      for (const p of [venue, alinea, wrigley]) {
+        expect(p.x).toBeGreaterThan(vb.x);
+        expect(p.x).toBeLessThan(vb.x + vb.w);
+        expect(p.y).toBeGreaterThan(vb.y);
+        expect(p.y).toBeLessThan(vb.y + vb.h);
+      }
+      // Starved Rock (130 km) and Copenhagen are a zoom-out away.
+      expect(starvedRock.x < vb.x || starvedRock.y > vb.y + vb.h).toBe(true);
+      expect(vb.w / u).toBeLessThan(40);
+      expect(vb.w / u).toBeGreaterThanOrEqual(9 - 1e-6);
+    }
+    // Without a focus it is still the world.
+    expect(homeView(WIDE, [venue])).toEqual(worldView(WIDE, [venue]));
+  });
+
+  it('zooms to street scale inside the close-up and holds the frame there; elsewhere stops at the world depth', () => {
+    const deep = clampView({ cx: venue.x, cy: venue.y, k: 1e6 }, WIDE);
+    expect(deep.k).toBe(MAX_ZOOM);
+    // ~2.8 km across at the deepest zoom.
+    expect(viewBox(deep, WIDE).w / u).toBeLessThan(3);
+    const dragged = viewBox(clampView({ cx: REGION_FRAME.x - 0.1, cy: venue.y, k: 1000 }, WIDE), WIDE);
+    expect(dragged.x).toBeGreaterThanOrEqual(REGION_FRAME.x - 1e-9);
+    expect(clampView({ cx: copenhagen.x, cy: copenhagen.y, k: 1000 }, WIDE).k).toBe(WORLD_MAX_ZOOM);
+  });
+
+  it('zooming in near the edge of the close-up neither jumps nor locks the pan', () => {
+    const edge = project(42.3, -83.2); // Detroit, just inside the close-up's east edge
+    const before = clampView({ cx: edge.x, cy: edge.y, k: WORLD_MAX_ZOOM }, WIDE);
+    const after = zoomAt(before, 1.8, WIDE);
+    expect(after.k).toBeCloseTo(WORLD_MAX_ZOOM * 1.8, 6);
+    expect(after.cx).toBeCloseTo(before.cx, 6);
+    expect(after.cy).toBeCloseTo(before.cy, 6);
+    // A frame wider than the close-up still pans (it only has to keep the close-up in view).
+    const wide = clampView({ cx: venue.x, cy: venue.y, k: 60 }, WIDE);
+    const moved = panBy(wide, -100, 0, 1000, WIDE);
+    expect(moved.k).toBe(60);
+    expect(moved.cx).toBeGreaterThan(wide.cx);
+  });
+
+  it('parts places a few blocks apart on a phone, but not three photos from one table', () => {
+    const ever = { id: 'ever', ...project(41.88658, -87.66048) }, riverWest = { id: 'rw', ...project(41.89, -87.66) };
+    expect(inseparable([ever, riverWest], 390, 30, { sizePx: 44 })).toBe(false);
+    const table = [project(41.91344, -87.64817), project(41.91349, -87.64808), project(41.91342, -87.64795)].map((p, i) => ({ id: `t${i}`, ...p }));
+    expect(inseparable(table, 390)).toBe(true);
+    // Out in the world, "inseparable" still means at the world's own depth.
+    expect(inseparable([{ id: 'a', ...copenhagen }, { id: 'b', ...project(55.6737, 12.5699) }], 390)).toBe(true);
+  });
+
+  it("merges markers whose 44px buttons would overlap, so none is partly covered", () => {
+    const pts = [
+      { id: 'a', x: 0, y: 0 },
+      { id: 'b', x: 0.036, y: 0 }, // 36px apart at k = 1000 on a 1000px frame: outside 30px, inside 44px
+      { id: 'c', x: 0.2, y: 0 },
+    ];
+    expect(clusterPoints(pts, 1000, 1000).length).toBe(3);
+    const merged = clusterPoints(pts, 1000, 1000, 30, { sizePx: 44 });
+    expect(merged.map((c) => c.members.map((m) => m.id).join(''))).toEqual(['ab', 'c']);
+    // A pin's button is lifted 14px onto its head: 36px above a cluster its button clears the
+    // cluster's; 36px below, it lands 22px from it and the two merge.
+    const lift = (m: { id: string }[]) => (m.length === 1 && m[0]!.id !== 'k' ? 14 : 0);
+    expect(clusterPoints([{ id: 'k', x: 0, y: 0 }, { id: 'p', x: 0, y: -0.036 }], 1000, 1000, 30, { sizePx: 44, lift }).length).toBe(2);
+    expect(clusterPoints([{ id: 'k', x: 0, y: 0 }, { id: 'p', x: 0, y: 0.036 }], 1000, 1000, 30, { sizePx: 44, lift }).length).toBe(1);
   });
 });

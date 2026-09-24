@@ -1,4 +1,7 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { rightsXmp } from '../../../scripts/stamp-photo-rights.mjs';
 import { adventureMemorySeedSchema, crossReferenceProblems, isPlaceholderText, loadContentSeed, PLACEHOLDER_MARKER, storySectionSeedSchema } from '@/content';
 
 const seed = loadContentSeed();
@@ -23,18 +26,66 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     expect(ok.success).toBe(true);
   });
 
-  it('memory places are private drafts with placeholder copy; only Starved Rock is public', () => {
-    const publicOnes = seed.adventures.filter((a) => a.visibility === 'public').map((a) => a.slug);
-    expect(publicOnes).toEqual(['starved-rock']);
-    for (const a of seed.adventures) expect(a.placeholder, a.slug).toBe(true);
+  it('memories only the brief knows stay private drafts with placeholder copy; Starved Rock is public', () => {
+    const briefOnly = seed.adventures.filter((a) => a.editedBy === 'seed:brief-2026-09-04' && !a.media.length);
+    expect(briefOnly.length).toBeGreaterThan(0);
+    for (const a of briefOnly) {
+      expect(a.placeholder, a.slug).toBe(true);
+      expect(a.visibility, a.slug).toBe('private-draft');
+    }
     const starved = seed.adventures.find((a) => a.slug === 'starved-rock')!;
+    expect(starved.visibility).toBe('public');
     expect(starved.summary).toContain('I love you');
-    // No invented trail, date, or wording: the memory body is a typed placeholder.
+    // No invented trail, date, or wording: the memory body is a typed placeholder, even with a photo.
     expect(starved.memory.every(isPlaceholderText)).toBe(true);
     expect(starved.dateExact).toBeUndefined();
     expect(starved.dateApprox).toBeUndefined();
     expect(isPlaceholderText(starved.saraMemory)).toBe(true);
     expect(isPlaceholderText(starved.tylerMemory)).toBe(true);
+  });
+
+  it("every one of the couple's photos is its own adventure, located from the photo or flagged as unknown", () => {
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), 'docs/content/adventure-photos.json'), 'utf8')) as { photos: { file: string | null; adventure: string; consent: string }[] };
+    expect(manifest.photos).toHaveLength(61);
+    const bySlug = new Map(seed.adventures.map((a) => [a.slug, a]));
+    const files = new Set<string>();
+    for (const m of manifest.photos) {
+      const a = bySlug.get(m.adventure)!;
+      expect(a, m.adventure).toBeDefined();
+      expect(a.media, a.slug).toHaveLength(1);
+      const src = a.media[0]!.src;
+      const pending = m.consent.startsWith('pending');
+      if (pending) {
+        // Anyone else in the frame agrees first (docs/ops/asset-licensing.md section 4): until then the
+        // photo is not in the repo at all, not even as a file under public/, and its adventure is a draft.
+        expect(src, a.slug).toBeUndefined();
+        expect(m.file, a.slug).toBeNull();
+        expect(a.visibility, a.slug).toBe('private-draft');
+      } else {
+        expect(src, a.slug).toBe(`/assets/photos/adventures/${m.file}`);
+        expect(existsSync(join(process.cwd(), 'public', src!)), src).toBe(true);
+        files.add(src!);
+        // The brief's own drafts (the museum, the first farm visit) stay drafts with a photo added.
+        const briefDraft = a.editedBy === 'seed:brief-2026-09-04' && a.slug !== 'starved-rock';
+        expect(a.visibility, a.slug).toBe(briefDraft ? 'private-draft' : 'public');
+      }
+      // The memory itself is the couple's to write: nothing but placeholders or nothing at all.
+      expect(a.memory.every(isPlaceholderText), a.slug).toBe(true);
+      const located = (a.lat !== undefined && a.lng !== undefined) || !!a.placeSlug;
+      // A photo with no location in it says so, rather than being pinned somewhere plausible.
+      if (!located) expect(isPlaceholderText(a.locationLabel ?? ''), a.slug).toBe(true);
+    }
+    // Only the manifest's files are published, and each once.
+    expect(readdirSync(join(process.cwd(), 'public/assets/photos/adventures')).sort()).toEqual([...files].map((f) => f.split('/').pop()).sort());
+    // Every public adventure's title is its own, so its links and pins say which one they are.
+    const titles = seed.adventures.filter((a) => a.visibility === 'public').map((a) => a.title);
+    expect(new Set(titles).size).toBe(titles.length);
+    // Homes are pinned to the neighbourhood (two decimals, about a kilometre), never to the door.
+    for (const slug of ['new-years-eve-2023', 'new-years-eve-2024', 'new-years-eve-2025', 'fresno-2024-12-22', 'fresno-christmas-2025', 'ocean-beach-nj-2025-08-16', 'river-west-2025-08-24', 'door-county-2024-09-24']) {
+      const a = bySlug.get(slug)!;
+      expect(a.lat! * 100, slug).toBeCloseTo(Math.round(a.lat! * 100), 6);
+      expect(a.lng! * 100, slug).toBeCloseTo(Math.round(a.lng! * 100), 6);
+    }
   });
 
   it('every itinerary is a draft and the kit spaces say their capacities are the venue\'s own, unconfirmed', () => {
@@ -75,5 +126,24 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     expect(isPlaceholderText(`x ${PLACEHOLDER_MARKER} y`)).toBe(true);
     expect(isPlaceholderText('plain')).toBe(false);
     expect(adventureMemorySeedSchema.safeParse({ ...seed.adventures[0], slug: 'Bad Slug' }).success).toBe(false);
+  });
+});
+
+describe("the couple's adventure photos", () => {
+  it('are published without EXIF or GPS, carrying only the rights statement as XMP', async () => {
+    const sharp = (await import('sharp')).default;
+    const expected = rightsXmp();
+    expect(expected).toContain('DMI-PROHIBITED');
+    expect(expected).not.toMatch(/exif:|GPS|tiff:|xmp:CreateDate/i);
+    const dir = join(process.cwd(), 'public/assets/photos/adventures');
+    const files = (await import('node:fs')).readdirSync(dir).filter((f) => f.endsWith('.webp'));
+    expect(files).toHaveLength(47);
+    for (const f of files) {
+      const meta = await sharp(join(dir, f)).metadata();
+      expect(meta.exif, f).toBeUndefined();
+      // `npm run photos:stamp` writes it; nothing else (camera, date, place) may ride along.
+      expect(meta.xmp?.toString('utf8'), f).toBe(expected);
+      expect(Math.max(meta.width ?? 0, meta.height ?? 0), f).toBeLessThanOrEqual(1600);
+    }
   });
 });

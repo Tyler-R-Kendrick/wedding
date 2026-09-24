@@ -27,7 +27,7 @@ export const CONTENT_COPY = {
       eyebrow: 'The atlas',
       title: 'Everywhere it has taken us',
       pinned: (pinned: number, total: number) =>
-        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. Choose a pin to read about it, or find it in the list below.`,
+        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. It opens on Chicago around the venue; zoom out, or choose the globe, for everywhere else. Choose a pin to read about it, or find it in the list below.`,
       keyPin: 'An adventure, numbered as in the list',
       keyCluster: 'Several close together: choose it to zoom in',
       keyVenue: 'Where we are getting married',

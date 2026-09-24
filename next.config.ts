@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { rightsHeaders } from './src/lib/rights';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
 
@@ -44,7 +45,9 @@ const nextConfig: NextConfig = {
     // `tests/e2e/media-upload.spec.ts` asserts `sandbox` on a served derivative and received the
     // site policy instead. That inverted the intent twice over, because the permissive `img-src`
     // and `media-src` in security-headers.ts are justified BY that per-route sandbox.
-    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...stageHeaders(stageFramingHeaders(headerOptions))];
+    // The rights headers (no AI training, no text and data mining; src/lib/rights.ts) set keys the
+    // security headers do not, so the two sets never override each other.
+    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...rightsHeaders(), ...stageHeaders(stageFramingHeaders(headerOptions))];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.

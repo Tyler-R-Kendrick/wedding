@@ -23,7 +23,10 @@ const output = z.object({
   items: z.array(adventureCardSchema),
   tags: z.array(z.string()),
   seasons: z.array(z.enum(SEASONS)),
+  /** Every adventure the caller may see, whatever the filter. */
   total: z.number().int(),
+  /** How many match the filter; the AI surfaces get the newest AI_ADVENTURE_LIMIT of them. */
+  matching: z.number().int(),
 });
 export type AdventuresPageData = z.infer<typeof output>;
 
@@ -32,7 +35,7 @@ export const listAdventures = defineCapability<z.infer<typeof input>, Adventures
   title: 'Our Adventures',
   description:
     "Lists the couple's adventure memories (places and experiences that shaped their life together) with optional tag and season filters. " +
-    'Only memories the caller may see are returned; drafts are never included. Read only.',
+    'Only memories the caller may see are returned; drafts are never included. On the AI surfaces at most 12 (the newest) come back; `matching` says how many fit the filter. Read only.',
   kind: 'read',
   auth: 'anonymous',
   requires: [],
@@ -44,7 +47,7 @@ export const listAdventures = defineCapability<z.infer<typeof input>, Adventures
   async handler(ctx, i) {
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
-    const { items, tags, seasons, total, sources } = await readAdventures(rctx, { tag: i?.tag, season: i?.season, limit: i?.limit });
-    return ok({ data: { route: ROUTES.adventures, items, tags, seasons, total }, sources });
+    const { items, tags, seasons, total, matching, sources } = await readAdventures(rctx, { tag: i?.tag, season: i?.season, limit: i?.limit });
+    return ok({ data: { route: ROUTES.adventures, items, tags, seasons, total, matching }, sources });
   },
 });

@@ -4067,6 +4067,41 @@
   stroke-dasharray: 2 3;
 }
 
+/* The Midwest close-up (midwest.svg), drawn inside its rectangle in place of the world's 1:50m layers. */
+.bd-atlas__region-land {
+  fill: var(--color-neutral);
+}
+
+.bd-atlas__urban,
+.bd-atlas__city {
+  fill: color-mix(in oklab, var(--color-champagne) 35%, var(--color-neutral));
+}
+
+/* Repaints Natural Earth's approximate shore as lake; the city's own outline then paints the land back. */
+.bd-atlas__shore {
+  fill: color-mix(in oklab, var(--color-dusty) 30%, var(--color-surface));
+}
+
+.bd-atlas__districts {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-gold) 55%, transparent);
+  stroke-width: 0.5px;
+}
+
+.bd-atlas__rivers {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-dusty) 70%, var(--color-surface));
+  stroke-width: 1px;
+}
+
+.bd-atlas__roads {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-gold-deep) 45%, transparent);
+  stroke-width: 1px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Markers are drawn in screen pixels inside a group scaled back from the zoom. */
 .bd-atlas__drop {
   fill: var(--color-gold-deep);
@@ -4385,6 +4420,32 @@
 
 .bd-postcard__title:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* An adventure's own photographs, above the memory on its page. */
+.bd-adventure-photos {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-block-end: var(--spacing-lg);
+}
+
+.bd-adventure-photos__item {
+  margin: 0;
+}
+
+.bd-adventure-photos__img {
+  display: block;
+  inline-size: auto;
+  max-inline-size: 100%;
+  max-block-size: 80svh;
+  border: 1px solid var(--color-gold);
+}
+
+.bd-adventure-photos__item figcaption {
+  padding-block-start: var(--spacing-xs);
+  font-size: var(--type-body-sm-size);
+  font-style: italic;
+  color: var(--color-on-surface-muted);
 }
 
 .bd-postcard__photo {
