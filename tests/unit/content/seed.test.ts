@@ -75,8 +75,12 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
       // A photo with no location in it says so, rather than being pinned somewhere plausible.
       if (!located) expect(isPlaceholderText(a.locationLabel ?? ''), a.slug).toBe(true);
     }
-    // Only the manifest's files are published, and each once.
-    expect(readdirSync(join(process.cwd(), 'public/assets/photos/adventures')).sort()).toEqual([...files].map((f) => f.split('/').pop()).sort());
+    // Only the manifest's files are published, and each once; the postcards' 800px copies
+    // (scripts/photo-renditions.mjs) are of those files and no others.
+    const published = [...files].map((f) => f.split('/').pop()).sort();
+    const dir = join(process.cwd(), 'public/assets/photos/adventures');
+    expect(readdirSync(dir).filter((f) => f !== '800').sort()).toEqual(published);
+    for (const f of readdirSync(join(dir, '800'))) expect(published, `800/${f}`).toContain(f);
     // Every public adventure's title is its own, so its links and pins say which one they are.
     const titles = seed.adventures.filter((a) => a.visibility === 'public').map((a) => a.title);
     expect(new Set(titles).size).toBe(titles.length);
@@ -136,9 +140,13 @@ describe("the couple's adventure photos", () => {
     expect(expected).toContain('DMI-PROHIBITED');
     expect(expected).not.toMatch(/exif:|GPS|tiff:|xmp:CreateDate/i);
     const dir = join(process.cwd(), 'public/assets/photos/adventures');
-    const files = (await import('node:fs')).readdirSync(dir).filter((f) => f.endsWith('.webp'));
+    const { readdirSync: ls } = await import('node:fs');
+    const files = ls(dir).filter((f) => f.endsWith('.webp'));
     expect(files).toHaveLength(47);
-    for (const f of files) {
+    // The postcards' 800px copies carry the same statement, and nothing else either.
+    const copies = ls(join(dir, '800')).map((f) => `800/${f}`);
+    expect(copies.length).toBeGreaterThan(0);
+    for (const f of [...files, ...copies]) {
       const meta = await sharp(join(dir, f)).metadata();
       expect(meta.exif, f).toBeUndefined();
       // `npm run photos:stamp` writes it; nothing else (camera, date, place) may ride along.

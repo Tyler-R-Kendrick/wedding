@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
+import { ATLAS_FILES } from '@/themes/shared/atlas/files';
+import { MIDWEST, SKY, WORLD, layerOn, regionInView, type Layer } from '@/themes/shared/atlas/layers';
 import {
   ATLAS_H,
   ATLAS_W,
@@ -25,6 +27,7 @@ import {
   type AtlasFocus,
   type AtlasView,
   type TargetRule,
+  type ViewBox,
 } from '@/themes/shared/atlas/projection';
 
 /**
@@ -38,11 +41,17 @@ import {
  * screen reader or keyboard reaches every adventure from it. The map's pins are real buttons, the
  * zoom has buttons, and every gesture has a keyboard equivalent.
  *
- * The world is one cached file (public/assets/atlas/world.svg) drawn through <use>, so its ~160 KB
- * of coastline is fetched once and never rides in the HTML or the RSC payload. Around Lake Michigan a
- * second file (midwest.svg: 1:10m lakes, rivers and interstates, and the City of Chicago's own
- * lakefront) is drawn instead, which is what lets the map open on the neighbourhoods around the
- * venue and zoom to street scale there. Each file is clipped to its side of REGION.
+ * The world is one cached file (world.svg) drawn through <use>, so its ~160 KB of coastline is
+ * fetched once and never rides in the HTML or the RSC payload. Around Lake Michigan a second file
+ * (midwest.svg: 1:10m lakes, rivers and interstates, and the City of Chicago's own lakefront) is
+ * drawn instead, which is what lets the map open on the neighbourhoods around the venue and zoom to
+ * street scale there. Each file is clipped to its side of REGION.
+ *
+ * SPEED. Moving the map never goes through React. A drag, a pinch, a wheel or a flight writes the
+ * live view to a ref and repaints imperatively (the base map's viewBox, each marker's translate, and
+ * which layers are drawn at this depth); React renders only when the map comes to rest, and only then
+ * are the pins re-clustered and their names placed. Layers are drawn only at depths where they are
+ * visible and cheap (src/themes/shared/atlas/layers.ts has the measurements).
  */
 
 export interface AtlasPin {
@@ -61,22 +70,24 @@ export interface AtlasVenue {
   lng: number;
 }
 
-const WORLD = '/assets/atlas/world.svg';
-const MIDWEST = '/assets/atlas/midwest.svg';
 /** Home frames the venue and every pin within REACH_KM of it, never tighter than MIN_SPAN_KM across. */
 const REACH_KM = 16;
 const MIN_SPAN_KM = 9;
-/** Interstates and rivers once the frame is a region, not a continent; community areas once it is a city. */
-const ROADS_ZOOM = 20;
-const DISTRICTS_ZOOM = 400;
 /** The frame before it is measured: the drawing's own shape, so the server render and the first paint agree. */
 const DEFAULT_ASPECT = ATLAS_W / ATLAS_H;
 const DEFAULT_WIDTH = 1000;
 const STEP = 1.8;
-const START: AtlasView = { cx: ATLAS_W / 2, cy: ATLAS_H / 2, k: 1 };
 const LABEL_ZOOM = 3;
+const FLY_MS = 420;
+/** A wheel or key move counts as finished this long after its last event; then the pins re-cluster. */
+const SETTLE_MS = 140;
+/** A press that travels less than this is a tap (it opens a pin), not the start of a drag. */
+const SLOP_PX = 6;
 /** Every marker's button is 44px square; a lone pin's sits 14px up, on the pin's head. */
 const TARGET: TargetRule<Point> = { sizePx: 44, lift: (m) => (m.length === 1 && m[0]?.kind === 'pin' ? 14 : 0) };
+const liftOf = (members: Point[]) => TARGET.lift?.(members) ?? 0;
+/** Postcard photos warmed while the map is idle: the few nearest the middle of the frame. */
+const IDLE_WARM = 6;
 
 type Point = { id: string; x: number; y: number; kind: 'pin' | 'venue'; title: string; number?: string };
 
@@ -88,7 +99,7 @@ const overlaps = (a: Rect, b: Rect) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1
  * every other name goes right, else left, else nowhere — never across another marker or name, and
  * never off the frame. Widths are estimated from the text (17px italic Bodoni runs ~8px a letter).
  */
-function placeLabels(clusters: AtlasCluster<Point>[], chosen: string | null, all: boolean, vb: { x: number; y: number; w: number; h: number }, width: number, aspect: number) {
+function placeLabels(clusters: AtlasCluster<Point>[], chosen: string | null, all: boolean, vb: ViewBox, width: number, aspect: number) {
   const height = width / aspect;
   const screen = (c: { x: number; y: number }) => ({ sx: ((c.x - vb.x) / vb.w) * width, sy: ((c.y - vb.y) / vb.h) * height });
   const taken: Rect[] = clusters.map((c) => {
@@ -119,24 +130,26 @@ function placeLabels(clusters: AtlasCluster<Point>[], chosen: string | null, all
 }
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Data saver on, or a 2G/3G connection: photos load only when asked for, never ahead. */
+const constrained = () => {
+  if (typeof navigator === 'undefined') return false;
+  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  return Boolean(c?.saveData) || /(^|-)(2g|3g)$/.test(c?.effectiveType ?? '');
+};
+const sameView = (a: AtlasView, b: AtlasView) => a.k === b.k && a.cx === b.cx && a.cy === b.cy;
+/** Screen position of a drawing point in a frame `width` pixels wide showing `vb`. */
+const toScreen = (x: number, y: number, vb: ViewBox, width: number) => ({ sx: ((x - vb.x) / vb.w) * width, sy: ((y - vb.y) / vb.w) * width });
+/** A marker more than this far outside the frame is not drawn (its name can still reach in). */
+const MARGIN_PX = 80;
 
 export function AdventureAtlas({ pins, venue, overview, postcards, children }: { pins: AtlasPin[]; venue: AtlasVenue; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
   const uid = useId();
   const clipId = `atlas-clip-${uid.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
-  const [frame, setFrame] = useState({ width: DEFAULT_WIDTH, aspect: DEFAULT_ASPECT });
-  const [view, setViewState] = useState<AtlasView>(START);
+  const baseSvg = useRef<SVGSVGElement>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  // Gestures read the current view between renders, so the ref is written wherever the view is.
-  const viewRef = useRef<AtlasView>(START);
-  const setView = useCallback((next: AtlasView) => {
-    viewRef.current = next;
-    setViewState(next);
-  }, []);
-  const moved = useRef(false);
-  const anim = useRef<number | null>(null);
 
   const points = useMemo<Point[]>(
     () => [
@@ -150,34 +163,107 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     return { ...project(venue.lat, venue.lng), reach: REACH_KM * u, minSpan: MIN_SPAN_KM * u };
   }, [venue]);
 
-  // ---------------------------------------------------------------------------------- moving
-  const stop = () => {
+  // The frame, the view the page last rendered (`view`: at rest), and the live one gestures move.
+  // The server renders the home view in the drawing's own shape, so the first paint is already Chicago.
+  const [frame, setFrame] = useState({ width: DEFAULT_WIDTH, aspect: DEFAULT_ASPECT });
+  const frameRef = useRef(frame);
+  const [view, setView] = useState<AtlasView>(() => homeView(DEFAULT_ASPECT, points, focus));
+  const live = useRef<AtlasView>(view);
+  const moved = useRef(false);
+
+  // ---------------------------------------------------------------------------------- painting
+  const paintQueued = useRef<number | null>(null);
+  const anim = useRef<number | null>(null);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Draw the live view: the base map's viewBox, every marker and its button, and the layers this depth shows. */
+  const paint = useCallback(() => {
+    const svg = baseSvg.current;
+    const el = root.current;
+    if (!svg || !el) return;
+    const { width, aspect } = frameRef.current;
+    const height = width / aspect;
+    const v = live.current;
+    const vb = viewBox(v, aspect);
+    svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    const inRegionView = regionInView(vb);
+    const region = svg.querySelector<SVGGElement>('[data-region]');
+    if (region) region.toggleAttribute('data-off', !inRegionView);
+    for (const u of svg.querySelectorAll<SVGUseElement>('use[data-layer]')) {
+      const on = layerOn({ kMin: Number(u.dataset.kMin ?? 0), kMax: Number(u.dataset.kMax ?? Infinity), detail: u.dataset.detail === 'true' }, v.k, vb);
+      if (u.hasAttribute('data-off') === on) u.toggleAttribute('data-off', !on);
+    }
+    for (const m of el.querySelectorAll<HTMLElement | SVGGElement>('[data-at]')) {
+      const [x, y, lift] = (m.dataset.at ?? '0 0 0').split(' ').map(Number) as [number, number, number];
+      const { sx, sy } = toScreen(x, y, vb, width);
+      const on = sx > -MARGIN_PX && sx < width + MARGIN_PX && sy > -MARGIN_PX && sy < height + MARGIN_PX;
+      if (m.hasAttribute('data-off') === on) m.toggleAttribute('data-off', !on);
+      if (!on) continue;
+      if (m instanceof SVGGElement) m.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)})`);
+      else m.style.transform = `translate(${sx.toFixed(1)}px, ${(sy - lift).toFixed(1)}px)`;
+    }
+  }, []);
+
+  /** React renders the view at rest; the pins re-cluster and the controls update. */
+  const settle = useCallback(() => {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = null;
+    setView((was) => (sameView(was, live.current) ? was : live.current));
+  }, []);
+
+  /** Move the live view; paint on the next frame; settle now, after a pause, or when the gesture ends. */
+  const moveTo = useCallback(
+    (next: AtlasView, when: 'now' | 'soon' | 'gesture') => {
+      live.current = next;
+      if (paintQueued.current === null) {
+        paintQueued.current = requestAnimationFrame(() => {
+          paintQueued.current = null;
+          paint();
+        });
+      }
+      if (when === 'now') settle();
+      else if (when === 'soon') {
+        if (settleTimer.current) clearTimeout(settleTimer.current);
+        settleTimer.current = setTimeout(settle, SETTLE_MS);
+      }
+    },
+    [paint, settle],
+  );
+
+  const stop = useCallback(() => {
     if (anim.current !== null) cancelAnimationFrame(anim.current);
     anim.current = null;
-  };
-  const jump = useCallback(
-    (next: AtlasView) => {
-      stop();
-      setView(next);
-    },
-    [setView],
-  );
+  }, []);
+
   const fly = useCallback(
     (next: AtlasView) => {
       stop();
-      if (reducedMotion()) return setView(next);
-      const from = viewRef.current;
+      if (reducedMotion()) return moveTo(next, 'now');
+      const from = live.current;
       const start = performance.now();
       const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / 520);
-        setView(lerpView(from, next, t));
-        anim.current = t < 1 ? requestAnimationFrame(tick) : null;
+        const t = Math.min(1, (now - start) / FLY_MS);
+        live.current = lerpView(from, next, t);
+        paint();
+        if (t < 1) anim.current = requestAnimationFrame(tick);
+        else {
+          anim.current = null;
+          settle();
+        }
       };
       anim.current = requestAnimationFrame(tick);
     },
-    [setView],
+    [stop, moveTo, paint, settle],
   );
-  useEffect(() => stop, []);
+
+  useEffect(
+    () => () => {
+      stop();
+      if (paintQueued.current !== null) cancelAnimationFrame(paintQueued.current);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    },
+    [stop],
+  );
 
   // Measure the frame; open on the home view once, then only keep the view valid as it resizes.
   useLayoutEffect(() => {
@@ -187,58 +273,103 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       const { width, height } = el.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width / height;
-      setFrame({ width, aspect });
-      setView(moved.current ? clampView(viewRef.current, aspect) : homeView(aspect, points, focus));
+      frameRef.current = { width, aspect };
+      setFrame(frameRef.current);
+      live.current = moved.current ? clampView(live.current, aspect) : homeView(aspect, points, focus);
+      setView(live.current);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     setReady(true);
     return () => ro.disconnect();
-  }, [points, focus, setView]);
+  }, [points, focus]);
 
   const { aspect, width } = frame;
   const vb = viewBox(view, aspect);
-  const upp = ATLAS_W / view.k / width; // drawing units per screen pixel
   const clusters = useMemo(() => clusterPoints(points, view.k, width, 30, TARGET), [points, view.k, width]);
+
+  // Every render is at rest: draw it, then re-apply the live view in case a gesture is already moving on.
+  useLayoutEffect(() => {
+    paint();
+  });
 
   const zoomBy = (factor: number) => {
     moved.current = true;
-    fly(zoomAt(viewRef.current, factor, aspect));
+    fly(zoomAt(live.current, factor, frameRef.current.aspect));
   };
   const goHome = () => {
     moved.current = false;
-    fly(homeView(aspect, points, focus));
+    fly(homeView(frameRef.current.aspect, points, focus));
   };
   const goWorld = () => {
     moved.current = true;
-    fly(worldView(aspect, points));
+    fly(worldView(frameRef.current.aspect, points));
   };
+
+  // ---------------------------------------------------------------------------------- photos
+  /**
+   * Start loading postcard photos before they are asked for: a pin's when the pointer or focus
+   * reaches it (so it is there when the postcard opens), the nearest few when the map comes to rest.
+   * The postcards' <img>s are lazy and hidden; switching one to eager loads it with the srcset and
+   * sizes it will be shown with, so the postcard reuses the very same response.
+   */
+  const warm = useCallback((ids: string[], priority: 'high' | 'low') => {
+    for (const id of ids) {
+      const img = root.current?.querySelector<HTMLImageElement>(`[data-atlas-entry="${CSS.escape(id)}"] img`);
+      if (!img || (img.loading === 'eager' && priority === 'low')) continue;
+      img.fetchPriority = priority;
+      img.loading = 'eager';
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready || constrained()) return;
+    const { width: w, aspect: a } = frameRef.current;
+    const box = viewBox(view, a);
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    const near = points
+      .filter((p) => p.kind === 'pin' && p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h)
+      .sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy))
+      .slice(0, IDLE_WARM)
+      .map((p) => p.id);
+    if (!near.length || !w) return;
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 200));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = idle(() => warm(near, 'low'));
+    return () => cancel(handle);
+  }, [view, ready, points, warm]);
 
   // ---------------------------------------------------------------------------------- choosing
   /**
-   * Open a postcard and hand it focus, so a screen reader reads what was opened. `scroll` is false
-   * when the caller has already scrolled the map into view and the postcard should not pull it away.
+   * Open a postcard and hand it focus, so a screen reader reads what was opened. The page scrolls
+   * only as far as it must to show the postcard (on a phone it sits under the map).
    */
-  const reveal = useCallback((id: string, scroll = true) => {
-    setChosen(id);
-    requestAnimationFrame(() => root.current?.querySelector<HTMLElement>(`[data-atlas-entry="${CSS.escape(id)}"] [data-atlas-focus]`)?.focus({ preventScroll: !scroll }));
-  }, []);
-
-  const choosePoint = (p: Point) => reveal(p.id);
+  const reveal = useCallback(
+    (id: string) => {
+      warm([id], 'high');
+      setChosen(id);
+      requestAnimationFrame(() => {
+        const card = root.current?.querySelector<HTMLElement>(`[data-atlas-entry="${CSS.escape(id)}"]`);
+        card?.querySelector<HTMLElement>('[data-atlas-focus]')?.focus({ preventScroll: true });
+        card?.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+      });
+    },
+    [warm],
+  );
 
   const chooseCluster = (c: AtlasCluster<Point>) => {
     const [first] = c.members;
     if (!first) return;
-    if (c.members.length === 1) return choosePoint(first);
+    if (c.members.length === 1) return reveal(first.id);
     moved.current = true;
     // One place (or one block), several memories: zooming cannot part them, so each press opens the
     // next, the wedding's own card included when it shares the spot.
-    if (inseparable(c.members, width, 30, TARGET)) {
+    if (inseparable(c.members, frameRef.current.width, 30, TARGET)) {
       const at = c.members.findIndex((m) => m.id === chosen);
       return reveal((c.members[(at + 1) % c.members.length] ?? first).id);
     }
-    fly(fitView(c.members, aspect, { pad: 0.3 }));
+    fly(fitView(c.members, frameRef.current.aspect, { pad: 0.3 }));
   };
 
   /** "Show on the map" from the ledger: fly to the pin, bring the map into view, open its postcard. */
@@ -247,20 +378,23 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       const p = points.find((q) => q.id === id);
       if (!p) return;
       moved.current = true;
+      const { aspect: a, width: w } = frameRef.current;
       // Close in around the venue; out in the world, only as deep as the world is drawn.
-      let k = inRegion(p.x, p.y) ? Math.max(viewRef.current.k, homeView(aspect, points, focus).k) : Math.min(Math.max(viewRef.current.k, 6), WORLD_MAX_ZOOM);
+      let k = inRegion(p.x, p.y) ? Math.max(live.current.k, homeView(a, points, focus).k) : Math.min(Math.max(live.current.k, 6), WORLD_MAX_ZOOM);
       // Then deeper, until its pin stands on its own (or shares a spot no zoom can split).
       const deepest = inRegion(p.x, p.y) ? MAX_ZOOM : WORLD_MAX_ZOOM;
       const alone = (z: number) => {
-        const mine = clusterPoints(points, z, width, 30, TARGET).find((c) => c.members.some((m) => m.id === id));
-        return !mine || mine.members.length === 1 || inseparable(mine.members, width, 30, TARGET);
+        const mine = clusterPoints(points, z, w, 30, TARGET).find((c) => c.members.some((m) => m.id === id));
+        return !mine || mine.members.length === 1 || inseparable(mine.members, w, 30, TARGET);
       };
       while (k < deepest && !alone(k)) k = Math.min(deepest, k * STEP);
-      fly(clampView({ cx: p.x, cy: p.y, k }, aspect));
+      fly(clampView({ cx: p.x, cy: p.y, k }, a));
       canvas.current?.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
-      reveal(id, false);
+      warm([id], 'high');
+      setChosen(id);
+      requestAnimationFrame(() => root.current?.querySelector<HTMLElement>(`[data-atlas-entry="${CSS.escape(id)}"] [data-atlas-focus]`)?.focus({ preventScroll: true }));
     },
-    [points, focus, aspect, width, fly, reveal],
+    [points, focus, fly, warm],
   );
 
   // A filter can take away the chosen adventure; fall back to the key rather than an empty panel.
@@ -293,10 +427,19 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
       });
     }
   };
+  // Hovering or focusing a ledger row warms its photo too.
+  const onRootPointerOver = (e: PointerEvent) => {
+    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-atlas-show]')?.dataset.atlasShow;
+    if (id) warm([id], 'low');
+  };
 
   // ---------------------------------------------------------------------------------- gestures
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  type Press = { x: number; y: number; startX: number; startY: number };
+  const pointers = useRef(new Map<number, Press>());
   const pinch = useRef<{ dist: number; view: AtlasView; mid: { x: number; y: number } } | null>(null);
+  const dragging = useRef(false);
+  /** Set when a drag or pinch ends, so the click the browser fires after it does not also open a pin. */
+  const swallowClick = useRef(false);
 
   const local = (e: { clientX: number; clientY: number }) => {
     const r = canvas.current!.getBoundingClientRect();
@@ -304,19 +447,28 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button')) return;
+    if ((e.target as HTMLElement).closest('.bd-atlas__zoom')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    // One finger on a phone scrolls the page until the map is zoomed in; two always pinch.
-    if (e.pointerType === 'touch' && pointers.current.size === 0 && viewRef.current.k <= worldView(aspect, points).k + 0.01) {
-      pointers.current.set(e.pointerId, local(e));
-      return;
+    // A primary pointer starts a new gesture: forget any press whose release never reached us.
+    if (e.isPrimary) {
+      pointers.current.clear();
+      pinch.current = null;
+      dragging.current = false;
+      swallowClick.current = false;
     }
-    stop();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    pointers.current.set(e.pointerId, local(e));
-    const [a, b] = [...pointers.current.values()];
-    if (a && b) {
-      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), view: viewRef.current, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+    const p = local(e);
+    pointers.current.set(e.pointerId, { x: p.x, y: p.y, startX: p.x, startY: p.y });
+    if (pointers.current.size === 2) {
+      stop();
+      const [a, b] = [...pointers.current.values()] as [Press, Press];
+      pinch.current = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), view: live.current, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+      for (const id of pointers.current.keys()) {
+        try {
+          e.currentTarget.setPointerCapture(id);
+        } catch {
+          // A pointer that has already gone cannot be captured; the pinch still reads its last position.
+        }
+      }
     }
   };
 
@@ -324,59 +476,87 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     const prev = pointers.current.get(e.pointerId);
     if (!prev) return;
     const now = local(e);
-    pointers.current.set(e.pointerId, now);
-    const [a, b] = [...pointers.current.values()];
-    if (a && b && pinch.current) {
-      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const { aspect: a } = frameRef.current;
+    if (pinch.current && pointers.current.size >= 2) {
+      pointers.current.set(e.pointerId, { ...prev, x: now.x, y: now.y });
+      const [p, q] = [...pointers.current.values()] as [Press, Press];
+      const dist = Math.hypot(p.x - q.x, p.y - q.y);
       moved.current = true;
-      jump(zoomAt(pinch.current.view, dist / pinch.current.dist, aspect, pinch.current.mid.x / now.w, pinch.current.mid.y / now.h));
+      dragging.current = true;
+      moveTo(zoomAt(pinch.current.view, dist / pinch.current.dist, a, pinch.current.mid.x / now.w, pinch.current.mid.y / now.h), 'gesture');
       return;
     }
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
-    const dx = now.x - prev.x, dy = now.y - prev.y;
-    if (Math.abs(dx) + Math.abs(dy) > 0) {
-      moved.current = true;
-      jump(panBy(viewRef.current, dx, dy, now.w, aspect));
+    if (!dragging.current) {
+      if (Math.hypot(now.x - prev.startX, now.y - prev.startY) < SLOP_PX) return;
+      // One finger on a phone scrolls the page until the map is zoomed in; two always pinch.
+      if (e.pointerType === 'touch' && live.current.k <= worldView(a, points).k + 0.01) return;
+      dragging.current = true;
+      stop();
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Released between the event and the capture: the next move or release settles it.
+      }
     }
+    pointers.current.set(e.pointerId, { ...prev, x: now.x, y: now.y });
+    moved.current = true;
+    moveTo(panBy(live.current, now.x - prev.x, now.y - prev.y, now.w, a), 'gesture');
   };
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinch.current = null;
+    if (!pointers.current.delete(e.pointerId)) return;
+    if (pinch.current && pointers.current.size < 2) {
+      pinch.current = null;
+      // The finger left behind carries on as a drag from where it is now.
+      for (const [id, p] of pointers.current) pointers.current.set(id, { ...p, startX: p.x, startY: p.y });
+    }
+    if (dragging.current && pointers.current.size === 0) {
+      dragging.current = false;
+      swallowClick.current = e.type === 'pointerup';
+      settle();
+    }
+  };
+
+  const onClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (!swallowClick.current) return;
+    swallowClick.current = false;
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const onDoubleClick = (e: MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     const p = local(e);
     moved.current = true;
-    fly(zoomAt(viewRef.current, e.shiftKey ? 1 / STEP : STEP, aspect, p.x / p.w, p.y / p.h));
+    fly(zoomAt(live.current, e.shiftKey ? 1 / STEP : STEP, frameRef.current.aspect, p.x / p.w, p.y / p.h));
   };
 
   // A plain wheel scrolls the page past the map; Ctrl/⌘ + wheel (and a trackpad pinch) zooms it.
-  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
-    if (!e.ctrlKey && !e.metaKey) return;
-    const p = local(e);
-    moved.current = true;
-    jump(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.01), aspect, p.x / p.w, p.y / p.h));
-  };
-  // React's onWheel is passive, so stopping the browser's own page zoom needs a native listener.
+  // A native listener, because React's is passive and the browser's own page zoom must be stopped.
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
-    const block = (e: globalThis.WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    const onWheel = (e: globalThis.WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      stop();
+      const r = el.getBoundingClientRect();
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * r.height : e.deltaY;
+      moved.current = true;
+      moveTo(zoomAt(live.current, Math.exp(-dy * 0.01), frameRef.current.aspect, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height), 'soon');
     };
-    el.addEventListener('wheel', block, { passive: false });
-    return () => el.removeEventListener('wheel', block);
-  }, []);
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [moveTo, stop]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     const step = 80;
     const pan = (dx: number, dy: number) => {
       e.preventDefault();
+      stop();
       moved.current = true;
-      jump(panBy(viewRef.current, dx, dy, width, aspect));
+      moveTo(panBy(live.current, dx, dy, frameRef.current.width, frameRef.current.aspect), 'soon');
     };
     switch (e.key) {
       case 'ArrowLeft': return pan(step, 0);
@@ -397,15 +577,17 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   // ---------------------------------------------------------------------------------- drawing
   const home = homeView(aspect, points, focus);
   const world = worldView(aspect, points);
-  const atWorld = Math.abs(view.k - world.k) < 0.01 && Math.abs(view.cx - world.cx) < 0.5 && Math.abs(view.cy - world.cy) < 0.5;
+  // "Already there" within a hundredth of the frame. (A fixed half a drawing unit was the whole frame
+  // at Chicago's scale, so after a pan most of a screen away "Back to Chicago" stayed disabled.)
+  const near = (a: AtlasView, b: AtlasView) => Math.abs(a.k / b.k - 1) < 0.01 && Math.abs(a.cx - b.cx) < vb.w * 0.01 && Math.abs(a.cy - b.cy) < vb.h * 0.01;
+  const atWorld = near(view, world);
+  const atHome = near(view, home);
   const R = REGION;
-  const regionInView = R.x < vb.x + vb.w && vb.x < R.x + R.w && R.y < vb.y + vb.h && vb.y < R.y + R.h;
-  const atHome = Math.abs(view.k - home.k) < 0.01 && Math.abs(view.cx - home.cx) < 0.5 && Math.abs(view.cy - home.cy) < 0.5;
-  const inView = (x: number, y: number) => x >= vb.x - 20 * upp && x <= vb.x + vb.w + 20 * upp && y >= vb.y - 20 * upp && y <= vb.y + vb.h + 20 * upp;
-  const pct = (x: number, y: number) => ({ left: `${((x - vb.x) / vb.w) * 100}%`, top: `${((y - vb.y) / vb.h) * 100}%` });
+  const height = width / aspect;
   const showLabels = view.k >= LABEL_ZOOM;
   const labelSides = placeLabels(clusters, chosen, showLabels, vb, width, aspect);
   const chosenCluster = clusters.find((c) => c.members.some((m) => m.id === chosen));
+  const onScreen = (sx: number, sy: number) => sx > -MARGIN_PX && sx < width + MARGIN_PX && sy > -MARGIN_PX && sy < height + MARGIN_PX;
 
   const labelFor = (c: AtlasCluster<Point>) => {
     const m = c.members.length === 1 ? c.members[0] : undefined;
@@ -417,8 +599,21 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     return `${c.members.length} places close together: ${names.join(', ')}. Zoom in to see them.`;
   };
 
+  const layer = (l: Layer, i: number) => (
+    <use
+      key={`${l.file}-${l.id}-${i}`}
+      href={`${ATLAS_FILES[l.file]}#${l.id}`}
+      className={l.className}
+      data-layer=""
+      data-k-min={l.kMin}
+      data-k-max={l.kMax}
+      data-detail={l.detail ? 'true' : undefined}
+      data-off={layerOn(l, view.k, vb) ? undefined : ''}
+    />
+  );
+
   return (
-    <div className="bd-atlas" ref={root} data-ready={ready ? 'true' : undefined} data-chosen={chosen ?? undefined} onClick={onRootClick}>
+    <div className="bd-atlas" ref={root} data-ready={ready ? 'true' : undefined} data-chosen={chosen ?? undefined} onClick={onRootClick} onPointerOver={onRootPointerOver}>
       <div className="bd-atlas__stage">
         <figure className="bd-atlas__map" aria-labelledby={`${uid}-caption`}>
           <div
@@ -433,11 +628,12 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
+            onLostPointerCapture={onPointerUp}
+            onClickCapture={onClickCapture}
             onDoubleClick={onDoubleClick}
-            onWheel={onWheel}
             onKeyDown={onKeyDown}
           >
-            <svg className="bd-atlas__svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+            <svg ref={baseSvg} className="bd-atlas__svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
               <defs>
                 {/* The world everywhere but the close-up's rectangle; the close-up only inside it. */}
                 <clipPath id={`${clipId}-world`}>
@@ -447,37 +643,30 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                   <rect x={R.x} y={R.y} width={R.w} height={R.h} />
                 </clipPath>
               </defs>
-              <use href={`${WORLD}#outline`} className="bd-atlas__sea" />
-              <use href={`${WORLD}#graticule`} className="bd-atlas__grid" />
-              <use href={`${WORLD}#tropics`} className="bd-atlas__tropics" />
-              <use href={`${WORLD}#equator`} className="bd-atlas__equator" />
-              <g clipPath={`url(#${clipId}-world)`}>
-                <use href={`${WORLD}#land`} className="bd-atlas__land" />
-                <use href={`${WORLD}#lakes`} className="bd-atlas__lakes" />
-                <use href={`${WORLD}#borders`} className="bd-atlas__borders" />
-                {view.k >= 2.5 ? <use href={`${WORLD}#states`} className="bd-atlas__states" /> : null}
+              {SKY.map(layer)}
+              <g clipPath={`url(#${clipId}-world)`}>{WORLD.map(layer)}</g>
+              <g clipPath={`url(#${clipId}-region)`} data-region="" data-off={regionInView(vb) ? undefined : ''}>
+                {MIDWEST.map(layer)}
               </g>
-              {regionInView ? (
-                <g clipPath={`url(#${clipId}-region)`}>
-                  <use href={`${MIDWEST}#land`} className="bd-atlas__region-land" />
-                  <use href={`${MIDWEST}#urban`} className="bd-atlas__urban" />
-                  <use href={`${MIDWEST}#lakes`} className="bd-atlas__lakes" />
-                  <use href={`${MIDWEST}#shore`} className="bd-atlas__shore" />
-                  <use href={`${MIDWEST}#city`} className="bd-atlas__city" />
-                  {view.k >= DISTRICTS_ZOOM ? <use href={`${MIDWEST}#city`} className="bd-atlas__districts" /> : null}
-                  {view.k >= ROADS_ZOOM ? <use href={`${MIDWEST}#rivers`} className="bd-atlas__rivers" /> : null}
-                  {view.k >= ROADS_ZOOM ? <use href={`${MIDWEST}#roads`} className="bd-atlas__roads" /> : null}
-                  {view.k >= 2.5 ? <use href={`${MIDWEST}#states`} className="bd-atlas__states" /> : null}
-                </g>
-              ) : null}
+            </svg>
+            {/* The markers, drawn in screen pixels and moved by translate, so no zoom ever re-rasterizes them. */}
+            <svg className="bd-atlas__pins" aria-hidden="true" focusable="false">
               {clusters.map((c) => {
-                if (!inView(c.x, c.y)) return null;
                 const single = c.members.length === 1 ? c.members[0] : null;
                 const hasVenue = c.members.some((m) => m.kind === 'venue');
                 const active = c === chosenCluster;
                 const side = labelSides.get(c.id);
+                const { sx, sy } = toScreen(c.x, c.y, vb, width);
                 return (
-                  <g key={c.id} className="bd-atlas__marker" data-kind={single ? single.kind : 'cluster'} data-active={active ? 'true' : undefined} transform={`translate(${c.x} ${c.y}) scale(${upp})`}>
+                  <g
+                    key={c.id}
+                    className="bd-atlas__marker"
+                    data-kind={single ? single.kind : 'cluster'}
+                    data-active={active ? 'true' : undefined}
+                    data-at={`${c.x} ${c.y} 0`}
+                    data-off={onScreen(sx, sy) ? undefined : ''}
+                    transform={`translate(${sx.toFixed(1)} ${sy.toFixed(1)})`}
+                  >
                     {single?.kind === 'venue' ? (
                       <>
                         <rect className="bd-atlas__diamond" x="-9" y="-9" width="18" height="18" transform="rotate(45)" />
@@ -514,18 +703,23 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             {/* The drawn markers are pictures; these 44px buttons sit on them and are what a guest presses. */}
             <div className="bd-atlas__targets">
               {clusters.map((c) => {
-                if (!inView(c.x, c.y)) return null;
                 const single = c.members.length === 1 ? c.members[0] : null;
-                const at = pct(c.x, single?.kind === 'pin' ? c.y - 14 * upp : c.y);
+                const lift = liftOf(c.members);
+                const { sx, sy } = toScreen(c.x, c.y, vb, width);
+                const intent = () => warm(c.members.slice(0, 4).map((m) => m.id), 'low');
                 return (
                   <button
                     key={c.id}
                     type="button"
                     className="bd-atlas__target"
                     data-pin={single?.id}
-                    style={at}
+                    data-at={`${c.x} ${c.y} ${lift}`}
+                    data-off={onScreen(sx, sy) ? undefined : ''}
+                    style={{ transform: `translate(${sx.toFixed(1)}px, ${(sy - lift).toFixed(1)}px)` }}
                     aria-label={labelFor(c)}
                     aria-pressed={single ? chosen === single.id : undefined}
+                    onPointerEnter={intent}
+                    onFocus={(e: FocusEvent) => e.target === e.currentTarget && intent()}
                     onClick={() => chooseCluster(c)}
                   />
                 );
