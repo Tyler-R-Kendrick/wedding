@@ -60,13 +60,14 @@ written by the browser, not the tour: the HTTP status it got and the address it 
 recorder's (`demos/recorder-preload.cjs`), never the site's. `kendrick.localhost` is production's
 shape, kendrick.wedding, on the recording machine.
 
-The hub at `dev.kendrick.localhost`, listing every stage's address; stage 1 at
-`sitemap.dev.kendrick.localhost`; the RSVP page there, then the same page at
-`wireframe.dev…`, `skeleton.dev…` (clicked through into "Who is coming"), `placeholder.dev…` (the
-theme picker switched to Gilded Hour), and finally the real site at `kendrick.localhost`, each hop
-by the stage bar's own link. Then `dev.kendrick.localhost/rsvp`, a 404: the hub host is the hub
-alone, never the wedding app under a second name. Last, the board: every page at every stage, with
-its sign-offs.
+Stages 2 to 4 are the real page, captured from the site (`npm run stages:capture`): the same
+layout, redrawn. The hub at `dev.kendrick.localhost`, listing every stage's address; stage 1 at
+`sitemap.dev.kendrick.localhost`; the RSVP page there, then the same page at `wireframe.dev…`
+(the real layout greyed out, every block labelled), `skeleton.dev…` (its content as bones) and
+`placeholder.dev…` (the real design with stand-in copy, then the design picker switching to
+Gilded Hour), and finally the real site at `kendrick.localhost`, each hop by the stage bar's own
+link. Then `dev.kendrick.localhost/rsvp`, a 404: the hub host is the hub alone, never the wedding
+app under a second name. Last, the board: every page at every stage, with the day it was captured.
 
 [![Every stage at its own subdomain](stages-by-subdomain.gif)](stages-by-subdomain.mp4)
 
@@ -75,8 +76,6 @@ its sign-offs.
 The same stages on one host, as every preview carries them: `/stages` is the hub, then
 `/skeleton`, `/skeleton/rsvp`, `/wireframe/rsvp` and `/placeholder/rsvp` by the stage bar, and
 `/rsvp`, the real site, on the same host. Last, `/_stages/_hub/index.html`, a 404: the assembled
-files are never served directly, so kendrick.wedding itself never shows them. (One frame on the
-way into `/skeleton` shows the page tiled: that is the recorder catching the compositor
-mid-navigation, not the page.)
+files are never served directly, so kendrick.wedding itself never shows them.
 
 [![Every stage by path](stages-by-path.gif)](stages-by-path.mp4)

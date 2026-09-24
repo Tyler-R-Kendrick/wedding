@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next';
-import { securityHeaders } from './src/lib/security-headers';
+import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
 
 // CSP and HSTS live here rather than in `src/proxy.ts`: the proxy's matcher skips `api/`, `_next/`,
@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
     // `tests/e2e/media-upload.spec.ts` asserts `sandbox` on a served derivative and received the
     // site policy instead. That inverted the intent twice over, because the permissive `img-src`
     // and `media-src` in security-headers.ts are justified BY that per-route sandbox.
-    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...stageHeaders()];
+    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...stageHeaders(stageFramingHeaders(headerOptions))];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.

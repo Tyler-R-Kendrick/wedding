@@ -80,12 +80,17 @@ export function stageRewrites({ production }: { production: boolean }): Rewrite[
   ];
 }
 
-/** The stages are working drafts: never indexed, wherever they are served. */
-export function stageHeaders(): { source: string; has?: { type: 'host'; value: string }[]; headers: { key: string; value: string }[] }[] {
-  const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+/**
+ * The stages are working drafts: never indexed, wherever they are served. And each stage page shows
+ * its captured page in a same-origin frame (stages/02-wireframe/lib/baseline.ts), which the site's
+ * own `frame-ancestors 'none'` would block, so stage responses allow framing by the same origin.
+ * These rules come after the site's in next.config.ts, and for the same header the last rule wins.
+ */
+export function stageHeaders(framing: { key: string; value: string }[] = []): { source: string; has?: { type: 'host'; value: string }[]; headers: { key: string; value: string }[] }[] {
+  const headers = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }, ...framing];
   return [
-    { source: '/:path*', has: [{ type: 'host', value: `(?:(?:${STAGES})\\.)?dev\\..+` }], headers: noindex },
-    { source: `/:stage(${STAGES}|stages|_stages)/:path*`, headers: noindex },
-    { source: `/:stage(${STAGES}|stages)`, headers: noindex },
+    { source: '/:path*', has: [{ type: 'host', value: `(?:(?:${STAGES})\\.)?dev\\..+` }], headers },
+    { source: `/:stage(${STAGES}|stages|_stages)/:path*`, headers },
+    { source: `/:stage(${STAGES}|stages)`, headers },
   ];
 }

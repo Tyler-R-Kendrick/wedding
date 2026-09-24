@@ -8,8 +8,8 @@
  */
 import { writeFileSync } from 'node:fs';
 import { hasPage } from '@wedding/sitemap';
-import { fingerprint, wireframeFor } from '@wedding/wireframe';
-import { SIGNABLE, SIGNOFF_FILE, readSignoffs, validateSignoffs, type SignableStage } from './board';
+
+import { SIGNABLE, SIGNOFF_FILE, pageFingerprint, readSignoffs, validateSignoffs, type SignableStage } from './board';
 
 const args = process.argv.slice(2);
 const flag = (name: string) => {
@@ -32,7 +32,7 @@ const entry = {
   stage: stage as SignableStage,
   by,
   on: new Date().toISOString().slice(0, 10),
-  wireframe: fingerprint(wireframeFor(page)),
+  wireframe: pageFingerprint(page),
   ...(note ? { note } : {}),
 };
 ledger.signoffs.push(entry);

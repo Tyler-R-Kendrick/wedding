@@ -1,14 +1,17 @@
 import { PAGES, children, hasPage, page as sitemapPage, type PageId, type SitemapPage } from '@wedding/sitemap';
 import type { Action, Block, Wireframe, WireframeSpec } from './types';
-import { ADMIN } from './wireframes/admin';
-import { GATE } from './wireframes/gate';
-import { GUEST } from './wireframes/guest';
-import { PUBLIC } from './wireframes/public';
 
 export * from './types';
 
-/** Every drawn page. A page missing here is still wireframed: see `derive`. */
-export const AUTHORED: Record<PageId, WireframeSpec> = { ...PUBLIC, ...GUEST, ...GATE, ...ADMIN };
+/**
+ * Drawn wireframes, for pages that are not built yet: a new page is added to the sitemap, drawn
+ * here, and carried through stages 3 and 4 by the kit until the real one exists. Once it is built
+ * and captured (`npm run stages:capture`), its baseline supersedes the drawing, which is deleted:
+ * the stages show every built page as production renders it (lib/baseline.ts), never as drawn.
+ * A test fails while a drawing outlives its page's capture. Empty today: every page is built.
+ * A page with neither is still wireframed: see `derive`.
+ */
+export const AUTHORED: Record<PageId, WireframeSpec> = {};
 
 /**
  * The cascade's first step. A page added to the sitemap has a wireframe the moment it exists,

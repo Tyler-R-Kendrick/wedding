@@ -1,0 +1,46 @@
+{
+ "htmlAttrs": {
+  "lang": "en",
+  "data-theme": "gilded-hour"
+ },
+ "bodyAttrs": {},
+ "css": [
+  "4431b68db8ab51fe",
+  "3d42c237c8678d4b",
+  "8fb57b611fbb2e88",
+  "f71563c31298aa6c"
+ ],
+ "assets": [
+  "/assets/art/botanical-deco/deco-corner.svg",
+  "/assets/art/botanical-deco/deco-rule.svg",
+  "/assets/art/botanical-deco/monogram-icon.svg",
+  "/assets/art/botanical-deco/skyline-line.svg",
+  "/assets/art/conservatory/fern-divider.svg",
+  "/assets/art/conservatory/leaf-border.svg",
+  "/assets/art/conservatory/pressed-flower-a.svg",
+  "/assets/art/conservatory/pressed-flower-b.svg",
+  "/assets/art/conservatory/pressed-flower-c.svg",
+  "/assets/art/conservatory/sky-wash.svg",
+  "/assets/art/conservatory/specimen-tag.svg",
+  "/assets/art/conservatory/tendril-corner.svg",
+  "/assets/art/gilded-hour/chevron-divider.svg",
+  "/assets/art/gilded-hour/corner-bracket.svg",
+  "/assets/art/gilded-hour/marble-texture.svg",
+  "/assets/art/gilded-hour/monogram-frame.svg",
+  "/assets/art/gilded-hour/stepped-frame.svg",
+  "/assets/art/gilded-hour/sunburst-hero.svg",
+  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
+  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
+  "/fonts/botanical-deco/ms-madi-regular.woff2",
+  "/fonts/botanical-deco/newsreader-text-italic.woff2",
+  "/fonts/botanical-deco/newsreader-text.woff2",
+  "/fonts/conservatory/cardo-italic.woff2",
+  "/fonts/conservatory/gloock-regular.woff2",
+  "/fonts/conservatory/spectral-medium.woff2",
+  "/fonts/conservatory/spectral-regular.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
+  "/fonts/gilded-hour/cinzel-wght.woff2",
+  "/fonts/gilded-hour/josefin-sans-wght.woff2"
+ ],
+ "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"gilded-hour\" data-bl-s=\"\"><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"We couldn’t find that invitation\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"We couldn’t find that invitation\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Your invitation</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">We couldn’t find that invitation</span></h1><div class=\"auth-notice auth-notice-info\" role=\"status\" data-bl-s=\"\" data-bl-b=\"\"><p class=\"auth-notice-title\"><span data-bl-t=\"copy\">What to do next</span></p><div><p><span data-bl-t=\"copy\">The link may have been copied incompletely. Try opening it again from your invitation, or get in touch with Sara and Tyler and they will send a fresh one.</span></p><p class=\"auth-hint\"><span class=\"placeholder placeholder--inline\" data-placeholder=\"true\" role=\"note\" data-bl-s=\"\" data-bl-b=\"\"><span class=\"placeholder__label\"><span data-bl-t=\"copy\">Sara + Tyler are still writing this:</span></span> <span class=\"placeholder__hint\"><span data-bl-t=\"copy\">how to reach us if you are stuck</span></span></span></p><p><a class=\"auth-link link-block\" href=\"/sign-in\"><span data-bl-t=\"copy\">Already claimed? Sign in with your email</span></a></p></div></div></article></main><!--$--><!--/$--></div>"
+}

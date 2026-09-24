@@ -43,14 +43,15 @@ const LABEL: Record<Approval['state'], string> = { open: 'open', signed: 'signed
 
 function approvalCell(stage: Stage, row: BoardRow, approval: Approval, prefix = ''): string {
   const who = approval.state === 'open' ? '' : ` <span class="hub-muted">${esc(approval.by)}, ${esc(approval.on)}</span>`;
-  const title = approval.state === 'stale' ? ' title="The wireframe changed after this sign-off"' : approval.state === 'signed' && approval.note ? ` title="${esc(approval.note)}"` : '';
+  const title = approval.state === 'stale' ? ' title="The page changed after this sign-off"' : approval.state === 'signed' && approval.note ? ` title="${esc(approval.note)}"` : '';
   return `<td data-state="${approval.state}"${title}>${stageLink(stage, row.url, `${prefix}${LABEL[approval.state]}`)}${who}</td>`;
 }
 
 function rowHtml(row: BoardRow): string {
   const [sitemap, wireframe, skeleton, placeholder, real] = STAGES as [Stage, Stage, Stage, Stage, Stage];
   const a = row.approvals as Record<SignableStage, Approval>;
-  const drawn = row.wireframe.status === 'derived' ? 'not drawn · ' : `${row.wireframe.status} · `;
+  // A captured page is the real one; anything else is drawn from the sitemap until it is built.
+  const drawn = row.wireframe.status === 'captured' ? `captured ${row.wireframe.capturedAt} · ` : row.wireframe.status === 'derived' ? 'not built · ' : `drawn (${row.wireframe.status}) · `;
   return `<tr>
   <th scope="row">${stageLink(sitemap, row.url, esc(row.page.title))} <code>${esc(row.page.path)}</code></th>
   ${approvalCell(wireframe, row, a.wireframe, drawn)}
@@ -143,10 +144,10 @@ ${stagesList}
 <li><h3>${stageLink(STAGES[4]!, '/', '5. Real')}</h3><p>${esc(STAGES[4]!.question)}</p></li>
 </ol>
 <h2 id="board">Where every page stands</h2>
-<p class="hub-lede">${rows.length} pages. ${signed} sign-offs hold, ${stale} are stale (the wireframe changed after them), ${open} are open.</p>
+<p class="hub-lede">${rows.length} pages. ${signed} sign-offs hold, ${stale} are stale (the page changed after them), ${open} are open. Stages 2 to 4 redraw each page from the real site (<code>npm run stages:capture</code>).</p>
 <ul class="hub-key hub-muted">
-<li><strong>signed off</strong>: settled at that stage, for the wireframe as it is now</li>
-<li><strong>stale</strong>: signed off, then the wireframe changed; look again</li>
+<li><strong>signed off</strong>: settled at that stage, for the page as it is now</li>
+<li><strong>stale</strong>: signed off, then the page's structure changed; look again</li>
 <li><strong>open</strong>: not signed off yet</li>
 </ul>
 <p class="hub-muted">Sign a page off with <code>npm run stages:signoff -- &lt;stage&gt; &lt;pageId&gt; --by &lt;name&gt;</code>; the ledger is <code>stages/signoffs.json</code>.</p>
