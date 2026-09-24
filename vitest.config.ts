@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { dropServerEnv } from './scripts/lib/server-env.mjs';
 
 const alias = {
   '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -9,24 +9,10 @@ const alias = {
   'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
 };
 
-/**
- * The suites run against the mocks, whatever the machine running them holds. A developer's shell or
- * an agent sandbox often exports a live credential (`AI_GATEWAY_API_KEY`, `ANTHROPIC_API_KEY`, a
- * `DATABASE_URL`); the workers inherited it, and the unconfigured-provider assertions, the concierge
- * suites and the health inventory went red on that machine only, while CI stayed green. Every
- * variable the server env schema declares is dropped here, before any worker starts, so the only
- * settings a suite sees are the ones a project below gives it.
- */
-function dropAmbientServerEnv() {
-  const source = readFileSync(fileURLToPath(new URL('./src/lib/env.ts', import.meta.url)), 'utf8');
-  const schema = source.slice(source.indexOf('const serverSchema = z.object({'));
-  const declared = [...schema.matchAll(/^ {2}([A-Z][A-Z0-9_]*):/gm)].map((m) => m[1]!);
-  if (!declared.includes('ANTHROPIC_API_KEY')) throw new Error('vitest.config: could not read the variable names from src/lib/env.ts serverSchema');
-  // Read outside the schema: Vercel's Postgres aliases, and the OIDC token the AI Gateway signs with.
-  for (const name of [...declared, 'POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'VERCEL_OIDC_TOKEN']) delete process.env[name];
-}
-
-dropAmbientServerEnv();
+// The suites run against the mocks, whatever the machine running them holds: every server variable
+// is dropped before any worker starts, so the only settings a suite sees are the ones a project
+// below gives it (scripts/lib/server-env.mjs says why).
+dropServerEnv();
 
 const baseEnv = { NODE_ENV: 'test', PGLITE_MEMORY: '1', LOG_LEVEL: 'silent', METRICS_SINK: 'none' } as const;
 
