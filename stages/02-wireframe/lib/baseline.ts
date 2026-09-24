@@ -239,14 +239,20 @@ const SHIM = (stage: FrameStage) => `(() => {
   document.body.appendChild(layer);
   const draw = () => {
     layer.textContent = '';
+    const placed = [];
     for (const el of document.querySelectorAll('[data-bl-k]')) {
       const r = el.getBoundingClientRect();
       if (r.width < 80 || r.height < 28) continue;
       const tag = document.createElement('span');
       tag.className = 'bl-tag';
       tag.textContent = el.getAttribute('data-bl-k') + (el.getAttribute('data-bl-label') ? ' · ' + el.getAttribute('data-bl-label') : '');
-      tag.style.left = (r.left + scrollX) + 'px';
-      tag.style.top = (r.top + scrollY) + 'px';
+      const left = r.left + scrollX;
+      let top = r.top + scrollY;
+      // Blocks that start at the same corner (a header and its heading's section) stack their labels.
+      while (placed.some((p) => Math.abs(p.left - left) < 160 && Math.abs(p.top - top) < 16)) top += 16;
+      placed.push({ left, top });
+      tag.style.left = left + 'px';
+      tag.style.top = top + 'px';
       layer.appendChild(tag);
     }
   };
