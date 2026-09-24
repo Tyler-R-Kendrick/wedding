@@ -23,10 +23,8 @@ export const SEED_SITE = {
   sourceId: BRIEF_SOURCE_ID,
 } as const;
 
-/** Idempotent: safe to run on every boot and in every test. */
-export async function seed(db: Db): Promise<void> {
-  const now = new Date();
-
+/** The provenance rows every seeded record cites. Code-owned: always refreshed from SEED_SOURCES. */
+export async function seedSources(db: Db, now: Date = new Date()): Promise<void> {
   for (const s of SEED_SOURCES) {
     const values = {
       id: s.id,
@@ -46,6 +44,13 @@ export async function seed(db: Db): Promise<void> {
       .values(values)
       .onConflictDoUpdate({ target: contentSources.id, set: values });
   }
+}
+
+/** Idempotent: safe to run on every boot and in every test. */
+export async function seed(db: Db): Promise<void> {
+  const now = new Date();
+
+  await seedSources(db, now);
 
   // Seeded once; afterwards the site row belongs to the admins (a reseed must never revert their edits).
   const site = { ...SEED_SITE, themes: [...SEED_SITE.themes], updatedAt: now };

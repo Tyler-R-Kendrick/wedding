@@ -26,6 +26,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --conditions=react-server --import tsx src/db/migrate.ts",
     "db:seed": "node --conditions=react-server --import tsx src/db/seed/seed.ts",
+    "db:sync-content": "node --conditions=react-server --import tsx src/db/seed/sync-content.ts",
     "jobs:run": "node --conditions=react-server --import tsx src/lib/jobs/cli.ts",
     "check": "npm run typecheck && npm run lint && npm run test:unit",
     "verify": "npm run check && npm run lint:css && npm run -s targets:check && npm run design:lint && npm run design:sync:check && npm run docs:check && npm run -s design:drift && npm run test:integration && npm run test:evals && npm run build",
