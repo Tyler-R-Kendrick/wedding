@@ -58,24 +58,30 @@ describe('navigation by lifecycle state', () => {
       const hrefs = [...nav.primary, ...nav.more].map((i) => i.href);
       expect(new Set(hrefs).size).toBe(hrefs.length);
     }
-    expect(navFor('INVITATIONS_OPEN').primary.find((i) => i.href === '/your-weekend')?.label).toBe('Your invitation');
-    expect(navFor('INVITATIONS_OPEN', { claimed: true }).primary.find((i) => i.href === '/your-weekend')?.label).toBe('Your Weekend');
     expect(navFor('WEDDING_DAY').primary[0]).toMatchObject({ label: 'Today', href: '/' });
     expect(homeLabelFor('WEDDING_DAY')).toBe('Today');
     expect(homeLabelFor('TEASER')).toBe('Home');
   });
 
-  it('keeps Your Weekend hidden before invitations and Gifts out of primary', () => {
-    for (const state of ['TEASER', 'SAVE_THE_DATE'] as const) {
-      expect([...navFor(state).primary, ...navFor(state).more].some((i) => i.href === '/your-weekend')).toBe(false);
+  it('keeps the household\'s pages out of the public nav: they are only in the signed-in account menu', () => {
+    const member = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos'];
+    for (const state of LIFECYCLE_STATES) {
+      const nav = navFor(state, { venue: toSiteFacts({ ...SEED_SITE }).venue });
+      const shown = [...nav.primary, ...nav.more, ...nav.sticky].map((i) => i.href);
+      for (const href of member) expect(shown, `${state}: ${href}`).not.toContain(href);
+      for (const item of nav.member ?? []) expect(member, `${state}: ${item.href}`).toContain(item.href);
     }
-    for (const state of LIFECYCLE_STATES) expect(navFor(state).primary.some((i) => i.href === '/gifts')).toBe(false);
-    expect(navFor('RSVP_OPEN').more.some((i) => i.href === '/gifts')).toBe(true);
+    const labels = (state: Parameters<typeof navFor>[0]) => (navFor(state).member ?? []).map((i) => i.label);
+    expect(labels('RSVP_OPEN')).toEqual(['RSVP', 'Your Weekend', 'Transportation', 'Gifts', 'Photos & Video']);
+    expect(labels('TEASER')).toEqual(['Photos & Video']);
+    // Your Weekend waits for invitations, RSVP for the reply window.
+    for (const state of ['TEASER', 'SAVE_THE_DATE'] as const) expect(labels(state)).not.toContain('Your Weekend');
+    expect(labels('RSVP_CLOSED')).not.toContain('RSVP');
   });
 
   it('never offers a route the app does not serve', () => {
-    // The nav table lists `photos` in every state — `primary` on WEDDING_DAY, POST_WEDDING and
-    // ARCHIVE — and /photos is a 404 until the media level ships. The public shells hid it behind a
+    // The nav table once listed `photos` in every state, and /photos was a 404 until the media level
+    // shipped. The public shells hid it behind a
     // Menu dialog, so it was only reachable by opening one; the guest shell renders its nav inline,
     // which is where it surfaced, as a browser sitting forever on the prefetch of a route that does
     // not exist. A link to a 404 is worse than no link, so `navFor` filters unbuilt pages — and this
@@ -102,7 +108,7 @@ describe('navigation by lifecycle state', () => {
 
     for (const state of LIFECYCLE_STATES) {
       const nav = navFor(state, { venue: toSiteFacts({ ...SEED_SITE }).venue });
-      for (const item of [...nav.primary, ...nav.more, ...nav.sticky]) {
+      for (const item of [...nav.primary, ...nav.more, ...nav.sticky, ...(nav.member ?? [])]) {
         if (item.external || item.href.startsWith('http')) continue;
         const path = item.href.split('#')[0] ?? '/';
         expect(routes.has(path), `${state}: nav offers ${item.href}, which no page serves`).toBe(true);
@@ -112,8 +118,10 @@ describe('navigation by lifecycle state', () => {
 
   it('sticky actions follow the design doc and Directions is an explicit external handoff', () => {
     const venue = toSiteFacts({ ...SEED_SITE }).venue;
-    expect(navFor('RSVP_OPEN', { venue }).sticky.map((s) => s.label)).toEqual(['RSVP', 'Directions']);
-    expect(navFor('RSVP_OPEN', { venue }).sticky[1]).toMatchObject({ external: true, provider: 'Google Maps' });
+    // RSVP is not a quick action any more: it is in the account menu, for a signed-in household.
+    expect(navFor('RSVP_OPEN', { venue }).sticky.map((s) => s.label)).toEqual(['Directions']);
+    expect(navFor('RSVP_OPEN', { venue }).sticky[0]).toMatchObject({ external: true, provider: 'Google Maps' });
+    expect(navFor('RSVP_OPEN').sticky[0]).toMatchObject({ label: 'Directions', href: '/the-wedding' });
     expect(navFor('WEDDING_DAY').sticky.map((s) => s.label)).toEqual(['Now', 'Ask Us']);
     expect(navFor('TEASER').sticky).toEqual([]);
     expect(navFor('ARCHIVE').sticky).toEqual([]);

@@ -168,10 +168,14 @@ test.describe('semantic media search', () => {
   });
 
   test('the search page is usable from the keyboard and reports its results honestly', async ({ page, context }) => {
-    // Anonymous first: the page works, and says which albums it is searching.
+    // Anonymous first: the photos sit behind the signed-in account menu, so the search page is a
+    // door to sign in that brings the visitor back to it.
+    await page.goto('/media/search');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fmedia%2Fsearch$/);
+
+    await context.setExtraHTTPHeaders(guest);
     await page.goto('/media/search');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Search the photos');
-    await expect(page.getByRole('main')).toContainText('searching the public albums');
 
     // The polite live region the results are announced through (the empty state is its own status).
     const announced = page.locator('p[role="status"]');
@@ -182,9 +186,7 @@ test.describe('semantic media search', () => {
     // of this file's budgets rather than at the default.
     await expect(announced).toContainText('results for', { timeout: 30_000 });
 
-    // Signed in, the guest albums are searchable too.
-    await context.setExtraHTTPHeaders(guest);
-    await page.reload();
+    // The guest albums are searchable too.
     const box = page.getByLabel('What are you looking for?');
     await box.fill(`sparklers roll ${ROLL}`);
     await box.press('Enter');

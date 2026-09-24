@@ -1,4 +1,5 @@
 import type { LifecycleState } from '@/contracts/lifecycle';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import type { ActionLink, Copy, HomeContent, HomeSection, Placeholder, SiteFacts, StatProps, TimelineEvent } from '@/themes/types';
 
 /**
@@ -14,13 +15,15 @@ const ROUTES = {
   share: '/share-an-adventure',
   wedding: '/the-wedding',
   caa: '/explore-caa',
-  weekend: '/your-weekend',
   travel: '/travel',
-  transport: '/transportation',
-  gifts: '/gifts',
-  photos: '/photos',
   ask: '/ask-us',
-  rsvp: '/rsvp',
+  // The household's pages live behind the signed-in account menu, so Home reaches them only
+  // through the sign-in door: signed out, sign in and go on; signed in, go straight on.
+  weekend: throughSignIn('/your-weekend'),
+  transport: throughSignIn('/transportation'),
+  gifts: throughSignIn('/gifts'),
+  photos: throughSignIn('/photos'),
+  rsvp: throughSignIn('/rsvp'),
 } as const;
 
 /** The three events named in the brief; rooms and times are planner items P-01 / P-02. */

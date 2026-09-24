@@ -199,7 +199,9 @@ describe('N4: an admin manifest advertises no capability an admin cannot complet
     // `prepare_reservation` stays: it is `auth: 'guest'` in the sense of "a signed-in principal",
     // builds a card from shared venue data and touches no guest-owned row, so an admin genuinely
     // can run it. `get_my_household` and `get_my_invitation` were the two that leaked.
-    expect(guestAuth).toEqual(['prepare_reservation']);
+    // The photos and the registry are the same "signed-in principal" sense of `guest`: they moved
+    // behind the account menu, the couple are signed in when they look, and none names a guest.
+    expect(guestAuth.sort()).toEqual(['get_media_item', 'list_gallery', 'list_gift_links', 'open_gift_fund', 'open_gift_link', 'prepare_reservation', 'search_media']);
     // `get_my_table` is deliberately NOT in this list and never was: it requires
     // `view_table_assignment`, which only `deriveGuestEntitlements` grants, so entitlements already
     // excluded it. Its `guestIdentityRequired` marker states the intrinsic property anyway — the

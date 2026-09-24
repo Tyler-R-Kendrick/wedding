@@ -43,6 +43,10 @@ test.describe('gifts', () => {
       });
       expect(configured.status(), await configured.text()).toBe(200);
 
+      // Signed out, the registry is a door to sign in; it is behind the account menu.
+      await page.goto(`/gifts?theme=${theme}`);
+      await expect(page).toHaveURL(/\/sign-in\?next=%2Fgifts$/);
+      await page.setExtraHTTPHeaders(principalHeaders('A1'));
       await page.goto(`/gifts?theme=${theme}`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
       const card = page.locator('article[data-handoff-provider="theknot"]');

@@ -746,3 +746,82 @@ a:not([class]) {
   block-size: 24px;
   accent-color: var(--color-primary);
 }
+
+/*
+ * The account menu (`themes/shared/AccountMenu.tsx`). Each design styles the trigger and links with
+ * its own nav and menu classes; this is only the structure they share: a disclosure button that
+ * looks like the nav link it replaces, a panel that drops below it in a masthead, and a plain
+ * labelled list in the Menu sheet. Colours, radii and spacing are each design's own tokens.
+ */
+.account-menu {
+  position: relative;
+}
+
+.account-menu__trigger {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-menu__trigger::before {
+  content: "";
+  display: inline-block;
+  inline-size: 0.4em;
+  block-size: 0.4em;
+  margin-inline-end: 0.5em;
+  border-block-end: 1px solid currentcolor;
+  border-inline-end: 1px solid currentcolor;
+  transform: translateY(-0.15em) rotate(45deg);
+}
+
+.account-menu__trigger[aria-expanded="true"]::before {
+  transform: translateY(0.1em) rotate(-135deg);
+}
+
+.account-menu__panel {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  z-index: 40;
+  min-inline-size: 14rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.account-menu__panel[hidden] {
+  display: none;
+}
+
+.account-menu__list {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-menu__list a {
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+}
+
+.account-menu--inline {
+  padding-block-start: var(--spacing-md);
+}
+
+.account-menu__label {
+  margin: 0 0 var(--spacing-xs);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .account-menu__trigger::before {
+    transition: transform var(--duration-fast, 160ms) ease-out;
+  }
+}

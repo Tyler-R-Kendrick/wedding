@@ -23,6 +23,12 @@ const guest: GuestPrincipal = { kind: 'guest', authIdentityId: 'a' as AuthIdenti
 guest.actsFor.push(guest.guestId);
 const admin: AdminPrincipal = { kind: 'admin', authIdentityId: 'b' as AuthIdentityId, adminId: 'A1' as AdminId, roles: new Set(['owner']), entitlements: new Set(['admin_content', 'admin_audit']), authenticatedAt: new Date().toISOString(), sessionId: 's' };
 const anon: Principal = { kind: 'anonymous' };
+/**
+ * The registry is behind the account menu: its capabilities refuse an anonymous caller. The closest a
+ * caller now comes to the old anonymous view is signed in with no invitation entitlements (a revoked
+ * or delegate session), which is what these tests read the registry as.
+ */
+const visitor: GuestPrincipal = { ...guest, entitlements: new Set() };
 let n = 0;
 async function run<I, O>(descriptor: Parameters<typeof invoke<I, O>>[0], principal: Principal, input: unknown, extra: { idempotencyKey?: string; surface?: 'ui' | 'ai' | 'webmcp'; requestId?: string } = {}) {
   const ctx = await createCapabilityContext({ principal, requestId: extra.requestId ?? `req-gr-${++n}`, surface: extra.surface ?? 'ui', idempotencyKey: extra.idempotencyKey });
@@ -40,7 +46,7 @@ describe('gifts', () => {
     // to it — on the page as "via Zola", and in this very output, which the AI concierge and WebMCP
     // both read. An empty list plus an editorial "still to come" is the honest answer; `placeholder`
     // on a card carrying a brand is not.
-    const r = await run(listGiftLinksCapability, anon, {});
+    const r = await run(listGiftLinksCapability, visitor, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.copy.title).toBe('Help us with our next adventures');
@@ -62,17 +68,17 @@ describe('gifts', () => {
       { idempotencyKey: key() },
     );
     expect(configured.ok).toBe(true);
-    const r = await run(openGiftLink, anon, { linkId: 'knot-registry' }, { requestId: 'req-gift-open' });
+    const r = await run(openGiftLink, visitor, { linkId: 'knot-registry' }, { requestId: 'req-gift-open' });
     expect(r.ok && r.value.handoffUrl).toBe('https://www.theknot.com/us/sara-and-tyler');
     expect(r.ok && r.value.data.handoff).toMatchObject({ providerDisplayName: 'The Knot', opensNewTab: true });
     const db = await getDb();
     const rec = (await db.select().from(externalActionRecords)).find((x) => x.kind === 'gift_link');
-    expect(rec).toMatchObject({ status: 'initiated', provider: 'theknot', urlHost: 'www.theknot.com', actor: { kind: 'anonymous' }, targetId: 'knot-registry', requestId: 'req-gift-open' });
+    expect(rec).toMatchObject({ status: 'initiated', provider: 'theknot', urlHost: 'www.theknot.com', actor: { kind: 'guest' }, targetId: 'knot-registry', requestId: 'req-gift-open' });
     const audit = await listAuditEvents(db, { requestId: 'req-gift-open' });
     expect(audit.map((e) => e.action).sort()).toEqual(['capability.invoked', 'external_action.initiated']);
-    expect((await run(openGiftLink, anon, { linkId: 'nope' })).ok).toBe(false);
-    expect((await run(openGiftLink, anon, { linkId: '../etc' })).ok).toBe(false);
-    const ai = await run(openGiftLink, anon, { linkId: 'knot-registry' }, { surface: 'ai' });
+    expect((await run(openGiftLink, visitor, { linkId: 'nope' })).ok).toBe(false);
+    expect((await run(openGiftLink, visitor, { linkId: '../etc' })).ok).toBe(false);
+    const ai = await run(openGiftLink, visitor, { linkId: 'knot-registry' }, { surface: 'ai' });
     expect(ai.ok && ai.value.handoffUrl).toBe('https://www.theknot.com/us/sara-and-tyler');
   });
 
@@ -89,13 +95,13 @@ describe('gifts', () => {
     // Tampered row written behind the capability layer: dropped on read.
     const db = await getDb();
     await db.insert(giftLinks).values({ id: 'tampered', kind: 'registry', provider: 'custom', label: 'Evil', url: 'https://evil.example/pay', placeholder: false, active: true, sortOrder: 5, updatedBy: { kind: 'system', component: 'test' } });
-    const list = await run(listGiftLinksCapability, anon, {});
+    const list = await run(listGiftLinksCapability, visitor, {});
     // One admin row for registry and nothing for the adventure fund: an unconfigured kind is an
     // empty section the page fills with its own editorial note, not a built-in card.
     expect(list.ok && list.value.data.links.map((l) => [l.id, l.kind, l.origin, l.placeholder])).toEqual([['knot-registry', 'registry', 'admin', false]]);
     expect(JSON.stringify(list)).not.toContain('evil.example');
-    expect((await run(openGiftLink, anon, { linkId: 'tampered' })).ok).toBe(false);
-    const opened = await run(openGiftLink, anon, { linkId: 'knot-registry' });
+    expect((await run(openGiftLink, visitor, { linkId: 'tampered' })).ok).toBe(false);
+    const opened = await run(openGiftLink, visitor, { linkId: 'knot-registry' });
     expect(opened.ok && opened.value.data.handoff.providerDisplayName).toBe('The Knot');
   });
 
@@ -110,7 +116,7 @@ describe('gifts', () => {
       { idempotencyKey: key() },
     );
     expect(r.ok).toBe(true);
-    const list = await run(listGiftLinksCapability, anon, {});
+    const list = await run(listGiftLinksCapability, visitor, {});
     expect(list.ok).toBe(true);
     if (!list.ok) return;
     const link = list.value.data.links.find((l) => l.id === 'marker-registry');
@@ -126,7 +132,7 @@ describe('gifts of money (ADR-0013)', () => {
   const STREET = '1 Example Street';
 
   it('shows no funds until there is a way to give, then all four defaults', async () => {
-    const before = await run(listGiftLinksCapability, anon, {});
+    const before = await run(listGiftLinksCapability, visitor, {});
     expect(before.ok && [before.value.data.funds, before.value.data.rails]).toEqual([[], []]);
 
     for (const [rail, handle, recipientName] of [
@@ -138,7 +144,7 @@ describe('gifts of money (ADR-0013)', () => {
       expect(r.ok, rail).toBe(true);
     }
 
-    const r = await run(listGiftLinksCapability, anon, {});
+    const r = await run(listGiftLinksCapability, visitor, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const { funds, rails, statement } = r.value.data;
@@ -159,7 +165,12 @@ describe('gifts of money (ADR-0013)', () => {
 
   it('never hands an anonymous visitor (or the concierge answering one) an email, phone or address', async () => {
     for (const surface of ['ui', 'ai', 'webmcp'] as const) {
-      const r = await run(listGiftLinksCapability, anon, {}, { surface });
+      // Anonymous is refused outright now: the registry sits behind the signed-in account menu.
+      for (const [capability, input] of [[listGiftLinksCapability, {}], [openGiftLink, { linkId: 'knot-registry' }], [openGiftFund, { fundId: 'home', rail: 'venmo' }]] as const) {
+        const refused = await run(capability as typeof listGiftLinksCapability, anon, input, { surface });
+        expect(!refused.ok && refused.error.code, `${surface} ${capability.name}`).toBe('unauthenticated');
+      }
+      const r = await run(listGiftLinksCapability, visitor, {}, { surface });
       const text = JSON.stringify(r);
       expect(text, surface).not.toContain(ZELLE);
       expect(text, surface).not.toContain(STREET);
@@ -220,7 +231,7 @@ describe('gifts of money (ADR-0013)', () => {
   it('lets the couple rename, hide and add funds; the defaults need no row', async () => {
     expect((await run(adminUpsertGiftFund, admin, { id: 'adoption', title: 'Growing our family', active: false }, { idempotencyKey: key() })).ok).toBe(true);
     expect((await run(adminUpsertGiftFund, admin, { id: 'date-nights', title: 'Date nights', description: 'Dinner somewhere new.', sortOrder: 15 }, { idempotencyKey: key() })).ok).toBe(true);
-    const r = await run(listGiftLinksCapability, anon, {});
+    const r = await run(listGiftLinksCapability, visitor, {});
     expect(r.ok && r.value.data.funds.map((f) => f.id)).toEqual(['honeymoon', 'home', 'date-nights', 'next-adventures']);
     const adminView = await run(adminListGiftLinks, admin, {});
     expect(adminView.ok && adminView.value.data.funds.map((f) => [f.id, f.active, f.origin])).toEqual([
@@ -247,27 +258,27 @@ describe('gifts of money (ADR-0013)', () => {
     }
     const asGuest = await run(adminUpsertGiftRail, guest, { rail: 'venmo', handle: '@someone-else' }, { idempotencyKey: key() });
     expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
-    const r = await run(listGiftLinksCapability, anon, {});
+    const r = await run(listGiftLinksCapability, visitor, {});
     expect(r.ok && r.value.data.funds[0]!.links[0]!.url).toContain('venmo.com/Sara-Tyler');
   });
 
   it('records a hand-off to Venmo (host only), never a payment; Zelle has nothing to open', async () => {
-    const r = await run(openGiftFund, anon, { fundId: 'home', rail: 'venmo' }, { requestId: 'req-fund-open' });
+    const r = await run(openGiftFund, visitor, { fundId: 'home', rail: 'venmo' }, { requestId: 'req-fund-open' });
     expect(r.ok && r.value.handoffUrl).toBe('https://venmo.com/Sara-Tyler?txn=pay&note=Our%20home%20(wedding%20gift)');
     const db = await getDb();
     const rec = (await db.select().from(externalActionRecords)).find((x) => x.kind === 'gift_fund');
     expect(rec).toMatchObject({ status: 'initiated', provider: 'venmo', urlHost: 'venmo.com', targetType: 'gift_fund', targetId: 'home', requestId: 'req-fund-open' });
     expect(JSON.stringify(rec)).not.toContain('txn=pay');
-    expect((await run(openGiftFund, anon, { fundId: 'home', rail: 'zelle' })).ok).toBe(false);
-    expect((await run(openGiftFund, anon, { fundId: 'adoption', rail: 'paypal' })).ok).toBe(false);
-    expect((await run(openGiftFund, anon, { fundId: 'date-nights', rail: 'venmo' })).ok).toBe(false);
-    expect((await run(openGiftFund, anon, { fundId: '../etc', rail: 'venmo' })).ok).toBe(false);
+    expect((await run(openGiftFund, visitor, { fundId: 'home', rail: 'zelle' })).ok).toBe(false);
+    expect((await run(openGiftFund, visitor, { fundId: 'adoption', rail: 'paypal' })).ok).toBe(false);
+    expect((await run(openGiftFund, visitor, { fundId: 'date-nights', rail: 'venmo' })).ok).toBe(false);
+    expect((await run(openGiftFund, visitor, { fundId: '../etc', rail: 'venmo' })).ok).toBe(false);
   });
 
   it('drops a tampered rail row whose handle would build a link off the allowlist', async () => {
     const db = await getDb();
     await db.insert(giftPaymentRails).values({ rail: 'cashapp', handle: 'x/../../evil.example', active: true, sortOrder: 30, updatedBy: { kind: 'system', component: 'test' } });
-    const r = await run(listGiftLinksCapability, anon, {});
+    const r = await run(listGiftLinksCapability, visitor, {});
     expect(r.ok && r.value.data.funds[0]!.links.map((l) => l.rail)).toEqual(['venmo']);
     expect(JSON.stringify(r)).not.toContain('evil.example');
     await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, 'cashapp'));
@@ -322,7 +333,7 @@ describe('gifts of money (ADR-0013)', () => {
     await db.execute(sql`ALTER TABLE gift_payment_rails RENAME TO gift_payment_rails_hidden`);
     await db.execute(sql`ALTER TABLE gift_funds RENAME TO gift_funds_hidden`);
     try {
-      const r = await run(listGiftLinksCapability, anon, {});
+      const r = await run(listGiftLinksCapability, visitor, {});
       expect(r.ok, JSON.stringify(r)).toBe(true);
       expect(r.ok && [r.value.data.funds, r.value.data.rails]).toEqual([[], []]);
       expect(r.ok && r.value.data.links.length).toBeGreaterThan(0); // the registry links still show
