@@ -16,36 +16,13 @@
  * photographs are swapped for empty images of the same intrinsic size (the real bytes never reach
  * the baseline); internal links point at the sitemap page they belong to; forms lose their action.
  */
-async ({ pages, textRoleLinkMax = 48 }) => {
+async ({ pages, phase = 'full', textRoleLinkMax = 48 }) => {
   await document.fonts.ready;
   const loc = window.location;
-
-  // --- Stylesheets, in document order, before anything is removed. --------------------------------
-  const styles = [];
-  for (const node of document.querySelectorAll('link[rel~="stylesheet"], style')) {
-    if (node.tagName === 'LINK') {
-      if (node.media === 'print') continue;
-      styles.push({ href: new URL(node.getAttribute('href'), loc.href).href });
-    } else if (node.textContent.trim()) {
-      styles.push({ text: node.textContent });
-    }
-  }
-
-  // --- Links seen as rendered (before rewriting), so patterned pages can find a real instance. ----
-  const rawLinks = [];
-  for (const a of document.querySelectorAll('a[href]')) {
-    try {
-      const u = new URL(a.getAttribute('href'), loc.href);
-      if (u.origin === loc.origin) rawLinks.push(u.pathname);
-    } catch {}
-  }
-
   const body = document.body;
-  // Anything the scroll-through did not reach is shown as it would be once read (Botanical Deco's
-  // kit/Reveal.tsx): a stage has none of the site's scripts to reveal it.
-  body.querySelectorAll('[data-reveal-state]').forEach((el) => el.setAttribute('data-reveal-state', 'in'));
-  body.querySelectorAll('script, noscript, template, nextjs-portal, next-route-announcer, link, style, [data-nextjs-toast], [data-nextjs-dialog-overlay]').forEach((n) => n.remove());
 
+  // --- Surfaces, borders, blocks. Also run at phone width first (phase 'marks'), so an element
+  //     only one breakpoint shows (the phone's bottom bar, say) is marked too: marks accumulate.
   const inSvg = (el) => el.parentElement && el.parentElement.closest('svg');
   const visible = (el, cs) => cs.display !== 'none' && cs.visibility !== 'hidden';
   const alpha = (color) => {
@@ -61,8 +38,8 @@ async ({ pages, textRoleLinkMax = 48 }) => {
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   };
 
-  // --- Surfaces, borders, blocks: read from the computed style, so no stage needs the real CSS's
-  //     colours to know where one area ends and the next begins. -----------------------------------
+  // Read from the computed style, so no stage needs the real CSS's colours to know where one area
+  // ends and the next begins.
   const BLOCKS = 'header, nav, main, footer, section, article, aside, form, figure, dialog, fieldset, [role="region"], [role="dialog"], [role="banner"], [role="contentinfo"]';
   for (const el of body.querySelectorAll('*')) {
     if (inSvg(el)) continue;
@@ -84,6 +61,34 @@ async ({ pages, textRoleLinkMax = 48 }) => {
       if (label) el.setAttribute('data-bl-label', label);
     }
   }
+
+  if (phase === 'marks') return null;
+
+  // --- Stylesheets, in document order, before anything is removed. --------------------------------
+  const styles = [];
+  for (const node of document.querySelectorAll('link[rel~="stylesheet"], style')) {
+    if (node.tagName === 'LINK') {
+      if (node.media === 'print') continue;
+      styles.push({ href: new URL(node.getAttribute('href'), loc.href).href });
+    } else if (node.textContent.trim() && !node.textContent.includes('__nextjs_font')) {
+      // (The test server is `next dev`: its overlay's own font faces are not the site's CSS.)
+      styles.push({ text: node.textContent });
+    }
+  }
+
+  // --- Links seen as rendered (before rewriting), so patterned pages can find a real instance. ----
+  const rawLinks = [];
+  for (const a of document.querySelectorAll('a[href]')) {
+    try {
+      const u = new URL(a.getAttribute('href'), loc.href);
+      if (u.origin === loc.origin) rawLinks.push(u.pathname);
+    } catch {}
+  }
+
+  // Anything the scroll-through did not reach is shown as it would be once read (Botanical Deco's
+  // kit/Reveal.tsx): a stage has none of the site's scripts to reveal it.
+  body.querySelectorAll('[data-reveal-state]').forEach((el) => el.setAttribute('data-reveal-state', 'in'));
+  body.querySelectorAll('script, noscript, template, nextjs-portal, next-route-announcer, link, style, [data-nextjs-toast], [data-nextjs-dialog-overlay]').forEach((n) => n.remove());
 
   // --- Media. ------------------------------------------------------------------------------------
   const emptyImage = (w, h) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${Math.max(1, Math.round(w))}" height="${Math.max(1, Math.round(h))}"/>`)}`;

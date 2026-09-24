@@ -22,7 +22,7 @@
  * an unstyled page. A page is read only once every stylesheet it links has loaded.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type BrowserContext, type Page } from '@playwright/test';
@@ -137,6 +137,13 @@ async function capturePage(source: Source, design: string, url: string): Promise
           await new Promise((r) => setTimeout(r, 700));
         })()`);
         const pages = PAGES.map((p) => ({ path: p.path, url: p.example ?? p.path }));
+        // Surfaces and borders are read at phone width first, then again at desktop width: an
+        // element only one breakpoint shows (the phone's bottom bar) keeps its marks either way.
+        await page.setViewportSize({ width: 390, height: 844 });
+        await sleep(400);
+        await page.evaluate(`(${DOM})(${JSON.stringify({ pages, phase: 'marks' })})`);
+        await page.setViewportSize({ width: WIDTH, height: 900 });
+        await sleep(400);
         const data = (await page.evaluate(`(${DOM})(${JSON.stringify({ pages })})`)) as Captured;
         return { status: res?.status() ?? 0, data, finalUrl: page.url() };
       }
@@ -252,6 +259,24 @@ for (const p of ordered) {
         if (!existsSync(file)) writeFileSync(file, text);
         css.push(id);
       }
+      // Fonts and images the page uses that the repo's public/ does not hold (a build asset, a file
+      // production has that main does not) are kept with the baseline, so it stays self-contained.
+      for (const a of assets) {
+        const clean = a.split('?')[0]!;
+        if (existsSync(path.join(ROOT, 'public', clean)) || existsSync(path.join(OUT, 'assets', clean))) continue;
+        const ctx = await contextFor(source, design);
+        const bytes = await withRetry(`${source.origin}${a}`, async () => {
+          const r = await ctx.request.get(`${source.origin}${a}`, { timeout: 45_000 });
+          if (!r.ok()) throw new Error(`HTTP ${r.status()}`);
+          return r.body();
+        }).catch(() => null);
+        if (!bytes) {
+          console.warn(`  ! ${p.id}: could not fetch ${a}`);
+          continue;
+        }
+        mkdirSync(path.dirname(path.join(OUT, 'assets', clean)), { recursive: true });
+        writeFileSync(path.join(OUT, 'assets', clean), bytes);
+      }
       const file = `${design}.json`;
       if (!cleared) {
         rmSync(pageDir, { recursive: true, force: true });
@@ -275,6 +300,13 @@ for (const p of ordered) {
 }
 
 writeFileSync(indexPath, `${JSON.stringify({ $comment: 'Written by npm run stages:capture (scripts/stages/capture.ts). Do not edit by hand.', ...index }, null, 1)}\n`);
+
+// A stylesheet no captured page links any more goes with the page that last did.
+const linked = new Set<string>();
+for (const dir of readdirSync(path.join(OUT, 'pages'))) {
+  for (const f of readdirSync(path.join(OUT, 'pages', dir))) for (const h of JSON.parse(readFileSync(path.join(OUT, 'pages', dir, f), 'utf8')).css as string[]) linked.add(`${h}.css`);
+}
+for (const f of readdirSync(path.join(OUT, 'css'))) if (!linked.has(f)) rmSync(path.join(OUT, 'css', f));
 await browser.close();
 if (failures.length) {
   console.error(`\ncapture: ${failures.length} failed:\n  ${failures.join('\n  ')}`);

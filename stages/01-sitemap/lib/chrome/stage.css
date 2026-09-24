@@ -160,9 +160,32 @@ a {
   }
 }
 
+/* On a phone the chrome gives the page the screen: the stage's question is dropped (the hub and
+   the stage's own home say it), and the stages stay on one row that scrolls sideways. */
+@media (width < 40rem) {
+  .bl-screen .st-bar__question {
+    display: none;
+  }
+
+  .bl-screen .st-bar__stages {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .bl-screen .st-bar__stages a {
+    white-space: nowrap;
+  }
+
+  .bl-screen .st-bar__inner {
+    gap: 0;
+  }
+}
+
 /* A captured page (stages/02-wireframe/lib/BaselinePage.tsx): the stage bar, a line naming where the
    baseline came from, and the page in a frame that fills the rest of the window. The frame is a
    viewport of its own, so the real site's breakpoints see the width the page would have. */
+
 .bl-screen {
   display: flex;
   flex-direction: column;
