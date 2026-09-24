@@ -83,17 +83,42 @@ export function parseBlocks(text: string): { question: string; blocks: Block[] }
   return { question, blocks };
 }
 
+/**
+ * The words of every multi-word proper name in the question ("the Cherry Circle Room", "the White
+ * City Ballroom"). A grounded model does not answer a question about one named place with a line
+ * about another that merely shares "dinner" with it; it refuses. So when the question names
+ * something, a line counts only if it, or its block's title, mentions that name.
+ * (Tokens are stemmed and include synonyms, so the count is of tokens, not words: close enough for
+ * a majority test, and it only ever narrows what the stand-in will say.)
+ */
+function namedTokens(question: string): Set<string> {
+  const out = new Set<string>();
+  for (const [phrase] of question.matchAll(/\b[A-Z][\w’']*(?:\s+[A-Z][\w’']*)+/g)) for (const t of tokens(phrase)) out.add(t);
+  return out;
+}
+
 /** The extractive answer for a rendered prompt. Exported so unit tests can pin the behaviour. */
 export function extractiveAnswer(prompt: LanguageModelV4Prompt, maxSentences = 3): string {
   const { question, blocks } = parseBlocks(lastUserText(prompt));
   const q = tokens(question);
   if (q.size === 0 || blocks.length === 0) return NO_SOURCE;
+  const named = namedTokens(question);
+  // Most of the name, not one word of it: "Esmé: the dining room" shares only "room" with "the
+  // Cherry Circle Room", and "Eleven Madison Park" only "madison" with "the Madison Ballroom".
+  const mentionsName = (text: string) => {
+    if (named.size === 0) return true;
+    let hits = 0;
+    for (const t of tokens(text)) if (named.has(t)) hits++;
+    return hits * 2 > named.size;
+  };
   const scored: { score: number; block: Block; line: string; index: number }[] = [];
   for (const block of blocks) {
     const titleTokens = tokens(block.title);
     let titleHits = 0;
     for (const t of titleTokens) if (q.has(t)) titleHits++;
+    const titleNamesIt = mentionsName(block.title);
     block.lines.forEach((line, index) => {
+      if (!titleNamesIt && !mentionsName(line)) return;
       const lt = tokens(line);
       let hits = 0;
       for (const t of lt) if (q.has(t)) hits++;
