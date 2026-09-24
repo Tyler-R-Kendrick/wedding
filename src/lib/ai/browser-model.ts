@@ -1,101 +1,111 @@
 /**
- * The concierge, run on the guest's own device.
+ * The concierge, run on the guest's own device, through the Vercel AI SDK.
  *
- * Chrome ships a built-in language model behind the W3C Prompt API — a global `LanguageModel`
- * with `availability()` and `create()`. When it is there, the best possible answer to "which
- * model powers the concierge" is *none of them*: nothing is billed, no key exists to leak, and
- * a guest's question never leaves their phone. That is why it is the default, and why the
- * server providers are the fallback rather than the other way round.
+ * Chrome and Edge ship a built-in language model behind the W3C Prompt API, and
+ * `@browser-ai/core` is the AI SDK provider for it: the device writes its draft with the same
+ * `generateText` the rest of the stack speaks. No gateway, no key and no hosted model are involved,
+ * so nothing is billed and a guest's question never leaves their phone. A browser without the
+ * Prompt API gets an answer the server quotes from the site's own pages instead.
  *
- * This module is browser-only and must be imported from a client component. It never throws
- * on an unsupported browser; `probe()` simply reports `unsupported` and callers fall back.
+ * This module is browser-only and must be imported from a client component. It never throws on an
+ * unsupported browser: `probe()` reports `unsupported` and callers fall back. The SDK and the
+ * provider load on first use, and only where the Prompt API exists, so a phone without it never
+ * downloads either.
  */
 
 /** Spec states, plus `unsupported` for browsers with no Prompt API at all. */
 export type BrowserModelState = 'unsupported' | 'unavailable' | 'downloadable' | 'downloading' | 'available';
 
-type DownloadProgress = { loaded: number; total?: number };
-
-type LanguageModelSession = {
-  prompt(input: string, options?: { signal?: AbortSignal }): Promise<string>;
-  promptStreaming?(input: string, options?: { signal?: AbortSignal }): AsyncIterable<string>;
-  destroy?(): void;
-};
-
-type LanguageModelStatic = {
-  availability(options?: unknown): Promise<Exclude<BrowserModelState, 'unsupported'>>;
-  create(options?: {
-    initialPrompts?: { role: 'system' | 'user' | 'assistant'; content: string }[];
-    monitor?: (monitor: { addEventListener(type: 'downloadprogress', fn: (e: DownloadProgress) => void): void }) => void;
-    signal?: AbortSignal;
-  }): Promise<LanguageModelSession>;
-};
-
 /** The API is a global, not a property of `window.ai` — that was an earlier shape. */
-function api(): LanguageModelStatic | null {
-  if (typeof globalThis === 'undefined') return null;
-  const candidate = (globalThis as { LanguageModel?: LanguageModelStatic }).LanguageModel;
-  return candidate && typeof candidate.availability === 'function' ? candidate : null;
+export function isSupported(): boolean {
+  const candidate = (globalThis as { LanguageModel?: { availability?: unknown } }).LanguageModel;
+  return !!candidate && typeof candidate.availability === 'function';
 }
 
-export function isSupported(): boolean {
-  return api() !== null;
+/**
+ * Close a model's Prompt API session. The provider opens one per model and keeps it private, with
+ * no public way to close it, so without this every question left a session holding its context
+ * until the page closed. If the provider ever changes shape this does nothing rather than throw.
+ */
+function release(model: object): void {
+  try {
+    (model as { sessionManager?: { destroySession?: () => void } }).sessionManager?.destroySession?.();
+  } catch {
+    // Already gone.
+  }
 }
 
 /** What this browser can do right now. Never throws. */
 export async function probe(): Promise<BrowserModelState> {
-  const model = api();
-  if (!model) return 'unsupported';
+  if (!isSupported()) return 'unsupported';
   try {
-    return await model.availability();
+    const { browserAI } = await import('@browser-ai/core');
+    return (await browserAI('text').availability()) as Exclude<BrowserModelState, 'unsupported'>;
   } catch {
     return 'unavailable';
   }
 }
 
-export type SessionOptions = {
+/**
+ * Start loading the AI SDK for a device found ready, so the download runs alongside the server's
+ * evidence request instead of inside the deadline the draft is written under.
+ */
+export function warm(): void {
+  void Promise.all([import('ai'), import('@browser-ai/core')]).catch(() => {});
+}
+
+/**
+ * Fetch the model in the background when the browser offers to download it — `state` is what
+ * `probe()` just reported. Never throws: a failed download is not this question's problem, and the
+ * next one simply checks again. The session that starts the download is closed once it is done.
+ */
+export async function prepare(state: BrowserModelState): Promise<void> {
+  if (state !== 'downloadable' && state !== 'downloading') return;
+  try {
+    const { browserAI } = await import('@browser-ai/core');
+    const model = browserAI('text');
+    try {
+      await model.createSessionWithProgress();
+    } finally {
+      release(model);
+    }
+  } catch {
+    // Declined, or the download failed: nothing to do until the next question.
+  }
+}
+
+export type AskOptions = {
   /** Grounding for the concierge: the site's own facts, nothing invented. */
   systemPrompt?: string;
-  /** Called while the model downloads on first use, 0..1. */
-  onProgress?: (fraction: number) => void;
   signal?: AbortSignal;
 };
 
 /**
- * Open an on-device session, downloading the model if the browser offers to. Resolves `null`
- * when the API is missing or the browser declines — the caller then uses the server route.
+ * One question, one draft, written on-device with the AI SDK. Resolves `null` when the device
+ * cannot answer — no Prompt API, a model the browser declines, a prompt that throws or times out.
  */
-export async function openSession(options: SessionOptions = {}): Promise<LanguageModelSession | null> {
-  const model = api();
-  if (!model) return null;
-  const state = await probe();
-  if (state === 'unavailable' || state === 'unsupported') return null;
+export async function askOnDevice(prompt: string, options: AskOptions = {}): Promise<string | null> {
+  if (!isSupported()) return null;
   try {
-    return await model.create({
-      ...(options.systemPrompt ? { initialPrompts: [{ role: 'system' as const, content: options.systemPrompt }] } : {}),
-      ...(options.signal ? { signal: options.signal } : {}),
-      monitor(monitor) {
-        monitor.addEventListener('downloadprogress', (event) => {
-          // `total` is absent in some implementations; `loaded` is already a fraction there.
-          const fraction = event.total ? event.loaded / event.total : event.loaded;
-          options.onProgress?.(Math.max(0, Math.min(1, fraction)));
-        });
-      },
-    });
+    const [{ generateText }, { browserAI }] = await Promise.all([import('ai'), import('@browser-ai/core')]);
+    // A fresh model for every question: the provider keeps one Prompt API session per model, and
+    // a session carries its conversation forward — this question's evidence must not meet the
+    // last one's. It asks the browser for availability itself and refuses an unavailable model.
+    const model = browserAI('text');
+    try {
+      const { text } = await generateText({
+        model,
+        ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
+        prompt,
+        ...(options.signal ? { abortSignal: options.signal } : {}),
+        // A retry would spend the caller's whole deadline on a device that has already failed once.
+        maxRetries: 0,
+      });
+      return text.trim() ? text : null;
+    } finally {
+      release(model);
+    }
   } catch {
     return null;
-  }
-}
-
-/** One question, one answer, on-device. Resolves `null` when the device cannot answer. */
-export async function askOnDevice(question: string, options: SessionOptions = {}): Promise<string | null> {
-  const session = await openSession(options);
-  if (!session) return null;
-  try {
-    return await session.prompt(question, options.signal ? { signal: options.signal } : undefined);
-  } catch {
-    return null;
-  } finally {
-    session.destroy?.();
   }
 }

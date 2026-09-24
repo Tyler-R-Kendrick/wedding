@@ -196,15 +196,6 @@ jobs:
       - name: Every spec runs in exactly one arrangement
         run: node scripts/check-spec-coverage.mjs
 
-      # The Secret Drop page as it is actually PUBLISHED — no server behind it, no Claude session
-      # watching. Every other check of that page runs it against `secrets:serve`, which has a
-      # worker, so all of them stayed green while the published artifact queued work nothing could
-      # ever claim. This one needs only the built page and the Chromium this job already installs.
-      - name: The published Secret Drop offers no control that cannot finish
-        run: |
-          node scripts/secrets/build-page.mjs
-          node scripts/secrets/page/verify-artifact.mjs
-
       - name: Production-build specs against `next start`
         # These assert production behaviour, including the proxy's `private, no-store` on
         # cookie-resolved public URLs — `next dev` replaces that header, so they only mean
@@ -310,6 +301,11 @@ jobs:
           # a rule that can be re-derived rather than remembered:
           #   comm -23 <(grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u) <this list>
           #
+          # `/api/session` is not a page but every page asks it: the account menu calls it on load
+          # to learn whether the reader is signed in. Left cold, its first compile landed mid-run
+          # and took `claim.spec`'s `page.goto('/sign-out')` past its 30s budget — the same
+          # starvation as above, from a route no `page.goto` names.
+          #
           # Level 16 added two many-navigation specs to this step — `typography.spec.ts` (6 auth
           # routes + 12 console routes, per project) and `quality-sweep.spec.ts` (4 guest routes,
           # walked five times over, two designs). Every route either was already here or is added
@@ -326,7 +322,7 @@ jobs:
                       /admin/media/duplicates /admin/media/import /admin/media/metrics \
                       /ask-us /our-story /the-wedding /our-venue /share-an-adventure /sign-out \
                       /our-adventures /travel \
-                      /invite/warmup-token-0000000000000000000000 /api/dev/inbox; do
+                      /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
           npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")

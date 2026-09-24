@@ -11,8 +11,8 @@ eval asks whether the concierge, end to end, was **honest** — and it fails the
 Each case runs the real pipeline: the real capability registry, the real `invoke`, real retrieval
 over the seeded corpus, the real verifier, and the deterministic extractive model stand-in
 (`src/providers/ai-model/concierge-mock.ts`, built on `MockLanguageModelV4`). **No live model call is
-made.** `EVALS_LIVE=1` lets a developer point the same cases at the configured provider locally; CI
-never sets it.
+made**: the site has no hosted model to call. On a guest's device the draft comes from the browser's
+own model instead, and faces the same verifier.
 
 Cases are scored on what a guest would actually see — the answer text, the citations, the refusal,
 the confirmation cards — plus the persisted invocation trace, which is where authorization is

@@ -40,7 +40,7 @@ Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI)
 | Storage | local-fs under `./.data/storage` (objects, `meta/` sidecars, `multipart/`); signed URLs at `/api/dev/storage/<key>?op=...&exp=...&sig=...` (never served in production) | S3-compatible bucket (or local-fs with an explicit `STORAGE_SIGNING_SECRET`) |
 | OTP emails | dev inbox: `GET /api/dev/inbox` (JSON, newest first), `DELETE /api/dev/inbox` to clear. Answers only on a local `NODE_ENV=development` server (not on Vercel/CI) unless `Authorization: Bearer $DEV_INBOX_TOKEN` is sent | Resend |
 | Jobs | in-process poller (`JOBS_INLINE_RUNNER=true`, every `JOBS_POLL_INTERVAL_MS`) or `npm run jobs:run` for one batch | cron hitting `POST /api/jobs/run` with `Authorization: Bearer $CRON_SECRET` |
-| AI model | `ai/test` mock (`MOCK_REPLY`) | Anthropic via `ANTHROPIC_API_KEY` |
+| AI concierge | the browser's own model (Prompt API) where it has one, else the server's extractive answer quoted from the site's pages | the same: no hosted model is ever called |
 | Logs | pretty (pino-pretty); `LOG_FORMAT=json` to switch | JSON |
 | Metrics | console at debug level | `metrics` table |
 

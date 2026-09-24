@@ -1,9 +1,14 @@
 /**
- * Next.js instrumentation hook: runs once when the server starts. Installs the Better Auth
- * principal resolver so every route resolves guests/admins before the first request.
+ * Next.js instrumentation hook: runs once when the server starts. Refuses hosted AI models, and
+ * installs the Better Auth principal resolver so every route resolves guests/admins before the
+ * first request.
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+
+  // Before anything can call a model: a model named by a string must never reach Vercel's AI Gateway.
+  const { refuseHostedModels } = await import('@/lib/ai/no-hosted-models');
+  refuseHostedModels();
 
   // ORDER MATTERS. The Better Auth resolver must be installed first: installTestPrincipalResolver
   // wraps whatever resolver is current and falls through to it, so installed the other way round it

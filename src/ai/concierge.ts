@@ -60,6 +60,8 @@ export interface ConciergeInput {
 }
 
 export const MAX_STORED_ANSWER_CHARS = 2_000;
+/** The trace's model for an answer the guest's browser wrote (src/lib/ai/browser-model.ts). */
+export const ON_DEVICE_MODEL_ID = 'browser:prompt-api';
 /** Splits the finished answer back into sentences for the `text` events (display order preserved). */
 const SENTENCE_EMIT_SPLIT = /(?<=[.!?](?:\s*\[S\d+(?:\s*,\s*S\d+)*\])?)\s+(?=[A-Z0-9"'(\[])/;
 const SIGN_IN_ROUTE = '/your-weekend';
@@ -295,7 +297,8 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
     return finish({ status: 'error', text: '', sources: [], refusal: { message: REFUSAL.unavailable, links: [CONTACT_LINK] } });
   }
 
-  // --- verify (second pass with a live provider), then the deterministic gates
+  // --- verify (a model pass only when a caller supplies live models; the site never does), then
+  // the deterministic gates
   await emit({ type: 'status', stage: 'verifying' });
   let survivors = kept;
   let method: AiVerifierSummary['method'] = 'deterministic';
@@ -381,7 +384,8 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
       status: partial.status,
       intent: plan.intent,
       toolsSelected: runs.map((r) => r.name),
-      modelId: models.modelId,
+      // A draft was written by the guest's own browser model; the server only verified it.
+      modelId: input.draft !== undefined ? ON_DEVICE_MODEL_ID : models.modelId,
       verifier: summary,
       securityAlerts,
       latencyMs,

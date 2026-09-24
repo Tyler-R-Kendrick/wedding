@@ -10,7 +10,7 @@ import type { SitemapPage, SitemapSection } from './types';
  */
 export const SECTIONS: SitemapSection[] = [
   { id: 'public', title: 'Public', audience: 'public', blurb: 'Anyone with the link: the story, the place, the plan.' },
-  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: their weekend, their RSVP, their trip.' },
+  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: their weekend, their RSVP, their trip, the registry and the photos. Reached only from the account menu.' },
   { id: 'gate', title: 'Doors', audience: 'gate', blurb: 'How a guest gets from an invitation link to a session.' },
   { id: 'admin', title: 'Admin', audience: 'admin', blurb: 'Sara, Tyler and the planner run the site from here.' },
 ];
@@ -67,20 +67,6 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Plan your trip', to: 'trip' },
   },
   {
-    id: 'gifts', path: '/gifts', title: 'Gifts', parent: null, audience: 'public', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
-    job: '"Help us with our next adventures": registry links and person-to-person funds.',
-  },
-  {
-    id: 'photos', path: '/photos', title: 'Photos & Video', parent: null, audience: 'public', mode: ['celebrate'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Engagement photos, guest uploads and the professional galleries, each by its rights.',
-    primaryAction: { label: 'Add your photos', to: 'media-upload' },
-  },
-  {
-    id: 'photo-collection', path: '/photos/[collection]', example: '/photos/example', title: 'A collection', parent: 'photos', audience: 'public', mode: ['celebrate'], visibleFrom: 'TEASER',
-    job: 'One gallery, with credits and a way to download what its rights allow.',
-    primaryAction: { label: 'All collections', to: 'photos' },
-  },
-  {
     id: 'ask', path: '/ask-us', title: 'Ask Us', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
     job: 'A concierge that answers questions about the weekend from what we have published, with citations.',
   },
@@ -113,6 +99,20 @@ export const PAGES: SitemapPage[] = [
   {
     id: 'trip', path: '/trip', title: 'Your trip', parent: 'weekend', audience: 'guest', mode: ['act'], visibleFrom: 'INVITATIONS_OPEN',
     job: 'Your flights and hotel, kept in one place so we can help if plans change.',
+  },
+  {
+    id: 'gifts', path: '/gifts', title: 'Gifts', parent: null, audience: 'guest', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
+    job: '"Help us with our next adventures": registry links and person-to-person funds.',
+  },
+  {
+    id: 'photos', path: '/photos', title: 'Photos & Video', parent: null, audience: 'guest', mode: ['celebrate'], visibleFrom: 'TEASER', inNav: true,
+    job: 'Engagement photos, guest uploads and the professional galleries, each by its rights.',
+    primaryAction: { label: 'Add your photos', to: 'media-upload' },
+  },
+  {
+    id: 'photo-collection', path: '/photos/[collection]', example: '/photos/example', title: 'A collection', parent: 'photos', audience: 'guest', mode: ['celebrate'], visibleFrom: 'TEASER',
+    job: 'One gallery, with credits and a way to download what its rights allow.',
+    primaryAction: { label: 'All collections', to: 'photos' },
   },
   {
     id: 'media-upload', path: '/media/upload', title: 'Add photos', parent: 'photos', audience: 'guest', mode: ['act'], visibleFrom: 'WEDDING_DAY',

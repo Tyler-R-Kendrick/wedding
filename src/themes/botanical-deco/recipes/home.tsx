@@ -1,3 +1,4 @@
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { Placeholder } from '@/components/provenance';
 import { placeholderTimeline } from '@/themes/shared/home-content';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
@@ -25,7 +26,8 @@ const { Shell, Hero, Button, Stat, Timeline, MapHandoff, Text } = kit;
  * of the building. docs/design/approved-botanical-deco/parity-exceptions.json lists each one.
  */
 
-const ROUTES = { story: '/our-story', caa: '/our-venue', guide: '/share-an-adventure', wedding: '/the-wedding', photos: '/photos' } as const;
+// Photos sit behind the signed-in account menu; Home reaches them through the sign-in door.
+const ROUTES = { story: '/our-story', caa: '/our-venue', guide: '/share-an-adventure', wedding: '/the-wedding', photos: throughSignIn('/photos') } as const;
 
 function Theme({ data }: { data: HomeData }) {
   const after = data.lifecycle.mode === 'remember';

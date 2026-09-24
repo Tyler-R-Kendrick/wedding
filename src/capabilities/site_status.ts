@@ -43,7 +43,7 @@ const output = z.object({
     mapsUrl: z.string(),
   }),
   countdown: z.object({ days: z.number().int(), isToday: z.boolean(), isPast: z.boolean() }),
-  navigation: z.object({ primary: z.array(navItem), more: z.array(navItem), sticky: z.array(navItem) }),
+  navigation: z.object({ primary: z.array(navItem), more: z.array(navItem), sticky: z.array(navItem), account: z.array(navItem) }),
   theme: z.object({
     active: z.enum(THEME_IDS),
     available: z.array(z.object({ id: z.enum(THEME_IDS), name: z.string(), tagline: z.string() })),
@@ -91,7 +91,8 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
     });
     const facts = toSiteFacts(site);
     const countdown = countdownView(ctx.now, site.weddingDate, site.timezone);
-    const nav = navFor(lifecycle.state, { venue: facts.venue, claimed: ctx.principal.kind === 'guest' });
+    const signedIn = ctx.principal.kind === 'guest' || ctx.principal.kind === 'admin';
+    const nav = navFor(lifecycle.state, { venue: facts.venue, signedIn });
     const requested = ctx.view?.theme?.toLowerCase();
     // A persisted default naming one of the superseded proposals predates the couple's approval (the
     // seed wrote `gilded-hour` until then) and is ignored, exactly as a pre-approval theme cookie is:
@@ -120,7 +121,8 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
           mapsUrl: facts.venue.mapsUrl,
         },
         countdown: { days: countdown.days, isToday: countdown.isToday, isPast: countdown.isPast },
-        navigation: { primary: nav.primary, more: nav.more, sticky: nav.sticky },
+        // The account menu's pages are the caller's only when they are signed in, as on the site.
+        navigation: { primary: nav.primary, more: nav.more, sticky: nav.sticky, account: signedIn ? (nav.member ?? []) : [] },
         theme: {
           active,
           available: listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline })),

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { decodeEvents, type ConciergeEvent } from "@/ai/events";
 import type { AnswerLink, AnswerSource, ConfirmationCard } from "@/ai/types";
-import { askOnDevice, isSupported, openSession, probe } from "@/lib/ai/browser-model";
+import { askOnDevice, isSupported, prepare, probe, warm } from "@/lib/ai/browser-model";
 import { publicEnv } from "@/lib/env.public";
 import { CHAT_ROUTE, MAX_DRAFT_CHARS, MAX_QUESTION_CHARS, MAX_TRANSCRIPT_TURNS } from "./constants";
 import "./concierge.css";
@@ -44,9 +44,10 @@ const STAGE_LABEL: Record<string, string> = {
 
 const ON_DEVICE_STAGE = "Writing an answer on your device\u2026";
 /**
- * Generation only — the model is downloaded before this path is taken. Kept short because it is
- * spent *before* the server is asked: a device that cannot answer in this long has cost the guest
- * the whole budget and the server's generation still has to follow.
+ * Generation, in practice — the model is downloaded before this path is taken, and the AI SDK
+ * starts loading as soon as the device is found ready, alongside the evidence request. Kept short
+ * because it is spent *before* the server is asked: a device that cannot answer in this long has
+ * cost the guest the whole budget and the server's generation still has to follow.
  */
 const ON_DEVICE_TIMEOUT_MS = 8_000;
 
@@ -69,10 +70,14 @@ function keepStage(stage: string, haveDraft: boolean): boolean {
 async function readyOnDevice(): Promise<boolean> {
   if (!isSupported()) return false;
   const state = await probe();
-  if (state === "available") return true;
+  if (state === "available") {
+    // The SDK loads while the server gathers the evidence, not inside the device's deadline.
+    warm();
+    return true;
+  }
   if (state === "downloadable" || state === "downloading") {
     // Fire and forget: nothing here awaits the download, and a failure is not this turn's problem.
-    void openSession().then((session) => session?.destroy?.()).catch(() => {});
+    void prepare(state);
   }
   return false;
 }
@@ -256,8 +261,9 @@ export default function ConciergePanel({
           const { system, userTurn } = evidence;
           setStage(ON_DEVICE_STAGE);
           // A deadline, because a stalled device must not become a hung concierge. The model is
-          // already downloaded by this point (`readyOnDevice`), so this bounds generation only —
-          // and it is short, because whatever it spends is spent before the server is even asked.
+          // already downloaded by this point (`readyOnDevice`) and the SDK has been loading since
+          // then, so this bounds generation — and it is short, because whatever it spends is spent
+          // before the server is even asked.
           draft = await askOnDevice(userTurn, {
             systemPrompt: system,
             signal: AbortSignal.timeout(ON_DEVICE_TIMEOUT_MS),

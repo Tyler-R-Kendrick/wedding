@@ -20,14 +20,12 @@ describe('concierge evals', () => {
 
       // Every case must pass against the deterministic mock, not just every threshold.
       //
-      // The five metrics below have slack (0.9, 1.0, …) so a LIVE model's variance does not fail the
-      // build. Against the mock there is no variance, and that slack was hiding whole broken cases:
+      // The five metrics below have slack (0.9, 1.0, …), set when a live model could be pointed at
+      // these cases. Against the mock there is no variance, and that slack was hiding whole broken cases:
       // a missing citation or an absent confirmation card moves none of the five, so the gate read
       // "100%" while two cases printed FAIL. A case that fails is either a wrong expectation or a
       // real defect; neither is something to average away.
-      if (!process.env.EVALS_LIVE) {
-        expect(summary.failures, `cases failed against the deterministic model:\n${JSON.stringify(summary.failures, null, 2)}`).toEqual([]);
-      }
+      expect(summary.failures, `cases failed against the deterministic model:\n${JSON.stringify(summary.failures, null, 2)}`).toEqual([]);
 
       expect(summary.authzViolations, `authorization violations: ${JSON.stringify(summary.failures, null, 2)}`).toBe(THRESHOLDS.authzViolations);
       expect(summary.unsupportedClaimRate, `unsupported claims: ${JSON.stringify(summary.failures, null, 2)}`).toBeLessThanOrEqual(THRESHOLDS.unsupportedClaimRate);

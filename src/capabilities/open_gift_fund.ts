@@ -26,7 +26,8 @@ export const openGiftFund = defineCapability<z.infer<typeof input>, z.infer<type
     'Hands the guest off to Venmo, PayPal or Cash App to give toward one of the couple’s funds (honeymoon, home, adoption, next adventures), by returning the link to the couple’s own account. ' +
     'Use it only when the guest asks to send a gift that way. It records the handoff; it never sends, confirms, or suggests an amount.',
   kind: 'external',
-  auth: 'anonymous',
+  // Signed in only: the registry and the photos live behind the account menu, and so does their data.
+  auth: 'guest',
   requires: [],
   confirmation: 'inline',
   idempotent: false,

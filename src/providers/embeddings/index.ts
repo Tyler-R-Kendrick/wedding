@@ -1,16 +1,14 @@
-import type { ServerEnv } from '@/lib/env';
-import { AiSdkEmbeddings } from './ai-sdk';
 import { MockEmbeddings } from './mock';
 import type { EmbeddingsProvider } from './types';
 
 export * from './types';
 export { MockEmbeddings, hashedEmbedding, MOCK_EMBEDDING_DIMS } from './mock';
-export { AiSdkEmbeddings } from './ai-sdk';
 
-export function createEmbeddingsProvider(env: Pick<ServerEnv, 'FORCE_MOCK_PROVIDERS' | 'OPENAI_API_KEY' | 'VOYAGE_API_KEY' | 'EMBEDDINGS_PROVIDER'>): EmbeddingsProvider {
-  if (env.FORCE_MOCK_PROVIDERS) return new MockEmbeddings();
-  const preferred = env.EMBEDDINGS_PROVIDER;
-  if ((preferred === 'voyage' || !preferred) && env.VOYAGE_API_KEY) return new AiSdkEmbeddings('voyage', env.VOYAGE_API_KEY);
-  if ((preferred === 'openai' || !preferred) && env.OPENAI_API_KEY) return new AiSdkEmbeddings('openai', env.OPENAI_API_KEY);
+/**
+ * Hashed bag-of-words vectors, computed in-process. No hosted embeddings API (Voyage, OpenAI or
+ * anything behind a gateway) is ever called: retrieval for the concierge and media search works
+ * from the site's own words, so no key is needed and nothing is sent anywhere to be embedded.
+ */
+export function createEmbeddingsProvider(): EmbeddingsProvider {
   return new MockEmbeddings();
 }

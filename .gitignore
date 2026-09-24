@@ -57,12 +57,9 @@ Thumbs.db
 # Python caches from skill scripts
 __pycache__/
 
-# Secret Drop: private recipient key + decrypted material (public.jwk.json may be committed)
-.secrets/*
-!.secrets/public.jwk.json
-!.secrets/env.enc.json
-# Which artifact the page was published to (the OAuth redirect target) — no secret in it.
-!.secrets/page.json
+# The removed Secret Drop kept private keys and decrypted material here; a checkout that still has
+# the folder must never commit it.
+.secrets/
 # Next.js / app data / test artifacts
 .next/
 .data/

@@ -226,7 +226,8 @@
   border-color: var(--color-gold);
 }
 
-.gh-nav__link[aria-current] {
+.gh-nav__link[aria-current="page"],
+.gh-nav__link[aria-current="true"] {
   color: var(--color-secondary);
   border-color: var(--color-gold);
 }
@@ -383,10 +384,6 @@
 .gh-panel__cell[aria-current] {
   color: var(--color-secondary);
   border-block-start-color: var(--color-gold);
-}
-
-.gh-panel__cell--accent {
-  color: var(--color-tertiary);
 }
 
 .gh-panel__cell:focus-visible {

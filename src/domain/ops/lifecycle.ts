@@ -41,7 +41,7 @@ export interface LifecycleStatusView {
 
 const navLabels = (state: LifecycleState): string[] => {
   const nav = navFor(state);
-  return [...nav.primary, ...nav.more].map((i) => i.label);
+  return [...nav.primary, ...nav.more, ...(nav.member ?? [])].map((i) => i.label);
 };
 
 /** What a move to `to` changes for a guest, computed from the same nav model the site renders. */

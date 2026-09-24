@@ -43,7 +43,15 @@ export function bottomCells(nav: NavModel, max: number): NavItem[] {
   return out;
 }
 
-/** Every page link a shell lists, in state order, then the way to sign in (always last). */
+/**
+ * Every page link a shell lists, in state order, then the account slot (always last): "Sign in", or
+ * the account menu once signed in. The household's pages are not here — only in that menu.
+ */
 export function allItems(nav: NavModel): NavItem[] {
   return [...nav.primary, ...nav.more, ...(nav.account ? [nav.account] : [])];
+}
+
+/** The account slot in `allItems`: shells render the account menu there instead of a plain link. */
+export function isAccount(item: NavItem, nav: NavModel): boolean {
+  return !!nav.account && item.href === nav.account.href;
 }

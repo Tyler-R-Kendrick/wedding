@@ -33,8 +33,8 @@ export const PRODUCTION_SPECS = [
   // posts to /api/ai/chat as a visitor, so it needs no test principal. It belongs here rather than
   // on the test server because the two things it asserts about are production behaviour: the answer
   // must be grounded and cited against the SEEDED knowledge base, and the chat route must be the
-  // only door (405 on GET, 403 on a form-encoded POST). With no ANTHROPIC_API_KEY in CI the model
-  // provider is not live, so `conciergeModels()` hands back the deterministic extractive mock.
+  // only door (405 on GET, 403 on a form-encoded POST). The server has no hosted model anywhere,
+  // so a browser without the Prompt API (CI's) gets the deterministic extractive answer.
   'tests/e2e/concierge.spec.ts',
   // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
   // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`

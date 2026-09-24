@@ -341,11 +341,13 @@
 }
 
 .bd-nav__link:hover::after,
-.bd-nav__link[aria-current]::after {
+.bd-nav__link[aria-current="page"]::after,
+.bd-nav__link[aria-current="true"]::after {
   transform: scaleX(1);
 }
 
-.bd-nav__link[aria-current] {
+.bd-nav__link[aria-current="page"],
+.bd-nav__link[aria-current="true"] {
   color: var(--color-tertiary);
 }
 
@@ -579,12 +581,6 @@
 
 .bd-bar__cell svg {
   display: none;
-}
-
-.bd-bar__cell--accent {
-  background: var(--color-moss);
-  border-color: var(--color-moss);
-  color: var(--color-on-moss);
 }
 
 .bd-bar__cell[aria-current] {

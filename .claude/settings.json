@@ -28,8 +28,7 @@
       "WebFetch(domain:www.awwwards.com)",
       "WebFetch(domain:www.theknot.com)",
       "WebFetch(domain:withjoy.com)",
-      "WebFetch(domain:www.zola.com)",
-      "Bash(node scripts/secrets/*)"
+      "WebFetch(domain:www.zola.com)"
     ],
     "ask": [
       "Bash(npm run skills:update)",
@@ -77,12 +76,6 @@
     "SessionStart": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SECRETS_PRIVATE_KEY\" ] && [ -f \"${CLAUDE_PROJECT_DIR}/.secrets/env.enc.json\" ] && (cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/secrets/apply-env.mjs .secrets/env.enc.json >/dev/null 2>&1 || true) || true",
-            "timeout": 30,
-            "statusMessage": "Secret Drop: applying sealed .env bundle"
-          },
           {
             "type": "command",
             "command": "cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/install-git-hooks.mjs 2>&1 || true",

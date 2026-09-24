@@ -31,9 +31,11 @@ export interface FrameInput {
 /** Everything a recipe needs besides its own content: facts, lifecycle, countdown, nav, switcher. */
 export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   const [site, lifecycle, countdown] = await Promise.all([getSiteFacts(), getLifecycleView(input.lifecycle), getCountdown()]);
-  const kind = input.lifecycle?.principal?.kind;
-  const claimed = kind === 'guest';
-  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, claimed, signedIn: kind === 'guest' || kind === 'admin' });
+  // Only a render that resolved the principal knows the answer; without one (prerendered public
+  // pages) `signedIn` stays undefined and the account menu asks in the browser.
+  const principal = input.lifecycle?.principal;
+  const signedIn = principal ? principal.kind === 'guest' || principal.kind === 'admin' : undefined;
+  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}) });
   return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 

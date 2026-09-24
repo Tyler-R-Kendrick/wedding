@@ -54,6 +54,57 @@ test.describe('concierge on Ask Us', () => {
     expect(answer).toMatch(/\[S\d+/);
   });
 
+  test('writes the answer on the guest\'s device through the AI SDK, and the server verifies the draft', async ({ page }) => {
+    // Chrome's Prompt API, stubbed where the browser puts it. The page loads the AI SDK and
+    // `@browser-ai/core` on demand, under the production CSP, and prompts this model with the
+    // server's evidence; the stub echoes the evidence line that holds the date, with its marker.
+    await page.addInitScript(() => {
+      const device = { prompts: 0, system: '' };
+      Object.assign(window, {
+        __device: device,
+        LanguageModel: {
+          availability: async () => 'available',
+          create: async (options: { initialPrompts?: { role: string; content: string }[] }) => {
+            device.system = options.initialPrompts?.find((p) => p.role === 'system')?.content ?? '';
+            return {
+              prompt: async (messages: { content: { value: unknown }[] }[]) => {
+                device.prompts += 1;
+                const text = messages.flatMap((m) => m.content.map((part) => String(part.value))).join('\n');
+                for (const block of text.split('<source ').slice(1)) {
+                  const id = /^id="(S\d+)"/.exec(block)?.[1];
+                  const line = block.split('\n').find((l) => l.includes('July 17, 2027'));
+                  if (id && line) return `${line.trim().replace(/[.\s]+$/, '')} [${id}].`;
+                }
+                return 'I do not know.';
+              },
+              destroy: () => {},
+              addEventListener: () => {},
+            };
+          },
+        },
+      });
+    });
+    const asked: string[] = [];
+    page.on('request', (r) => {
+      if (r.method() !== 'POST' || !r.url().endsWith('/api/ai/chat')) return;
+      const body = JSON.parse(r.postData() ?? '{}') as { mode?: string; draft?: string };
+      asked.push(body.mode === 'evidence' ? 'evidence' : body.draft ? 'draft' : 'answer');
+    });
+
+    await page.goto('/ask-us');
+    await page.getByTestId('concierge-open').click();
+    await page.getByTestId('concierge-input').fill('When is the wedding?');
+    await page.getByTestId('concierge-send').click();
+    const panel = page.getByTestId('concierge');
+    await expect(panel).toContainText('July 17, 2027', { timeout: 30_000 });
+    await expect(panel).toContainText('Based on:');
+    // Evidence out, a draft back: the device wrote the answer, the server only verified it.
+    expect(asked).toEqual(['evidence', 'draft']);
+    const device = await page.evaluate(() => (window as unknown as { __device: { prompts: number; system: string } }).__device);
+    expect(device.prompts).toBe(1);
+    expect(device.system).not.toBe('');
+  });
+
   test('says an undecided fact is undecided instead of inventing a time', async ({ page }) => {
     await page.goto('/ask-us');
     await page.getByTestId('concierge-open').click();

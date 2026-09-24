@@ -184,7 +184,8 @@ describe('concierge panel', () => {
 });
 
 /**
- * The on-device path in the browser. `LanguageModel` is a global in Chrome; stubbing it is exactly
+ * The on-device path in the browser, driven through the AI SDK (`generateText` with the
+ * `@browser-ai/core` provider). `LanguageModel` is a global in Chrome; stubbing it is exactly
  * what a supporting browser looks like from here. What matters is that the panel asks for evidence,
  * writes the sentences locally, sends the draft back for verification, and — whenever any of that
  * fails — still ends up showing the server's own verified answer.
@@ -217,7 +218,19 @@ describe('the concierge on the guest\'s own device', () => {
     return { fetch, bodies };
   }
 
-  /** Records what the device was grounded with, so a test can prove it was not the bare question. */
+  /** The text the device was prompted with: the AI SDK provider sends Prompt API messages, not a string. */
+  const textOf = (input: unknown): string =>
+    typeof input === 'string'
+      ? input
+      : (input as { content: string | { value: unknown }[] }[])
+          .flatMap((m) => (typeof m.content === 'string' ? [m.content] : m.content.map((part) => String(part.value))))
+          .join('\n');
+
+  /**
+   * Records what the device was grounded with, so a test can prove it was not the bare question.
+   * The session has Chrome's shape, `addEventListener` included: `@browser-ai/core` listens on it
+   * for context overflow, and a stub without it is a browser no guest has.
+   */
   function stubDevice(prompt: (input: string) => Promise<string>) {
     const seen = { system: '', asked: '' };
     vi.stubGlobal('LanguageModel', {
@@ -225,8 +238,9 @@ describe('the concierge on the guest\'s own device', () => {
       create: async (options?: { initialPrompts?: { role: string; content: string }[] }) => {
         seen.system = options?.initialPrompts?.find((p) => p.role === 'system')?.content ?? '';
         return {
-          prompt: (input: string) => { seen.asked = input; return prompt(input); },
+          prompt: (input: unknown) => { seen.asked = textOf(input); return prompt(seen.asked); },
           destroy: () => {},
+          addEventListener: () => {},
         };
       },
     });
@@ -403,7 +417,7 @@ describe('the concierge on the guest\'s own device', () => {
     const created: string[] = [];
     vi.stubGlobal('LanguageModel', {
       availability: async () => 'downloadable',
-      create: async () => { created.push('create'); return { prompt: async () => 'never used', destroy: () => {} }; },
+      create: async () => { created.push('create'); return { prompt: async () => 'never used', destroy: () => {}, addEventListener: () => {} }; },
     });
     await open();
     await ask('when is the wedding?');

@@ -50,10 +50,13 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/pass
  * with on a phone — rendered on every route below and passed CI from the day it landed. The
  * chrome is the same on all of them, so one pass over both designs catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/ask-us', '/share-an-adventure'] as const;
 
-/** Behind the invitation: the RSVP, two of its per-part pages, and the three pages a guest plans their weekend from. */
-const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation'] as const;
+/**
+ * Behind the signed-in account menu: the RSVP, two of its per-part pages, the three pages a guest
+ * plans their weekend from, the registry and the photos.
+ */
+const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation', '/gifts', '/photos'] as const;
 
 /** The console. One per family of screens, plus the index; `admin-console.spec.ts` walks all 21. */
 const ADMIN_ROUTES = ['/admin', '/admin/audit', '/admin/jobs', '/admin/flags', '/admin/guests', '/admin/invitations', '/admin/events', '/admin/rsvp', '/admin/content', '/admin/travel', '/admin/media', '/admin/ai'] as const;

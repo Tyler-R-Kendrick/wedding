@@ -36,7 +36,7 @@ plus-ones = 142; planner agreement anticipates 110–160.
 | Families with children (28 children) | Kid policy, what's near, stroller/quiet options, itineraries "with kids" | `TODO(Tyler & Sara)` kid policies surface early; itinerary filter "with kids" |
 | Older relatives | Large legible text, print, phone calls over forms, valet and elevators | 17px body minimum, visible labels, printable logistics, phone-number fallbacks, accessibility info from CAA `/about/faq/` as a dated record |
 | Cost-sensitive travellers | Room-block rate and cutoff, alternatives, ride costs, free things to do | Prices shown only from verified records with `verifiedAt`; never guessed |
-| First-time Chicago visitors | Orientation, the building, the neighbourhood, "look for this" | Explore CAA docent; Share an Adventure itineraries by duration |
+| First-time Chicago visitors | Orientation, the building, the neighbourhood, "look for this" | Our Venue docent; Share an Adventure itineraries by duration |
 | Weekend extenders | Friday afternoon / Saturday morning / Sunday ideas | Itinerary buckets (brief §6) |
 | The couple and wedding party | Preview, check the run of day, share the link | Admin preview (ADR-0012); Your Weekend for party members |
 | Guests' own agents | Read schedule, draft RSVP | WebMCP over the same capabilities (ADR-0002) |
@@ -49,7 +49,7 @@ membership change per state (ADR-0012).
 
 | State | Primary nav (mobile, ≤ 5) | Home's job | Sticky bar |
 |---|---|---|---|
-| TEASER | Story · Adventures · Explore CAA | Names, `07 · 17 · 27`, one line of thesis | none |
+| TEASER | Story · Adventures · Our Venue | Names, `07 · 17 · 27`, one line of thesis | none |
 | SAVE_THE_DATE | Story · Travel & Stay · The Wedding · Adventures | Date (weekday), city, "details to come", travel heads-up | none |
 | INVITATIONS_OPEN | The Wedding · Your Weekend · Travel & Stay · Story | Claim your invitation | Claim |
 | RSVP_OPEN | RSVP · The Wedding · Travel & Stay · Transportation · Your Weekend | RSVP CTA + deadline (`TODO(Tyler & Sara)`) | RSVP · Directions |
@@ -57,7 +57,7 @@ membership change per state (ADR-0012).
 | WEDDING_WEEK | Your Weekend · Transportation · The Wedding · Ask Us · Share an Adventure | Your itinerary, rides, what's open | Directions · Ask Us |
 | WEDDING_DAY | Today · Ask Us · Photos & Video · Transportation | Now / next, your table, ride home | Now · Ask Us |
 | POST_WEDDING | Photos & Video · Adventures · Story · Share an Adventure | Thank you; add your photos | Add photos |
-| ARCHIVE | Photos & Video · Story · Adventures · Explore CAA | The weekend, preserved | none |
+| ARCHIVE | Photos & Video · Story · Adventures · Our Venue | The weekend, preserved | none |
 
 Desktop shows the full set in state order. Gifts is always reachable from
 "More" and from Home in `RSVP_OPEN`+ (never above the RSVP). Ask Us is a
@@ -76,7 +76,7 @@ vocabulary and must not change. "Fold" = visible without scrolling on a
 | Our Adventures | `/adventures` | Expansive, structured `AdventureMemory` records with optional "Sara remembers / Tyler remembers" | Section intro + first memory card with place and year; filter by motif | all |
 | Share an Adventure | `/share-an-adventure` | Recommendations linked to memories; itineraries by 45 min / 2–3 h / Friday afternoon / Saturday morning / with kids / architecture / food & drink / stay inside CAA | Itinerary picker (duration/mode chips) + first recommendation with practical layer visible, memory layer collapsed | SAVE_THE_DATE+ |
 | The Wedding | `/the-wedding` | Ceremony, cocktail hour, reception: room (`TODO`), times (`TODO`), dress code (`TODO`), what happens, accessibility | Date + weekday; venue + tappable address; first event name/time (or dated "times to be confirmed"); dress code line | INVITATIONS_OPEN+ |
-| Explore CAA | `/explore-caa` | Docent: building, spaces, history with provenance, on-property outlets as live links, "look for this" details, floor plans with your table when published | One-line "built 1893…" hook; image frame; "Spaces" and "Look for this" entry points | all |
+| Our Venue | `/our-venue` | Docent: building, spaces, history with provenance, on-property outlets as live links, "look for this" details, floor plans with your table when published | One-line "built 1893…" hook; image frame; "Spaces" and "Look for this" entry points | all |
 | Your Weekend | `/your-weekend` (auth) | Personal hub: your invitation, events, RSVP status, table (when published), benefits (block link, voucher), preferences | Greeting by first name; RSVP status or CTA; next event; your benefits list | INVITATIONS_OPEN+ |
 | RSVP | `/rsvp` (auth) | Household-aware RSVP: per-event accept/decline, per-person meal (`TODO` menu), dietary notes, plus-one per invitation, message | Household names; first event accept/decline controls; deadline | RSVP_OPEN, edit-by-request after |
 | Travel & Stay | `/travel` | Airports (`TODO` which to recommend), CAA block (rate/URL/cutoff `TODO`), alternatives (`TODO`), neighbourhood, weather expectations | Hotel block card with dated status; airport line; "book" action or honest unavailable | SAVE_THE_DATE+ |
@@ -109,7 +109,7 @@ Hospitality, Future.** Anti-references apply to both (brief §4).
 | Motion | Curtains, elevator doors, engraved reveals — moving through a building | Leaves settling, soft parallax — turning archive pages |
 | Structure | Centred axis; numbered sections; symmetric pairs; hero as monument; grid never breaks | Off-axis; cards pinned like specimens; images break the grid by one column; captions hang in gutters |
 | Ground | Marble white / ivory with gold hairlines | Creme with sky-blue washes and moss accents |
-| Where it shines | The Wedding, Explore CAA, Countdown, Timeline | Our Adventures, Share an Adventure, Photos, Story |
+| Where it shines | The Wedding, Our Venue, Countdown, Timeline | Our Adventures, Share an Adventure, Photos, Story |
 | Risk to watch | Reads cold or "hotel brand"; gold on white contrast | Reads "template floral"; watercolor drift; illegible on busy backgrounds |
 
 Same everywhere: kit contracts (§6), a11y (§8), print styles, copy,
@@ -201,7 +201,7 @@ See brief §6 and ADR-0011. Every operational record carries `sourceId`,
 | `AdventureMemory` | Place, date range, motif tags, body, optional "Sara remembers / Tyler remembers", media refs | Our Adventures, Share an Adventure memory layer |
 | `Recommendation` | Practical layer (what/where/hours/link with provenance) + optional memory link; itinerary buckets; `draft` until curated | Share an Adventure, Ask Us |
 | `Event` | Name, room (`TODO`), start/end (`TODO`), dress code (`TODO`), accessibility, invitation scope | The Wedding, Your Weekend, Timeline |
-| `Space` / `Outlet` | CAA spaces with kit capacities (verify); outlets as live links with `verifiedAt` | Explore CAA, Share an Adventure |
+| `Space` / `Outlet` | CAA spaces with kit capacities (verify); outlets as live links with `verifiedAt` | Our Venue, Share an Adventure |
 | `Household` / `Guest` / `Invitation` | ADR-0001 | RSVP, Your Weekend |
 | `Benefit` | Per-guest entitlement (block link, voucher) with provider state | Your Weekend, Transportation, Travel & Stay |
 | `Media` | ADR-0005 rights flags and derivatives | Photos & Video, Gallery |
