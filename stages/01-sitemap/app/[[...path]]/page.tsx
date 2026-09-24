@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   LIFECYCLE_STATES,
@@ -13,6 +14,7 @@ import {
   trail,
   validateSitemap,
   visibleIn,
+  withBase,
   type SitemapPage,
 } from '@wedding/sitemap';
 import { StageBar } from '@wedding/sitemap/chrome';
@@ -113,7 +115,7 @@ function MapView() {
             <tbody>
               {guestFacing.map((p) => (
                 <tr key={p.id}>
-                  <th scope="row"><a href={href(p)}>{p.title}</a></th>
+                  <th scope="row"><Link href={href(p)}>{p.title}</Link></th>
                   {LIFECYCLE_STATES.map((st) => (
                     <td key={st} data-on={visibleIn(p, st) || undefined}>
                       <span className="sm-visually-hidden">{visibleIn(p, st) ? 'visible' : 'hidden'}</span>
@@ -127,7 +129,7 @@ function MapView() {
       </section>
 
       <p className="sm-foot">
-        As data: <a href="/sitemap.json">sitemap.json</a>. Source: <code>stages/01-sitemap/lib/sitemap.ts</code>.
+        As data: <a href={withBase('/sitemap.json')}>sitemap.json</a>. Source: <code>stages/01-sitemap/lib/sitemap.ts</code>.
       </p>
     </>
   );
@@ -137,12 +139,12 @@ function TreeNode({ p, audience }: { p: SitemapPage; audience: SitemapPage['audi
   const kids = children(p.id).filter((c) => c.audience === audience);
   return (
     <li className="sm-node">
-      <a className="sm-node__card" href={href(p)}>
+      <Link className="sm-node__card" href={href(p)}>
         <span className="sm-node__title">{p.title}</span>
         <code className="sm-node__path">{p.path}</code>
         <span className="sm-node__job">{p.job}</span>
         {p.visibleFrom && <span className="sm-node__meta">from {STATE_LABEL[p.visibleFrom]}</span>}
-      </a>
+      </Link>
       {kids.length > 0 && (
         <ul className="sm-tree">
           {kids.map((c) => <TreeNode key={c.id} p={c} audience={audience} />)}
@@ -160,10 +162,10 @@ function NodeView({ p }: { p: SitemapPage }) {
     <article className="sm-card">
       <nav aria-label="Breadcrumb">
         <ol className="sm-crumbs">
-          <li><a href="/">Map</a></li>
+          <li><Link href="/">Map</Link></li>
           {crumbs.map((c) => (
             <li key={c.id}>
-              {c.id === p.id ? <span aria-current="page">{c.title}</span> : <a href={href(c)}>{c.title}</a>}
+              {c.id === p.id ? <span aria-current="page">{c.title}</span> : <Link href={href(c)}>{c.title}</Link>}
             </li>
           ))}
         </ol>
@@ -177,7 +179,7 @@ function NodeView({ p }: { p: SitemapPage }) {
         <div><dt>Appears</dt><dd>{p.visibleFrom ? `from ${STATE_LABEL[p.visibleFrom]}` : 'always (signed-in admins)'}</dd></div>
         <div><dt>In the navigation</dt><dd>{p.inNav ? `yes, as "${p.navLabel ?? p.title}"` : 'no'}</dd></div>
         {action && (
-          <div><dt>Primary action</dt><dd>{p.primaryAction!.label} → <a href={href(action)}>{action.title}</a></dd></div>
+          <div><dt>Primary action</dt><dd>{p.primaryAction!.label} → <Link href={href(action)}>{action.title}</Link></dd></div>
         )}
       </dl>
       {p.notes && (
@@ -189,7 +191,7 @@ function NodeView({ p }: { p: SitemapPage }) {
       {kids.length > 0 && (
         <>
           <h2>Below this page</h2>
-          <ul>{kids.map((c) => <li key={c.id}><a href={href(c)}>{c.title}</a>: {c.job}</li>)}</ul>
+          <ul>{kids.map((c) => <li key={c.id}><Link href={href(c)}>{c.title}</Link>: {c.job}</li>)}</ul>
         </>
       )}
     </article>

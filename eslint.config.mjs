@@ -8,7 +8,7 @@ export default defineConfig([
   globalIgnores([
     '.next/**', 'node_modules/**', '.data/**', '.claude/**', '.impeccable/**', 'coverage/**',
     'playwright-report/**', 'test-results/**', 'src/db/migrations/**', 'scripts/**', 'docs/**', 'next-env.d.ts',
-    'stages/*/.next/**', 'stages/*/out/**', 'stages/*/next-env.d.ts', 'stages/04-placeholder/public/**',
+    'stages/*/.next/**', 'stages/*/out/**', 'public/_stages/**', 'stages/*/next-env.d.ts', 'stages/04-placeholder/public/**',
   ]),
   ...asArray(nextVitals),
   ...asArray(nextTs),
@@ -16,6 +16,12 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
     },
+  },
+  {
+    // The demo recorder's preloads are CommonJS on purpose: `node --require` loads them before
+    // webreel's ESM, to patch the CommonJS DevTools client it imports (docs/ops/demos.md).
+    files: ['demos/**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
     // Providers are leaves: they never import domain logic, capabilities, or app code.

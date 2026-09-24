@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import { securityHeaders } from './src/lib/security-headers';
+import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
 
 // CSP and HSTS live here rather than in `src/proxy.ts`: the proxy's matcher skips `api/`, `_next/`,
 // `t/`, `fonts/`, `assets/` and any path with a dot, and `/t/<theme>` is the statically rendered
@@ -43,7 +44,12 @@ const nextConfig: NextConfig = {
     // `tests/e2e/media-upload.spec.ts` asserts `sandbox` on a served derivative and received the
     // site policy instead. That inverted the intent twice over, because the permissive `img-src`
     // and `media-src` in security-headers.ts are justified BY that per-route sandbox.
-    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }];
+    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...stageHeaders()];
+  },
+  // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
+  // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.
+  async rewrites() {
+    return { beforeFiles: stageRewrites({ production: process.env.VERCEL_ENV === 'production' }), afterFiles: [], fallback: [] };
   },
   // Sandboxes with parallel worktrees symlink node_modules outside the project; Turbopack needs its
   // filesystem root to contain the link target. Unset in normal checkouts and CI.

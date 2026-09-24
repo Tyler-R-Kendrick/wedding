@@ -25,12 +25,14 @@
  *   6. Variables    the site's own secrets, generated here if the project lacks them; the public
  *                   origin; and what the Secret Drop already acquired into .env, mirrored as
  *                   sensitive variables — minus anything a connector now owns.
- *   7. Cron         vercel.json carries them (Vercel sends `Authorization: Bearer $CRON_SECRET`
+ *   7. Stage domains  dev.<domain> and *.dev.<domain>, where the design pipeline's stages are
+ *                   served (src/lib/stage-hosting.ts). Never chosen as the site's own origin.
+ *   8. Cron         vercel.json carries them (Vercel sends `Authorization: Bearer $CRON_SECRET`
  *                   itself). Nothing to do but read the file out.
- *   8. Preflight    every variable src/lib/env.ts requires in production is present, or stop. A
+ *   9. Preflight    every variable src/lib/env.ts requires in production is present, or stop. A
  *                   build goes READY whether or not the app can boot; the first run of this
  *                   script proved that by serving 500 on every route.
- *   9. Deploy       `vercel deploy` (or `--prod`), then wait for READY and read the build log if
+ *  10. Deploy       `vercel deploy` (or `--prod`), then wait for READY and read the build log if
  *                   it is not.
  *
  * Vercel Connect (the OIDC-to-provider-token exchange, `vercel connect create <service>`) is for
@@ -153,6 +155,12 @@ async function api(method, path, body) {
   try { json = await res.json(); } catch { /* no body */ }
   return { ok: res.ok, status: res.status, json };
 }
+
+/**
+ * The design pipeline's stages are served by this project at `<stage>.dev.<domain>` and the hub at
+ * `dev.<domain>` (src/lib/stage-hosting.ts, whose isStageHost this mirrors). Never a site origin.
+ */
+const isStageDomain = (name) => name.startsWith('*.') || /^(?:(?:sitemap|wireframe|skeleton|placeholder)\.)?dev\./.test(name);
 
 /* ------------------------------------------------------------------ steps */
 
@@ -360,7 +368,10 @@ async function variables(project, scope, owned) {
   // Only a domain that SERVES this project's production branch can be its origin. A redirect
   // sends the passkey relying party somewhere else, an unverified domain is not ours yet, and a
   // branch domain serves something other than production.
-  const usable = (listed || []).filter((d) => d.name && !d.redirect && d.verified !== false && !d.gitBranch);
+  // Nor can the design pipeline's stage hosts (dev.<domain>, *.dev.<domain>; stageDomains below):
+  // listed newest first, they would otherwise become the passkey relying party and the address in
+  // every guest e-mail the moment they were attached.
+  const usable = (listed || []).filter((d) => d.name && !d.redirect && d.verified !== false && !d.gitBranch && !isStageDomain(d.name));
   const names = usable.map((d) => d.name);
   const host = names.find((n) => !n.endsWith('.vercel.app')) ?? names.find((n) => n.endsWith('.vercel.app'));
   if (listed && !host) {
@@ -411,8 +422,30 @@ async function variables(project, scope, owned) {
   if (still.length) say(`Still needed, and only the couple can say: ${still.join(', ')} — the Secret Drop's email strip asks for the first; the admin guide covers the second.`);
 }
 
+/**
+ * 7. Stage domains: dev.<domain> for the hub and *.dev.<domain> for the stages, on the domain the
+ * site itself is served at. A wildcard needs the zone on Vercel's nameservers; when it is not,
+ * Vercel refuses it and this says so, and the four stage names can be added one by one instead.
+ */
+async function stageDomains(project, scope) {
+  step('7. Stage domains');
+  const q = `?teamId=${encodeURIComponent(scope)}`;
+  const listed = await api('GET', `/v9/projects/${project.id}/domains${q}`);
+  if (!listed.ok) { say('Could not list this project\'s domains; leaving the stage domains alone.'); return; }
+  const domains = listed.json?.domains || [];
+  const apex = domains.find((d) => d.name && !d.redirect && !d.gitBranch && !d.name.endsWith('.vercel.app') && !isStageDomain(d.name))?.apexName;
+  if (!apex) { say('No custom domain on this project, so there is no dev.<domain> to add. Stages stay reachable by path on previews.'); return; }
+  const have = new Set(domains.map((d) => d.name));
+  for (const name of [`dev.${apex}`, `*.dev.${apex}`]) {
+    if (have.has(name)) { say(`${name}: attached.`); continue; }
+    if (PLAN) { say(`${name}: would attach.`); continue; }
+    const r = await api('POST', `/v10/projects/${project.id}/domains${q}`, { name });
+    say(r.ok ? `${name}: attached.` : `${name}: Vercel refused (${r.status} ${r.json?.error?.code ?? ''}: ${r.json?.error?.message ?? 'no message'}).`);
+  }
+}
+
 function cron() {
-  step('7. Cron');
+  step('8. Cron');
   // Read the file rather than restate it: this said `/api/jobs/run` alone while vercel.json
   // declared three, and one cron covering two job routes is a defect this repo has already had
   // once — uploads sat in "Checking" because nothing ran /api/uploads/jobs/run.
@@ -460,7 +493,7 @@ async function requiredInProduction() {
  * not about the app, so the build succeeding is not evidence of anything a guest would notice.
  */
 async function preflight(project, scope) {
-  step('8. Preflight');
+  step('9. Preflight');
   if (!bearer || !project) { say('(no token or project: skipped)'); return true; }
   const keys = await envKeys(project, scope);
   if (!keys) {
@@ -507,7 +540,7 @@ async function preflight(project, scope) {
 }
 
 async function deploy(scope) {
-  step(PROD ? '9. Deploy (production)' : '9. Deploy (preview)');
+  step(PROD ? '10. Deploy (production)' : '10. Deploy (preview)');
   if (PLAN) { say(`Would run: vercel deploy --yes${PROD ? ' --prod' : ''} --scope ${scope}`); return; }
   const r = await vercel(['deploy', '--yes', ...(PROD ? ['--prod'] : []), '--scope', scope]);
   const url = (r.out.match(/https:\/\/[a-z0-9.-]+\.vercel\.app/g) || []).pop();
@@ -540,11 +573,12 @@ const project = await ensureProject(scope);
 await link(scope);
 const owned = await connectors(project, scope);
 await variables(project, scope, owned);
+await stageDomains(project, scope);
 cron();
 // `--skip-preflight` skips it, rather than paying for it and printing a refusal before deploying
 // anyway; and a plan reports without ever failing, because a plan writes nothing to fail about.
 let cleared = true;
-if (flag('skip-preflight')) { step('8. Preflight'); say('Skipped (--skip-preflight).'); }
+if (flag('skip-preflight')) { step('9. Preflight'); say('Skipped (--skip-preflight).'); }
 else cleared = await preflight(project, scope);
 if (cleared || PLAN) await deploy(scope);
 else process.exit(1);

@@ -3,7 +3,9 @@ name: stages
 # The design pipeline (stages/README.md): sitemap → wireframe → skeleton → placeholder, each its
 # own project. The jobs are chained in pipeline order because each stage imports the one above it:
 # a broken sitemap fails here, at stage 1, instead of as a strange render three stages later.
-# The real app (stage 5) is held to the sitemap by tests/unit/stages/, in design-quality.yml.
+# The last job assembles the stages into the wedding app, which serves them at
+# <stage>.dev.<domain> (and /<stage> outside production), and probes them through the running app. The real app (stage 5) is held to the sitemap by tests/unit/stages/, in
+# design-quality.yml.
 
 on:
   pull_request:
@@ -84,3 +86,46 @@ jobs:
       - run: npx vitest run --project stage:placeholder
       - run: node scripts/check-design-drift.mjs stages/04-placeholder
       - run: npm run build -w @wedding/placeholder
+
+  dev-host:
+    name: 5 · served by the wedding app (every stage by subdomain and by path)
+    needs: placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The hub, board and sign-off command are TypeScript run through tsx; check them first.
+      - run: npx tsc -p scripts/stages/tsconfig.json
+      # Every stage twice (at a host root for <stage>.dev.<domain>, under /<stage> for previews)
+      # plus the hub, into public/_stages/, as the Vercel build does (vercel.json).
+      - run: npm run stages:assemble
+      - name: Build the wedding app
+        run: npm run build
+        env:
+          PGLITE_MEMORY: '1'
+      # The app's own rewrites (src/lib/stage-hosting.ts) serve the stages; the probe asks for the
+      # hub and each stage at both addresses, every script, stylesheet and font they reference,
+      # the 404s (the hub host's other paths, /_stages/ itself), and that the wedding site's own
+      # home page is untouched. The wait asks for the hub by its host: /_stages/… is never served.
+      - name: Probe the stages through the running app
+        env:
+          CI: 'true'
+          PGLITE_MEMORY: '1'
+          DB_AUTO_MIGRATE: '1'
+          DB_AUTO_SEED: '1'
+          # CI-only placeholders so the production env check passes; never real secrets.
+          CONFIRMATION_SECRET: ci-only-confirmation-secret-not-real
+          CRON_SECRET: ci-only-cron-secret-not-real-32-chars-minimum
+          STORAGE_SIGNING_SECRET: ci-only-storage-signing-secret-not-real
+          BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-real
+          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          RATE_LIMIT_BACKEND: db
+        run: |
+          npm run -s start &
+          for i in $(seq 1 60); do curl -sf -o /dev/null -H 'Host: dev.kendrick.localhost' http://127.0.0.1:3000/ && break; sleep 2; done
+          npm run -s stages:probe

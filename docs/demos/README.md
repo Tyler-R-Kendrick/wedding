@@ -51,3 +51,32 @@ The same home page at 390px, the width the site is designed from, with the bar o
 destinations that stays at the bottom of the screen.
 
 [![Home on a phone](phone.gif)](phone.mp4)
+
+## The design pipeline, by subdomain
+
+Proof that the wedding app serves every stage of the design pipeline
+([stages/README.md](../../stages/README.md)) at its own address. The strip along the bottom is
+written by the browser, not the tour: the HTTP status it got and the address it is on. It is the
+recorder's (`demos/recorder-preload.cjs`), never the site's. `kendrick.localhost` is production's
+shape, kendrick.wedding, on the recording machine.
+
+The hub at `dev.kendrick.localhost`, listing every stage's address; stage 1 at
+`sitemap.dev.kendrick.localhost`; the RSVP page there, then the same page at
+`wireframe.dev…`, `skeleton.dev…` (clicked through into "Who is coming"), `placeholder.dev…` (the
+theme picker switched to Gilded Hour), and finally the real site at `kendrick.localhost`, each hop
+by the stage bar's own link. Then `dev.kendrick.localhost/rsvp`, a 404: the hub host is the hub
+alone, never the wedding app under a second name. Last, the board: every page at every stage, with
+its sign-offs.
+
+[![Every stage at its own subdomain](stages-by-subdomain.gif)](stages-by-subdomain.mp4)
+
+## The design pipeline, by path (every pull request's preview)
+
+The same stages on one host, as every preview carries them: `/stages` is the hub, then
+`/skeleton`, `/skeleton/rsvp`, `/wireframe/rsvp` and `/placeholder/rsvp` by the stage bar, and
+`/rsvp`, the real site, on the same host. Last, `/_stages/_hub/index.html`, a 404: the assembled
+files are never served directly, so kendrick.wedding itself never shows them. (One frame on the
+way into `/skeleton` shows the page tiled: that is the recorder catching the compositor
+mid-navigation, not the page.)
+
+[![Every stage by path](stages-by-path.gif)](stages-by-path.mp4)

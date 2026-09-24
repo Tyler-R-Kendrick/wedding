@@ -59,6 +59,10 @@ npm run stages:test            # every stage's tests (also part of `npm run test
 npm run stages:typecheck       # in pipeline order; stops at the first stage that fails
 npm run stages:build           # static exports in pipeline order → stages/*/out/
 npm run stages:serve           # serve those exports on 3101–3104, as a static host would
+npm run stages:assemble        # every stage, both ways, plus the hub → public/_stages/ (served by the app)
+npm run dev                    # then: http://dev.kendrick.localhost:3000, http://sitemap.dev.kendrick.localhost:3000/rsvp
+npm run stages:probe           # check every address and asset, against the running app
+npm run stages:signoff -- <stage> <pageId> --by <name>
 node scripts/stages/run.mjs build skeleton placeholder    # just some stages
 ```
 
@@ -103,24 +107,75 @@ The lo-fi stages (1–3) draw only with the `--st-*` tokens in
 `DESIGN.md`, so the pre-commit design gate and `design:drift` hold them to the
 same scale as the site.
 
-## Deploy
+## Sign-offs: settling a stage
 
-Each stage is a static export (`out/`) and deploys as its own Vercel project:
+"Settle each stage's question before moving down" is recorded, not assumed. When Sara or
+Tyler (or whoever owns the call) is happy with a page at a stage, sign it off:
 
-1. New Vercel project from this repository, **Root Directory** `stages/0N-<stage>`
-   ("Include files outside the root directory" on — the default). Everything
-   else comes from that directory's `vercel.json`: install at the repo root,
-   `npm run build`, serve `out/`.
-2. On every stage project, set
-   `NEXT_PUBLIC_STAGE_URL_SITEMAP`, `…_WIREFRAME`, `…_SKELETON`,
-   `…_PLACEHOLDER` and `…_REAL` to the deployed URLs so each stage bar links to
-   the others. Unset, they point at the local dev ports.
-3. Each project's `ignoreCommand` is `scripts/stages/changed.mjs <stage>`: it
-   builds only when something that stage reads changed since its last
-   deployment (`scripts/stages/inputs.mjs`), which is the cascade expressed as
-   deployments. A sitemap edit redeploys all four; a skeleton edit redeploys
-   3 and 4; a `DESIGN.md` edit redeploys 4.
+```bash
+npm run stages:signoff -- skeleton rsvp --by Sara --note "walked the reply by keyboard"
+```
 
-CI (`.github/workflows/stages.yml`) typechecks, tests, design-checks and
-builds the four stages as a chain in pipeline order, so a failure names the
-stage where the problem starts.
+That appends to `stages/signoffs.json` with today's date and the page's current **wireframe
+fingerprint** (`fingerprint()` in `02-wireframe/lib/index.ts`). Commit the file. Wireframe,
+skeleton and placeholder take sign-offs; the sitemap is settled by being in it, and the real app
+by shipping.
+
+The fingerprint is the cascade applied to approvals: when a wireframe changes after a page was
+signed off, every sign-off on that page shows as **stale** on the board until someone looks
+again. Nothing fails; the board just stops vouching for what nobody has seen.
+
+## Online: every stage at its own address, served by the wedding app
+
+The wedding site's own Vercel project serves the stages too, so there is nothing else to deploy:
+
+| Address | Serves |
+|---|---|
+| `dev.kendrick.wedding` | the hub: what each stage is for, and the **board** (every page × every stage, with its sign-offs) |
+| `sitemap.dev.kendrick.wedding/rsvp`, `wireframe.dev.…`, `skeleton.dev.…`, `placeholder.dev.…` | a stage on its own subdomain, to share with the couple |
+| `<preview>/sitemap/rsvp`, `/wireframe/…`, `/skeleton/…`, `/placeholder/…`, and `/stages` for the hub | a stage by path, on every pull request's preview (and locally) |
+
+How it fits together:
+
+- **Assembled into the app.** `npm run stages:assemble` builds each stage as a static export into
+  the app's `public/` folder, under `_stages` (build output, gitignored), twice: at a host root (`_hosts/<stage>/`, for the subdomains) and under
+  `/<stage>` (for paths), plus the hub (`scripts/stages/hub.ts`). The Vercel build
+  (`vercel.json`) runs it with `--for-vercel`, which builds only what that environment serves:
+  subdomain builds for production, path builds for previews. Two stages build at a time, which
+  adds about a minute to a deploy.
+- **Routed by the app.** `next.config.ts` takes its `beforeFiles` rewrites from
+  `src/lib/stage-hosting.ts`. A host that starts `<stage>.dev.` gets that stage, `/_next`
+  included, and a 404 for any page the sitemap lacks. `dev.` gets the hub at `/` and nothing
+  else: every other path there is a 404, never the wedding app under a second name. Outside
+  production, `/<stage>/…` and `/stages` work on any host. The assembled files are never served
+  at `/_stages/…` directly, so kendrick.wedding itself never shows them. `src/proxy.ts` steps
+  aside for these requests, and every response is `X-Robots-Tag: noindex`.
+- **Links need no configuration.** The stage bar and the hub work out every link from the
+  address you are on (`stageHref()` in `01-sitemap/lib/pipeline.ts`). On
+  `sitemap.dev.kendrick.wedding`, "Wireframe" is `wireframe.dev.kendrick.wedding` and "Real" is
+  `kendrick.wedding`. On a preview they are `/wireframe/…` and `/…` on the same host, and the
+  preview's hub links there too, never to production. The subdomain builds also know their dev
+  domain at build time, so their static HTML carries the right links before any script runs.
+- **Local is the same app.** `npm run stages:assemble && npm run dev`, then open
+  `http://dev.kendrick.localhost:3000` or `http://sitemap.dev.kendrick.localhost:3000/rsvp`, with
+  the real site at `http://kendrick.localhost:3000`: production's shape on your machine. Browsers
+  resolve every `*.localhost` to it and treat it as secure over plain http, so nothing is upgraded
+  to https (the site's CSP asks for that on any other name). `http://localhost:3000/sitemap`
+  works too.
+- **Checked.** `tests/unit/stages/stage-hosting.test.ts` replays the rewrites with Next's own
+  matcher. `npm run stages:probe` asks a running app for the hub and every stage at both
+  addresses, every script, stylesheet and font they reference, and the 404s (the hub host's other
+  paths, `/_stages/…`, an unknown stage page). CI runs it against `next start` (`stages.yml`,
+  job 5). `docs/demos/stages-by-subdomain.mp4` and `stages-by-path.mp4` are the same walk,
+  recorded in a browser (`npm run demos:stages`, docs/ops/demos.md).
+- **Domains.** `dev.kendrick.wedding` and `*.dev.kendrick.wedding` belong on the wedding project.
+  kendrick.wedding is on Vercel's nameservers, so the wildcard needs no DNS work.
+  `npm run deploy:vercel` attaches both (step 7, "Stage domains"), and never takes a stage host
+  for the site's own origin.
+
+Each stage still stands alone: its own `npm run dev`, tests, typecheck and `npm run build`, and
+its own `out/` for any static host (`npm run start -w @wedding/<stage>`).
+
+CI (`.github/workflows/stages.yml`) typechecks, tests, design-checks and builds the four stages as
+a chain in pipeline order, so a failure names the stage where the problem starts. It then
+assembles them into the app and probes them through it.
