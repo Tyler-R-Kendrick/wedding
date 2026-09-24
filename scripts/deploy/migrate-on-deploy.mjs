@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Applies the committed migration chain once per production deploy, from the build step.
+ * Applies the committed migration chain, then syncs the repo's content, once per production deploy,
+ * from the build step (see DEPLOY_STEPS).
  *
  * The alternative is `DB_AUTO_MIGRATE=1`, which `src/db/client.ts` runs inside `connect()` — that
  * is once per *serverless instance*, so on Vercel the migrator and the seed run on every cold
@@ -81,6 +82,21 @@ export function childEnv(env, url) {
   return { ...env, DATABASE_URL: url, DB_AUTO_MIGRATE: '0', DB_AUTO_SEED: '0' };
 }
 
+/**
+ * What a production deploy runs against the database, in order, before `next build`.
+ *
+ * The migration chain first, then the content sync (src/db/seed/sync-content.ts): content committed
+ * to src/content/seed/ reaches the live site with the deploy that carries it, instead of waiting for
+ * someone to seed production by hand (it used to wait, and a merged content change simply did not
+ * appear). The sync writes content only, and never a row an admin has edited: see syncContent.
+ * Guests, events, RSVP settings and the site row are still seeded once, by hand (the runbook).
+ * Before the build because the build prerenders pages that read these tables.
+ */
+export const DEPLOY_STEPS = [
+  { script: 'db:migrate', failure: 'migrations failed' },
+  { script: 'db:sync-content', failure: 'content sync failed' },
+];
+
 // `pathToFileURL` rather than `file://` + argv[1]: the concatenated form does not percent-encode,
 // so a checkout path with a space or a non-ASCII character makes this false and the script a
 // silent no-op that migrates nothing and still exits 0. src/db/migrate.ts uses the same idiom.
@@ -96,10 +112,16 @@ if (isMain) {
     console.log(`migrate-on-deploy: skipped (${reason})`);
     process.exit(0);
   }
-  console.log('migrate-on-deploy: applying the migration chain before the build');
-  // Fail the build rather than ship code onto a database that does not have its schema: that
-  // combination is what answered 500 on every route the first time this site went up.
-  const r = spawnSync('npm', ['run', 'db:migrate'], { stdio: 'inherit', env: childEnv(process.env, url) });
-  if (r.status !== 0) console.error('migrate-on-deploy: migrations failed; failing the build');
-  process.exit(r.status ?? 1);
+  console.log('migrate-on-deploy: applying the migration chain and syncing content before the build');
+  // Fail the build rather than ship code onto a database that does not have its schema (that
+  // combination is what answered 500 on every route the first time this site went up), or content
+  // the code expects but the database lacks. A failed build leaves the previous deployment serving.
+  for (const step of DEPLOY_STEPS) {
+    const r = spawnSync('npm', ['run', step.script], { stdio: 'inherit', env: childEnv(process.env, url) });
+    if (r.status !== 0) {
+      console.error(`migrate-on-deploy: ${step.failure}; failing the build`);
+      process.exit(r.status ?? 1);
+    }
+  }
+  process.exit(0);
 }

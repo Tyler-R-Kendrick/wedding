@@ -2,7 +2,8 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DATABASE_URL_ALIASES } from '@/lib/env';
-import { childEnv, decide } from '../../scripts/deploy/migrate-on-deploy.mjs';
+import { readFileSync } from 'node:fs';
+import { childEnv, decide, DEPLOY_STEPS } from '../../scripts/deploy/migrate-on-deploy.mjs';
 
 const SCRIPT = path.resolve(process.cwd(), 'scripts/deploy/migrate-on-deploy.mjs');
 
@@ -28,6 +29,14 @@ function runScript(env: Record<string, string>): { status: number; out: string }
  */
 describe('migrate-on-deploy', () => {
   const PROD = { VERCEL: '1', VERCEL_ENV: 'production' };
+
+  it('migrates, then syncs the repo\'s content, and both scripts exist', () => {
+    // Mutation: dropping the sync (content merged to main never reaches the live site), or running
+    // it before the chain (the sync writes columns the chain creates).
+    expect(DEPLOY_STEPS.map((s) => s.script)).toEqual(['db:migrate', 'db:sync-content']);
+    const scripts = JSON.parse(readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8')).scripts as Record<string, string>;
+    for (const s of DEPLOY_STEPS) expect(scripts[s.script], s.script).toBeTruthy();
+  });
 
   it('migrates on a production Vercel build', () => {
     // Mutation: `run: false` here, or dropping the POSTGRES_URL fallback.

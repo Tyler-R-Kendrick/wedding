@@ -38,6 +38,15 @@ search both use it).
   halfway. If migrations fail the build fails, which is the point: code deployed onto a
   database without its schema answers 500 on every route.
   Off Vercel, run `npm run db:migrate` with `DATABASE_URL` set.
+- **Content syncs itself on deploy too.** Right after the chain, the same step runs
+  `npm run db:sync-content` (`src/db/seed/sync-content.ts`): the story, places,
+  adventures, recommendations, venue docent and FAQ in `src/content/seed/`, their
+  provenance sources, and the AI corpus projected from them. So content merged to
+  `main` is on the live site with the deploy that carries it. It writes content only,
+  never guests, events, RSVP settings or the site row, and never a row an admin has
+  edited in `/admin/content` (every upsert is guarded by `content_version = 1`). A
+  failed sync fails the build, leaving the previous deployment serving. Off Vercel,
+  run `npm run db:sync-content` with `DATABASE_URL` set.
   One sharp edge: the step keys off `VERCEL`, which the CLI also sets for a local
   `vercel build --prod` — and that pulls the production environment. Run that on a laptop and
   it will apply the chain to the live database. Use `npm run build` locally; `vercel build`
@@ -47,10 +56,11 @@ search both use it).
   pages that read content tables, so a build compiled against the *old* schema is the more
   likely breakage, and the chain is additive by convention. A destructive migration (a drop
   or a rename) is the case to run by hand, in two deploys, rather than through this step.
-- Decide about seeding. `npm run db:seed` writes the brief-derived content and
-  is idempotent, but it also writes the placeholder rows. On a production
-  database, run it once and then enter the real content through `/admin/content`
-  rather than re-seeding.
+- Decide about seeding. `npm run db:seed` is idempotent and writes what the
+  deploy's content sync does not: the site row, lifecycle state, feature flags,
+  events, RSVP settings and floor plans. Run it once on a new production database.
+  Content after that arrives with each deploy (above); an edit made in
+  `/admin/content` is kept either way.
 
 ### Previews share the production database
 
@@ -75,8 +85,9 @@ connection, both flags are still the way: set `DB_AUTO_MIGRATE=1` **and**
 `DB_AUTO_SEED=1`, deploy once, then remove both. `DB_AUTO_MIGRATE` alone applies the
 schema and seeds nothing, which leaves the tables only `seed()` ever writes — `events`,
 the `rsvp_settings` 'current' row, `floor_plans` and the content rows — empty, and the
-pages that read them saying the site has not been set up yet. The build step migrates but
-never seeds, deliberately: a seed on every deploy is a write nobody asked for.
+pages that read them saying the site has not been set up yet. The build step migrates and
+syncs content, but never runs the full seed: events, RSVP settings and the site row are
+written once, by hand, and belong to the admins after that.
 
 ### 2. Storage
 
