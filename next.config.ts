@@ -47,7 +47,17 @@ const nextConfig: NextConfig = {
     // and `media-src` in security-headers.ts are justified BY that per-route sandbox.
     // The rights headers (no AI training, no text and data mining; src/lib/rights.ts) set keys the
     // security headers do not, so the two sets never override each other.
-    return [{ source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) }, ...rightsHeaders(), ...stageHeaders(stageFramingHeaders(headerOptions))];
+    return [
+      { source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) },
+      ...rightsHeaders(),
+      ...stageHeaders(stageFramingHeaders(headerOptions)),
+      // The atlas files are addressed by content hash (src/themes/shared/atlas/files.ts), so a
+      // returning guest never re-downloads the map. Only the hashed address is immutable: a request
+      // without `?v=` (a stage's captured page) revalidates as before. Photos keep their names: a
+      // day, then revalidate.
+      { source: '/assets/atlas/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/assets/photos/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }] },
+    ];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.

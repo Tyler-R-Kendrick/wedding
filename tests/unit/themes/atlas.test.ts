@@ -1,9 +1,13 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { adventureCoordinates } from '@/domain/adventures/repo';
 import { ATLAS_FRAME, ATLAS_LAYERS } from '@/themes/shared/atlas/frame.generated';
-import { REGION_FRAME, REGION_LAYERS } from '@/themes/shared/atlas/region.generated';
+import { ATLAS_FILES, WORLD_VERSION } from '@/themes/shared/atlas/files';
+import { MIDWEST, SKY, WORLD, insideRegion, layerOn } from '@/themes/shared/atlas/layers';
+import { REGION_FRAME, REGION_LAYERS, REGION_VERSION } from '@/themes/shared/atlas/region.generated';
+import { photoSrcSet } from '@/themes/shared/photos';
 import { ATLAS_H, ATLAS_W, MAX_ZOOM, WORLD_MAX_ZOOM, clampView, clusterPoints, fitView, homeView, inRegion, inseparable, lerpView, panBy, project, unitsPerKm, viewBox, worldView, zoomAt } from '@/themes/shared/atlas/projection';
 
 const WIDE = ATLAS_W / ATLAS_H;
@@ -154,6 +158,9 @@ describe('the Midwest close-up', () => {
 
   it('covers the venue, Starved Rock and Door County, and matches the file the generator wrote', () => {
     for (const p of [venue, starvedRock, project(44.9, -87.39)]) expect(inRegion(p.x, p.y)).toBe(true);
+    // With room to spare: its west edge once ran 0.03° from Starved Rock, and the map was blank beyond it.
+    const west = project(41.3214, -88.9903 - 1.5);
+    expect(inRegion(west.x, west.y)).toBe(true);
     expect(inRegion(copenhagen.x, copenhagen.y)).toBe(false);
     const svg = readFileSync(join(process.cwd(), 'public/assets/atlas/midwest.svg'), 'utf8');
     expect(svg).toContain(`viewBox="${REGION_FRAME.x} ${REGION_FRAME.y} ${REGION_FRAME.w} ${REGION_FRAME.h}"`);
@@ -191,7 +198,7 @@ describe('the Midwest close-up', () => {
   });
 
   it('zooming in near the edge of the close-up neither jumps nor locks the pan', () => {
-    const edge = project(42.3, -83.2); // Detroit, just inside the close-up's east edge
+    const edge = project(42.28, -83.74); // Ann Arbor, just inside the close-up's east edge
     const before = clampView({ cx: edge.x, cy: edge.y, k: WORLD_MAX_ZOOM }, WIDE);
     const after = zoomAt(before, 1.8, WIDE);
     expect(after.k).toBeCloseTo(WORLD_MAX_ZOOM * 1.8, 6);
@@ -227,5 +234,60 @@ describe('the Midwest close-up', () => {
     const lift = (m: { id: string }[]) => (m.length === 1 && m[0]!.id !== 'k' ? 14 : 0);
     expect(clusterPoints([{ id: 'k', x: 0, y: 0 }, { id: 'p', x: 0, y: -0.036 }], 1000, 1000, 30, { sizePx: 44, lift }).length).toBe(2);
     expect(clusterPoints([{ id: 'k', x: 0, y: 0 }, { id: 'p', x: 0, y: 0.036 }], 1000, 1000, 30, { sizePx: 44, lift }).length).toBe(1);
+  });
+});
+
+describe('what the atlas draws at each depth', () => {
+  const u = unitsPerKm(41.8815);
+  const focus = { ...chicago, reach: 16 * u, minSpan: 9 * u };
+  const on = (layers: typeof SKY, id: string, className: string, v: { cx: number; cy: number; k: number }, aspect = WIDE) =>
+    layerOn(layers.find((l) => l.id === id && l.className === className)!, v.k, viewBox(v, aspect));
+
+  it('draws the world-long dashed lines only while the whole world is in reach', () => {
+    const world = worldView(WIDE, [chicago]);
+    const home = homeView(WIDE, [chicago], focus);
+    for (const id of ['graticule', 'tropics', 'equator']) {
+      const layer = SKY.find((l) => l.id === id)!;
+      expect(on(SKY, id, layer.className, world), id).toBe(true);
+      // Chicago's default view: the tropics cost ~230 ms a frame there, drawn off screen.
+      expect(on(SKY, id, layer.className, home), id).toBe(false);
+    }
+  });
+
+  it('stops dashing state lines at street scale', () => {
+    const street = clampView({ cx: chicago.x, cy: chicago.y, k: MAX_ZOOM }, WIDE);
+    expect(on(MIDWEST, 'states', 'bd-atlas__states', { ...street, k: 1000 })).toBe(true);
+    expect(on(MIDWEST, 'states', 'bd-atlas__states', street)).toBe(false);
+    expect(on(WORLD, 'states', 'bd-atlas__states', street)).toBe(false);
+  });
+
+  it('draws roads and rivers only where they fill the frame, so they never end in a seam', () => {
+    for (const aspect of [WIDE, PHONE]) {
+      // Starved Rock at a county's scale: detail on both sides of it.
+      const rock = clampView({ cx: starvedRock.x, cy: starvedRock.y, k: 300 }, aspect);
+      expect(insideRegion(viewBox(rock, aspect))).toBe(true);
+      expect(on(MIDWEST, 'roads', 'bd-atlas__roads', rock, aspect)).toBe(true);
+      // A frame wider than the close-up would show the roads stop at its edge: none are drawn.
+      const wide = clampView({ cx: chicago.x, cy: chicago.y, k: 30 }, aspect);
+      expect(insideRegion(viewBox(wide, aspect))).toBe(false);
+      expect(on(MIDWEST, 'roads', 'bd-atlas__roads', wide, aspect)).toBe(false);
+      expect(on(MIDWEST, 'rivers', 'bd-atlas__rivers', wide, aspect)).toBe(false);
+    }
+  });
+
+  it('addresses both map files by their content, so a cached copy never outlives its frame', () => {
+    const hash = (f: string) => createHash('sha256').update(readFileSync(join(process.cwd(), 'public/assets/atlas', f))).digest('hex').slice(0, 12);
+    expect(WORLD_VERSION, 'world.svg changed: update WORLD_VERSION in src/themes/shared/atlas/files.ts').toBe(hash('world.svg'));
+    expect(REGION_VERSION, 'midwest.svg changed without scripts/generate-atlas-region.mjs').toBe(hash('midwest.svg'));
+    expect(ATLAS_FILES.world).toBe(`/assets/atlas/world.svg?v=${WORLD_VERSION}`);
+    expect(ATLAS_FILES.midwest).toBe(`/assets/atlas/midwest.svg?v=${REGION_VERSION}`);
+  });
+});
+
+describe('postcard photos', () => {
+  it('offer the 800px copy beside the original, at their real widths', () => {
+    expect(photoSrcSet('/assets/photos/adventures/noma-2025-06-24.webp')).toMatch(/^\/assets\/photos\/adventures\/800\/noma-2025-06-24\.webp 800w, \/assets\/photos\/adventures\/noma-2025-06-24\.webp \d+w$/);
+    expect(photoSrcSet('/assets/commons/some-hotel.jpg')).toBeUndefined();
+    expect(photoSrcSet('/assets/photos/adventures/not-a-photo.webp')).toBeUndefined();
   });
 });

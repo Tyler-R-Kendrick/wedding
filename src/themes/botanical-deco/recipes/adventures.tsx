@@ -4,6 +4,7 @@ import { ROUTES } from '@/domain/routes';
 import type { AdventuresProps, ContentRecipe } from '@/themes/content-types';
 import { CONTENT_COPY, adventureChips } from '@/themes/shared/content';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
+import { photoSrcSet } from '@/themes/shared/photos';
 import type { PageFrame } from '@/themes/types';
 import { kit } from '../kit';
 import { AdventureAtlas, type AtlasPin } from '../kit/AdventureAtlas';
@@ -13,6 +14,16 @@ import { Arrow } from '../kit/index';
 const { Shell, Section, Prose, Link, content } = kit;
 const { PageHead, Chips, AdventureList, StatusFlags } = content;
 const COPY = CONTENT_COPY.adventures.atlas;
+
+/**
+ * Where a guest goes from here: an adventure's own page (a postcard's button, a ledger row) or a
+ * filter chip. The links are plain <a>s, so Chrome's speculation rules warm them: a hover or a press
+ * starts rendering that page in the background, and the click that follows lands on it at once.
+ * Browsers without them ignore the tag. Read-only pages only; nothing here books or submits.
+ */
+const SPECULATION = JSON.stringify({
+  prerender: [{ where: { or: [{ href_matches: '/our-adventures/*' }, { href_matches: '/our-adventures?*' }] }, eagerness: 'moderate' }],
+});
 
 /**
  * The hotel's doorstep, the same point the Chicago map on Explore marks. The wedding is always on
@@ -36,6 +47,7 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
       <PageHead eyebrow={CONTENT_COPY.adventures.eyebrow} title={CONTENT_COPY.adventures.title} lede={CONTENT_COPY.adventures.lede}>
         {chips.length > 1 ? <Chips items={chips} label={CONTENT_COPY.adventures.filter} /> : null}
       </PageHead>
+      <script type="speculationrules" dangerouslySetInnerHTML={{ __html: SPECULATION }} />
       <Section id="archive">
         <AdventureAtlas
           pins={pins}
@@ -124,7 +136,7 @@ function Postcard({ card, number }: { card: AdventureCard; number: string }) {
       {card.cover ? (
         <figure className="bd-postcard__photo">
           {/* eslint-disable-next-line @next/next/no-img-element -- couple-supplied photo of unknown size; the kit draws every photo with <img> */}
-          <img className="bd-postcard__img" src={card.cover.src} alt={card.cover.alt} loading="lazy" decoding="async" />
+          <img className="bd-postcard__img" src={card.cover.src} srcSet={photoSrcSet(card.cover.src)} sizes="(min-width: 1000px) 22rem, 92vw" alt={card.cover.alt} loading="lazy" decoding="async" />
           {card.cover.caption ? <figcaption>{card.cover.caption}</figcaption> : null}
         </figure>
       ) : null}
