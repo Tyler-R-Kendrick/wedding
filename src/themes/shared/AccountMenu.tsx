@@ -37,15 +37,19 @@ let probe: Promise<boolean> | null = null;
 function sessionProbe(fresh = false): Promise<boolean> {
   if (fresh) probe = null;
   if (probe) return probe;
-  const asked = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } }).then(async (r) => {
-    if (!r.ok) throw new Error(`session probe: ${r.status}`);
-    return ((await r.json()) as { signedIn?: unknown }).signedIn === true;
-  });
+  // The cached promise is the one that already handles failure: every caller shares it, so a raw
+  // fetch promise here would hand each of them a rejection nobody catches.
+  const asked: Promise<boolean> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
+    .then(async (r) => {
+      if (!r.ok) throw new Error(`session probe: ${r.status}`);
+      return ((await r.json()) as { signedIn?: unknown }).signedIn === true;
+    })
+    .catch(() => {
+      if (probe === asked) probe = null;
+      return false;
+    });
   probe = asked;
-  return asked.catch(() => {
-    if (probe === asked) probe = null;
-    return false;
-  });
+  return asked;
 }
 
 function useSignedIn(known: boolean | undefined): boolean {
