@@ -1,0 +1,50 @@
+{
+ "htmlAttrs": {
+  "lang": "en",
+  "data-theme": "gilded-hour"
+ },
+ "bodyAttrs": {},
+ "css": [
+  "f95fb4ca001846ba",
+  "749b791ab811a3d4",
+  "a1af79865fa1f10b",
+  "a7ae037080986601"
+ ],
+ "assets": [
+  "/__nextjs_font/geist-latin-ext.woff2",
+  "/__nextjs_font/geist-latin.woff2",
+  "/__nextjs_font/geist-mono-latin-ext.woff2",
+  "/__nextjs_font/geist-mono-latin.woff2",
+  "/assets/art/botanical-deco/deco-corner.svg",
+  "/assets/art/botanical-deco/deco-rule.svg",
+  "/assets/art/botanical-deco/monogram-icon.svg",
+  "/assets/art/botanical-deco/skyline-line.svg",
+  "/assets/art/conservatory/fern-divider.svg",
+  "/assets/art/conservatory/leaf-border.svg",
+  "/assets/art/conservatory/pressed-flower-a.svg",
+  "/assets/art/conservatory/pressed-flower-b.svg",
+  "/assets/art/conservatory/pressed-flower-c.svg",
+  "/assets/art/conservatory/sky-wash.svg",
+  "/assets/art/conservatory/specimen-tag.svg",
+  "/assets/art/conservatory/tendril-corner.svg",
+  "/assets/art/gilded-hour/chevron-divider.svg",
+  "/assets/art/gilded-hour/corner-bracket.svg",
+  "/assets/art/gilded-hour/marble-texture.svg",
+  "/assets/art/gilded-hour/monogram-frame.svg",
+  "/assets/art/gilded-hour/stepped-frame.svg",
+  "/assets/art/gilded-hour/sunburst-hero.svg",
+  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
+  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
+  "/fonts/botanical-deco/ms-madi-regular.woff2",
+  "/fonts/botanical-deco/newsreader-text-italic.woff2",
+  "/fonts/botanical-deco/newsreader-text.woff2",
+  "/fonts/conservatory/cardo-italic.woff2",
+  "/fonts/conservatory/gloock-regular.woff2",
+  "/fonts/conservatory/spectral-medium.woff2",
+  "/fonts/conservatory/spectral-regular.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
+  "/fonts/gilded-hour/cinzel-wght.woff2",
+  "/fonts/gilded-hour/josefin-sans-wght.woff2"
+ ],
+ "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"site gh\" data-theme=\"gilded-hour\" data-bottom-bar=\"\" data-lifecycle=\"TEASER\" data-bl-s=\"\" data-bl-b=\"\"><a class=\"skip-link\" href=\"#main\" data-bl-s=\"\" data-bl-dark=\"\" target=\"_self\"><span data-bl-t=\"label\">Skip to content</span></a><header class=\"gh-header\" data-bl-b=\"\" data-bl-k=\"header\" data-bl-label=\"Menu\"><nav class=\"gh-frieze\" aria-label=\"Site\" data-bl-k=\"nav\" data-bl-label=\"Site\"><ul class=\"gh-frieze__side gh-frieze__side--left\"><li><a class=\"gh-nav__link\" href=\"/our-story\"><span><span data-bl-t=\"label\">Our Story</span></span></a></li><li><a class=\"gh-nav__link\" href=\"/our-adventures\"><span><span data-bl-t=\"label\">Our Adventures</span></span></a></li><li><a class=\"gh-nav__link\" href=\"/explore-caa\"><span><span data-bl-t=\"label\">Explore CAA</span></span></a></li></ul><a class=\"gh-plaque-link\" href=\"/\"><span class=\"gh-plaque gh-plaque--mono\" aria-hidden=\"true\" data-bl-s=\"\"><span data-bl-t=\"label\">S+T</span></span><span class=\"sr-only\"><span data-bl-t=\"label\">Sara + Tyler</span><!-- --><span data-bl-t=\"label\">: </span><!-- --><span data-bl-t=\"label\">Home</span></span></a><ul class=\"gh-frieze__side gh-frieze__side--right\"><li><a class=\"gh-nav__link\" href=\"/ask-us\"><span><span data-bl-t=\"label\">Ask Us</span></span></a></li><li><a class=\"gh-nav__link\" href=\"/photos\" aria-current=\"page\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Photos &amp; Video</span></span></a></li><li><a class=\"gh-nav__link\" href=\"/sign-in\"><span><span data-bl-t=\"label\">Sign in</span></span></a></li></ul><div class=\"gh-frieze__menu\"><button type=\"button\" class=\"gh-nav__menu\" aria-haspopup=\"dialog\" aria-expanded=\"false\" aria-controls=\"site-menu\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" data-bl-m=\"icon\"><path d=\"M4 7h16M4 12h16M4 17h16\"></path></svg><span><span data-bl-t=\"label\">Menu</span></span></button><dialog id=\"site-menu\" class=\"gh-dialog\" aria-labelledby=\"_R_8matpesneknelb_\" data-bl-k=\"dialog\" data-bl-label=\"Menu\"><div class=\"gh-dialog__panel\" data-bl-s=\"\"><div class=\"gh-dialog__header\" data-bl-b=\"\"><h2 id=\"_R_8matpesneknelb_\" class=\"gh-dialog__title\"><span data-bl-t=\"heading\">Menu</span></h2><button type=\"button\" class=\"gh-btn gh-btn--ghost gh-dialog__close\" data-bl-s=\"\"><span data-bl-t=\"label\">Close</span></button></div><div class=\"gh-dialog__body\"><ul class=\"gh-menu\"><li><a class=\"gh-menu__link\" href=\"/\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Home</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/our-story\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Our Story</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/our-adventures\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Our Adventures</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/explore-caa\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Explore CAA</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/ask-us\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Ask Us</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/photos\" aria-current=\"page\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Photos &amp; Video</span></span></a></li><li><a class=\"gh-menu__link\" href=\"/sign-in\" data-bl-b=\"\"><span><span data-bl-t=\"label\">Sign in</span></span></a></li></ul></div></div></dialog></div></nav></header><main id=\"main\" class=\"gh-main\" tabindex=\"-1\" data-bl-k=\"main\" data-bl-label=\"Engagement\"><header class=\"gh-pagehead\" data-bl-k=\"header\" data-bl-label=\"Engagement\"><div class=\"gh-pagehead__inner\"><hr class=\"gh-divider\" data-bl-s=\"\"><h1 class=\"gh-h gh-h--1 gh-pagehead__title\"><span data-bl-t=\"heading\">Engagement</span></h1><p class=\"gh-lede gh-pagehead__lede\"><span data-bl-t=\"copy\">Photos from before the wedding.</span></p></div></header><section id=\"grid\" class=\"gh-section gh-section--default\" data-bl-k=\"section\"><div class=\"gh-section__inner\"><div class=\"media-empty\" role=\"status\"><p><span data-bl-t=\"copy\">Nothing here yet.</span></p></div><div class=\"gh-prose\"><p class=\"media-pager\"><a class=\"gh-link\" href=\"/photos\"><span data-bl-t=\"copy\">All albums</span></a></p></div></div></section></main><nav class=\"gh-panel\" aria-label=\"Quick actions\" style=\"--cells:4\"><a class=\"gh-panel__cell\" href=\"/our-story\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" data-bl-m=\"icon\"><path d=\"M4 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z\"></path></svg><span><span data-bl-t=\"label\">Story</span></span></a><a class=\"gh-panel__cell\" href=\"/our-adventures\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" data-bl-m=\"icon\"><path d=\"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-2 6-4 2 2-6z\"></path></svg><span><span data-bl-t=\"label\">Adventures</span></span></a><a class=\"gh-panel__cell\" href=\"/explore-caa\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" data-bl-m=\"icon\"><path d=\"M5 21V5l7-3 7 3v16M9 9h2M13 9h2M9 13h2M13 13h2M11 21v-4h2v4\"></path></svg><span><span data-bl-t=\"label\">Explore CAA</span></span></a><a class=\"gh-panel__cell\" href=\"/ask-us\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" data-bl-m=\"icon\"><path d=\"M4 5h16v11H9l-5 4z\"></path></svg><span><span data-bl-t=\"label\">Ask us</span></span></a></nav><footer class=\"gh-footer\" data-bl-b=\"\" data-bl-k=\"footer\"><div class=\"gh-footer__inner\"><p class=\"gh-footer__names\"><span data-bl-t=\"copy\">Sara + Tyler</span></p><p class=\"gh-footer__date\"><span class=\"gh-numeral\"><span data-bl-t=\"copy\">07 · 17 · 27</span></span></p><p class=\"gh-footer__place\"><span data-bl-t=\"copy\">Chicago Athletic Association Hotel</span><br><a class=\"gh-link\" href=\"https://www.google.com/maps/search/?api=1&amp;query=12%20S%20Michigan%20Ave%2C%20Chicago%2C%20IL%2060603\" rel=\"noopener noreferrer\" target=\"_blank\"><span data-bl-t=\"copy\">12 S Michigan Ave, Chicago, IL 60603</span><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\" class=\"gh-external\" data-bl-m=\"icon\"><path d=\"M14 4h6v6M20 4l-9 9M18 13v7H4V6h7\"></path></svg><span class=\"sr-only\"><span data-bl-t=\"copy\">, opens Google Maps</span></span></a></p><p class=\"gh-footer__signin\"><a class=\"gh-link gh-link--standalone\" href=\"/sign-in\"><span data-bl-t=\"copy\">Sign in</span></a></p><p class=\"gh-footer__rights\"><span data-bl-t=\"copy\">Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.</span></p><ul class=\"gh-footer__print\"><li><span data-bl-t=\"copy\">Directions</span><!-- --><span data-bl-t=\"copy\">: </span><!-- --><span data-bl-t=\"copy\">https://www.google.com/maps/search/?api=1&amp;query=12%20S%20Michigan%20Ave%2C%20Chicago%2C%20IL%2060603</span></li><li><span data-bl-t=\"copy\">Chicago Athletic Association Hotel</span><!-- --><span data-bl-t=\"copy\">: </span><!-- --><span data-bl-t=\"copy\">https://www.chicagoathletichotel.com/</span></li></ul></div></footer></div><!--$--><!--/$-->"
+}

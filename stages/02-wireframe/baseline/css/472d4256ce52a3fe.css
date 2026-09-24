@@ -1,0 +1,71 @@
+/* [project]/src/components/floorplan/floorplan.css [app-client] (css) */
+.fp {
+  max-width: 100%;
+  margin: 0;
+}
+
+.fp__svg {
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  display: block;
+}
+
+.fp__outline {
+  fill: none;
+  stroke: var(--color-on-surface-muted);
+  stroke-width: 2px;
+  stroke-dasharray: 8 6;
+}
+
+.fp__seat {
+  fill: var(--color-neutral-variant);
+  stroke: var(--color-outline);
+  stroke-width: 2px;
+}
+
+.fp__table--mine .fp__seat {
+  fill: var(--color-primary);
+  stroke: var(--color-tertiary);
+  stroke-width: 4px;
+}
+
+.fp__label {
+  font-family: var(--type-control-caps-family, inherit);
+  font-size: var(--type-body-md-size, 1.0625rem);
+  fill: var(--color-on-surface);
+}
+
+.fp__table--mine .fp__label {
+  fill: var(--color-on-primary);
+  font-weight: 700;
+}
+
+.fp__you {
+  font-family: var(--type-control-caps-family, inherit);
+  font-size: var(--type-control-caps-size, 1rem);
+  letter-spacing: var(--type-control-caps-tracking, .1em);
+  text-transform: uppercase;
+  fill: var(--color-tertiary);
+}
+
+.fp__caption {
+  margin-top: var(--spacing-sm);
+  font-size: var(--type-body-sm-size, 1rem);
+  color: var(--color-on-surface-muted);
+}
+
+.fp__caption strong {
+  color: var(--color-on-surface);
+}
+
+@media print {
+  .fp__svg {
+    border-color: currentColor;
+    max-height: none;
+  }
+}
+
+/*# sourceMappingURL=src_components_floorplan_floorplan_03knrwo.css.map*/

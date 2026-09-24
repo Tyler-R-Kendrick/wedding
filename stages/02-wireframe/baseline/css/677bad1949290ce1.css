@@ -1,0 +1,113 @@
+/* [project]/src/components/provenance/provenance.css [app-client] (css) */
+.prov {
+  gap: var(--spacing-sm, 8px);
+  margin: var(--spacing-sm, 8px) 0 0;
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  color: var(--color-on-surface-muted, var(--color-primary));
+  flex-wrap: wrap;
+  align-items: center;
+  line-height: 1.4;
+  display: flex;
+}
+
+.prov__badge {
+  gap: var(--spacing-xs, 4px);
+  min-height: var(--prov-badge-min, 28px);
+  padding: var(--prov-badge-pad, 2px 10px);
+  border: 1px solid var(--prov-badge-line, var(--color-outline, var(--color-primary)));
+  border-radius: var(--rounded-sm, 2px);
+  font-size: var(--type-control-caps-size, 1rem);
+  font-weight: var(--type-control-caps-weight, 500);
+  letter-spacing: var(--prov-badge-tracking, var(--type-control-caps-tracking, .06em));
+  font-feature-settings: var(--type-control-caps-features, normal);
+  text-transform: var(--prov-badge-transform, var(--label-transform, uppercase));
+  overflow-wrap: anywhere;
+  flex-wrap: wrap;
+  align-items: center;
+  max-inline-size: 100%;
+  display: inline-flex;
+}
+
+.prov__badge--ok {
+  border-color: var(--prov-badge-line, var(--color-secondary, var(--color-primary)));
+  color: var(--color-secondary, var(--color-primary));
+}
+
+.prov__badge--warn {
+  border-color: var(--prov-external-line, var(--color-tertiary, var(--color-primary)));
+  color: var(--prov-external-ink, var(--color-tertiary, var(--color-primary)));
+}
+
+.prov__badge--bad {
+  border-color: var(--prov-badge-line, var(--color-error, var(--color-primary)));
+  color: var(--color-error, var(--color-primary));
+}
+
+.prov__badge--muted {
+  color: var(--color-on-surface-muted, var(--color-primary));
+}
+
+.prov__caveat {
+  flex-basis: 100%;
+}
+
+.prov__source {
+  gap: var(--spacing-xs, 4px);
+  flex-wrap: wrap;
+  align-items: center;
+  display: inline-flex;
+}
+
+.prov a {
+  min-height: 44px;
+  color: inherit;
+  text-underline-offset: .18em;
+  align-items: center;
+  padding-block: 10px;
+  text-decoration: underline;
+  display: inline-flex;
+}
+
+.placeholder {
+  margin: var(--spacing-md, 16px) 0;
+  padding: var(--spacing-md, 16px);
+  border: 2px dashed var(--prov-placeholder-line, var(--color-on-surface-muted, var(--color-primary)));
+  background: var(--color-surface, var(--color-neutral));
+  color: var(--color-on-surface, var(--color-primary));
+  display: block;
+}
+
+.placeholder__label {
+  text-wrap: pretty;
+  margin-bottom: var(--spacing-xs, 4px);
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  color: var(--prov-note-ink, var(--color-tertiary, var(--color-primary)));
+  font-weight: 500;
+  display: block;
+}
+
+.placeholder__hint {
+  font-size: var(--type-body-sm-size, 1.0625rem);
+  line-height: var(--type-body-sm-line, 1.55);
+  max-width: var(--wp-measure, 33rem);
+  margin: 0;
+}
+
+.placeholder--inline {
+  line-height: var(--type-body-sm-line, 1.55);
+  margin: 0;
+  padding: 6px 10px;
+  display: inline-block;
+}
+
+.placeholder--inline .placeholder__label {
+  margin: 0 var(--spacing-xs, 4px) 0 0;
+  display: inline;
+}
+
+.placeholder--inline .placeholder__hint {
+  display: inline;
+}
+
+/*# sourceMappingURL=src_components_provenance_provenance_1om7le_.css.map*/

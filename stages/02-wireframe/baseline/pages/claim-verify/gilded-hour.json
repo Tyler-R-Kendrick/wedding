@@ -1,0 +1,46 @@
+{
+ "htmlAttrs": {
+  "lang": "en",
+  "data-theme": "gilded-hour"
+ },
+ "bodyAttrs": {},
+ "css": [
+  "4431b68db8ab51fe",
+  "3d42c237c8678d4b",
+  "8fb57b611fbb2e88",
+  "f71563c31298aa6c"
+ ],
+ "assets": [
+  "/assets/art/botanical-deco/deco-corner.svg",
+  "/assets/art/botanical-deco/deco-rule.svg",
+  "/assets/art/botanical-deco/monogram-icon.svg",
+  "/assets/art/botanical-deco/skyline-line.svg",
+  "/assets/art/conservatory/fern-divider.svg",
+  "/assets/art/conservatory/leaf-border.svg",
+  "/assets/art/conservatory/pressed-flower-a.svg",
+  "/assets/art/conservatory/pressed-flower-b.svg",
+  "/assets/art/conservatory/pressed-flower-c.svg",
+  "/assets/art/conservatory/sky-wash.svg",
+  "/assets/art/conservatory/specimen-tag.svg",
+  "/assets/art/conservatory/tendril-corner.svg",
+  "/assets/art/gilded-hour/chevron-divider.svg",
+  "/assets/art/gilded-hour/corner-bracket.svg",
+  "/assets/art/gilded-hour/marble-texture.svg",
+  "/assets/art/gilded-hour/monogram-frame.svg",
+  "/assets/art/gilded-hour/stepped-frame.svg",
+  "/assets/art/gilded-hour/sunburst-hero.svg",
+  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
+  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
+  "/fonts/botanical-deco/ms-madi-regular.woff2",
+  "/fonts/botanical-deco/newsreader-text-italic.woff2",
+  "/fonts/botanical-deco/newsreader-text.woff2",
+  "/fonts/conservatory/cardo-italic.woff2",
+  "/fonts/conservatory/gloock-regular.woff2",
+  "/fonts/conservatory/spectral-medium.woff2",
+  "/fonts/conservatory/spectral-regular.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
+  "/fonts/gilded-hour/cinzel-wght.woff2",
+  "/fonts/gilded-hour/josefin-sans-wght.woff2"
+ ],
+ "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"gilded-hour\" data-bl-s=\"\"><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"Enter your six-digit code\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"Enter your six-digit code\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Check your email</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">Enter your six-digit code</span></h1><div class=\"auth-lede\"><p><span data-bl-t=\"copy\">This page has no code waiting for it. Start again and we will send you one.</span></p></div><div class=\"auth-notice auth-notice-error\" role=\"alert\" data-bl-s=\"\" data-bl-b=\"\"><div><span data-bl-t=\"copy\">This page needs a fresh code. </span><a class=\"auth-link\" href=\"/sign-in\"><span data-bl-t=\"label\">Start again</span></a><span data-bl-t=\"copy\">.</span></div></div></article><footer class=\"auth-footer\" data-bl-k=\"footer\"><p><span data-bl-t=\"copy\">Nothing arrived? Check spam, then</span><!-- --> <a class=\"auth-link\" href=\"/sign-in\"><span data-bl-t=\"copy\">request a new code</span></a><span data-bl-t=\"copy\">. If the address Sara and Tyler have for you is wrong, a code will never arrive — ask them to fix it.</span></p></footer></main><!--$--><!--/$--></div>"
+}

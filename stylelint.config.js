@@ -1,7 +1,9 @@
 /** @type {import('stylelint').Config} */
 const config = {
   extends: ['stylelint-config-standard'],
-  ignoreFiles: ['node_modules/**', 'dist/**', '.astro/**', '.next/**', '.data/**', 'coverage/**', 'design/generated/**'],
+  // stages/02-wireframe/baseline/: the real site's compiled stylesheets, captured by
+  // `npm run stages:capture`. Their sources (src/themes, src/app) are what this config checks.
+  ignoreFiles: ['node_modules/**', 'dist/**', '.astro/**', '.next/**', '.data/**', 'coverage/**', 'design/generated/**', 'stages/02-wireframe/baseline/**'],
   rules: {
     // Tailwind v4 / modern CSS at-rules the standard config does not know about.
     'at-rule-no-unknown': [

@@ -33,6 +33,7 @@
       "playwright-report/**",
       "src/themes/*/fonts.css",
       "stages/*/out/**",
+      "stages/02-wireframe/baseline/**",
       "public/_stages/**",
       "stages/*/.next/**",
       "stages/04-placeholder/app/themes/**",
@@ -87,6 +88,7 @@
       "clipped-overflow-container": "Our Story's ride stage (.bd-ride__stage, .bd-ride__window) shows one moment at a time: the moment being left drifts out sideways as the next drifts in, and the window clips them at its edge. The line diagram above it is a horizontal scroller that keeps the train centred. No other surface clips a positioned child. docs/design/approved-botanical-deco/detector-waivers.md.",
       "cramped-padding": "The ride's car card (the CTA line diagram) runs edge to edge across the top of the stage by design, like the strip map above a train's doors; the moments under it carry their own inset. docs/design/approved-botanical-deco/detector-waivers.md.",
       "stages/*/out/**": "Static exports of the pipeline stages, and public/_stages/ which assembles them into the wedding app (gitignored build output). Their sources are scanned; stage 4's export inlines each design's own DESIGN.md colours, which are judged in src/themes/, not against the root scale.",
+      "stages/02-wireframe/baseline/**": "The design pipeline's baseline: every page as the real site rendered it, captured by npm run stages:capture (the site's compiled stylesheets and its markup). Its sources are src/themes and src/app, scanned there against each design's own DESIGN.md.",
       "stages/04-placeholder/app/themes/**": "Copies of src/themes/<id>/theme.css + fonts.css made by stages/04-placeholder/scripts/sync-themes.mjs (gitignored). The originals are scanned in src/themes/."
     }
   }

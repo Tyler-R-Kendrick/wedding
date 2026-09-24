@@ -26,7 +26,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type BrowserContext, type Page } from '@playwright/test';
-import { PAGES, isPatterned, matches, type SitemapPage } from '@wedding/sitemap';
+import { PAGES, isPatterned, matches, pageForUrl, type SitemapPage } from '@wedding/sitemap';
 import { fixtureId } from '../../src/db/seed/ids';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -186,23 +186,55 @@ const index: { pages: Record<string, unknown> } = existsSync(indexPath) ? JSON.p
 mkdirSync(path.join(OUT, 'css'), { recursive: true });
 const failures: string[] = [];
 
+/** Where each page was captured, so a page nested under a patterned one starts from its instance. */
+const resolved = new Map<string, string>();
+
+/**
+ * A real instance of a patterned page (`/our-adventures/[slug]`): the first link to one that the
+ * source has served, looking on its parent page if nothing seen so far points at one.
+ */
+async function instanceFor(p: SitemapPage, source: Source): Promise<string | null> {
+  // The link must be this page, not a more specific sibling: `/admin/content/t/new` fits the
+  // row pattern `/admin/content/[table]/[row]` too, but it is the new-row page.
+  const find = () => (seenLinks.get(source.name) ?? []).find((l) => matches(p.path, l) && l !== p.example && pageForUrl(l)?.id === p.id) ?? null;
+  if (find()) return find();
+  const parent = p.parent ? PAGES.find((x) => x.id === p.parent) : undefined;
+  const parentUrl = parent && (resolved.get(parent.id) ?? (isPatterned(parent.path) ? null : (parent.example ?? parent.path)));
+  if (!parentUrl) return null;
+  const { data } = await capturePage({ ...source, principal: source.principal ?? (parent!.audience === 'guest' || parent!.audience === 'admin' ? parent!.audience : null) }, DESIGNS[0], parentUrl);
+  seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
+  return find();
+}
+
 for (const p of ordered) {
-  const source = sourceFor(p);
+  let source = sourceFor(p);
   let url = p.example ?? p.path;
   if (isPatterned(p.path)) {
-    const instance = (seenLinks.get(source.name) ?? []).find((l) => matches(p.path, l) && l !== p.example);
+    let instance = await instanceFor(p, source).catch(() => null);
+    // Production has none (no photo collection published yet, say): the same code, with fixture
+    // data, has one. The index says which source each page came from.
+    if (!instance && source.name === 'production') {
+      const app: Source = { name: 'app', origin: APP, principal: null };
+      instance = await instanceFor(p, app).catch(() => null);
+      if (instance) source = app;
+    }
     if (instance) url = instance;
   }
   const pageDir = path.join(OUT, 'pages', p.id);
-  rmSync(pageDir, { recursive: true, force: true });
-  mkdirSync(pageDir, { recursive: true });
+  // The old capture goes only once the new one has succeeded in production's design.
+  let cleared = false;
   const designs: Record<string, { status: number; file: string; same?: string }> = {};
   const bodies = new Map<string, string>();
   let meta: { title: string; url: string; finalUrl: string } | null = null;
   for (const design of DESIGNS) {
     try {
       const { status, data, finalUrl } = await capturePage(source, design, url);
-      if (design === DESIGNS[0]) seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
+      // An error page is not a baseline of anything: say so, and keep what was there before.
+      if (status >= 400) throw new Error(`${source.origin}${url} answered ${status}`);
+      if (design === DESIGNS[0]) {
+        seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
+        resolved.set(p.id, url);
+      }
       // A design the source does not serve (or a page no design changes) is not stored twice.
       const served = data.htmlAttrs['data-theme'] ?? design;
       if (design !== DESIGNS[0] && served !== design) continue;
@@ -221,6 +253,11 @@ for (const p of ordered) {
         css.push(id);
       }
       const file = `${design}.json`;
+      if (!cleared) {
+        rmSync(pageDir, { recursive: true, force: true });
+        mkdirSync(pageDir, { recursive: true });
+        cleared = true;
+      }
       writeFileSync(path.join(pageDir, file), JSON.stringify({ htmlAttrs: data.htmlAttrs, bodyAttrs: data.bodyAttrs, css, assets: [...assets].sort(), body: data.body }, null, 1));
       bodies.set(design, data.body);
       designs[design] = { status, file };
@@ -229,6 +266,7 @@ for (const p of ordered) {
     } catch (err) {
       failures.push(`${p.id} (${design}): ${err instanceof Error ? err.message : String(err)}`);
       console.error(`✗ ${p.id} ${design}: ${err instanceof Error ? err.message : String(err)}`);
+      if (design === DESIGNS[0]) break;
     }
   }
   if (meta) {
