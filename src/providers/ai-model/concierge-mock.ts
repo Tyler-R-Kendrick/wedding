@@ -93,7 +93,7 @@ export function parseBlocks(text: string): { question: string; blocks: Block[] }
  */
 function namedTokens(question: string): Set<string> {
   const out = new Set<string>();
-  for (const [phrase] of question.matchAll(/\b[A-Z][\w’']*(?:\s+[A-Z][\w’']*)+/g)) for (const t of tokens(phrase)) out.add(t);
+  for (const [phrase] of question.matchAll(/(?<![\p{L}\p{N}])\p{Lu}[\p{L}\p{N}’']*(?:\s+\p{Lu}[\p{L}\p{N}’']*)+/gu)) for (const t of tokens(phrase)) out.add(t);
   return out;
 }
 

@@ -27,6 +27,13 @@ describe('the extractive stand-in model', () => {
     expect(extractiveAnswer(prompt('Is the Cherry Circle Room open for dinner?', byLine))).toBe('The Cherry Circle Room serves dinner nightly [S1].');
   });
 
+  it('reads names with accented letters whole', () => {
+    // An ASCII-only pattern saw no name in either question and matched on "dinner" alone.
+    const blocks = [{ title: 'Dining', lines: ['Dinner at Café Esmé.'] }];
+    expect(extractiveAnswer(prompt('Is Éclair Bakery open for dinner?', blocks))).toBe(NO_SOURCE);
+    expect(extractiveAnswer(prompt('Is Café Esmé open for dinner?', blocks))).toBe('Dinner at Café Esmé [S1].');
+  });
+
   it('matches on shared words as before when the question names nothing', () => {
     const blocks = [{ title: 'Esmé: the dining room', lines: ['Dinner at Esmé, 2200 N Clark.'] }];
     expect(extractiveAnswer(prompt('Where did they have dinner?', blocks))).toBe('Dinner at Esmé, 2200 N Clark [S1].');
