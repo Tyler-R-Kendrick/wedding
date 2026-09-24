@@ -150,6 +150,7 @@ export function ModerationQueue({ initial, initialStatus }: { initial: QueueResp
                 })}
                 aria-label={`Select ${item.originalFilename ?? item.id}`}
               />
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it */}
               {item.thumb ? <img className="media-queue-row__thumb" src={item.thumb.url} alt={item.altText ?? item.caption ?? ''} width={96} height={96} loading="lazy" decoding="async" /> : <span className="media-queue-row__thumb" aria-hidden="true" />}
               <div>
                 <p className="media-upload-row__name">

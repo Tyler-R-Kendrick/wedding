@@ -129,7 +129,10 @@ async function floorWalk(page: Page, routes: readonly string[], theme?: string):
     const url = theme ? `${route}?theme=${theme}` : route;
     const response = await page.goto(url);
     expect(response?.status(), `${url} did not render`).toBeLessThan(400);
-    await expect(page.getByText(GATE), `${url} rendered a sign-in gate, so nothing on it was measured`).toHaveCount(0);
+    await expect(
+      page.getByText(GATE),
+      `${url} rendered a sign-in gate, so nothing on it was measured. This spec needs the test server CI starts (NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET); a plain \`npm run dev\` gates every signed-in route`,
+    ).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     const sizes = (await page.evaluate(SIZES)) as Size[];
     expect(sizes.length, `${url} rendered no text`).toBeGreaterThan(0);

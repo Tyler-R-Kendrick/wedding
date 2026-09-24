@@ -76,6 +76,7 @@ export function Lightbox({ items }: { items: GalleryItem[] }) {
             <li key={item.id}>
               <button type="button" className="media-tile" style={{ aspectRatio: `${w} / ${h}` }} onClick={(e) => show(index, e.currentTarget)} aria-label={`Open ${alt}`} data-asset-id={item.id}>
                 {item.thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it
                   <img src={item.thumb.url} alt={alt} width={w} height={h} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" />
                 ) : (
                   <span className="media-tile__placeholder">Preparing</span>
@@ -112,9 +113,11 @@ export function Lightbox({ items }: { items: GalleryItem[] }) {
                     <track kind="captions" />
                   </video>
                 ) : (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it
                   <img src={full?.url ?? current.thumb?.url} alt={current.altText ?? current.caption ?? 'Video poster'} width={full?.width ?? undefined} height={full?.height ?? undefined} />
                 )
               ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it
                 <img src={full?.url ?? current.thumb?.url} alt={current.altText ?? current.caption ?? 'Photo'} width={full?.width ?? undefined} height={full?.height ?? undefined} />
               )}
             </div>

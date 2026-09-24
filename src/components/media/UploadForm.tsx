@@ -154,6 +154,7 @@ export function UploadForm({ collection, myUploadsHref }: { collection?: string;
             const busy = ['queued', 'preparing', 'uploading', 'finishing'].includes(job.state);
             return (
               <li key={job.clientRef} className="media-upload-row" data-state={job.state} data-testid="upload-row">
+                {/* eslint-disable-next-line @next/next/no-img-element -- a local blob: preview of the file being uploaded; next/image cannot load it */}
                 {preview ? <img className="media-upload-row__preview" src={preview} alt="" width={56} height={56} /> : <span className="media-upload-row__preview media-upload-row__preview--video" aria-hidden="true">{job.file.type.startsWith('video/') ? 'video' : 'photo'}</span>}
                 <div>
                   <p className="media-upload-row__name">{job.file.name}</p>
