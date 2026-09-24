@@ -159,8 +159,8 @@
    "title": "Gifts | Sara + Tyler",
    "url": "/gifts",
    "finalUrl": "/gifts",
-   "source": "https://kendrick.wedding",
-   "principal": null,
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
    "capturedAt": "2026-09-24",
    "designs": {
     "botanical-deco": {
@@ -181,8 +181,8 @@
    "title": "Photos & Video | Sara + Tyler",
    "url": "/photos",
    "finalUrl": "/photos",
-   "source": "https://kendrick.wedding",
-   "principal": null,
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
    "capturedAt": "2026-09-24",
    "designs": {
     "botanical-deco": {
@@ -1180,7 +1180,7 @@
    "url": "/photos/engagement",
    "finalUrl": "/photos/engagement",
    "source": "app (test server, fixture data)",
-   "principal": null,
+   "principal": "guest",
    "capturedAt": "2026-09-24",
    "designs": {
     "botanical-deco": {

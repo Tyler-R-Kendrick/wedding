@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import type { GalleryPage } from '@/capabilities/media';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { hasEntitlement } from '@/contracts/principal';
 import { recipes } from '../_recipes';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Photos & Video' };
+export const metadata: Metadata = { title: 'Photos & Video', robots: { index: false, follow: false } };
 
 // "Engagement photos now" was false on the page that said it: `main` rendered zero <img>, the one
 // album an anonymous visitor can see read "Nothing here yet", and the engagement shoot is still an
@@ -21,8 +22,8 @@ const COPY = {
 };
 
 /**
- * Album index: what the caller may see (public albums for everyone, guest albums and chapters for
- * signed-in guests).
+ * Album index: what the signed-in caller may see. Photos and video sit behind the account menu, so
+ * an anonymous visitor is sent to sign in and brought back (`list_gallery` refuses them as well).
  *
  * Rendered through the recipe seam, so the page arrives inside the active design's Shell. Bare, it
  * had no nav, no design switcher, an h1 in the text face at one fixed size in both designs, and —
@@ -30,11 +31,12 @@ const COPY = {
  */
 export default async function PhotosPage() {
   const principal = await currentPrincipal();
+  if (principal.kind === 'anonymous') redirect(`/sign-in?next=${encodeURIComponent('/photos')}`);
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', {}, principal);
   return (
     <recipes.PhotosPage
       albums={gallery.ok ? gallery.data.collections : []}
-      canUpload={principal.kind !== 'anonymous' && hasEntitlement(principal, 'upload_media')}
+      canUpload={hasEntitlement(principal, 'upload_media')}
       copy={COPY}
     />
   );

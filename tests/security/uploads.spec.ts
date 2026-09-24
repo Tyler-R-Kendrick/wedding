@@ -45,12 +45,10 @@ test.describe('media security', () => {
   });
 
   test('ACL: private albums and unreviewed items are invisible across guests and to anonymous callers', async ({ request, baseURL }) => {
-    const anon = await request.post('/api/capabilities/list_gallery', { headers: { 'Content-Type': 'application/json' }, data: { input: {} } });
-    expect(anon.status()).toBe(200);
-    expect((await anon.json()).data.collections.map((c: { slug: string }) => c.slug)).toEqual(['engagement']);
-    for (const slug of ['guest-uploads', 'raw-archive', 'full-ceremony']) {
-      const res = await request.post('/api/capabilities/list_gallery', { headers: { 'Content-Type': 'application/json' }, data: { input: { collection: slug } } });
-      expect(res.status(), slug).toBe(404);
+    // The photos sit behind the signed-in account menu: an anonymous caller gets no album at all.
+    for (const input of [{}, { collection: 'engagement' }, { collection: 'guest-uploads' }, { collection: 'raw-archive' }, { collection: 'full-ceremony' }]) {
+      const res = await request.post('/api/capabilities/list_gallery', { headers: { 'Content-Type': 'application/json' }, data: { input } });
+      expect(res.status(), JSON.stringify(input)).toBe(401);
     }
     // A guest without view_private_media sees only public albums; a guest with it never sees raw-archive
     const noView = await request.post('/api/capabilities/list_gallery', { headers: apiHeaders(guestNoView, baseURL!), data: { input: { collection: 'guest-uploads' } } });
@@ -71,7 +69,7 @@ test.describe('media security', () => {
       const anonymousItem = await request.post('/api/capabilities/get_media_item', { headers: { 'Content-Type': 'application/json' }, data: { input: { assetId: id } } });
       // published guest items are visible to guests with view_private_media but never to anonymous callers
       expect([200, 404]).toContain(privateItem.status());
-      expect(anonymousItem.status()).toBe(404);
+      expect(anonymousItem.status()).toBe(401);
       const del = await request.post('/api/capabilities/delete_my_upload', { headers: apiHeaders(guestB, baseURL!), data: { input: { assetId: id }, idempotencyKey: `sec-del-${Date.now()}-${id}` } });
       expect(del.status()).toBe(404);
     }

@@ -168,6 +168,16 @@
   text-decoration: none;
 }
 
+/* The account menu in the rail opens in place, under its tag: the rail is a clipped scroller, so a
+   panel dropped over the page would be cut off at the rail's edge. */
+.cv-rail .account-menu__panel {
+  position: static;
+  min-inline-size: 0;
+  padding: var(--spacing-sm) 0 0;
+  border: 0;
+  background: none;
+}
+
 .cv-rail__list {
   display: none;
   gap: var(--spacing-sm);

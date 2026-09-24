@@ -9,7 +9,8 @@ import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
-import { allItems, bottomCells, isCurrent, shortLabel } from '@/themes/shared/nav-utils';
+import { AccountMenu } from '@/themes/shared/AccountMenu';
+import { allItems, bottomCells, isAccount, isCurrent, shortLabel } from '@/themes/shared/nav-utils';
 import type {
   BadgeProps, ButtonProps, CardProps, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps, ImageFrameProps,
   InputProps, LinkProps, MapHandoffProps, NavItem, NavProps, PlaceholderProps, ProseProps, SectionHeadingProps, SectionProps, SelectProps, ShellProps, SkeletonProps, StatProps,
@@ -96,7 +97,11 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
     <ul className="gh-menu">
       {items.map((item) => (
         <li key={item.href}>
-          <NavLink item={item} nav={nav} className="gh-menu__link" />
+          {isAccount(item, nav) ? (
+            <AccountMenu nav={nav} variant="inline" classNames={{ link: 'gh-menu__link', item: 'gh-menu__link' }} />
+          ) : (
+            <NavLink item={item} nav={nav} className="gh-menu__link" />
+          )}
         </li>
       ))}
     </ul>
@@ -105,7 +110,8 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
 
 function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave
-  // line. "Sign in" counts toward the six and always stays in the frieze, never on the architrave.
+  // line. The account slot ("Sign in", or the account menu) counts toward the six and always stays in
+  // the frieze, never on the architrave.
   const inline = allItems(nav).length <= 6;
   const sideItems = inline ? allItems(nav) : [...nav.primary, ...(nav.account ? [nav.account] : [])];
   const architrave = inline ? [] : nav.more;
@@ -118,7 +124,11 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
         <ul className="gh-frieze__side gh-frieze__side--left">
           {left.map((item) => (
             <li key={item.href}>
-              <NavLink item={item} nav={nav} className="gh-nav__link" />
+              {isAccount(item, nav) ? (
+                <AccountMenu nav={nav} variant="popover" classNames={{ link: 'gh-nav__link', item: 'gh-menu__link' }} />
+              ) : (
+                <NavLink item={item} nav={nav} className="gh-nav__link" />
+              )}
             </li>
           ))}
         </ul>
@@ -133,7 +143,11 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
         <ul className="gh-frieze__side gh-frieze__side--right">
           {right.map((item) => (
             <li key={item.href}>
-              <NavLink item={item} nav={nav} className="gh-nav__link" />
+              {isAccount(item, nav) ? (
+                <AccountMenu nav={nav} variant="popover" classNames={{ link: 'gh-nav__link', item: 'gh-menu__link' }} />
+              ) : (
+                <NavLink item={item} nav={nav} className="gh-nav__link" />
+              )}
             </li>
           ))}
           {switcherEnabled ? (
@@ -178,7 +192,7 @@ function Panel({ nav }: { nav: NavProps['nav'] }) {
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
+function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="gh-footer">
       <div className="gh-footer__inner">
@@ -195,9 +209,7 @@ function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: Fo
           </a>
         </p>
         <p className="gh-footer__signin">
-          <a className="gh-link gh-link--standalone" href={account.href}>
-            {account.label}
-          </a>
+          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'gh-link gh-link--standalone', item: 'gh-link' }} />
         </p>
         <p className="gh-footer__rights">{rightsNote}</p>
         <ul className="gh-footer__print">
@@ -237,7 +249,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
-        account={frame.nav.account}
+        nav={frame.nav}
         rightsNote={RIGHTS_NOTE}
         printUrls={printUrls}
       />

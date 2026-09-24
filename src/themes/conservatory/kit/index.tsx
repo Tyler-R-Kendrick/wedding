@@ -7,7 +7,8 @@ import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
-import { allItems, isCurrent } from '@/themes/shared/nav-utils';
+import { AccountMenu } from '@/themes/shared/AccountMenu';
+import { allItems, isAccount, isCurrent } from '@/themes/shared/nav-utils';
 import type {
   BadgeProps, ButtonProps, CardProps, ChoiceProps, Copy, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps,
   ImageFrameProps, InputProps, LinkProps, MapHandoffProps, NavItem, NavProps, PlaceholderProps, ProseProps, SectionHeadingProps, SectionProps, SelectProps, ShellProps, SkeletonProps,
@@ -99,7 +100,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
         <ul className="cv-rail__list">
           {items.slice(1).map((item) => (
             <li key={item.href}>
-              <Tag item={item} nav={nav} />
+              {isAccount(item, nav) ? <AccountMenu nav={nav} variant="popover" classNames={{ link: 'cv-tag', item: 'cv-menu__link' }} /> : <Tag item={item} nav={nav} />}
             </li>
           ))}
         </ul>
@@ -114,7 +115,11 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
           <ul className="cv-menu__list">
             {items.map((item) => (
               <li key={item.href}>
-                <Tag item={item} nav={nav} className="cv-menu__link" />
+                {isAccount(item, nav) ? (
+                  <AccountMenu nav={nav} variant="inline" classNames={{ link: 'cv-menu__link', item: 'cv-menu__link' }} />
+                ) : (
+                  <Tag item={item} nav={nav} className="cv-menu__link" />
+                )}
               </li>
             ))}
           </ul>
@@ -135,7 +140,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   );
 }
 
-function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
+function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="cv-footer">
       <div className="cv-footer__inner">
@@ -150,9 +155,7 @@ function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: Fo
           </a>
         </p>
         <p className="cv-footer__signin">
-          <a className="cv-link cv-link--standalone" href={account.href}>
-            {account.label}
-          </a>
+          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'cv-link cv-link--standalone', item: 'cv-link' }} />
         </p>
         <p className="cv-footer__rights">{rightsNote}</p>
         <ul className="cv-footer__print">
@@ -192,7 +195,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="conservatory" themes={THEME_OPTIONS} /> : null}
-        account={frame.nav.account}
+        nav={frame.nav}
         rightsNote={RIGHTS_NOTE}
         printUrls={printUrls}
       />

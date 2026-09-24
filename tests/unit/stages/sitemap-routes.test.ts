@@ -57,8 +57,8 @@ describe('the real app serves the sitemap (pipeline stage 1 → stage 5)', () =>
   it('the navigation reads its labels from the sitemap', () => {
     const labels = new Set(navPages().map(navLabel));
     for (const state of LIFECYCLE_STATES) {
-      const nav = navFor(state, { claimed: true });
-      for (const item of [...nav.primary, ...nav.more]) {
+      const nav = navFor(state);
+      for (const item of [...nav.primary, ...nav.more, ...(nav.member ?? [])]) {
         if (item.external || item.label === 'Today') continue; // state-specific relabels live in nav.ts
         expect(labels, `${state}: ${item.label}`).toContain(item.label);
       }

@@ -27,7 +27,8 @@ export const getMediaItem = defineCapability<z.infer<typeof input>, MediaItemDet
     'Returns one published photo or video with short-lived links to its web-sized copies, its caption, credit and licence note, ' +
     'and a playback link for videos. The uploader can also see their own item before it is approved. Never exposes originals or capture location.',
   kind: 'read',
-  auth: 'anonymous',
+  // Signed in only: the registry and the photos live behind the account menu, and so does their data.
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

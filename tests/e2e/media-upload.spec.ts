@@ -83,13 +83,17 @@ test.describe('guest QR upload → resume → admin approve → gallery', () => 
     fixtures = await makeFixtures(await mkdtemp(path.join(os.tmpdir(), 'wedding-e2e-')));
   });
 
-  test('anonymous visitors are asked to sign in and see only public albums', async ({ page }) => {
+  test('anonymous visitors are asked to sign in and see no album at all', async ({ page }) => {
     await page.goto('/media/upload');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add your photos and videos');
     await expect(page.getByRole('heading', { name: 'Please sign in first' })).toBeVisible();
-    await page.goto('/photos');
-    await expect(page.getByRole('link', { name: 'Engagement' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'From our guests' })).toHaveCount(0);
+    // The photos sit behind the signed-in account menu: the albums send a visitor to sign in and
+    // back, and none of them — not even the public one — is shown on the way.
+    for (const path of ['/photos', '/photos/engagement']) {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(path)}$`));
+      await expect(page.getByRole('link', { name: 'Engagement' })).toHaveCount(0);
+    }
   });
 
   test('mobile guest uploads a batch with an interruption, resumes, and sees processing states', async ({ browser, baseURL }) => {

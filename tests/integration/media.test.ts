@@ -316,17 +316,18 @@ describe('media pipeline (PGlite + local-fs storage)', () => {
   });
 
   it('moderation publishes into the gallery with ACL by visibility and principal', async () => {
-    const anonGallery = await call<{ collections: { slug: string }[] }>(anon, 'list_gallery', {});
-    expect(anonGallery.ok && anonGallery.data.collections.map((c) => c.slug)).toEqual(['engagement']);
-    expect((await call(anon, 'list_gallery', { collection: 'guest-uploads' })).error?.code).toBe('not_found');
-    expect((await call(anon, 'list_gallery', { collection: 'raw-archive' })).error?.code).toBe('not_found');
+    // The photos sit behind the signed-in account menu: an anonymous caller sees no album at all,
+    // not even the public one.
+    for (const collection of [undefined, 'engagement', 'guest-uploads', 'raw-archive']) {
+      expect((await call(anon, 'list_gallery', collection ? { collection } : {})).error?.code, collection).toBe('unauthenticated');
+    }
     const guestList = await call<{ collections: { slug: string }[]; items: unknown[] }>(guestB, 'list_gallery', { collection: 'guest-uploads' });
     expect(guestList.ok && guestList.data.collections.map((c) => c.slug)).toContain('full-ceremony');
     expect(guestList.ok && guestList.data.collections.map((c) => c.slug)).not.toContain('raw-archive');
     expect(guestList.ok && guestList.data.items).toEqual([]); // nothing published yet
     // guest B cannot see guest A's private item
     expect((await call(guestB, 'get_media_item', { assetId: firstAssetId })).error?.code).toBe('not_found');
-    expect((await call(anon, 'get_media_item', { assetId: firstAssetId })).error?.code).toBe('not_found');
+    expect((await call(anon, 'get_media_item', { assetId: firstAssetId })).error?.code).toBe('unauthenticated');
     // guests cannot moderate
     expect((await call(guestA, 'admin_moderate_media', { assetIds: [firstAssetId], action: 'approve' })).error?.code).toBe('forbidden');
 
@@ -342,7 +343,7 @@ describe('media pipeline (PGlite + local-fs storage)', () => {
     expect(published.ok && published.data.items[0]!.thumb?.url).toContain('derivatives/thumb/');
     expect(published.ok && published.data.items[0]!.credit).toBeNull();
     expect((await call(guestB, 'get_media_item', { assetId: firstAssetId })).ok).toBe(true);
-    expect((await call(anon, 'get_media_item', { assetId: firstAssetId })).error?.code).toBe('not_found'); // guests-only collection
+    expect((await call(anon, 'get_media_item', { assetId: firstAssetId })).error?.code).toBe('unauthenticated'); // guests-only collection
     const db = await getDb();
     expect(await listAuditEvents(db, { action: 'media.published', targetId: firstAssetId })).toHaveLength(1);
 

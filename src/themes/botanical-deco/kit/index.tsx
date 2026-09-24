@@ -8,7 +8,8 @@ import { renderCopy } from '@/themes/shared/copy';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
-import { allItems, bottomCells, isCurrent, shortLabel } from '@/themes/shared/nav-utils';
+import { AccountMenu } from '@/themes/shared/AccountMenu';
+import { allItems, bottomCells, isAccount, isCurrent, shortLabel } from '@/themes/shared/nav-utils';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import type {
   BadgeProps, ButtonProps, CardProps, ChoiceProps, Copy, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps,
@@ -122,7 +123,11 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
     <ul className="bd-menu">
       {items.map((item) => (
         <li key={item.href}>
-          <NavLink item={item} nav={nav} className="bd-menu__link" />
+          {isAccount(item, nav) ? (
+            <AccountMenu nav={nav} variant="inline" classNames={{ link: 'bd-menu__link', item: 'bd-menu__link', label: 'bd-eyebrow' }} />
+          ) : (
+            <NavLink item={item} nav={nav} className="bd-menu__link" />
+          )}
         </li>
       ))}
     </ul>
@@ -154,7 +159,11 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
         <ul className="bd-nav__list">
           {inline.map((item) => (
             <li key={item.href}>
-              <NavLink item={item} nav={nav} className="bd-nav__link" />
+              {isAccount(item, nav) ? (
+                <AccountMenu nav={nav} variant="popover" classNames={{ link: 'bd-nav__link', item: 'bd-menu__link' }} />
+              ) : (
+                <NavLink item={item} nav={nav} className="bd-nav__link" />
+              )}
             </li>
           ))}
         </ul>
@@ -209,7 +218,7 @@ function ActionBar({ nav }: { nav: NavProps['nav'] }) {
 /** The professional photographs and films live on these pages; their rights note belongs there. */
 const PRO_MEDIA_PATHS = /^\/(?:photos|media)(?:\/|$)/;
 
-function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: FooterProps & { account?: NavItem }) {
+function Footer({ site, switcher, rightsNote, printUrls, nav }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
@@ -243,9 +252,7 @@ function Footer({ site, switcher, rightsNote, printUrls, account = SIGN_IN }: Fo
           </a>
         </p>
         <p className="bd-footer__credits">
-          <a className="bd-link bd-link--standalone" href={account.href}>
-            {account.label}
-          </a>
+          <AccountMenu nav={nav ?? { account: SIGN_IN, currentPath: '' }} variant="link" classNames={{ link: 'bd-link bd-link--standalone', item: 'bd-link' }} />
         </p>
         {rightsNote ? <p className="bd-footer__rights">{rightsNote}</p> : null}
         <ul className="bd-footer__print">
@@ -285,7 +292,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
-        account={frame.nav.account}
+        nav={frame.nav}
         rightsNote={PRO_MEDIA_PATHS.test(frame.nav.currentPath) ? RIGHTS_NOTE : ''}
         printUrls={printUrls}
       />

@@ -19,10 +19,11 @@ export const listGallery = defineCapability<z.infer<typeof input>, GalleryPage>(
   title: 'Photos & Video',
   description:
     'Lists the albums the caller may see (engagement photos, guest uploads, professional chapters such as Full Ceremony or Toasts) ' +
-    'and, for one album, its published items with short-lived thumbnail links. Anonymous visitors see public albums only; ' +
-    'signed-in guests also see guest albums. Never returns anything awaiting review.',
+    'and, for one album, its published items with short-lived thumbnail links. Signed-in guests and the couple only: the photos and video sit behind ' +
+    'the account menu, and an anonymous caller is refused. Never returns anything awaiting review.',
   kind: 'read',
-  auth: 'anonymous',
+  // Signed in only: the registry and the photos live behind the account menu, and so does their data.
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },
