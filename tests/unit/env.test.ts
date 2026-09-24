@@ -44,7 +44,10 @@ describe('server env', () => {
   it('requires S3 or an explicit storage signing secret in production (names only)', () => {
     expect(() => parseServerEnv(prodBase)).toThrow(/STORAGE_SIGNING_SECRET/);
     expect(() => parseServerEnv({ ...prodBase, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k' })).toThrow(/S3_SECRET_ACCESS_KEY/);
-    expect(parseServerEnv({ ...prodBase, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 'value-must-not-leak' }).isProduction).toBe(true);
+    const s3 = { S3_ENDPOINT: 'https://acct.r2.cloudflarestorage.com', S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 'value-must-not-leak' };
+    expect(parseServerEnv({ ...prodBase, ...s3 }).isProduction).toBe(true);
+    // Without an endpoint the AWS SDK would pick Amazon, which storage refuses: that is not S3 configured.
+    expect(() => parseServerEnv({ ...prodBase, ...s3, S3_ENDPOINT: undefined })).toThrow(/S3_ENDPOINT/);
     // DEV_STORAGE_SECRET (an older name for STORAGE_SIGNING_SECRET) is accepted as the signing secret.
     expect(parseServerEnv({ ...prodBase, DEV_STORAGE_SECRET: 'd'.repeat(32) }).isProduction).toBe(true);
     try {

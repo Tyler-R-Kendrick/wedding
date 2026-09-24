@@ -22,6 +22,19 @@ export function isSupported(): boolean {
   return !!candidate && typeof candidate.availability === 'function';
 }
 
+/**
+ * Close a model's Prompt API session. The provider opens one per model and keeps it private, with
+ * no public way to close it, so without this every question left a session holding its context
+ * until the page closed. If the provider ever changes shape this does nothing rather than throw.
+ */
+function release(model: object): void {
+  try {
+    (model as { sessionManager?: { destroySession?: () => void } }).sessionManager?.destroySession?.();
+  } catch {
+    // Already gone.
+  }
+}
+
 /** What this browser can do right now. Never throws. */
 export async function probe(): Promise<BrowserModelState> {
   if (!isSupported()) return 'unsupported';
@@ -34,16 +47,28 @@ export async function probe(): Promise<BrowserModelState> {
 }
 
 /**
- * Fetch the model in the background, when the browser offers to download it. Resolves once it is
- * ready or the browser declines; never throws, because a failed download is not this question's
- * problem — the next one simply checks again.
+ * Start loading the AI SDK for a device found ready, so the download runs alongside the server's
+ * evidence request instead of inside the deadline the draft is written under.
  */
-export async function prepare(onProgress?: (fraction: number) => void): Promise<void> {
-  const state = await probe();
+export function warm(): void {
+  void Promise.all([import('ai'), import('@browser-ai/core')]).catch(() => {});
+}
+
+/**
+ * Fetch the model in the background when the browser offers to download it — `state` is what
+ * `probe()` just reported. Never throws: a failed download is not this question's problem, and the
+ * next one simply checks again. The session that starts the download is closed once it is done.
+ */
+export async function prepare(state: BrowserModelState): Promise<void> {
   if (state !== 'downloadable' && state !== 'downloading') return;
   try {
     const { browserAI } = await import('@browser-ai/core');
-    await browserAI('text').createSessionWithProgress(onProgress && ((loaded) => onProgress(Math.max(0, Math.min(1, loaded)))));
+    const model = browserAI('text');
+    try {
+      await model.createSessionWithProgress();
+    } finally {
+      release(model);
+    }
   } catch {
     // Declined, or the download failed: nothing to do until the next question.
   }
@@ -60,22 +85,26 @@ export type AskOptions = {
  * cannot answer — no Prompt API, a model the browser declines, a prompt that throws or times out.
  */
 export async function askOnDevice(prompt: string, options: AskOptions = {}): Promise<string | null> {
-  const state = await probe();
-  if (state === 'unsupported' || state === 'unavailable') return null;
+  if (!isSupported()) return null;
   try {
     const [{ generateText }, { browserAI }] = await Promise.all([import('ai'), import('@browser-ai/core')]);
-    const { text } = await generateText({
-      // A fresh model for every question: the provider keeps one Prompt API session per model, and
-      // a session carries its conversation forward — this question's evidence must not meet the
-      // last one's.
-      model: browserAI('text'),
-      ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
-      prompt,
-      ...(options.signal ? { abortSignal: options.signal } : {}),
-      // A retry would spend the caller's whole deadline on a device that has already failed once.
-      maxRetries: 0,
-    });
-    return text.trim() ? text : null;
+    // A fresh model for every question: the provider keeps one Prompt API session per model, and
+    // a session carries its conversation forward — this question's evidence must not meet the
+    // last one's. It asks the browser for availability itself and refuses an unavailable model.
+    const model = browserAI('text');
+    try {
+      const { text } = await generateText({
+        model,
+        ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
+        prompt,
+        ...(options.signal ? { abortSignal: options.signal } : {}),
+        // A retry would spend the caller's whole deadline on a device that has already failed once.
+        maxRetries: 0,
+      });
+      return text.trim() ? text : null;
+    } finally {
+      release(model);
+    }
   } catch {
     return null;
   }

@@ -60,8 +60,8 @@ const VERCEL_BIN = resolve(repoRoot, 'node_modules/.bin/vercel');
 
 /** Marketplace connectors, and the variable each injects that tells us it is already there. */
 const CONNECTORS = [
-  { slug: 'supabase', name: `${PROJECT}-db`, slot: 'database', gives: ['POSTGRES_URL', 'DATABASE_URL'], owns: ['DATABASE_URL'] },
-  { slug: 'resend', name: `${PROJECT}-email`, slot: 'email', gives: ['RESEND_API_KEY'], owns: ['RESEND_API_KEY'] },
+  { slug: 'supabase', name: `${PROJECT}-db`, slot: 'database', gives: ['POSTGRES_URL', 'DATABASE_URL'] },
+  { slug: 'resend', name: `${PROJECT}-email`, slot: 'email', gives: ['RESEND_API_KEY'] },
 ];
 
 /** Secrets the site needs in every deployed environment; generated here when the project has none. */
@@ -288,15 +288,13 @@ async function freePlan(slug, scope) {
 
 async function connectors(project, scope) {
   step('5. Connectors (Vercel Marketplace)');
-  if (flag('skip-integrations')) { say('Skipped (--skip-integrations).'); return new Set(); }
+  if (flag('skip-integrations')) { say('Skipped (--skip-integrations).'); return; }
   const keys = await envKeys(project, scope);
-  if (!keys) { say('Could not list this project\'s variables; skipping connectors rather than installing over one that is already there.'); return new Set(); }
-  const owned = new Set();
+  if (!keys) { say('Could not list this project\'s variables; skipping connectors rather than installing over one that is already there.'); return; }
   for (const c of CONNECTORS) {
     const present = c.gives.find((k) => keys.has(k));
     if (present) {
       say(`${c.slug}: already connected (${present} is in the project).`);
-      for (const k of c.owns) owned.add(k);
       continue;
     }
     if (PLAN) { say(`${c.slug}: would run \`vercel integration add ${c.slug} --name ${c.name}\` and let it inject its variables.`); continue; }
@@ -306,11 +304,8 @@ async function connectors(project, scope) {
     const r = await vercel(argv);
     if (r.code !== 0) {
       say(`${c.slug}: the CLI could not finish this on its own. Finish it at https://vercel.com/marketplace/${c.slug} (one press, then it injects the variables), or re-run once it has.`);
-      continue;
     }
-    for (const k of c.owns) owned.add(k);
   }
-  return owned;
 }
 
 async function variables(project, scope) {
@@ -477,8 +472,8 @@ async function preflight(project, scope) {
   // 500s exactly as loudly as a missing key. Modelling only the `required` array would let this
   // wave through the failure it exists to catch.
   if (!has('STORAGE_SIGNING_SECRET') && !has('DEV_STORAGE_SECRET')
-      && !['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
-    missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
+      && !['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
+    missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_ENDPOINT + S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
   }
   // A missing mailer is not a refusal. env.ts deliberately keeps RESEND_API_KEY and EMAIL_FROM
   // out of `required` so a site with no mail still boots and still shows the date of the wedding.

@@ -145,7 +145,8 @@ export type ServerEnv = Omit<Parsed, 'TRUSTED_PROXY_HOPS'> & {
   isDevelopment: boolean;
 };
 
-const hasS3 = (e: Parsed) => !!(e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
+// The endpoint is part of it: without one the AWS SDK picks Amazon, which the storage provider refuses.
+const hasS3 = (e: Parsed) => !!(e.S3_ENDPOINT && e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
 
 /**
  * Names a Vercel Marketplace connector injects, read as the name the app uses.
@@ -233,7 +234,7 @@ function load(raw: NodeJS.ProcessEnv): ServerEnv {
     const missing: string[] = required.filter((k) => !e[k]);
     // Storage must be S3 or a deliberately configured local-fs signing secret; the committed dev default is never used in production.
     if (!hasS3(e) && !e.STORAGE_SIGNING_SECRET && !e.DEV_STORAGE_SECRET) {
-      missing.push('STORAGE_SIGNING_SECRET (or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY)');
+      missing.push('STORAGE_SIGNING_SECRET (or S3_ENDPOINT + S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY)');
     }
     // Vercel production must not silently run on ephemeral /tmp PGlite; previews may.
     if (source.VERCEL_ENV === 'production' && !e.DATABASE_URL) missing.push('DATABASE_URL (VERCEL_ENV=production)');

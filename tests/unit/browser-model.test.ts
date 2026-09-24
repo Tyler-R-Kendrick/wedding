@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { askOnDevice, isSupported, prepare, probe } from '@/lib/ai/browser-model';
+import { askOnDevice, isSupported, prepare, probe, warm } from '@/lib/ai/browser-model';
 
-type CreateOptions = {
-  initialPrompts?: { role: string; content: string }[];
-  monitor?: (m: { addEventListener: (type: string, fn: (e: { loaded: number }) => void) => void }) => void;
-};
+type CreateOptions = { initialPrompts?: { role: string; content: string }[] };
 type Prompt = (messages: unknown, options?: { signal?: AbortSignal }) => Promise<string>;
 
 /** Install a fake Prompt API on the global, as Chrome does. */
@@ -25,8 +22,9 @@ describe('the on-device concierge, through the AI SDK', () => {
   it('reports unsupported on a browser without the Prompt API, and never throws', async () => {
     expect(isSupported()).toBe(false);
     await expect(probe()).resolves.toBe('unsupported');
-    await expect(prepare()).resolves.toBeUndefined();
+    await expect(prepare('unsupported')).resolves.toBeUndefined();
     await expect(askOnDevice('when is the ceremony?')).resolves.toBeNull();
+    expect(() => warm()).not.toThrow();
   });
 
   it('ignores a global that is present but not the Prompt API', async () => {
@@ -52,18 +50,30 @@ describe('the on-device concierge, through the AI SDK', () => {
     const create = vi.fn();
     stubLanguageModel({ availability: async () => 'unavailable', create });
     await expect(askOnDevice('anything')).resolves.toBeNull();
-    await prepare();
+    await prepare('unavailable');
     expect(create).not.toHaveBeenCalled();
   });
 
-  it('starts a download only when there is one to start', async () => {
-    const create = vi.fn(async () => session(async () => 'ok'));
-    stubLanguageModel({ availability: async () => 'available', create });
-    await prepare();
-    expect(create, 'already downloaded: nothing to prepare').not.toHaveBeenCalled();
+  it('starts a download only when there is one to start, and closes the session that started it', async () => {
+    const opened = session(async () => 'ok');
+    const create = vi.fn(async () => opened);
     stubLanguageModel({ availability: async () => 'downloading', create });
-    await prepare();
+    await prepare('available');
+    expect(create, 'already downloaded: nothing to prepare').not.toHaveBeenCalled();
+    await prepare('downloading');
     expect(create).toHaveBeenCalledOnce();
+    expect(opened.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('closes every question\'s session, whether the draft came back or the prompt failed', async () => {
+    const answered = session(async () => 'ok');
+    stubLanguageModel({ availability: async () => 'available', create: async () => answered });
+    await askOnDevice('one');
+    expect(answered.destroy).toHaveBeenCalledOnce();
+    const failed = session(async () => { throw new Error('nope'); });
+    stubLanguageModel({ availability: async () => 'available', create: async () => failed });
+    await askOnDevice('two');
+    expect(failed.destroy).toHaveBeenCalledOnce();
   });
 
   it('writes the draft with generateText, grounding the session with the site\'s own facts', async () => {
@@ -83,19 +93,6 @@ describe('the on-device concierge, through the AI SDK', () => {
     await askOnDevice('one', { systemPrompt: 'evidence A' });
     await askOnDevice('two', { systemPrompt: 'evidence B' });
     expect(create.mock.calls.map(([o]) => o.initialPrompts?.[0]?.content)).toEqual(['evidence A', 'evidence B']);
-  });
-
-  it('reports download progress as a 0..1 fraction', async () => {
-    const seen: number[] = [];
-    stubLanguageModel({
-      availability: async () => 'downloadable',
-      create: async (options: CreateOptions) => {
-        options.monitor?.({ addEventListener: (_type, fn) => { fn({ loaded: 0.25 }); fn({ loaded: 1.5 }); } });
-        return session(async () => 'ok');
-      },
-    });
-    await prepare((f) => seen.push(f));
-    expect(seen).toEqual([0.25, 1]);
   });
 
   it('falls back rather than surfacing a prompt failure, or an empty draft', async () => {

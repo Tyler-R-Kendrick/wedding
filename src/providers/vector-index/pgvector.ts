@@ -33,6 +33,14 @@ export class PgVectorIndex implements VectorIndexProvider {
 
   private ensure() {
     this.ready ??= (async () => {
+      // A table's width is fixed when it is created, and one built for another embeddings model
+      // (the removed Voyage and OpenAI adapters wrote 1024 and 1536 dimensions) rejects every
+      // vector of this width. It holds derived data only — the indexers write it all again — so it
+      // is rebuilt rather than left to fail every upsert and query. The name is validated above.
+      const [existing] = this.rows<{ dims: number | string }>(
+        await this.db.execute(sql.raw(`SELECT atttypmod AS dims FROM pg_attribute WHERE attrelid = to_regclass('${this.table}') AND attname = 'embedding'`)),
+      );
+      if (existing && Number(existing.dims) !== this.dims) await this.db.execute(sql.raw(`DROP TABLE IF EXISTS ${this.table}`));
       await this.db.execute(sql.raw(
         `CREATE TABLE IF NOT EXISTS ${this.table} (
           namespace text NOT NULL,

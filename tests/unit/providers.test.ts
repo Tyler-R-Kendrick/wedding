@@ -126,7 +126,7 @@ describe('storage provider selection', () => {
   });
 
   it('never stores with AWS: an Amazon endpoint, or none (the SDK would pick Amazon), is refused', () => {
-    for (const endpoint of [undefined, 'https://s3.us-east-2.amazonaws.com', 'https://b.s3.amazonaws.com', 'https://s3.cn-north-1.amazonaws.com.cn', 'not a url']) {
+    for (const endpoint of [undefined, 'https://s3.us-east-2.amazonaws.com', 'https://b.s3.amazonaws.com', 'https://s3.cn-north-1.amazonaws.com.cn', 'https://s3.eusc-de-east-1.amazonaws.eu', 'https://s3.us-east-1.amazonaws.com.', 'not a url']) {
       expect(() => createStorageProvider({ ...base, ...r2, S3_ENDPOINT: endpoint }), String(endpoint)).toThrow(/does not use AWS/);
     }
     for (const endpoint of ['https://acct.r2.cloudflarestorage.com', 'https://s3.us-west-004.backblazeb2.com', 'https://ref.supabase.co/storage/v1/s3', 'http://localhost:9000']) {
