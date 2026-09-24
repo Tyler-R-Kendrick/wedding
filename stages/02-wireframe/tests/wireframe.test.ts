@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { PAGES, page } from '@wedding/sitemap';
-import { AUTHORED, allWireframes, coverage, derive, linksFrom, validateWireframes, walk, wireframeFor } from '../lib';
+import { AUTHORED, allWireframes, coverage, derive, linksFrom, validateWireframes, walk, type Wireframe } from '../lib';
+import { baselineFor } from '../lib/baseline';
+
+/** A drawing with nested blocks, as a planned page would have. */
+const DRAWN: Wireframe = {
+  page: 'weekend',
+  status: 'draft',
+  blocks: [
+    { kind: 'masthead', title: 'Your weekend' },
+    { kind: 'split', columns: [[{ kind: 'facts', label: 'When', items: ['Day'] }], [{ id: 'rsvp-status', kind: 'prose', label: 'Reply', paragraphs: 1 }]] },
+  ],
+};
 
 describe('wireframes', () => {
   it('are valid against the current sitemap', () => {
@@ -39,17 +50,22 @@ describe('wireframes', () => {
 
   it('give nested blocks stable, unique ids', () => {
     const ids: string[] = [];
-    walk(wireframeFor('weekend').blocks, (_b, id) => ids.push(id));
+    walk(DRAWN.blocks, (_b, id) => ids.push(id));
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toContain('rsvp-status'); // an explicit id is kept as written
-    expect(ids).toContain('split-1.0.facts-1'); // a derived one carries its path
+    expect(ids).toContain('split-1.0.facts-0'); // a derived one carries its path
+  });
+
+  it('are only drawn for pages not built yet: a captured page is shown as production renders it', () => {
+    const outlived = Object.keys(AUTHORED).filter((id) => baselineFor(id));
+    expect(outlived, 'these pages are captured; delete their drawings (lib/index.ts)').toEqual([]);
   });
 });
 
 describe('fingerprints', () => {
   it('are stable, ignore key order and status, and change with content', async () => {
     const { fingerprint } = await import('../lib');
-    const w = wireframeFor('rsvp');
+    const w = DRAWN;
     expect(fingerprint(w)).toMatch(/^[0-9a-f]{8}$/);
     expect(fingerprint({ ...w, status: 'approved' })).toBe(fingerprint(w));
     const reordered = { ...w, blocks: w.blocks.map((b) => Object.fromEntries(Object.entries(b).reverse()) as typeof b) };

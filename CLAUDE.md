@@ -74,9 +74,12 @@ touching any UI. The site itself is not built yet; the tooling is.
 A page is made in five fidelities, each its own project with its own dev
 server, tests, build and deployment, each built from the one before it:
 **sitemap** (`stages/01-sitemap`, :3101) → **wireframe** (`02-wireframe`,
-:3102) → **skeleton** (`03-skeleton`, :3103, clickable, content as boneyard
-bones) → **placeholder** (`04-placeholder`, :3104, stand-in copy in every real
-design, theme picker) → **real** (this app, :3000). Settle each stage's
+:3102) → **skeleton** (`03-skeleton`, :3103, clickable, content as bones) →
+**placeholder** (`04-placeholder`, :3104, stand-in copy in every real design,
+design picker) → **real** (this app, :3000). Stages 2 to 4 redraw the **baseline**:
+every page as production renders it, captured with `npm run stages:capture`
+into `stages/02-wireframe/baseline/` (guest and admin pages from the test server
+as fixture users), so their layout is the real site's, never a sketch of it. Settle each stage's
 question before moving down; fix a problem at the stage that owns it (a wrong
 flow is a wireframe fix, not a skeleton patch). Changes cascade down only:
 `stages/01-sitemap/lib/sitemap.ts` is the page list every stage reads, the real
@@ -92,6 +95,7 @@ wireframe changes. Guide: `stages/README.md`.
 npm run dev:sitemap | dev:wireframe | dev:skeleton | dev:placeholder
 npm run stages:dev · stages:test · stages:typecheck · stages:build · stages:serve
 npm run stages:assemble && npm run dev   # http://dev.kendrick.localhost:3000, http://sitemap.dev.kendrick.localhost:3000
+npm run stages:capture                   # refresh the baseline from production (+ the test server on :3331)
 npm run stages:probe                     # every stage address and asset, against the running app
 npm run stages:signoff -- <wireframe|skeleton|placeholder> <pageId> --by <name>
 ```

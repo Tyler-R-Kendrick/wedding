@@ -55,7 +55,11 @@ export interface SecurityHeaderOptions {
  */
 const IMAGE_SOURCES = "'self' data: blob: https:";
 
-export function contentSecurityPolicy({ production }: SecurityHeaderOptions): string {
+/**
+ * `framing: 'self'` is for the design pipeline's stages only (src/lib/stage-hosting.ts): each stage
+ * page shows its captured page in a same-origin frame. The wedding site itself is never framed.
+ */
+export function contentSecurityPolicy({ production }: SecurityHeaderOptions, { framing = 'none' }: { framing?: 'none' | 'self' } = {}): string {
   const directives: Record<string, string> = {
     'default-src': "'self'",
     // See the header comment: no nonce, so Next's inline RSC payload needs 'unsafe-inline'.
@@ -71,8 +75,8 @@ export function contentSecurityPolicy({ production }: SecurityHeaderOptions): st
     'worker-src': "'self' blob:",
     'manifest-src': "'self'",
     'object-src': "'none'",
-    'frame-src': "'none'",
-    'frame-ancestors': "'none'",
+    'frame-src': `'${framing}'`,
+    'frame-ancestors': `'${framing}'`,
     'base-uri': "'self'",
     'form-action': "'self'",
   };
@@ -100,5 +104,16 @@ export function securityHeaders(options: SecurityHeaderOptions): { key: string; 
     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
     { key: 'Content-Security-Policy', value: contentSecurityPolicy(options) },
     ...(options.production ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }] : []),
+  ];
+}
+
+/**
+ * The headers that differ on the design pipeline's stages: framing by the same origin only, which
+ * the stage pages need to show their captured page. Applied after `securityHeaders`, so these win.
+ */
+export function stageFramingHeaders(options: SecurityHeaderOptions): { key: string; value: string }[] {
+  return [
+    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+    { key: 'Content-Security-Policy', value: contentSecurityPolicy(options, { framing: 'self' }) },
   ];
 }

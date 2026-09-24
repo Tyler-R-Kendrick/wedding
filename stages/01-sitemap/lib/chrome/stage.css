@@ -159,3 +159,68 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* A captured page (stages/02-wireframe/lib/BaselinePage.tsx): the stage bar, a line naming where the
+   baseline came from, and the page in a frame that fills the rest of the window. The frame is a
+   viewport of its own, so the real site's breakpoints see the width the page would have. */
+.bl-screen {
+  display: flex;
+  flex-direction: column;
+  block-size: 100dvh;
+}
+
+.bl-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.bl-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-xs) var(--st-space-lg);
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--st-space-xs) var(--st-space-md);
+  border-block-end: 1px solid var(--st-line);
+  background: var(--st-surface);
+  color: var(--st-ink-muted);
+  font-family: var(--st-font-note);
+  font-size: var(--st-size-label);
+}
+
+.bl-design {
+  display: inline-flex;
+  gap: var(--st-space-sm);
+  align-items: center;
+  color: var(--st-ink);
+}
+
+.bl-design select {
+  min-block-size: 44px;
+  padding: 0 var(--st-space-sm);
+  border: 1px solid var(--st-line);
+  border-radius: var(--st-radius);
+  background: var(--st-paper);
+  color: var(--st-ink);
+  font: inherit;
+}
+
+.bl-frame {
+  flex: 1;
+  inline-size: 100%;
+  min-block-size: 0;
+  border: 0;
+  background: var(--st-paper);
+}
+
+.bl-none {
+  margin: 0;
+  padding: var(--st-space-sm) var(--st-space-md);
+  background: var(--st-mark);
+  color: var(--st-on-mark);
+  font-family: var(--st-font-note);
+  font-size: var(--st-size-small);
+}

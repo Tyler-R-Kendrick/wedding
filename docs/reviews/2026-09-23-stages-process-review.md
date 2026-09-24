@@ -70,3 +70,35 @@ Two things surfaced on the way, and both are guarded now:
 - **Every deploy of the site now builds the stages** (about a minute, four builds two at a time).
   If that becomes a cost worth avoiding, `--for-vercel` can skip a deploy whose stage inputs did
   not change.
+
+## Follow-up (2026-09-24): the stages start from production
+
+Seen on the live stages the day they shipped: stages 2 to 4 were not the site. They were drawn
+from hand-written block lists and rendered with a generic kit, so the theming, positioning and
+structure were a sketch's, not production's. A baseline that disagrees with the thing it is a
+baseline of is worse than none: a sign-off on it approves a page nobody will ever see.
+
+What changed:
+
+- **`npm run stages:capture`** (scripts/stages/capture.ts) opens every sitemap page in a real
+  browser and keeps what it rendered: the markup without the site's scripts, the site's own
+  stylesheets, and a mark on each element for the part it plays. Public pages and the doors come
+  from kendrick.wedding. Guest and admin pages come from the same code as the app's test server,
+  signed in as fixture users. Every design is captured. Photographs never enter the baseline, and
+  sections that reveal on scroll are captured revealed.
+- **Stages 2 to 4 redraw that page** (stages/02-wireframe/lib/baseline.ts): greyed and labelled,
+  then as bones, then in each real design with stand-in copy. Each stage page shows its rendering
+  in a same-origin frame, so the real stylesheets lay it out at the viewer's width: the phone
+  layout at 390px, the Menu sheet included.
+- **Stage responses may be framed by the same origin.** Nothing else changes: the wedding site
+  keeps `frame-ancestors 'none'` (src/lib/security-headers.ts, `stageFramingHeaders`).
+- **Sign-offs fingerprint the baseline's structure**, so a re-capture that moved things stales
+  them and a copy edit does not.
+- **The hand-drawn wireframes are gone.** Drawing stays, for a page that is not built yet, and a
+  test fails while a drawing outlives its page's capture. Another fails while any sitemap page has
+  no baseline.
+
+Still open: the baseline is only as fresh as its last capture. A scheduled job that re-captures
+production and opens a pull request when the structure moved would close that. The capture
+reaches production through a retrying fetch because the sandbox's proxy drops requests; CI's
+network may not need it, but it costs nothing when nothing fails.

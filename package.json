@@ -91,6 +91,7 @@
     "dev:skeleton": "npm run dev -w @wedding/skeleton",
     "dev:placeholder": "npm run dev -w @wedding/placeholder",
     "stages:assemble": "node scripts/stages/assemble.mjs",
+    "stages:capture": "node --import tsx scripts/stages/capture.ts",
     "stages:signoff": "node --import tsx scripts/stages/signoff.ts",
     "stages:probe": "node scripts/stages/probe.mjs"
   },

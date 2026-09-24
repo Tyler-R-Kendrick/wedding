@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PAGES } from '@wedding/sitemap';
-import { fingerprint, wireframeFor } from '@wedding/wireframe';
-import { board, readSignoffs, validateSignoffs, type SignoffFile } from '../../../scripts/stages/board';
+import { board, pageFingerprint, readSignoffs, validateSignoffs, type SignoffFile } from '../../../scripts/stages/board';
 
 describe('the promotion board', () => {
   it('the committed sign-off ledger is valid', () => {
@@ -12,8 +11,8 @@ describe('the promotion board', () => {
     expect(board({ signoffs: [] }).map((r) => r.page.id)).toEqual(PAGES.map((p) => p.id));
   });
 
-  it('a sign-off holds while its wireframe is unchanged, and goes stale when it changes', () => {
-    const current = fingerprint(wireframeFor('rsvp'));
+  it('a sign-off holds while its page is unchanged, and goes stale when it changes', () => {
+    const current = pageFingerprint('rsvp');
     const ledger: SignoffFile = {
       signoffs: [
         { page: 'rsvp', stage: 'skeleton', by: 'Sara', on: '2026-09-01', wireframe: current },
@@ -27,7 +26,7 @@ describe('the promotion board', () => {
   });
 
   it('the latest sign-off per page and stage wins', () => {
-    const fp = fingerprint(wireframeFor('home'));
+    const fp = pageFingerprint('home');
     const row = board({
       signoffs: [
         { page: 'home', stage: 'wireframe', by: 'Sara', on: '2026-09-10', wireframe: fp },
@@ -35,6 +34,13 @@ describe('the promotion board', () => {
       ],
     }).find((r) => r.page.id === 'home')!;
     expect(row.approvals.wireframe).toMatchObject({ state: 'signed', by: 'Sara' });
+  });
+
+  it('shows a captured page as captured, with its date, and fingerprints its structure', () => {
+    const row = board({ signoffs: [] }).find((r) => r.page.id === 'wedding')!;
+    expect(row.wireframe).toMatchObject({ status: 'captured', source: 'https://kendrick.wedding' });
+    expect(row.wireframe.capturedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(row.wireframe.fingerprint).toMatch(/^[0-9a-f]{8}$/);
   });
 
   it('rejects entries the board could not place', () => {

@@ -3,9 +3,12 @@
  *
  * A stage's question ("what goes on the page?", "can you click through it?", "does it work in
  * each design?") is settled when someone, usually Sara or Tyler, signs that page off at that
- * stage. A sign-off records the wireframe fingerprint it approved, so when the wireframe
- * changes afterwards the sign-off shows as stale instead of silently vouching for a page it
- * never saw. Sign-offs live in stages/signoffs.json and are added with `npm run stages:signoff`.
+ * stage. A sign-off records the fingerprint of the page it approved: the structure of its baseline
+ * (the real page as captured, stages/02-wireframe/lib/baseline.ts), or of its drawn wireframe when
+ * it is not built yet. When that changes afterwards (a re-capture after the real page's layout
+ * moved, say), the sign-off shows as stale instead of silently vouching for a page it never saw.
+ * Copy edits do not change it. Sign-offs live in stages/signoffs.json and are added with
+ * `npm run stages:signoff`.
  *
  * Read by scripts/stages/hub.ts (the dev hub's board), scripts/stages/signoff.ts and
  * tests/unit/stages/board.test.ts.
@@ -15,6 +18,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PAGES, SECTIONS, href, type SitemapPage } from '@wedding/sitemap';
 import { fingerprint, wireframeFor, type WireframeStatus } from '@wedding/wireframe';
+import { baselineFor, structureFingerprint } from '@wedding/wireframe/baseline';
 
 export const SIGNOFF_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../stages/signoffs.json');
 
@@ -28,7 +32,7 @@ export interface Signoff {
   by: string;
   /** ISO date. */
   on: string;
-  /** The wireframe fingerprint this sign-off approved. */
+  /** The fingerprint of the page this sign-off approved (pageFingerprint). Named for history. */
   wireframe: string;
   note?: string;
 }
@@ -65,15 +69,22 @@ export type Approval =
 export interface BoardRow {
   page: SitemapPage;
   url: string;
-  wireframe: { status: WireframeStatus; fingerprint: string };
+  /** `captured`: redrawn from the real page. Otherwise drawn (or derived) in stages/02-wireframe. */
+  wireframe: { status: WireframeStatus | 'captured'; fingerprint: string; capturedAt?: string; source?: string };
   approvals: Record<SignableStage, Approval>;
+}
+
+/** What a sign-off approves: the baseline's structure, or the drawn wireframe of a page not built yet. */
+export function pageFingerprint(id: string): string {
+  return structureFingerprint(id) ?? fingerprint(wireframeFor(id));
 }
 
 /** The latest sign-off per page and stage wins; the ledger keeps the history. */
 export function board(ledger: SignoffFile = readSignoffs()): BoardRow[] {
   return PAGES.map((page) => {
     const w = wireframeFor(page.id);
-    const fp = fingerprint(w);
+    const captured = baselineFor(page.id);
+    const fp = pageFingerprint(page.id);
     const approvals = Object.fromEntries(
       SIGNABLE.map((stage) => {
         const latest = ledger.signoffs.filter((s) => s.page === page.id && s.stage === stage).sort((a, b) => a.on.localeCompare(b.on)).at(-1);
@@ -83,7 +94,8 @@ export function board(ledger: SignoffFile = readSignoffs()): BoardRow[] {
         return [stage, approval];
       }),
     ) as Record<SignableStage, Approval>;
-    return { page, url: href(page), wireframe: { status: w.status, fingerprint: fp }, approvals };
+    const wireframe = captured ? { status: 'captured' as const, fingerprint: fp, capturedAt: captured.capturedAt, source: captured.principal ? 'app' : captured.source } : { status: w.status, fingerprint: fp };
+    return { page, url: href(page), wireframe, approvals };
   });
 }
 

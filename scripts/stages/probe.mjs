@@ -37,7 +37,7 @@ function get(host, path) {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (c) => (body += c));
-      res.on('end', () => resolve({ status: res.statusCode, body, location: res.headers.location ?? null }));
+      res.on('end', () => resolve({ status: res.statusCode, body, location: res.headers.location ?? null, headers: res.headers }));
     });
     req.on('error', reject);
     req.end();
@@ -65,8 +65,43 @@ async function expectPage(label, host, path, marker) {
       if (f.status !== 200) failures.push(`${label}: ${asset} → url(${ref}) at ${host} → ${f.status}`);
     }
   }
+  if (marker.includes('</title>')) await expectFrame(label, host, r);
   return r.body;
 }
+
+/**
+ * Stages 2 to 4 show the real page, captured, in a same-origin frame (stages/02-wireframe/lib/
+ * baseline.ts). The frame's document must load, be this stage's rendering, be allowed in a frame,
+ * and so must the real stylesheets it links and every font and image they point at.
+ */
+async function expectFrame(label, host, page) {
+  const src = page.body.match(/<iframe[^>]*\ssrc="([^"]+)"/)?.[1];
+  if (!src) return;
+  checks++;
+  const doc = await get(host, src.replace(/&amp;/g, '&'));
+  if (doc.status !== 200) return void failures.push(`${label}: frame ${host}${src} → ${doc.status}`);
+  const stage = label.split(' ')[0];
+  if (!doc.body.includes(`data-bl-stage="${stage}"`)) failures.push(`${label}: frame ${src} is not the ${stage} rendering`);
+  checks++;
+  const xfo = String(doc.headers['x-frame-options'] ?? '');
+  if (xfo && xfo.toUpperCase() !== 'SAMEORIGIN') failures.push(`${label}: frame ${src} sends X-Frame-Options ${xfo}; the stage page cannot show it`);
+  for (const css of new Set([...doc.body.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]))) {
+    checks++;
+    const c = await get(host, css);
+    if (c.status !== 200) {
+      failures.push(`${label}: frame stylesheet ${host}${css} → ${c.status}`);
+      continue;
+    }
+    for (const ref of new Set([...c.body.matchAll(/url\("(\/[^"]+)"\)/g)].map((m) => m[1]))) {
+      if (framed.has(`${host}${ref}`)) continue;
+      framed.add(`${host}${ref}`);
+      checks++;
+      const f = await get(host, ref);
+      if (f.status !== 200) failures.push(`${label}: ${css} → url(${ref}) at ${host} → ${f.status}`);
+    }
+  }
+}
+const framed = new Set();
 
 await expectPage('hub by host', domain, '/', 'in five fidelities');
 const hubByPath = await expectPage('hub by path', 'localhost', '/stages', 'in five fidelities');

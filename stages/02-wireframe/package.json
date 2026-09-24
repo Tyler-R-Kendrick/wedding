@@ -5,7 +5,11 @@
   "description": "Stage 2: a lo-fi wireframe of every sitemap page. Reads @wedding/sitemap; stage 3 reads this.",
   "type": "module",
   "exports": {
-    ".": "./lib/index.ts"
+    ".": "./lib/index.ts",
+    "./baseline": "./lib/baseline.ts",
+    "./baseline-view": "./lib/BaselineView.tsx",
+    "./baseline-routes": "./lib/baseline-routes.ts",
+    "./baseline-page": "./lib/BaselinePage.tsx"
   },
   "dependencies": {
     "@wedding/sitemap": "*"

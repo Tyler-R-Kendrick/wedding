@@ -21,6 +21,8 @@ const from = dirname(realpathSync(process.argv[1]));
 const Chrome = require(require.resolve('chrome-remote-interface/lib/chrome.js', { paths: [from] }));
 
 const STRIP = `(() => {
+  // The stage pages frame the captured page: the strip belongs to the window the reader sees.
+  if (window.top !== window) return;
   const draw = () => {
     if (!document.body) return;
     let el = document.getElementById('__address-strip');

@@ -36,37 +36,26 @@
           "action": "click",
           "selector": ".st-bar__stages li:nth-child(2) > a",
           "delay": 2200,
-          "description": "the same page at wireframe.dev.kendrick.localhost"
+          "description": "the same page at wireframe.dev.kendrick.localhost: the real layout, greyed"
         },
         {
           "action": "click",
           "selector": ".st-bar__stages li:nth-child(3) > a",
           "delay": 2000,
-          "description": "skeleton.dev.kendrick.localhost: clickable"
-        },
-        {
-          "action": "wait",
-          "selector": ".st-tasks__link",
-          "timeout": 10000
-        },
-        {
-          "action": "click",
-          "selector": ".st-tasks__link",
-          "delay": 2200,
-          "description": "a flow, clicked through at stage 3"
+          "description": "skeleton.dev.kendrick.localhost: the real layout, content as bones"
         },
         {
           "action": "click",
           "selector": ".st-bar__stages li:nth-child(4) > a",
           "delay": 2000,
-          "description": "placeholder.dev.kendrick.localhost: the real designs"
+          "description": "placeholder.dev.kendrick.localhost: the real design, stand-in copy"
         },
         {
           "action": "select",
-          "selector": ".pl-picker__select",
+          "selector": ".bl-design select",
           "value": "gilded-hour",
           "delay": 2200,
-          "description": "the theme picker"
+          "description": "the design picker: the same captured page in another design"
         },
         {
           "action": "click",
@@ -117,8 +106,8 @@
           "description": "/skeleton"
         },
         {
-          "action": "click",
-          "selector": "#st-nav a[href$=\"/rsvp\"]",
+          "action": "navigate",
+          "url": "http://localhost:3000/skeleton/rsvp",
           "delay": 2000,
           "description": "/skeleton/rsvp"
         },
