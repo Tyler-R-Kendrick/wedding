@@ -3,11 +3,14 @@ import { createExtractiveMockModel, createMockVerifierModel } from '@/providers/
 import { getProvider } from '@/providers/registry';
 
 /**
- * Models for the concierge come from the provider registry: the Anthropic adapter when
- * ANTHROPIC_API_KEY is set (never in tests), otherwise the deterministic extractive stand-ins in
- * `src/providers/ai-model/concierge-mock.ts`. The foundation's `MockAiModel` deliberately returns a
- * fixed reply (other swarms depend on that), so the substitution happens here, not in the provider.
- * `live` decides whether the model-based verifier pass runs in addition to the deterministic one.
+ * The server's models for the concierge, and neither is hosted. An answer is written on the
+ * guest's own device (the browser's built-in model through the AI SDK, src/lib/ai/browser-model.ts)
+ * and arrives here as a draft to verify; when their browser has no model, `chat` answers by
+ * quoting the site's own content (src/providers/ai-model/concierge-mock.ts). Both run in-process:
+ * nothing is sent to Anthropic, Vercel's AI Gateway or anyone else, and nothing is billed. The
+ * foundation's `MockAiModel` deliberately returns a fixed reply (other swarms depend on that), so
+ * the substitution happens here, not in the provider. `live` runs the model-based verifier pass in
+ * addition to the deterministic one; only a caller that supplies its own models can turn it on.
  */
 export interface ConciergeModels {
   chat: LanguageModel;
@@ -18,13 +21,10 @@ export interface ConciergeModels {
 
 export function conciergeModels(): ConciergeModels {
   const provider = getProvider('ai-model');
-  if (provider.mode !== 'live') {
-    return {
-      chat: createExtractiveMockModel(provider.modelIdFor('chat')),
-      verifier: createMockVerifierModel(provider.modelIdFor('verifier')),
-      modelId: provider.modelIdFor('chat'),
-      live: false,
-    };
-  }
-  return { chat: provider.getLanguageModel('chat'), verifier: provider.getLanguageModel('verifier'), modelId: provider.modelIdFor('chat'), live: true };
+  return {
+    chat: createExtractiveMockModel(provider.modelIdFor('chat')),
+    verifier: createMockVerifierModel(provider.modelIdFor('verifier')),
+    modelId: provider.modelIdFor('chat'),
+    live: false,
+  };
 }

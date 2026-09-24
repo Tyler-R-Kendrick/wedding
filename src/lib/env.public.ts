@@ -9,9 +9,10 @@ export const publicEnv = {
   /** Default theme id when no preference is stored. Themes are owned by the design swarm. */
   defaultTheme: process.env.NEXT_PUBLIC_DEFAULT_THEME || 'botanical-deco',
   /**
-   * Try the guest's own browser for the concierge before any hosted model. On a browser with
-   * the Prompt API this costs nothing, needs no key, and keeps the question on their device;
-   * everywhere else it falls through to whatever the server has. Default on.
+   * Write the concierge's answers in the guest's own browser. On a browser with the Prompt API
+   * this costs nothing, needs no key, and keeps the question on their device; everywhere else
+   * (or `off`) the server quotes the site's own pages instead. No hosted model exists to fall
+   * back to. Default on.
    */
   browserModel: (process.env.NEXT_PUBLIC_AI_BROWSER_MODEL || 'on').toLowerCase() !== 'off',
 } as const;

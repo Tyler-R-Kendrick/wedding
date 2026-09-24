@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { runConcierge } from '@/ai/concierge';
+import { ON_DEVICE_MODEL_ID, runConcierge } from '@/ai/concierge';
 import type { ConciergeEvent } from '@/ai/events';
 import { AI_PURGE_JOB_TYPE, appendTurns, enqueueAiPurge, loadOrCreateSession, purgeAiSessions } from '@/ai/session';
 import { createCapabilityContext, invoke } from '@/capabilities';
@@ -393,5 +393,9 @@ describe('evidence mode (a model in the guest\'s browser)', () => {
     const [row] = await db.select().from(aiAnswers).where(eq(aiAnswers.id, replayed.answerId));
     expect(row).toBeDefined();
     expect(row?.verifier?.claims).toBeGreaterThan(0);
+    // …and says who wrote it: the guest's browser, not the server's quoting stand-in.
+    expect(row?.modelId).toBe(ON_DEVICE_MODEL_ID);
+    const [own] = await db.select().from(aiAnswers).where(eq(aiAnswers.id, server.answerId));
+    expect(own?.modelId).not.toBe(ON_DEVICE_MODEL_ID);
   });
 });

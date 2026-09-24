@@ -41,8 +41,8 @@ the level-03 example capabilities and fixture capabilities in tests).
    security alerts audited (`ai.security_alert`).
 6. **UI**: conversational panel available on Ask Us and as a lazy slot on
    guest pages; works without AI (FAQ remains); accessible.
-7. **Evals** (`npm run evals`, mock model in CI, live model opt-in via
-   `EVALS_LIVE=1`): factual questions with exact sources; unanswerable
+7. **Evals** (`npm run evals`, against the deterministic model; the site has
+   no hosted model, so the former `EVALS_LIVE=1` opt-in is gone): factual questions with exact sources; unanswerable
    wedding questions; personalized structured questions; live-external
    questions selecting a tool; prompt injection in provider output and in
    guest captions/metadata; conflicting/stale sources; requests for another

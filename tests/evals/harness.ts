@@ -18,8 +18,8 @@ export { EVAL_PRINCIPALS, EVAL_TABLES, type EvalPrincipalName } from './principa
  *
  * Every case runs the real pipeline — real capability registry, real `invoke`, real retrieval over
  * the seeded corpus, real verifier — against the deterministic mock model, and is scored on what a
- * guest would actually see. No live model call is ever made here; `EVALS_LIVE=1` opts a developer
- * into the configured provider locally and CI never sets it.
+ * guest would actually see. No live model call is ever made here: the site has no hosted model to
+ * make one with.
  */
 /** The registry the concierge sees during evals: everything the app registers, plus the fixtures. */
 export function evalRegistry(): CapabilityRegistryImpl {

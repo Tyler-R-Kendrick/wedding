@@ -19,7 +19,7 @@ import { createRateLimitProvider, DbRateLimit, MemoryRateLimit } from '@/provide
 import { MOCK_CASH_FUND_LINKS, MOCK_REGISTRY_LINKS, MockCashFund, MockRegistry, REGISTRY_DISCLOSURE, parseGiftLinks } from '@/providers/registry/index';
 import { describeProviders, getProvider, resetProviders } from '@/providers/registry';
 import { MockReservations } from '@/providers/reservations';
-import { createStorageProvider, LocalFsStorage, S3Storage, signDevStorage, verifyDevStorage, isValidKey } from '@/providers/storage';
+import { createStorageProvider, isAwsEndpoint, LocalFsStorage, S3Storage, signDevStorage, verifyDevStorage, isValidKey } from '@/providers/storage';
 import { MockTransportBenefit, ManualCodeTransportBenefit, MemoryCodeSource } from '@/providers/transport-benefit';
 import { InMemoryCosineIndex } from '@/providers/vector-index';
 import { MockVideo } from '@/providers/video';
@@ -93,11 +93,12 @@ describe('auth-email mock', () => {
 
 describe('storage provider selection', () => {
   const base = { FORCE_MOCK_PROVIDERS: false, S3_ENDPOINT: undefined, S3_REGION: 'auto', S3_BUCKET: undefined, S3_ACCESS_KEY_ID: undefined, S3_SECRET_ACCESS_KEY: undefined, S3_FORCE_PATH_STYLE: true, STORAGE_DATA_DIR: './.data/storage', STORAGE_SIGNING_SECRET: undefined, isProduction: false };
+  const r2 = { S3_ENDPOINT: 'https://acct.r2.cloudflarestorage.com', S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' };
   it('never falls back to the committed dev signing secret in production', () => {
     expect(() => createStorageProvider({ ...base, isProduction: true })).toThrow(/STORAGE_SIGNING_SECRET/);
     expect(createStorageProvider({ ...base, isProduction: true, STORAGE_SIGNING_SECRET: 's'.repeat(32) })).toBeInstanceOf(LocalFsStorage);
     expect(createStorageProvider({ ...base, isProduction: true, DEV_STORAGE_SECRET: 'd'.repeat(32) })).toBeInstanceOf(LocalFsStorage);
-    expect(createStorageProvider({ ...base, isProduction: true, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' })).toBeInstanceOf(S3Storage);
+    expect(createStorageProvider({ ...base, isProduction: true, ...r2 })).toBeInstanceOf(S3Storage);
     const warnings: string[] = [];
     expect(createStorageProvider(base, { warn: (m) => warnings.push(m) })).toBeInstanceOf(LocalFsStorage);
     expect(warnings.join(' ')).toMatch(/STORAGE_SIGNING_SECRET/);
@@ -115,13 +116,24 @@ describe('storage provider selection', () => {
       try {
         expect(() => createStorageProvider(prod), `${marker} must refuse local-fs`).toThrow(/ephemeral filesystem/);
         // ... and S3 on the same host is fine, which is the point of refusing only the fallback.
-        expect(createStorageProvider({ ...prod, S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's' })).toBeInstanceOf(S3Storage);
+        expect(createStorageProvider({ ...prod, ...r2 })).toBeInstanceOf(S3Storage);
       } finally {
         if (previous === undefined) delete process.env[marker];
         else process.env[marker] = previous;
       }
     }
     expect(createStorageProvider(prod), 'a host with a disk keeps local-fs').toBeInstanceOf(LocalFsStorage);
+  });
+
+  it('never stores with AWS: an Amazon endpoint, or none (the SDK would pick Amazon), is refused', () => {
+    for (const endpoint of [undefined, 'https://s3.us-east-2.amazonaws.com', 'https://b.s3.amazonaws.com', 'https://s3.cn-north-1.amazonaws.com.cn', 'https://s3.eusc-de-east-1.amazonaws.eu', 'https://s3.us-east-1.amazonaws.com.', 'not a url']) {
+      expect(() => createStorageProvider({ ...base, ...r2, S3_ENDPOINT: endpoint }), String(endpoint)).toThrow(/does not use AWS/);
+    }
+    for (const endpoint of ['https://acct.r2.cloudflarestorage.com', 'https://s3.us-west-004.backblazeb2.com', 'https://ref.supabase.co/storage/v1/s3', 'http://localhost:9000']) {
+      expect(createStorageProvider({ ...base, ...r2, S3_ENDPOINT: endpoint }), endpoint).toBeInstanceOf(S3Storage);
+    }
+    // A host that merely contains the name is not Amazon's.
+    expect(isAwsEndpoint('https://notamazonaws.com.example')).toBe(false);
   });
 });
 

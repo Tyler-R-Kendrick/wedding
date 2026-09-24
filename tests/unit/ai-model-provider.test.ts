@@ -1,111 +1,70 @@
-import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { generateText } from 'ai';
+import { afterEach, describe, expect, it } from 'vitest';
+import { conciergeModels } from '@/ai/model';
+import { refuseHostedModels } from '@/lib/ai/no-hosted-models';
 import { createAiModelProvider } from '@/providers/ai-model';
-import type { ServerEnv } from '@/lib/env';
+import { createEmbeddingsProvider } from '@/providers/embeddings';
+import { createMediaAiProvider } from '@/providers/media-ai';
+import { resetProviders } from '@/providers/registry';
 
-/** Only the fields the factory reads; the rest of ServerEnv is irrelevant here. */
-type Env = Parameters<typeof createAiModelProvider>[0];
-const env = (over: Partial<Env> = {}): Env =>
-  ({ FORCE_MOCK_PROVIDERS: false, ...over }) as Env;
+/**
+ * Guest Q&A runs on the guest's own device (the W3C Prompt API); the server only retrieves,
+ * verifies and, for a browser with no model, quotes the site's own content. No hosted model is
+ * reachable from the server at all: not Anthropic, not Vercel's AI Gateway, not an OpenAI-style
+ * endpoint. The factories take no configuration, so a key left in the environment selects nothing.
+ */
+describe('the server never uses a hosted AI provider', () => {
+  afterEach(() => resetProviders());
 
-describe('choosing a language-model provider', () => {
-  it('falls back to the mock when nothing is configured', () => {
-    expect(createAiModelProvider(env()).mode).toBe('mock');
-  });
-
-  it('prefers Anthropic, which the site is written against', () => {
-    const p = createAiModelProvider(env({ ANTHROPIC_API_KEY: 'sk-ant-test', OPENAI_API_KEY: 'sk-other' } as Partial<ServerEnv>));
-    expect(p.name).toBe('anthropic');
-    expect(p.modelIdFor('chat')).toBe('claude-sonnet-5');
-  });
-
-  it('honours the mock switch even when keys are present', () => {
-    expect(createAiModelProvider(env({ FORCE_MOCK_PROVIDERS: true, ANTHROPIC_API_KEY: 'sk-ant-test' } as Partial<ServerEnv>)).mode).toBe('mock');
-  });
-
-  it('uses the OpenAI-compatible adapter when only an OpenAI-style key is set', () => {
-    const p = createAiModelProvider(env({ OPENAI_API_KEY: 'sk-test' } as Partial<ServerEnv>));
-    expect(p.name).toBe('openai');
-    expect(p.modelIdFor('chat')).toBe('gpt-5');
-    expect(p.modelIdFor('verifier')).toBe('gpt-5-mini');
-  });
-
-  it('points at any gateway through AI_BASE_URL, naming it from the host', () => {
-    // This is what makes OpenRouter, Groq, Together, Mistral, DeepSeek and a local Ollama
-    // real choices on the Secret Drop page rather than entries the app cannot honour.
-    const p = createAiModelProvider(env({
-      OPENAI_API_KEY: 'sk-or-v1-test',
-      AI_BASE_URL: 'https://openrouter.ai/api/v1',
-      AI_CHAT_MODEL: 'anthropic/claude-sonnet-5',
-      AI_FAST_MODEL: 'anthropic/claude-haiku-4.5',
-    } as Partial<ServerEnv>));
-    expect(p.name).toBe('openrouter.ai');
-    expect(p.modelIdFor('chat')).toBe('anthropic/claude-sonnet-5');
-    expect(p.modelIdFor('caption')).toBe('anthropic/claude-haiku-4.5');
-  });
-
-  it('keeps the OpenAI defaults for any tier the gateway does not override', () => {
-    const p = createAiModelProvider(env({
-      OPENAI_API_KEY: 'gsk_test',
-      AI_BASE_URL: 'https://api.groq.com/openai/v1',
-      AI_CHAT_MODEL: 'llama-3.3-70b-versatile',
-    } as Partial<ServerEnv>));
-    expect(p.modelIdFor('chat')).toBe('llama-3.3-70b-versatile');
-    expect(p.modelIdFor('verifier')).toBe('gpt-5-mini');
-  });
-
-  it('reports live mode and a usable model id for every role', async () => {
-    const p = createAiModelProvider(env({ OPENAI_API_KEY: 'sk-test' } as Partial<ServerEnv>));
-    expect(p.mode).toBe('live');
-    expect(p.validateConfig().ok).toBe(true);
-    for (const role of ['chat', 'verifier', 'caption'] as const) {
-      expect(p.modelIdFor(role), role).toBeTruthy();
+  it('builds only in-process models', () => {
+    for (const p of [createAiModelProvider(), createEmbeddingsProvider(), createMediaAiProvider()]) {
+      expect(p.mode, p.kind).toBe('mock');
     }
-    expect((await p.health()).status).toBe('up');
-  });
-});
-
-describe('borrowed sessions', () => {
-  it('uses an OAuth bearer from a signed-in Claude Code session when no key was issued', () => {
-    const p = createAiModelProvider(env({ ANTHROPIC_AUTH_TOKEN: 'sk-ant-oat-test' } as Partial<ServerEnv>));
-    expect(p.name).toBe('anthropic (borrowed session)');
-    expect(p.mode).toBe('live');
-    expect(p.modelIdFor('chat')).toBe('claude-sonnet-5');
+    const models = conciergeModels();
+    expect(models.live).toBe(false);
+    for (const m of [models.chat, models.verifier]) {
+      expect(typeof m === 'string' ? m : m.provider).toBe('mock');
+    }
   });
 
-  it('prefers a key issued to the site over a borrowed session', () => {
-    const p = createAiModelProvider(env({ ANTHROPIC_API_KEY: 'sk-ant-real', ANTHROPIC_AUTH_TOKEN: 'sk-ant-oat' } as Partial<ServerEnv>));
-    expect(p.name).toBe('anthropic');
+  it('refuses a model named by a string, which the AI SDK would otherwise send to the AI Gateway', async () => {
+    const previous = globalThis.AI_SDK_DEFAULT_PROVIDER;
+    refuseHostedModels();
+    try {
+      await expect(generateText({ model: 'anthropic/claude-sonnet-5', prompt: 'hello' })).rejects.toThrow(/No such languageModel/i);
+    } finally {
+      globalThis.AI_SDK_DEFAULT_PROVIDER = previous;
+    }
   });
 
-  it('names the harness it borrowed from, so health output says whose identity is answering', () => {
-    const p = createAiModelProvider(env({
-      OPENAI_API_KEY: 'tid_test',
-      AI_BASE_URL: 'https://api.githubcopilot.com',
-      AI_HARNESS: 'copilot',
-    } as Partial<ServerEnv>));
-    expect(p.name).toBe('copilot (borrowed session)');
-  });
-});
+  it('ships no hosted AI SDK and names no hosted model anywhere in the app', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+    // `@ai-sdk/provider` is the model specification (types only); every other package is a vendor.
+    const vendor = (name: string) => /^@ai-sdk\/(?!provider(-utils)?$)/.test(name);
+    expect(deps.filter(vendor)).toEqual([]);
 
-describe('Vercel AI Gateway', () => {
-  it('is selected by AI_GATEWAY=on with no key at all', () => {
-    // On Vercel the deployment signs with its own OIDC identity, so "no key" is the configured
-    // state rather than a missing one — the mock would be the wrong answer here.
-    const p = createAiModelProvider(env({ AI_GATEWAY: true } as Partial<ServerEnv>));
-    expect(p.name).toBe('vercel-ai-gateway');
-    expect(p.mode).toBe('live');
-    expect(p.modelIdFor('chat')).toBe('anthropic/claude-sonnet-5');
-    expect(p.modelIdFor('verifier')).toBe('anthropic/claude-haiku-4.5');
-  });
-
-  it('is selected by an explicit key, and takes model overrides', () => {
-    const p = createAiModelProvider(env({ AI_GATEWAY_API_KEY: 'vck_test', AI_CHAT_MODEL: 'openai/gpt-5' } as Partial<ServerEnv>));
-    expect(p.name).toBe('vercel-ai-gateway');
-    expect(p.modelIdFor('chat')).toBe('openai/gpt-5');
-  });
-
-  it('still yields to Anthropic, which the site is written against', () => {
-    const p = createAiModelProvider(env({ AI_GATEWAY: true, ANTHROPIC_API_KEY: 'sk-ant-test' } as Partial<ServerEnv>));
-    expect(p.name).toBe('anthropic');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const file = path.join(dir, name);
+        if (statSync(file).isDirectory()) walk(file);
+        else if (/\.(ts|tsx|mjs|js)$/.test(name)) files.push(file);
+      }
+    };
+    walk('src');
+    const offending = files.filter((file) => {
+      const text = readFileSync(file, 'utf8');
+      return (
+        /from ['"]@ai-sdk\/(?!provider(-utils)?['"])/.test(text) ||
+        /\b(createGateway|createAnthropic|createOpenAI|createVoyage)\b/.test(text) ||
+        /import\s*\{[^}]*\bgateway\b[^}]*\}\s*from\s*['"]ai['"]/.test(text) ||
+        // A "vendor/model" string is resolved through the AI Gateway (see no-hosted-models.ts).
+        /\bmodel:\s*['"`][\w.-]+\/[\w.-]+['"`]/.test(text)
+      );
+    });
+    expect(offending).toEqual([]);
   });
 });

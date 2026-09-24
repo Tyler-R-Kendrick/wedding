@@ -58,14 +58,14 @@ Human text comes first because it is the truth; suggestions are drafts. Every st
    rights row carries written confirmation (brief §7). Otherwise the image is never sent and no
    caption is suggested.
 
-   It is still indexed from its own metadata, and — being precise, because an earlier version of
-   this document was not — **that metadata is embedded, and the embeddings provider is a live
-   third-party API when `VOYAGE_API_KEY` or `OPENAI_API_KEY` is set.** What goes is our own text:
-   the album and chapter, the admin-written caption and alt text, the kind, and the fact that the
-   item is professional. What does not go is the image and **the photographer's name**, which is
-   withheld from the embedded document precisely because naming the vendor beside a description of
-   their frame is the same disclosure in text that withholding the picture avoids. Search stays
-   complete; the licence is not stretched.
+   It is still indexed from its own metadata, and that metadata is embedded — in-process, since
+   the hosted embeddings adapters (Voyage, OpenAI) were removed, so none of it leaves the server.
+   What the embedded document holds is our own text: the album and chapter, the admin-written
+   caption and alt text, the kind, and the fact that the item is professional. What it leaves out
+   is **the photographer's name**, withheld precisely because naming the vendor beside a
+   description of their frame is the same disclosure in text that withholding the picture avoids.
+   The rule stands for whichever provider comes next. Search stays complete; the licence is not
+   stretched.
 
    If even that is judged too much for a particular vendor, the next step is to skip
    `embeddings.embed` for `pro_media_ai_off` assets entirely and let the lexical half of the blend
@@ -143,10 +143,13 @@ publishes the **admin-edited** text and marks the suggestion reviewed. The revie
 
 ## Known limits
 
-- The default embeddings provider outside production is a hashed bag-of-words. It is deterministic
-  and cheap, and keeps tests honest, but it has no real semantics: "dance" and "dancing" are only
-  related because of the lexical half of the blend. With a real provider (`VOYAGE_API_KEY` /
-  `OPENAI_API_KEY`) vector recall does that work. Re-index with `full` after changing the model.
+- The embeddings provider is a hashed bag-of-words everywhere, production included: no hosted
+  embeddings API is called. It is deterministic and cheap, and keeps tests honest, but it has no
+  real semantics: "dance" and "dancing" are only related because of the lexical half of the
+  blend. Re-index with `full` after changing the model.
+- There is no hosted vision provider, so suggested captions and tags come from the deterministic
+  stand-in and describe nothing real. They stay drafts (see above): only text an admin writes or
+  approves on `/admin/ai` ever reaches a guest.
 - Video is indexed from its poster frame plus its metadata. Per-scene descriptions exist in the
   seam (`describeScenes`) but are not stored yet.
 - The vector index has no re-ranking stage; `k` is `4 × limit`, which is ample for an archive of

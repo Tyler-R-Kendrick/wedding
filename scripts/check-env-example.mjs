@@ -37,7 +37,6 @@ const EXEMPT = new Map([
   ['PATH', 'the shell'],
   ['HTTPS_PROXY', 'the environment, for the asset-fetch scripts'],
   ['NODE_USE_ENV_PROXY', 'set by the asset npm scripts themselves'],
-  ['SECRETS_PRIVATE_KEY', 'Secret Drop private key — read from .secrets/, never from .env (docs/ops/secrets.md)'],
   ['SEED_TEST_FIXTURES', 'test-server arrangement only; set by the CI job and the local runners, never in a deployment'],
   ['PROBE_BASE', 'argument to a scripts/probes/* measurement script'],
   ['VW', 'local variable inside a browser-evaluated probe, not an environment read'],

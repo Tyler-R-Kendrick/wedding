@@ -44,8 +44,9 @@ answers in `docs/content/backlog.md` against the relevant item.
       rely on it later may not be the person who heard it.
 - [ ] **Written confirmation from the videographer**, same terms.
 - [ ] **The provider is named** in the confirmation, not "an AI service". The
-      current default is Anthropic (`ANTHROPIC_API_KEY`, `MEDIA_AI_PROVIDER`);
-      changing the provider invalidates the permission.
+      site has no hosted captioning provider today (the Anthropic adapter was
+      removed; nothing is sent anywhere), so there is nothing to confirm until
+      one is chosen — and changing the provider invalidates the permission.
 - [ ] **Training is addressed explicitly.** Confirm with the provider, in their
       current terms, whether API content is used for training, and put the
       answer in front of the vendors before asking them to agree.

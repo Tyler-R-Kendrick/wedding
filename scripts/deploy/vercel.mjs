@@ -6,25 +6,23 @@
  *   npm run deploy:vercel -- --prod  # production
  *   npm run deploy:vercel:plan       # say what would happen; write nothing
  *
- * The only credential this needs is the Vercel CLI session — acquired through the Secret Drop's
- * Hosting strip, which runs `vercel login` and streams the one link it prints (cli-login.mjs).
- * A `VERCEL_TOKEN` in the environment is honoured too, for CI. Nothing here prints a value: names
- * and lengths only, as everywhere else in scripts/secrets.
+ * The only credential this needs is the Vercel CLI session (`vercel login`). A `VERCEL_TOKEN` in
+ * the environment is honoured too, for CI. Nothing here prints a value: names and lengths only.
  *
  * What it does, in order, each step idempotent so it can be re-run after any of them:
  *
  *   1. Session      `vercel whoami`; without one, say where to get it and stop.
  *   2. Scope        the team, from --scope / VERCEL_SCOPE / .vercel/project.json / the only team.
  *   3. Project      find or create it, linked to the GitHub repo (`git remote origin`), Fluid
- *                   compute on, OIDC on (the AI Gateway and Vercel Connect both sign with it).
+ *                   compute on, OIDC on (Vercel Connect signs with it; the site calls no AI Gateway).
  *   4. Link         `vercel link` so the CLI's integration and deploy commands target it.
  *   5. Connectors   Marketplace integrations for the database and email: `vercel integration add`
  *                   provisions the resource AND injects its variables into the project. The app
  *                   reads the connector's names (POSTGRES_URL -> DATABASE_URL, src/lib/env.ts),
  *                   so no value is copied by hand and the connector stays the owner of it.
- *   6. Variables    the site's own secrets, generated here if the project lacks them; the public
- *                   origin; and what the Secret Drop already acquired into .env, mirrored as
- *                   sensitive variables — minus anything a connector now owns.
+ *   6. Variables    the site's own secrets, generated here if the project lacks them, and the
+ *                   public origin. Provider keys come from a connector or `vercel env add`; a
+ *                   local .env is never copied up.
  *   7. Stage domains  dev.<domain> and *.dev.<domain>, where the design pipeline's stages are
  *                   served (src/lib/stage-hosting.ts). Never chosen as the site's own origin.
  *   8. Cron         vercel.json carries them (Vercel sends `Authorization: Bearer $CRON_SECRET`
@@ -48,7 +46,6 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readEnv } from '../secrets/env-file.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2);
@@ -63,8 +60,8 @@ const VERCEL_BIN = resolve(repoRoot, 'node_modules/.bin/vercel');
 
 /** Marketplace connectors, and the variable each injects that tells us it is already there. */
 const CONNECTORS = [
-  { slug: 'supabase', name: `${PROJECT}-db`, slot: 'database', gives: ['POSTGRES_URL', 'DATABASE_URL'], owns: ['DATABASE_URL'] },
-  { slug: 'resend', name: `${PROJECT}-email`, slot: 'email', gives: ['RESEND_API_KEY'], owns: ['RESEND_API_KEY'] },
+  { slug: 'supabase', name: `${PROJECT}-db`, slot: 'database', gives: ['POSTGRES_URL', 'DATABASE_URL'] },
+  { slug: 'resend', name: `${PROJECT}-email`, slot: 'email', gives: ['RESEND_API_KEY'] },
 ];
 
 /** Secrets the site needs in every deployed environment; generated here when the project has none. */
@@ -76,23 +73,6 @@ const GENERATED = [
   ['STORAGE_SIGNING_SECRET', 32],
 ];
 
-/**
- * Variables in .env that are the deployment's business. Everything else there is either local-only
- * (PGlite, the dev inbox, the test principal) or a build-machine tool key (FAL_KEY, STITCH,
- * OPENVERSE, the harness session) and must not travel.
- */
-const MIRROR = [
-  'RESEND_API_KEY', 'EMAIL_FROM', 'ADMIN_EMAILS',
-  'S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_FORCE_PATH_STYLE',
-  'MEDIA_PART_SIZE_MB', 'MEDIA_MULTIPART_THRESHOLD_MB', 'STORAGE_SIGNING_SECRET',
-  'DATABASE_URL',
-  'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'AI_BASE_URL', 'AI_CHAT_MODEL', 'AI_FAST_MODEL', 'AI_GATEWAY', 'AI_GATEWAY_API_KEY',
-  'VOYAGE_API_KEY', 'EMBEDDINGS_PROVIDER', 'NEXT_PUBLIC_AI_BROWSER_MODEL',
-  'MUX_TOKEN_ID', 'MUX_TOKEN_SECRET', 'CLOUDFLARE_STREAM_ACCOUNT_ID', 'CLOUDFLARE_STREAM_API_TOKEN',
-  'WORKOS_API_KEY', 'WORKOS_CLIENT_ID', 'NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'CLERK_SECRET_KEY', 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', 'AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET',
-  'RATE_LIMIT_BACKEND', 'TRUSTED_PROXY_HOPS',
-];
 const TARGETS = ['production', 'preview'];
 
 const say = (...m) => console.log(...m);
@@ -169,8 +149,7 @@ async function ensureSession() {
   const who = await vercel(['whoami'], { quiet: true });
   if (who.code !== 0) {
     say('No Vercel session on this machine.');
-    say('Sign in through the Secret Drop\'s Hosting strip (it runs the CLI login and shows you the link),');
-    say('or set VERCEL_TOKEN for a non-interactive run.');
+    say('Sign in with `npx vercel login`, or set VERCEL_TOKEN for a non-interactive run.');
     process.exit(1);
   }
   const user = who.out.trim().split('\n').filter(Boolean).pop();
@@ -243,7 +222,7 @@ async function ensureProject(scope) {
     say(`Created "${PROJECT}" (${project.id}).`);
   }
   if (!PLAN) {
-    // Settings that only matter once: Fluid compute and an OIDC issuer for the gateway/connect tokens.
+    // Settings that only matter once: Fluid compute and an OIDC issuer for Vercel Connect's tokens.
     const patched = await api('PATCH', `/v9/projects/${project.id}${q}`, {
       resourceConfig: { fluid: true },
       oidcTokenConfig: { enabled: true, issuerMode: 'team' },
@@ -309,15 +288,13 @@ async function freePlan(slug, scope) {
 
 async function connectors(project, scope) {
   step('5. Connectors (Vercel Marketplace)');
-  if (flag('skip-integrations')) { say('Skipped (--skip-integrations).'); return new Set(); }
+  if (flag('skip-integrations')) { say('Skipped (--skip-integrations).'); return; }
   const keys = await envKeys(project, scope);
-  if (!keys) { say('Could not list this project\'s variables; skipping connectors rather than installing over one that is already there.'); return new Set(); }
-  const owned = new Set();
+  if (!keys) { say('Could not list this project\'s variables; skipping connectors rather than installing over one that is already there.'); return; }
   for (const c of CONNECTORS) {
     const present = c.gives.find((k) => keys.has(k));
     if (present) {
       say(`${c.slug}: already connected (${present} is in the project).`);
-      for (const k of c.owns) owned.add(k);
       continue;
     }
     if (PLAN) { say(`${c.slug}: would run \`vercel integration add ${c.slug} --name ${c.name}\` and let it inject its variables.`); continue; }
@@ -327,14 +304,11 @@ async function connectors(project, scope) {
     const r = await vercel(argv);
     if (r.code !== 0) {
       say(`${c.slug}: the CLI could not finish this on its own. Finish it at https://vercel.com/marketplace/${c.slug} (one press, then it injects the variables), or re-run once it has.`);
-      continue;
     }
-    for (const k of c.owns) owned.add(k);
   }
-  return owned;
 }
 
-async function variables(project, scope, owned) {
+async function variables(project, scope) {
   step('6. Variables');
   if (!bearer || !project) { say('(no token or project: skipped)'); return; }
   const keys = await envKeys(project, scope);
@@ -390,28 +364,9 @@ async function variables(project, scope, owned) {
   }
   // Previews take their origin from VERCEL_URL (src/lib/env.ts derives both when unset).
 
-  // What the Secret Drop already acquired, minus what a connector now owns.
-  const local = existsSync(join(repoRoot, '.env')) ? await readEnv(join(repoRoot, '.env')) : new Map();
-  const mirrored = [];
-  for (const key of MIRROR) {
-    if (owned.has(key)) continue;
-    const value = local.get?.(key) ?? local[key];
-    if (!value) continue;
-    // src/lib/env.ts refuses to boot production with RATE_LIMIT_BACKEND=memory (per-process
-    // buckets are not a rate limit behind a load balancer). It is a perfectly ordinary value in a
-    // developer's .env, and mirroring it would deploy READY and then 500 on every route, for a
-    // reason no missing-variable check would ever name. Keep it local.
-    if (key === 'RATE_LIMIT_BACKEND' && String(value) === 'memory') {
-      say('RATE_LIMIT_BACKEND=memory is a local-only value (production refuses it); not mirroring it.');
-      continue;
-    }
-    add(key, value, TARGETS, key.startsWith('NEXT_PUBLIC_') ? 'plain' : 'sensitive');
-    mirrored.push(key);
-  }
-
   if (!batch.length) { say('Nothing to set; every variable is already in the project.'); return; }
   say(`Setting ${batch.length} variable${batch.length === 1 ? '' : 's'}:`);
-  for (const b of batch) say(`  ${b.key.padEnd(28)} ${b.type.padEnd(9)} ${b.target.join(',')}  (${b.value.length} chars${mirrored.includes(b.key) ? ', from .env' : ''})`);
+  for (const b of batch) say(`  ${b.key.padEnd(28)} ${b.type.padEnd(9)} ${b.target.join(',')}  (${b.value.length} chars)`);
   if (PLAN) return;
   const r = await api('POST', `/v10/projects/${project.id}/env${q}`, batch);
   if (!r.ok) { say(`Variables not set (${r.status}: ${r.json?.error?.message || 'no detail'}).`); process.exit(1); }
@@ -419,7 +374,7 @@ async function variables(project, scope, owned) {
   if (failed.length) for (const f of failed) say(`  not set: ${f.error?.key || '?'} — ${f.error?.message || 'no detail'}`);
 
   const still = ['EMAIL_FROM', 'ADMIN_EMAILS'].filter((k) => !keys.has(k) && !batch.some((b) => b.key === k));
-  if (still.length) say(`Still needed, and only the couple can say: ${still.join(', ')} — the Secret Drop's email strip asks for the first; the admin guide covers the second.`);
+  if (still.length) say(`Still needed, and only the couple can say: ${still.join(', ')} — set them with \`vercel env add\`; the admin guide covers the second.`);
 }
 
 /**
@@ -517,8 +472,8 @@ async function preflight(project, scope) {
   // 500s exactly as loudly as a missing key. Modelling only the `required` array would let this
   // wave through the failure it exists to catch.
   if (!has('STORAGE_SIGNING_SECRET') && !has('DEV_STORAGE_SECRET')
-      && !['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
-    missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
+      && !['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
+    missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_ENDPOINT + S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
   }
   // A missing mailer is not a refusal. env.ts deliberately keeps RESEND_API_KEY and EMAIL_FROM
   // out of `required` so a site with no mail still boots and still shows the date of the wedding.
@@ -534,7 +489,7 @@ async function preflight(project, scope) {
   for (const names of missing) say(`  ${names[0]}${names.length > 1 ? `  (or ${names.slice(1).join(', ')})` : ''}`);
   say('');
   say('The build would go READY and every route would answer 500, which is what happened the first');
-  say('time this ran. Set them (a connector, the Secret Drop, or `vercel env add`) and re-run.');
+  say('time this ran. Set them (a connector, or `vercel env add`) and re-run.');
   say('To deploy anyway: --skip-preflight.');
   return false;
 }
@@ -571,8 +526,8 @@ await ensureSession();
 const scope = await resolveScope();
 const project = await ensureProject(scope);
 await link(scope);
-const owned = await connectors(project, scope);
-await variables(project, scope, owned);
+await connectors(project, scope);
+await variables(project, scope);
 await stageDomains(project, scope);
 cron();
 // `--skip-preflight` skips it, rather than paying for it and printing a refusal before deploying

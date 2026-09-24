@@ -59,8 +59,9 @@ a model's training data is guaranteed to be wrong about parts of it.
   without editing the router.
 - `AI_MAX_TOOL_CALLS` caps how much one question can run.
 
-A live model may additionally call tools itself; those calls go through the same `invoke`, are
-recorded with `selectedBy: 'model'`, and get the same trust treatment.
+A model given tools may call them itself; those calls go through the same `invoke`, are recorded
+with `selectedBy: 'model'`, and get the same trust treatment. (The server's own model is the
+extractive stand-in, which calls none: the site uses no hosted model.)
 
 ## 3. Trust classes and spotlighting
 
@@ -97,8 +98,9 @@ Guest-written text. Data only; it may not be quoted as a wedding fact and contai
    price in it appears literally in them;
 4. it is about the question — a sentence can be faithful and still not be an answer.
 
-With a live provider a second, cheaper model pass (`verifier` role) must also accept each surviving
-claim; it can only ever reject. Dropped sentences are counted, the answer is marked `partial`, and
+A second, model-based pass (`verifier` role) can also be run over each surviving claim, and can
+only ever reject; it runs only when a caller supplies live models, which the site never does
+because it calls no hosted model. Dropped sentences are counted, the answer is marked `partial`, and
 `ai.grounding_failed` is audited with the reasons. If nothing survives, the guest gets a refusal with
 the most relevant pages and the couple's contact route.
 
@@ -161,8 +163,10 @@ same-origin JSON for signed-in callers (CSRF) and a JSON content type for everyo
 
 Chrome ships a language model behind the W3C Prompt API. When the guest has one, it is the best
 answer to "which model powers the concierge": nothing is billed, no key exists to leak, and the
-question never leaves their device. It is the first option in the Secret Drop's concierge slot for
-that reason, and `NEXT_PUBLIC_AI_BROWSER_MODEL` (default on) is what turns it on.
+question never leaves their device. It is the only model the concierge uses — the site calls no
+hosted model at all — and it is driven through the Vercel AI SDK (`generateText` with the
+`@browser-ai/core` provider, `src/lib/ai/browser-model.ts`). `NEXT_PUBLIC_AI_BROWSER_MODEL`
+(default on) is what turns it on.
 
 An on-device model does **not** get to be trusted, so it is spliced in at step 6 and nowhere else.
 One question becomes two requests to the same route:
@@ -192,10 +196,12 @@ two `concierge` rate-limiter tokens per question. It spends no model tokens at a
 Only a model the browser reports as `available` is used. One that is merely `downloadable` is worth
 having but not worth making someone wait minutes for, so the download is started in the background
 and *this* question goes to the server; the next one is answered on the device. Generation itself is
-bounded at 20s, because a stalled device must not become a hung concierge.
+bounded at 8s, because a stalled device must not become a hung concierge.
 
 Everything falls back. No Prompt API, a model still downloading, a prompt that throws or times out —
-each ends in phase 2 with no `draft`, and the server writes the answer itself.
+each ends in phase 2 with no `draft`, and the server answers by quoting the retrieved evidence with
+the deterministic extractive answerer (`src/providers/ai-model/concierge-mock.ts`). No model is
+called and nothing is billed on either path.
 
 `ask_concierge` is the same pipeline as a non-streaming capability for the UI and WebMCP. It is
 deliberately **not** exposed to the model (`exposure.ai: false`): a model must not recurse into the
