@@ -1,5 +1,4 @@
 import { Text as Block } from '@/components/provenance';
-import { guestText } from '@/domain/content/text';
 import { mapsUrlFor } from '@/domain/lifecycle/facts';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, OurVenueProps } from '@/themes/content-types';
@@ -78,16 +77,17 @@ function cityPlaces(): CityPlace[] {
 const VENUE_FRAMES = [
   { id: 'venue.exterior', kicker: 'An icon in the Loop', sizes: '(min-width: 900px) 52vw, 100vw' },
   { id: 'venue.facade', kicker: 'The details', sizes: '(min-width: 900px) 40vw, 82vw' },
-  { id: 'venue.historic', kicker: 'In 1897', sizes: '(min-width: 900px) 30vw, 64vw' },
+  { id: 'venue.historic', kicker: 'As it was', sizes: '(min-width: 900px) 30vw, 64vw' },
 ] as const;
 
+/** Each jump reads as the heading it lands on, so a guest arriving by it knows they are there. */
 const JUMPS = [
-  { href: '#history', label: 'The building’s history' },
-  { href: '#spaces', label: 'The event spaces' },
-  { href: '#look-for-this', label: 'What to look for' },
-  { href: '#outlets', label: 'Food and drink inside' },
-  { href: '#getting-here', label: 'Getting here' },
-  { href: '#city', label: 'Chicago, right outside' },
+  { href: '#history', label: CONTENT_COPY.ourVenue.building },
+  { href: '#spaces', label: CONTENT_COPY.ourVenue.spaces },
+  { href: '#look-for-this', label: CONTENT_COPY.ourVenue.lookFor },
+  { href: '#outlets', label: CONTENT_COPY.ourVenue.outlets },
+  { href: '#getting-here', label: CONTENT_COPY.ourVenue.gettingHere },
+  { href: '#city', label: 'Chicago' },
 ];
 
 /**
@@ -95,19 +95,19 @@ const JUMPS = [
  * photographs come in beside it. On a phone the introduction comes first and the photographs follow,
  * stepped across the width so three pictures read as a sequence rather than a stack of tiles.
  */
-function Building({ data, name }: { data: OurVenueProps['data']; name: string }) {
-  const hook = data.history[0];
+function Building({ name, remember }: { name: string; remember: boolean }) {
   return (
     <section className="bd-place" aria-labelledby="venue-title">
       <Botanical id="botanical.edge-left" className="bd-bloom--venue" />
       <div className="bd-place__inner">
         <div className="bd-place__intro">
-          <p className="bd-eyebrow">The building</p>
+          <p className="bd-eyebrow">{remember ? 'Where we said “I do”' : 'Where we’ll say “I do”'}</p>
           <h2 id="venue-title" className="bd-h bd-h--2 bd-place__title">
             {name}
           </h2>
           <span className="bd-head__rule" aria-hidden="true" />
-          {hook ? <p className="bd-place__lede">{guestText(hook.statement)} Venetian Gothic on Michigan Avenue, restored as a hotel, in the heart of downtown.</p> : null}
+          {/* Not the first history fact again: the facts are listed in full just below. */}
+          <p className="bd-place__lede">A private athletic club for more than a century, restored as a hotel, with Millennium Park out the windows.</p>
           <nav className="bd-place__index" aria-label="On this page">
             <span className="bd-place__crest" aria-hidden="true">
               CAA
@@ -157,14 +157,14 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHero
-        className="bd-pagehero--settle"
+        className="bd-pagehero--settle bd-pagehero--column"
         eyebrow={frame.site.coupleDisplayName}
         title={
           <>
             Our <em>Venue</em>
           </>
         }
-        sub={[name, 'Since 1893']}
+        sub={['On Michigan Avenue']}
         lede={
           remember
             ? 'The Venetian Gothic landmark on Michigan Avenue where we said “I do,” and the city right outside its doors.'
@@ -175,12 +175,12 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
         words={['Love', 'peace', 'happiness']}
         actions={
           <Button variant="secondary" href={ROUTES.wedding}>
-            See the weekend
+            The wedding
           </Button>
         }
       />
 
-      <Building data={data} name={name} />
+      <Building name={name} remember={remember} />
 
       <Section id="history" labelledBy="history-title">
         <div data-reveal="">
@@ -231,7 +231,12 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
         </div>
         <Prose>
           <p className="bd-muted">
-            Address: {frame.site.venue.address}. {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.wedding}>The Wedding</Link>.
+            Address:{' '}
+            <a className="bd-link" href={mapsUrlFor(frame.site.venue.address)} target="_blank" rel="noopener noreferrer">
+              {frame.site.venue.address}
+              <span className="sr-only">, opens Google Maps</span>
+            </a>
+            . {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.wedding}>The Wedding</Link>.
           </p>
         </Prose>
       </Section>
@@ -270,9 +275,6 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
 
       <section className={`bd-ribbon${skyline ? ' bd-ribbon--photo' : ''}`} aria-labelledby="ribbon-title">
         {skyline ? <Photo id="city.skyline" sizes="100vw" className="bd-ribbon__photo" alt="" /> : <span className="bd-ribbon__drawing" aria-hidden="true" />}
-        <p className="bd-ribbon__words" aria-hidden="true">
-          <span>Love</span> <span>peace</span> <span>happiness</span> <span>Chicago</span>
-        </p>
         <div className="bd-ribbon__center" data-reveal="">
           <h2 id="ribbon-title" className="bd-ribbon__title">
             Share an adventure
@@ -285,9 +287,7 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
           </Button>
         </p>
         {remember ? null : (
-          <p className="bd-ribbon__script" aria-hidden="true">
-            See you in Chicago
-          </p>
+          <p className="bd-ribbon__script">See you in Chicago</p>
         )}
       </section>
 

@@ -80,7 +80,7 @@ export const CONTENT_COPY = {
     wholeBuilding: 'Back to our venue',
     roomLookFor: 'Look for this',
     roomFeatures: 'What is in the room',
-    roomCapacity: 'Capacity (from the venue kit)',
+    roomCapacity: 'Capacity, in the venue’s own figures',
   },
   wedding: { eyebrow: 'The Wedding', title: 'The Wedding', dress: 'What to wear', rooms: 'About the rooms', roomsLink: 'Our venue and its four spaces' },
   ask: {

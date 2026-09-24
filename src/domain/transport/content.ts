@@ -51,7 +51,7 @@ export const TRANSPORTATION_TOPICS: readonly TransportationTopic[] = [
     title: 'Do I need a car?',
     paragraphs: [
       'The hotel is on Michigan Avenue across from Millennium Park; the wedding happens inside the building, so a car is not needed for the day itself.',
-      'If you drive in, the hotel’s valet entrance is at 71 E Madison. TODO(Tyler & Sara): the special event valet rate from the venue kit, once verified.',
+      'If you drive in, the hotel’s valet entrance is at 71 E Madison. TODO(Tyler & Sara): the special event valet rate for wedding guests, once it is confirmed.',
     ],
     directionsTo: 'valet',
     sourceId: CAA_OFFICIAL_SOURCE,

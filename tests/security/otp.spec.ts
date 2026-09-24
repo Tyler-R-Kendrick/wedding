@@ -30,19 +30,33 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
   });
 
   test('brute force: five wrong codes lock the address, then the right code is refused', async ({ page, request }) => {
+    // Its own client: the six attempts below are about the per-address lock, and the file-wide
+    // address above is shared by every test in the worker, whose verify calls count against the
+    // same per-client allowance and can answer "Too many attempts" before the lock is reached.
+    await page.setExtraHTTPHeaders(forwardedFor(`otp-brute-force-${Math.random()}`));
     const f = await seedFixtures(request);
     await page.goto(`/invite/${f.invitations.okafor!.token}`);
     await page.locator(`input[name="guestId"][value="${f.guests.chidi}"]`).check();
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     const code = await readOtp(request, f.emails.chidi!);
-    for (let i = 0; i < 5; i++) {
-      await page.getByRole('textbox', { name: 'Six-digit code' }).fill(String(900000 + i));
+    // Each attempt waits until the page it answered with has committed before the next is typed.
+    // Waiting for "didn’t work" did not do that: after the first wrong code the alert is already on
+    // the page, so the wait passed at once, and on a loaded runner the next click landed on the form
+    // React was about to replace and was never sent. Four attempts reached the server, the correct
+    // code was still in flight, and "Too many incorrect codes" never came (CI, mobile, twice). The
+    // form clears its field when the action's page commits, so an empty field is the signal.
+    const box = page.getByRole('textbox', { name: 'Six-digit code' });
+    const attempt = async (value: string) => {
+      await box.fill(value);
       await page.getByRole('button', { name: 'Continue' }).click();
+      await expect(box).toHaveValue('', { timeout: 15_000 });
+    };
+    for (let i = 0; i < 5; i++) {
+      await attempt(String(900000 + i));
       await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work/);
     }
-    await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
-    await page.getByRole('button', { name: 'Continue' }).click();
+    await attempt(code);
     await expect(page.locator('[role="alert"]').filter({ hasText: /Too many incorrect codes/ })).toBeVisible();
     const cookies = await page.context().cookies();
     expect(cookies.some((c) => c.name.endsWith('session_token'))).toBe(false);

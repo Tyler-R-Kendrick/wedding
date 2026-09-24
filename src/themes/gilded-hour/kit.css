@@ -226,7 +226,7 @@
   border-color: var(--color-gold);
 }
 
-.gh-nav__link[aria-current="page"] {
+.gh-nav__link[aria-current] {
   color: var(--color-secondary);
   border-color: var(--color-gold);
 }
@@ -380,7 +380,7 @@
   display: none;
 }
 
-.gh-panel__cell[aria-current="page"] {
+.gh-panel__cell[aria-current] {
   color: var(--color-secondary);
   border-block-start-color: var(--color-gold);
 }
@@ -468,7 +468,7 @@
   text-decoration: none;
 }
 
-.gh-menu__link[aria-current="page"] {
+.gh-menu__link[aria-current] {
   color: var(--color-secondary);
   box-shadow: inset 3px 0 0 var(--color-gold);
 }
@@ -1595,7 +1595,12 @@
 
 .gh-entry__body {
   display: grid;
+
+  /* One column no wider than the cell: an auto track took its widest child's min-content (313px
+     in a 285px cell at 390) and pushed the summary 8px past the screen edge. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-sm);
+  min-inline-size: 0;
 }
 
 .gh-entry__title {
@@ -1606,6 +1611,10 @@
   letter-spacing: var(--type-h2-tracking);
   line-height: var(--type-h2-line);
   text-transform: uppercase;
+
+  /* "Christkindlmarket" in capitals is wider than a phone's card: let one long name break. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .gh-entry__summary {

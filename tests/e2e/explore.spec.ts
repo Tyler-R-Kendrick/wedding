@@ -211,6 +211,12 @@ test.describe('explore journey', () => {
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     await axe(page);
 
+    // The rooms rise into place as they scroll in. Playwright measures the link, scrolls it into view
+    // (which starts the entrance) and clicks where it measured, 36px below where the link then is.
+    // Click once the list has settled, as a guest does: nobody clicks a card before it appears.
+    const rooms = page.locator('#spaces [data-reveal="list"]');
+    await rooms.scrollIntoViewIfNeeded();
+    await rooms.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
     await page.getByRole('link', { name: 'White City Ballroom' }).click();
     await expect(page).toHaveURL(/\/our-venue\/white-city-ballroom$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('White City Ballroom');

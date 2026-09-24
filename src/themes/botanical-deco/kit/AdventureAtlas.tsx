@@ -149,6 +149,14 @@ const MARGIN_PX = 80;
  */
 const TARGET_MARGIN_PX = 20;
 
+/**
+ * A marker's drawing-unit position as written into `data-at`. Rounded: the projection's trig ran on
+ * the server's V8 and again in the browser's, and they disagreed in the fourteenth digit
+ * (90.393878269333 against 90.39387826933302), which React reports as a hydration mismatch it will
+ * not patch. A thousandth of a drawing unit is far below a pixel at any zoom.
+ */
+const drawn = (n: number): number => Math.round(n * 1000) / 1000;
+
 export function AdventureAtlas({ pins, venue, overview, postcards, children }: { pins: AtlasPin[]; venue: AtlasVenue; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
   const uid = useId();
   const clipId = `atlas-clip-${uid.replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -682,7 +690,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                     className="bd-atlas__marker"
                     data-kind={single ? single.kind : 'cluster'}
                     data-active={active ? 'true' : undefined}
-                    data-at={`${c.x} ${c.y} 0`}
+                    data-at={`${drawn(c.x)} ${drawn(c.y)} 0`}
                     data-off={within(sx, sy, width, height, MARGIN_PX) ? undefined : ''}
                     transform={`translate(${sx.toFixed(1)} ${sy.toFixed(1)})`}
                   >
@@ -732,7 +740,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                     type="button"
                     className="bd-atlas__target"
                     data-pin={single?.id}
-                    data-at={`${c.x} ${c.y} ${lift}`}
+                    data-at={`${drawn(c.x)} ${drawn(c.y)} ${lift}`}
                     data-off={within(sx, sy, width, height, TARGET_MARGIN_PX) ? undefined : ''}
                     style={{ transform: `translate(${sx.toFixed(1)}px, ${(sy - lift).toFixed(1)}px)` }}
                     aria-label={labelFor(c)}

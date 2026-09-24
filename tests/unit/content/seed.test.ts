@@ -114,8 +114,10 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
 
   it('never publishes the historic-district designation date', () => {
     const district = seed.venueFacts.find((f) => f.slug === 'historic-district')!;
+    // The date is reported inconsistently, so it is left out. That reason used to be the fact's
+    // `note`, which Our Venue prints under the fact: an editor's note read by every guest.
     expect(district.statement).not.toMatch(/\b(19|20)\d{2}\b/);
-    expect(district.note).toMatch(/not published/);
+    expect(district.note ?? '').not.toMatch(/\b(19|20)\d{2}\b/);
   });
 
   it('flags broken cross references and a why-layer without a memory', () => {

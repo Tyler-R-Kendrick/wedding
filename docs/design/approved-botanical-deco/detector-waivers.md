@@ -90,3 +90,43 @@ the reason in each entry):
   the gap to the next section, and a purely vertical measure reads that as the heading belonging
   to the block above. Both sections are placeholders until the couple chooses where the registry
   lives.
+
+## `first-viewport-column-overflow` on `/our-venue`, 2026-09-24
+
+At 1280px and up the short page opening puts "The building" on the first screen. Its photograph
+column is about two viewports tall, beside an introduction a little under one. That is the
+pattern the page takes from Home's theme section (PX-30): the building's name, its lede and the
+dusty-blue jump panel stay pinned under the masthead while the three photographs, each whole at
+its own proportions, scroll past. The pin applies only where the whole introduction fits the
+window (at least 900px wide and 54em tall), so it never hides its own end. Below that the two
+stack. The tall column is the one that moves, so it never floats beside empty paper.
+
+## `text-occlusion` on `/share-an-adventure/<recommendation>`, 2026-09-24
+
+The same false positive as `/your-weekend`, on each recommendation page and in all three
+designs. The memory line and the "Read the memory" link that the scan reports as covered are
+inside the closed "Why we're sharing this" `<details>`, where `checkVisibility()` is false.
+Chromium keeps their layout boxes under the provenance badges that follow. Opened, nothing
+overlaps. The same scan's `line-length` finding on that page was real, and was fixed at the
+source: the memory line inside that `<details>`, opened, ran 96 characters to a line on a
+full-width card. It and the Google Maps hand-off note (85 characters) now keep to the reading
+measure (`.bd-why__text`, `.bd-handoffs__disclosure`).
+
+## `text-occlusion` and `first-viewport-column-overflow` on `/our-adventures`, 2026-09-24
+
+Both are the atlas's map, measured rather than seen.
+
+- **`text-occlusion`**: the scan reports pin numbers and labels ("Duet Dance Studio", "New Year's
+  Eve 2023", "28", "33") as covered by `use.bd-atlas__city` and `use.bd-atlas__shore`. Those are the
+  base-map layers of `midwest.svg`. They span the whole map and are painted before the marker
+  layer, so every label is drawn on top of them. On screen, at every width, each one reads clearly.
+- **`first-viewport-column-overflow`**: "56733% of the viewport tall" is the SVG's world-scale
+  drawing, which the stage clips to its frame. The stage on screen is one frame tall, beside the
+  legend.
+
+The same scan's findings on that page that were real were fixed at the source:
+
+- A hydration mismatch in the marker positions. Server and browser disagreed in the fourteenth
+  digit; `data-at` is now rounded to a thousandth of a drawing unit.
+- In Gilded Hour at 390, a card whose one-column grid took its widest child's min-content and ran
+  8px off the screen. A long title ("Christkindlmarket") now breaks.

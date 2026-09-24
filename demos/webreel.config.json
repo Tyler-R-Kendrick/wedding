@@ -38,23 +38,25 @@
         { "action": "click", "selector": ".bd-ride-map__stop a[href=\"#the-loop\"]", "delay": 3600, "description": "end of the line: the Loop, 07 · 17 · 27" }
       ]
     },
-    "explore-caa": {
+    "our-venue": {
       "url": "/our-venue",
       "viewport": { "width": 1440, "height": 900 },
-      "waitFor": ".bd-cityguide",
-      "output": "explore-caa.mp4",
+      "waitFor": ".bd-place",
+      "output": "our-venue.mp4",
       "thumbnail": { "time": 1 },
       "steps": [
         { "action": "pause", "ms": 1500 },
-        { "action": "scroll", "y": 500, "delay": 1500, "description": "the venue" },
-        { "action": "scroll", "y": 500, "delay": 1200, "description": "our Chicago" },
+        { "action": "scroll", "y": 600, "delay": 1800, "description": "the building, and the way in pinned beside it" },
+        { "action": "scroll", "y": 700, "delay": 2000, "description": "each photograph whole, opening out as it arrives" },
+        { "action": "click", "selector": ".bd-place__index a[href=\"#spaces\"]", "delay": 2400, "description": "jump straight to the rooms" },
+        { "action": "scroll", "y": 950, "delay": 1800, "description": "what to look for, one at a time" },
+        { "action": "scroll", "y": 1750, "delay": 1800, "description": "what is open inside, and getting here" },
+        { "action": "scroll", "y": 1060, "delay": 1600, "description": "Chicago, right outside" },
         { "action": "moveTo", "selector": "[data-place=\"riverwalk\"]", "delay": 1400, "description": "each place lights its pin" },
         { "action": "moveTo", "selector": "[data-place=\"north-pond\"]", "delay": 1400 },
         { "action": "moveTo", "selector": "[data-place=\"lakefront-adler\"]", "delay": 1400 },
         { "action": "click", "selector": ".bd-citymap__choose[data-pin=\"north-pond\"]", "delay": 2000, "description": "and each pin picks its place" },
-        { "action": "scroll", "y": 620, "delay": 1600, "description": "the ribbon" },
-        { "action": "scroll", "y": 900, "delay": 1600, "description": "the building's history" },
-        { "action": "scroll", "y": 1400, "delay": 1800, "description": "what to look for" }
+        { "action": "scroll", "y": 700, "delay": 1800, "description": "the skyline, and our Chicago guide" }
       ]
     },
     "phone": {

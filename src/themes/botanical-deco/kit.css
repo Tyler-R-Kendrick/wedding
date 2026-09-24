@@ -341,11 +341,11 @@
 }
 
 .bd-nav__link:hover::after,
-.bd-nav__link[aria-current="page"]::after {
+.bd-nav__link[aria-current]::after {
   transform: scaleX(1);
 }
 
-.bd-nav__link[aria-current="page"] {
+.bd-nav__link[aria-current] {
   color: var(--color-tertiary);
 }
 
@@ -528,7 +528,7 @@
   text-decoration: none;
 }
 
-.bd-menu__link[aria-current="page"] {
+.bd-menu__link[aria-current] {
   color: var(--color-tertiary);
   font-style: italic;
 }
@@ -587,7 +587,7 @@
   color: var(--color-on-moss);
 }
 
-.bd-bar__cell[aria-current="page"] {
+.bd-bar__cell[aria-current] {
   border-color: var(--color-gold-deep);
 }
 
@@ -1141,6 +1141,18 @@
   .bd-pagehero__lede {
     max-width: min(24rem, 27vw);
   }
+
+  /* Our Venue: the title starts on the page's one column line, like everything under it, wherever
+     that line is clear of the corner flowers (they are 8vw wide, the inset's own measure). So from
+     about 1400px the two agree, and on a wide screen the title no longer sits far out to the left
+     of the page. */
+  .bd-pagehero--column {
+    container-type: inline-size;
+  }
+
+  .bd-pagehero--column .bd-pagehero__copy {
+    padding-inline-start: max(var(--bd-inset), calc((100cqi - var(--bd-col)) / 2 + var(--bd-gutter)));
+  }
 }
 
 @media (width >= 1100px) {
@@ -1200,6 +1212,7 @@
 /* ---------- companion page head ---------- */
 .bd-pagehead {
   position: relative;
+  container-type: inline-size;
   overflow: clip;
   border-block-end: var(--bd-hair);
   background: var(--color-neutral);
@@ -1214,7 +1227,11 @@
   max-width: 1200px;
   margin-inline: auto;
   padding: clamp(40px, 6vw, 88px) var(--bd-gutter) clamp(36px, 5vw, 72px);
-  padding-inline-start: max(var(--bd-gutter), clamp(64px, 11vw, 150px));
+
+  /* Clear of the corner flowers at the page edge, and no further: once the centred box's own margin
+     clears them (wide screens), the title starts on the column line the sections below use. It
+     used to keep the full inset inside the margin too, 100px right of the body at 1440. */
+  padding-inline-start: max(var(--bd-gutter), calc(clamp(64px, 11vw, 150px) - max(0px, (100cqi - 1200px) / 2)));
 }
 
 .bd-pagehead__title {
@@ -2641,6 +2658,9 @@
   inset-inline-start: 0;
   inset-block-start: clamp(56px, 10vw, 140px);
   inline-size: clamp(48px, 5vw, 80px);
+
+  /* The interim cut-out keeps flecks of mockup above the sprig, as Home's does; the flowers start below them. */
+  clip-path: inset(9% 0 0 0);
 }
 
 .bd-place__frames {
@@ -2707,11 +2727,14 @@
 }
 
 /* Pinned under the top of the window while the photographs scroll past it, where the window is tall
-   enough to hold the whole introduction; a pinned column taller than the window hides its own end. */
-@media (width >= 900px) and (height >= 760px) {
+   enough to hold the whole introduction; a pinned column taller than the window hides its own end,
+   and a focused jump link with it (WCAG 2.4.11). The introduction is about 820px from the window's
+   top at 16px text, so the guard is in em: a reader who has raised the browser's text size gets a
+   taller threshold with the taller column, and at 900px x 760px the column now scrolls. */
+@media (width >= 900px) and (height >= 54em) {
   .bd-place__intro {
     position: sticky;
-    inset-block-start: clamp(48px, 10vh, 112px);
+    inset-block-start: clamp(48px, 12vh, 120px);
     align-self: start;
   }
 }
@@ -3058,7 +3081,6 @@
   color: var(--color-primary);
 }
 
-.bd-ribbon__words,
 .bd-ribbon__script {
   display: none;
 }
@@ -3074,22 +3096,14 @@
     --veil-lo: color-mix(in oklab, var(--color-surface) 45%, transparent);
   }
 
-  .bd-ribbon__words {
-    display: grid;
-    justify-self: start;
-    font-size: var(--type-label-caps-size);
-    letter-spacing: 0.22em;
-    line-height: 1.6;
-    text-align: start;
-    text-transform: uppercase;
-    color: var(--color-primary);
-  }
-
-  .bd-ribbon__words > span {
-    display: block;
+  /* The theme words used to stand at the left end; the opening and the footer already say them,
+     so the first column is left to the skyline. */
+  .bd-ribbon__center {
+    grid-column: 2;
   }
 
   .bd-ribbon__script {
+    grid-column: 4;
     display: block;
     justify-self: end;
     max-inline-size: 11rem;
@@ -3239,6 +3253,7 @@
 }
 
 .bd-handoffs__disclosure {
+  max-width: var(--bd-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
 }
@@ -3271,6 +3286,11 @@
 .bd-why {
   border-block-start: var(--bd-hair);
   padding-block-start: var(--spacing-sm);
+}
+
+/* The memory behind a place, opened on a full-width card, ran 96 characters to a line. */
+.bd-why__text {
+  max-width: var(--bd-measure);
 }
 
 .bd-why__summary {
@@ -3400,13 +3420,26 @@
   font-weight: 400;
 }
 
+/* The room's name is its link: 44px tall at least, like every other standalone target here. */
+.bd-room__name .bd-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+}
+
 .bd-room__capacity {
   font-variant-numeric: tabular-nums;
 }
 
+.bd-rooms__note,
 .bd-room__note,
 .bd-room__character {
   color: var(--color-on-surface-muted);
+}
+
+/* Said once above the grid, it spans the row; kept to the reading measure. */
+.bd-rooms__note {
+  max-width: var(--bd-measure);
 }
 
 .bd-scroll {
@@ -3866,7 +3899,7 @@
     animation: bd-unveil 1.3s var(--ease-settle) both;
   }
 
-  .bd [data-reveal="photo"][data-reveal-state] img {
+  .bd [data-reveal="photo"]:is([data-reveal-state="pending"], [data-reveal-state="in"]) img {
     scale: 1.12;
   }
 
@@ -3893,8 +3926,9 @@
   }
 
   /* A list arrives entry by entry: the block itself stays put and its entries rise in turn, a
-     beat apart, so a run of rooms or facts reads as a sequence. The delay stops growing at the
-     sixth entry: a long list never makes a guest wait on its last line. */
+     beat apart, so a run of rooms or facts reads as a sequence. Quicker than a section's own
+     entrance, and the delay stops growing at the fourth entry, so the last line of any list is
+     settled about 0.8s after the list arrives: a guest never waits on it. */
   .bd [data-reveal="list"][data-reveal-state] {
     opacity: 1;
     translate: none;
@@ -3907,27 +3941,19 @@
   }
 
   .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li {
-    animation: bd-reveal 0.9s var(--ease-settle) both;
+    animation: bd-reveal 0.6s var(--ease-settle) both;
   }
 
   .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(2) {
-    animation-delay: 90ms;
+    animation-delay: 60ms;
   }
 
   .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(3) {
+    animation-delay: 120ms;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(n + 4) {
     animation-delay: 180ms;
-  }
-
-  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(4) {
-    animation-delay: 270ms;
-  }
-
-  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(5) {
-    animation-delay: 360ms;
-  }
-
-  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(n + 6) {
-    animation-delay: 450ms;
   }
 }
 

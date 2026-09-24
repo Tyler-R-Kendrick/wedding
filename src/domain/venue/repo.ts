@@ -58,7 +58,7 @@ export function toVenueFactView(row: VenueFactRow, ctx: ReadContext): VenueFactV
 }
 
 /** The typed placeholder every venue page must show until the planner confirms the rooms (backlog P-01). */
-export const ROOMS_NOT_CONFIRMED = textBlock('TODO(Tyler & Sara): which room hosts the ceremony, the cocktail hour, and the reception is not confirmed (backlog P-01). The spaces below are the rooms the venue offers for weddings.');
+export const ROOMS_NOT_CONFIRMED = textBlock('TODO(Tyler & Sara): which room hosts the ceremony, the cocktail hour, and the reception is not confirmed (backlog P-01). Every room on these pages is one the venue offers for weddings.');
 
 export interface VenueFactsOptions {
   category?: VenueFactRow['category'];

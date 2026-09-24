@@ -29,7 +29,7 @@ export function VenueSpacePage({ data }: { data: VenueRoomData }) {
         </ul>
       </Section>
 
-      <Section id="capacity" number="03" title="Capacity (from the venue kit)">
+      <Section id="capacity" number="03" title="Capacity, in the venue’s own figures">
         <div className="wp-scroll">
           <table className="wp-table">
             <caption className="wp-muted">{space.capacities.note}</caption>

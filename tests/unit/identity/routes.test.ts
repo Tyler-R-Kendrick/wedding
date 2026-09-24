@@ -4,12 +4,12 @@ import { errorCode, errorCopy, ERROR_COPY } from '@/app/(auth)/_lib/errors';
 
 describe('safe return paths (review S7/N4)', () => {
   it('accepts same-site public, auth and admin paths', () => {
-    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock']) {
+    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom']) {
       expect(isSafeReturnPath(p), p).toBe(true);
     }
   });
   it('refuses off-site and malformed targets', () => {
-    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/step-up?next=https://evil', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
+    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
       expect(isSafeReturnPath(p), String(p)).toBe(false);
     }
     expect(safeReturnPath('https://evil.example', '/sign-in')).toBe('/sign-in');

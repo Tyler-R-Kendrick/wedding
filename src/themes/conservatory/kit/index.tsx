@@ -7,7 +7,7 @@ import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
-import { allItems, isCurrent } from '@/themes/shared/nav-utils';
+import { allItems, ariaCurrent, isCurrent } from '@/themes/shared/nav-utils';
 import type {
   BadgeProps, ButtonProps, CardProps, ChoiceProps, Copy, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps,
   ImageFrameProps, InputProps, LinkProps, MapHandoffProps, NavItem, NavProps, PlaceholderProps, ProseProps, SectionHeadingProps, SectionProps, SelectProps, ShellProps, SkeletonProps,
@@ -79,7 +79,7 @@ function ExternalMark({ provider }: { provider?: string }) {
 function Tag({ item, nav, className = 'cv-tag' }: { item: NavItem; nav: NavProps['nav']; className?: string }) {
   const current = isCurrent(item, nav);
   return (
-    <a className={`${className}${current ? ' is-current' : ''}`} href={item.href} aria-current={current ? 'page' : undefined} rel={item.external ? 'noopener' : undefined}>
+    <a className={`${className}${current ? ' is-current' : ''}`} href={item.href} aria-current={ariaCurrent(item, nav)} rel={item.external ? 'noopener' : undefined}>
       <span>{item.label}</span>
       {item.external ? <ExternalMark provider={item.provider} /> : null}
     </a>

@@ -6,7 +6,7 @@ built for.
 
 | Recording | Tool | Server | Why that pairing |
 |---|---|---|---|
-| `home`, `our-story`, `explore-caa`, `phone` | [webreel](https://github.com/vercel-labs/webreel) 0.1.4 | production build on 3330 | Scripted tours with a drawn cursor and on-screen keystrokes. Production, because a dev server paints its badge into every frame. |
+| `home`, `our-story`, `our-venue`, `phone` | [webreel](https://github.com/vercel-labs/webreel) 0.1.4 | production build on 3330 | Scripted tours with a drawn cursor and on-screen keystrokes. Production, because a dev server paints its badge into every frame. |
 | `your-weekend` | [agent-browser](https://github.com/vercel-labs/agent-browser) 0.27.0 | `NODE_ENV=test` server on 3331 | The page is personal. Only the test server lets a seeded household sign in by header, and agent-browser can set those headers. |
 
 Neither tool is a dependency of the site. The script fetches each one at its pinned
@@ -45,7 +45,7 @@ npm run dev -- -p 3331
 
 # 3. Record everything, or name the recordings you want
 npm run demos:record
-npm run demos:record -- our-story explore-caa
+npm run demos:record -- our-story our-venue
 npm run demos:record -- your-weekend --dry   # screenshots at each noted step, no video
 npm run demos:record -- --encode             # re-encode the takes already in demos/.out
 ```
@@ -88,6 +88,15 @@ when a page has visibly changed, not on every commit.
   local Chromium. webreel launches the `chrome-headless-shell` it downloads into
   `~/.webreel/bin`. Where that download is blocked, a small shell script at that
   path that runs a local Chromium with `--headless=new` works.
+- **A take that ends `ENOENT: rename '~/.webreel/_rec_….mp4'` recorded no frames.** webreel
+  starts its headless shell with `--enable-begin-frame-control`, and under that flag some builds
+  never answer `Page.captureScreenshot`, so the capture loop waits until the tour ends and the
+  empty take is deleted before it can be renamed. Measured on 2026-09-24: the same shell answers
+  in about 30ms without the flag and not at all with it. Replace
+  `~/.webreel/bin/chrome-headless-shell/chrome-headless-shell-linux64/chrome-headless-shell` with
+  a script that drops that one argument and runs the real binary.
+- **webreel's ffmpeg download can 404** (it fetches a BtbN build by a URL that has since moved).
+  It falls back to `ffmpeg` on `PATH`, so installing one (`apt-get install ffmpeg`) is enough.
 
 ## The stage tours (`npm run demos:stages`)
 

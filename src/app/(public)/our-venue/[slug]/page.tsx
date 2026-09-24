@@ -9,7 +9,10 @@ type Params = Promise<{ slug: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  return { title: slug.replace(/-/g, ' ') };
+  // The room's own name (White City Ballroom), not its slug; an unknown slug 404s below anyway.
+  const { ctx } = await publicPageContext();
+  const r = await invoke(showVenueRoom, ctx, { slug });
+  return { title: r.ok ? r.value.data.space.name : 'Our Venue' };
 }
 
 export default async function VenueSpaceRoute({ params }: { params: Params }) {

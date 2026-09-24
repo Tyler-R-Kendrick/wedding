@@ -11,8 +11,9 @@ const alias = {
 
 // The suites run against the mocks, whatever the machine running them holds: every server variable
 // is dropped before any worker starts, so the only settings a suite sees are the ones a project
-// below gives it (scripts/lib/server-env.mjs says why).
-dropServerEnv();
+// below gives it (scripts/lib/server-env.mjs says why). `EVALS_LIVE=1` is the one documented way to
+// point a run at the configured provider (tests/evals/harness.ts), so it keeps the environment.
+if (!process.env.EVALS_LIVE) dropServerEnv();
 
 const baseEnv = { NODE_ENV: 'test', PGLITE_MEMORY: '1', LOG_LEVEL: 'silent', METRICS_SINK: 'none' } as const;
 

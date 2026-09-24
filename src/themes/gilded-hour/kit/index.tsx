@@ -9,7 +9,7 @@ import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
-import { allItems, bottomCells, isCurrent, shortLabel } from '@/themes/shared/nav-utils';
+import { allItems, ariaCurrent, bottomCells, shortLabel } from '@/themes/shared/nav-utils';
 import type {
   BadgeProps, ButtonProps, CardProps, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps, ImageFrameProps,
   InputProps, LinkProps, MapHandoffProps, NavItem, NavProps, PlaceholderProps, ProseProps, SectionHeadingProps, SectionProps, SelectProps, ShellProps, SkeletonProps, StatProps,
@@ -71,7 +71,6 @@ function ExternalMark({ provider }: { provider?: string }) {
 }
 
 function NavLink({ item, nav, className, short = false }: { item: NavItem; nav: NavProps['nav']; className: string; short?: boolean }) {
-  const current = isCurrent(item, nav);
   const label = short ? shortLabel(item.label) : item.label;
   if (item.external) {
     return (
@@ -83,7 +82,7 @@ function NavLink({ item, nav, className, short = false }: { item: NavItem; nav: 
     );
   }
   return (
-    <a className={className} href={item.href} aria-current={current ? 'page' : undefined}>
+    <a className={className} href={item.href} aria-current={ariaCurrent(item, nav)}>
       {short ? <Icon name={iconForHref(item.href)} /> : null}
       <span>{label}</span>
     </a>

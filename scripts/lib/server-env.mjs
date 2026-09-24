@@ -22,4 +22,7 @@ export function serverEnvNames(root = new URL('../../', import.meta.url)) {
  */
 export function dropServerEnv(env = process.env) {
   for (const name of serverEnvNames()) delete env[name];
+  // Not a variable but a binary: an ffmpeg on PATH makes the video provider live. `off` says there
+  // is none without looking (src/providers/video/ffmpeg.ts); a suite that wants one passes its own.
+  env.FFMPEG_PATH = 'off';
 }
