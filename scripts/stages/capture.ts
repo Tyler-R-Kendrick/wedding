@@ -125,7 +125,8 @@ async function capturePage(source: Source, design: string, url: string): Promise
   try {
     const target = `${source.origin}${url}${design === DESIGNS[0] ? '' : `${url.includes('?') ? '&' : '?'}theme=${design}`}`;
     for (let attempt = 1; ; attempt++) {
-      const res = await page.goto(target, { waitUntil: 'load', timeout: 120_000 });
+      // The navigation itself goes through the same flaky proxy as every subresource.
+      const res = await withRetry(target, () => page.goto(target, { waitUntil: 'load', timeout: 120_000 }), 4);
       await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
       await sleep(600);
       if ((await stylesLoaded(page)) || attempt === 3) {

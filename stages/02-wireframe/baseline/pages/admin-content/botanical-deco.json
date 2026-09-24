@@ -5,14 +5,9 @@
  "bodyAttrs": {},
  "css": [
   "f95fb4ca001846ba",
-  "4682cf76fd87823b",
-  "a7ae037080986601"
+  "4682cf76fd87823b"
  ],
  "assets": [
-  "/__nextjs_font/geist-latin-ext.woff2",
-  "/__nextjs_font/geist-latin.woff2",
-  "/__nextjs_font/geist-mono-latin-ext.woff2",
-  "/__nextjs_font/geist-mono-latin.woff2",
   "/assets/art/botanical-deco/deco-corner.svg",
   "/assets/art/botanical-deco/deco-rule.svg",
   "/assets/art/botanical-deco/monogram-icon.svg",
