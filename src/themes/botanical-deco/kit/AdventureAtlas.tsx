@@ -139,8 +139,15 @@ const constrained = () => {
 const sameView = (a: AtlasView, b: AtlasView) => a.k === b.k && a.cx === b.cx && a.cy === b.cy;
 /** Screen position of a drawing point in a frame `width` pixels wide showing `vb`. */
 const toScreen = (x: number, y: number, vb: ViewBox, width: number) => ({ sx: ((x - vb.x) / vb.w) * width, sy: ((y - vb.y) / vb.w) * width });
-/** A marker more than this far outside the frame is not drawn (its name can still reach in). */
+/** A screen point within `margin` pixels of a `width` × `height` frame. */
+const within = (sx: number, sy: number, width: number, height: number, margin: number) => sx > -margin && sx < width + margin && sy > -margin && sy < height + margin;
+/** A marker's drawing this far outside the frame is still drawn: its pin or name can reach in. */
 const MARGIN_PX = 80;
+/**
+ * A marker's button, only this far: the canvas clips anything outside it, and a button no one can
+ * see must not be a tab stop.
+ */
+const TARGET_MARGIN_PX = 20;
 
 export function AdventureAtlas({ pins, venue, overview, postcards, children }: { pins: AtlasPin[]; venue: AtlasVenue; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
   const uid = useId();
@@ -196,7 +203,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     for (const m of el.querySelectorAll<HTMLElement | SVGGElement>('[data-at]')) {
       const [x, y, lift] = (m.dataset.at ?? '0 0 0').split(' ').map(Number) as [number, number, number];
       const { sx, sy } = toScreen(x, y, vb, width);
-      const on = sx > -MARGIN_PX && sx < width + MARGIN_PX && sy > -MARGIN_PX && sy < height + MARGIN_PX;
+      const on = within(sx, sy, width, height, m instanceof SVGGElement ? MARGIN_PX : TARGET_MARGIN_PX);
       if (m.hasAttribute('data-off') === on) m.toggleAttribute('data-off', !on);
       if (!on) continue;
       if (m instanceof SVGGElement) m.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)})`);
@@ -447,15 +454,17 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.bd-atlas__zoom')) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    // A primary pointer starts a new gesture: forget any press whose release never reached us.
+    // A primary pointer starts a new gesture: forget any press whose release never reached us, and
+    // any click a drag was waiting to swallow. First, so a press on the zoom buttons counts too: a
+    // touch drag is not followed by a click, and the next tap on "+" must not be taken for it.
     if (e.isPrimary) {
       pointers.current.clear();
       pinch.current = null;
       dragging.current = false;
       swallowClick.current = false;
     }
+    if ((e.target as HTMLElement).closest('.bd-atlas__zoom')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     const p = local(e);
     pointers.current.set(e.pointerId, { x: p.x, y: p.y, startX: p.x, startY: p.y });
     if (pointers.current.size === 2) {
@@ -517,8 +526,19 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     }
   };
 
+  /**
+   * Only the canvas losing its capture ends a press. A finger is captured implicitly by whatever it
+   * lands on (a map layer, a pin's button); when a drag or pinch takes the capture for the canvas,
+   * that element fires lostpointercapture, which bubbles here. Read as a release, it ended every
+   * touch drag after its first move and dropped both fingers of a pinch.
+   */
+  const onLostCapture = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onPointerUp(e);
+  };
+
   const onClickCapture = (e: MouseEvent<HTMLDivElement>) => {
-    if (!swallowClick.current) return;
+    // `detail` is 0 for a click from the keyboard (Enter or Space on a pin), which no drag produced.
+    if (!swallowClick.current || e.detail === 0) return;
     swallowClick.current = false;
     e.preventDefault();
     e.stopPropagation();
@@ -587,7 +607,6 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   const showLabels = view.k >= LABEL_ZOOM;
   const labelSides = placeLabels(clusters, chosen, showLabels, vb, width, aspect);
   const chosenCluster = clusters.find((c) => c.members.some((m) => m.id === chosen));
-  const onScreen = (sx: number, sy: number) => sx > -MARGIN_PX && sx < width + MARGIN_PX && sy > -MARGIN_PX && sy < height + MARGIN_PX;
 
   const labelFor = (c: AtlasCluster<Point>) => {
     const m = c.members.length === 1 ? c.members[0] : undefined;
@@ -628,7 +647,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
-            onLostPointerCapture={onPointerUp}
+            onLostPointerCapture={onLostCapture}
             onClickCapture={onClickCapture}
             onDoubleClick={onDoubleClick}
             onKeyDown={onKeyDown}
@@ -664,7 +683,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                     data-kind={single ? single.kind : 'cluster'}
                     data-active={active ? 'true' : undefined}
                     data-at={`${c.x} ${c.y} 0`}
-                    data-off={onScreen(sx, sy) ? undefined : ''}
+                    data-off={within(sx, sy, width, height, MARGIN_PX) ? undefined : ''}
                     transform={`translate(${sx.toFixed(1)} ${sy.toFixed(1)})`}
                   >
                     {single?.kind === 'venue' ? (
@@ -714,7 +733,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                     className="bd-atlas__target"
                     data-pin={single?.id}
                     data-at={`${c.x} ${c.y} ${lift}`}
-                    data-off={onScreen(sx, sy) ? undefined : ''}
+                    data-off={within(sx, sy, width, height, TARGET_MARGIN_PX) ? undefined : ''}
                     style={{ transform: `translate(${sx.toFixed(1)}px, ${(sy - lift).toFixed(1)}px)` }}
                     aria-label={labelFor(c)}
                     aria-pressed={single ? chosen === single.id : undefined}

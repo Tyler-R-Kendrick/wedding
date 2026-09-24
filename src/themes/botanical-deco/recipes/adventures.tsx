@@ -136,7 +136,7 @@ function Postcard({ card, number }: { card: AdventureCard; number: string }) {
       {card.cover ? (
         <figure className="bd-postcard__photo">
           {/* eslint-disable-next-line @next/next/no-img-element -- couple-supplied photo of unknown size; the kit draws every photo with <img> */}
-          <img className="bd-postcard__img" src={card.cover.src} srcSet={photoSrcSet(card.cover.src)} sizes="(width >= 1000px) 22rem, 92vw" alt={card.cover.alt} loading="lazy" decoding="async" />
+          <img className="bd-postcard__img" src={card.cover.src} srcSet={photoSrcSet(card.cover.src)} sizes="(min-width: 1000px) 22rem, 92vw" alt={card.cover.alt} loading="lazy" decoding="async" />
           {card.cover.caption ? <figcaption>{card.cover.caption}</figcaption> : null}
         </figure>
       ) : null}

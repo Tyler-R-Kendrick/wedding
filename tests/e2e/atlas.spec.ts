@@ -100,6 +100,54 @@ test.describe('the adventures atlas', () => {
     expect((await canvas(page).boundingBox())!.y).toBeGreaterThan(-box.height);
   });
 
+  test('follows a finger: a one-finger drag, a pinch, and a tap on "+" right after a drag', async ({ page }, testInfo) => {
+    // Touch as a phone sends it (Chrome's touch events, not a mouse): a finger is captured by what it
+    // lands on, and a drag or pinch that takes the capture for the map must not read that as a release.
+    // It did, so a drag stopped after its first move.
+    test.skip(!testInfo.project.use.hasTouch, 'touch devices only');
+    await openAtlas(page);
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: [number, number][]) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y], id) => ({ x, y, id })) });
+    const box = (await canvas(page).boundingBox())!;
+    const width = async () => Number((await viewBoxOf(page))!.split(' ')[2]);
+
+    // One finger, 100px to the left in ten moves: the map follows the whole way.
+    const [x0] = (await viewBoxOf(page))!.split(' ').map(Number) as [number];
+    const w0 = await width();
+    const fx = box.x + box.width * 0.6, fy = box.y + box.height * 0.8;
+    await touch('touchStart', [[fx, fy]]);
+    for (let i = 1; i <= 10; i++) await touch('touchMove', [[fx - i * 10, fy]]);
+    await touch('touchEnd', []);
+    await settled(page);
+    const [x1] = (await viewBoxOf(page))!.split(' ').map(Number) as [number];
+    expect(((x1 - x0) / w0) * box.width).toBeCloseTo(100, -1);
+    await expect(openPostcard(page)).toHaveCount(0);
+
+    // Two fingers from 60px to 180px apart: three times closer.
+    const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+    const before = await width();
+    await touch('touchStart', [[cx - 30, cy], [cx + 30, cy]]);
+    for (let i = 1; i <= 12; i++) await touch('touchMove', [[cx - 30 - i * 5, cy], [cx + 30 + i * 5, cy]]);
+    await touch('touchEnd', []);
+    await settled(page);
+    expect(before / (await width())).toBeCloseTo(3, 1);
+
+    // A touch drag is not followed by a click, so the next tap on a button must work, not be
+    // swallowed: back to Chicago (well short of the deepest zoom), a drag, then "+".
+    await page.getByRole('button', { name: 'Back to Chicago and the venue' }).tap();
+    await settled(page);
+    await expect(page.getByRole('button', { name: 'Back to Chicago and the venue' })).toBeDisabled();
+    await touch('touchStart', [[fx, fy]]);
+    for (let i = 1; i <= 5; i++) await touch('touchMove', [[fx - i * 10, fy]]);
+    await touch('touchEnd', []);
+    await settled(page);
+    const k0 = await width();
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).tap();
+    await settled(page);
+    expect(k0 / (await width())).toBeCloseTo(1.8, 1);
+  });
+
   test('zooms with the buttons and the keyboard, and each step lands where it was asked', async ({ page }) => {
     await openAtlas(page);
     const zoomOf = async () => {
