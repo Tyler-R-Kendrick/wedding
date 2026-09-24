@@ -39,7 +39,8 @@ export async function probe(): Promise<BrowserModelState> {
  * problem — the next one simply checks again.
  */
 export async function prepare(onProgress?: (fraction: number) => void): Promise<void> {
-  if ((await probe()) === 'unsupported') return;
+  const state = await probe();
+  if (state !== 'downloadable' && state !== 'downloading') return;
   try {
     const { browserAI } = await import('@browser-ai/core');
     await browserAI('text').createSessionWithProgress(onProgress && ((loaded) => onProgress(Math.max(0, Math.min(1, loaded)))));

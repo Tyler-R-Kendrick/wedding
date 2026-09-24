@@ -56,6 +56,16 @@ describe('the on-device concierge, through the AI SDK', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it('starts a download only when there is one to start', async () => {
+    const create = vi.fn(async () => session(async () => 'ok'));
+    stubLanguageModel({ availability: async () => 'available', create });
+    await prepare();
+    expect(create, 'already downloaded: nothing to prepare').not.toHaveBeenCalled();
+    stubLanguageModel({ availability: async () => 'downloading', create });
+    await prepare();
+    expect(create).toHaveBeenCalledOnce();
+  });
+
   it('writes the draft with generateText, grounding the session with the site\'s own facts', async () => {
     const create = vi.fn(async (options: CreateOptions) =>
       session(async (messages) => `answered ${JSON.stringify(messages)} with ${options.initialPrompts?.[0]?.content ?? 'nothing'}`),
