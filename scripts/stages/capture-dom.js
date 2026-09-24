@@ -198,7 +198,9 @@ async ({ pages, textRoleLinkMax = 48 }) => {
   for (const node of texts) {
     const parent = node.parentElement;
     let role = 'copy';
-    if (parent.closest('h1, h2, h3, h4, h5, h6')) role = 'heading';
+    // Text hidden from assistive technology is ornament (a monogram, a flourish), not copy.
+    if (parent.closest('[aria-hidden="true"]')) role = 'label';
+    else if (parent.closest('h1, h2, h3, h4, h5, h6')) role = 'heading';
     else if (parent.closest(LABEL)) role = 'label';
     else {
       const a = parent.closest('a');
