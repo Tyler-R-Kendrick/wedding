@@ -22,7 +22,7 @@ export class ResendAuthEmail implements AuthEmailProvider {
       await getToken('resend/wedding', { subject: { type: 'user', id: this.userId } });
       return upHealth();
     } catch (e) {
-      return { status: 'down' as const, checkedAt: new Date().toISOString(), detail: e instanceof Error ? e.name : 'Connect unavailable' };
+      return { status: 'down' as const, checkedAt: new Date().toISOString(), detail: e instanceof Error ? `${e.name}: ${e.message}` : 'Connect unavailable' };
     }
   }
 

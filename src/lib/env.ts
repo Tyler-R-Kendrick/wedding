@@ -78,6 +78,7 @@ const serverSchema = z.object({
   // ANTHROPIC_API_KEY, OPENAI_API_KEY or AI_GATEWAY_API_KEY is ignored (src/providers/ai-model).
   RESEND_CONNECT_USER_ID: optionalString,
   EMAIL_FROM: optionalString,
+  CONNECT_SETUP_TOKEN: optionalSecret(32),
   /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,
   S3_REGION: z.string().default('auto'),
