@@ -198,7 +198,7 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
 async function mailerProblem(ctx: Parameters<typeof appServices>[0]): Promise<string | null> {
   try {
     const health = await appServices(ctx).providers('auth-email').health();
-    return health.status === 'up' ? null : `auth-email provider ${health.status}`;
+    return health.status === 'up' ? null : `auth-email provider ${health.status}: ${health.detail ?? 'no details'}`;
   } catch (e) {
     return e instanceof Error ? e.message : 'auth-email provider unavailable';
   }
