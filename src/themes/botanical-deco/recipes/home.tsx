@@ -27,7 +27,7 @@ const { Shell, Hero, Button, Stat, Timeline, MapHandoff, Text } = kit;
  */
 
 // Photos sit behind the signed-in account menu; Home reaches them through the sign-in door.
-const ROUTES = { story: '/our-story', caa: '/explore-caa', guide: '/share-an-adventure', wedding: '/the-wedding', photos: throughSignIn('/photos') } as const;
+const ROUTES = { story: '/our-story', caa: '/our-venue', guide: '/share-an-adventure', wedding: '/the-wedding', photos: throughSignIn('/photos') } as const;
 
 function Theme({ data }: { data: HomeData }) {
   const after = data.lifecycle.mode === 'remember';
@@ -115,7 +115,7 @@ function Share({ data }: { data: HomeData }) {
           <p>
             Venetian Gothic on Michigan Avenue since 1893, restored as a hotel. {remember ? 'Where we said “I do.”' : 'Where we will say “I do.”'} Carved limestone, stained glass, marble floors, and Millennium Park out the windows.
           </p>
-          <More href={ROUTES.caa}>Explore the venue</More>
+          <More href={ROUTES.caa}>See our venue</More>
         </div>
       </article>
 

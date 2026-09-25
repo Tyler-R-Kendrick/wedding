@@ -5,7 +5,7 @@ import { kit } from '../kit';
 import { BotanicalAdventureDetailPage } from './adventure-detail';
 import { BotanicalAdventuresPage } from './adventures';
 import { BotanicalAskPage } from './ask';
-import { BotanicalExploreCaaPage } from './explore-caa';
+import { BotanicalOurVenuePage } from './our-venue';
 import { BotanicalGiftsPage } from './gifts';
 import { BotanicalPhotoAlbumPage, BotanicalPhotosPage } from './photos';
 import { BotanicalGuidePage } from './guide';
@@ -28,7 +28,7 @@ export const content: ContentRecipes = {
   adventureDetail: BotanicalAdventureDetailPage,
   guide: BotanicalGuidePage,
   recommendation: BotanicalRecommendationPage,
-  exploreCaa: BotanicalExploreCaaPage,
+  ourVenue: BotanicalOurVenuePage,
   venueSpace: BotanicalVenueSpacePage,
   wedding: BotanicalWeddingPage,
   travel: BotanicalTravelPage,

@@ -24,6 +24,12 @@ export function isCurrent(item: NavItem, nav: NavModel): boolean {
   return !item.external && item.href === nav.currentPath;
 }
 
+/** The `aria-current` a nav item carries: `page` for the page itself, `true` for its parent section. */
+export function ariaCurrent(item: NavItem, nav: NavModel): 'page' | 'true' | undefined {
+  if (!isCurrent(item, nav)) return undefined;
+  return nav.currentIsAncestor ? 'true' : 'page';
+}
+
 /** Cells for a bottom bar: quick actions first, then primary items, de-duplicated, capped. */
 export function bottomCells(nav: NavModel, max: number): NavItem[] {
   const out: NavItem[] = [];

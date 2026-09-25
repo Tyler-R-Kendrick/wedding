@@ -38,7 +38,7 @@ export const CONTENT_COPY = {
           ? [paragraphs ? `${paragraphs} ${paragraphs === 1 ? 'journal page' : 'journal pages'}` : '', photos ? `${photos} ${photos === 1 ? 'photograph' : 'photographs'}` : ''].filter(Boolean).join(' · ')
           : 'Photographs and journal pages are still to come.',
       venueEyebrow: 'Where it all leads',
-      venueMore: 'Explore the venue',
+      venueMore: 'See our venue',
     },
   },
   adventureDetail: {
@@ -67,8 +67,8 @@ export const CONTENT_COPY = {
     hoursTail: ', each with the day we last checked it.',
     back: 'All recommendations and itineraries',
   },
-  exploreCaa: {
-    eyebrow: 'Explore CAA',
+  ourVenue: {
+    eyebrow: 'Our Venue',
     building: 'The building',
     spaces: 'The spaces',
     lookFor: 'Look for this',
@@ -77,12 +77,12 @@ export const CONTENT_COPY = {
     outletsLede: 'These are the hotel’s own places as listed on its website. Hours and menus change, so each link shows the day we last checked it; confirm with the official page before you plan around it.',
     gettingHere: 'Getting here, parking, accessibility',
     directions: 'Directions are on',
-    wholeBuilding: 'Explore the whole building',
+    wholeBuilding: 'Back to our venue',
     roomLookFor: 'Look for this',
     roomFeatures: 'What is in the room',
-    roomCapacity: 'Capacity (from the venue kit)',
+    roomCapacity: 'Capacity, in the venue’s own figures',
   },
-  wedding: { eyebrow: 'The Wedding', title: 'The Wedding', dress: 'What to wear', rooms: 'About the rooms', roomsLink: 'Explore the building and its four spaces' },
+  wedding: { eyebrow: 'The Wedding', title: 'The Wedding', dress: 'What to wear', rooms: 'About the rooms', roomsLink: 'Our venue and its four spaces' },
   ask: {
     eyebrow: 'Ask Us',
     title: 'Questions, answered',
@@ -226,7 +226,7 @@ export function labelForRoute(route: string): string {
   const base = route.split('#')[0] ?? route;
   const known: Record<string, string> = {
     [ROUTES.wedding]: 'The Wedding',
-    [ROUTES.exploreCaa]: 'Explore CAA',
+    [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
     [ROUTES.travel]: 'Travel & Stay',
     [ROUTES.gifts]: 'Gifts',

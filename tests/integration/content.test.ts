@@ -185,7 +185,7 @@ describe('CAA docent', () => {
     expect(d.spaces.map((s) => s.slug)).toEqual(['white-city-ballroom', 'madison-ballroom', 'stagg-court', 'the-tank']);
     expect(d.spaces[0]!.capacities).toMatchObject({ ceremony: 220, reception: 300 });
     // The note read "Kit figure - verify with the planner before publishing as fact." until
-    // this commit: an instruction addressed to the couple, rendered to guests on /explore-caa.
+    // this commit: an instruction addressed to the couple, rendered to guests on /our-venue.
     // The guarantee it was protecting is that the numbers are marked as the venue's own,
     // unconfirmed figures - so assert that, and that the note is no longer a task for someone.
     for (const space of d.spaces) {
@@ -239,7 +239,7 @@ describe('static search', () => {
     const r = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'valet parking' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.data.results[0]!.route).toBe('/explore-caa#getting-here');
+    expect(r.value.data.results[0]!.route).toBe('/our-venue#getting-here');
     expect(r.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
     const drafts = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'ice cream museum' });
     expect(drafts.ok && drafts.value.data.results.filter((x) => x.kind === 'adventure')).toEqual([]);
@@ -267,7 +267,7 @@ describe('static search', () => {
     expect(hit.ok).toBe(true);
     if (!hit.ok) return;
     expect(hit.value.data.mode).toBe('static');
-    expect(hit.value.data.results[0]!.route).toBe('/explore-caa#getting-here');
+    expect(hit.value.data.results[0]!.route).toBe('/our-venue#getting-here');
     expect(hit.value.data.results[0]!.content.length).toBeGreaterThan(0);
     expect(hit.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
 

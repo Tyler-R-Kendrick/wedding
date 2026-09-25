@@ -190,6 +190,27 @@ seed/, repos/), `src/providers/<kind>/{types,mock,index}.ts`, `tests/{unit,
 integration,ui,e2e}`. The Tailwind `@theme` in `src/app/globals.css` is a
 placeholder until the design swarm exports `DESIGN.md`.
 
+## Agent sessions: processes and disk
+
+This checkout is about 1.6 GB, and 1.4 GB of that is `node_modules`. If it is much bigger, or a
+session has processes you did not expect, something was left running or left behind. A session on
+2026-09-24 ended with four shell loops that could never finish, a 5 GB dev server, a 12 GB swap file
+and 3.4 GB of `.next`. The rules that prevent it:
+
+- **Never match a process by its command line** (`pgrep -f`, `pkill -f`, `killall`). The Bash tool
+  runs every command inside `bash -c "…"`, so the pattern matches the calling shell: a wait on it
+  never ends, and a kill of it kills the caller. Keep PIDs (`$!`), or use `pgrep -x <name>`.
+- **Bound every wait**: `timeout <seconds>` around any `until`/`while … sleep` loop.
+- **One Next server at a time.** A dev server that has compiled every route holds several GB; a
+  second server beside it is what ran out of memory. Stop it when you are done. Never add swap.
+- **`npm run clean`** stops this checkout's Next servers (found by working directory, never by
+  command line) and removes `.next`, test output, demo takes and review screenshots
+  (`--data` also drops the local database). Run it before you finish a session that built or served
+  the site.
+
+`scripts/agent/bash-guard.mjs` enforces the first three as a PreToolUse hook
+(`.claude/settings.json`). It blocks the command and says what to do instead.
+
 ## Maintenance
 
 - Skills were installed with `npx skills add … --copy` into `.claude/skills`

@@ -122,7 +122,7 @@
     "slug": "food-and-drink",
     "title": "Food and drink",
     "bucket": "food-drink",
-    "intro": "The hotel's own places first; hours and menus stay live links on Explore CAA. TODO(Tyler & Sara): your picks beyond the building.",
+    "intro": "The hotel's own places first; hours and menus stay live links on Our Venue. TODO(Tyler & Sara): your picks beyond the building.",
     "minMinutes": 60,
     "maxMinutes": 240,
     "interests": ["food", "drink"],

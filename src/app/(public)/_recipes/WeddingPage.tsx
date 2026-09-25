@@ -51,7 +51,7 @@ export function WeddingPage({ data }: { data: WeddingPageData }) {
         <div className="wp-prose">
           <Text block={data.roomsNote} />
           <p>
-            <Link className="link-block" href={ROUTES.exploreCaa}>Explore the building and its four spaces →</Link>
+            <Link className="link-block" href={ROUTES.ourVenue}>Our venue and its four spaces →</Link>
           </p>
           <Provenance provenance={data.provenance} />
         </div>

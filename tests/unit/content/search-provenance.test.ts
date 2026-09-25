@@ -12,16 +12,16 @@ const base = {
 
 describe('provenance projections', () => {
   it('cites official pages for external data and internal routes for authored copy, never repo paths', () => {
-    expect(publicUrlFor({ sourceType: 'official-web', sourceUrl: 'https://www.chicagoathletichotel.com/about/faq/' }, '/explore-caa#getting-here')).toBe('https://www.chicagoathletichotel.com/about/faq/');
+    expect(publicUrlFor({ sourceType: 'official-web', sourceUrl: 'https://www.chicagoathletichotel.com/about/faq/' }, '/our-venue#getting-here')).toBe('https://www.chicagoathletichotel.com/about/faq/');
     expect(publicUrlFor({ sourceType: 'authored', sourceUrl: 'https://example.com' }, '/our-story#love')).toBe('/our-story#love');
-    expect(publicUrlFor({ sourceType: 'official-web', sourceUrl: '/docs/design/brief.md' }, '/explore-caa')).toBe('/explore-caa');
+    expect(publicUrlFor({ sourceType: 'official-web', sourceUrl: '/docs/design/brief.md' }, '/our-venue')).toBe('/our-venue');
     const c = toRecordCitation({ ...base, sourceType: 'authored' }, { route: '/our-story#love', title: 'Love', recordRef: { type: 'story_sections', id: '1' }, now });
     expect(c.url).toBe('/our-story#love');
     expect(c.url).not.toMatch(/^\/docs\//);
   });
 
   it('computes freshness and labels external data', () => {
-    const v = toProvenanceView({ ...base, sourceType: 'official-web', sourceUrl: 'https://www.chicagoathletichotel.com/', trustClass: 'EXTERNAL_DATA' }, { route: '/explore-caa', now, sources: new Map([['src', 'chicagoathletichotel.com']]) });
+    const v = toProvenanceView({ ...base, sourceType: 'official-web', sourceUrl: 'https://www.chicagoathletichotel.com/', trustClass: 'EXTERNAL_DATA' }, { route: '/our-venue', now, sources: new Map([['src', 'chicagoathletichotel.com']]) });
     expect(v).toMatchObject({ sourceTitle: 'chicagoathletichotel.com', freshness: 'fresh', policy: 'operational', external: true, url: 'https://www.chicagoathletichotel.com/' });
   });
 
@@ -62,7 +62,7 @@ describe('knowledge projection + static search', () => {
     expect(scoreRecord(valet, 'madison')).toBeGreaterThanOrEqual(1);
     expect(scoreRecord(valet, 'zzz')).toBe(0);
     const ranked = rankRecords(records, 'valet entrance', now, 5);
-    expect(ranked[0]!.route).toBe('/explore-caa#getting-here');
+    expect(ranked[0]!.route).toBe('/our-venue#getting-here');
     expect(ranked[0]!.caveat).toBeUndefined();
     const later = rankRecords(records, 'valet', new Date('2026-11-01T00:00:00Z'), 5);
     expect(later[0]!.freshness).toBe('aging');

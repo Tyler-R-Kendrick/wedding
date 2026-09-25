@@ -92,7 +92,7 @@ const ROUTE_WORDS: [RegExp, string][] = [
   [/story|met|meet/i, '/our-story'],
   [/adventure|memor/i, '/our-adventures'],
   [/recommend|itinerar|things to do|share an adventure/i, '/share-an-adventure'],
-  [/caa|athletic|venue|building|hotel/i, '/explore-caa'],
+  [/caa|athletic|venue|building|hotel/i, '/our-venue'],
   [/wedding|ceremony|reception|schedule|when|where/i, '/the-wedding'],
   [/weekend|my weekend/i, '/your-weekend'],
   [/faq|question|ask/i, '/ask-us'],

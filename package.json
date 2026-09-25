@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "next dev",
+    "clean": "node scripts/clean.mjs",
     "build": "next build",
     "start": "next start",
     "prepare": "node scripts/install-git-hooks.mjs",
@@ -86,7 +87,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@fal-ai/client": "^1.10.1",
     "@google/design.md": "^0.4.0",
-    "@higgsfield/cli": "^1.1.24",
+    "@higgsfield/cli": "^1.1.26",
     "@playwright/test": "^1.62.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",

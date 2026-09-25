@@ -530,7 +530,7 @@
   text-decoration: none;
 }
 
-.bd-menu__link[aria-current="page"] {
+.bd-menu__link[aria-current] {
   color: var(--color-tertiary);
   font-style: italic;
 }
@@ -583,7 +583,7 @@
   display: none;
 }
 
-.bd-bar__cell[aria-current="page"] {
+.bd-bar__cell[aria-current] {
   border-color: var(--color-gold-deep);
 }
 
@@ -1137,6 +1137,18 @@
   .bd-pagehero__lede {
     max-width: min(24rem, 27vw);
   }
+
+  /* Our Venue: the title starts on the page's one column line, like everything under it, wherever
+     that line is clear of the corner flowers (they are 8vw wide, the inset's own measure). So from
+     about 1400px the two agree, and on a wide screen the title no longer sits far out to the left
+     of the page. */
+  .bd-pagehero--column {
+    container-type: inline-size;
+  }
+
+  .bd-pagehero--column .bd-pagehero__copy {
+    padding-inline-start: max(var(--bd-inset), calc((100cqi - var(--bd-col)) / 2 + var(--bd-gutter)));
+  }
 }
 
 @media (width >= 1100px) {
@@ -1196,6 +1208,7 @@
 /* ---------- companion page head ---------- */
 .bd-pagehead {
   position: relative;
+  container-type: inline-size;
   overflow: clip;
   border-block-end: var(--bd-hair);
   background: var(--color-neutral);
@@ -1210,7 +1223,11 @@
   max-width: 1200px;
   margin-inline: auto;
   padding: clamp(40px, 6vw, 88px) var(--bd-gutter) clamp(36px, 5vw, 72px);
-  padding-inline-start: max(var(--bd-gutter), clamp(64px, 11vw, 150px));
+
+  /* Clear of the corner flowers at the page edge, and no further: once the centred box's own margin
+     clears them (wide screens), the title starts on the column line the sections below use. It
+     used to keep the full inset inside the margin too, 100px right of the body at 1440. */
+  padding-inline-start: max(var(--bd-gutter), calc(clamp(64px, 11vw, 150px) - max(0px, (100cqi - 1200px) / 2)));
 }
 
 .bd-pagehead__title {
@@ -2535,125 +2552,60 @@
   }
 }
 
-/* ---------- explore: the venue strip ---------- */
-.bd-venue {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  max-width: var(--bd-max);
-  margin-inline: auto;
-  border-block-end: var(--bd-hair);
-}
+/* ---------- our venue: the building ---------- */
 
-.bd-venue__intro {
+/* Home's theme section given to the building: the introduction and the way into the details pinned
+   while three photographs come in beside it. Each photograph is whole at its own proportions and at
+   its own scale, so no spire or cornice is cut at a tile edge (the approved strip cropped all three
+   to one row height). */
+.bd-place {
   position: relative;
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xl) var(--bd-gutter) var(--spacing-xl) max(var(--bd-gutter), 64px);
+  padding-block: clamp(72px, 12vw, 160px);
   overflow: clip;
 }
 
-.bd-venue__title {
-  font-size: clamp(2rem, 1.3rem + 1.4vw, 2.5rem);
-  line-height: 1.02;
-}
-
-.bd-venue__tag {
-  letter-spacing: 0.18em;
-}
-
-.bd-venue__lede {
-  max-width: 24rem;
-  color: var(--color-on-surface-muted);
-}
-
-.bd-bloom--venue {
-  inset-inline-start: 0;
-  inset-block-start: 8%;
-  inline-size: clamp(48px, 5vw, 80px);
-}
-
-.bd-venue__frames {
+.bd-place__inner {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: var(--spacing-xl);
+  max-width: var(--bd-col);
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
 }
 
-.bd-venue__frame figure {
+.bd-place__intro {
   display: grid;
-  grid-template-rows: 1fr auto;
-  block-size: 100%;
-  background: var(--color-surface);
-}
-
-.bd-venue__frame :is(picture, img) {
-  display: block;
-  inline-size: 100%;
-  block-size: 100%;
-  min-block-size: 220px;
-  aspect-ratio: 11 / 10;
-  object-fit: cover;
-}
-
-@media (width >= 1100px) {
-  /* In the strip the row's height is the intro's; the photographs fill it instead of floating. */
-  .bd-venue__frame :is(picture, img) {
-    aspect-ratio: auto;
-  }
-}
-
-/* On a phone three tall frames stacked to about 1,100px: the building takes the width, and the two
-   details sit side by side under it. */
-@media (width < 600px) {
-  .bd-venue__frames {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .bd-venue__frame:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .bd-venue__frame :is(picture, img) {
-    min-block-size: 0;
-    aspect-ratio: 4 / 5;
-  }
-
-  .bd-venue__frame:first-child :is(picture, img) {
-    aspect-ratio: 16 / 11;
-  }
-}
-
-.bd-venue__frame figcaption {
-  display: grid;
+  justify-items: start;
   align-content: start;
-  justify-items: center;
-  gap: 2px;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  text-align: center;
+  gap: var(--spacing-sm);
 }
 
-.bd-venue__caption {
-  font-size: var(--type-body-sm-size);
+.bd-place__title {
+  font-size: clamp(var(--type-h1-size), 1.99rem + 1.56vw, var(--type-display-lg-size));
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.bd-place__lede {
+  max-width: 30rem;
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
   color: var(--color-on-surface-muted);
+  text-wrap: pretty;
 }
 
-/* The dusty-blue panel: a crest and the jumps into the details below. */
-.bd-venue__jump {
+/* The approved dusty-blue panel: the crest and the jumps into the details below. */
+.bd-place__index {
   display: grid;
-  align-content: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-xl) var(--spacing-lg);
+  inline-size: 100%;
+  max-width: 26rem;
+  margin-block-start: var(--spacing-md);
+  padding: var(--spacing-lg);
   background: var(--color-dusk);
   color: var(--color-on-dusk);
 }
 
-.bd-venue__crest {
-  justify-self: center;
+.bd-place__crest {
   display: grid;
   place-items: center;
   inline-size: 72px;
@@ -2666,14 +2618,14 @@
   letter-spacing: 0.12em;
 }
 
-.bd-venue__jump ul {
+.bd-place__index ul {
   display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.bd-venue__jump a {
+.bd-place__index a {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2684,53 +2636,120 @@
   text-decoration: none;
 }
 
-.bd-venue__jump a:hover .bd-arrow {
+.bd-place__index a:hover .bd-arrow {
   transform: translateX(4px);
 }
 
-.bd-venue__words {
-  font-size: var(--type-label-caps-size);
-  letter-spacing: 0.2em;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-@media (width >= 768px) {
-  .bd-venue {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .bd-venue__frames {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (width >= 600px) {
+  .bd-place__index {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--spacing-lg);
   }
 }
 
-@media (width >= 1100px) {
-  .bd-venue {
-    grid-template-columns: minmax(0, 26fr) minmax(0, 58fr) minmax(0, 16fr);
+/* Only where the column leaves a margin for it: never over the words. */
+.bd-bloom--venue {
+  display: none;
+  inset-inline-start: 0;
+  inset-block-start: clamp(56px, 10vw, 140px);
+  inline-size: clamp(48px, 5vw, 80px);
+
+  /* The interim cut-out keeps flecks of mockup above the sprig, as Home's does; the flowers start below them. */
+  clip-path: inset(9% 0 0 0);
+}
+
+.bd-place__frames {
+  display: grid;
+  gap: clamp(40px, 8vw, 96px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-place__frame figure {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+/* Stepped across the width: the building wide, the carving narrower on the other side, the 1897
+   engraving narrower again, so three photographs read as a walk up to the door, not a stack. */
+.bd-place__frame:nth-child(2) {
+  justify-self: end;
+  inline-size: 82%;
+}
+
+.bd-place__frame:nth-child(3) {
+  inline-size: 64%;
+}
+
+.bd-place__photo {
+  overflow: hidden;
+  background: var(--color-neutral-variant);
+}
+
+.bd-place__photo img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.bd-place__frame figcaption {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.bd-place__caption {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+@media (width >= 900px) {
+  .bd-place__inner {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(48px, 7vw, 120px);
   }
 
-  .bd-venue__frames {
-    grid-column: 2;
-    grid-row: 1;
-    padding-block: 4px;
+  .bd-place__frame:nth-child(2) {
+    inline-size: 78%;
   }
 
-  .bd-venue__intro {
-    padding-inline: clamp(56px, 4.4vw, 68px) var(--spacing-md);
+  .bd-place__frame:nth-child(3) {
+    inline-size: 58%;
+    margin-inline-start: 8%;
   }
 }
 
-/* ---------- explore: the Chicago band ---------- */
+/* Pinned under the top of the window while the photographs scroll past it, where the window is tall
+   enough to hold the whole introduction; a pinned column taller than the window hides its own end,
+   and a focused jump link with it (WCAG 2.4.11). The introduction is about 820px from the window's
+   top at 16px text, so the guard is in em: a reader who has raised the browser's text size gets a
+   taller threshold with the taller column, and at 900px x 760px the column now scrolls. */
+@media (width >= 900px) and (height >= 54em) {
+  .bd-place__intro {
+    position: sticky;
+    inset-block-start: clamp(48px, 12vh, 120px);
+    align-self: start;
+  }
+}
+
+@media (width >= 1360px) {
+  .bd-bloom--venue {
+    display: block;
+  }
+}
+
+/* ---------- our venue: the Chicago band ---------- */
+
+/* The ground runs edge to edge; the content keeps to the page's one column line. */
 .bd-city {
   position: relative;
   display: grid;
-  gap: var(--spacing-lg);
-  max-width: var(--bd-max);
-  margin-inline: auto;
-  padding: var(--spacing-xl) var(--bd-gutter);
+  gap: var(--spacing-xl);
+  padding-block: clamp(64px, 9vw, 120px);
+  padding-inline: max(var(--bd-gutter), calc((100% - var(--bd-col)) / 2 + var(--bd-gutter)));
   background: var(--color-secondary);
   color: var(--color-on-secondary);
   overflow: clip;
@@ -2758,11 +2777,8 @@
 }
 
 .bd-city__intro > p:not([class]) {
-  max-width: 22rem;
-}
-
-.bd-city__skyline {
-  display: none;
+  max-width: 30rem;
+  text-wrap: pretty;
 }
 
 .bd-cityguide {
@@ -2978,27 +2994,6 @@
 }
 
 @media (width >= 1100px) {
-  .bd-city {
-    grid-template-columns: minmax(0, 23fr) minmax(0, 77fr);
-    gap: var(--spacing-xl);
-    padding-inline: clamp(72px, 6.4vw, 92px) var(--bd-gutter);
-  }
-
-  .bd-city__skyline {
-    position: absolute;
-    display: block;
-    inset-inline: calc(-1 * clamp(72px, 6.4vw, 92px)) 0;
-    inset-block-end: calc(-1 * var(--spacing-xl));
-    block-size: 64px;
-    background: var(--art-skyline) no-repeat left bottom / contain;
-    opacity: 0.6;
-  }
-
-  .bd-city__intro {
-    align-self: stretch;
-    padding-block-end: 72px;
-  }
-
   .bd-cityguide {
     grid-template-columns: minmax(0, 66fr) minmax(0, 34fr);
     align-items: start;
@@ -3009,7 +3004,7 @@
   }
 }
 
-/* ---------- explore: the skyline ribbon ---------- */
+/* ---------- our venue: the skyline ribbon ---------- */
 .bd-ribbon {
   position: relative;
   display: grid;
@@ -3082,7 +3077,6 @@
   color: var(--color-primary);
 }
 
-.bd-ribbon__words,
 .bd-ribbon__script {
   display: none;
 }
@@ -3098,22 +3092,14 @@
     --veil-lo: color-mix(in oklab, var(--color-surface) 45%, transparent);
   }
 
-  .bd-ribbon__words {
-    display: grid;
-    justify-self: start;
-    font-size: var(--type-label-caps-size);
-    letter-spacing: 0.22em;
-    line-height: 1.6;
-    text-align: start;
-    text-transform: uppercase;
-    color: var(--color-primary);
-  }
-
-  .bd-ribbon__words > span {
-    display: block;
+  /* The theme words used to stand at the left end; the opening and the footer already say them,
+     so the first column is left to the skyline. */
+  .bd-ribbon__center {
+    grid-column: 2;
   }
 
   .bd-ribbon__script {
+    grid-column: 4;
     display: block;
     justify-self: end;
     max-inline-size: 11rem;
@@ -3263,6 +3249,7 @@
 }
 
 .bd-handoffs__disclosure {
+  max-width: var(--bd-measure);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
 }
@@ -3295,6 +3282,11 @@
 .bd-why {
   border-block-start: var(--bd-hair);
   padding-block-start: var(--spacing-sm);
+}
+
+/* The memory behind a place, opened on a full-width card, ran 96 characters to a line. */
+.bd-why__text {
+  max-width: var(--bd-measure);
 }
 
 .bd-why__summary {
@@ -3424,13 +3416,26 @@
   font-weight: 400;
 }
 
+/* The room's name is its link: 44px tall at least, like every other standalone target here. */
+.bd-room__name .bd-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+}
+
 .bd-room__capacity {
   font-variant-numeric: tabular-nums;
 }
 
+.bd-rooms__note,
 .bd-room__note,
 .bd-room__character {
   color: var(--color-on-surface-muted);
+}
+
+/* Said once above the grid, it spans the row; kept to the reading measure. */
+.bd-rooms__note {
+  max-width: var(--bd-measure);
 }
 
 .bd-scroll {
@@ -3733,16 +3738,6 @@
   grid-column: 1 / -1;
 }
 
-.bd-citymap__guide {
-  margin-block-start: var(--spacing-sm);
-}
-
-/* Full width of the map card; the narrower padding keeps "Our Chicago guide" on one line from 1440px. */
-.bd-citymap__guide .bd-btn {
-  inline-size: 100%;
-  padding-inline: var(--spacing-md);
-}
-
 /* ---------- the invitation-access journey (sign-in, claim, verify, passkey, step-up) ---------- */
 .bd-authhead {
   position: relative;
@@ -3864,6 +3859,16 @@
     animation: bd-draw 0.9s var(--ease-settle) 0.2s both;
   }
 
+  /* Our Venue opens as Home does: the portrait eases back from a slight zoom, the gold rule draws. */
+  .bd-pagehero--settle .bd-pagehero__media img {
+    animation: bd-settle 1.8s var(--ease-settle) both;
+  }
+
+  .bd-pagehero--settle .bd-head__rule {
+    transform-origin: left center;
+    animation: bd-draw 0.9s var(--ease-settle) 0.2s both;
+  }
+
   /* Only where @property is supported: unregistered, the count would sit at 0 for a second. No
      @supports test exists for it; allow-discrete shipped after it in every engine. */
   @supports (transition-behavior: allow-discrete) {
@@ -3890,7 +3895,7 @@
     animation: bd-unveil 1.3s var(--ease-settle) both;
   }
 
-  .bd [data-reveal="photo"][data-reveal-state] img {
+  .bd [data-reveal="photo"]:is([data-reveal-state="pending"], [data-reveal-state="in"]) img {
     scale: 1.12;
   }
 
@@ -3904,6 +3909,47 @@
 
   .bd-theme__item[data-reveal-state="in"] .bd-theme__rule {
     animation: bd-draw 0.9s var(--ease-settle) 0.35s both;
+  }
+
+  /* A section heading's gold rule draws as its block arrives. */
+  .bd [data-reveal-state="pending"] .bd-head__rule {
+    transform: scaleX(0);
+  }
+
+  .bd [data-reveal-state="in"] .bd-head__rule {
+    transform-origin: left center;
+    animation: bd-draw 0.9s var(--ease-settle) 0.35s both;
+  }
+
+  /* A list arrives entry by entry: the block itself stays put and its entries rise in turn, a
+     beat apart, so a run of rooms or facts reads as a sequence. Quicker than a section's own
+     entrance, and the delay stops growing at the fourth entry, so the last line of any list is
+     settled about 0.8s after the list arrives: a guest never waits on it. */
+  .bd [data-reveal="list"][data-reveal-state] {
+    opacity: 1;
+    translate: none;
+    animation: none;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="pending"] > :is(ol, ul) > li {
+    opacity: 0;
+    translate: 0 36px;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li {
+    animation: bd-reveal 0.6s var(--ease-settle) both;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(2) {
+    animation-delay: 60ms;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(3) {
+    animation-delay: 120ms;
+  }
+
+  .bd [data-reveal="list"][data-reveal-state="in"] > :is(ol, ul) > li:nth-child(n + 4) {
+    animation-delay: 180ms;
   }
 }
 

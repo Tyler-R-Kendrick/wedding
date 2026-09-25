@@ -14,7 +14,7 @@ const ROUTES = {
   adventures: '/our-adventures',
   share: '/share-an-adventure',
   wedding: '/the-wedding',
-  caa: '/explore-caa',
+  caa: '/our-venue',
   travel: '/travel',
   ask: '/ask-us',
   // The household's pages live behind the signed-in account menu, so Home reaches them only
@@ -61,7 +61,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
       body: [
         'Built in 1893 for the private Chicago Athletic Association: Henry Ives Cobb’s Venetian Gothic after the Doge’s Palace, opened amid the World’s Columbian Exposition, a club until 2007, restored as a hotel. Patterned brick, carved limestone, stained glass, marble floors, and Millennium Park out the windows.',
       ],
-      link: { label: 'Explore CAA', href: ROUTES.caa },
+      link: { label: 'See our venue', href: ROUTES.caa },
       facts: venueFacts,
       map: true,
     },
@@ -165,7 +165,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
       act: 'place',
       title: 'What’s open in the building',
       body: ['Restaurants and bars on the property, with hours from the hotel’s own site.'],
-      link: { label: 'Explore CAA', href: ROUTES.caa },
+      link: { label: 'What’s open inside', href: `${ROUTES.caa}#outlets` },
     },
     ask: {
       id: 'ask',
@@ -226,7 +226,7 @@ function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
         eyebrow: 'We are getting married',
         lede: ['We are inviting the people we love into the places, adventures, and memories that made us. Details as they are settled.'],
         primary: { label: 'Our Story', href: ROUTES.story, variant: 'primary' },
-        secondary: { label: 'Explore the building', href: ROUTES.caa, variant: 'ghost' },
+        secondary: { label: 'See our venue', href: ROUTES.caa, variant: 'ghost' },
         note: ['Many of you will be travelling in: rooms, airports, and getting around will appear here as we confirm them.'],
       };
     case 'SAVE_THE_DATE':

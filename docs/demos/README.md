@@ -29,12 +29,14 @@ that shaped the story.
 
 [![Our Story, the chapter reader](our-story.gif)](our-story.mp4)
 
-## Explore CAA + Chicago
+## Our Venue
 
-The venue, then the city guide: pointing at a place lights its pin on the map, and choosing a pin
-picks its place. Then the ribbon, the building's history and the list of things to look for.
+The building first: its name and the way into the details stay pinned while its three photographs
+open out beside them. A jump goes straight to the rooms, and the lists below rise in one entry at a
+time. Then Chicago, right outside: pointing at a place lights its pin on the map, and choosing a pin
+picks its place. The skyline closes the page.
 
-[![Explore, the city guide and map](explore-caa.gif)](explore-caa.mp4)
+[![Our Venue, the building and the city around it](our-venue.gif)](our-venue.mp4)
 
 ## Your Weekend and the RSVP
 

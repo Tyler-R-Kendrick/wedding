@@ -1,4 +1,5 @@
 import 'server-only';
+import { mkdirSync } from 'node:fs';
 import type { Extension } from '@electric-sql/pglite';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -65,6 +66,9 @@ async function connectPglite(): Promise<Db> {
   // per-instance and ephemeral. That is acceptable for previews without DATABASE_URL.
   const serverless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
   const dataDir = env.isTest || env.PGLITE_MEMORY ? 'memory://' : serverless ? '/tmp/wedding-pglite' : env.PGLITE_DATA_DIR;
+  // PGlite creates only the last segment of its data directory, so a fresh clone (no `.data/` yet)
+  // failed every request with ENOENT until someone made the parent by hand.
+  if (!dataDir.includes('://')) mkdirSync(dataDir, { recursive: true });
   const vector = await loadPgVector();
   const client = await PGlite.create({ dataDir, ...(vector ? { extensions: { vector } } : {}) });
   const base = drizzle({ client, schema });

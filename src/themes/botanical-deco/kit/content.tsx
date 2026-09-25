@@ -365,10 +365,10 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
         {card.why ? (
           <details className="bd-why">
             <summary className="bd-why__summary">{CONTENT_COPY.why.summary} →</summary>
-            <p>
+            <p className="bd-why__text">
               <Block block={card.why.text} inline />
             </p>
-            <p>
+            <p className="bd-why__text">
               <a className="bd-link bd-link--standalone" href={card.why.experienceHref}>
                 {CONTENT_COPY.why.read}: {card.why.experienceTitle}
               </a>
@@ -443,27 +443,34 @@ function LookForList({ items, label }: Parameters<ContentKit['LookForList']>[0])
 }
 
 function RoomGrid({ spaces }: Parameters<ContentKit['RoomGrid']>[0]) {
+  // The capacities' caveat is usually the same sentence for every room; said once above the grid
+  // it is read, said under each of four rooms it is skipped. A room with its own caveat keeps it.
+  const notes = new Set(spaces.map((s) => s.capacities.note));
+  const shared = notes.size === 1 ? spaces[0]?.capacities.note : undefined;
   return (
-    <ul className="bd-rooms" aria-label="Event spaces">
-      {spaces.map((s, i) => (
-        <li key={s.id} className="bd-rooms__cell">
-          <article className="bd-room" data-space={s.slug} data-index={i}>
-            <h3 className="bd-room__name">
-              <a className="bd-link" href={s.href}>
-                {s.name}
-              </a>
-            </h3>
-            <p className="bd-room__character">{guestText(s.character)}</p>
-            <p className="bd-room__capacity">
-              {s.capacities.ceremony ? `Ceremony ${s.capacities.ceremony}` : null}
-              {s.capacities.dinnerDance ? ` · Dinner ${s.capacities.dinnerDance}` : null}
-              {s.capacities.reception ? ` · Reception ${s.capacities.reception}` : null}
-            </p>
-            <p className="bd-room__note">{guestText(s.capacities.note)}</p>
-          </article>
-        </li>
-      ))}
-    </ul>
+    <>
+      {shared ? <p className="bd-rooms__note">{guestText(shared)}</p> : null}
+      <ul className="bd-rooms" aria-label="Event spaces">
+        {spaces.map((s, i) => (
+          <li key={s.id} className="bd-rooms__cell">
+            <article className="bd-room" data-space={s.slug} data-index={i}>
+              <h3 className="bd-room__name">
+                <a className="bd-link" href={s.href}>
+                  {s.name}
+                </a>
+              </h3>
+              <p className="bd-room__character">{guestText(s.character)}</p>
+              <p className="bd-room__capacity">
+                {s.capacities.ceremony ? `Ceremony ${s.capacities.ceremony}` : null}
+                {s.capacities.dinnerDance ? ` · Dinner ${s.capacities.dinnerDance}` : null}
+                {s.capacities.reception ? ` · Reception ${s.capacities.reception}` : null}
+              </p>
+              {shared ? null : <p className="bd-room__note">{guestText(s.capacities.note)}</p>}
+            </article>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

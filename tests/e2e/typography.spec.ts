@@ -50,7 +50,7 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/pass
  * with on a phone — rendered on every route below and passed CI from the day it landed. The
  * chrome is the same on all of them, so one pass over both designs catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/explore-caa', '/the-wedding', '/travel', '/ask-us', '/share-an-adventure'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/ask-us', '/share-an-adventure'] as const;
 
 /**
  * Behind the signed-in account menu: the RSVP, two of its per-part pages, the three pages a guest
@@ -132,7 +132,10 @@ async function floorWalk(page: Page, routes: readonly string[], theme?: string):
     const url = theme ? `${route}?theme=${theme}` : route;
     const response = await page.goto(url);
     expect(response?.status(), `${url} did not render`).toBeLessThan(400);
-    await expect(page.getByText(GATE), `${url} rendered a sign-in gate, so nothing on it was measured`).toHaveCount(0);
+    await expect(
+      page.getByText(GATE),
+      `${url} rendered a sign-in gate, so nothing on it was measured. This spec needs the test server CI starts (NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET); a plain \`npm run dev\` gates every signed-in route`,
+    ).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     const sizes = (await page.evaluate(SIZES)) as Size[];
     expect(sizes.length, `${url} rendered no text`).toBeGreaterThan(0);

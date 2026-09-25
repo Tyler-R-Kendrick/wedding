@@ -1,12 +1,18 @@
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { dropServerEnv } from './scripts/lib/server-env.mjs';
 
 const alias = {
   '@': fileURLToPath(new URL('./src', import.meta.url)),
   // `server-only` throws outside React Server Components; tests get an empty module.
   'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
 };
+
+// The suites run against the mocks, whatever the machine running them holds: every server variable
+// is dropped before any worker starts, so the only settings a suite sees are the ones a project
+// below gives it (scripts/lib/server-env.mjs says why).
+dropServerEnv();
 
 const baseEnv = { NODE_ENV: 'test', PGLITE_MEMORY: '1', LOG_LEVEL: 'silent', METRICS_SINK: 'none' } as const;
 

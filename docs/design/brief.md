@@ -131,7 +131,7 @@ Five motifs: **Adventure, Place, Memory, Hospitality, Future.**
 ## 5. Information architecture
 
 Home · Our Story · Our Adventures · Share an Adventure · The Wedding ·
-Explore CAA · Your Weekend (authenticated) · Travel & Stay · Transportation ·
+Our Venue · Your Weekend (authenticated) · Travel & Stay · Transportation ·
 Gifts · Photos & Video · Ask Us (concierge). Navigation collapses and
 re-prioritizes by lifecycle and identity; mobile information scent beats
 exposing everything.

@@ -384,7 +384,7 @@
 }
 
 .cv-menu__link.is-current,
-.cv-menu__link[aria-current="page"] {
+.cv-menu__link[aria-current] {
   background: var(--color-primary);
   color: var(--color-on-primary);
 }

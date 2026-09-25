@@ -145,6 +145,7 @@
 }
 
 .card__meta {
+  max-width: var(--wp-measure, 33rem);
   margin: 0 0 var(--spacing-sm);
   color: var(--color-on-surface-muted);
 }

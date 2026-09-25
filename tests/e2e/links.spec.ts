@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
  * designs, because a theme kit can render links the other does not.
  */
 const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-const ROUTES = ['/', '/our-story', '/our-adventures', '/share-an-adventure', '/the-wedding', '/explore-caa', '/travel', '/gifts', '/ask-us', '/transportation', '/trip', '/rsvp', '/your-weekend'];
+const ROUTES = ['/', '/our-story', '/our-adventures', '/share-an-adventure', '/the-wedding', '/our-venue', '/travel', '/gifts', '/ask-us', '/transportation', '/trip', '/rsvp', '/your-weekend'];
 
 test.describe('no dead internal links', () => {
   // One viewport is enough: this is about hrefs, not layout. Chrome differs by viewport (the Menu

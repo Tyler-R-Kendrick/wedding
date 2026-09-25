@@ -255,7 +255,7 @@ anonymous request (the page sends them to sign in and back; the capabilities ans
 | Our Adventures | `/our-adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | TEASER |
 | Share an Adventure | `/share-an-adventure` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | SAVE_THE_DATE |
 | The Wedding | `/the-wedding` | Ceremony, cocktail hour, reception; rooms, times, dress code (all TODO), accessibility | Inform | INVITATIONS_OPEN |
-| Explore CAA | `/explore-caa` | Docent: building, spaces, history with provenance, live outlet links, "look for this", floor plan with your table | Celebrate + Inform | TEASER |
+| Our Venue | `/our-venue` | Docent: building, spaces, history with provenance, live outlet links, "look for this", floor plan with your table | Celebrate + Inform | TEASER |
 | Your Weekend | `/your-weekend` | Authenticated hub: invitation, RSVP status, table, benefits, preferences. **Account menu only** | Act | INVITATIONS_OPEN |
 | RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message. **Account menu only** | Act | RSVP_OPEN |
 | Travel & Stay | `/travel` | Airports, CAA block, alternative hotels, neighbourhood, weather expectations | Inform + Act | SAVE_THE_DATE |

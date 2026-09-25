@@ -27,11 +27,11 @@ const output = z.object({
   gettingHere: z.array(operationalFieldViewSchema),
   roomsNotConfirmed: textBlockSchema,
 });
-export type ExploreCaaPageData = z.infer<typeof output>;
+export type OurVenuePageData = z.infer<typeof output>;
 
-export const getVenueFacts = defineCapability<z.infer<typeof input>, ExploreCaaPageData>({
+export const getVenueFacts = defineCapability<z.infer<typeof input>, OurVenuePageData>({
   name: 'get_venue_facts',
-  title: 'Explore the CAA',
+  title: 'Our Venue',
   description:
     'Returns the venue docent: cited history of the Chicago Athletic Association building, the four event spaces from the kit, self-guided "look for this" details, and the current ' +
     'on-property outlets, valet, parking, transit and accessibility as dated operational records with official links. Every operational fact carries a verification date; ' +
@@ -48,6 +48,6 @@ export const getVenueFacts = defineCapability<z.infer<typeof input>, ExploreCaaP
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const { history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed, sources } = await readVenueFacts(rctx, { category: i?.category, includeExpired: i?.includeExpired });
-    return ok({ data: { route: ROUTES.exploreCaa, venueName: 'Chicago Athletic Association Hotel', history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed }, sources });
+    return ok({ data: { route: ROUTES.ourVenue, venueName: 'Chicago Athletic Association Hotel', history, lookForThis, spaces, outlets, gettingHere, roomsNotConfirmed }, sources });
   },
 });

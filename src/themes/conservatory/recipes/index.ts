@@ -5,7 +5,7 @@ import { kit } from '../kit';
 import { ConservatoryAdventureDetailPage } from './adventure-detail';
 import { ConservatoryAdventuresPage } from './adventures';
 import { ConservatoryAskPage } from './ask';
-import { ConservatoryExploreCaaPage } from './explore-caa';
+import { ConservatoryOurVenuePage } from './our-venue';
 import { ConservatoryGiftsPage } from './gifts';
 import { ConservatoryPhotoAlbumPage, ConservatoryPhotosPage } from './photos';
 import { ConservatoryGuidePage } from './guide';
@@ -28,7 +28,7 @@ export const content: ContentRecipes = {
   adventureDetail: ConservatoryAdventureDetailPage,
   guide: ConservatoryGuidePage,
   recommendation: ConservatoryRecommendationPage,
-  exploreCaa: ConservatoryExploreCaaPage,
+  ourVenue: ConservatoryOurVenuePage,
   venueSpace: ConservatoryVenueSpacePage,
   wedding: ConservatoryWeddingPage,
   travel: ConservatoryTravelPage,

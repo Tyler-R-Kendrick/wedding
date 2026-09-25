@@ -45,7 +45,7 @@ export function iconForHref(link: string): IconName {
   if (href.startsWith('/our-story')) return 'book';
   if (href.startsWith('/our-adventures')) return 'compass';
   if (href.startsWith('/share-an-adventure')) return 'route';
-  if (href.startsWith('/explore-caa')) return 'building';
+  if (href.startsWith('/our-venue')) return 'building';
   if (href.startsWith('/the-wedding')) return 'sun';
   if (href.startsWith('/gifts')) return 'gift';
   if (href.startsWith('http')) return 'pin';

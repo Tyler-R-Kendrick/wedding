@@ -35,7 +35,7 @@ export const EVAL_CASES: readonly EvalCase[] = [
     group: 'factual',
     question: 'Tell me about the White City Ballroom.',
     principal: 'anonymous',
-    expect: { outcome: 'answer', tools: ['show_venue_room'], contains: ['marble'], citesUrl: ['/explore-caa/white-city-ballroom'] },
+    expect: { outcome: 'answer', tools: ['show_venue_room'], contains: ['marble'], citesUrl: ['/our-venue/white-city-ballroom'] },
   },
   {
     id: 'venue-history',

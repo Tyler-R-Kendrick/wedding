@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import type { ComponentType, ReactNode } from 'react';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
-import type { ExploreCaaPageData } from '@/capabilities/get_venue_facts';
+import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { GiftsProps, PhotoAlbumProps, PhotosProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
@@ -17,7 +17,7 @@ import type { PageFrame } from '@/themes/types';
 import { AdventureDetailPage } from './AdventureDetailPage';
 import { AdventuresPage, type AdventuresRecipeProps } from './AdventuresPage';
 import { AskPage, type AskRecipeProps } from './AskPage';
-import { ExploreCaaPage } from './ExploreCaaPage';
+import { OurVenuePage } from './OurVenuePage';
 import { GuidePage, type GuideRecipeProps } from './GuidePage';
 import { RecommendationPage } from './RecommendationPage';
 import { StoryPage } from './StoryPage';
@@ -39,7 +39,7 @@ export interface PageRecipes {
   AdventureDetailPage: ComponentType<{ data: AdventureDetailData }>;
   GuidePage: ComponentType<GuideRecipeProps>;
   RecommendationPage: ComponentType<{ card: RecommendationCard }>;
-  ExploreCaaPage: ComponentType<{ data: ExploreCaaPageData }>;
+  OurVenuePage: ComponentType<{ data: OurVenuePageData }>;
   VenueSpacePage: ComponentType<{ data: VenueSpaceData }>;
   WeddingPage: ComponentType<{ data: WeddingPageData }>;
   AskPage: ComponentType<AskRecipeProps>;
@@ -59,7 +59,7 @@ export const placeholderRecipes: PageRecipes = {
   AdventureDetailPage,
   GuidePage,
   RecommendationPage,
-  ExploreCaaPage,
+  OurVenuePage,
   VenueSpacePage,
   WeddingPage,
   AskPage,
@@ -78,7 +78,7 @@ type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0]
  * switcher flag) and renders that theme's recipe. A theme without a recipe for the page falls back
  * to Swarm C's placeholder recipe, so unknown themes never break a route.
  */
-function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean } = {}): ComponentType<PropsOf<K>> {
+function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean; within?: boolean } = {}): ComponentType<PropsOf<K>> {
   const Themed = async (props: PropsOf<K>): Promise<ReactNode> => {
     const theme = await getRequestTheme();
     const recipe = selectContentRecipe(getTheme(theme), key);
@@ -92,7 +92,9 @@ function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallbac
     // open at first paint instead of reading "Sign in" until the browser asks /api/session.
     const principal = preview || opts.signedIn ? await getPrincipal(new Request('http://wedding.local/', { headers: h })) : undefined;
     const lifecycle = principal ? { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) } : undefined;
-    const frame = await buildPageFrame({ theme, currentPath, ...(lifecycle ? { lifecycle } : {}) });
+    const built = await buildPageFrame({ theme, currentPath, ...(lifecycle ? { lifecycle } : {}) });
+    // A detail page (`within`) lights its section's item as the place the reader is, not the page.
+    const frame = opts.within ? { ...built, nav: { ...built.nav, currentIsAncestor: true } } : built;
     const render = recipe as unknown as (p: PropsOf<K> & { frame: PageFrame }) => ReactNode;
     return render({ ...props, frame });
   };
@@ -103,17 +105,17 @@ function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallbac
 export const themedRecipes: PageRecipes = {
   StoryPage: themed('story', ROUTES.story, StoryPage),
   AdventuresPage: themed('adventures', ROUTES.adventures, AdventuresPage),
-  AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage),
+  AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage, { within: true }),
   GuidePage: themed('guide', ROUTES.share, GuidePage),
-  RecommendationPage: themed('recommendation', ROUTES.share, RecommendationPage),
-  ExploreCaaPage: themed('exploreCaa', ROUTES.exploreCaa, ExploreCaaPage),
-  VenueSpacePage: themed('venueSpace', ROUTES.exploreCaa, VenueSpacePage),
+  RecommendationPage: themed('recommendation', ROUTES.share, RecommendationPage, { within: true }),
+  OurVenuePage: themed('ourVenue', ROUTES.ourVenue, OurVenuePage),
+  VenueSpacePage: themed('venueSpace', ROUTES.ourVenue, VenueSpacePage, { within: true }),
   WeddingPage: themed('wedding', ROUTES.wedding, WeddingPage),
   AskPage: themed('ask', ROUTES.ask, AskPage),
   TravelPage: themed('travel', ROUTES.travel, TravelPage),
   GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage, { signedIn: true }),
   PhotosPage: themed('photos', ROUTES.photos, PhotosPage, { signedIn: true }),
-  PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage, { signedIn: true }),
+  PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage, { signedIn: true, within: true }),
 };
 
 /** Swap point: the theme kit's recipes, with the placeholders as the fallback for unknown themes. */

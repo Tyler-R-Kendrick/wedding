@@ -120,9 +120,9 @@ describe('closed-world contract', () => {
   });
 
   it('offers pages, never repository paths, on a refusal', () => {
-    const links = refusalLinks(['/the-wedding', '/explore-caa#history'], '/ask-us');
-    expect(links.map((l) => l.href)).toEqual(['/the-wedding', '/explore-caa', CONTACT_LINK.href]);
+    const links = refusalLinks(['/the-wedding', '/our-venue#history'], '/ask-us');
+    expect(links.map((l) => l.href)).toEqual(['/the-wedding', '/our-venue', CONTACT_LINK.href]);
     for (const link of links) expect(link.href.startsWith('/')).toBe(true);
-    expect(labelForRoute('/explore-caa/white-city-ballroom')).toBe('Explore CAA');
+    expect(labelForRoute('/our-venue/white-city-ballroom')).toBe('Our Venue');
   });
 });

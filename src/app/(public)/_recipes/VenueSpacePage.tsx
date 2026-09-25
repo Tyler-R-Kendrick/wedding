@@ -7,8 +7,8 @@ import { PageIntro, Provenance, Section, Shell } from './kit';
 export function VenueSpacePage({ data }: { data: VenueRoomData }) {
   const { space } = data;
   return (
-    <Shell current={ROUTES.exploreCaa}>
-      <PageIntro eyebrow="Explore CAA" title={space.name} lede={space.character} />
+    <Shell current={ROUTES.ourVenue}>
+      <PageIntro eyebrow="Our Venue" title={space.name} lede={space.character} />
       <div className="wp-prose">
         <Text block={data.roomsNotConfirmed} />
       </div>
@@ -29,7 +29,7 @@ export function VenueSpacePage({ data }: { data: VenueRoomData }) {
         </ul>
       </Section>
 
-      <Section id="capacity" number="03" title="Capacity (from the venue kit)">
+      <Section id="capacity" number="03" title="Capacity, in the venue’s own figures">
         <div className="wp-scroll">
           <table className="wp-table">
             <caption className="wp-muted">{space.capacities.note}</caption>
@@ -53,7 +53,7 @@ export function VenueSpacePage({ data }: { data: VenueRoomData }) {
       </Section>
 
       <p className="wp-prose">
-        <Link className="link-block" href={ROUTES.exploreCaa}>← Explore the whole building</Link>
+        <Link className="link-block" href={ROUTES.ourVenue}>← Back to our venue</Link>
       </p>
     </Shell>
   );

@@ -14,15 +14,15 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
   const { space } = data;
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-      <PageHead eyebrow={CONTENT_COPY.exploreCaa.eyebrow} title={space.name} lede={guestText(space.character)} />
+      <PageHead eyebrow={CONTENT_COPY.ourVenue.eyebrow} title={space.name} lede={guestText(space.character)} />
 
       <Section id="look" labelledBy="look-title">
         <div className="cv-section__text">
-          <SectionHeading level={2} id="look-title" title={CONTENT_COPY.exploreCaa.roomLookFor} />
+          <SectionHeading level={2} id="look-title" title={CONTENT_COPY.ourVenue.roomLookFor} />
           <LookForList items={space.lookForThis.map((text, i) => ({ id: `look-${i}`, text }))} label="Look for this" />
         </div>
         <div className="cv-section__mount">
-          <Card label="In the room" featured index={1} headingLevel={2} title={CONTENT_COPY.exploreCaa.roomFeatures}>
+          <Card label="In the room" featured index={1} headingLevel={2} title={CONTENT_COPY.ourVenue.roomFeatures}>
             <ul className="cv-list">
               {space.features.map((f, i) => (
                 <li key={i}>{guestText(f)}</li>
@@ -34,14 +34,14 @@ export const ConservatoryVenueSpacePage: ContentRecipe<VenueSpaceProps> = ({ dat
 
       <Section id="capacity" ground="alt" labelledBy="capacity-title">
         <div className="cv-section__text">
-          <SectionHeading level={2} id="capacity-title" title={CONTENT_COPY.exploreCaa.roomCapacity} />
+          <SectionHeading level={2} id="capacity-title" title={CONTENT_COPY.ourVenue.roomCapacity} />
           <Prose>
             <Block block={data.roomsNotConfirmed} />
           </Prose>
           <CapacityTable capacities={space.capacities} />
           <Provenance provenance={space.provenance} freshness />
           <Prose>
-            <BackLink href={ROUTES.exploreCaa}>{CONTENT_COPY.exploreCaa.wholeBuilding}</BackLink>
+            <BackLink href={ROUTES.ourVenue}>{CONTENT_COPY.ourVenue.wholeBuilding}</BackLink>
           </Prose>
         </div>
       </Section>

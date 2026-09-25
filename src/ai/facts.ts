@@ -25,8 +25,8 @@ export const HOME_ROUTE: Record<string, string> = {
   show_adventure: ROUTES.adventures,
   find_adventures: ROUTES.share,
   list_itineraries: ROUTES.share,
-  show_venue_room: ROUTES.exploreCaa,
-  get_venue_facts: ROUTES.exploreCaa,
+  show_venue_room: ROUTES.ourVenue,
+  get_venue_facts: ROUTES.ourVenue,
   get_faq: ROUTES.ask,
   // Level 06 onwards. Without these every answer built from a personal or travel capability cited
   // `/ask-us`, the page the guest is already reading, instead of the page that holds the fact.
@@ -271,7 +271,7 @@ export function factsFromOutcome(descriptor: Pick<AnyCapability, 'name' | 'title
   // guest to go and check a page that does not contain the fact. When the outcome names exactly one
   // source there is no ambiguity about where the answer came from, so that source's route is used.
   // Order matters: the authored route wins. `get_venue_facts` returns one synthesis over many
-  // records, so its sole source ("Built in 1893", /explore-caa#history) is not where the leftovers
+  // records, so its sole source ("Built in 1893", /our-venue#history) is not where the leftovers
   // came from and its anchor would send the guest to the wrong section. Only when no route was
   // authored for this capability — every capability from level 06 on — is a single unambiguous
   // source better than guessing `/ask-us`.

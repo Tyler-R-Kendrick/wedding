@@ -91,7 +91,7 @@ const serverSchema = z.object({
   MEDIA_MAX_VIDEO_MB: intish(512, 1),
   MEDIA_PART_SIZE_MB: intish(8, 1),
   MEDIA_MULTIPART_THRESHOLD_MB: intish(8, 1),
-  /** ffmpeg binary for video posters/probing; the adapter reports what the binary can really do. Unset -> `ffmpeg` on PATH, else mock. */
+  /** ffmpeg binary for video posters/probing; the adapter reports what the binary can really do. Unset -> `ffmpeg` on PATH, else mock; `off` -> mock without looking. */
   FFMPEG_PATH: optionalString,
   /** Cloudflare Stream delivery adapter (skeleton). All three required for live mode. */
   CLOUDFLARE_ACCOUNT_ID: optionalString,

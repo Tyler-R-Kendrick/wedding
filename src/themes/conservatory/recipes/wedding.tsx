@@ -54,7 +54,7 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
         <Provenance provenance={data.provenance} />
       </div>
       <p className="cv-section__hang">
-        <a className="cv-tag cv-tag--hang" href={ROUTES.exploreCaa}>
+        <a className="cv-tag cv-tag--hang" href={ROUTES.ourVenue}>
           <span>{CONTENT_COPY.wedding.roomsLink}</span>
         </a>
       </p>

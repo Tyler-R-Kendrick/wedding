@@ -192,10 +192,13 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('explore CAA lists current outlets with dates and never the closed ones', async ({ page }) => {
+  test('our venue lists current outlets with dates and never the closed ones', async ({ page }) => {
+    // The page was "Explore CAA" at /explore-caa; links already shared land on it.
     await page.goto('/explore-caa');
-    // The approved page is "Explore CAA + Chicago"; the building's own name leads the venue section.
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explore CAA + Chicago');
+    await expect(page).toHaveURL(/\/our-venue$/);
+    await page.goto('/our-venue');
+    // The page is "Our Venue"; the building's own name leads the section under the opening.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Our Venue');
     await expect(page.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 })).toBeVisible();
     await expect(page.locator('#fact-built-1893')).toContainText('Built in 1893');
     await expect(page.locator('[data-key="outlet.cindys"]')).toBeVisible();
@@ -208,8 +211,14 @@ test.describe('explore journey', () => {
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     await axe(page);
 
+    // The rooms rise into place as they scroll in. Playwright measures the link, scrolls it into view
+    // (which starts the entrance) and clicks where it measured, 36px below where the link then is.
+    // Click once the list has settled, as a guest does: nobody clicks a card before it appears.
+    const rooms = page.locator('#spaces [data-reveal="list"]');
+    await rooms.scrollIntoViewIfNeeded();
+    await rooms.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
     await page.getByRole('link', { name: 'White City Ballroom' }).click();
-    await expect(page).toHaveURL(/\/explore-caa\/white-city-ballroom$/);
+    await expect(page).toHaveURL(/\/our-venue\/white-city-ballroom$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('White City Ballroom');
     // Was `toContainText('Kit figure')`, which pinned the caption to
     // "Kit figure - verify with the planner before publishing as fact." — an instruction addressed

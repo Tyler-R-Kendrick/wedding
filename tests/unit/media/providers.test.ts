@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -69,6 +69,10 @@ describe('video providers', () => {
     expect(createVideoProvider({ storage, env: { CLOUDFLARE_ACCOUNT_ID: 'a', CLOUDFLARE_STREAM_API_TOKEN: 't', CLOUDFLARE_STREAM_CUSTOMER_CODE: 'c', FFMPEG_PATH: '/missing' } }).name).toBe('cloudflare-stream');
     expect(resolveFfmpegBinary('/missing/ffmpeg')).toBeNull();
     expect(resolveFfmpegBinary(undefined, '/definitely/not/a/dir')).toBeNull();
+    // `off` never looks: an ffmpeg on PATH (here a stand-in file) is ignored.
+    await writeFile(path.join(dir, 'ffmpeg'), '');
+    expect(resolveFfmpegBinary(undefined, dir)).toBe(path.join(dir, 'ffmpeg'));
+    expect(resolveFfmpegBinary('off', dir)).toBeNull();
     await rm(dir, { recursive: true, force: true });
   });
 

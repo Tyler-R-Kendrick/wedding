@@ -8,7 +8,7 @@
  * the site that no longer existed — a hand-maintained activation matrix is that defect with a
  * deploy attached, because the reader is an operator deciding what to switch on in production.
  *
- * So the modes are the ones `describeProviders()` actually resolves with the current environment,
+ * So the modes are the ones `describeProviders()` actually resolves with no environment configured,
  * the flag defaults are read from the registry, and the variables listed against each provider are
  * the ones its own source reads. Prose that a generator cannot derive lives above the marker and
  * is never touched.
@@ -17,8 +17,15 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { argv, cwd, exit } from 'node:process';
 import { join } from 'node:path';
-import { FEATURE_FLAGS, READINESS_GATED, type FeatureFlag } from '@/contracts/flags';
-import { describeProviders } from '@/providers';
+import type { FeatureFlag } from '@/contracts/flags';
+import { dropServerEnv } from './lib/server-env.mjs';
+
+// The table documents the site with no environment configured (the prose above the marker says so),
+// so whatever this shell exports is dropped before the registry reads it. Otherwise a machine
+// holding an AI key regenerated `ai-model` as live, and `--check` failed there and nowhere else.
+dropServerEnv();
+const { FEATURE_FLAGS, READINESS_GATED } = await import('@/contracts/flags');
+const { describeProviders } = await import('@/providers');
 
 const ROOT = cwd();
 const DOC = join(ROOT, 'docs/ops/activation-matrix.md');

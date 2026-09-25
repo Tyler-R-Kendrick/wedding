@@ -49,9 +49,9 @@ describe('capability output as evidence', () => {
 
   it('cites a leftovers block to the capability and its page, never to an unrelated record', () => {
     const data = { note: 'Valet is on Madison Street.' };
-    const blocks = factsFromOutcome(descriptor({ name: 'get_venue_facts', title: 'Explore the CAA' }), outcome(data, { sources: [{ sourceId: 'other' as ContentSourceId, title: 'Built in 1893', url: '/explore-caa#history' }] }), markers());
-    expect(blocks[0]!.citation.title).toBe('Explore the CAA');
-    expect(blocks[0]!.citation.url).toBe('/explore-caa');
+    const blocks = factsFromOutcome(descriptor({ name: 'get_venue_facts', title: 'Our Venue' }), outcome(data, { sources: [{ sourceId: 'other' as ContentSourceId, title: 'Built in 1893', url: '/our-venue#history' }] }), markers());
+    expect(blocks[0]!.citation.title).toBe('Our Venue');
+    expect(blocks[0]!.citation.url).toBe('/our-venue');
   });
 
   it('turns every search hit into its own block with its own public URL', () => {
@@ -59,7 +59,7 @@ describe('capability output as evidence', () => {
       query: 'valet',
       mode: 'static',
       results: [
-        { id: 'r1', kind: 'operational', title: 'Valet entrance', snippet: 'x', content: 'Valet is on Madison Street. Rates are on the hotel FAQ.', route: '/explore-caa#getting-here', url: 'https://www.chicagoathletichotel.com/about/faq/', sourceId: 'caa-web', verifiedAt: '2027-06-01T00:00:00.000Z', trustClass: 'EXTERNAL_DATA', caveat: 'Last checked 2027-06-01.', recordRef: { type: 'operational_fields', id: 'o1' } },
+        { id: 'r1', kind: 'operational', title: 'Valet entrance', snippet: 'x', content: 'Valet is on Madison Street. Rates are on the hotel FAQ.', route: '/our-venue#getting-here', url: 'https://www.chicagoathletichotel.com/about/faq/', sourceId: 'caa-web', verifiedAt: '2027-06-01T00:00:00.000Z', trustClass: 'EXTERNAL_DATA', caveat: 'Last checked 2027-06-01.', recordRef: { type: 'operational_fields', id: 'o1' } },
       ],
     };
     const blocks = factsFromOutcome(descriptor({ name: 'search_wedding_information', title: 'Search' }), outcome(data), markers());
@@ -102,7 +102,7 @@ describe('authoring markers never reach a guest', () => {
 
   it('drops a search caveat that carries a marker', () => {
     const outcome: CapabilityOutcome<unknown> = {
-      data: { results: [{ title: 'Valet', content: 'Valet is at 71 E Madison.', caveat: 'TODO(Tyler & Sara): confirm overnight valet rate', url: '/explore-caa', verifiedAt: '2026-01-01T00:00:00.000Z', sourceId: 's1' }] },
+      data: { results: [{ title: 'Valet', content: 'Valet is at 71 E Madison.', caveat: 'TODO(Tyler & Sara): confirm overnight valet rate', url: '/our-venue', verifiedAt: '2026-01-01T00:00:00.000Z', sourceId: 's1' }] },
       sources: [],
     };
     const blocks = factsFromOutcome(descriptor({ name: 'search_wedding_information', title: 'Search' }), outcome, markers());

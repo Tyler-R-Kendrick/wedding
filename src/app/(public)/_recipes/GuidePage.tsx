@@ -128,7 +128,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan }: 
           </section>
         ))}
         <p className="wp-prose wp-muted">
-          Hours, menus, and reservation links for the hotel&rsquo;s own places live on <Link href={`${ROUTES.exploreCaa}#outlets`}>Explore CAA</Link>, each with the day we last checked it.
+          Hours, menus, and reservation links for the hotel&rsquo;s own places live on <Link href={`${ROUTES.ourVenue}#outlets`}>Our Venue</Link>, each with the day we last checked it.
         </p>
       </Section>
     </Shell>

@@ -320,7 +320,7 @@ jobs:
                       /admin/seating /admin/transport /admin/travel \
                       /admin/guests/export /admin/rsvp/export \
                       /admin/media/duplicates /admin/media/import /admin/media/metrics \
-                      /ask-us /our-story /the-wedding /explore-caa /share-an-adventure /sign-out \
+                      /ask-us /our-story /the-wedding /our-venue /share-an-adventure /sign-out \
                       /our-adventures /travel \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true

@@ -90,7 +90,7 @@ export interface AccountMenuClassNames {
 }
 
 export interface AccountMenuProps {
-  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'currentPath'>;
+  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'currentPath' | 'currentIsAncestor'>;
   variant: 'popover' | 'inline' | 'link';
   classNames: AccountMenuClassNames;
 }
@@ -113,16 +113,20 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
     );
   }
   const items = [...(nav.member ?? []), SIGN_OUT];
-  if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} classNames={classNames} />;
-  return <Popover items={items} currentPath={nav.currentPath} classNames={classNames} />;
+  // On a page inside a member page (one photo album), its item is where the reader is, not the page.
+  const mark = nav.currentIsAncestor ? 'true' : 'page';
+  if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;
+  return <Popover items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;
 }
 
-function ItemList({ items, currentPath, className, onPick }: { items: NavItem[]; currentPath: string; className: string; onPick?: () => void }) {
+type Mark = 'page' | 'true';
+
+function ItemList({ items, currentPath, mark, className, onPick }: { items: NavItem[]; currentPath: string; mark: Mark; className: string; onPick?: () => void }) {
   return (
     <ul className="account-menu__list">
       {items.map((item) => (
         <li key={item.href}>
-          <a className={className} href={item.href} aria-current={item.href === currentPath ? 'page' : undefined} onClick={onPick}>
+          <a className={className} href={item.href} aria-current={item.href === currentPath ? mark : undefined} onClick={onPick}>
             {item.label}
           </a>
         </li>
@@ -131,19 +135,19 @@ function ItemList({ items, currentPath, className, onPick }: { items: NavItem[];
   );
 }
 
-function InlineGroup({ items, currentPath, classNames }: { items: NavItem[]; currentPath: string; classNames: AccountMenuClassNames }) {
+function InlineGroup({ items, currentPath, mark, classNames }: { items: NavItem[]; currentPath: string; mark: Mark; classNames: AccountMenuClassNames }) {
   const labelId = useId();
   return (
     <div className="account-menu account-menu--inline" role="group" aria-labelledby={labelId}>
       <p id={labelId} className={`account-menu__label${classNames.label ? ` ${classNames.label}` : ''}`}>
         {TRIGGER_LABEL}
       </p>
-      <ItemList items={items} currentPath={currentPath} className={classNames.item} />
+      <ItemList items={items} currentPath={currentPath} mark={mark} className={classNames.item} />
     </div>
   );
 }
 
-function Popover({ items, currentPath, classNames }: { items: NavItem[]; currentPath: string; classNames: AccountMenuClassNames }) {
+function Popover({ items, currentPath, mark, classNames }: { items: NavItem[]; currentPath: string; mark: Mark; classNames: AccountMenuClassNames }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -190,7 +194,7 @@ function Popover({ items, currentPath, classNames }: { items: NavItem[]; current
         {TRIGGER_LABEL}
       </button>
       <div id={panelId} className="account-menu__panel" hidden={!open}>
-        <ItemList items={items} currentPath={currentPath} className={classNames.item} onPick={() => setOpen(false)} />
+        <ItemList items={items} currentPath={currentPath} mark={mark} className={classNames.item} onPick={() => setOpen(false)} />
       </div>
     </div>
   );

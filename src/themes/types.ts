@@ -89,6 +89,12 @@ export interface NavModel {
   sticky: NavItem[];
   currentPath: string;
   /**
+   * True on a page inside the current item (a room under Our Venue, one adventure under Our
+   * Adventures): the item is marked `aria-current="true"`, since it is where the reader is but not
+   * the page they are on. `"page"` is for the page itself.
+   */
+  currentIsAncestor?: boolean;
+  /**
    * The one way into a session, for guests and the couple alike: "Sign in" → /sign-in, whatever the
    * lifecycle state. Signed in, the same place becomes the account menu (`member`, then Sign out).
    */

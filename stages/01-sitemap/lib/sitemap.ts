@@ -53,11 +53,11 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'RSVP', to: 'rsvp' },
   },
   {
-    id: 'caa', path: '/explore-caa', title: 'Explore CAA', parent: null, audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER', inNav: true,
+    id: 'caa', path: '/our-venue', title: 'Our Venue', parent: null, audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER', inNav: true,
     job: 'A docent for the building: spaces, history with sources, things to look for, and where your table is.',
   },
   {
-    id: 'caa-space', path: '/explore-caa/[slug]', example: '/explore-caa/example', title: 'A space in the building', parent: 'caa', audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER',
+    id: 'caa-space', path: '/our-venue/[slug]', example: '/our-venue/example', title: 'A space in the building', parent: 'caa', audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER',
     job: 'One room or feature of the building, its history and what to look for.',
     primaryAction: { label: 'Back to the building', to: 'caa' },
   },

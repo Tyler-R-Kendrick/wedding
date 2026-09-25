@@ -21,8 +21,13 @@ export interface FfmpegCapabilities {
   encoders: Set<string>;
 }
 
-/** Resolve FFMPEG_PATH or `ffmpeg` on PATH to an existing file, else null. */
+/**
+ * Resolve FFMPEG_PATH or `ffmpeg` on PATH to an existing file, else null. `off` says there is none
+ * without looking: the test suites and the activation matrix describe an unconfigured site, and an
+ * ffmpeg a developer installed for something else turned the video provider live there.
+ */
 export function resolveFfmpegBinary(configured: string | undefined, pathEnv: string | undefined = process.env.PATH): string | null {
+  if (configured === 'off') return null;
   if (configured) return existsSync(configured) ? configured : null;
   for (const dir of (pathEnv ?? '').split(path.delimiter)) {
     if (!dir) continue;

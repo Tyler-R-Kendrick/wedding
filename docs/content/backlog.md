@@ -34,13 +34,13 @@ in which the fact first renders to guests.
 
 | Done | Id | Item (verbatim) | Needed by | Surfaces blocked | Notes |
 |---|---|---|---|---|---|
-| [ ] | P-01 | exact CAA room(s) for ceremony/cocktail/reception | INVITATIONS_OPEN | The Wedding, Explore CAA (your table), Timeline | Do not build around White City because it photographs best; candidates from kit: White City Ballroom, Madison Ballroom, Stagg Court, The Tank |
+| [ ] | P-01 | exact CAA room(s) for ceremony/cocktail/reception | INVITATIONS_OPEN | The Wedding, Our Venue (your table), Timeline | Do not build around White City because it photographs best; candidates from kit: White City Ballroom, Madison Ballroom, Stagg Court, The Tank |
 | [ ] | P-02 | exact times (the spreadsheet timeline is a generic template) | INVITATIONS_OPEN | The Wedding, Timeline, calendar files, WEDDING_DAY "now/next" | Until closed, render "times to be confirmed" with `verifiedAt`, never a template time |
 | [ ] | P-03 | CAA room-block rate/URL/dates/room types/cutoff | SAVE_THE_DATE | Travel & Stay block card, Your Weekend benefit | Kit: courtesy block up to 20 rooms subject to availability; two parent upgrades at group rate; all to verify |
 | [ ] | P-04 | final alternative hotels | SAVE_THE_DATE | Travel & Stay | Cost-sensitive travellers need a range |
 | [ ] | P-05 | Uber voucher amount/geography/validity | WEDDING_WEEK | Transportation, Your Weekend benefit, rides adapter (ADR-0004) | Step-up on redemption (ADR-0001) |
-| [ ] | P-06 | final table assignments | WEDDING_WEEK | Your Weekend "your table", Explore CAA floor plan | Published only in WEDDING_WEEK+; per-guest entitlement; never in the repo |
-| [ ] | P-07 | current CAA outlet menus/hours/reservation links | SAVE_THE_DATE, re-verified before WEDDING_WEEK | Explore CAA outlets, Share an Adventure "stay inside CAA" | Kit is stale (Milk Room closed Feb 2025; Cherry Circle Room closed Apr 2024); current list on chicagoathletichotel.com: Cindy's, Game Room, Drawing Room, Shake Shack, The Ives, Midōsuji, Fairgrounds, Topgolf Swing Suite; each a record with `verifiedAt` |
+| [ ] | P-06 | final table assignments | WEDDING_WEEK | Your Weekend "your table", Our Venue floor plan | Published only in WEDDING_WEEK+; per-guest entitlement; never in the repo |
+| [ ] | P-07 | current CAA outlet menus/hours/reservation links | SAVE_THE_DATE, re-verified before WEDDING_WEEK | Our Venue outlets, Share an Adventure "stay inside CAA" | Kit is stale (Milk Room closed Feb 2025; Cherry Circle Room closed Apr 2024); current list on chicagoathletichotel.com: Cindy's, Game Room, Drawing Room, Shake Shack, The Ives, Midōsuji, Fairgrounds, Topgolf Swing Suite; each a record with `verifiedAt` |
 
 ## Vendors
 

@@ -52,6 +52,7 @@ export function DuplicateClusters({ clusters: initial }: { clusters: Cluster[] }
             {cluster.items.map((item, idx) => (
               <li key={item.id}>
                 <div className="media-tile" style={{ aspectRatio: '1 / 1' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it */}
                   {item.thumb ? <img src={item.thumb.url} alt={item.altText ?? item.caption ?? `Item ${idx + 1}`} width={96} height={96} loading="lazy" decoding="async" /> : <span className="media-tile__placeholder">No preview</span>}
                   <span className="media-tile__badge">{idx === 0 ? 'keep' : item.status}</span>
                 </div>

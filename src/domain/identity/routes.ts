@@ -7,6 +7,12 @@ import { isInternalRoute } from '@/capabilities/routes';
  */
 const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/step-up', '/claim/verify', '/claim/welcome', '/claim/passkey', '/sign-out', '/admin'] as const;
 const AUTH_PREFIXES = ['/invite/', '/i/', '/claim/', '/admin/'] as const;
+/**
+ * Pages that moved, which next.config.ts redirects permanently. A sign-in link minted before the
+ * move still carries the old path as `next`, and refusing it would drop the guest on the fallback
+ * page instead of where they were going.
+ */
+const MOVED = ['/explore-caa'] as const;
 const SAFE_TAIL = /^[A-Za-z0-9_\-/]*$/;
 const SAFE_QUERY = /^[A-Za-z0-9_\-=&%.]*$/;
 
@@ -18,6 +24,7 @@ export function isSafeReturnPath(path: unknown): path is string {
   if (rest.length > 0 || !SAFE_QUERY.test(query) || pathname!.includes('#')) return false;
   const clean = pathname!.replace(/\/+$/, '') || '/';
   if (isInternalRoute(clean) || (AUTH_ROUTES as readonly string[]).includes(clean)) return true;
+  if (MOVED.some((moved) => clean === moved || (clean.startsWith(`${moved}/`) && SAFE_TAIL.test(clean.slice(moved.length + 1))))) return true;
   return AUTH_PREFIXES.some((prefix) => clean.startsWith(prefix) && SAFE_TAIL.test(clean.slice(prefix.length)));
 }
 

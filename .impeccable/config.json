@@ -75,6 +75,42 @@
         ],
         "createdAt": "2026-09-23T16:37:46.975Z",
         "reason": "Claude: approved REF-WEEKEND three-column workspace, whose side column went one-up in PX-24; the short RSVP column is sticky under the masthead at >=1280px (guest.css) so it never floats over empty paper. Rebalancing the columns is the couple's call. See detector-waivers.md."
+      },
+      {
+        "rule": "first-viewport-column-overflow",
+        "value": "*",
+        "files": [
+          "**/our-venue*"
+        ],
+        "createdAt": "2026-09-24T21:00:00.000Z",
+        "reason": "Claude: Home's pinned-introduction pattern (PX-30). The building's name, lede and jump panel are sticky under the masthead (>=900px wide, >=54em tall) while the three photographs, each at its own proportions, scroll past; the tall column is what moves beside the pinned one. See detector-waivers.md."
+      },
+      {
+        "rule": "text-occlusion",
+        "value": "*",
+        "files": [
+          "**/share-an-adventure/*"
+        ],
+        "createdAt": "2026-09-24T21:45:00.000Z",
+        "reason": "Claude: false positive, measured 2026-09-24, the same one as /your-weekend. The 'covered' memory line and 'Read the memory' link are inside a closed <details> ('Why we're sharing this'), checkVisibility() false; Chromium keeps their layout boxes under the provenance badges below. Opened, nothing overlaps. See detector-waivers.md."
+      },
+      {
+        "rule": "text-occlusion",
+        "value": "*",
+        "files": [
+          "**/our-adventures?theme=botanical-deco*"
+        ],
+        "createdAt": "2026-09-24T22:00:00.000Z",
+        "reason": "Claude: false positive, measured 2026-09-24. The 'covering' elements are the atlas's base-map <use> layers (#shore, #city of midwest.svg), which span the whole map and are painted before the marker layer; every pin number and label is drawn on top of them and reads clearly (screenshot at 1440). See detector-waivers.md."
+      },
+      {
+        "rule": "first-viewport-column-overflow",
+        "value": "*",
+        "files": [
+          "**/our-adventures?theme=botanical-deco*"
+        ],
+        "createdAt": "2026-09-24T22:00:00.000Z",
+        "reason": "Claude: false positive, measured 2026-09-24. '56733% of the viewport tall' is the atlas SVG's world-scale drawing, which the stage clips to a fixed frame; the stage itself is one frame tall beside the legend. See detector-waivers.md."
       }
     ],
     "waivers": {

@@ -70,8 +70,8 @@ describe('evidence deduplication', () => {
   });
 
   it('keeps two different records that share a page anchor', () => {
-    const a = source({ citation: { sourceId: 'a' as ContentSourceId, title: 'Built in 1893', url: '/explore-caa#history', recordRef: { type: 'venue_facts', id: '1' } } });
-    const b = source({ citation: { sourceId: 'a' as ContentSourceId, title: 'Restored in 2015', url: '/explore-caa#history', recordRef: { type: 'venue_facts', id: '2' } } });
+    const a = source({ citation: { sourceId: 'a' as ContentSourceId, title: 'Built in 1893', url: '/our-venue#history', recordRef: { type: 'venue_facts', id: '1' } } });
+    const b = source({ citation: { sourceId: 'a' as ContentSourceId, title: 'Restored in 2015', url: '/our-venue#history', recordRef: { type: 'venue_facts', id: '2' } } });
     expect(dedupeSources([a, b])).toHaveLength(2);
   });
 });

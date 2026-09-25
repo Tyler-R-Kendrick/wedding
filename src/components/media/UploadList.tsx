@@ -52,6 +52,7 @@ export function UploadList({ items: initial, uploadHref }: { items: MyUploadItem
       <ul className="media-upload-list" aria-label="Your uploads">
         {items.map((item) => (
           <li key={item.uploadId} className="media-upload-row" data-testid="my-upload" data-asset-status={item.assetStatus ?? item.uploadStatus}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL; next/image cannot sign it */}
             {item.thumb ? <img className="media-upload-row__preview" src={item.thumb.url} alt="" width={56} height={56} loading="lazy" decoding="async" /> : <span className="media-upload-row__preview media-upload-row__preview--video" aria-hidden="true">{item.kind}</span>}
             <div>
               <p className="media-upload-row__name">{item.filename}</p>

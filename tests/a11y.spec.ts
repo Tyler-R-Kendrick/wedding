@@ -15,7 +15,7 @@ import AxeBuilder from '@axe-core/playwright';
 // Level 10 adds `/photos` for the same reason `/gifts` qualified: it is public. `/media/upload` and
 // `/media/mine` are NOT added — swarm H proposed `/media/upload` here, and it is guest-gated, so it
 // would have audited the sign-in page under the upload page's name. Third time this has come up.
-const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa', '/explore-caa/white-city-ballroom', '/the-wedding', '/ask-us', '/gifts', '/photos', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
+const ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/our-venue', '/our-venue/white-city-ballroom', '/the-wedding', '/ask-us', '/gifts', '/photos', '/sign-in', '/sign-out', '/invite/not-a-real-token-0000000000000000000000'];
 
 test.describe('accessibility (axe-core, WCAG 2.2 AA)', () => {
   for (const route of ROUTES) {

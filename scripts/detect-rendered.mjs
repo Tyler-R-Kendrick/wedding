@@ -36,7 +36,7 @@ import { classify, format } from './check-design-drift.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The same lists the 17px-floor walk uses (tests/e2e/typography.spec.ts). */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/explore-caa', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure', '/sign-in'];
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure', '/sign-in'];
 const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation'];
 const VIEWPORTS = ['390x844', '820x1180', '1280x800', '1440x900'];
 
