@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "next dev",
+    "clean": "node scripts/clean.mjs",
     "build": "next build",
     "start": "next start",
     "prepare": "node scripts/install-git-hooks.mjs",

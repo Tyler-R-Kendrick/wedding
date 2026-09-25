@@ -84,6 +84,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR}\" && env -u NODE_OPTIONS node scripts/agent/bash-guard.mjs",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }
