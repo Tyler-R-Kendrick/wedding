@@ -42,7 +42,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `TEST_AUTH_SECRET` | unset | `src/lib/auth/test-principal.ts`: enables `x-test-principal` injection **only** under `NODE_ENV=test`; never set on a deployed host | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
-| `RESEND_API_KEY`, `EMAIL_FROM` | unset -> dev inbox | auth-email | no |
+| `RESEND_CONNECT_USER_ID`, `EMAIL_FROM` | unset -> dev inbox; Connect connector `resend/wedding` must be attached and authorized | auth-email | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage: R2, Backblaze B2, Supabase Storage or MinIO. `S3_ENDPOINT` is required with the keys, and an Amazon endpoint (or none, which the AWS SDK would resolve to Amazon) is refused: the site does not use AWS | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
 | `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
@@ -98,7 +98,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 2. `CONFIRMATION_SECRET`, `CRON_SECRET` (32+ random chars each), and either the `S3_*` set or `STORAGE_SIGNING_SECRET` (boot fails with neither).
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET` (32+ random chars) and `ADMIN_EMAILS` for the couple.
 4. Storage: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` for R2, B2, Supabase Storage or MinIO (never AWS).
-5. Email: `RESEND_API_KEY`, `EMAIL_FROM`.
+5. Email: attach and authorize `resend/wedding` in Vercel Connect; set `RESEND_CONNECT_USER_ID` and verified `EMAIL_FROM`.
 6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set.
 7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.

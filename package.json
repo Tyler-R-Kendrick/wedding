@@ -118,6 +118,7 @@
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
     "@tailwindcss/postcss": "^4.3.3",
+    "@vercel/connect": "^2.3.2",
     "@wedding/sitemap": "*",
     "ai": "^7.0.93",
     "better-auth": "^1.7.2",
