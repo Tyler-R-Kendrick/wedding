@@ -89,9 +89,9 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
     const startedMs = performance.now();
     // No mailer, no code — say so before anything depends on the address, so every caller gets the
     // same answer and enumeration resistance holds. This used to return "sent" and fail in the
-    // background: on a deploy without RESEND_API_KEY / EMAIL_FROM nobody could sign in, and every
+    // background: on a deploy without RESEND_CONNECT_USER_ID / EMAIL_FROM nobody could sign in, and every
     // one of them was told a code was on its way.
-    const mailer = mailerProblem(ctx);
+    const mailer = await mailerProblem(ctx);
     if (mailer) {
       appServices(ctx).logger?.error({ reason: mailer }, 'otp not sent: no auth-email provider');
       return err(new CapabilityError('provider_unavailable', 'Sign-in codes cannot be sent yet: this site has no email service set up.', { reason: 'mail_not_configured' }));
@@ -195,10 +195,10 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
 });
 
 /** Why no one-time code can be sent at all (independent of the address), or null when a mailer exists. */
-function mailerProblem(ctx: Parameters<typeof appServices>[0]): string | null {
+async function mailerProblem(ctx: Parameters<typeof appServices>[0]): Promise<string | null> {
   try {
-    appServices(ctx).providers('auth-email');
-    return null;
+    const health = await appServices(ctx).providers('auth-email').health();
+    return health.status === 'up' ? null : `auth-email provider ${health.status}`;
   } catch (e) {
     return e instanceof Error ? e.message : 'auth-email provider unavailable';
   }

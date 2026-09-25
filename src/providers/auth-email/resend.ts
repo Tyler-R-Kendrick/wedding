@@ -1,9 +1,10 @@
+import { ConnectError, getToken } from '@vercel/connect';
 import { err, ok } from '@/contracts/result';
 import { failure, okConfig, upHealth } from '../base';
 import type { AuthEmailProvider, OtpMessage, PlainMessage } from './types';
 
 /**
- * Resend adapter (HTTPS API, no SDK). Selected when RESEND_API_KEY and EMAIL_FROM are set.
+ * Resend adapter. Vercel Connect holds the credential and exchanges it at send time.
  * Copy is intentionally plain; the auth swarm owns the final template.
  */
 export class ResendAuthEmail implements AuthEmailProvider {
@@ -11,13 +12,18 @@ export class ResendAuthEmail implements AuthEmailProvider {
   readonly name = 'resend';
   readonly mode = 'live' as const;
   readonly capabilities = { sendOtp: true, sendMessage: true };
-  constructor(private readonly apiKey: string, private readonly from: string, private readonly fetchImpl: typeof fetch = fetch) {}
+  constructor(private readonly userId: string, private readonly from: string, private readonly fetchImpl: typeof fetch = fetch) {}
 
   validateConfig() {
     return okConfig();
   }
   async health() {
-    return upHealth();
+    try {
+      await getToken('resend/wedding', { subject: { type: 'user', id: this.userId } });
+      return upHealth();
+    } catch (e) {
+      return { status: 'down' as const, checkedAt: new Date().toISOString(), detail: e instanceof Error ? e.name : 'Connect unavailable' };
+    }
   }
 
   async sendOtp(message: OtpMessage) {
@@ -33,9 +39,10 @@ export class ResendAuthEmail implements AuthEmailProvider {
 
   private async deliver(to: string, subject: string, text: string) {
     try {
+      const token = await getToken('resend/wedding', { subject: { type: 'user', id: this.userId } });
       const res = await this.fetchImpl('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: this.from, to: [to], subject, text }),
         signal: AbortSignal.timeout(8_000),
       });
@@ -43,9 +50,10 @@ export class ResendAuthEmail implements AuthEmailProvider {
       if (res.status === 401 || res.status === 403) return err(failure(this.name, 'auth', 'Email service is not available right now.'));
       if (!res.ok) return err(failure(this.name, res.status >= 500 ? 'server' : 'bad_request', 'We could not send your code. Please try again.'));
       const body = (await res.json()) as { id?: string };
-      return ok({ messageId: body.id ?? 'unknown' });
+      if (!body.id) return err(failure(this.name, 'server', 'We could not send your code. Please try again.'));
+      return ok({ messageId: body.id });
     } catch (e) {
-      const cls = e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'network';
+      const cls = e instanceof ConnectError ? (e.status === 429 ? 'rate_limited' : e.status && e.status >= 500 ? 'server' : 'auth') : e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'network';
       return err(failure(this.name, cls, 'We could not send your code. Please try again.', { raw: e }));
     }
   }

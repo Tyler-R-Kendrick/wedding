@@ -23,9 +23,9 @@ describe('dev endpoint gate (review S5)', () => {
 
 describe('auth-email provider selection (review S6)', () => {
   it('refuses the mock mailer on a production host and uses Resend when configured', () => {
-    expect(() => createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: false, isProduction: true })).toThrow(/RESEND_API_KEY/);
-    expect(() => createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: true, RESEND_API_KEY: 're_x', EMAIL_FROM: 'a@b.co', isProduction: true })).toThrow(/mock mailer/);
-    expect(createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: false, RESEND_API_KEY: 're_x', EMAIL_FROM: 'a@b.co', isProduction: true }).name).toBe('resend');
+    expect(() => createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: false, isProduction: true })).toThrow(/RESEND_CONNECT_USER_ID/);
+    expect(() => createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: true, RESEND_CONNECT_USER_ID: 'user_123', EMAIL_FROM: 'a@b.co', isProduction: true })).toThrow(/mock mailer/);
+    expect(createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: false, RESEND_CONNECT_USER_ID: 'user_123', EMAIL_FROM: 'a@b.co', isProduction: true }).name).toBe('resend');
     expect(createAuthEmailProvider({ FORCE_MOCK_PROVIDERS: false, isProduction: false }).name).toBe('mock');
   });
 });

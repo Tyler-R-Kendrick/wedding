@@ -76,7 +76,7 @@ const serverSchema = z.object({
   // No AI provider reads a key: the concierge is written in the guest's browser and everything the
   // server does with language (retrieval, verification, captions) runs in-process. A leftover
   // ANTHROPIC_API_KEY, OPENAI_API_KEY or AI_GATEWAY_API_KEY is ignored (src/providers/ai-model).
-  RESEND_API_KEY: optionalString,
+  RESEND_CONNECT_USER_ID: optionalString,
   EMAIL_FROM: optionalString,
   /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,
@@ -212,7 +212,7 @@ function load(raw: NodeJS.ProcessEnv): ServerEnv {
 
   if (isProduction && !isBuildPhase) {
     /**
-     * RESEND_API_KEY and EMAIL_FROM are deliberately NOT here, though review S6 put them here.
+     * RESEND_CONNECT_USER_ID and EMAIL_FROM are deliberately NOT here, though review S6 put them here.
      *
      * S6's property is that production must never route a one-time code to the in-memory dev
      * inbox, and `createAuthEmailProvider` is what enforces it: without a real mailer it THROWS

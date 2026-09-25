@@ -22,7 +22,7 @@ describe('server env', () => {
     }
   });
 
-  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), BETTER_AUTH_URL: 'https://example.test', RESEND_API_KEY: 're_test', EMAIL_FROM: 'Sara + Tyler <hello@example.test>' };
+  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), BETTER_AUTH_URL: 'https://example.test', RESEND_CONNECT_USER_ID: 'user_123', EMAIL_FROM: 'Sara + Tyler <hello@example.test>' };
 
   it('requires the signing secrets in production', () => {
     expect(() => parseServerEnv({ NODE_ENV: 'production' })).toThrow(/CONFIRMATION_SECRET/);
@@ -32,13 +32,13 @@ describe('server env', () => {
   });
 
   it('boots production without a mailer, because no page needs one to render', () => {
-    // This used to throw on RESEND_API_KEY, which took the home page, the schedule, the travel
+    // This used to throw on mail configuration, which took the home page, the schedule, the travel
     // page and /api/health down for want of a credential none of them uses — a deployed site
     // answering 500 everywhere because it could not send an e-mail. `createAuthEmailProvider`
     // is what holds review S6's line, and the test below is that line.
-    const e = parseServerEnv({ ...prodBase, RESEND_API_KEY: '', EMAIL_FROM: '', STORAGE_SIGNING_SECRET: 's'.repeat(32) });
+    const e = parseServerEnv({ ...prodBase, RESEND_CONNECT_USER_ID: '', EMAIL_FROM: '', STORAGE_SIGNING_SECRET: 's'.repeat(32) });
     expect(e.isProduction).toBe(true);
-    expect(e.RESEND_API_KEY).toBeUndefined();
+    expect(e.RESEND_CONNECT_USER_ID).toBeUndefined();
   });
 
   it('requires S3 or an explicit storage signing secret in production (names only)', () => {
@@ -96,7 +96,7 @@ describe('server env', () => {
 });
 
 describe('what the platform already knows', () => {
-  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), RESEND_API_KEY: 're_test', EMAIL_FROM: 'Sara + Tyler <hello@example.test>', STORAGE_SIGNING_SECRET: 's'.repeat(32) };
+  const prodBase = { NODE_ENV: 'production', CONFIRMATION_SECRET: 'x'.repeat(32), CRON_SECRET: 'y'.repeat(32), BETTER_AUTH_SECRET: 'z'.repeat(32), RESEND_CONNECT_USER_ID: 'user_123', EMAIL_FROM: 'Sara + Tyler <hello@example.test>', STORAGE_SIGNING_SECRET: 's'.repeat(32) };
 
   it('reads the Vercel connector\'s own name for the database', () => {
     // `vercel integration add supabase` writes POSTGRES_URL, never DATABASE_URL, and one project

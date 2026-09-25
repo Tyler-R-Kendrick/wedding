@@ -32,7 +32,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | Kind | Implementation | Mode | Variables its source reads | Operations available | Notes |
 |---|---|---|---|---|---|
 | `ai-model` | mock | mock | — | chat, verifier, caption, streaming |  |
-| `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_API_KEY` | sendOtp, sendMessage |  |
+| `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_CONNECT_USER_ID` | sendOtp, sendMessage |  |
 | `cash-fund` | mock | mock | — | describeLinks |  |
 | `embeddings` | mock | mock | — | embed |  |
 | `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY` | search, deepLink |  |

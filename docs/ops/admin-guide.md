@@ -18,7 +18,7 @@ these screens.
    deployment; in local development it lands in the dev inbox at
    `/api/dev/inbox` and is printed to the server log.
    A deployment can only send codes once it has an email service:
-   `RESEND_API_KEY` and `EMAIL_FROM` in Vercel (see `docs/ops/environment.md`).
+   Authorize `resend/wedding` in Vercel Connect, then set `RESEND_CONNECT_USER_ID` and `EMAIL_FROM` in Vercel (see `docs/ops/environment.md`).
    Without them the sign-in page says it can't send
    codes yet, for every address alike, rather than claiming one is on its way.
 3. Anything that changes money, identity or publication asks you to prove it is

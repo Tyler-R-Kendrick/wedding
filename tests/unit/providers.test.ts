@@ -56,7 +56,7 @@ describe('provider registry', () => {
 });
 
 describe('auth-email selection', () => {
-  const key = { RESEND_API_KEY: 're_test', EMAIL_FROM: 'Sara + Tyler <no-reply@example.test>', FORCE_MOCK_PROVIDERS: false };
+  const key = { RESEND_CONNECT_USER_ID: 'user_123', EMAIL_FROM: 'Sara + Tyler <no-reply@example.test>', FORCE_MOCK_PROVIDERS: false };
 
   /**
    * Review S6: production must never route a one-time code to the in-memory dev inbox. This is
@@ -65,17 +65,17 @@ describe('auth-email selection', () => {
    * uses; narrowing that guard is only safe because refusing here is loud rather than silent.
    */
   it('refuses the mock mailer on a production host', () => {
-    expect(() => createAuthEmailProvider({ ...key, RESEND_API_KEY: undefined, isProduction: true }))
-      .toThrow(/production requires RESEND_API_KEY/);
+    expect(() => createAuthEmailProvider({ ...key, RESEND_CONNECT_USER_ID: undefined, isProduction: true }))
+      .toThrow(/production requires RESEND_CONNECT_USER_ID/);
     expect(() => createAuthEmailProvider({ ...key, EMAIL_FROM: undefined, isProduction: true }))
-      .toThrow(/production requires RESEND_API_KEY/);
+      .toThrow(/production requires RESEND_CONNECT_USER_ID/);
     // FORCE_MOCK_PROVIDERS must not be a way around it either.
     expect(() => createAuthEmailProvider({ ...key, FORCE_MOCK_PROVIDERS: true, isProduction: true }))
       .toThrow(/the mock mailer is refused/);
   });
 
   it('uses the mock off production, and Resend whenever it is configured', () => {
-    expect(createAuthEmailProvider({ ...key, RESEND_API_KEY: undefined, isProduction: false })).toBeInstanceOf(MockAuthEmail);
+    expect(createAuthEmailProvider({ ...key, RESEND_CONNECT_USER_ID: undefined, isProduction: false })).toBeInstanceOf(MockAuthEmail);
     expect(createAuthEmailProvider({ ...key, isProduction: true })).not.toBeInstanceOf(MockAuthEmail);
   });
 });

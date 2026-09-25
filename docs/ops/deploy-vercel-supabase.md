@@ -156,7 +156,7 @@ do not rely on that.
 
 ### 5. Email
 
-Resend: verify the sending domain, then set `RESEND_API_KEY` and `EMAIL_FROM`.
+Resend: verify the sending domain, attach and authorize the `resend/wedding` Connect connector, then set `RESEND_CONNECT_USER_ID` and `EMAIL_FROM`.
 
 Until this is done, one-time codes go nowhere — the dev inbox does not exist on
 a deployed host, and a guest asking for a code gets a page that says one was

@@ -16,7 +16,7 @@
  *   3. Project      find or create it, linked to the GitHub repo (`git remote origin`), Fluid
  *                   compute on, OIDC on (Vercel Connect signs with it; the site calls no AI Gateway).
  *   4. Link         `vercel link` so the CLI's integration and deploy commands target it.
- *   5. Connectors   Marketplace integrations for the database and email: `vercel integration add`
+ *   5. Connectors   Marketplace integration for the database: `vercel integration add`
  *                   provisions the resource AND injects its variables into the project. The app
  *                   reads the connector's names (POSTGRES_URL -> DATABASE_URL, src/lib/env.ts),
  *                   so no value is copied by hand and the connector stays the owner of it.
@@ -33,11 +33,8 @@
  *  10. Deploy       `vercel deploy` (or `--prod`), then wait for READY and read the build log if
  *                   it is not.
  *
- * Vercel Connect (the OIDC-to-provider-token exchange, `vercel connect create <service>`) is for
- * a third-party API the *running site* calls with its own identity — Slack, Notion, GitHub. No
- * feature here does that today; the connectors this site needs are the Marketplace ones above.
- * When one does, attach it with `vercel connect attach <connector>` and read the token with
- * `@vercel/connect`'s getToken — that package is not a dependency yet and packages are fixed.
+ * Resend uses Vercel Connect. The existing `resend/wedding` connector must be attached to this
+ * project and authorized for RESEND_CONNECT_USER_ID; the site gets its token with @vercel/connect.
  */
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -61,7 +58,6 @@ const VERCEL_BIN = resolve(repoRoot, 'node_modules/.bin/vercel');
 /** Marketplace connectors, and the variable each injects that tells us it is already there. */
 const CONNECTORS = [
   { slug: 'supabase', name: `${PROJECT}-db`, slot: 'database', gives: ['POSTGRES_URL', 'DATABASE_URL'] },
-  { slug: 'resend', name: `${PROJECT}-email`, slot: 'email', gives: ['RESEND_API_KEY'] },
 ];
 
 /** Secrets the site needs in every deployed environment; generated here when the project has none. */
@@ -433,7 +429,7 @@ async function requiredInProduction() {
   // A connector never writes `DATABASE_URL`: `vercel integration add supabase` writes
   // `POSTGRES_URL`, and env.ts reads it under the name the app uses. Checking for the literal key
   // reported a database that was demonstrably connected — the first version of this preflight did
-  // exactly that, while the deployment's own error named RESEND_API_KEY alone.
+  // exactly that, while the deployment's own error named the missing mailer alone.
   const aliased = /DATABASE_URL_ALIASES\s*=\s*\[([^\]]*)\]/.exec(src);
   const aliases = aliased ? [...aliased[1].matchAll(/'([A-Z][A-Z0-9_]*)'/g)].map((m) => m[1]) : [];
   return keys.map((key) => (key === 'DATABASE_URL' ? [key, ...aliases] : [key]));
@@ -475,12 +471,12 @@ async function preflight(project, scope) {
       && !['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'].every(has)) {
     missing.push(['STORAGE_SIGNING_SECRET', 'DEV_STORAGE_SECRET', 'or S3_ENDPOINT + S3_BUCKET + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY']);
   }
-  // A missing mailer is not a refusal. env.ts deliberately keeps RESEND_API_KEY and EMAIL_FROM
+  // A missing mailer is not a refusal. env.ts deliberately keeps RESEND_CONNECT_USER_ID and EMAIL_FROM
   // out of `required` so a site with no mail still boots and still shows the date of the wedding.
   // But `createAuthEmailProvider` throws on the one action that needs them, so RSVP sign-in is dead
   // until both are set — say it here, rather than let a guest be the one to find out.
   if (PROD) {
-    const noMail = ['RESEND_API_KEY', 'EMAIL_FROM'].filter((n) => !has(n));
+    const noMail = ['RESEND_CONNECT_USER_ID', 'EMAIL_FROM'].filter((n) => !has(n));
     if (noMail.length) say(`Warning: ${noMail.join(' and ')} not set — every page still renders, but RSVP cannot send a sign-in code.`);
   }
 
