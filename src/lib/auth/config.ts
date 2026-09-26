@@ -178,8 +178,11 @@ export function createAuth(db: Db) {
         changeEmail: { enabled: true, verifyCurrentEmail: false },
         async sendVerificationOTP({ email, otp, type }, ctx) {
           const hinted = ctx?.headers?.get?.(OTP_PURPOSE_HEADER) ?? null;
-          const result = await getProvider('auth-email').sendOtp({ to: email, code: otp, purpose: purposeFor(type, hinted), expiresInMinutes: OTP_POLICY.expiresInSeconds / 60 });
+          const provider = getProvider('auth-email');
+          const purpose = purposeFor(type, hinted);
+          const result = await provider.sendOtp({ to: email, code: otp, purpose, expiresInMinutes: OTP_POLICY.expiresInSeconds / 60 });
           if (!result.ok) logger.warn({ provider: result.error.provider, class: result.error.class }, 'otp email could not be sent');
+          else logger.info({ provider: provider.name, messageId: result.value.messageId, purpose }, 'otp email accepted');
         },
       }),
       passkey({
