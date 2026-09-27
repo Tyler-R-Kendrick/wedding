@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { routesToWarm, testServerEnv, WARM_ROUTES } from '../../../scripts/test-server-specs.mjs';
+import { DATABASE_URL_ALIASES as SERVER_ALIASES } from '@/lib/env';
+import { DATABASE_URL_ALIASES, localIsolation, routesToWarm, splitArgs, testServerEnv, WARM_ROUTES } from '../../../scripts/test-server-specs.mjs';
 
 /**
  * The CI step as text: from its `- name:` line to the next step. The repository has no YAML parser
@@ -50,5 +51,31 @@ describe('npm run test:e2e:server mirrors the CI test-server step', () => {
     // '/travel' is a prefix of a different string, not a navigation; the big console pages are not reached.
     for (const route of ['/travel', '/admin/guests/export', '/admin/media/duplicates']) expect(warm, route).not.toContain(route);
     expect(new Set(warm).size).toBe(warm.length);
+  });
+
+  it('takes files, file:line filters and directories as specs, and passes everything else to Playwright', () => {
+    const dirs = new Set(['tests/security']);
+    const { specs, passThrough } = splitArgs(['tests/e2e/claim.spec.ts:73', 'tests/security', '--project=mobile', '-g', 'admin sign-in', '--headed'], (p) => dirs.has(p));
+    expect(specs).toEqual(['tests/e2e/claim.spec.ts:73', 'tests/security']);
+    expect(passThrough).toEqual(['--project=mobile', '-g', 'admin sign-in', '--headed']);
+  });
+});
+
+describe('npm run test:e2e:server never reaches a real system', () => {
+  const example = readFileSync('.env.example', 'utf8');
+  const blanked = localIsolation(example, testServerEnv('3100'));
+
+  it('blanks the database, its aliases, the mailer, the bucket and the admin list a local .env may hold', () => {
+    for (const key of ['DATABASE_URL', 'POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'RESEND_CONNECT_USER_ID', 'EMAIL_FROM', 'S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'ADMIN_EMAILS', 'UBER_CLIENT_SECRET', 'DUFFEL_API_KEY']) {
+      expect(blanked[key], key).toBe('');
+    }
+  });
+
+  it("keeps CI's own test values rather than blanking them", () => {
+    for (const key of Object.keys(testServerEnv('3100'))) expect(blanked, key).not.toHaveProperty(key);
+  });
+
+  it('knows every Postgres alias the server reads', () => {
+    expect([...DATABASE_URL_ALIASES].sort()).toEqual([...SERVER_ALIASES].sort());
   });
 });

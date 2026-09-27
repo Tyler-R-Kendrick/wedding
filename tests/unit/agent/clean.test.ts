@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNextServer } from '../../../scripts/clean.mjs';
+import { isNextServer, parseStat } from '../../../scripts/clean.mjs';
 
 describe('npm run clean: which processes are Next servers', () => {
   it('recognises every process a dev or production server runs as', () => {
@@ -26,5 +26,11 @@ describe('npm run clean: which processes are Next servers', () => {
     ]) {
       expect(isNextServer(argv), argv.join(' ')).toBe(false);
     }
+  });
+
+  it('reads state and parent from /proc stat, whatever the process named itself', () => {
+    expect(parseStat('2434 (next-server (v1) S 2422 2421 2421 0 -1')).toEqual({ state: 'S', ppid: 2422, pgrp: 2421 });
+    // A stopped server that nobody has reaped yet is gone, not running: clean must not wait on it.
+    expect(parseStat('2421 (sh) Z 1 2421 2421 0 -1').state).toBe('Z');
   });
 });
