@@ -35,9 +35,14 @@ describe('the account menu', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('offers an administrator the console, not a household they do not have', () => {
+  it('offers an administrator the console and "Browse as a guest", not a household they do not have', () => {
     render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, admin: true })} variant="inline" classNames={CLASSES} />);
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/admin', '/sign-out']);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/admin', '/admin/guests#browse-as', '/sign-out']);
+  });
+
+  it('while an administrator browses as a guest: that household\'s pages, then the way back to the console', () => {
+    render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, viewing: true })} variant="inline" classNames={CLASSES} />);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...MEMBER, '/admin', '/sign-out']);
   });
 
   it('asks /api/session on a prerendered page, and opens itself only on a yes', async () => {

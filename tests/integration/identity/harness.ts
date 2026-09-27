@@ -26,6 +26,8 @@ export interface Transport {
   origin?: string | null;
   /** Replaces the capability context's logger, so a test can read what a call logged. */
   logger?: unknown;
+  /** The page path the proxy would stamp (`x-pathname`), for a request made from that page. */
+  pathname?: string;
 }
 
 /** Headers the way a browser would send them: same-origin by default. */
@@ -33,11 +35,15 @@ export function requestHeaders(t: Transport = {}): Headers {
   const h = new Headers({ host: 'localhost:3000' });
   if (t.cookie) h.set('cookie', t.cookie);
   if (t.origin !== null) h.set('origin', t.origin ?? SITE);
+  if (t.pathname) h.set('x-pathname', t.pathname);
   return h;
 }
 
 export async function principalFor(t: Transport = {}): Promise<Principal> {
-  return getPrincipal(new Request(`${SITE}/api/capabilities/x`, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
+  // With `pathname`, the request a server component on that page would build: a placeholder URL and
+  // the proxy's `x-pathname`. Without it, an /api capability call, whose URL is its real path.
+  const url = t.pathname ? `http://wedding.local${t.pathname}` : `${SITE}/api/capabilities/x`;
+  return getPrincipal(new Request(url, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
 }
 
 /** Invokes a capability through the real pipeline with the identity transport attached. */

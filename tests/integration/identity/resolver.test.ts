@@ -30,6 +30,7 @@ describe('principal resolver', () => {
     expectErr(await call('get_my_invitation', {}, { cookie: ana.cookie, origin: 'https://evil.example' }), 'unauthenticated');
   });
 
+  // Until they choose "Browse as a guest" (guest-view.test.ts), which is a view, not a merge.
   it('admin allowlist/roles produce an AdminPrincipal, never a guest, even if the email is also a guest', async () => {
     const f = await seed('rs3');
     await grantAdmin(f.emails.ana, 'planner');
@@ -172,7 +173,9 @@ describe('principal resolver', () => {
     // the funds a gift of money goes toward and the couple's own accounts it goes to.
     // 68 -> 69: `admin_preview_guest_table` (`admin_guest_ops`, ui only), the seating preview the
     // admin guide promised: what one guest would see if the draft chart were published.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(69);
+    // 69 -> 70: `admin_browse_as_guest` (ui only), "Browse as a guest": an administrator sees the
+    // site as one guest does, read-only unless it is their own guest record.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

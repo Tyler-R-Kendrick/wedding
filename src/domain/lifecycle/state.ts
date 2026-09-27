@@ -20,7 +20,7 @@ export interface ResolveLifecycleInput {
 /**
  * Manual publish state always beats the wall clock (ADR-0012 §2). Admin preview overlays a state
  * for this response only; it never changes the persisted row and is refused for anyone who is not
- * an admin (`requireAdmin`), whatever the token says.
+ * an admin (`requireAdmin`) or an admin browsing as a guest (`viewedBy`), whatever the token says.
  */
 export function resolveLifecycle(input: ResolveLifecycleInput): LifecycleView {
   const persisted = input.persisted;
@@ -31,7 +31,9 @@ export function resolveLifecycle(input: ResolveLifecycleInput): LifecycleView {
       requireAdmin(input.principal);
       admin = true;
     } catch {
-      admin = false;
+      // An administrator browsing as a guest keeps the preview: "what will this household see when
+      // RSVPs open" is the question the two answer together.
+      admin = input.principal.kind === 'guest' && input.principal.viewedBy !== undefined;
     }
     if (admin) {
       const secret = typeof input.secret === 'function' ? input.secret() : input.secret;

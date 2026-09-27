@@ -8,6 +8,7 @@ import { renderCopy } from '@/themes/shared/copy';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
+import { GuestViewBand } from '@/components/guest-view/GuestViewBand';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
 import { allItems, ariaCurrent, isAccount, isCurrent } from '@/themes/shared/nav-utils';
 import type {
@@ -189,6 +190,7 @@ function Shell({ frame, children, banner }: ShellProps) {
         Skip to content
       </a>
       {banner}
+      <GuestViewBand />
       <div className="cv-sheet">
         <header className="cv-header">
           <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { SIGN_IN, SIGN_OUT } from '@/domain/lifecycle/account';
 import type { NavItem, NavModel } from '@/themes/types';
+import { sessionProbe, SIGNED_OUT, type SessionHint } from './session-hint';
 
 /**
  * The account menu: "Sign in" to anyone, and — once there is a session — the household's own pages
@@ -27,43 +28,12 @@ import type { NavItem, NavModel } from '@/themes/types';
 
 const TRIGGER_LABEL = 'Your account';
 
-interface SessionHint {
-  signedIn: boolean;
-  admin: boolean;
-}
-
-const SIGNED_OUT: SessionHint = { signedIn: false, admin: false };
-
 /** An administrator has no household: the console is their page, and the household's would each send them back to sign in. */
 const ADMIN_CONSOLE: NavItem = { label: 'Admin console', href: '/admin' };
+/** Where an administrator picks a guest to browse the site as (the console's Guests screen). */
+const BROWSE_AS_GUEST: NavItem = { label: 'Browse as a guest', href: '/admin/guests#browse-as' };
 
-let probe: Promise<SessionHint> | null = null;
-
-/**
- * One request per page, whichever instance asks first. Only an answer is kept: a failed request
- * reads as signed out for now and is forgotten, so the next instance (or the next page) asks again
- * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
- */
-function sessionProbe(fresh = false): Promise<SessionHint> {
-  if (fresh) probe = null;
-  if (probe) return probe;
-  // The cached promise is the one that already handles failure: every caller shares it, so a raw
-  // fetch promise here would hand each of them a rejection nobody catches.
-  const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
-    .then(async (r) => {
-      if (!r.ok) throw new Error(`session probe: ${r.status}`);
-      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown };
-      return { signedIn: body.signedIn === true, admin: body.signedIn === true && body.admin === true };
-    })
-    .catch(() => {
-      if (probe === asked) probe = null;
-      return SIGNED_OUT;
-    });
-  probe = asked;
-  return asked;
-}
-
-function useSession(known: boolean | undefined, knownAdmin: boolean): SessionHint {
+function useSession(known: boolean | undefined, knownAdmin: boolean, knownViewing: boolean): SessionHint {
   const [probed, setProbed] = useState<SessionHint>(SIGNED_OUT);
   // A page restored from the back/forward cache kept the menu it had when it was left — after a
   // sign-out in between, that is a menu of pages the reader can no longer open. Ask again then,
@@ -88,7 +58,7 @@ function useSession(known: boolean | undefined, knownAdmin: boolean): SessionHin
       window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin });
+  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin, viewAs: null, viewing: known && knownViewing });
 }
 
 export interface AccountMenuClassNames {
@@ -101,13 +71,13 @@ export interface AccountMenuClassNames {
 }
 
 export interface AccountMenuProps {
-  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'admin' | 'currentPath' | 'currentIsAncestor'>;
+  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'admin' | 'viewing' | 'currentPath' | 'currentIsAncestor'>;
   variant: 'popover' | 'inline' | 'link';
   classNames: AccountMenuClassNames;
 }
 
 export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
-  const { signedIn, admin } = useSession(nav.signedIn, nav.admin === true);
+  const { signedIn, admin, viewing } = useSession(nav.signedIn, nav.admin === true, nav.viewing === true);
   const signIn = nav.account ?? SIGN_IN;
   if (!signedIn) {
     return (
@@ -123,7 +93,9 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
       </a>
     );
   }
-  const items = admin ? [ADMIN_CONSOLE, SIGN_OUT] : [...(nav.member ?? []), SIGN_OUT];
+  // An administrator gets the console and the way into "Browse as a guest"; while browsing as one,
+  // they get that guest's pages and the way back.
+  const items = admin ? [ADMIN_CONSOLE, BROWSE_AS_GUEST, SIGN_OUT] : [...(nav.member ?? []), ...(viewing ? [ADMIN_CONSOLE] : []), SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;

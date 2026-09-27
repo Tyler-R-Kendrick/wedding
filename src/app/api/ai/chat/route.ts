@@ -13,6 +13,7 @@ import { getFlags } from '@/lib/flags';
 import { getPrincipal } from '@/lib/principal';
 import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, NO_STORE_HEADERS, readBodyText, REQUEST_ID_HEADER, SAME_ORIGIN_MESSAGE } from '@/lib/request';
 import { principalKey } from '@/policy/confirmation';
+import { BROWSING_MESSAGE, isReadOnlyView } from '@/policy/entitlements';
 import { getProvider } from '@/providers/registry';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +62,8 @@ export async function POST(request: Request) {
   if (!ipDecision.allowed) return rateLimited(ipDecision.retryAfterMs, requestId);
 
   const principal = await getPrincipal(request);
+  // The chat door keeps a session and the questions in the caller's name: not in a read-only view.
+  if (isReadOnlyView(principal)) return errorResponse(new CapabilityError('forbidden', BROWSING_MESSAGE), requestId);
   if (principal.kind !== 'anonymous') {
     const sameOrigin = assertSameOriginJson(request);
     if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);

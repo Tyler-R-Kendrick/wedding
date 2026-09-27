@@ -168,6 +168,12 @@ describe('ride benefit claims', () => {
       expect(r.ok && r.value.data.benefits[0]!.redemption).toMatchObject({ kind: 'hidden', revealRoute: '/transportation' });
       expect(JSON.stringify(r)).not.toContain(redemptionUrl);
     }
+    // An owner browsing as this guest ("Browse as a guest") sees the ride was claimed, never the
+    // bearer link: the page is theirs to read, the credential is not theirs to hold.
+    const viewing = { ...g1, viewedBy: { adminId: 'ADMIN-VIEW' as AdminId, roles: new Set(['owner'] as const), readOnly: true } };
+    const viewed = await run(getMyTransportationOptions, viewing, {});
+    expect(viewed.ok && viewed.value.data.benefits[0]).toMatchObject({ status: 'claimed', redemption: { kind: 'hidden', revealRoute: '/transportation' } });
+    expect(JSON.stringify(viewed)).not.toContain(redemptionUrl);
 
     // Idempotent double-claim: same key replays; a fresh key with the second tab's token returns the first result.
     const replay = await run(claimMyTransportationBenefit, g1, { entitlementId: E1 }, { idempotencyKey: k1, confirmationToken: draftA.value.confirmation!.token });

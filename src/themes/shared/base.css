@@ -379,6 +379,52 @@ a:not([class]) {
   line-height: var(--type-body-sm-line);
 }
 
+/* A page's calls to action side by side, wrapping on a phone, never touching. */
+.page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-block: var(--spacing-md);
+}
+
+/* "Browse as a guest" (components/guest-view/GuestViewBand): the preview band's colours, in flow
+   rather than sticky, with the way back beside the sentence. */
+.guest-view-band {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.guest-view-band__text {
+  margin: 0;
+}
+
+.guest-view-band__stop {
+  min-height: 44px;
+  padding-inline: var(--spacing-md);
+  border: 1px solid currentcolor;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Scoped past each design's own `.<kit> :focus-visible`, whose ring is drawn in the band's own
+   background colour and vanished on it. */
+.guest-view-band .guest-view-band__stop:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+/* Under the lifecycle preview band, a hairline keeps the two sentences apart. */
+.preview-band + .guest-view-band {
+  border-block-start: 1px solid currentcolor;
+}
+
 /* Floating design switcher: theme-neutral chrome coloured by the active theme's tokens. */
 .switcher--trigger {
   display: inline-block;

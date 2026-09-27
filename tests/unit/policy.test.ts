@@ -57,6 +57,22 @@ describe('authorize', () => {
     expect(authorize({ name: 'x', auth: 'admin', requires: [] }, guest()).ok).toBe(false);
     expect(authorize({ name: 'x', auth: 'system', requires: [] }, admin()).ok).toBe(false);
   });
+
+  it('an administrator browsing as someone else\'s guest reads, and changes nothing', () => {
+    const viewing = guest({ viewedBy: { adminId: 'AD1' as AdminId, roles: new Set(['owner']), readOnly: true } });
+    expect(authorize({ name: 'x', kind: 'read', auth: 'guest', requires: ['view_event'] }, viewing).ok).toBe(true);
+    expect(authorize({ name: 'x', kind: 'navigate', auth: 'anonymous', requires: [] }, viewing).ok).toBe(true);
+    for (const kind of ['draft', 'action', 'transaction', 'external', undefined] as const) {
+      const r = authorize({ name: 'x', kind, auth: 'guest', requires: ['rsvp_self'] }, viewing);
+      expect(r.ok, `kind ${kind}`).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe('forbidden');
+    }
+    // Browsing as their own guest record, the administrator is that guest.
+    const self = guest({ viewedBy: { adminId: 'AD1' as AdminId, roles: new Set(['moderator']), readOnly: false } });
+    expect(authorize({ name: 'x', kind: 'action', auth: 'guest', requires: ['rsvp_self'] }, self).ok).toBe(true);
+    // A real guest is untouched.
+    expect(authorize({ name: 'x', kind: 'action', auth: 'guest', requires: ['rsvp_self'] }, guest()).ok).toBe(true);
+  });
 });
 
 describe('assertActsFor', () => {

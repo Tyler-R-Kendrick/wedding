@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BROWSING_MESSAGE, isReadOnlyView } from '@/policy/entitlements';
 import { runConcierge } from '@/ai/concierge';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -75,6 +76,9 @@ export const askConcierge = defineCapability<z.infer<typeof input>, AskConcierge
   output,
   maxOutputChars: 16_000,
   async handler(ctx, { question, sessionId }) {
+    // `read` in what it returns, but it keeps a session, the questions and a trace keyed to the
+    // caller: in a read-only view those would be an administrator's words filed as the guest's.
+    if (isReadOnlyView(ctx.principal)) return err(new CapabilityError('forbidden', BROWSING_MESSAGE));
     // The model budget is charged HERE, not at a route, because this capability is a second door to
     // exactly the work `/api/ai/chat` does — and that route meters it on the `concierge` policy
     // (20 burst, 1 per 3s) while a capability call was paying only the generic `capability` one

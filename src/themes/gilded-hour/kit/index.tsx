@@ -10,6 +10,7 @@ import { ThemeSync } from '@/themes/shared/ThemeSync';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
+import { GuestViewBand } from '@/components/guest-view/GuestViewBand';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
 import { NavFit } from '@/themes/shared/NavFit';
 import { allItems, ariaCurrent, bottomCells, isAccount, shortLabel } from '@/themes/shared/nav-utils';
@@ -247,6 +248,7 @@ function Shell({ frame, children, banner }: ShellProps) {
         Skip to content
       </a>
       {banner}
+      <GuestViewBand />
       <header className="gh-header">
         <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
       </header>
