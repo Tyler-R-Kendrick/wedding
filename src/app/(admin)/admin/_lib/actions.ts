@@ -18,12 +18,19 @@ const optIfPresent = (fd: FormData, key: string): string | null | undefined => (
 /** Idempotent admin mutations carry a key: the form's render-time key when present (double-submit safe), else a fresh one. */
 const idem = (fd: FormData) => ({ idempotencyKey: str(fd, 'idem') || newId() });
 
-function finish(page: string, r: { ok: true } | { ok: false; error: { code: string; message: string } }, okMessage: string): never {
+const withParam = (page: string, key: string, value: string) => `${page}${page.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(value)}`;
+
+function finish(page: string, r: { ok: true } | { ok: false; error: { code: string; message: string } }, okMessage: string, errorPage = page): never {
   if (!r.ok) {
-    if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent(page)}`);
-    redirect(`${page}?error=${encodeURIComponent(r.error.message.slice(0, 200))}`);
+    if (r.error.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent(errorPage)}`);
+    redirect(withParam(errorPage, 'error', r.error.message.slice(0, 200)));
   }
-  redirect(`${page}?ok=${encodeURIComponent(okMessage)}`);
+  redirect(withParam(page, 'ok', okMessage));
+}
+
+/** Destructive actions refuse unless the form's `ConfirmCheck` was ticked (see `_components/ops.tsx`). */
+function requireConfirm(fd: FormData, page: string): void {
+  if (str(fd, 'confirm') !== 'yes') redirect(withParam(page, 'error', 'Nothing was changed: tick the box to confirm.'));
 }
 
 export async function saveGuest(fd: FormData): Promise<void> {
@@ -39,18 +46,23 @@ export async function saveGuest(fd: FormData): Promise<void> {
     managedByGuestId: optIfPresent(fd, 'managedByGuestId'),
     notes: optIfPresent(fd, 'notes'),
   }, idem(fd));
-  finish('/admin/guests', r, 'Guest saved.');
+  // A failed edit goes back to the same guest's form, not to "Add a guest".
+  const id = opt(fd, 'id');
+  finish('/admin/guests', r, 'Guest saved.', id ? `/admin/guests?edit=${encodeURIComponent(id)}` : '/admin/guests');
 }
 
 export async function deleteGuest(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/guests');
   finish('/admin/guests', await adminInvoke('admin_delete_guest', { guestId: str(fd, 'guestId') }, idem(fd)), 'Guest deleted.');
 }
 
 export async function mergeGuests(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/guests');
   finish('/admin/guests', await adminInvoke('admin_merge_guests', { keepId: str(fd, 'keepId'), mergeId: str(fd, 'mergeId') }, idem(fd)), 'Guests merged.');
 }
 
 export async function resetIdentity(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/guests');
   finish('/admin/guests', await adminInvoke('admin_reset_identity', { guestId: str(fd, 'guestId'), reason: str(fd, 'reason') || 'admin reset' }, idem(fd)), 'Access reset; the guest can claim again.');
 }
 
@@ -79,10 +91,12 @@ export async function saveHousehold(fd: FormData): Promise<void> {
 }
 
 export async function deleteHousehold(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/households');
   finish('/admin/households', await adminInvoke('admin_delete_household', { householdId: str(fd, 'householdId') }, idem(fd)), 'Household deleted.');
 }
 
 export async function revokeInvitation(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/invitations');
   finish('/admin/invitations', await adminInvoke('admin_revoke_invitation', { invitationId: str(fd, 'invitationId'), reason: str(fd, 'reason') || 'revoked by admin' }, idem(fd)), 'Invitation link revoked.');
 }
 

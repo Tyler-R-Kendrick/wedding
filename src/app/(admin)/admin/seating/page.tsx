@@ -3,7 +3,7 @@ import { adminSeatingOverview } from '@/capabilities/rsvp';
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, Denied, Pill, ScrollRegion, Section, Stamp } from '../_components/console';
-import { Button, Checkbox, IdemKey, Input } from '../_components/ops';
+import { Button, Checkbox, ConfirmCheck, IdemKey, Input } from '../_components/ops';
 import { assignAction, deleteTableAction, importCsvAction, publishAction, saveTableAction, unpublishAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -113,6 +113,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
                 <form action={deleteTableAction} className="ops-form-inline">
                   <IdemKey />
                   <input type="hidden" name="id" value={t.id} />
+                  <ConfirmCheck id={`confirm-delete-${t.id}`} label={`Yes, delete ${t.name} and unseat its guests`} />
                   <Button variant="danger">Delete {t.name}</Button>
                 </form>
               </>
