@@ -15,7 +15,7 @@ left as follow-up.
 
 ## 1. Hostile-reviewer pass
 
-No blocker. Four "should" and five nits, all fixed; one design suggestion declined with its reason.
+No blocker. Five "should" and five nits, all fixed; one design suggestion declined with its reason. Finding 11 came from CI, not the diff.
 Every fix sits in the PR whose code it changes.
 
 | # | Finding | Severity | Resolution |
@@ -30,6 +30,7 @@ Every fix sits in the PR whose code it changes.
 | 8 | Altitude: wrap one caller in a lazy proxy, or make the storage factory return an "unconfigured" provider instead of throwing? | suggestion | Declined. Throwing at construction is deliberate (`src/providers/storage/index.ts`: booting quietly without storage was "the worst shape a storage misconfiguration can take"). Guest-facing media capabilities surface it through the pipeline as an error, not a 500 (no runtime errors in three days of production logs), and the media-AI scan and cluster jobs never build storage. The sweep was the only thing failing on its own schedule with nothing to do. |
 | 9 | `lazyProvider` trapped only `get`: awaiting it read `.then` and built the provider (throwing the error it exists to defer); `in` and `instanceof` saw an empty object; each read made a new bound function. | nit | Fixed in #63: `then` is `undefined` without building; `has` and `getPrototypeOf` forward; one bound function per method. Unit-tested. |
 | 10 | The scripts' main-module guard compared `pathToFileURL(argv[1])` with `import.meta.url`; Node resolves symlinks in the latter only, so from a symlinked checkout `clean` did nothing and exited 0. | nit | Fixed in #61 and #62: real paths are compared. Checked by running `clean` through a symlink. |
+| 11 | Not from the diff: #62's first CI run on the merged head failed `quality-sweep` ("/rsvp @ conservatory renders no conservatory element inside <main>") and flaked `rsvp.spec` ("Your Weekend is taking a moment"), the same pair that failed on `main` in #58's run. Every spec acts as the fixture guest A1 from every context it opens, and the pipeline meters a principal at 60 calls, 1/s: a local run logged `rate_limited` from `get_my_rsvp` 21 times, and `FriendlyFailure` rendered it. | should | Fixed in #62: the test principal resolver records what it injects (on `globalThis`, since Next bundles it twice), and those principals are metered per session; `contextAs` gives each browser context its own, API calls use the running test's. Real principals keep one bucket per person. The failing specs went from 2–3 failures a run to 98/98 with no `rate_limited`, and eleven specs using A1, `claim` and `otp` passed 250/250. |
 
 Checked and found correct: #56 sends the admin code only when no guest matches and the address is
 an administrator, keeps the response identical for every address, and still holds it to the timing
