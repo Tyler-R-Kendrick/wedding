@@ -4,7 +4,7 @@ import type { AiTracesData } from '@/capabilities/list_ai_traces';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { AI_ANSWER_STATUSES } from '@/db/schema/ai';
-import { ConsoleGate, ConsolePage, DataTable, Note, Pill, Section, Stamp, Stat, StatStrip, SubNav, formatStamp, type PillTone } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Day, Note, Pill, Section, Stamp, Stat, StatStrip, SubNav, formatStamp, type PillTone } from '../_components/console';
 import { Input } from '../_components/ops';
 import { INTELLIGENCE_SUBNAV } from '../_components/sections';
 import './concierge.css';
@@ -22,6 +22,10 @@ const STATUS: Record<Status, { label: string; tone: PillTone }> = {
   confirmation: { label: 'Asked to confirm', tone: 'neutral' },
   error: { label: 'Error', tone: 'bad' },
 };
+
+/** Who asked, and where a cited source came from, in words; the codes stay under "How it answered". */
+const ASKED_BY: Record<string, string> = { guest: 'a guest', admin: 'an admin', anonymous: 'a visitor' };
+const TRUST: Record<string, string> = { TRUSTED_WEDDING: 'the wedding’s own pages', EXTERNAL_DATA: 'outside data', UNTRUSTED_USER_CONTENT: 'written by a guest' };
 
 const nav = <SubNav label="Media and AI" items={INTELLIGENCE_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/concierge' }))} />;
 
@@ -49,7 +53,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
   const traces = await invokeForRequest<AiTracesData>('list_ai_traces', { limit: 50, ...(status ? { status } : {}) }, principal);
   if (!traces.ok) {
     return (
-      <ConsolePage title="Concierge" actions={nav}>
+      <ConsolePage title="Concierge" subNav={nav}>
         <Section id="error">
           <Note>{traces.error.message}</Note>
         </Section>
@@ -62,7 +66,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
     <ConsolePage
       title="Concierge"
       lede="Every answer the concierge gave, with the verdict its verifier reached, the sources it cited and the capabilities it called. Questions and answers are redacted and expire with their session. No reasoning is stored, so there is none to show."
-      actions={nav}
+      subNav={nav}
     >
       <StatStrip>
         <Stat label="Answers" value={totals.answers} />
@@ -144,7 +148,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
               }
               meta={
                 <>
-                  <Stamp at={answer.createdAt} /> · asked by a {answer.principalKind} · {answer.intent} · {answer.verifier.supported} of {answer.verifier.claims} claims kept
+                  <Stamp at={answer.createdAt} /> · asked by {ASKED_BY[answer.principalKind] ?? 'someone else'} · {answer.verifier.supported} of {answer.verifier.claims} claims kept
                 </>
               }
             >
@@ -154,8 +158,13 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
                 <ol className="cg-sources">
                   {answer.sources.map((source) => (
                     <li key={`${answer.id}-${source.marker}`}>
-                      [{source.marker}] {source.url ? <a href={source.url}>{source.title}</a> : source.title} · {source.trustClass}
-                      {source.verifiedAt ? ` · checked ${source.verifiedAt.slice(0, 10)}` : ''}
+                      [{source.marker}] {source.url ? <a href={source.url}>{source.title}</a> : source.title} · {TRUST[source.trustClass] ?? 'source unclassified'}
+                      {source.verifiedAt ? (
+                        <>
+                          {' '}
+                          · checked <Day at={source.verifiedAt} />
+                        </>
+                      ) : null}
                     </li>
                   ))}
                 </ol>
@@ -164,7 +173,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
                 <summary>How it answered</summary>
                 <div className="flow-details__body">
                   <p className="flow-row__meta">
-                    Model {answer.modelId} · {answer.latencyMs} ms · verifier {answer.verifier.method} · request <span className="ops-code">{answer.requestId}</span>
+                    Intent <span className="ops-code">{answer.intent}</span> · model {answer.modelId} · {answer.latencyMs} ms · verifier {answer.verifier.method} · request <span className="ops-code">{answer.requestId}</span>
                   </p>
                   {answer.invocations.length > 0 ? (
                     <DataTable

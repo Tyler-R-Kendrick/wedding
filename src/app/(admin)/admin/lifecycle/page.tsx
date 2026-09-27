@@ -6,6 +6,7 @@ import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stamp } from '../_components/console';
 import { startPreview, stopPreview } from '../_lib/ops-actions';
 import { PublishFlow } from './_components/PublishFlow';
+import { DIRECTION_LABEL, MODE_LABEL, OUTCOME_LABEL, actorLabel, changeLabel, stateLabel } from './_components/states';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Lifecycle', robots: { index: false, follow: false } };
@@ -43,13 +44,15 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
       notice={notice}
       actions={s.transitions.length ? <PublishFlow moves={s.transitions.map((t) => ({ to: t.to, direction: t.direction }))} /> : null}
     >
+      {/* The state in words; the code rides along as `data-state` for anything that reads the page
+          (the e2e spec), and is printed in Technical details at the bottom. */}
       <KeyValues
         items={[
-          { label: 'Published state', value: <strong>{s.state}</strong> },
-          { label: 'Home page mode', value: s.mode },
-          { label: 'Published', value: s.publishedAt ? <Stamp at={s.publishedAt} /> : 'never' },
-          { label: 'By', value: s.publishedBy ? `${s.publishedBy.kind}${s.publishedBy.ref ? ` · ${s.publishedBy.ref}` : ''}` : '—' },
-          { label: 'Calendar suggests', value: s.behindSchedule ? <Pill tone="warn">{s.suggested}</Pill> : <Pill tone="good">{s.suggested}</Pill> },
+          { label: 'Published state', value: <strong data-state={s.state}>{stateLabel(s.state)}</strong> },
+          { label: 'Home page leads with', value: MODE_LABEL[s.mode] ?? s.mode },
+          { label: 'Published', value: s.publishedAt ? <Stamp at={s.publishedAt} /> : 'Never' },
+          { label: 'By', value: actorLabel(s.publishedBy) },
+          { label: 'Calendar suggests', value: s.behindSchedule ? <Pill tone="warn">{stateLabel(s.suggested)}</Pill> : <Pill tone="good">{stateLabel(s.suggested)}</Pill> },
         ]}
       />
       {s.note ? <p className="con-note">Note on the current state: {s.note}</p> : null}
@@ -57,7 +60,7 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
       <p className="con-note">
         {s.transitions.length
           ? 'Publishing takes effect for every guest on their next page load, and can be undone by exactly one state. Reviewing a move first is free and changes nothing.'
-          : `There is nowhere to move from ${s.state}: it is the last state.`}
+          : `There is nowhere to move from ${stateLabel(s.state)}: it is the last state.`}
       </p>
 
       <Section
@@ -69,16 +72,16 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
           <tr>
             <th scope="col">To</th>
             <th scope="col">Direction</th>
-            <th scope="col">Mode</th>
+            <th scope="col">Home page leads with</th>
             <th scope="col">Navigation gains</th>
             <th scope="col">Navigation loses</th>
           </tr>
-        } empty={s.transitions.length === 0 ? <>{s.state} is the last state; there is nowhere further to go.</> : null}>
+        } empty={s.transitions.length === 0 ? <>{stateLabel(s.state)} is the last state; there is nowhere further to go.</> : null}>
           {s.transitions.map((t) => (
             <tr key={t.to}>
-              <th scope="row">{t.to}</th>
-              <td>{t.direction}</td>
-              <td>{t.mode}</td>
+              <th scope="row">{stateLabel(t.to)}</th>
+              <td>{DIRECTION_LABEL[t.direction] ?? t.direction}</td>
+              <td>{MODE_LABEL[t.mode] ?? t.mode}</td>
               <td className="con-wrap">{t.navGained.length ? t.navGained.join(', ') : '—'}</td>
               <td className="con-wrap">{t.navLost.length ? t.navLost.join(', ') : '—'}</td>
             </tr>
@@ -112,7 +115,7 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
               <select id="preview-state" name="state" className="ops-input" defaultValue={s.suggested}>
                 {s.states.map((state) => (
                   <option key={state} value={state}>
-                    {state}
+                    {stateLabel(state)}
                   </option>
                 ))}
               </select>
@@ -128,25 +131,57 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
         <DataTable caption="Lifecycle audit trail" head={
           <tr>
             <th scope="col">When</th>
-            <th scope="col">Action</th>
-            <th scope="col">Actor</th>
+            <th scope="col">What changed</th>
+            <th scope="col">By</th>
             <th scope="col">Outcome</th>
-            <th scope="col">Detail</th>
-            <th scope="col">Request</th>
           </tr>
         } empty={s.history.length === 0 ? <>Nothing has been published or previewed yet.</> : null}>
           {s.history.map((h) => (
             <tr key={h.id}>
               <td><Stamp at={h.at} /></td>
-              <td>{h.action}</td>
-              <td>{h.actor.kind}</td>
-              <td>{h.outcome}</td>
-              <td className="con-wrap">{h.metadata ? Object.entries(h.metadata).map(([k, v]) => `${k}=${v}`).join(' · ') : '—'}</td>
-              <td className="ops-code">{h.requestId}</td>
+              <td className="con-wrap">{changeLabel(h.action, h.metadata)}</td>
+              <td>{actorLabel(h.actor)}</td>
+              <td>{h.outcome === 'success' ? OUTCOME_LABEL.success : <Pill tone="bad">{OUTCOME_LABEL[h.outcome] ?? h.outcome}</Pill>}</td>
             </tr>
           ))}
         </DataTable>
       </Section>
+
+      {/* The model's own names, for someone reading the code or the audit export beside this screen. */}
+      <details className="flow-details">
+        <summary>Technical details</summary>
+        <div className="flow-details__body">
+          <KeyValues
+            items={[
+              { label: 'State code', value: <code className="ops-code">{s.state}</code> },
+              { label: 'Home page mode', value: <code className="ops-code">{s.mode}</code> },
+              { label: 'Suggested code', value: <code className="ops-code">{s.suggested}</code> },
+              { label: 'Published by', value: s.publishedBy ? <code className="ops-code">{`${s.publishedBy.kind}${s.publishedBy.ref ? ` · ${s.publishedBy.ref}` : ''}`}</code> : '—' },
+            ]}
+          />
+          <DataTable caption="Lifecycle audit rows as recorded" head={
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">Action</th>
+              <th scope="col">Actor</th>
+              <th scope="col">Outcome</th>
+              <th scope="col">Metadata</th>
+              <th scope="col">Request</th>
+            </tr>
+          } empty={s.history.length === 0 ? <>No audit rows yet.</> : null}>
+            {s.history.map((h) => (
+              <tr key={h.id}>
+                <td><Stamp at={h.at} /></td>
+                <td className="ops-code">{h.action}</td>
+                <td className="ops-code">{`${h.actor.kind}${h.actor.ref ? ` · ${h.actor.ref}` : ''}`}</td>
+                <td className="ops-code">{h.outcome}</td>
+                <td className="con-wrap ops-code">{h.metadata ? Object.entries(h.metadata).map(([k, v]) => `${k}=${v}`).join(' · ') : '—'}</td>
+                <td className="ops-code">{h.requestId}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
+      </details>
     </ConsolePage>
   );
 }

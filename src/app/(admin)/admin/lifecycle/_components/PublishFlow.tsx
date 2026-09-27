@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability } from '@/components/handoff/client';
+import { formatStamp } from '@/components/admin/flow/dates';
+import { stateLabel } from './states';
 
 export interface LifecycleMove {
   to: string;
@@ -29,10 +31,9 @@ interface DraftData {
 /** The note exactly as both calls send it: the token is bound to this payload, key for key. */
 const payload = (v: PublishValues) => ({ to: v.to, note: v.note.trim() || undefined });
 
-const clock = (iso: string) => {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-};
+// The console's instant format (Chicago time), not the browser's locale: the expiry is compared
+// with the audit trail, which uses the same one.
+const clock = (iso: string) => formatStamp(iso);
 
 /**
  * Publishing a lifecycle state: choose it, then read back what it changes before publishing.
@@ -57,7 +58,7 @@ export function PublishFlow({ moves }: { moves: LifecycleMove[] }) {
       fields: ['to', 'note'],
       render: (ctx) => (
         <>
-          <SelectField ctx={ctx} name="to" label="Move the site to" options={moves.map((m) => ({ value: m.to, label: `${m.to} (${m.direction})` }))} />
+          <SelectField ctx={ctx} name="to" label="Move the site to" options={moves.map((m) => ({ value: m.to, label: m.direction === 'back' ? `${stateLabel(m.to)} (back one step)` : stateLabel(m.to) }))} />
           <TextField ctx={ctx} name="note" label="Why" optional hint="Admin-only. Kept with the published state and in the audit trail." />
         </>
       ),
@@ -79,8 +80,8 @@ export function PublishFlow({ moves }: { moves: LifecycleMove[] }) {
         <>
           <ReviewList
             items={[
-              { label: 'From', value: v.from },
-              { label: 'To', value: v.to },
+              { label: 'From', value: stateLabel(v.from) },
+              { label: 'To', value: stateLabel(v.to) },
               { label: 'Why', value: v.note.trim() },
             ]}
           />
@@ -109,11 +110,11 @@ export function PublishFlow({ moves }: { moves: LifecycleMove[] }) {
       initial={{ to: moves[0]?.to ?? '', note: '', from: '', consequences: [], token: '', expiresAt: '' }}
       steps={steps}
       submit={{
-        label: `Publish ${chosen} to every guest`,
+        label: `Publish ${stateLabel(chosen)} to every guest`,
         capability: 'admin_publish_lifecycle',
         input: payload,
         confirmationToken: (v) => v.token || undefined,
-        success: `Published ${chosen}. Guests see it on their next page load.`,
+        success: `Published ${stateLabel(chosen)}. Guests see it on their next page load.`,
       }}
     />
   );

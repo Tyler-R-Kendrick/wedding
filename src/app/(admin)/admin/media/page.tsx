@@ -41,7 +41,7 @@ export default async function AdminMediaPage({ searchParams }: { searchParams: S
   const key = `${filters.status}|${filters.collection ?? ''}|${filters.kind ?? ''}`;
 
   return (
-    <ConsolePage title="Media queue" lede="Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here." actions={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media' }))} />}>
+    <ConsolePage title="Media queue" lede="Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here." subNav={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media' }))} />}>
       <Section id="queue">
         <FilterBar submitLabel="Show" extra={filters.status !== 'private' || filters.collection || filters.kind ? <a className="flow-link" href="/admin/media">Back to what is awaiting review</a> : null}>
           <Input id="status" label="State" defaultValue={filters.status} options={ASSET_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />

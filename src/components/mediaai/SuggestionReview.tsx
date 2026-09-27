@@ -5,14 +5,39 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import type { MediaAiStatusView } from '@/capabilities/mediaai';
 import { AdminFlow } from '@/components/admin/flow/AdminFlow';
 import { CheckField, Consequences, GuestPreview, TextField } from '@/components/admin/flow/fields';
-import { RecordList, RecordRow } from '@/components/admin/flow/records';
+import { QuickAction } from '@/components/admin/flow/QuickAction';
+import { Pill, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
+import type { AssetStatus } from '@/db/schema/media';
+import type { ScheduleSlot, VenueClass } from '@/db/schema/media_ai';
+import { STATUS_LABEL } from '../media/moderation';
 import '../media/admin-media.css';
 
 type Suggestion = MediaAiStatusView['suggestions'][number];
 type Applied = { assetId: string; altText: string | null };
 
 const MIN = 3;
+
+/** Where and when the index thinks a photo was taken, in words (the values are the index's). */
+const VENUE: Record<VenueClass, string> = {
+  ballroom: 'Ballroom',
+  indoor: 'Indoors',
+  outdoor: 'Outdoors',
+  garden: 'Garden',
+  street: 'Street',
+  lakefront: 'Lakefront',
+  rooftop: 'Rooftop',
+  unknown: 'Place unknown',
+};
+const SLOT: Record<ScheduleSlot, string> = {
+  before_wedding: 'before the wedding',
+  wedding_morning: 'wedding morning',
+  wedding_afternoon: 'wedding afternoon',
+  wedding_evening: 'wedding evening',
+  wedding_night: 'wedding night',
+  after_wedding: 'after the wedding',
+  unknown: 'time unknown',
+};
 const suggested = (item: Suggestion) => (item.suggestion.suggestedAltText ?? item.suggestion.suggestedCaption ?? '').trim();
 const apply = (assetId: string, altText: string) => callCapability<Applied>('admin_apply_media_text', { input: { assetId, altText }, idempotencyKey: newIdempotencyKey() });
 
@@ -20,7 +45,7 @@ const apply = (assetId: string, altText: string) => callCapability<Applied>('adm
  * Machine-written alt text waiting for a person. Nothing reaches a guest until someone here decides.
  *
  * Each suggestion is a row with three ways out:
- *   - "Publish as written": one click, for a suggestion that is already right.
+ *   - "Publish as written": one click (`QuickAction`), for a suggestion that is already right.
  *   - "Edit and publish": a one-step flow with the text in a box and the photo beside it, so the
  *     published words can be the admin's own.
  *   - "Dismiss": drops the suggestion and leaves the photo without alt text. It cannot be brought
@@ -45,9 +70,13 @@ export function SuggestionReview({ initial }: { initial: Suggestion[] }) {
     if (notice && !notice.tone && (!document.activeElement || document.activeElement === document.body)) noticeRef.current?.focus();
   }, [notice, items.length]);
 
-  const settle = (id: string, text: string) => {
+  // The row leaves the list at once; the list's status line says what happened.
+  const decide = (id: string, text: string) => {
     setDecided((d) => new Set(d).add(id));
     setNotice({ text });
+  };
+  const settle = (id: string, text: string) => {
+    decide(id, text);
     startTransition(() => router.refresh());
   };
 
@@ -66,17 +95,28 @@ export function SuggestionReview({ initial }: { initial: Suggestion[] }) {
               key={item.id}
               data-asset-id={item.id}
               title={`Photo ${n}`}
-              status={<span className="con-pill con-pill--neutral">{item.status === 'private' ? 'Awaiting review' : item.status}</span>}
+              status={<Pill>{STATUS_LABEL[item.status as AssetStatus] ?? 'Awaiting review'}</Pill>}
               meta={
                 <>
-                  {s.venueClass.replaceAll('_', ' ')} · {s.scheduleSlot.replaceAll('_', ' ')}
+                  {VENUE[s.venueClass] ?? 'Place unknown'}, {SLOT[s.scheduleSlot] ?? 'time unknown'}
                   {s.captionModel ? ` · by ${s.captionModel}` : ''}
                   {s.captionConfidence !== null ? ` · confidence ${s.captionConfidence.toFixed(2)}` : ''}
                 </>
               }
               actions={
                 <>
-                  {text.length >= MIN ? <PublishAsWritten item={item} n={n} text={text} onDone={settle} onError={(m) => setNotice({ text: m, tone: 'error' })} /> : null}
+                  {text.length >= MIN ? (
+                    // The kit's one-click change: busy and done are announced the same way as every
+                    // other quick action, and it refreshes the page itself.
+                    <QuickAction
+                      label="Publish as written"
+                      busyLabel="Publishing…"
+                      done={`Photo ${n}: the suggested alt text is published.`}
+                      accessibleName={`Publish the suggestion for photo ${n} as written`}
+                      calls={[{ capability: 'admin_apply_media_text', input: { assetId: item.id, altText: text } }]}
+                      onSuccess={() => decide(item.id, `Photo ${n}: the suggested alt text is published.`)}
+                    />
+                  ) : null}
                   <EditFlow item={item} n={n} text={text} onDone={settle} />
                   <DismissFlow item={item} n={n} onDone={settle} />
                 </>
@@ -97,29 +137,6 @@ export function SuggestionReview({ initial }: { initial: Suggestion[] }) {
   );
 }
 
-/** One click: the suggestion as it stands becomes the photo's alt text. */
-function PublishAsWritten({ item, n, text, onDone, onError }: { item: Suggestion; n: number; text: string; onDone: (id: string, message: string) => void; onError: (message: string) => void }) {
-  const [busy, setBusy] = useState(false);
-  return (
-    <button
-      type="button"
-      className="flow-trigger-quiet"
-      aria-disabled={busy || undefined}
-      aria-label={`Publish the suggestion for photo ${n} as written`}
-      onClick={async () => {
-        if (busy) return;
-        setBusy(true);
-        const r = await apply(item.id, text);
-        setBusy(false);
-        if (!r.ok) return onError(r.error?.message ?? 'That did not publish. Please try again.');
-        onDone(item.id, `Photo ${n}: the suggested alt text is published.`);
-      }}
-    >
-      {busy ? 'Publishing…' : 'Publish as written'}
-    </button>
-  );
-}
-
 interface EditValues extends Record<string, unknown> {
   altText: string;
 }
@@ -128,7 +145,7 @@ function EditFlow({ item, n, text, onDone }: { item: Suggestion; n: number; text
   return (
     <AdminFlow<EditValues>
       id={`ai:alt:${item.id}`}
-      title={`Alt text for photo ${n}`}
+      title={`Edit the alt text for photo ${n}`}
       trigger={{ label: 'Edit and publish', variant: 'quiet', accessibleName: `Edit and publish the alt text for photo ${n}` }}
       initial={{ altText: text }}
       steps={[
@@ -155,7 +172,7 @@ function EditFlow({ item, n, text, onDone }: { item: Suggestion; n: number; text
         },
       ]}
       submit={{
-        label: 'Publish this text',
+        label: 'Publish alt text',
         success: 'Alt text published.',
         run: async (v): Promise<CapabilityResponse> => {
           const r = await apply(item.id, v.altText.trim());

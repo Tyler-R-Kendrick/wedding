@@ -21,7 +21,7 @@ export default async function AdminAiPage() {
   const status = await invokeForRequest<MediaAiStatusView>('admin_media_ai_status', { suggestions: 20 }, principal);
   if (!status.ok) {
     return (
-      <ConsolePage title="Search index" actions={nav}>
+      <ConsolePage title="Search index" subNav={nav}>
         <Section id="error">
           <Note>{status.error.message}</Note>
         </Section>
@@ -30,7 +30,7 @@ export default async function AdminAiPage() {
   }
   const { flags, providers, status: counts, suggestions } = status.data;
   return (
-    <ConsolePage title="Search index" lede="What the archive can be searched by, where each description came from, and what is waiting for a person to approve." actions={nav}>
+    <ConsolePage title="Search index" lede="What the archive can be searched by, where each description came from, and what is waiting for a person to approve." subNav={nav}>
       <Section id="coverage" title="Coverage" note={counts.lastIndexedAt ? `Counts as of the last index run, ${formatStamp(counts.lastIndexedAt)}.` : 'No index run yet.'}>
         <StatStrip>
           <Stat label="Indexable items" value={counts.indexable} />

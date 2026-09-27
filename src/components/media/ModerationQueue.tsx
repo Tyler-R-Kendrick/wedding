@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { CollectionSummary, QueueItem } from '@/capabilities/media';
 import { AdminFlow } from '@/components/admin/flow/AdminFlow';
 import { CheckField, Consequences, TextField } from '@/components/admin/flow/fields';
+import { Pill } from '@/components/admin/flow/records';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
 import { MODERATION_ACTIONS, type AssetStatus, type ModerationAction } from '@/db/schema/media';
 import { moderationTarget } from '@/domain/media/state';
 import { ACTION_LABEL, STATUS_LABEL } from './moderation';
+import { formatStamp } from '@/components/admin/flow/dates';
 import './admin-media.css';
 
 export interface QueueResponse {
@@ -34,11 +36,6 @@ function bytes(n: number): string {
   return `${Math.max(1, Math.round(n / 1024))} KB`;
 }
 
-const CAPTURED = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', dateStyle: 'medium', timeStyle: 'short' });
-
-function Pill({ tone = 'neutral', children }: { tone?: 'neutral' | 'good' | 'warn' | 'bad'; children: ReactNode }) {
-  return <span className={`con-pill con-pill--${tone}`}>{children}</span>;
-}
 
 function summarise(action: ModerationAction, data: Results): string {
   const failed = data.results.filter((x) => !x.ok);
@@ -67,6 +64,8 @@ export function ModerationQueue({ initial, filters }: { initial: QueueResponse; 
   const [busy, setBusy] = useState<ModerationAction | 'more' | null>(null);
   const [notice, setNotice] = useState<{ text: string; tone?: 'error' } | null>(null);
   const allRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLParagraphElement>(null);
+  const hintId = useId();
 
   const status = filters.status;
   const listInput = (cursor?: string) => ({ status, ...(filters.collection ? { collection: filters.collection } : {}), ...(filters.kind ? { kind: filters.kind } : {}), ...(cursor ? { cursor } : {}), limit: 50 });
@@ -95,11 +94,8 @@ export function ModerationQueue({ initial, filters }: { initial: QueueResponse; 
   }, [count, total]);
 
   const oneClick = async (action: ModerationAction) => {
-    if (busy) return;
-    if (!count) {
-      setNotice({ text: `Tick the items to ${ACTION_LABEL[action].toLowerCase()} first.`, tone: 'error' });
-      return;
-    }
+    // Unavailable until something is ticked; the hint under the bar says so.
+    if (busy || !count) return;
     setBusy(action);
     setNotice(null);
     const r = await moderate(action, ids);
@@ -126,6 +122,8 @@ export function ModerationQueue({ initial, filters }: { initial: QueueResponse; 
   const primary: ModerationAction | undefined = allowed.includes('approve') ? 'approve' : allowed.includes('restore') ? 'restore' : undefined;
   const quick = allowed.filter((a) => !DANGER.includes(a));
   const danger = allowed.filter((a) => DANGER.includes(a));
+  // The hint exists only when there is something to select; an empty queue says so itself.
+  const hinted = count === 0 && total > 0;
   const names = data.items.filter((i) => selected.has(i.id)).map((i) => i.originalFilename ?? 'an untitled file');
 
   return (
@@ -138,6 +136,12 @@ export function ModerationQueue({ initial, filters }: { initial: QueueResponse; 
         <span className="mq-count" aria-live="polite">
           {count ? `${count} of ${total} selected` : 'Nothing selected'}
         </span>
+        {/*
+          One behaviour for every bulk action: with nothing ticked they are all unavailable, drawn the
+          same way (muted text, dashed edge, admin-media.css), and described by the hint below. Reject
+          and Delete used to open a danger sheet titled "Nothing is selected" while Approve beside
+          them was dimmed; their sheets now exist only once there is something to confirm.
+        */}
         <span className="mq-actions">
           {quick.map((a) => (
             <button
@@ -146,23 +150,45 @@ export function ModerationQueue({ initial, filters }: { initial: QueueResponse; 
               data-action={a}
               className={a === primary ? 'ops-button ops-button-primary' : 'ops-button ops-button-ghost'}
               aria-disabled={busy !== null || count === 0 || undefined}
+              aria-describedby={hinted ? hintId : undefined}
               aria-busy={busy === a || undefined}
               onClick={() => void oneClick(a)}
             >
               {busy === a ? 'Working…' : ACTION_LABEL[a]}
             </button>
           ))}
-          {danger.map((a) => (
-            <DangerAction key={a} action={a} ids={ids} names={names} run={moderate} onDone={async (text) => {
-              setNotice(text ? { text } : null);
-              await reload();
-            }} />
-          ))}
+          {danger.map((a) =>
+            count === 0 || busy !== null ? (
+              <button key={a} type="button" data-action={a} className="ops-button ops-button-ghost" aria-disabled="true" aria-describedby={hinted ? hintId : undefined}>
+                {ACTION_LABEL[a]}
+              </button>
+            ) : (
+              <DangerAction
+                key={a}
+                action={a}
+                ids={ids}
+                names={names}
+                run={moderate}
+                onDone={async (text) => {
+                  setNotice({ text });
+                  await reload();
+                  // The selection is gone, and with it the sheet's trigger: put focus somewhere that
+                  // says what happened and what to do next, not on <body>.
+                  requestAnimationFrame(() => (allRef.current && !allRef.current.disabled ? allRef.current : noteRef.current)?.focus());
+                }}
+              />
+            ),
+          )}
         </span>
       </div>
+      {hinted ? (
+        <p id={hintId} className="mq-hint">
+          Select items to act on them.
+        </p>
+      ) : null}
 
       {notice ? (
-        <p role="status" className="media-note mq-note" data-tone={notice.tone}>
+        <p ref={noteRef} tabIndex={-1} role="status" className="media-note mq-note" data-tone={notice.tone}>
           {notice.text}
         </p>
       ) : null}
@@ -225,7 +251,7 @@ function QueueRow({ item, checked, onToggle }: { item: QueueItem; checked: boole
           {item.width && item.height ? ` · ${item.width}×${item.height}` : ''}
         </p>
         <p className="flow-row__meta">
-          {item.capturedAt ? `Captured ${CAPTURED.format(new Date(item.capturedAt))}` : 'Capture time unknown'}
+          {item.capturedAt ? `Captured ${formatStamp(item.capturedAt)}` : 'Capture time unknown'}
           {item.camera ? ` · ${item.camera}` : ''}
           {item.hadLocation ? ' · location removed' : ''}
         </p>
@@ -285,8 +311,8 @@ interface DangerValues extends Record<string, unknown> {
 }
 
 /**
- * Reject or delete the selected items, after saying what that does. Opens even with nothing
- * selected, and then says so, rather than being a dead button with no reason.
+ * Reject or delete the selected items, after saying what that does. Mounted only while something
+ * is ticked (the bar draws an unavailable button otherwise), so the sheet always has a count to name.
  */
 function DangerAction({
   action,
@@ -299,7 +325,8 @@ function DangerAction({
   ids: string[];
   names: string[];
   run: (action: ModerationAction, ids: string[], reason?: string) => Promise<CapabilityResponse<Results>>;
-  onDone: (partial: string | null) => Promise<void>;
+  /** Called with what happened, in words, once the call lands. */
+  onDone: (summary: string) => Promise<void>;
 }) {
   const n = ids.length;
   const what = plural(n, 'item');
@@ -309,49 +336,44 @@ function DangerAction({
     <AdminFlow<DangerValues>
       id={`media:queue:${action}`}
       tone="danger"
-      title={n ? `${verb} ${what}` : `${verb} items`}
-      trigger={{ label: ACTION_LABEL[action], variant: 'danger', accessibleName: n ? `${verb} the ${what} selected` : `${verb} the selected items` }}
+      title={`${verb} ${what}`}
+      trigger={{ label: ACTION_LABEL[action], variant: 'danger', accessibleName: `${verb} the ${what} selected` }}
       initial={{ reason: '', confirmed: false }}
       steps={[
         {
-          title: n ? `${verb} ${what}?` : 'Nothing is selected',
+          title: `${verb} ${what}?`,
           fields: ['reason', 'confirmed'],
-          render: (ctx) =>
-            n ? (
-              <>
-                <Consequences>
-                  <p>
-                    {action === 'delete'
-                      ? `${n === 1 ? 'It leaves' : 'They leave'} the gallery and the queue. The files are kept for 30 days, and until then “Restore to the queue” under the Deleted filter brings ${n === 1 ? 'it' : 'them'} back. After 30 days ${n === 1 ? 'it is' : 'they are'} removed for good.`
-                      : `${n === 1 ? 'It is' : 'They are'} taken out of the queue and never shown in the gallery; anything already published comes down. “Restore to the queue” under the Rejected filter brings ${n === 1 ? 'it' : 'them'} back.`}
-                  </p>
-                  <ul>
-                    {shown.map((s, i) => (
-                      <li key={`${s}-${i}`}>{s}</li>
-                    ))}
-                    {names.length > shown.length ? <li>and {plural(names.length - shown.length, 'more item')}</li> : null}
-                  </ul>
-                </Consequences>
-                <TextField ctx={ctx} name="reason" label="Why" optional hint="Kept in the moderation log with each item." />
-                <CheckField ctx={ctx} name="confirmed" label={`Yes, ${verb.toLowerCase()} ${n === 1 ? 'this item' : `these ${n} items`}`} />
-              </>
-            ) : (
-              <p className="flow-copy">Close this, tick the items in the queue, then choose {verb} again.</p>
-            ),
-          ready: (v) => n > 0 && v.confirmed,
-          readyHint: n ? { field: 'confirmed', message: 'Tick the box to confirm.' } : { message: 'Nothing is selected yet.' },
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>
+                  {action === 'delete'
+                    ? `${n === 1 ? 'It leaves' : 'They leave'} the gallery and the queue. The files are kept for 30 days, and until then “Restore to the queue” under the Deleted filter brings ${n === 1 ? 'it' : 'them'} back. After 30 days ${n === 1 ? 'it is' : 'they are'} removed for good.`
+                    : `${n === 1 ? 'It is' : 'They are'} taken out of the queue and never shown in the gallery; anything already published comes down. “Restore to the queue” under the Rejected filter brings ${n === 1 ? 'it' : 'them'} back.`}
+                </p>
+                <ul>
+                  {shown.map((s, i) => (
+                    <li key={`${s}-${i}`}>{s}</li>
+                  ))}
+                  {names.length > shown.length ? <li>and {plural(names.length - shown.length, 'more item')}</li> : null}
+                </ul>
+              </Consequences>
+              <TextField ctx={ctx} name="reason" label="Why" optional hint="Kept in the moderation log with each item." />
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, ${verb.toLowerCase()} ${n === 1 ? 'this item' : `these ${n} items`}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
       submit={{
-        label: n ? `${verb} ${what}` : verb,
+        label: `${verb} ${what}`,
         success: `${action === 'delete' ? 'Deleted' : 'Rejected'} ${what}.`,
         run: async (v) => {
           const r = await run(action, ids, v.reason.trim() || undefined);
-          if (r.ok && r.data) {
-            const failed = r.data.results.some((x) => !x.ok);
-            // All done: the sheet's own announcement says so. Some skipped: the queue says which and why.
-            await onDone(failed ? summarise(action, r.data) : null);
-          }
+          // The queue says what happened (and which were skipped, and why): the selection is cleared
+          // by the reload, which takes this trigger and its own announcement with it.
+          if (r.ok && r.data) await onDone(summarise(action, r.data));
           return r;
         },
       }}

@@ -16,7 +16,7 @@ export default async function ImportPage() {
   const r = await invokeForRequest<{ items: QueueItem[]; collections: CollectionSummary[] }>('admin_list_media', { limit: 1 }, principal);
   const chapters = r.ok ? r.data.collections.filter((c) => c.kind === 'professional') : [];
   return (
-    <ConsolePage title="Import professional media" lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery." actions={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/import' }))} />}>
+    <ConsolePage title="Import professional media" lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery." subNav={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/import' }))} />}>
       <Section id="import">
         {r.ok ? (
           <>

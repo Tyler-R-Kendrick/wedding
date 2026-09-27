@@ -117,9 +117,14 @@ test('reviewing a lifecycle change explains what it does to guests and publishes
   const page = await ctx.newPage();
   await page.goto('/admin/lifecycle');
   // The labels are uppercased in CSS, so innerText is not the source text; read the value cell.
-  const publishedState = page.locator('#main .con-kv > div').first().locator('dd');
-  const before = (await publishedState.innerText()).trim();
-  expect(before, 'the page must state the published lifecycle state').toMatch(/^[A-Z_]+$/);
+  // The state is said in words ("Save the date"); the model's code rides along as `data-state`
+  // (and in the closed Technical details), so the check is both: stated for a person, and exact.
+  const publishedState = page.locator('#main .con-kv > div').first().locator('dd [data-state]');
+  const before = await publishedState.getAttribute('data-state');
+  expect(before, 'the page must carry the published lifecycle state').toMatch(/^[A-Z_]+$/);
+  const words = (await publishedState.innerText()).trim();
+  expect(words, 'the page must state the published lifecycle state in words').not.toBe('');
+  expect(words, 'the main path shows the state in words, not its code').not.toMatch(/^[A-Z_]+$/);
 
   // Publishing is a flow from the admin kit: the trigger opens a sheet (a <dialog> inside #main),
   // step 1 chooses the state, and its Continue drafts the change (no side effects) and issues the
@@ -135,7 +140,7 @@ test('reviewing a lifecycle change explains what it does to guests and publishes
 
   // A draft has no side effects: the published state is what it was, on a fresh load.
   await page.goto('/admin/lifecycle');
-  const after = (await page.locator('#main .con-kv > div').first().locator('dd').innerText()).trim();
+  const after = await page.locator('#main .con-kv > div').first().locator('dd [data-state]').getAttribute('data-state');
   expect(after).toBe(before);
   await ctx.close();
 });

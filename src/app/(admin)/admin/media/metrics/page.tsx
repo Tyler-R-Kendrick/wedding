@@ -4,7 +4,7 @@ import { isMediaAdmin, type MediaMetrics } from '@/domain/media';
 import { formatBytes } from '@/lib/media/limits';
 import { STATUS_LABEL } from '@/components/media/moderation';
 import type { AssetStatus } from '@/db/schema/media';
-import { ConsoleGate, ConsolePage, KeyValues, Note, Section, SubNav } from '../../_components/console';
+import { ConsoleGate, ConsolePage, Day, KeyValues, Note, Section, SubNav } from '../../_components/console';
 import { MEDIA_SUBNAV } from '../../_components/sections';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export default async function MetricsPage() {
   const r = await invokeForRequest<MediaMetrics & { jobs: Record<string, number> }>('admin_media_metrics', {}, principal);
   if (!r.ok) {
     return (
-      <ConsolePage title="Storage and cost" actions={nav}>
+      <ConsolePage title="Storage and cost" subNav={nav}>
         <Note>{r.error.message}</Note>
       </ConsolePage>
     );
@@ -35,7 +35,7 @@ export default async function MetricsPage() {
     <ConsolePage
       title="Storage and cost (approximate)"
       lede="Counts and bytes are exact as of now; the cost line is an estimate at an assumed price and is not a bill."
-      actions={nav}
+      subNav={nav}
     >
       <Section title="Items" id="items">
         <KeyValues
@@ -55,7 +55,7 @@ export default async function MetricsPage() {
             { label: 'Completed', value: m.uploads.completed },
             { label: 'Rejected', value: m.uploads.rejected },
             { label: 'Aborted / expired', value: `${m.uploads.aborted} / ${m.uploads.expired}` },
-            { label: 'Jobs', value: Object.entries(m.jobs).map(([k, v]) => `${k} ${v}`).join(' · ') || 'none' },
+            { label: 'Jobs', value: Object.entries(m.jobs).map(([k, v]) => `${k} ${v}`).join(' · ') || 'None' },
           ]}
         />
       </Section>
@@ -70,7 +70,7 @@ export default async function MetricsPage() {
           ]}
         />
         <Note>
-          {m.pricing.note} Price verified: {m.pricing.verifiedAt ?? 'not yet (TODO(Tyler & Sara): confirm the current object-storage price list)'}.
+          {m.pricing.note} Price verified: {m.pricing.verifiedAt ? <Day at={m.pricing.verifiedAt} /> : 'not yet (TODO(Tyler & Sara): confirm the current object-storage price list)'}.
         </Note>
       </Section>
     </ConsolePage>

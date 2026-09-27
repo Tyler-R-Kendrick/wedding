@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
+import { readDraft, writeDraft } from '@/components/admin/flow/draft';
 import { CheckField, ChoiceField, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
+import { ANSWER_WORDS } from './answers';
 
 /** One guest × event pair a guest can answer (an invitation), with the answer on record if any. */
 export interface AnswerSlot {
@@ -57,9 +60,12 @@ async function recordAnswer(input: unknown): Promise<CapabilityResponse> {
 }
 
 const ANSWERS = [
-  { value: 'accepted', label: 'Attending' },
-  { value: 'declined', label: 'Not attending' },
+  { value: 'accepted', label: ANSWER_WORDS.accepted.label },
+  { value: 'declined', label: ANSWER_WORDS.declined.label },
 ];
+
+/** The draft key: one for the blank flow at the top, one per guest × event for a row's correction. */
+const flowId = (pick?: { guestId: string; eventId: string }) => (pick ? `rsvp:override:${pick.guestId}:${pick.eventId}` : 'rsvp:override');
 
 /**
  * Record or correct one answer after a phone call or an email: whose answer, what they said, why.
@@ -70,11 +76,33 @@ const ANSWERS = [
  * to, starts from the answer already on record, and asks about a plus-one and meals only where the
  * invitation and the menu allow them.
  */
-export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus: MenuSummary[] }) {
+export function RecordAnswerFlow({
+  slots,
+  menus,
+  pick,
+  defaultOpen = false,
+}: {
+  slots: AnswerSlot[];
+  menus: MenuSummary[];
+  /** A row's correction: this guest and event are already chosen, so the "Whose answer" step is skipped. */
+  pick?: { guestId: string; eventId: string };
+  defaultOpen?: boolean;
+}) {
   const guests = [...new Map(slots.map((s) => [s.guestId, `${s.displayName} (${s.householdName})`])).entries()].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
   const slot = (v: Values) => slots.find((s) => s.guestId === v.guestId && s.eventId === v.eventId);
   const menu = (eventId: string) => menus.find((m) => m.eventId === eventId)?.options ?? [];
   const mealName = (eventId: string, id: string) => menu(eventId).find((m) => m.id === id)?.label ?? '';
+  // Start from what is on record, so a correction changes only what the guest changed.
+  const onRecord = (s: AnswerSlot): Partial<Values> => {
+    const byLabel = (label: string | null | undefined) => (label ? (menu(s.eventId).find((m) => m.label === label)?.id ?? '') : '');
+    return {
+      status: s.status ?? 'accepted',
+      mealOptionId: s.mealStale ? '' : byLabel(s.mealLabel),
+      plusOne: s.plusOnePolicy !== 'none' && Boolean(s.plusOne?.attending),
+      plusOneName: s.plusOne?.name ?? '',
+      plusOneMealOptionId: byLabel(s.plusOne?.mealLabel),
+    };
+  };
 
   const steps: FlowStep<Values>[] = [
     {
@@ -98,20 +126,7 @@ export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus:
       },
       ready: (v) => Boolean(slot(v)),
       readyHint: { field: 'eventId', message: 'Choose a guest and one of their events.' },
-      // Start from what is on record, so a correction changes only what the guest changed.
-      next: async (v) => {
-        const s = slot(v)!;
-        const byLabel = (label: string | null | undefined) => (label ? (menu(s.eventId).find((m) => m.label === label)?.id ?? '') : '');
-        return {
-          patch: {
-            status: s.status ?? 'accepted',
-            mealOptionId: s.mealStale ? '' : byLabel(s.mealLabel),
-            plusOne: s.plusOnePolicy !== 'none' && Boolean(s.plusOne?.attending),
-            plusOneName: s.plusOne?.name ?? '',
-            plusOneMealOptionId: byLabel(s.plusOne?.mealLabel),
-          },
-        };
-      },
+      next: async (v) => ({ patch: onRecord(slot(v)!) }),
     },
     {
       title: 'Their answer',
@@ -124,7 +139,7 @@ export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus:
           <>
             {s?.status ? (
               <p className="flow-copy">
-                On record: {s.status === 'accepted' ? 'attending' : 'not attending'}
+                On record: {ANSWER_WORDS[s.status].label.toLowerCase()}
                 {s.mealLabel ? `, ${s.mealLabel}${s.mealStale ? ' (from an older menu)' : ''}` : ''}.
               </p>
             ) : (
@@ -161,7 +176,7 @@ export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus:
               items={[
                 { label: 'Guest', value: s ? `${s.displayName} (${s.householdName})` : '' },
                 { label: 'Event', value: s?.eventName ?? '' },
-                { label: 'Answer', value: attending ? 'Attending' : 'Not attending' },
+                { label: 'Answer', value: attending ? ANSWER_WORDS.accepted.label : ANSWER_WORDS.declined.label },
                 ...(attending && menu(v.eventId).length ? [{ label: 'Meal', value: mealName(v.eventId, v.mealOptionId) }] : []),
                 ...(attending && s && s.plusOnePolicy !== 'none'
                   ? [{ label: 'Their guest', value: v.plusOne ? [v.plusOneName.trim() || 'Not named', mealName(v.eventId, v.plusOneMealOptionId)].filter(Boolean).join(', ') : 'Not bringing anyone' }]
@@ -176,16 +191,22 @@ export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus:
     },
   ];
 
+  const picked = pick ? slots.find((x) => x.guestId === pick.guestId && x.eventId === pick.eventId) : undefined;
   return (
     <AdminFlow<Values>
-      id="rsvp:override"
-      title="Record or correct an answer"
-      trigger={{ label: 'Record an answer', variant: 'primary' }}
-      initial={EMPTY}
-      steps={steps}
+      id={flowId(picked ? pick : undefined)}
+      title={picked ? `Correct ${picked.displayName}’s answer for ${picked.eventName}` : 'Record or correct an answer'}
+      trigger={
+        picked
+          ? { label: 'Correct', variant: 'quiet', accessibleName: `Correct ${picked.displayName}’s answer for ${picked.eventName}` }
+          : { label: 'Record an answer', variant: 'primary' }
+      }
+      initial={picked ? { ...EMPTY, guestId: picked.guestId, eventId: picked.eventId, ...onRecord(picked) } : EMPTY}
+      steps={picked ? steps.slice(1) : steps}
+      defaultOpen={defaultOpen}
       submit={{
-        label: 'Record answer',
-        success: 'Answer recorded.',
+        label: 'Save answer',
+        success: 'Answer saved.',
         run: (v) => {
           const s = slot(v);
           const attending = v.status === 'accepted';
@@ -203,5 +224,46 @@ export function RecordAnswerFlow({ slots, menus }: { slots: AnswerSlot[]; menus:
         },
       }}
     />
+  );
+}
+
+/**
+ * A row's "Correct" in the answers table: the record-an-answer flow, with this guest and event
+ * already chosen.
+ *
+ * A screen of answers is hundreds of rows, and a sheet per row would be hundreds of dialogs in the
+ * page. So each row starts as a plain button; pressing it mounts the real flow for that one row,
+ * which opens on arrival and stays mounted, so pressing it again reopens it and focus comes back to
+ * it on close. The row carries only this guest's invitations and those events' menus.
+ *
+ * A row with a draft on this device (a reload with the sheet open, or a correction closed half
+ * done) mounts its flow straight away, so the draft is picked up where it was left.
+ */
+export function CorrectAnswer({ slots, menus, pick }: { slots: AnswerSlot[]; menus: MenuSummary[]; pick: { guestId: string; eventId: string } }) {
+  const [armed, setArmed] = useState(false);
+  const id = flowId(pick);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a draft lives in sessionStorage, readable only after hydration
+    if (readDraft(id)) setArmed(true);
+  }, [id]);
+  const s = slots.find((x) => x.guestId === pick.guestId && x.eventId === pick.eventId);
+  if (!s) return null;
+  if (armed) return <RecordAnswerFlow slots={slots} menus={menus} pick={pick} defaultOpen />;
+  const name = `Correct ${s.displayName}’s answer for ${s.eventName}`;
+  return (
+    <button
+      type="button"
+      className="flow-trigger-quiet"
+      aria-haspopup="dialog"
+      aria-label={name}
+      onClick={() => {
+        // A correction closed half done keeps its draft closed; pressing Correct means "open it".
+        const d = readDraft(id);
+        if (d) writeDraft(id, { ...d, open: true });
+        setArmed(true);
+      }}
+    >
+      Correct
+    </button>
   );
 }

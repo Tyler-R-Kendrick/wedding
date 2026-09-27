@@ -90,6 +90,28 @@ describe('moderation queue', () => {
     await waitFor(() => expect(screen.queryAllByTestId('queue-item')).toHaveLength(0));
   });
 
+  it('with nothing selected, every bulk action is unavailable the same way and says why', () => {
+    render(<ModerationQueue initial={initial} filters={{ status: 'private' }} />);
+    const hint = screen.getByText('Select items to act on them.');
+    const bar = screen.getByRole('group', { name: 'Act on the selected items' });
+    const actions = within(bar).getAllByRole('button');
+    expect(actions.map((b) => b.textContent)).toEqual(expect.arrayContaining(['Approve and publish', 'Reject', 'Delete']));
+    for (const b of actions) {
+      expect(b.getAttribute('aria-disabled'), b.textContent ?? '').toBe('true');
+      expect(b.getAttribute('aria-describedby')).toBe(hint.id);
+    }
+    // Reject and Delete are not a danger sheet about nothing.
+    fireEvent.click(within(bar).getByRole('button', { name: 'Reject' }));
+    fireEvent.click(within(bar).getByRole('button', { name: 'Approve and publish' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByLabelText('Select one.jpg'));
+    expect(screen.queryByText('Select items to act on them.')).toBeNull();
+    expect(within(bar).getByRole('button', { name: 'Approve and publish' }).getAttribute('aria-disabled')).toBeNull();
+    expect(within(bar).getByRole('button', { name: 'Reject the 1 item selected' })).toBeTruthy();
+  });
+
   it('does not reject anything until the count is read and confirmed', async () => {
     render(<ModerationQueue initial={initial} filters={{ status: 'private' }} />);
     fireEvent.click(screen.getByLabelText('Select one.jpg'));

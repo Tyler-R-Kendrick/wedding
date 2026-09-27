@@ -88,9 +88,23 @@
   flex-basis: auto;
 }
 
+/*
+ * Unavailable, drawn one way for every bulk action (filled, outlined or red when live): muted text on
+ * the page (4.5:1 and more) and a dashed edge in the same muted ink (well over the 3:1 a control's
+ * boundary needs). Not opacity: 0.6 took "Approve and publish" to 2.2:1, which is unreadable, not
+ * unavailable.
+ */
 .mq-actions [aria-disabled="true"] {
+  color: var(--color-on-surface-muted);
+  background: transparent;
+  border: 1px dashed var(--color-on-surface-muted);
+  text-decoration: none;
   cursor: not-allowed;
-  opacity: 0.6;
+}
+
+.mq-hint {
+  margin: 0;
+  color: var(--color-on-surface-muted);
 }
 
 .mq-note {
