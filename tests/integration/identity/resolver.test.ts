@@ -174,11 +174,16 @@ describe('principal resolver', () => {
     // admin guide promised: what one guest would see if the draft chart were published.
     // 69 -> 70: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
     // call between steps to check a registry link or a way to give before anything is saved.
-    // 70 -> 79: the console's deletes and orderings, each ui only — `admin_delete_gift_link`,
-    // `admin_delete_gift_fund`, `admin_delete_gift_rail`, `admin_delete_reservation_venue`,
-    // `admin_delete_notice` (`admin_content`); `admin_delete_event` (`admin_content` and
-    // `admin_guest_ops`, step-up); `admin_reorder_events` (`admin_content`); `admin_list_content_sources`
-    // (read), for the content editor's source picker; `admin_dismiss_media_suggestion` (`admin_media`).
+    // 70 -> 73: the gifts screen's deletes, each ui only — `admin_delete_gift_link`,
+    // `admin_delete_gift_fund` (a built-in fund is reset instead) and `admin_delete_gift_rail`
+    // (`admin_content`; the rail one is step-up, like setting it).
+    // 73 -> 76: `admin_delete_event` (`admin_content` and `admin_guest_ops`, step-up; refused once
+    // anyone has answered), `admin_reorder_events` and `admin_delete_notice` (`admin_content`), ui only.
+    // 76 -> 77: `admin_delete_reservation_venue` (`admin_content`, ui only).
+    // 77 -> 78: `admin_list_content_sources` (`admin_content`, ui only, read), which the content
+    // editor's source picker lists instead of bundling the seed file.
+    // 78 -> 79: `admin_dismiss_media_suggestion` (`admin_media`, ui only), which marks an AI
+    // suggestion reviewed without touching the photo's alt text.
     expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(79);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
