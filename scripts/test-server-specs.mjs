@@ -17,13 +17,17 @@
  * warm-up altogether is not an option — a cold compile of `/` after sign-out outlasts claim.spec's
  * 5s `toHaveURL`, the flake the CI step's warm-up comment describes.
  *
- * The server starts on PORT (default 3100), and is stopped whatever happens.
+ * The server starts on PORT (default 3100), and is stopped whatever happens. It never reaches a real
+ * system: `next dev` loads `.env` too, so every credential and database setting there is blanked
+ * (LOCAL_ISOLATION), which is what CI gets by having no `.env` at all.
  */
-import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, openSync, readFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { closeSync, existsSync, openSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { TEST_SERVER_SPECS } from './check-spec-coverage.mjs';
+import { parseStat } from './clean.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -70,6 +74,25 @@ export const WARM_ROUTES = [
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
 ];
 
+/** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */
+export const DATABASE_URL_ALIASES = ['POSTGRES_URL', 'POSTGRES_PRISMA_URL'];
+
+/** A setting that reaches a real system: a database, a mailbox, a bucket, a paid API, an admin list. */
+export const CREDENTIAL = /^DATABASE_URL$|_KEY$|_SECRET$|_TOKEN$|_ID$|_CODES?$|^S3_ENDPOINT$|^S3_BUCKET$|^EMAIL_FROM$|^ADMIN_EMAILS$/;
+
+/**
+ * Every credential `.env.example` documents, and the database aliases, set to ''. Next never lets
+ * `.env` override a variable already in the environment, even an empty one, and the server reads ''
+ * as unset. Without this a developer's `.env` DATABASE_URL (the couple's real Postgres) wins over
+ * PGLITE_MEMORY, and the fixture seed writes test guests and an owner admin into it; RESEND_* and
+ * S3_* would send real mail and write real objects.
+ */
+export function localIsolation(exampleText, mirrored) {
+  const documented = [...exampleText.matchAll(/^#?\s*([A-Z][A-Z0-9_]+)=/gm)].map((m) => m[1]);
+  const blank = [...new Set([...documented.filter((k) => CREDENTIAL.test(k)), ...DATABASE_URL_ALIASES])].filter((k) => !(k in mirrored));
+  return Object.fromEntries(blank.map((k) => [k, '']));
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -86,64 +109,145 @@ export function routesToWarm(specs, read = (f) => readFileSync(f, 'utf8')) {
   return [...new Set([...ALWAYS_WARM, ...named])];
 }
 
-async function ready(origin) {
-  for (const deadline = Date.now() + 180_000; Date.now() < deadline; await sleep(2000)) {
+/** Any answer from `/api/health` on this origin: someone is serving it. */
+async function answers(origin) {
+  try {
+    return (await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(5000) })).ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Splits the arguments into spec targets (a file, `file:line`, or a directory of specs) and
+ * Playwright's own options, which pass through as given. A value after an option (`-g name`) is not a
+ * path, so it passes through too.
+ */
+export function splitArgs(args, exists = (p) => existsSync(path.resolve(ROOT, p))) {
+  const specs = [];
+  const passThrough = [];
+  for (const arg of args) {
+    const target = arg.replace(/(:\d+)+$/, '');
+    if (!arg.startsWith('-') && (target.endsWith('.spec.ts') || exists(target))) specs.push(arg);
+    else passThrough.push(arg);
+  }
+  return { specs, passThrough };
+}
+
+/** The spec files a target names: itself, or every `.spec.ts` under a directory. */
+function specFiles(target) {
+  const abs = path.resolve(ROOT, target.replace(/(:\d+)+$/, ''));
+  if (!statSync(abs).isDirectory()) return [abs];
+  return readdirSync(abs, { recursive: true }).filter((f) => String(f).endsWith('.spec.ts')).map((f) => path.join(abs, String(f)));
+}
+
+/** A process of the group is still running (a zombie has exited; it only waits to be reaped). */
+function groupRunning(pgid) {
+  if (!existsSync('/proc')) {
     try {
-      if ((await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(5000) })).ok) return true;
+      process.kill(-pgid, 0);
+      return true;
     } catch {
-      // not listening yet
+      return false;
+    }
+  }
+  for (const pid of readdirSync('/proc').filter((d) => /^\d+$/.test(d))) {
+    try {
+      const { state, pgrp } = parseStat(readFileSync(`/proc/${pid}/stat`, 'utf8'));
+      if (pgrp === pgid && state !== 'Z') return true;
+    } catch {
+      // gone
     }
   }
   return false;
 }
 
-/** Spec files pick what runs and what is warmed; every other argument goes to Playwright as is. */
 async function main(args) {
-  const specs = args.filter((a) => a.endsWith('.spec.ts'));
-  const passThrough = args.filter((a) => !a.endsWith('.spec.ts'));
+  const { specs, passThrough } = splitArgs(args);
+  const missing = specs.filter((s) => !existsSync(path.resolve(ROOT, s.replace(/(:\d+)+$/, ''))));
+  if (missing.length) {
+    console.error(`no such spec: ${missing.join(', ')}`);
+    return 1;
+  }
   const port = process.env.PORT ?? '3100';
-  const env = { ...process.env, ...testServerEnv(port) };
-  const logDir = path.join(ROOT, 'test-results');
-  mkdirSync(logDir, { recursive: true });
-  const log = path.join(logDir, 'test-server.log');
+  const mirrored = testServerEnv(port);
+  const env = { ...process.env, ...localIsolation(readFileSync(path.join(ROOT, '.env.example'), 'utf8'), mirrored), ...mirrored };
+  if (await answers(env.BASE_URL)) {
+    console.error(`something is already serving ${env.BASE_URL}; stop it or run with another PORT`);
+    return 1;
+  }
+
+  // Not under test-results/: Playwright empties that directory when it starts, log and all.
+  const log = path.join(tmpdir(), `wedding-test-server-${port}.log`);
+  const out = openSync(log, 'w'); // one descriptor for both streams, so neither overwrites the other
   // Its own process group, so stopping it takes `next dev`, next-server and the Turbopack workers too.
-  const server = spawn('npx', ['next', 'dev', '-p', port], { cwd: ROOT, env, detached: true, stdio: ['ignore', openSync(log, 'w'), openSync(log, 'a')] });
-  const signal = (sig) => {
-    try {
-      process.kill(-server.pid, sig);
-      return true;
-    } catch {
-      return false; // the whole group is gone
-    }
-  };
-  // Waits for the group to empty (SIGKILL after 10s), so the next command does not meet a server
-  // still flushing `.next` or holding the port.
+  const server = spawn('npx', ['next', 'dev', '-p', port], { cwd: ROOT, env, detached: true, stdio: ['ignore', out, out] });
+  closeSync(out);
+  let serverError;
+  let serverExited = false;
+  server.on('error', (e) => (serverError = e));
+  server.on('exit', () => (serverExited = true));
+
+  // Ctrl-C reaches Playwright directly (it shares our terminal's process group); here it only stops
+  // the warm-up and sets the exit code. The server is stopped in `finally`, once, whatever happened.
+  let interrupted = false;
+  process.on('SIGINT', () => (interrupted = true));
+
   const stop = async () => {
-    if (!signal('SIGTERM')) return;
-    for (const deadline = Date.now() + 10_000; Date.now() < deadline; await sleep(200)) if (!signal(0)) return;
-    signal('SIGKILL');
+    if (!server.pid) return;
+    try {
+      process.kill(-server.pid, 'SIGTERM');
+    } catch {
+      return; // the whole group is gone
+    }
+    // Wait for the group to exit, so the next command meets neither a server flushing `.next` nor a busy port.
+    for (const deadline = Date.now() + 10_000; Date.now() < deadline; await sleep(200)) if (!groupRunning(server.pid)) return;
+    try {
+      process.kill(-server.pid, 'SIGKILL');
+    } catch {
+      // exited in between
+    }
   };
-  process.on('SIGINT', () => void stop().then(() => process.exit(130)));
+
   try {
-    if (!(await ready(env.BASE_URL))) {
-      console.error(`test server did not become ready on ${env.BASE_URL}; see ${path.relative(ROOT, log)}`);
+    let up = false;
+    for (const deadline = Date.now() + 180_000; !up && !serverExited && !serverError && !interrupted && Date.now() < deadline; ) {
+      up = await answers(env.BASE_URL);
+      if (!up) await sleep(2000);
+    }
+    if (interrupted) return 130;
+    if (!up) {
+      console.error(`test server ${serverError ? `could not start (${serverError.message})` : serverExited ? 'exited' : 'did not become ready'}; the end of ${log}:`);
+      // The reason is usually in the last lines: a port in use, or Next refusing a second dev server here.
+      console.error(readFileSync(log, 'utf8').trimEnd().split('\n').slice(-12).join('\n'));
       return 1;
     }
-    const missing = specs.filter((f) => !existsSync(path.resolve(ROOT, f)));
-    if (missing.length) {
-      console.error(`no such spec: ${missing.join(', ')}`);
-      return 1;
-    }
-    const warm = routesToWarm(specs.map((f) => path.resolve(ROOT, f)));
+    const warm = routesToWarm(specs.flatMap(specFiles));
     console.log(`warming ${warm.length} route${warm.length === 1 ? '' : 's'}${specs.length ? '' : ' (a full run peaks near 14 GB; name spec files to warm only theirs)'}`);
-    for (const route of warm) await fetch(`${env.BASE_URL}${route}`, { signal: AbortSignal.timeout(120_000) }).catch(() => {});
-    const run = spawnSync('npx', ['playwright', 'test', ...(specs.length ? specs : TEST_SERVER_SPECS), ...passThrough], { cwd: ROOT, env, stdio: 'inherit' });
-    return run.status ?? 1;
+    for (const route of warm) {
+      if (interrupted) return 130;
+      await fetch(`${env.BASE_URL}${route}`, { signal: AbortSignal.timeout(120_000) }).catch(() => {});
+    }
+    const playwright = spawn('npx', ['playwright', 'test', ...(specs.length ? specs : TEST_SERVER_SPECS), ...passThrough], { cwd: ROOT, env, stdio: 'inherit' });
+    const status = await new Promise((resolve) => {
+      playwright.on('error', () => resolve(1));
+      playwright.on('exit', (code) => resolve(code ?? 1));
+    });
+    return interrupted ? 130 : status;
   } finally {
     await stop();
   }
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+// Node resolves symlinks in the main module's URL but not in argv[1], so compare real paths.
+const runDirectly = () => {
+  try {
+    return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+};
+
+if (runDirectly()) {
   process.exitCode = await main(process.argv.slice(2));
 }
