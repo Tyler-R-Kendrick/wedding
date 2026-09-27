@@ -72,6 +72,10 @@ export const WARM_ROUTES = [
   '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
   '/our-adventures', '/travel',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
+  // The lifecycle preview route (`/t/[theme]/preview/[token]`): the masthead sweep reaches every
+  // state through it, and nothing else on this server does. The proxy rewrites on the value's shape,
+  // not on who asks, so an anonymous request compiles it.
+  '/?preview=RSVP_OPEN',
 ];
 
 /** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */
