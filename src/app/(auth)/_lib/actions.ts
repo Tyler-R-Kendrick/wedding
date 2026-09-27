@@ -11,9 +11,9 @@ import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { getAuth } from '@/lib/auth';
-import { clearChallengeCookie, readChallengeCookie, setChallengeCookie } from './challenge-cookie';
+import { clearChallengeCookie, readChallengeCookie, readVerified, rememberVerified, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
-import { invokeFromRequest } from './invoke';
+import { currentPrincipal, invokeFromRequest } from './invoke';
 
 /**
  * Server actions for the claim / sign-in / step-up journeys. Every action is a thin adapter:
@@ -67,20 +67,41 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
 export async function verifyCode(formData: FormData): Promise<void> {
   const code = str(formData, 'code').replace(/\s+/g, '');
   const cookie = await readChallengeCookie();
-  if (!cookie || !['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind)) redirect(withError('/claim/verify', 'expired'));
+  if (!cookie || !['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind)) {
+    await followVerified();
+    redirect(withError('/claim/verify', 'expired'));
+  }
   const r = await invokeFromRequest<SignInOutcome>('verify_otp', { challenge: cookie.c, code });
   if (!r.ok) redirect(withError('/claim/verify', errorCode(r.error)));
-  await clearChallengeCookie();
   const d = r.value.data;
-  if (d.isAdmin && !d.guestId) redirect(safeReturnPath(d.next, '/admin'));
-  if (!d.guestId) redirect(withError('/sign-in', 'unlinked'));
+  if (!d.guestId && !d.isAdmin) {
+    await clearChallengeCookie();
+    redirect(withError('/sign-in', 'unlinked'));
+  }
   // Who they said they were, when the session is about to be somebody else. Read before the cookie
   // is cleared, and carried only when the claim went through a household manager — the welcome page
   // has to reconcile the two names or it greets a no-email guest by the manager's and tells her she
   // manages the RSVP.
-  const target = safeReturnPath(d.next, '/claim/welcome');
-  if (cookie.picked && target === '/claim/welcome') redirect(`/claim/welcome?picked=${encodeURIComponent(cookie.picked)}`);
+  const target = d.isAdmin && !d.guestId ? safeReturnPath(d.next, '/admin') : safeReturnPath(d.next, '/claim/welcome');
+  await finishVerified(cookie.picked && target === '/claim/welcome' ? `/claim/welcome?picked=${encodeURIComponent(cookie.picked)}` : target);
+}
+
+/** A code was accepted: forget the challenge, remember where it led (see `rememberVerified`), go there. */
+async function finishVerified(target: string): Promise<never> {
+  await clearChallengeCookie();
+  await rememberVerified(target);
   redirect(target);
+}
+
+/**
+ * The challenge is gone. If that is because a code was just accepted in this browser — this is the
+ * same form submitted again — go where that submit went instead of saying the code expired.
+ */
+async function followVerified(): Promise<void> {
+  const target = await readVerified();
+  if (!target) return;
+  const principal = await currentPrincipal();
+  if (principal.kind === 'guest' || principal.kind === 'admin') redirect(target);
 }
 
 export async function requestStepUpCode(formData: FormData): Promise<void> {
@@ -98,11 +119,13 @@ export async function stepUpWithCode(formData: FormData): Promise<void> {
   const next = safeReturnPath(str(formData, 'next'), '/claim/welcome');
   const target = `/step-up?next=${encodeURIComponent(next)}`;
   const cookie = await readChallengeCookie();
-  if (!cookie || cookie.kind !== 'step_up') redirect(withError(target, 'expired'));
+  if (!cookie || cookie.kind !== 'step_up') {
+    await followVerified();
+    redirect(withError(target, 'expired'));
+  }
   const r = await invokeFromRequest<StepUpResult>('step_up', { method: 'otp', challenge: cookie.c, code });
   if (!r.ok) redirect(withError(target, errorCode(r.error)));
-  await clearChallengeCookie();
-  redirect(next);
+  await finishVerified(next);
 }
 
 export async function claimPerson(formData: FormData): Promise<void> {
