@@ -8,7 +8,7 @@ import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
-import { safeReturnPath } from '@/domain/identity/routes';
+import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
@@ -24,7 +24,15 @@ const str = (fd: FormData, key: string): string => {
   return typeof v === 'string' ? v.trim() : '';
 };
 
-const withNext = (path: string, next: string) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
+/**
+ * `path` with `next` carried on it, so a mistake or "Start again" still leads where the guest was
+ * going. `back` is itself checked as a return path (512 characters at most), and an encoded `next`
+ * near that limit would push it over and lose the invite; then `next` is left off instead.
+ */
+const withNext = (path: string, next: string) => {
+  const carried = next ? `${path}?next=${encodeURIComponent(next)}` : path;
+  return isSafeReturnPath(carried) ? carried : path;
+};
 
 const withError = (path: string, code: string) => `${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`;
 

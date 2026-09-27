@@ -1,8 +1,8 @@
-import { and, eq, gt, inArray, lt, or } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, notInArray, or } from 'drizzle-orm';
 import type { Db } from '@/db/client';
 import { jobs, metrics, rateLimits, type JobRow } from '@/db/schema';
 import { purgeExpiredIdempotencyKeys } from '@/lib/idempotency';
-import { registerJobHandler, type JobHandler } from './handlers';
+import { listJobTypes, registerJobHandler, type JobHandler } from './handlers';
 import { JobQueue } from './queue';
 
 /**
@@ -35,6 +35,24 @@ export async function purgeHousekeeping(
   return { idempotencyKeys, rateLimits: staleBuckets.length, metrics: oldMetrics.length };
 }
 
+/** A queued job whose type no runner has had a handler for in this long is reported dead. */
+export const ORPHANED_JOB_AFTER_MS = 24 * 60 * 60_000;
+export const ORPHANED_JOB_ERROR = 'no handler registered for this job type (after 24h queued)';
+
+/**
+ * Runners only claim job types they have a handler for, so a job of a retired or mistyped type
+ * would otherwise sit `queued` forever: never run, never `dead`, invisible to `/admin/jobs`'s dead
+ * count. Housekeeping runs with every handler loaded (`register-all`), so a queued job whose type
+ * is none of them, and that has waited longer than `afterMs`, is marked dead with a reason.
+ */
+export async function deadOrphanedJobs(db: Db, knownTypes: readonly string[], opts: { now?: Date; afterMs?: number } = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - (opts.afterMs ?? ORPHANED_JOB_AFTER_MS));
+  const orphaned = and(eq(jobs.status, 'queued'), lt(jobs.createdAt, cutoff), knownTypes.length ? notInArray(jobs.type, [...knownTypes]) : undefined);
+  const rows = await db.update(jobs).set({ status: 'dead', lastError: ORPHANED_JOB_ERROR, updatedAt: now, completedAt: now }).where(orphaned).returning({ id: jobs.id });
+  return rows.length;
+}
+
 /**
  * Queues one purge unless one is queued/running or succeeded within the last hour.
  * Returns the queued job, or null when nothing was enqueued.
@@ -54,7 +72,8 @@ export async function enqueueHousekeeping(db: Db, opts: { now?: Date; minInterva
 export const housekeepingPurge: JobHandler = async (_payload, _job, ctx) => {
   const { env } = await import('@/lib/env');
   const summary = await purgeHousekeeping(ctx.db, { now: ctx.now, metricsRetentionDays: env.METRICS_RETENTION_DAYS });
-  ctx.logger.info(summary, 'housekeeping purge');
+  const orphanedJobs = await deadOrphanedJobs(ctx.db, listJobTypes(), { now: ctx.now });
+  ctx.logger.info({ ...summary, orphanedJobs }, 'housekeeping purge');
 };
 
 /** Idempotent (re-registering the same function is a no-op); tests that clear handlers call it again. */

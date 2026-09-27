@@ -39,8 +39,9 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
       // A capability that needs a fresh session (`stepUp: true`) is finished after proving it is still
       // you; /step-up brings the admin back to this page.
       if (res.error?.code === 'step_up_required') {
-        setStatus({ kind: 'error', message: res.error.message });
-        router.push(`/step-up?next=${encodeURIComponent(window.location.pathname)}`);
+        // Said before leaving, because nothing typed here survives the round trip to /step-up.
+        setStatus({ kind: 'error', message: 'Please confirm it’s you first. You will come back to this page and need to enter this form again.' });
+        router.push(`/step-up?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
       setStatus({ kind: 'error', message: res.error?.message ?? 'Something went wrong.', issues: (res.error?.details?.issues as { path: string; message: string }[] | undefined) ?? undefined });
