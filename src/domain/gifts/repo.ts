@@ -49,3 +49,9 @@ export async function listGiftLinkRows(db: Db, opts: { includeInactive?: boolean
     .where(opts.includeInactive ? undefined : eq(giftLinks.active, true))
     .orderBy(asc(giftLinks.sortOrder), asc(giftLinks.id));
 }
+
+/** Deletes one link. True when there was a row to delete. */
+export async function deleteGiftLink(db: Db, id: string): Promise<boolean> {
+  const rows = await db.delete(giftLinks).where(eq(giftLinks.id, id)).returning({ id: giftLinks.id });
+  return rows.length > 0;
+}

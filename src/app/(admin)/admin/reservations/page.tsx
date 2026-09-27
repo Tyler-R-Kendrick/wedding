@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { adminListReservationVenues } from '@/capabilities/admin_reservations';
+import { swapOrder } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { invokeForPage } from '@/components/handoff/server';
 import { ConsoleGate, ConsolePage, DataTable, Note, Pill, Section } from '../_components/console';
-import { PlaceFlow, type PlaceRecord } from './_components/PlaceFlow';
+import { DeletePlaceFlow, PlaceFlow, type PlaceRecord } from './_components/PlaceFlow';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Reservations (admin)', robots: { index: false, follow: false } };
@@ -114,13 +115,7 @@ export default async function AdminReservationsPage() {
               const o = byId.get(r.id);
               const prev = rows[i - 1];
               const next = rows[i + 1];
-              const move = (other: Row, before: boolean) => {
-                const mine = other.sortOrder === r.sortOrder ? Math.max(0, other.sortOrder + (before ? -1 : 1)) : other.sortOrder;
-                return [
-                  { capability: 'admin_upsert_reservation_venue', input: placeInput(r, { sortOrder: mine }) },
-                  { capability: 'admin_upsert_reservation_venue', input: placeInput(other, { sortOrder: r.sortOrder }) },
-                ];
-              };
+              const move = (other: Row, above: boolean) => swapOrder(r, other, above, placeInput, 'admin_upsert_reservation_venue');
               return (
                 <RecordRow
                   key={r.id}
@@ -155,6 +150,7 @@ export default async function AdminReservationsPage() {
                       />
                       <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${r.name} up.`} unavailable={!prev} accessibleName={`Move ${r.name} up`} calls={prev ? move(prev, true) : []} />
                       <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${r.name} down.`} unavailable={!next} accessibleName={`Move ${r.name} down`} calls={next ? move(next, false) : []} />
+                      <DeletePlaceFlow place={r} last={rows.length === 1} />
                     </>
                   }
                 />

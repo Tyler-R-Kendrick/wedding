@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, GuestPreview, TextField } from '@/components/admin/flow/fields';
+import { CheckField, Consequences, GuestPreview, TextField } from '@/components/admin/flow/fields';
 import { assertAllowedRedirect } from '@/lib/redirects';
 
 /** A saved place, or one of the built-in placeholders being set up for real. */
@@ -182,10 +182,47 @@ export function PlaceFlow({
           placeholder: v.placeholder,
           active: place?.active ?? true,
           sortOrder: place?.sortOrder ?? nextSort,
-          // Ticking "I opened it" is the check; a place with no link has nothing to check.
-          verifiedAt: v.confirmed ? new Date().toISOString() : undefined,
+          // Ticking "I opened it" is the check, stamped with the server's clock; a place with no link has nothing to check.
+          confirmed: v.confirmed,
         }),
       }}
+    />
+  );
+}
+
+/**
+ * Takes a place off the weekend list for good. Hide (one click on the row) is the reversible choice.
+ * `last`: it is the only saved place, so guests see the built-in placeholders again once it goes.
+ */
+export function DeletePlaceFlow({ place, last }: { place: Pick<PlaceRecord, 'id' | 'name'>; last: boolean }) {
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`reservations:delete-place:${place.id}`}
+      tone="danger"
+      title={`Delete ${place.name}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${place.name}` }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: `Delete ${place.name}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>
+                  Guests stop seeing {place.name}, with its note and its button to reserve.
+                  {last ? ' It is the only place you have saved, so guests see the built-in placeholders again until you add another.' : ''}
+                </p>
+                <p>This cannot be undone; adding it again starts from nothing. To take it off the page for a while, use Hide instead.</p>
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${place.name}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{ label: `Delete ${place.name}`, capability: 'admin_delete_reservation_venue', success: `${place.name} deleted.`, input: () => ({ id: place.id }) }}
     />
   );
 }

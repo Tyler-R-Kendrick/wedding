@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, ChoiceField, GuestPreview, TextField } from '@/components/admin/flow/fields';
+import { CheckField, ChoiceField, Consequences, GuestPreview, TextField } from '@/components/admin/flow/fields';
 import { callCapability } from '@/components/handoff/client';
 
 interface Values extends Record<string, unknown> {
@@ -168,6 +168,43 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label, a
           confirmed: v.confirmed,
         }),
       }}
+    />
+  );
+}
+
+/**
+ * Takes a registry or next-adventures link off the Gifts page for good. Hide (one click on the row)
+ * is the reversible choice. `lastShown`: it is the only link of its kind guests can see.
+ */
+export function DeleteRegistryFlow({ link, where, lastShown }: { link: Pick<RegistryLinkSummary, 'id' | 'kind' | 'label'>; where: string; lastShown: boolean }) {
+  const empty = link.kind === 'registry' ? 'Guests read that you have not chosen where to keep a wishlist yet' : 'Guests no longer see this under your next adventures';
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`gifts:delete-link:${link.id}`}
+      tone="danger"
+      title={`Delete ${link.label}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${link.label}` }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: `Delete ${link.label}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>
+                  The Gifts page stops sending guests to {where}.{lastShown ? ` It is the only one guests can see: ${empty} until you add another.` : ''}
+                </p>
+                <p>Your registry itself, and anything already bought from it, stays on {where}; only the link here goes. This cannot be undone. To take it off the page for a while, use Hide instead.</p>
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${link.label}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{ label: `Delete ${link.label}`, capability: 'admin_delete_gift_link', success: `${link.label} deleted.`, input: () => ({ id: link.id }) }}
     />
   );
 }

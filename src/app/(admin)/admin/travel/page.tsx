@@ -7,7 +7,8 @@ import type { HotelRecommendation } from '@/domain/travel';
 import { ConsoleGate, ConsolePage, DataTable, Day, Denied, KeyValues, Note, Pill, Section } from '../_components/console';
 import { HotelFlow, DeleteHotelFlow } from './_components/HotelFlow';
 import { LinkFlow, DeleteLinkFlow } from './_components/LinkFlow';
-import { categoryLabel, hotelInput, linkInput, swapOrder } from './_components/travel-input';
+import { swapOrder } from '@/components/admin/flow/order';
+import { categoryLabel, hotelInput, linkInput } from './_components/travel-input';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Travel (admin)', robots: { index: false, follow: false } };

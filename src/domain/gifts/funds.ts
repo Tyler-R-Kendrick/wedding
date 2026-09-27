@@ -80,6 +80,19 @@ export async function upsertGiftFund(
   return row!;
 }
 
+/** True for the four built-in funds, which exist without a row and can be reset but never deleted. */
+export const isDefaultGiftFund = (id: string) => DEFAULT_GIFT_FUNDS.some((d) => d.id === id);
+
+/**
+ * Deletes a fund's row. For a custom fund that deletes the fund; for a built-in one it puts back the
+ * built-in words, place and "shown", since a default with no row is the default. True when there
+ * was a row to delete.
+ */
+export async function deleteGiftFund(db: Db, id: string): Promise<boolean> {
+  const rows = await db.delete(giftFunds).where(eq(giftFunds.id, id)).returning({ id: giftFunds.id });
+  return rows.length > 0;
+}
+
 /** The fields a caller actually supplied, so an upsert never overwrites a value with "not given". */
 function definedOnly<T extends Record<string, unknown>>(o: T): Partial<T> {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
@@ -103,6 +116,12 @@ export async function upsertGiftRail(
   const update = definedOnly({ handle: input.handle, recipientName: input.recipientName, active: input.active, sortOrder: input.sortOrder, updatedBy: input.updatedBy, updatedAt: now });
   const [row] = await db.insert(giftPaymentRails).values(values).onConflictDoUpdate({ target: giftPaymentRails.rail, set: update }).returning();
   return row!;
+}
+
+/** Deletes one way to give. True when there was a row to delete. */
+export async function deleteGiftRail(db: Db, rail: GiftRail): Promise<boolean> {
+  const rows = await db.delete(giftPaymentRails).where(eq(giftPaymentRails.rail, rail)).returning({ rail: giftPaymentRails.rail });
+  return rows.length > 0;
 }
 
 /** One way to give, as a guest sees it. */

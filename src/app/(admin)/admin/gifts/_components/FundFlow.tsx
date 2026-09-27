@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, GuestPreview, TextField } from '@/components/admin/flow/fields';
+import { CheckField, Consequences, GuestPreview, TextField } from '@/components/admin/flow/fields';
 
 export interface FundSummary {
   id: string;
@@ -99,4 +99,58 @@ function freeSlug(title: string, taken: string[]): string {
       .slice(0, 56) || 'fund';
   if (!taken.includes(base)) return base;
   for (let n = 2; ; n++) if (!taken.includes(`${base}-${n}`)) return `${base}-${n}`;
+}
+
+/**
+ * A fund the couple added is deleted. A built-in one (honeymoon, home, adoption, next adventures)
+ * cannot be: it is put back to its built-in words, place and "shown" instead, and the flow says
+ * which of the two will happen. `builtIn` carries the built-in words for a built-in fund.
+ */
+export function DeleteFundFlow({ fund, builtIn }: { fund: Pick<FundSummary, 'id' | 'title' | 'active'>; builtIn: { title: string; description: string } | null }) {
+  const reset = builtIn !== null;
+  const act = reset ? `Reset ${fund.title}` : `Delete ${fund.title}`;
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`gifts:delete-fund:${fund.id}`}
+      tone="danger"
+      title={act}
+      trigger={{ label: reset ? 'Reset' : 'Delete', variant: 'danger', accessibleName: act }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: reset ? `Put ${fund.title} back as it was?` : `Delete ${fund.title}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                {builtIn ? (
+                  <>
+                    <p>
+                      {fund.title} is one of the built-in funds, so it is not deleted: its words go back to “{builtIn.title}: {builtIn.description}”, and it goes back to its built-in place in the list
+                      {fund.active ? '' : ' and is no longer hidden'}.
+                    </p>
+                    <p>Your own words for it are not kept. To take it off the Gifts page, use Hide instead.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Guests stop seeing {fund.title} as something to give toward. Gifts already sent are not affected: the money went straight to you.</p>
+                    <p>This cannot be undone; adding it again starts from nothing. To take it off the page for a while, use Hide instead.</p>
+                  </>
+                )}
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={reset ? `Yes, put ${fund.title} back to the built-in words` : `Yes, delete ${fund.title}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{
+        label: reset ? `Reset ${fund.title} to the built-in words` : `Delete ${fund.title}`,
+        capability: 'admin_delete_gift_fund',
+        success: builtIn ? `${builtIn.title} is back to its built-in words.` : `${fund.title} deleted.`,
+        input: () => ({ id: fund.id }),
+      }}
+    />
+  );
 }

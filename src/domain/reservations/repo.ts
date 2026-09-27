@@ -57,6 +57,12 @@ export async function getReservationVenueRow(db: Db, id: string): Promise<Reserv
   return rows[0] ?? null;
 }
 
+/** Deletes one saved place. True when there was a row to delete. Once none are left, guests see the built-in placeholders again. */
+export async function deleteReservationVenue(db: Db, id: string): Promise<boolean> {
+  const rows = await db.delete(reservationVenues).where(eq(reservationVenues.id, id)).returning({ id: reservationVenues.id });
+  return rows.length > 0;
+}
+
 const BRIEF_VERIFIED_AT = new Date('2026-09-04T00:00:00.000Z');
 const SYSTEM: PrincipalRef = { kind: 'system', component: 'defaults' };
 

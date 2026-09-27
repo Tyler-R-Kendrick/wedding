@@ -7,7 +7,7 @@ import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { detectRegistryProvider, isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, railInstructions, registryProviderFor, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
+import { deleteGiftFund, deleteGiftLink, deleteGiftRail, detectRegistryProvider, isDefaultGiftFund, isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, railInstructions, registryProviderFor, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
 import { appServices } from './context';
 import { giftLinkViewSchema } from './list_gift_links';
 
@@ -173,6 +173,96 @@ export const adminUpsertGiftRail = defineCapability<z.infer<typeof railInput>, z
   },
 });
 
+const deleteAnnotations = { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true };
+
+const deleteLinkInput = z.object({ id: z.string().regex(SLUG) });
+
+/** Admin: takes a registry or next-adventures link off the Gifts page for good. Hide is the reversible choice. */
+export const adminDeleteGiftLink = defineCapability<z.infer<typeof deleteLinkInput>, { id: string; deleted: boolean }>({
+  name: 'admin_delete_gift_link',
+  title: 'Delete a gift link',
+  description: 'Admin: deletes a registry / next-adventures link. Guests stop being sent to it at once.',
+  kind: 'action',
+  auth: 'admin',
+  requires: ['admin_content'],
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: deleteAnnotations,
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: deleteLinkInput,
+  output: z.object({ id: z.string(), deleted: z.boolean() }),
+  async handler(ctx, i) {
+    const { db } = appServices(ctx);
+    const deleted = await deleteGiftLink(db, i.id);
+    if (!deleted) return err(new CapabilityError('not_found', 'That link is not saved any more.'));
+    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_link', id: i.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: 'delete' } });
+    return ok({ data: { id: i.id, deleted }, sources: [] });
+  },
+});
+
+const deleteFundInput = z.object({ id: z.string().regex(SLUG) });
+const deleteFundOutput = z.object({ id: z.string(), outcome: z.enum(['deleted', 'reset']) });
+
+/**
+ * Admin: deletes a fund the couple added, or puts a built-in one (honeymoon, home, adoption, next
+ * adventures) back to its built-in words, place and "shown". A built-in fund cannot be deleted: it
+ * exists without a row, so hiding it is how it comes off the page.
+ */
+export const adminDeleteGiftFund = defineCapability<z.infer<typeof deleteFundInput>, z.infer<typeof deleteFundOutput>>({
+  name: 'admin_delete_gift_fund',
+  title: 'Delete or reset a gift fund',
+  description: 'Admin: deletes a fund the couple added; for a built-in fund, puts back its built-in words instead.',
+  kind: 'action',
+  auth: 'admin',
+  requires: ['admin_content'],
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: deleteAnnotations,
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: deleteFundInput,
+  output: deleteFundOutput,
+  async handler(ctx, i) {
+    const { db } = appServices(ctx);
+    const builtIn = isDefaultGiftFund(i.id);
+    const deleted = await deleteGiftFund(db, i.id);
+    // A built-in fund with no row already has its built-in words: resetting it again changes nothing.
+    if (!deleted && !builtIn) return err(new CapabilityError('not_found', 'That fund is not saved any more.'));
+    const outcome = builtIn ? ('reset' as const) : ('deleted' as const);
+    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_fund', id: i.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: outcome === 'reset' ? 'reset' : 'delete' } });
+    return ok({ data: { id: i.id, outcome }, sources: [] });
+  },
+});
+
+const deleteRailInput = z.object({ rail: z.enum(GIFT_RAILS) });
+
+/**
+ * Admin: stops offering one way to give. Step-up, like setting one: it decides where guests' money
+ * can go. The audit names the rail, never the handle it held.
+ */
+export const adminDeleteGiftRail = defineCapability<z.infer<typeof deleteRailInput>, { rail: z.infer<typeof deleteRailInput>['rail']; deleted: boolean }>({
+  name: 'admin_delete_gift_rail',
+  title: 'Delete a way to give',
+  description: 'Admin: deletes the couple’s Venmo, PayPal.Me, $Cashtag, Zelle or check details. With none left, guests see no gifts of money.',
+  kind: 'action',
+  auth: 'admin',
+  requires: ['admin_content'],
+  // Step-up: this decides where guests' money is sent.
+  stepUp: true,
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: deleteAnnotations,
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: deleteRailInput,
+  output: z.object({ rail: z.enum(GIFT_RAILS), deleted: z.boolean() }),
+  async handler(ctx, i) {
+    const { db } = appServices(ctx);
+    const deleted = await deleteGiftRail(db, i.rail);
+    if (!deleted) return err(new CapabilityError('not_found', `${RAILS[i.rail].displayName} is not set up.`));
+    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_rail', id: i.rail }, outcome: 'success', requestId: ctx.requestId, metadata: { op: 'delete' } });
+    return ok({ data: { rail: i.rail, deleted }, sources: [] });
+  },
+});
+
 const checkInput = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('link'), url: z.string().max(2048) }),
   z.object({ kind: z.literal('rail'), rail: z.enum(GIFT_RAILS), handle: z.union([z.string(), z.array(z.string())]).transform((h) => (Array.isArray(h) ? h.join('\n') : h)), recipientName: z.string().trim().max(80).optional() }),
@@ -267,4 +357,4 @@ export const adminListGiftLinks = defineCapability<unknown, z.infer<typeof listO
   },
 });
 
-export const adminGiftCapabilities = [adminUpsertGiftLink, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftRail, adminCheckGiftSetup];
+export const adminGiftCapabilities = [adminUpsertGiftLink, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftRail, adminCheckGiftSetup, adminDeleteGiftLink, adminDeleteGiftFund, adminDeleteGiftRail];

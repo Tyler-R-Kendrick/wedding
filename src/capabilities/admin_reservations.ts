@@ -6,7 +6,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
-import { listReservationVenueRows, reservationOptions, upsertReservationVenue } from '@/domain/reservations';
+import { deleteReservationVenue, listReservationVenueRows, reservationOptions, upsertReservationVenue } from '@/domain/reservations';
 import { appServices } from './context';
 import { reservationOptionSchema } from './get_reservation_options';
 
@@ -24,7 +24,10 @@ const upsertInput = z.object({
   active: z.boolean().default(true),
   sortOrder: z.number().int().min(0).max(1000).default(0),
   sourceId: z.string().regex(ID_PATTERN).optional(),
+  /** A saved check sent back unchanged (a one-click Hide or Up keeps it). A new check is `confirmed`. */
   verifiedAt: z.string().datetime({ offset: true }).optional(),
+  /** The admin opened the booking page and confirmed it is this place: stamped with the server's clock, never the browser's. */
+  confirmed: z.boolean().optional(),
 });
 
 const rowSchema = z.object({
@@ -65,9 +68,36 @@ export const adminUpsertReservationVenue = defineCapability<z.infer<typeof upser
       url = allowed.value.toString();
     }
     const { db } = appServices(ctx);
-    const row = await upsertReservationVenue(db, { ...i, url, verifiedAt: i.verifiedAt ? new Date(i.verifiedAt) : undefined, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
+    const { confirmed, ...fields } = i;
+    const verifiedAt = confirmed ? ctx.now : i.verifiedAt ? new Date(i.verifiedAt) : undefined;
+    const row = await upsertReservationVenue(db, { ...fields, url, verifiedAt, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'reservation_venue', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { active: row.active, placeholder: row.placeholder, hasResy: !!row.resySlug, hasOpenTable: !!row.openTableId, hasUrl: !!row.url } });
     return ok({ data: toRow(row), sources: [] });
+  },
+});
+
+const deleteInput = z.object({ id: z.string().regex(SLUG) });
+
+/** Admin: deletes a saved place. When the last one goes, guests see the built-in placeholders again. */
+export const adminDeleteReservationVenue = defineCapability<z.infer<typeof deleteInput>, { id: string; deleted: boolean }>({
+  name: 'admin_delete_reservation_venue',
+  title: 'Delete a reservable place',
+  description: 'Admin: deletes a place guests can reserve at. With no saved places left, guests see the built-in placeholders.',
+  kind: 'action',
+  auth: 'admin',
+  requires: ['admin_content'],
+  confirmation: 'inline',
+  idempotent: true,
+  annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true },
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: deleteInput,
+  output: z.object({ id: z.string(), deleted: z.boolean() }),
+  async handler(ctx, i) {
+    const { db } = appServices(ctx);
+    const deleted = await deleteReservationVenue(db, i.id);
+    if (!deleted) return err(new CapabilityError('not_found', 'That place is not saved any more.'));
+    await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'reservation_venue', id: i.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: 'delete' } });
+    return ok({ data: { id: i.id, deleted }, sources: [] });
   },
 });
 
@@ -91,4 +121,4 @@ export const adminListReservationVenues = defineCapability<unknown, z.infer<type
   },
 });
 
-export const adminReservationCapabilities = [adminUpsertReservationVenue, adminListReservationVenues];
+export const adminReservationCapabilities = [adminUpsertReservationVenue, adminListReservationVenues, adminDeleteReservationVenue];

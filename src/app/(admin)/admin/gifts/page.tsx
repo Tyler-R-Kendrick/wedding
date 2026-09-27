@@ -5,16 +5,17 @@ import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { GiftFunds } from '@/components/handoff/GiftFunds';
 import { GiftLinkCard } from '@/components/handoff/GiftLinkCard';
 import { invokeForPage } from '@/components/handoff/server';
-import { giftsSetup, RAIL_ORDER, RAILS, registryProviderFor, type NextStep, type SetupStep } from '@/domain/gifts';
+import { DEFAULT_GIFT_FUNDS, giftsSetup, RAIL_ORDER, RAILS, registryProviderFor, type NextStep, type SetupStep } from '@/domain/gifts';
 import { getLifecycleView } from '@/domain/lifecycle';
 import { memberNavFor } from '@/domain/lifecycle/nav';
 import { ROUTES } from '@/domain/routes';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Pill, Section } from '../_components/console';
-import { FundFlow } from './_components/FundFlow';
+import { DeleteFundFlow, FundFlow } from './_components/FundFlow';
+import { swapOrder } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
-import { RailFlow, type RailOption } from './_components/RailFlow';
-import { RegistryFlow } from './_components/RegistryFlow';
+import { DeleteRailFlow, RailFlow, type RailOption } from './_components/RailFlow';
+import { DeleteRegistryFlow, RegistryFlow } from './_components/RegistryFlow';
 import './_components/gifts.css';
 
 export const dynamic = 'force-dynamic';
@@ -112,6 +113,7 @@ export default async function AdminGiftsPage() {
             <RecordList label="Registry links">
               {adminLinks.map((r) => {
                 const host = safeHost(r.url);
+                const where = registryProviderFor(host)?.name ?? host;
                 return (
                   <RecordRow
                     key={r.id}
@@ -120,7 +122,7 @@ export default async function AdminGiftsPage() {
                     status={r.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
                     meta={
                       <>
-                        {registryProviderFor(host)?.name ?? host} · {r.kind === 'registry' ? 'Our wishlist' : 'Our next adventures'} ·{' '}
+                        {where} · {r.kind === 'registry' ? 'Our wishlist' : 'Our next adventures'} ·{' '}
                         {r.verifiedAt ? (
                           <>
                             you checked it <Day at={r.verifiedAt} />
@@ -148,6 +150,7 @@ export default async function AdminGiftsPage() {
                           },
                         ]}
                       />
+                      <DeleteRegistryFlow link={r} where={where} lastShown={r.active && adminLinks.filter((x) => x.kind === r.kind && x.active).length === 1} />
                       </>
                     }
                   />
@@ -178,7 +181,12 @@ export default async function AdminGiftsPage() {
                           {r.recipientName ? ` · ${r.recipientName}` : ''}
                         </span>
                       }
-                      actions={<RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Edit" accessibleName={`Edit ${r.displayName}`} />}
+                      actions={
+                        <>
+                          <RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Edit" accessibleName={`Edit ${r.displayName}`} />
+                          <DeleteRailFlow rail={r.rail} displayName={r.displayName} lastShown={r.active && activeRails.length === 1} />
+                        </>
+                      }
                     />
                   ))}
                 </RecordList>
@@ -199,10 +207,8 @@ export default async function AdminGiftsPage() {
                 {data.funds.map((f, i) => {
                   const prev = data.funds[i - 1];
                   const next = data.funds[i + 1];
-                  const move = (other: NonNullable<typeof prev>) => [
-                    { capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, sortOrder: other.sortOrder === f.sortOrder ? other.sortOrder + (other === prev ? -1 : 1) : other.sortOrder } },
-                    { capability: 'admin_upsert_gift_fund', input: { id: other.id, title: other.title, sortOrder: f.sortOrder } },
-                  ];
+                  const move = (other: typeof f, above: boolean) => swapOrder(f, other, above, (x, patch) => ({ id: x.id, title: x.title, ...patch }), 'admin_upsert_gift_fund');
+                  const builtIn = DEFAULT_GIFT_FUNDS.find((d) => d.id === f.id) ?? null;
                   return (
                     <RecordRow
                       key={f.id}
@@ -214,8 +220,10 @@ export default async function AdminGiftsPage() {
                         <>
                         <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Edit" accessibleName={`Edit ${f.title}`} />
                         <QuickAction label={f.active ? 'Hide' : 'Show'} busyLabel="Saving…" done={f.active ? `${f.title} hidden.` : `${f.title} shown.`} accessibleName={`${f.active ? 'Hide' : 'Show'} ${f.title}`} calls={[{ capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, active: !f.active } }]} />
-                        <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${f.title} up.`} unavailable={!prev} accessibleName={`Move ${f.title} up`} calls={prev ? move(prev) : []} />
-                        <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${f.title} down.`} unavailable={!next} accessibleName={`Move ${f.title} down`} calls={next ? move(next) : []} />
+                        <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${f.title} up.`} unavailable={!prev} accessibleName={`Move ${f.title} up`} calls={prev ? move(prev, true) : []} />
+                        <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${f.title} down.`} unavailable={!next} accessibleName={`Move ${f.title} down`} calls={next ? move(next, false) : []} />
+                        {/* A built-in fund nobody has changed has nothing to reset. */}
+                        {builtIn && f.origin === 'default' ? null : <DeleteFundFlow fund={f} builtIn={builtIn ? { title: builtIn.title, description: builtIn.description } : null} />}
                         </>
                       }
                     />

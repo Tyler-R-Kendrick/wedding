@@ -35,18 +35,6 @@ export function linkInput(l: TravelLink, patch: Partial<Pick<TravelLink, 'active
 }
 
 /**
- * The two saves that swap a row with its neighbour. Rows that share a sort number (every row starts
- * at 100) are nudged one apart, so the swap always changes the order guests see.
- */
-export function swapOrder<T extends { sortOrder: number }>(row: T, other: T, before: boolean, input: (r: T, patch: { sortOrder: number }) => unknown, capability: string) {
-  const mine = other.sortOrder === row.sortOrder ? Math.max(0, other.sortOrder + (before ? -1 : 1)) : other.sortOrder;
-  return [
-    { capability, input: input(row, { sortOrder: mine }) },
-    { capability, input: input(other, { sortOrder: row.sortOrder }) },
-  ];
-}
-
-/**
  * The same trusted-partner check the save runs, done on the step where the link was typed so the fix
  * is said there. The save checks again; this only saves a round trip.
  */

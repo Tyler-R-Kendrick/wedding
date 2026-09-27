@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, ChoiceField, GuestPreview, TextField } from '@/components/admin/flow/fields';
+import { CheckField, ChoiceField, Consequences, GuestPreview, TextField } from '@/components/admin/flow/fields';
 import { callCapability } from '@/components/handoff/client';
 
 export interface RailOption {
@@ -176,6 +176,43 @@ export function RailFlow({ options, editing, label, variant = 'primary', accessi
         success: 'Saved. The Gifts page uses it now.',
         input: (v) => ({ rail: v.rail, handle: v.handle, recipientName: v.recipientName.trim() || undefined, active: v.shown }),
       }}
+    />
+  );
+}
+
+/**
+ * Stops offering one way to give. `lastShown`: it is the only one guests can see, and with no way to
+ * give the Gifts page shows no gifts of money at all, funds included.
+ */
+export function DeleteRailFlow({ rail, displayName, lastShown }: { rail: RailOption['rail']; displayName: string; lastShown: boolean }) {
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`gifts:delete-rail:${rail}`}
+      tone="danger"
+      title={`Delete ${displayName}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${displayName}` }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: `Delete ${displayName}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>
+                  Guests stop being offered {displayName}, and the details you saved for it are deleted from this site.
+                  {lastShown ? ' It is the only way to give guests can see, so the Gifts page shows no gifts of money at all, and none of your funds, until you add another.' : ''}
+                </p>
+                <p>Gifts already sent are not affected: the money went straight to you. This cannot be undone; to offer it again you enter the details again. To take it off the page for a while, use Edit and untick “Show this to guests” instead.</p>
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${displayName}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{ label: `Delete ${displayName}`, capability: 'admin_delete_gift_rail', success: `${displayName} deleted.`, input: () => ({ rail }) }}
     />
   );
 }

@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { adminListExternalActions } from '@/capabilities/admin_external_actions';
-import { adminCheckGiftSetup, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
-import { adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
+import { adminCheckGiftSetup, adminDeleteGiftFund, adminDeleteGiftLink, adminDeleteGiftRail, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
+import { adminDeleteReservationVenue, adminListReservationVenues, adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
 import { getReservationOptions } from '@/capabilities/get_reservation_options';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { openGiftFund } from '@/capabilities/open_gift_fund';
@@ -379,6 +379,64 @@ describe('gifts of money (ADR-0013)', () => {
   });
 });
 
+describe('deleting from /admin/gifts', () => {
+  it('deletes a registry link: guests stop being sent to it, and only an admin can', async () => {
+    const made = await run(adminUpsertGiftLink, admin, { id: 'zola-gone', kind: 'registry', label: 'Our registry on Zola', url: 'https://www.zola.com/registry/sara-and-tyler-gone' }, { idempotencyKey: key() });
+    expect(made.ok).toBe(true);
+    const asGuest = await run(adminDeleteGiftLink, guest, { id: 'zola-gone' }, { idempotencyKey: key() });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+    const r = await run(adminDeleteGiftLink, admin, { id: 'zola-gone' }, { idempotencyKey: key(), requestId: 'req-gift-link-delete' });
+    expect(r.ok && r.value.data).toEqual({ id: 'zola-gone', deleted: true });
+    const db = await getDb();
+    expect(await db.select().from(giftLinks).where(eq(giftLinks.id, 'zola-gone'))).toEqual([]);
+    const g = await run(listGiftLinksCapability, visitor, {});
+    expect(g.ok && g.value.data.links.map((l) => l.id)).not.toContain('zola-gone');
+    const audit = await listAuditEvents(db, { requestId: 'req-gift-link-delete' });
+    expect(audit.find((e) => e.action === 'content.updated')).toMatchObject({ targetType: 'gift_link', targetId: 'zola-gone', metadata: { op: 'delete' } });
+    const again = await run(adminDeleteGiftLink, admin, { id: 'zola-gone' }, { idempotencyKey: key() });
+    expect(!again.ok && again.error.code).toBe('not_found');
+    expect((await run(adminDeleteGiftLink, admin, { id: '../etc' }, { idempotencyKey: key() })).ok).toBe(false);
+  });
+
+  it('deletes a fund the couple added, and resets a built-in one to its built-in words instead', async () => {
+    expect((await run(adminUpsertGiftFund, admin, { id: 'bike-fund', title: 'Two bikes', description: 'For the lakefront path.' }, { idempotencyKey: key() })).ok).toBe(true);
+    const custom = await run(adminDeleteGiftFund, admin, { id: 'bike-fund' }, { idempotencyKey: key() });
+    expect(custom.ok && custom.value.data).toEqual({ id: 'bike-fund', outcome: 'deleted' });
+    const missing = await run(adminDeleteGiftFund, admin, { id: 'bike-fund' }, { idempotencyKey: key() });
+    expect(!missing.ok && missing.error.code).toBe('not_found');
+
+    expect((await run(adminUpsertGiftFund, admin, { id: 'honeymoon', title: 'Somewhere warm', description: 'Sun, eventually.', active: false, sortOrder: 90 }, { idempotencyKey: key() })).ok).toBe(true);
+    const reset = await run(adminDeleteGiftFund, admin, { id: 'honeymoon' }, { idempotencyKey: key() });
+    expect(reset.ok && reset.value.data).toEqual({ id: 'honeymoon', outcome: 'reset' });
+    const a = await run(adminListGiftLinks, admin, {});
+    expect(a.ok && a.value.data.funds.map((f) => f.id)).not.toContain('bike-fund');
+    expect(a.ok && a.value.data.funds.find((f) => f.id === 'honeymoon')).toEqual({ id: 'honeymoon', title: 'Our honeymoon', description: 'Toward the first trip of our married life.', active: true, sortOrder: 0, origin: 'default' });
+    // A built-in fund with nothing to reset is already reset: asking again is not an error.
+    const again = await run(adminDeleteGiftFund, admin, { id: 'honeymoon' }, { idempotencyKey: key() });
+    expect(again.ok && again.value.data.outcome).toBe('reset');
+  });
+
+  it('deletes a way to give with step-up, and guests stop being offered it', async () => {
+    expect((await run(adminUpsertGiftRail, admin, { rail: 'paypal', handle: 'SaraTylerGifts' }, { idempotencyKey: key() })).ok).toBe(true);
+    const stale = { ...admin, authenticatedAt: new Date(Date.now() - 24 * 3600_000).toISOString() };
+    const refused = await run(adminDeleteGiftRail, stale, { rail: 'paypal' }, { idempotencyKey: key() });
+    expect(!refused.ok && refused.error.code).toBe('step_up_required');
+    const asGuest = await run(adminDeleteGiftRail, guest, { rail: 'paypal' }, { idempotencyKey: key() });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+
+    const r = await run(adminDeleteGiftRail, admin, { rail: 'paypal' }, { idempotencyKey: key(), requestId: 'req-gift-rail-delete' });
+    expect(r.ok && r.value.data).toEqual({ rail: 'paypal', deleted: true });
+    const db = await getDb();
+    expect(await db.select().from(giftPaymentRails).where(eq(giftPaymentRails.rail, 'paypal'))).toEqual([]);
+    const g = await run(listGiftLinksCapability, guest, {});
+    expect(g.ok && g.value.data.rails.map((x) => x.rail)).not.toContain('paypal');
+    // The audit names the rail, never the handle it held.
+    expect(JSON.stringify(await listAuditEvents(db, { requestId: 'req-gift-rail-delete' }))).not.toContain('SaraTylerGifts');
+    const again = await run(adminDeleteGiftRail, admin, { rail: 'paypal' }, { idempotencyKey: key() });
+    expect(!again.ok && again.error.code).toBe('not_found');
+  });
+});
+
 describe('reservations ladder', () => {
   it('answers with the url rung for Cindy’s and an honest unavailable rung for the placeholder', async () => {
     const r = await run(getReservationOptions, anon, {});
@@ -468,5 +526,28 @@ describe('reservations ladder', () => {
     expect(filtered.ok && filtered.value.data.records).toHaveLength(1);
     expect((await run(adminListExternalActions, guest, {})).ok).toBe(false);
     expect((await run(adminListExternalActions, { ...admin, entitlements: new Set(['admin_content']) }, {})).ok).toBe(false);
+  });
+  it('stamps a confirmed place with the server clock, and deletes places until the placeholders return', async () => {
+    const before = Date.now();
+    const r = await run(adminUpsertReservationVenue, admin, { id: 'test-confirmed', name: 'Checked Place', resySlug: 'checked-place', confirmed: true, verifiedAt: '2000-01-01T00:00:00Z' }, { idempotencyKey: key() });
+    expect(r.ok).toBe(true);
+    const stamped = r.ok ? Date.parse(r.value.data.verifiedAt ?? '') : NaN;
+    expect(stamped).toBeGreaterThanOrEqual(before - 1000);
+    // A saved check sent back unchanged (a one-click Hide) is kept.
+    const kept = await run(adminUpsertReservationVenue, admin, { id: 'test-confirmed', name: 'Checked Place', resySlug: 'checked-place', active: false, verifiedAt: r.ok ? r.value.data.verifiedAt! : undefined }, { idempotencyKey: key() });
+    expect(kept.ok && Date.parse(kept.value.data.verifiedAt ?? '')).toBe(stamped);
+
+    const asGuest = await run(adminDeleteReservationVenue, guest, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+    const del = await run(adminDeleteReservationVenue, admin, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(del.ok && del.value.data).toEqual({ id: 'test-confirmed', deleted: true });
+    const again = await run(adminDeleteReservationVenue, admin, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(!again.ok && again.error.code).toBe('not_found');
+
+    // With the last saved place gone, guests see the built-in placeholders again.
+    const listed = await run(adminListReservationVenues, admin, {});
+    for (const row of listed.ok ? listed.value.data.rows : []) expect((await run(adminDeleteReservationVenue, admin, { id: row.id }, { idempotencyKey: key() })).ok, row.id).toBe(true);
+    const opts = await run(getReservationOptions, anon, {});
+    expect(opts.ok && opts.value.data.options.map((o) => o.venue.id)).toContain('caa-cindys');
   });
 });
