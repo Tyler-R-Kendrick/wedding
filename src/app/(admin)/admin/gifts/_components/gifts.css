@@ -17,9 +17,9 @@
 
 .gs-status__eyebrow {
   margin: 0;
-  font-family: var(--font-label-caps), Georgia, serif;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-family: var(--font-control-caps), Georgia, serif;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--color-on-surface-muted);
 }
@@ -138,9 +138,9 @@
 }
 
 .gs-step__next {
-  font-family: var(--font-label-caps), Georgia, serif;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-family: var(--font-control-caps), Georgia, serif;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--color-secondary);
 }
@@ -257,9 +257,9 @@
 
 .gs-preview__eyebrow {
   margin: 0;
-  font-family: var(--font-label-caps), Georgia, serif;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-family: var(--font-control-caps), Georgia, serif;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--color-secondary);
 }
