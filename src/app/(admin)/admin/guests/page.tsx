@@ -108,6 +108,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Input id="rebind-guest" label="Guest id" name="guestId" required />
           <Input id="rebind-email" label="New email" name="email" type="email" required />
           <Input id="rebind-reason" label="Reason (audited)" name="reason" required />
+          <ConfirmCheck id="confirm-rebind" label="Yes, move this guest’s access to the new email (the old one stops working)" />
           <div>
             <Button>Rebind</Button>
           </div>
@@ -140,6 +141,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <form action={setAdminRole} className="ops-form">
             <Input id="role-email" label="Email" name="email" type="email" required />
             <Input id="role" label="Role" defaultValue="planner" options={[{ value: 'owner', label: 'Owner' }, { value: 'planner', label: 'Planner' }, { value: 'moderator', label: 'Moderator' }, { value: 'none', label: 'Remove role' }]} />
+            <ConfirmCheck id="confirm-role" label="Yes, change what this person can do in the console" />
             <div>
               <Button>Save role</Button>
             </div>

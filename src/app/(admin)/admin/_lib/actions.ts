@@ -67,6 +67,7 @@ export async function resetIdentity(fd: FormData): Promise<void> {
 }
 
 export async function rebindIdentity(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/guests');
   finish('/admin/guests', await adminInvoke('admin_rebind_identity', { guestId: str(fd, 'guestId'), email: str(fd, 'email'), reason: str(fd, 'reason') || 'admin rebind' }, idem(fd)), 'Access moved to the new email.');
 }
 
@@ -113,6 +114,7 @@ export interface IssuedLink {
 /** Issue / rotate return the token exactly once, so they render inline (useActionState) instead of redirecting. */
 export async function issueInvitation(_prev: IssuedLink, fd: FormData): Promise<IssuedLink> {
   const rotate = str(fd, 'invitationId');
+  if (rotate && str(fd, 'confirm') !== 'yes') return { ok: false, error: 'Nothing was changed: tick the box to confirm.', code: 'validation' };
   const eventKeys = str(fd, 'eventKeys').split(/[;,]/).map((s) => s.trim()).filter(Boolean);
   const r = rotate
     ? await adminInvoke<{ url: string; qrSvg: string; invitation: { householdId: string; expiresAt: string } }>('admin_rotate_invitation', { invitationId: rotate }, idem(fd))
@@ -129,6 +131,7 @@ export async function issueInvitation(_prev: IssuedLink, fd: FormData): Promise<
 }
 
 export async function setAdminRole(fd: FormData): Promise<void> {
+  requireConfirm(fd, '/admin/guests');
   const role = str(fd, 'role');
   finish('/admin/guests', await adminInvoke('admin_set_admin_role', { email: str(fd, 'email'), role: role === 'none' ? null : role }, idem(fd)), 'Admin role updated.');
 }
