@@ -113,6 +113,32 @@ export function principalFromSpec(spec: TestPrincipalSpec): Principal {
   };
 }
 
+/**
+ * Principals this resolver made from headers. A real session can never be in it. Held on `globalThis`
+ * because Next bundles this module twice — once for `instrumentation.ts`, which installs the
+ * resolver, and once for the app, which builds contexts — and a module-level set was two sets.
+ */
+const INJECTED = Symbol.for('wedding.testPrincipal.injected');
+const injected: WeakSet<Principal> = ((globalThis as { [INJECTED]?: WeakSet<Principal> })[INJECTED] ??= new WeakSet<Principal>());
+
+/**
+ * Under the injector, the per-principal capability budget is one bucket per SESSION, not per person.
+ *
+ * The e2e suites act as a handful of fixture guests from every browser context they open — two
+ * workers, three viewports, the quality sweep walking six guest routes per design — so "guest A1"
+ * is dozens of devices at once. One person's budget (60 calls, 1/s) ran dry mid-suite and the guest
+ * pages rendered "RSVP is taking a moment": `rate_limited` from `get_my_rsvp`, 21 times in one
+ * local run of the specs that failed on main (#58's run) and on #62. Each `contextAs` now sends its
+ * own `sessionId`, and this gives each one its own bucket, which is what a person with that many
+ * devices would have. Real principals are never in `injected`, so production keeps one bucket per
+ * person (`src/capabilities/invoke.ts`), and the pipeline's own tests still meter per principal.
+ */
+export function sessionScopedLimiter<L extends { consume(key: string, budget: 'capability'): Promise<{ allowed: boolean; retryAfterMs?: number }> }>(limiter: L, principal: Principal) {
+  if (!injected.has(principal) || principal.kind === 'anonymous' || principal.kind === 'system') return limiter;
+  const session = principal.sessionId;
+  return { consume: (key: string, budget: 'capability') => limiter.consume(`${key}@${session}`, budget) };
+}
+
 const MARK = Symbol.for('wedding.testPrincipalResolver');
 
 export function createTestPrincipalResolver(fallback: PrincipalResolver, e: TestPrincipalEnv = readTestPrincipalEnv()): PrincipalResolver {
@@ -125,7 +151,9 @@ export function createTestPrincipalResolver(fallback: PrincipalResolver, e: Test
       try {
         const parsed = testPrincipalSchema.safeParse(JSON.parse(raw));
         if (!parsed.success) return fallback.resolve(request);
-        return principalFromSpec(parsed.data);
+        const principal = principalFromSpec(parsed.data);
+        injected.add(principal);
+        return principal;
       } catch {
         return fallback.resolve(request);
       }
