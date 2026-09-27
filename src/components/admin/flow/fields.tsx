@@ -136,6 +136,7 @@ export function CheckField<V extends Values>({ ctx, name, label, hint }: { ctx: 
           id={id}
           type="checkbox"
           checked={Boolean(ctx.values[name])}
+          aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(ctx.uid, name, Boolean(hint), Boolean(error))}
           onChange={(e) => ctx.set({ [name]: e.target.checked } as Partial<V>)}
         />

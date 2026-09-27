@@ -5,7 +5,7 @@ import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { GiftFunds } from '@/components/handoff/GiftFunds';
 import { GiftLinkCard } from '@/components/handoff/GiftLinkCard';
 import { invokeForPage } from '@/components/handoff/server';
-import { giftsSetup, RAIL_ORDER, RAILS, registryProviderFor, type SetupStep } from '@/domain/gifts';
+import { giftsSetup, RAIL_ORDER, RAILS, registryProviderFor, type NextStep, type SetupStep } from '@/domain/gifts';
 import { getLifecycleView } from '@/domain/lifecycle';
 import { memberNavFor } from '@/domain/lifecycle/nav';
 import { ROUTES } from '@/domain/routes';
@@ -84,22 +84,14 @@ export default async function AdminGiftsPage() {
         <h2 id="gs-status-title" className="gs-status__title">
           {setup.headline}
         </h2>
-        <ul className="gs-checks" role="list">
-          <Check done={setup.steps.wishlist.done} label="Registry" href="#gift-wishlist">
-            {setup.steps.wishlist.summary}
-          </Check>
-          <Check done={setup.steps.rails.done} label="Ways to give" href="#gift-rails">
-            {setup.steps.rails.summary}
-          </Check>
-          <Check done={setup.steps.funds.done} label="Funds" href="#gift-funds">
-            {setup.steps.funds.summary}
-          </Check>
-          <Check done={setup.steps.page.done} label="In guests’ menu">
-            {setup.steps.page.summary}
-          </Check>
-        </ul>
+        <p className="gs-status__line">{setup.steps.page.summary}</p>
         <p className="gs-status__actions">
-          <a className="ops-button ops-button-ghost" href="#gifts-preview">
+          {setup.next ? (
+            <a className="ops-button ops-button-ghost" href={`#${STEP_ANCHOR[setup.next]}`}>
+              Next: {STEP_TITLE[setup.next]}
+            </a>
+          ) : null}
+          <a className="gs-link" href="#gifts-preview">
             See what guests see
           </a>
           <a className="gs-link" href={ROUTES.gifts} target="_blank" rel="noopener">
@@ -110,7 +102,7 @@ export default async function AdminGiftsPage() {
       </section>
 
       <ol className="gs-steps" role="list">
-        <SetupCard n={1} id="gift-wishlist" step="wishlist" next={setup.next} done={setup.steps.wishlist.done} title="Your registry">
+        <SetupCard n={1} id="gift-wishlist" step="wishlist" next={setup.next} done={setup.steps.wishlist.done} title={STEP_TITLE.wishlist}>
           <p className="gs-copy">
             The list itself lives on your registry site: Zola, The Knot or Joy. Guests buy there, and the registry keeps track of what has been bought. This site does not
             copy the list; it sends guests to it, so paste the link your registry gives you.
@@ -161,12 +153,12 @@ export default async function AdminGiftsPage() {
           ) : (
             <p className="gs-empty">No registry linked. Guests read that you have not chosen where to keep a wishlist yet.</p>
           )}
-          <RegistryFlow takenIds={linkIds} variant={adminLinks.length ? 'ghost' : 'primary'} label={adminLinks.length ? 'Add another link' : 'Link your registry'} />
+          <RegistryFlow takenIds={linkIds} variant={setup.next === 'wishlist' ? 'primary' : 'ghost'} label={adminLinks.length ? 'Add another link' : 'Link your registry'} />
         </SetupCard>
 
         {data.fundsAvailable ? (
           <>
-            <SetupCard n={2} id="gift-rails" step="rails" next={setup.next} done={setup.steps.rails.done} title="Ways to send a gift of money">
+            <SetupCard n={2} id="gift-rails" step="rails" next={setup.next} done={setup.steps.rails.done} title={STEP_TITLE.rails}>
               <p className="gs-copy">Your own Venmo, PayPal, Cash App, Zelle or a mailing address for checks. Money goes from a guest’s account straight to yours; this site never holds it or adds a fee.</p>
               {data.rails.length ? (
                 <ul className="gs-rows" role="list">
@@ -190,21 +182,21 @@ export default async function AdminGiftsPage() {
               ) : (
                 <p className="gs-empty">None yet. Until you add one, guests see no gifts of money at all.</p>
               )}
-              {data.rails.length < RAIL_ORDER.length ? <RailFlow options={railOptions} variant={data.rails.length ? 'ghost' : 'primary'} label={data.rails.length ? 'Add another way' : 'Add a way to give'} /> : null}
+              {data.rails.length < RAIL_ORDER.length ? <RailFlow options={railOptions} variant={setup.next === 'rails' ? 'primary' : 'ghost'} label={data.rails.length ? 'Add another way' : 'Add a way to give'} /> : null}
             </SetupCard>
 
-            <SetupCard n={3} id="gift-funds" step="funds" next={setup.next} done={setup.steps.funds.done} title="What gifts of money go toward">
+            <SetupCard n={3} id="gift-funds" step="funds" next={setup.next} done={setup.steps.funds.done} title={STEP_TITLE.funds}>
               <p className="gs-copy">Guests pick one of these, then how to send it. Venmo’s note carries the fund’s name, so you can tell a honeymoon gift from a house gift.</p>
               {!activeRails.length ? (
                 <p className="gs-blocked" role="note">
-                  <strong>Hidden from guests until step 2 is done.</strong> A list of things to give toward, with no way to give, would be a dead end, so the Gifts page leaves these out until you add a way to give.
+                  <strong>Hidden from guests until you add a way to give.</strong> A list of things to give toward, with no way to give, would be a dead end, so the Gifts page leaves these out until you add a way to give.
                 </p>
               ) : null}
               <ul className="gs-rows" role="list">
                 {data.funds.map((f, i) => {
                   const prev = data.funds[i - 1];
                   const next = data.funds[i + 1];
-                  const move = (other: typeof f) => [
+                  const move = (other: NonNullable<typeof prev>) => [
                     { capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, sortOrder: other.sortOrder === f.sortOrder ? other.sortOrder + (other === prev ? -1 : 1) : other.sortOrder } },
                     { capability: 'admin_upsert_gift_fund', input: { id: other.id, title: other.title, sortOrder: f.sortOrder } },
                   ];
@@ -212,21 +204,21 @@ export default async function AdminGiftsPage() {
                     <li key={f.id} className="gs-row" data-gift-fund-id={f.id}>
                       <div className="gs-row__main">
                         <p className="gs-row__title">
-                          {f.title} {f.active ? activeRails.length ? <Pill tone="good">Shown</Pill> : <Pill>Ready</Pill> : <Pill>Hidden</Pill>}
+                          {f.title} {f.active ? activeRails.length ? <Pill tone="good">Shown</Pill> : <Pill>Ready, waiting on a way to give</Pill> : <Pill>Hidden</Pill>}
                         </p>
                         {f.description ? <p className="gs-row__meta">{f.description}</p> : null}
                       </div>
                       <div className="gs-row__actions">
                         <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Change" />
-                        <QuickAction label={f.active ? 'Hide' : 'Show'} busyLabel="Saving…" accessibleName={`${f.active ? 'Hide' : 'Show'} ${f.title}`} calls={[{ capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, active: !f.active } }]} />
-                        {prev ? <QuickAction label="Up" busyLabel="Moving…" accessibleName={`Move ${f.title} up`} calls={move(prev)} /> : null}
-                        {next ? <QuickAction label="Down" busyLabel="Moving…" accessibleName={`Move ${f.title} down`} calls={move(next)} /> : null}
+                        <QuickAction label={f.active ? 'Hide' : 'Show'} busyLabel="Saving…" done={f.active ? `${f.title} hidden.` : `${f.title} shown.`} accessibleName={`${f.active ? 'Hide' : 'Show'} ${f.title}`} calls={[{ capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, active: !f.active } }]} />
+                        <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${f.title} up.`} unavailable={!prev} accessibleName={`Move ${f.title} up`} calls={prev ? move(prev) : []} />
+                        <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${f.title} down.`} unavailable={!next} accessibleName={`Move ${f.title} down`} calls={next ? move(next) : []} />
                       </div>
                     </li>
                   );
                 })}
               </ul>
-              <FundFlow takenIds={fundIds} rails={linkRailNames} variant="ghost" label="Add a fund" />
+              <FundFlow takenIds={fundIds} rails={linkRailNames} variant={setup.next === 'funds' && activeRails.length ? 'primary' : 'ghost'} label="Add a fund" />
             </SetupCard>
           </>
         ) : (
@@ -243,7 +235,7 @@ export default async function AdminGiftsPage() {
 
       <section id="gifts-preview" className="gs-preview" aria-labelledby="gifts-preview-title">
         <div className="gs-preview__head">
-          <h2 id="gifts-preview-title" className="ops-h2">
+          <h2 id="gifts-preview-title" className="gs-section-title">
             What guests see
           </h2>
           <p className="con-note">
@@ -333,22 +325,8 @@ export default async function AdminGiftsPage() {
   );
 }
 
-function Check({ done, label, href, children }: { done: boolean; label: string; href?: string; children: ReactNode }) {
-  return (
-    <li className="gs-check" data-done={done ? '' : undefined}>
-      <span className="gs-check__mark" aria-hidden="true">
-        {done ? '✓' : '○'}
-      </span>
-      <span className="gs-check__text">
-        <span className="gs-check__label">
-          {href ? <a href={href}>{label}</a> : label}
-          <span className="sr-only">{done ? ': done.' : ': not done.'}</span>
-        </span>
-        <span className="gs-check__summary">{children}</span>
-      </span>
-    </li>
-  );
-}
+const STEP_TITLE: Record<NextStep, string> = { wishlist: 'Registry', rails: 'Ways to give', funds: 'Funds' };
+const STEP_ANCHOR: Record<NextStep, string> = { wishlist: 'gift-wishlist', rails: 'gift-rails', funds: 'gift-funds' };
 
 function SetupCard({ n, id, step, next, done, title, children }: { n: number; id: string; step: SetupStep; next: SetupStep | null; done: boolean; title: string; children: ReactNode }) {
   const current = next === step;

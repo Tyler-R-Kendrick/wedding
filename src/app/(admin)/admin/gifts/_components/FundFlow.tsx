@@ -38,6 +38,7 @@ export function FundFlow({ fund, takenIds, label, variant = 'primary', rails }: 
         </>
       ),
       ready: (v) => v.title.trim().length > 0,
+      readyHint: { field: 'title', message: 'Say what the money is for.' },
     },
     {
       title: 'Check and save',
@@ -79,8 +80,8 @@ export function FundFlow({ fund, takenIds, label, variant = 'primary', rails }: 
         input: (v) => ({
           id: fund?.id ?? freeSlug(v.title, takenIds),
           title: v.title.trim(),
-          // An emptied line is kept as it was by the capability; send it only when there is one.
-          description: v.description.trim() || undefined,
+          // Always sent: an emptied line clears it, which is what the preview on the last step showed.
+          description: v.description.trim(),
           active: v.shown,
         }),
       }}

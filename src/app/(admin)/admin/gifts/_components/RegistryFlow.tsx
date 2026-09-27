@@ -24,6 +24,8 @@ export interface RegistryLinkSummary {
   url: string;
   note: string | null;
   sortOrder: number;
+  /** A hidden link stays hidden when its words are changed: showing it is its own, explicit action. */
+  active: boolean;
 }
 
 interface CheckedLink {
@@ -64,6 +66,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
       fields: ['url'],
       render: (ctx) => <TextField ctx={ctx} name="url" label="Link to your registry" type="url" inputMode="url" spellCheck={false} hint="It starts with https:// and names your registry site, for example zola.com/registry/…" />,
       ready: (v) => v.url.trim().length > 0,
+      readyHint: { field: 'url', message: 'Paste the link to your registry.' },
       next: async (v) => {
         const res = await callCapability<CheckedLink>('admin_check_gift_setup', { input: { kind: 'link', url: v.url } });
         if (!res.ok || !res.data) return { errors: { url: res.error?.message ?? 'We could not check that link. Please try again.' } };
@@ -103,6 +106,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
         </>
       ),
       ready: (v) => v.confirmed,
+      readyHint: { field: 'confirmed', message: 'Open the link and tick the box once you have seen it is yours.' },
     },
     {
       title: 'How guests see it',
@@ -136,6 +140,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
         </>
       ),
       ready: (v) => v.label.trim().length > 0,
+      readyHint: { field: 'label', message: 'Give the link a few words guests will see.' },
     },
   ];
 
@@ -149,7 +154,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
       submit={{
         label: existing ? 'Save changes' : 'Add to the Gifts page',
         capability: 'admin_upsert_gift_link',
-        success: 'Saved. Guests see it on the Gifts page now.',
+        success: existing && !existing.active ? 'Saved. It is still hidden from guests; use Show when you want it back.' : 'Saved. Guests see it on the Gifts page now.',
         input: (v) => ({
           id: existing?.id ?? freeId(`${v.kind === 'registry' ? 'wishlist' : 'adventures'}-${v.provider || 'link'}`, takenIds),
           kind: v.kind,
@@ -159,7 +164,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
           note: v.note.trim() || undefined,
           sortOrder: existing?.sortOrder ?? 0,
           placeholder: false,
-          active: true,
+          active: existing?.active ?? true,
           confirmed: v.confirmed,
         }),
       }}

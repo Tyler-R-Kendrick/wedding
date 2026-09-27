@@ -77,6 +77,7 @@ export function RailFlow({ options, editing, label, variant = 'primary' }: { opt
       />
     ),
     ready: (v) => Boolean(v.rail),
+    readyHint: { field: 'rail', message: 'Choose one way to give.' },
     next: async (v) => {
       // Choosing one that is already set up edits it, starting from what is saved.
       const o = spec(v.rail);
@@ -105,6 +106,7 @@ export function RailFlow({ options, editing, label, variant = 'primary' }: { opt
       );
     },
     ready: (v) => v.handle.trim().length > 0,
+    readyHint: { field: 'handle', message: 'Enter your details first.' },
     next: async (v) => {
       const o = spec(v.rail);
       const errors: FieldErrors = {};
@@ -153,6 +155,7 @@ export function RailFlow({ options, editing, label, variant = 'primary' }: { opt
       );
     },
     ready: (v) => v.tried,
+    readyHint: { field: 'tried', message: 'Open it and tick the box once it shows your own details. A typo here sends a guest’s gift to a stranger.' },
   };
 
   const steps = fixed ? [details, tryIt] : [choose, details, tryIt];

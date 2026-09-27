@@ -26,8 +26,13 @@ export interface FlowStep<V> {
   render: (ctx: FlowContext<V>) => ReactNode;
   /** Runs on Continue. Return errors to stay on the step, or a patch (a normalised value) to keep. */
   next?: (values: V) => Promise<{ errors?: FieldErrors; patch?: Partial<V> } | void>;
-  /** Continue stays disabled until this holds (a required confirmation, a choice not yet made). */
+  /** Continue checks this first (a required confirmation, a choice not yet made)… */
   ready?: (values: V) => boolean;
+  /**
+   * …and says this when it does not hold, beside `field` when given. Continue is never a dead,
+   * disabled button with no reason: the review of this kit found exactly that.
+   */
+  readyHint?: { field?: keyof V & string; message: string };
 }
 
 export interface AdminFlowProps<V> {
@@ -70,6 +75,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   const uid = useId().replace(/:/g, '');
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<V>(initial);
@@ -121,6 +127,10 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       const done = () => {
         d.removeAttribute('data-closing');
         if (d.open) d.close();
+        // A sheet that opened itself (a restored draft, the return from /step-up) had nothing focused
+        // before it, so the browser would drop focus to <body>. The button that opens it is where it lives.
+        const active = document.activeElement;
+        if (!active || active === document.body || d.contains(active)) triggerRef.current?.focus();
       };
       // The exit animation ends the close; the timer covers reduced motion, where there is none.
       d.addEventListener('animationend', done, { once: true });
@@ -182,8 +192,17 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (busy || !ready) return;
+    if (busy) return;
     setFormError(null);
+    if (!ready) {
+      const hint = current.readyHint ?? { message: 'Please finish this step first.' };
+      if (hint.field) {
+        const errs = { [hint.field]: hint.message };
+        setErrors(errs);
+        focusFirstError(errs);
+      } else setFormError(hint.message);
+      return;
+    }
     if (!last) {
       if (current.next) {
         setBusy(true);
@@ -242,7 +261,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
 
   return (
     <div className="flow-anchor">
-      <button type="button" className={triggerClass} onClick={start} aria-haspopup="dialog" aria-describedby={trigger.describedBy}>
+      <button ref={triggerRef} type="button" className={triggerClass} onClick={start} aria-haspopup="dialog" aria-describedby={trigger.describedBy}>
         {unfinished && !open ? `Continue: ${trigger.label.charAt(0).toLowerCase()}${trigger.label.slice(1)}` : trigger.label}
       </button>
       {unfinished && !open ? <span className="flow-draft-note">Unfinished, kept on this device</span> : null}
@@ -322,7 +341,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
                   Back
                 </button>
               ) : null}
-              <button type="submit" className="ops-button ops-button-primary" disabled={busy || !ready} aria-busy={busy || undefined}>
+              <button type="submit" className="ops-button ops-button-primary" disabled={busy} aria-busy={busy || undefined}>
                 {busy ? (last ? 'Saving…' : 'Checking…') : last ? submit.label : 'Continue'}
               </button>
             </div>

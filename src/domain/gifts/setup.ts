@@ -92,6 +92,8 @@ export interface GiftsSetupInput {
 }
 
 export type SetupStep = 'wishlist' | 'rails' | 'funds' | 'page';
+/** The steps the couple act on; `page` follows the lifecycle, not anything they set here. */
+export type NextStep = Exclude<SetupStep, 'page'>;
 
 export interface GiftsSetup {
   /** True when a signed-in guest can find the page AND it has something on it to give with. */
@@ -101,7 +103,7 @@ export interface GiftsSetup {
   /** What each part of the setup is doing for guests right now. */
   steps: Record<SetupStep, { done: boolean; summary: string }>;
   /** The first unfinished step, which the page leads with. Null once everything is done. */
-  next: SetupStep | null;
+  next: NextStep | null;
   /** When the account menu starts listing Gifts, if it does not yet. */
   opensAt: LifecycleState | null;
 }
@@ -137,7 +139,7 @@ export function giftsSetup(i: GiftsSetupInput): GiftsSetup {
     },
   };
   const somethingToGive = steps.wishlist.done || fundsLive;
-  const order: SetupStep[] = ['wishlist', 'rails', 'funds'];
+  const order: NextStep[] = ['wishlist', 'rails', 'funds'];
   const next = order.find((s) => !steps[s].done) ?? null;
   const live = pageOpen && somethingToGive;
   const headline = live

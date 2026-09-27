@@ -21,11 +21,17 @@
   font-size: var(--text-label-caps);
   letter-spacing: var(--tracking-label-caps);
   text-transform: uppercase;
-  color: var(--color-tertiary);
+  color: var(--color-on-surface-muted);
 }
 
 .gs-status[data-live] .gs-status__eyebrow {
   color: var(--color-secondary);
+}
+
+.gs-status__line {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--color-on-surface-muted);
 }
 
 .gs-status__title {
@@ -35,60 +41,7 @@
   font-size: var(--text-h2);
   font-weight: 400;
   line-height: 1.2;
-}
-
-.gs-checks {
-  display: grid;
-  gap: var(--spacing-md) var(--spacing-xl);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (width >= 48rem) {
-  .gs-checks {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.gs-check {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--spacing-sm) var(--spacing-md);
-  align-items: start;
-}
-
-.gs-check__mark {
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  font-size: var(--text-body-sm);
-  line-height: 1;
-  color: var(--color-on-surface-muted);
-  border: 1px solid var(--color-outline);
-  border-radius: var(--radius-pill);
-}
-
-.gs-check[data-done] .gs-check__mark {
-  color: var(--color-on-secondary);
-  background: var(--color-secondary);
-  border-color: var(--color-secondary);
-}
-
-.gs-check__text {
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.gs-check__label {
-  font-weight: 500;
-}
-
-.gs-check__summary {
-  max-width: 52ch;
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-muted);
+  text-wrap: balance;
 }
 
 .gs-status__actions {
@@ -201,7 +154,7 @@
   font-size: var(--text-label-caps);
   letter-spacing: var(--tracking-label-caps);
   text-transform: uppercase;
-  color: var(--color-tertiary);
+  color: var(--color-secondary);
 }
 
 .gs-copy,
@@ -226,8 +179,8 @@
   margin: 0;
   max-width: 62ch;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid color-mix(in oklab, var(--color-tertiary) 45%, var(--color-outline));
-  background: color-mix(in oklab, var(--color-tertiary) 6%, var(--color-neutral));
+  border: 1px solid var(--color-outline);
+  background: var(--color-surface);
 }
 
 /* Rows: what is saved, each with its own actions. Hairlines, not cards. */
@@ -397,6 +350,14 @@
   scroll-margin-top: var(--spacing-lg);
 }
 
+.gs-section-title {
+  margin: 0;
+  font-family: var(--font-h2), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h2);
+  font-weight: 400;
+  text-wrap: balance;
+}
+
 .gs-preview__head {
   display: grid;
   gap: var(--spacing-xs);
@@ -472,8 +433,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .gs-step__num,
-  .gs-check__mark {
+  .gs-step__num {
     transition:
       background-color 240ms cubic-bezier(0.2, 0, 0, 1),
       color 240ms cubic-bezier(0.2, 0, 0, 1);

@@ -169,8 +169,8 @@ test.describe('admin pages', () => {
 test('admin gifts: the registry flow checks each step, keeps its draft over a reload, and saves nothing until asked', async ({ page }) => {
   await page.setExtraHTTPHeaders(principalHeaders('admin'));
   await page.goto('/admin/gifts');
-  // The status says what guests actually get: no way to give, so no funds, whatever the table held.
-  await expect(page.locator('.gs-status')).toContainText('hidden until you add a way to give');
+  // Funds say what guests actually get: no way to give, so no funds, whatever the table held.
+  await expect(page.locator('[data-gift-fund-id="honeymoon"]')).toContainText('waiting on a way to give');
   await expect(page.locator('#gifts-preview')).toContainText('What guests see');
 
   // Other specs on this server may already have linked a registry, which turns the button into "Add another link".
@@ -178,6 +178,8 @@ test('admin gifts: the registry flow checks each step, keeps its draft over a re
   await start.click();
   const sheet = page.locator('dialog[open]');
   await expect(sheet.getByRole('heading', { name: 'Paste the link' })).toBeFocused();
+  // The footer is on screen at every width: on a phone it used to sit below the fold of its own sheet.
+  await expect(sheet.getByRole('button', { name: 'Continue' })).toBeInViewport();
   await noBlockingAxe(page);
   await sheet.getByLabel('Link to your registry').fill('https://www.zola.com/');
   await sheet.getByRole('button', { name: 'Continue' }).click();
@@ -187,8 +189,10 @@ test('admin gifts: the registry flow checks each step, keeps its draft over a re
   await sheet.getByRole('button', { name: 'Continue' }).click();
   await expect(sheet.getByRole('heading', { name: 'Check it is yours' })).toBeVisible();
   await expect(sheet.getByRole('link', { name: /Open it in a new tab/ })).toHaveAttribute('href', 'https://zola.com/registry/e2e-couple');
-  // Continue waits for the admin to say they opened it.
-  await expect(sheet.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  // Continue waits for the admin to say they opened it, and says so rather than sitting disabled.
+  await sheet.getByRole('button', { name: 'Continue' }).click();
+  await expect(sheet.getByText(/tick the box once you have seen it is yours/)).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: 'Check it is yours' })).toBeVisible();
 
   await page.reload();
   const resumed = page.locator('dialog[open]');
