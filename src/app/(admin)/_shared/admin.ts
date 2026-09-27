@@ -44,6 +44,15 @@ export function back(path: string, outcome: { ok?: string; error?: string }): ne
   redirect(`${path}?${q.toString()}`);
 }
 
+/**
+ * The failure half of `back`: a capability that needs a fresh session (`stepUp: true`) sends the
+ * admin to `/step-up`, which returns them to `path`; anything else goes back with its message.
+ */
+export function backWithError(path: string, e: { code: string; message: string; details?: Record<string, unknown> }): never {
+  if (e.code === 'step_up_required') redirect(`/step-up?next=${encodeURIComponent(path)}`);
+  back(path, { error: describeError(e) });
+}
+
 export function describeError(e: { code: string; message: string; details?: Record<string, unknown> }): string {
   const issues = e.details?.issues as Array<{ path: string; message: string }> | undefined;
   return issues?.length ? `${e.message} ${issues.map((i) => `${i.path}: ${i.message}`).join('; ')}` : e.message;

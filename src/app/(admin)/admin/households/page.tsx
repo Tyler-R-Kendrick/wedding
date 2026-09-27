@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { deleteHousehold, saveHousehold } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Button, IdemKey, Input } from '../_components/ops';
-import { ConsoleGate, ConsolePage, DataTable, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Note, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Households', robots: { index: false, follow: false } };
@@ -13,13 +13,14 @@ type Detail = { household: Household & { mailingAddress: Record<string, string |
 export default async function HouseholdsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   if ((await adminPrincipal()).kind !== 'admin') return <ConsoleGate what="Households" />;
-  const list = await adminInvoke<{ households: Household[] }>('admin_list_households', { q: sp.q || undefined }, { method: 'GET' });
+  const list = await adminInvoke<{ households: Household[]; truncated: boolean }>('admin_list_households', { q: sp.q || undefined }, { method: 'GET' });
   const detail = sp.edit ? await adminInvoke<Detail>('admin_get_household', { householdId: sp.edit }, { method: 'GET' }) : null;
   const rows = list.ok ? list.value.data.households : [];
   const editing = detail?.ok ? detail.value.data : null;
   const a = editing?.household.mailingAddress ?? {};
   return (
     <ConsolePage title="Households" lede="The RSVP unit. One manager per household; children and guests without email are managed by them." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
+      {list.ok && list.value.data.truncated ? <Note>There are more households than this screen lists at once. Only the first {rows.length} are shown; narrow the list with a search.</Note> : null}
       <Section title={editing ? `Edit ${editing.household.name}` : 'Add a household'}>
         <form action={saveHousehold} className="ops-form">
           <IdemKey />

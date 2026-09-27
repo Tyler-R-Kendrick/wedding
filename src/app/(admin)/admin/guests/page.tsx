@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Button, Checkbox, IdemKey, Input } from '../_components/ops';
-import { ConsoleGate, ConsolePage, DataTable, Day, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -13,16 +13,20 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const principal = await adminPrincipal();
   if (principal.kind !== 'admin') return <ConsoleGate what="Guests" />;
+  // The checkbox submits `merged=on`; `1` is kept for links written by hand.
+  const showMerged = sp.merged === 'on' || sp.merged === '1';
   const [list, hh] = await Promise.all([
-    adminInvoke<{ guests: Guest[] }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: sp.merged === '1' }, { method: 'GET' }),
-    adminInvoke<{ households: { id: string; name: string }[] }>('admin_list_households', {}, { method: 'GET' }),
+    adminInvoke<{ guests: Guest[]; truncated: boolean }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: showMerged }, { method: 'GET' }),
+    adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
   const households = hh.ok ? hh.value.data.households : [];
+  const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
   const isOwner = principal.roles.has('owner');
   return (
     <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
+      {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
       <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
         <form action={saveGuest} className="ops-form">
           <IdemKey />
@@ -45,7 +49,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       <Section title="All guests">
         <form method="get" className="ops-form-inline">
           <Input id="q" label="Search name or email" defaultValue={sp.q} />
-          <Checkbox id="merged" label="Show merged duplicates" name="merged" />
+          <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
           <Button variant="ghost">Search</Button>
           <a href="/admin/guests/export">Export CSV</a>
           <a href="/admin/guests/export?notes=1&address=1">Export CSV with notes + addresses</a>

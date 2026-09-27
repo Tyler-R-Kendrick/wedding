@@ -17,10 +17,11 @@ export class MockVideo implements VideoProvider {
   readonly name = 'mock';
   readonly mode = 'mock' as const;
   readonly capabilities = { createAsset: true, getPlayback: true, hls: false, poster: false, probe: false };
-  constructor(private readonly storage: StorageProvider) {}
+  /** `warning` surfaces in describeProviders (admin integrations, /api/health), e.g. the mock serving production. */
+  constructor(private readonly storage: StorageProvider, private readonly opts: { warning?: string } = {}) {}
 
   validateConfig() {
-    return okConfig();
+    return okConfig(this.opts.warning ? [this.opts.warning] : []);
   }
   async health() {
     return upHealth();

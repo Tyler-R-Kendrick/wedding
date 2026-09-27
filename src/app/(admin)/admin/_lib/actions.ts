@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { newId } from '@/contracts/ids';
 import { adminInvoke } from './invoke';
@@ -108,6 +109,8 @@ export async function issueInvitation(_prev: IssuedLink, fd: FormData): Promise<
         childrenAllowance: Number(str(fd, 'childrenAllowance') || 0),
       }, idem(fd));
   if (!r.ok) return { ok: false, error: r.error.message, code: r.error.code };
+  // The action answers inline rather than redirecting, so the list beside the form is refreshed explicitly.
+  revalidatePath('/admin/invitations');
   return { ok: true, url: r.value.data.url, qrSvg: r.value.data.qrSvg, householdId: r.value.data.invitation.householdId, expiresAt: r.value.data.invitation.expiresAt };
 }
 

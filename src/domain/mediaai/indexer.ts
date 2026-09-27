@@ -7,7 +7,7 @@ import { mediaAiAnnotations, type MediaAiAnnotationRow, type VenueClass } from '
 import type { LoggerLike } from '@/capabilities/services';
 import { isServableKey } from '@/lib/media/keys';
 import type { EmbeddingsProvider } from '@/providers/embeddings/types';
-import type { MediaAiProvider } from '@/providers/media-ai/types';
+import { canAnnotate, type MediaAiProvider } from '@/providers/media-ai/types';
 import type { StorageProvider } from '@/providers/storage/types';
 import type { VectorIndexProvider, VectorMetadata } from '@/providers/vector-index/types';
 import { aiEligibility, INDEXABLE_STATUSES, type AiEligibility } from './eligibility';
@@ -109,7 +109,20 @@ export async function indexAsset(deps: IndexerDeps, assetId: string): Promise<In
   let derivativeKey: string | null = existing?.captionSource === 'ai' ? existing.derivativeKey : null;
   let error: string | null = null;
 
-  if (eligibility.ai) {
+  // No real describer (production refuses the mock media-ai): index from metadata only, and drop
+  // any earlier machine suggestion — it would otherwise keep feeding search and alt-text review.
+  const describer = canAnnotate(deps.mediaAi);
+  if (eligibility.ai && !describer) {
+    suggestedCaption = null;
+    suggestedAltText = null;
+    tags = [];
+    venueCandidate = undefined;
+    captionModel = null;
+    captionConfidence = null;
+    captionSource = 'none';
+    derivativeKey = null;
+    error = 'media-ai unavailable (metadata only)';
+  } else if (eligibility.ai) {
     const d = eligibility.derivative;
     // Belt and braces: the provider only ever receives a servable derivative key.
     if (!isServableKey(d.key)) throw new Error(`media.index: refusing to send non-derivative key for ${assetId}`);
@@ -225,8 +238,11 @@ export async function indexAsset(deps: IndexerDeps, assetId: string): Promise<In
  * for the rebuilds where nothing about the assets changed but everything about the index did:
  * a new embeddings model, a different vector backend, or a flag that changes what may be sent to
  * a provider at all.
+ *
+ * `purgeAiCaptions` also returns every row still holding a machine caption; the scan sets it when
+ * the media-ai provider cannot annotate, so stale suggestions leave search and review.
  */
-export async function listIndexBacklog(db: Db, limit = 50, opts: { full?: boolean } = {}): Promise<string[]> {
+export async function listIndexBacklog(db: Db, limit = 50, opts: { full?: boolean; purgeAiCaptions?: boolean } = {}): Promise<string[]> {
   const indexable = [...INDEXABLE_STATUSES];
   const changed = or(isNull(mediaAiAnnotations.id), sql`${mediaAssets.updatedAt} > coalesce(${mediaAiAnnotations.indexedAt}, ${mediaAiAnnotations.updatedAt})`);
   const fresh = await db
@@ -247,5 +263,9 @@ export async function listIndexBacklog(db: Db, limit = 50, opts: { full?: boolea
     .leftJoin(mediaAssets, eq(mediaAssets.id, mediaAiAnnotations.assetId))
     .where(and(eq(mediaAiAnnotations.status, 'indexed'), isNull(mediaAssets.id)))
     .limit(limit);
-  return [...new Set([...fresh, ...stale, ...orphans].map((r) => r.id))].slice(0, limit);
+  // With no describer configured, rows still carrying a machine caption are re-indexed so it is dropped.
+  const machineCaptioned = opts.purgeAiCaptions
+    ? await db.select({ id: mediaAiAnnotations.assetId }).from(mediaAiAnnotations).where(eq(mediaAiAnnotations.captionSource, 'ai')).limit(limit)
+    : [];
+  return [...new Set([...fresh, ...stale, ...orphans, ...machineCaptioned].map((r) => r.id))].slice(0, limit);
 }

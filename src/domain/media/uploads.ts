@@ -2,6 +2,7 @@ import { and, eq, isNotNull, lt } from 'drizzle-orm';
 import { CapabilityError } from '@/contracts/errors';
 import { newId, type MediaAssetId, type MediaUploadId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
+import type { ProviderFailure } from '@/contracts/providers';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { mediaAssets, mediaUploads, professionalMediaRights, type AssetStatus, type MediaCollectionRow, type MediaSource, type MediaUploadRow, type ProfessionalRightsDraft, type UploadPartRecord } from '@/db/schema/media';
@@ -211,7 +212,29 @@ export async function getUpload(db: Db, id: string): Promise<MediaUploadRow | nu
 
 const PART_ETAG = /^[A-Za-z0-9"=+/._-]{1,128}$/;
 
-/** Merges client-reported parts (numbers validated against the plan; ETags shape-checked) into the row's record. */
+/**
+ * Optional storage capability: the parts storage holds for a multipart upload (S3 ListParts).
+ * Adapters that implement it let completion recover ETags the browser could not read; without it,
+ * a multipart upload needs the bucket CORS to expose ETag.
+ */
+export interface MultipartPartLister {
+  listMultipartParts(input: { key: string; uploadId: string }): Promise<Result<{ partNumber: number; etag: string; size?: number }[], ProviderFailure>>;
+}
+
+async function listStoredParts(storage: StorageProvider, key: string, uploadId: string): Promise<Result<{ partNumber: number; etag: string; size?: number }[] | null, ProviderFailure>> {
+  const lister = storage as StorageProvider & Partial<MultipartPartLister>;
+  if (typeof lister.listMultipartParts !== 'function') return ok(null);
+  return lister.listMultipartParts({ key, uploadId });
+}
+
+/**
+ * Merges client-reported parts (numbers validated against the plan; ETags shape-checked) into the row's record.
+ *
+ * An empty ETag is not an error: browsers hide the header on a cross-origin PUT unless the bucket's
+ * CORS exposes it (docs/ops/deploy-vercel-supabase.md). Such a report is simply not recorded —
+ * a single PUT never needs one (completion checks the object with HEAD), and multipart completion
+ * asks storage for the part list instead (`completeUpload`).
+ */
 export function mergeReportedParts(upload: MediaUploadRow, reported: { partNumber: number; etag: string; size?: number }[], now: Date): Result<UploadPartRecord[], CapabilityError> {
   const merged = partRecordsToTicket(upload.parts);
   for (const p of reported) {
@@ -219,6 +242,7 @@ export function mergeReportedParts(upload: MediaUploadRow, reported: { partNumbe
       return err(new CapabilityError('validation', 'That part does not belong to this upload.', { issues: [{ path: 'parts', message: `part ${p.partNumber} out of range` }] }));
     }
     const etag = p.etag.trim().replaceAll('"', '');
+    if (etag === '' || !upload.multipart) continue;
     if (!PART_ETAG.test(etag)) return err(new CapabilityError('validation', 'That part could not be recorded.', { issues: [{ path: 'parts', message: 'malformed etag' }] }));
     merged.set(p.partNumber, { partNumber: p.partNumber, etag, size: p.size ?? 0, uploadedAt: now.toISOString() });
   }
@@ -295,9 +319,33 @@ export async function completeUpload(deps: UploadDeps, upload: MediaUploadRow, i
   const key = upload.quarantineKey;
 
   if (upload.multipart) {
-    const have = new Set(merged.value.map((p) => p.partNumber));
-    const missing: number[] = [];
-    for (let n = 1; n <= upload.partCount; n++) if (!have.has(n)) missing.push(n);
+    const missingFrom = (records: UploadPartRecord[]) => {
+      const have = new Set(records.map((p) => p.partNumber));
+      const out: number[] = [];
+      for (let n = 1; n <= upload.partCount; n++) if (!have.has(n)) out.push(n);
+      return out;
+    };
+    let missing = missingFrom(merged.value);
+    // Parts the browser sent but could not read an ETag for (bucket CORS hides it): ask storage.
+    const blind = (input.reported ?? []).some((p) => p.etag.trim().replaceAll('"', '') === '');
+    if (missing.length > 0) {
+      const listed = await listStoredParts(deps.storage, key, upload.storageUploadId!);
+      if (listed.ok && listed.value) {
+        const byNumber = partRecordsToTicket(merged.value);
+        for (const p of listed.value) {
+          if (p.partNumber < 1 || p.partNumber > upload.partCount || byNumber.has(p.partNumber)) continue;
+          const etag = p.etag.trim().replaceAll('"', '');
+          if (PART_ETAG.test(etag)) byNumber.set(p.partNumber, { partNumber: p.partNumber, etag, size: p.size ?? 0, uploadedAt: now.toISOString() });
+        }
+        merged.value.splice(0, merged.value.length, ...[...byNumber.values()].sort((a, b) => a.partNumber - b.partNumber));
+        missing = missingFrom(merged.value);
+      } else if (blind) {
+        // The parts may well be in the bucket, but without their ETags they cannot be assembled.
+        // Retrying cannot help, so say so instead of asking for the parts again.
+        await deps.db.update(mediaUploads).set({ parts: merged.value, updatedAt: now }).where(eq(mediaUploads.id, upload.id));
+        return err(new CapabilityError('provider_unavailable', 'We could not confirm this upload with our photo storage. Please let us know, and try a smaller file in the meantime.', { reason: 'etag_not_exposed' }));
+      }
+    }
     if (missing.length > 0) {
       await deps.db.update(mediaUploads).set({ parts: merged.value, updatedAt: now }).where(eq(mediaUploads.id, upload.id));
       return err(new CapabilityError('validation', 'Some parts of that file have not arrived yet. Please resume the upload.', { missingParts: missing.slice(0, 50) }));

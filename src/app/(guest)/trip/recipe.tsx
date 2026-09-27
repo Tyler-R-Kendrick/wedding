@@ -4,6 +4,7 @@ import type { ThemeId } from '@/themes/types';
 import Link from 'next/link';
 import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { formatChicagoDateTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
 import { deleteProfileAction, hostedFlightsAction, itemAction } from './actions';
 
@@ -263,7 +264,16 @@ export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
     <div className="page">
       <h1 className="page__title">Your trip</h1>
       <p className="page__lede">
-        {reason === 'anonymous' ? 'Open the link from your invitation to see and plan your trip. Until then, everything about getting here is on ' : 'This page is for invited guests. Everything about getting here is on '}
+        {reason === 'anonymous' ? (
+          <>
+            <Link className="underline underline-offset-4" href={throughSignIn('/trip')}>
+              Sign in
+            </Link>{' '}
+            with the email on your invitation to see and plan your trip. Until then, everything about getting here is on{' '}
+          </>
+        ) : (
+          'This page is for invited guests. Everything about getting here is on '
+        )}
         <a className="underline underline-offset-4" href="/travel">
           Travel &amp; Stay
         </a>

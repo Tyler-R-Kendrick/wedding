@@ -109,6 +109,11 @@ export interface NavModel {
    * preview). Undefined on prerendered public pages: the account menu asks in the browser.
    */
   signedIn?: boolean;
+  /**
+   * The session is an administrator's. An admin has no household, so the household's pages would
+   * each answer "for invited guests" and send them to sign in, which sends them straight back.
+   */
+  admin?: boolean;
 }
 
 export interface DateFacts {

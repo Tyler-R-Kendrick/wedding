@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   description: 'Sara and Tyler are getting married in Chicago on Saturday, July 17, 2027.',
   // noai/noimageai: the couple's photos and words are not for AI training (LICENSE, src/lib/rights.ts).
   robots: 'noindex, nofollow, noai, noimageai',
+  // The default design's mark, for the trees whose layouts set none (auth, admin): without it every
+  // one of those pages asked for /favicon.ico and got a 404. The public and guest layouts override it
+  // with the active design's.
+  icons: { icon: [{ url: '/icons/botanical-deco.svg', type: 'image/svg+xml' }], apple: [{ url: '/icons/botanical-deco-180.png', sizes: '180x180' }] },
 };
 
 export const viewport: Viewport = {

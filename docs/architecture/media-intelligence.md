@@ -147,9 +147,15 @@ publishes the **admin-edited** text and marks the suggestion reviewed. The revie
   embeddings API is called. It is deterministic and cheap, and keeps tests honest, but it has no
   real semantics: "dance" and "dancing" are only related because of the lexical half of the
   blend. Re-index with `full` after changing the model.
-- There is no hosted vision provider, so suggested captions and tags come from the deterministic
-  stand-in and describe nothing real. They stay drafts (see above): only text an admin writes or
-  approves on `/admin/ai` ever reaches a guest.
+- There is no hosted vision provider, so in development and tests suggested captions and tags come
+  from the deterministic stand-in and describe nothing real. They stay drafts (see above): only
+  text an admin writes or approves on `/admin/ai` ever reaches a guest. **Production refuses the
+  stand-in** (unless `FORCE_MOCK_PROVIDERS`): `createMediaAiProvider` returns `UnavailableMediaAi`
+  (mode `unavailable`, `capabilities.annotate: false`), the indexer never calls it and indexes
+  metadata only (`captionSource: 'none'`, `error: 'media-ai unavailable (metadata only)'`),
+  `suggest_alt_text` returns the suggestion with every machine field nulled, `/admin/ai` lists no
+  suggestions, and a backlog scan re-indexes every row still holding `captionSource: 'ai'` so a
+  caption written before the switch leaves search too.
 - Video is indexed from its poster frame plus its metadata. Per-scene descriptions exist in the
   seam (`describeScenes`) but are not stored yet.
 - The vector index has no re-ranking stage; `k` is `4 × limit`, which is ample for an archive of

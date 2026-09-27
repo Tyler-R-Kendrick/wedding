@@ -34,7 +34,7 @@ const overviewOutput = z.object({
       anchorId: z.string().nullable(),
       notes: z.string().nullable(),
       sortOrder: z.number(),
-      assignments: z.array(z.object({ guestId: z.string(), displayName: z.string(), householdName: z.string(), seatNumber: z.number().nullable() })),
+      assignments: z.array(z.object({ guestId: z.string(), displayName: z.string(), householdName: z.string(), seatNumber: z.number().nullable(), receptionRsvp: z.enum(RSVP_STATUSES).nullable() })),
     }),
   ),
   unassigned: z.array(z.object({ guestId: z.string(), displayName: z.string(), householdName: z.string(), receptionRsvp: z.enum(RSVP_STATUSES).nullable() })),
@@ -76,9 +76,10 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
           sortOrder: t.sortOrder,
           assignments: assignments
             .filter((a) => a.tableId === t.id)
-            .map((a) => ({ guestId: a.guestId, displayName: nameOf(guestById.get(a.guestId), 'Unknown'), householdName: hh.get(guestById.get(a.guestId)?.householdId ?? '') ?? '', seatNumber: a.seatNumber })),
+            .map((a) => ({ guestId: a.guestId, displayName: nameOf(guestById.get(a.guestId), 'Unknown'), householdName: hh.get(guestById.get(a.guestId)?.householdId ?? '') ?? '', seatNumber: a.seatNumber, receptionRsvp: reception.get(a.guestId) ?? null })),
         })),
-        unassigned: guests.filter((g) => !seated.has(g.id)).map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), householdName: hh.get(g.householdId) ?? '', receptionRsvp: reception.get(g.id) ?? null })),
+        // A merged duplicate is not a person to seat; the guest it was merged into is listed instead.
+        unassigned: guests.filter((g) => !seated.has(g.id) && !g.mergedIntoGuestId).map((g) => ({ guestId: g.id, displayName: guestDisplayName(g), householdName: hh.get(g.householdId) ?? '', receptionRsvp: reception.get(g.id) ?? null })),
         history: history.map((h) => ({ id: h.id, publishedAt: h.publishedAt.toISOString(), unpublishedAt: h.unpublishedAt?.toISOString() ?? null, note: h.note })),
       },
       sources: [],
@@ -222,10 +223,12 @@ const publishOutput = z.object({ publicationId: z.string(), publishedAt: z.strin
 export const adminPublishSeating = defineCapability<{ note?: string | null }, z.infer<typeof publishOutput>>({
   name: 'admin_publish_seating',
   title: 'Publish seating (admin)',
-  description: 'Freezes the current draft into the chart guests can see (Your Weekend, get_my_table). Re-publishing replaces the live chart. Audited.',
+  description: 'Freezes the current draft into the chart guests can see (Your Weekend, get_my_table). Re-publishing replaces the live chart. Audited; fresh admin session required.',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_guest_ops'],
+  // Step-up: every guest with a table sees it at once (docs/ops/admin-guide.md "Step-up").
+  stepUp: true,
   confirmation: 'inline',
   idempotent: true,
   annotations: ADMIN_ANNOTATIONS,

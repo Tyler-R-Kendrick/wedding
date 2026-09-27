@@ -12,11 +12,26 @@ import { Placeholder } from '@/components/provenance/Placeholder';
  * button offered was `/sign-in`, which succeeds and lands back on the page that just refused them.
  * That loop has no exit; a reviewer walked it.
  */
-export function GuestsOnly({ what, signedIn = false, returnTo }: { what: string; signedIn?: boolean; returnTo?: string }) {
+export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: { what: string; signedIn?: boolean; admin?: boolean; returnTo?: string }) {
   // Carrying the path through sign-in is what `next` is for: `/sign-in` renders the hidden field and
   // `verifyCode` honours it, but this page linked to a bare `/sign-in`, so a guest who tapped RSVP
   // in an email, signed in, and landed on Your Weekend had to find their way back alone.
   const href = returnTo ? `/sign-in?next=${encodeURIComponent(returnTo)}` : '/sign-in';
+  // An administrator has a session but no household. The signed-out copy sent them to /sign-in, which
+  // sends anyone already signed in straight back here: a loop with no way out.
+  if (admin) {
+    return (
+      <div className="page">
+        <h1 className="page__title">{what} is for invited guests</h1>
+        <p className="page__lede">You are signed in as an administrator, and an administrator has no household of their own. Guests’ answers are in the console.</p>
+        <p>
+          <Link className="btn btn--primary" href="/admin">
+            Go to the admin console
+          </Link>
+        </p>
+      </div>
+    );
+  }
   if (signedIn) {
     return (
       <div className="page">

@@ -8,7 +8,7 @@ import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
-import { safeReturnPath } from '@/domain/identity/routes';
+import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
@@ -24,13 +24,24 @@ const str = (fd: FormData, key: string): string => {
   return typeof v === 'string' ? v.trim() : '';
 };
 
+/**
+ * `path` with `next` carried on it, so a mistake or "Start again" still leads where the guest was
+ * going. `back` is itself checked as a return path (512 characters at most), and an encoded `next`
+ * near that limit would push it over and lose the invite; then `next` is left off instead.
+ */
+const withNext = (path: string, next: string) => {
+  const carried = next ? `${path}?next=${encodeURIComponent(next)}` : path;
+  return isSafeReturnPath(carried) ? carried : path;
+};
+
 const withError = (path: string, code: string) => `${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`;
 
 export async function startClaim(formData: FormData): Promise<void> {
   const token = str(formData, 'token');
   const guestId = str(formData, 'guestId');
   const next = safeReturnPath(str(formData, 'next'), '');
-  const back = `/invite/${encodeURIComponent(token)}`;
+  // `back` is where a mistake returns the guest, and where "Start again" on the code page goes: keep `next` on it.
+  const back = withNext(`/invite/${encodeURIComponent(token)}`, next);
   if (!guestId) redirect(withError(back, 'pick'));
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: 'claim', token, guestId, next: next || undefined });
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
@@ -44,7 +55,7 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
   const email = str(formData, 'email');
   const admin = str(formData, 'admin') === '1';
   const next = safeReturnPath(str(formData, 'next'), '');
-  const back = admin ? '/sign-in/admin' : '/sign-in';
+  const back = withNext(admin ? '/sign-in/admin' : '/sign-in', next);
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: admin ? 'admin_sign_in' : 'sign_in', email, next: next || undefined });
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
@@ -134,6 +145,18 @@ export async function updateEmail(formData: FormData): Promise<void> {
     redirect('/claim/welcome?contact=1');
   }
   redirect('/claim/welcome?contact=done');
+}
+
+/**
+ * Drops a pending code (an email change or a step-up) so the page offers to send one again. The
+ * challenge cookie lives ten minutes, and while it did the page showed only the code field: a code
+ * that never arrived, or a mistyped new address, stranded the guest until it expired.
+ */
+export async function startOverCode(formData: FormData): Promise<void> {
+  const back = safeReturnPath(str(formData, 'back'), '/claim/welcome');
+  const cookie = await readChallengeCookie();
+  if (cookie && (cookie.kind === 'change_email' || cookie.kind === 'step_up')) await clearChallengeCookie();
+  redirect(back);
 }
 
 /** Passkey ceremony halves, called from the client component (no forms: WebAuthn needs JS). */

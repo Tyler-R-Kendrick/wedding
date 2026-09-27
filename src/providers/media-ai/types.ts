@@ -52,3 +52,9 @@ export interface MediaAiProvider extends ProviderDescriptor {
   /** Caption + alt text + tags + venue class in one call (the indexer's entry point). */
   annotate(media: MediaRef): Promise<Result<MediaAnnotation, ProviderFailure>>;
 }
+
+/**
+ * True when the provider can actually describe media. False for `UnavailableMediaAi` (production
+ * without a real describer): callers index metadata only and offer no machine text.
+ */
+export const canAnnotate = (p: Pick<MediaAiProvider, 'capabilities'>): boolean => p.capabilities['annotate'] !== false;

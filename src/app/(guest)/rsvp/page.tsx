@@ -29,7 +29,7 @@ export default async function RsvpPage() {
   const { ctx, principal } = await uiContext();
   // `RsvpForm` is a client island and cannot read the request, so the design is handed to it here.
   const theme = await getRequestTheme();
-  if (principal.kind !== 'guest') return <GuestsOnly what="RSVP" returnTo="/rsvp" />;
+  if (principal.kind !== 'guest') return <GuestsOnly admin={principal.kind === 'admin'} what="RSVP" returnTo="/rsvp" />;
   const result = await invoke(getMyRsvp, ctx, {});
   if (!result.ok) {
     if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="RSVP" signedIn />;

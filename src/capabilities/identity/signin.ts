@@ -88,7 +88,12 @@ export async function completeOtpSignIn(
   if (previous?.session.token && previous.session.token !== sessionToken) await db.delete(authSessions).where(eq(authSessions.token, previous.session.token));
 
   const actor = actorOf(ctx);
-  let activeGuestId: string | null = previous?.session.activeGuestId ?? null;
+  // The browser's previous session only says who is active when it was the SAME identity (a step-up,
+  // or signing in again from one inbox). On a shared computer the previous session is somebody
+  // else's: carrying its active guest kept that person signed in and made them the manager of any
+  // no-email relative the new guest claimed. A claim names who is signing in, so it never inherits.
+  const sameIdentity = previous?.session.userId === user.id;
+  let activeGuestId: string | null = sameIdentity && challenge.kind !== 'claim' ? (previous?.session.activeGuestId ?? null) : null;
   const candidates: SignInOutcome['candidates'] = [];
   const isAdmin = (await resolveAdminRoles(db, user.email, env.ADMIN_EMAILS)).size > 0;
 

@@ -83,6 +83,17 @@ export const xhrTransport: PartTransport = ({ url, headers, body, onProgress, si
     xhr.send(body);
   });
 
+/**
+ * The parts to report to the server. A single PUT reports none: completion verifies the object
+ * itself, and a cross-origin PUT cannot read the ETag unless the bucket CORS exposes it. Multipart
+ * reports every part it sent, with an empty ETag where the header was hidden; the server then asks
+ * storage for the part list (or says the bucket needs `ExposeHeaders: ETag`).
+ */
+export function reportedParts(job: Pick<UploadJob, 'parts' | 'ticket'>): { partNumber: number; etag: string }[] {
+  if (job.ticket?.mode === 'single') return [];
+  return Object.entries(job.parts).map(([n, etag]) => ({ partNumber: Number(n), etag }));
+}
+
 const HEAD = 256 * 1024;
 const TAIL = 64 * 1024;
 
@@ -200,7 +211,8 @@ export class Uploader {
     const total = job.file.size;
     const sentBefore = () => Object.keys(job.parts).reduce((n, k) => n + this.partBytes(ticket, Number(k), total), 0);
     for (const part of ticket.parts) {
-      if (part.uploaded || job.parts[part.partNumber]) continue;
+      // Presence, not truthiness: a part whose ETag the bucket hid ('') was still sent.
+      if (part.uploaded || job.parts[part.partNumber] !== undefined) continue;
       if (!part.url) throw new Error('missing part url');
       const start = (part.partNumber - 1) * ticket.partSize;
       const body = ticket.mode === 'single' ? job.file : job.file.slice(start, Math.min(total, start + ticket.partSize));
@@ -236,10 +248,15 @@ export class Uploader {
 
   private async finish(job: UploadJob) {
     this.update(job, { state: 'finishing', progress: 1 });
-    const parts = Object.entries(job.parts).map(([n, etag]) => ({ partNumber: Number(n), etag }));
-    const done = await this.api.complete(job.uploadId!, parts, job.caption, `complete-${job.uploadId}`);
+    const done = await this.api.complete(job.uploadId!, reportedParts(job), job.caption, `complete-${job.uploadId}`);
     if (!done.ok) {
-      if (done.error.details && Array.isArray(done.error.details['missingParts'])) return this.update(job, { state: 'error', message: 'Some parts did not arrive. Tap retry to send them again.' });
+      const missing = done.error.details?.['missingParts'];
+      if (Array.isArray(missing)) {
+        // Forget what the server did not receive so the retry sends those parts again.
+        for (const n of missing) if (typeof n === 'number') delete job.parts[n];
+        this.persist(job);
+        return this.update(job, { state: 'error', message: 'Some parts did not arrive. Tap retry to send them again.' });
+      }
       return this.update(job, { state: 'error', message: done.error.message });
     }
     this.forget(job);
@@ -255,7 +272,7 @@ export class Uploader {
       return this.pump();
     }
     this.update(job, { state: 'preparing', message: undefined });
-    const uploadedParts = Object.entries(job.parts).map(([n, etag]) => ({ partNumber: Number(n), etag }));
+    const uploadedParts = reportedParts(job);
     const resumed = await this.api.resume(job.uploadId, uploadedParts);
     if (!resumed.ok) {
       if (resumed.error.code === 'conflict' && (resumed.error.details as { assetId?: string } | undefined)?.assetId) {

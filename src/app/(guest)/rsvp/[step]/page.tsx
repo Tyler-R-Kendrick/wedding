@@ -30,7 +30,7 @@ export default async function RsvpStepPage({ params }: { params: Params }) {
   if (!part) notFound();
   const { ctx, principal } = await uiContext();
   const theme = await getRequestTheme();
-  if (principal.kind !== 'guest') return <GuestsOnly what="RSVP" returnTo={`/rsvp/${PART_STEP[part]}`} />;
+  if (principal.kind !== 'guest') return <GuestsOnly admin={principal.kind === 'admin'} what="RSVP" returnTo={`/rsvp/${PART_STEP[part]}`} />;
   const result = await invoke(getMyRsvp, ctx, {});
   if (!result.ok) {
     if (result.error.code === 'unauthenticated' || result.error.code === 'forbidden') return <GuestsOnly what="RSVP" signedIn />;

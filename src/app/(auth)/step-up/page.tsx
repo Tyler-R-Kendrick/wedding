@@ -42,6 +42,14 @@ export default async function StepUpPage({ searchParams }: { searchParams: Promi
             <Button>Confirm</Button>
           </Actions>
         </form>
+      ) : null}
+      {pending ? (
+        <form action={requestStepUpCode}>
+          <input type="hidden" name="next" value={next} />
+          <Actions>
+            <Button variant="ghost">Send a new code</Button>
+          </Actions>
+        </form>
       ) : (
         <form action={requestStepUpCode}>
           <input type="hidden" name="next" value={next} />

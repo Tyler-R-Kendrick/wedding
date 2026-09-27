@@ -41,7 +41,12 @@ export const uploadFileInput = z.object({
 
 export const uploadFilesInput = z.array(uploadFileInput).min(1).max(MAX_FILES_PER_BATCH);
 
-export const reportedPart = z.object({ partNumber: z.number().int().min(1).max(10_000), etag: z.string().min(1).max(130), size: z.number().int().min(0).optional() });
+/**
+ * A part the browser says it sent. `etag` may be empty: a cross-origin PUT only exposes the ETag
+ * header when the bucket's CORS lists it in ExposeHeaders, and the server fills the gap (or says
+ * why it cannot) rather than rejecting the report — see completeUpload.
+ */
+export const reportedPart = z.object({ partNumber: z.number().int().min(1).max(10_000), etag: z.string().max(130), size: z.number().int().min(0).optional() });
 
 export const ticketPartSchema = z.object({
   partNumber: z.number().int(),

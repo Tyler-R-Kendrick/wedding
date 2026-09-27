@@ -68,9 +68,19 @@ describe('job queue', () => {
     expect(seen).toEqual([{ payload: {}, id: stuck.id, principal: 'system' }]);
     expect((await q.get(stuck.id))?.status).toBe('succeeded');
 
-    await q.enqueue({ type: 'no.handler', maxAttempts: 1 });
+    // A type with no handler in this process is left for a runner that has one, not claimed and killed.
+    const orphan = await q.enqueue({ type: 'no.handler', maxAttempts: 1 });
     const s2 = await runDueJobs(db, { worker: 'runner', now: () => now });
-    expect(s2).toMatchObject({ claimed: 1, succeeded: 0, dead: 1 });
-    expect(Object.keys(await q.countByStatus()).sort()).toEqual(expect.arrayContaining(['dead', 'succeeded']));
+    expect(s2).toMatchObject({ claimed: 0, succeeded: 0, dead: 0 });
+    expect(await q.get(orphan.id)).toMatchObject({ status: 'queued', attempts: 0 });
+
+    // A handler that throws still retries to dead.
+    registerJobHandler('always.fails', async () => {
+      throw new Error('boom');
+    });
+    await q.enqueue({ type: 'always.fails', maxAttempts: 1 });
+    const s3 = await runDueJobs(db, { worker: 'runner', now: () => now });
+    expect(s3).toMatchObject({ claimed: 1, succeeded: 0, dead: 1 });
+    expect(Object.keys(await q.countByStatus()).sort()).toEqual(expect.arrayContaining(['dead', 'queued', 'succeeded']));
   });
 });

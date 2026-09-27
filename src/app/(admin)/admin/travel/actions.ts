@@ -2,16 +2,25 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { field, noticeForError, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { field, runAsUi } from '@/app/(public)/travel/_shared/server';
 import { adminRemoveHotel, adminRemoveTravelLink, adminSaveHotel, adminSaveTravelLink } from '@/capabilities/travel';
+import { describeError } from '../../_shared/admin';
 
 const compact = <T extends Record<string, unknown>>(o: T): Partial<T> => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 
-const finish = (ok: boolean, error: { code: string; message: string } | undefined, notice: string): never => {
+const OK_MESSAGES = { saved: 'Saved.', removed: 'Removed.' } as const;
+
+/**
+ * Back to the screen with the outcome. A failure carries the capability's own message and field
+ * issues (`?error=`), shown as an error: the old `?notice=<code>` collapsed every failure to a
+ * generic guest-facing sentence and rendered it in the success tone.
+ */
+const finish = (ok: boolean, error: { code: string; message: string; details?: Record<string, unknown> } | undefined, outcome: keyof typeof OK_MESSAGES): never => {
   revalidatePath('/admin/travel');
   revalidatePath('/travel');
   revalidatePath('/trip');
-  redirect(`/admin/travel?notice=${ok ? notice : noticeForError(error as never)}`);
+  const q = new URLSearchParams(ok || !error ? { ok: OK_MESSAGES[outcome] } : { error: describeError(error).slice(0, 300) });
+  redirect(`/admin/travel?${q.toString()}`);
 };
 
 /** Reasons arrive one per line as `kind | text | value`. */

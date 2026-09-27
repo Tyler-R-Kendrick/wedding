@@ -19,10 +19,10 @@ import { isSafeReturnPath } from '@/domain/identity/routes';
 import { authOf, callAuth, challengeSecret, challengeStore, consumeLimits, holdToFloor, ipHashOf, logOtp, otpBuckets, RECOVERY } from './identity/shared';
 
 const input = z.discriminatedUnion('purpose', [
-  z.object({ purpose: z.literal('claim'), token: z.string().min(1).max(128), guestId: z.string().min(1).max(64), next: z.string().max(256).optional() }),
-  z.object({ purpose: z.literal('sign_in'), email: z.string().min(3).max(254), next: z.string().max(256).optional() }),
-  z.object({ purpose: z.literal('admin_sign_in'), email: z.string().min(3).max(254), next: z.string().max(256).optional() }),
-  z.object({ purpose: z.literal('step_up'), next: z.string().max(256).optional() }),
+  z.object({ purpose: z.literal('claim'), token: z.string().min(1).max(128), guestId: z.string().min(1).max(64), next: z.string().max(512).optional() }),
+  z.object({ purpose: z.literal('sign_in'), email: z.string().min(3).max(254), next: z.string().max(512).optional() }),
+  z.object({ purpose: z.literal('admin_sign_in'), email: z.string().min(3).max(254), next: z.string().max(512).optional() }),
+  z.object({ purpose: z.literal('step_up'), next: z.string().max(512).optional() }),
 ]);
 
 const output = z.discriminatedUnion('sent', [

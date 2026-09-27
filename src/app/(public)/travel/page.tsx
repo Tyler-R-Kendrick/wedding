@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { currentPrincipal, runAsUi } from './_shared/server';
 import { recipes } from '../_recipes';
 import { FlightSearchForm, HotelSearchForm } from './search-form';
@@ -58,7 +59,8 @@ export default async function TravelPage() {
       alternatives={hotels.value.data.alternatives}
       facts={hotels.value.data.facts}
       sources={hotels.value.sources}
-      tripHref="/trip"
+      // Signed out, "Your trip" goes through sign-in and comes back; a direct /trip link was a dead end.
+      tripHref={principal.kind === 'guest' ? '/trip' : throughSignIn('/trip')}
       slots={{ flightSearch: <FlightSearchForm defaults={flightDefaults} />, hotelSearch: <HotelSearchForm defaults={{ adults: String(profile?.adults ?? 2) }} /> }}
     />
   );
