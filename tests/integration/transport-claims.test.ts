@@ -12,6 +12,7 @@ import { getDb } from '@/db/client';
 import { FX } from '@/db/seed/fixtures';
 import { externalActionRecords, guests, transportationClaims, transportationManualCodes } from '@/db/schema';
 import { DbManualCodeSource } from '@/domain/transport/manual-codes';
+import { RIDES_NOT_OPEN_MESSAGE } from '@/domain/transport';
 import { getTransportVault } from '@/domain/external/vault';
 import { listAuditEvents } from '@/lib/audit';
 import { stableHash } from '@/lib/crypto';
@@ -348,15 +349,23 @@ describe('ride benefit claims', () => {
       const row = (await db.select().from(transportationClaims)).find((c) => c.entitlementId === E8)!;
       expect(row.status).toBe('failed');
       expect(row.secretCiphertext).toBeNull();
+      // The page and the concierge no longer offer a claim that can only fail: the benefit reads as
+      // not open yet, and the draft carries no confirmation to claim with.
       const view = await run(getMyTransportationOptions, g8, {});
-      expect(view.ok && view.value.data.benefits[0]).toMatchObject({ status: 'failed' });
+      expect(view.ok && view.value.data.benefits[0]).toMatchObject({ status: 'unavailable', statusMessage: RIDES_NOT_OPEN_MESSAGE });
       expect(view.ok && view.value.data.benefits[0]!.redemption).toBeUndefined();
+      const draft = await run(draftMyTransportationClaim, g8, { entitlementId: E8 });
+      expect(draft.ok && draft.value.data.claimable).toBe(false);
+      expect(draft.ok && draft.value.confirmation).toBeUndefined();
     } finally {
       setProviderOverride('transport-benefit', counting);
     }
     // Once a real provider is configured the same entitlement can still be claimed.
     const retry = await run(claimMyTransportationBenefit, g8, { entitlementId: E8 }, { idempotencyKey: key(), confirmationToken: await tokenFor(g8, E8) });
     expect(retry.ok && retry.value.data.status).toBe('issued');
+    // And the page says so again the moment a provider is back: the benefit was never the problem.
+    const after = await run(getMyTransportationOptions, g8, {});
+    expect(after.ok && after.value.data.benefits[0]!.status).toBe('claimed');
   });
 
   it('ok() helper sanity: results are plain envelopes', () => {

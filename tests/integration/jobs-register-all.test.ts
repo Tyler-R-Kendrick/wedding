@@ -91,4 +91,36 @@ describe('claiming by type', () => {
     // Before the filter this was claimed, failed with "no handler registered" and, at maxAttempts 1, dead.
     expect(await q.get(orphan.id)).toMatchObject({ status: 'queued', attempts: 0, lastError: null });
   });
+
+  it('stops claiming once its time budget is spent, leaving the rest queued rather than locked', async () => {
+    const db = await getDb();
+    registerJobHandler('jobs_test.slow', async () => {
+      await new Promise((r) => setTimeout(r, 60));
+    });
+    const q = new JobQueue(db);
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) ids.push((await q.enqueue({ type: 'jobs_test.slow' })).id);
+
+    const summary = await runDueJobs(db, { worker: 'budget-test', limit: 10, types: ['jobs_test.slow'], budgetMs: 100 });
+
+    // Two fit in 100ms of 60ms jobs (the budget is checked before each claim); none is claimed after it.
+    expect(summary.claimed).toBeGreaterThanOrEqual(1);
+    expect(summary.claimed).toBeLessThan(5);
+    expect(summary.succeeded).toBe(summary.claimed);
+    const rows = await Promise.all(ids.map((id) => q.get(id)));
+    const left = rows.filter((r) => r!.status === 'queued');
+    expect(left).toHaveLength(5 - summary.claimed);
+    for (const r of left) expect(r).toMatchObject({ attempts: 0, lockedBy: null });
+  });
+
+  it('claims only what was due when the run began, so a job rescheduled mid-run waits for the next one', async () => {
+    const db = await getDb();
+    const began = new Date('2026-09-26T12:00:00Z');
+    const later = new Date(began.getTime() + 5_000);
+    const q = new JobQueue(db, () => later);
+    const retried = await q.enqueue({ type: 'jobs_test.dueby', runAt: new Date(began.getTime() + 2_000) });
+    expect(await q.claim('w', 5, { types: ['jobs_test.dueby'], dueBy: began })).toEqual([]);
+    expect(await q.get(retried.id)).toMatchObject({ status: 'queued', attempts: 0 });
+    expect((await q.claim('w', 5, { types: ['jobs_test.dueby'] })).map((j) => j.id)).toEqual([retried.id]);
+  });
 });

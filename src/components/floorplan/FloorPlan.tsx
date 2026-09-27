@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Placeholder } from '@/components/provenance/Placeholder';
 import './floorplan.css';
 
 export interface FloorPlanAnchorView {
@@ -61,7 +62,13 @@ export function FloorPlan({ name, viewBox, outline, anchors, highlightAnchorId, 
         })}
       </svg>
       <figcaption className="fp__caption">
-        {highlighted && highlightLabel ? <strong>Your table: {highlightLabel}.</strong> : null} {placeholder ? <span>Schematic layout — the planner’s floor plan will replace it. TODO(Tyler &amp; Sara)</span> : null}
+        {highlighted && highlightLabel ? <strong>Your table: {highlightLabel}.</strong> : null} {placeholder ? (
+          // The authoring marker itself (TODO(…)) used to be printed here, on a guest's page, as soon
+          // as seating was published; the placeholder note says the same thing in the site's words.
+          <span>
+            Schematic layout. <Placeholder inline>the planner’s floor plan</Placeholder>
+          </span>
+        ) : null}
         {children}
       </figcaption>
     </figure>
