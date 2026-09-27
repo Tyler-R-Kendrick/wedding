@@ -1,4 +1,4 @@
-import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test';
+import { test, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
 import { fixtureId, seedId } from '../../../src/db/seed/ids';
 
 /**
@@ -56,9 +56,25 @@ export function customPrincipalHeaders(spec: Record<string, unknown>, secret: st
   return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify(spec) };
 }
 
-export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET): Record<string, string> {
+/**
+ * The session a principal's requests belong to. The server meters an injected principal per session
+ * (`sessionScopedLimiter`), so a fixture guest shared by every spec is not one person spending one
+ * budget. API calls made inside a test share that test's session; each `contextAs` browser context
+ * gets its own; headers built outside any test (module constants) share one per worker.
+ */
+function testSession(): string {
+  try {
+    const info = test.info();
+    return `test-${info.testId}-${info.retry}`;
+  } catch {
+    return `worker-${process.pid}`;
+  }
+}
+let contexts = 0;
+
+export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET, sessionId: string = testSession()): Record<string, string> {
   if (!name) return {};
-  return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify(PRINCIPALS[name]) };
+  return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify({ ...PRINCIPALS[name], sessionId }) };
 }
 
 /** Headers for POST /api/capabilities from a signed-in principal: same-origin JSON (CSRF rule). */
@@ -93,7 +109,7 @@ export async function contextAs(
   // with relative paths and must land on the server Playwright actually started.
   return browser.newContext({
     baseURL: BASE_URL,
-    extraHTTPHeaders: principalHeaders(name),
+    extraHTTPHeaders: principalHeaders(name, TEST_AUTH_SECRET, `browser-${process.pid}-${++contexts}`),
     ...(opts.viewport ? { viewport: opts.viewport } : {}),
     ...(opts.javaScriptEnabled === undefined ? {} : { javaScriptEnabled: opts.javaScriptEnabled }),
   });
