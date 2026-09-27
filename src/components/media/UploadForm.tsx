@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MyUploadItem } from '@/capabilities/media';
 import { callCapability } from './capabilityClient';
+import { startBackoffPoll } from './poll';
 import { describeJob, Uploader, type UploadJob } from './uploader';
+
+/** Status polling while files are being prepared: first gap, growth per poll, longest gap. */
+const POLL_FIRST_MS = 2500;
+const POLL_GROWTH = 1.25;
+const POLL_MAX_MS = 15_000;
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,.jpg,.jpeg,.png,.webp,.heic,.heif,.mp4,.mov';
 
@@ -82,24 +88,23 @@ export function UploadForm({ collection, myUploadsHref }: { collection?: string;
     [uploader, pending],
   );
 
-  // Poll the server while anything is still being checked/prepared.
+  // Poll the server while anything is still being checked/prepared. Processing runs on a cron, so
+  // the answer changes in minutes, not seconds: the gap grows from 2.5s to at most 15s, and a hidden
+  // tab does not poll at all (it asks once when shown again). A fixed 2.5s from every phone on the
+  // venue's Wi-Fi shared one per-IP budget with the uploads themselves.
   const processing = jobs.filter((j) => j.state === 'processing').length;
   useEffect(() => {
     if (processing === 0) return;
-    let stopped = false;
-    const tick = async () => {
-      const r = await callCapability<{ items: MyUploadItem[] }>('list_my_uploads', { limit: 60 });
-      if (stopped || !r.ok) return;
-      const ready = new Set(r.data.items.filter((i) => i.assetId && i.assetStatus && !['quarantined', 'validating', 'processing'].includes(i.assetStatus) && i.assetStatus !== 'rejected').map((i) => i.assetId!));
-      const rejected = new Map(r.data.items.filter((i) => i.assetStatus === 'rejected' && i.assetId).map((i) => [i.assetId!, i.rejectionReason ?? 'This one could not be added.']));
-      uploader.markProcessed(ready, rejected);
-    };
-    const timer = setInterval(() => void tick(), 2500);
-    void tick();
-    return () => {
-      stopped = true;
-      clearInterval(timer);
-    };
+    return startBackoffPoll(
+      async () => {
+        const r = await callCapability<{ items: MyUploadItem[] }>('list_my_uploads', { limit: 60 });
+        if (!r.ok) return;
+        const ready = new Set(r.data.items.filter((i) => i.assetId && i.assetStatus && !['quarantined', 'validating', 'processing'].includes(i.assetStatus) && i.assetStatus !== 'rejected').map((i) => i.assetId!));
+        const rejected = new Map(r.data.items.filter((i) => i.assetStatus === 'rejected' && i.assetId).map((i) => [i.assetId!, i.rejectionReason ?? 'This one could not be added.']));
+        uploader.markProcessed(ready, rejected);
+      },
+      { first: POLL_FIRST_MS, growth: POLL_GROWTH, max: POLL_MAX_MS },
+    );
   }, [processing, uploader]);
 
   const done = jobs.filter((j) => j.state === 'done' || j.state === 'duplicate').length;
