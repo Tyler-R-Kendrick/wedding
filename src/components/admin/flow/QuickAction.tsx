@@ -26,6 +26,7 @@ export function QuickAction({
   accessibleName,
   unavailable,
   tone = 'quiet',
+  onSuccess,
 }: {
   label: string;
   busyLabel: string;
@@ -35,6 +36,8 @@ export function QuickAction({
   /** Rendered but inert (the top fund's Up), so the row keeps its shape and focus has somewhere to stay. */
   unavailable?: boolean;
   tone?: 'quiet' | 'ghost';
+  /** Called once every call has landed, before the page refreshes. */
+  onSuccess?: () => void;
 }) {
   const router = useRouter();
   const ref = useRef<HTMLButtonElement>(null);
@@ -70,6 +73,7 @@ export function QuickAction({
     }
     setBusy(false);
     setStatus(done);
+    onSuccess?.();
     startTransition(() => router.refresh());
   };
 

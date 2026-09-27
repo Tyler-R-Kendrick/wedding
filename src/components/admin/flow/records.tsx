@@ -18,6 +18,16 @@ import './flow.css';
  * Server-safe: no hooks. The flows and quick actions inside a row are the client islands.
  */
 
+export type PillTone = 'neutral' | 'good' | 'warn' | 'bad';
+
+/**
+ * A short state beside a name ("Shown", "Hidden"). Here, not in `console.tsx`, so client components
+ * (a queue, a flow's preview) can use it: `console.tsx` reads request headers and is server-only.
+ */
+export function Pill({ tone = 'neutral', children }: { tone?: PillTone; children: ReactNode }) {
+  return <span className={`con-pill con-pill--${tone}`}>{children}</span>;
+}
+
 export function RecordList({ label, children, empty }: { label: string; children: ReactNode; empty?: ReactNode }) {
   if (empty) {
     return (

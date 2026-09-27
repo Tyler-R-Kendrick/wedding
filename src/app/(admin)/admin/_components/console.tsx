@@ -305,11 +305,8 @@ export function StatStrip({ children }: { children: ReactNode }) {
   return <div className="con-stats">{children}</div>;
 }
 
-export type PillTone = 'neutral' | 'good' | 'warn' | 'bad';
-
-export function Pill({ tone = 'neutral', children }: { tone?: PillTone; children: ReactNode }) {
-  return <span className={`con-pill con-pill--${tone}`}>{children}</span>;
-}
+// Moved to the kit so client components can use it; re-exported for the screens that import it here.
+export { Pill, type PillTone } from '@/components/admin/flow/records';
 
 /** A definition strip for "what this thing is" — label above value, wraps at 390px. */
 export function KeyValues({ items }: { items: { label: string; value: ReactNode }[] }) {

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { adminProviderStatus } from '@/capabilities/ops';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stat, StatStrip } from '../_components/console';
@@ -40,9 +39,20 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
       title="Providers"
       lede="Every external system sits behind a typed seam with a mock. Unconfigured always means the mock, never a crash."
       actions={
-        <p>
-          {probe ? <Link href="/admin/providers">Stop probing</Link> : <Link href="/admin/providers?probe=1">Probe health now</Link>}
-        </p>
+        probe ? (
+          <form method="get" action="/admin/providers">
+            <button type="submit" className="ops-button ops-button-ghost">
+              Stop checking health
+            </button>
+          </form>
+        ) : (
+          <form method="get" action="/admin/providers">
+            <input type="hidden" name="probe" value="1" />
+            <button type="submit" className="ops-button ops-button-ghost">
+              Check health now
+            </button>
+          </form>
+        )
       }
     >
       <StatStrip>
@@ -100,26 +110,6 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
         </DataTable>
       </Section>
 
-      <Section title="Detected operations" id="capabilities" note="What each resolved instance reports it can do right now. A mock answers every call, but says here which of them are real.">
-        <DataTable caption="Operations supported by each adapter" head={
-          <tr>
-            <th scope="col">Kind</th>
-            <th scope="col">Supported</th>
-            <th scope="col">Not supported</th>
-          </tr>
-        } empty={p.providers.every((row) => row.capabilities.length === 0) ? <>No adapter reported an operation list.</> : null}>
-          {p.providers
-            .filter((row) => row.capabilities.length > 0)
-            .map((row) => (
-              <tr key={row.kind}>
-                <th scope="row">{row.kind}</th>
-                <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
-                <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
-              </tr>
-            ))}
-        </DataTable>
-      </Section>
-
       <Section title="Warnings" id="warnings">
         <DataTable caption="Configuration warnings by adapter" head={
           <tr>
@@ -135,6 +125,30 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
           )))}
         </DataTable>
       </Section>
+
+      <details className="flow-details" id="capabilities">
+        <summary>What each adapter can do</summary>
+        <div className="flow-details__body">
+          <p className="con-note">What each resolved instance reports it can do right now. A mock answers every call, but says here which of them are real.</p>
+          <DataTable caption="Operations supported by each adapter" head={
+            <tr>
+              <th scope="col">Kind</th>
+              <th scope="col">Supported</th>
+              <th scope="col">Not supported</th>
+            </tr>
+          } empty={p.providers.every((row) => row.capabilities.length === 0) ? <>No adapter reported an operation list.</> : null}>
+            {p.providers
+              .filter((row) => row.capabilities.length > 0)
+              .map((row) => (
+                <tr key={row.kind}>
+                  <th scope="row">{row.kind}</th>
+                  <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
+                  <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
+                </tr>
+              ))}
+          </DataTable>
+        </div>
+      </details>
     </ConsolePage>
   );
 }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { isMediaAdmin, type MediaMetrics } from '@/domain/media';
 import { formatBytes } from '@/lib/media/limits';
+import { STATUS_LABEL } from '@/components/media/moderation';
+import type { AssetStatus } from '@/db/schema/media';
 import { ConsoleGate, ConsolePage, KeyValues, Note, Section, SubNav } from '../../_components/console';
 import { MEDIA_SUBNAV } from '../../_components/sections';
 
@@ -39,7 +41,7 @@ export default async function MetricsPage() {
         <KeyValues
           items={[
             { label: 'Total', value: m.assets.total },
-            ...Object.entries(m.assets.byStatus).map(([k, v]) => ({ label: k, value: v })),
+            ...Object.entries(m.assets.byStatus).map(([k, v]) => ({ label: STATUS_LABEL[k as AssetStatus] ?? k, value: v })),
             { label: 'Photos / videos', value: `${m.assets.byKind['image'] ?? 0} / ${m.assets.byKind['video'] ?? 0}` },
             { label: 'Guest / couple / professional', value: `${m.assets.bySource['guest'] ?? 0} / ${m.assets.bySource['couple'] ?? 0} / ${m.assets.bySource['professional'] ?? 0}` },
             { label: 'Duplicate clusters', value: `${m.duplicates.exactClusters} (${m.duplicates.assetsInClusters} items)` },

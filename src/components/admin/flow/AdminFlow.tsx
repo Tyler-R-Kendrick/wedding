@@ -82,6 +82,8 @@ export interface AdminFlowProps<V> {
      * counts. Without it the sheet closes on success and the page refreshes behind it.
      */
     result?: (data: unknown, values: V) => ReactNode;
+    /** Called with the capability's data once the save lands (a list that re-reads, a count). */
+    onSuccess?: (data: unknown, values: V) => void;
   };
 }
 
@@ -337,6 +339,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     setHasDraft(false);
     setNotice(null);
     setAnnounce(submit.success);
+    submit.onSuccess?.(res.data, values);
     router.refresh();
     if (submit.result) {
       // Stay open on a "Done" panel: what it shows may be visible only this once.
