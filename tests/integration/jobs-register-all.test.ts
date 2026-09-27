@@ -112,4 +112,15 @@ describe('claiming by type', () => {
     expect(left).toHaveLength(5 - summary.claimed);
     for (const r of left) expect(r).toMatchObject({ attempts: 0, lockedBy: null });
   });
+
+  it('claims only what was due when the run began, so a job rescheduled mid-run waits for the next one', async () => {
+    const db = await getDb();
+    const began = new Date('2026-09-26T12:00:00Z');
+    const later = new Date(began.getTime() + 5_000);
+    const q = new JobQueue(db, () => later);
+    const retried = await q.enqueue({ type: 'jobs_test.dueby', runAt: new Date(began.getTime() + 2_000) });
+    expect(await q.claim('w', 5, { types: ['jobs_test.dueby'], dueBy: began })).toEqual([]);
+    expect(await q.get(retried.id)).toMatchObject({ status: 'queued', attempts: 0 });
+    expect((await q.claim('w', 5, { types: ['jobs_test.dueby'] })).map((j) => j.id)).toEqual([retried.id]);
+  });
 });

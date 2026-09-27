@@ -9,7 +9,8 @@ import type { ThemeId } from '@/themes/types';
 export function RsvpConfirmation({ result, theme, onAnother }: { result: SubmitRsvpOutput; theme: ThemeId; onAnother?: () => void }) {
   // Already on /rsvp: the link would keep this confirmation mounted, so start a fresh round instead.
   const backToRsvp = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (!onAnother || window.location.pathname !== '/rsvp') return;
+    // A modified click (new tab, new window) is the browser's, not ours.
+    if (!onAnother || window.location.pathname !== '/rsvp' || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     onAnother();
   };

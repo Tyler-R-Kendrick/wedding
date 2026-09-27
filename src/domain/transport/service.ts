@@ -75,7 +75,7 @@ const STATUS_MESSAGES: Record<BenefitStatus, string> = {
 };
 
 /** Shown instead of a claim while no ride provider is configured. */
-export const RIDES_NOT_OPEN_MESSAGE = 'Ride claims are not open yet. Your benefit is saved, and Sara and Tyler will let you know when you can claim it.';
+export const RIDES_NOT_OPEN_MESSAGE = 'Ride claims are not open yet. Your benefit is saved; check back here closer to the wedding to claim it.';
 
 /**
  * A production site with no ride provider configured refuses every claim (the unconfigured

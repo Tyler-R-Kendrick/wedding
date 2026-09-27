@@ -59,4 +59,30 @@ describe('upload status polling backs off', () => {
     await vi.advanceTimersByTimeAsync(60_000);
     expect(calls).toBe(3);
   });
+
+  it('keeps polling after a tick that throws, and tells a late tick it is no longer live', async () => {
+    const { doc } = fakeDoc();
+    let calls = 0;
+    const seen: boolean[] = [];
+    let finish: () => void = () => {};
+    const stop = startBackoffPoll(
+      (live) => {
+        calls++;
+        if (calls === 1) return Promise.reject(new Error('network'));
+        return new Promise<void>((r) => {
+          finish = () => {
+            seen.push(live());
+            r();
+          };
+        });
+      },
+      { first: 1000, growth: 1, max: 1000, doc },
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(calls).toBe(2);
+    stop();
+    finish();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(seen).toEqual([false]);
+  });
 });

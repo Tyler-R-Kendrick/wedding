@@ -21,11 +21,15 @@ export interface RunSummary {
  * `listJobTypes()`), so a runner never kills a job it cannot run. Entry points import
  * `./register-all` so every handler the app defines is registered before they get here.
  */
-export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date; types?: readonly string[]; budgetMs?: number } = {}): Promise<RunSummary> {
+export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date; types?: readonly string[]; budgetMs?: number; startedAt?: number } = {}): Promise<RunSummary> {
   const queue = new JobQueue(db, opts.now);
   const worker = opts.worker ?? `worker-${process.pid}`;
   const summary: RunSummary = { claimed: 0, succeeded: 0, retried: 0, dead: 0, reaped: 0 };
-  const began = performance.now();
+  // The budget counts from `startedAt` (the request's start, in `performance.now()` terms) when the
+  // caller gives one, so cold start and the route's own setup are inside it.
+  const began = opts.startedAt ?? performance.now();
+  // Only what was due when the run began: a job that fails now is retried by a later run.
+  const dueBy = (opts.now ?? (() => new Date()))();
   summary.reaped = await queue.reapStale();
   const types = opts.types ?? listJobTypes();
   const limit = opts.limit ?? 10;
@@ -35,7 +39,7 @@ export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number
   // simply waits for the next tick.
   while (summary.claimed < limit) {
     if (opts.budgetMs !== undefined && performance.now() - began >= opts.budgetMs) break;
-    const [job] = await queue.claim(worker, 1, { types });
+    const [job] = await queue.claim(worker, 1, { types, dueBy });
     if (!job) break;
     summary.claimed++;
     const requestId = newId();

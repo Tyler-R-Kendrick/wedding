@@ -25,11 +25,12 @@ function authorized(request: Request): boolean {
 }
 
 async function run(request: Request) {
+  const startedAt = performance.now();
   const requestId = getRequestId(request.headers);
   if (!authorized(request)) return jsonResponse({ ok: false, error: { code: 'unauthenticated', message: 'Unauthorized.' } }, { status: 401, requestId });
   const db = await getDb();
   await enqueueMediaSweep(db);
-  const summary = await runDueJobs(db, { limit: env.JOBS_BATCH_SIZE, worker: `media-cron-${requestId}`, budgetMs: JOB_BUDGET_MS });
+  const summary = await runDueJobs(db, { limit: env.JOBS_BATCH_SIZE, worker: `media-cron-${requestId}`, budgetMs: JOB_BUDGET_MS, startedAt });
   return jsonResponse({ ok: true, ...summary }, { requestId });
 }
 

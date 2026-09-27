@@ -68,6 +68,8 @@ test('a household manager answers for the whole household, reviews inline, confi
   // without a reload, since the submit revalidated the page.
   await page.getByRole('link', { name: 'Back to your RSVP' }).click();
   await expect(page.getByText('Thank you — that is saved')).toHaveCount(0);
+  // Focus lands on the page's heading, as it would after a page load.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   const tasks = page.getByRole('list', { name: 'Where things stand' });
   const task = (name: string) => tasks.getByRole('listitem').filter({ has: page.getByRole('link', { name, exact: true }) });
   await expect(task('Who is coming')).toContainText(/\d of \d done/);

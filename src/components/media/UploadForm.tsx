@@ -96,9 +96,9 @@ export function UploadForm({ collection, myUploadsHref }: { collection?: string;
   useEffect(() => {
     if (processing === 0) return;
     return startBackoffPoll(
-      async () => {
+      async (live) => {
         const r = await callCapability<{ items: MyUploadItem[] }>('list_my_uploads', { limit: 60 });
-        if (!r.ok) return;
+        if (!r.ok || !live()) return;
         const ready = new Set(r.data.items.filter((i) => i.assetId && i.assetStatus && !['quarantined', 'validating', 'processing'].includes(i.assetStatus) && i.assetStatus !== 'rejected').map((i) => i.assetId!));
         const rejected = new Map(r.data.items.filter((i) => i.assetStatus === 'rejected' && i.assetId).map((i) => [i.assetId!, i.rejectionReason ?? 'This one could not be added.']));
         uploader.markProcessed(ready, rejected);
