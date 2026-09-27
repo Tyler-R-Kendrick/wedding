@@ -6,7 +6,7 @@ import { err, ok } from '@/contracts/result';
 import { getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
 import { mintGuestViewToken } from '@/domain/identity/guest-view';
-import { buildGuestViewPrincipal } from '@/domain/identity/principal';
+import { buildGuestViewPrincipal, ownGuestRecords } from '@/domain/identity/principal';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { actorOf, adminOf } from './shared';
 
@@ -66,5 +66,29 @@ export const adminBrowseAsGuest = defineCapability<{ guestId: string }, z.infer<
       data: { guestId: guest.id, displayName: guestDisplayName(guest), householdName: household?.name ?? '', readOnly: view.viewedBy.readOnly, token: minted.token, expiresAt: minted.expiresAt },
       sources: [],
     });
+  },
+});
+
+/**
+ * The administrator's own guest records (their email is on the list, claimed by them), which they
+ * may browse as whatever their role: the one door into "Browse as a guest" for an administrator who
+ * is not an owner, and a shortcut for one who is.
+ */
+export const adminListOwnGuestRecords = defineCapability<Record<string, never>, { records: { guestId: string; displayName: string }[] }>({
+  name: 'admin_list_own_guest_records',
+  title: 'Admin: my own guest records',
+  description: 'Lists the guest records bound to this administrator by their own claim, which they may browse the site as. Admin only; reads nothing about anyone else.',
+  kind: 'read',
+  auth: 'admin',
+  requires: [],
+  annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: z.object({}).strict(),
+  output: z.object({ records: z.array(z.object({ guestId: z.string(), displayName: z.string() })) }),
+  async handler(ctx) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    return ok({ data: { records: await ownGuestRecords(db, guard.value.authIdentityId) }, sources: [] });
   },
 });
