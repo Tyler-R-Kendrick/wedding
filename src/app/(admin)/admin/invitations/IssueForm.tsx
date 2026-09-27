@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { issueInvitation, type IssuedLink } from '../_lib/actions';
+import { ConfirmCheck } from '../_components/ops';
 
 /** The token is shown exactly once, so the result renders inline rather than through a redirect. */
 export function IssueForm({ households, rotateId }: { households: { id: string; name: string }[]; rotateId?: string }) {
@@ -9,7 +10,11 @@ export function IssueForm({ households, rotateId }: { households: { id: string; 
   return (
     <form action={action} className="ops-form">
       {rotateId ? (
-        <input type="hidden" name="invitationId" value={rotateId} />
+        <>
+          <input type="hidden" name="invitationId" value={rotateId} />
+          {/* Rotating stops the old link at once, for everyone in the household who still has it. */}
+          <ConfirmCheck id={`confirm-rotate-${rotateId}`} label="Yes, replace this link (the old one stops working)" />
+        </>
       ) : (
         <>
           <div className="ops-field">

@@ -1,7 +1,8 @@
 'use client';
 
 import { Placeholder } from '@/components/provenance/Placeholder';
-import { useActionState, useEffect, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useState, type ReactNode } from 'react';
 import type { MyRsvp } from '@/capabilities/rsvp';
 import type { RsvpPart } from '@/domain/rsvp/parts';
 import { formatDeadline } from '@/domain/events/format';
@@ -35,7 +36,36 @@ export interface RsvpFormProps {
  * Household RSVP form (recipe). Progressive: works without JavaScript, every field has a visible
  * label, errors are text bound to their field, inputs are 17px+, and the review step is inline.
  */
-export function RsvpForm({ data, action, idempotencyKey, theme, parts = data.next }: RsvpFormProps) {
+export function RsvpForm(props: RsvpFormProps) {
+  // "Back to your RSVP" on the confirmation links to the page the guest is already on, so the
+  // navigation keeps this component mounted and its action state stays "done": the confirmation
+  // never went away. A new round remounts the form fresh, with the data the submit revalidated.
+  const [round, setRound] = useState(0);
+  const router = useRouter();
+  // The confirmation's link was the focused element and is gone; without a navigation nothing
+  // announces the page again. Put focus (and the viewport) on the page's heading, as a load would.
+  useEffect(() => {
+    if (round === 0) return;
+    const heading = document.querySelector<HTMLElement>('#main h1');
+    if (!heading) return;
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus();
+  }, [round]);
+  return (
+    <RsvpFormRound
+      key={round}
+      {...props}
+      onAnother={() => {
+        setRound((r) => r + 1);
+        // The submit does not revalidate (it would re-render this page mid-confirmation), so the
+        // new round asks for the page again: "Where things stand" and the parts left to answer.
+        router.refresh();
+      }}
+    />
+  );
+}
+
+function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next, onAnother }: RsvpFormProps & { onAnother: () => void }) {
   const [state, formAction, pending] = useActionState(action, INITIAL_RSVP_STATE);
 
   useEffect(() => {
@@ -44,7 +74,7 @@ export function RsvpForm({ data, action, idempotencyKey, theme, parts = data.nex
     if (state.stage === 'done') document.getElementById('done-title')?.focus();
   }, [state]);
 
-  if (state.stage === 'done') return <RsvpConfirmation result={state.result} theme={theme} />;
+  if (state.stage === 'done') return <RsvpConfirmation result={state.result} theme={theme} onAnother={onAnother} />;
   if (state.stage === 'review') return <RsvpReview state={state} formAction={formAction} pending={pending} theme={theme} />;
 
   // A closed window is answered before the guest spends any effort, not after. Leaving 23 editable
