@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { deleteHousehold, saveHousehold } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, IdemKey, Input } from '../_components/ops';
+import { Button, ConfirmCheck, IdemKey, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, DataTable, Note, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
@@ -75,6 +75,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
                       {h.memberCount === 0 ? (
                         <form action={deleteHousehold}>
                           <input type="hidden" name="householdId" value={h.id} />
+                          <ConfirmCheck id={`confirm-delete-${h.id}`} label={`Yes, delete ${h.name}`} />
                           <Button variant="danger">Delete</Button>
                         </form>
                       ) : null}

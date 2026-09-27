@@ -15,6 +15,8 @@ export async function saveTableAction(fd: FormData): Promise<void> {
 }
 
 export async function deleteTableAction(fd: FormData): Promise<void> {
+  // The form's ConfirmCheck; checked here too so a post without it changes nothing.
+  if (field(fd, 'confirm') !== 'yes') back(PATH, { error: 'Nothing was changed: tick the box to confirm.' });
   const r = await adminInvoke(adminDeleteTable, { id: field(fd, 'id') ?? '' }, { idempotencyKey: field(fd, 'idem') ?? undefined });
   back(PATH, r.ok ? { ok: 'Table deleted (draft).' } : { error: describeError(r.error) });
 }

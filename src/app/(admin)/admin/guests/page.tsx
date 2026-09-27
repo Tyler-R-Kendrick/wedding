@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Checkbox, IdemKey, Input } from '../_components/ops';
+import { Button, Checkbox, ConfirmCheck, IdemKey, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
@@ -86,11 +86,13 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                         <form action={resetIdentity}>
                           <input type="hidden" name="guestId" value={g.id} />
                           <input type="hidden" name="reason" value="admin reset from guests page" />
+                          <ConfirmCheck id={`confirm-reset-${g.id}`} label={`Yes, reset ${g.displayName}’s access`} />
                           <Button variant="danger">Reset access</Button>
                         </form>
                       ) : (
                         <form action={deleteGuest}>
                           <input type="hidden" name="guestId" value={g.id} />
+                          <ConfirmCheck id={`confirm-delete-${g.id}`} label={`Yes, delete ${g.displayName}`} />
                           <Button variant="danger">Delete</Button>
                         </form>
                       )}
@@ -106,6 +108,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Input id="rebind-guest" label="Guest id" name="guestId" required />
           <Input id="rebind-email" label="New email" name="email" type="email" required />
           <Input id="rebind-reason" label="Reason (audited)" name="reason" required />
+          <ConfirmCheck id="confirm-rebind" label="Yes, move this guest’s access to the new email (the old one stops working)" />
           <div>
             <Button>Rebind</Button>
           </div>
@@ -116,6 +119,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         <form action={mergeGuests} className="ops-form">
           <Input id="keepId" label="Guest id to keep" required />
           <Input id="mergeId" label="Duplicate guest id to merge" required />
+          <ConfirmCheck id="confirm-merge" label="Yes, merge the duplicate into the guest I keep" />
           <div>
             <Button variant="danger">Merge</Button>
           </div>
@@ -137,6 +141,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <form action={setAdminRole} className="ops-form">
             <Input id="role-email" label="Email" name="email" type="email" required />
             <Input id="role" label="Role" defaultValue="planner" options={[{ value: 'owner', label: 'Owner' }, { value: 'planner', label: 'Planner' }, { value: 'moderator', label: 'Moderator' }, { value: 'none', label: 'Remove role' }]} />
+            <ConfirmCheck id="confirm-role" label="Yes, change what this person can do in the console" />
             <div>
               <Button>Save role</Button>
             </div>

@@ -64,24 +64,35 @@ export async function readSeatingState(ctx: CapabilityContext, guestId: string):
 }
 
 /**
+ * What a guest is shown for one snapshot: the sentence, the table and the floor plan. Shared by the
+ * guest's own read (the live publication) and the console's preview (the draft), so the preview is
+ * the guest's view by construction rather than a second rendering of it.
+ */
+export async function tableViewFor(db: Awaited<ReturnType<typeof eDb>>, snapshot: Parameters<typeof findGuestInSnapshot>[0], guestId: string): Promise<Omit<MyTable, 'publishedAt'> | null> {
+  const view = findGuestInSnapshot(snapshot, guestId);
+  if (!view) return null;
+  const plan = view.floorPlanId ? await getFloorPlan(db, view.floorPlanId) : null;
+  const seat = view.seatNumber === null ? '' : `, seat ${view.seatNumber}`;
+  const withYou = view.tablemates.length ? ` You are with ${view.tablemates.join(', ')}.` : '';
+  return {
+    guestId,
+    summary: `You are seated at ${view.tableName}${seat}.${withYou}`,
+    table: { id: view.tableId, name: view.tableName, seatNumber: view.seatNumber, anchorId: view.anchorId, tablemates: view.tablemates },
+    floorPlan: plan ? { id: plan.id, venueSpaceRef: plan.venueSpaceRef, name: plan.name, viewBox: plan.viewBox, outline: plan.outline, anchors: plan.anchors, placeholder: plan.placeholder } : null,
+  };
+}
+
+/**
  * Reads ONLY the live publication snapshot. Before publication (or when the guest is not
  * in the snapshot) this is `not_found` — the draft chart never reaches any surface.
  */
 export async function readPublishedTable(ctx: CapabilityContext, guestId: string) {
   const db = await eDb(ctx);
   const live = await getLivePublication(db);
-  const view = findGuestInSnapshot(live?.snapshot ?? null, guestId);
-  if (!live || !view) return null;
-  const plan = view.floorPlanId ? await getFloorPlan(db, view.floorPlanId) : null;
-  const seat = view.seatNumber === null ? '' : `, seat ${view.seatNumber}`;
-  const withYou = view.tablemates.length ? ` You are with ${view.tablemates.join(', ')}.` : '';
-  const data: MyTable = {
-    guestId,
-    summary: `You are seated at ${view.tableName}${seat}.${withYou}`,
-    publishedAt: live.publishedAt.toISOString(),
-    table: { id: view.tableId, name: view.tableName, seatNumber: view.seatNumber, anchorId: view.anchorId, tablemates: view.tablemates },
-    floorPlan: plan ? { id: plan.id, venueSpaceRef: plan.venueSpaceRef, name: plan.name, viewBox: plan.viewBox, outline: plan.outline, anchors: plan.anchors, placeholder: plan.placeholder } : null,
-  };
+  if (!live) return null;
+  const view = await tableViewFor(db, live.snapshot, guestId);
+  if (!view) return null;
+  const data: MyTable = { ...view, publishedAt: live.publishedAt.toISOString() };
   return { data, live };
 }
 

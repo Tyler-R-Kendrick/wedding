@@ -23,6 +23,8 @@ export interface FloorPlanProps {
   placeholder: boolean;
   /** DOM id for deep links (`show_my_table_on_floorplan` returns `highlight`). */
   highlightDomId?: string;
+  /** Prefix for the title id, so two plans of one room on a page (the console's preview beside the plan itself) do not share it. */
+  idPrefix?: string;
   children?: ReactNode;
 }
 
@@ -31,8 +33,8 @@ export interface FloorPlanProps {
  * The highlighted table is marked with text as well as colour, and the plan carries a caption
  * so screen-reader users get the same answer as sighted ones.
  */
-export function FloorPlan({ name, viewBox, outline, anchors, highlightAnchorId, highlightLabel, placeholder, highlightDomId, children }: FloorPlanProps) {
-  const titleId = `fp-title-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+export function FloorPlan({ name, viewBox, outline, anchors, highlightAnchorId, highlightLabel, placeholder, highlightDomId, idPrefix = 'fp', children }: FloorPlanProps) {
+  const titleId = `${idPrefix}-title-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   const highlighted = anchors.find((a) => a.id === highlightAnchorId);
   return (
     <figure className="fp">

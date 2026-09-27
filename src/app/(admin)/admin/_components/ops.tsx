@@ -75,6 +75,21 @@ export function Button({ children, variant = 'primary' }: { children: ReactNode;
   );
 }
 
+/**
+ * The explicit "yes" a destructive action needs: deleting a guest, household or table, resetting
+ * access, merging or revoking. One click on a red button in a long table used to be the whole
+ * decision. `required` stops the submit in the browser; the action checks `confirm=yes` again on
+ * the server, so a form posted without it (or with scripts off in an old browser) changes nothing.
+ */
+export function ConfirmCheck({ id, label }: { id: string; label: string }) {
+  return (
+    <div className="ops-check">
+      <input id={id} name="confirm" type="checkbox" value="yes" required />
+      <label htmlFor={id}>{label}</label>
+    </div>
+  );
+}
+
 /** Render-time idempotency key so a double-submitted admin form replays instead of repeating. */
 export function IdemKey() {
   return <input type="hidden" name="idem" value={newId()} />;
