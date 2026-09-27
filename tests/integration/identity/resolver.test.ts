@@ -170,7 +170,9 @@ describe('principal resolver', () => {
     // moving a readiness switch are not things an assistant may reach for.
     // 66 -> 68: ADR-0013's `admin_upsert_gift_fund` and `admin_upsert_gift_rail` (`admin_content`),
     // the funds a gift of money goes toward and the couple's own accounts it goes to.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(68);
+    // 68 -> 69: `admin_preview_guest_table` (`admin_guest_ops`, ui only), the seating preview the
+    // admin guide promised: what one guest would see if the draft chart were published.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(69);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
