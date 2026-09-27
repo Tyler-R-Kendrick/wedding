@@ -72,6 +72,10 @@ export const WARM_ROUTES = [
   '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
   '/our-adventures', '/travel',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
+  // Every admin flow saves through /api/capabilities/<name>. A GET compiles the route (and answers
+  // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed
+  // out on [mobile], the first project to run, while tablet and desktop passed.
+  '/api/capabilities/warmup',
 ];
 
 /** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */
@@ -99,7 +103,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Pages sign-in journeys pass through or land on, whether or not a spec names them in quotes (specs
  * reach the invite page through a template string and assert `/admin` and `/rsvp` with regexes).
  */
-const ALWAYS_WARM = ['/', '/api/session', '/api/dev/inbox', '/sign-in', '/sign-out', '/invite/warmup-token-0000000000000000000000', '/claim/verify', '/claim/welcome', '/admin', '/rsvp'];
+const ALWAYS_WARM = ['/', '/api/session', '/api/capabilities/warmup', '/api/dev/inbox', '/sign-in', '/sign-out', '/invite/warmup-token-0000000000000000000000', '/claim/verify', '/claim/welcome', '/admin', '/rsvp'];
 
 /** The warm-up for a run of `specs`: everything for a full run, else what those files name. */
 export function routesToWarm(specs, read = (f) => readFileSync(f, 'utf8')) {
