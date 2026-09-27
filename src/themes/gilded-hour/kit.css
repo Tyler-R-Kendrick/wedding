@@ -170,7 +170,11 @@
   justify-content: flex-start;
 }
 
+/* Collapsed (a phone, or a frieze too long for its width), the plaque keeps the centre axis
+   (`.gh-plaque-link` below) and "Menu" takes the right edge. Without the placement, the plaque sat
+   centred in the LEFT column and the Menu button floated in the middle of the bar. */
 .gh-frieze__menu {
+  grid-column: 3;
   justify-self: end;
 }
 
@@ -200,6 +204,28 @@
 
   .gh-frieze__menu {
     display: none;
+  }
+
+  /* NavFit (src/themes/shared/NavFit.tsx) reads each wing on one line; a wing wider than its column
+     collapses the whole frieze to the plaque and "Menu". */
+  .gh-frieze[data-fit="measure"] .gh-frieze__side {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .gh-frieze[data-fit="measure"] .gh-frieze__side > li {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .gh-frieze[data-fit="some"] .gh-frieze__side,
+  .gh-frieze[data-fit="some"] .gh-frieze__more {
+    display: none;
+  }
+
+  .gh-frieze[data-fit="some"] .gh-frieze__menu {
+    display: block;
   }
 }
 
@@ -251,6 +277,7 @@
 }
 
 .gh-plaque-link {
+  grid-column: 2;
   justify-self: center;
 }
 
