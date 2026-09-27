@@ -39,7 +39,8 @@ interface StateNav {
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
   TEASER: { primary: ['story', 'adventures', 'caa'], more: ['ask'], sticky: [] },
-  SAVE_THE_DATE: { primary: ['story', 'travel', 'wedding', 'adventures'], more: ['share', 'caa', 'ask'], sticky: [] },
+  // No 'wedding' yet: the sitemap opens The Wedding at INVITATIONS_OPEN, when there is a ceremony to describe.
+  SAVE_THE_DATE: { primary: ['story', 'travel', 'adventures'], more: ['share', 'caa', 'ask'], sticky: [] },
   INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: [] },
   RSVP_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: ['directions'] },
   RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa', 'ask'], sticky: ['directions'] },

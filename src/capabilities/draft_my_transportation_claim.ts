@@ -7,7 +7,7 @@ import { err, ok } from '@/contracts/result';
 import { stableHash } from '@/lib/crypto';
 import { providerDisplayName } from '@/domain/external/handoff';
 import { getTransportVault } from '@/domain/external/vault';
-import { benefitViewsFor, TRANSPORTATION_CITATIONS } from '@/domain/transport';
+import { benefitViewsFor, withProviderReadiness, TRANSPORTATION_CITATIONS } from '@/domain/transport';
 import { appServices } from './context';
 import { benefitViewSchema } from './get_my_transportation_options';
 
@@ -49,11 +49,11 @@ export const draftMyTransportationClaim = defineCapability<z.infer<typeof input>
   async handler(ctx, { entitlementId }) {
     if (ctx.principal.kind !== 'guest') return err(new CapabilityError('forbidden', 'Ride benefits are claimed by the guest they belong to.'));
     const { db, providers, confirmation } = appServices(ctx);
-    const views = await benefitViewsFor(db, await getTransportVault(), ctx.principal, ctx.now, ctx.surface ?? 'ui');
+    const provider = providers('transport-benefit');
+    const views = withProviderReadiness(await benefitViewsFor(db, await getTransportVault(), ctx.principal, ctx.now, ctx.surface ?? 'ui'), provider.mode);
     const benefit = views.find((b) => b.entitlementId === entitlementId);
     // Not found rather than forbidden: benefits are only ever looked up by the owner's own id, so anything else is simply not theirs.
     if (!benefit) return err(new CapabilityError('not_found', 'We could not find that ride benefit on your invitation.'));
-    const provider = providers('transport-benefit');
     const redemptionKind = provider.capabilities.getRedemptionLink ? 'link' : 'code';
     const claimable = benefit.status === 'eligible' || benefit.status === 'failed';
     const confirmInput = { entitlementId };

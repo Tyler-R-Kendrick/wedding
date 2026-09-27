@@ -21,14 +21,27 @@ export interface RunSummary {
  * `listJobTypes()`), so a runner never kills a job it cannot run. Entry points import
  * `./register-all` so every handler the app defines is registered before they get here.
  */
-export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date; types?: readonly string[] } = {}): Promise<RunSummary> {
+export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date; types?: readonly string[]; budgetMs?: number; startedAt?: number } = {}): Promise<RunSummary> {
   const queue = new JobQueue(db, opts.now);
   const worker = opts.worker ?? `worker-${process.pid}`;
   const summary: RunSummary = { claimed: 0, succeeded: 0, retried: 0, dead: 0, reaped: 0 };
+  // The budget counts from `startedAt` (the request's start, in `performance.now()` terms) when the
+  // caller gives one, so cold start and the route's own setup are inside it.
+  const began = opts.startedAt ?? performance.now();
+  // Only what was due when the run began: a job that fails now is retried by a later run.
+  const dueBy = (opts.now ?? (() => new Date()))();
   summary.reaped = await queue.reapStale();
-  const batch = await queue.claim(worker, opts.limit ?? 10, { types: opts.types ?? listJobTypes() });
-  summary.claimed = batch.length;
-  for (const job of batch) {
+  const types = opts.types ?? listJobTypes();
+  const limit = opts.limit ?? 10;
+  // One job at a time, and none once the time budget is spent. Claiming the whole batch up front
+  // meant a serverless function killed at its `maxDuration` left the jobs it had not reached locked
+  // (and charged an attempt) until the reaper freed them ten minutes later; a job not yet claimed
+  // simply waits for the next tick.
+  while (summary.claimed < limit) {
+    if (opts.budgetMs !== undefined && performance.now() - began >= opts.budgetMs) break;
+    const [job] = await queue.claim(worker, 1, { types, dueBy });
+    if (!job) break;
+    summary.claimed++;
     const requestId = newId();
     const log = logger.child({ jobId: job.id, jobType: job.type, attempt: job.attempts, requestId });
     const handler = getJobHandler(job.type);

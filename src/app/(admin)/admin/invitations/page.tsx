@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { revokeInvitation } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Input } from '../_components/ops';
+import { Button, ConfirmCheck, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section } from '../_components/console';
 import { IssueForm } from './IssueForm';
 
@@ -62,6 +62,7 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
                         <form action={revokeInvitation} className="ops-form-inline">
                           <input type="hidden" name="invitationId" value={r.id} />
                           <Input id={`reason-${r.id}`} label="Reason" name="reason" defaultValue="revoked by admin" />
+                          <ConfirmCheck id={`confirm-revoke-${r.id}`} label={`Yes, revoke ${r.householdName}’s link`} />
                           <Button variant="danger">Revoke</Button>
                         </form>
                       </div>
