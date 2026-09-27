@@ -64,10 +64,6 @@ export async function readSeatingState(ctx: CapabilityContext, guestId: string):
 }
 
 /**
- * Reads ONLY the live publication snapshot. Before publication (or when the guest is not
- * in the snapshot) this is `not_found` — the draft chart never reaches any surface.
- */
-/**
  * What a guest is shown for one snapshot: the sentence, the table and the floor plan. Shared by the
  * guest's own read (the live publication) and the console's preview (the draft), so the preview is
  * the guest's view by construction rather than a second rendering of it.
@@ -86,6 +82,10 @@ export async function tableViewFor(db: Awaited<ReturnType<typeof eDb>>, snapshot
   };
 }
 
+/**
+ * Reads ONLY the live publication snapshot. Before publication (or when the guest is not
+ * in the snapshot) this is `not_found` — the draft chart never reaches any surface.
+ */
 export async function readPublishedTable(ctx: CapabilityContext, guestId: string) {
   const db = await eDb(ctx);
   const live = await getLivePublication(db);
