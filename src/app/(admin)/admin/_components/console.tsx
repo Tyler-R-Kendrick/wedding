@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { isSafeReturnPath } from '@/domain/identity/routes';
+import { PATHNAME_HEADER } from '@/themes/routes';
 import { ADMIN_SECTIONS } from './sections';
 import './ops.css';
 import './console.css';
@@ -48,13 +51,20 @@ export function ConsolePage({
   );
 }
 
-export function ConsoleGate({ what }: { what: string }) {
+/**
+ * The gate every console screen shows to someone who is not an administrator. Sign-in comes back to
+ * the screen that was asked for (the proxy's pathname header, validated as a return path); it used
+ * to land on /admin whatever the link was.
+ */
+export async function ConsoleGate({ what }: { what: string }) {
+  const path = (await headers()).get(PATHNAME_HEADER);
+  const signIn = isSafeReturnPath(path) && path !== '/admin' ? `/sign-in/admin?next=${encodeURIComponent(path)}` : '/sign-in/admin';
   return (
     <main id="main" className="ops">
       <h1 className="ops-title">Administrator sign-in required</h1>
       <p>{what} is part of the admin console.</p>
       <p>
-        <Link className="link-block" href="/sign-in/admin">Sign in with your administrator email</Link>
+        <Link className="link-block" href={signIn}>Sign in with your administrator email</Link>
       </p>
     </main>
   );

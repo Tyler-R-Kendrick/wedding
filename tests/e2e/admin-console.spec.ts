@@ -54,6 +54,9 @@ test('every console page turns an anonymous visitor away without rendering any o
   for (const { path } of CONSOLE_PAGES) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }), path).toContainText('Administrator sign-in required');
+    // Sign-in comes back to the screen that was asked for, not to the console's front page.
+    const signIn = page.locator('#main').getByRole('link', { name: 'Sign in with your administrator email' });
+    await expect(signIn, path).toHaveAttribute('href', path === '/admin' ? '/sign-in/admin' : `/sign-in/admin?next=${encodeURIComponent(path)}`);
     const body = (await page.locator('body').innerText()).toLowerCase();
     // None of the operational vocabulary of the real screens may appear on the gate.
     for (const leak of ['audit event', 'queue depth', 'readiness', 'provider mode', 'publish']) {
