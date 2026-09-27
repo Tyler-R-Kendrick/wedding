@@ -89,9 +89,10 @@ export const TEST_SERVER_SPECS = [
   // files asserting one rule, and the rule is the thing that must not be splittable.
   'tests/e2e/typography.spec.ts',
   // Level 16: the quality sweep — keyboard and focus order, prefers-reduced-motion, cross-identity
-  // cache isolation, the no-JavaScript paths, and the guest tree's shell. Every route it visits is
-  // a signed-in guest route, so it needs the test-principal injector. It walks 4 routes x 2 designs
-  // several times over; the CI warm-up list already holds every one of them.
+  // cache isolation, the no-JavaScript paths, and the guest tree's shell. It needs the test-principal
+  // injector: most routes it visits are signed-in guest routes, and the masthead sweep (2026-09-27)
+  // reaches every lifecycle state through the admin's signed preview. The CI warm-up list holds
+  // every route it visits, the preview route included.
   'tests/e2e/quality-sweep.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',

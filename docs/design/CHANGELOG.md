@@ -4,6 +4,24 @@ One entry per accepted design change. Token changes cite the
 `npx design.md diff` output; direction changes cite the critique or the
 couple's decision. Newest first. Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md) Stage 9.
 
+## 2026-09-27 — Mastheads fit their real labels
+
+**Reported by Tyler:** "HOME" was overlapping the S|T monogram. Since the sitemap's longer labels
+(#55) the Botanical–Deco list outgrew its centred column in 8 of 9 lifecycle states and spilled over
+the monogram; the Gilded Hour frieze wrapped one wing onto a ragged second line.
+
+- **Botanical–Deco masthead:** which pages sit inline is measured from the rendered labels
+  (`NavFit`), not guessed from the page count; what does not fit beside the Menu button goes to the
+  Menu sheet. The script motto is ornament: it shows only when every page fits beside it (as at
+  1600px for a signed-out reader), and gives way before any page does. The list never paints
+  outside its own column, with or without script.
+- **Gilded Hour frieze:** a wing that cannot hold its links on one line collapses the whole frieze to
+  the plaque and "Menu" (the phone layout), rather than wrapping. Collapsed, the plaque keeps the
+  centre axis and "Menu" the right edge, per DESIGN.md "Navigation is a frieze".
+- **Guard:** `tests/e2e/quality-sweep.spec.ts` › "the masthead never collides" walks every design ×
+  lifecycle state × five widths for overlap, overflow, wrapping, clipped focus rings and a reachable
+  account menu.
+
 ## 2026-09-23 — The Sara + Tyler Line, redone to match the design
 
 **Asked for by Tyler and Sara:** the ride did not feel smooth or like the rest of

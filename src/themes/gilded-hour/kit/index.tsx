@@ -11,6 +11,7 @@ import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
+import { NavFit } from '@/themes/shared/NavFit';
 import { allItems, ariaCurrent, bottomCells, isAccount, shortLabel } from '@/themes/shared/nav-utils';
 import type {
   BadgeProps, ButtonProps, CardProps, DialogProps, DividerProps, ErrorSummaryProps, EyebrowProps, FieldProps, FieldsetProps, FooterProps, GalleryProps, HeroProps, ImageFrameProps,
@@ -111,7 +112,9 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
 function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave
   // line. The account slot ("Sign in", or the account menu) counts toward the six and always stays in
-  // the frieze, never on the architrave.
+  // the frieze, never on the architrave. The frieze only works whole: when NavFit finds a wing that
+  // cannot hold its links on one line, the frieze collapses to the plaque and "Menu", as on a phone,
+  // rather than wrapping one wing onto a ragged second line.
   const inline = allItems(nav).length <= 6;
   const sideItems = inline ? allItems(nav) : [...nav.primary, ...(nav.account ? [nav.account] : [])];
   const architrave = inline ? [] : nav.more;
@@ -121,7 +124,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   return (
     <>
       <nav className="gh-frieze" aria-label="Site">
-        <ul className="gh-frieze__side gh-frieze__side--left">
+        <ul className="gh-frieze__side gh-frieze__side--left" data-fit-row="">
           {left.map((item) => (
             <li key={item.href}>
               {isAccount(item, nav) ? (
@@ -140,7 +143,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
             {siteName}: {homeLabel}
           </span>
         </a>
-        <ul className="gh-frieze__side gh-frieze__side--right">
+        <ul className="gh-frieze__side gh-frieze__side--right" data-fit-row="">
           {right.map((item) => (
             <li key={item.href}>
               {isAccount(item, nav) ? (
@@ -171,6 +174,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
             ))}
           </ul>
         ) : null}
+        <NavFit mode="whole" />
       </nav>
     </>
   );
