@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Destructive console actions need an explicit "yes": the form's ConfirmCheck posts `confirm=yes`,
@@ -33,6 +33,13 @@ const run = async (p: Promise<unknown>) => {
 };
 
 describe('destructive admin actions need confirm=yes', () => {
+  // The actions pull in the whole capability registry; loading it once here keeps each test's own
+  // clock for what it asserts (a cold import under a full parallel run took over 5s).
+  beforeAll(async () => {
+    await import('@/app/(admin)/admin/_lib/actions');
+    await import('@/app/(admin)/admin/seating/actions');
+  }, 60_000);
+
   beforeEach(() => {
     redirect.mockClear();
     adminInvoke.mockClear();
