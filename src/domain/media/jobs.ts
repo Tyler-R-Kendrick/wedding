@@ -2,6 +2,7 @@ import type { Db } from '@/db/client';
 import { env } from '@/lib/env';
 import { JobQueue, registerJobHandler, type JobHandler } from '@/lib/jobs';
 import { limitsFromEnv } from '@/lib/media/limits';
+import { lazyProvider } from '@/providers/lazy';
 import { getProvider } from '@/providers/registry';
 import { purgeSoftDeleted } from './assets';
 import { deriveAsset, markStuckAssets, processAsset, type PipelineDeps } from './pipeline';
@@ -35,10 +36,13 @@ const derive: JobHandler<{ assetId: string }> = async (payload, _job, ctx) => {
 };
 
 const sweep: JobHandler = async (_payload, _job, ctx) => {
-  const deps = pipelineDeps(ctx.db, () => ctx.now);
-  const expired = await expireStaleUploads({ db: ctx.db, storage: deps.storage, now: () => ctx.now });
+  // Storage is resolved only when a row needs it. With no object store configured nothing can have
+  // been uploaded, and resolving it up front threw on every cron tick: three attempts, dead, queued
+  // again five minutes later. A row that does need storage still gets that error, from that call.
+  const storage = lazyProvider(() => getProvider('storage', { db: ctx.db }));
+  const expired = await expireStaleUploads({ db: ctx.db, storage, now: () => ctx.now });
   const stuck = await markStuckAssets(ctx.db, ctx.now);
-  const purged = await purgeSoftDeleted(ctx.db, deps.storage, ctx.now);
+  const purged = await purgeSoftDeleted(ctx.db, storage, ctx.now);
   ctx.logger.info({ expired, stuck, purged }, 'media.sweep');
 };
 
