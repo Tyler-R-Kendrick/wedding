@@ -199,7 +199,7 @@
 .ops-input:focus-visible,
 .ops-button:focus-visible,
 .ops a:focus-visible {
-  outline: 3px solid var(--ops-accent);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 

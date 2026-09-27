@@ -21,15 +21,21 @@ export function ConsolePage({
   children,
   notice,
   actions,
+  subNav,
 }: {
   title: string;
   lede?: string;
   children: ReactNode;
   notice?: { ok?: string; error?: string };
+  /** The screen's main action (one primary button), top right. */
   actions?: ReactNode;
+  /** A family's `SubNav` (media, intelligence), above the title — never in `actions`, where its
+   *  width moved the title about from screen to screen. */
+  subNav?: ReactNode;
 }) {
   return (
     <main id="main" className="ops">
+      {subNav}
       <div className="con-head">
         <div>
           <h1 className="ops-title">{title}</h1>

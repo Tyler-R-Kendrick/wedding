@@ -69,6 +69,7 @@
 
 .gs-step {
   position: relative;
+  margin-top: var(--spacing-sm);
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr);
   gap: var(--spacing-md);

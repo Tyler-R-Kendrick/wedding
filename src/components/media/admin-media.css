@@ -22,7 +22,7 @@
 }
 
 .am-notice:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -163,7 +163,7 @@
 .mq-actions [aria-disabled="true"]:focus-visible,
 .mq-all input:focus-visible,
 .mq-pick input:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -175,7 +175,7 @@
 }
 
 .im-files:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -259,7 +259,7 @@
 
 /* The kept copy is ringed in sage; a copy already out is dimmed, and says so in words beside it. */
 .dc-strip li[data-keep] img {
-  outline: 3px solid var(--color-secondary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 

@@ -1,0 +1,782 @@
+{
+ "/admin/content": {
+  "route": "/admin/content",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Content"
+   ],
+   "h2": [
+    "Tables",
+    "Stale, expired, or placeholder records"
+   ],
+   "lede": "Every record carries its source, verification date, validity window, and version. Guests never see drafts or expired records; the concierge never sees drafts.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add [Add to Our Story]",
+    "Add [Add to Our Story timeline]",
+    "Add [Add to Places]",
+    "Add [Add to Our Adventures]",
+    "Add [Add to Share an Adventure]",
+    "Add [Add to Itineraries]",
+    "Add [Add to CAA spaces]",
+    "Add [Add to CAA history]",
+    "Add [Add to Operational fields]",
+    "Add [Add to Ask Us (FAQ)]",
+    "Edit [Edit Milk Room]",
+    "Edit [Edit Cherry Circle Room]",
+    "Edit [Edit How we met]",
+    "Edit [Edit The connection]",
+    "Edit [Edit Our life together]",
+    "Edit [Edit Love]",
+    "Edit [Edit Greater together than alone]",
+    "Edit [Edit The proposal]",
+    "Edit [Edit What marriage means to us]",
+    "Edit [Edit Museum of Ice Cream]",
+    "Edit [Edit Richardson Farm]",
+    "Edit [Edit Michael Jordan's Steakhouse]",
+    "Edit [Edit Food tastings]",
+    "Edit [Edit Gardening together]",
+    "Edit [Edit Madison waterfront]"
+   ],
+   "quiet": [
+    "Add",
+    "Edit",
+    "Mark verified"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 2,
+   "tablesVisible": 2,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:Our Story:17",
+    "A:Our Story timeline:17",
+    "A:Places:17",
+    "A:Our Adventures:17",
+    "A:Share an Adventure:17",
+    "A:Itineraries:17"
+   ],
+   "pills": [
+    "No longer current",
+    "Checked"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Content"
+   ],
+   "h2": [
+    "Tables",
+    "Stale, expired, or placeholder records"
+   ],
+   "lede": "Every record carries its source, verification date, validity window, and version. Guests never see drafts or expired records; the concierge never sees drafts.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add [Add to Our Story]",
+    "Add [Add to Our Story timeline]",
+    "Add [Add to Places]",
+    "Add [Add to Our Adventures]",
+    "Add [Add to Share an Adventure]",
+    "Add [Add to Itineraries]",
+    "Add [Add to CAA spaces]",
+    "Add [Add to CAA history]",
+    "Add [Add to Operational fields]",
+    "Add [Add to Ask Us (FAQ)]",
+    "Edit [Edit Milk Room]",
+    "Edit [Edit Cherry Circle Room]",
+    "Edit [Edit How we met]",
+    "Edit [Edit The connection]",
+    "Edit [Edit Our life together]",
+    "Edit [Edit Love]",
+    "Edit [Edit Greater together than alone]",
+    "Edit [Edit The proposal]",
+    "Edit [Edit What marriage means to us]",
+    "Edit [Edit Museum of Ice Cream]",
+    "Edit [Edit Richardson Farm]",
+    "Edit [Edit Michael Jordan's Steakhouse]",
+    "Edit [Edit Food tastings]",
+    "Edit [Edit Gardening together]",
+    "Edit [Edit Madison waterfront]"
+   ],
+   "quiet": [
+    "Add",
+    "Edit",
+    "Mark verified"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 2,
+   "tablesVisible": 2,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:Our Story:17",
+    "A:Our Story timeline:17",
+    "A:Places:17",
+    "A:Our Adventures:17",
+    "A:Share an Adventure:17",
+    "A:Itineraries:17"
+   ],
+   "pills": [
+    "No longer current",
+    "Checked"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/content/faq_entries": {
+  "route": "/admin/content/faq_entries",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Ask Us (FAQ)"
+   ],
+   "h2": [],
+   "lede": "New records start as private drafts. Any text containing the TODO(Tyler & Sara) marker must have “Placeholder” ticked.",
+   "primary": [
+    "Add a record"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add a record",
+    "Edit [Edit When and where is the wedding?]",
+    "Edit [Edit What time does it start?]",
+    "Edit [Edit What should I wear?]",
+    "Edit [Edit Can we bring our kids?]",
+    "Edit [Edit Can I bring a plus-one?]",
+    "Edit [Edit Where do I park?]",
+    "Edit [Edit What if it rains?]",
+    "Edit [Edit Can I take photos?]",
+    "Edit [Edit Is the venue accessible?]",
+    "Edit [Edit How do I RSVP?]",
+    "Edit [Edit Where should I stay, and how do I get there?]",
+    "Edit [Edit Do you have a registry?]",
+    "Edit [Edit How do I reach you?]"
+   ],
+   "quiet": [
+    "Edit",
+    "Mark verified"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 13,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:Content:17"
+   ],
+   "pills": [
+    "Checked",
+    "placeholder"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Ask Us (FAQ)"
+   ],
+   "h2": [],
+   "lede": "New records start as private drafts. Any text containing the TODO(Tyler & Sara) marker must have “Placeholder” ticked.",
+   "primary": [
+    "Add a record"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add a record",
+    "Edit [Edit When and where is the wedding?]",
+    "Edit [Edit What time does it start?]",
+    "Edit [Edit What should I wear?]",
+    "Edit [Edit Can we bring our kids?]",
+    "Edit [Edit Can I bring a plus-one?]",
+    "Edit [Edit Where do I park?]",
+    "Edit [Edit What if it rains?]",
+    "Edit [Edit Can I take photos?]",
+    "Edit [Edit Is the venue accessible?]",
+    "Edit [Edit How do I RSVP?]",
+    "Edit [Edit Where should I stay, and how do I get there?]",
+    "Edit [Edit Do you have a registry?]",
+    "Edit [Edit How do I reach you?]"
+   ],
+   "quiet": [
+    "Edit",
+    "Mark verified"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 13,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:Content:17"
+   ],
+   "pills": [
+    "Checked",
+    "placeholder"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/media": {
+  "route": "/admin/media",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Media queue"
+   ],
+   "h2": [],
+   "lede": "Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here.",
+   "primary": [
+    "Approve and publish"
+   ],
+   "ghost": [
+    "Show",
+    "Flag for follow-up",
+    "Prepare again"
+   ],
+   "danger": [],
+   "triggers": [
+    "Reject [Reject the selected items]",
+    "Delete [Delete the selected items]"
+   ],
+   "quiet": [
+    "Reject",
+    "Delete"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Queue"
+   ]
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Media queue"
+   ],
+   "h2": [],
+   "lede": "Everything guests and vendors have added, in the state it is in. Approve to publish; nothing reaches the gallery without a decision here.",
+   "primary": [
+    "Approve and publish"
+   ],
+   "ghost": [
+    "Show",
+    "Flag for follow-up",
+    "Prepare again"
+   ],
+   "danger": [],
+   "triggers": [
+    "Reject [Reject the selected items]",
+    "Delete [Delete the selected items]"
+   ],
+   "quiet": [
+    "Reject",
+    "Delete"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Queue"
+   ]
+  },
+  "errors390": []
+ },
+ "/admin/media/import": {
+  "route": "/admin/media/import",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Import professional media"
+   ],
+   "h2": [],
+   "lede": "Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery.",
+   "primary": [
+    "Import a delivery"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Import a delivery"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Import professional media"
+   ]
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Import professional media"
+   ],
+   "h2": [],
+   "lede": "Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery.",
+   "primary": [
+    "Import a delivery"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Import a delivery"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Import professional media"
+   ]
+  },
+  "errors390": []
+ },
+ "/admin/media/duplicates": {
+  "route": "/admin/media/duplicates",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Duplicates"
+   ],
+   "h2": [],
+   "lede": "Identical files (same checksum) and near-identical images (perceptual hash). Keep one copy of each and reject the rest; anything rejected can be restored from t",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Duplicates"
+   ]
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Duplicates"
+   ],
+   "h2": [],
+   "lede": "Identical files (same checksum) and near-identical images (perceptual hash). Keep one copy of each and reject the rest; anything rejected can be restored from t",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Duplicates"
+   ]
+  },
+  "errors390": []
+ },
+ "/admin/ai": {
+  "route": "/admin/ai",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Search index"
+   ],
+   "h2": [
+    "Coverage",
+    "What is switched on",
+    "Waiting for review (0)"
+   ],
+   "lede": "What the archive can be searched by, where each description came from, and what is waiting for a person to approve.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "On",
+    "Off"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Search index"
+   ]
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Search index"
+   ],
+   "h2": [
+    "Coverage",
+    "What is switched on",
+    "Waiting for review (0)"
+   ],
+   "lede": "What the archive can be searched by, where each description came from, and what is waiting for a person to approve.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "On",
+    "Off"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Search index"
+   ]
+  },
+  "errors390": []
+ },
+ "/admin/concierge": {
+  "route": "/admin/concierge",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Concierge"
+   ],
+   "h2": [
+    "Security alerts",
+    "Grounding failures",
+    "Answers"
+   ],
+   "lede": "Every answer the concierge gave, with the verdict its verifier reached, the sources it cited and the capabilities it called. Questions and answers are redacted ",
+   "primary": [],
+   "ghost": [
+    "Show"
+   ],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Concierge"
+   ]
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Concierge"
+   ],
+   "h2": [
+    "Security alerts",
+    "Grounding failures",
+    "Answers"
+   ],
+   "lede": "Every answer the concierge gave, with the verdict its verifier reached, the sources it cited and the capabilities it called. Questions and answers are redacted ",
+   "primary": [],
+   "ghost": [
+    "Show"
+   ],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": [
+    "Concierge"
+   ]
+  },
+  "errors390": []
+ },
+ "/admin/audit": {
+  "route": "/admin/audit",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Audit trail"
+   ],
+   "h2": [
+    "Filter",
+    "Events",
+    "Busiest actions"
+   ],
+   "lede": "Append-only. Every capability invocation and every domain event, newest first.",
+   "primary": [],
+   "ghost": [
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 2,
+   "tablesVisible": 2,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:capability.invoked:17"
+   ],
+   "pills": [
+    "success"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader",
+    "ui-monospace"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Audit trail"
+   ],
+   "h2": [
+    "Filter",
+    "Events",
+    "Busiest actions"
+   ],
+   "lede": "Append-only. Every capability invocation and every domain event, newest first.",
+   "primary": [],
+   "ghost": [
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 2,
+   "tablesVisible": 2,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "A:capability.invoked:17"
+   ],
+   "pills": [
+    "success"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader",
+    "ui-monospace"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ }
+}

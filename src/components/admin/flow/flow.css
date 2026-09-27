@@ -348,7 +348,7 @@ textarea.flow-input {
 }
 
 .flow-input:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -410,7 +410,7 @@ textarea.flow-input {
 }
 
 .flow-choice:has(input:focus-visible) {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: -3px;
 }
 
@@ -483,7 +483,7 @@ textarea.flow-input {
 .flow-close:focus-visible,
 .flow-discard:focus-visible,
 .flow-step__title:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -658,7 +658,7 @@ textarea.flow-input {
 }
 
 .flow-details > summary:focus-visible {
-  outline: 3px solid var(--color-tertiary);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 

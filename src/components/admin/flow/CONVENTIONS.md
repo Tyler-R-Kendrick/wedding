@@ -15,7 +15,8 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
 ## Page layout
 
 1. `ConsolePage` with a short `lede`. The screen's main create action goes in `actions`
-   (top right): one primary button per screen.
+   (top right): one primary button per screen. A family's `SubNav` (media, intelligence) goes in
+   `subNav`, never in `actions`.
 2. A `FilterBar` above the list when the list can be searched.
 3. The things the screen manages as a `RecordList` of `RecordRow`s: name and state (`Pill`) first,
    one muted line of details, row actions on the right as quiet text buttons (`variant="quiet"`,
@@ -24,6 +25,20 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
    actions cell holds the same quiet triggers.
 5. Raw ids, internals and troubleshooting tables go in a closed `<details className="flow-details">`
    at the bottom, never in the main path.
+
+## Words (the same everywhere)
+
+| Where | Say | Not |
+|---|---|---|
+| A row's edit trigger | **Edit** (`accessibleName`: "Edit Ada Lovelace"). **Set up** only for a built-in placeholder nobody has saved yet | Change, Modify, Manage |
+| A row's destructive trigger | **Delete** to remove a record. The act's own verb when it is not a deletion: **Revoke**, **Withdraw**, **Replace**, **Unpublish**, **Cancel**, **Reject**, **Reset access** | Remove |
+| A danger flow's button | The verb and the thing: "Delete Ada Lovelace", "Revoke the Lovelace link", "Cancel the reminder job" | "Delete", "Confirm", "Yes" |
+| A create/edit flow's button | "Add a guest" / "Save guest", "Add a fund" / "Save fund" | bare "Save", "Submit", "OK" |
+| Flow titles | Verb and name, no quotes: "Edit Our honeymoon", "Delete the Garden table" | “Edit ‘Our honeymoon’” |
+| RSVP answers | **Coming**, **Not coming**, **No answer yet** | attending, declined, yes/no, raw enum values |
+| Status pills | Sentence case, a state in plain words ("Shown", "Needs a decision") | lowercase, raw enum values (`private`, `RSVP_OPEN` outside Technical details) |
+| Dates and times | `Day` / `Stamp` / `formatStamp` from `_components/console` (Chicago time) | raw ISO strings, `toLocaleString()` |
+| Required fields | A sentence saying what to enter ("Give the record a title.") | "Required." |
 
 ## Inside a flow
 
