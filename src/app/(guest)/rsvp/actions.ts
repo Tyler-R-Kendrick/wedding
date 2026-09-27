@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { invoke } from '@/capabilities';
 import { draftRsvp, submitRsvp } from '@/capabilities/rsvp';
 import { submitInputSchema } from '@/capabilities/rsvp/schemas';
@@ -109,13 +108,10 @@ export async function rsvpAction(_prev: RsvpFormState, fd: FormData): Promise<Rs
       if (!submission.success || !token) return { stage: 'form', errors: {}, messages: ['Your review timed out — please check your answers and confirm again.'], values: submission.success ? submission.data : null, failure: false };
       const { ctx } = await uiContext({ idempotencyKey, confirmationToken: token });
       const result = await invoke(submitRsvp, ctx, submission.data);
-      if (result.ok) {
-        // The page around the form ("Where things stand", each part's progress) and Your Weekend read
-        // the saved answers: refresh them, or they show the state from before this submit until a reload.
-        revalidatePath('/rsvp', 'layout');
-        revalidatePath('/your-weekend');
-        return { stage: 'done', result: result.value.data };
-      }
+      // No revalidatePath here. Every RSVP page is dynamic and uncached, so the next visit reads the
+      // saved answers anyway; revalidating re-rendered /rsvp inside this response, and once a submit
+      // answered everything the page stopped rendering the form, taking the confirmation with it.
+      if (result.ok) return { stage: 'done', result: result.value.data };
       const { code, message } = result.error;
       if (code === 'confirmation_required') return { stage: 'form', errors: {}, messages: ['Your review timed out — please check your answers and confirm again.'], values: submission.data, failure: false };
       if (code === 'validation' || code === 'forbidden' || code === 'conflict') {
