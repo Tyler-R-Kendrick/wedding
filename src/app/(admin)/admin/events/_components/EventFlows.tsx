@@ -41,10 +41,9 @@ interface EventValues extends Record<string, unknown> {
   accessibilityNote: string;
   placeholder: boolean;
   rsvpRequired: boolean;
-  sortOrder: string;
 }
 
-const eventValues = (e: EventSummary | undefined, nextOrder: number): EventValues => ({
+const eventValues = (e: EventSummary | undefined): EventValues => ({
   name: e?.name ?? '',
   dateIso: e?.dateIso ?? '2027-07-17',
   startsAt: isoToChicagoLocal(e?.startsAt),
@@ -55,18 +54,18 @@ const eventValues = (e: EventSummary | undefined, nextOrder: number): EventValue
   accessibilityNote: e?.accessibilityNote ?? '',
   placeholder: e ? e.placeholder : true,
   rsvpRequired: e ? e.rsvpRequired : true,
-  sortOrder: String(e?.sortOrder ?? nextOrder),
 });
-
-const validOrder = (s: string) => /^\d{1,4}$/.test(s.trim()) && Number(s) <= 1000;
 
 /**
  * Add an event, or edit one: what and when, where and what guests should know, how it shows on
  * the site, then the event read back. Replaces a long form per event plus a blank one at the end.
+ *
+ * Where it sits in lists is not asked: a new event goes last, an edit keeps its place, and the
+ * events list moves one with Up and Down (`admin_reorder_events`). This step used to ask for a
+ * "Position in lists" number beside every other event's number.
  */
-export function EventFlow({ event, rooms, others, nextOrder, label, variant = 'primary' }: { event?: EventSummary; rooms: Option[]; others: { name: string; sortOrder: number }[]; nextOrder: number; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
+export function EventFlow({ event, rooms, label, variant = 'primary' }: { event?: EventSummary; rooms: Option[]; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
   const room = (ref: string) => rooms.find((r) => r.value === ref)?.label ?? '';
-  const order = others.length ? `The others: ${others.map((o) => `${o.name} ${o.sortOrder}`).join(', ')}.` : '';
   const steps: FlowStep<EventValues>[] = [
     {
       title: 'What and when',
@@ -96,16 +95,13 @@ export function EventFlow({ event, rooms, others, nextOrder, label, variant = 'p
     },
     {
       title: 'On the site',
-      fields: ['placeholder', 'rsvpRequired', 'sortOrder'],
+      fields: ['placeholder', 'rsvpRequired'],
       render: (ctx) => (
         <>
           <CheckField ctx={ctx} name="placeholder" label="Details not confirmed yet" hint="Guests see the event marked as still to be confirmed." />
           <CheckField ctx={ctx} name="rsvpRequired" label="Guests RSVP to this event" />
-          <TextField ctx={ctx} name="sortOrder" label="Position in lists" type="number" min={0} max={1000} inputMode="numeric" hint={`Events are listed from the lowest number up. ${order}`} />
         </>
       ),
-      ready: (v) => validOrder(v.sortOrder),
-      readyHint: { field: 'sortOrder', message: 'Enter a whole number from 0 to 1000.' },
     },
     {
       title: 'Check and save',
@@ -135,9 +131,9 @@ export function EventFlow({ event, rooms, others, nextOrder, label, variant = 'p
       id={`events:event:${event?.id ?? 'new'}`}
       title={event ? `Edit ${event.name}` : 'Add an event'}
       trigger={{ label, variant, accessibleName: event ? `Edit ${event.name}` : undefined }}
-      initial={eventValues(event, nextOrder)}
+      initial={eventValues(event)}
       // The page refreshes after a save; reading the props again keeps the next edit current.
-      load={event ? async () => eventValues(event, nextOrder) : undefined}
+      load={event ? async () => eventValues(event) : undefined}
       steps={steps}
       submit={{
         label: event ? 'Save event' : 'Add an event',
@@ -155,9 +151,54 @@ export function EventFlow({ event, rooms, others, nextOrder, label, variant = 'p
           accessibilityNote: v.accessibilityNote.trim() || null,
           placeholder: v.placeholder,
           rsvpRequired: v.rsvpRequired,
-          sortOrder: Number(v.sortOrder),
+          // No sortOrder: the server keeps an edited event's place and puts a new one last.
         }),
       }}
+    />
+  );
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Delete an event nobody has answered yet. The page offers this only when the event has no RSVP
+ * answers (`responseCount`); one that has them says why instead, and `admin_delete_event` refuses
+ * it anyway. Step-up applies: the flow comes back here after /step-up.
+ */
+export function DeleteEventFlow({ event }: { event: { id: string; name: string; invitedCount: number; mealOptionsVersion: number } }) {
+  const { name, invitedCount } = event;
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`events:delete:${event.id}`}
+      tone="danger"
+      title={`Delete ${name}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${name}` }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: `Delete ${name}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>{name} comes off the schedule, the RSVP and Your Weekend, and off every invitation link that names it.</p>
+                {invitedCount || event.mealOptionsVersion > 0 ? (
+                  <p>
+                    {invitedCount ? `The ${plural(invitedCount, 'guest', 'guests')} invited to it ${invitedCount === 1 ? 'is' : 'are'} no longer invited.` : ''}
+                    {invitedCount && event.mealOptionsVersion > 0 ? ' ' : ''}
+                    {event.mealOptionsVersion > 0 ? 'Its menu is deleted too.' : ''}
+                  </p>
+                ) : null}
+                <p>Nobody has answered its RSVP yet, so no answers are lost. This cannot be undone: to bring it back, add it again and invite everyone again.</p>
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={invitedCount ? `Yes, delete ${name} and its ${plural(invitedCount, 'invitation', 'invitations')}` : `Yes, delete ${name}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{ label: `Delete ${name}`, capability: 'admin_delete_event', success: `${name} deleted.`, input: () => ({ id: event.id }) }}
     />
   );
 }
@@ -527,6 +568,38 @@ const SEVERITIES = [
   { value: 'info', label: 'Information', description: 'A change of plan, a reminder.' },
   { value: 'urgent', label: 'Urgent', description: 'Shown first, marked urgent. For weather, a closed road, a new time.' },
 ];
+
+/** Deletes a notice for good. Hide is the undoable way to take one down; this says so. */
+export function DeleteNoticeFlow({ notice }: { notice: Pick<NoticeSummary, 'id' | 'title' | 'active'> }) {
+  const { title } = notice;
+  return (
+    <AdminFlow<{ confirmed: boolean }>
+      id={`events:notice-delete:${notice.id}`}
+      tone="danger"
+      title={`Delete ${title}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${title}` }}
+      initial={{ confirmed: false }}
+      steps={[
+        {
+          title: `Delete ${title}?`,
+          fields: ['confirmed'],
+          render: (ctx) => (
+            <>
+              <Consequences>
+                <p>{notice.active ? `${title} comes off Your Weekend at once and is deleted.` : `${title} is hidden already; this deletes it.`}</p>
+                <p>This cannot be undone. To take a notice down for a while and keep it, use Hide instead.</p>
+              </Consequences>
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${title}`} />
+            </>
+          ),
+          ready: (v) => v.confirmed,
+          readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
+        },
+      ]}
+      submit={{ label: `Delete ${title}`, capability: 'admin_delete_notice', success: `${title} deleted.`, input: () => ({ id: notice.id }) }}
+    />
+  );
+}
 
 /** Post a notice on Your Weekend, or edit one: the message, when it shows, then how guests see it. */
 export function NoticeFlow({ notice, label, variant = 'ghost' }: { notice?: NoticeSummary; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {

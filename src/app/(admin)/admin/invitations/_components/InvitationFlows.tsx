@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminFlow, type FieldErrors, type FlowContext, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
+import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
+import { CheckField, CheckGroupField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { formatDay } from '@/components/admin/flow/dates';
+import { possessive } from '@/components/admin/flow/words';
 
 type Option = { value: string; label: string };
 
@@ -38,7 +39,7 @@ function OneTimeLink({ issued, householdName }: { issued: Issued; householdName:
   return (
     <div className="flow-found" data-testid="issued-link">
       <p>
-        <strong>{householdName}’s link, shown only this once.</strong> Copy it or save the QR code before you close this: it cannot be shown again, only replaced.
+        <strong>{possessive(householdName)} link, shown only this once.</strong> Copy it or save the QR code before you close this: it cannot be shown again, only replaced.
       </p>
       <p className="flow-found__url">{issued.url}</p>
       <p>
@@ -48,45 +49,9 @@ function OneTimeLink({ issued, householdName }: { issued: Issued; householdName:
         <span role="status">{copied}</span>
       </p>
       {/* eslint-disable-next-line @next/next/no-img-element -- a generated data URI; there is nothing to optimise */}
-      <img className="ops-qr" alt={`QR code for ${householdName}’s invitation link`} src={`data:image/svg+xml;utf8,${encodeURIComponent(issued.qrSvg)}`} />
+      <img className="ops-qr" alt={`QR code for ${possessive(householdName)} invitation link`} src={`data:image/svg+xml;utf8,${encodeURIComponent(issued.qrSvg)}`} />
       <p className="flow-hint">It works until {formatDay(issued.invitation.expiresAt)}.</p>
     </div>
-  );
-}
-
-/**
- * The events a link invites the household to, as boxes to tick. The kit's `CheckField` is one box;
- * this is a group of them, in the kit's choice-row styling.
- */
-function EventsField({ ctx, events }: { ctx: FlowContext<IssueValues>; events: Option[] }) {
-  const chosen = ctx.values.eventKeys;
-  const error = ctx.errors.eventKeys;
-  const toggle = (key: string, on: boolean) => ctx.set({ eventKeys: on ? [...chosen, key] : chosen.filter((k) => k !== key) });
-  return (
-    <fieldset className="flow-choices" aria-describedby={error ? `${ctx.uid}-eventKeys-error` : `${ctx.uid}-eventKeys-hint`}>
-      <legend className="flow-label">Events</legend>
-      <p id={`${ctx.uid}-eventKeys-hint`} className="flow-hint">
-        What the invitation says they are invited to. Each guest’s own events can be changed later on the Events screen.
-      </p>
-      <div className="flow-choices__list">
-        {events.map((e, i) => {
-          const id = i === 0 ? `${ctx.uid}-eventKeys` : `${ctx.uid}-eventKeys-${e.value}`;
-          return (
-            <label key={e.value} htmlFor={id} className="flow-choice">
-              <input id={id} type="checkbox" checked={chosen.includes(e.value)} onChange={(ev) => toggle(e.value, ev.target.checked)} />
-              <span className="flow-choice__text">
-                <span className="flow-choice__label">{e.label}</span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      {error ? (
-        <p id={`${ctx.uid}-eventKeys-error`} className="flow-field-error">
-          {error}
-        </p>
-      ) : null}
-    </fieldset>
   );
 }
 
@@ -135,7 +100,13 @@ export function IssueLinkFlow({ households, events, defaultEvents }: { household
       render: (ctx) => (
         <>
           {events ? (
-            <EventsField ctx={ctx} events={events} />
+            <CheckGroupField
+              ctx={ctx}
+              name="eventKeys"
+              legend="Events"
+              choices={events}
+              hint="What the invitation says they are invited to. Each guest’s own events can be changed later on the Events screen."
+            />
           ) : (
             <TextField ctx={ctx} name="eventText" label="Events" spellCheck={false} hint="The event keys, separated by semicolons: “ceremony; reception”." />
           )}
@@ -178,7 +149,7 @@ export function IssueLinkFlow({ households, events, defaultEvents }: { household
       submit={{
         label: (v) => {
           const chosen = households.find((h) => h.value === v.householdId);
-          return chosen ? `Make ${chosen.label}’s link` : 'Make the link';
+          return chosen ? `Make ${possessive(chosen.label)} link` : 'Make the link';
         },
         capability: 'admin_issue_invitation',
         success: 'Invitation link made.',
@@ -192,16 +163,17 @@ export function IssueLinkFlow({ households, events, defaultEvents }: { household
 /** Replaces a link that leaked or was lost: the old one stops working and a new one is shown, once. */
 export function RotateLinkFlow({ invitation }: { invitation: InvitationSummary }) {
   const who = invitation.householdName;
+  const whose = possessive(who);
   return (
     <AdminFlow<{ confirmed: boolean }>
       id={`invitations:rotate:${invitation.id}`}
       tone="danger"
-      title={`Replace ${who}’s link`}
-      trigger={{ label: 'Replace', variant: 'quiet', accessibleName: `Replace ${who}’s invitation link` }}
+      title={`Replace ${whose} link`}
+      trigger={{ label: 'Replace', variant: 'quiet', accessibleName: `Replace ${whose} invitation link` }}
       initial={{ confirmed: false }}
       steps={[
         {
-          title: `Replace ${who}’s link?`,
+          title: `Replace ${whose} link?`,
           fields: ['confirmed'],
           render: (ctx) => (
             <>
@@ -219,7 +191,7 @@ export function RotateLinkFlow({ invitation }: { invitation: InvitationSummary }
         },
       ]}
       submit={{
-        label: `Replace ${who}’s link`,
+        label: `Replace ${whose} link`,
         capability: 'admin_rotate_invitation',
         success: 'Link replaced.',
         input: () => ({ invitationId: invitation.id }),
@@ -232,16 +204,17 @@ export function RotateLinkFlow({ invitation }: { invitation: InvitationSummary }
 /** Stops a link for good without making a new one: it went to the wrong person, or they are no longer invited. */
 export function RevokeLinkFlow({ invitation }: { invitation: InvitationSummary }) {
   const who = invitation.householdName;
+  const whose = possessive(who);
   return (
     <AdminFlow<{ confirmed: boolean; reason: string }>
       id={`invitations:revoke:${invitation.id}`}
       tone="danger"
-      title={`Revoke ${who}’s link`}
-      trigger={{ label: 'Revoke', variant: 'danger', accessibleName: `Revoke ${who}’s invitation link` }}
+      title={`Revoke ${whose} link`}
+      trigger={{ label: 'Revoke', variant: 'danger', accessibleName: `Revoke ${whose} invitation link` }}
       initial={{ confirmed: false, reason: '' }}
       steps={[
         {
-          title: `Revoke ${who}’s link?`,
+          title: `Revoke ${whose} link?`,
           fields: ['reason', 'confirmed'],
           render: (ctx) => (
             <>
@@ -252,14 +225,14 @@ export function RevokeLinkFlow({ invitation }: { invitation: InvitationSummary }
                 <p>Guests who have already signed in keep their access. This cannot be undone.</p>
               </Consequences>
               <TextField ctx={ctx} name="reason" label="Why" hint="Kept in the audit trail. For example: “sent to the wrong address”." />
-              <CheckField ctx={ctx} name="confirmed" label={`Yes, revoke ${who}’s link`} />
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, revoke ${whose} link`} />
             </>
           ),
           ready: (v) => v.confirmed && v.reason.trim().length > 0,
           readyHint: { field: 'confirmed', message: 'Say why, and tick the box to confirm.' },
         },
       ]}
-      submit={{ label: `Revoke ${who}’s link`, capability: 'admin_revoke_invitation', success: `${who}’s link revoked.`, input: (v) => ({ invitationId: invitation.id, reason: v.reason.trim().slice(0, 200) }) }}
+      submit={{ label: `Revoke ${whose} link`, capability: 'admin_revoke_invitation', success: `${whose} link revoked.`, input: (v) => ({ invitationId: invitation.id, reason: v.reason.trim().slice(0, 200) }) }}
     />
   );
 }

@@ -53,10 +53,10 @@ describe('invitation links', () => {
   it('keeps the replacement link on its Done panel after the refresh revokes the old one', async () => {
     const before = [row({ id: 'A' })];
     const { rerender } = render(<InvitationList rows={before} showRevoked={false} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’s invitation link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’ invitation link' }));
     fireEvent.click(screen.getByLabelText('Yes, replace the link (the old one stops working)'));
     fetchMock.mockReturnValueOnce(answer({ ok: true, data: { url: 'https://example.test/i/NEWTOKEN', qrSvg: '<svg/>', invitation: { id: 'B', expiresAt: '2027-02-01T00:00:00.000Z' } } }));
-    fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’s link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’ link' }));
     expect(await screen.findByText('https://example.test/i/NEWTOKEN')).toBeTruthy();
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/capabilities/admin_rotate_invitation');
 

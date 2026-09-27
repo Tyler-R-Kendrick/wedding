@@ -114,11 +114,14 @@ Unregistered slots render an honest placeholder; a throwing provider renders `un
 | `get_my_table` | read | guest | `view_table_assignment` | — | ui, ai, webmcp |
 | `show_my_table_on_floorplan` | navigate | guest | `view_table_assignment` | — | ui, ai, webmcp |
 | `admin_list_events` | read | admin | `admin_content` | — | ui |
-| `admin_upsert_event` | action | admin | `admin_content` | inline / key | ui |
+| `admin_upsert_event` | action | admin | `admin_content` | inline / key; `sortOrder` optional (an edit keeps its place and key, a new event goes last) | ui |
+| `admin_delete_event` | action | admin | `admin_content` + `admin_guest_ops` | inline / key; **step-up**; refuses an event with any RSVP answer; removes its entitlements, menu versions and its key from `invitations.event_keys` | ui |
+| `admin_reorder_events` | action | admin | `admin_content` | inline / key; one save for Up/Down (`moves: [{ id, sortOrder }]`) | ui |
 | `admin_set_meal_options` | action | admin | `admin_content` | inline / key | ui |
 | `admin_set_event_entitlements` | action | admin | `admin_guest_ops` | inline / key | ui |
 | `admin_set_rsvp_window` | action | admin | `admin_content` | inline / key | ui |
 | `admin_upsert_notice` | action | admin | `admin_content` | inline / key | ui |
+| `admin_delete_notice` | action | admin | `admin_content` | inline / key | ui |
 | `admin_rsvp_overview` | read | admin | `admin_guest_ops` | — (never needs) | ui |
 | `admin_export_rsvp` | read | admin | `admin_guest_ops` | — (never needs) | ui |
 | `admin_export_needs` | read | admin | `admin_guest_ops` | requires `includeNeeds: true`; audited by name | ui |

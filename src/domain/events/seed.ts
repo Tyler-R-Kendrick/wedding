@@ -9,6 +9,10 @@ import { PLACEHOLDER_PLANS } from '@/domain/seating/plans';
  * The three events the design doc names (ceremony, cocktail hour, reception). Only the date is a
  * brief fact; room, times, dress code stay NULL with `placeholder: true` — TODO(Tyler & Sara).
  * Idempotent: rows are inserted once and never overwrite admin edits.
+ *
+ * Only into an empty table. The seed runs on every boot (`ensureSwarmESeeded`) and every
+ * `db:seed`, so re-inserting by id would bring back an event the couple deleted in /admin/events
+ * (`admin_delete_event`) — without its invitations, as a stray "Ceremony" nobody asked for.
  */
 export const SEED_EVENTS = [
   { id: seedId('EVENTCEREMONY'), slug: 'ceremony', name: 'Ceremony', sortOrder: 10, hasMeal: false },
@@ -19,7 +23,8 @@ export const SEED_EVENTS = [
 export const SEED_EVENT_IDS = { ceremony: SEED_EVENTS[0].id, cocktailHour: SEED_EVENTS[1].id, reception: SEED_EVENTS[2].id } as const;
 
 export async function seedEventsAndPlans(db: Db, now: Date = new Date()): Promise<void> {
-  for (const e of SEED_EVENTS) {
+  const hasEvents = (await db.select({ id: events.id }).from(events).limit(1)).length > 0;
+  for (const e of hasEvents ? [] : SEED_EVENTS) {
     await db
       .insert(events)
       .values({

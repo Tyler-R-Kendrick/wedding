@@ -73,9 +73,9 @@ not see a guest list, a dietary need or an address.
 ## Step-up
 
 A session older than five minutes is asked to re-prove itself before an action
-that is hard to undo: publishing seating, revoking an invitation, changing an
-admin role, anything that hands out a ride voucher. A code or a passkey clears
-it for the next five minutes.
+that is hard to undo: publishing seating, revoking an invitation, deleting an
+event, changing an admin role, anything that hands out a ride voucher. A code or
+a passkey clears it for the next five minutes.
 
 This is not friction for its own sake. An admin session left open on a laptop at
 a venue is the most likely way this site gets misused, and the five-minute
