@@ -97,6 +97,7 @@ test('after publication: the seated guest sees their table; other households, ot
 test('admin seating mutations refuse guests and anonymous callers', async ({ request }) => {
   for (const [name, input] of [
     ['admin_seating_overview', {}],
+    ['admin_preview_guest_table', { guestId: IDS.C1 }],
     ['admin_upsert_table', { name: 'x', capacity: 2 }],
     ['admin_assign_seats', { changes: [{ guestId: IDS.C1, tableId: null }] }],
     ['admin_import_seating_csv', { csv: 'a,1,b' }],

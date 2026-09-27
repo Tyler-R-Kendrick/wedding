@@ -3,7 +3,7 @@ import { defineCapability } from '@/contracts/capability';
 import { ok } from '@/contracts/result';
 import { getTransportVault } from '@/domain/external/vault';
 import { guestHandoffSchema } from '@/domain/external/schemas';
-import { benefitViewsFor, transportationTopics, TRANSPORTATION_CITATIONS } from '@/domain/transport';
+import { benefitViewsFor, withProviderReadiness, transportationTopics, TRANSPORTATION_CITATIONS } from '@/domain/transport';
 import { appServices } from './context';
 
 const input = z.object({}).optional();
@@ -65,7 +65,7 @@ export const getMyTransportationOptions = defineCapability<z.infer<typeof input>
     const { db, providers } = appServices(ctx);
     const topics = transportationTopics(providers('maps'));
     const signedIn = ctx.principal.kind === 'guest';
-    const benefits = signedIn && ctx.principal.kind === 'guest' ? await benefitViewsFor(db, await getTransportVault(), ctx.principal, ctx.now, ctx.surface ?? 'ui') : [];
+    const benefits = signedIn && ctx.principal.kind === 'guest' ? withProviderReadiness(await benefitViewsFor(db, await getTransportVault(), ctx.principal, ctx.now, ctx.surface ?? 'ui'), providers('transport-benefit').mode) : [];
     return ok({ data: { signedIn, topics, benefits }, sources: TRANSPORTATION_CITATIONS });
   },
 });

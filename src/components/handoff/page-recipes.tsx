@@ -109,6 +109,17 @@ export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> 
         {other.map((b) => (
           <div key={b.entitlementId} data-benefit-status={b.status}>
             <GuestCard theme={theme} title="Ride benefit">
+              {/* A benefit waiting on ride claims to open is still the guest's: say what it is. */}
+              {b.status === 'unavailable' ? (
+                <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1">
+                  <dt className="text-primary">Amount</dt>
+                  <dd>{b.amountNote ?? 'To be confirmed'}</dd>
+                  <dt className="text-primary">Valid</dt>
+                  <dd>{b.validityNote ?? 'To be confirmed'}</dd>
+                  <dt className="text-primary">Area</dt>
+                  <dd>{b.geofenceNote ?? 'To be confirmed'}</dd>
+                </dl>
+              ) : null}
               <p className="measure">{b.statusMessage}</p>
             </GuestCard>
           </div>

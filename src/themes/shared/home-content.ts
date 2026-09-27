@@ -1,5 +1,6 @@
 import type { LifecycleState } from '@/contracts/lifecycle';
-import { throughSignIn } from '@/domain/lifecycle/account';
+import { pageForUrl, visibleIn } from '@wedding/sitemap';
+import { destinationOf, throughSignIn } from '@/domain/lifecycle/account';
 import type { ActionLink, Copy, HomeContent, HomeSection, Placeholder, SiteFacts, StatProps, TimelineEvent } from '@/themes/types';
 
 /**
@@ -301,6 +302,18 @@ const SECTION_ORDER: Record<LifecycleState, string[]> = {
   ARCHIVE: ['photosArchive', 'memory', 'adventure', 'place'],
 };
 
+/**
+ * A link Home offers only once the sitemap opens its page in this state (`visibleFrom`, stage 01).
+ * The navigation already follows that rule; Home's sections are written per state by hand, and the
+ * Save the Date "Future" section still linked The Wedding a state before the sitemap opens it.
+ * Links through the sign-in door are judged by where they lead; anything not in the sitemap stays.
+ */
+function openIn<T extends ActionLink | undefined>(state: LifecycleState, link: T): T | undefined {
+  if (!link) return link;
+  const page = pageForUrl(destinationOf(link.href).split(/[?#]/)[0]!);
+  return !page || visibleIn(page, state) ? link : undefined;
+}
+
 export function homeContent(site: SiteFacts, state: LifecycleState): HomeContent {
   const all = sections(site, state);
   const h = hero(site, state);
@@ -309,11 +322,11 @@ export function homeContent(site: SiteFacts, state: LifecycleState): HomeContent
     eyebrow: h.eyebrow,
     lede: h.lede,
     primary: h.primary,
-    secondary: h.secondary,
+    secondary: openIn(state, h.secondary),
     deadline: h.deadline,
     note: h.note,
     showCountdown: !['WEDDING_DAY', 'POST_WEDDING', 'ARCHIVE'].includes(state),
-    sections: SECTION_ORDER[state].map((key) => all[key]!),
+    sections: SECTION_ORDER[state].map((key) => ({ ...all[key]!, link: openIn(state, all[key]!.link) })),
   };
 }
 

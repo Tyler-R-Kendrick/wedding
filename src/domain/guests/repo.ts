@@ -5,7 +5,7 @@ import { newId, type GuestId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
-import { GUEST_KINDS, guestAccessBindings, guests, households, type GuestKind, type GuestRow } from '@/db/schema';
+import { GUEST_KINDS, guestAccessBindings, guests, households, seatAssignments, type GuestKind, type GuestRow } from '@/db/schema';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
 
 export interface GuestUpsert {
@@ -193,6 +193,11 @@ export async function mergeGuests(
     await tx.update(guests).set({ managedByGuestId: keep.id, updatedAt: now }).where(eq(guests.managedByGuestId, merge.id));
     await tx.update(guests).set({ plusOneOfGuestId: keep.id, updatedAt: now }).where(eq(guests.plusOneOfGuestId, merge.id));
     await tx.update(households).set({ managerGuestId: keep.id, updatedAt: now }).where(eq(households.managerGuestId, merge.id));
+    // A seat is one person's. The duplicate's seat moves to the kept guest when they have none, and is
+    // freed otherwise; left in place, the merged row stayed seated in the draft and was published.
+    const keepSeat = (await tx.select({ id: seatAssignments.id }).from(seatAssignments).where(eq(seatAssignments.guestId, keep.id)).limit(1))[0];
+    if (keepSeat) await tx.delete(seatAssignments).where(eq(seatAssignments.guestId, merge.id));
+    else await tx.update(seatAssignments).set({ guestId: keep.id, updatedAt: now }).where(eq(seatAssignments.guestId, merge.id));
     await tx.update(guests).set({ mergedIntoGuestId: keep.id, email: null, updatedAt: now }).where(eq(guests.id, merge.id));
     return kept!;
   });
