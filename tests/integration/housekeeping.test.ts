@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getDb } from '@/db/client';
 import { idempotencyKeys, jobs, metrics, rateLimits } from '@/db/schema';
-import { enqueueHousekeeping, getJobHandler, HOUSEKEEPING_JOB_TYPE, purgeHousekeeping, registerHousekeeping, runDueJobs } from '@/lib/jobs';
+import { deadOrphanedJobs, enqueueHousekeeping, getJobHandler, HOUSEKEEPING_JOB_TYPE, JobQueue, ORPHANED_JOB_ERROR, purgeHousekeeping, registerHousekeeping, runDueJobs } from '@/lib/jobs';
 
 describe('housekeeping.purge', () => {
   it('deletes expired idempotency rows, idle rate-limit buckets, and old metrics, keeping live ones', async () => {
@@ -25,6 +25,22 @@ describe('housekeeping.purge', () => {
     expect((await db.select().from(rateLimits)).map((r) => r.key)).toEqual(['hk:hot']);
     expect((await db.select().from(metrics)).map((r) => r.name)).toEqual(['hk.recent']);
     expect(await purgeHousekeeping(db, { now })).toEqual({ idempotencyKeys: 0, rateLimits: 0, metrics: 0 });
+  });
+
+  it('marks a job dead once it has waited a day for a handler no runner has, and nothing younger or known', async () => {
+    const db = await getDb();
+    const now = new Date('2026-09-06T12:00:00Z');
+    const day = 86_400_000;
+    const q = new JobQueue(db, () => new Date(now.getTime() - 2 * day));
+    const orphan = await q.enqueue({ type: 'hk_test.retired' });
+    const known = await q.enqueue({ type: 'hk_test.known' });
+    const young = await new JobQueue(db, () => now).enqueue({ type: 'hk_test.retired' });
+
+    expect(await deadOrphanedJobs(db, ['hk_test.known'], { now })).toBe(1);
+    expect(await q.get(orphan.id)).toMatchObject({ status: 'dead', lastError: ORPHANED_JOB_ERROR });
+    expect((await q.get(known.id))!.status).toBe('queued');
+    expect((await q.get(young.id))!.status).toBe('queued');
+    expect(await deadOrphanedJobs(db, ['hk_test.known'], { now })).toBe(0);
   });
 
   it('is registered as a job handler and enqueued at most once per hour by the cron path', async () => {

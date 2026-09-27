@@ -9,7 +9,7 @@ describe('safe return paths (review S7/N4)', () => {
     }
   });
   it('refuses off-site and malformed targets', () => {
-    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', '/rsvp/<x>', '/media/me', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
+    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', '/rsvp/<x>', '/rsvp/nope', '/rsvp/meals/extra', '/media/me', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
       expect(isSafeReturnPath(p), String(p)).toBe(false);
     }
     expect(safeReturnPath('https://evil.example', '/sign-in')).toBe('/sign-in');
@@ -28,5 +28,14 @@ describe('fixed error copy (review N7)', () => {
     expect(errorCode({ code: 'rate_limited', message: 'Too many attempts.' })).toBe('rate_limited');
     expect(errorCode({ code: 'weird' })).toBe('internal');
     for (const v of Object.values(ERROR_COPY)) expect(v).not.toMatch(/<|>|http/);
+  });
+});
+
+describe('RSVP part routes', () => {
+  it('the navigate_to allowlist names exactly the parts the RSVP has', async () => {
+    const { INTERNAL_ROUTES } = await import('@/capabilities/routes');
+    const { PART_STEP } = await import('@/components/rsvp/RsvpTaskList');
+    const listed = INTERNAL_ROUTES.filter((r) => r.startsWith('/rsvp/')).sort();
+    expect(listed).toEqual(Object.values(PART_STEP).map((s) => `/rsvp/${s}`).sort());
   });
 });

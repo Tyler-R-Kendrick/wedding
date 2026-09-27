@@ -15,9 +15,11 @@ export function PageError({ error, reset }: { error: Error & { digest?: string }
     console.error(error);
   }, [error]);
   return (
-    <div className="page" role="alert">
+    <div className="page">
       <h1 className="page__title">This page didn’t load</h1>
-      <p className="page__lede">Something went wrong on our side, not yours. Trying again usually works; if it doesn’t, the rest of the site is still here.</p>
+      <p className="page__lede" role="alert">
+        Something went wrong on our side, not yours. Trying again usually works; if it doesn’t, the rest of the site is still here.
+      </p>
       <p>
         <button type="button" className="btn btn--primary" onClick={reset}>
           Try again
