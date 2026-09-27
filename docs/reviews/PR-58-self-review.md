@@ -10,8 +10,9 @@
 
 ## 1. Hostile-reviewer pass
 
-No blocker. Two "should" and five nits against this PR, plus one finding whose cause was in PR 54;
-all resolved in `59fe96b` (and, for the last, `1e2f48d` on PR 54's branch).
+No blocker. Two "should" and five nits against this PR, one finding whose cause was in PR 54, and one
+older defect found while validating; all resolved in `59fe96b`, `1e2f48d` (on PR 54's branch) and the
+floor-plan commit.
 
 | # | Finding | Severity | Resolution |
 |---|---|---|---|
@@ -21,6 +22,7 @@ all resolved in `59fe96b` (and, for the last, `1e2f48d` on PR 54's branch).
 | 4 | The 15s margin started inside `runDueJobs`, after cold start and the route's setup. | nit | Fixed: the routes pass the request's start (`startedAt`). |
 | 5 | The poller dropped the old `stopped` check, so a request in flight at unmount still called `markProcessed`; a tick that threw would end polling. | nit | Fixed: the tick gets `live()`, and a throw schedules the next poll (unit tests). |
 | 6 | An `unavailable` benefit lost its amount, validity and area, and the copy promised a notification that does not exist. | nit | Fixed: the details show, and the message says to check back here. |
+| 8 | Found while validating this PR, not by the reviewer, and older than the stack: once seating is published, every seated guest's Your Weekend printed the raw `TODO(Tyler & Sara)` authoring marker under the floor plan. The e2e "authoring marker never reaches a guest" test caught it when it ran after the seating spec had published. | should (pre-existing) | Fixed: the floor plan's caption uses the site's `Placeholder` note; `tests/ui/floorplan.test.tsx` asserts it. |
 | 7 | Suspicion: if a submit answered everything, the refreshed `/rsvp` stopped rendering the form and the confirmation vanished. | should (regression from PR 54) | Confirmed and fixed at the cause in PR 54: the RSVP action no longer revalidates (every RSVP page is `force-dynamic`), and this PR's "Back" calls `router.refresh()` for a guest who stays. |
 
 Checked and found correct: the poller's stale-chain guard; a hidden tab never sends a request;
