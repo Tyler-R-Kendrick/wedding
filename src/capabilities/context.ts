@@ -7,6 +7,7 @@ import { getAuditSink } from '@/lib/audit';
 import { hmacSha256, keyedHash } from '@/lib/crypto';
 import { env } from '@/lib/env';
 import { getFlags, isReady } from '@/lib/flags';
+import { sessionScopedLimiter } from '@/domain/testing/testPrincipal';
 import { DbIdempotencyStore } from '@/lib/idempotency';
 import { logger, requestLogger } from '@/lib/logger';
 import { metrics } from '@/lib/metrics';
@@ -59,7 +60,8 @@ export async function createCapabilityContext(input: CreateContextInput): Promis
     idempotency: new DbIdempotencyStore(db),
     metrics,
     logger: input.requestId ? requestLogger(input.requestId) : logger,
-    ...(input.rateLimit ? { limiter: getProvider('rate-limit', { db }) } : {}),
+    // A test-injected principal is metered per session (see sessionScopedLimiter); anyone else, per person.
+    ...(input.rateLimit ? { limiter: sessionScopedLimiter(getProvider('rate-limit', { db }), input.principal) } : {}),
     ...(input.clientIp ? { clientIp: input.clientIp } : {}),
   };
   return {

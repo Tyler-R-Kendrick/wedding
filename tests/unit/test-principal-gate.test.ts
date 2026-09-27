@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTestPrincipalResolver, isTestPrincipalEnabled, principalFromSpec } from '@/domain/testing/testPrincipal';
+import { createTestPrincipalResolver, isTestPrincipalEnabled, principalFromSpec, sessionScopedLimiter } from '@/domain/testing/testPrincipal';
 import type { Principal } from '@/contracts/principal';
 import type { PrincipalResolver } from '@/lib/principal';
 
@@ -104,5 +104,27 @@ describe('the test principal resolver is unreachable unless deliberately enabled
     // CI is not a deployment: CI is exactly where NODE_ENV=test belongs.
     expect(() => parseServerEnv({ ...base, CI: 'true' })).not.toThrow();
     expect(() => parseServerEnv(base)).not.toThrow();
+  });
+});
+
+describe('an injected principal is metered per session, everyone else per person', () => {
+  const keys: string[] = [];
+  const limiter = { consume: async (key: string) => (keys.push(key), { allowed: true }) };
+  const guest = { kind: 'guest' as const, guestId: '0'.repeat(26), householdId: '1'.repeat(26) };
+  const as = (sessionId: string) => req({ 'x-test-auth': SECRET, 'x-test-principal': JSON.stringify({ ...guest, sessionId }) });
+
+  it('gives each injected session its own bucket', async () => {
+    const r = createTestPrincipalResolver(fallback, { isTest: true, secret: SECRET });
+    keys.length = 0;
+    await sessionScopedLimiter(limiter, await r.resolve(as('browser-1'))).consume('cap:guest:G', 'capability');
+    await sessionScopedLimiter(limiter, await r.resolve(as('browser-2'))).consume('cap:guest:G', 'capability');
+    expect(keys).toEqual(['cap:guest:G@browser-1', 'cap:guest:G@browser-2']);
+  });
+
+  it('leaves the key alone for a principal the resolver did not inject, however it looks', async () => {
+    // Same shape, same sessionId, built without the header: a real session must keep one bucket per person.
+    const lookalike = principalFromSpec({ ...guest, sessionId: 'browser-1' });
+    expect(sessionScopedLimiter(limiter, lookalike)).toBe(limiter);
+    expect(sessionScopedLimiter(limiter, anonymous)).toBe(limiter);
   });
 });

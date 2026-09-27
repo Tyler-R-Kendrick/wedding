@@ -87,12 +87,12 @@ function sizeOf(p) {
 }
 
 /**
- * State and parent from `/proc/<pid>/stat`: "pid (comm) state ppid …". The name may itself hold
+ * State, parent and process group from `/proc/<pid>/stat`: "pid (comm) state ppid pgrp …". The name may itself hold
  * spaces and parentheses (`next-server (v16.3.4)` becomes `(next-server (v1)`), so read after the last ')'.
  */
 export function parseStat(stat) {
-  const [state, ppid] = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
-  return { state, ppid: Number(ppid) };
+  const [state, ppid, pgrp] = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+  return { state, ppid: Number(ppid), pgrp: Number(pgrp) };
 }
 
 /** Running, rather than gone or a zombie: a zombie has exited and only waits to be reaped (state Z). */

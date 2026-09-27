@@ -82,6 +82,31 @@ npm run verify             # everything CI runs except e2e
 - Route: `src/capabilities/routes.ts` for `navigate_to`, `src/app/<route>/page.tsx` for the page.
 - Dependencies are frozen at this level; ask the foundation owner before adding a package.
 
+## The identity, RSVP and security browser tests
+
+About half the Playwright specs (`TEST_SERVER_SPECS` in `scripts/check-spec-coverage.mjs`) need a
+server `npm run test:e2e` never starts: `NODE_ENV=test` for the dev inbox and the test-principal
+injector, the fixture seed, and `TRUSTED_PROXY_HOPS=1` so each spec's `x-forwarded-for` is its own
+rate-limit client. `npm run test:e2e:server` starts that server on `PORT` (default 3100) with CI's
+settings, runs the specs, and stops it:
+
+```bash
+npm run test:e2e:server -- tests/e2e/claim.spec.ts tests/security/otp.spec.ts
+npm run test:e2e:server   # all of them, after warming every route, as CI does
+npm run test:e2e:server -- tests/e2e/rsvp.spec.ts --project=mobile --headed   # other arguments go to Playwright
+```
+
+Specs can be files, `file:line` filters or directories. The no-argument run warms every route first,
+and `next dev` peaks near 14 GB doing it (CI adds swap for it), so on a laptop name the specs you
+want. The script's settings and warm-up list mirror the CI step, and
+`tests/unit/agent/test-server-specs.test.ts` fails when they drift.
+
+The server never reaches a real system. `next dev` loads `.env` too, so the script blanks every
+credential and database setting there (`DATABASE_URL` and its Postgres aliases, `RESEND_*`, `S3_*`,
+`ADMIN_EMAILS`, API keys), which is what CI gets by having no `.env`. It refuses a port that
+something else already answers on, and its server log is in the OS temp directory
+(`wedding-test-server-<port>.log`), because Playwright empties `test-results/` when it starts.
+
 ## The rendered design scan
 
 The source scans read CSS and JSX and cannot see a layout. `npm run slop:detect:rendered` runs
