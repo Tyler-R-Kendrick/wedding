@@ -49,7 +49,7 @@ export function requireAdmin(p: Principal, roles?: readonly AdminRole[]): AdminP
   return p;
 }
 
-/** Narrow to a signed-in guest or throw. Admins are not guests: use previewAs for previews. */
+/** Narrow to a signed-in guest or throw. Admins are not guests; one browsing as a guest (`viewedBy`) already resolves as that guest. */
 export function requireGuest(p: Principal): GuestPrincipal {
   if (p.kind === 'anonymous') throw new CapabilityError('unauthenticated', 'Please sign in to continue.');
   if (p.kind !== 'guest') throw new CapabilityError('forbidden', 'This area is for invited guests.');
