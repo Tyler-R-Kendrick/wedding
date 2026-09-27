@@ -1,11 +1,18 @@
 import Link from 'next/link';
+import type { MouseEvent } from 'react';
 import type { SubmitRsvpOutput } from '@/capabilities/rsvp';
 import { formatDeadline } from '@/domain/events/format';
 import { GuestCard, GuestNotice } from '@/themes/guest';
 import type { ThemeId } from '@/themes/types';
 
 /** Confirmation screen: restates what was submitted and how to change it (wedding-site-standards §3). */
-export function RsvpConfirmation({ result, theme }: { result: SubmitRsvpOutput; theme: ThemeId }) {
+export function RsvpConfirmation({ result, theme, onAnother }: { result: SubmitRsvpOutput; theme: ThemeId; onAnother?: () => void }) {
+  // Already on /rsvp: the link would keep this confirmation mounted, so start a fresh round instead.
+  const backToRsvp = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!onAnother || window.location.pathname !== '/rsvp') return;
+    e.preventDefault();
+    onAnother();
+  };
   const byEvent = new Map<string, SubmitRsvpOutput['lines']>();
   for (const line of result.lines) byEvent.set(line.eventName, [...(byEvent.get(line.eventName) ?? []), line]);
   return (
@@ -31,13 +38,15 @@ export function RsvpConfirmation({ result, theme }: { result: SubmitRsvpOutput; 
       {result.needsRecordedFor.length ? <p>Notes recorded for {result.needsRecordedFor.join(', ')}. Only the caterer and planner see them.</p> : null}
       <p>
         {result.emailQueued ? 'A confirmation is on its way to your e-mail. ' : ''}To change anything, come back to{' '}
-        <Link href="/rsvp">your RSVP</Link>
+        <Link href="/rsvp" onClick={backToRsvp}>
+          your RSVP
+        </Link>
         {result.editableUntil ? ` before ${formatDeadline(result.editableUntil)}` : ' while RSVPs are open'} — your latest answers always win.
       </p>
       {/* The parts of an RSVP open at different times, so "done" here is done with THIS part: the
           RSVP page is where the guest sees what is left, and what opens later. */}
       <div className="actions">
-        <Link className="btn btn--primary" href="/rsvp">
+        <Link className="btn btn--primary" href="/rsvp" onClick={backToRsvp}>
           Back to your RSVP
         </Link>
         <Link className="btn btn--secondary" href="/your-weekend">
