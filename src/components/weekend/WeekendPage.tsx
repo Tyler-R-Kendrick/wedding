@@ -1,9 +1,8 @@
 import { Placeholder } from '@/components/provenance/Placeholder';
 import Link from 'next/link';
 import type { MyItinerary } from '@/capabilities/rsvp';
-import { highlightIdFor } from '@/capabilities/seating/show_my_table_on_floorplan';
-import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { Badge } from '@/components/rsvp/fields';
+import { TableCard } from '@/components/weekend/TableCard';
 import { replyLabel, RsvpTaskList } from '@/components/rsvp/RsvpTaskList';
 import { formatDeadline } from '@/domain/events/format';
 import { BotanicalWeekendPage, type WeekendReply } from '@/themes/botanical-deco/weekend';
@@ -120,26 +119,7 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
 
       <GuestSection theme={theme} id="table" index={2} title="Your table">
         {table ? (
-          <div>
-            <p>
-              <strong>{table.table.name}</strong>
-              {table.table.seatNumber ? `, seat ${table.table.seatNumber}` : ''}
-              {table.floorPlan ? ` in the ${table.floorPlan.name}` : ''}.
-            </p>
-            {table.table.tablemates.length ? <p className="card__meta">With {table.table.tablemates.join(', ')}.</p> : null}
-            {table.floorPlan ? (
-              <FloorPlan
-                name={table.floorPlan.name}
-                viewBox={table.floorPlan.viewBox}
-                outline={table.floorPlan.outline}
-                anchors={table.floorPlan.anchors}
-                highlightAnchorId={table.table.anchorId}
-                highlightLabel={`${table.table.name}${table.table.seatNumber ? `, seat ${table.table.seatNumber}` : ''}`}
-                highlightDomId={highlightIdFor(table.table.anchorId, table.table.id)}
-                placeholder={table.floorPlan.placeholder}
-              />
-            ) : null}
-          </div>
+          <TableCard table={table} />
         ) : (
           <p className="card__meta">{data.seating.message}</p>
         )}

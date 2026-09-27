@@ -2,10 +2,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { adminUpsertGiftRail } from '@/capabilities/admin_gifts';
 import { adminListHouseholds, adminRevokeInvitation } from '@/capabilities/admin_guest_ops';
 import { adminAssignTransportationEntitlement, adminRevokeTransportationEntitlement } from '@/capabilities/admin_transport';
-import { adminExportRsvp, adminPublishSeating, adminRsvpOverview, adminSeatingOverview } from '@/capabilities/rsvp';
+import { adminAssignSeats, adminExportRsvp, adminPublishSeating, adminRsvpOverview, adminSeatingOverview, adminUpsertTable } from '@/capabilities/rsvp';
 import { newId, type GuestId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
-import { eventEntitlements, guests } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { eventEntitlements, guests, seatAssignments } from '@/db/schema';
+import { mergeGuests } from '@/domain/guests/repo';
 import { FX, fixtureAdmin } from '@/db/seed/fixtures';
 import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
@@ -66,6 +68,31 @@ describe('merged duplicates', () => {
   it('are not offered for seating', async () => {
     const s = expectOk(await run(adminSeatingOverview, admin, {}));
     expect(s.data.unassigned.some((u) => u.guestId === duplicateId)).toBe(false);
+  });
+});
+
+describe('merging moves a seat, never leaves the duplicate seated', () => {
+  it('gives the kept guest the duplicate\'s seat when they have none, and frees it when they do', async () => {
+    const audit = { record: async () => undefined } as never;
+    const table = expectOk(await run(adminUpsertTable, admin, { name: 'Merge Table', capacity: 6 })).data.id;
+    const mk = async (firstName: string) => {
+      const id = newId<GuestId>();
+      await db.insert(guests).values({ id, householdId: FX.householdB, firstName, lastName: 'Mergetest' });
+      return id;
+    };
+    const seatOf = async (guestId: string) => (await db.select().from(seatAssignments).where(eq(seatAssignments.guestId, guestId)))[0];
+
+    const [keep, dup] = [await mk('Keep'), await mk('Dup')];
+    expectOk(await run(adminAssignSeats, admin, { changes: [{ guestId: dup, tableId: table, seatNumber: 3 }] }));
+    expect((await mergeGuests(db, { keepId: keep, mergeId: dup, actor: { kind: 'system', component: 'test' }, requestId: 'm1', audit })).ok).toBe(true);
+    expect(await seatOf(keep)).toMatchObject({ tableId: table, seatNumber: 3 });
+    expect(await seatOf(dup)).toBeUndefined();
+
+    const [keep2, dup2] = [await mk('Keep2'), await mk('Dup2')];
+    expectOk(await run(adminAssignSeats, admin, { changes: [{ guestId: keep2, tableId: table, seatNumber: 1 }, { guestId: dup2, tableId: table, seatNumber: 2 }] }));
+    expect((await mergeGuests(db, { keepId: keep2, mergeId: dup2, actor: { kind: 'system', component: 'test' }, requestId: 'm2', audit })).ok).toBe(true);
+    expect(await seatOf(keep2)).toMatchObject({ seatNumber: 1 });
+    expect(await seatOf(dup2)).toBeUndefined();
   });
 });
 

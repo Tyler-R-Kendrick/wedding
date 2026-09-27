@@ -74,6 +74,20 @@ const STATUS_MESSAGES: Record<BenefitStatus, string> = {
   unavailable: 'Ride benefits are not available right now.',
 };
 
+/** Shown instead of a claim while no ride provider is configured. */
+export const RIDES_NOT_OPEN_MESSAGE = 'Ride claims are not open yet. Your benefit is saved; check back here closer to the wedding to claim it.';
+
+/**
+ * A production site with no ride provider configured refuses every claim (the unconfigured
+ * provider, mode `unavailable`). A benefit that would otherwise be claimable is shown as
+ * `unavailable` with that reason, so neither the page nor the concierge offers a claim that can
+ * only fail. Everything else (claimed, revoked, expired…) is unchanged.
+ */
+export function withProviderReadiness<T extends { status: BenefitStatus; statusMessage: string }>(views: T[], providerMode: string): T[] {
+  if (providerMode !== 'unavailable') return views;
+  return views.map((v) => (v.status === 'eligible' || v.status === 'failed' ? { ...v, status: 'unavailable' as const, statusMessage: RIDES_NOT_OPEN_MESSAGE } : v));
+}
+
 /** Unseals a claim's secret for its owner. Only ever called with the owner's principal on the ui surface. */
 export function redemptionFor(claim: TransportationClaimRow, vault: Vault, surface: keyof CapabilityExposure): Redemption | undefined {
   if (claim.status !== 'issued' || !claim.secretCiphertext) return undefined;

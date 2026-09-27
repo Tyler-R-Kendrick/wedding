@@ -63,8 +63,13 @@ test('a household manager answers for the whole household, reviews inline, confi
   await expect(page.locator('#main')).toContainText('come back to your RSVP');
   await axeClean(page);
 
-  // A second visit shows where each part stands, and the weekend reflects it.
-  await page.goto('/rsvp');
+  // "Back to your RSVP" leads to the page the guest is already on: it must replace the
+  // confirmation with the RSVP as it now stands (it used to leave the confirmation on screen), and
+  // without a reload, since the submit revalidated the page.
+  await page.getByRole('link', { name: 'Back to your RSVP' }).click();
+  await expect(page.getByText('Thank you — that is saved')).toHaveCount(0);
+  // Focus lands on the page's heading, as it would after a page load.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   const tasks = page.getByRole('list', { name: 'Where things stand' });
   const task = (name: string) => tasks.getByRole('listitem').filter({ has: page.getByRole('link', { name, exact: true }) });
   await expect(task('Who is coming')).toContainText(/\d of \d done/);
