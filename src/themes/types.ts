@@ -114,6 +114,12 @@ export interface NavModel {
    * each answer "for invited guests" and send them to sign in, which sends them straight back.
    */
   admin?: boolean;
+  /**
+   * An administrator browsing as a guest ("Browse as a guest"): the session reads as that guest,
+   * and the account menu adds the way back to the console. Known on pages that resolved the
+   * principal; prerendered pages learn it from `/api/session`.
+   */
+  viewing?: boolean;
 }
 
 export interface DateFacts {

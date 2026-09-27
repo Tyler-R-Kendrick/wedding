@@ -40,20 +40,56 @@ export async function buildGuestPrincipal(db: Db, session: SessionFacts, flags: 
     delegateBindings[0];
   if (!primary) return null;
   const guest = live.get(primary.guestId)!;
+  const selfGuestIds = [...new Set([...selfBindings, ...managerBindings].map((b) => b.guestId))] as GuestId[];
+  return principalForGuest(db, guest, { bindingRole: primary.role, selfGuestIds, delegateGuestIds: delegateBindings.map((b) => b.guestId as GuestId) }, session, flags, now);
+}
+
+/**
+ * The GuestPrincipal an administrator browses as ("Browse as a guest", `guest-view.ts`): the one
+ * that guest's own sign-in would produce, with `viewedBy` naming the administrator.
+ *
+ * When the guest is bound to the administrator's own identity (a planner who is also invited, or
+ * the couple on their own list) this IS their guest session, so it is built from their bindings
+ * exactly as a guest sign-in would be, and it is not read-only. Anyone else's view needs
+ * `admin_guest_ops` — the entitlement that already shows an administrator every household in the
+ * console — and is built as that guest's own `self` sign-in would be, read-only. Null when the
+ * guest is gone (merged or deleted) or the administrator may not view them.
+ */
+export async function buildGuestViewPrincipal(db: Db, session: SessionFacts, admin: AdminPrincipal, guestId: string, flags: FlagValues, now: Date = new Date()): Promise<GuestPrincipal | null> {
+  const viewer = (readOnly: boolean) => ({ adminId: admin.adminId, roles: admin.roles, readOnly });
+  const own = await activeBindingsForIdentity(db, session.authIdentityId);
+  if (own.some((b) => b.guestId === guestId && b.role !== 'delegate')) {
+    const self = await buildGuestPrincipal(db, { ...session, activeGuestId: guestId }, flags, now);
+    return self && self.guestId === guestId ? { ...self, viewedBy: viewer(false) } : null;
+  }
+  if (!admin.entitlements.has('admin_guest_ops')) return null;
+  const guest = (await db.select().from(guests).where(eq(guests.id, guestId)).limit(1))[0];
+  if (!guest || guest.mergedIntoGuestId) return null;
+  const principal = await principalForGuest(db, guest, { bindingRole: 'self', selfGuestIds: [guest.id as GuestId], delegateGuestIds: [] }, session, flags, now);
+  return principal ? { ...principal, viewedBy: viewer(true) } : null;
+}
+
+async function principalForGuest(
+  db: Db,
+  guest: GuestRow,
+  binding: { bindingRole: 'self' | 'household_manager' | 'delegate'; selfGuestIds: GuestId[]; delegateGuestIds: GuestId[] },
+  session: SessionFacts,
+  flags: FlagValues,
+  now: Date,
+): Promise<GuestPrincipal | null> {
   const household = (await db.select().from(households).where(eq(households.id, guest.householdId)).limit(1))[0];
   if (!household) return null;
   const invitation = await currentInvitationForHousehold(db, household.id);
-  const selfGuestIds = [...new Set([...selfBindings, ...managerBindings].map((b) => b.guestId))] as GuestId[];
-  const managed = await listManagedGuests(db, selfGuestIds);
+  const managed = await listManagedGuests(db, binding.selfGuestIds);
   const facts = await collectEntitlementFacts(db, { guest, household, invitation });
   const input = {
     guest: { id: guest.id as GuestId, kind: guest.kind, isMinor: guest.isMinor, mergedIntoGuestId: guest.mergedIntoGuestId },
     household: { id: household.id, managerGuestId: household.managerGuestId },
     invitation: invitation ? { lifecycle: invitationLifecycle(invitation, now) } : null,
-    bindingRole: primary.role,
-    selfGuestIds,
+    bindingRole: binding.bindingRole,
+    selfGuestIds: binding.selfGuestIds,
     managedGuestIds: managed.map((m) => m.id as GuestId),
-    delegateGuestIds: delegateBindings.map((b) => b.guestId as GuestId),
+    delegateGuestIds: binding.delegateGuestIds,
     facts,
     flags,
   };

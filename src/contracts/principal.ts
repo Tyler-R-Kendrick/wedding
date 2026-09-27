@@ -41,6 +41,13 @@ export type GuestPrincipal = {
   /** ISO time the session last proved possession (OTP/passkey). Used for step-up. */
   authenticatedAt: string;
   sessionId: string;
+  /**
+   * Set when an administrator is browsing the site as this guest ("Browse as a guest",
+   * `domain/identity/guest-view.ts`). `readOnly` unless the guest is the administrator's own guest
+   * record: `authorize` then refuses every capability that is not a read, so an owner looking at a
+   * household's weekend can never answer its RSVP or claim its ride. Absent for a real guest.
+   */
+  viewedBy?: { adminId: AdminId; roles: ReadonlySet<AdminRole>; readOnly: boolean };
 };
 
 export type AdminPrincipal = {

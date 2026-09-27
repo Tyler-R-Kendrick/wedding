@@ -307,13 +307,21 @@
   min-width: 0;
 }
 
+/* The list never paints outside its own column: `min-width: 0` holds it to the room between the
+   monogram and the Menu, `safe` alignment lets a too-long row run off its end rather than both
+   ways, and the clip stops it there. Until NavFit has measured (or with no script), a row that
+   is too long is cut at the right edge instead of covering the monogram, which is what "HOME"
+   did to it once the sitemap's longer labels arrived. Only the inline axis is clipped: the account
+   popover hangs below the row and must not be. The padding keeps focus rings inside the clip. */
 .bd-nav__list {
   display: none;
   flex: 1;
-  justify-content: center;
+  min-width: 0;
+  justify-content: safe center;
   gap: clamp(18px, 2vw, 40px);
   margin: 0;
-  padding: 0;
+  padding: var(--spacing-sm);
+  overflow-x: clip;
   list-style: none;
 }
 
@@ -431,6 +439,27 @@
 
   .bd-masthead__inner--gt7:not(.bd-masthead__inner--gt8) .bd-masthead__menu {
     display: none;
+  }
+}
+
+/* NavFit (src/themes/shared/NavFit.tsx) has measured the real labels, so its answer replaces the
+   page-count guesses above: every page it kept is shown, every one it could not fit goes to the
+   sheet, and the Menu button shows exactly when something went there. */
+@media (width >= 1100px) {
+  .bd-masthead__inner[data-fit] .bd-nav__list > li {
+    display: list-item;
+  }
+
+  .bd-masthead__inner[data-fit="some"] .bd-nav__list > li[data-fit-hidden] {
+    display: none;
+  }
+
+  .bd-masthead__inner[data-fit="all"] .bd-masthead__menu {
+    display: none;
+  }
+
+  .bd-masthead__inner:is([data-fit="measure"], [data-fit="some"]) .bd-masthead__menu {
+    display: block;
   }
 }
 

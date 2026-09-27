@@ -9,7 +9,9 @@ import { renderCopy } from '@/themes/shared/copy';
 import { DialogBase } from '@/themes/shared/DialogBase';
 import { formatTimeIn } from '@/themes/shared/format';
 import { Icon, iconForHref } from '@/themes/shared/icons';
+import { GuestViewBand } from '@/components/guest-view/GuestViewBand';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
+import { NavFit } from '@/themes/shared/NavFit';
 import { allItems, ariaCurrent, bottomCells, isAccount, shortLabel } from '@/themes/shared/nav-utils';
 import { ThemeSync } from '@/themes/shared/ThemeSync';
 import type {
@@ -138,6 +140,8 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
  * The masthead: monogram left, the site's pages spaced across the middle in tracked capitals with a
  * gold underline on the current one, and the couple's line in script at the right. On a phone the
  * pages move into a labelled "Menu" sheet and the monogram stays; the words never shrink below 17px.
+ * On a desktop, NavFit measures the real labels and sends whatever does not fit beside the Menu
+ * button to the sheet; the page-count classes are only the guess it replaces after hydration.
  */
 function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
   const items: NavItem[] = [{ label: homeLabel, href: '/' }, ...allItems(nav)];
@@ -156,7 +160,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
           button (and its sheet) on a phone. Hiding the whole <nav> on a phone took the landmark
           out of the accessibility tree with it. */}
       <nav className="bd-nav" aria-label="Site">
-        <ul className="bd-nav__list">
+        <ul className="bd-nav__list" data-fit-list="">
           {inline.map((item) => (
             <li key={item.href}>
               {isAccount(item, nav) ? (
@@ -167,7 +171,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
             </li>
           ))}
         </ul>
-        <div className="bd-masthead__menu">
+        <div className="bd-masthead__menu" data-fit-menu="">
           <DialogBase
             id="site-menu"
             title="Menu"
@@ -189,6 +193,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
         <span className="bd-masthead__rule" />
         <span className="bd-script">Love, peace &amp; happiness</span>
       </p>
+      <NavFit mode="priority" />
     </div>
   );
 }
@@ -286,6 +291,7 @@ function Shell({ frame, children, banner }: ShellProps) {
         Skip to content
       </a>
       {banner}
+      <GuestViewBand />
       <header className="bd-masthead">
         <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
       </header>

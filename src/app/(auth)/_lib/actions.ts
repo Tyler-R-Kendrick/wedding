@@ -1,13 +1,14 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import type { RegisterPasskeyResult } from '@/capabilities/register_passkey';
 import type { RequestOtpResult } from '@/capabilities/request_otp';
 import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
+import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, setChallengeCookie } from './challenge-cookie';
@@ -193,5 +194,8 @@ export async function signOut(): Promise<void> {
     // No session: nothing to end.
   }
   await clearChallengeCookie();
+  // "Browse as a guest" ends with the session it was bound to; the cookie would be inert, but a
+  // signed-out browser should not carry it.
+  (await cookies()).delete(GUEST_VIEW_COOKIE);
   redirect('/');
 }

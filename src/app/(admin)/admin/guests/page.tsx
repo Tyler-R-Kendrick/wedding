@@ -1,4 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import { stopGuestView } from '@/components/guest-view/actions';
+import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest-view';
+import { getPreviewSecret } from '@/domain/lifecycle/secret';
+import { startGuestView } from '../_lib/guest-view-actions';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Button, Checkbox, ConfirmCheck, IdemKey, Input } from '../_components/ops';
@@ -24,9 +29,33 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
   const isOwner = principal.roles.has('owner');
+  // Browsing as anyone but yourself needs guest operations (`admin_browse_as_guest` re-checks it).
+  const canBrowseAs = principal.entitlements.has('admin_guest_ops');
+  const browsing = verifyGuestViewToken((await cookies()).get(GUEST_VIEW_COOKIE)?.value, principal.sessionId, getPreviewSecret(), new Date());
+  const browsingName = browsing ? (rows.find((g) => g.id === browsing.guestId)?.displayName ?? 'a guest') : null;
   return (
     <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
+      <Section title="Browse the site as a guest" id="browse-as">
+        <p className="con-note">
+          See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. It is read-only: nothing you do there is saved or sent in their name, unless the guest is
+          your own guest record. A band on every page says whose view it is, with the way back here.
+        </p>
+        {browsing ? (
+          <div className="ops-form-inline">
+            <p className="con-note">
+              You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself.
+            </p>
+            <a href="/">Open the site</a>
+            <form action={stopGuestView}>
+              <Button variant="ghost">Stop browsing as a guest</Button>
+            </form>
+          </div>
+        ) : (
+          <p className="con-note">Choose “Browse as” beside a guest in the list below.</p>
+        )}
+      </Section>
+
       <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
         <form action={saveGuest} className="ops-form">
           <IdemKey />
@@ -82,6 +111,14 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   <td>
                     <div className="ops-form-inline">
                       <a href={`/admin/guests?edit=${encodeURIComponent(g.id)}${sp.householdId ? `&householdId=${encodeURIComponent(sp.householdId)}` : ''}`}>Edit</a>
+                      {canBrowseAs && !g.mergedIntoGuestId ? (
+                        <form action={startGuestView}>
+                          <input type="hidden" name="guestId" value={g.id} />
+                          <Button variant="ghost">
+                            Browse as <span className="sr-only">{g.displayName}</span>
+                          </Button>
+                        </form>
+                      ) : null}
                       {g.claimed ? (
                         <form action={resetIdentity}>
                           <input type="hidden" name="guestId" value={g.id} />

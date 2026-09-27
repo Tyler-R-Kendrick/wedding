@@ -23,9 +23,16 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
     return (
       <div className="page">
         <h1 className="page__title">{what} is for invited guests</h1>
-        <p className="page__lede">You are signed in as an administrator, and an administrator has no household of their own. Guests’ answers are in the console.</p>
+        <p className="page__lede">
+          You are signed in as an administrator, and an administrator has no household of their own. To see this page the way a guest does, browse the site as one of them; their answers are in the console.
+        </p>
         <p>
-          <Link className="btn btn--primary" href="/admin">
+          <Link className="btn btn--primary" href="/admin/guests#browse-as">
+            Browse as a guest
+          </Link>
+        </p>
+        <p>
+          <Link className="btn btn--secondary" href="/admin">
             Go to the admin console
           </Link>
         </p>

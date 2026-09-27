@@ -26,6 +26,8 @@ export interface Transport {
   origin?: string | null;
   /** Replaces the capability context's logger, so a test can read what a call logged. */
   logger?: unknown;
+  /** The page path the proxy would stamp (`x-pathname`), for a request made from that page. */
+  pathname?: string;
 }
 
 /** Headers the way a browser would send them: same-origin by default. */
@@ -33,6 +35,7 @@ export function requestHeaders(t: Transport = {}): Headers {
   const h = new Headers({ host: 'localhost:3000' });
   if (t.cookie) h.set('cookie', t.cookie);
   if (t.origin !== null) h.set('origin', t.origin ?? SITE);
+  if (t.pathname) h.set('x-pathname', t.pathname);
   return h;
 }
 

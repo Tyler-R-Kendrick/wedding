@@ -91,6 +91,8 @@ export interface NavOptions {
   signedIn?: boolean;
   /** The session is an administrator's: the account menu offers the console, not a household's pages. */
   admin?: boolean;
+  /** An administrator browsing as a guest: the household's pages, and the way back to the console. */
+  viewing?: boolean;
   venue?: VenueFacts;
 }
 
@@ -130,6 +132,7 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
     member: memberNavFor(state),
     ...(opts.signedIn !== undefined ? { signedIn: opts.signedIn } : {}),
     ...(opts.admin ? { admin: true } : {}),
+    ...(opts.viewing ? { viewing: true } : {}),
   };
 }
 

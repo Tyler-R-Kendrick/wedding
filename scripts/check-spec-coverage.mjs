@@ -96,6 +96,10 @@ export const TEST_SERVER_SPECS = [
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',
+  // "Browse as a guest": a real administrator sign-in through the dev inbox, then the console's
+  // button and the cookie it sets. The injector would skip the resolver the feature lives in, so
+  // this signs in for real — which needs the dev inbox, and so this server.
+  'tests/security/guest-view.spec.ts',
 ];
 
 function check() {
