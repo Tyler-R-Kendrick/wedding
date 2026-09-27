@@ -163,12 +163,12 @@ export function PlaceFlow({
   return (
     <AdminFlow<Values>
       id={`reservations:place:${place?.id ?? 'new'}`}
-      title={place ? `Change ${place.name}` : 'Add a place to reserve'}
+      title={place ? `${replacesDefaults ? 'Set up' : 'Edit'} ${place.name}` : 'Add a place to reserve'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: place ? 'Save place' : 'Add place',
+        label: place ? 'Save place' : 'Add a place',
         capability: 'admin_upsert_reservation_venue',
         success: place ? `${place.name} saved.` : 'Place added.',
         input: (v) => ({

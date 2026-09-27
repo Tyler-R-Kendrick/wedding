@@ -19,7 +19,7 @@ interface Values extends Record<string, unknown> {
 }
 
 /**
- * Add a fund, or change what one says. Two steps: the words, then the card as a guest will see it.
+ * Add a fund, or edit what one says. Two steps: the words, then the card as a guest will see it.
  *
  * The id is made from the title for a new fund and never shown: it was the first field of the old
  * form ("Id (slug)"), and the only way to edit a fund was to retype its id exactly.
@@ -69,12 +69,12 @@ export function FundFlow({ fund, takenIds, label, variant = 'primary', rails, ac
   return (
     <AdminFlow<Values>
       id={`gifts:fund:${fund?.id ?? 'new'}`}
-      title={fund ? `Change “${fund.title}”` : 'Add a fund'}
+      title={fund ? `Edit ${fund.title}` : 'Add a fund'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: 'Save',
+        label: fund ? 'Save fund' : 'Add a fund',
         capability: 'admin_upsert_gift_fund',
         success: 'Saved.',
         input: (v) => ({

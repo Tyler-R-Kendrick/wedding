@@ -147,12 +147,12 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label, a
   return (
     <AdminFlow<Values>
       id={`gifts:registry:${existing?.id ?? 'new'}`}
-      title={existing ? 'Change your registry link' : 'Link your registry'}
+      title={existing ? `Edit ${existing.label}` : 'Link your registry'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: existing ? 'Save changes' : 'Add to the Gifts page',
+        label: existing ? 'Save registry link' : 'Add to the Gifts page',
         capability: 'admin_upsert_gift_link',
         success: existing && !existing.active ? 'Saved. It is still hidden from guests; use Show when you want it back.' : 'Saved. Guests see it on the Gifts page now.',
         input: (v) => ({

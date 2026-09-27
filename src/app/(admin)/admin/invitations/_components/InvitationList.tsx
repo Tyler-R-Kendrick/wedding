@@ -1,9 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { RevokeLinkFlow, RotateLinkFlow } from './InvitationFlows';
 
-/** A link as the page lists it, dates already in words (the page formats them in the wedding's time zone). */
+/** A link as the page lists it, dates already rendered (the page uses the console's `Day`, in the wedding's time zone). */
 export interface InvitationRowView {
   id: string;
   householdName: string;
@@ -13,8 +14,8 @@ export interface InvitationRowView {
   rotatedFromId: string | null;
   events: string;
   allowances: string;
-  expires: { iso: string; label: string };
-  claimed: { iso: string; label: string } | null;
+  expires: ReactNode;
+  claimed: ReactNode | null;
 }
 
 const PILL: Record<InvitationRowView['lifecycle'], { tone: string; label: string }> = {
@@ -74,11 +75,11 @@ export function InvitationList({ rows, showRevoked }: { rows: InvitationRowView[
             status={<span className={`con-pill con-pill--${pill.tone}`}>{pill.label}</span>}
             meta={
               <>
-                {r.events} · {r.allowances} · {r.lifecycle === 'expired' ? 'expired' : 'works until'} <time dateTime={r.expires.iso}>{r.expires.label}</time>
+                {r.events} · {r.allowances} · {r.lifecycle === 'expired' ? 'expired' : 'works until'} {r.expires}
                 {r.claimed ? (
                   <>
                     {' '}
-                    · claimed <time dateTime={r.claimed.iso}>{r.claimed.label}</time>
+                    · claimed {r.claimed}
                   </>
                 ) : null}
                 {r.lifecycle === 'revoked' && r.revokedReason && r.revokedReason !== 'rotated' ? ` · ${r.revokedReason}` : ''}

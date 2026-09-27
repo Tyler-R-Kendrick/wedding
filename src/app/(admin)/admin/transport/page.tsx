@@ -98,7 +98,7 @@ export default async function AdminTransportPage() {
                 actions={
                   e.status === 'active' ? (
                     <>
-                      <AssignRideFlow guests={options} ride={ride} defaultProgram={DEFAULT_PROGRAM} variant="quiet" label="Change" accessibleName={`Change ${name}’s ride benefit`} />
+                      <AssignRideFlow guests={options} ride={ride} defaultProgram={DEFAULT_PROGRAM} variant="quiet" label="Edit" accessibleName={`Edit ${name}’s ride benefit`} />
                       <RevokeRideFlow ride={ride} />
                     </>
                   ) : (

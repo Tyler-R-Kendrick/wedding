@@ -5,8 +5,8 @@ import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminGetTravelConfig } from '@/capabilities/travel';
 import type { HotelRecommendation } from '@/domain/travel';
 import { ConsoleGate, ConsolePage, DataTable, Day, Denied, KeyValues, Note, Pill, Section } from '../_components/console';
-import { HotelFlow, RemoveHotelFlow } from './_components/HotelFlow';
-import { LinkFlow, RemoveLinkFlow } from './_components/LinkFlow';
+import { HotelFlow, DeleteHotelFlow } from './_components/HotelFlow';
+import { LinkFlow, DeleteLinkFlow } from './_components/LinkFlow';
 import { categoryLabel, hotelInput, linkInput, swapOrder } from './_components/travel-input';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: 'Travel (admin)', robots: { index: fa
  * Every hotel used to be printed as its own open form, one after another, with a "Sort order", a
  * "Source id (provenance)", reasons typed as `kind | text | value` and a room-block fieldset on every
  * hotel whether or not it was the venue; a red "Remove" sat under each. Each change is now a flow
- * from the kit (`components/admin/flow/CONVENTIONS.md`): Change and Remove on the row, Show/Hide and
+ * from the kit (`components/admin/flow/CONVENTIONS.md`): Edit and Delete on the row, Show/Hide and
  * Up/Down as one click, and the provider status and raw rows in the closed details at the bottom.
  */
 export default async function AdminTravelPage() {
@@ -72,8 +72,8 @@ export default async function AdminTravelPage() {
                       hotel={{ id: h.id, name: h.name, isVenue: h.isVenue, synthesized: h.synthesized }}
                       allowedHosts={allowedHosts}
                       variant="quiet"
-                      label={h.synthesized ? 'Set up' : 'Change'}
-                      accessibleName={`${h.synthesized ? 'Set up' : 'Change'} ${h.name}`}
+                      label={h.synthesized ? 'Set up' : 'Edit'}
+                      accessibleName={`${h.synthesized ? 'Set up' : 'Edit'} ${h.name}`}
                     />
                     {!h.synthesized ? (
                       <QuickAction
@@ -90,7 +90,7 @@ export default async function AdminTravelPage() {
                         <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${h.name} down.`} unavailable={!next} accessibleName={`Move ${h.name} down`} calls={next ? move(next, false) : []} />
                       </>
                     ) : null}
-                    {!h.synthesized ? <RemoveHotelFlow hotel={{ id: h.id, name: h.name, isVenue: h.isVenue, synthesized: false }} /> : null}
+                    {!h.synthesized ? <DeleteHotelFlow hotel={{ id: h.id, name: h.name, isVenue: h.isVenue, synthesized: false }} /> : null}
                   </>
                 }
               />
@@ -122,7 +122,7 @@ export default async function AdminTravelPage() {
                       Open<span aria-hidden="true"> ↗</span>
                       <span className="sr-only"> {l.label} (new tab)</span>
                     </a>
-                    <LinkFlow link={l} allowedHosts={allowedHosts} variant="quiet" label="Change" accessibleName={`Change ${l.label}`} />
+                    <LinkFlow link={l} allowedHosts={allowedHosts} variant="quiet" label="Edit" accessibleName={`Edit ${l.label}`} />
                     <QuickAction
                       label={l.active ? 'Hide' : 'Show'}
                       busyLabel={l.active ? 'Hiding…' : 'Showing…'}
@@ -132,7 +132,7 @@ export default async function AdminTravelPage() {
                     />
                     <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${l.label} up.`} unavailable={!prev} accessibleName={`Move ${l.label} up`} calls={prev ? swapOrder(l, prev, true, linkInput, 'admin_save_travel_link') : []} />
                     <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${l.label} down.`} unavailable={!next} accessibleName={`Move ${l.label} down`} calls={next ? swapOrder(l, next, false, linkInput, 'admin_save_travel_link') : []} />
-                    <RemoveLinkFlow link={l} />
+                    <DeleteLinkFlow link={l} />
                   </>
                 }
               />

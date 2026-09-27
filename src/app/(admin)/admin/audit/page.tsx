@@ -19,6 +19,8 @@ const OUTCOMES = ['success', 'denied', 'failed'] as const;
 const ACTOR_KINDS = ['guest', 'admin', 'system', 'anonymous'] as const;
 const isAction = (v: string): v is AuditAction => (AUDIT_ACTIONS as readonly string[]).includes(v);
 const tone = (outcome: string) => (outcome === 'denied' ? 'warn' : outcome === 'failed' ? 'bad' : 'good');
+/** A pill is sentence case: `denied` reads "Denied". */
+const sentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1).replace(/_/g, ' ')}`;
 
 /**
  * The read side of the audit trail: twenty-one admin capabilities and every capability invocation
@@ -107,7 +109,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               <option value="">Any outcome</option>
               {OUTCOMES.map((o) => (
                 <option key={o} value={o}>
-                  {o}
+                  {sentence(o)}
                 </option>
               ))}
             </select>
@@ -118,7 +120,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               <option value="">Anyone</option>
               {ACTOR_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {k}
+                  {sentence(k)}
                 </option>
               ))}
             </select>
@@ -175,7 +177,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               </td>
               <td data-col="action">{r.action}</td>
               <td data-col="outcome">
-                <Pill tone={tone(r.outcome)}>{r.outcome}</Pill>
+                <Pill tone={tone(r.outcome)}>{sentence(r.outcome)}</Pill>
               </td>
               <td data-col="actor">
                 {r.actor.kind}

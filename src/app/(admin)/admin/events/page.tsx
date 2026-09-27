@@ -151,8 +151,8 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                   <QuickAction
                     label={n.active ? 'Hide' : 'Show'}
                     busyLabel={n.active ? 'Hiding…' : 'Showing…'}
-                    done={n.active ? `“${n.title}” hidden.` : `“${n.title}” shown.`}
-                    accessibleName={`${n.active ? 'Hide' : 'Show'} notice “${n.title}”`}
+                    done={n.active ? `${n.title} hidden.` : `${n.title} shown.`}
+                    accessibleName={`${n.active ? 'Hide' : 'Show'} ${n.title}`}
                     calls={[{ capability: 'admin_upsert_notice', input: { id: n.id, title: n.title, body: n.body, severity: n.severity, active: !n.active, startsAt: n.startsAt, endsAt: n.endsAt } }]}
                   />
                 </>

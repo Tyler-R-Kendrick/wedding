@@ -132,7 +132,7 @@ export function GuestFlow({ guest, households, defaultHouseholdId, label, varian
       initial={initial}
       steps={steps}
       submit={{
-        label: guest ? 'Save guest' : 'Add guest',
+        label: guest ? 'Save guest' : 'Add a guest',
         capability: 'admin_upsert_guest',
         success: guest ? 'Guest saved.' : 'Guest added.',
         input: (v) => ({
@@ -220,7 +220,7 @@ export function ResetAccessFlow({ guest }: { guest: GuestSummary }) {
           readyHint: { field: 'confirmed', message: 'Say why, and tick the box to confirm.' },
         },
       ]}
-      submit={{ label: 'Reset access', capability: 'admin_reset_identity', success: `${guest.displayName} can claim their place again.`, input: (v) => ({ guestId: guest.id, reason: v.reason.trim() }) }}
+      submit={{ label: `Reset ${guest.displayName}’s access`, capability: 'admin_reset_identity', success: `${guest.displayName} can claim their place again.`, input: (v) => ({ guestId: guest.id, reason: v.reason.trim() }) }}
     />
   );
 }
@@ -255,7 +255,7 @@ export function RebindFlow({ guest }: { guest: GuestSummary }) {
           readyHint: { field: 'confirmed', message: 'Enter the new email and why, then tick the box.' },
         },
       ]}
-      submit={{ label: 'Move access', capability: 'admin_rebind_identity', success: 'Access moved to the new email.', input: (v) => ({ guestId: guest.id, email: v.email.trim(), reason: v.reason.trim() }) }}
+      submit={{ label: `Move ${guest.displayName}’s access`, capability: 'admin_rebind_identity', success: 'Access moved to the new email.', input: (v) => ({ guestId: guest.id, email: v.email.trim(), reason: v.reason.trim() }) }}
     />
   );
 }
@@ -296,7 +296,7 @@ export function MergeFlow({ guest, others }: { guest: GuestSummary; others: Opti
           readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
-      submit={{ label: 'Merge', capability: 'admin_merge_guests', success: 'Guests merged.', input: (v) => ({ keepId: v.keepId, mergeId: guest.id }) }}
+      submit={{ label: (v) => `Merge ${guest.displayName} into ${others.find((o) => o.value === v.keepId)?.label ?? 'the guest you keep'}`, capability: 'admin_merge_guests', success: 'Guests merged.', input: (v) => ({ keepId: v.keepId, mergeId: guest.id }) }}
     />
   );
 }
@@ -374,7 +374,7 @@ export function ImportGuestsFlow() {
         },
       ]}
       submit={{
-        label: 'Import',
+        label: 'Import the list',
         capability: 'admin_import_guests_csv',
         success: 'List imported.',
         input: (v) => ({ csv: v.csv, dryRun: false }),

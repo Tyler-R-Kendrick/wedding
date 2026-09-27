@@ -8,6 +8,8 @@ export const metadata: Metadata = { title: 'Providers', robots: { index: false, 
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const modeTone = (mode: string) => (mode === 'live' ? 'good' : mode === 'unavailable' ? 'bad' : mode === 'mock' ? 'neutral' : 'warn');
+/** A pill is sentence case: `mock` reads "Mock". */
+const sentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1).replace(/_/g, ' ')}`;
 const healthTone = (status: string) => (status === 'up' ? 'good' : status === 'degraded' ? 'warn' : status === 'unconfigured' ? 'neutral' : 'bad');
 
 /**
@@ -64,7 +66,7 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
       <KeyValues
         items={[
           { label: 'Database driver', value: p.db.driver },
-          { label: 'pgvector', value: p.db.vectorAvailable ? <Pill tone="good">available</Pill> : <Pill tone="warn">unavailable</Pill> },
+          { label: 'pgvector', value: p.db.vectorAvailable ? <Pill tone="good">Available</Pill> : <Pill tone="warn">Unavailable</Pill> },
           { label: 'Health probe', value: p.probed ? 'ran just now' : 'not run' },
         ]}
       />
@@ -89,15 +91,15 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
               <th scope="row">{row.kind}</th>
               <td>{row.name}</td>
               <td>
-                <Pill tone={modeTone(row.mode)}>{row.mode}</Pill>
+                <Pill tone={modeTone(row.mode)}>{sentence(row.mode)}</Pill>
               </td>
-              <td>{row.config.ok ? <Pill tone="good">ok</Pill> : <Pill tone="bad">incomplete</Pill>}</td>
+              <td>{row.config.ok ? <Pill tone="good">Complete</Pill> : <Pill tone="bad">Incomplete</Pill>}</td>
               <td className="con-wrap ops-code">{row.config.missing.length ? row.config.missing.join(', ') : '—'}</td>
               {p.probed ? (
                 <td>
                   {row.health ? (
                     <>
-                      <Pill tone={healthTone(row.health.status)}>{row.health.status}</Pill>
+                      <Pill tone={healthTone(row.health.status)}>{sentence(row.health.status)}</Pill>
                       {row.health.latencyMs === null ? null : <span className="con-num"> {row.health.latencyMs}ms</span>}
                     </>
                   ) : (

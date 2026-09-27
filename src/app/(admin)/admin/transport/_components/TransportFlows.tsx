@@ -116,12 +116,12 @@ export function AssignRideFlow({ guests, ride, defaultProgram, label, variant = 
   return (
     <AdminFlow<AssignValues>
       id={`transport:assign:${ride?.id ?? 'new'}`}
-      title={ride ? `Change ${ride.guestName}’s ride benefit` : 'Give a guest a ride home'}
+      title={ride ? `Edit ${ride.guestName}’s ride benefit` : 'Give a guest a ride home'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: ride ? 'Save' : 'Give the benefit',
+        label: ride ? 'Save ride benefit' : 'Give the ride benefit',
         capability: 'admin_assign_transportation_entitlement',
         success: ride ? 'Ride benefit saved.' : 'Ride benefit given.',
         input: (v) => ({
@@ -167,7 +167,7 @@ export function RevokeRideFlow({ ride }: { ride: RideSummary }) {
           readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
-      submit={{ label: 'Withdraw the benefit', capability: 'admin_revoke_transportation_entitlement', success: `${ride.guestName}’s ride benefit withdrawn.`, input: () => ({ entitlementId: ride.id, status: 'revoked' }) }}
+      submit={{ label: `Withdraw ${ride.guestName}’s ride benefit`, capability: 'admin_revoke_transportation_entitlement', success: `${ride.guestName}’s ride benefit withdrawn.`, input: () => ({ entitlementId: ride.id, status: 'revoked' }) }}
     />
   );
 }

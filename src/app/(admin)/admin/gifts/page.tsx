@@ -136,7 +136,7 @@ export default async function AdminGiftsPage() {
                         Open<span aria-hidden="true"> ↗</span>
                         <span className="sr-only"> {r.label} (new tab)</span>
                       </a>
-                      <RegistryFlow existing={{ ...r }} takenIds={linkIds} variant="quiet" label="Change" accessibleName={`Change ${r.label}`} />
+                      <RegistryFlow existing={{ ...r }} takenIds={linkIds} variant="quiet" label="Edit" accessibleName={`Edit ${r.label}`} />
                       <QuickAction
                         label={r.active ? 'Hide' : 'Show'}
                         busyLabel={r.active ? 'Hiding…' : 'Showing…'}
@@ -178,7 +178,7 @@ export default async function AdminGiftsPage() {
                           {r.recipientName ? ` · ${r.recipientName}` : ''}
                         </span>
                       }
-                      actions={<RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Change" accessibleName={`Change ${r.displayName}`} />}
+                      actions={<RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Edit" accessibleName={`Edit ${r.displayName}`} />}
                     />
                   ))}
                 </RecordList>
@@ -212,7 +212,7 @@ export default async function AdminGiftsPage() {
                       meta={f.description || undefined}
                       actions={
                         <>
-                        <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Change" accessibleName={`Change ${f.title}`} />
+                        <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Edit" accessibleName={`Edit ${f.title}`} />
                         <QuickAction label={f.active ? 'Hide' : 'Show'} busyLabel="Saving…" done={f.active ? `${f.title} hidden.` : `${f.title} shown.`} accessibleName={`${f.active ? 'Hide' : 'Show'} ${f.title}`} calls={[{ capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, active: !f.active } }]} />
                         <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${f.title} up.`} unavailable={!prev} accessibleName={`Move ${f.title} up`} calls={prev ? move(prev) : []} />
                         <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${f.title} down.`} unavailable={!next} accessibleName={`Move ${f.title} down`} calls={next ? move(next) : []} />

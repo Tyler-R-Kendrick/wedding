@@ -44,7 +44,7 @@ const row = (over: Partial<InvitationRowView> & Pick<InvitationRowView, 'id'>): 
   rotatedFromId: null,
   events: 'Ceremony, Reception',
   allowances: 'no plus-ones, no children',
-  expires: { iso: '2027-01-01T00:00:00.000Z', label: 'Jan 1, 2027' },
+  expires: 'Jan 01, 2027',
   claimed: null,
   ...over,
 });
@@ -56,7 +56,7 @@ describe('invitation links', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’s invitation link' }));
     fireEvent.click(screen.getByLabelText('Yes, replace the link (the old one stops working)'));
     fetchMock.mockReturnValueOnce(answer({ ok: true, data: { url: 'https://example.test/i/NEWTOKEN', qrSvg: '<svg/>', invitation: { id: 'B', expiresAt: '2027-02-01T00:00:00.000Z' } } }));
-    fireEvent.click(screen.getByRole('button', { name: 'Replace the link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Replace The Lovelaces’s link' }));
     expect(await screen.findByText('https://example.test/i/NEWTOKEN')).toBeTruthy();
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/capabilities/admin_rotate_invitation');
 

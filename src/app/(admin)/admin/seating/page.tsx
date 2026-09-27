@@ -199,7 +199,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
               key={g.guestId}
               data-guest-id={g.guestId}
               title={g.displayName}
-              status={g.receptionRsvp === 'accepted' ? <Pill tone="good">Coming</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">Not coming</Pill> : <Pill>No answer</Pill>}
+              status={g.receptionRsvp === 'accepted' ? <Pill tone="good">Coming</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">Not coming</Pill> : <Pill>No answer yet</Pill>}
               meta={
                 <>
                   {g.householdName} · {g.tableId ? `${tableName.get(g.tableId)}${g.seatNumber ? `, seat ${g.seatNumber}` : ''}` : 'no seat yet'}

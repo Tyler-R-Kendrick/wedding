@@ -140,7 +140,7 @@ export function EventFlow({ event, rooms, others, nextOrder, label, variant = 'p
       load={event ? async () => eventValues(event, nextOrder) : undefined}
       steps={steps}
       submit={{
-        label: event ? 'Save event' : 'Add event',
+        label: event ? 'Save event' : 'Add an event',
         capability: 'admin_upsert_event',
         success: event ? `${event.name} saved.` : 'Event added.',
         input: (v) => ({
@@ -447,8 +447,8 @@ export function WindowFlow({ settings }: { settings: { mode: string; deadlineAt:
   return (
     <AdminFlow<WindowValues>
       id="events:window"
-      title="Change the RSVP window"
-      trigger={{ label: 'Change the RSVP window', variant: 'ghost' }}
+      title="Edit the RSVP window"
+      trigger={{ label: 'Edit the RSVP window', variant: 'ghost' }}
       initial={from()}
       load={async () => from()}
       steps={[
@@ -540,8 +540,8 @@ export function NoticeFlow({ notice, label, variant = 'ghost' }: { notice?: Noti
   return (
     <AdminFlow<NoticeValues>
       id={`events:notice:${notice?.id ?? 'new'}`}
-      title={notice ? `Edit “${notice.title}”` : 'Post a notice'}
-      trigger={{ label, variant, accessibleName: notice ? `Edit notice “${notice.title}”` : undefined }}
+      title={notice ? `Edit ${notice.title}` : 'Post a notice'}
+      trigger={{ label, variant, accessibleName: notice ? `Edit ${notice.title}` : undefined }}
       initial={noticeValues(notice)}
       load={notice ? async () => noticeValues(notice) : undefined}
       steps={[
@@ -592,7 +592,7 @@ export function NoticeFlow({ notice, label, variant = 'ghost' }: { notice?: Noti
         },
       ]}
       submit={{
-        label: notice ? 'Save notice' : 'Post notice',
+        label: notice ? 'Save notice' : 'Post the notice',
         capability: 'admin_upsert_notice',
         success: notice ? 'Notice saved.' : 'Notice posted.',
         input: (v) => ({ id: notice?.id, title: v.title.trim(), body: v.body.trim(), severity: v.severity, active: v.active, startsAt: chicagoLocalToIso(v.startsAt), endsAt: chicagoLocalToIso(v.endsAt) }),

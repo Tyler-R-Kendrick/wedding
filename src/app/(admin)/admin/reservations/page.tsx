@@ -145,7 +145,7 @@ export default async function AdminReservationsPage() {
                           <span className="sr-only"> the booking page for {r.name} (new tab)</span>
                         </a>
                       ) : null}
-                      <PlaceFlow place={r} takenIds={ids} variant="quiet" label="Change" accessibleName={`Change ${r.name}`} />
+                      <PlaceFlow place={r} takenIds={ids} variant="quiet" label="Edit" accessibleName={`Edit ${r.name}`} />
                       <QuickAction
                         label={r.active ? 'Hide' : 'Show'}
                         busyLabel={r.active ? 'Hiding…' : 'Showing…'}

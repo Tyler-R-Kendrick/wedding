@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import { FilterBar } from '@/components/admin/flow/records';
-import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { hasEntitlement } from '@/contracts/principal';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox } from '../_components/ops';
-import { ConsoleGate, ConsolePage, DataTable, Note, Section, Stamp } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section, Stamp } from '../_components/console';
 import { IssueLinkFlow } from './_components/InvitationFlows';
 import { InvitationList, type InvitationRowView } from './_components/InvitationList';
 
@@ -29,8 +28,6 @@ type Inv = {
   rotatedFromId: string | null;
 };
 
-const DAY = new Intl.DateTimeFormat('en-US', { timeZone: WEDDING_TIMEZONE, year: 'numeric', month: 'short', day: 'numeric' });
-const day = (iso: string) => ({ iso, label: DAY.format(new Date(iso)) });
 const count = (n: number, one: string, many: string) => (n === 0 ? `no ${many}` : `${n} ${n === 1 ? one : many}`);
 
 /**
@@ -70,8 +67,8 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
     rotatedFromId: r.rotatedFromId,
     events: r.eventKeys.map(eventName).join(', ') || 'no events',
     allowances: `${count(r.plusOneAllowance, 'plus-one', 'plus-ones')}, ${count(r.childrenAllowance, 'child', 'children')}`,
-    expires: day(r.expiresAt),
-    claimed: r.claimedAt ? day(r.claimedAt) : null,
+    expires: <Day at={r.expiresAt} />,
+    claimed: r.claimedAt ? <Day at={r.claimedAt} /> : null,
   }));
 
   return (

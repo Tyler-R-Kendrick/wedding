@@ -172,7 +172,7 @@ function CollapseFlow({ cluster, n, onDone }: { cluster: Cluster; n: number; onD
         },
       ]}
       submit={{
-        label: 'Reject duplicates',
+        label: (v) => `Reject ${plural(rest(v.keepId).length, 'duplicate')} in ${name}`,
         success: 'Duplicates rejected; one copy kept.',
         run: async (v) => {
           const others = rest(v.keepId);

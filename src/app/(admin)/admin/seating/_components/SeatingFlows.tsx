@@ -102,7 +102,7 @@ export function TableFlow({ table, plans, nextOrder, label, variant = 'primary' 
       load={table ? async () => tableValues(table) : undefined}
       steps={steps}
       submit={{
-        label: table ? 'Save table' : 'Add table',
+        label: table ? 'Save table' : 'Add a table',
         capability: 'admin_upsert_table',
         success: table ? `${table.name} saved (draft).` : 'Table added (draft).',
         input: (v) => ({
@@ -400,7 +400,7 @@ export function UnpublishFlow() {
           readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
-      submit={{ label: 'Unpublish', capability: 'admin_unpublish_seating', success: 'Seating hidden from guests.', input: () => ({}) }}
+      submit={{ label: 'Unpublish the seating', capability: 'admin_unpublish_seating', success: 'Seating hidden from guests.', input: () => ({}) }}
     />
   );
 }

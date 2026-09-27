@@ -93,12 +93,12 @@ export function LinkFlow({ link, allowedHosts, nextSort = 100, label, variant = 
   return (
     <AdminFlow<Values>
       id={`travel:link:${link?.id ?? 'new'}`}
-      title={link ? `Change ${link.label}` : 'Add a travel link'}
+      title={link ? `Edit ${link.label}` : 'Add a travel link'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: link ? 'Save link' : 'Add link',
+        label: link ? 'Save link' : 'Add a link',
         capability: 'admin_save_travel_link',
         success: link ? 'Link saved.' : 'Link added. Guests see it on Travel & Stay.',
         input: (v) => ({
@@ -117,31 +117,31 @@ export function LinkFlow({ link, allowedHosts, nextSort = 100, label, variant = 
 }
 
 /** Deletes a partner link. Hiding it is the reversible choice, one click on the row. */
-export function RemoveLinkFlow({ link }: { link: TravelLink }) {
+export function DeleteLinkFlow({ link }: { link: TravelLink }) {
   return (
     <AdminFlow<{ confirmed: boolean }>
-      id={`travel:remove-link:${link.id}`}
+      id={`travel:delete-link:${link.id}`}
       tone="danger"
-      title={`Remove ${link.label}`}
-      trigger={{ label: 'Remove', variant: 'danger', accessibleName: `Remove ${link.label}` }}
+      title={`Delete ${link.label}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${link.label}` }}
       initial={{ confirmed: false }}
       steps={[
         {
-          title: `Remove ${link.label}?`,
+          title: `Delete ${link.label}?`,
           fields: ['confirmed'],
           render: (ctx) => (
             <>
               <Consequences>
                 <p>The link to {link.provider} comes off Travel &amp; Stay, and is no longer offered when live search is unavailable. This cannot be undone; to take it off for a while, use Hide instead.</p>
               </Consequences>
-              <CheckField ctx={ctx} name="confirmed" label={`Yes, remove ${link.label}`} />
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${link.label}`} />
             </>
           ),
           ready: (v) => v.confirmed,
           readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
-      submit={{ label: `Remove ${link.label}`, capability: 'admin_remove_travel_link', success: 'Link removed.', input: () => ({ linkId: link.id }) }}
+      submit={{ label: `Delete ${link.label}`, capability: 'admin_remove_travel_link', success: `${link.label} deleted.`, input: () => ({ linkId: link.id }) }}
     />
   );
 }

@@ -126,7 +126,7 @@ export function HouseholdFlow({ household, label, variant = 'primary' }: { house
       load={load}
       steps={steps}
       submit={{
-        label: household ? 'Save household' : 'Add household',
+        label: household ? 'Save household' : 'Add a household',
         capability: 'admin_upsert_household',
         success: household ? 'Household saved.' : 'Household added.',
         input: (v) => {

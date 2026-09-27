@@ -283,13 +283,13 @@ export function HotelFlow({
   return (
     <AdminFlow<Values>
       id={`travel:hotel:${hotel?.id ?? 'new'}`}
-      title={hotel ? (hotel.synthesized ? `Set up ${hotel.name}` : `Change ${hotel.name}`) : 'Add a hotel'}
+      title={hotel ? (hotel.synthesized ? `Set up ${hotel.name}` : `Edit ${hotel.name}`) : 'Add a hotel'}
       trigger={{ label, variant, accessibleName }}
       initial={{ ...EMPTY, sortOrder: nextSort }}
       load={load}
       steps={steps}
       submit={{
-        label: hotel ? 'Save hotel' : 'Add hotel',
+        label: hotel ? 'Save hotel' : 'Add a hotel',
         capability: 'admin_save_hotel',
         success: hotel ? `${hotel.name} saved.` : 'Hotel added. Guests see it on Travel & Stay.',
         input: (v) => ({
@@ -326,17 +326,17 @@ export function HotelFlow({
 }
 
 /** Takes a hotel off Travel & Stay for good. Hiding it (a one-click Hide on the row) is the reversible choice. */
-export function RemoveHotelFlow({ hotel }: { hotel: HotelSummary }) {
+export function DeleteHotelFlow({ hotel }: { hotel: HotelSummary }) {
   return (
     <AdminFlow<{ confirmed: boolean }>
-      id={`travel:remove-hotel:${hotel.id}`}
+      id={`travel:delete-hotel:${hotel.id}`}
       tone="danger"
-      title={`Remove ${hotel.name}`}
-      trigger={{ label: 'Remove', variant: 'danger', accessibleName: `Remove ${hotel.name}` }}
+      title={`Delete ${hotel.name}`}
+      trigger={{ label: 'Delete', variant: 'danger', accessibleName: `Delete ${hotel.name}` }}
       initial={{ confirmed: false }}
       steps={[
         {
-          title: `Remove ${hotel.name}?`,
+          title: `Delete ${hotel.name}?`,
           fields: ['confirmed'],
           render: (ctx) => (
             <>
@@ -347,14 +347,14 @@ export function RemoveHotelFlow({ hotel }: { hotel: HotelSummary }) {
                 </p>
                 <p>This cannot be undone; adding it again starts from nothing. To take it off the page for a while, use Hide instead.</p>
               </Consequences>
-              <CheckField ctx={ctx} name="confirmed" label={`Yes, remove ${hotel.name}`} />
+              <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${hotel.name}`} />
             </>
           ),
           ready: (v) => v.confirmed,
           readyHint: { field: 'confirmed', message: 'Tick the box to confirm.' },
         },
       ]}
-      submit={{ label: `Remove ${hotel.name}`, capability: 'admin_remove_hotel', success: `${hotel.name} removed.`, input: () => ({ hotelId: hotel.id }) }}
+      submit={{ label: `Delete ${hotel.name}`, capability: 'admin_remove_hotel', success: `${hotel.name} deleted.`, input: () => ({ hotelId: hotel.id }) }}
     />
   );
 }

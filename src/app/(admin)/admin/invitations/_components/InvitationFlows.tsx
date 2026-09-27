@@ -177,7 +177,10 @@ export function IssueLinkFlow({ households, events, defaultEvents }: { household
       initial={{ householdId: '', eventKeys: defaultEvents, eventText: defaultEvents.join('; '), plusOneAllowance: '0', childrenAllowance: '0' }}
       steps={steps}
       submit={{
-        label: 'Make the link',
+        label: (v) => {
+          const chosen = households.find((h) => h.value === v.householdId);
+          return chosen ? `Make ${chosen.label}’s link` : 'Make the link';
+        },
         capability: 'admin_issue_invitation',
         success: 'Invitation link made.',
         input: (v) => ({ householdId: v.householdId, eventKeys: keysOf(v), plusOneAllowance: Number(v.plusOneAllowance), childrenAllowance: Number(v.childrenAllowance) }),
@@ -217,7 +220,7 @@ export function RotateLinkFlow({ invitation }: { invitation: InvitationSummary }
         },
       ]}
       submit={{
-        label: 'Replace the link',
+        label: `Replace ${who}’s link`,
         capability: 'admin_rotate_invitation',
         success: 'Link replaced.',
         input: () => ({ invitationId: invitation.id }),
@@ -257,7 +260,7 @@ export function RevokeLinkFlow({ invitation }: { invitation: InvitationSummary }
           readyHint: { field: 'confirmed', message: 'Say why, and tick the box to confirm.' },
         },
       ]}
-      submit={{ label: 'Revoke the link', capability: 'admin_revoke_invitation', success: `${who}’s link revoked.`, input: (v) => ({ invitationId: invitation.id, reason: v.reason.trim().slice(0, 200) }) }}
+      submit={{ label: `Revoke ${who}’s link`, capability: 'admin_revoke_invitation', success: `${who}’s link revoked.`, input: (v) => ({ invitationId: invitation.id, reason: v.reason.trim().slice(0, 200) }) }}
     />
   );
 }

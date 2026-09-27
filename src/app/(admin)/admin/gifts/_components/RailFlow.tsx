@@ -66,7 +66,7 @@ export function RailFlow({ options, editing, label, variant = 'primary', accessi
         choices={options.map((o) => ({
           value: o.rail,
           label: o.displayName,
-          badge: o.current ? (o.current.active ? 'set up' : 'set up, hidden') : undefined,
+          badge: o.current ? (o.current.active ? 'Set up' : 'Set up, hidden') : undefined,
           description:
             o.mode === 'link'
               ? 'Guests tap a button that opens your profile in the app.'
@@ -163,12 +163,15 @@ export function RailFlow({ options, editing, label, variant = 'primary', accessi
   return (
     <AdminFlow<Values>
       id={`gifts:rail:${editing ?? 'new'}`}
-      title={fixed ? `Change ${fixed.displayName}` : 'Add a way to give'}
+      title={fixed ? `Edit ${fixed.displayName}` : 'Add a way to give'}
       trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
-        label: 'Save',
+        label: (v) => {
+          const o = spec(v.rail);
+          return o ? `${o.current ? 'Save' : 'Add'} ${o.displayName}` : 'Add a way to give';
+        },
         capability: 'admin_upsert_gift_rail',
         success: 'Saved. The Gifts page uses it now.',
         input: (v) => ({ rail: v.rail, handle: v.handle, recipientName: v.recipientName.trim() || undefined, active: v.shown }),
