@@ -13,9 +13,9 @@
  *
  * `--data` also removes the local PGlite database (.data), which `npm run dev` rebuilds and seeds.
  */
-import { existsSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTPUT = ['.next', 'test-results', 'playwright-report', 'coverage', 'demos/.out', 'demos/.webreel', 'demos/.webreel.local.json', '.impeccable/review', 'tsconfig.tsbuildinfo', 'stages/01-sitemap/.next', 'stages/02-wireframe/.next', 'stages/03-skeleton/.next', 'stages/04-placeholder/.next', 'stages/01-sitemap/out', 'stages/02-wireframe/out', 'stages/03-skeleton/out', 'stages/04-placeholder/out'];
@@ -32,9 +32,7 @@ function ancestry() {
   for (let pid = process.pid; pid > 1 && !chain.has(pid); ) {
     chain.add(pid);
     try {
-      // /proc/<pid>/stat: "pid (comm) state ppid …"; comm may contain spaces, so read after the last ')'.
-      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
-      pid = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]);
+      pid = parseStat(readFileSync(`/proc/${pid}/stat`, 'utf8')).ppid;
     } catch {
       break;
     }
@@ -88,7 +86,23 @@ function sizeOf(p) {
   }
 }
 
-const alive = (pid) => existsSync(`/proc/${pid}`);
+/**
+ * State and parent from `/proc/<pid>/stat`: "pid (comm) state ppid …". The name may itself hold
+ * spaces and parentheses (`next-server (v16.3.4)` becomes `(next-server (v1)`), so read after the last ')'.
+ */
+export function parseStat(stat) {
+  const [state, ppid] = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+  return { state, ppid: Number(ppid) };
+}
+
+/** Running, rather than gone or a zombie: a zombie has exited and only waits to be reaped (state Z). */
+const alive = (pid) => {
+  try {
+    return parseStat(readFileSync(`/proc/${pid}/stat`, 'utf8')).state !== 'Z';
+  } catch {
+    return false;
+  }
+};
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -122,7 +136,17 @@ async function stopServers() {
   }
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+// Node resolves symlinks in the main module's URL but not in argv[1], so compare real paths: a
+// checkout reached through a symlink would otherwise skip everything and still exit 0.
+const runDirectly = () => {
+  try {
+    return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+};
+
+if (runDirectly()) {
   await stopServers();
 
   let freed = 0;
