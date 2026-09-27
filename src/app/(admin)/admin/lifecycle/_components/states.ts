@@ -1,21 +1,7 @@
-import type { LifecycleState } from '@/contracts/lifecycle';
+import { stateLabel } from '@/domain/lifecycle/words';
 
-/**
- * The lifecycle in words. The codes (`RSVP_OPEN`) are the model's names and belong in Technical
- * details; everywhere a person reads the state, it is one of these. The RSVP screen uses the same
- * map to say why replies are closed.
- */
-export const STATE_LABEL: Record<LifecycleState, string> = {
-  TEASER: 'Teaser',
-  SAVE_THE_DATE: 'Save the date',
-  INVITATIONS_OPEN: 'Invitations out',
-  RSVP_OPEN: 'RSVPs open',
-  RSVP_CLOSED: 'RSVPs closed',
-  WEDDING_WEEK: 'Wedding week',
-  WEDDING_DAY: 'Wedding day',
-  POST_WEDDING: 'After the wedding',
-  ARCHIVE: 'Archive',
-};
+// The state labels live with the lifecycle domain, so the gifts setup and the RSVP screen share them.
+export { STATE_LABEL, stateLabel } from '@/domain/lifecycle/words';
 
 /** What the home page leads with in each mode (`LIFECYCLE_MODE`). */
 export const MODE_LABEL: Record<string, string> = {
@@ -35,9 +21,6 @@ export const OUTCOME_LABEL: Record<string, string> = {
   denied: 'Refused',
   failed: 'Failed',
 };
-
-/** A state code in words; an unknown value is shown as it stands (it is the evidence). */
-export const stateLabel = (s: string | null | undefined): string => (s ? (STATE_LABEL[s as LifecycleState] ?? s) : '—');
 
 /** Who did it, without the internal id (that is in Technical details). */
 export const actorLabel = (a: { kind: string; ref: string | null } | null | undefined): string => {

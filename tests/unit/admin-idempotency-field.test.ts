@@ -51,8 +51,8 @@ describe('admin forms and actions agree on the idempotency field name', () => {
     for (const f of actionModules) {
       const src = readFileSync(f, 'utf8');
       if (!/idempotencyKey/.test(src)) continue;
-      // `field(fd, 'idem')`, `str(fd, 'idem')` (via `idem(fd)`), or travel's `field.idempotencyKey(fd)`, which accepts `idem`.
-      expect(/(['"])idem\1/.test(src) || /field\.idempotencyKey\(/.test(src), rel(f)).toBe(true);
+      // `field(fd, 'idem')` or `str(fd, 'idem')` (via `idem(fd)`).
+      expect(/(['"])idem\1/.test(src), rel(f)).toBe(true);
     }
   });
 });

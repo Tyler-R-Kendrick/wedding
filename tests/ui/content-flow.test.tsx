@@ -165,29 +165,23 @@ describe('content record flow', () => {
 });
 
 describe('moving a record', () => {
-  it('swaps two places with two position-only saves', async () => {
+  it('sends the saves the table page built for Up, then refreshes', async () => {
     fetchMock.mockImplementation(() => answer({ ok: true, data: { id: 'x', contentVersion: 2, created: false } }));
-    render(<MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 4 }} other={{ id: 'B', title: 'Dress code', sortOrder: 3 }} direction="up" />);
+    const calls = [
+      { capability: 'save_content_record', input: { table: 'faq_entries', id: 'A', data: { order: 3 }, merge: true } },
+      { capability: 'save_content_record', input: { table: 'faq_entries', id: 'B', data: { order: 4 }, merge: true } },
+    ];
+    render(<MoveRecord title="Parking" direction="up" calls={calls} />);
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Parking up' })));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/capabilities/save_content_record');
-    expect(sentBody(0).input).toEqual({ table: 'faq_entries', id: 'A', data: { order: 3 }, merge: true });
-    expect(sentBody(1).input).toEqual({ table: 'faq_entries', id: 'B', data: { order: 4 }, merge: true });
+    expect(sentBody(0).input).toEqual(calls[0]!.input);
+    expect(sentBody(1).input).toEqual(calls[1]!.input);
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
-  it('sets two records that share a place one apart, and keeps the top one’s Up inert', async () => {
-    fetchMock.mockImplementation(() => answer({ ok: true, data: { id: 'x', contentVersion: 2, created: false } }));
-    render(
-      <>
-        <MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 0 }} other={null} direction="up" />
-        <MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 0 }} other={{ id: 'B', title: 'Dress code', sortOrder: 0 }} direction="down" />
-      </>,
-    );
+  it('keeps the top record’s Up inert', () => {
+    render(<MoveRecord title="Parking" direction="up" calls={[]} />);
     expect(screen.getByRole('button', { name: 'Move Parking up' }).getAttribute('aria-disabled')).toBe('true');
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Parking down' })));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(sentBody(0).input).toEqual({ table: 'faq_entries', id: 'A', data: { order: 1 }, merge: true });
-    expect(sentBody(1).input).toEqual({ table: 'faq_entries', id: 'B', data: { order: 0 }, merge: true });
   });
 });

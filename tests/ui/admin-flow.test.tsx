@@ -74,10 +74,11 @@ function DeleteThing() {
   );
 }
 
-function NameThing({ result, load, name = '' }: { result?: boolean; load?: () => Promise<Partial<{ name: string }> | string>; name?: string }) {
+function NameThing({ result, load, name = '', secret }: { result?: boolean; load?: () => Promise<Partial<{ name: string }> | string>; name?: string; secret?: boolean }) {
   return (
     <AdminFlow<{ name: string }>
       id="test:name"
+      secret={secret}
       title="Name the thing"
       trigger={{ label: 'Name it' }}
       initial={{ name }}
@@ -138,6 +139,17 @@ describe('admin flow kit', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith(expect.stringMatching(/^\/step-up\?next=/)));
     const draft = JSON.parse(window.sessionStorage.getItem('wedding.admin-flow:test:name') ?? '{}') as { stepUp?: boolean; values?: { name: string } };
     expect(draft).toMatchObject({ stepUp: true, values: { name: 'Kept' } });
+  });
+
+  it('keeps nothing of a secret flow, not even across a step-up', async () => {
+    render(<NameThing secret />);
+    fireEvent.click(screen.getByRole('button', { name: 'Name it' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A ride code' } });
+    fetchMock.mockReturnValueOnce(answer({ ok: false, error: { code: 'step_up_required', message: 'Confirm it is you.' } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(expect.stringMatching(/^\/step-up\?next=/)));
+    expect(screen.getByText(/you will need to enter it again/)).toBeTruthy();
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it('puts a field error from the server beside the field', async () => {

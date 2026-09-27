@@ -62,6 +62,12 @@ export interface AdminFlowProps<V> {
   /** Keep a draft while the flow is unfinished. Defaults to true, and to false for `danger`. */
   durable?: boolean;
   /**
+   * What is typed here (ride codes, a guest list full of addresses) is never written to this device,
+   * not even to survive a trip to /step-up: implies `durable={false}`, and a step-up detour says the
+   * answers will need entering again rather than keeping them.
+   */
+  secret?: boolean;
+  /**
    * Fetches what the form starts from when the sheet opens (an edit needs the whole record; the
    * list only carried a summary). Not called when a draft is being resumed: the draft is newer.
    * Return a message string instead of values to say why it could not be loaded.
@@ -110,7 +116,8 @@ type Direction = 'forward' | 'back';
  * Motion is transform and opacity only, 180–240ms, and none at all under `prefers-reduced-motion`
  * (flow.css). Focus moves to each step's heading, so a screen reader hears where it is.
  */
-export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial: given, steps, submit, tone = 'default', durable = tone !== 'danger', load, defaultOpen = false }: AdminFlowProps<V>) {
+export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial: given, steps, submit, tone = 'default', durable: durableProp, secret = false, load, defaultOpen = false }: AdminFlowProps<V>) {
+  const durable = !secret && (durableProp ?? tone !== 'danger');
   const router = useRouter();
   const uid = useId().replace(/:/g, '');
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -317,8 +324,12 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     setBusy(false);
     if (!res.ok) {
       if (res.error?.code === 'step_up_required') {
-        writeDraft(id, { values, step, open: true, stepUp: true });
-        setNotice('Taking you to confirm it’s you. You will come straight back to this step with everything you typed.');
+        if (secret) {
+          setNotice('Taking you to confirm it’s you. What you typed here is not kept on this device, so you will need to enter it again when you come back.');
+        } else {
+          writeDraft(id, { values, step, open: true, stepUp: true });
+          setNotice('Taking you to confirm it’s you. You will come straight back to this step with everything you typed.');
+        }
         router.push(`/step-up?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }

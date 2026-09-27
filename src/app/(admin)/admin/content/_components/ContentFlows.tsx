@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { AdminFlow, type FieldErrors, type FlowContext, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, CheckGroupField, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
-import { swapOrder } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
 import type { ContentRecordData } from '@/capabilities/get_content_record';
@@ -731,31 +730,19 @@ export function MarkVerified({ table, id, title, tone }: { table: string; id: st
 }
 
 /**
- * Up or Down in a table sorted by position: the kit's `QuickAction`, with the two saves `swapOrder`
- * builds (this record takes its neighbour's place and the neighbour takes this one's; two that share
- * a place are set one apart). Each save sends only the position (`merge`), so the list's summaries
- * are enough and nothing is read first.
+ * Up or Down in a table sorted by position: the kit's `QuickAction` with the saves `moveCalls` built
+ * on the server page (`moveRecordCalls`). Each save sends only the position (`merge`), so the list's
+ * summaries are enough and nothing is read first.
  */
-export function MoveRecord({
-  table,
-  record,
-  other,
-  direction,
-}: {
-  table: string;
-  record: { id: string; title: string; sortOrder: number };
-  other: { id: string; title: string; sortOrder: number } | null;
-  direction: 'up' | 'down';
-}) {
-  const build = (r: { id: string }, patch: { sortOrder: number }) => ({ table, id: r.id, data: { order: patch.sortOrder }, merge: true });
+export function MoveRecord({ title, direction, calls }: { title: string; direction: 'up' | 'down'; calls: { capability: string; input: unknown }[] }) {
   return (
     <QuickAction
       label={direction === 'up' ? 'Up' : 'Down'}
       busyLabel="Moving…"
-      done={`Moved ${record.title} ${direction}.`}
-      unavailable={!other}
-      accessibleName={`Move ${record.title} ${direction}`}
-      calls={other ? swapOrder(record, other, direction === 'up', build, 'save_content_record') : []}
+      done={`Moved ${title} ${direction}.`}
+      unavailable={calls.length === 0}
+      accessibleName={`Move ${title} ${direction}`}
+      calls={calls}
     />
   );
 }

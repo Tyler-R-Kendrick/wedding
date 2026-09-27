@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InvitationList, type InvitationRowView } from '@/app/(admin)/admin/invitations/_components/InvitationList';
 import { UploadCodesFlow } from '@/app/(admin)/admin/transport/_components/TransportFlows';
+import { ImportGuestsFlow } from '@/app/(admin)/admin/guests/_components/GuestFlows';
 
 /*
  * Two things the console shows once, or never: an invitation link (the token is not stored, so the
@@ -88,5 +89,33 @@ describe('ride codes', () => {
     expect(body.input.codes).toEqual(['SECRET-ONE', 'SECRET-TWO']);
     expect(document.body.textContent).not.toContain('SECRET-ONE');
     expect(window.sessionStorage.length).toBe(0);
+  });
+});
+
+describe('guest list import', () => {
+  const CSV = 'household,first_name,last_name,email\nLovelace,Ada,Lovelace,ada@example.test\n';
+
+  it('dry-runs the pasted list with its own idempotency key, and never keeps the list on the device', async () => {
+    render(<ImportGuestsFlow />);
+    fireEvent.click(screen.getByRole('button', { name: 'Import a list' }));
+    fireEvent.change(screen.getByLabelText('CSV'), { target: { value: CSV } });
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { dryRun: true, householdsCreated: 1, guestsCreated: 1, guestsUpdated: 0, skipped: 0, issues: [] } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/capabilities/admin_import_guests_csv');
+    const body = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as { input: { dryRun: boolean }; idempotencyKey?: string };
+    expect(body.input.dryRun).toBe(true);
+    expect(body.idempotencyKey, 'an idempotent action refuses a call without a key').toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(await screen.findByRole('heading', { name: 'Check what will change' })).toBeTruthy();
+    expect(JSON.stringify({ ...window.sessionStorage })).not.toContain('ada@example.test');
+  });
+
+  it('says a list too long for one request should be split, before sending it', async () => {
+    render(<ImportGuestsFlow />);
+    fireEvent.click(screen.getByRole('button', { name: 'Import a list' }));
+    fireEvent.change(screen.getByLabelText('CSV'), { target: { value: CSV + 'Lovelace,Ada,Lovelace,ada@example.test\n'.repeat(8000) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText(/too long to send in one go/)).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

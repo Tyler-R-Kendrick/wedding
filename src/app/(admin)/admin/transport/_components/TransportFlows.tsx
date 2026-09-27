@@ -191,14 +191,14 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  * Paste a batch of ride codes from Uber. They are sealed on save and never shown again, anywhere:
  * the check step counts them, and the Done panel reports counts only.
  *
- * `durable={false}`: an unfinished paste is not kept on the device, because what was pasted is a
- * pile of redeemable codes, and a draft would leave them in the browser's session storage.
+ * `secret`: nothing pasted here is kept on the device, not even across a step-up, because what was
+ * pasted is a pile of redeemable codes, and a draft would leave them in the browser's session storage.
  */
 export function UploadCodesFlow({ defaultProgram }: { defaultProgram: string }) {
   return (
     <AdminFlow<UploadValues>
       id="transport:upload-codes"
-      durable={false}
+      secret
       title="Add ride codes"
       trigger={{ label: 'Add ride codes', variant: 'ghost' }}
       initial={{ program: defaultProgram, codes: '' }}

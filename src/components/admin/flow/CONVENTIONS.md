@@ -56,6 +56,10 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
   `submit.success`, and the page refreshes from the server.
 - Capabilities with `stepUp` need nothing extra: the flow keeps the draft across `/step-up`.
 - Drafts are kept on the device (`sessionStorage`) for create/edit flows; `danger` flows keep none.
+  A flow whose answers must never sit in the browser (ride codes, a pasted guest list) is `secret`:
+  no draft at all, and a step-up detour asks for them again instead of keeping them.
+- Up and Down on a hand-ordered list are `QuickAction`s whose calls come from `moveCalls` (`order.ts`),
+  given the whole list as shown, so rows that share a place are renumbered rather than left to chance.
 
 ## Visual rules
 

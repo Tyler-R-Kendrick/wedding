@@ -2,7 +2,7 @@
 
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
-import { callCapability } from '@/components/handoff/client';
+import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
 
 export interface GuestSummary {
   id: string;
@@ -318,14 +318,20 @@ interface ImportResult {
 
 const counts = (d: ImportResult) => `${d.householdsCreated} households and ${d.guestsCreated} guests to add, ${d.guestsUpdated} guests to update, ${d.skipped} lines skipped.`;
 
+/** The capability route takes 256 KB a request; this leaves room for the rest of the body. */
+const CSV_LIMIT_BYTES = 240 * 1024;
+
 /**
  * Import a guest list: paste it, read what a dry run would do, then import. The dry run used to be
  * a checkbox you had to remember to tick; it is now the step every import passes through.
+ *
+ * `secret`: the pasted list (names, emails, home addresses) is never kept on this device.
  */
 export function ImportGuestsFlow() {
   return (
     <AdminFlow<ImportValues>
       id="guests:import"
+      secret
       title="Import a guest list"
       trigger={{ label: 'Import a list', variant: 'ghost' }}
       initial={{ csv: '', summary: '', issues: [] }}
@@ -348,7 +354,10 @@ export function ImportGuestsFlow() {
           ready: (v) => v.csv.trim().length > 0,
           readyHint: { field: 'csv', message: 'Paste the list first.' },
           next: async (v) => {
-            const res = await callCapability<ImportResult>('admin_import_guests_csv', { input: { csv: v.csv, dryRun: true } });
+            // The request, CSV and all, has to fit the capability route's body limit (256 KB).
+            if (new Blob([v.csv]).size > CSV_LIMIT_BYTES) return { errors: { csv: 'That list is too long to send in one go. Split it into files of about a thousand guests each and import them one after another.' } };
+            // A dry run is still an action to the pipeline, so it carries its own idempotency key.
+            const res = await callCapability<ImportResult>('admin_import_guests_csv', { input: { csv: v.csv, dryRun: true }, idempotencyKey: newIdempotencyKey() });
             if (!res.ok || !res.data) return { errors: { csv: res.error?.message ?? 'The list could not be read.' } };
             return { patch: { summary: counts(res.data), issues: res.data.issues.slice(0, 20).map((i) => `Line ${i.line}: ${i.message}`) } };
           },

@@ -70,7 +70,7 @@ describe('derived content fields', () => {
     const [ra] = await db.select().from(faqEntries).where(eq(faqEntries.id, a.value.data.id));
     const [rb] = await db.select().from(faqEntries).where(eq(faqEntries.id, b.value.data.id));
 
-    // What Up and Down send (`swapOrder` in the kit): each record's new place, nothing else.
+    // What Up and Down send (`moveCalls` in the kit): each record's new place, nothing else.
     const up = await invoke(saveContentRecord, await ctx(), { table: 'faq_entries', id: rb!.id, data: { order: ra!.order }, merge: true });
     const down = await invoke(saveContentRecord, await ctx(), { table: 'faq_entries', id: ra!.id, data: { order: rb!.order }, merge: true });
     expect(up.ok && down.ok).toBe(true);

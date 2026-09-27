@@ -7,7 +7,7 @@ import type { HotelRecommendation } from '@/domain/travel';
 import { ConsoleGate, ConsolePage, DataTable, Day, Denied, KeyValues, Note, Pill, Section } from '../_components/console';
 import { HotelFlow, DeleteHotelFlow } from './_components/HotelFlow';
 import { LinkFlow, DeleteLinkFlow } from './_components/LinkFlow';
-import { swapOrder } from '@/components/admin/flow/order';
+import { moveCalls } from '@/components/admin/flow/order';
 import { categoryLabel, hotelInput, linkInput } from './_components/travel-input';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,7 @@ export default async function AdminTravelPage() {
             const i = others.indexOf(h);
             const prev = i > 0 ? others[i - 1] : undefined;
             const next = i >= 0 ? others[i + 1] : undefined;
-            const move = (other: HotelRecommendation, before: boolean) => swapOrder(h, other, before, hotelInput, 'admin_save_hotel');
+            const move = (direction: 'up' | 'down') => moveCalls(others, i, direction, hotelInput, 'admin_save_hotel');
             return (
               <RecordRow
                 key={h.id}
@@ -87,8 +87,8 @@ export default async function AdminTravelPage() {
                     ) : null}
                     {i >= 0 && others.length > 1 ? (
                       <>
-                        <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${h.name} up.`} unavailable={!prev} accessibleName={`Move ${h.name} up`} calls={prev ? move(prev, true) : []} />
-                        <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${h.name} down.`} unavailable={!next} accessibleName={`Move ${h.name} down`} calls={next ? move(next, false) : []} />
+                        <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${h.name} up.`} unavailable={!prev} accessibleName={`Move ${h.name} up`} calls={move('up')} />
+                        <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${h.name} down.`} unavailable={!next} accessibleName={`Move ${h.name} down`} calls={move('down')} />
                       </>
                     ) : null}
                     {!h.synthesized ? <DeleteHotelFlow hotel={{ id: h.id, name: h.name, isVenue: h.isVenue, synthesized: false }} /> : null}
@@ -131,8 +131,8 @@ export default async function AdminTravelPage() {
                       accessibleName={`${l.active ? 'Hide' : 'Show'} ${l.label}`}
                       calls={[{ capability: 'admin_save_travel_link', input: linkInput(l, { active: !l.active }) }]}
                     />
-                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${l.label} up.`} unavailable={!prev} accessibleName={`Move ${l.label} up`} calls={prev ? swapOrder(l, prev, true, linkInput, 'admin_save_travel_link') : []} />
-                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${l.label} down.`} unavailable={!next} accessibleName={`Move ${l.label} down`} calls={next ? swapOrder(l, next, false, linkInput, 'admin_save_travel_link') : []} />
+                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${l.label} up.`} unavailable={!prev} accessibleName={`Move ${l.label} up`} calls={moveCalls(links, i, 'up', linkInput, 'admin_save_travel_link')} />
+                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${l.label} down.`} unavailable={!next} accessibleName={`Move ${l.label} down`} calls={moveCalls(links, i, 'down', linkInput, 'admin_save_travel_link')} />
                     <DeleteLinkFlow link={l} />
                   </>
                 }

@@ -5,7 +5,7 @@ import { LIFECYCLE_ORDER } from '@/contracts/lifecycle';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Day, Denied, KeyValues, Note, Pill, Section, Stat, StatStrip } from '../_components/console';
 import { Checkbox, Input } from '../_components/ops';
-import { stateLabel } from '../lifecycle/_components/states';
+import { stateLabel } from '@/domain/lifecycle/words';
 import { ANSWER_FILTERS, answerWords } from './_components/answers';
 import { CorrectAnswer, RecordAnswerFlow, type AnswerSlot, type MenuSummary } from './_components/RsvpFlows';
 

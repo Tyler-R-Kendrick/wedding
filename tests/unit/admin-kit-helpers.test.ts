@@ -1,24 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { swapOrder } from '@/components/admin/flow/order';
+import { moveCalls } from '@/components/admin/flow/order';
 import { possessive } from '@/components/admin/flow/words';
 
 describe('admin kit helpers', () => {
-  it('swaps two rows, nudging rows that share a number so the order always changes', () => {
-    const build = (r: { id: string; sortOrder: number }, p: { sortOrder: number }) => ({ id: r.id, ...p });
-    expect(swapOrder({ id: 'b', sortOrder: 10 }, { id: 'a', sortOrder: 0 }, true, build, 'cap')).toEqual([
+  const build = (r: { id: string; sortOrder: number }, p: { sortOrder: number }) => ({ id: r.id, ...p });
+  const inputs = (rows: { id: string; sortOrder: number }[], i: number, d: 'up' | 'down') => moveCalls(rows, i, d, build, 'cap').map((c) => c.input);
+  /** The order the saves leave: every row's number after applying them, sorted. */
+  const after = (rows: { id: string; sortOrder: number }[], i: number, d: 'up' | 'down') => {
+    const next = new Map(rows.map((r) => [r.id, r.sortOrder]));
+    for (const c of moveCalls(rows, i, d, build, 'cap')) next.set((c.input as { id: string }).id, (c.input as { sortOrder: number }).sortOrder);
+    const numbers = [...next.values()];
+    expect(new Set(numbers).size, 'no two rows share a number after a move').toBe(numbers.length);
+    return [...next.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id).join('');
+  };
+
+  it('trades numbers with the neighbour when every row has its own', () => {
+    expect(moveCalls([{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 10 }], 1, 'up', build, 'cap')).toEqual([
       { capability: 'cap', input: { id: 'b', sortOrder: 0 } },
       { capability: 'cap', input: { id: 'a', sortOrder: 10 } },
     ]);
-    // A tie moves too, and never below zero: b (moving up past a) keeps 0, a goes to 1.
-    expect(swapOrder({ id: 'b', sortOrder: 0 }, { id: 'a', sortOrder: 0 }, true, build, 'cap').map((c) => c.input)).toEqual([
-      { id: 'b', sortOrder: 0 },
-      { id: 'a', sortOrder: 1 },
+    expect(after([{ id: 'a', sortOrder: 1 }, { id: 'b', sortOrder: 2 }, { id: 'c', sortOrder: 5 }], 1, 'down')).toBe('acb');
+  });
+
+  it('renumbers the list when rows share a number, so the move is exactly the one asked for', () => {
+    // Three funds that all started at 100: Up on the middle one puts it first and nothing else moves.
+    const tied = [{ id: 'a', sortOrder: 100 }, { id: 'b', sortOrder: 100 }, { id: 'z', sortOrder: 100 }];
+    expect(after(tied, 1, 'up')).toBe('baz');
+    expect(after(tied, 1, 'down')).toBe('azb');
+    expect(after(tied, 0, 'down')).toBe('baz');
+    // A tie elsewhere in the list still renumbers, and a row already on its new number is not re-sent.
+    const partly = [{ id: 'a', sortOrder: 10 }, { id: 'b', sortOrder: 20 }, { id: 'c', sortOrder: 20 }, { id: 'd', sortOrder: 40 }];
+    expect(after(partly, 3, 'up')).toBe('abdc');
+    expect(inputs(partly, 3, 'up')).toEqual([
+      { id: 'd', sortOrder: 30 },
+      { id: 'c', sortOrder: 40 },
     ]);
-    // Moving down past a tie: the row goes to s + 1, the neighbour keeps s.
-    expect(swapOrder({ id: 'a', sortOrder: 100 }, { id: 'b', sortOrder: 100 }, false, build, 'cap').map((c) => c.input)).toEqual([
-      { id: 'a', sortOrder: 101 },
-      { id: 'b', sortOrder: 100 },
-    ]);
+  });
+
+  it('has nowhere to go past either end', () => {
+    const rows = [{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 0 }];
+    expect(moveCalls(rows, 0, 'up', build, 'cap')).toEqual([]);
+    expect(moveCalls(rows, 1, 'down', build, 'cap')).toEqual([]);
   });
 
   it('makes possessives the way the invitations read', () => {
