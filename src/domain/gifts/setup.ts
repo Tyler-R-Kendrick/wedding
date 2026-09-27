@@ -1,6 +1,7 @@
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
 import { assertAllowedRedirect } from '@/lib/redirects';
+import { STATE_IN_SENTENCE } from '@/domain/lifecycle/words';
 
 /**
  * What /admin/gifts needs to tell the couple, in the order they need it: can guests see the page at
@@ -51,12 +52,21 @@ export function detectRegistryProvider(raw: string): DetectedRegistry {
   }
   const host = allowed.value.hostname.toLowerCase();
   const hit = registryProviderFor(host);
-  // A provider's home page is not a registry: it is what the removed placeholders linked to, and
-  // it sends a guest to a search box. Ask for the page that is actually theirs.
-  if (hit && (allowed.value.pathname === '/' || allowed.value.pathname === '')) {
-    return { ok: false, message: `That is ${hit.name}’s home page. Open your own registry on ${hit.name}, copy its share link, and paste that.` };
-  }
+  const homePage = registryHomePageMessage(allowed.value);
+  if (homePage) return { ok: false, message: homePage };
   return { ok: true, provider: hit?.id ?? 'custom', providerName: hit?.name ?? host, host, url: allowed.value.toString() };
+}
+
+/**
+ * The sentence refusing a registry provider's home page, or null when `url` is not one. A provider's
+ * home page is not a registry: it is what the removed placeholders linked to, and it sends a guest to
+ * a search box. Ask for the page that is actually theirs. The check step and the save both call this,
+ * so a save cannot skip what the check step refuses.
+ */
+export function registryHomePageMessage(url: URL): string | null {
+  const hit = registryProviderFor(url.hostname);
+  if (!hit || (url.pathname !== '/' && url.pathname !== '')) return null;
+  return `That is ${hit.name}’s home page. Open your own registry on ${hit.name}, copy its share link, and paste that.`;
 }
 
 /** The registry provider a host belongs to, or undefined for any other allowlisted host. */
@@ -64,19 +74,6 @@ export function registryProviderFor(host: string): (typeof REGISTRY_PROVIDERS)[n
   const h = host.toLowerCase();
   return REGISTRY_PROVIDERS.find((p) => h === p.host || h.endsWith(`.${p.host}`));
 }
-
-/** The lifecycle states in plain words, for a sentence an admin reads. */
-export const LIFECYCLE_PLAIN: Readonly<Record<LifecycleState, string>> = {
-  TEASER: 'the teaser',
-  SAVE_THE_DATE: 'save the date',
-  INVITATIONS_OPEN: 'invitations out',
-  RSVP_OPEN: 'RSVPs open',
-  RSVP_CLOSED: 'RSVPs closed',
-  WEDDING_WEEK: 'wedding week',
-  WEDDING_DAY: 'the wedding day',
-  POST_WEDDING: 'after the wedding',
-  ARCHIVE: 'the archive',
-};
 
 export interface GiftsSetupInput {
   /** The lifecycle state guests are in now (never an admin preview). */
@@ -134,8 +131,8 @@ export function giftsSetup(i: GiftsSetupInput): GiftsSetup {
       summary: pageOpen
         ? 'Signed-in guests find Gifts in their account menu.'
         : opensAt
-          ? `Guests find Gifts in their account menu from ${LIFECYCLE_PLAIN[opensAt]}. The site is at ${LIFECYCLE_PLAIN[i.state]} now; anyone with the link can still open it once signed in.`
-          : `The account menu does not list Gifts at ${LIFECYCLE_PLAIN[i.state]}.`,
+          ? `Guests find Gifts in their account menu from ${STATE_IN_SENTENCE[opensAt]}. The site is at ${STATE_IN_SENTENCE[i.state]} now; anyone with the link can still open it once signed in.`
+          : `The account menu does not list Gifts at ${STATE_IN_SENTENCE[i.state]}.`,
     },
   };
   const somethingToGive = steps.wishlist.done || fundsLive;

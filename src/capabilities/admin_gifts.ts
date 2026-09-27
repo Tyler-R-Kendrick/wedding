@@ -7,10 +7,40 @@ import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { deleteGiftFund, deleteGiftLink, deleteGiftRail, detectRegistryProvider, isDefaultGiftFund, isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, railInstructions, registryProviderFor, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
+import { deleteGiftFund, deleteGiftLink, deleteGiftRail, detectRegistryProvider, getGiftLinkRow, isDefaultGiftFund, isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, railInstructions, registryHomePageMessage, registryProviderFor, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
 import { appServices } from './context';
 import { giftLinkViewSchema } from './list_gift_links';
 
+/**
+ * An optional text an edit can clear. Left out (`undefined`), a save keeps what the row holds; `null`
+ * or an empty string clears it. The upserts never overwrite a field the caller did not send, so the
+ * console's one-click Hide can send only what it knows, and a citation it never sees survives.
+ */
+const clearable = <T extends z.ZodType<string>>(s: T) =>
+  z
+    .union([s, z.literal(''), z.null()])
+    .optional()
+    .transform((v) => (v === '' ? null : v));
+
+/** A saved check sent back unchanged. The same bound `markContentVerified` sets: never in the future. */
+const verifiedAtInput = z.string().datetime({ offset: true }).nullable().optional();
+const MAX_CLOCK_SKEW_MS = 60_000;
+
+/** `confirmed` stamps the server's clock; a time sent back must not be ahead of it. `undefined` keeps the saved one. */
+function resolveVerifiedAt(i: { confirmed?: boolean; verifiedAt?: string | null }, now: Date): { ok: true; value: Date | null | undefined } | { ok: false; error: CapabilityError } {
+  if (i.confirmed) return { ok: true, value: now };
+  if (i.verifiedAt === undefined || i.verifiedAt === null) return { ok: true, value: i.verifiedAt };
+  const at = new Date(i.verifiedAt);
+  if (Number.isNaN(at.getTime()) || at.getTime() > now.getTime() + MAX_CLOCK_SKEW_MS) {
+    return { ok: false, error: new CapabilityError('validation', 'The verification time must be a valid time, not in the future.', { issues: [{ path: 'verifiedAt', message: 'invalid or in the future' }] }) };
+  }
+  return { ok: true, value: at };
+}
+
+/**
+ * On an existing link, a field left out keeps its saved value (see `upsertGiftLink`); on a new one it
+ * takes the default: shown, not a placeholder, first in order.
+ */
 const upsertInput = z.object({
   id: z.string().regex(SLUG),
   kind: z.enum(['registry', 'adventure-fund']),
@@ -18,13 +48,13 @@ const upsertInput = z.object({
   provider: z.string().trim().min(1).max(40).optional(),
   label: z.string().trim().min(1).max(120),
   url: z.url(),
-  note: z.string().trim().max(200).optional(),
-  disclosure: z.string().trim().max(300).optional(),
-  placeholder: z.boolean().default(false),
-  active: z.boolean().default(true),
-  sortOrder: z.number().int().min(0).max(1000).default(0),
-  sourceId: z.string().regex(ID_PATTERN).optional(),
-  verifiedAt: z.string().datetime({ offset: true }).optional(),
+  note: clearable(z.string().trim().max(200)),
+  disclosure: clearable(z.string().trim().max(300)),
+  placeholder: z.boolean().optional(),
+  active: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+  sourceId: z.string().regex(ID_PATTERN).nullable().optional(),
+  verifiedAt: verifiedAtInput,
   /** The admin opened the link and confirmed it is theirs: stamped with the server's clock, never the browser's. */
   confirmed: z.boolean().optional(),
 });
@@ -62,11 +92,20 @@ export const adminUpsertGiftLink = defineCapability<z.infer<typeof upsertInput>,
   async handler(ctx, i) {
     const allowed = assertAllowedRedirect(i.url);
     if (!allowed.ok) return err(new CapabilityError('validation', 'That link is not on our list of trusted partners.', { issues: [{ path: 'url', message: allowed.error.message }] }));
+    const verified = resolveVerifiedAt(i, ctx.now);
+    if (!verified.ok) return err(verified.error);
     const { db } = appServices(ctx);
+    const url = allowed.value.toString();
+    // The check step refuses a registry site's home page; the save refuses it too, so calling the
+    // upsert directly cannot skip it. A link already saved with that address can still be hidden,
+    // moved or renamed: only a new or changed address is refused.
+    const homePage = registryHomePageMessage(allowed.value);
+    if (homePage && (await getGiftLinkRow(db, i.id))?.url !== url) {
+      return err(new CapabilityError('validation', homePage, { issues: [{ path: 'url', message: homePage }] }));
+    }
     const provider = i.provider ?? registryProviderFor(allowed.value.hostname)?.id ?? 'custom';
-    const { confirmed, ...fields } = i;
-    const verifiedAt = confirmed ? ctx.now : i.verifiedAt ? new Date(i.verifiedAt) : undefined;
-    const row = await upsertGiftLink(db, { ...fields, provider, url: allowed.value.toString(), verifiedAt, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
+    const { confirmed: _confirmed, ...fields } = i;
+    const row = await upsertGiftLink(db, { ...fields, provider, url, verifiedAt: verified.value, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_link', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { kind: row.kind, provider: row.provider, active: row.active, placeholder: row.placeholder, host: allowed.value.hostname } });
     return ok({ data: toRow(row), sources: [] });
   },
@@ -76,7 +115,8 @@ const fundInput = z.object({
   id: z.string().regex(SLUG),
   title: z.string().trim().min(1).max(80),
   description: z.string().trim().max(200).optional(),
-  active: z.boolean().default(true),
+  /** Omitted: an existing fund keeps its shown/hidden state (a rename must not un-hide it); a new one is shown. */
+  active: z.boolean().optional(),
   /** Omitted: a default keeps its place and a new fund goes after the defaults. */
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
@@ -113,12 +153,22 @@ export const adminUpsertGiftFund = defineCapability<z.infer<typeof fundInput>, z
   },
 });
 
+/**
+ * Venmo username, PayPal.Me name, $Cashtag, Zelle email or US mobile, or a mailing address (one line
+ * per row). Capped before it is parsed: the longest a rail keeps is a 300-character address, and
+ * the slack is for the spaces and blank lines normalising removes. The save and the check share it.
+ */
+const railHandle = z
+  .union([z.string().max(600), z.array(z.string().max(200)).max(12)])
+  .transform((h) => (Array.isArray(h) ? h.join('\n') : h))
+  .pipe(z.string().max(600));
+
 const railInput = z.object({
   rail: z.enum(GIFT_RAILS),
-  /** Venmo username, PayPal.Me name, $Cashtag, Zelle email or US mobile, or a mailing address (one line per row). */
-  handle: z.union([z.string(), z.array(z.string())]).transform((h) => (Array.isArray(h) ? h.join('\n') : h)),
+  handle: railHandle,
   recipientName: z.string().trim().min(1).max(80).optional(),
-  active: z.boolean().default(true),
+  /** Omitted: an existing rail keeps its shown/hidden state; a new one is shown. */
+  active: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
@@ -265,7 +315,7 @@ export const adminDeleteGiftRail = defineCapability<z.infer<typeof deleteRailInp
 
 const checkInput = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('link'), url: z.string().max(2048) }),
-  z.object({ kind: z.literal('rail'), rail: z.enum(GIFT_RAILS), handle: z.union([z.string(), z.array(z.string())]).transform((h) => (Array.isArray(h) ? h.join('\n') : h)), recipientName: z.string().trim().max(80).optional() }),
+  z.object({ kind: z.literal('rail'), rail: z.enum(GIFT_RAILS), handle: railHandle, recipientName: z.string().trim().max(80).optional() }),
 ]);
 
 const checkOutput = z.discriminatedUnion('kind', [

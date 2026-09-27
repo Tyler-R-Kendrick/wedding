@@ -10,7 +10,7 @@ import { DeletePlaceFlow, PlaceFlow, type PlaceRecord } from './_components/Plac
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Reservations (admin)', robots: { index: false, follow: false } };
 
-type Option = { venue: { id: string; name: string; note: string | null; placeholder: boolean }; rung: 'api' | 'deep-link' | 'url' | 'unavailable'; handoff?: { providerDisplayName: string; host: string; url: string } };
+type Option = { venue: { id: string; name: string; note: string | null; placeholder: boolean; sourceId: string | null }; rung: 'api' | 'deep-link' | 'url' | 'unavailable'; handoff?: { providerDisplayName: string; host: string; url: string } };
 type Row = PlaceRecord & { placeRef: string | null; verifiedAt: string | null };
 
 /** How a guest books this place, in words: the "ladder rung" the old table printed as `deep-link`. */
@@ -94,6 +94,7 @@ export default async function AdminReservationsPage() {
                 placeholder: o.venue.placeholder,
                 active: true,
                 sortOrder: i * 10,
+                sourceId: o.venue.sourceId,
               };
               return (
                 <RecordRow

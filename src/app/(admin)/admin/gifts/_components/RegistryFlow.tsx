@@ -161,7 +161,9 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label, a
           provider: v.provider || undefined,
           label: v.label.trim(),
           url: v.checkedUrl || v.url,
-          note: v.note.trim() || undefined,
+          // An emptied line is cleared (null); leaving a field out would keep the saved one. The link's
+          // disclosure and citation are not asked about here, so they are not sent, and are kept.
+          note: v.note.trim() || null,
           sortOrder: existing?.sortOrder ?? 0,
           placeholder: false,
           active: existing?.active ?? true,

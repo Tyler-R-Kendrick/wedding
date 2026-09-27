@@ -4,6 +4,7 @@ import type { Db } from '@/db/client';
 import { giftFunds, giftPaymentRails, type GiftFundRow, type GiftPaymentRailRow, type GiftRail } from '@/db/schema';
 import { toGuestHandoff, type GuestHandoff } from '../external/handoff';
 import { parseRailHandle, RAIL_ORDER, RAILS, railInstructions } from './rails';
+import { definedOnly } from './repo';
 
 /**
  * The funds a guest can give toward, before the couple change anything (ADR-0013).
@@ -91,11 +92,6 @@ export const isDefaultGiftFund = (id: string) => DEFAULT_GIFT_FUNDS.some((d) => 
 export async function deleteGiftFund(db: Db, id: string): Promise<boolean> {
   const rows = await db.delete(giftFunds).where(eq(giftFunds.id, id)).returning({ id: giftFunds.id });
   return rows.length > 0;
-}
-
-/** The fields a caller actually supplied, so an upsert never overwrites a value with "not given". */
-function definedOnly<T extends Record<string, unknown>>(o: T): Partial<T> {
-  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
 export async function listGiftRailRows(db: Db, opts: { includeInactive?: boolean } = {}): Promise<GiftPaymentRailRow[]> {

@@ -17,6 +17,8 @@ export interface PlaceRecord {
   sortOrder: number;
   /** Not asked about in the flow; sent back as it is. */
   placeRef?: string | null;
+  /** The citation a built-in placeholder carries, so setting one up keeps it. A saved place keeps its own. */
+  sourceId?: string | null;
 }
 
 interface Values extends Record<string, unknown> {
@@ -175,15 +177,21 @@ export function PlaceFlow({
           id: place?.id ?? freeId(v.name, takenIds),
           name: v.name.trim(),
           placeRef: place?.placeRef ?? undefined,
-          note: v.note.trim() || undefined,
-          resySlug: v.resySlug.trim() || undefined,
-          openTableId: v.openTableId.trim() || undefined,
-          url: v.url.trim() || undefined,
+          sourceId: place?.sourceId ?? undefined,
+          // A field the admin emptied is cleared (null): the save keeps any field left out, which is
+          // how a place's citation, never shown here, survives an edit.
+          note: v.note.trim() || null,
+          resySlug: v.resySlug.trim() || null,
+          openTableId: v.openTableId.trim() || null,
+          url: v.url.trim() || null,
           placeholder: v.placeholder,
           active: place?.active ?? true,
           sortOrder: place?.sortOrder ?? nextSort,
-          // Ticking "I opened it" is the check, stamped with the server's clock; a place with no link has nothing to check.
+          // Ticking "I opened it" is the check, stamped with the server's clock. A place with no link
+          // has nothing to check, so a check made of links since removed is cleared; otherwise an
+          // unticked save keeps the saved one.
           confirmed: v.confirmed,
+          ...(bookingLinks(v).length ? {} : { verifiedAt: null }),
         }),
       }}
     />

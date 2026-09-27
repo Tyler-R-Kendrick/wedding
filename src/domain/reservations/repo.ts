@@ -5,22 +5,31 @@ import type { Db } from '@/db/client';
 import { reservationVenues, type ReservationVenueRow } from '@/db/schema';
 import { seedId } from '@/db/seed/sources';
 
+/**
+ * A field left `undefined` keeps what the row already holds; `null` clears it. Only a first save
+ * (an insert) falls back to defaults: shown, not a placeholder, first in order, no links.
+ */
 export interface UpsertReservationVenueInput {
   id: string;
   name: string;
-  placeRef?: string;
-  resySlug?: string;
-  openTableId?: string;
-  url?: string;
-  note?: string;
+  placeRef?: string | null;
+  resySlug?: string | null;
+  openTableId?: string | null;
+  url?: string | null;
+  note?: string | null;
   placeholder?: boolean;
   active?: boolean;
   sortOrder?: number;
-  sourceId?: string;
-  verifiedAt?: Date;
+  sourceId?: string | null;
+  verifiedAt?: Date | null;
   updatedBy: PrincipalRef;
 }
 
+/**
+ * Creates or changes one place. The admin console never sees a place's `sourceId` (its citation),
+ * so overwriting the whole row lost it on every edit, Hide and move: a field the caller left out
+ * keeps its current value.
+ */
 export async function upsertReservationVenue(db: Db, input: UpsertReservationVenueInput, now: Date = new Date()): Promise<ReservationVenueRow> {
   const values = {
     id: input.id,
@@ -39,9 +48,28 @@ export async function upsertReservationVenue(db: Db, input: UpsertReservationVen
     createdAt: now,
     updatedAt: now,
   };
-  const { id: _id, createdAt: _c, ...update } = values;
+  const update = definedOnly({
+    name: input.name,
+    placeRef: input.placeRef,
+    resySlug: input.resySlug,
+    openTableId: input.openTableId,
+    url: input.url,
+    note: input.note,
+    placeholder: input.placeholder,
+    active: input.active,
+    sortOrder: input.sortOrder,
+    sourceId: input.sourceId,
+    verifiedAt: input.verifiedAt,
+    updatedBy: input.updatedBy,
+    updatedAt: now,
+  });
   const [row] = await db.insert(reservationVenues).values(values).onConflictDoUpdate({ target: reservationVenues.id, set: update }).returning();
   return row!;
+}
+
+/** The fields a caller actually supplied (`null` included), so an upsert never overwrites a value with "not given". */
+function definedOnly<T extends Record<string, unknown>>(o: T): Partial<T> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
 export async function listReservationVenueRows(db: Db, opts: { includeInactive?: boolean } = {}): Promise<ReservationVenueRow[]> {
