@@ -8,6 +8,8 @@ import { bearerToken, getRequestId, jsonResponse } from '@/lib/request';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+/** Stop claiming new jobs with 15s of the function's 60 to spare, so the last one can finish. */
+const JOB_BUDGET_MS = (maxDuration - 15) * 1000;
 
 function authorized(request: Request): boolean {
   if (!env.CRON_SECRET) return false;
@@ -23,7 +25,7 @@ async function run(request: Request) {
   const db = await getDb();
   // The cron tick is the only scheduler we have: it also keeps the housekeeping purge queued (deduped).
   await enqueueHousekeeping(db);
-  const summary = await runDueJobs(db, { limit: env.JOBS_BATCH_SIZE, worker: `cron-${requestId}` });
+  const summary = await runDueJobs(db, { limit: env.JOBS_BATCH_SIZE, worker: `cron-${requestId}`, budgetMs: JOB_BUDGET_MS });
   return jsonResponse({ ok: true, ...summary }, { requestId });
 }
 
