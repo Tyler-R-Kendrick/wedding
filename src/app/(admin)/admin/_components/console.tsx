@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
-import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { getPrincipal } from '@/lib/principal';
 import { PATHNAME_HEADER } from '@/themes/routes';
@@ -250,51 +249,8 @@ export function DataTable({ caption, head, children, dense = true, empty = null 
   );
 }
 
-/**
- * A machine timestamp, rendered in the deployment's time zone.
- *
- * Every stamp in this console was the raw ISO string the database returned —
- * `2026-09-08T05:04:07.912Z` — on a deployment whose operators, whose venue and whose lifecycle
- * dates are all America/Chicago. The milliseconds were noise in a table already scrolling
- * sideways, and the offset was a subtraction the reader had to do. `dateTime` keeps the exact
- * instant for anything parsing the page.
- *
- * `Intl` with an explicit `timeZone` gives the same string on the server and in the browser, so
- * this is safe in a server component and safe to hydrate.
- */
-const STAMP = new Intl.DateTimeFormat('en-US', {
-  timeZone: WEDDING_TIMEZONE,
-  year: 'numeric',
-  month: 'short',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-  timeZoneName: 'short',
-});
-
-export function formatStamp(at: string | null | undefined): string {
-  if (!at) return '—';
-  const d = new Date(at);
-  // An unparseable value is shown as it stands rather than as "Invalid Date": on this screen the
-  // raw string is the evidence.
-  return Number.isNaN(d.getTime()) ? at : STAMP.format(d);
-}
-
-/** Day only, same time zone. For a cutoff or an expiry, where the clock is noise. */
-const DAY = new Intl.DateTimeFormat('en-US', { timeZone: WEDDING_TIMEZONE, year: 'numeric', month: 'short', day: '2-digit' });
-
-export function Day({ at }: { at: string | null | undefined }) {
-  if (!at) return <>—</>;
-  const d = new Date(at);
-  return Number.isNaN(d.getTime()) ? <>{at}</> : <time dateTime={at}>{DAY.format(d)}</time>;
-}
-
-export function Stamp({ at }: { at: string | null | undefined }) {
-  if (!at) return <>—</>;
-  return <time dateTime={at}>{formatStamp(at)}</time>;
-}
+// Dates moved to the kit so client components (a queue, a Done panel) format them the same way.
+export { Day, formatDay, formatStamp, Stamp } from '@/components/admin/flow/dates';
 
 /** One headline number with its label underneath. Used in strips of three or four, never as cards. */
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {

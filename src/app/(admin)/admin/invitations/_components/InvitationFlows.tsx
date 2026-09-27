@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AdminFlow, type FieldErrors, type FlowContext, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
-import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { formatDay } from '@/components/admin/flow/dates';
 
 type Option = { value: string; label: string };
 
@@ -20,7 +20,6 @@ interface Issued {
   invitation: { expiresAt: string };
 }
 
-const EXPIRY = new Intl.DateTimeFormat('en-US', { timeZone: WEDDING_TIMEZONE, dateStyle: 'long' });
 
 /**
  * The one place an invitation link is ever shown: the Done panel of the flow that made it. The token
@@ -50,7 +49,7 @@ function OneTimeLink({ issued, householdName }: { issued: Issued; householdName:
       </p>
       {/* eslint-disable-next-line @next/next/no-img-element -- a generated data URI; there is nothing to optimise */}
       <img className="ops-qr" alt={`QR code for ${householdName}’s invitation link`} src={`data:image/svg+xml;utf8,${encodeURIComponent(issued.qrSvg)}`} />
-      <p className="flow-hint">It works until {EXPIRY.format(new Date(issued.invitation.expiresAt))}.</p>
+      <p className="flow-hint">It works until {formatDay(issued.invitation.expiresAt)}.</p>
     </div>
   );
 }

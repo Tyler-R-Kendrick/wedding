@@ -6,6 +6,7 @@ import { AdminFlow } from '@/components/admin/flow/AdminFlow';
 import { CheckField, ChoiceField, Consequences } from '@/components/admin/flow/fields';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
+import { formatStamp } from '@/components/admin/flow/dates';
 import './admin-media.css';
 
 type ClusterItem = GalleryItem & { status: string; createdAt: string };
@@ -15,8 +16,7 @@ export interface Cluster {
   items: ClusterItem[];
 }
 
-const DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', dateStyle: 'medium', timeStyle: 'short' });
-const when = (at: string) => DAY.format(new Date(at));
+const when = (at: string) => formatStamp(at);
 const live = (i: ClusterItem) => i.status !== 'rejected' && i.status !== 'deleted';
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const kindLabel = (c: Cluster) => (c.kind === 'exact' ? 'Identical files' : 'Near-identical images');
