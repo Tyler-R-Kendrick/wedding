@@ -22,9 +22,11 @@ import { PATHNAME_HEADER } from '@/themes/routes';
  * Anything else is anonymous. Errors degrade to anonymous in getPrincipal, never upward.
  */
 /**
- * The path a request is for. An /api route (which the proxy skips, so any `x-pathname` on it came
- * from the client) has its real URL; server components build their Request with a placeholder URL,
- * and there the proxy's pathname header, which it always overwrites, is the real path.
+ * The path a request is for. An /api route has its real URL, and that wins. Server components
+ * build their Request with a placeholder URL, so there the proxy's `x-pathname` is the path: the
+ * proxy overwrites it on every route it matches. It does not match `/api/`, `/t/` or `_next/`, so
+ * a client can set the header on those itself — which only ever chooses between two principals
+ * this administrator already holds (their own, or the guest they chose to browse as), never more.
  */
 function requestPath(request: Request): string {
   const own = new URL(request.url).pathname;
