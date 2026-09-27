@@ -1,0 +1,481 @@
+/*
+ * /admin/gifts. Root DESIGN.md foundation: paper and ink, hairlines for depth, sage for "done",
+ * terracotta only for the one thing still to do. The page reads top to bottom as status, three
+ * steps on a thread, then the guest's view — so the eye lands on what is left, not on a table.
+ */
+
+/* --- Status ---------------------------------------------------------------------------------- */
+
+.gs-status {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-block: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline);
+}
+
+.gs-status__eyebrow {
+  margin: 0;
+  font-family: var(--font-label-caps), Georgia, serif;
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.gs-status[data-live] .gs-status__eyebrow {
+  color: var(--color-secondary);
+}
+
+.gs-status__title {
+  margin: 0;
+  max-width: 34ch;
+  font-family: var(--font-h2), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h2);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.gs-checks {
+  display: grid;
+  gap: var(--spacing-md) var(--spacing-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 48rem) {
+  .gs-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.gs-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: start;
+}
+
+.gs-check__mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--text-body-sm);
+  line-height: 1;
+  color: var(--color-on-surface-muted);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill);
+}
+
+.gs-check[data-done] .gs-check__mark {
+  color: var(--color-on-secondary);
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.gs-check__text {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.gs-check__label {
+  font-weight: 500;
+}
+
+.gs-check__summary {
+  max-width: 52ch;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.gs-status__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-lg);
+  align-items: center;
+  margin: 0;
+}
+
+.gs-status__actions .ops-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.gs-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-tertiary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.gs-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* --- The three steps, on a thread ------------------------------------------------------------ */
+
+.gs-steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gs-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-xl);
+}
+
+/* The thread between the numbers. */
+.gs-step:not(:last-child)::before {
+  position: absolute;
+  top: 2.75rem;
+  bottom: var(--spacing-sm);
+  left: calc(1.25rem - 0.5px);
+  width: 1px;
+  background: var(--color-outline);
+  content: "";
+}
+
+.gs-step__num {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-family: var(--font-numeral), Georgia, serif;
+  font-size: var(--text-body-lg);
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--color-primary);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-pill);
+}
+
+.gs-step[data-current] .gs-step__num {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.gs-step[data-done] .gs-step__num {
+  color: var(--color-on-secondary);
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.gs-step__body {
+  display: grid;
+  gap: var(--spacing-md);
+  align-content: start;
+  justify-items: start;
+  min-width: 0;
+  padding-top: var(--spacing-xs);
+}
+
+.gs-step__body > * {
+  max-width: 100%;
+}
+
+.gs-step__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: baseline;
+  margin: 0;
+  font-family: var(--font-h3), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h3);
+  font-weight: 400;
+}
+
+.gs-step__next {
+  font-family: var(--font-label-caps), Georgia, serif;
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.gs-copy,
+.gs-step-copy {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--color-on-surface-muted);
+}
+
+.gs-step-copy {
+  color: inherit;
+}
+
+.gs-empty {
+  margin: 0;
+  max-width: 62ch;
+  padding: var(--spacing-md);
+  border: 1px dashed var(--color-outline);
+}
+
+.gs-blocked {
+  margin: 0;
+  max-width: 62ch;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid color-mix(in oklab, var(--color-tertiary) 45%, var(--color-outline));
+  background: color-mix(in oklab, var(--color-tertiary) 6%, var(--color-neutral));
+}
+
+/* Rows: what is saved, each with its own actions. Hairlines, not cards. */
+.gs-rows {
+  justify-self: stretch;
+  max-width: 48rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-outline);
+}
+
+.gs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.gs-row__main {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.gs-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: baseline;
+  margin: 0;
+  font-weight: 500;
+}
+
+.gs-row__meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.gs-row__meta--pre {
+  white-space: pre-line;
+}
+
+.gs-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-xs);
+  align-items: center;
+}
+
+.gs-row__actions .flow-anchor {
+  display: contents;
+}
+
+.gs-row__actions .flow-announce {
+  order: 10;
+}
+
+.gs-quick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.gs-quick button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* --- Inside the flows ------------------------------------------------------------------------ */
+
+.gs-found {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-outline);
+}
+
+.gs-found p {
+  margin: 0;
+}
+
+.gs-found__url {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono-ops, monospace);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.gs-inline-button {
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.gs-card-preview {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.gs-card-preview__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.gs-card-preview__title {
+  margin: 0;
+  font-family: var(--font-h3), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h3);
+}
+
+.gs-card-preview__via,
+.gs-card-preview__note {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.gs-card-preview__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-sm) 0 0;
+}
+
+.gs-card-preview__button {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--spacing-lg);
+  font-size: var(--text-control-caps);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+
+.gs-card-preview__button--quiet {
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-outline);
+}
+
+.gs-preview-lines {
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* --- The guest's view ------------------------------------------------------------------------ */
+
+.gs-preview {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-block: var(--spacing-lg) var(--spacing-xl);
+  scroll-margin-top: var(--spacing-lg);
+}
+
+.gs-preview__head {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.gs-preview__page {
+  max-width: 48rem;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-outline);
+}
+
+@media (width <= 30rem) {
+  .gs-preview__page {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+}
+
+.gs-preview__eyebrow {
+  margin: 0;
+  font-family: var(--font-label-caps), Georgia, serif;
+  font-size: var(--text-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.gs-preview__title {
+  margin: var(--spacing-sm) 0 var(--spacing-md);
+  font-family: var(--font-h1), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h1);
+  line-height: 1.1;
+}
+
+.gs-preview__h {
+  margin: var(--spacing-xl) 0 var(--spacing-sm);
+  font-family: var(--font-h2), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h2);
+  font-weight: 400;
+}
+
+.gs-preview__gap {
+  margin: 0;
+  padding: var(--spacing-md);
+  color: var(--color-on-surface-muted);
+  border: 1px dashed var(--color-outline);
+}
+
+/* --- Technical details ----------------------------------------------------------------------- */
+
+.gs-details {
+  margin-block: var(--spacing-lg);
+  border-top: 1px solid var(--color-outline);
+}
+
+.gs-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-on-surface-muted);
+  cursor: pointer;
+}
+
+.gs-details > summary:focus-visible {
+  outline: 3px solid var(--color-tertiary);
+  outline-offset: 2px;
+}
+
+.gs-details__body {
+  display: grid;
+  gap: var(--spacing-md);
+  padding-block: var(--spacing-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gs-step__num,
+  .gs-check__mark {
+    transition:
+      background-color 240ms cubic-bezier(0.2, 0, 0, 1),
+      color 240ms cubic-bezier(0.2, 0, 0, 1);
+  }
+}

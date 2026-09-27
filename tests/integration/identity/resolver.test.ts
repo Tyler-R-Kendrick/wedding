@@ -172,7 +172,9 @@ describe('principal resolver', () => {
     // the funds a gift of money goes toward and the couple's own accounts it goes to.
     // 68 -> 69: `admin_preview_guest_table` (`admin_guest_ops`, ui only), the seating preview the
     // admin guide promised: what one guest would see if the draft chart were published.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(69);
+    // 69 -> 70: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
+    // call between steps to check a registry link or a way to give before anything is saved.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

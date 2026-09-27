@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { adminListExternalActions } from '@/capabilities/admin_external_actions';
-import { adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
+import { adminCheckGiftSetup, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
 import { adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
 import { getReservationOptions } from '@/capabilities/get_reservation_options';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
@@ -124,6 +124,37 @@ describe('gifts', () => {
     expect(link?.placeholder).toBe(true);
     expect(link?.label).toBe('registry link');
     expect(JSON.stringify(list.value.data.links)).not.toContain('TODO(');
+  });
+});
+
+describe('gifts setup checks (/admin/gifts flows)', () => {
+  it('checks a registry link before it is saved: provider from the host, home pages and off-list hosts refused', async () => {
+    const zola = await run(adminCheckGiftSetup, admin, { kind: 'link', url: 'zola.com/registry/saraandtyler' });
+    expect(zola.ok && zola.value.data).toMatchObject({ kind: 'link', provider: 'zola', providerName: 'Zola', url: 'https://zola.com/registry/saraandtyler' });
+    const home = await run(adminCheckGiftSetup, admin, { kind: 'link', url: 'https://www.theknot.com/' });
+    expect(!home.ok && home.error.message).toMatch(/home page/);
+    for (const url of EVIL) {
+      const r = await run(adminCheckGiftSetup, admin, { kind: 'link', url });
+      expect(r.ok, url).toBe(false);
+    }
+    const asGuest = await run(adminCheckGiftSetup, guest, { kind: 'link', url: 'https://www.zola.com/registry/x' });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+  });
+
+  it('checks a way to give and returns exactly what guests will be handed, saving nothing', async () => {
+    const bad = await run(adminCheckGiftSetup, admin, { kind: 'rail', rail: 'venmo', handle: 'abc' });
+    expect(!bad.ok && bad.error.details?.issues).toEqual([{ path: 'handle', message: expect.stringMatching(/Venmo username/) }]);
+    const venmo = await run(adminCheckGiftSetup, admin, { kind: 'rail', rail: 'venmo', handle: '@Sara-Tyler' });
+    expect(venmo.ok && venmo.value.data).toMatchObject({ kind: 'rail', handle: 'Sara-Tyler', url: expect.stringMatching(/^https:\/\/venmo\.com\/Sara-Tyler\?/) });
+    const zelle = await run(adminCheckGiftSetup, admin, { kind: 'rail', rail: 'zelle', handle: '+1 312.555.0142' });
+    expect(zelle.ok && zelle.value.data).toMatchObject({ handle: '(312) 555-0142', url: null, instructions: expect.stringContaining('(312) 555-0142') });
+    const db = await getDb();
+    expect(await db.select().from(giftPaymentRails)).toEqual([]);
+  });
+
+  it('reads the provider from the link and stamps the check with the server clock', async () => {
+    const r = await run(adminUpsertGiftLink, admin, { id: 'joy-check', kind: 'registry', label: 'Our registry on Joy', url: 'https://withjoy.com/sara-and-tyler/registry', active: false, confirmed: true }, { idempotencyKey: key() });
+    expect(r.ok && r.value.data).toMatchObject({ provider: 'withjoy', verifiedAt: expect.any(String), active: false });
   });
 });
 

@@ -7,14 +7,15 @@ import { err, ok } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { SLUG } from '@/domain/external/schemas';
 import { GIFT_RAILS } from '@/db/schema';
-import { isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
+import { detectRegistryProvider, isMissingGiftTable, listGiftFundEntries, listGiftLinkRows, listGiftLinks, listGiftRailRows, MAX_GIFT_FUNDS, parseRailHandle, RAILS, railInstructions, registryProviderFor, upsertGiftFund, upsertGiftLink, upsertGiftRail } from '@/domain/gifts';
 import { appServices } from './context';
 import { giftLinkViewSchema } from './list_gift_links';
 
 const upsertInput = z.object({
   id: z.string().regex(SLUG),
   kind: z.enum(['registry', 'adventure-fund']),
-  provider: z.string().trim().min(1).max(40),
+  /** Omitted: read from the link's host (zola.com -> zola), so the name and the link cannot disagree. */
+  provider: z.string().trim().min(1).max(40).optional(),
   label: z.string().trim().min(1).max(120),
   url: z.url(),
   note: z.string().trim().max(200).optional(),
@@ -24,6 +25,8 @@ const upsertInput = z.object({
   sortOrder: z.number().int().min(0).max(1000).default(0),
   sourceId: z.string().regex(ID_PATTERN).optional(),
   verifiedAt: z.string().datetime({ offset: true }).optional(),
+  /** The admin opened the link and confirmed it is theirs: stamped with the server's clock, never the browser's. */
+  confirmed: z.boolean().optional(),
 });
 
 const rowSchema = z.object({
@@ -60,7 +63,10 @@ export const adminUpsertGiftLink = defineCapability<z.infer<typeof upsertInput>,
     const allowed = assertAllowedRedirect(i.url);
     if (!allowed.ok) return err(new CapabilityError('validation', 'That link is not on our list of trusted partners.', { issues: [{ path: 'url', message: allowed.error.message }] }));
     const { db } = appServices(ctx);
-    const row = await upsertGiftLink(db, { ...i, url: allowed.value.toString(), verifiedAt: i.verifiedAt ? new Date(i.verifiedAt) : undefined, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
+    const provider = i.provider ?? registryProviderFor(allowed.value.hostname)?.id ?? 'custom';
+    const { confirmed, ...fields } = i;
+    const verifiedAt = confirmed ? ctx.now : i.verifiedAt ? new Date(i.verifiedAt) : undefined;
+    const row = await upsertGiftLink(db, { ...fields, provider, url: allowed.value.toString(), verifiedAt, updatedBy: toPrincipalRef(ctx.principal) }, ctx.now);
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'gift_link', id: row.id }, outcome: 'success', requestId: ctx.requestId, metadata: { kind: row.kind, provider: row.provider, active: row.active, placeholder: row.placeholder, host: allowed.value.hostname } });
     return ok({ data: toRow(row), sources: [] });
   },
@@ -167,6 +173,65 @@ export const adminUpsertGiftRail = defineCapability<z.infer<typeof railInput>, z
   },
 });
 
+const checkInput = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('link'), url: z.string().max(2048) }),
+  z.object({ kind: z.literal('rail'), rail: z.enum(GIFT_RAILS), handle: z.union([z.string(), z.array(z.string())]).transform((h) => (Array.isArray(h) ? h.join('\n') : h)), recipientName: z.string().trim().max(80).optional() }),
+]);
+
+const checkOutput = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('link'), provider: z.string(), providerName: z.string(), host: z.string(), url: z.string() }),
+  z.object({
+    kind: z.literal('rail'),
+    rail: z.enum(GIFT_RAILS),
+    displayName: z.string(),
+    handle: z.string(),
+    /** The link guests will be handed, for a link rail — so the couple can open it and see their own profile. */
+    url: z.string().nullable(),
+    /** What a guest will read, for a direct rail. */
+    instructions: z.string().nullable(),
+    fee: z.string(),
+  }),
+]);
+
+/**
+ * Admin: checks a registry link or a way to give BEFORE it is saved, and says what guests will get.
+ *
+ * The setup flows in /admin/gifts call this between steps, so a mistyped Venmo name or a link to a
+ * registry's home page is caught on the step where it was typed, with the fix in words, rather than
+ * as a list of field paths under a form. It writes nothing and records nothing: the same checks run
+ * again inside the upserts, which are what decide.
+ */
+export const adminCheckGiftSetup = defineCapability<z.infer<typeof checkInput>, z.infer<typeof checkOutput>>({
+  name: 'admin_check_gift_setup',
+  title: 'Check a gift link or way to give',
+  description: 'Admin: validates a registry link or a way to give without saving it, and returns what guests would be shown.',
+  kind: 'read',
+  auth: 'admin',
+  requires: ['admin_content'],
+  annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: checkInput,
+  output: checkOutput,
+  async handler(_ctx, i) {
+    if (i.kind === 'link') {
+      const d = detectRegistryProvider(i.url);
+      if (!d.ok) return err(new CapabilityError('validation', d.message, { issues: [{ path: 'url', message: d.message }] }));
+      return ok({ data: { kind: 'link' as const, provider: d.provider, providerName: d.providerName, host: d.host, url: d.url }, sources: [] });
+    }
+    const parsed = parseRailHandle(i.rail, i.handle);
+    if (!parsed.ok) return err(new CapabilityError('validation', parsed.message, { issues: [{ path: 'handle', message: parsed.message }] }));
+    const spec = RAILS[i.rail];
+    let url: string | null = null;
+    if (spec.url) {
+      const allowed = assertAllowedRedirect(spec.url(parsed.handle, 'Wedding gift'));
+      if (!allowed.ok) return err(new CapabilityError('validation', allowed.error.message, { issues: [{ path: 'handle', message: allowed.error.message }] }));
+      url = allowed.value.toString();
+    }
+    const instructions = railInstructions(spec, parsed.handle, i.recipientName || null);
+    return ok({ data: { kind: 'rail' as const, rail: i.rail, displayName: spec.displayName, handle: parsed.handle, url, instructions, fee: spec.fee }, sources: [] });
+  },
+});
+
 const listOutput = z.object({
   rows: z.array(rowSchema),
   effective: z.array(giftLinkViewSchema),
@@ -202,4 +267,4 @@ export const adminListGiftLinks = defineCapability<unknown, z.infer<typeof listO
   },
 });
 
-export const adminGiftCapabilities = [adminUpsertGiftLink, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftRail];
+export const adminGiftCapabilities = [adminUpsertGiftLink, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftRail, adminCheckGiftSetup];
