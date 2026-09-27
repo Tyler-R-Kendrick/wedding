@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { adminListEvents } from '@/capabilities/rsvp';
-import { swapOrder } from '@/components/admin/flow/order';
+import { moveCalls } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { formatDeadline, formatEventDate, formatEventWindow } from '@/domain/events/format';
@@ -19,12 +19,12 @@ const CELL: Record<string, string> = { none: 'Invited', named: 'Invited + named 
 
 type Ordered = { id: string; sortOrder: number };
 /**
- * Up/Down for an event: `swapOrder`'s two saves (this event and its neighbour) sent as one
- * `admin_reorder_events` call, so the pair moves together or not at all.
+ * Up/Down for an event: `moveCalls`'s saves (this event and its neighbour, or the whole list when
+ * two share a place) sent as one `admin_reorder_events` call, so they land together or not at all.
  */
-const move = (e: Ordered, other: Ordered, otherIsAbove: boolean) => {
-  const pair = swapOrder(e, other, otherIsAbove, (r, p) => ({ id: r.id, sortOrder: p.sortOrder }), 'admin_reorder_events');
-  return [{ capability: 'admin_reorder_events', input: { moves: pair.map((c) => c.input) } }];
+const move = (list: readonly Ordered[], index: number, direction: 'up' | 'down') => {
+  const moves = moveCalls(list, index, direction, (r, p) => ({ id: r.id, sortOrder: p.sortOrder }), 'admin_reorder_events');
+  return moves.length ? [{ capability: 'admin_reorder_events', input: { moves: moves.map((c) => c.input) } }] : [];
 };
 
 /**
@@ -99,8 +99,8 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                     <EventFlow event={e} rooms={rooms} label="Edit" variant="quiet" />
                     <MenuFlow event={e} />
                     <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
-                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={!prev} accessibleName={`Move ${e.name} up`} calls={prev ? move(e, prev, true) : []} />
-                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={!next} accessibleName={`Move ${e.name} down`} calls={next ? move(e, next, false) : []} />
+                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={!prev} accessibleName={`Move ${e.name} up`} calls={move(d.events, i, 'up')} />
+                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={!next} accessibleName={`Move ${e.name} down`} calls={move(d.events, i, 'down')} />
                     {e.responseCount === 0 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
                   </>
                 }
