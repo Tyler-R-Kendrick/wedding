@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminFlagStatus } from '@/capabilities/ops';
-import { newId } from '@/contracts/ids';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section } from '../_components/console';
-import { disableFlagReadiness } from '../_lib/ops-actions';
+import { DisableReadinessFlow } from './_components/DisableReadinessFlow';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Feature flags', robots: { index: false, follow: false } };
@@ -96,19 +95,12 @@ export default async function AdminFlagsPage({ searchParams }: { searchParams: S
                   ) : null}
                 </p>
               ) : null}
-              <form action={disableFlagReadiness} className="con-inline-form">
-                <input type="hidden" name="flag" value={f.name} />
-                <input type="hidden" name="idem" value={newId()} />
-                {/*
-                  Both buttons used to be named exactly "Switch off". A screen reader announced the
-                  same name twice on a screen governing two different legal gates, and `<th scope="row">`
-                  is not read in focus order — so the one irreversible-feeling control here was the one
-                  you could not tell apart.
-                */}
-                <button type="submit" className="ops-button ops-button-danger" aria-label={`Switch ${f.name} readiness off`}>
-                  Switch off
-                </button>
-              </form>
+              {/*
+                Both buttons used to be named exactly "Switch off": a screen reader announced the same
+                name twice on a screen governing two different legal gates. The trigger's accessible
+                name is "Switch <FLAG> readiness off", and so is the red button inside its sheet.
+              */}
+              <DisableReadinessFlow flag={f.name} blockedBy={f.gate?.requirement} />
             </li>
           ))}
         </ul>

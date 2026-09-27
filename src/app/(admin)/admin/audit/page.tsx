@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminSearchAudit } from '@/capabilities/ops';
+import { FilterBar } from '@/components/admin/flow/records';
 import { AUDIT_ACTIONS, type AuditAction } from '@/contracts/audit';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
@@ -82,7 +83,13 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
       </StatStrip>
 
       <Section title="Filter" id="filter" note="Filters are applied server-side inside the capability; nothing is fetched to the browser and narrowed there.">
-        <form method="get" className="con-form">
+        <FilterBar
+          extra={
+            <Link className="link-block" href="/admin/audit">
+              Clear filters
+            </Link>
+          }
+        >
           <div className="ops-field">
             <label htmlFor="f-action">Action</label>
             <select id="f-action" name="action" className="ops-input" defaultValue={action ?? ''}>
@@ -128,13 +135,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
             <label htmlFor="f-request">Request id</label>
             <input id="f-request" name="requestId" type="text" className="ops-input" defaultValue={filters.requestId ?? ''} maxLength={80} />
           </div>
-          <button type="submit" className="ops-button ops-button-ghost">
-            Search
-          </button>
-          <p className="ops-field">
-            <Link className="link-block" href="/admin/audit">Clear filters</Link>
-          </p>
-        </form>
+        </FilterBar>
       </Section>
 
       {/*

@@ -4,11 +4,14 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Admin forms carry their render-time idempotency key in a hidden field, and the action has to read
- * the field by the name the form posts. The console's `<IdemKey />` posts `idem`; the content
- * editor's `RecordForm` posts `idempotencyKey` and is read by `saveRecordAction` alone. The events,
- * RSVP, seating and content actions once read `idempotencyKey` from `<IdemKey />` forms, so every
- * submission got a fresh key and a double-submit ran twice. This pins the pairing structurally:
- * the only quoted `'idempotencyKey'` in the admin tree is RecordForm's field and the one read of it.
+ * the field by the name the form posts. The console's `<IdemKey />` posts `idem`. The events, RSVP,
+ * seating and content actions once read `idempotencyKey` from `<IdemKey />` forms, so every
+ * submission got a fresh key and a double-submit ran twice. This pins the pairing structurally.
+ *
+ * The content editor's `RecordForm` was the one form that posted a field named `idempotencyKey`
+ * (read by `saveRecordAction`). It is now an admin-kit flow that calls `save_content_record`
+ * through /api/capabilities with the key in the request body, so no admin form posts a field of
+ * that name, and none may start reading one.
  */
 const ADMIN = path.resolve(__dirname, '../../src/app/(admin)');
 const LITERAL = /(['"`])idempotencyKey\1/g;
@@ -23,14 +26,6 @@ function sources(dir: string): string[] {
 
 const rel = (p: string) => path.relative(ADMIN, p).split(path.sep).join('/');
 
-/** The body of `export async function <name>` up to the next top-level `export` (or end of file). */
-function functionBody(src: string, name: string): string {
-  const start = src.indexOf(`export async function ${name}(`);
-  if (start < 0) return '';
-  const next = src.indexOf('\nexport ', start + 1);
-  return src.slice(start, next < 0 ? undefined : next);
-}
-
 describe('admin forms and actions agree on the idempotency field name', () => {
   const files = sources(ADMIN);
 
@@ -38,19 +33,13 @@ describe('admin forms and actions agree on the idempotency field name', () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it("reads 'idempotencyKey' only in content/actions.ts saveRecordAction, and posts it only from RecordForm", () => {
+  it("no admin form posts, and no admin action reads, a field named 'idempotencyKey'", () => {
     const hits = files.flatMap((f) => {
       const src = readFileSync(f, 'utf8');
       return [...src.matchAll(LITERAL)].map(() => rel(f));
     });
-    expect(hits.sort()).toEqual(['admin/content/_form.tsx', 'admin/content/actions.ts']);
-
-    const actions = readFileSync(path.join(ADMIN, 'admin/content/actions.ts'), 'utf8');
-    expect(functionBody(actions, 'saveRecordAction')).toMatch(LITERAL);
-
-    const form = readFileSync(path.join(ADMIN, 'admin/content/_form.tsx'), 'utf8');
-    expect(form).toMatch(/name="idempotencyKey"/);
-    expect(form).toMatch(/useActionState\(saveRecordAction\b/);
+    expect(hits).toEqual([]);
+    for (const f of files) expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/name="idempotencyKey"/);
   });
 
   it("IdemKey posts 'idem', and the admin action helpers read 'idem'", () => {
@@ -59,7 +48,9 @@ describe('admin forms and actions agree on the idempotency field name', () => {
 
     // Every other server-action module that forwards a form's key reads it as `idem`.
     const actionModules = files.filter((f) => /^\s*['"]use server['"]/.test(readFileSync(f, 'utf8')) && !rel(f).startsWith('admin/content/'));
-    expect(actionModules.length).toBeGreaterThan(3);
+    // Fewer every time a screen moves to the admin kit, whose flows call capabilities directly; the
+    // check is that the scan still finds the ones that remain, not how many there are.
+    expect(actionModules.length).toBeGreaterThan(0);
     for (const f of actionModules) {
       const src = readFileSync(f, 'utf8');
       if (!/idempotencyKey/.test(src)) continue;

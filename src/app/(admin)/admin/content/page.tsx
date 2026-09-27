@@ -1,18 +1,23 @@
 import Link from 'next/link';
 import { invoke } from '@/capabilities/invoke';
 import { listContentRecordsCapability } from '@/capabilities/list_content_records';
+import type { ContentTableName } from '@/db/schema/content';
+import { TABLE_SPECS } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
-import { ConsolePage, DataTable, Denied, Pill, Section, Stamp, type PillTone } from '../_components/console';
+import { ConsolePage, DataTable, Denied, Pill, Section, Stamp } from '../_components/console';
 import { AdminDenied, adminContentContext } from './_auth';
+import { ContentRecordFlow, MarkVerified } from './_components/ContentFlows';
+import { FRESHNESS_TONE, NEW_RECORD_DEFAULTS } from './_components/shared';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Content (admin)' };
 
-/** DESIGN.md freshness tones, mapped onto the console's pill tones. */
-export const FRESHNESS_TONE: Record<string, PillTone> = { bad: 'bad', warn: 'warn', ok: 'good' };
-
-/** Content overview: every table with counts and the records that need attention (stale, expired, placeholder). */
+/**
+ * Content overview: every table with counts and the records that need attention (stale, expired,
+ * placeholder). Adding a record, editing one and marking one verified happen here, in flows and a
+ * quick action from the admin kit; each table's own page lists all of its records.
+ */
 export default async function AdminContentIndex() {
   const { ctx, allowed } = await adminContentContext();
   if (!allowed) return <AdminDenied />;
@@ -40,7 +45,7 @@ export default async function AdminContentIndex() {
               <th scope="col" className="con-num">Records</th>
               <th scope="col" className="con-num">Need attention</th>
               <th scope="col">
-                <span className="sr-only">Add</span>
+                <span className="sr-only">Actions</span>
               </th>
             </tr>
           }
@@ -53,7 +58,7 @@ export default async function AdminContentIndex() {
               <td className="con-num">{t.count}</td>
               <td className="con-num">{t.needsAttention}</td>
               <td>
-                <Link href={`${ROUTES.adminContent}/${t.table}/new`}>New</Link>
+                <ContentRecordFlow table={t.table} tableLabel={t.label} fields={TABLE_SPECS[t.table as ContentTableName].fields} defaults={NEW_RECORD_DEFAULTS} label="Add" variant="quiet" accessibleName={`Add to ${t.label}`} />
               </td>
             </tr>
           ))}
@@ -71,6 +76,9 @@ export default async function AdminContentIndex() {
               <th scope="col">Freshness</th>
               <th scope="col">Verified</th>
               <th scope="col">Flags</th>
+              <th scope="col">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           }
         >
@@ -89,6 +97,19 @@ export default async function AdminContentIndex() {
               <td>
                 {rec.placeholder ? 'placeholder ' : ''}
                 {rec.visibility !== 'public' ? rec.visibility : ''}
+              </td>
+              <td>
+                <div className="flow-row__actions">
+                  <ContentRecordFlow
+                    table={rec.table}
+                    tableLabel={rec.label}
+                    fields={TABLE_SPECS[rec.table as ContentTableName].fields}
+                    record={{ id: rec.id, title: rec.title }}
+                    label="Edit"
+                    variant="quiet"
+                  />
+                  <MarkVerified table={rec.table} id={rec.id} title={rec.title} />
+                </div>
               </td>
             </tr>
           ))}

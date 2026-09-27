@@ -63,8 +63,11 @@ export interface AdminFlowProps<V> {
    * Return a message string instead of values to say why it could not be loaded.
    */
   load?: () => Promise<Partial<V> | string>;
+  /** Open on arrival (a `/new` route whose whole job is this flow). A resumed draft opens anyway. */
+  defaultOpen?: boolean;
   submit: {
-    label: string;
+    /** The last step's button. A function when it names something chosen earlier ("Publish RSVP_OPEN"). */
+    label: string | ((values: V) => string);
     /** The capability the last step calls, with `input(values)`… */
     capability?: string;
     input?: (values: V) => unknown;
@@ -101,7 +104,7 @@ type Direction = 'forward' | 'back';
  * Motion is transform and opacity only, 180–240ms, and none at all under `prefers-reduced-motion`
  * (flow.css). Focus moves to each step's heading, so a screen reader hears where it is.
  */
-export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial: given, steps, submit, tone = 'default', durable = tone !== 'danger', load }: AdminFlowProps<V>) {
+export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial: given, steps, submit, tone = 'default', durable = tone !== 'danger', load, defaultOpen = false }: AdminFlowProps<V>) {
   const router = useRouter();
   const uid = useId().replace(/:/g, '');
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -217,6 +220,17 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     setValues(base);
   };
 
+  // Open on arrival, once, when there is no draft to resume (a draft reopens itself above).
+  const arrived = useRef(false);
+  useEffect(() => {
+    if (!defaultOpen || arrived.current) return;
+    arrived.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- opening needs the browser, after hydration, exactly once
+    if (!readDraft(id)) void start();
+    // Arrival happens once per mount; `start` is rebuilt every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const dismiss = () => {
     setOpen(false);
     setNotice(null);
@@ -304,7 +318,11 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       }
       const issues = (res.error?.details?.issues as { path: string; message: string }[] | undefined) ?? [];
       const byField: FieldErrors = {};
-      for (const i of issues) if (i.path && !byField[i.path]) byField[i.path] = i.message;
+      // A nested path (`paragraphs.0`, `media[0].alt`) belongs to the field that holds it.
+      for (const i of issues) {
+        const field = i.path ? i.path.split(/[.[]/)[0]! : '';
+        if (field && !byField[field]) byField[field] = i.message;
+      }
       const owner = steps.findIndex((s) => s.fields?.some((f) => byField[f]));
       if (owner >= 0 && owner !== step) {
         setDirection('back');
@@ -449,7 +467,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
                     </button>
                   ) : null}
                   <button type="submit" className={`ops-button ${last && tone === 'danger' ? 'ops-button-danger' : 'ops-button-primary'}`} disabled={busy || loading} aria-busy={busy || undefined}>
-                    {busy ? (last ? 'Working…' : 'Checking…') : last ? submit.label : 'Continue'}
+                    {busy ? (last ? 'Working…' : 'Checking…') : last ? (typeof submit.label === 'function' ? submit.label(values) : submit.label) : 'Continue'}
                   </button>
                 </div>
               </>

@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { adminJobsOverview } from '@/capabilities/ops';
-import { newId } from '@/contracts/ids';
 // Every handler, as the cron runners load them: "no handler" should mean no runner can run the type,
 // not that this page's own module graph happened not to import it.
 import '@/lib/jobs/register-all';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
-import { cancelJob, retryJob } from '../_lib/ops-actions';
+import { ConsoleGate, ConsolePage, DataTable, Denied, formatStamp, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
+import { CancelJobFlow, RetryJob } from './_components/JobActions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Jobs', robots: { index: false, follow: false } };
@@ -81,13 +80,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
               <td><Stamp at={row.updatedAt} /></td>
               <td className="con-wrap">{row.lastError ?? '—'}</td>
               <td>
-                <form action={retryJob} className="con-inline-form">
-                  <input type="hidden" name="jobId" value={row.id} />
-                  <input type="hidden" name="idem" value={newId()} />
-                  <button type="submit" className="ops-button ops-button-ghost">
-                    Retry
-                  </button>
-                </form>
+                <RetryJob job={{ id: row.id, type: row.type }} />
               </td>
             </tr>
           ))}
@@ -147,13 +140,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
               <td className="ops-code">{row.lockedBy ?? '—'}</td>
               <td>
                 {row.status === 'queued' ? (
-                  <form action={cancelJob} className="con-inline-form">
-                    <input type="hidden" name="jobId" value={row.id} />
-                    <input type="hidden" name="idem" value={newId()} />
-                    <button type="submit" className="ops-button ops-button-danger">
-                      Cancel
-                    </button>
-                  </form>
+                  <CancelJobFlow job={{ id: row.id, type: row.type, runAt: formatStamp(row.runAt) }} />
                 ) : (
                   '—'
                 )}

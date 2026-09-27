@@ -5,7 +5,7 @@ import { PREVIEW_COOKIE } from '@/domain/lifecycle/constants';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stamp } from '../_components/console';
 import { startPreview, stopPreview } from '../_lib/ops-actions';
-import { PublishForm } from './PublishForm';
+import { PublishFlow } from './_components/PublishFlow';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Lifecycle', robots: { index: false, follow: false } };
@@ -41,6 +41,7 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
       title="Lifecycle"
       lede="What every guest sees right now. A published state always beats the calendar: nothing here changes on its own."
       notice={notice}
+      actions={s.transitions.length ? <PublishFlow moves={s.transitions.map((t) => ({ to: t.to, direction: t.direction }))} /> : null}
     >
       <KeyValues
         items={[
@@ -53,13 +54,11 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
       />
       {s.note ? <p className="con-note">Note on the current state: {s.note}</p> : null}
 
-      <Section
-        title="Publish a new state"
-        id="publish"
-        note="Reviewing is free and changes nothing. Publishing takes effect for every guest on their next page load, and can be undone by exactly one state."
-      >
-        <PublishForm current={s.state} states={s.transitions.map((t) => ({ to: t.to, direction: t.direction, navGained: t.navGained, navLost: t.navLost }))} />
-      </Section>
+      <p className="con-note">
+        {s.transitions.length
+          ? 'Publishing takes effect for every guest on their next page load, and can be undone by exactly one state. Reviewing a move first is free and changes nothing.'
+          : `There is nowhere to move from ${s.state}: it is the last state.`}
+      </p>
 
       <Section
         title="What each move changes"
@@ -92,12 +91,17 @@ export default async function AdminLifecyclePage({ searchParams }: { searchParam
         id="preview"
         note={`A preview is a rehearsal, not a setting: it lasts ${Math.round(s.previewTtlSeconds / 3600)} hours, applies to this browser only, and is refused for anyone who is not an administrator — a guest handed the same link sees the published state.`}
       >
+        {/*
+          Still server-action forms, not QuickActions: starting a preview sets an httpOnly cookie, and
+          /api/capabilities never sets cookies (`navigate_to` only mints the token). Stopping it is
+          reversible in one click, so it is a quiet ghost button, not a red one.
+        */}
         {previewing ? (
-          <form action={stopPreview}>
+          <form action={stopPreview} className="con-form">
             <p className="ops-notice" role="status">
               <Pill tone="warn">Preview active</Pill> This browser is previewing another state. Stop it before judging what a guest sees.
             </p>
-            <button type="submit" className="ops-button ops-button-danger">
+            <button type="submit" className="ops-button ops-button-ghost">
               Stop previewing
             </button>
           </form>

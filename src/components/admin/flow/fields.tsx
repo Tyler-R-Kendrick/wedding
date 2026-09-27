@@ -47,6 +47,7 @@ export function TextField<V extends Values>({
   spellCheck,
   min,
   max,
+  step,
 }: {
   ctx: FlowContext<V>;
   name: keyof V & string;
@@ -63,6 +64,8 @@ export function TextField<V extends Values>({
   spellCheck?: boolean;
   min?: number | string;
   max?: number | string;
+  /** For `type="number"`: 1 by default; `"any"` for decimals (a latitude). */
+  step?: number | 'any';
 }) {
   const id = `${ctx.uid}-${name}`;
   const error = ctx.errors[name];
@@ -85,7 +88,7 @@ export function TextField<V extends Values>({
       {multiline ? (
         <textarea {...common} rows={rows} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
       ) : (
-        <input {...common} type={type} inputMode={inputMode ?? (type === 'number' ? 'numeric' : undefined)} min={min} max={max} step={type === 'number' ? 1 : undefined} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
+        <input {...common} type={type} inputMode={inputMode ?? (type === 'number' ? 'numeric' : undefined)} min={min} max={max} step={type === 'number' ? (step ?? 1) : undefined} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
       )}
       <Hint uid={ctx.uid} name={name}>
         {hint}
