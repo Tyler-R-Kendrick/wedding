@@ -83,6 +83,29 @@ test.describe('claim journey', () => {
     await expect(page).toHaveURL(/\/admin(\/|$)/);
   });
 
+  test('a code submitted twice lands where the first submit did, not on "that code has expired"', async ({ page, request }) => {
+    // Production, 2026-09-27: the same code form was posted at 18:36:20 and again at 18:36:27 (a second
+    // tap, or one-time-code autofill submitting beside the button). The first signed the admin in and
+    // cleared the challenge; the second found no challenge and redirected to ?error=expired — and,
+    // running after the first, its redirect was the one the browser kept.
+    const f = await seedFixtures(request);
+    await page.goto('/sign-in');
+    await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
+    await page.getByRole('button', { name: 'Send me a code' }).click();
+    await expect(page).toHaveURL(/\/claim\/verify/);
+    await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
+    await page.locator('form:has(input[name="code"])').evaluate((form: HTMLFormElement) => {
+      form.requestSubmit();
+      form.requestSubmit();
+    });
+    await expect(page).toHaveURL(/\/admin(\/|$)/);
+    await page.waitForLoadState('networkidle');
+    await expect(page).not.toHaveURL(/error=/);
+    // And the code page itself, revisited (Back, a refresh), sends a signed-in visitor on rather than asking again.
+    await page.goto('/claim/verify');
+    await expect(page).toHaveURL(/\/admin(\/|$)/);
+  });
+
   test('no-email grandparent is claimed through the manager; shared inbox spouse switches with "not you"', async ({ page, request }) => {
     const f = await seedFixtures(request);
     await page.goto(`/invite/${f.invitations.fitzgerald!.token}`);

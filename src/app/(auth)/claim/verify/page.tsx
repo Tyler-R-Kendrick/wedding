@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { safeReturnPath } from '@/domain/identity/routes';
 import { verifyCode } from '../../_lib/actions';
-import { readChallengeCookie } from '../../_lib/challenge-cookie';
+import { readChallengeCookie, readVerified } from '../../_lib/challenge-cookie';
 import { errorCopy } from '../../_lib/errors';
+import { currentPrincipal } from '../../_lib/invoke';
 import { Actions, AuthShell, Button, CodeInput, Field, Notice } from '../../_components/kit';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +15,15 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const cookie = await readChallengeCookie();
   const usable = cookie && ['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind) ? cookie : null;
+  // Back, or a refresh, just after a code was accepted: this browser is signed in and has nothing to
+  // enter here. Go where the code led rather than showing a code form with no code behind it.
+  if (!usable) {
+    const verified = await readVerified();
+    if (verified) {
+      const principal = await currentPrincipal();
+      if (principal.kind === 'guest' || principal.kind === 'admin') redirect(verified);
+    }
+  }
   const back = safeReturnPath(usable?.back, '/sign-in');
   const error = errorCopy(sp.error);
   // The lock lives at VERIFY time and sending is not gated on it, so "request a new code" always
