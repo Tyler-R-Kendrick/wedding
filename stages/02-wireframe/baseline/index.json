@@ -552,12 +552,12 @@
    }
   },
   "admin": {
-   "title": "Admin | Sara + Tyler",
+   "title": "Admin",
    "url": "/admin",
    "finalUrl": "/admin",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -576,12 +576,12 @@
    }
   },
   "admin-lifecycle": {
-   "title": "Lifecycle | Sara + Tyler",
+   "title": "Lifecycle",
    "url": "/admin/lifecycle",
    "finalUrl": "/admin/lifecycle",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -600,12 +600,12 @@
    }
   },
   "admin-content": {
-   "title": "Content | Sara + Tyler",
+   "title": "Content (admin)",
    "url": "/admin/content",
    "finalUrl": "/admin/content",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -624,12 +624,12 @@
    }
   },
   "admin-guests": {
-   "title": "Guests | Sara + Tyler",
+   "title": "Guests",
    "url": "/admin/guests",
    "finalUrl": "/admin/guests",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -637,21 +637,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-households": {
-   "title": "Households | Sara + Tyler",
+   "title": "Households",
    "url": "/admin/households",
    "finalUrl": "/admin/households",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -659,21 +661,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-invitations": {
-   "title": "Invitations | Sara + Tyler",
+   "title": "Invitations",
    "url": "/admin/invitations",
    "finalUrl": "/admin/invitations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -692,12 +696,12 @@
    }
   },
   "admin-rsvp": {
-   "title": "RSVPs (admin) | Sara + Tyler",
+   "title": "RSVPs (admin)",
    "url": "/admin/rsvp",
    "finalUrl": "/admin/rsvp",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -705,21 +709,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-events": {
-   "title": "Events (admin) | Sara + Tyler",
+   "title": "Events (admin)",
    "url": "/admin/events",
    "finalUrl": "/admin/events",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -727,21 +733,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-seating": {
-   "title": "Seating (admin) | Sara + Tyler",
+   "title": "Seating (admin)",
    "url": "/admin/seating",
    "finalUrl": "/admin/seating",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -749,21 +757,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-travel": {
-   "title": "Travel (admin) | Sara + Tyler",
+   "title": "Travel (admin)",
    "url": "/admin/travel",
    "finalUrl": "/admin/travel",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -771,21 +781,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-reservations": {
-   "title": "Sara + Tyler",
+   "title": "Reservations (admin)",
    "url": "/admin/reservations",
    "finalUrl": "/admin/reservations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -804,12 +816,12 @@
    }
   },
   "admin-transport": {
-   "title": "Sara + Tyler",
+   "title": "Ride benefits (admin)",
    "url": "/admin/transport",
    "finalUrl": "/admin/transport",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -828,12 +840,12 @@
    }
   },
   "admin-gifts": {
-   "title": "Sara + Tyler",
+   "title": "Gifts (admin)",
    "url": "/admin/gifts",
    "finalUrl": "/admin/gifts",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -852,12 +864,12 @@
    }
   },
   "admin-media": {
-   "title": "Media queue | Sara + Tyler",
+   "title": "Media queue",
    "url": "/admin/media",
    "finalUrl": "/admin/media",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -876,12 +888,12 @@
    }
   },
   "admin-media-import": {
-   "title": "Import professional media | Sara + Tyler",
+   "title": "Import professional media",
    "url": "/admin/media/import",
    "finalUrl": "/admin/media/import",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -900,12 +912,12 @@
    }
   },
   "admin-media-duplicates": {
-   "title": "Duplicate media | Sara + Tyler",
+   "title": "Duplicate media",
    "url": "/admin/media/duplicates",
    "finalUrl": "/admin/media/duplicates",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -924,12 +936,12 @@
    }
   },
   "admin-media-metrics": {
-   "title": "Media storage and cost | Sara + Tyler",
+   "title": "Media storage and cost",
    "url": "/admin/media/metrics",
    "finalUrl": "/admin/media/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -948,12 +960,12 @@
    }
   },
   "admin-concierge": {
-   "title": "Concierge traces | Sara + Tyler",
+   "title": "Concierge traces",
    "url": "/admin/concierge",
    "finalUrl": "/admin/concierge",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -972,12 +984,12 @@
    }
   },
   "admin-ai": {
-   "title": "Search index | Sara + Tyler",
+   "title": "Search index",
    "url": "/admin/ai",
    "finalUrl": "/admin/ai",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -996,12 +1008,12 @@
    }
   },
   "admin-flags": {
-   "title": "Feature flags | Sara + Tyler",
+   "title": "Feature flags",
    "url": "/admin/flags",
    "finalUrl": "/admin/flags",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1009,21 +1021,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-providers": {
-   "title": "Providers | Sara + Tyler",
+   "title": "Providers",
    "url": "/admin/providers",
    "finalUrl": "/admin/providers",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1042,12 +1056,12 @@
    }
   },
   "admin-jobs": {
-   "title": "Jobs | Sara + Tyler",
+   "title": "Jobs",
    "url": "/admin/jobs",
    "finalUrl": "/admin/jobs",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1066,12 +1080,12 @@
    }
   },
   "admin-metrics": {
-   "title": "Metrics | Sara + Tyler",
+   "title": "Metrics",
    "url": "/admin/metrics",
    "finalUrl": "/admin/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1088,12 +1102,12 @@
    }
   },
   "admin-audit": {
-   "title": "Audit trail | Sara + Tyler",
+   "title": "Audit trail",
    "url": "/admin/audit",
    "finalUrl": "/admin/audit",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1264,12 +1278,12 @@
    }
   },
   "admin-content-table": {
-   "title": "Sara + Tyler",
+   "title": "Our Story · Content (admin)",
    "url": "/admin/content/story_sections",
    "finalUrl": "/admin/content/story_sections",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1288,12 +1302,12 @@
    }
   },
   "admin-content-new": {
-   "title": "Sara + Tyler",
+   "title": "Add a story section · Content (admin)",
    "url": "/admin/content/story_sections/new",
    "finalUrl": "/admin/content/story_sections/new",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1301,21 +1315,23 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   },
   "admin-content-row": {
-   "title": "Sara + Tyler",
+   "title": "Operational fields · Content (admin)",
    "url": "/admin/content/operational_fields/01SEED00000000000000000908",
    "finalUrl": "/admin/content/operational_fields/01SEED00000000000000000908",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-09-27",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1323,11 +1339,13 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "gilded-hour.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     },
     "conservatory": {
      "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
     }
    }
   }
