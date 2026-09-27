@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { LIFECYCLE_STATES } from '../../src/contracts/lifecycle';
 import { mintPreviewToken } from '../../src/domain/lifecycle/preview';
 import { contextAs, principalHeaders } from './helpers/principal';
@@ -314,8 +314,16 @@ test.describe('the guest tree wears the design end to end', () => {
  */
 test.describe('the masthead never collides', () => {
   test.setTimeout(NAV_HEAVY_WITH_AXE);
-  const WIDTHS = [390, 1024, 1100, 1280, 1440];
+  // 1600 and 1920 are where the Botanical–Deco motto may show, and where it once clipped the last page.
+  const WIDTHS = [390, 1024, 1100, 1280, 1440, 1600, 1920];
   const secret = process.env.CONFIRMATION_SECRET ?? 'local-confirmation-secret-not-real';
+
+  /** Resizes, lets NavFit measure after the web font, and returns every collision in the header. */
+  async function collisions(page: Page, width: number): Promise<string[]> {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
+    return page.evaluate(CHECK);
+  }
 
   for (const theme of THEMES) {
     test(`no overlap, no overflow, no ragged row in any state (${theme})`, async ({ browser }, testInfo) => {
@@ -327,51 +335,7 @@ test.describe('the masthead never collides', () => {
         const { token } = mintPreviewToken(state, secret, new Date());
         await page.goto(`/?theme=${theme}&preview=${encodeURIComponent(token)}`);
         await expect(page.getByText('Previewing', { exact: false }).first(), `${state}: the preview was not applied`).toBeVisible();
-        for (const width of WIDTHS) {
-          await page.setViewportSize({ width, height: 900 });
-          await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
-          const found = await page.evaluate(() => {
-            const header = document.querySelector('header');
-            if (!header) return ['no <header>'];
-            const shown = (e: Element) => {
-              const r = e.getBoundingClientRect();
-              return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !e.closest('dialog:not([open]), .sr-only, [hidden]');
-            };
-            const name = (e: Element) => ((e as HTMLElement).innerText || e.getAttribute('aria-label') || e.className).trim().replace(/\s+/g, ' ').slice(0, 24);
-            const out: string[] = [];
-            // The Botanical–Deco motto is ornament, but it must still never sit on a page link.
-            const controls = [...header.querySelectorAll('a, button, .bd-masthead__motto')].filter(shown);
-            for (const c of controls) {
-              const r = c.getBoundingClientRect();
-              if (r.left < -1 || r.right > innerWidth + 1) out.push(`"${name(c)}" leaves the viewport (${Math.round(r.left)}..${Math.round(r.right)})`);
-            }
-            for (let i = 0; i < controls.length; i++) {
-              for (let j = i + 1; j < controls.length; j++) {
-                const a = controls[i]!.getBoundingClientRect();
-                const b = controls[j]!.getBoundingClientRect();
-                const x = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-                const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-                if (x > 1 && y > 1 && !controls[i]!.contains(controls[j]!) && !controls[j]!.contains(controls[i]!)) out.push(`"${name(controls[i]!)}" overlaps "${name(controls[j]!)}"`);
-              }
-            }
-            // A row of pages is one line: a horizontal list whose items sit at two heights has
-            // wrapped. (Conservatory's rail is a column by design, so only flex rows are read.)
-            for (const list of header.querySelectorAll('nav[aria-label="Site"] ul')) {
-              const cs = getComputedStyle(list);
-              if (!cs.display.includes('flex') || !cs.flexDirection.startsWith('row')) continue;
-              const tops = new Set([...list.children].filter(shown).map((li) => Math.round(li.getBoundingClientRect().top / 4)));
-              if (tops.size > 1) out.push(`"${list.className}" wraps onto ${tops.size} lines`);
-              // …and each page it shows sits inside its content box, where the focus ring is not clipped.
-              const box = list.getBoundingClientRect();
-              const right = box.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth);
-              for (const li of [...list.children].filter(shown)) {
-                if (li.getBoundingClientRect().right > right + 1) out.push(`"${name(li)}" runs past the end of "${list.className}"`);
-              }
-            }
-            return out;
-          });
-          problems.push(...found.map((f) => `${state} @ ${width}px: ${f}`));
-        }
+        for (const width of WIDTHS) problems.push(...(await collisions(page, width)).map((f) => `${state} @ ${width}px: ${f}`));
         // The account popover hangs out of the row: whatever keeps the row in its column must not
         // clip it. Each of its links has to be the thing under its own centre.
         await page.setViewportSize({ width: 1440, height: 900 });
@@ -394,5 +358,60 @@ test.describe('the masthead never collides', () => {
       expect(problems, problems.join('\n')).toEqual([]);
       await ctx.close();
     });
+
+    test(`a signed-in guest's masthead holds at every width (${theme})`, async ({ browser }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the test sets its own widths; one project is enough');
+      const ctx = await contextAs(browser, 'A1', { viewport: { width: 1440, height: 900 } });
+      const page = await ctx.newPage();
+      await page.goto(`/?theme=${theme}`);
+      // The prerendered home learns about the session in the browser: measure once it has.
+      await expect(page.locator('header .account-menu__trigger').first()).toBeAttached();
+      const problems: string[] = [];
+      for (const width of WIDTHS) problems.push(...(await collisions(page, width)).map((f) => `${width}px: ${f}`));
+      expect(problems, problems.join('\n')).toEqual([]);
+      await ctx.close();
+    });
   }
 });
+
+/** The in-page half of the masthead check: runs in the browser, so it closes over nothing. */
+const CHECK = () => {
+  const header = document.querySelector('header');
+  if (!header) return ['no <header>'];
+  const shown = (e: Element) => {
+    const r = e.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !e.closest('dialog:not([open]), .sr-only, [hidden]');
+  };
+  const name = (e: Element) => ((e as HTMLElement).innerText || e.getAttribute('aria-label') || e.className).trim().replace(/\s+/g, ' ').slice(0, 24);
+  const out: string[] = [];
+  // The Botanical–Deco motto is ornament, but it must still never sit on a page link.
+  const controls = [...header.querySelectorAll('a, button, .bd-masthead__motto')].filter(shown);
+  for (const c of controls) {
+    const r = c.getBoundingClientRect();
+    if (r.left < -1 || r.right > innerWidth + 1) out.push(`"${name(c)}" leaves the viewport (${Math.round(r.left)}..${Math.round(r.right)})`);
+  }
+  for (let i = 0; i < controls.length; i++) {
+    for (let j = i + 1; j < controls.length; j++) {
+      const a = controls[i]!.getBoundingClientRect();
+      const b = controls[j]!.getBoundingClientRect();
+      const x = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (x > 1 && y > 1 && !controls[i]!.contains(controls[j]!) && !controls[j]!.contains(controls[i]!)) out.push(`"${name(controls[i]!)}" overlaps "${name(controls[j]!)}"`);
+    }
+  }
+  // A row of pages is one line: a horizontal list whose items sit at two heights has
+  // wrapped. (Conservatory's rail is a column by design, so only flex rows are read.)
+  for (const list of header.querySelectorAll('nav[aria-label="Site"] ul')) {
+    const cs = getComputedStyle(list);
+    if (!cs.display.includes('flex') || !cs.flexDirection.startsWith('row')) continue;
+    const tops = new Set([...list.children].filter(shown).map((li) => Math.round(li.getBoundingClientRect().top / 4)));
+    if (tops.size > 1) out.push(`"${list.className}" wraps onto ${tops.size} lines`);
+    // …and each page it shows sits inside its content box, where the focus ring is not clipped.
+    const box = list.getBoundingClientRect();
+    const right = box.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth);
+    for (const li of [...list.children].filter(shown)) {
+      if (li.getBoundingClientRect().right > right + 1) out.push(`"${name(li)}" runs past the end of "${list.className}"`);
+    }
+  }
+  return out;
+};
