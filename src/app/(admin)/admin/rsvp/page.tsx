@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { adminExportNeeds, adminListEvents, adminRsvpOverview } from '@/capabilities/rsvp';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
-import { Button, Checkbox, IdemKey, Input, Radios } from '../_components/ops';
-import { overrideAction } from './actions';
+import { RecordAnswerFlow } from './_components/RsvpFlows';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'RSVPs (admin)', robots: { index: false, follow: false } };
@@ -19,6 +18,9 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
  * widgets. It was the same information as `/admin/audit` next door, dressed as a guest page: a
  * different type scale, a different table, a different idea of what a section is. Everything below
  * is the console's, and the guest kit is no longer imported by any admin route.
+ *
+ * Recording or correcting an answer is a flow from the admin kit (`components/admin/flow/
+ * CONVENTIONS.md`) opened from the top of the screen; it replaces a long form at the bottom of it.
  */
 export default async function AdminRsvpPage({ searchParams }: { searchParams: SearchParams }) {
   const { principal } = await adminPrincipal();
@@ -39,7 +41,7 @@ export default async function AdminRsvpPage({ searchParams }: { searchParams: Se
   const ev = events.ok ? events.value.data : null;
   // Sensitive: loaded only on explicit request (the capability call itself is the audit trail).
   const needs = showNeeds ? await adminInvoke(adminExportNeeds, { includeNeeds: true }) : null;
-  const meals = ev ? ev.events.flatMap((e) => e.mealOptions.map((m) => ({ value: m.id, label: `${e.name}: ${m.label}` }))) : [];
+  const menus = ev ? ev.events.map((e) => ({ eventId: e.id, options: e.mealOptions.map((m) => ({ id: m.id, label: m.label })) })) : [];
 
   return (
     <ConsolePage
@@ -48,6 +50,7 @@ export default async function AdminRsvpPage({ searchParams }: { searchParams: Se
       notice={notice}
       actions={
         <>
+          {ev ? <RecordAnswerFlow slots={d.rows} menus={menus} /> : null}
           <a className="ops-button ops-button-ghost" href="/admin/rsvp/export">
             RSVP CSV
           </a>
@@ -106,7 +109,7 @@ export default async function AdminRsvpPage({ searchParams }: { searchParams: Se
         </Section>
       ) : null}
 
-      <Section title="Every answer" id="rows">
+      <Section title="Every answer" id="rows" note="After a phone call or an email, use “Record an answer” at the top. It works after the deadline and is audited with your reason.">
         <DataTable
           caption="Every RSVP answer"
           empty={d.rows.length === 0 ? <>Nobody has answered yet.</> : null}
@@ -141,25 +144,6 @@ export default async function AdminRsvpPage({ searchParams }: { searchParams: Se
           ))}
         </DataTable>
       </Section>
-
-      {ev ? (
-        <Section title="Record or correct an answer" id="override" note="Use after a phone call or e-mail. Works after the deadline; audited with your reason.">
-          <form action={overrideAction} className="ops-form">
-            <IdemKey />
-            <Input id="ov-guest" name="guestId" label="Guest" required options={ev.guests.map((g) => ({ value: g.guestId, label: `${g.displayName} (${g.householdName})` }))} />
-            <Input id="ov-event" name="eventId" label="Event" required options={ev.events.map((e) => ({ value: e.id, label: e.name }))} />
-            <Radios name="status" legend="Answer" options={[{ value: 'accepted', label: 'Attending', defaultChecked: true }, { value: 'declined', label: 'Not attending' }]} />
-            <Input id="ov-meal" name="mealOptionId" label="Meal (current menu)" hint="Only for events with a menu." options={[{ value: '', label: 'No meal' }, ...meals]} />
-            <Checkbox id="ov-p1" name="plusOne" label="Bringing a guest" />
-            <Input id="ov-p1name" name="plusOneName" label="Guest's name" hint="Leave blank if nobody is coming with them." />
-            <Input id="ov-p1meal" name="plusOneMealOptionId" label="Guest's meal" options={[{ value: '', label: 'No meal' }, ...meals]} />
-            <Input id="ov-reason" name="reason" label="Reason (audited)" required hint="Recorded on the audit row with your identity." />
-            <div className="ops-form-inline">
-              <Button>Record answer</Button>
-            </div>
-          </form>
-        </Section>
-      ) : null}
     </ConsolePage>
   );
 }

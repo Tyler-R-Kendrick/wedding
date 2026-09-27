@@ -74,13 +74,13 @@ function DeleteThing() {
   );
 }
 
-function NameThing({ result, load }: { result?: boolean; load?: () => Promise<Partial<{ name: string }> | string> }) {
+function NameThing({ result, load, name = '' }: { result?: boolean; load?: () => Promise<Partial<{ name: string }> | string>; name?: string }) {
   return (
     <AdminFlow<{ name: string }>
       id="test:name"
       title="Name the thing"
       trigger={{ label: 'Name it' }}
-      initial={{ name: '' }}
+      initial={{ name }}
       load={load}
       steps={[{ title: 'The name', fields: ['name'], render: (ctx) => <TextField ctx={ctx} name="name" label="Name" /> }]}
       submit={{
@@ -168,5 +168,13 @@ describe('admin flow kit', () => {
     await waitFor(() => expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('From the server'));
     // Loaded values are the starting point, not an edit: nothing is kept as a draft yet.
     expect(window.sessionStorage.getItem('wedding.admin-flow:test:name')).toBeNull();
+  });
+
+  it('starts from the refreshed record after a save, not the one it opened with', async () => {
+    const { rerender } = render(<NameThing name="Before" />);
+    // The page refreshed after a save elsewhere: the same flow now receives the saved record.
+    rerender(<NameThing name="After" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Name it' }));
+    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('After');
   });
 });

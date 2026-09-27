@@ -113,6 +113,19 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   const [initial, setInitial] = useState<V>(given);
   const [values, setValues] = useState<V>(given);
   const [loading, setLoading] = useState(false);
+  // New starting values from the server — a save refreshed the page, so an edit's record changed.
+  // A closed flow the admin has not touched starts from them; an open one, or one holding a draft,
+  // keeps what was typed. Adjusted during render (React's pattern for props that reset state), so
+  // the next open never shows the record as it was before the save.
+  const givenKey = JSON.stringify(given);
+  const [seenGiven, setSeenGiven] = useState(givenKey);
+  if (givenKey !== seenGiven) {
+    setSeenGiven(givenKey);
+    if (!open && JSON.stringify(values) === JSON.stringify(initial)) {
+      setInitial(given);
+      setValues(given);
+    }
+  }
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
