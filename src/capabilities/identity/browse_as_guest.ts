@@ -5,7 +5,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
-import { mintGuestViewToken } from '@/domain/identity/guest-view';
+import { mintGuestViewToken, verifyGuestViewToken } from '@/domain/identity/guest-view';
 import { buildGuestViewPrincipal, ownGuestRecords } from '@/domain/identity/principal';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { actorOf, adminOf } from './shared';
@@ -90,5 +90,36 @@ export const adminListOwnGuestRecords = defineCapability<Record<string, never>, 
     if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
     return ok({ data: { records: await ownGuestRecords(db, guard.value.authIdentityId) }, sources: [] });
+  },
+});
+
+/**
+ * Whose view this administrator's browser is in, from the `guest-view` cookie's token: null for no
+ * token, a forged one, or one minted for another session. The console names the guest from here, so
+ * the name is right whatever the Guests list is filtered to, and verifying the token stays in the
+ * capability layer rather than in a page.
+ */
+export const adminGuestViewStatus = defineCapability<{ token?: string }, { view: { guestId: string; displayName: string; readOnly: boolean } | null }>({
+  name: 'admin_guest_view_status',
+  title: 'Admin: which guest am I browsing as',
+  description: 'Given this browser\u2019s guest-view token, says which guest the administrator is browsing the site as, if any. Admin only; the token must be one this session minted.',
+  kind: 'read',
+  auth: 'admin',
+  requires: [],
+  annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
+  exposure: { ui: true, ai: false, webmcp: false },
+  input: z.object({ token: z.string().max(200).optional() }).strict(),
+  output: z.object({ view: z.object({ guestId: z.string(), displayName: z.string(), readOnly: z.boolean() }).nullable() }),
+  async handler(ctx, { token }) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const admin = guard.value;
+    const verified = token ? verifyGuestViewToken(token, admin.sessionId, getPreviewSecret(), ctx.now) : null;
+    if (!verified) return ok({ data: { view: null }, sources: [] });
+    const { db } = appServices(ctx);
+    const guest = await getGuest(db, verified.guestId);
+    if (!guest) return ok({ data: { view: null }, sources: [] });
+    const own = (await ownGuestRecords(db, admin.authIdentityId)).some((r) => r.guestId === guest.id);
+    return ok({ data: { view: { guestId: guest.id, displayName: guestDisplayName(guest), readOnly: !own } }, sources: [] });
   },
 });

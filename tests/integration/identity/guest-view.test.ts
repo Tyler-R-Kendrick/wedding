@@ -24,6 +24,16 @@ describe('browse as a guest', () => {
     expect(minted.data).toMatchObject({ guestId: f.guests.ana, readOnly: true });
     const cookie = withView(owner.cookie, minted.data.token);
 
+    // The console names whose view it is from the token (on an admin surface, as the console asks).
+    type Status = { view: { guestId: string; displayName: string; readOnly: boolean } | null };
+    const status = expectOk(await call<Status>('admin_guest_view_status', { token: minted.data.token }, { cookie: owner.cookie, method: 'GET' }));
+    expect(status.data.view).toMatchObject({ guestId: f.guests.ana, displayName: minted.data.displayName, readOnly: true });
+    const tampered = expectOk(await call<Status>('admin_guest_view_status', { token: `${minted.data.token}x` }, { cookie: owner.cookie, method: 'GET' }));
+    expect(tampered.data.view).toBeNull();
+    const again = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    const otherSession = expectOk(await call<Status>('admin_guest_view_status', { token: minted.data.token }, { cookie: again.cookie, method: 'GET' }));
+    expect(otherSession.data.view).toBeNull();
+
     const p = await principalFor({ cookie, pathname: '/your-weekend' });
     expect(p.kind).toBe('guest');
     if (p.kind !== 'guest') throw new Error('unreachable');

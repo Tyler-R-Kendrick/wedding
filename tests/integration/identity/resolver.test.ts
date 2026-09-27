@@ -173,10 +173,11 @@ describe('principal resolver', () => {
     // the funds a gift of money goes toward and the couple's own accounts it goes to.
     // 68 -> 69: `admin_preview_guest_table` (`admin_guest_ops`, ui only), the seating preview the
     // admin guide promised: what one guest would see if the draft chart were published.
-    // 69 -> 71: `admin_browse_as_guest` and `admin_list_own_guest_records` (ui only), "Browse as a
-    // guest": an administrator sees the site as one guest does, read-only unless it is their own
-    // guest record, and the second lists those own records.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(71);
+    // 69 -> 72: "Browse as a guest" (all ui only): `admin_browse_as_guest` starts a view of the site
+    // as one guest, read-only unless it is the administrator's own guest record;
+    // `admin_list_own_guest_records` lists those own records; `admin_guest_view_status` names the
+    // guest this browser's token is for.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(72);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

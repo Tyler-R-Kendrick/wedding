@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { stopGuestView } from '@/components/guest-view/actions';
-import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest-view';
-import { getPreviewSecret } from '@/domain/lifecycle/secret';
+import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { startGuestView } from '../_lib/guest-view-actions';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
@@ -21,11 +20,12 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const isOwner = principal.roles.has('owner');
   const own = await adminInvoke<{ records: { guestId: string; displayName: string }[] }>('admin_list_own_guest_records', {}, { method: 'GET' });
   const ownRecords = own.ok ? own.value.data.records : [];
-  const browsing = verifyGuestViewToken((await cookies()).get(GUEST_VIEW_COOKIE)?.value, principal.sessionId, getPreviewSecret(), new Date());
+  // Whose view this browser is in, named by the capability whatever the list below is filtered to.
+  const status = await adminInvoke<{ view: { displayName: string } | null }>('admin_guest_view_status', { token: (await cookies()).get(GUEST_VIEW_COOKIE)?.value }, { method: 'GET' });
+  const browsingName = status.ok ? (status.value.data.view?.displayName ?? null) : null;
   // An administrator without guest operations (a moderator) reaches this screen from "Browse as a
   // guest" too: they get the one section that is theirs, not a list they may not read.
   if (!principal.entitlements.has('admin_guest_ops')) {
-    const browsingName = browsing ? (ownRecords.find((r) => r.guestId === browsing.guestId)?.displayName ?? 'a guest') : null;
     return (
       <ConsolePage title="Guests" lede="Browse the site as your own guest record." notice={{ ok: sp.ok, error: sp.error }}>
         <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
@@ -44,7 +44,6 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
   // Browsing as anyone but yourself is for owners (`admin_browse_as_guest` re-checks it).
   const canBrowseAs = isOwner;
-  const browsingName = browsing ? (rows.find((g) => g.id === browsing.guestId)?.displayName ?? ownRecords.find((r) => r.guestId === browsing.guestId)?.displayName ?? 'a guest') : null;
   return (
     <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
