@@ -50,7 +50,7 @@ membership change per state (ADR-0012).
 | State | Primary nav (mobile, ≤ 5) | Home's job | Sticky bar |
 |---|---|---|---|
 | TEASER | Story · Adventures · Our Venue | Names, `07 · 17 · 27`, one line of thesis | none |
-| SAVE_THE_DATE | Story · Travel & Stay · The Wedding · Adventures | Date (weekday), city, "details to come", travel heads-up | none |
+| SAVE_THE_DATE | Story · Travel & Stay · Adventures (The Wedding opens at INVITATIONS_OPEN, per the sitemap) | Date (weekday), city, "details to come", travel heads-up | none |
 | INVITATIONS_OPEN | The Wedding · Your Weekend · Travel & Stay · Story | Claim your invitation | Claim |
 | RSVP_OPEN | RSVP · The Wedding · Travel & Stay · Transportation · Your Weekend | RSVP CTA + deadline (`TODO(Tyler & Sara)`) | RSVP · Directions |
 | RSVP_CLOSED | The Wedding · Travel & Stay · Transportation · Your Weekend · Adventures | "We can't wait", logistics digest | Directions |

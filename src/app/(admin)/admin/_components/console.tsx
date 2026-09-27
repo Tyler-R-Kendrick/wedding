@@ -1,6 +1,10 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
+import { isSafeReturnPath } from '@/domain/identity/routes';
+import { getPrincipal } from '@/lib/principal';
+import { PATHNAME_HEADER } from '@/themes/routes';
 import { ADMIN_SECTIONS } from './sections';
 import './ops.css';
 import './console.css';
@@ -48,13 +52,36 @@ export function ConsolePage({
   );
 }
 
-export function ConsoleGate({ what }: { what: string }) {
+/**
+ * The gate every console screen shows to someone who may not see it.
+ *
+ * Signed out: sign-in comes back to the screen that was asked for (the proxy's pathname header,
+ * validated as a return path; the query is not carried). Signed in as an administrator without
+ * this screen's entitlement (a planner on the media queue): sign-in would only send them straight
+ * back here, so they are told what is missing and sent to the console instead.
+ */
+export async function ConsoleGate({ what }: { what: string }) {
+  const h = await headers();
+  const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
+  if (principal.kind === 'admin') {
+    return (
+      <main id="main" className="ops">
+        <h1 className="ops-title">Not part of your access</h1>
+        <p>{what} is part of the admin console, and your administrator role does not include it. The owner can grant it.</p>
+        <p>
+          <Link className="link-block" href="/admin">Back to the console</Link>
+        </p>
+      </main>
+    );
+  }
+  const path = h.get(PATHNAME_HEADER);
+  const signIn = isSafeReturnPath(path) && path !== '/admin' ? `/sign-in/admin?next=${encodeURIComponent(path)}` : '/sign-in/admin';
   return (
     <main id="main" className="ops">
       <h1 className="ops-title">Administrator sign-in required</h1>
       <p>{what} is part of the admin console.</p>
       <p>
-        <Link className="link-block" href="/sign-in/admin">Sign in with your administrator email</Link>
+        <Link className="link-block" href={signIn}>Sign in with your administrator email</Link>
       </p>
     </main>
   );
