@@ -2,14 +2,15 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { invoke } from '@/capabilities/invoke';
 import { getContentRecordCapability } from '@/capabilities/get_content_record';
+import { listContentRecordsCapability } from '@/capabilities/list_content_records';
 import { ReviewList } from '@/components/admin/flow/fields';
-import { CONTENT_TABLE_NAMES, TABLE_SPECS, type FieldSpec } from '@/domain/content/admin';
+import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
 import { Breadcrumbs, ConsolePage, Denied, formatStamp, Note, Pill, Section, Stamp } from '../../../_components/console';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { ContentRecordFlow, MarkVerified } from '../../_components/ContentFlows';
-import { FRESHNESS_TONE } from '../../_components/shared';
+import { FRESHNESS_TONE, contentEditor, describeValue, editorWords, refOptions, refTables, revisionWords } from '../../_components/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,28 +19,20 @@ type Params = Promise<{ table: string; id: string }>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { table } = await params;
   const spec = (CONTENT_TABLE_NAMES as readonly string[]).includes(table) ? TABLE_SPECS[table as keyof typeof TABLE_SPECS] : null;
-  return { title: spec ? `Edit ${spec.label} · Content (admin)` : 'Content (admin)' };
-}
-
-/** A stored value in words, for reading the record back on its own page. */
-function shown(f: FieldSpec, v: unknown): string {
-  if (f.type === 'boolean') return v === true ? 'Yes' : 'No';
-  if (f.type === 'tristate') return v === true ? 'Yes' : v === false ? 'No' : 'Unknown';
-  if (v === null || v === undefined || v === '') return '';
-  if (f.type === 'datetime') return formatStamp(String(v));
-  const text = typeof v === 'string' ? v : JSON.stringify(v);
-  return text.length > 240 ? `${text.slice(0, 237)}…` : text;
+  return { title: spec ? `${spec.label} · Content (admin)` : 'Content (admin)' };
 }
 
 /**
  * One content record: what it says now, its freshness, and its history. Editing it is a flow
  * (the page's main action) that loads the whole record when it opens; marking it verified is one
- * click. Both refresh this page from the server when they land.
+ * click. Both refresh this page from the server when they land. Its id, slug and who stored each
+ * version are under Technical details.
  */
-export default async function AdminContentEdit({ params }: { params: Params }) {
-  const { table, id } = await params;
-  if (!(CONTENT_TABLE_NAMES as readonly string[]).includes(table) || !/^[0-9A-HJKMNP-TV-Z]{26}$/.test(id)) notFound();
-  const spec = TABLE_SPECS[table as keyof typeof TABLE_SPECS];
+export default async function AdminContentRecord({ params }: { params: Params }) {
+  const { table: name, id } = await params;
+  if (!(CONTENT_TABLE_NAMES as readonly string[]).includes(name) || !/^[0-9A-HJKMNP-TV-Z]{26}$/.test(id)) notFound();
+  const table = name as keyof typeof TABLE_SPECS;
+  const spec = TABLE_SPECS[table];
   const { ctx, allowed } = await adminContentContext();
   if (!allowed) return <AdminDenied />;
   const r = await invoke(getContentRecordCapability, ctx, { table, id });
@@ -52,24 +45,28 @@ export default async function AdminContentEdit({ params }: { params: Params }) {
       </ConsolePage>
     );
   }
+  // A record that points at others (a place, recommendations) reads them back by name.
+  const lists = refTables(table).length ? await invoke(listContentRecordsCapability, ctx, {}) : null;
+  const refs = refOptions(lists?.ok ? lists.value.data.tables : undefined);
   const record = r.value.data;
-  const title = String(record.values[spec.titleField] ?? id);
+  const title = String(record.values[spec.titleField] ?? spec.label);
   const fresh = FRESHNESS_LABELS[record.freshness];
+  const technical = spec.fields.filter((f) => f.technical || f.derive === 'position');
 
   return (
     <ConsolePage
       title={title}
       actions={
         <>
-          <ContentRecordFlow table={table} tableLabel={spec.label} fields={spec.fields} record={{ id, title }} label="Edit this record" accessibleName={`Edit ${title}`} />
+          <ContentRecordFlow editor={contentEditor(table, refs)} record={{ id, title }} label="Edit" accessibleName={`Edit ${title}`} />
           <MarkVerified table={table} id={id} title={title} tone="ghost" />
         </>
       }
     >
       <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { href: `${ROUTES.adminContent}/${table}`, label: spec.label }, { label: title }]} />
       <Note>
-        Version {record.contentVersion} · last edited by {record.editedBy} on <Stamp at={record.updatedAt} /> · <Pill tone={FRESHNESS_TONE[fresh.tone] ?? 'neutral'}>{fresh.label}</Pill>{' '}
-        <Stamp at={String(record.values.verifiedAt)} />
+        <Pill tone={FRESHNESS_TONE[fresh.tone] ?? 'neutral'}>{fresh.label}</Pill> Last checked against its source <Stamp at={String(record.values.verifiedAt)} />. Version {record.contentVersion}, last
+        changed by {editorWords(record.editedBy).toLowerCase()} on <Stamp at={record.updatedAt} />.
       </Note>
       {record.freshness !== 'fresh' ? (
         <p className="ops-notice ops-notice-error" role="note">
@@ -86,26 +83,40 @@ export default async function AdminContentEdit({ params }: { params: Params }) {
           , fix anything that changed, then mark it verified.
         </p>
       ) : null}
-      <p className="con-note">“Mark verified” stamps the verification time with now and records a content.verified audit event. It does not change the text.</p>
+      <p className="con-note">“Mark verified” records that someone checked it just now. It does not change the text, and the previous version stays in the history.</p>
 
       <Section title="What it says now" id="record">
-        <ReviewList items={spec.fields.map((f) => ({ label: f.label, value: shown(f, record.values[f.name]) }))} />
+        <ReviewList items={spec.fields.filter((f) => !f.technical && f.derive !== 'position').map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], refs, formatStamp) }))} />
       </Section>
 
       <Section title="History" id="history">
         {record.revisions.length === 0 ? (
-          <Note>No previous versions.</Note>
+          <Note>No earlier versions.</Note>
         ) : (
           <ul className="list">
             {record.revisions.map((rev) => (
               <li key={rev.contentVersion}>
-                v{rev.contentVersion} · {rev.editedBy} · <Stamp at={rev.editedAt} />
-                {rev.reason ? ` · ${rev.reason}` : ''}
+                Version {rev.contentVersion} · {revisionWords(rev.reason)} by {editorWords(rev.editedBy).toLowerCase()} · <Stamp at={rev.editedAt} />
               </li>
             ))}
           </ul>
         )}
       </Section>
+
+      <details className="flow-details">
+        <summary>Technical details</summary>
+        <div className="flow-details__body">
+          <ReviewList
+            items={[
+              { label: 'Table', value: table },
+              { label: 'Record id', value: id },
+              ...technical.map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], refs, formatStamp) })),
+              { label: 'Last stored by', value: record.editedBy },
+              ...record.revisions.map((rev) => ({ label: `Version ${rev.contentVersion}`, value: `${rev.editedBy} · ${rev.reason ?? 'no reason'}` })),
+            ]}
+          />
+        </div>
+      </details>
     </ConsolePage>
   );
 }

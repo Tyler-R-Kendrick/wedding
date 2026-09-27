@@ -13,7 +13,11 @@ export interface FlowContext<V> {
   set: (patch: Partial<V>) => void;
   errors: FieldErrors;
   busy: boolean;
-  /** Prefix for this flow's element ids, so two flows on one page never share an id. */
+  /**
+   * Prefix for this flow's element ids, so two flows on one page never share an id. Fields use
+   * `${uid}-${name}`; the sheet's own ids use a double dash (`${uid}--sheet-title`), so a field named
+   * `title` or `step` can never take the heading's id and leave its label pointing at the heading.
+   */
   uid: string;
 }
 
@@ -375,7 +379,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
         ref={dialogRef}
         className="flow-sheet"
         data-tone={tone}
-        aria-labelledby={`${uid}-title`}
+        aria-labelledby={`${uid}--sheet-title`}
         onCancel={(e) => {
           e.preventDefault();
           dismiss();
@@ -388,7 +392,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
         <form className="flow-frame" onSubmit={onSubmit} noValidate>
           <header className="flow-head">
             <div className="flow-head__row">
-              <p id={`${uid}-title`} className="flow-title">
+              <p id={`${uid}--sheet-title`} className="flow-title">
                 {title}
               </p>
               <button type="button" className="flow-close" onClick={dismiss}>
@@ -414,9 +418,9 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
               </p>
             ) : null}
             {result !== null ? (
-              <section key="done" className="flow-step" data-direction="forward" aria-labelledby={`${uid}-step`}>
+              <section key="done" className="flow-step" data-direction="forward" aria-labelledby={`${uid}--step-title`}>
                 <p className="flow-step__count">Done</p>
-                <h2 id={`${uid}-step`} ref={headingRef} tabIndex={-1} className="flow-step__title">
+                <h2 id={`${uid}--step-title`} ref={headingRef} tabIndex={-1} className="flow-step__title">
                   {submit.success}
                 </h2>
                 <div className="flow-step__fields" role="status">
@@ -424,13 +428,13 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
                 </div>
               </section>
             ) : (
-              <section key={step} className="flow-step" data-direction={direction} aria-labelledby={`${uid}-step`}>
+              <section key={step} className="flow-step" data-direction={direction} aria-labelledby={`${uid}--step-title`}>
                 {!single ? (
                   <p className="flow-step__count">
                     Step {step + 1} of {steps.length}
                   </p>
                 ) : null}
-                <h2 id={`${uid}-step`} ref={headingRef} tabIndex={-1} className="flow-step__title">
+                <h2 id={`${uid}--step-title`} ref={headingRef} tabIndex={-1} className="flow-step__title">
                   {current.title}
                 </h2>
                 {current.lede ? <p className="flow-step__lede">{current.lede}</p> : null}

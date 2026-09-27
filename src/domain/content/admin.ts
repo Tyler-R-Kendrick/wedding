@@ -18,22 +18,69 @@ import { computeFreshness, daysSinceVerified } from './freshness';
 
 /**
  * Spec-driven admin editing. One field spec per table drives the zod validation, the
- * generic editor form, and the row → form mapping, so every content type gets the same
+ * generic editor flow, and the row → form mapping, so every content type gets the same
  * provenance fields (ADR-0011) without nine hand-written editors.
+ *
+ * The spec also says how each field is *asked for* (`components/admin/flow/CONVENTIONS.md`): the
+ * admin never types an id. A slug or key is derived from the title (`derive`, filled in by
+ * `saveContentRecord`), a list position is set by where the record sits (`derive: 'position'`,
+ * moved with Up and Down), a source or another record is chosen from a list (`ref`), and a JSON
+ * value is edited as lines or rows (`editor`). Internals sit under "Technical details"
+ * (`technical`), and every stored enum has a label in words (`optionLabels`).
  */
 export type FieldType = 'text' | 'textarea' | 'number' | 'float' | 'boolean' | 'tristate' | 'select' | 'json' | 'date' | 'datetime' | 'url';
+
+/** One column of a `rows` or `object` editor (a media item's alt text, a stop's minutes). */
+export interface SubFieldSpec {
+  name: string;
+  label: string;
+  type: 'text' | 'number';
+  required?: boolean;
+  help?: string;
+  /** The value is another record's id, chosen from this table. */
+  ref?: ContentTableName;
+  /** The shortest answer that is not too short (a photo's alt text). */
+  minLength?: number;
+  /** What the value has to start with (an image address starts with "/"). */
+  startsWith?: string;
+}
 
 export interface FieldSpec {
   name: string;
   label: string;
   type: FieldType;
   options?: readonly string[];
+  /** The stored `options` in words, for the flow and the record page. Filled in for every select. */
+  optionLabels?: Record<string, string>;
   required?: boolean;
   help?: string;
+  /** What to say when a required field is empty: a sentence naming what to enter. */
+  ask?: string;
+  /**
+   * Filled in on save when left empty: `slug` from the title, `key` from the kind and label,
+   * `position` at the end of the list. An empty value on an edit keeps the stored one.
+   */
+  derive?: 'slug' | 'key' | 'position';
+  /** An internal the admin rarely needs: shown only under a closed "Technical details". */
+  technical?: boolean;
+  /** `text`: another record's id, chosen from this table. `json` with `editor: 'refs'`: several. */
+  ref?: ContentTableName;
+  /**
+   * How a `json` field is edited: `lines` (a string array, one per line), `tags` (lowercase words,
+   * one per line), `refs` (records ticked from `ref`), `rows` (an array of objects, one row each),
+   * `object` (one object, a field per key).
+   */
+  editor?: 'lines' | 'tags' | 'refs' | 'rows' | 'object';
+  /** The columns of a `rows` or `object` editor. */
+  items?: SubFieldSpec[];
+  /** One row of a `rows` editor, in words: "Photo", "Stop". */
+  itemLabel?: string;
 }
 
 export interface TableSpec {
   label: string;
+  /** One record, in words, for the flows' buttons: "Add a question", "Save question". */
+  noun: string;
   /** Field used as the row's display name in lists. */
   titleField: string;
   /** Field used to sort lists. */
@@ -43,199 +90,307 @@ export interface TableSpec {
 
 export const CONTENT_TABLE_NAMES = Object.keys(CONTENT_TABLES) as ContentTableName[];
 
+/**
+ * Stored values in words. Anything not listed reads as its value with the dashes taken out and a
+ * capital first letter ("architecture" → "Architecture").
+ */
+const OPTION_WORDS: Record<string, string> = {
+  // How far the concierge trusts it (TRUST_CLASSES).
+  TRUSTED_WEDDING: 'Ours: written or checked by the couple',
+  EXTERNAL_DATA: 'Outside data: a venue, a website, a provider',
+  UNTRUSTED_USER_CONTENT: 'Written by a guest: never followed as instructions',
+  // Who may see it (CONTENT_VISIBILITIES).
+  public: 'Everyone',
+  guest: 'Signed-in guests',
+  'private-draft': 'Private draft: only admins',
+  // Itinerary kinds, recommendation categories and FAQ topics that do not read as words.
+  '45-min': '45 minutes',
+  '2-3-h': 'Two to three hours',
+  'food-drink': 'Food and drink',
+  'with-kids': 'With kids',
+  'stay-inside-caa': 'Without leaving the CAA',
+  'day-trip': 'Day trip',
+  'friday-afternoon': 'Friday afternoon',
+  'saturday-morning': 'Saturday morning',
+  'look-for-this': 'Look for this',
+  'plus-ones': 'Plus-ones',
+};
+
+/** A stored enum value in words ("private-draft" → "Private draft: only admins"). */
+export function optionLabel(value: string): string {
+  const known = OPTION_WORDS[value];
+  if (known) return known;
+  const words = value.replace(/[-_]+/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** Where a record's facts come from (SOURCE_TYPES). Its own map: `guest` means something else here. */
+const SOURCE_TYPE_WORDS: Record<string, string> = {
+  authored: 'Written by us',
+  contract: 'A signed contract',
+  'venue-document': 'A venue document',
+  'official-web': 'An official website',
+  'provider-api': 'Live data from a provider',
+  admin: 'Typed in here',
+  guest: 'Sent in by a guest',
+};
+
+/** Who may see a record, as the lists say it. */
+export const VISIBILITY_LABELS: Record<string, string> = { public: 'Everyone', guest: 'Signed-in guests', 'private-draft': 'Private draft' };
+
 const PROVENANCE_FIELDS: FieldSpec[] = [
-  { name: 'sourceId', label: 'Source (content_sources id)', type: 'text', required: true, help: 'Which registered source backs this record.' },
-  { name: 'sourceType', label: 'Source type', type: 'select', options: SOURCE_TYPES, required: true },
-  { name: 'sourceUrl', label: 'Source URL (official page)', type: 'url', help: 'Required for official-web records: the page guests are told to confirm with.' },
-  { name: 'verifiedAt', label: 'Verified at', type: 'datetime', required: true, help: 'Use "Mark verified" to stamp now.' },
-  { name: 'validFrom', label: 'Valid from', type: 'datetime' },
-  { name: 'validUntil', label: 'Valid until', type: 'datetime', help: 'Past this instant the record is hidden from guests (e.g. a closed outlet).' },
-  { name: 'trustClass', label: 'Trust class', type: 'select', options: TRUST_CLASSES, required: true },
-  { name: 'visibility', label: 'Visibility', type: 'select', options: CONTENT_VISIBILITIES, required: true, help: 'private-draft never reaches guests or the concierge.' },
-  { name: 'placeholder', label: `Placeholder (contains ${PLACEHOLDER_MARKER})`, type: 'boolean', help: 'Required to be on while any text contains the TODO marker.' },
+  { name: 'sourceId', label: 'Where this comes from', type: 'text', required: true, ask: 'Choose where this record comes from.', help: 'The document, website or person the facts come from. Guests see it as “Based on …”.' },
+  { name: 'sourceType', label: 'Kind of source', type: 'select', options: SOURCE_TYPES, optionLabels: SOURCE_TYPE_WORDS, required: true, technical: true, ask: 'Choose what kind of source this is.', help: 'Set from the source you chose. Change it only if this record differs.' },
+  { name: 'sourceUrl', label: 'Official page', type: 'url', help: 'Needed when the source is an official website: the page guests are told to check. It starts with https://.' },
+  { name: 'verifiedAt', label: 'Last checked against the source', type: 'datetime', required: true, ask: 'Enter when this was last checked against its source.', help: 'A new record starts at now. “Mark verified” on the list sets it to now later.' },
+  { name: 'validFrom', label: 'Shown from', type: 'datetime', help: 'Leave empty to show it straight away.' },
+  { name: 'validUntil', label: 'Hidden after', type: 'datetime', help: 'After this time guests stop seeing it (a restaurant that has closed, a menu that has changed).' },
+  { name: 'trustClass', label: 'How far the concierge trusts it', type: 'select', options: TRUST_CLASSES, required: true, technical: true, ask: 'Choose how far the concierge trusts this.', help: 'Set from the source you chose.' },
+  { name: 'visibility', label: 'Who can see it', type: 'select', options: CONTENT_VISIBILITIES, required: true, ask: 'Choose who can see this record.', help: 'A private draft never reaches guests or the concierge.' },
+  { name: 'placeholder', label: 'This is still a placeholder', type: 'boolean', help: `Ticked for you while any text says ${PLACEHOLDER_MARKER}. A placeholder is never shown as a fact.` },
 ];
 
-const stringList = 'JSON array of strings, e.g. ["one", "two"]';
+const lines = (name: string, label: string, help: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({ name, label, type: 'json', editor: 'lines', help: `${help} Put each one on its own line.`, ...extra });
+const tags = { type: 'json', editor: 'tags', help: 'One word or short phrase per line, like “architecture” or “rainy-day”.' } as const;
+const slug: FieldSpec = { name: 'slug', label: 'Web address name', type: 'text', required: true, derive: 'slug', technical: true, help: 'The last part of this record’s web address. Made from the title when left empty; kept as it is when you edit the title later.' };
+const position = (required: boolean): FieldSpec => ({ name: 'order', label: 'Position in the list', type: 'number', required, derive: 'position' });
+const media: FieldSpec = {
+  name: 'media',
+  label: 'Photos',
+  type: 'json',
+  editor: 'rows',
+  itemLabel: 'Photo',
+  help: 'One row per photo. Alt text describes the photo for anyone who cannot see it.',
+  items: [
+    { name: 'alt', label: 'Alt text', type: 'text', required: true, minLength: 3 },
+    { name: 'caption', label: 'Caption', type: 'text' },
+    { name: 'src', label: 'Image address', type: 'text', startsWith: '/', help: 'Starts with /, like /photos/starved-rock.jpg.' },
+  ],
+};
 
-export const TABLE_SPECS: Record<ContentTableName, TableSpec> = {
+const SPECS: Record<ContentTableName, TableSpec> = {
   story_sections: {
     label: 'Our Story',
+    noun: 'story section',
     titleField: 'title',
     sortField: 'order',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'chapter', label: 'Chapter', type: 'select', options: STORY_CHAPTERS, required: true },
-      { name: 'order', label: 'Order', type: 'number', required: true },
-      { name: 'title', label: 'Title', type: 'text', required: true },
-      { name: 'paragraphs', label: 'Paragraphs', type: 'json', required: true, help: stringList },
-      { name: 'media', label: 'Media refs', type: 'json', help: 'JSON array of { alt, caption?, src?, assetId? }' },
+      slug,
+      { name: 'chapter', label: 'Chapter', type: 'select', options: STORY_CHAPTERS, required: true, ask: 'Choose the chapter this belongs to.' },
+      position(true),
+      { name: 'title', label: 'Title', type: 'text', required: true, ask: 'Give the section a title.' },
+      lines('paragraphs', 'Paragraphs', 'The section’s text.', { required: true, ask: 'Write at least one paragraph.' }),
+      media,
       ...PROVENANCE_FIELDS,
     ],
   },
   timeline_moments: {
     label: 'Our Story timeline',
+    noun: 'timeline stop',
     titleField: 'title',
     sortField: 'order',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'chapter', label: 'Line (chapter)', type: 'select', options: STORY_CHAPTERS, required: true },
-      { name: 'order', label: 'Order', type: 'number', required: true },
-      { name: 'title', label: 'Station name', type: 'text', required: true },
-      { name: 'occurredOn', label: 'Date', type: 'text', help: 'YYYY-MM-DD, YYYY-MM or YYYY — only as precise as you know it' },
+      slug,
+      { name: 'chapter', label: 'Line', type: 'select', options: STORY_CHAPTERS, required: true, ask: 'Choose the line this stop sits on.' },
+      position(true),
+      { name: 'title', label: 'Station name', type: 'text', required: true, ask: 'Give the stop a station name.' },
+      { name: 'occurredOn', label: 'When', type: 'text', help: 'Only as exact as you know it: 2019-06-14, 2019-06 or 2019.' },
       { name: 'locationLabel', label: 'Where', type: 'text' },
-      { name: 'note', label: 'Note', type: 'textarea', required: true },
-      { name: 'media', label: 'Media refs', type: 'json', help: 'JSON array of { alt, caption?, src?, assetId? }' },
-      { name: 'adventureSlug', label: 'Our Adventures slug', type: 'text' },
-      { name: 'externalRef', label: 'External ref', type: 'text', help: '"paired:<id>" for rows imported from Paired' },
+      { name: 'note', label: 'Note', type: 'textarea', required: true, ask: 'Write a short note about this stop.' },
+      media,
+      { name: 'adventureSlug', label: 'Our Adventures web address name', type: 'text', technical: true, help: 'The adventure this stop opens, by the last part of its web address.' },
+      { name: 'externalRef', label: 'Imported from', type: 'text', technical: true, help: 'Set by the Paired import (“paired:…”). Leave it as it is.' },
       ...PROVENANCE_FIELDS,
     ],
   },
   places: {
     label: 'Places',
+    noun: 'place',
     titleField: 'name',
     sortField: 'name',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'name', label: 'Name', type: 'text', required: true },
-      { name: 'kind', label: 'Kind', type: 'select', options: PLACE_KINDS, required: true },
+      slug,
+      { name: 'name', label: 'Name', type: 'text', required: true, ask: 'Give the place a name.' },
+      { name: 'kind', label: 'Kind of place', type: 'select', options: PLACE_KINDS, required: true, ask: 'Choose what kind of place this is.' },
       { name: 'address', label: 'Address', type: 'text' },
       { name: 'city', label: 'City', type: 'text' },
-      { name: 'region', label: 'Region', type: 'text' },
-      { name: 'lat', label: 'Latitude', type: 'float' },
-      { name: 'lng', label: 'Longitude', type: 'float' },
+      { name: 'region', label: 'State or region', type: 'text' },
+      { name: 'lat', label: 'Latitude', type: 'float', help: 'From a map, like 41.8819.' },
+      { name: 'lng', label: 'Longitude', type: 'float', help: 'From a map, like -87.6244.' },
       { name: 'url', label: 'Official website', type: 'url' },
-      { name: 'resySlug', label: 'Resy slug', type: 'text' },
-      { name: 'openTableId', label: 'OpenTable id', type: 'text' },
       { name: 'insideVenue', label: 'Inside the CAA', type: 'boolean' },
+      { name: 'resySlug', label: 'Resy name', type: 'text', technical: true, help: 'The restaurant’s name in its Resy web address.' },
+      { name: 'openTableId', label: 'OpenTable number', type: 'text', technical: true, help: 'The restaurant’s number in its OpenTable web address.' },
       ...PROVENANCE_FIELDS,
     ],
   },
   adventure_memories: {
     label: 'Our Adventures',
+    noun: 'adventure',
     titleField: 'title',
     sortField: 'title',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'title', label: 'Title', type: 'text', required: true },
-      { name: 'dateExact', label: 'Exact date', type: 'date' },
-      { name: 'dateApprox', label: 'Approximate date (wording)', type: 'text' },
+      slug,
+      { name: 'title', label: 'Title', type: 'text', required: true, ask: 'Give the adventure a title.' },
+      { name: 'dateExact', label: 'Date', type: 'date', help: 'When you know the day.' },
+      { name: 'dateApprox', label: 'Roughly when', type: 'text', help: 'When you do not, in words: “the summer of 2021”.' },
       { name: 'season', label: 'Season', type: 'select', options: SEASONS },
       { name: 'timeOfDay', label: 'Time of day', type: 'select', options: TIMES_OF_DAY },
-      { name: 'placeId', label: 'Place id', type: 'text' },
-      { name: 'locationLabel', label: 'Location label (when there is no place)', type: 'text' },
+      { name: 'placeId', label: 'Place', type: 'text', ref: 'places', help: 'Choose it from Places. Add the place there first if it is missing.' },
+      { name: 'locationLabel', label: 'Where, in words', type: 'text', help: 'When there is no place to choose.' },
       { name: 'lat', label: 'Latitude', type: 'float' },
       { name: 'lng', label: 'Longitude', type: 'float' },
-      { name: 'summary', label: 'Summary', type: 'textarea', required: true },
-      { name: 'memory', label: 'Memory (paragraphs)', type: 'json', help: stringList },
+      { name: 'summary', label: 'Summary', type: 'textarea', required: true, ask: 'Write a short summary of the adventure.' },
+      lines('memory', 'The memory', 'The story in paragraphs.'),
       { name: 'saraMemory', label: 'Sara remembers', type: 'textarea' },
       { name: 'tylerMemory', label: 'Tyler remembers', type: 'textarea' },
-      { name: 'media', label: 'Media refs', type: 'json', help: 'JSON array of { alt, caption?, src?, assetId? }' },
-      { name: 'tags', label: 'Tags', type: 'json', help: stringList },
-      { name: 'durationMinutes', label: 'Duration (minutes)', type: 'number' },
+      media,
+      { name: 'tags', label: 'Tags', ...tags },
+      { name: 'durationMinutes', label: 'How long it takes (minutes)', type: 'number' },
       { name: 'accessibilityNotes', label: 'Accessibility notes', type: 'textarea' },
-      { name: 'relatedRecommendationIds', label: 'Related recommendation ids', type: 'json', help: stringList },
+      { name: 'relatedRecommendationIds', label: 'Related recommendations', type: 'json', editor: 'refs', ref: 'recommendations', help: 'Tick the Share an Adventure entries that go with this memory.' },
       ...PROVENANCE_FIELDS,
     ],
   },
   recommendations: {
     label: 'Share an Adventure',
+    noun: 'recommendation',
     titleField: 'title',
     sortField: 'title',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'title', label: 'Title', type: 'text', required: true },
-      { name: 'category', label: 'Category', type: 'select', options: RECOMMENDATION_CATEGORIES, required: true },
-      { name: 'interests', label: 'Interest tags', type: 'json', help: stringList },
-      { name: 'placeId', label: 'Place id', type: 'text' },
-      { name: 'what', label: 'What (practical layer)', type: 'textarea', required: true },
-      { name: 'durationMinutes', label: 'Suggested minutes', type: 'number' },
-      { name: 'distanceFromCaa', label: 'Distance from the CAA', type: 'text' },
+      slug,
+      { name: 'title', label: 'Title', type: 'text', required: true, ask: 'Give the recommendation a title.' },
+      { name: 'category', label: 'Category', type: 'select', options: RECOMMENDATION_CATEGORIES, required: true, ask: 'Choose a category.' },
+      { name: 'interests', label: 'Interests', ...tags },
+      { name: 'placeId', label: 'Place', type: 'text', ref: 'places', help: 'Choose it from Places. Add the place there first if it is missing.' },
+      { name: 'what', label: 'What it is', type: 'textarea', required: true, ask: 'Say what it is and how to do it.', help: 'The practical part: what, where, how.' },
+      { name: 'durationMinutes', label: 'Suggested time (minutes)', type: 'number' },
+      { name: 'distanceFromCaa', label: 'Distance from the CAA', type: 'text', help: 'In words, like “a 5-minute walk”.' },
       { name: 'cost', label: 'Cost', type: 'text' },
       { name: 'accessibility', label: 'Accessibility', type: 'textarea' },
-      { name: 'bookingUrl', label: 'Booking URL (allowlisted)', type: 'url' },
-      { name: 'operationalKey', label: 'Operational field key (live hours/menu)', type: 'text' },
-      { name: 'experienceId', label: 'Memory id (adventure_memories)', type: 'text' },
+      { name: 'bookingUrl', label: 'Booking link', type: 'url', help: 'Only sites on the approved list open from the page.' },
+      { name: 'experienceId', label: 'Our Adventures memory', type: 'text', ref: 'adventure_memories', help: 'The memory this recommendation comes from, if any.' },
       { name: 'whyWeShareThis', label: 'Why we are sharing this', type: 'textarea' },
-      { name: 'kidFriendly', label: 'Kid friendly', type: 'tristate' },
-      { name: 'draft', label: 'Draft', type: 'boolean' },
+      { name: 'kidFriendly', label: 'Good with kids', type: 'tristate' },
+      { name: 'draft', label: 'Still a draft', type: 'boolean' },
+      { name: 'operationalKey', label: 'Live hours or menu key', type: 'text', technical: true, help: 'The key of an operational field (outlet.cindys) whose hours or menu this shows.' },
       ...PROVENANCE_FIELDS,
     ],
   },
   itinerary_templates: {
     label: 'Itineraries',
+    noun: 'itinerary',
     titleField: 'title',
     sortField: 'title',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'title', label: 'Title', type: 'text', required: true },
-      { name: 'bucket', label: 'Bucket', type: 'select', options: ITINERARY_BUCKETS, required: true },
-      { name: 'intro', label: 'Intro', type: 'textarea' },
-      { name: 'minMinutes', label: 'Min minutes', type: 'number' },
-      { name: 'maxMinutes', label: 'Max minutes', type: 'number' },
-      { name: 'interests', label: 'Interest tags', type: 'json', help: stringList },
-      { name: 'stops', label: 'Stops', type: 'json', help: 'JSON array of { recommendationId, minutes?, note? }' },
-      { name: 'draft', label: 'Draft', type: 'boolean' },
+      slug,
+      { name: 'title', label: 'Title', type: 'text', required: true, ask: 'Give the itinerary a title.' },
+      { name: 'bucket', label: 'Kind of plan', type: 'select', options: ITINERARY_BUCKETS, required: true, ask: 'Choose what kind of plan this is.' },
+      { name: 'intro', label: 'Introduction', type: 'textarea' },
+      { name: 'minMinutes', label: 'Shortest time (minutes)', type: 'number' },
+      { name: 'maxMinutes', label: 'Longest time (minutes)', type: 'number' },
+      { name: 'interests', label: 'Interests', ...tags },
+      {
+        name: 'stops',
+        label: 'Stops',
+        type: 'json',
+        editor: 'rows',
+        itemLabel: 'Stop',
+        help: 'One row per stop, in the order guests make them.',
+        items: [
+          { name: 'recommendationId', label: 'Recommendation', type: 'text', required: true, ref: 'recommendations' },
+          { name: 'minutes', label: 'Minutes', type: 'number' },
+          { name: 'note', label: 'Note', type: 'text' },
+        ],
+      },
+      { name: 'draft', label: 'Still a draft', type: 'boolean' },
       ...PROVENANCE_FIELDS,
     ],
   },
   venue_spaces: {
     label: 'CAA spaces',
+    noun: 'space',
     titleField: 'name',
     sortField: 'order',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'name', label: 'Name', type: 'text', required: true },
-      { name: 'order', label: 'Order', type: 'number', required: true },
-      { name: 'character', label: 'Character', type: 'textarea', required: true },
-      { name: 'features', label: 'Features', type: 'json', help: stringList },
-      { name: 'capacities', label: 'Capacities', type: 'json', required: true, help: 'JSON { ceremony, dinnerDance, reception, note } — until verified, the note says these are the venue\'s own figures' },
-      { name: 'lookForThis', label: 'Look for this', type: 'json', help: stringList },
+      slug,
+      { name: 'name', label: 'Name', type: 'text', required: true, ask: 'Give the space a name.' },
+      position(true),
+      { name: 'character', label: 'What it is like', type: 'textarea', required: true, ask: 'Describe what the space is like.' },
+      lines('features', 'Features', 'What the space has.'),
+      {
+        name: 'capacities',
+        label: 'How many it holds',
+        type: 'json',
+        editor: 'object',
+        required: true,
+        ask: 'Say how many the space holds, or say where the figures come from.',
+        help: 'Leave a number empty when you do not know it.',
+        items: [
+          { name: 'ceremony', label: 'Ceremony', type: 'number' },
+          { name: 'dinnerDance', label: 'Dinner and dancing', type: 'number' },
+          { name: 'reception', label: 'Reception', type: 'number' },
+          { name: 'note', label: 'Note on the figures', type: 'text', required: true, minLength: 3, help: 'Until you have checked them, say they are the venue’s own figures.' },
+        ],
+      },
+      lines('lookForThis', 'Look for this', 'Details guests can look out for.'),
       ...PROVENANCE_FIELDS,
     ],
   },
   venue_facts: {
     label: 'CAA history',
+    noun: 'history fact',
     titleField: 'statement',
     sortField: 'order',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'order', label: 'Order', type: 'number', required: true },
-      { name: 'category', label: 'Category', type: 'select', options: VENUE_FACT_CATEGORIES, required: true },
-      { name: 'statement', label: 'Statement', type: 'textarea', required: true },
-      { name: 'note', label: 'Editorial note (never rendered as fact)', type: 'textarea' },
+      slug,
+      position(true),
+      { name: 'category', label: 'Topic', type: 'select', options: VENUE_FACT_CATEGORIES, required: true, ask: 'Choose the topic this fact is about.' },
+      { name: 'statement', label: 'The fact', type: 'textarea', required: true, ask: 'Write the fact as guests will read it.' },
+      { name: 'note', label: 'Note for us', type: 'textarea', help: 'Never shown as a fact.' },
       ...PROVENANCE_FIELDS,
     ],
   },
   operational_fields: {
     label: 'Operational fields',
+    noun: 'operational detail',
     titleField: 'label',
     sortField: 'order',
     fields: [
-      { name: 'key', label: 'Key', type: 'text', required: true, help: 'e.g. outlet.cindys, valet.entrance' },
-      { name: 'kind', label: 'Kind', type: 'select', options: OPERATIONAL_KINDS, required: true },
-      { name: 'label', label: 'Label', type: 'text', required: true },
-      { name: 'value', label: 'Value', type: 'text' },
+      { name: 'key', label: 'Key', type: 'text', required: true, derive: 'key', technical: true, help: 'How recommendations point at this detail, like outlet.cindys. Made from the kind and name when left empty.' },
+      { name: 'kind', label: 'Kind', type: 'select', options: OPERATIONAL_KINDS, required: true, ask: 'Choose what kind of detail this is.' },
+      { name: 'label', label: 'Name', type: 'text', required: true, ask: 'Give the detail a name, like “Cindy’s hours”.' },
+      { name: 'value', label: 'What it says', type: 'text' },
       { name: 'url', label: 'Official page', type: 'url' },
       { name: 'note', label: 'Note', type: 'textarea' },
-      { name: 'order', label: 'Order', type: 'number' },
+      position(false),
       ...PROVENANCE_FIELDS,
     ],
   },
   faq_entries: {
     label: 'Ask Us (FAQ)',
+    noun: 'question',
     titleField: 'question',
     sortField: 'order',
     fields: [
-      { name: 'slug', label: 'Slug', type: 'text', required: true },
-      { name: 'order', label: 'Order', type: 'number', required: true },
-      { name: 'category', label: 'Category', type: 'select', options: FAQ_CATEGORIES, required: true },
-      { name: 'question', label: 'Question', type: 'text', required: true },
-      { name: 'answer', label: 'Answer', type: 'textarea', required: true },
-      { name: 'route', label: 'Related route', type: 'text' },
+      slug,
+      position(true),
+      { name: 'category', label: 'Topic', type: 'select', options: FAQ_CATEGORIES, required: true, ask: 'Choose the topic this question is about.' },
+      { name: 'question', label: 'Question', type: 'text', required: true, ask: 'Write the question as a guest would ask it.' },
+      { name: 'answer', label: 'Answer', type: 'textarea', required: true, ask: 'Write the answer.' },
+      { name: 'route', label: 'Related page', type: 'text', help: 'A page on this site that says more, like /travel.' },
       ...PROVENANCE_FIELDS,
     ],
   },
 };
+
+/** Every select gets its options in words. */
+export const TABLE_SPECS: Record<ContentTableName, TableSpec> = Object.fromEntries(
+  Object.entries(SPECS).map(([name, spec]) => [
+    name,
+    { ...spec, fields: spec.fields.map((f) => (f.options && !f.optionLabels ? { ...f, optionLabels: Object.fromEntries(f.options.map((o) => [o, optionLabel(o)])) } : f)) },
+  ]),
+) as Record<ContentTableName, TableSpec>;
 
 const stringArray = z.array(z.string().min(1));
 const JSON_FIELD_SCHEMAS: Record<string, z.ZodType> = {
@@ -310,7 +465,7 @@ export function parseEditable(table: ContentTableName, data: unknown): Result<Re
   }
   const record = parsed.data as Record<string, unknown>;
   if (record.placeholder !== true && textValues(record).some(isPlaceholderText)) {
-    return err(new CapabilityError('validation', `This record contains ${PLACEHOLDER_MARKER}; tick "Placeholder" so it never renders as a fact.`, { issues: [{ path: 'placeholder', message: 'must be true while the text contains the placeholder marker' }] }));
+    return err(new CapabilityError('validation', `This record contains ${PLACEHOLDER_MARKER}; tick “This is still a placeholder” so it never renders as a fact.`, { issues: [{ path: 'placeholder', message: 'must be true while the text contains the placeholder marker' }] }));
   }
   if (record.sourceType === 'official-web' && !record.sourceUrl) {
     return err(new CapabilityError('validation', 'Official-web records need the official page URL guests are told to confirm with.', { issues: [{ path: 'sourceUrl', message: 'required for official-web' }] }));
@@ -475,6 +630,56 @@ function isUniqueViolation(e: unknown): boolean {
   return /unique|duplicate key/i.test(msg);
 }
 
+/** A title as the last part of a web address: "Cindy's Rooftop" → "cindys-rooftop". */
+export function slugify(text: unknown): string {
+  return String(text ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+    .replace(/-+$/, '');
+}
+
+const blank = (v: unknown) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+
+/**
+ * The values the admin is never asked to type (`FieldSpec.derive`). On an edit, an empty one keeps
+ * what is stored. On a new record, a slug comes from the title and a key from the kind and name,
+ * each made unique in its table ("-2", "-3"), and a position puts the record at the end of the list.
+ * Anything the admin did type is kept as typed; the schema and the unique index still check it.
+ */
+async function fillDerived(db: Db, table: ContentTableName, data: unknown, existing: Record<string, unknown> | undefined): Promise<unknown> {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+  const spec = TABLE_SPECS[table];
+  const out: Record<string, unknown> = { ...(data as Record<string, unknown>) };
+  const t = tableFor(table) as ContentTable & Record<string, AnyPgColumn>;
+  for (const f of spec.fields) {
+    if (!f.derive || !blank(out[f.name])) continue;
+    if (existing) {
+      out[f.name] = existing[f.name] ?? null;
+      continue;
+    }
+    const col = t[f.name];
+    if (!col) continue;
+    const taken = ((await db.select({ v: col }).from(t)) as { v: unknown }[]).map((r) => r.v);
+    if (f.derive === 'position') {
+      const numbers = taken.filter((v): v is number => typeof v === 'number');
+      out[f.name] = numbers.length ? Math.max(...numbers) + 1 : 1;
+      continue;
+    }
+    const name = slugify(out[spec.titleField]) || slugify(spec.noun);
+    const base = f.derive === 'key' && !blank(out.kind) ? `${String(out.kind)}.${name}` : name;
+    const used = new Set(taken.map(String));
+    let candidate = base;
+    for (let n = 2; used.has(candidate); n += 1) candidate = `${base}-${n}`;
+    out[f.name] = candidate;
+  }
+  return out;
+}
+
 export interface SaveInput {
   table: ContentTableName;
   id?: string;
@@ -486,18 +691,19 @@ export interface SaveInput {
  * bumps `contentVersion`, stamps the editor, audits `content.updated`, and re-projects the AI corpus.
  */
 export async function saveContentRecord(db: Db, input: SaveInput, editor: Editor): Promise<Result<{ id: string; contentVersion: number; created: boolean }, CapabilityError>> {
-  const parsed = parseEditable(input.table, input.data);
+  const current = input.id ? await loadRow(db, input.table, input.id) : undefined;
+  if (input.id && !current) return err(new CapabilityError('not_found', 'That record no longer exists.'));
+  const parsed = parseEditable(input.table, await fillDerived(db, input.table, input.data, current));
   if (!parsed.ok) return parsed;
   if (parsed.value.sourceId) {
     const src = await db.select({ id: contentSources.id }).from(contentSources).where(eq(contentSources.id, String(parsed.value.sourceId))).limit(1);
-    if (!src[0]) return err(new CapabilityError('validation', 'Unknown source id. Register the source first.', { issues: [{ path: 'sourceId', message: 'unknown content_sources id' }] }));
+    if (!src[0]) return err(new CapabilityError('validation', 'That source is not registered. Choose one from the list.', { issues: [{ path: 'sourceId', message: 'unknown content_sources id' }] }));
   }
   const t = tableFor(input.table);
   const values = toRowValues(input.table, parsed.value);
   try {
     if (input.id) {
-      const existing = await loadRow(db, input.table, input.id);
-      if (!existing) return err(new CapabilityError('not_found', 'That record no longer exists.'));
+      const existing = current!;
       await recordRevision(db, input.table, existing, editor, 'update');
       const contentVersion = Number(existing.contentVersion ?? 1) + 1;
       await db
@@ -514,7 +720,7 @@ export async function saveContentRecord(db: Db, input: SaveInput, editor: Editor
     await projectKnowledge(db, editor.now);
     return ok({ id, contentVersion: 1, created: true });
   } catch (e) {
-    if (isUniqueViolation(e)) return err(new CapabilityError('conflict', 'Another record already uses that slug or key.'));
+    if (isUniqueViolation(e)) return err(new CapabilityError('conflict', 'Another record already uses that web address name or key. Change it under Technical details.'));
     throw e;
   }
 }

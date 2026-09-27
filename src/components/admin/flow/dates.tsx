@@ -18,7 +18,8 @@ import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
  * instant for anything parsing the page.
  *
  * `Intl` with an explicit `timeZone` gives the same string on the server and in the browser, so
- * this is safe in a server component and safe to hydrate.
+ * this is safe in a server component and safe to hydrate. No seconds: the 2026-09-27 console
+ * review found them noise on every screen but the one that already sorts by the instant.
  */
 const STAMP = new Intl.DateTimeFormat('en-US', {
   timeZone: WEDDING_TIMEZONE,
@@ -27,7 +28,6 @@ const STAMP = new Intl.DateTimeFormat('en-US', {
   day: '2-digit',
   hour: '2-digit',
   minute: '2-digit',
-  second: '2-digit',
   hour12: false,
   timeZoneName: 'short',
 });
