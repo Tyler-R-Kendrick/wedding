@@ -49,6 +49,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <li>
             <Link href="/admin/jobs">Jobs</Link>
           </li>
+          <li>
+            <Link href="/admin/guests#browse-as">Browse as a guest</Link>
+          </li>
         </ul>
         <details>
           <summary>All admin screens</summary>

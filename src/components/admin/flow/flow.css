@@ -777,3 +777,9 @@ textarea.flow-input {
     transition: none !important;
   }
 }
+
+/* A plain form action beside the kit's triggers (browse as a guest): inline, no box of its own. */
+.flow-inline-form {
+  display: inline;
+  margin: 0;
+}

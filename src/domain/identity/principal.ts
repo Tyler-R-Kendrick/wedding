@@ -40,20 +40,62 @@ export async function buildGuestPrincipal(db: Db, session: SessionFacts, flags: 
     delegateBindings[0];
   if (!primary) return null;
   const guest = live.get(primary.guestId)!;
+  const selfGuestIds = [...new Set([...selfBindings, ...managerBindings].map((b) => b.guestId))] as GuestId[];
+  return principalForGuest(db, guest, { bindingRole: primary.role, selfGuestIds, delegateGuestIds: delegateBindings.map((b) => b.guestId as GuestId) }, session, flags, now);
+}
+
+/**
+ * The GuestPrincipal an administrator browses as ("Browse as a guest", `guest-view.ts`): the one
+ * that guest's own sign-in would produce, with `viewedBy` naming the administrator.
+ *
+ * When the guest is bound to the administrator's own identity (a planner who is also invited, or
+ * the couple on their own list) by the guest's OWN claim, this IS their guest session, so it is
+ * built from their bindings exactly as a guest sign-in would be, and it is not read-only. A binding
+ * an administrator made (`admin_rebind_identity`, claim method `admin`) never counts: otherwise
+ * rebinding a guest to your own inbox would turn a read-only view into writing in their name.
+ *
+ * Anyone else's view is for OWNERS only — the couple, who already hold every `admin_*` screen — and
+ * is built as that guest's own `self` sign-in would be, read-only. `admin_guest_ops` alone is not
+ * enough: a view reads what the guest reads (their uploads in every state, their travel profile),
+ * which reaches past what a planner's console shows. Children and minors are never viewed: they have
+ * no access of their own to see (ADR-0001 rule 7). Null when the guest is gone (merged or
+ * deleted), is a child, or the administrator may not view them.
+ */
+export async function buildGuestViewPrincipal(db: Db, session: SessionFacts, admin: AdminPrincipal, guestId: string, flags: FlagValues, now: Date = new Date()): Promise<GuestPrincipal | null> {
+  const viewer = (readOnly: boolean) => ({ adminId: admin.adminId, roles: admin.roles, readOnly });
+  const own = await activeBindingsForIdentity(db, session.authIdentityId);
+  if (own.some((b) => b.guestId === guestId && b.role !== 'delegate' && b.claimMethod !== 'admin')) {
+    const self = await buildGuestPrincipal(db, { ...session, activeGuestId: guestId }, flags, now);
+    return self && self.guestId === guestId ? { ...self, viewedBy: viewer(false) } : null;
+  }
+  if (!admin.roles.has('owner')) return null;
+  const guest = (await db.select().from(guests).where(eq(guests.id, guestId)).limit(1))[0];
+  if (!guest || guest.mergedIntoGuestId || guest.kind === 'child' || guest.isMinor) return null;
+  const principal = await principalForGuest(db, guest, { bindingRole: 'self', selfGuestIds: [guest.id as GuestId], delegateGuestIds: [] }, session, flags, now);
+  return principal ? { ...principal, viewedBy: viewer(true) } : null;
+}
+
+async function principalForGuest(
+  db: Db,
+  guest: GuestRow,
+  binding: { bindingRole: 'self' | 'household_manager' | 'delegate'; selfGuestIds: GuestId[]; delegateGuestIds: GuestId[] },
+  session: SessionFacts,
+  flags: FlagValues,
+  now: Date,
+): Promise<GuestPrincipal | null> {
   const household = (await db.select().from(households).where(eq(households.id, guest.householdId)).limit(1))[0];
   if (!household) return null;
   const invitation = await currentInvitationForHousehold(db, household.id);
-  const selfGuestIds = [...new Set([...selfBindings, ...managerBindings].map((b) => b.guestId))] as GuestId[];
-  const managed = await listManagedGuests(db, selfGuestIds);
+  const managed = await listManagedGuests(db, binding.selfGuestIds);
   const facts = await collectEntitlementFacts(db, { guest, household, invitation });
   const input = {
     guest: { id: guest.id as GuestId, kind: guest.kind, isMinor: guest.isMinor, mergedIntoGuestId: guest.mergedIntoGuestId },
     household: { id: household.id, managerGuestId: household.managerGuestId },
     invitation: invitation ? { lifecycle: invitationLifecycle(invitation, now) } : null,
-    bindingRole: primary.role,
-    selfGuestIds,
+    bindingRole: binding.bindingRole,
+    selfGuestIds: binding.selfGuestIds,
     managedGuestIds: managed.map((m) => m.id as GuestId),
-    delegateGuestIds: delegateBindings.map((b) => b.guestId as GuestId),
+    delegateGuestIds: binding.delegateGuestIds,
     facts,
     flags,
   };

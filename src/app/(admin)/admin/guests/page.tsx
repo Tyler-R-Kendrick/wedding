@@ -1,4 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import { stopGuestView } from '@/components/guest-view/actions';
+import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest-view';
+import { getPreviewSecret } from '@/domain/lifecycle/secret';
+import { startGuestView } from '../_lib/guest-view-actions';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
@@ -35,6 +40,11 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const isOwner = principal.roles.has('owner');
   const household = sp.householdId ? households.find((h) => h.value === sp.householdId) : undefined;
   const mergeTargets = rows.filter((g) => !g.mergedIntoGuestId).map((g) => ({ value: g.id, label: `${g.displayName} (${g.householdName})` }));
+  // Browsing as anyone but yourself is for owners (`admin_browse_as_guest` re-checks it). It sets a
+  // cookie and opens the site, so it stays a plain form action rather than a flow.
+  const canBrowseAs = isOwner;
+  const browsing = verifyGuestViewToken((await cookies()).get(GUEST_VIEW_COOKIE)?.value, principal.sessionId, getPreviewSecret(), new Date());
+  const browsingName = browsing ? (rows.find((g) => g.id === browsing.guestId)?.displayName ?? 'a guest') : null;
 
   return (
     <ConsolePage
@@ -49,6 +59,16 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       }
     >
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
+      {browsing ? (
+        <Note>
+          You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself. <a href="/">Open the site</a>{' '}
+          <form action={stopGuestView} className="flow-inline-form">
+            <button type="submit" className="flow-trigger-quiet">
+              Stop browsing as {browsingName}
+            </button>
+          </form>
+        </Note>
+      ) : null}
 
       <Section title={household ? `Guests in ${household.label}` : 'All guests'} id="guests">
         <FilterBar
@@ -97,6 +117,14 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                     <GuestFlow guest={g} households={households} label="Edit" variant="quiet" />
                     {g.claimed ? <RebindFlow guest={g} /> : null}
                     <MergeFlow guest={g} others={mergeTargets.filter((o) => o.value !== g.id)} />
+                    {canBrowseAs ? (
+                      <form action={startGuestView} className="flow-inline-form">
+                        <input type="hidden" name="guestId" value={g.id} />
+                        <button type="submit" className="flow-trigger-quiet">
+                          Browse as <span className="sr-only">{g.displayName}</span>
+                        </button>
+                      </form>
+                    ) : null}
                     {g.claimed ? <ResetAccessFlow guest={g} /> : <DeleteGuestFlow guest={g} />}
                   </>
                 )
@@ -104,6 +132,18 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
             />
           ))}
         </RecordList>
+      </Section>
+
+      <Section title="Browse the site as a guest" id="browse-as">
+        <p className="con-note">
+          See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. It is read-only: nothing you do there is saved or sent in their name, and their ride
+          credit and the concierge stay closed. A band on every page says whose view it is, with the way to stop.
+        </p>
+        <p className="con-note">
+          {canBrowseAs
+            ? 'Choose “Browse as” beside a guest in the list above.'
+            : 'Browsing as a guest is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'}
+        </p>
       </Section>
 
       {isOwner ? (

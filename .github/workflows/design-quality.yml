@@ -311,7 +311,7 @@ jobs:
                       /ask-us /our-story /the-wedding /our-venue /share-an-adventure /sign-out \
                       /our-adventures /travel \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session \
-                      /api/capabilities/warmup; do
+                      /api/capabilities/warmup /?preview=RSVP_OPEN; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
           npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")

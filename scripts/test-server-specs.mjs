@@ -76,6 +76,10 @@ export const WARM_ROUTES = [
   // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed
   // out on [mobile], the first project to run, while tablet and desktop passed.
   '/api/capabilities/warmup',
+  // The lifecycle preview route (`/t/[theme]/preview/[token]`): the masthead sweep reaches every
+  // state through it, and nothing else on this server does. The proxy rewrites on the value's shape,
+  // not on who asks, so an anonymous request compiles it.
+  '/?preview=RSVP_OPEN',
 ];
 
 /** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */
