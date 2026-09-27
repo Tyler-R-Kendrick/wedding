@@ -14,8 +14,8 @@ production while the suite was green. This review then read the diff as someone 
 
 ## 1. Hostile-reviewer pass
 
-No blocker. Two "should", five nits, one suspicion; every one is resolved in `e5314ce` or recorded
-here with its reason.
+No blocker. Three "should" (one found later, by the PR 58 review), five nits, one suspicion; every
+one is resolved in `e5314ce` and the commit after it, or recorded here with its reason.
 
 | # | Finding | Severity | Resolution |
 |---|---|---|---|
@@ -26,6 +26,7 @@ here with its reason.
 | 5 | On `step_up_required`, `AdminCapabilityForm` navigated away without saying the form would have to be entered again, and dropped the query from `next`. | nit | Fixed: it says so first and keeps `pathname + search`. |
 | 6 | `/admin/travel?error=` shows text from the URL (React-escaped, admin-only). | nit | Left: the whole console's `back()` already carries messages this way, behind the admin gate; the fixed-copy rule (review N7) is for guest pages. |
 | 7 | `role="alert"` wrapped the error page's buttons as well as its message. | nit | Fixed: on the message only. |
+| 9 | Found by the PR 58 review, fixed here at the cause: the RSVP action's new `revalidatePath` re-rendered `/rsvp` inside the submit's response, and when a submit answered everything the page stopped rendering the form, so the confirmation vanished the moment it appeared. | should | Fixed: the revalidation is gone. Every RSVP page is `force-dynamic`, so the next visit reads the saved answers anyway; PR 58's "Back to your RSVP" refreshes the page for a guest who stays. |
 | 8 | Unverified: whether Supabase Storage and B2 implement `ListParts`. | suspicion | Both document it among their S3-compatible multipart operations. If one did not, completion answers `provider_unavailable` / `etag_not_exposed`, which fails cleanly (no resend loop); the deploy doc also asks for `ExposeHeaders: ETag`. |
 
 Checked and found correct: the looser `SAFE_QUERY` (`' ( ) * ! ~`) keeps every path check
