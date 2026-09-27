@@ -70,6 +70,19 @@ test.describe('claim journey', () => {
     expect((await cap(request, 'get_my_invitation', {}, { cookie: `${rotated.name}=${rotated.value}` })).status()).toBe(401);
   });
 
+  test('an administrator who is not a guest signs in through the guest form and lands in the console', async ({ page, request }) => {
+    // The fixture admin holds the owner role and has no guest record — the couple on production.
+    // The guest form used to answer "we sent a code" and send nothing to such an address.
+    const f = await seedFixtures(request);
+    await page.goto('/sign-in');
+    await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
+    await page.getByRole('button', { name: 'Send me a code' }).click();
+    await expect(page).toHaveURL(/\/claim\/verify/);
+    await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page).toHaveURL(/\/admin(\/|$)/);
+  });
+
   test('no-email grandparent is claimed through the manager; shared inbox spouse switches with "not you"', async ({ page, request }) => {
     const f = await seedFixtures(request);
     await page.goto(`/invite/${f.invitations.fitzgerald!.token}`);

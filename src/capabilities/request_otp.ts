@@ -148,8 +148,19 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
         const user = await findAuthUserByEmail(db, typedEmail);
         const byBinding = user ? (await activeBindingsForIdentity(db, user.id)).filter((b) => b.role === 'self').map((b) => b.guestId) : [];
         const guestIds = [...new Set([...byBinding, ...byGuest.map((g) => g.id)])];
-        email = guestIds.length > 0 ? typedEmail : null;
-        payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+        if (guestIds.length > 0) {
+          email = typedEmail;
+          payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+        } else if ((await resolveAdminRoles(db, typedEmail, env.ADMIN_EMAILS)).size > 0) {
+          // An administrator who is not on the guest list, typing into the guest form. This used to be
+          // suppressed like any unknown address: "we sent a code", and nothing ever arrived. Send the
+          // admin code instead. The response is identical either way, so it tells a stranger nothing.
+          email = typedEmail;
+          payload = { kind: 'admin_sign_in', guestIds: [], invitationId: null, userId: null, next };
+        } else {
+          email = null;
+          payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+        }
       }
     } else {
       const p = ctx.principal;

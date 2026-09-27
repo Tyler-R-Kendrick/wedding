@@ -35,6 +35,19 @@ describe('admin reset, rebind, roles, CSV', () => {
     expectErr(await call('verify_otp', { challenge: old.data.challenge, code: '111111' }), 'validation');
   });
 
+  it('an administrator who is not a guest gets a code from the guest sign-in form too', async () => {
+    await seed('ad4');
+    await grantAdmin(`owner+ad4@example.test`, 'owner');
+    const admin = await signIn(`owner+ad4@example.test`);
+    expect(admin.outcome.isAdmin).toBe(true);
+    expect(admin.outcome.guestId).toBeNull();
+    expect((await principalFor({ cookie: admin.cookie })).kind).toBe('admin');
+    // A stranger still gets the same "sent" answer and no code.
+    const stranger = expectOk(await call<{ sent: boolean; challenge: string }>('request_otp', { purpose: 'sign_in', email: `nobody+ad4@example.test` }));
+    expect(stranger.data.sent).toBe(true);
+    expectErr(await call('verify_otp', { challenge: stranger.data.challenge, code: '111111' }), 'validation');
+  });
+
   it('admin capabilities deny guests and anonymous callers; planners cannot manage roles', async () => {
     const f = await seed('ad2');
     const ana = await claim(f.invitations.ruiz.token, f.guests.ana, f.emails.ana);
