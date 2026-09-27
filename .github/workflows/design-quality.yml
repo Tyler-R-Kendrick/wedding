@@ -138,29 +138,17 @@ jobs:
   e2e:
     name: Playwright smoke (production build)
     runs-on: ubuntu-latest
-    # One of these at a time in the whole repository, queued rather than cancelled.
+    # No job-level concurrency group: the workflow's own group (one run per ref, superseded pushes
+    # to a pull request cancelled) is the only one this job needs.
     #
-    # This job is the heaviest thing here — a production build, `next start`, then a `next dev`
-    # server with two Playwright workers against it — and it is the only one that has ever died
-    # with "the runner has received a shutdown signal". Five runs on this branch today say when:
-    #
-    #   11:44–11:55  no run on main   green
-    #   11:56–12:07  no run on main   green
-    #   12:11–12:18  #20 on main      shutdown signal, 30s into the dev-server step
-    #   12:37–12:50  #22 on main      superseded
-    #   12:45–12:57  #23 on main      shutdown signal, 30s into the dev-server step
-    #
-    # Both deaths took THIS job while its siblings on the same run finished green seconds later,
-    # so it is not the run being cancelled and not the account losing its runners — it is this
-    # job's own machine going away while another copy of it runs elsewhere in the repo.
-    #
-    # Scoped to the job, not the workflow, so lint and typecheck stay parallel and only the
-    # expensive one takes a turn. `cancel-in-progress: false` because a queued run is the point;
-    # GitHub keeps one running and one pending per group and drops older pending ones itself,
-    # so a burst of pushes still collapses to the newest.
-    concurrency:
-      group: playwright-smoke-${{ github.repository }}
-      cancel-in-progress: false
+    # It used to share ONE group across the whole repository, to keep two copies from running at
+    # once after two runs on main died with "the runner has received a shutdown signal". The
+    # swap step below found the cause: `next dev` warming every route runs a 16 GB runner out of
+    # memory, with or without another run in the repository. The group stayed, and it cost more
+    # than it saved. GitHub keeps one running and ONE pending job per group and cancels an older
+    # pending one when another arrives, so with a few pull requests open a PR's Playwright job was
+    # cancelled before it ever got a runner (#56's run 36287088103: queued 01:57, dropped 02:01
+    # when #57 queued) and its check read "cancelled" on a commit nothing had tested.
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -228,8 +216,8 @@ jobs:
         # (Turbopack) to ~13.8 GB resident, ~17 GB counting its transient peak, on a machine with
         # 16 GB. Out of memory, the kernel takes the runner agent, and that is "the runner has
         # received a shutdown signal": #38's PR run and two runs on #35 died that way inside the
-        # next step, with no other run in the repository at the time, so the concurrency group
-        # above is not the whole story. Reproduced in a 16 GB sandbox (the server died at 13.4 GB,
+        # next step, with no other run in the repository at the time, so a repository-wide
+        # concurrency group was never the cure (it has since been removed). Reproduced in a 16 GB sandbox (the server died at 13.4 GB,
         # on /admin/rsvp/export, 45 routes in) and fixed there by 10 GB of swap. Turbopack frees
         # most of it once idle, so swap only has to carry the peak, not the steady state.
         run: |
