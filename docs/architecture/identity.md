@@ -111,5 +111,5 @@ reset / rebind, admin roles (owners only). `/admin/guests/export` streams the CS
 
 ## Development
 
-- `POST /api/dev/identity` seeds suffixed fixtures (`src/domain/identity/fixtures.ts`) and returns ids, emails and plain tokens; `GET /api/dev/inbox` shows the codes. Both are open in local development and behind `Authorization: Bearer $DEV_INBOX_TOKEN` elsewhere.
+- `POST /api/dev/identity` seeds suffixed fixtures (`src/domain/identity/fixtures.ts`) and returns ids, emails and plain tokens; `GET /api/dev/inbox` shows the codes. Both are open in local development, behind `Authorization: Bearer $DEV_INBOX_TOKEN` on non-production shared hosts (CI), and closed in production — Vercel previews included, since they run with `NODE_ENV=production` (`src/lib/auth/dev-gate.ts`).
 - Run `npm run test:security` and `npm run test:e2e` with `BASE_URL` pointing at a server started with `BETTER_AUTH_URL`/`NEXT_PUBLIC_SITE_URL` set to that origin.

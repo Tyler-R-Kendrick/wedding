@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { revokeInvitation } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Button, Input } from '../_components/ops';
-import { ConsoleGate, ConsolePage, DataTable, Day, Section } from '../_components/console';
+import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section } from '../_components/console';
 import { IssueForm } from './IssueForm';
 
 export const dynamic = 'force-dynamic';
@@ -14,14 +14,15 @@ export default async function InvitationsPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   if ((await adminPrincipal()).kind !== 'admin') return <ConsoleGate what="Invitations" />;
   const [inv, hh] = await Promise.all([
-    adminInvoke<{ invitations: Inv[] }>('admin_list_invitations', {}, { method: 'GET' }),
-    adminInvoke<{ households: { id: string; name: string }[] }>('admin_list_households', {}, { method: 'GET' }),
+    adminInvoke<{ invitations: Inv[]; truncated: boolean }>('admin_list_invitations', {}, { method: 'GET' }),
+    adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
   ]);
   const notice = { ok: sp.ok, error: sp.error ?? (!inv.ok ? inv.error.message : undefined) };
   const rows = inv.ok ? inv.value.data.invitations : [];
   const households = hh.ok ? hh.value.data.households : [];
   return (
     <ConsolePage title="Invitations" lede="Links are discovery only: they show who is invited and start a claim. Tokens are never stored; rotate a link if it leaks." notice={notice}>
+      {(inv.ok && inv.value.data.truncated) || (hh.ok && hh.value.data.truncated) ? <Note>There are more links or households than this screen lists at once. Only the first {rows.length} links and {households.length} households are shown.</Note> : null}
       <Section title="Issue a link">
         <IssueForm households={households} />
       </Section>

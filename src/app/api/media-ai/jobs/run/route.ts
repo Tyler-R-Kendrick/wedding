@@ -1,9 +1,10 @@
 import { getDb } from '@/db/client';
-import '@/domain/media/jobs';
 import { enqueueIndexScan } from '@/domain/mediaai/jobs';
 import { timingSafeEqualString } from '@/lib/crypto';
 import { env } from '@/lib/env';
 import { runDueJobs } from '@/lib/jobs';
+// Every handler, not just this route's: a runner only claims types it has a handler for.
+import '@/lib/jobs/register-all';
 import { bearerToken, getRequestId, jsonResponse } from '@/lib/request';
 
 export const dynamic = 'force-dynamic';
@@ -11,10 +12,9 @@ export const maxDuration = 60;
 
 /**
  * Media-intelligence cron alias: `POST /api/media-ai/jobs/run` with `Authorization: Bearer $CRON_SECRET`.
- * Importing the job modules registers media.index / media.cluster (and Swarm H's media.* handlers)
- * in this route's module graph, keeps one index scan and one cluster pass queued (deduped), and
- * runs a bounded batch. `vercel.json` schedules this alongside the other two cron routes: a handler
- * that is not in a route's module graph cannot be run by that route.
+ * `@/lib/jobs/register-all` registers every job handler in this route's module graph (a runner only
+ * claims types it has a handler for); this route keeps one index scan and one cluster pass queued
+ * (deduped) and runs a bounded batch. `vercel.json` schedules it alongside the other two cron routes.
  */
 function authorized(request: Request): boolean {
   if (!env.CRON_SECRET) return false;

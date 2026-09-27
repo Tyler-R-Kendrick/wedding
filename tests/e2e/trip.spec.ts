@@ -44,7 +44,9 @@ test.describe('Your trip (signed in)', () => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
     await page.goto('/trip');
-    await expect(page.getByText(/Open the link from your invitation/)).toBeVisible();
+    await expect(page.getByText(/with the email on your invitation to see and plan your trip/)).toBeVisible();
+    // The way in is sign-in, and it comes back here; the page used to point only at Travel & Stay.
+    await expect(page.locator('#main').getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/sign-in?next=%2Ftrip');
     await ctx.close();
   });
 });

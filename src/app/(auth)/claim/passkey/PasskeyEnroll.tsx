@@ -50,13 +50,20 @@ export function PasskeyEnroll() {
     }
   }
 
-  if (!supported) return null;
+  // Hidden rather than broken — but not silent: the page is about passkeys, and a heading with nothing under it reads as a fault.
+  if (!supported) {
+    return (
+      <p className="auth-hint" data-testid="passkey-unsupported">
+        This browser can’t save a passkey. Nothing is lost: codes by email keep working everywhere.
+      </p>
+    );
+  }
   return (
     <section className="auth-field" aria-labelledby="passkey-heading" data-testid="passkey-enroll">
       <h2 id="passkey-heading" className="auth-label">
-        Sign in faster next time (optional)
+        Confirm it’s you faster (optional)
       </h2>
-      <p className="auth-hint">Add a passkey to use Face ID, Touch ID, or your device lock instead of a code. Codes always keep working.</p>
+      <p className="auth-hint">When we ask you to confirm it’s you — before changing your email or claiming a ride — a passkey lets you use Face ID, Touch ID, or your device lock instead of waiting for a code. Codes always keep working.</p>
       {status === 'done' ? (
         <p className="auth-notice auth-notice-success" role="status" data-testid="passkey-done">
           Passkey saved for this device.
@@ -67,7 +74,7 @@ export function PasskeyEnroll() {
             {status === 'working' ? 'Waiting for your device…' : 'Add a passkey'}
           </button>
           {status === 'step_up' ? (
-            <a className="auth-link" href="/step-up?next=%2Fclaim%2Fwelcome">
+            <a className="auth-link" href="/step-up?next=%2Fclaim%2Fpasskey">
               Confirm it’s you first
             </a>
           ) : null}

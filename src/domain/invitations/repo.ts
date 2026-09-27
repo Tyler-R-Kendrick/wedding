@@ -91,6 +91,10 @@ export async function currentInvitationsForHouseholds(db: Db, householdIds: read
   return out;
 }
 
+/** Default page and hard ceiling for invitation lists (see HOUSEHOLD_LIST_DEFAULT for the reasoning). */
+export const INVITATION_LIST_DEFAULT = 5000;
+export const INVITATION_LIST_MAX = 10_000;
+
 export async function listInvitations(db: Db, filter: { householdId?: string; status?: InvitationStatus; limit?: number; offset?: number } = {}): Promise<InvitationRow[]> {
   const conditions = [filter.householdId ? eq(invitations.householdId, filter.householdId) : undefined, filter.status ? eq(invitations.status, filter.status) : undefined].filter(
     (c): c is NonNullable<typeof c> => c !== undefined,
@@ -99,8 +103,8 @@ export async function listInvitations(db: Db, filter: { householdId?: string; st
     .select()
     .from(invitations)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(invitations.issuedAt))
-    .limit(Math.min(filter.limit ?? 500, 2000))
+    .orderBy(desc(invitations.issuedAt), desc(invitations.id))
+    .limit(Math.min(filter.limit ?? INVITATION_LIST_DEFAULT, INVITATION_LIST_MAX))
     .offset(filter.offset ?? 0);
 }
 

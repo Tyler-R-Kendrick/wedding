@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import '@/components/tokens/foundation.css';
@@ -7,6 +8,11 @@ import './admin/_components/ops.css';
 import './admin/_components/console.css';
 
 export const dynamic = 'force-dynamic';
+/**
+ * Every admin route is noindex, whether or not the page sets its own metadata. The root layout's
+ * site-wide noindex is a pre-launch setting and will change; this one must not.
+ */
+export const metadata: Metadata = { title: 'Admin', robots: { index: false, follow: false } };
 
 /**
  * The admin console shell. Every admin screen hangs off one index (`_components/sections.ts`), so a

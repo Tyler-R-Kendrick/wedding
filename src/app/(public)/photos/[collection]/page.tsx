@@ -36,7 +36,11 @@ export default async function CollectionPage({ params, searchParams }: { params:
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', { collection, ...(cursor && /^[A-Za-z0-9_-]{1,256}$/.test(cursor) ? { cursor } : {}) }, principal);
   // A collection the caller may not see is indistinguishable from one that does not exist: no
   // enumeration of admin-only albums, which is the same answer `list_gallery` gives.
-  if (!gallery.ok) notFound();
+  if (!gallery.ok) {
+    if (gallery.error.code === 'not_found' || gallery.error.code === 'forbidden' || gallery.error.code === 'validation') notFound();
+    // Anything else (rate limited, the database) is a failure to read the album, not proof it doesn't exist.
+    throw new Error(`list_gallery failed: ${gallery.error.code}`);
+  }
   const { collection: album, items, nextCursor } = gallery.data;
   return (
     <recipes.PhotoAlbumPage

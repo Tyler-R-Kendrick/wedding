@@ -35,7 +35,7 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   // pages) `signedIn` stays undefined and the account menu asks in the browser.
   const principal = input.lifecycle?.principal;
   const signedIn = principal ? principal.kind === 'guest' || principal.kind === 'admin' : undefined;
-  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}) });
+  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}) });
   return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 

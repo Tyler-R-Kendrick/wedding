@@ -88,6 +88,8 @@ export interface NavOptions {
    * menu asks `/api/session` in the browser and opens itself when the answer is yes.
    */
   signedIn?: boolean;
+  /** The session is an administrator's: the account menu offers the console, not a household's pages. */
+  admin?: boolean;
   venue?: VenueFacts;
 }
 
@@ -126,6 +128,7 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
     account: SIGN_IN,
     member: memberNavFor(state),
     ...(opts.signedIn !== undefined ? { signedIn: opts.signedIn } : {}),
+    ...(opts.admin ? { admin: true } : {}),
   };
 }
 

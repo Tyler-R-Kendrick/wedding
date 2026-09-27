@@ -147,6 +147,7 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                           <label className="sr-only" htmlFor={id}>
                             {g.displayName} at {e.name}
                           </label>
+                          <input type="hidden" name={`was:${g.guestId}:${e.id}`} value={current ? current.plusOnePolicy : 'no'} />
                           <select id={id} className="ops-input" name={`ent:${g.guestId}:${e.id}`} defaultValue={current ? current.plusOnePolicy : 'no'}>
                             <option value="no">Not invited</option>
                             <option value="none">Invited</option>

@@ -17,7 +17,7 @@ export async function overrideAction(fd: FormData): Promise<void> {
       plusOne: plusOneWanted || field(fd, 'plusOneName') ? { attending: plusOneWanted, name: field(fd, 'plusOneName'), mealOptionId: field(fd, 'plusOneMealOptionId') } : null,
       reason: field(fd, 'reason') ?? '',
     },
-    { idempotencyKey: field(fd, 'idempotencyKey') ?? undefined },
+    { idempotencyKey: field(fd, 'idem') ?? undefined },
   );
   back(PATH, r.ok ? { ok: `Recorded ${r.value.data.status} (version ${r.value.data.version}, was ${r.value.data.previousStatus ?? 'unanswered'}).` } : { error: describeError(r.error) });
 }

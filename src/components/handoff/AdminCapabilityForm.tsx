@@ -21,7 +21,9 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    // React clears `currentTarget` once the handler yields, so keep the element for after the await.
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const input: Record<string, unknown> = {};
     for (const f of fields) {
       const raw = form.get(f.name);
@@ -34,11 +36,19 @@ export function AdminCapabilityForm({ capability, fields, submitLabel, title }: 
     setStatus({ kind: 'busy' });
     const res = await callCapability(capability, { input, idempotencyKey: newIdempotencyKey() });
     if (!res.ok) {
+      // A capability that needs a fresh session (`stepUp: true`) is finished after proving it is still
+      // you; /step-up brings the admin back to this page.
+      if (res.error?.code === 'step_up_required') {
+        // Said before leaving, because nothing typed here survives the round trip to /step-up.
+        setStatus({ kind: 'error', message: 'Please confirm it’s you first. You will come back to this page and need to enter this form again.' });
+        router.push(`/step-up?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        return;
+      }
       setStatus({ kind: 'error', message: res.error?.message ?? 'Something went wrong.', issues: (res.error?.details?.issues as { path: string; message: string }[] | undefined) ?? undefined });
       return;
     }
     setStatus({ kind: 'ok', message: 'Saved.' });
-    e.currentTarget?.reset?.();
+    formEl.reset();
     router.refresh();
   };
 

@@ -4,12 +4,12 @@ import { errorCode, errorCopy, ERROR_COPY } from '@/app/(auth)/_lib/errors';
 
 describe('safe return paths (review S7/N4)', () => {
   it('accepts same-site public, auth and admin paths', () => {
-    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom']) {
+    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom', '/rsvp/attending', '/rsvp/meals', "/media/search?q=Sara's%20dress", '/media/search?q=(first)%20dance!']) {
       expect(isSafeReturnPath(p), p).toBe(true);
     }
   });
   it('refuses off-site and malformed targets', () => {
-    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
+    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', '/rsvp/<x>', '/rsvp/nope', '/rsvp/meals/extra', '/media/me', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
       expect(isSafeReturnPath(p), String(p)).toBe(false);
     }
     expect(safeReturnPath('https://evil.example', '/sign-in')).toBe('/sign-in');
@@ -28,5 +28,14 @@ describe('fixed error copy (review N7)', () => {
     expect(errorCode({ code: 'rate_limited', message: 'Too many attempts.' })).toBe('rate_limited');
     expect(errorCode({ code: 'weird' })).toBe('internal');
     for (const v of Object.values(ERROR_COPY)) expect(v).not.toMatch(/<|>|http/);
+  });
+});
+
+describe('RSVP part routes', () => {
+  it('the navigate_to allowlist names exactly the parts the RSVP has', async () => {
+    const { INTERNAL_ROUTES } = await import('@/capabilities/routes');
+    const { PART_STEP } = await import('@/components/rsvp/RsvpTaskList');
+    const listed = INTERNAL_ROUTES.filter((r) => r.startsWith('/rsvp/')).sort();
+    expect(listed).toEqual(Object.values(PART_STEP).map((s) => `/rsvp/${s}`).sort());
   });
 });

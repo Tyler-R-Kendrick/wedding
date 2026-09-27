@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { MyInvitation } from '@/capabilities/get_my_invitation';
-import { claimPerson, signOut, updateEmail } from '../../_lib/actions';
+import { claimPerson, signOut, startOverCode, updateEmail } from '../../_lib/actions';
 import { readChallengeCookie } from '../../_lib/challenge-cookie';
 import { errorCopy } from '../../_lib/errors';
 import { currentPrincipal, invokeFromRequest } from '../../_lib/invoke';
@@ -61,7 +61,11 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   // guest who picked her own name on the invitation was greeted "Welcome, Dev", told she was signed
   // in as Dev Fixture, and told she manages the RSVP for the household. Three sentences false about
   // the person reading them. Only shown when the two names actually differ.
-  const picked = typeof sp.picked === 'string' && sp.picked !== d.you.displayName ? sp.picked : null;
+  // The name comes from the URL, so it is only shown when it is a member of this household: a crafted
+  // link cannot put its own words on the page (fixed-copy rule, review N7).
+  const memberName = (name: string | undefined) => (typeof name === 'string' && d.members.some((m) => m.displayName === name) ? name : null);
+  const pickedName = memberName(sp.picked);
+  const picked = pickedName && pickedName !== d.you.displayName ? pickedName : null;
   return (
     <AuthShell
       eyebrow="You’re in"
@@ -91,7 +95,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
           signed in as <the name it already showed>". The action now says which happened. */}
       {sp.switched === '1' ? <Notice tone="success">Done — you’re now signed in as {d.you.displayName}.</Notice> : null}
       {sp.switched === 'managed' ? (
-        <Notice tone="success">Done — you now answer for {sp.who ? decodeURIComponent(sp.who) : 'them'}. You are still signed in as {d.you.displayName}.</Notice>
+        <Notice tone="success">Done — you now answer for {memberName(sp.who) ?? 'them'}. You are still signed in as {d.you.displayName}.</Notice>
       ) : null}
       {sp.contact === 'done' ? <Notice tone="success">Your email is updated. Future codes will go to the new address.</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
@@ -146,6 +150,14 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
             </Field>
             <Actions>
               <Button>Confirm new email</Button>
+            </Actions>
+          </form>
+        ) : null}
+        {changing ? (
+          <form action={startOverCode}>
+            <input type="hidden" name="back" value="/claim/welcome" />
+            <Actions>
+              <Button variant="ghost">Use a different address</Button>
             </Actions>
           </form>
         ) : (

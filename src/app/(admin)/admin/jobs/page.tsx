@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { adminJobsOverview } from '@/capabilities/ops';
 import { newId } from '@/contracts/ids';
+// Every handler, as the cron runners load them: "no handler" should mean no runner can run the type,
+// not that this page's own module graph happened not to import it.
+import '@/lib/jobs/register-all';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
 import { cancelJob, retryJob } from '../_lib/ops-actions';

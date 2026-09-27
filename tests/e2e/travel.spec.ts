@@ -182,8 +182,12 @@ test.describe("Travel & Stay", () => {
       "Your trip",
     );
     await expect(
-      page.getByText(/Open the link from your invitation/),
+      page.getByText(/with the email on your invitation to see and plan your trip/),
     ).toBeVisible();
+    // Signed out, the way in is sign-in, and it comes back to /trip.
+    await expect(
+      page.locator("#main").getByRole("link", { name: "Sign in" }),
+    ).toHaveAttribute("href", "/sign-in?next=%2Ftrip");
     await page.goto("/admin/travel");
     // Level 16 moved every admin screen onto one shell, so this screen's gate is `ConsoleGate` —
     // the same heading and the same sentence as the other twenty-four, instead of the bespoke

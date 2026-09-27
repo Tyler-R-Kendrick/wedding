@@ -30,6 +30,6 @@ export async function searchAction(_prev: SearchFormState, fd: FormData): Promis
           cabin: field.str(fd, 'cabin'),
           nonstopOnly: field.bool(fd, 'nonstopOnly'),
         };
-  const r = await runAsUi(searchTravelOptions, input);
+  const r = await runAsUi(searchTravelOptions, input, { meterAnonymous: true });
   return r.ok ? { status: 'ok', outcome: r.value.data, values } : { status: 'error', error: toFormError(r.error), values };
 }

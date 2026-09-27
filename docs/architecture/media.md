@@ -131,8 +131,14 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3110 MEDIA_PART_SIZE_MB=1 MEDIA_MULTIPART_
 
 - Single-use upload URLs need a nonce in the local-fs signature and a consume step in the dev route
   (contract-change request); today expiry + completion state provide the guarantee at the app level.
-- Resume relies on client-reported ETags (kept in sessionStorage); a `listMultipartParts` seam would
-  let the server recover parts after a full client reset.
+- Resume relies on client-reported ETags (kept in sessionStorage). The browser can only read a
+  part's ETag when the bucket CORS lists it in `ExposeHeaders` (docs/ops/deploy-vercel-supabase.md).
+  A single PUT reports no parts at all — completion verifies the object with HEAD — and a part
+  whose ETag was hidden is reported with an empty one. Completion then asks storage through the
+  optional `listMultipartParts` seam (`MultipartPartLister` in `src/domain/media/uploads.ts`). The S3
+  adapter implements it with `ListParts`, so an R2/B2/Supabase bucket that hides ETag still completes;
+  an adapter without it (local-fs never needs it: same origin) fails with `provider_unavailable` /
+  `reason: etag_not_exposed` rather than asking the guest to resend parts that did arrive.
 - No AVIF derivatives yet; no transcoding of MOV/HEVC for browsers without native support.
 - The malware-scan hook is a seam (`scanHook`) with no scanner configured.
 - Cost figures use an assumed price (`TODO(Tyler & Sara)` to confirm).

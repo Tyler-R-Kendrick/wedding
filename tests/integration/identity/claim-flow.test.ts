@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { guests } from '@/db/schema';
 import { getDb } from '@/db/client';
 import { listAuditEvents } from '@/lib/audit';
 import { devInbox } from '@/providers/auth-email/mock';
@@ -63,6 +65,23 @@ describe('claim flow (invite -> pick -> OTP -> session)', () => {
     const hh = expectOk(await call<{ members: { guestId: string; canActFor: boolean; hasEmail: boolean | null }[] }>('get_my_household', {}, { cookie }));
     expect(hh.data.members.find((m) => m.guestId === f.guests.ruth)).toMatchObject({ canActFor: true, hasEmail: false });
     expect(hh.data.members.find((m) => m.guestId === f.guests.nora)).toMatchObject({ canActFor: true });
+  });
+
+  it('a claim on a browser someone else is signed in on makes the new guest active and the manager of whom they claimed', async () => {
+    const f = await seed('cf6');
+    // Ana signs in on the family computer, then Sara claims Ruth (no email) on the same browser.
+    const first = await claim(f.invitations.ruiz.token, f.guests.ana, f.emails.ana);
+    devInbox.clear();
+    const { cookie, outcome } = await claim(f.invitations.fitzgerald.token, f.guests.ruth, f.emails.shared, { cookie: first.cookie });
+    expect(outcome.guestId).toBe(f.guests.sara);
+    const p = await principalFor({ cookie });
+    expect(p.kind).toBe('guest');
+    if (p.kind !== 'guest') return;
+    expect(p.guestId).toBe(f.guests.sara);
+    expect(p.householdId).toBe(f.households.fitzgerald);
+    const db = await getDb();
+    const [ruth] = await db.select({ managedBy: guests.managedByGuestId }).from(guests).where(eq(guests.id, f.guests.ruth));
+    expect(ruth?.managedBy).toBe(f.guests.sara);
   });
 
   it('wrong, expired-challenge and replayed codes all fail with the same message; a used code cannot be replayed', async () => {

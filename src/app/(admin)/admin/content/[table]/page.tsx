@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { invoke } from '@/capabilities/invoke';
@@ -5,13 +6,19 @@ import { listContentRecordsCapability } from '@/capabilities/list_content_record
 import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
-import { Breadcrumbs, ConsolePage, DataTable, Pill, Stamp } from '../../_components/console';
+import { Breadcrumbs, ConsolePage, DataTable, Denied, Pill, Stamp } from '../../_components/console';
 import { AdminDenied, adminContentContext } from '../_auth';
 import { FRESHNESS_TONE } from '../page';
 
 export const dynamic = 'force-dynamic';
 
 type Params = Promise<{ table: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { table } = await params;
+  const spec = (CONTENT_TABLE_NAMES as readonly string[]).includes(table) ? TABLE_SPECS[table as keyof typeof TABLE_SPECS] : null;
+  return { title: spec ? `${spec.label} · Content (admin)` : 'Content (admin)' };
+}
 
 export default async function AdminContentTable({ params }: { params: Params }) {
   const { table } = await params;
@@ -20,7 +27,14 @@ export default async function AdminContentTable({ params }: { params: Params }) 
   const { ctx, allowed } = await adminContentContext();
   if (!allowed) return <AdminDenied />;
   const r = await invoke(listContentRecordsCapability, ctx, { table });
-  if (!r.ok) throw new Error(r.error.message);
+  if (!r.ok) {
+    return (
+      <ConsolePage title={spec.label}>
+        <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { label: spec.label }]} />
+        <Denied message={r.error.message} />
+      </ConsolePage>
+    );
+  }
   const rows = r.value.data.tables[0]?.records ?? [];
 
   return (

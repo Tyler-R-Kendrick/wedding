@@ -125,6 +125,22 @@ describe('storage provider selection', () => {
     expect(createStorageProvider(prod), 'a host with a disk keeps local-fs').toBeInstanceOf(LocalFsStorage);
   });
 
+  it('lists a multipart upload\'s parts across pages, so completion can recover ETags the browser could not read', async () => {
+    const s3 = createStorageProvider({ ...base, ...r2, S3_ENDPOINT: 'https://acct.r2.cloudflarestorage.com' }) as S3Storage;
+    const pages = [
+      { Parts: [{ PartNumber: 1, ETag: '"a"', Size: 5 }, { PartNumber: 2, ETag: '"b"', Size: 5 }], IsTruncated: true, NextPartNumberMarker: 2 },
+      { Parts: [{ PartNumber: 3, ETag: '"c"', Size: 1 }], IsTruncated: false },
+    ];
+    const seen: unknown[] = [];
+    class ListPartsCommand {
+      constructor(readonly input: unknown) {}
+    }
+    Object.assign(s3, { sdk: async () => ({ s3: { ListPartsCommand }, client: { send: async (cmd: ListPartsCommand) => (seen.push(cmd.input), pages.shift()) } }) });
+    const r = await s3.listMultipartParts({ key: 'uploads/x/y.jpg', uploadId: 'u1' });
+    expect(r.ok && r.value).toEqual([{ partNumber: 1, etag: '"a"', size: 5 }, { partNumber: 2, etag: '"b"', size: 5 }, { partNumber: 3, etag: '"c"', size: 1 }]);
+    expect(seen).toEqual([expect.not.objectContaining({ PartNumberMarker: expect.anything() }), expect.objectContaining({ PartNumberMarker: '2', UploadId: 'u1' })]);
+  });
+
   it('never stores with AWS: an Amazon endpoint, or none (the SDK would pick Amazon), is refused', () => {
     for (const endpoint of [undefined, 'https://s3.us-east-2.amazonaws.com', 'https://b.s3.amazonaws.com', 'https://s3.cn-north-1.amazonaws.com.cn', 'https://s3.eusc-de-east-1.amazonaws.eu', 'https://s3.us-east-1.amazonaws.com.', 'not a url']) {
       expect(() => createStorageProvider({ ...base, ...r2, S3_ENDPOINT: endpoint }), String(endpoint)).toThrow(/does not use AWS/);

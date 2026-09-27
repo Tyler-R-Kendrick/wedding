@@ -62,6 +62,8 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
         ...(filters.targetId ? { targetId: filters.targetId } : {}),
         ...(filters.requestId ? { requestId: filters.requestId } : {}),
         ...(filters.actorKind ? { actorKind: filters.actorKind } : {}),
+        // The page size travels with the cursor, or "Older events" silently fell back to 50.
+        ...(one(sp.limit) ? { limit: String(filters.limit) } : {}),
         cursorAt: data.nextCursor.at,
         cursorId: data.nextCursor.id,
       }).toString()}`

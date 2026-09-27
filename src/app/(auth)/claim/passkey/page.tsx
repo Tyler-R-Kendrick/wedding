@@ -12,13 +12,13 @@ export default async function PasskeyPage() {
     return (
       <AuthShell eyebrow="Sign in" title="Please sign in first">
         <Actions>
-          <a className="auth-link" href="/sign-in">Sign in with your email</a>
+          <a className="auth-link" href="/sign-in?next=%2Fclaim%2Fpasskey">Sign in with your email</a>
         </Actions>
       </AuthShell>
     );
   }
   return (
-    <AuthShell eyebrow="Optional" title="Passkeys" lede={<p>A passkey lets this device sign you in without a code. It never replaces codes — they keep working everywhere.</p>}>
+    <AuthShell eyebrow="Optional" title="Passkeys" lede={<p>A passkey lets this device confirm it’s you without a code. It never replaces codes — they keep working everywhere.</p>}>
       <PasskeyEnroll />
       <Actions>
         <a className="auth-link" href="/claim/welcome">Back</a>

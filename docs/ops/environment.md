@@ -11,7 +11,7 @@ running server enforces it.
 | Variable | Used by | Notes |
 |---|---|---|
 | `CONFIRMATION_SECRET` | `src/policy/confirmation.ts` | HMAC key for confirmation tokens, >= 16 chars. Dev default with a warning. |
-| `CRON_SECRET` | `POST /api/jobs/run` | Bearer token for the cron caller, >= 32 chars. Route returns a uniform 401 when unset or wrong. |
+| `CRON_SECRET` | `/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run` | Bearer token for the cron caller, >= 32 chars. Each route returns a uniform 401 when unset or wrong. |
 | `S3_ENDPOINT` + `S3_BUCKET` + `S3_ACCESS_KEY_ID` + `S3_SECRET_ACCESS_KEY`, **or** `STORAGE_SIGNING_SECRET` | `src/providers/storage` | One of the two (the endpoint is R2, B2, Supabase Storage or MinIO, never AWS), and on a serverless host (`VERCEL` / `AWS_LAMBDA_FUNCTION_NAME`) it must be S3: local-fs on an ephemeral disk accepts an upload and loses it, so boot fails instead. The committed local-fs dev signing secret is never used in production: `createStorageProvider` throws and boot fails (names only). `DEV_STORAGE_SECRET`, an older name, is accepted as an alias of `STORAGE_SIGNING_SECRET`. |
 | `DATABASE_URL` | `src/db/client.ts` | Required when `VERCEL_ENV=production` (boot fails without it). Vercel previews may run on ephemeral `/tmp` PGlite. Elsewhere, production without it uses PGlite on local disk. |
 
@@ -31,10 +31,10 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `DB_AUTO_MIGRATE` | on outside production | db client | no |
 | `DB_AUTO_SEED` | on outside production | db client (idempotent seed) | no |
 | `CONFIRMATION_SECRET` | dev default (warns) | policy/confirmation; also signs admin lifecycle-preview tokens (`src/domain/lifecycle/preview.ts`) | no |
-| `CRON_SECRET` | unset (route 401) | api/jobs/run | no |
+| `CRON_SECRET` | unset (routes 401) | api/jobs/run, api/uploads/jobs/run, api/media-ai/jobs/run | no |
 | `STORAGE_SIGNING_SECRET` | dev default (warns); required in production unless S3 is configured | storage local-fs signed URLs | no |
 | `DEV_STORAGE_SECRET` | unset | older name for `STORAGE_SIGNING_SECRET`, still honoured; `STORAGE_SIGNING_SECRET` wins when both are set | no |
-| `DEV_INBOX_TOKEN` | unset | bearer that unlocks `GET/DELETE /api/dev/inbox` and `POST /api/dev/identity` off a local dev server (e.g. previews with the mock mailer); without it the inbox answers only when `NODE_ENV=development` and neither `VERCEL` nor `CI` is set | no |
+| `DEV_INBOX_TOKEN` | unset | bearer that unlocks `GET/DELETE /api/dev/inbox` and `POST /api/dev/identity` on a non-production shared host such as CI (`NODE_ENV` not `production`). It never opens them in production, and that includes Vercel previews, which run `NODE_ENV=production`: `src/lib/auth/dev-gate.ts` refuses first, and those routes answer 404. Without it they answer only when `NODE_ENV=development` and neither `VERCEL` nor `CI` is set | no |
 | `HEALTH_TOKEN` | unset | bearer that unlocks the provider/driver inventory on `/api/health` (admin principals see it without a token); `{ ok, db, time }` stays public | no |
 | `AUDIT_HASH_KEY` | derived from `CONFIRMATION_SECRET` | HMAC key for the audit `inputHash` fingerprint | no |
 | `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
@@ -58,7 +58,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
 | `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
-| `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run` | no |
+| `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run`. Each registers every job handler (`src/lib/jobs/register-all.ts`) and claims only the types it has a handler for | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
 | `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; the design switcher is off by default since the couple approved Botanical–Deco — `FLAG_DESIGN_SWITCHER=on` brings the chooser back for reviewing the two superseded proposals | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
@@ -100,6 +100,6 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 4. Storage: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` for R2, B2, Supabase Storage or MinIO (never AWS).
 5. Email: attach and authorize `resend/wedding` in Vercel Connect; set `RESEND_CONNECT_USER_ID` and verified `EMAIL_FROM`.
 6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set.
-7. Cron: schedule `POST /api/jobs/run` every minute with the bearer token.
+7. Cron: nothing to add on Vercel. `vercel.json` schedules `/api/jobs/run`, `/api/uploads/jobs/run` and `/api/media-ai/jobs/run` every 5 minutes (`*/5 * * * *`); Vercel Cron sends `GET` with `Authorization: Bearer $CRON_SECRET`. Another scheduler calls the same routes (`GET` or `POST`) with that bearer.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
 9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.

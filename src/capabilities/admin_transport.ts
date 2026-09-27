@@ -5,6 +5,7 @@ import { ID_PATTERN } from '@/contracts/ids';
 import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { getTransportVault } from '@/domain/external/vault';
+import { getGuest } from '@/domain/guests/repo';
 import { SLUG } from '@/domain/external/schemas';
 import { countManualCodes, DEFAULT_PROGRAM, getEntitlement, listClaims, listEntitlements, setEntitlementStatus, uploadManualCodes, upsertEntitlement } from '@/domain/transport';
 import { appServices } from './context';
@@ -55,7 +56,8 @@ const assignInput = z.object({
   amountNote: NOTE,
   validityNote: NOTE,
   geofenceNote: NOTE,
-  guestIsMinor: z.boolean().default(false),
+  /** Ignored: eligibility comes from the guest record (`isMinor`, `kind: 'child'`), never from the form. Kept so older callers still validate. */
+  guestIsMinor: z.boolean().optional(),
   validFrom: ISO,
   validUntil: ISO,
   sourceId: z.string().regex(ID_PATTERN).optional(),
@@ -69,6 +71,8 @@ export const adminAssignTransportationEntitlement = defineCapability<z.infer<typ
   kind: 'action',
   auth: 'admin',
   requires: ['admin_guest_ops'],
+  // Step-up: anything that hands out (or withdraws) a ride voucher (docs/ops/admin-guide.md "Step-up").
+  stepUp: true,
   confirmation: 'inline',
   idempotent: true,
   annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },
@@ -77,17 +81,26 @@ export const adminAssignTransportationEntitlement = defineCapability<z.infer<typ
   output: entitlementSummary,
   async handler(ctx, i) {
     const { db } = appServices(ctx);
+    // The guest, their household and whether they are a minor are read from the guest list, not
+    // trusted from the form: a typo'd id, a guest filed under someone else's household, or an
+    // unticked "minor" box would otherwise mint a voucher the eligibility rules exist to refuse.
+    const guest = await getGuest(db, i.guestId);
+    if (!guest || guest.mergedIntoGuestId) return err(new CapabilityError('not_found', 'No guest has that id.', { issues: [{ path: 'guestId', message: 'No guest has that id.' }] }));
+    if (guest.householdId !== i.householdId) {
+      return err(new CapabilityError('validation', 'That guest is not in that household.', { issues: [{ path: 'householdId', message: 'That guest belongs to a different household.' }] }));
+    }
+    const guestIsMinor = guest.isMinor || guest.kind === 'child';
     const row = await upsertEntitlement(
       db,
       {
-        guestId: i.guestId,
-        householdId: i.householdId,
+        guestId: guest.id,
+        householdId: guest.householdId,
         program: i.program,
         providerProgramRef: i.providerProgramRef,
         amountNote: i.amountNote,
         validityNote: i.validityNote,
         geofenceNote: i.geofenceNote,
-        guestIsMinor: i.guestIsMinor,
+        guestIsMinor,
         validFrom: i.validFrom ? new Date(i.validFrom) : undefined,
         validUntil: i.validUntil ? new Date(i.validUntil) : undefined,
         sourceId: i.sourceId,
@@ -110,6 +123,8 @@ export const adminRevokeTransportationEntitlement = defineCapability<z.infer<typ
   kind: 'action',
   auth: 'admin',
   requires: ['admin_guest_ops'],
+  // Step-up: anything that hands out (or withdraws) a ride voucher (docs/ops/admin-guide.md "Step-up").
+  stepUp: true,
   confirmation: 'inline',
   idempotent: true,
   annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },

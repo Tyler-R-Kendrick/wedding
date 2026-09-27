@@ -99,8 +99,33 @@ Cloudflare R2, or any S3-compatible bucket.
   `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
 - `MEDIA_PART_SIZE_MB` must be **at least 5** — S3 and R2 both reject smaller
   multipart parts.
-- CORS on the bucket must allow `PUT` from the site's origin, or direct uploads
-  fail in the browser while the server logs nothing interesting.
+- CORS on the bucket must allow `PUT` from the site's origin **and expose the
+  `ETag` header**, or direct uploads fail in the browser while the server logs
+  nothing interesting. Browsers hide every response header on a cross-origin PUT
+  that the bucket does not list in `ExposeHeaders`, and multipart uploads (files
+  above `MEDIA_MULTIPART_THRESHOLD_MB`) need each part's ETag to assemble the
+  file. A single PUT no longer needs it (completion checks the object itself),
+  and the S3 adapter recovers hidden part ETags with `ListParts` at completion,
+  so a missing `ExposeHeaders` costs one extra storage call per multipart upload
+  rather than the upload. Expose it anyway: resume after a dropped connection
+  relies on the ETags the browser kept. For R2 (dashboard → bucket → Settings →
+  CORS policy), or `aws s3api put-bucket-cors` for another S3-compatible store:
+
+  ```json
+  [
+    {
+      "AllowedOrigins": ["https://<production domain>", "https://*.vercel.app"],
+      "AllowedMethods": ["PUT"],
+      "AllowedHeaders": ["*"],
+      "ExposeHeaders": ["ETag"],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+  ```
+
+  Put the production domain first and keep the preview wildcard only if
+  previews should accept uploads. Check it once from the upload page with the
+  browser's network tab: the PUT's response should show an `ETag` header.
 
 Without S3, production refuses to boot unless `STORAGE_SIGNING_SECRET` is set,
 because the committed local-filesystem signing key must never sign a real URL.
@@ -188,11 +213,33 @@ housekeeping rather than breaking a page.
 
 ### 7. Everything else stays mocked
 
-Flights, hotels, ride benefits, the registry, reservations, media AI: leave them
-unset. Each falls back to an honest deep link to the vendor who owns the truth,
-which is a supported product state, not a degraded one. Turn them on one at a
-time, each with a `/admin/providers` check afterwards, using
-`docs/ops/activation-matrix.md`.
+Flights, hotels, the registry, reservations: leave them unset. Each falls back
+to an honest deep link to the vendor who owns the truth, which is a supported
+product state, not a degraded one. Turn them on one at a time, each with a
+`/admin/providers` check afterwards, using `docs/ops/activation-matrix.md`.
+
+Three kinds refuse their mock in production (`NODE_ENV=production`, previews
+included) rather than pretend, and show on `/admin/providers` as they are:
+
+- **Ride benefits** (`TRANSPORT_BENEFIT_MODE`). The mock issues a fake
+  `uber.com/redeem/MOCK-…` link; stored as a real claim it would use up the
+  guest's one claim. In production, `mock` (the default) or `uber` with a
+  missing credential resolves to mode `unavailable`: a claim fails with
+  `provider_unavailable`, is recorded as failed, and stays claimable once
+  `manual-code` or `uber` is configured. Turn `TRANSPORT_BENEFITS` off until
+  then, or guests see a claim button that cannot succeed.
+- **Media AI.** The deterministic captioner writes word-list captions; on real
+  guest photos that is invented description. Production gets mode
+  `unavailable`: the index is built from captions, albums and times only, no
+  alt text is suggested, and the next index scan drops any machine caption
+  already stored.
+- **Video** without ffmpeg (Vercel has none) falls back to the mock processor
+  — no transcode, no probe, a placeholder poster. It still works, so it is not
+  refused, but it logs a warning once per instance and carries the same warning
+  on `/admin/providers`. Cloudflare Stream (`CLOUDFLARE_*`) is the Vercel answer.
+
+`FORCE_MOCK_PROVIDERS=1` still pins every mock, production included, for a demo
+deployment that should never touch a real vendor.
 
 ## Before you call it live
 

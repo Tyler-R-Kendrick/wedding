@@ -35,7 +35,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
   const d = r.value.data;
   const tableOptions = d.tables.map((t) => ({ value: t.id, label: `${t.name} (${t.assignments.length}/${t.capacity})` }));
   const seatRows = [
-    ...d.tables.flatMap((t) => t.assignments.map((a) => ({ ...a, tableId: t.id, receptionRsvp: null as null | 'accepted' | 'declined' }))),
+    ...d.tables.flatMap((t) => t.assignments.map((a) => ({ ...a, tableId: t.id }))),
     ...d.unassigned.map((u) => ({ ...u, tableId: '', seatNumber: null as number | null })),
   ];
   return (
@@ -141,7 +141,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
                     <span className="con-index__blurb">{g.householdName}</span>
                   </th>
                   <td>
-                    {g.receptionRsvp === 'accepted' ? <Pill tone="good">attending</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">declined</Pill> : g.tableId ? '' : <Pill tone="neutral">no answer</Pill>}
+                    {g.receptionRsvp === 'accepted' ? <Pill tone="good">attending</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">declined</Pill> : <Pill tone="neutral">no answer</Pill>}
                   </td>
                   <td>
                     <form action={assignAction} className="ops-form-inline">

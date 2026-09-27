@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MediaEmpty, MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { UploadForm } from '@/components/media/UploadForm';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { currentPrincipal } from '@/components/media/server';
 import { hasEntitlement } from '@/contracts/principal';
 import { getFlags } from '@/lib/flags';
@@ -26,9 +27,16 @@ export default async function UploadPage() {
         <MediaSection title="Please sign in first" id="sign-in">
           <p className="media-lede">Open the link from your invitation to sign in, then come back here to add photos. Nothing on this page is shared with other guests until it has been reviewed.</p>
           <p>
-            <Link className="media-button" href="/">
-              Go to the site
-            </Link>
+            {/* Signed out (the QR code on a phone that has no session): the way back is sign-in, and it returns here. */}
+            {principal.kind === 'anonymous' ? (
+              <Link className="media-button" href={throughSignIn('/media/upload')}>
+                Sign in
+              </Link>
+            ) : (
+              <Link className="media-button" href="/">
+                Go to the site
+              </Link>
+            )}
           </p>
         </MediaSection>
       ) : (

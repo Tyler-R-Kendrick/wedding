@@ -7,8 +7,9 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { newId } from '@/contracts/ids';
 import { sniffMedia } from '@/lib/media/sniff';
+import { createMediaAiProvider, MockMediaAi, UnavailableMediaAi } from '@/providers/media-ai';
 import { LocalFsStorage } from '@/providers/storage';
-import { CloudflareStreamVideo, createVideoProvider, FfmpegVideo, MockVideo, parseProbe, placeholderPosterPng, resolveFfmpegBinary } from '@/providers/video';
+import { CloudflareStreamVideo, createVideoProvider, VIDEO_MOCK_IN_PRODUCTION_WARNING, FfmpegVideo, MockVideo, parseProbe, placeholderPosterPng, resolveFfmpegBinary } from '@/providers/video';
 import { syntheticMp4 } from '../../helpers/media-fixtures';
 
 const execFileAsync = promisify(execFile);
@@ -73,6 +74,24 @@ describe('video providers', () => {
     await writeFile(path.join(dir, 'ffmpeg'), '');
     expect(resolveFfmpegBinary(undefined, dir)).toBe(path.join(dir, 'ffmpeg'));
     expect(resolveFfmpegBinary('off', dir)).toBeNull();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('says so, once, when production has no ffmpeg and falls back to the mock', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'wedding-video-'));
+    const storage = new LocalFsStorage({ dataDir: dir, baseUrl: 'http://localhost:3000', signingSecret: 'unit-storage-secret-123456' });
+    delete (globalThis as { __weddingVideoMockWarned?: boolean }).__weddingVideoMockWarned;
+    const warnings: string[] = [];
+    const warn = (m: string) => void warnings.push(m);
+    const prod = createVideoProvider({ storage, env: { isProduction: true, FFMPEG_PATH: 'off' }, warn });
+    expect(prod.name).toBe('mock');
+    expect(prod.validateConfig().warnings).toEqual([VIDEO_MOCK_IN_PRODUCTION_WARNING]);
+    createVideoProvider({ storage, env: { isProduction: true, FFMPEG_PATH: 'off' }, warn });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/ffmpeg/);
+    // Development stays quiet.
+    expect(createVideoProvider({ storage, env: { FFMPEG_PATH: 'off' }, warn }).validateConfig().warnings).toEqual([]);
+    expect(warnings).toHaveLength(1);
     await rm(dir, { recursive: true, force: true });
   });
 
@@ -181,5 +200,19 @@ describe('video providers', () => {
     expect(poster.ok && poster.value.placeholder).toBe(true);
     expect(String(copyCall.init?.body)).not.toContain('Bearer'); // credentials travel in headers only
     await rm(dir, { recursive: true, force: true });
+  });
+});
+
+describe('media-ai provider selection', () => {
+  it('keeps the deterministic mock in development and tests, and refuses it in production', async () => {
+    expect(createMediaAiProvider({})).toBeInstanceOf(MockMediaAi);
+    expect(createMediaAiProvider({ isProduction: true, FORCE_MOCK_PROVIDERS: true })).toBeInstanceOf(MockMediaAi);
+    const prod = createMediaAiProvider({ isProduction: true });
+    expect(prod).toBeInstanceOf(UnavailableMediaAi);
+    expect(prod.mode).toBe('unavailable');
+    expect(prod.capabilities.annotate).toBe(false);
+    expect(prod.validateConfig().ok).toBe(false);
+    const annotated = await prod.annotate({ objectKey: 'derivatives/x/gallery.webp' });
+    expect(!annotated.ok && annotated.error.class).toBe('unconfigured');
   });
 });

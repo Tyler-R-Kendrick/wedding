@@ -84,7 +84,7 @@ function LinkRow({ link }: { link: TravelLink }) {
   );
 }
 
-export default async function AdminTravelPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+export default async function AdminTravelPage({ searchParams }: { searchParams: Promise<{ notice?: string; ok?: string; error?: string }> }) {
   const sp = await searchParams;
   const { principal } = await currentPrincipal();
   if (principal.kind !== 'admin') return <ConsoleGate what="Travel and stay" />;
@@ -97,12 +97,15 @@ export default async function AdminTravelPage({ searchParams }: { searchParams: 
     );
   }
   const { providers, hotels, links, allowedHosts } = config.value.data;
-  const notice = noticeFor(sp.notice);
+  // `?ok=` / `?error=` from the actions; `?notice=<code>` is still read for links written before them.
+  const legacy = noticeFor(sp.notice);
+  const legacyIsError = sp.notice === 'not_found' || sp.notice === 'forbidden' || sp.notice === 'invalid' || sp.notice === 'error';
+  const notice = { ok: sp.ok ?? (legacy && !legacyIsError ? legacy : undefined), error: sp.error ?? (legacy && legacyIsError ? legacy : undefined) };
   return (
     <ConsolePage
       title="Travel (admin)"
       lede={`Provider status, the room block, curated hotels, and partner links. Links must point at: ${allowedHosts.join(', ')}.`}
-      notice={notice ? { ok: notice } : undefined}
+      notice={notice}
     >
       <Section title="Providers" id="providers">
         {providers ? (

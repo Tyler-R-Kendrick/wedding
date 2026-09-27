@@ -49,7 +49,9 @@ async function buildOverview(db: Db, now: Date): Promise<AdminRsvpOverview> {
   const [evs, settings, lifecycle, guests, households, ents, responses] = await Promise.all([listEvents(db), getRsvpSettings(db), getLifecycle(db), listAllGuests(db), listHouseholds(db), listAllEntitlements(db), listAllResponses(db)]);
   const meals = await listMealOptionsForEvents(db, evs.map((e) => e.id));
   const mealLabel = new Map(meals.map((m) => [m.id, m.label]));
-  const guestById = new Map(guests.map((g) => [g.id, g]));
+  // A guest merged into another is a duplicate row kept for its history, not a person: counting it
+  // double-counts the invited/pending totals and the export (the kept guest carries the answers).
+  const guestById = new Map(guests.filter((g) => !g.mergedIntoGuestId).map((g) => [g.id, g]));
   const hh = new Map(households.map((h) => [h.id, h.name]));
   const evById = new Map(evs.map((e) => [e.id, e]));
   const respKey = new Map(responses.map((r) => [`${r.guestId}::${r.eventId}`, r]));

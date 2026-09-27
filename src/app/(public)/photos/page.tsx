@@ -34,6 +34,9 @@ export default async function PhotosPage() {
   const principal = await currentPrincipal();
   if (principal.kind === 'anonymous') redirect(throughSignIn('/photos'));
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', {}, principal);
+  // "Nothing to show yet" is a statement about the albums; a failure to read them (a rate limit, the
+  // database) is not that, and goes to the error page, which offers to try again.
+  if (!gallery.ok && gallery.error.code !== 'forbidden') throw new Error(`list_gallery failed: ${gallery.error.code}`);
   return (
     <recipes.PhotosPage
       albums={gallery.ok ? gallery.data.collections : []}

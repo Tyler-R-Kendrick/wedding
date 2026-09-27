@@ -21,6 +21,7 @@ import { LocalFsStorage } from '@/providers/storage';
 import { seedSwarmE } from './helpers/swarm-e';
 import { getProvider, resetProviders, setProviderOverride } from '@/providers/registry';
 import { InMemoryCosineIndex } from '@/providers/vector-index';
+import { UnavailableMediaAi } from '@/providers/media-ai';
 import { FakeMediaAi, placeCorpus, type PlacedItem } from '../helpers/media-ai-fixtures';
 
 const WEDDING_EVENING = new Date('2027-07-18T00:30:00Z'); // 2027-07-17 19:30 Chicago
@@ -294,6 +295,36 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
       delete process.env.FLAG_PRO_MEDIA_AI_PROCESSING;
       await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: false, actor: { kind: 'system', component: 'test' }, requestId: newId(), audit: await getAuditSink() });
     }
+  });
+
+  it('with no describer configured (production refuses the mock), indexes metadata only and offers no machine alt text', async () => {
+    const db = await getDb();
+    const dance = corpus.get('dance')!;
+    const hallway = corpus.get('hallway')!;
+    expect((await getAnnotation(db, dance.assetId))!.captionSource).toBe('ai');
+    setProviderOverride('media-ai', new UnavailableMediaAi());
+    try {
+      // Before any re-index, a stale machine suggestion is still never offered.
+      const stale = await call<{ suggestion: { suggestedAltText: string | null; suggestedCaption: string | null; captionSource: string } | null }>(guestA, 'suggest_alt_text', { assetId: hallway.assetId });
+      expect(stale.ok && stale.data.suggestion).toMatchObject({ suggestedAltText: null, suggestedCaption: null, captionSource: 'none' });
+      // A plain (not full) scan picks up every row still carrying a machine caption.
+      const calls = mediaAi.calls.length;
+      await reindexAll();
+      expect(mediaAi.calls.length).toBe(calls);
+      const after = await getAnnotation(db, dance.assetId);
+      expect(after).toMatchObject({ status: 'indexed', captionSource: 'none', suggestedCaption: null, suggestedAltText: null, captionModel: null, tags: [] });
+      expect(after!.indexText).toContain('Our first dance');
+      expect(after!.indexText).not.toContain('two people dancing under warm light');
+      expect(namesOf(await call<SearchMediaResult>(guestA, 'search_media', { query: 'first dance' }))).toContain('dance');
+      const status = await call<MediaAiStatusView>(admin, 'admin_media_ai_status', {});
+      expect(status.ok && status.data.providers.mediaAi).toEqual({ name: 'unconfigured', mode: 'unavailable' });
+      expect(status.ok && status.data.suggestions).toEqual([]);
+      expect(status.ok && status.data.status.annotations.withAiCaption).toBe(0);
+    } finally {
+      setProviderOverride('media-ai', mediaAi);
+      await reindexAll({ full: true });
+    }
+    expect((await getAnnotation(db, dance.assetId))!.captionSource).toBe('ai');
   });
 
   it('stops indexing entirely when MEDIA_SEMANTIC_SEARCH is off', async () => {
