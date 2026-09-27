@@ -8,7 +8,7 @@ import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY } from '@/domain/gifts/copy';
 import { DEFAULT_RESERVATION_VENUES } from '@/domain/reservations/repo';
 import { TRANSPORTATION_TOPICS } from '@/domain/transport/content';
 import { defaultEligibilityFactSource, getTransportEligibilityFactSource, setTransportEligibilityFactSource } from '@/domain/transport/eligibility';
-import { transportationTopics } from '@/domain/transport/service';
+import { RIDES_NOT_OPEN_MESSAGE, transportationTopics, withProviderReadiness } from '@/domain/transport/service';
 import { DeepLinkMaps } from '@/providers/maps';
 import { createTransportBenefitProvider, ManualCodeTransportBenefit, MemoryCodeSource, MockTransportBenefit, UberVouchersTransportBenefit, UnconfiguredTransportBenefit } from '@/providers/transport-benefit';
 import { installManualCodeSource, installedManualCodeSource } from '@/providers/transport-benefit/types';
@@ -187,5 +187,21 @@ describe('transport-benefit provider selection', () => {
     const e = await explicit.createVoucherClaim({ claimId: 'c4', guestId: 'g', entitlementId: 'e' });
     expect(e.ok && e.value.code).toBe('EXPLICIT');
     installManualCodeSource(undefined);
+  });
+});
+
+describe('withProviderReadiness', () => {
+  const views = (['eligible', 'failed', 'claimed', 'revoked'] as const).map((status) => ({ status, statusMessage: status }));
+  it('leaves every benefit alone while a provider is configured', () => {
+    expect(withProviderReadiness(views, 'mock')).toEqual(views);
+    expect(withProviderReadiness(views, 'live')).toEqual(views);
+  });
+  it('shows claimable benefits as not open yet when no provider is configured, and nothing else changes', () => {
+    expect(withProviderReadiness(views, 'unavailable')).toEqual([
+      { status: 'unavailable', statusMessage: RIDES_NOT_OPEN_MESSAGE },
+      { status: 'unavailable', statusMessage: RIDES_NOT_OPEN_MESSAGE },
+      { status: 'claimed', statusMessage: 'claimed' },
+      { status: 'revoked', statusMessage: 'revoked' },
+    ]);
   });
 });

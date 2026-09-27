@@ -67,11 +67,15 @@ export class JobQueue {
    * handlers for, so a job whose handler lives in another module graph stays queued for a runner
    * that has it, instead of being claimed here, failed with "no handler" and retried to `dead`.
    * An empty list claims nothing; omitting it claims any type (tests and ad-hoc tooling).
+   *
+   * `dueBy` claims only jobs due by then rather than by now: a runner passes the moment its run
+   * began, so a job that fails and is rescheduled seconds later waits for the next run instead of
+   * spending all its attempts inside this one.
    */
-  async claim(worker: string, limit = 10, opts: { types?: readonly string[] } = {}): Promise<JobRow[]> {
+  async claim(worker: string, limit = 10, opts: { types?: readonly string[]; dueBy?: Date } = {}): Promise<JobRow[]> {
     const now = this.now();
     if (opts.types && opts.types.length === 0) return [];
-    const due = and(eq(jobs.status, 'queued'), lte(jobs.runAt, now));
+    const due = and(eq(jobs.status, 'queued'), lte(jobs.runAt, opts.dueBy && opts.dueBy < now ? opts.dueBy : now));
     const candidates = await this.db
       .select({ id: jobs.id })
       .from(jobs)
