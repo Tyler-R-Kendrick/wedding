@@ -10,7 +10,7 @@ import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { listAllGuests, listAllResponses, listHouseholds } from '@/domain/rsvp';
 import { applySeatingImport, assignSeats, deleteTable, draftSnapshot, getLivePublication, listAssignments, listFloorPlans, listPublications, listTables, parseSeatingCsv, publishSeating, snapshotDiffers, unpublishSeating, upsertTable } from '@/domain/seating';
 import { idSchema } from '@/capabilities/rsvp/shared';
-import { floorPlanViewSchema } from './get_my_table';
+import { floorPlanViewSchema, myTableSchema, tableViewFor } from './get_my_table';
 
 /** A guest row's printed name, or `fallback` when the row is missing (a merged or deleted guest). */
 const nameOf = (g: Parameters<typeof guestDisplayName>[0] | undefined, fallback: string): string => (g ? guestDisplayName(g) : fallback);
@@ -84,6 +84,37 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
       },
       sources: [],
     });
+  },
+});
+
+/* ------------------------------------------------------------- preview ------ */
+const previewInput = z.object({ guestId: idSchema });
+const previewOutput = z.object({ displayName: z.string(), view: myTableSchema.omit({ publishedAt: true }).nullable() });
+
+/**
+ * What one guest would see under "Your table" if the current DRAFT were published: the same
+ * sentence, tablemates and floor-plan highlight, built by the same function the guest's own read
+ * uses (`tableViewFor`). `view: null` means that guest is not seated in the draft. Read-only; the
+ * draft never reaches a guest surface through this.
+ */
+export const adminPreviewGuestTable = defineCapability<z.infer<typeof previewInput>, z.infer<typeof previewOutput>>({
+  name: 'admin_preview_guest_table',
+  title: 'Preview a guest\'s table',
+  description: 'Shows what one guest would see under "Your table" if the current draft seating were published.',
+  kind: 'read',
+  auth: 'admin',
+  requires: ['admin_guest_ops'],
+  annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
+  exposure: ADMIN_EXPOSURE,
+  input: previewInput,
+  output: previewOutput,
+  async handler(ctx, input) {
+    const db = await eDb(ctx);
+    const guests = await listAllGuests(db);
+    const guest = guests.find((g) => g.id === input.guestId && !g.mergedIntoGuestId);
+    if (!guest) return err(new CapabilityError('not_found', 'That guest is not on the list.'));
+    const view = await tableViewFor(db, await draftSnapshot(db), guest.id);
+    return ok({ data: { displayName: guestDisplayName(guest), view }, sources: [] });
   },
 });
 
@@ -264,4 +295,4 @@ export const adminUnpublishSeating = defineCapability<Record<string, never> | un
   },
 });
 
-export const adminSeatingCapabilities = [adminSeatingOverview, adminUpsertTable, adminDeleteTable, adminAssignSeats, adminImportSeatingCsv, adminPublishSeating, adminUnpublishSeating];
+export const adminSeatingCapabilities = [adminSeatingOverview, adminPreviewGuestTable, adminUpsertTable, adminDeleteTable, adminAssignSeats, adminImportSeatingCsv, adminPublishSeating, adminUnpublishSeating];

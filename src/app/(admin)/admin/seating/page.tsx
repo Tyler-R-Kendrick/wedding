@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
-import { adminSeatingOverview } from '@/capabilities/rsvp';
+import { adminPreviewGuestTable, adminSeatingOverview } from '@/capabilities/rsvp';
+import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
+import { TableCard } from '@/components/weekend/TableCard';
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, Denied, Pill, ScrollRegion, Section, Stamp } from '../_components/console';
@@ -33,7 +35,13 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
     );
   }
   const d = r.value.data;
+  const previewId = one(sp.preview);
+  const preview = previewId ? await adminInvoke(adminPreviewGuestTable, { guestId: previewId }) : null;
   const tableOptions = d.tables.map((t) => ({ value: t.id, label: `${t.name} (${t.assignments.length}/${t.capacity})` }));
+  const previewOptions = [
+    { value: '', label: 'Choose a guest' },
+    ...[...d.tables.flatMap((t) => t.assignments), ...d.unassigned].map((g) => ({ value: g.guestId, label: `${g.displayName} (${g.householdName})` })).sort((a, b) => a.label.localeCompare(b.label)),
+  ];
   const seatRows = [
     ...d.tables.flatMap((t) => t.assignments.map((a) => ({ ...a, tableId: t.id }))),
     ...d.unassigned.map((u) => ({ ...u, tableId: '', seatNumber: null as number | null })),
@@ -81,6 +89,25 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
               </li>
             ))}
           </ul>
+        ) : null}
+      </Section>
+
+      <Section title="Preview what a guest sees" id="preview" note={<p className="con-index__blurb">What one guest would see under “Your table” if this draft were published. Nothing is published by previewing.</p>}>
+        <form method="get" action="/admin/seating#preview" className="ops-form-inline">
+          <Input id="preview" label="Guest" options={previewOptions} defaultValue={previewId ?? ''} required />
+          <Button variant="ghost">Preview</Button>
+        </form>
+        {preview ? (
+          preview.ok ? (
+            <div>
+              <p>
+                <strong>{preview.value.data.displayName}</strong> would see:
+              </p>
+              {preview.value.data.view ? <TableCard table={preview.value.data.view} /> : <p className="card__meta">{SEATING_MESSAGE.not_seated}</p>}
+            </div>
+          ) : (
+            <Denied message={preview.error.message} />
+          )
         ) : null}
       </Section>
 

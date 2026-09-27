@@ -124,6 +124,7 @@ Unregistered slots render an honest placeholder; a throwing provider renders `un
 | `admin_export_needs` | read | admin | `admin_guest_ops` | requires `includeNeeds: true`; audited by name | ui |
 | `admin_override_rsvp` | action | admin | `admin_guest_ops` | inline / key; audits `rsvp.admin_override` + reason | ui |
 | `admin_seating_overview` | read | admin | `admin_guest_ops` | — | ui |
+| `admin_preview_guest_table` | read | admin | `admin_guest_ops` | — | ui |
 | `admin_upsert_table`, `admin_delete_table`, `admin_assign_seats`, `admin_import_seating_csv` | action | admin | `admin_guest_ops` | inline / key; audit `seating.changed` | ui |
 | `admin_publish_seating`, `admin_unpublish_seating` | action | admin | `admin_guest_ops` | inline / key; audit `seating.published` / `seating.unpublished` | ui |
 

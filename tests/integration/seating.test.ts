@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { adminAssignSeats, adminDeleteTable, adminImportSeatingCsv, adminPublishSeating, adminSeatingOverview, adminUnpublishSeating, adminUpsertTable, getMyItinerary, getMyRsvp, getMyTable, listMyEvents, showMyTableOnFloorplan } from '@/capabilities/rsvp';
+import { adminAssignSeats, adminDeleteTable, adminPreviewGuestTable, adminImportSeatingCsv, adminPublishSeating, adminSeatingOverview, adminUnpublishSeating, adminUpsertTable, getMyItinerary, getMyRsvp, getMyTable, listMyEvents, showMyTableOnFloorplan } from '@/capabilities/rsvp';
 import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
 import type { Db } from '@/db/client';
 import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
@@ -53,6 +53,19 @@ describe('draft seating never reaches guests', () => {
     expect(overview.data.draftDiffers).toBe(true);
     expect(overview.data.tables.map((t) => t.name)).toEqual(['Draft Table Alpha', 'Draft Table Beta', 'Draft Table Gamma']);
     expect(overview.data.unassigned.map((u) => u.guestId)).toEqual([FX.guestA3]);
+  });
+
+  it('previews for the console what a guest would see if the draft were published — and publishes nothing', async () => {
+    const seen = expectOk(await run(adminPreviewGuestTable, admin, { guestId: FX.guestA1 }));
+    expect(seen.data.view?.table).toMatchObject({ name: 'Draft Table Alpha', seatNumber: 1, anchorId: 't1' });
+    expect(seen.data.view?.summary).toMatch(/^You are seated at Draft Table Alpha, seat 1\. You are with /);
+    expect(seen.data.view?.floorPlan?.id).toBe(planId);
+    // A guest missing from the draft is shown as not seated, not as an error.
+    expect(expectOk(await run(adminPreviewGuestTable, admin, { guestId: FX.guestA3 })).data.view).toBeNull();
+    expect(expectErr(await run(adminPreviewGuestTable, admin, { guestId: '01ZZZZZZZZZZZZZZZZZZZZZZZZ' })).code).toBe('not_found');
+    // Guests cannot call it, and it changed nothing they can see.
+    expect(expectErr(await run(adminPreviewGuestTable, A1, { guestId: FX.guestA1 })).code).toMatch(/forbidden|unauthenticated/);
+    expect(expectErr(await run(getMyTable, A1, {})).code).toBe('not_found');
   });
 
   it('answers not_found before publication and leaks no draft ids or names anywhere', async () => {
