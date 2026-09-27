@@ -19,7 +19,7 @@ import { getConfirmationService } from '@/policy/confirmation';
 import { failure } from '@/providers/base';
 import { resetProviders, setProviderOverride } from '@/providers/registry';
 import { seedSwarmE } from './helpers/swarm-e';
-import { ManualCodeTransportBenefit, MockTransportBenefit } from '@/providers/transport-benefit';
+import { ManualCodeTransportBenefit, MockTransportBenefit, UnconfiguredTransportBenefit } from '@/providers/transport-benefit';
 import type { VoucherClaimRequest } from '@/providers/transport-benefit/types';
 
 /*
@@ -333,6 +333,30 @@ describe('ride benefit claims', () => {
     expect(v7.ok && v7.value.data.benefits[0]!.status).toBe('failed');
     const list = await run(adminListTransportationEntitlements, guest(G1, H1), {});
     expect(!list.ok && list.error.code).toBe('forbidden');
+  });
+
+  it('production without a real provider: the claim fails as unavailable, stores no link, and stays claimable', async () => {
+    const db = await getDb();
+    const G8 = await makeGuest('Unconfigured', H2);
+    const e8 = await run(adminAssignTransportationEntitlement, admin, { guestId: G8, householdId: H2 }, { idempotencyKey: key() });
+    const E8 = e8.ok ? e8.value.data.id : '';
+    const g8 = guest(G8, H2);
+    setProviderOverride('transport-benefit', new UnconfiguredTransportBenefit([], 'test: production refuses the mock'));
+    try {
+      const refused = await run(claimMyTransportationBenefit, g8, { entitlementId: E8 }, { idempotencyKey: key(), confirmationToken: await tokenFor(g8, E8) });
+      expect(!refused.ok && refused.error.code).toBe('provider_unavailable');
+      const row = (await db.select().from(transportationClaims)).find((c) => c.entitlementId === E8)!;
+      expect(row.status).toBe('failed');
+      expect(row.secretCiphertext).toBeNull();
+      const view = await run(getMyTransportationOptions, g8, {});
+      expect(view.ok && view.value.data.benefits[0]).toMatchObject({ status: 'failed' });
+      expect(view.ok && view.value.data.benefits[0]!.redemption).toBeUndefined();
+    } finally {
+      setProviderOverride('transport-benefit', counting);
+    }
+    // Once a real provider is configured the same entitlement can still be claimed.
+    const retry = await run(claimMyTransportationBenefit, g8, { entitlementId: E8 }, { idempotencyKey: key(), confirmationToken: await tokenFor(g8, E8) });
+    expect(retry.ok && retry.value.data.status).toBe('issued');
   });
 
   it('ok() helper sanity: results are plain envelopes', () => {

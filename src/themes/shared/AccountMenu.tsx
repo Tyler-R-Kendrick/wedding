@@ -27,37 +27,48 @@ import type { NavItem, NavModel } from '@/themes/types';
 
 const TRIGGER_LABEL = 'Your account';
 
-let probe: Promise<boolean> | null = null;
+interface SessionHint {
+  signedIn: boolean;
+  admin: boolean;
+}
+
+const SIGNED_OUT: SessionHint = { signedIn: false, admin: false };
+
+/** An administrator has no household: the console is their page, and the household's would each send them back to sign in. */
+const ADMIN_CONSOLE: NavItem = { label: 'Admin console', href: '/admin' };
+
+let probe: Promise<SessionHint> | null = null;
 
 /**
  * One request per page, whichever instance asks first. Only an answer is kept: a failed request
  * reads as signed out for now and is forgotten, so the next instance (or the next page) asks again
  * rather than showing "Sign in" to a signed-in guest for the rest of the visit.
  */
-function sessionProbe(fresh = false): Promise<boolean> {
+function sessionProbe(fresh = false): Promise<SessionHint> {
   if (fresh) probe = null;
   if (probe) return probe;
   // The cached promise is the one that already handles failure: every caller shares it, so a raw
   // fetch promise here would hand each of them a rejection nobody catches.
-  const asked: Promise<boolean> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
+  const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
-      return ((await r.json()) as { signedIn?: unknown }).signedIn === true;
+      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown };
+      return { signedIn: body.signedIn === true, admin: body.signedIn === true && body.admin === true };
     })
     .catch(() => {
       if (probe === asked) probe = null;
-      return false;
+      return SIGNED_OUT;
     });
   probe = asked;
   return asked;
 }
 
-function useSignedIn(known: boolean | undefined): boolean {
-  const [probed, setProbed] = useState(false);
+function useSession(known: boolean | undefined, knownAdmin: boolean): SessionHint {
+  const [probed, setProbed] = useState<SessionHint>(SIGNED_OUT);
   // A page restored from the back/forward cache kept the menu it had when it was left — after a
   // sign-out in between, that is a menu of pages the reader can no longer open. Ask again then,
   // whatever the server knew when it rendered.
-  const [restored, setRestored] = useState<boolean | null>(null);
+  const [restored, setRestored] = useState<SessionHint | null>(null);
   useEffect(() => {
     let live = true;
     if (known === undefined) {
@@ -77,7 +88,7 @@ function useSignedIn(known: boolean | undefined): boolean {
       window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return restored ?? known ?? probed;
+  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin });
 }
 
 export interface AccountMenuClassNames {
@@ -90,13 +101,13 @@ export interface AccountMenuClassNames {
 }
 
 export interface AccountMenuProps {
-  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'currentPath' | 'currentIsAncestor'>;
+  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'admin' | 'currentPath' | 'currentIsAncestor'>;
   variant: 'popover' | 'inline' | 'link';
   classNames: AccountMenuClassNames;
 }
 
 export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
-  const signedIn = useSignedIn(nav.signedIn);
+  const { signedIn, admin } = useSession(nav.signedIn, nav.admin === true);
   const signIn = nav.account ?? SIGN_IN;
   if (!signedIn) {
     return (
@@ -112,7 +123,7 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
       </a>
     );
   }
-  const items = [...(nav.member ?? []), SIGN_OUT];
+  const items = admin ? [ADMIN_CONSOLE, SIGN_OUT] : [...(nav.member ?? []), SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;

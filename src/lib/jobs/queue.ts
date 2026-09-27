@@ -60,13 +60,22 @@ export class JobQueue {
     return row!;
   }
 
-  /** Claims up to `limit` due jobs for `worker`. Optimistic per-row update: safe across processes. */
-  async claim(worker: string, limit = 10): Promise<JobRow[]> {
+  /**
+   * Claims up to `limit` due jobs for `worker`. Optimistic per-row update: safe across processes.
+   *
+   * `types` restricts the claim to job types this worker can run. A runner passes the types it has
+   * handlers for, so a job whose handler lives in another module graph stays queued for a runner
+   * that has it, instead of being claimed here, failed with "no handler" and retried to `dead`.
+   * An empty list claims nothing; omitting it claims any type (tests and ad-hoc tooling).
+   */
+  async claim(worker: string, limit = 10, opts: { types?: readonly string[] } = {}): Promise<JobRow[]> {
     const now = this.now();
+    if (opts.types && opts.types.length === 0) return [];
+    const due = and(eq(jobs.status, 'queued'), lte(jobs.runAt, now));
     const candidates = await this.db
       .select({ id: jobs.id })
       .from(jobs)
-      .where(and(eq(jobs.status, 'queued'), lte(jobs.runAt, now)))
+      .where(opts.types ? and(due, inArray(jobs.type, [...opts.types])) : due)
       .orderBy(asc(jobs.runAt), asc(jobs.createdAt))
       .limit(limit);
     const claimed: JobRow[] = [];

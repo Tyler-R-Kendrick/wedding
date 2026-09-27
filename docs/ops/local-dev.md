@@ -38,8 +38,8 @@ Node's HTTP client ignores `HTTPS_PROXY`; behind a proxy (this sandbox, some CI)
 |---|---|---|
 | Database | PGlite `./.data/pglite` (`npm run db:migrate` / `db:seed` also work) | Postgres (`DATABASE_URL`); run `npm run db:migrate` in the deploy step or set `DB_AUTO_MIGRATE=1` on a single instance |
 | Storage | local-fs under `./.data/storage` (objects, `meta/` sidecars, `multipart/`); signed URLs at `/api/dev/storage/<key>?op=...&exp=...&sig=...` (never served in production) | S3-compatible bucket (or local-fs with an explicit `STORAGE_SIGNING_SECRET`) |
-| OTP emails | dev inbox: `GET /api/dev/inbox` (JSON, newest first), `DELETE /api/dev/inbox` to clear. Answers only on a local `NODE_ENV=development` server (not on Vercel/CI) unless `Authorization: Bearer $DEV_INBOX_TOKEN` is sent | Resend |
-| Jobs | in-process poller (`JOBS_INLINE_RUNNER=true`, every `JOBS_POLL_INTERVAL_MS`) or `npm run jobs:run` for one batch | cron hitting `POST /api/jobs/run` with `Authorization: Bearer $CRON_SECRET` |
+| OTP emails | dev inbox: `GET /api/dev/inbox` (JSON, newest first), `DELETE /api/dev/inbox` to clear. Answers on a local `NODE_ENV=development` server; on a non-production shared host (CI) only with `Authorization: Bearer $DEV_INBOX_TOKEN`. Never in production, which includes Vercel previews | Resend |
+| Jobs | no in-process poller: `npm run jobs:run` runs one batch (every handler, via `src/lib/jobs/register-all.ts`), or call a cron route with `Authorization: Bearer $CRON_SECRET` | Vercel cron (`vercel.json`, every 5 minutes) hitting `/api/jobs/run`, `/api/uploads/jobs/run` and `/api/media-ai/jobs/run` with `Authorization: Bearer $CRON_SECRET` |
 | AI concierge | the browser's own model (Prompt API) where it has one, else the server's extractive answer quoted from the site's pages | the same: no hosted model is ever called |
 | Logs | pretty (pino-pretty); `LOG_FORMAT=json` to switch | JSON |
 | Metrics | console at debug level | `metrics` table |

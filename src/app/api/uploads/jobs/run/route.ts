@@ -3,6 +3,8 @@ import { enqueueMediaSweep } from '@/domain/media/jobs';
 import { timingSafeEqualString } from '@/lib/crypto';
 import { env } from '@/lib/env';
 import { runDueJobs } from '@/lib/jobs';
+// Every handler, not just this route's: a runner only claims types it has a handler for.
+import '@/lib/jobs/register-all';
 import { bearerToken, getRequestId, jsonResponse } from '@/lib/request';
 
 export const dynamic = 'force-dynamic';
@@ -10,9 +12,9 @@ export const maxDuration = 60;
 
 /**
  * Media cron alias: `POST /api/uploads/jobs/run` with `Authorization: Bearer $CRON_SECRET`.
- * Importing `@/domain/media/jobs` registers media.process / media.derive / media.sweep in this
- * route's module graph (the generic /api/jobs/run route only knows the foundation's handlers),
- * keeps one media sweep queued, and runs one bounded batch of due jobs.
+ * `@/lib/jobs/register-all` registers every job handler in this route's module graph (a runner only
+ * claims types it has a handler for); this route keeps one media sweep queued and runs one bounded
+ * batch of due jobs.
  */
 function authorized(request: Request): boolean {
   if (!env.CRON_SECRET) return false;

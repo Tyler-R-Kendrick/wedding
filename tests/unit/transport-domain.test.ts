@@ -10,7 +10,7 @@ import { TRANSPORTATION_TOPICS } from '@/domain/transport/content';
 import { defaultEligibilityFactSource, getTransportEligibilityFactSource, setTransportEligibilityFactSource } from '@/domain/transport/eligibility';
 import { transportationTopics } from '@/domain/transport/service';
 import { DeepLinkMaps } from '@/providers/maps';
-import { createTransportBenefitProvider, ManualCodeTransportBenefit, MemoryCodeSource, MockTransportBenefit, UberVouchersTransportBenefit } from '@/providers/transport-benefit';
+import { createTransportBenefitProvider, ManualCodeTransportBenefit, MemoryCodeSource, MockTransportBenefit, UberVouchersTransportBenefit, UnconfiguredTransportBenefit } from '@/providers/transport-benefit';
 import { installManualCodeSource, installedManualCodeSource } from '@/providers/transport-benefit/types';
 
 describe('transport vault', () => {
@@ -149,6 +149,24 @@ describe('transport-benefit provider selection', () => {
     expect(live).toBeInstanceOf(UberVouchersTransportBenefit);
     expect(live.validateConfig().ok).toBe(true);
     expect(createTransportBenefitProvider({ ...base, TRANSPORT_BENEFIT_MODE: 'uber', FORCE_MOCK_PROVIDERS: true, UBER_CLIENT_ID: 'id', UBER_CLIENT_SECRET: 's', UBER_ORG_ID: 'org', UBER_VOUCHER_PROGRAM_ID: 'prog' })).toBeInstanceOf(MockTransportBenefit);
+  });
+
+  it('production never gets the mock: mock mode and uber-without-credentials resolve to an honest unavailable provider', async () => {
+    const prod = { ...base, isProduction: true };
+    const mock = createTransportBenefitProvider(prod);
+    expect(mock).toBeInstanceOf(UnconfiguredTransportBenefit);
+    expect(mock.mode).toBe('unavailable');
+    expect(mock.validateConfig().ok).toBe(false);
+    const claim = await mock.createVoucherClaim({ claimId: 'c', guestId: 'g', entitlementId: 'e' });
+    expect(!claim.ok && claim.error.class).toBe('unconfigured');
+    expect(JSON.stringify(claim)).not.toMatch(/uber\.com|MOCK-/);
+    const uber = createTransportBenefitProvider({ ...prod, TRANSPORT_BENEFIT_MODE: 'uber', UBER_CLIENT_ID: 'id' });
+    expect(uber).toBeInstanceOf(UnconfiguredTransportBenefit);
+    expect(uber.validateConfig().missing).toEqual(['UBER_CLIENT_SECRET', 'UBER_ORG_ID', 'UBER_VOUCHER_PROGRAM_ID']);
+    // Real modes and the explicit FORCE_MOCK_PROVIDERS opt-in are unaffected.
+    expect(createTransportBenefitProvider({ ...prod, TRANSPORT_BENEFIT_MODE: 'manual-code' })).toBeInstanceOf(ManualCodeTransportBenefit);
+    expect(createTransportBenefitProvider({ ...prod, TRANSPORT_BENEFIT_MODE: 'uber', UBER_CLIENT_ID: 'id', UBER_CLIENT_SECRET: 's', UBER_ORG_ID: 'org', UBER_VOUCHER_PROGRAM_ID: 'prog' })).toBeInstanceOf(UberVouchersTransportBenefit);
+    expect(createTransportBenefitProvider({ ...prod, FORCE_MOCK_PROVIDERS: true })).toBeInstanceOf(MockTransportBenefit);
   });
 
   it('manual-code mode prefers an explicit source, then the installed DB source, then the env pool', async () => {

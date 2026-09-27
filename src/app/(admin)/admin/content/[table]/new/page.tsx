@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { newId } from '@/contracts/ids';
 import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
@@ -10,6 +11,12 @@ import { RecordForm } from '../../_form';
 export const dynamic = 'force-dynamic';
 
 type Params = Promise<{ table: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { table } = await params;
+  const spec = (CONTENT_TABLE_NAMES as readonly string[]).includes(table) ? TABLE_SPECS[table as keyof typeof TABLE_SPECS] : null;
+  return { title: spec ? `New ${spec.label} · Content (admin)` : 'Content (admin)' };
+}
 
 export default async function AdminContentNew({ params }: { params: Params }) {
   const { table } = await params;

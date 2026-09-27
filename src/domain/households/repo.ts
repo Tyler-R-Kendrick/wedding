@@ -18,6 +18,14 @@ export async function getHousehold(db: Db, id: string): Promise<HouseholdRow | n
   return rows[0] ?? null;
 }
 
+/**
+ * Default page and hard ceiling for the admin lists. A wedding has well under a thousand households,
+ * so the default is "all of them"; the ceiling only bounds a runaway query, and the admin capability
+ * asks for one row past its own limit to say so on screen rather than silently cutting the list.
+ */
+export const HOUSEHOLD_LIST_DEFAULT = 5000;
+export const HOUSEHOLD_LIST_MAX = 10_000;
+
 export async function listHouseholds(db: Db, filter: { q?: string; limit?: number; offset?: number } = {}): Promise<(HouseholdRow & { memberCount: number })[]> {
   const where = filter.q ? ilike(households.name, `%${filter.q.replace(/[%_]/g, '')}%`) : undefined;
   // A correlated `(select count(*) …)` in a raw `sql` template returned 0 for EVERY household under
@@ -27,7 +35,7 @@ export async function listHouseholds(db: Db, filter: { q?: string; limit?: numbe
   // the household members first"), so nothing was lost; the screen was simply lying about who
   // exists. A grouped count is one more round trip and cannot be wrong.
   const [rows, counts] = await Promise.all([
-    db.select().from(households).where(where).orderBy(asc(households.name)).limit(Math.min(filter.limit ?? 200, 1000)).offset(filter.offset ?? 0),
+    db.select().from(households).where(where).orderBy(asc(households.name), asc(households.id)).limit(Math.min(filter.limit ?? HOUSEHOLD_LIST_DEFAULT, HOUSEHOLD_LIST_MAX)).offset(filter.offset ?? 0),
     db.select({ householdId: guests.householdId, n: sql<number>`count(*)` }).from(guests).where(isNull(guests.mergedIntoGuestId)).groupBy(guests.householdId),
   ]);
   const byHousehold = new Map(counts.map((c) => [c.householdId, Number(c.n)]));

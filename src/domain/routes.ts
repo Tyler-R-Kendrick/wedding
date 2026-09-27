@@ -14,7 +14,6 @@ export const ROUTES = {
   gifts: '/gifts',
   photos: '/photos',
   photoSearch: '/media/search',
-  photosOfMe: '/media/me',
   adminContent: '/admin/content',
 } as const;
 

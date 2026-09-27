@@ -62,7 +62,8 @@ export async function saveRecordAction(_prev: SaveState, formData: FormData): Pr
 export async function markVerifiedAction(formData: FormData): Promise<void> {
   const table = formData.get('table');
   const id = formData.get('id');
-  const keyRaw = formData.get('idempotencyKey');
+  // The button renders <IdemKey/>, whose field is `idem`.
+  const keyRaw = formData.get('idem');
   const idempotencyKey = typeof keyRaw === 'string' && keyRaw.length >= 8 ? keyRaw : undefined;
   if (!isTable(table) || typeof id !== 'string') redirect(`${ROUTES.adminContent}?error=validation`);
   const ctx = await contextFor(idempotencyKey);

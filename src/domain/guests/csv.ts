@@ -43,8 +43,9 @@ export function parseCsv(text: string): string[][] {
 const needsQuote = /[",\r\n]/;
 export function csvCell(value: unknown): string {
   const s = value === null || value === undefined ? '' : String(value);
-  // Neutralise spreadsheet formula injection (=, +, -, @ at cell start).
-  const safe = /^[=+\-@\t]/.test(s) ? `'${s}` : s;
+  // Neutralise spreadsheet formula injection (=, +, -, @, tab or CR at cell start) — the same set
+  // the RSVP export neutralises (src/capabilities/rsvp/admin_rsvp.ts `FORMULA_LEAD`).
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
   return needsQuote.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 

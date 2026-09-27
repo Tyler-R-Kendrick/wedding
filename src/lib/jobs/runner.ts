@@ -3,7 +3,7 @@ import type { Db } from '@/db/client';
 import { logger } from '@/lib/logger';
 import { metrics } from '@/lib/metrics';
 import { systemPrincipal } from '@/lib/principal';
-import { getJobHandler } from './handlers';
+import { getJobHandler, listJobTypes } from './handlers';
 import { JobQueue } from './queue';
 
 export interface RunSummary {
@@ -14,13 +14,19 @@ export interface RunSummary {
   reaped: number;
 }
 
-/** Runs one bounded batch of due jobs. Used by the cron route and the dev poller. */
-export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date } = {}): Promise<RunSummary> {
+/**
+ * Runs one bounded batch of due jobs. Used by the cron routes, `npm run jobs:run` and the dev poller.
+ *
+ * Only jobs whose type has a handler registered in this process are claimed (`types` defaults to
+ * `listJobTypes()`), so a runner never kills a job it cannot run. Entry points import
+ * `./register-all` so every handler the app defines is registered before they get here.
+ */
+export async function runDueJobs(db: Db, opts: { worker?: string; limit?: number; now?: () => Date; types?: readonly string[] } = {}): Promise<RunSummary> {
   const queue = new JobQueue(db, opts.now);
   const worker = opts.worker ?? `worker-${process.pid}`;
   const summary: RunSummary = { claimed: 0, succeeded: 0, retried: 0, dead: 0, reaped: 0 };
   summary.reaped = await queue.reapStale();
-  const batch = await queue.claim(worker, opts.limit ?? 10);
+  const batch = await queue.claim(worker, opts.limit ?? 10, { types: opts.types ?? listJobTypes() });
   summary.claimed = batch.length;
   for (const job of batch) {
     const requestId = newId();

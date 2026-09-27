@@ -19,17 +19,15 @@ export const INTERNAL_ROUTES = [
   '/trip',
   '/media/upload',
   '/media/mine',
-  // Level 11. Both were unreachable: `/media/me` had no inbound link anywhere in `src`, and
-  // `/media/search`'s only links were from `/media/me` itself, so neither could be reached by a
-  // guest OR named by the concierge. Two pages nobody could get to.
+  // Level 11 added `/media/search` and `/media/me`; the `/media/me` page was later removed, and a
+  // route on this list without a page is a 404 the concierge can send a guest to.
   '/media/search',
-  '/media/me',
 ] as const;
 
 export type InternalRoute = (typeof INTERNAL_ROUTES)[number];
 
 /** Dynamic route prefixes (e.g. `/our-adventures/<slug>`). */
-export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/our-venue/', '/photos/'] as const;
+export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/our-venue/', '/photos/', '/rsvp/'] as const;
 
 const SAFE_SEGMENT = /^[a-z0-9-]+$/;
 

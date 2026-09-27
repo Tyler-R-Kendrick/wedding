@@ -29,6 +29,18 @@ const adminBase = {
   requires: ['admin_guest_ops'] as const,
   exposure: { ui: true, ai: false, webmcp: false },
 };
+/**
+ * The admin lists return everything up to this many rows (a wedding has well under a thousand
+ * guests). Each asks for one row more than it returns, so a list that hit the ceiling says
+ * `truncated: true` and the screen can say so, instead of the old silent 200/500 cut-offs that fed
+ * the household pickers.
+ */
+export const ADMIN_LIST_CEILING = 5000;
+async function upToCeiling<T>(fetch: (limit: number) => Promise<T[]>, limit = ADMIN_LIST_CEILING): Promise<{ rows: T[]; truncated: boolean }> {
+  const rows = await fetch(limit + 1);
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit };
+}
+const listLimit = z.number().int().min(1).max(ADMIN_LIST_CEILING).optional();
 const readAnn = { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false };
 const writeAnn = { readOnlyHint: false, untrustedContentHint: false, consequentialHint: true };
 
@@ -91,14 +103,14 @@ export const adminListGuests = defineCapability({
   description: 'Lists guests with household, kind, claim status and email. Admin only.',
   kind: 'read',
   annotations: readAnn,
-  input: z.object({ q: z.string().max(100).optional(), householdId: z.string().max(64).optional(), includeMerged: z.boolean().optional(), limit: z.number().int().min(1).max(2000).optional(), offset: z.number().int().min(0).optional() }).optional(),
-  output: z.object({ guests: z.array(guestOut) }),
+  input: z.object({ q: z.string().max(100).optional(), householdId: z.string().max(64).optional(), includeMerged: z.boolean().optional(), limit: listLimit, offset: z.number().int().min(0).optional() }).optional(),
+  output: z.object({ guests: z.array(guestOut), truncated: z.boolean() }),
   async handler(ctx, i) {
     const guard = adminOf(ctx);
     if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
-    const rows = await listGuests(db, i ?? {});
-    return ok({ data: { guests: await decorate(db, rows) }, sources: [] });
+    const { rows, truncated } = await upToCeiling((limit) => listGuests(db, { ...i, limit }), i?.limit);
+    return ok({ data: { guests: await decorate(db, rows), truncated }, sources: [] });
   },
 });
 
@@ -195,13 +207,13 @@ export const adminListHouseholds = defineCapability({
   description: 'Lists households with member counts and current invitation status. Admin only.',
   kind: 'read',
   annotations: readAnn,
-  input: z.object({ q: z.string().max(100).optional(), limit: z.number().int().min(1).max(1000).optional(), offset: z.number().int().min(0).optional() }).optional(),
-  output: z.object({ households: z.array(householdOut) }),
+  input: z.object({ q: z.string().max(100).optional(), limit: listLimit, offset: z.number().int().min(0).optional() }).optional(),
+  output: z.object({ households: z.array(householdOut), truncated: z.boolean() }),
   async handler(ctx, i) {
     const guard = adminOf(ctx);
     if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
-    const rows = await listHouseholds(db, i ?? {});
+    const { rows, truncated } = await upToCeiling((limit) => listHouseholds(db, { ...i, limit }), i?.limit);
     const current = await currentInvitationsForHouseholds(db, rows.map((h) => h.id));
     return ok({
       data: {
@@ -209,6 +221,7 @@ export const adminListHouseholds = defineCapability({
           const inv = current.get(h.id);
           return { id: h.id, name: h.name, managerGuestId: h.managerGuestId, memberCount: h.memberCount, invitation: inv ? { id: inv.id, status: invitationLifecycle(inv, ctx.now), tokenPrefix: inv.tokenPrefix, expiresAt: inv.expiresAt.toISOString() } : null, updatedAt: h.updatedAt.toISOString() };
         }),
+        truncated,
       },
       sources: [],
     });
@@ -313,18 +326,19 @@ export const adminListInvitations = defineCapability({
   description: 'Lists invitation links (status, prefix, expiry) — never the tokens themselves. Admin only.',
   kind: 'read',
   annotations: readAnn,
-  input: z.object({ householdId: z.string().max(64).optional(), status: z.enum(INVITATION_STATUSES).optional(), limit: z.number().int().min(1).max(2000).optional(), offset: z.number().int().min(0).optional() }).optional(),
-  output: z.object({ invitations: z.array(z.object({ id: z.string(), householdId: z.string(), householdName: z.string(), tokenPrefix: z.string(), status: z.enum(INVITATION_STATUSES), lifecycle: z.enum(['active', 'claimed', 'expired', 'revoked']), issuedAt: z.string(), expiresAt: z.string(), claimedAt: z.string().nullable(), revokedAt: z.string().nullable(), revokedReason: z.string().nullable(), eventKeys: z.array(z.string()), plusOneAllowance: z.number().int(), childrenAllowance: z.number().int(), rotatedFromId: z.string().nullable() })) }),
+  input: z.object({ householdId: z.string().max(64).optional(), status: z.enum(INVITATION_STATUSES).optional(), limit: listLimit, offset: z.number().int().min(0).optional() }).optional(),
+  output: z.object({ invitations: z.array(z.object({ id: z.string(), householdId: z.string(), householdName: z.string(), tokenPrefix: z.string(), status: z.enum(INVITATION_STATUSES), lifecycle: z.enum(['active', 'claimed', 'expired', 'revoked']), issuedAt: z.string(), expiresAt: z.string(), claimedAt: z.string().nullable(), revokedAt: z.string().nullable(), revokedReason: z.string().nullable(), eventKeys: z.array(z.string()), plusOneAllowance: z.number().int(), childrenAllowance: z.number().int(), rotatedFromId: z.string().nullable() })), truncated: z.boolean() }),
   async handler(ctx, i) {
     const guard = adminOf(ctx);
     if (!guard.ok) return err(guard.error);
     const { db } = appServices(ctx);
-    const rows = await listInvitations(db, i ?? {});
+    const { rows, truncated } = await upToCeiling((limit) => listInvitations(db, { ...i, limit }), i?.limit);
     const hh = await db.select({ id: households.id, name: households.name }).from(households).where(rows.length ? inArray(households.id, [...new Set(rows.map((r) => r.householdId))]) : eq(households.id, ''));
     const names = new Map(hh.map((h) => [h.id, h.name]));
     return ok({
       data: {
         invitations: rows.map((x) => ({ id: x.id, householdId: x.householdId, householdName: names.get(x.householdId) ?? '', tokenPrefix: x.tokenPrefix, status: x.status, lifecycle: invitationLifecycle(x, ctx.now), issuedAt: x.issuedAt.toISOString(), expiresAt: x.expiresAt.toISOString(), claimedAt: x.claimedAt?.toISOString() ?? null, revokedAt: x.revokedAt?.toISOString() ?? null, revokedReason: x.revokedReason, eventKeys: x.eventKeys, plusOneAllowance: x.plusOneAllowance, childrenAllowance: x.childrenAllowance, rotatedFromId: x.rotatedFromId })),
+        truncated,
       },
       sources: [],
     });
@@ -386,8 +400,10 @@ export const adminRevokeInvitation = defineCapability({
   ...adminBase,
   name: 'admin_revoke_invitation',
   title: 'Admin: revoke an invitation link',
-  description: 'Deactivates an invitation link; the household keeps its access. Admin only.',
+  description: 'Deactivates an invitation link; the household keeps its access. Admin only; fresh admin session required.',
   kind: 'action',
+  // Step-up: revoking stops a household mid-claim and is hard to undo (docs/ops/admin-guide.md "Step-up").
+  stepUp: true,
   confirmation: 'inline',
   idempotent: true,
   annotations: writeAnn,
@@ -520,6 +536,10 @@ export const adminImportGuestsCsv = defineCapability({
   },
 });
 
+const EXPORT_PAGE = 1000;
+/** 50 000 guests: far past any wedding, and still a bounded loop. */
+const EXPORT_MAX_PAGES = 50;
+
 export const adminExportGuestsCsv = defineCapability({
   ...adminBase,
   name: 'admin_export_guests_csv',
@@ -535,7 +555,13 @@ export const adminExportGuestsCsv = defineCapability({
     const { db } = appServices(ctx);
     const includeNotes = !!i?.includeNotes;
     const includeAddress = !!i?.includeAddress;
-    const rows = await listGuests(db, { limit: 2000 });
+    // Every guest, a page at a time (the old single `limit: 2000` read cut the file off silently).
+    const rows: GuestRow[] = [];
+    for (let page = 0; page < EXPORT_MAX_PAGES; page++) {
+      const batch = await listGuests(db, { limit: EXPORT_PAGE, offset: page * EXPORT_PAGE });
+      rows.push(...batch);
+      if (batch.length < EXPORT_PAGE) break;
+    }
     const hh = await db.select().from(households);
     const byId = new Map(hh.map((h) => [h.id, h]));
     const invs = await currentInvitationsForHouseholds(db, hh.map((h) => h.id));

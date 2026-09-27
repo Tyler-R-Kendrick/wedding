@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { MyUploadItem } from '@/capabilities/media';
 import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { UploadList } from '@/components/media/UploadList';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 
 export const dynamic = 'force-dynamic';
@@ -35,9 +36,16 @@ export default async function MyUploadsPage() {
         <MediaSection title="Please sign in first" id="sign-in">
           <p className="media-lede">Open the link from your invitation to sign in, then come back here to see everything you have added.</p>
           <p>
-            <Link className="media-button" href="/">
-              Go to the site
-            </Link>
+            {/* Signed out (the QR code on a phone that has no session): the way back is sign-in, and it returns here. */}
+            {principal.kind === 'anonymous' ? (
+              <Link className="media-button" href={throughSignIn('/media/mine')}>
+                Sign in
+              </Link>
+            ) : (
+              <Link className="media-button" href="/">
+                Go to the site
+              </Link>
+            )}
           </p>
         </MediaSection>
       ) : (

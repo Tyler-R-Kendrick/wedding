@@ -13,7 +13,7 @@ interface DraftData {
   confirmInput: { entitlementId: string };
 }
 
-type Step = { name: 'idle' } | { name: 'drafting' } | { name: 'review'; draft: DraftData; token: string; expiresAt: string } | { name: 'claiming' } | { name: 'done'; redemptionKind: 'link' | 'code' } | { name: 'error'; message: string; retry: boolean };
+type Step = { name: 'idle' } | { name: 'drafting' } | { name: 'review'; draft: DraftData; token: string; expiresAt: string } | { name: 'claiming' } | { name: 'done'; redemptionKind: 'link' | 'code' } | { name: 'error'; message: string; retry: boolean; stepUp?: boolean };
 
 const BUTTON = 'inline-flex min-h-11 items-center rounded-[var(--radius-button,2px)] px-7 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60';
 const PRIMARY = `${BUTTON} bg-primary text-neutral`;
@@ -32,7 +32,7 @@ export function ClaimBenefitFlow({ entitlementId, program }: { entitlementId: st
   const draft = async () => {
     setStep({ name: 'drafting' });
     const res = await callCapability<DraftData>('draft_my_transportation_claim', { input: { entitlementId } });
-    if (!res.ok || !res.data) return setStep({ name: 'error', message: messageFor(res.error), retry: true });
+    if (!res.ok || !res.data) return setStep({ name: 'error', message: messageFor(res.error), stepUp: res.error?.code === 'step_up_required', retry: true });
     if (!res.data.claimable || !res.confirmation) return setStep({ name: 'error', message: res.data.benefit.statusMessage, retry: false });
     keyRef.current ??= newIdempotencyKey();
     setStep({ name: 'review', draft: res.data, token: res.confirmation.token, expiresAt: res.confirmation.expiresAt });
@@ -50,7 +50,7 @@ export function ClaimBenefitFlow({ entitlementId, program }: { entitlementId: st
         router.refresh();
         return setStep({ name: 'error', message: messageFor(res.error), retry: false });
       }
-      return setStep({ name: 'error', message: messageFor(res.error), retry: true });
+      return setStep({ name: 'error', message: messageFor(res.error), stepUp: res.error?.code === 'step_up_required', retry: true });
     }
     setStep({ name: 'done', redemptionKind: res.data.redemptionKind });
     router.refresh();
@@ -86,6 +86,14 @@ export function ClaimBenefitFlow({ entitlementId, program }: { entitlementId: st
       {step.name === 'error' ? (
         <p role="alert" className="mb-3 measure">
           {step.message}
+          {step.stepUp ? (
+            <>
+              {' '}
+              <a className="underline underline-offset-4" href={`/step-up?next=${encodeURIComponent('/transportation')}`}>
+                Confirm it’s you
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
       {step.name === 'done' ? (
@@ -109,7 +117,7 @@ export function ClaimBenefitFlow({ entitlementId, program }: { entitlementId: st
 
 function messageFor(error: { code: string; message: string } | undefined): string {
   if (!error) return 'Something went wrong. Please try again.';
-  if (error.code === 'step_up_required') return 'For your security, please sign in again from your invitation link before claiming.';
+  if (error.code === 'step_up_required') return 'For your security, please confirm it’s you with a fresh code before claiming.';
   if (error.code === 'unauthenticated') return 'Please sign in from your invitation link to claim.';
   return error.message;
 }

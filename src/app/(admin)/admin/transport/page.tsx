@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import { adminListTransportationEntitlements } from '@/capabilities/admin_transport';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
 import { ConsoleGate, ConsolePage, Note, ScrollRegion, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
+export const metadata: Metadata = { title: 'Ride benefits (admin)', robots: { index: false, follow: false } };
 
 /** Ride benefits: assignment and eligibility, manual code upload (counts only), claim status. Never a code or link. */
 export default async function AdminTransportPage() {
@@ -89,13 +91,12 @@ export default async function AdminTransportPage() {
               submitLabel="Assign"
               fields={[
                 { name: 'guestId', label: 'Guest id', type: 'text', required: true },
-                { name: 'householdId', label: 'Household id', type: 'text', required: true },
+                { name: 'householdId', label: 'Household id', type: 'text', required: true, help: 'Must be the guest’s own household. Whether the guest is a minor (never eligible) is read from the guest list.' },
                 { name: 'program', label: 'Programme key', type: 'text', defaultValue: 'reception-ride-home', help: 'Lowercase letters, digits and dashes.' },
                 { name: 'amountNote', label: 'Amount (as text)', type: 'text', help: 'From the planner (P-05). Shown to the guest verbatim.' },
                 { name: 'validityNote', label: 'Validity (as text)', type: 'text' },
                 { name: 'geofenceNote', label: 'Area (as text)', type: 'text' },
                 { name: 'providerProgramRef', label: 'Provider programme reference', type: 'text', help: 'Uber voucher programme id, if any. Never a secret.' },
-                { name: 'guestIsMinor', label: 'Guest is a minor (never eligible)', type: 'checkbox' },
               ]}
             />
             <AdminCapabilityForm

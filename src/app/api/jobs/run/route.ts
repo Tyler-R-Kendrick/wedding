@@ -2,6 +2,8 @@ import { getDb } from '@/db/client';
 import { timingSafeEqualString } from '@/lib/crypto';
 import { env } from '@/lib/env';
 import { enqueueHousekeeping, runDueJobs } from '@/lib/jobs';
+// Every handler, not just this route's: a runner only claims types it has a handler for.
+import '@/lib/jobs/register-all';
 import { bearerToken, getRequestId, jsonResponse } from '@/lib/request';
 
 export const dynamic = 'force-dynamic';

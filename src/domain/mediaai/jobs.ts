@@ -2,6 +2,7 @@ import type { Db } from '@/db/client';
 import { env } from '@/lib/env';
 import { getFlags, isReady } from '@/lib/flags';
 import { JobQueue, registerJobHandler, type JobHandler } from '@/lib/jobs';
+import { canAnnotate } from '@/providers/media-ai/types';
 import { getProvider } from '@/providers/registry';
 import { recomputeClusters } from './clusters';
 import { indexAsset, listIndexBacklog, type IndexerDeps } from './indexer';
@@ -48,7 +49,8 @@ export async function enqueueIndexScan(db: Db, now: Date = new Date(), opts: { f
 
 const index: JobHandler<{ assetId?: string; scan?: boolean; full?: boolean }> = async (payload, _job, ctx) => {
   if (payload.scan) {
-    const ids = await listIndexBacklog(ctx.db, env.JOBS_BATCH_SIZE * 5 || INDEX_SCAN_BATCH, { full: !!payload.full });
+    const purgeAiCaptions = !canAnnotate(getProvider('media-ai', { db: ctx.db }));
+    const ids = await listIndexBacklog(ctx.db, env.JOBS_BATCH_SIZE * 5 || INDEX_SCAN_BATCH, { full: !!payload.full, purgeAiCaptions });
     for (const assetId of ids) await enqueueIndex(ctx.db, assetId, ctx.now);
     ctx.logger.info({ enqueued: ids.length, full: !!payload.full }, 'media.index scan');
     return;

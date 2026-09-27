@@ -4,7 +4,9 @@ import { CapabilityError } from '@/contracts/errors';
 import { err, ok } from '@/contracts/result';
 import { getAssetWithCollection, isMediaAdmin, isOwner } from '@/domain/media';
 import { getAnnotation } from '@/domain/mediaai';
-import { ID, dbOf, suggestionSchema, toSuggestion } from './_shared';
+import { canAnnotate } from '@/providers/media-ai/types';
+import { appServices } from '../context';
+import { ID, dbOf, suggestionSchema, toSuggestion, withoutMachineText } from './_shared';
 
 const input = z.object({ assetId: ID });
 const output = z.object({
@@ -36,6 +38,10 @@ export const suggestAltText = defineCapability<z.infer<typeof input>, AltTextSug
     const admin = isMediaAdmin(ctx.principal);
     if (!found || found.asset.deletedAt || (!admin && !isOwner(ctx.principal, found.asset))) return err(new CapabilityError('not_found', 'We could not find that item.'));
     const annotation = await getAnnotation(db, i.assetId);
-    return ok({ data: { assetId: i.assetId, current: { caption: found.asset.caption, altText: found.asset.altText }, suggestion: toSuggestion(annotation), canApply: admin }, sources: [] });
+    // No describer configured (production refuses the mock): never offer machine text as alt text,
+    // even a row written before the switch and not yet re-indexed.
+    const describer = canAnnotate(appServices(ctx).providers('media-ai'));
+    const suggestion = describer ? toSuggestion(annotation) : withoutMachineText(toSuggestion(annotation));
+    return ok({ data: { assetId: i.assetId, current: { caption: found.asset.caption, altText: found.asset.altText }, suggestion, canApply: admin }, sources: [] });
   },
 });

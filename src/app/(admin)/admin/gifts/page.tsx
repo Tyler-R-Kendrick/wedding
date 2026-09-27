@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import { adminListGiftLinks } from '@/capabilities/admin_gifts';
 import { AdminCapabilityForm } from '@/components/handoff/AdminCapabilityForm';
 import { invokeForPage } from '@/components/handoff/server';
 import { ConsoleGate, ConsolePage, Note, ScrollRegion, Section } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
+export const metadata: Metadata = { title: 'Gifts (admin)', robots: { index: false, follow: false } };
 
 export default async function AdminGiftsPage() {
   const { principal, result } = await invokeForPage(adminListGiftLinks, {});

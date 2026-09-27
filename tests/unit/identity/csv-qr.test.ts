@@ -7,6 +7,9 @@ describe('csv', () => {
     expect(parseCsv('﻿a,b\r\n"x, y","say ""hi"""\n')).toEqual([['a', 'b'], ['x, y', 'say "hi"']]);
     expect(toCsv([['a', 'b,c'], ['=SUM(1)', 'q"q']])).toBe('a,"b,c"\r\n\'=SUM(1),"q""q"\r\n');
     expect(csvCell(null)).toBe('');
+    // Same leading characters as the RSVP export neutralises: a tab or CR can also start a formula.
+    for (const lead of ['=', '+', '-', '@', '\t', '\r']) expect(csvCell(`${lead}1+1`).startsWith(`'`) || csvCell(`${lead}1+1`).startsWith(`"'`)).toBe(true);
+    expect(csvCell('\r=cmd')).toBe(`"'\r=cmd"`);
   });
   it('parses the guest column contract and reports row issues by line', () => {
     const { records, issues } = parseGuestCsv('Household,First Name,last_name,email,kind,manager,event_keys\nThe Smiths,Ann,Smith,ANN@X.CO,adult,yes,ceremony;reception\nThe Smiths,Kid,Smith,,child,,\n,Nobody,,,,,\nThe Smiths,Bad,,not-an-email,,,\n');

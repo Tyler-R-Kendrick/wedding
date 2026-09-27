@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeJob, fingerprintFile, Uploader, type PartTransport, type Ticket, type UploaderApi } from '@/components/media/uploader';
+import { describeJob, fingerprintFile, reportedParts, Uploader, type PartTransport, type Ticket, type UploaderApi } from '@/components/media/uploader';
 import { quickFingerprint } from '@/lib/media/checksum';
 
 /** In-memory server: hands out tickets, records parts, completes; a fake transport that can fail on demand. */
@@ -161,5 +161,44 @@ describe('upload engine', () => {
     expect(slow.uploads.has('U1')).toBe(false);
     up2.remove(j2!.clientRef);
     expect(up2.jobs).toHaveLength(0);
+  });
+  it('works when the bucket hides ETag (no CORS ExposeHeaders): single reports no parts, multipart reports blanks once', async () => {
+    const server = fakeServer({ partSize: 1024 });
+    const completes: { uploadId: string; parts: { partNumber: number; etag: string }[] }[] = [];
+    const api: UploaderApi = { ...server.api, complete: (uploadId, parts, ...rest) => (completes.push({ uploadId, parts }), server.api.complete(uploadId, parts, ...rest)) };
+    // A cross-origin PUT whose ETag header the browser will not show.
+    const blind: PartTransport = async (input) => ({ ...(await server.transport(input)), etag: '' });
+    const up = new Uploader({ api, transport: blind, backoffMs: () => 1, subtle: globalThis.crypto.subtle });
+    const [single, multi] = up.add([file('a.jpg', 500), file('b.jpg', 2500)]);
+    await until(() => single!.state === 'processing' && multi!.state === 'processing');
+    expect(completes.find((c) => c.uploadId === single!.uploadId)!.parts).toEqual([]);
+    expect(completes.find((c) => c.uploadId === multi!.uploadId)!.parts).toEqual([1, 2, 3].map((partNumber) => ({ partNumber, etag: '' })));
+    // Each part went up exactly once: a blank ETag still counts as sent.
+    for (const n of [1, 2, 3]) expect(server.attempts.get(`http://storage/${multi!.uploadId}/${n}`)).toBe(1);
+    expect(reportedParts({ parts: { 1: '' }, ticket: { ...single!.ticket!, mode: 'single' } })).toEqual([]);
+  });
+
+  it('forgets parts the server says are missing, so a retry sends them again', async () => {
+    const server = fakeServer({ partSize: 1024 });
+    let dropOnce = true;
+    const api: UploaderApi = {
+      ...server.api,
+      async complete(uploadId, parts, ...rest) {
+        if (dropOnce) {
+          dropOnce = false;
+          server.uploads.get(uploadId)!.parts.delete(2); // storage never got part 2
+          return { ok: false, error: { code: 'validation', message: 'missing', details: { missingParts: [2] } } };
+        }
+        return server.api.complete(uploadId, parts, ...rest);
+      },
+    };
+    const up = new Uploader({ api, transport: server.transport, backoffMs: () => 1, subtle: globalThis.crypto.subtle });
+    const [job] = up.add([file('big.jpg', 3000)]);
+    await until(() => job!.state === 'error');
+    expect(Object.keys(job!.parts).map(Number)).toEqual([1, 3]);
+    await up.retry(job!.clientRef);
+    await until(() => job!.state === 'processing');
+    expect(server.attempts.get(`http://storage/${job!.uploadId}/2`)).toBe(2);
+    expect(server.attempts.get(`http://storage/${job!.uploadId}/1`)).toBe(1);
   });
 });

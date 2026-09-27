@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { invoke } from '@/capabilities/invoke';
 import { getContentRecordCapability } from '@/capabilities/get_content_record';
@@ -5,7 +6,7 @@ import { newId } from '@/contracts/ids';
 import { CONTENT_TABLE_NAMES, TABLE_SPECS, toFormValues } from '@/domain/content/admin';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
-import { Breadcrumbs, ConsolePage, Note, Pill, Section, Stamp } from '../../../_components/console';
+import { Breadcrumbs, ConsolePage, Denied, Note, Pill, Section, Stamp } from '../../../_components/console';
 import { Button, IdemKey } from '../../../_components/ops';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { RecordForm } from '../../_form';
@@ -18,6 +19,12 @@ type Params = Promise<{ table: string; id: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { table } = await params;
+  const spec = (CONTENT_TABLE_NAMES as readonly string[]).includes(table) ? TABLE_SPECS[table as keyof typeof TABLE_SPECS] : null;
+  return { title: spec ? `Edit ${spec.label} · Content (admin)` : 'Content (admin)' };
+}
+
 export default async function AdminContentEdit({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { table, id } = await params;
   const sp = await searchParams;
@@ -28,7 +35,12 @@ export default async function AdminContentEdit({ params, searchParams }: { param
   const r = await invoke(getContentRecordCapability, ctx, { table, id });
   if (!r.ok) {
     if (r.error.code === 'not_found') notFound();
-    throw new Error(r.error.message);
+    return (
+      <ConsolePage title={spec.label}>
+        <Breadcrumbs trail={[{ href: ROUTES.adminContent, label: 'Content' }, { href: `${ROUTES.adminContent}/${table}`, label: spec.label }]} />
+        <Denied message={r.error.message} />
+      </ConsolePage>
+    );
   }
   const record = r.value.data;
   const values = toFormValues(table as keyof typeof TABLE_SPECS, record.values);

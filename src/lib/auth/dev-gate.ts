@@ -12,7 +12,7 @@ export interface DevGateEnv {
 /**
  * Gate for development-only endpoints (dev inbox, identity fixtures).
  *  - production: never, whatever the caller presents (review S5)
- *  - otherwise a matching `DEV_INBOX_TOKEN` bearer opens them (previews, CI)
+ *  - otherwise a matching `DEV_INBOX_TOKEN` bearer opens them (CI; previews run as production)
  *  - otherwise only a local development server (NODE_ENV=development, not VERCEL/CI)
  */
 export function devEndpointAllowedFor(request: Request, e: DevGateEnv): boolean {

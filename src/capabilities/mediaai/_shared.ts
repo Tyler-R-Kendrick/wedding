@@ -68,6 +68,12 @@ export function toSuggestion(row: MediaAiAnnotationRow | null): Suggestion | nul
   };
 }
 
+/** A suggestion with every machine-written field removed (no describer configured). */
+export function withoutMachineText(s: Suggestion | null): Suggestion | null {
+  if (!s) return null;
+  return { ...s, captionSource: 'none', suggestedCaption: null, suggestedAltText: null, tags: [], captionModel: null, captionConfidence: null };
+}
+
 /** A search hit: the gallery item (signed derivative URLs) plus where the match came from. */
 export const searchHitSchema = galleryItemSchema.extend({
   score: z.number(),

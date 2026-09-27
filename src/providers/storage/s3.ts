@@ -197,6 +197,31 @@ export class S3Storage implements StorageProvider {
     }
   }
 
+  /**
+   * The parts storage holds for an upload (ListParts), so completion can recover ETags the browser
+   * could not read — a bucket whose CORS does not expose ETag hides it from a cross-origin PUT.
+   * Optional on the interface (`MultipartPartLister` in domain/media/uploads.ts); pages of 1,000.
+   */
+  async listMultipartParts(input: { key: string; uploadId: string }) {
+    if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
+    try {
+      const { s3, client } = await this.sdk();
+      const parts: { partNumber: number; etag: string; size?: number }[] = [];
+      let marker: string | undefined;
+      for (let page = 0; page < 10; page++) {
+        const res = await client.send(new s3.ListPartsCommand({ Bucket: this.opts.bucket, Key: input.key, UploadId: input.uploadId, ...(marker ? { PartNumberMarker: marker } : {}) }));
+        for (const p of res.Parts ?? []) {
+          if (p.PartNumber && p.ETag) parts.push({ partNumber: p.PartNumber, etag: p.ETag, ...(p.Size !== undefined ? { size: p.Size } : {}) });
+        }
+        if (!res.IsTruncated || !res.NextPartNumberMarker) break;
+        marker = String(res.NextPartNumberMarker);
+      }
+      return ok(parts);
+    } catch (e) {
+      return err(this.classify(e));
+    }
+  }
+
   async abortMultipartUpload(input: { key: string; uploadId: string }) {
     if (!isValidKey(input.key)) return err(failure(this.name, 'bad_request', 'Invalid storage key.'));
     try {

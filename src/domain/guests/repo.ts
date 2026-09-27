@@ -74,6 +74,10 @@ export async function listManagedGuests(db: Db, managerIds: readonly string[]): 
   return rows.filter((g) => !managerIds.includes(g.id));
 }
 
+/** Default page and hard ceiling for guest lists (see HOUSEHOLD_LIST_DEFAULT for the reasoning). */
+export const GUEST_LIST_DEFAULT = 5000;
+export const GUEST_LIST_MAX = 10_000;
+
 export async function listGuests(db: Db, filter: { householdId?: string; q?: string; includeMerged?: boolean; limit?: number; offset?: number } = {}): Promise<GuestRow[]> {
   const conditions = [
     filter.householdId ? eq(guests.householdId, filter.householdId) : undefined,
@@ -86,8 +90,8 @@ export async function listGuests(db: Db, filter: { householdId?: string; q?: str
     .select()
     .from(guests)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(asc(guests.lastName), asc(guests.firstName))
-    .limit(Math.min(filter.limit ?? 500, 2000))
+    .orderBy(asc(guests.lastName), asc(guests.firstName), asc(guests.id))
+    .limit(Math.min(filter.limit ?? GUEST_LIST_DEFAULT, GUEST_LIST_MAX))
     .offset(filter.offset ?? 0);
 }
 

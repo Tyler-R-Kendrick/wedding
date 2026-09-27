@@ -3,11 +3,11 @@ import { invoke } from '@/capabilities/invoke';
 import { listContentRecordsCapability } from '@/capabilities/list_content_records';
 import { FRESHNESS_LABELS } from '@/domain/content/freshness';
 import { ROUTES } from '@/domain/routes';
-import { ConsolePage, DataTable, Pill, Section, Stamp, type PillTone } from '../_components/console';
+import { ConsolePage, DataTable, Denied, Pill, Section, Stamp, type PillTone } from '../_components/console';
 import { AdminDenied, adminContentContext } from './_auth';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Content' };
+export const metadata = { title: 'Content (admin)' };
 
 /** DESIGN.md freshness tones, mapped onto the console's pill tones. */
 export const FRESHNESS_TONE: Record<string, PillTone> = { bad: 'bad', warn: 'warn', ok: 'good' };
@@ -17,7 +17,14 @@ export default async function AdminContentIndex() {
   const { ctx, allowed } = await adminContentContext();
   if (!allowed) return <AdminDenied />;
   const r = await invoke(listContentRecordsCapability, ctx, {});
-  if (!r.ok) throw new Error(r.error.message);
+  // A refused or failed read is shown on the console, not thrown into the error boundary.
+  if (!r.ok) {
+    return (
+      <ConsolePage title="Content">
+        <Denied message={r.error.message} />
+      </ConsolePage>
+    );
+  }
   const attention = r.value.data.tables.flatMap((t) => t.records.filter((rec) => rec.freshness !== 'fresh' || rec.placeholder).map((rec) => ({ ...rec, table: t.table, label: t.label })));
   attention.sort((a, b) => order(a.freshness) - order(b.freshness) || b.daysSinceVerified - a.daysSinceVerified);
 

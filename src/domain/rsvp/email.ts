@@ -63,7 +63,7 @@ export async function deliverRsvpConfirmation(db: Db, outboxId: string, now: Dat
 }
 
 let registered = false;
-/** Idempotent registration; called from instrumentation.ts and from the capabilities module. */
+/** Idempotent registration; called from `@/lib/jobs/register-all` (every job runner) and from the capabilities module. */
 export function registerRsvpJobs(): void {
   if (registered) return;
   registered = true;

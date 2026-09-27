@@ -1,4 +1,5 @@
 import { getDb, resetDb } from '@/db/client';
+import './register-all';
 import { runDueJobs } from './runner';
 
 /** `npm run jobs:run` - one bounded batch, for local development and ad-hoc ops. */

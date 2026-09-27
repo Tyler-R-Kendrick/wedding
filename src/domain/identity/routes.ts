@@ -14,7 +14,8 @@ const AUTH_PREFIXES = ['/invite/', '/i/', '/claim/', '/admin/'] as const;
  */
 const MOVED = ['/explore-caa'] as const;
 const SAFE_TAIL = /^[A-Za-z0-9_\-/]*$/;
-const SAFE_QUERY = /^[A-Za-z0-9_\-=&%.]*$/;
+// Includes the characters encodeURIComponent leaves as-is (' ( ) * ! ~), so an encoded photo search survives sign-in.
+const SAFE_QUERY = /^[A-Za-z0-9_\-=&%.'()*!~]*$/;
 
 export function isSafeReturnPath(path: unknown): path is string {
   if (typeof path !== 'string' || path.length === 0 || path.length > 512) return false;

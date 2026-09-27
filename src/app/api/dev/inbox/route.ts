@@ -7,13 +7,16 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Development only: shows OTP emails captured by the mock auth-email provider (the inbox is
- * empty whenever a real mailer is configured). Reachable on a local development server only,
- * never on a shared host (Vercel, CI) unless the caller presents DEV_INBOX_TOKEN.
+ * empty whenever a real mailer is configured). Never in production (which includes Vercel
+ * previews, built with NODE_ENV=production); otherwise a local development server, or a
+ * non-production shared host (CI) when the caller presents DEV_INBOX_TOKEN.
  */
 function available(request: Request): boolean {
-  if (getProvider('auth-email').name !== 'mock') return false;
-  // Shared gate with /api/dev/identity: never in production, bearer for previews/CI, else local dev only.
-  return devEndpointAllowed(request);
+  // The gate first: in production resolving the auth-email provider throws when no mailer is
+  // configured, which turned this 404 into a 500 (and told the caller the route exists).
+  // Shared gate with /api/dev/identity: never in production, bearer for CI, else local dev only.
+  if (!devEndpointAllowed(request)) return false;
+  return getProvider('auth-email').name === 'mock';
 }
 
 export async function GET(request: Request) {

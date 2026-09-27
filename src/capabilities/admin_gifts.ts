@@ -135,6 +135,8 @@ export const adminUpsertGiftRail = defineCapability<z.infer<typeof railInput>, z
   kind: 'action',
   auth: 'admin',
   requires: ['admin_content'],
+  // Step-up: this decides where guests' money is sent.
+  stepUp: true,
   confirmation: 'inline',
   idempotent: true,
   annotations: { readOnlyHint: false, untrustedContentHint: false, consequentialHint: false },

@@ -6,6 +6,7 @@ import { mediaAssets } from '@/db/schema/media';
 import { mediaAiAnnotations } from '@/db/schema/media_ai';
 import { computeMediaAiStatus } from '@/domain/mediaai';
 import { galleryItemSchema, toGalleryItems } from '../media/_shared';
+import { canAnnotate } from '@/providers/media-ai/types';
 import { mediaAiServices, suggestionSchema, toSuggestion } from './_shared';
 
 const input = z.object({ suggestions: z.number().int().min(0).max(50).optional() }).optional();
@@ -44,7 +45,8 @@ export const adminMediaAiStatus = defineCapability<z.infer<typeof input>, MediaA
     const services = mediaAiServices(ctx);
     const status = await computeMediaAiStatus(services.db);
     const proReadiness = await services.readiness('PRO_MEDIA_AI_PROCESSING');
-    const limit = i?.suggestions ?? 20;
+    // Without a describer there is nothing machine-written worth reviewing (stale rows are purged on the next scan).
+    const limit = canAnnotate(services.mediaAi) ? (i?.suggestions ?? 20) : 0;
     const rows = limit
       ? await services.db
           .select({ asset: mediaAssets, annotation: mediaAiAnnotations })

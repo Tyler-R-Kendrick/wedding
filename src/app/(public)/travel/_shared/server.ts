@@ -2,12 +2,15 @@ import 'server-only';
 import { headers } from 'next/headers';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import type { CapabilityDescriptor, CapabilityOutcome } from '@/contracts/capability';
-import type { CapabilityError } from '@/contracts/errors';
+import { CapabilityError } from '@/contracts/errors';
 import { newId } from '@/contracts/ids';
 import type { Principal } from '@/contracts/principal';
-import type { Result } from '@/contracts/result';
+import { err, type Result } from '@/contracts/result';
+import { getDb } from '@/db/client';
+import { env } from '@/lib/env';
 import { getPrincipal } from '@/lib/principal';
-import { getRequestId } from '@/lib/request';
+import { getClientIp, getRequestId } from '@/lib/request';
+import { getProvider } from '@/providers';
 import type { NoticeCode } from './recipe';
 
 /** Who is rendering / submitting. Server components and server actions both read the request headers. */
@@ -18,9 +21,19 @@ export async function currentPrincipal(): Promise<{ principal: Principal; reques
 }
 
 /** Every page and action goes through the capability pipeline on the `ui` surface; nothing here authorises anything itself. */
-export async function runAsUi<I, O>(cap: CapabilityDescriptor<I, O>, input: unknown, opts: { idempotencyKey?: string } = {}): Promise<Result<CapabilityOutcome<O>, CapabilityError>> {
+export async function runAsUi<I, O>(cap: CapabilityDescriptor<I, O>, input: unknown, opts: { idempotencyKey?: string; meterAnonymous?: boolean } = {}): Promise<Result<CapabilityOutcome<O>, CapabilityError>> {
   const { principal, requestId } = await currentPrincipal();
-  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: opts.idempotencyKey, inputTrust: 'UNTRUSTED_USER_CONTENT' });
+  const h = await headers();
+  const clientIp = getClientIp(h, env.TRUSTED_PROXY_HOPS);
+  // The same budget policy as the JSON route: a signed-in caller is metered inside the pipeline (one
+  // bucket for the route and server actions alike); anonymous callers share one principal key, so an
+  // action that costs something (a live partner search) meters them by client instead. Without this,
+  // a server action was an unmetered door to paid flight and hotel APIs.
+  if (principal.kind === 'anonymous' && opts.meterAnonymous) {
+    const decision = await getProvider('rate-limit', { db: await getDb() }).consume(`cap:anon:${clientIp}`, 'capability');
+    if (!decision.allowed) return err(new CapabilityError('rate_limited', 'You have tried that a few times. Please wait a moment and try again.', { retryAfterMs: decision.retryAfterMs }));
+  }
+  const ctx = await createCapabilityContext({ principal, requestId, surface: 'ui', idempotencyKey: opts.idempotencyKey, inputTrust: 'UNTRUSTED_USER_CONTENT', rateLimit: principal.kind !== 'anonymous', clientIp });
   return invoke(cap, ctx, input);
 }
 
@@ -86,7 +99,8 @@ export const field = {
   },
   /** The client regenerates the key per submit; without JavaScript one is minted here (that submit is then not replay-safe). */
   idempotencyKey(fd: FormData): string {
-    const k = field.str(fd, 'idempotencyKey');
+    // Guest forms name the field `idempotencyKey`; admin forms render <IdemKey/>, which names it `idem`.
+    const k = field.str(fd, 'idempotencyKey') ?? field.str(fd, 'idem');
     return k && /^[0-9A-HJKMNP-TV-Z]{26}$/.test(k) ? k : newId();
   },
 };

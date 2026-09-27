@@ -284,6 +284,55 @@ describe('media pipeline (PGlite + local-fs storage)', () => {
     expect(!short.ok && short.error.code).toBe('validation');
   });
 
+  it('a bucket that hides ETag (no CORS ExposeHeaders): single completes without one; multipart lists parts from storage or says why it cannot', async () => {
+    // Single PUT: the browser reports no parts (or a blank one); completion checks the object itself.
+    const small = await plainJpeg();
+    const c1 = await call<CreateOut>(guestA, 'create_upload', { files: [{ clientRef: 'e1', filename: 'blind.jpg', contentType: 'image/jpeg', size: small.byteLength }] });
+    const t1 = c1.ok ? c1.data.uploads[0]!.ticket! : undefined;
+    expect(t1?.mode).toBe('single');
+    expect((await put(t1!.parts[0]!.url!, small, t1!.parts[0]!.headers)).status).toBe(200);
+    const r1 = await call<Ticket>(guestA, 'resume_upload', { uploadId: t1!.uploadId, uploadedParts: [{ partNumber: 1, etag: '' }] });
+    expect(r1.ok, JSON.stringify(r1)).toBe(true);
+    const d1 = await call<{ assetId: string }>(guestA, 'complete_upload', { uploadId: t1!.uploadId, parts: [{ partNumber: 1, etag: '' }] });
+    expect(d1.ok, JSON.stringify(d1)).toBe(true);
+
+    const big = await jpegWithGps({ width: 1600, height: 1100, quality: 100, noise: true });
+    const partBytes = (n: number) => big.subarray((n - 1) * PART, n * PART);
+    const sendAllBlind = async (clientRef: string) => {
+      const c = await call<CreateOut>(guestA, 'create_upload', { files: [{ clientRef, filename: `${clientRef}.jpg`, contentType: 'image/jpeg', size: big.byteLength }] });
+      const t = c.ok ? c.data.uploads[0]!.ticket! : undefined;
+      expect(t?.mode).toBe('multipart');
+      const etags: { partNumber: number; etag: string }[] = [];
+      for (const part of t!.parts) {
+        const r = await put(part.url!, partBytes(part.partNumber), part.headers);
+        expect(r.status).toBe(200);
+        etags.push({ partNumber: part.partNumber, etag: r.etag });
+      }
+      return { t: t!, etags, blank: etags.map((p) => ({ partNumber: p.partNumber, etag: '' })) };
+    };
+
+    // Multipart, storage without ListParts: a clear, non-retry error rather than "parts missing".
+    const a = await sendAllBlind('e2');
+    const refused = await call(guestA, 'complete_upload', { uploadId: a.t.uploadId, parts: a.blank });
+    expect(!refused.ok && refused.error.code).toBe('provider_unavailable');
+    expect(!refused.ok && refused.error.details).toMatchObject({ reason: 'etag_not_exposed' });
+    expect(!refused.ok && refused.error.details?.missingParts).toBeUndefined();
+
+    // Multipart, storage with ListParts: completion recovers the ETags server-side.
+    const b = await sendAllBlind('e3');
+    const lister = storage as unknown as { listMultipartParts?: unknown };
+    lister.listMultipartParts = async () => ({ ok: true, value: b.etags });
+    try {
+      const done = await call<{ assetId: string }>(guestA, 'complete_upload', { uploadId: b.t.uploadId, parts: b.blank });
+      expect(done.ok, JSON.stringify(done)).toBe(true);
+      const db = await getDb();
+      const row = (await db.select().from(mediaUploads).where(eq(mediaUploads.id, b.t.uploadId)))[0]!;
+      expect(row.parts.map((p) => p.etag)).toEqual(b.etags.map((p) => p.etag));
+    } finally {
+      delete lister.listMultipartParts;
+    }
+  });
+
   it('rejects a polyglot at completion and a renamed archive in the pipeline; oversize objects never pass', async () => {
     const jpeg = await plainJpeg();
     const polyglot = concat(jpeg, ZIP_LOCAL_HEADER, new Uint8Array(64), ZIP_EOCD);
