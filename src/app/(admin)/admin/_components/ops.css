@@ -143,6 +143,14 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  min-height: 2.75rem;
+}
+
+/* The label is the 44px target (wedding-site-standards §7); the box alone is about 13px. */
+.ops-check label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 /*

@@ -7,7 +7,7 @@ import { FloorPlan } from '@/components/floorplan/FloorPlan';
  * their table lit. Used by Your Weekend and by the console's seating preview, so the preview is
  * the guest's own markup rather than a description of it.
  */
-export function TableCard({ table }: { table: Pick<MyTable, 'table' | 'floorPlan'> }) {
+export function TableCard({ table, idPrefix }: { table: Pick<MyTable, 'table' | 'floorPlan'>; idPrefix?: string }) {
   const where = `${table.table.name}${table.table.seatNumber ? `, seat ${table.table.seatNumber}` : ''}`;
   return (
     <div>
@@ -25,8 +25,9 @@ export function TableCard({ table }: { table: Pick<MyTable, 'table' | 'floorPlan
           anchors={table.floorPlan.anchors}
           highlightAnchorId={table.table.anchorId}
           highlightLabel={where}
-          highlightDomId={highlightIdFor(table.table.anchorId, table.table.id)}
+          highlightDomId={idPrefix ? undefined : highlightIdFor(table.table.anchorId, table.table.id)}
           placeholder={table.floorPlan.placeholder}
+          {...(idPrefix ? { idPrefix } : {})}
         />
       ) : null}
     </div>

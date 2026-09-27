@@ -1,4 +1,4 @@
-import { guestDisplayName } from '@/domain/guests/repo';
+import { getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
@@ -89,13 +89,19 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
 
 /* ------------------------------------------------------------- preview ------ */
 const previewInput = z.object({ guestId: idSchema });
-const previewOutput = z.object({ displayName: z.string(), view: myTableSchema.omit({ publishedAt: true }).nullable() });
+const previewOutput = z.object({
+  displayName: z.string(),
+  /** What the guest's own page would say: seated (with `view`), not seated, or never shown (a child or minor has no page of their own). */
+  state: z.enum(['seated', 'not_seated', 'not_entitled']),
+  view: myTableSchema.omit({ publishedAt: true }).nullable(),
+});
 
 /**
  * What one guest would see under "Your table" if the current DRAFT were published: the same
  * sentence, tablemates and floor-plan highlight, built by the same function the guest's own read
- * uses (`tableViewFor`). `view: null` means that guest is not seated in the draft. Read-only; the
- * draft never reaches a guest surface through this.
+ * uses (`tableViewFor`). A child or minor never holds `view_table_assignment` (ADR-0001 rule 7):
+ * they appear on others' pages as tablemates, and the preview says so rather than showing a page
+ * they will never see. Read-only; the draft never reaches a guest surface through this.
  */
 export const adminPreviewGuestTable = defineCapability<z.infer<typeof previewInput>, z.infer<typeof previewOutput>>({
   name: 'admin_preview_guest_table',
@@ -110,11 +116,11 @@ export const adminPreviewGuestTable = defineCapability<z.infer<typeof previewInp
   output: previewOutput,
   async handler(ctx, input) {
     const db = await eDb(ctx);
-    const guests = await listAllGuests(db);
-    const guest = guests.find((g) => g.id === input.guestId && !g.mergedIntoGuestId);
-    if (!guest) return err(new CapabilityError('not_found', 'That guest is not on the list.'));
+    const guest = await getGuest(db, input.guestId);
+    if (!guest || guest.mergedIntoGuestId) return err(new CapabilityError('not_found', 'That guest is not on the list (or was merged into another).'));
     const view = await tableViewFor(db, await draftSnapshot(db), guest.id);
-    return ok({ data: { displayName: guestDisplayName(guest), view }, sources: [] });
+    const state = guest.kind === 'child' || guest.isMinor ? 'not_entitled' : view ? 'seated' : 'not_seated';
+    return ok({ data: { displayName: guestDisplayName(guest), state, view }, sources: [] });
   },
 });
 

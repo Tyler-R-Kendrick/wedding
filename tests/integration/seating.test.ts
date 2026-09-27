@@ -57,11 +57,13 @@ describe('draft seating never reaches guests', () => {
 
   it('previews for the console what a guest would see if the draft were published — and publishes nothing', async () => {
     const seen = expectOk(await run(adminPreviewGuestTable, admin, { guestId: FX.guestA1 }));
+    expect(seen.data.state).toBe('seated');
     expect(seen.data.view?.table).toMatchObject({ name: 'Draft Table Alpha', seatNumber: 1, anchorId: 't1' });
     expect(seen.data.view?.summary).toMatch(/^You are seated at Draft Table Alpha, seat 1\. You are with /);
     expect(seen.data.view?.floorPlan?.id).toBe(planId);
     // A guest missing from the draft is shown as not seated, not as an error.
-    expect(expectOk(await run(adminPreviewGuestTable, admin, { guestId: FX.guestA3 })).data.view).toBeNull();
+    // Cleo is a minor: no page of her own, whatever the chart says.
+    expect(expectOk(await run(adminPreviewGuestTable, admin, { guestId: FX.guestA3 })).data).toMatchObject({ state: 'not_entitled', view: null });
     expect(expectErr(await run(adminPreviewGuestTable, admin, { guestId: '01ZZZZZZZZZZZZZZZZZZZZZZZZ' })).code).toBe('not_found');
     // Guests cannot call it, and it changed nothing they can see.
     expect(expectErr(await run(adminPreviewGuestTable, A1, { guestId: FX.guestA1 })).code).toMatch(/forbidden|unauthenticated/);

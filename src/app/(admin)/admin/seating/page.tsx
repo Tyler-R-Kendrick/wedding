@@ -92,9 +92,9 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
         ) : null}
       </Section>
 
-      <Section title="Preview what a guest sees" id="preview" note={<p className="con-index__blurb">What one guest would see under “Your table” if this draft were published. Nothing is published by previewing.</p>}>
+      <Section title="Preview what a guest sees" id="preview" note="What one guest would see under “Your table” if this draft were published. Nothing is published by previewing.">
         <form method="get" action="/admin/seating#preview" className="ops-form-inline">
-          <Input id="preview" label="Guest" options={previewOptions} defaultValue={previewId ?? ''} required />
+          <Input id="preview-guest" name="preview" label="Guest" options={previewOptions} defaultValue={previewId ?? ''} required />
           <Button variant="ghost">Preview</Button>
         </form>
         {preview ? (
@@ -103,7 +103,16 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
               <p>
                 <strong>{preview.value.data.displayName}</strong> would see:
               </p>
-              {preview.value.data.view ? <TableCard table={preview.value.data.view} /> : <p className="card__meta">{SEATING_MESSAGE.not_seated}</p>}
+              {preview.value.data.state === 'seated' && preview.value.data.view ? (
+                <TableCard table={preview.value.data.view} idPrefix="preview-fp" />
+              ) : preview.value.data.state === 'not_entitled' ? (
+                <p className="card__meta">
+                  Nothing of their own: {SEATING_MESSAGE.not_entitled}
+                  {preview.value.data.view ? ` They appear as a tablemate at ${preview.value.data.view.table.name}.` : ''}
+                </p>
+              ) : (
+                <p className="card__meta">{SEATING_MESSAGE.not_seated}</p>
+              )}
             </div>
           ) : (
             <Denied message={preview.error.message} />

@@ -109,7 +109,7 @@ type Size = { px: number; where: string; sample: string };
 const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
 
 /** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
-const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required/;
+const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required|Not part of your access/;
 
 /**
  * Walk a route list at the caller's viewport and return every sample under the floor — asserting,

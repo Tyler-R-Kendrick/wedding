@@ -44,6 +44,8 @@ describe('destructive admin actions need confirm=yes', () => {
     ['mergeGuests', { keepId: 'g1', mergeId: 'g2' }, '/admin/guests'],
     ['deleteHousehold', { householdId: 'h1' }, '/admin/households'],
     ['revokeInvitation', { invitationId: 'i1' }, '/admin/invitations'],
+    ['rebindIdentity', { guestId: 'g1', email: 'a@example.test', reason: 'r' }, '/admin/guests'],
+    ['setAdminRole', { email: 'a@example.test', role: 'planner' }, '/admin/guests'],
   ] as const)('%s refuses without it and runs with it', async (name, fields, page) => {
     const actions = await import('@/app/(admin)/admin/_lib/actions');
     const action = actions[name] as (fd: FormData) => Promise<void>;
@@ -63,5 +65,11 @@ describe('destructive admin actions need confirm=yes', () => {
     adminInvoke.mockResolvedValueOnce({ ok: false, error: { code: 'validation', message: 'bad' } } as never);
     const { saveGuest } = await import('@/app/(admin)/admin/_lib/actions');
     expect(await run(saveGuest(form({ id: 'g1', householdId: 'h1', firstName: 'A' })))).toBe('REDIRECT /admin/guests?edit=g1&error=bad');
+  });
+
+  it('rotating an invitation link refuses without it; issuing a new one does not need it', async () => {
+    const { issueInvitation } = await import('@/app/(admin)/admin/_lib/actions');
+    expect(await issueInvitation({ ok: false }, form({ invitationId: 'i1' }))).toMatchObject({ ok: false, code: 'validation' });
+    expect(adminInvoke).not.toHaveBeenCalled();
   });
 });

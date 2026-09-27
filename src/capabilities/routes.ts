@@ -16,6 +16,13 @@ export const INTERNAL_ROUTES = [
   '/photos',
   '/ask-us',
   '/rsvp',
+  // One part of the RSVP each (`PART_STEP` in components/rsvp/RsvpTaskList.tsx; a unit test keeps
+  // the two lists equal). Named one by one, not as a `/rsvp/` prefix, so a return path or the
+  // concierge can only name a part that exists.
+  '/rsvp/attending',
+  '/rsvp/guest',
+  '/rsvp/meals',
+  '/rsvp/notes',
   '/trip',
   '/media/upload',
   '/media/mine',
@@ -27,7 +34,7 @@ export const INTERNAL_ROUTES = [
 export type InternalRoute = (typeof INTERNAL_ROUTES)[number];
 
 /** Dynamic route prefixes (e.g. `/our-adventures/<slug>`). */
-export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/our-venue/', '/photos/', '/rsvp/'] as const;
+export const INTERNAL_ROUTE_PREFIXES = ['/our-adventures/', '/share-an-adventure/', '/our-venue/', '/photos/'] as const;
 
 const SAFE_SEGMENT = /^[a-z0-9-]+$/;
 
