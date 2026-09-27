@@ -317,6 +317,7 @@
   display: none;
   flex: 1;
   min-width: 0;
+  justify-content: center;
   justify-content: safe center;
   gap: clamp(18px, 2vw, 40px);
   margin: 0;
@@ -460,6 +461,13 @@
 
   .bd-masthead__inner:is([data-fit="measure"], [data-fit="some"]) .bd-masthead__menu {
     display: block;
+  }
+
+  /* The motto's room is read beside a complete row, which never has the Menu button. Left to the
+     page-count rules, the button was sometimes already gone and its room was counted twice: the
+     motto showed and "Your account" was clipped at 1600px and up. */
+  .bd-masthead__inner[data-fit="measure-extra"] .bd-masthead__menu {
+    display: none;
   }
 
   /* The motto is ornament: NavFit keeps it only when every page fits beside it. At 1600 the

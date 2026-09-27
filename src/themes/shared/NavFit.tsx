@@ -44,8 +44,9 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
     const fit = () => {
       frame = 0;
       const extra = box.querySelector<HTMLElement>('[data-fit-extra]');
-      // The room the list would have with the ornament showing, read with it showing (the kit shows
-      // it during `measure-extra` only where it may appear at all): no guessing at gaps or tracks.
+      // The room the list would have with the ornament showing and no Menu button, read in exactly
+      // that layout (the kit shows the ornament during `measure-extra` only where it may appear at
+      // all, and hides the Menu): no guessing at gaps or tracks, and no room counted twice.
       let roomWithExtra = -Infinity;
       if (extra) {
         // The last answer is withdrawn first, so only the measuring rules apply while measuring.
@@ -88,7 +89,9 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
       }
       items.forEach((li, i) => li.toggleAttribute('data-fit-hidden', i >= shown));
       box.dataset.fit = shown < items.length ? 'some' : 'all';
-      if (extra) box.dataset.fitExtra = shown === items.length && total <= roomWithExtra + menuRoom ? 'show' : 'hide';
+      // `roomWithExtra` was read with the Menu button hidden (the kit hides it in `measure-extra`):
+      // the motto only ever shows beside a complete row, so that is the room it has to share.
+      if (extra) box.dataset.fitExtra = shown === items.length && total <= roomWithExtra ? 'show' : 'hide';
     };
 
     /** A row's content box: its width less its own padding. */
