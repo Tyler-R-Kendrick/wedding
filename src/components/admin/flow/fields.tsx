@@ -213,6 +213,54 @@ export function ChoiceField<V extends Values>({ ctx, name, legend, choices, hint
   );
 }
 
+/**
+ * Several boxes to tick from a list (the events an invitation covers, related recommendations).
+ * `CheckField` is one yes/no; this is a group, in the choice-row styling, bound to a string array.
+ */
+export function CheckGroupField<V extends Values>({
+  ctx,
+  name,
+  legend,
+  choices,
+  hint,
+}: {
+  ctx: FlowContext<V>;
+  name: keyof V & string;
+  legend: string;
+  choices: Choice[];
+  hint?: ReactNode;
+}) {
+  const chosen = Array.isArray(ctx.values[name]) ? (ctx.values[name] as string[]) : [];
+  const error = ctx.errors[name];
+  const toggle = (value: string, on: boolean) => ctx.set({ [name]: on ? [...chosen.filter((c) => c !== value), value] : chosen.filter((c) => c !== value) } as Partial<V>);
+  return (
+    <fieldset className="flow-choices" aria-describedby={describedBy(ctx.uid, name, Boolean(hint), Boolean(error))}>
+      <legend className="flow-label">{legend}</legend>
+      <Hint uid={ctx.uid} name={name}>
+        {hint}
+      </Hint>
+      <div className="flow-choices__list">
+        {choices.map((c, i) => {
+          const id = i === 0 ? `${ctx.uid}-${name}` : `${ctx.uid}-${name}-${c.value}`;
+          return (
+            <label key={c.value} htmlFor={id} className="flow-choice">
+              <input id={id} type="checkbox" checked={chosen.includes(c.value)} onChange={(e) => toggle(c.value, e.target.checked)} />
+              <span className="flow-choice__text">
+                <span className="flow-choice__label">
+                  {c.label}
+                  {c.badge ? <span className="flow-badge">{c.badge}</span> : null}
+                </span>
+                {c.description ? <span className="flow-choice__desc">{c.description}</span> : null}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      <FieldError uid={ctx.uid} name={name} message={error} />
+    </fieldset>
+  );
+}
+
 export function CheckField<V extends Values>({ ctx, name, label, hint }: { ctx: FlowContext<V>; name: keyof V & string; label: string; hint?: ReactNode }) {
   const id = `${ctx.uid}-${name}`;
   const error = ctx.errors[name];
