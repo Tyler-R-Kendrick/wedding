@@ -194,6 +194,10 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
           .catch((e) => appServices(ctx).logger?.warn({ err: e }, 'otp send threw')),
       );
     } else {
+      // The caller is told a code is on its way either way; the server log is the only place that
+      // says none was sent. Without this line a "the code never arrived" report showed no send, no
+      // failure and no error, and read like a mailer outage. No address in it — the hash is in otp_attempts.
+      appServices(ctx).logger?.info({ purpose: payload.kind }, 'otp not sent: no guest or administrator has this address');
       afterResponse(() => logOtp(ctx, { emailHash, purpose: payload.kind, kind: 'send', outcome: 'suppressed' }));
     }
     const { token, expiresAt } = await issueChallenge(challengeStore(ctx), challengeSecret(), { ...payload, email }, { now: ctx.now });
