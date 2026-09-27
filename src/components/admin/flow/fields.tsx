@@ -40,21 +40,29 @@ export function TextField<V extends Values>({
   hint,
   type = 'text',
   multiline,
+  rows = 4,
   optional,
   autoComplete = 'off',
   inputMode,
   spellCheck,
+  min,
+  max,
 }: {
   ctx: FlowContext<V>;
   name: keyof V & string;
   label: string;
   hint?: ReactNode;
-  type?: 'text' | 'url' | 'email';
+  /** Values stay strings in the flow; convert in `submit.input` (`Number(v.seats)`, an ISO date). */
+  type?: 'text' | 'url' | 'email' | 'tel' | 'number' | 'date' | 'datetime-local';
   multiline?: boolean;
+  /** For `multiline`: how tall the box starts. A CSV import wants more than a note. */
+  rows?: number;
   optional?: boolean;
   autoComplete?: string;
-  inputMode?: 'text' | 'url' | 'email';
+  inputMode?: 'text' | 'url' | 'email' | 'tel' | 'numeric' | 'decimal';
   spellCheck?: boolean;
+  min?: number | string;
+  max?: number | string;
 }) {
   const id = `${ctx.uid}-${name}`;
   const error = ctx.errors[name];
@@ -75,9 +83,9 @@ export function TextField<V extends Values>({
         {optional ? <span className="flow-optional"> (optional)</span> : null}
       </label>
       {multiline ? (
-        <textarea {...common} rows={4} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
+        <textarea {...common} rows={rows} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
       ) : (
-        <input {...common} type={type} inputMode={inputMode} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
+        <input {...common} type={type} inputMode={inputMode ?? (type === 'number' ? 'numeric' : undefined)} min={min} max={max} step={type === 'number' ? 1 : undefined} onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)} />
       )}
       <Hint uid={ctx.uid} name={name}>
         {hint}
@@ -85,6 +93,82 @@ export function TextField<V extends Values>({
       <FieldError uid={ctx.uid} name={name} message={error} />
     </div>
   );
+}
+
+/** A native select, for a choice among many (a household, an event). Few choices read better as `ChoiceField`. */
+export function SelectField<V extends Values>({
+  ctx,
+  name,
+  label,
+  hint,
+  options,
+  optional,
+  placeholder,
+}: {
+  ctx: FlowContext<V>;
+  name: keyof V & string;
+  label: string;
+  hint?: ReactNode;
+  options: { value: string; label: string }[];
+  optional?: boolean;
+  /** The empty first option's text ("Choose a household"); omit when a value is always chosen. */
+  placeholder?: string;
+}) {
+  const id = `${ctx.uid}-${name}`;
+  const error = ctx.errors[name];
+  return (
+    <div className="flow-field" data-invalid={error ? '' : undefined}>
+      <label htmlFor={id} className="flow-label">
+        {label}
+        {optional ? <span className="flow-optional"> (optional)</span> : null}
+      </label>
+      <select
+        id={id}
+        name={name}
+        value={String(ctx.values[name] ?? '')}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(ctx.uid, name, Boolean(hint), Boolean(error))}
+        className="ops-input flow-input"
+        onChange={(e) => ctx.set({ [name]: e.target.value } as Partial<V>)}
+      >
+        {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <Hint uid={ctx.uid} name={name}>
+        {hint}
+      </Hint>
+      <FieldError uid={ctx.uid} name={name} message={error} />
+    </div>
+  );
+}
+
+/**
+ * What will be saved, as a short definition list, on a flow's last step. The admin reads the
+ * record back in words before it changes anything; an empty value reads "Not set", never blank.
+ */
+export function ReviewList({ items }: { items: { label: string; value: ReactNode }[] }) {
+  return (
+    <dl className="flow-review">
+      {items.map((i) => (
+        <div key={i.label}>
+          <dt>{i.label}</dt>
+          <dd>{i.value === '' || i.value === null || i.value === undefined ? <span className="flow-optional">Not set</span> : i.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/**
+ * The consequence of a destructive flow, said plainly, above the box that confirms it. Used as the
+ * only step of a `tone="danger"` flow: what happens, what does not, and whether it can be undone.
+ */
+export function Consequences({ children }: { children: ReactNode }) {
+  return <div className="flow-consequences">{children}</div>;
 }
 
 export interface Choice {

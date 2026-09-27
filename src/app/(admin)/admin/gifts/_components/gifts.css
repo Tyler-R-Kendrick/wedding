@@ -58,19 +58,6 @@
   text-decoration: none;
 }
 
-.gs-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  color: var(--color-tertiary);
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-}
-
-.gs-link:hover {
-  text-decoration-thickness: 2px;
-}
-
 /* --- The three steps, on a thread ------------------------------------------------------------ */
 
 .gs-steps {
@@ -168,121 +155,12 @@
   color: inherit;
 }
 
-.gs-empty {
-  margin: 0;
-  max-width: 62ch;
-  padding: var(--spacing-md);
-  border: 1px dashed var(--color-outline);
-}
-
 .gs-blocked {
   margin: 0;
   max-width: 62ch;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-outline);
   background: var(--color-surface);
-}
-
-/* Rows: what is saved, each with its own actions. Hairlines, not cards. */
-.gs-rows {
-  justify-self: stretch;
-  max-width: 48rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--color-outline);
-}
-
-.gs-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs) var(--spacing-md);
-  align-items: center;
-  justify-content: space-between;
-  padding-block: var(--spacing-sm);
-  border-bottom: 1px solid var(--color-outline);
-}
-
-.gs-row__main {
-  display: grid;
-  gap: var(--spacing-xs);
-  min-width: 0;
-  flex: 1 1 16rem;
-}
-
-.gs-row__title {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  align-items: baseline;
-  margin: 0;
-  font-weight: 500;
-}
-
-.gs-row__meta {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-muted);
-}
-
-.gs-row__meta--pre {
-  white-space: pre-line;
-}
-
-.gs-row__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--spacing-xs);
-  align-items: center;
-}
-
-.gs-row__actions .flow-anchor {
-  display: contents;
-}
-
-.gs-row__actions .flow-announce {
-  order: 10;
-}
-
-.gs-quick {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  align-items: center;
-}
-
-.gs-quick button:disabled {
-  cursor: progress;
-  opacity: 0.6;
-}
-
-/* --- Inside the flows ------------------------------------------------------------------------ */
-
-.gs-found {
-  display: grid;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background: var(--color-neutral);
-  border: 1px solid var(--color-outline);
-}
-
-.gs-found p {
-  margin: 0;
-}
-
-.gs-found__url {
-  overflow-wrap: anywhere;
-  font-family: var(--font-mono-ops, monospace);
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-muted);
-}
-
-.gs-inline-button {
-  display: inline-flex;
-  align-items: center;
-  font-family: inherit;
-  text-decoration: none;
 }
 
 .gs-card-preview {
@@ -404,32 +282,6 @@
   padding: var(--spacing-md);
   color: var(--color-on-surface-muted);
   border: 1px dashed var(--color-outline);
-}
-
-/* --- Technical details ----------------------------------------------------------------------- */
-
-.gs-details {
-  margin-block: var(--spacing-lg);
-  border-top: 1px solid var(--color-outline);
-}
-
-.gs-details > summary {
-  display: flex;
-  align-items: center;
-  min-height: 2.75rem;
-  color: var(--color-on-surface-muted);
-  cursor: pointer;
-}
-
-.gs-details > summary:focus-visible {
-  outline: 3px solid var(--color-tertiary);
-  outline-offset: 2px;
-}
-
-.gs-details__body {
-  display: grid;
-  gap: var(--spacing-md);
-  padding-block: var(--spacing-md);
 }
 
 @media (prefers-reduced-motion: no-preference) {

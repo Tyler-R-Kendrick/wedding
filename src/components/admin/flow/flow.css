@@ -481,6 +481,236 @@ textarea.flow-input {
   outline-offset: 2px;
 }
 
+/* Plain copy inside a step, at the reading measure. */
+.flow-copy {
+  margin: 0;
+  max-width: 62ch;
+}
+
+/* --- Review, consequences, danger (fields.tsx, AdminFlow tone="danger") ---------------------- */
+
+.flow-review {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-review > div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  gap: var(--spacing-md);
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+@media (width <= 30rem) {
+  .flow-review > div {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+}
+
+.flow-review dt {
+  color: var(--color-on-surface-muted);
+}
+
+.flow-review dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.flow-consequences {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-error);
+}
+
+.flow-consequences > * {
+  margin: 0;
+}
+
+.flow-consequences ul {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-left: var(--spacing-lg);
+}
+
+/* A row's "Delete" or "Revoke": text weight like the other row actions, in the error colour, so a
+   list of rows is not a column of red buttons. The red button is inside the sheet, once. */
+.flow-trigger-danger {
+  color: var(--color-error);
+}
+
+/* --- Filters (records.tsx FilterBar) -------------------------------------------------------- */
+
+.flow-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: end;
+}
+
+.flow-filter .ops-field {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+}
+
+.flow-filter__extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+/* --- Records, links and disclosures (records.tsx, shared by every console screen) ------------ */
+.flow-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-tertiary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.flow-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.flow-empty {
+  margin: 0;
+  max-width: 62ch;
+  padding: var(--spacing-md);
+  border: 1px dashed var(--color-outline);
+}
+
+/* Rows (records.tsx): what is saved, each with its own actions. Hairlines, not cards. */
+.flow-rows {
+  justify-self: stretch;
+  max-width: 48rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.flow-quick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.flow-quick button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.flow-found {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-outline);
+}
+
+.flow-found p {
+  margin: 0;
+}
+
+.flow-inline-button {
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.flow-details {
+  margin-block: var(--spacing-lg);
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-on-surface-muted);
+  cursor: pointer;
+}
+
+.flow-details > summary:focus-visible {
+  outline: 3px solid var(--color-tertiary);
+  outline-offset: 2px;
+}
+
+.flow-row__main {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.flow-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: baseline;
+  margin: 0;
+  font-weight: 500;
+}
+
+.flow-row__meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-row__meta--pre {
+  white-space: pre-line;
+}
+
+.flow-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-xs);
+  align-items: center;
+}
+
+.flow-row__actions .flow-anchor {
+  display: contents;
+}
+
+.flow-row__actions .flow-announce {
+  order: 10;
+}
+
+.flow-found__url {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono-ops, monospace);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-details__body {
+  display: grid;
+  gap: var(--spacing-md);
+  padding-block: var(--spacing-md);
+}
+
 /* --- Motion --------------------------------------------------------------------------------- */
 
 @keyframes flow-fade {

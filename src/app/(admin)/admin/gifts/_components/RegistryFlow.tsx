@@ -46,7 +46,7 @@ interface CheckedLink {
  * right page — so the step that matters is the second one, where the couple open the exact link a
  * guest will be sent to and say it is theirs. That confirmation is what `verifiedAt` records.
  */
-export function RegistryFlow({ existing, takenIds, variant = 'primary', label }: { existing?: RegistryLinkSummary; takenIds: string[]; variant?: 'primary' | 'ghost' | 'quiet'; label: string }) {
+export function RegistryFlow({ existing, takenIds, variant = 'primary', label, accessibleName }: { existing?: RegistryLinkSummary; takenIds: string[]; variant?: 'primary' | 'ghost' | 'quiet'; label: string; accessibleName?: string }) {
   const initial: Values = {
     url: existing?.url ?? '',
     checkedUrl: '',
@@ -91,13 +91,13 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
       fields: ['confirmed'],
       render: (ctx) => (
         <>
-          <div className="gs-found">
-            <p className="gs-found__what">
+          <div className="flow-found">
+            <p className="flow-found__what">
               A <strong>{ctx.values.providerName}</strong> link
             </p>
-            <p className="gs-found__url">{ctx.values.checkedUrl}</p>
+            <p className="flow-found__url">{ctx.values.checkedUrl}</p>
             <p>
-              <a className="ops-button ops-button-ghost gs-inline-button" href={ctx.values.checkedUrl} target="_blank" rel="noopener noreferrer">
+              <a className="ops-button ops-button-ghost flow-inline-button" href={ctx.values.checkedUrl} target="_blank" rel="noopener noreferrer">
                 Open it in a new tab<span aria-hidden="true"> ↗</span>
               </a>
             </p>
@@ -148,7 +148,7 @@ export function RegistryFlow({ existing, takenIds, variant = 'primary', label }:
     <AdminFlow<Values>
       id={`gifts:registry:${existing?.id ?? 'new'}`}
       title={existing ? 'Change your registry link' : 'Link your registry'}
-      trigger={{ label, variant }}
+      trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
+import './flow.css';
 
 /**
  * A one-click change that needs no questions: show or hide a fund or a link, move a fund up or down.
@@ -74,7 +75,7 @@ export function QuickAction({
 
   const working = busy || pending;
   return (
-    <span className="gs-quick">
+    <span className="flow-quick">
       <button
         ref={ref}
         type="button"

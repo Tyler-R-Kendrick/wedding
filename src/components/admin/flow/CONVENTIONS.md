@@ -1,0 +1,49 @@
+# Admin console: how a screen changes things
+
+Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests` and
+`/admin/households` are the references; copy their shape.
+
+## The four patterns
+
+| What the admin is doing | Use | Never |
+|---|---|---|
+| Creating or editing a record | `AdminFlow` in a sheet: one question per step, a review or preview step last, one capability call on save | A long form beside the list, a `?edit=` reload, typing an id |
+| Deleting, revoking, resetting, merging, unpublishing | `AdminFlow tone="danger"`: one step, `<Consequences>` saying what happens and whether it can be undone, a `CheckField` that confirms it, a red button that names the act ("Delete Ada Lovelace") | A red button and a checkbox repeated down every row |
+| A one-click change that is easy to reverse (show/hide, move up/down, retry) | `QuickAction` | A form per row |
+| Searching or filtering what is shown | `FilterBar` (a GET form) | A flow: filters change the view, not the data |
+
+## Page layout
+
+1. `ConsolePage` with a short `lede`. The screen's main create action goes in `actions`
+   (top right): one primary button per screen.
+2. A `FilterBar` above the list when the list can be searched.
+3. The things the screen manages as a `RecordList` of `RecordRow`s: name and state (`Pill`) first,
+   one muted line of details, row actions on the right as quiet text buttons (`variant="quiet"`,
+   or `variant="danger"` for destructive ones), each with `accessibleName` ("Edit Ada Lovelace").
+4. Dense data read across columns (logs, queues, counts, answers) stays a `DataTable`; its
+   actions cell holds the same quiet triggers.
+5. Raw ids, internals and troubleshooting tables go in a closed `<details className="flow-details">`
+   at the bottom, never in the main path.
+
+## Inside a flow
+
+- Titles are verbs about the thing: "Add a guest", "Edit Ada Lovelace", "Delete the Garden table".
+- Two to four steps. Group fields by the question they answer ("Who", "How to reach them",
+  "Check and save"). A one-field change is a one-step flow.
+- Every field has a visible label and a hint when the format is not obvious. Optional fields say so.
+  Values are strings in the flow; convert (`Number`, ISO dates, `null` for empty) in `submit.input`.
+- `ready` + `readyHint` on any step that needs something before Continue: the button is never a
+  silent disabled control.
+- The last step shows what will be saved: `ReviewList`, or `GuestPreview` when guests will see it.
+- `load` fetches the full record when an edit opens; the page only lists summaries.
+- `submit.result` keeps the sheet open on a Done panel for something shown only once (an
+  invitation link, an import's counts). Otherwise the sheet closes, the trigger announces
+  `submit.success`, and the page refreshes from the server.
+- Capabilities with `stepUp` need nothing extra: the flow keeps the draft across `/step-up`.
+- Drafts are kept on the device (`sessionStorage`) for create/edit flows; `danger` flows keep none.
+
+## Visual rules
+
+Foundation tokens only (root `DESIGN.md`). One filled button per viewport. Terracotta only for
+links; `--color-error` for destructive triggers and buttons. Hairlines, not cards or shadows.
+`npm run design:drift` and `npm run lint:css` must stay clean.

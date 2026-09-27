@@ -11,7 +11,8 @@ import { memberNavFor } from '@/domain/lifecycle/nav';
 import { ROUTES } from '@/domain/routes';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Pill, Section } from '../_components/console';
 import { FundFlow } from './_components/FundFlow';
-import { QuickAction } from './_components/QuickAction';
+import { QuickAction } from '@/components/admin/flow/QuickAction';
+import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { RailFlow, type RailOption } from './_components/RailFlow';
 import { RegistryFlow } from './_components/RegistryFlow';
 import './_components/gifts.css';
@@ -91,10 +92,10 @@ export default async function AdminGiftsPage() {
               Next: {STEP_TITLE[setup.next]}
             </a>
           ) : null}
-          <a className="gs-link" href="#gifts-preview">
+          <a className="flow-link" href="#gifts-preview">
             See what guests see
           </a>
-          <a className="gs-link" href={ROUTES.gifts} target="_blank" rel="noopener">
+          <a className="flow-link" href={ROUTES.gifts} target="_blank" rel="noopener">
             Open the Gifts page<span aria-hidden="true"> ↗</span>
             <span className="sr-only"> (new tab)</span>
           </a>
@@ -108,16 +109,17 @@ export default async function AdminGiftsPage() {
             copy the list; it sends guests to it, so paste the link your registry gives you.
           </p>
           {adminLinks.length ? (
-            <ul className="gs-rows" role="list">
+            <RecordList label="Registry links">
               {adminLinks.map((r) => {
                 const host = safeHost(r.url);
                 return (
-                  <li key={r.id} className="gs-row" data-gift-link-id={r.id}>
-                    <div className="gs-row__main">
-                      <p className="gs-row__title">
-                        {r.label} {r.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
-                      </p>
-                      <p className="gs-row__meta">
+                  <RecordRow
+                    key={r.id}
+                    data-gift-link-id={r.id}
+                    title={r.label}
+                    status={r.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
+                    meta={
+                      <>
                         {registryProviderFor(host)?.name ?? host} · {r.kind === 'registry' ? 'Our wishlist' : 'Our next adventures'} ·{' '}
                         {r.verifiedAt ? (
                           <>
@@ -126,14 +128,15 @@ export default async function AdminGiftsPage() {
                         ) : (
                           'not checked yet'
                         )}
-                      </p>
-                    </div>
-                    <div className="gs-row__actions">
-                      <a className="gs-link" href={r.url} target="_blank" rel="noopener noreferrer">
+                      </>
+                    }
+                    actions={
+                      <>
+                      <a className="flow-link" href={r.url} target="_blank" rel="noopener noreferrer">
                         Open<span aria-hidden="true"> ↗</span>
                         <span className="sr-only"> {r.label} (new tab)</span>
                       </a>
-                      <RegistryFlow existing={{ ...r }} takenIds={linkIds} variant="quiet" label="Change" />
+                      <RegistryFlow existing={{ ...r }} takenIds={linkIds} variant="quiet" label="Change" accessibleName={`Change ${r.label}`} />
                       <QuickAction
                         label={r.active ? 'Hide' : 'Show'}
                         busyLabel={r.active ? 'Hiding…' : 'Showing…'}
@@ -145,13 +148,14 @@ export default async function AdminGiftsPage() {
                           },
                         ]}
                       />
-                    </div>
-                  </li>
+                      </>
+                    }
+                  />
                 );
               })}
-            </ul>
+            </RecordList>
           ) : (
-            <p className="gs-empty">No registry linked. Guests read that you have not chosen where to keep a wishlist yet.</p>
+            <p className="flow-empty" role="status">No registry linked. Guests read that you have not chosen where to keep a wishlist yet.</p>
           )}
           <RegistryFlow takenIds={linkIds} variant={setup.next === 'wishlist' ? 'primary' : 'ghost'} label={adminLinks.length ? 'Add another link' : 'Link your registry'} />
         </SetupCard>
@@ -161,26 +165,25 @@ export default async function AdminGiftsPage() {
             <SetupCard n={2} id="gift-rails" step="rails" next={setup.next} done={setup.steps.rails.done} title={STEP_TITLE.rails}>
               <p className="gs-copy">Your own Venmo, PayPal, Cash App, Zelle or a mailing address for checks. Money goes from a guest’s account straight to yours; this site never holds it or adds a fee.</p>
               {data.rails.length ? (
-                <ul className="gs-rows" role="list">
+                <RecordList label="Ways to give">
                   {data.rails.map((r) => (
-                    <li key={r.rail} className="gs-row" data-admin-gift-rail={r.rail}>
-                      <div className="gs-row__main">
-                        <p className="gs-row__title">
-                          {r.displayName} {r.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
-                        </p>
-                        <p className="gs-row__meta gs-row__meta--pre">
+                    <RecordRow
+                      key={r.rail}
+                      data-admin-gift-rail={r.rail}
+                      title={r.displayName}
+                      status={r.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
+                      meta={
+                        <span className="flow-row__meta--pre">
                           {r.handle}
                           {r.recipientName ? ` · ${r.recipientName}` : ''}
-                        </p>
-                      </div>
-                      <div className="gs-row__actions">
-                        <RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Change" />
-                      </div>
-                    </li>
+                        </span>
+                      }
+                      actions={<RailFlow options={railOptions} editing={r.rail} variant="quiet" label="Change" accessibleName={`Change ${r.displayName}`} />}
+                    />
                   ))}
-                </ul>
+                </RecordList>
               ) : (
-                <p className="gs-empty">None yet. Until you add one, guests see no gifts of money at all.</p>
+                <p className="flow-empty" role="status">None yet. Until you add one, guests see no gifts of money at all.</p>
               )}
               {data.rails.length < RAIL_ORDER.length ? <RailFlow options={railOptions} variant={setup.next === 'rails' ? 'primary' : 'ghost'} label={data.rails.length ? 'Add another way' : 'Add a way to give'} /> : null}
             </SetupCard>
@@ -192,7 +195,7 @@ export default async function AdminGiftsPage() {
                   <strong>Hidden from guests until you add a way to give.</strong> A list of things to give toward, with no way to give, would be a dead end, so the Gifts page leaves these out until you add a way to give.
                 </p>
               ) : null}
-              <ul className="gs-rows" role="list">
+              <RecordList label="Funds">
                 {data.funds.map((f, i) => {
                   const prev = data.funds[i - 1];
                   const next = data.funds[i + 1];
@@ -201,23 +204,24 @@ export default async function AdminGiftsPage() {
                     { capability: 'admin_upsert_gift_fund', input: { id: other.id, title: other.title, sortOrder: f.sortOrder } },
                   ];
                   return (
-                    <li key={f.id} className="gs-row" data-gift-fund-id={f.id}>
-                      <div className="gs-row__main">
-                        <p className="gs-row__title">
-                          {f.title} {f.active ? activeRails.length ? <Pill tone="good">Shown</Pill> : <Pill>Ready, waiting on a way to give</Pill> : <Pill>Hidden</Pill>}
-                        </p>
-                        {f.description ? <p className="gs-row__meta">{f.description}</p> : null}
-                      </div>
-                      <div className="gs-row__actions">
-                        <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Change" />
+                    <RecordRow
+                      key={f.id}
+                      data-gift-fund-id={f.id}
+                      title={f.title}
+                      status={f.active ? activeRails.length ? <Pill tone="good">Shown</Pill> : <Pill>Ready, waiting on a way to give</Pill> : <Pill>Hidden</Pill>}
+                      meta={f.description || undefined}
+                      actions={
+                        <>
+                        <FundFlow fund={f} takenIds={fundIds} rails={linkRailNames} variant="quiet" label="Change" accessibleName={`Change ${f.title}`} />
                         <QuickAction label={f.active ? 'Hide' : 'Show'} busyLabel="Saving…" done={f.active ? `${f.title} hidden.` : `${f.title} shown.`} accessibleName={`${f.active ? 'Hide' : 'Show'} ${f.title}`} calls={[{ capability: 'admin_upsert_gift_fund', input: { id: f.id, title: f.title, active: !f.active } }]} />
                         <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${f.title} up.`} unavailable={!prev} accessibleName={`Move ${f.title} up`} calls={prev ? move(prev) : []} />
                         <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${f.title} down.`} unavailable={!next} accessibleName={`Move ${f.title} down`} calls={next ? move(next) : []} />
-                      </div>
-                    </li>
+                        </>
+                      }
+                    />
                   );
                 })}
-              </ul>
+              </RecordList>
               <FundFlow takenIds={fundIds} rails={linkRailNames} variant={setup.next === 'funds' && activeRails.length ? 'primary' : 'ghost'} label="Add a fund" />
             </SetupCard>
           </>
@@ -270,9 +274,9 @@ export default async function AdminGiftsPage() {
         )}
       </section>
 
-      <details className="gs-details">
+      <details className="flow-details">
         <summary>Technical details</summary>
-        <div className="gs-details__body">
+        <div className="flow-details__body">
           <Note>What the Gifts capability returns to guests, and every saved row including hidden ones. For troubleshooting; nothing here needs changing by hand.</Note>
           <DataTable
             caption="Links guests are given"

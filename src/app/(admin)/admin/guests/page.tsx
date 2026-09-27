@@ -1,14 +1,24 @@
 import type { Metadata } from 'next';
-import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
+import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
-import { Button, Checkbox, ConfirmCheck, IdemKey, Input } from '../_components/ops';
-import { ConsoleGate, ConsolePage, DataTable, Day, Note, Section } from '../_components/console';
+import { Checkbox, Input } from '../_components/ops';
+import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
+import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, type GuestSummary } from './_components/GuestFlows';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
 
-type Guest = { id: string; householdId: string; householdName: string; firstName: string; lastName: string; displayName: string; email: string | null; kind: string; isMinor: boolean; managedByGuestId: string | null; mergedIntoGuestId: string | null; notes: string | null; claimed: boolean; claimedAt: string | null; claimMethod: string | null };
+type Guest = GuestSummary & { mergedIntoGuestId: string | null; claimedAt: string | null; claimMethod: string | null };
 
+/**
+ * Guests: the people on the invitations.
+ *
+ * Adding, editing, deleting, resetting access, moving access to a new email, merging duplicates,
+ * importing a list and changing console roles are each a flow from the kit
+ * (`components/admin/flow/CONVENTIONS.md`). They replace a form at the top of the page that
+ * `?edit=` refilled, a confirm box and red button in every row, and three forms at the bottom that
+ * asked for guest ids to be typed in.
+ */
 export default async function GuestsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const principal = await adminPrincipal();
@@ -20,132 +30,85 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
-  const households = hh.ok ? hh.value.data.households : [];
+  const households = (hh.ok ? hh.value.data.households : []).map((h) => ({ value: h.id, label: h.name }));
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
-  const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
   const isOwner = principal.roles.has('owner');
-  return (
-    <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
-      {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
-      <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
-        <form action={saveGuest} className="ops-form">
-          <IdemKey />
-          {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
-          <Input id="householdId" label="Household" defaultValue={editing?.householdId ?? sp.householdId} required options={households.map((h) => ({ value: h.id, label: h.name }))} />
-          <Input id="firstName" label="First name" defaultValue={editing?.firstName} required />
-          <Input id="lastName" label="Last name" defaultValue={editing?.lastName} />
-          <Input id="email" label="Email" type="email" defaultValue={editing?.email ?? ''} hint="Optional. Codes go here." />
-          <Input id="kind" label="Kind" defaultValue={editing?.kind ?? 'adult'} options={[{ value: 'adult', label: 'Adult' }, { value: 'child', label: 'Child' }, { value: 'plus_one', label: 'Plus-one' }]} />
-          <Input id="managedByGuestId" label="Managed by (guest id)" defaultValue={editing?.managedByGuestId ?? ''} hint="Leave blank to use the household manager." />
-          <Checkbox id="isMinor" label="Minor (never signs in)" defaultChecked={editing?.isMinor} />
-          <Input id="notes" label="Admin notes" type="textarea" defaultValue={editing?.notes ?? ''} />
-          <div className="ops-form-inline">
-            <Button>{editing ? 'Save guest' : 'Add guest'}</Button>
-            {editing ? <a href="/admin/guests">Cancel</a> : null}
-          </div>
-        </form>
-      </Section>
+  const household = sp.householdId ? households.find((h) => h.value === sp.householdId) : undefined;
+  const mergeTargets = rows.filter((g) => !g.mergedIntoGuestId).map((g) => ({ value: g.id, label: `${g.displayName} (${g.householdName})` }));
 
-      <Section title="All guests">
-        <form method="get" className="ops-form-inline">
-          <Input id="q" label="Search name or email" defaultValue={sp.q} />
-          <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
-          <Button variant="ghost">Search</Button>
-          <a href="/admin/guests/export">Export CSV</a>
-          <a href="/admin/guests/export?notes=1&address=1">Export CSV with notes + addresses</a>
-        </form>
-        <DataTable
-          caption="Guests and the households they belong to"
-          dense={false}
-          empty={rows.length === 0 ? <>No guest matches this search.</> : null}
-          head={
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Household</th>
-              <th scope="col">Kind</th>
-              <th scope="col">Email</th>
-              <th scope="col">Access</th>
-              <th scope="col">Actions</th>
-            </tr>
+  return (
+    <ConsolePage
+      title="Guests"
+      lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here."
+      notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}
+      actions={
+        <>
+          <GuestFlow households={households} defaultHouseholdId={sp.householdId} label="Add a guest" />
+          <ImportGuestsFlow />
+        </>
+      }
+    >
+      {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
+
+      <Section title={household ? `Guests in ${household.label}` : 'All guests'} id="guests">
+        <FilterBar
+          extra={
+            <>
+              <a href="/admin/guests/export">Export CSV</a>
+              <a href="/admin/guests/export?notes=1&address=1">Export with notes and addresses</a>
+              {household ? <a href="/admin/guests">Show every household</a> : null}
+            </>
           }
         >
-              {rows.map((g) => (
-                <tr key={g.id}>
-                  <td>
-                    {g.displayName}
-                    {g.mergedIntoGuestId ? ' (merged)' : ''}
-                  </td>
-                  <td>{g.householdName}</td>
-                  <td>{g.kind}{g.isMinor ? ' · minor' : ''}</td>
-                  <td>{g.email ?? '—'}</td>
-                  <td>{g.claimed ? <>claimed <Day at={g.claimedAt} /> ({g.claimMethod})</> : 'not claimed'}</td>
-                  <td>
-                    <div className="ops-form-inline">
-                      <a href={`/admin/guests?edit=${encodeURIComponent(g.id)}${sp.householdId ? `&householdId=${encodeURIComponent(sp.householdId)}` : ''}`}>Edit</a>
-                      {g.claimed ? (
-                        <form action={resetIdentity}>
-                          <input type="hidden" name="guestId" value={g.id} />
-                          <input type="hidden" name="reason" value="admin reset from guests page" />
-                          <ConfirmCheck id={`confirm-reset-${g.id}`} label={`Yes, reset ${g.displayName}’s access`} />
-                          <Button variant="danger">Reset access</Button>
-                        </form>
-                      ) : (
-                        <form action={deleteGuest}>
-                          <input type="hidden" name="guestId" value={g.id} />
-                          <ConfirmCheck id={`confirm-delete-${g.id}`} label={`Yes, delete ${g.displayName}`} />
-                          <Button variant="danger">Delete</Button>
-                        </form>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-        </DataTable>
-      </Section>
-
-      <Section title="Move a guest’s access to another email (rebind)">
-        <form action={rebindIdentity} className="ops-form">
-          <Input id="rebind-guest" label="Guest id" name="guestId" required />
-          <Input id="rebind-email" label="New email" name="email" type="email" required />
-          <Input id="rebind-reason" label="Reason (audited)" name="reason" required />
-          <ConfirmCheck id="confirm-rebind" label="Yes, move this guest’s access to the new email (the old one stops working)" />
-          <div>
-            <Button>Rebind</Button>
-          </div>
-        </form>
-      </Section>
-
-      <Section title="Merge duplicates">
-        <form action={mergeGuests} className="ops-form">
-          <Input id="keepId" label="Guest id to keep" required />
-          <Input id="mergeId" label="Duplicate guest id to merge" required />
-          <ConfirmCheck id="confirm-merge" label="Yes, merge the duplicate into the guest I keep" />
-          <div>
-            <Button variant="danger">Merge</Button>
-          </div>
-        </form>
-      </Section>
-
-      <Section title="Import CSV">
-        <form action={importGuestsCsv} className="ops-form">
-          <Input id="csv" label="CSV" type="textarea" hint="Columns: household, first_name, last_name, email, kind, is_minor, manager, plus_one_of, event_keys, notes, address_line1…" required />
-          <Checkbox id="dryRun" label="Dry run (report only)" />
-          <div>
-            <Button>Import</Button>
-          </div>
-        </form>
+          {sp.householdId ? <input type="hidden" name="householdId" value={sp.householdId} /> : null}
+          <Input id="q" label="Search name or email" defaultValue={sp.q} />
+          <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
+        </FilterBar>
+        <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
+          {rows.map((g) => (
+            <RecordRow
+              key={g.id}
+              data-guest-id={g.id}
+              title={g.displayName}
+              status={
+                g.mergedIntoGuestId ? (
+                  <Pill>Merged</Pill>
+                ) : g.claimed ? (
+                  <Pill tone="good">Signed in</Pill>
+                ) : (
+                  <Pill>Not signed in yet</Pill>
+                )
+              }
+              meta={
+                <>
+                  {g.householdName} · {g.kind === 'plus_one' ? 'plus-one' : g.kind}
+                  {g.isMinor ? ', a minor' : ''} · {g.email ?? 'no email'}
+                  {g.claimed && g.claimedAt ? (
+                    <>
+                      {' '}
+                      · claimed <Day at={g.claimedAt} />
+                    </>
+                  ) : null}
+                </>
+              }
+              actions={
+                g.mergedIntoGuestId ? null : (
+                  <>
+                    <GuestFlow guest={g} households={households} label="Edit" variant="quiet" />
+                    {g.claimed ? <RebindFlow guest={g} /> : null}
+                    <MergeFlow guest={g} others={mergeTargets.filter((o) => o.value !== g.id)} />
+                    {g.claimed ? <ResetAccessFlow guest={g} /> : <DeleteGuestFlow guest={g} />}
+                  </>
+                )
+              }
+            />
+          ))}
+        </RecordList>
       </Section>
 
       {isOwner ? (
-        <Section title="Administrator roles">
-          <form action={setAdminRole} className="ops-form">
-            <Input id="role-email" label="Email" name="email" type="email" required />
-            <Input id="role" label="Role" defaultValue="planner" options={[{ value: 'owner', label: 'Owner' }, { value: 'planner', label: 'Planner' }, { value: 'moderator', label: 'Moderator' }, { value: 'none', label: 'Remove role' }]} />
-            <ConfirmCheck id="confirm-role" label="Yes, change what this person can do in the console" />
-            <div>
-              <Button>Save role</Button>
-            </div>
-          </form>
+        <Section title="Who can use this console" id="roles" note="Owners only. Changing someone’s access asks you to confirm it’s you first.">
+          <AdminRoleFlow />
         </Section>
       ) : null}
     </ConsolePage>

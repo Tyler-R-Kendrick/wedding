@@ -41,7 +41,7 @@ interface CheckedRail {
  * couple's own profile. Saving asks the admin to confirm it is them (`stepUp`), and the flow keeps
  * everything typed across that trip.
  */
-export function RailFlow({ options, editing, label, variant = 'primary' }: { options: RailOption[]; editing?: RailOption['rail']; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
+export function RailFlow({ options, editing, label, variant = 'primary', accessibleName }: { options: RailOption[]; editing?: RailOption['rail']; label: string; variant?: 'primary' | 'ghost' | 'quiet'; accessibleName?: string }) {
   const fixed = editing ? options.find((o) => o.rail === editing) : undefined;
   const initial: Values = {
     rail: fixed?.rail ?? '',
@@ -131,10 +131,10 @@ export function RailFlow({ options, editing, label, variant = 'primary' }: { opt
             <p className="gs-step-copy">
               This is the link guests get. Open it: it should show <strong>your</strong> {o.displayName} profile. You do not need to send anything.
             </p>
-            <div className="gs-found">
-              <p className="gs-found__url">{ctx.values.url}</p>
+            <div className="flow-found">
+              <p className="flow-found__url">{ctx.values.url}</p>
               <p>
-                <a className="ops-button ops-button-ghost gs-inline-button" href={ctx.values.url} target="_blank" rel="noopener noreferrer">
+                <a className="ops-button ops-button-ghost flow-inline-button" href={ctx.values.url} target="_blank" rel="noopener noreferrer">
                   Open your {o.displayName} link<span aria-hidden="true"> ↗</span>
                 </a>
               </p>
@@ -164,7 +164,7 @@ export function RailFlow({ options, editing, label, variant = 'primary' }: { opt
     <AdminFlow<Values>
       id={`gifts:rail:${editing ?? 'new'}`}
       title={fixed ? `Change ${fixed.displayName}` : 'Add a way to give'}
-      trigger={{ label, variant }}
+      trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{

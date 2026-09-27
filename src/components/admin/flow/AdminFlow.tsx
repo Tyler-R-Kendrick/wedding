@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
+import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
 import { clearDraft, readDraft, writeDraft } from './draft';
 import './flow.css';
 
@@ -39,15 +39,46 @@ export interface AdminFlowProps<V> {
   /** The draft's key. Include the record's id when editing one, so two edits keep two drafts. */
   id: string;
   title: string;
-  trigger: { label: string; variant?: 'primary' | 'ghost' | 'quiet'; describedBy?: string };
+  trigger: {
+    label: string;
+    variant?: 'primary' | 'ghost' | 'quiet' | 'danger';
+    describedBy?: string;
+    /** For a row's "Edit" or "Delete": the name a screen reader hears ("Delete Ada Lovelace"). */
+    accessibleName?: string;
+  };
   initial: V;
   steps: FlowStep<V>[];
+  /**
+   * `danger`: the flow deletes, revokes, resets or merges something. The final button is red and
+   * says what it does, and nothing is kept as a draft while it is open — a half-finished deletion
+   * is not something to come back to. (A trip to /step-up still resumes it: that is the same
+   * decision, interrupted.)
+   */
+  tone?: 'default' | 'danger';
+  /** Keep a draft while the flow is unfinished. Defaults to true, and to false for `danger`. */
+  durable?: boolean;
+  /**
+   * Fetches what the form starts from when the sheet opens (an edit needs the whole record; the
+   * list only carried a summary). Not called when a draft is being resumed: the draft is newer.
+   * Return a message string instead of values to say why it could not be loaded.
+   */
+  load?: () => Promise<Partial<V> | string>;
   submit: {
     label: string;
-    capability: string;
-    input: (values: V) => unknown;
+    /** The capability the last step calls, with `input(values)`… */
+    capability?: string;
+    input?: (values: V) => unknown;
+    /** …or a caller that makes the call itself (two saves in order, a confirmation token). */
+    run?: (values: V) => Promise<CapabilityResponse>;
+    /** For a capability that needs the token a review step was issued (lifecycle publishing). */
+    confirmationToken?: (values: V) => string | undefined;
     /** Said once the save lands; announced next to the button that opened the flow. */
     success: string;
+    /**
+     * Something to show before the sheet closes: a link that is shown only once, an import's
+     * counts. Without it the sheet closes on success and the page refreshes behind it.
+     */
+    result?: (data: unknown, values: V) => ReactNode;
   };
 }
 
@@ -70,7 +101,7 @@ type Direction = 'forward' | 'back';
  * Motion is transform and opacity only, 180–240ms, and none at all under `prefers-reduced-motion`
  * (flow.css). Focus moves to each step's heading, so a screen reader hears where it is.
  */
-export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial, steps, submit }: AdminFlowProps<V>) {
+export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigger, initial: given, steps, submit, tone = 'default', durable = tone !== 'danger', load }: AdminFlowProps<V>) {
   const router = useRouter();
   const uid = useId().replace(/:/g, '');
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -78,7 +109,10 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
-  const [values, setValues] = useState<V>(initial);
+  // What "unchanged" means: the given starting values, or what `load` fetched for this record.
+  const [initial, setInitial] = useState<V>(given);
+  const [values, setValues] = useState<V>(given);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,6 +120,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   const [notice, setNotice] = useState<string | null>(null);
   const [announce, setAnnounce] = useState<string | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
+  const [result, setResult] = useState<ReactNode | null>(null);
   const hydrated = useRef(false);
 
   const dirty = step > 0 || JSON.stringify(values) !== JSON.stringify(initial);
@@ -111,8 +146,8 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
   // Keep the draft current while there is something worth keeping.
   useEffect(() => {
     if (!hydrated.current) return;
-    if (dirty) writeDraft(id, { values, step, open });
-  }, [id, values, step, open, dirty]);
+    if (durable && dirty) writeDraft(id, { values, step, open });
+  }, [id, values, step, open, dirty, durable]);
 
   // The sheet is a native modal <dialog>: focus is contained, Escape works, and the page behind it is inert.
   useEffect(() => {
@@ -152,14 +187,35 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     });
   }, []);
 
-  const start = () => {
+  const start = async () => {
     setAnnounce(null);
     setOpen(true);
+    if (!load || dirty || hasDraft) return;
+    setLoading(true);
+    setFormError(null);
+    const loaded = await load();
+    setLoading(false);
+    if (typeof loaded === 'string') {
+      setFormError(loaded);
+      return;
+    }
+    const base = { ...given, ...loaded } as V;
+    setInitial(base);
+    setValues(base);
   };
 
   const dismiss = () => {
     setOpen(false);
     setNotice(null);
+    if (result !== null || !durable) {
+      // A finished flow, or one that keeps nothing, starts over next time.
+      setResult(null);
+      setStep(0);
+      setValues(initial);
+      setErrors({});
+      setFormError(null);
+      if (!durable) clearDraft(id);
+    }
   };
 
   const discard = () => {
@@ -222,7 +278,9 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       return;
     }
     setBusy(true);
-    const res = await callCapability(submit.capability, { input: submit.input(values), idempotencyKey: newIdempotencyKey() });
+    const res = submit.run
+      ? await submit.run(values)
+      : await callCapability(submit.capability ?? '', { input: submit.input ? submit.input(values) : {}, idempotencyKey: newIdempotencyKey(), confirmationToken: submit.confirmationToken?.(values) });
     setBusy(false);
     if (!res.ok) {
       if (res.error?.code === 'step_up_required') {
@@ -246,22 +304,32 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     }
     clearDraft(id);
     setHasDraft(false);
-    setOpen(false);
-    setStep(0);
-    setValues(initial);
     setNotice(null);
     setAnnounce(submit.success);
     router.refresh();
+    if (submit.result) {
+      // Stay open on a "Done" panel: what it shows may be visible only this once.
+      setResult(submit.result(res.data, values));
+      setDirection('forward');
+      window.requestAnimationFrame(() => headingRef.current?.focus());
+      return;
+    }
+    setOpen(false);
+    setStep(0);
+    setValues(initial);
   };
 
   // Something unfinished is waiting: restored from an earlier visit, or typed and then closed.
-  const unfinished = hasDraft || dirty;
-  const triggerClass = trigger.variant === 'quiet' ? 'flow-trigger-quiet' : trigger.variant === 'ghost' ? 'ops-button ops-button-ghost' : 'ops-button ops-button-primary';
+  const unfinished = durable && (hasDraft || dirty) && result === null;
+  const triggerClass =
+    trigger.variant === 'quiet' ? 'flow-trigger-quiet' : trigger.variant === 'danger' ? 'flow-trigger-quiet flow-trigger-danger' : trigger.variant === 'ghost' ? 'ops-button ops-button-ghost' : 'ops-button ops-button-primary';
+  const triggerName = trigger.accessibleName ? (unfinished && !open ? `Continue: ${trigger.accessibleName}` : trigger.accessibleName) : undefined;
+  const single = steps.length === 1;
   const ctx: FlowContext<V> = { values, set, errors, busy, uid };
 
   return (
     <div className="flow-anchor">
-      <button ref={triggerRef} type="button" className={triggerClass} onClick={start} aria-haspopup="dialog" aria-describedby={trigger.describedBy}>
+      <button ref={triggerRef} type="button" className={triggerClass} onClick={start} aria-haspopup="dialog" aria-describedby={trigger.describedBy} aria-label={triggerName}>
         {unfinished && !open ? `Continue: ${trigger.label.charAt(0).toLowerCase()}${trigger.label.slice(1)}` : trigger.label}
       </button>
       {unfinished && !open ? <span className="flow-draft-note">Unfinished, kept on this device</span> : null}
@@ -272,6 +340,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       <dialog
         ref={dialogRef}
         className="flow-sheet"
+        data-tone={tone}
         aria-labelledby={`${uid}-title`}
         onCancel={(e) => {
           e.preventDefault();
@@ -289,10 +358,10 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
                 {title}
               </p>
               <button type="button" className="flow-close" onClick={dismiss}>
-                Close<span className="sr-only"> (your answers are kept)</span>
+                Close{durable && result === null ? <span className="sr-only"> (your answers are kept)</span> : null}
               </button>
             </div>
-            {steps.length > 1 ? (
+            {!single && result === null ? (
               <ol className="flow-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
                 {steps.map((s, i) => (
                   <li key={s.title} data-state={i < step ? 'done' : i === step ? 'current' : 'todo'} aria-current={i === step ? 'step' : undefined}>
@@ -310,16 +379,32 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
                 {notice}
               </p>
             ) : null}
-            <section key={step} className="flow-step" data-direction={direction} aria-labelledby={`${uid}-step`}>
-              <p className="flow-step__count">
-                Step {step + 1} of {steps.length}
-              </p>
-              <h2 id={`${uid}-step`} ref={headingRef} tabIndex={-1} className="flow-step__title">
-                {current.title}
-              </h2>
-              {current.lede ? <p className="flow-step__lede">{current.lede}</p> : null}
-              <div className="flow-step__fields">{current.render(ctx)}</div>
-            </section>
+            {result !== null ? (
+              <section key="done" className="flow-step" data-direction="forward" aria-labelledby={`${uid}-step`}>
+                <p className="flow-step__count">Done</p>
+                <h2 id={`${uid}-step`} ref={headingRef} tabIndex={-1} className="flow-step__title">
+                  {submit.success}
+                </h2>
+                <div className="flow-step__fields" role="status">
+                  {result}
+                </div>
+              </section>
+            ) : (
+              <section key={step} className="flow-step" data-direction={direction} aria-labelledby={`${uid}-step`}>
+                {!single ? (
+                  <p className="flow-step__count">
+                    Step {step + 1} of {steps.length}
+                  </p>
+                ) : null}
+                <h2 id={`${uid}-step`} ref={headingRef} tabIndex={-1} className="flow-step__title">
+                  {current.title}
+                </h2>
+                {current.lede ? <p className="flow-step__lede">{current.lede}</p> : null}
+                <div className="flow-step__fields" aria-busy={loading || undefined}>
+                  {loading ? <p className="flow-hint">Loading the current details…</p> : current.render(ctx)}
+                </div>
+              </section>
+            )}
             {formError ? (
               <p className="flow-error" role="alert">
                 {formError}
@@ -328,23 +413,34 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
           </div>
 
           <footer className="flow-foot">
-            {dirty ? (
-              <button type="button" className="flow-discard" onClick={discard}>
-                Discard
-              </button>
-            ) : (
-              <span />
-            )}
-            <div className="flow-foot__nav">
-              {step > 0 ? (
-                <button type="button" className="ops-button ops-button-ghost" onClick={goBack} disabled={busy}>
-                  Back
+            {result !== null ? (
+              <>
+                <span />
+                <button type="button" className="ops-button ops-button-primary" onClick={dismiss}>
+                  Close
                 </button>
-              ) : null}
-              <button type="submit" className="ops-button ops-button-primary" disabled={busy} aria-busy={busy || undefined}>
-                {busy ? (last ? 'Saving…' : 'Checking…') : last ? submit.label : 'Continue'}
-              </button>
-            </div>
+              </>
+            ) : (
+              <>
+                {dirty && durable ? (
+                  <button type="button" className="flow-discard" onClick={discard}>
+                    Discard
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <div className="flow-foot__nav">
+                  {step > 0 ? (
+                    <button type="button" className="ops-button ops-button-ghost" onClick={goBack} disabled={busy}>
+                      Back
+                    </button>
+                  ) : null}
+                  <button type="submit" className={`ops-button ${last && tone === 'danger' ? 'ops-button-danger' : 'ops-button-primary'}`} disabled={busy || loading} aria-busy={busy || undefined}>
+                    {busy ? (last ? 'Working…' : 'Checking…') : last ? submit.label : 'Continue'}
+                  </button>
+                </div>
+              </>
+            )}
           </footer>
         </form>
       </dialog>

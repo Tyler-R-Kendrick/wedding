@@ -24,7 +24,7 @@ interface Values extends Record<string, unknown> {
  * The id is made from the title for a new fund and never shown: it was the first field of the old
  * form ("Id (slug)"), and the only way to edit a fund was to retype its id exactly.
  */
-export function FundFlow({ fund, takenIds, label, variant = 'primary', rails }: { fund?: FundSummary; takenIds: string[]; label: string; variant?: 'primary' | 'ghost' | 'quiet'; rails: string[] }) {
+export function FundFlow({ fund, takenIds, label, variant = 'primary', rails, accessibleName }: { fund?: FundSummary; takenIds: string[]; label: string; variant?: 'primary' | 'ghost' | 'quiet'; rails: string[]; accessibleName?: string }) {
   const initial: Values = { title: fund?.title ?? '', description: fund?.description ?? '', shown: fund?.active ?? true };
   const steps: FlowStep<Values>[] = [
     {
@@ -70,7 +70,7 @@ export function FundFlow({ fund, takenIds, label, variant = 'primary', rails }: 
     <AdminFlow<Values>
       id={`gifts:fund:${fund?.id ?? 'new'}`}
       title={fund ? `Change “${fund.title}”` : 'Add a fund'}
-      trigger={{ label, variant }}
+      trigger={{ label, variant, accessibleName }}
       initial={initial}
       steps={steps}
       submit={{
