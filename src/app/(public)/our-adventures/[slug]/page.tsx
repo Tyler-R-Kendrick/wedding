@@ -21,7 +21,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug } = await params;
   const r = await load(slug);
   const title = r.ok ? r.value.data.title : undefined;
-  return { title: title ?? 'Not found' };
+  if (title) return { title };
+  // "Not found" only when it is: a failed read (a rate limit, the database) keeps the site's default title.
+  return r.ok || r.error.code === 'not_found' || r.error.code === 'validation' ? { title: 'Not found' } : {};
 }
 
 export default async function AdventurePage({ params }: { params: Params }) {

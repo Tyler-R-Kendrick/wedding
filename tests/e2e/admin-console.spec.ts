@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { contextAs } from './helpers/principal';
+import { BASE_URL, contextAs, customPrincipalHeaders, IDS } from './helpers/principal';
 
 /**
  * The cross-cutting admin console (level 14): lifecycle, audit, jobs, metrics, flags, providers.
@@ -63,6 +63,16 @@ test('every console page turns an anonymous visitor away without rendering any o
       expect(body, `${path} leaked "${leak}" to a signed-out visitor`).not.toContain(leak);
     }
   }
+  await ctx.close();
+});
+
+test('an admin without a screen\'s entitlement is told so, not sent round the sign-in loop', async ({ browser }) => {
+  const ctx = await browser.newContext({ baseURL: BASE_URL, extraHTTPHeaders: customPrincipalHeaders({ kind: 'admin', adminId: IDS.admin, roles: ['planner'], entitlements: ['admin_guest_ops'] }) });
+  const page = await ctx.newPage();
+  await page.goto('/admin/media');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Not part of your access');
+  await expect(page.locator('#main').getByRole('link', { name: 'Back to the console' })).toHaveAttribute('href', '/admin');
+  await expect(page.locator('#main')).not.toContainText('Sign in');
   await ctx.close();
 });
 
