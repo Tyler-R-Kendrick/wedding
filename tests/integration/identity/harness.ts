@@ -24,6 +24,8 @@ export interface Transport {
   ip?: string;
   method?: 'GET' | 'POST';
   origin?: string | null;
+  /** Replaces the capability context's logger, so a test can read what a call logged. */
+  logger?: unknown;
 }
 
 /** Headers the way a browser would send them: same-origin by default. */
@@ -45,7 +47,7 @@ export async function call<T = unknown>(name: string, input: unknown, t: Transpo
   const sink: CookieSink = { setCookies: [] };
   // Idempotent mutations require a key from signed-in callers; anonymous callers may not hold one.
   const ctx = await createCapabilityContext({ principal, requestId: `req-${Math.random().toString(36).slice(2, 10)}`, surface: 'ui', idempotencyKey: principal.kind === 'anonymous' ? undefined : newId() });
-  Object.assign(ctx.services, { requestHeaders: headers, clientIp: t.ip ?? `10.0.${++ipCounter % 250}.${(ipCounter * 7) % 250}`, cookieSink: sink });
+  Object.assign(ctx.services, { requestHeaders: headers, clientIp: t.ip ?? `10.0.${++ipCounter % 250}.${(ipCounter * 7) % 250}`, cookieSink: sink }, t.logger ? { logger: t.logger } : {});
   const result = (await invokeByName(name, ctx, input)) as Result<CapabilityOutcome<T>, CapabilityError>;
   return Object.assign(result, { sink, principal });
 }

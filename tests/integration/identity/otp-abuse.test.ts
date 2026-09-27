@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getDb } from '@/db/client';
 import { getOtpLockout, hashOtpIdentifier } from '@/domain/identity/otp';
 import { devInbox } from '@/providers/auth-email/mock';
@@ -22,6 +22,19 @@ describe('OTP abuse controls', () => {
     const own = expectOk(await call<{ challenge: string }>('request_otp', { purpose: 'claim', token: f.invitations.okafor.token, guestId: f.guests.chidi }, { ip: '10.9.1.2' }));
     const ok = await call('verify_otp', { challenge: own.data.challenge, code: await latestCode(f.emails.chidi) }, { ip: '10.9.1.2' });
     expect(ok.ok).toBe(true);
+  });
+
+  it('an address nobody has is suppressed out loud in the server log, and never named there', async () => {
+    const f = await seed('ab0');
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const ghost = 'ghost+ab0@example.test';
+    expectOk(await call('request_otp', { purpose: 'sign_in', email: ghost }, { ip: '10.9.0.1', logger }));
+    const lines = logger.info.mock.calls.map(([, msg]) => msg);
+    expect(lines).toContain('otp not sent: no guest or administrator has this address');
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain(ghost);
+    const known = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    expectOk(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.0.2', logger: known }));
+    expect(known.info.mock.calls.map(([, msg]) => msg)).not.toContain('otp not sent: no guest or administrator has this address');
   });
 
   it('send limits: 5 per (email, client), a soft 20 per email across clients, and a per-IP cap', async () => {
