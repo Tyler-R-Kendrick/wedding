@@ -8,6 +8,7 @@ import { ConsoleGate, ConsolePage, DataTable, Day, Note, Pill, Section, Stamp, S
 import { Input } from '../_components/ops';
 import { INTELLIGENCE_SUBNAV } from '../_components/sections';
 import './concierge.css';
+import { capitalise, errorWords, intentWords, kindWords, outcomeWords, reasonWords, ruleWords, selectedByWords, whereWords } from './words';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Concierge traces', robots: { index: false, follow: false } };
@@ -82,7 +83,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
             <tr>
               <th scope="col">When</th>
               <th scope="col">Where</th>
-              <th scope="col">Rules matched</th>
+              <th scope="col">What it tried</th>
               <th scope="col">Answer</th>
             </tr>
           }
@@ -93,8 +94,8 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
               <td>
                 <Stamp at={alert.at} />
               </td>
-              <td>{String(alert.metadata?.kind ?? 'source')}</td>
-              <td className="con-wrap">{String(alert.metadata?.rules ?? '')}</td>
+              <td>{whereWords(alert.metadata?.kind)}</td>
+              <td className="con-wrap">{capitalise(ruleWords(alert.metadata?.rules))}</td>
               <td className="ops-code">{alert.answerId}</td>
             </tr>
           ))}
@@ -107,7 +108,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
           head={
             <tr>
               <th scope="col">When</th>
-              <th scope="col">Intent</th>
+              <th scope="col">Asked about</th>
               <th scope="col" className="con-num">Claims</th>
               <th scope="col" className="con-num">Dropped</th>
               <th scope="col">Reasons</th>
@@ -120,10 +121,10 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
               <td>
                 <Stamp at={failure.at} />
               </td>
-              <td>{String(failure.metadata?.intent ?? '')}</td>
+              <td>{intentWords(failure.metadata?.intent)}</td>
               <td className="con-num">{String(failure.metadata?.claims ?? '')}</td>
               <td className="con-num">{String(failure.metadata?.dropped ?? '')}</td>
-              <td className="con-wrap">{String(failure.metadata?.reasons ?? '')}</td>
+              <td className="con-wrap">{capitalise(reasonWords(failure.metadata?.reasons))}</td>
             </tr>
           ))}
         </DataTable>
@@ -153,7 +154,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
               }
             >
               <p className="cg-answer">{answer.answer}</p>
-              {answer.verifier.reasons.length > 0 ? <p className="cg-dropped">Dropped because: {answer.verifier.reasons.join(', ')}.</p> : null}
+              {answer.verifier.reasons.length > 0 ? <p className="cg-dropped">Dropped because {reasonWords(answer.verifier.reasons)}.</p> : null}
               {answer.sources.length > 0 ? (
                 <ol className="cg-sources">
                   {answer.sources.map((source) => (
@@ -173,7 +174,7 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
                 <summary>How it answered</summary>
                 <div className="flow-details__body">
                   <p className="flow-row__meta">
-                    Intent <span className="ops-code">{answer.intent}</span> · model {answer.modelId} · {answer.latencyMs} ms · verifier {answer.verifier.method} · request <span className="ops-code">{answer.requestId}</span>
+                    Asked about {intentWords(answer.intent).toLowerCase() || 'nothing the router recognised'} (<span className="ops-code">{answer.intent}</span>) · model {answer.modelId} · {answer.latencyMs} ms · verifier {answer.verifier.method} · request <span className="ops-code">{answer.requestId}</span>
                   </p>
                   {answer.invocations.length > 0 ? (
                     <DataTable
@@ -193,10 +194,10 @@ export default async function AdminConciergePage({ searchParams }: { searchParam
                       {answer.invocations.map((invocation, index) => (
                         <tr key={`${answer.id}-${invocation.capability}-${index}`}>
                           <th scope="row">{invocation.capability}</th>
-                          <td>{invocation.kind}</td>
-                          <td>{invocation.selectedBy}</td>
-                          <td>{invocation.outcome}</td>
-                          <td>{invocation.errorCode ?? ''}</td>
+                          <td>{kindWords(invocation.kind)}</td>
+                          <td>{selectedByWords(invocation.selectedBy)}</td>
+                          <td>{outcomeWords(invocation.outcome)}</td>
+                          <td>{errorWords(invocation.errorCode)}</td>
                           <td className="con-num">{invocation.outputChars}</td>
                           <td className="con-num">{invocation.durationMs}</td>
                         </tr>

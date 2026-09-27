@@ -66,6 +66,12 @@ export interface FieldSpec {
   /** `text`: another record's id, chosen from this table. `json` with `editor: 'refs'`: several. */
   ref?: ContentTableName;
   /**
+   * `text`: another record named by its web address name or key rather than its id, chosen from a
+   * list: `adventure` (an Our Adventures memory guests can open, from `list_adventures`),
+   * `operational` (an operational field's key, from `list_content_records`).
+   */
+  pick?: ContentPickList;
+  /**
    * How a `json` field is edited: `lines` (a string array, one per line), `tags` (lowercase words,
    * one per line), `refs` (records ticked from `ref`), `rows` (an array of objects, one row each),
    * `object` (one object, a field per key).
@@ -76,6 +82,9 @@ export interface FieldSpec {
   /** One row of a `rows` editor, in words: "Photo", "Stop". */
   itemLabel?: string;
 }
+
+/** The lists a `pick` field chooses from (`FieldSpec.pick`). */
+export type ContentPickList = 'adventure' | 'operational';
 
 export interface TableSpec {
   label: string;
@@ -198,7 +207,7 @@ const SPECS: Record<ContentTableName, TableSpec> = {
       { name: 'locationLabel', label: 'Where', type: 'text' },
       { name: 'note', label: 'Note', type: 'textarea', required: true, ask: 'Write a short note about this stop.' },
       media,
-      { name: 'adventureSlug', label: 'Our Adventures web address name', type: 'text', technical: true, help: 'The adventure this stop opens, by the last part of its web address.' },
+      { name: 'adventureSlug', label: 'Adventure it opens', type: 'text', pick: 'adventure', help: 'Choose it from Our Adventures. Only adventures guests can open are listed.' },
       { name: 'externalRef', label: 'Imported from', type: 'text', technical: true, help: 'Set by the Paired import (“paired:…”). Leave it as it is.' },
       ...PROVENANCE_FIELDS,
     ],
@@ -273,7 +282,7 @@ const SPECS: Record<ContentTableName, TableSpec> = {
       { name: 'whyWeShareThis', label: 'Why we are sharing this', type: 'textarea' },
       { name: 'kidFriendly', label: 'Good with kids', type: 'tristate' },
       { name: 'draft', label: 'Still a draft', type: 'boolean' },
-      { name: 'operationalKey', label: 'Live hours or menu key', type: 'text', technical: true, help: 'The key of an operational field (outlet.cindys) whose hours or menu this shows.' },
+      { name: 'operationalKey', label: 'Live hours or menu', type: 'text', pick: 'operational', help: 'The operational detail whose hours or menu this shows. Add it under Operational fields first if it is missing.' },
       ...PROVENANCE_FIELDS,
     ],
   },
@@ -583,6 +592,10 @@ export interface ContentRecordSummary {
   freshness: Freshness;
   daysSinceVerified: number;
   sourceType: string;
+  /** The record's web address name or key (its `derive: 'slug' | 'key'` field), when the table has one. */
+  key?: string;
+  /** Its place in a hand-ordered list (`derive: 'position'`); `null` when it has none yet. */
+  position?: number | null;
 }
 
 async function loadRow(db: Db, table: ContentTableName, id: string): Promise<Record<string, unknown> | undefined> {
@@ -684,6 +697,11 @@ export interface SaveInput {
   table: ContentTableName;
   id?: string;
   data: unknown;
+  /**
+   * Edits only: `data` holds just the fields that change (a list position) and every other field
+   * keeps its stored value. The whole record is still validated, versioned and audited as one save.
+   */
+  merge?: boolean;
 }
 
 /**
@@ -693,7 +711,9 @@ export interface SaveInput {
 export async function saveContentRecord(db: Db, input: SaveInput, editor: Editor): Promise<Result<{ id: string; contentVersion: number; created: boolean }, CapabilityError>> {
   const current = input.id ? await loadRow(db, input.table, input.id) : undefined;
   if (input.id && !current) return err(new CapabilityError('not_found', 'That record no longer exists.'));
-  const parsed = parseEditable(input.table, await fillDerived(db, input.table, input.data, current));
+  if (input.merge && !current) return err(new CapabilityError('validation', 'Only an existing record can be changed a field at a time.'));
+  const data = input.merge && current && input.data && typeof input.data === 'object' ? { ...rowToEditable(input.table, current), ...(input.data as Record<string, unknown>) } : input.data;
+  const parsed = parseEditable(input.table, await fillDerived(db, input.table, data, current));
   if (!parsed.ok) return parsed;
   if (parsed.value.sourceId) {
     const src = await db.select({ id: contentSources.id }).from(contentSources).where(eq(contentSources.id, String(parsed.value.sourceId))).limit(1);
@@ -762,6 +782,8 @@ export async function listContentRecords(db: Db, table: ContentTableName, now: D
   const spec = TABLE_SPECS[table];
   const t = tableFor(table) as ContentTable & Record<string, AnyPgColumn>;
   const sortCol = t[spec.sortField];
+  const keyField = spec.fields.find((f) => f.derive === 'slug' || f.derive === 'key');
+  const positionField = spec.fields.find((f) => f.derive === 'position');
   const rows = (await db
     .select()
     .from(t)
@@ -780,6 +802,8 @@ export async function listContentRecords(db: Db, table: ContentTableName, now: D
       freshness: computeFreshness({ sourceType: r.sourceType as never, verifiedAt, validFrom: r.validFrom as Date | null, validUntil: validUntil ?? null }, now),
       daysSinceVerified: daysSinceVerified(verifiedAt, now),
       sourceType: String(r.sourceType),
+      ...(keyField && typeof r[keyField.name] === 'string' ? { key: String(r[keyField.name]) } : {}),
+      ...(positionField ? { position: typeof r[positionField.name] === 'number' ? (r[positionField.name] as number) : null } : {}),
     };
   });
 }

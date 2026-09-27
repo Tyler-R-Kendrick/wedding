@@ -8,7 +8,8 @@ import { ROUTES } from '@/domain/routes';
 import { Breadcrumbs, ConsolePage } from '../../../_components/console';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { ContentRecordFlow } from '../../_components/ContentFlows';
-import { contentEditor, refOptions, refTables, withArticle } from '../../_components/shared';
+import { editorLists } from '../../_components/lists';
+import { contentEditor, refTables, withArticle } from '../../_components/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export default async function AdminContentNew({ params }: { params: Params }) {
   if (!allowed) return <AdminDenied />;
   // Only a table that points at other records (a place, a memory) needs them read, to offer them by name.
   const r = refTables(table).length ? await invoke(listContentRecordsCapability, ctx, {}) : null;
-  const editor = contentEditor(table, refOptions(r?.ok ? r.value.data.tables : undefined));
+  const editor = contentEditor(table, await editorLists(ctx, [table], r?.ok ? r.value.data.tables : undefined));
   const add = `Add ${withArticle(spec.noun)}`;
   return (
     <ConsolePage title={add} lede={`It starts as a private draft in ${spec.label}, and nothing is saved until the last step.`} actions={<ContentRecordFlow editor={editor} label={add} linkAfterCreate defaultOpen />}>

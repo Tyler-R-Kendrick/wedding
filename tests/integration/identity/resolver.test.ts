@@ -174,7 +174,12 @@ describe('principal resolver', () => {
     // admin guide promised: what one guest would see if the draft chart were published.
     // 69 -> 70: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
     // call between steps to check a registry link or a way to give before anything is saved.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(70);
+    // 70 -> 79: the console's deletes and orderings, each ui only — `admin_delete_gift_link`,
+    // `admin_delete_gift_fund`, `admin_delete_gift_rail`, `admin_delete_reservation_venue`,
+    // `admin_delete_notice` (`admin_content`); `admin_delete_event` (`admin_content` and
+    // `admin_guest_ops`, step-up); `admin_reorder_events` (`admin_content`); `admin_list_content_sources`
+    // (read), for the content editor's source picker; `admin_dismiss_media_suggestion` (`admin_media`).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(79);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

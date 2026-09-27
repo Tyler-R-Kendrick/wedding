@@ -9,7 +9,9 @@ import { ROUTES } from '@/domain/routes';
 import { ConsolePage, DataTable, Day, Denied, Pill, Section } from '../_components/console';
 import { AdminDenied, adminContentContext } from './_auth';
 import { ContentRecordFlow, MarkVerified } from './_components/ContentFlows';
-import { FRESHNESS_TONE, contentEditor, refOptions, visibilityWords, withArticle } from './_components/shared';
+import { editorLists } from './_components/lists';
+import { FRESHNESS_TONE, contentEditor, visibilityWords, withArticle } from './_components/shared';
+import type { ContentEditor } from './_components/types';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Content (admin)' };
@@ -35,7 +37,12 @@ export default async function AdminContentIndex() {
     );
   }
   const tables = r.value.data.tables;
-  const refs = refOptions(tables);
+  const names = tables.map((t) => t.table as ContentTableName);
+  const lists = await editorLists(ctx, names, tables);
+  // One editor per table, built once and handed to every flow for that table (the "Add" in its row
+  // and each "Edit" below). The flows used to get a fresh copy each, so the sources and the records
+  // they point at went to the browser once per row; the same object is serialised once and shared.
+  const editors = new Map<ContentTableName, ContentEditor>(names.map((t) => [t, contentEditor(t, lists)]));
   const attention = tables.flatMap((t) => t.records.filter((rec) => rec.freshness !== 'fresh' || rec.placeholder).map((rec) => ({ ...rec, table: t.table as ContentTableName, label: t.label })));
   attention.sort((a, b) => order(a.freshness) - order(b.freshness) || b.daysSinceVerified - a.daysSinceVerified);
   const shown = attention.slice(0, ATTENTION_LIMIT);
@@ -67,7 +74,7 @@ export default async function AdminContentIndex() {
                 <td className="con-num">{t.count}</td>
                 <td className="con-num">{t.needsAttention}</td>
                 <td>
-                  <ContentRecordFlow editor={contentEditor(table, refs)} label="Add" variant="quiet" accessibleName={`Add ${withArticle(TABLE_SPECS[table].noun)}`} />
+                  <ContentRecordFlow editor={editors.get(table)!} label="Add" variant="quiet" accessibleName={`Add ${withArticle(TABLE_SPECS[table].noun)}`} />
                 </td>
               </tr>
             );
@@ -97,7 +104,7 @@ export default async function AdminContentIndex() {
                 }
                 actions={
                   <>
-                    <ContentRecordFlow editor={contentEditor(rec.table, refs)} record={{ id: rec.id, title: rec.title }} label="Edit" variant="quiet" />
+                    <ContentRecordFlow editor={editors.get(rec.table)!} record={{ id: rec.id, title: rec.title }} label="Edit" variant="quiet" />
                     <MarkVerified table={rec.table} id={rec.id} title={rec.title} />
                   </>
                 }

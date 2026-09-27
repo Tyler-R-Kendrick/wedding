@@ -11,7 +11,8 @@ import { ROUTES } from '@/domain/routes';
 import { Breadcrumbs, ConsolePage, Day, Denied, Pill } from '../../_components/console';
 import { AdminDenied, adminContentContext } from '../_auth';
 import { ContentRecordFlow, MarkVerified, MoveRecord } from '../_components/ContentFlows';
-import { FRESHNESS_TONE, contentEditor, refOptions, refTables, visibilityWords, withArticle } from '../_components/shared';
+import { editorLists } from '../_components/lists';
+import { FRESHNESS_TONE, contentEditor, refTables, visibilityWords, withArticle } from '../_components/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +47,13 @@ export default async function AdminContentTable({ params }: { params: Params }) 
     );
   }
   const rows = r.value.data.tables.find((t) => t.table === table)?.records ?? [];
-  const editor = contentEditor(table, refOptions(r.value.data.tables));
+  const editor = contentEditor(table, await editorLists(ctx, [table], r.value.data.tables));
   const ordered = spec.fields.some((f) => f.derive === 'position' && f.name === spec.sortField);
+  // Up and Down swap two records' places. A record with no place yet sorts after those that have
+  // one, so it moves as if it held the next free number (`swapOrder` then writes real ones).
+  const last = Math.max(0, ...rows.map((rec) => rec.position ?? 0));
+  const unplacedBefore = (i: number) => rows.slice(0, i).filter((rec) => typeof rec.position !== 'number').length;
+  const places = rows.map((rec, i) => (typeof rec.position === 'number' ? rec.position : last + 1 + unplacedBefore(i)));
   const add = `Add ${withArticle(spec.noun)}`;
 
   return (
@@ -84,8 +90,8 @@ export default async function AdminContentTable({ params }: { params: Params }) 
                   <MarkVerified table={table} id={rec.id} title={rec.title} />
                   {ordered ? (
                     <>
-                      <MoveRecord table={table} record={{ id: rec.id, title: rec.title }} other={prev ? { id: prev.id, title: prev.title } : null} direction="up" />
-                      <MoveRecord table={table} record={{ id: rec.id, title: rec.title }} other={next ? { id: next.id, title: next.title } : null} direction="down" />
+                      <MoveRecord table={table} record={{ id: rec.id, title: rec.title, sortOrder: places[i]! }} other={prev ? { id: prev.id, title: prev.title, sortOrder: places[i - 1]! } : null} direction="up" />
+                      <MoveRecord table={table} record={{ id: rec.id, title: rec.title, sortOrder: places[i]! }} other={next ? { id: next.id, title: next.title, sortOrder: places[i + 1]! } : null} direction="down" />
                     </>
                   ) : null}
                 </>

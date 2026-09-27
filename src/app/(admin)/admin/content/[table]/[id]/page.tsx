@@ -10,7 +10,8 @@ import { ROUTES } from '@/domain/routes';
 import { Breadcrumbs, ConsolePage, Denied, formatStamp, Note, Pill, Section, Stamp } from '../../../_components/console';
 import { AdminDenied, adminContentContext } from '../../_auth';
 import { ContentRecordFlow, MarkVerified } from '../../_components/ContentFlows';
-import { FRESHNESS_TONE, contentEditor, describeValue, editorWords, refOptions, refTables, revisionWords } from '../../_components/shared';
+import { editorLists } from '../../_components/lists';
+import { FRESHNESS_TONE, contentEditor, describeValue, editorWords, refTables, revisionWords } from '../../_components/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +47,8 @@ export default async function AdminContentRecord({ params }: { params: Params })
     );
   }
   // A record that points at others (a place, recommendations) reads them back by name.
-  const lists = refTables(table).length ? await invoke(listContentRecordsCapability, ctx, {}) : null;
-  const refs = refOptions(lists?.ok ? lists.value.data.tables : undefined);
+  const records = refTables(table).length ? await invoke(listContentRecordsCapability, ctx, {}) : null;
+  const editor = contentEditor(table, await editorLists(ctx, [table], records?.ok ? records.value.data.tables : undefined));
   const record = r.value.data;
   const title = String(record.values[spec.titleField] ?? spec.label);
   const fresh = FRESHNESS_LABELS[record.freshness];
@@ -58,7 +59,7 @@ export default async function AdminContentRecord({ params }: { params: Params })
       title={title}
       actions={
         <>
-          <ContentRecordFlow editor={contentEditor(table, refs)} record={{ id, title }} label="Edit" accessibleName={`Edit ${title}`} />
+          <ContentRecordFlow editor={editor} record={{ id, title }} label="Edit" accessibleName={`Edit ${title}`} />
           <MarkVerified table={table} id={id} title={title} tone="ghost" />
         </>
       }
@@ -86,7 +87,7 @@ export default async function AdminContentRecord({ params }: { params: Params })
       <p className="con-note">“Mark verified” records that someone checked it just now. It does not change the text, and the previous version stays in the history.</p>
 
       <Section title="What it says now" id="record">
-        <ReviewList items={spec.fields.filter((f) => !f.technical && f.derive !== 'position').map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], refs, formatStamp) }))} />
+        <ReviewList items={spec.fields.filter((f) => !f.technical && f.derive !== 'position').map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], editor, formatStamp) }))} />
       </Section>
 
       <Section title="History" id="history">
@@ -110,7 +111,7 @@ export default async function AdminContentRecord({ params }: { params: Params })
             items={[
               { label: 'Table', value: table },
               { label: 'Record id', value: id },
-              ...technical.map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], refs, formatStamp) })),
+              ...technical.map((f) => ({ label: f.label, value: describeValue(f, record.values[f.name], editor, formatStamp) })),
               { label: 'Last stored by', value: record.editedBy },
               ...record.revisions.map((rev) => ({ label: `Version ${rev.contentVersion}`, value: `${rev.editedBy} · ${rev.reason ?? 'no reason'}` })),
             ]}

@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AdminFlow, type FieldErrors, type FlowContext, type FlowStep } from '@/components/admin/flow/AdminFlow';
-import { CheckField, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
+import { CheckField, CheckGroupField, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
+import { swapOrder } from '@/components/admin/flow/order';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
 import type { ContentRecordData } from '@/capabilities/get_content_record';
@@ -24,8 +24,9 @@ import { formatStamp } from '@/components/admin/flow/dates';
  *
  * The admin never types an id. A slug or key is left to the server, which makes it from the title
  * (`derive`); it can be changed under "Technical details". A list position is set by Up and Down on
- * the table's page, never typed: a new record goes to the end. A source, a place or a memory is
- * chosen by name. Lists are lines or rows, not JSON.
+ * the table's page, never typed: a new record goes to the end. A source, a place, a memory, the
+ * adventure a timeline stop opens or the operational detail a recommendation shows is chosen by
+ * name. Lists are lines or rows, not JSON.
  *
  * Values are strings (or arrays and objects of strings) in the flow and are converted here, in the
  * browser, before the one `save_content_record` call. That is also where a `datetime-local` value
@@ -301,6 +302,7 @@ function shown(f: FieldSpec, raw: unknown, editor: ContentEditor): string {
   const v = text(raw);
   if (v === '') return '';
   if (f.name === 'sourceId') return editor.sources.find((s) => s.value === v)?.label ?? 'A source that is not in the list';
+  if (f.pick) return editor.picks[f.pick]?.find((o) => o.value === v)?.label ?? `${v} (not listed)`;
   if (f.type === 'select') return f.optionLabels?.[v] ?? v;
   if (f.ref) return refLabel(editor.refs[f.ref], v);
   if (f.type === 'datetime') return formatStamp(v);
@@ -459,42 +461,6 @@ function ObjectField({ ctx, field: f, refs }: { ctx: FlowContext<Values>; field:
   );
 }
 
-/** Several records ticked from a list (the recommendations that go with a memory). */
-function PickManyField({ ctx, field: f, options }: { ctx: FlowContext<Values>; field: FieldSpec; options: RefOption[] }) {
-  const picked = (Array.isArray(ctx.values[f.name]) ? ctx.values[f.name] : []) as string[];
-  const all = [...options, ...picked.filter((id) => !options.some((o) => o.value === id)).map((id) => ({ value: id, label: 'A record that is no longer listed' }))];
-  const error = ctx.errors[f.name];
-  const base = `${ctx.uid}-${f.name}`;
-  const toggle = (id: string, on: boolean) => ctx.set({ [f.name]: on ? [...picked, id] : picked.filter((p) => p !== id) });
-  return (
-    <fieldset className="flow-choices" aria-describedby={describedBy(f.help && `${base}-hint`, error && `${base}-error`)}>
-      <legend className="flow-label">
-        {f.label}
-        {f.required ? null : <span className="flow-optional"> (optional)</span>}
-      </legend>
-      <Hint id={`${base}-hint`}>{f.help}</Hint>
-      {all.length ? (
-        <div className="flow-choices__list">
-          {all.map((o, i) => {
-            const id = i === 0 ? base : `${base}-${i}`;
-            return (
-              <label key={o.value} htmlFor={id} className="flow-choice">
-                <input id={id} type="checkbox" checked={picked.includes(o.value)} onChange={(e) => toggle(o.value, e.target.checked)} />
-                <span className="flow-choice__text">
-                  <span className="flow-choice__label">{o.label}</span>
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="flow-hint">Nothing to choose from yet.</p>
-      )}
-      <Problem id={`${base}-error`} message={error} />
-    </fieldset>
-  );
-}
-
 function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; field: FieldSpec; editor: ContentEditor; isNew: boolean }) {
   const optional = !f.required || Boolean(f.derive);
   const opts = (options: readonly string[] = []) => options.map((o) => ({ value: o, label: f.optionLabels?.[o] ?? o }));
@@ -523,6 +489,10 @@ function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; fie
       />
     );
   }
+  if (f.pick) {
+    // Named by web address name or key, but chosen by title: nobody types "outlet.cindys".
+    return <SelectField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional placeholder="None" options={withCurrent(editor.picks[f.pick] ?? [], ctx.values[f.name], `${text(ctx.values[f.name])} (not listed)`)} />;
+  }
   if (f.ref && f.type === 'text') {
     return <SelectField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional placeholder="None" options={withCurrent(editor.refs[f.ref] ?? [], ctx.values[f.name], 'A record that is no longer listed')} />;
   }
@@ -550,7 +520,15 @@ function Field({ ctx, field: f, editor, isNew }: { ctx: FlowContext<Values>; fie
     case 'json':
       if (f.editor === 'rows') return <RowsField ctx={ctx} field={f} refs={editor.refs} />;
       if (f.editor === 'object') return <ObjectField ctx={ctx} field={f} refs={editor.refs} />;
-      if (f.editor === 'refs') return <PickManyField ctx={ctx} field={f} options={editor.refs[f.ref ?? ''] ?? []} />;
+      if (f.editor === 'refs') {
+        // Several records ticked from a list (the recommendations that go with a memory); one ticked
+        // before and since removed stays, by what it was, so saving does not drop it silently.
+        const options = editor.refs[f.ref ?? ''] ?? [];
+        const picked = Array.isArray(ctx.values[f.name]) ? (ctx.values[f.name] as string[]) : [];
+        const choices = [...options, ...picked.filter((id) => !options.some((o) => o.value === id)).map((id) => ({ value: id, label: 'A record that is no longer listed' }))];
+        const hint = choices.length ? f.help : <>{f.help} Nothing to choose from yet.</>;
+        return <CheckGroupField ctx={ctx} name={f.name} legend={optional ? `${f.label} (optional)` : f.label} choices={choices} hint={hint} />;
+      }
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} multiline rows={f.editor ? 5 : 6} spellCheck={f.editor === 'lines'} />;
     case 'number':
       return <TextField ctx={ctx} name={f.name} label={f.label} hint={f.help} optional={optional} type="number" />;
@@ -753,77 +731,31 @@ export function MarkVerified({ table, id, title, tone }: { table: string; id: st
 }
 
 /**
- * Up or Down in a table sorted by position. `QuickAction` in behaviour and markup (focus stays on
- * the button, the result is said beside it, the page refreshes), but its calls cannot be written
- * down in advance: a save takes the whole record, and the list carries only summaries. So a move
- * reads the two records it swaps, then saves each with the other's place. When the two share a
- * place (or one has none), only this record moves, to just before or after the other.
+ * Up or Down in a table sorted by position: the kit's `QuickAction`, with the two saves `swapOrder`
+ * builds (this record takes its neighbour's place and the neighbour takes this one's; two that share
+ * a place are set one apart). Each save sends only the position (`merge`), so the list's summaries
+ * are enough and nothing is read first.
  */
-export function MoveRecord({ table, record, other, direction }: { table: string; record: { id: string; title: string }; other: { id: string; title: string } | null; direction: 'up' | 'down' }) {
-  const router = useRouter();
-  const ref = useRef<HTMLButtonElement>(null);
-  const [pending, startTransition] = useTransition();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const refocus = useRef(false);
-
-  useEffect(() => {
-    if (pending || busy || !refocus.current) return;
-    refocus.current = false;
-    if (document.activeElement !== ref.current) ref.current?.focus();
-  }, [pending, busy]);
-
-  const save = (id: string, values: Record<string, unknown>) => callCapability('save_content_record', { input: { table, id, data: values }, idempotencyKey: newIdempotencyKey() });
-
-  const run = async () => {
-    if (!other || busy || pending) return;
-    setError(null);
-    setStatus(null);
-    setBusy(true);
-    refocus.current = true;
-    const fail = (res: CapabilityResponse) => {
-      setBusy(false);
-      if (res.error?.code === 'step_up_required') {
-        router.push(`/step-up?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-        return;
-      }
-      setError(res.error?.message ?? 'That did not move. Please try again.');
-    };
-    const [mine, theirs] = await Promise.all([record.id, other.id].map((id) => callCapability<ContentRecordData>('get_content_record', { input: { table, id } })));
-    if (!mine!.ok || !mine!.data) return fail(mine!);
-    if (!theirs!.ok || !theirs!.data) return fail(theirs!);
-    const a = mine!.data.values;
-    const b = theirs!.data.values;
-    const ao = typeof a.order === 'number' ? a.order : null;
-    const bo = typeof b.order === 'number' ? b.order : null;
-    const calls: (() => Promise<CapabilityResponse>)[] =
-      ao !== null && bo !== null && ao !== bo
-        ? [() => save(record.id, { ...a, order: bo }), () => save(other.id, { ...b, order: ao })]
-        : [() => save(record.id, { ...a, order: (bo ?? ao ?? 0) + (direction === 'up' ? -1 : 1) })];
-    for (const call of calls) {
-      const res = await call();
-      if (!res.ok) return fail(res);
-    }
-    setBusy(false);
-    setStatus(`Moved ${record.title} ${direction}.`);
-    startTransition(() => router.refresh());
-  };
-
-  const working = busy || pending;
+export function MoveRecord({
+  table,
+  record,
+  other,
+  direction,
+}: {
+  table: string;
+  record: { id: string; title: string; sortOrder: number };
+  other: { id: string; title: string; sortOrder: number } | null;
+  direction: 'up' | 'down';
+}) {
+  const build = (r: { id: string }, patch: { sortOrder: number }) => ({ table, id: r.id, data: { order: patch.sortOrder }, merge: true });
   return (
-    <span className="flow-quick">
-      <button ref={ref} type="button" className="flow-trigger-quiet" onClick={run} aria-disabled={working || !other || undefined} aria-label={`Move ${record.title} ${direction}`}>
-        {working ? 'Moving…' : direction === 'up' ? 'Up' : 'Down'}
-      </button>
-      <span className="sr-only" role="status">
-        {status}
-      </span>
-      {error ? (
-        <span role="alert" className="flow-field-error">
-          {error}
-        </span>
-      ) : null}
-    </span>
+    <QuickAction
+      label={direction === 'up' ? 'Up' : 'Down'}
+      busyLabel="Moving…"
+      done={`Moved ${record.title} ${direction}.`}
+      unavailable={!other}
+      accessibleName={`Move ${record.title} ${direction}`}
+      calls={other ? swapOrder(record, other, direction === 'up', build, 'save_content_record') : []}
+    />
   );
 }

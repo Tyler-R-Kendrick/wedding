@@ -40,6 +40,7 @@ const SLOT: Record<ScheduleSlot, string> = {
 };
 const suggested = (item: Suggestion) => (item.suggestion.suggestedAltText ?? item.suggestion.suggestedCaption ?? '').trim();
 const apply = (assetId: string, altText: string) => callCapability<Applied>('admin_apply_media_text', { input: { assetId, altText }, idempotencyKey: newIdempotencyKey() });
+const dismiss = (assetId: string) => callCapability<{ assetId: string; reviewedAt: string }>('admin_dismiss_media_suggestion', { input: { assetId }, idempotencyKey: newIdempotencyKey() });
 
 /**
  * Machine-written alt text waiting for a person. Nothing reaches a guest until someone here decides.
@@ -48,8 +49,9 @@ const apply = (assetId: string, altText: string) => callCapability<Applied>('adm
  *   - "Publish as written": one click (`QuickAction`), for a suggestion that is already right.
  *   - "Edit and publish": a one-step flow with the text in a box and the photo beside it, so the
  *     published words can be the admin's own.
- *   - "Dismiss": drops the suggestion and leaves the photo without alt text. It cannot be brought
- *     back to this list, so it confirms first (`AdminFlow tone="danger"`).
+ *   - "Dismiss": drops the suggestion (`admin_dismiss_media_suggestion`) and leaves the photo's own
+ *     alt text as it is. It cannot be brought back to this list, so it confirms first
+ *     (`AdminFlow tone="danger"`).
  *
  * It was an editable textarea and a "Publish this text" button per row: every suggestion was a form,
  * and the only way to be rid of a wrong one was to publish something.
@@ -203,7 +205,7 @@ function DismissFlow({ item, n, onDone }: { item: Suggestion; n: number; onDone:
           render: (ctx) => (
             <>
               <Consequences>
-                <p>The suggested text is dropped and the photo keeps no alt text. It is marked as reviewed, so it does not come back to this list.</p>
+                <p>The suggested text is dropped. The photo’s own alt text is not changed. The suggestion is marked as reviewed, so it does not come back to this list.</p>
               </Consequences>
               <CheckField ctx={ctx} name="confirmed" label="Yes, dismiss this suggestion" />
             </>
@@ -216,8 +218,8 @@ function DismissFlow({ item, n, onDone }: { item: Suggestion; n: number; onDone:
         label: 'Dismiss the suggestion',
         success: 'Suggestion dismissed.',
         run: async (): Promise<CapabilityResponse> => {
-          // An empty string clears the field and marks the suggestion reviewed (admin_apply_media_text).
-          const r = await apply(item.id, '');
+          // Marks the suggestion reviewed; the photo's alt text is left exactly as it is.
+          const r = await dismiss(item.id);
           if (r.ok) onDone(item.id, `Photo ${n}: the suggestion is dismissed.`);
           return r;
         },

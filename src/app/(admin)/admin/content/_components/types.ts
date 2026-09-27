@@ -28,10 +28,19 @@ export interface ContentEditor {
   sources: SourceOption[];
   /** The records a field can point at, by table. */
   refs: Record<string, RefOption[]>;
+  /** The records a `pick` field names by web address name or key, by list (`adventure`, `operational`). */
+  picks: Record<string, RefOption[]>;
   /** The placeholder marker; text containing it ticks "This is still a placeholder". */
   marker: string;
   /** A new record's starting values (the default source, trust class and visibility). */
   defaults: Record<string, string>;
+}
+
+/** What `contentEditor` offers besides the table's own spec: sources, records by id, records by name. */
+export interface EditorLists {
+  sources: SourceOption[];
+  refs: Record<string, RefOption[]>;
+  picks: Record<string, RefOption[]>;
 }
 
 /** "a question", "an itinerary". */

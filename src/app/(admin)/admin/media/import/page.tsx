@@ -15,16 +15,22 @@ export default async function ImportPage() {
   if (principal.kind !== 'admin' || !isMediaAdmin(principal)) return <ConsoleGate what="Importing professional media" />;
   const r = await invokeForRequest<{ items: QueueItem[]; collections: CollectionSummary[] }>('admin_list_media', { limit: 1 }, principal);
   const chapters = r.ok ? r.data.collections.filter((c) => c.kind === 'professional') : [];
+  // The screen's one primary action sits in the header, as on every other console screen.
+  const canImport = r.ok && chapters.length > 0;
   return (
-    <ConsolePage title="Import professional media" lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery." subNav={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/import' }))} />}>
+    <ConsolePage
+      title="Import professional media"
+      lede="Photographer and videographer deliveries, with their rights recorded up front. Files come from this machine; nothing is fetched from a vendor gallery."
+      subNav={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/import' }))} />}
+      actions={canImport ? <ImportForm chapters={chapters} /> : undefined}
+    >
       <Section id="import">
-        {r.ok ? (
-          <>
-            <Note>Have the contract to hand: the import asks who delivered the files, who holds the copyright, how they reached you and what the licence allows, then for the files themselves.</Note>
-            <ImportForm chapters={chapters} />
-          </>
-        ) : (
+        {!r.ok ? (
           <Note>{r.error.message}</Note>
+        ) : canImport ? (
+          <Note>Have the contract to hand: “Import a delivery” asks who delivered the files, who holds the copyright, how they reached you and what the licence allows, then for the files themselves.</Note>
+        ) : (
+          <Note>There is no professional chapter to import into yet. Chapters are created with the site’s albums.</Note>
         )}
       </Section>
     </ConsolePage>

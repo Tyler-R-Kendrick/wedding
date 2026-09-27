@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ContentRecordFlow } from '@/app/(admin)/admin/content/_components/ContentFlows';
-import { contentEditor } from '@/app/(admin)/admin/content/_components/shared';
+import { ContentRecordFlow, MoveRecord } from '@/app/(admin)/admin/content/_components/ContentFlows';
+import { contentEditor, sourceOptions } from '@/app/(admin)/admin/content/_components/shared';
+import type { EditorLists } from '@/app/(admin)/admin/content/_components/types';
+import { SEED_SOURCES } from '@/db/seed/sources';
 
 /*
  * The content editor as the 2026-09-27 admin review asked for it (blocker 4): no slug, position,
@@ -32,13 +34,24 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/*
+ * The lists a page reads for the flow (`editorLists`): the sources as `admin_list_content_sources`
+ * returns the seeded registry, a few records by id, and the adventures and operational fields a
+ * field names by web address name or key.
+ */
+const lists: EditorLists = {
+  sources: sourceOptions(SEED_SOURCES.map((s) => ({ id: s.id, title: s.title, sourceType: s.sourceType, trustClass: s.trustClass, canonicalUrl: s.canonicalUrl ?? null, documentName: s.documentName ?? null, verifiedAt: s.verifiedAt, validFrom: null, validUntil: null, notes: null }))),
+  refs: { recommendations: [{ value: '01J00000000000000000000R01', label: 'Coffee at Cindy’s' }, { value: '01J00000000000000000000R02', label: 'The Art Institute' }] },
+  picks: { adventure: [{ value: 'starved-rock', label: 'Starved Rock' }], operational: [{ value: 'outlet.cindys', label: 'Cindy’s hours' }] },
+};
+
 const answer = (body: unknown) => Promise.resolve({ json: () => Promise.resolve(body) } as Response);
 const sentBody = (i = 0) => JSON.parse(String((fetchMock.mock.calls[i]?.[1] as RequestInit).body)) as { input: { table: string; data: Record<string, unknown> } };
 const next = async () => act(async () => fireEvent.click(screen.getByRole('button', { name: 'Continue' })));
 
 describe('content record flow', () => {
   it('asks for no ids, says what is missing in sentences, and derives the rest', async () => {
-    render(<ContentRecordFlow editor={contentEditor('faq_entries')} label="Add a question" />);
+    render(<ContentRecordFlow editor={contentEditor('faq_entries', lists)} label="Add a question" />);
     fireEvent.click(screen.getByRole('button', { name: 'Add a question' }));
 
     expect(screen.queryByLabelText(/^Slug/)).toBeNull();
@@ -76,7 +89,7 @@ describe('content record flow', () => {
   });
 
   it('edits a list as lines and ticks the placeholder box for text that still says TODO', async () => {
-    render(<ContentRecordFlow editor={contentEditor('story_sections')} label="Add a story section" />);
+    render(<ContentRecordFlow editor={contentEditor('story_sections', lists)} label="Add a story section" />);
     fireEvent.click(screen.getByRole('button', { name: 'Add a story section' }));
     fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: 'met' } });
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'How we met' } });
@@ -94,5 +107,87 @@ describe('content record flow', () => {
     await act(async () => fireEvent.click(screen.getAllByRole('button', { name: 'Add a story section' }).at(-1)!));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(sentBody().input.data).toMatchObject({ paragraphs: ['First paragraph.', 'TODO(Tyler & Sara): the second one.'], media: [{ alt: 'The two of us at the lake' }], placeholder: true, slug: null, order: null });
+  });
+
+  it('offers the adventure a timeline stop opens by title, and saves its web address name', async () => {
+    render(<ContentRecordFlow editor={contentEditor('timeline_moments', lists)} label="Add a timeline stop" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add a timeline stop' }));
+    const adventure = screen.getByLabelText(/^Adventure it opens/) as HTMLSelectElement;
+    expect(adventure.tagName).toBe('SELECT');
+    expect([...adventure.options].map((o) => o.textContent)).toEqual(['None', 'Starved Rock']);
+    fireEvent.change(adventure, { target: { value: 'starved-rock' } });
+    fireEvent.change(screen.getByLabelText('Line'), { target: { value: 'met' } });
+    fireEvent.change(screen.getByLabelText('Station name'), { target: { value: 'Starved Rock' } });
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'The first long walk.' } });
+    await next();
+    await next();
+    expect(screen.getAllByText('Starved Rock').length).toBeGreaterThan(0);
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { id: '01J0000000000000000000000C', contentVersion: 1, created: true } }));
+    await act(async () => fireEvent.click(screen.getAllByRole('button', { name: 'Add a timeline stop' }).at(-1)!));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(sentBody().input.data).toMatchObject({ adventureSlug: 'starved-rock' });
+  });
+
+  it('offers the operational detail a recommendation shows by name, keeping one no longer listed', async () => {
+    fetchMock.mockReturnValueOnce(
+      answer({ ok: true, data: { table: 'recommendations', id: '01J00000000000000000000R01', values: { title: 'Coffee at Cindy’s', category: 'food-drink', what: 'Coffee upstairs.', operationalKey: 'outlet.gone', sourceId: '01SEED00000000000000000101', sourceType: 'authored', verifiedAt: '2026-09-05T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING', visibility: 'public', placeholder: false }, contentVersion: 1, editedBy: 'seed:x', updatedAt: '2026-09-05T00:00:00.000Z', freshness: 'fresh', revisions: [] } }),
+    );
+    render(<ContentRecordFlow editor={contentEditor('recommendations', lists)} record={{ id: '01J00000000000000000000R01', title: 'Coffee at Cindy’s' }} label="Edit" />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Edit Coffee at Cindy’s' })));
+    await waitFor(() => expect(screen.getByLabelText('Title')).toBeTruthy());
+    await next();
+    const operational = screen.getByLabelText(/^Live hours or menu/) as HTMLSelectElement;
+    expect(operational.tagName).toBe('SELECT');
+    expect([...operational.options].map((o) => o.textContent)).toEqual(['None', 'Cindy’s hours', 'outlet.gone (not listed)']);
+    expect(operational.value).toBe('outlet.gone');
+    fireEvent.change(operational, { target: { value: 'outlet.cindys' } });
+    expect(operational.value).toBe('outlet.cindys');
+  });
+
+  it('ticks related recommendations with the kit’s checkbox group', async () => {
+    render(<ContentRecordFlow editor={contentEditor('adventure_memories', lists)} label="Add an adventure" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add an adventure' }));
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Starved Rock' } });
+    await next();
+    fireEvent.change(screen.getByLabelText('Summary'), { target: { value: 'Canyons and a waterfall.' } });
+    const group = screen.getByRole('group', { name: 'Related recommendations (optional)' });
+    expect(group).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('The Art Institute'));
+    expect((screen.getByLabelText('The Art Institute') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Coffee at Cindy’s') as HTMLInputElement).checked).toBe(false);
+    await next();
+    await next();
+    fetchMock.mockReturnValueOnce(answer({ ok: true, data: { id: '01J0000000000000000000000D', contentVersion: 1, created: true } }));
+    await act(async () => fireEvent.click(screen.getAllByRole('button', { name: 'Add an adventure' }).at(-1)!));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(sentBody().input.data).toMatchObject({ relatedRecommendationIds: ['01J00000000000000000000R02'] });
+  });
+});
+
+describe('moving a record', () => {
+  it('swaps two places with two position-only saves', async () => {
+    fetchMock.mockImplementation(() => answer({ ok: true, data: { id: 'x', contentVersion: 2, created: false } }));
+    render(<MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 4 }} other={{ id: 'B', title: 'Dress code', sortOrder: 3 }} direction="up" />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Parking up' })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/capabilities/save_content_record');
+    expect(sentBody(0).input).toEqual({ table: 'faq_entries', id: 'A', data: { order: 3 }, merge: true });
+    expect(sentBody(1).input).toEqual({ table: 'faq_entries', id: 'B', data: { order: 4 }, merge: true });
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it('sets two records that share a place one apart, and keeps the top one’s Up inert', async () => {
+    fetchMock.mockImplementation(() => answer({ ok: true, data: { id: 'x', contentVersion: 2, created: false } }));
+    render(
+      <>
+        <MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 0 }} other={null} direction="up" />
+        <MoveRecord table="faq_entries" record={{ id: 'A', title: 'Parking', sortOrder: 0 }} other={{ id: 'B', title: 'Dress code', sortOrder: 0 }} direction="down" />
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Move Parking up' }).getAttribute('aria-disabled')).toBe('true');
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Parking down' })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(sentBody(0).input).toEqual({ table: 'faq_entries', id: 'A', data: { order: 1 }, merge: true });
+    expect(sentBody(1).input).toEqual({ table: 'faq_entries', id: 'B', data: { order: 0 }, merge: true });
   });
 });
