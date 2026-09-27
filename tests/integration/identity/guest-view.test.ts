@@ -2,7 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { getDb } from '@/db/client';
 import { auditEvents } from '@/db/schema';
+import { rebindIdentity } from '@/domain/identity/bindings';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
+import { getAuditSink } from '@/lib/audit';
 import { call, claim, expectErr, expectOk, grantAdmin, principalFor, seed, signIn } from './harness';
 
 /**
@@ -30,18 +32,31 @@ describe('browse as a guest', () => {
 
     // What Ana would read, she reads; nothing can be done in her name.
     expectOk(await call('get_my_invitation', {}, { cookie }));
+    // Not even the concierge, which reads but keeps a session and the questions in the asker's name.
+    const asked = await call('ask_concierge', { question: 'When is the ceremony?' }, { cookie });
+    if (!asked.ok) expect(asked.error.code === 'forbidden' || asked.error.code === 'feature_disabled').toBe(true);
+    else throw new Error('the concierge answered in a read-only view');
     const refused = await call('update_my_contact', { email: 'someone-else@example.test' }, { cookie });
     expectErr(refused, 'forbidden');
     if (!refused.ok) expect(refused.error.message).toMatch(/browsing as this guest/);
 
-    // The console is never viewed as a guest: it (and its capabilities) keep the administrator.
+    // The console is never viewed as a guest: it, its capabilities and its step-up keep the administrator.
     expect((await principalFor({ cookie, pathname: '/admin/guests' })).kind).toBe('admin');
     expect((await principalFor({ cookie, pathname: '/admin' })).kind).toBe('admin');
+    expect((await principalFor({ cookie, pathname: '/step-up' })).kind).toBe('admin');
+    // An /api request's real path wins over an `x-pathname` it sent itself.
+    const { getPrincipal } = await import('@/lib/principal');
+    const forged = new Headers({ host: 'localhost:3000', origin: 'http://localhost:3000', cookie, 'x-pathname': '/admin' });
+    expect((await getPrincipal(new Request('http://localhost:3000/api/capabilities/get_my_rsvp', { method: 'POST', headers: forged }))).kind).toBe('guest');
 
     // Audited, next to the guest's own sign-ins.
     const db = await getDb();
     const rows = await db.select().from(auditEvents).where(and(eq(auditEvents.action, 'guest_view.started'), eq(auditEvents.targetId, f.guests.ana)));
     expect(rows).toHaveLength(1);
+    // …and every row written during the view names the administrator, not only the guest.
+    const invoked = await db.select().from(auditEvents).where(and(eq(auditEvents.action, 'capability.invoked'), eq(auditEvents.targetId, 'get_my_invitation')));
+    const mine = invoked.filter((r) => (r.actor as { guestId?: string }).guestId === f.guests.ana);
+    expect(mine.some((r) => (r.actor as { viewedBy?: { readOnly: boolean } }).viewedBy?.readOnly === true)).toBe(true);
   });
 
   it('the token belongs to one session: another session, a forged token, or a guest carrying it gets nothing', async () => {
@@ -65,12 +80,28 @@ describe('browse as a guest', () => {
     expect(asAna.kind === 'guest' && asAna.viewedBy).toBeFalsy();
   });
 
-  it('a moderator (no guest operations) may not browse as someone else', async () => {
+  it('only an owner browses as someone else: not a moderator, not a planner, and never as a child', async () => {
     const f = await seed('gv3');
-    const email = 'moderator+gv3@example.test';
-    await grantAdmin(email, 'moderator');
-    const mod = await signIn(email, {}, 'admin_sign_in');
-    expectErr(await call('admin_browse_as_guest', { guestId: f.guests.ana }, { cookie: mod.cookie }), 'forbidden');
+    for (const role of ['moderator', 'planner'] as const) {
+      const email = `${role}+gv3@example.test`;
+      await grantAdmin(email, role);
+      const admin = await signIn(email, {}, 'admin_sign_in');
+      expectErr(await call('admin_browse_as_guest', { guestId: f.guests.ana }, { cookie: admin.cookie }), 'forbidden');
+    }
+    const owner = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    expectErr(await call('admin_browse_as_guest', { guestId: f.guests.nora }, { cookie: owner.cookie }), 'forbidden');
+  });
+
+  it('a binding an administrator made is not their own record: rebinding a guest to your inbox buys no write access', async () => {
+    const f = await seed('gv6');
+    const email = 'planner+gv6@example.test';
+    await grantAdmin(email, 'planner');
+    const planner = await signIn(email, {}, 'admin_sign_in');
+    const db = await getDb();
+    const bound = await rebindIdentity(db, { guestId: f.guests.chidi, email, reason: 'test', actor: { kind: 'system', component: 'test' }, requestId: 'gv6', audit: await getAuditSink() });
+    expect(bound.ok).toBe(true);
+    // A planner may not view anyone else, and this binding does not make Chidi "theirs".
+    expectErr(await call('admin_browse_as_guest', { guestId: f.guests.chidi }, { cookie: planner.cookie }), 'forbidden');
   });
 
   it('an administrator who is also invited browses as themself, and that view is their own session: not read-only', async () => {

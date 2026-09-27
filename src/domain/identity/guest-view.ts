@@ -13,8 +13,9 @@ import { hmacSha256, timingSafeEqualString } from '@/lib/crypto';
  *   administrator from the session first, and a token in anyone else's browser is ignored.
  * - The view is read-only unless the guest is the administrator's own guest record
  *   (`buildGuestViewPrincipal`); `authorize` refuses every capability that is not a read.
- * - The console is never viewed as a guest (`isAdminSurface`): its pages and its `admin_*`
- *   capabilities keep the administrator's own principal, so "Back to the console" always works.
+ * - The console is never viewed as a guest (`isAdminSurface`): its pages, its `admin_*`
+ *   capabilities and the step-up it sends you to keep the administrator's own principal.
+ * - Anyone else's guest is for owners only, and never a child (`buildGuestViewPrincipal`).
  */
 export const GUEST_VIEW_COOKIE = 'guest-view';
 export const GUEST_VIEW_TTL_SECONDS = 4 * 60 * 60;
@@ -47,7 +48,15 @@ export function verifyGuestViewToken(token: string | null | undefined, sessionId
  * that the account menu asks — sees the guest.
  */
 export function isAdminSurface(pathname: string): boolean {
-  return pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/api/capabilities/admin_');
+  return (
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    pathname.startsWith('/api/capabilities/admin_') ||
+    pathname.startsWith('/api/webmcp/invoke/admin_') ||
+    // A console action that needs a fresh session sends the administrator to /step-up; as the
+    // read-only guest they could not request or enter the code.
+    pathname === '/step-up'
+  );
 }
 
 /** One cookie's value from a Cookie header. */

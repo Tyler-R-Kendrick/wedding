@@ -12,7 +12,7 @@ export const AUDIT_ACTIONS = [
   'invitation.rotated', 'guest.merged', 'guest.imported', 'guest.exported', 'admin.role_changed',
   // An administrator started browsing the site as a guest (`admin_browse_as_guest`): whose view, and
   // whether it could change anything, belong in the trail next to the guest's own sign-ins.
-  'guest_view.started',
+  'guest_view.started', 'guest_view.ended',
   'passkey.registered', 'passkey.removed', 'identity.email_changed',
   'rsvp.submitted', 'rsvp.admin_override',
   'seating.published', 'seating.unpublished', 'seating.changed',

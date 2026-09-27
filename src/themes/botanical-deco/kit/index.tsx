@@ -189,7 +189,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
           </DialogBase>
         </div>
       </nav>
-      <p className="bd-masthead__motto" aria-hidden="true">
+      <p className="bd-masthead__motto" aria-hidden="true" data-fit-extra="">
         <span className="bd-masthead__rule" />
         <span className="bd-script">Love, peace &amp; happiness</span>
       </p>

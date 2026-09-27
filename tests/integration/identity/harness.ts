@@ -40,7 +40,10 @@ export function requestHeaders(t: Transport = {}): Headers {
 }
 
 export async function principalFor(t: Transport = {}): Promise<Principal> {
-  return getPrincipal(new Request(`${SITE}/api/capabilities/x`, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
+  // With `pathname`, the request a server component on that page would build: a placeholder URL and
+  // the proxy's `x-pathname`. Without it, an /api capability call, whose URL is its real path.
+  const url = t.pathname ? `http://wedding.local${t.pathname}` : `${SITE}/api/capabilities/x`;
+  return getPrincipal(new Request(url, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
 }
 
 /** Invokes a capability through the real pipeline with the identity transport attached. */

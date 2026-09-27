@@ -93,7 +93,7 @@ export function isSessionFresh(p: Principal, now: Date = new Date(), maxAgeSecon
 /** Minimal, log-safe reference to a principal for audit rows. */
 export type PrincipalRef =
   | { kind: 'anonymous' }
-  | { kind: 'guest'; guestId: GuestId; householdId: HouseholdId }
+  | { kind: 'guest'; guestId: GuestId; householdId: HouseholdId; viewedBy?: { adminId: AdminId; readOnly: boolean } }
   | { kind: 'admin'; adminId: AdminId }
   | { kind: 'system'; component: string };
 
@@ -102,7 +102,8 @@ export function toPrincipalRef(p: Principal): PrincipalRef {
     case 'anonymous':
       return { kind: 'anonymous' };
     case 'guest':
-      return { kind: 'guest', guestId: p.guestId, householdId: p.householdId };
+      // An administrator browsing as this guest: every audit row and every per-principal key says so.
+      return p.viewedBy ? { kind: 'guest', guestId: p.guestId, householdId: p.householdId, viewedBy: { adminId: p.viewedBy.adminId, readOnly: p.viewedBy.readOnly } } : { kind: 'guest', guestId: p.guestId, householdId: p.householdId };
     case 'admin':
       return { kind: 'admin', adminId: p.adminId };
     case 'system':

@@ -40,7 +40,7 @@ test.describe('browse as a guest', () => {
 
     // And the band's way back ends the view.
     await page.goto('/');
-    await page.getByRole('button', { name: 'Back to the console' }).click();
+    await page.getByRole('button', { name: /^Stop browsing as/ }).click();
     await expect(page).toHaveURL(/\/admin\/guests/);
     await page.goto('/');
     await expect(page.getByRole('status').filter({ hasText: 'Browsing as' })).toHaveCount(0);

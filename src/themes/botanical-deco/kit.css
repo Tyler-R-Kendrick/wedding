@@ -461,6 +461,18 @@
   .bd-masthead__inner:is([data-fit="measure"], [data-fit="some"]) .bd-masthead__menu {
     display: block;
   }
+
+  /* The motto is ornament: NavFit keeps it only when every page fits beside it. At 1600 the
+     page-count rule showed it and pushed "Your account" into the sheet to make room. */
+  .bd-masthead__inner[data-fit]:is([data-fit="measure"], [data-fit-extra="hide"]) .bd-masthead__motto {
+    display: none;
+  }
+}
+
+@media (width >= 1600px) {
+  .bd-masthead__inner[data-fit]:is([data-fit="measure-extra"], [data-fit-extra="show"]) .bd-masthead__motto {
+    display: inline-flex;
+  }
 }
 
 /* The couple's line in script ("Love, peace & happiness"), only where the pages leave room for it:

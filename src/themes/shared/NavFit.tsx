@@ -26,6 +26,9 @@ import { useLayoutEffect, useRef } from 'react';
  * - `whole` mode (a composition that only works complete, like the frieze mirrored around its
  *   plaque): every `[data-fit-row]` must hold its links on one line, or the whole row gives way to
  *   the Menu.
+ * - An optional `[data-fit-extra]` (the Botanical–Deco motto) is ornament: it is kept only when every
+ *   page fits beside it, and the container says which with `data-fit-extra="show" | "hide"`. The
+ *   kit's CSS shows it during `measure-extra` so its width can be read, and hides it during `measure`.
  *
  * It re-measures when the container resizes, when the web font lands, and when a label changes
  * (the account slot reads "Sign in" on the server and "Your account" once the session is known).
@@ -40,6 +43,15 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
 
     const fit = () => {
       frame = 0;
+      const extra = box.querySelector<HTMLElement>('[data-fit-extra]');
+      let extraRoom = 0;
+      if (extra) {
+        // The last answer is withdrawn first, so only the measuring rules apply while measuring.
+        delete box.dataset.fitExtra;
+        box.dataset.fit = 'measure-extra';
+        const w = extra.getBoundingClientRect().width;
+        extraRoom = w > 0 ? w + (parseFloat(getComputedStyle(box).columnGap) || 0) : Infinity;
+      }
       box.dataset.fit = 'measure';
       const rows = mode === 'priority' ? [...box.querySelectorAll<HTMLElement>('[data-fit-list]')] : [...box.querySelectorAll<HTMLElement>('[data-fit-row]')];
       if (!rows.length || rows.every((row) => getComputedStyle(row).display === 'none')) {
@@ -49,15 +61,16 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
       if (mode === 'whole') {
         // Summed, not `scrollWidth`: a wing aligned to its end overflows toward its start, which
         // scrollWidth does not count.
-        const overflows = rows.some((row) => need(row).total > row.clientWidth + 1);
+        const overflows = rows.some((row) => need(row).total > inner(row) + 1);
         box.dataset.fit = overflows ? 'some' : 'all';
         return;
       }
       const list = rows[0]!;
       const { items, gap, widths, total } = need(list);
-      // In `measure` the Menu button is showing, so the list's own width is the room it has
+      // In `measure` the Menu button is showing, so the list's own content box is the room it has
       // beside it; the Menu's width (and the gap before it) is what dropping the button returns.
-      const room = list.clientWidth;
+      // The padding is not room: it is where the list's focus rings sit inside its clip.
+      const room = inner(list);
       const menu = box.querySelector<HTMLElement>('[data-fit-menu]');
       const menuRoom = menu ? menu.getBoundingClientRect().width + (parseFloat(getComputedStyle(menu.parentElement ?? box).columnGap) || 0) : 0;
       let shown = widths.length;
@@ -73,6 +86,13 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
       }
       items.forEach((li, i) => li.toggleAttribute('data-fit-hidden', i >= shown));
       box.dataset.fit = shown < items.length ? 'some' : 'all';
+      if (extra) box.dataset.fitExtra = shown === items.length && total + extraRoom <= room + menuRoom ? 'show' : 'hide';
+    };
+
+    /** A row's content box: its width less its own padding. */
+    const inner = (row: HTMLElement) => {
+      const cs = getComputedStyle(row);
+      return row.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
     };
 
     /** What a row asks for on one line: its items' own widths (the kit's `measure` rules stop them shrinking) and the gaps between. */

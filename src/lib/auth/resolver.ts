@@ -21,6 +21,16 @@ import { PATHNAME_HEADER } from '@/themes/routes';
  *  - the identity holds an active GuestAccessBinding (GuestPrincipal).
  * Anything else is anonymous. Errors degrade to anonymous in getPrincipal, never upward.
  */
+/**
+ * The path a request is for. An /api route (which the proxy skips, so any `x-pathname` on it came
+ * from the client) has its real URL; server components build their Request with a placeholder URL,
+ * and there the proxy's pathname header, which it always overwrites, is the real path.
+ */
+function requestPath(request: Request): string {
+  const own = new URL(request.url).pathname;
+  return own.startsWith('/api/') ? own : (request.headers.get(PATHNAME_HEADER) ?? own);
+}
+
 export const betterAuthPrincipalResolver: PrincipalResolver = {
   async resolve(request: Request) {
     const injected = readTestPrincipal(request); // null outside NODE_ENV=test + TEST_AUTH_SECRET
@@ -36,9 +46,7 @@ export const betterAuthPrincipalResolver: PrincipalResolver = {
     if (roles.size > 0) {
       const admin = buildAdminPrincipal(facts, roles);
       const view = verifyGuestViewToken(cookieValue(request.headers.get('cookie'), GUEST_VIEW_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
-      // Server components build their Request with a placeholder URL; the proxy's pathname header
-      // is the real path there, and an /api route (which the proxy skips) has its real URL.
-      if (view && !isAdminSurface(request.headers.get(PATHNAME_HEADER) ?? new URL(request.url).pathname)) {
+      if (view && !isAdminSurface(requestPath(request))) {
         const asGuest = await buildGuestViewPrincipal(db, facts, admin, view.guestId, getFlags());
         if (asGuest) return asGuest;
       }

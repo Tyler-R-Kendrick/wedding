@@ -360,6 +360,12 @@ test.describe('the masthead never collides', () => {
               if (!cs.display.includes('flex') || !cs.flexDirection.startsWith('row')) continue;
               const tops = new Set([...list.children].filter(shown).map((li) => Math.round(li.getBoundingClientRect().top / 4)));
               if (tops.size > 1) out.push(`"${list.className}" wraps onto ${tops.size} lines`);
+              // …and each page it shows sits inside its content box, where the focus ring is not clipped.
+              const box = list.getBoundingClientRect();
+              const right = box.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth);
+              for (const li of [...list.children].filter(shown)) {
+                if (li.getBoundingClientRect().right > right + 1) out.push(`"${name(li)}" runs past the end of "${list.className}"`);
+              }
             }
             return out;
           });

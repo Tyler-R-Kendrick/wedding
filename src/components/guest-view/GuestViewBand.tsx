@@ -27,15 +27,18 @@ export function GuestViewBand() {
   }, []);
   if (!view) return null;
   return (
-    <div className="preview-band guest-view-band" role="status">
-      <p className="guest-view-band__text">
+    <div className="preview-band guest-view-band">
+      <p className="guest-view-band__text" role="status">
         Browsing as <strong>{view.name}</strong>
-        {view.household ? ` (${view.household})` : ''}.{' '}
+        {/* "Ana Ruiz (Ana Ruiz & Guest)" says the name twice; the household only when it adds something. */}
+        {view.household && !view.household.includes(view.name) ? ` (${view.household})` : ''}.{' '}
         {view.readOnly ? 'Read-only: nothing you do here is saved or sent in their name.' : 'This is your own guest record.'}
       </p>
+      {/* One name for one action, the console's too: it ENDS the view (and returns to the console),
+          where the account menu's "Admin console" link only visits it. */}
       <form action={stopGuestView}>
         <button type="submit" className="guest-view-band__stop">
-          Back to the console
+          Stop browsing as {view.name}
         </button>
       </form>
     </div>

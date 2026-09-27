@@ -29,7 +29,7 @@ describe('guest-view token', () => {
 });
 
 describe('the console is never viewed as a guest', () => {
-  it.each(['/admin', '/admin/guests', '/admin/rsvp/export', '/api/capabilities/admin_list_guests'])('%s', (path) => expect(isAdminSurface(path)).toBe(true));
+  it.each(['/admin', '/admin/guests', '/admin/rsvp/export', '/api/capabilities/admin_list_guests', '/api/webmcp/invoke/admin_list_guests', '/step-up'])('%s', (path) => expect(isAdminSurface(path)).toBe(true));
   it.each(['/', '/your-weekend', '/rsvp', '/administrator', '/api/session', '/api/capabilities/get_my_rsvp'])('%s is the site', (path) => expect(isAdminSurface(path)).toBe(false));
 });
 

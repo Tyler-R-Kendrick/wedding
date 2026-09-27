@@ -6,7 +6,10 @@ import { err, ok, type Result } from '@/contracts/result';
 
 const SIGN_IN_MESSAGE = 'Please sign in to continue.';
 const FORBIDDEN_MESSAGE = 'You do not have access to that.';
-const BROWSING_MESSAGE = 'You are browsing as this guest, so nothing can be changed from here.';
+export const BROWSING_MESSAGE = 'You are browsing as this guest, so nothing can be changed from here.';
+
+/** An administrator browsing as someone else's guest: reads only, and nothing kept in the guest's name. */
+export const isReadOnlyView = (p: Principal): boolean => p.kind === 'guest' && p.viewedBy?.readOnly === true;
 
 /**
  * Auth-level check: who may even attempt this capability. `guest` is a floor, not an identity —
@@ -41,7 +44,7 @@ export function authorize(
   // An administrator browsing as someone else's guest ("Browse as a guest") sees what that guest
   // sees and changes nothing: no RSVP, no ride claim, no upload, no contact edit in their name. Only
   // reads and navigation pass; a descriptor that does not say what it is counts as a change.
-  if (principal.kind === 'guest' && principal.viewedBy?.readOnly && descriptor.kind !== 'read' && descriptor.kind !== 'navigate') {
+  if (isReadOnlyView(principal) && descriptor.kind !== 'read' && descriptor.kind !== 'navigate') {
     return err(new CapabilityError('forbidden', BROWSING_MESSAGE));
   }
   if (!meetsAuthLevel(descriptor.auth, principal)) {

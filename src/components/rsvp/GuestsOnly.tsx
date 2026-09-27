@@ -26,16 +26,14 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
         <p className="page__lede">
           You are signed in as an administrator, and an administrator has no household of their own. To see this page the way a guest does, browse the site as one of them; their answers are in the console.
         </p>
-        <p>
+        <div className="page__actions">
           <Link className="btn btn--primary" href="/admin/guests#browse-as">
             Browse as a guest
           </Link>
-        </p>
-        <p>
           <Link className="btn btn--secondary" href="/admin">
             Go to the admin console
           </Link>
-        </p>
+        </div>
       </div>
     );
   }

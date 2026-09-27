@@ -49,22 +49,28 @@ export async function buildGuestPrincipal(db: Db, session: SessionFacts, flags: 
  * that guest's own sign-in would produce, with `viewedBy` naming the administrator.
  *
  * When the guest is bound to the administrator's own identity (a planner who is also invited, or
- * the couple on their own list) this IS their guest session, so it is built from their bindings
- * exactly as a guest sign-in would be, and it is not read-only. Anyone else's view needs
- * `admin_guest_ops` — the entitlement that already shows an administrator every household in the
- * console — and is built as that guest's own `self` sign-in would be, read-only. Null when the
- * guest is gone (merged or deleted) or the administrator may not view them.
+ * the couple on their own list) by the guest's OWN claim, this IS their guest session, so it is
+ * built from their bindings exactly as a guest sign-in would be, and it is not read-only. A binding
+ * an administrator made (`admin_rebind_identity`, claim method `admin`) never counts: otherwise
+ * rebinding a guest to your own inbox would turn a read-only view into writing in their name.
+ *
+ * Anyone else's view is for OWNERS only — the couple, who already hold every `admin_*` screen — and
+ * is built as that guest's own `self` sign-in would be, read-only. `admin_guest_ops` alone is not
+ * enough: a view reads what the guest reads (their uploads in every state, their travel profile),
+ * which reaches past what a planner's console shows. Children and minors are never viewed: they have
+ * no access of their own to see (ADR-0001 rule 7). Null when the guest is gone (merged or
+ * deleted), is a child, or the administrator may not view them.
  */
 export async function buildGuestViewPrincipal(db: Db, session: SessionFacts, admin: AdminPrincipal, guestId: string, flags: FlagValues, now: Date = new Date()): Promise<GuestPrincipal | null> {
   const viewer = (readOnly: boolean) => ({ adminId: admin.adminId, roles: admin.roles, readOnly });
   const own = await activeBindingsForIdentity(db, session.authIdentityId);
-  if (own.some((b) => b.guestId === guestId && b.role !== 'delegate')) {
+  if (own.some((b) => b.guestId === guestId && b.role !== 'delegate' && b.claimMethod !== 'admin')) {
     const self = await buildGuestPrincipal(db, { ...session, activeGuestId: guestId }, flags, now);
     return self && self.guestId === guestId ? { ...self, viewedBy: viewer(false) } : null;
   }
-  if (!admin.entitlements.has('admin_guest_ops')) return null;
+  if (!admin.roles.has('owner')) return null;
   const guest = (await db.select().from(guests).where(eq(guests.id, guestId)).limit(1))[0];
-  if (!guest || guest.mergedIntoGuestId) return null;
+  if (!guest || guest.mergedIntoGuestId || guest.kind === 'child' || guest.isMinor) return null;
   const principal = await principalForGuest(db, guest, { bindingRole: 'self', selfGuestIds: [guest.id as GuestId], delegateGuestIds: [] }, session, flags, now);
   return principal ? { ...principal, viewedBy: viewer(true) } : null;
 }

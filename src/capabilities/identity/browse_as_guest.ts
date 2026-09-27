@@ -32,11 +32,11 @@ export const adminBrowseAsGuest = defineCapability<{ guestId: string }, z.infer<
   description:
     'Lets an administrator see the site as one guest sees it, in this browser session only: their account menu, their weekend, their RSVP and table. ' +
     'Read-only — nothing can be submitted in the guest’s name — unless the guest is the administrator’s own guest record. ' +
-    'Viewing anyone else needs guest operations access. Audited. Admin only.',
+    'Viewing anyone else is for owners, and never a child. Audited. Admin only.',
   kind: 'navigate',
   auth: 'admin',
-  // Any administrator may browse as their OWN guest record; anyone else's needs `admin_guest_ops`,
-  // which the handler checks (through `buildGuestViewPrincipal`) once it knows whose record it is.
+  // Any administrator may browse as their OWN guest record; anyone else's is for owners, which the
+  // handler checks (through `buildGuestViewPrincipal`) once it knows whose record it is.
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: false, webmcp: false },
@@ -51,7 +51,7 @@ export const adminBrowseAsGuest = defineCapability<{ guestId: string }, z.infer<
     if (!guest || guest.mergedIntoGuestId) return err(new CapabilityError('not_found', 'That guest does not exist.'));
     const session = { authIdentityId: admin.authIdentityId, sessionId: admin.sessionId, authenticatedAt: new Date(admin.authenticatedAt), activeGuestId: null, email: '' };
     const view = await buildGuestViewPrincipal(db, session, admin, guest.id, ctx.flags, ctx.now);
-    if (!view?.viewedBy) return err(new CapabilityError('forbidden', 'You can browse as your own guest record; browsing as someone else needs guest operations access.'));
+    if (!view?.viewedBy) return err(new CapabilityError('forbidden', guest.kind === 'child' || guest.isMinor ? 'Children have no access of their own, so there is nothing to browse as them.' : 'You can browse as your own guest record; browsing as someone else is for the site’s owners.'));
     const household = await getHousehold(db, guest.householdId);
     const minted = mintGuestViewToken(guest.id, admin.sessionId, getPreviewSecret(), ctx.now);
     await ctx.audit.record({

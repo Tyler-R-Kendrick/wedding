@@ -88,6 +88,8 @@ export function withProviderReadiness<T extends { status: BenefitStatus; statusM
   return views.map((v) => (v.status === 'eligible' || v.status === 'failed' ? { ...v, status: 'unavailable' as const, statusMessage: RIDES_NOT_OPEN_MESSAGE } : v));
 }
 
+const VIEWER_HIDDEN: Redemption = { kind: 'hidden', revealRoute: '/transportation', note: 'The ride credit is shown only to the guest it belongs to, not while browsing as them.' };
+
 /** Unseals a claim's secret for its owner. Only ever called with the owner's principal on the ui surface. */
 export function redemptionFor(claim: TransportationClaimRow, vault: Vault, surface: keyof CapabilityExposure): Redemption | undefined {
   if (claim.status !== 'issued' || !claim.secretCiphertext) return undefined;
@@ -152,7 +154,11 @@ export async function benefitViewsFor(db: Db, vault: Vault, principal: GuestPrin
       statusMessage: STATUS_MESSAGES[status],
       claim: { claimId: claim.id, claimedAt: claim.claimedAt?.toISOString() ?? null, provider: claim.providerName, providerDisplayName: providerDisplayName(claim.providerName, 'uber.com'), testMode: isTestProvider(claim.providerName) },
     };
-    const redemption = status === 'claimed' ? redemptionFor(claim, vault, surface) : undefined;
+    // An administrator browsing as this guest ("Browse as a guest") sees that a ride was claimed,
+    // never the bearer code or link: the console does not show it, and a read-only view must not
+    // hand out a credential someone could redeem.
+    const viewer = principal.viewedBy?.readOnly;
+    const redemption = status !== 'claimed' ? undefined : viewer ? (claim.status === 'issued' ? VIEWER_HIDDEN : undefined) : redemptionFor(claim, vault, surface);
     out.push(redemption ? { ...view, redemption } : view);
   }
   return out;

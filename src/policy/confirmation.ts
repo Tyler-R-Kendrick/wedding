@@ -57,7 +57,8 @@ export function principalKey(ref: PrincipalRef): string {
     case 'anonymous':
       return 'anonymous';
     case 'guest':
-      return `guest:${ref.guestId}`;
+      // A read-only view spends the administrator's budgets, never the guest's own.
+      return ref.viewedBy?.readOnly ? `admin:${ref.viewedBy.adminId}:as:${ref.guestId}` : `guest:${ref.guestId}`;
     case 'admin':
       return `admin:${ref.adminId}`;
     case 'system':
