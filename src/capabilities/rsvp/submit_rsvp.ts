@@ -1,10 +1,14 @@
+import { inArray } from 'drizzle-orm';
 import { defineCapability } from '@/contracts/capability';
+import type { CapabilityError } from '@/contracts/errors';
 import { toPrincipalRef } from '@/contracts/principal';
-import { err, ok } from '@/contracts/result';
+import { err, ok, type Result } from '@/contracts/result';
 import { eDb } from '@/capabilities/rsvp/db';
+import type { Db } from '@/db/client';
+import { events } from '@/db/schema';
 import { publicEnv } from '@/lib/env.public';
 import { buildConfirmationEmail, buildProposal, orderParts, persistHouseholdRsvp, queueRsvpConfirmation, type HouseholdRsvpContext, type HouseholdRsvpInput } from '@/domain/rsvp';
-import { loadForPrincipal, namesFor, resolveParts, validateFor } from './context';
+import { eventRemovedError, loadForPrincipal, namesFor, resolveParts, validateFor } from './context';
 import { submitInputSchema, submitOutputSchema, type SubmitRsvpInput, type SubmitRsvpOutput } from './schemas';
 import { requireGuestPrincipal } from './shared';
 
@@ -48,7 +52,8 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     if (!validated.ok) return err(validated.error);
 
     const mealVersionByEvent = new Map(hc.entitledEvents.map((e) => [e.id, e.mealOptionsVersion]));
-    await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent, parts: parts.value });
+    const persisted = await persistReply(db, validated.value, { submittedBy: actor, via: 'guest', now: ctx.now, mealVersionByEvent, parts: parts.value });
+    if (!persisted.ok) return err(persisted.error);
     const proposal = buildProposal(validated.value, namesFor(hc));
     const householdId = hc.household?.id ?? p.value.householdId;
 
@@ -87,6 +92,36 @@ export const submitRsvp = defineCapability<SubmitRsvpInput, SubmitRsvpOutput>({
     });
   },
 });
+
+/** Postgres foreign-key violation (23503) as raised by postgres-js or PGlite (possibly wrapped in `cause`). */
+function isForeignKeyViolation(e: unknown): boolean {
+  let cur: unknown = e;
+  for (let depth = 0; cur && depth < 4; depth++) {
+    const x = cur as { code?: unknown; message?: unknown; cause?: unknown };
+    if (x.code === '23503') return true;
+    if (typeof x.message === 'string' && /violates foreign key constraint/i.test(x.message)) return true;
+    cur = x.cause;
+  }
+  return false;
+}
+
+/**
+ * Saves the reply, saying in words when an event on it was deleted after it was checked: the
+ * couple's `admin_delete_event` holds a lock on the event, so an answer that lands after the
+ * delete fails its foreign key (the whole save rolls back) instead of being deleted with it. Any
+ * other failure is still thrown, to the pipeline's generic internal error.
+ */
+export async function persistReply(db: Db, input: HouseholdRsvpInput, meta: Parameters<typeof persistHouseholdRsvp>[2]): Promise<Result<Awaited<ReturnType<typeof persistHouseholdRsvp>>, CapabilityError>> {
+  try {
+    return ok(await persistHouseholdRsvp(db, input, meta));
+  } catch (e) {
+    if (!isForeignKeyViolation(e)) throw e;
+    const ids = [...new Set(input.responses.map((r) => r.eventId))];
+    const present = ids.length ? (await db.select({ id: events.id }).from(events).where(inArray(events.id, ids))).length : 0;
+    if (present < ids.length) return err(eventRemovedError());
+    throw e;
+  }
+}
 
 /** Every answer on file for the household context, as a reply: events in display order, then guests. */
 function onFileReply(hc: HouseholdRsvpContext): HouseholdRsvpInput {

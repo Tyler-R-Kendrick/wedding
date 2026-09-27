@@ -101,13 +101,17 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
                     <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
                     <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={!prev} accessibleName={`Move ${e.name} up`} calls={move(d.events, i, 'up')} />
                     <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={!next} accessibleName={`Move ${e.name} down`} calls={move(d.events, i, 'down')} />
-                    {e.responseCount === 0 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
+                    {e.responseCount === 0 && d.events.length > 1 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
                   </>
                 }
               >
                 {e.responseCount > 0 ? (
                   <p className="flow-row__meta" data-testid="event-kept">
                     {e.responseCount === 1 ? 'One guest has' : `${e.responseCount} guests have`} answered its RSVP, so it cannot be deleted. Edit it instead.
+                  </p>
+                ) : d.events.length === 1 ? (
+                  <p className="flow-row__meta" data-testid="event-kept">
+                    It is the only event, so it cannot be deleted: a wedding has at least one. Edit it instead.
                   </p>
                 ) : null}
               </RecordRow>

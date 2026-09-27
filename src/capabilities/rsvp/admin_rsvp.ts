@@ -8,9 +8,10 @@ import { eDb } from '@/capabilities/rsvp/db';
 import { RSVP_CHANNELS, RSVP_STATUSES } from '@/db/schema';
 import { getLifecycle } from '@/db/repos/site';
 import { computeRsvpWindow, getRsvpSettings, listAllEntitlements, listEvents, listMealOptionsForEvents } from '@/domain/events';
-import { buildProposal, findResponse, listAllGuests, listAllNeeds, listAllResponses, listHouseholds, loadHouseholdRsvpContext, persistHouseholdRsvp } from '@/domain/rsvp';
+import { buildProposal, findResponse, listAllGuests, listAllNeeds, listAllResponses, listHouseholds, loadHouseholdRsvpContext } from '@/domain/rsvp';
 import { assertActsFor } from '@/policy/entitlements';
 import { namesFor, validateFor } from './context';
+import { persistReply } from './submit_rsvp';
 import { idSchema, plusOnePolicySchema, windowSchema } from './shared';
 import type { Db } from '@/db/client';
 
@@ -246,8 +247,10 @@ export const adminOverrideRsvp = defineCapability<z.infer<typeof overrideInput>,
     });
     if (!validated.ok) return err(validated.error);
     const actor = toPrincipalRef(ctx.principal);
-    const { responses } = await persistHouseholdRsvp(db, validated.value, { submittedBy: actor, via: 'admin', now: ctx.now, mealVersionByEvent: new Map(hc.entitledEvents.map((e) => [e.id, e.mealOptionsVersion])) });
-    const row = responses[0]!;
+    // `persistReply`: an event deleted between the check above and this save is said in words, not as an internal error.
+    const persisted = await persistReply(db, validated.value, { submittedBy: actor, via: 'admin', now: ctx.now, mealVersionByEvent: new Map(hc.entitledEvents.map((e) => [e.id, e.mealOptionsVersion])) });
+    if (!persisted.ok) return err(persisted.error);
+    const row = persisted.value.responses[0]!;
     buildProposal(validated.value, namesFor(hc)); // keeps the summary path exercised for parity with guest submissions
     await ctx.audit.record({
       actor,

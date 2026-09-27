@@ -18,7 +18,7 @@ import { eventViewSchema, idSchema, plusOnePolicySchema, toEventView, windowSche
 const ADMIN_ANNOTATIONS = { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true } as const;
 const ADMIN_EXPOSURE = { ui: true, ai: false, webmcp: false } as const;
 const isoInstant = z.string().datetime({ offset: true });
-/** Room for years of Up/Down: a tie is broken by adding one (`swapOrder`), and a new event goes ten after the last. */
+/** Room for years of Up/Down: shared places are renumbered ten apart (`moveCalls`), and a new event goes ten after the last. */
 const SORT_MAX = 100_000;
 
 /* ------------------------------------------------------------------ list ----- */
@@ -146,7 +146,7 @@ export const adminDeleteEvent = defineCapability<z.infer<typeof deleteEventInput
   name: 'admin_delete_event',
   title: 'Delete event (admin)',
   description:
-    'Deletes an event nobody has answered yet, with who is invited to it, its menu versions, and its key on every invitation link. Refuses an event with any RSVP answer: those answers would go with it. Audited; fresh admin session required.',
+    'Deletes an event nobody has answered yet, with who is invited to it, its menu versions, and its key on every invitation link. Refuses an event with any RSVP answer (those answers would go with it) and the only event left (a wedding has at least one). Audited; fresh admin session required.',
   kind: 'action',
   auth: 'admin',
   // It takes the event off every guest it was offered to, which is a roster change as much as a
@@ -163,13 +163,19 @@ export const adminDeleteEvent = defineCapability<z.infer<typeof deleteEventInput
   async handler(ctx, i) {
     const db = await eDb(ctx);
     const r = await db.transaction(async (tx) => {
-      // Lock the row first. An RSVP being saved holds a key-share lock on it (the foreign key), so
-      // this waits for that answer to land and the count below sees it; an answer that starts after
-      // this waits for the delete and then fails its foreign key, instead of being deleted with it.
-      const event = (await tx.select().from(events).where(eq(events.id, i.id)).for('update').limit(1))[0];
+      // Lock the rows first. An RSVP being saved holds a key-share lock on its event (the foreign
+      // key), so this waits for that answer to land and the count below sees it; an answer that
+      // starts after this waits for the delete and then fails its foreign key, instead of being
+      // deleted with it (submit_rsvp says so in words). Every event is locked, not only this one, so
+      // two deletes at once cannot each see the other's event and leave the wedding with none.
+      const all = await tx.select().from(events).for('update');
+      const event = all.find((e) => e.id === i.id);
       if (!event) return { kind: 'missing' as const };
       const answered = Number((await tx.select({ n: count() }).from(rsvpResponses).where(eq(rsvpResponses.eventId, event.id)))[0]?.n ?? 0);
       if (answered > 0) return { kind: 'answered' as const, event, answered };
+      // The last one stays: a wedding has at least one event, and an empty table is what the seed
+      // (every boot and db:seed) reads as a new site, so it would put back all three placeholders.
+      if (all.length <= 1) return { kind: 'only' as const, event };
       // The foreign keys cascade these, but deleting them here says how many went, for the audit.
       const ents = await tx.delete(eventEntitlements).where(eq(eventEntitlements.eventId, event.id)).returning({ id: eventEntitlements.id });
       const meals = await tx.delete(mealOptions).where(eq(mealOptions.eventId, event.id)).returning({ id: mealOptions.id });
@@ -190,6 +196,9 @@ export const adminDeleteEvent = defineCapability<z.infer<typeof deleteEventInput
           responses: r.answered,
         }),
       );
+    }
+    if (r.kind === 'only') {
+      return err(new CapabilityError('conflict', `${r.event.name} cannot be deleted: it is the only event, and a wedding has at least one. Edit it instead.`, { eventId: r.event.id }));
     }
     const { event, ...removed } = r;
     await ctx.audit.record({ actor: toPrincipalRef(ctx.principal), action: 'content.updated', target: { type: 'event', id: event.id }, outcome: 'success', requestId: ctx.requestId, metadata: { op: 'delete', slug: event.slug, ...removed } });

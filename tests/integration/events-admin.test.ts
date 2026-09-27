@@ -7,13 +7,18 @@ import {
   adminReorderEvents,
   adminSetEventEntitlements,
   adminSetMealOptions,
+  adminSetRsvpWindow,
   adminUpsertEvent,
   adminUpsertNotice,
+  draftRsvp,
+  submitRsvp,
 } from '@/capabilities/rsvp';
+import { EVENT_REMOVED_MESSAGE } from '@/capabilities/rsvp/context';
+import { persistReply } from '@/capabilities/rsvp/submit_rsvp';
 import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { eventEntitlements, events, invitations, mealOptions, rsvpResponses, weekendNotices } from '@/db/schema';
-import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
+import { FX, fixtureAdmin, fixturePrincipal, seedTestFixtures } from '@/db/seed/fixtures';
 import { seedEventsAndPlans } from '@/domain/events/seed';
 import { listAuditEvents } from '@/lib/audit';
 import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
@@ -27,6 +32,7 @@ const admin = fixtureAdmin();
 const staleAdmin = fixtureAdmin({ authenticatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() });
 const contentOnly = fixtureAdmin({ entitlements: new Set(['admin_content']) as never });
 const A1 = fixturePrincipal('A1');
+const C1 = fixturePrincipal('C1');
 const E = FX.events;
 let db: Db;
 
@@ -134,6 +140,40 @@ describe('admin_delete_event', () => {
     expect(await eventRow(E.cocktailHour)).toBeUndefined();
     expect(await eventRow(E.ceremony)).toBeTruthy();
   });
+
+  it('lets the test-fixture seed run again after a seed event is deleted (a SEED_TEST_FIXTURES boot)', async () => {
+    expect(await eventRow(E.cocktailHour)).toBeUndefined();
+    // It used to insert invitations for the deleted event, fail the foreign key, and take every RSVP capability down with the boot seed.
+    await expect(seedTestFixtures(db)).resolves.toBeUndefined();
+    expect(await db.select().from(eventEntitlements).where(eq(eventEntitlements.eventId, E.cocktailHour))).toHaveLength(0);
+    expect(await db.select().from(eventEntitlements).where(eq(eventEntitlements.eventId, E.reception))).not.toHaveLength(0);
+  });
+});
+
+describe('an RSVP naming an event deleted since the page loaded', () => {
+  it('says the event was taken off the schedule, not that the guest is not invited', async () => {
+    expectOk(await run(adminSetRsvpWindow, admin, { mode: 'open', deadlineAt: null }));
+    const picnic = expectOk(await run(adminUpsertEvent, admin, eventInput('Rehearsal picnic'))).data;
+    expectOk(await run(adminSetEventEntitlements, admin, { changes: [{ guestId: FX.guestC1, eventId: picnic.id, invited: true }] }));
+    const reply = { responses: [{ guestId: FX.guestC1, eventId: picnic.id, status: 'accepted' as const }], needs: [] };
+    const draft = expectOk(await run(draftRsvp, C1, reply));
+    expectOk(await run(adminDeleteEvent, admin, { id: picnic.id }));
+
+    const late = expectErr(await run(submitRsvp, C1, draft.data.submission, { confirmationToken: draft.confirmation!.token }));
+    expect(late).toMatchObject({ code: 'conflict', message: EVENT_REMOVED_MESSAGE, details: { reason: 'event_removed' } });
+    expect(expectErr(await run(draftRsvp, C1, reply))).toMatchObject({ code: 'conflict', message: EVENT_REMOVED_MESSAGE });
+    expect(await db.select().from(rsvpResponses).where(eq(rsvpResponses.guestId, FX.guestC1))).toHaveLength(0);
+    // Someone else's guest is still refused as that, whatever the event.
+    expect(expectErr(await run(draftRsvp, C1, { responses: [{ guestId: FX.guestA1, eventId: picnic.id, status: 'accepted' }], needs: [] })).code).toBe('forbidden');
+  });
+
+  it('turns the foreign-key failure of a save that lands after the delete into the same words, and saves nothing', async () => {
+    const row = (eventId: string) => ({ guestId: FX.guestC1, eventId, status: 'accepted' as const, mealOptionId: null, plusOne: null });
+    const r = await persistReply(db, { responses: [row(E.ceremony), row(newId())], needs: [] }, { submittedBy: { kind: 'system', component: 'test' }, via: 'guest', now: new Date(), mealVersionByEvent: new Map() });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatchObject({ code: 'conflict', message: EVENT_REMOVED_MESSAGE });
+    expect(await db.select().from(rsvpResponses).where(eq(rsvpResponses.guestId, FX.guestC1))).toHaveLength(0);
+  });
 });
 
 describe('admin_delete_notice', () => {
@@ -145,5 +185,21 @@ describe('admin_delete_notice', () => {
     expect(expectOk(await run(adminListEvents, admin, {})).data.notices.some((x) => x.id === n.id)).toBe(false);
     expect((await listAuditEvents(db, { requestId: 'req-delete-notice', action: 'content.updated' }))[0]).toMatchObject({ targetType: 'weekend_notice', targetId: n.id });
     expect(expectErr(await run(adminDeleteNotice, admin, { id: n.id })).code).toBe('not_found');
+  });
+});
+
+describe('the last event', () => {
+  it('cannot be deleted, so the seed never mistakes the site for a new one and puts the placeholders back', async () => {
+    await db.delete(rsvpResponses);
+    const [keep, ...rest] = expectOk(await run(adminListEvents, admin, {})).data.events;
+    for (const e of rest) expectOk(await run(adminDeleteEvent, admin, { id: e.id }));
+
+    const e = expectErr(await run(adminDeleteEvent, admin, { id: keep!.id }));
+    expect(e.code).toBe('conflict');
+    expect(e.message).toBe(`${keep!.name} cannot be deleted: it is the only event, and a wedding has at least one. Edit it instead.`);
+    expect(await eventRow(keep!.id)).toBeTruthy();
+
+    await seedEventsAndPlans(db);
+    expect((await db.select({ id: events.id }).from(events)).map((r) => r.id)).toEqual([keep!.id]);
   });
 });

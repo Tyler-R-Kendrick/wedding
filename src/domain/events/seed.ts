@@ -12,7 +12,13 @@ import { PLACEHOLDER_PLANS } from '@/domain/seating/plans';
  *
  * Only into an empty table. The seed runs on every boot (`ensureSwarmESeeded`) and every
  * `db:seed`, so re-inserting by id would bring back an event the couple deleted in /admin/events
- * (`admin_delete_event`) — without its invitations, as a stray "Ceremony" nobody asked for.
+ * (`admin_delete_event`) — without its invitations, as a stray "Ceremony" nobody asked for. An
+ * empty table means a new site, so this holds only while one event is left: `admin_delete_event`
+ * refuses to delete the last event for that reason. (A table emptied by hand, in SQL, gets all
+ * three placeholders back on the next boot.)
+ *
+ * Code outside the seed must not find an event by these ids: any of them can be deleted, and one
+ * added again gets a new id. Find the reception with `findReception` (by key, name or meal).
  */
 export const SEED_EVENTS = [
   { id: seedId('EVENTCEREMONY'), slug: 'ceremony', name: 'Ceremony', sortOrder: 10, hasMeal: false },

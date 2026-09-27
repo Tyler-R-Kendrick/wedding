@@ -162,8 +162,10 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 /**
  * Delete an event nobody has answered yet. The page offers this only when the event has no RSVP
- * answers (`responseCount`); one that has them says why instead, and `admin_delete_event` refuses
- * it anyway. Step-up applies: the flow comes back here after /step-up.
+ * answers (`responseCount`) and is not the only event; otherwise it says why instead, and
+ * `admin_delete_event` refuses it anyway (a wedding keeps at least one event: an empty table is
+ * what the boot seed reads as a new site, and it would put the three placeholders back).
+ * Step-up applies: the flow comes back here after /step-up.
  */
 export function DeleteEventFlow({ event }: { event: { id: string; name: string; invitedCount: number; mealOptionsVersion: number } }) {
   const { name, invitedCount } = event;

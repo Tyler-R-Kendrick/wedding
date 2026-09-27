@@ -1,8 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { adminAssignSeats, adminDeleteTable, adminPreviewGuestTable, adminImportSeatingCsv, adminPublishSeating, adminSeatingOverview, adminUnpublishSeating, adminUpsertTable, getMyItinerary, getMyRsvp, getMyTable, listMyEvents, showMyTableOnFloorplan } from '@/capabilities/rsvp';
+import { adminDeleteEvent, adminSetEventEntitlements, adminUpsertEvent, adminAssignSeats, adminDeleteTable, adminPreviewGuestTable, adminImportSeatingCsv, adminPublishSeating, adminSeatingOverview, adminUnpublishSeating, adminUpsertTable, getMyItinerary, getMyRsvp, getMyTable, listMyEvents, showMyTableOnFloorplan } from '@/capabilities/rsvp';
 import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
+import { eq } from 'drizzle-orm';
+import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
-import { FX, fixtureAdmin, fixturePrincipal } from '@/db/seed/fixtures';
+import { mealOptions, rsvpResponses } from '@/db/schema';
+import { FX, fixtureAdmin, fixturePrincipal, seedTestFixtures } from '@/db/seed/fixtures';
 import { listAuditEvents } from '@/lib/audit';
 import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
 
@@ -156,5 +159,32 @@ describe('published seating', () => {
       expect(expectErr(await run(cap as never, A1, input)).code).toBe('forbidden');
       expect(expectErr(await run(cap as never, { kind: 'anonymous' }, input)).code).toBe('unauthenticated');
     }
+  });
+});
+
+describe('the reception column', () => {
+  const answer = (eventId: string, status: 'accepted' | 'declined') => db.insert(rsvpResponses).values({ id: newId(), guestId: FX.guestA1, eventId, status, submittedBy: { kind: 'system', component: 'test' } });
+  const a1Reception = async () => {
+    const o = expectOk(await run(adminSeatingOverview, admin, {})).data;
+    return [...o.tables.flatMap((t) => t.assignments), ...o.unassigned].find((g) => g.guestId === FX.guestA1)?.receptionRsvp;
+  };
+
+  it('follows the reception the couple added after deleting the seeded one, not the seed id', async () => {
+    await answer(FX.events.reception, 'declined');
+    expect(await a1Reception()).toBe('declined');
+    // Unanswered again, so it can be deleted.
+    await db.delete(rsvpResponses).where(eq(rsvpResponses.eventId, FX.events.reception));
+    expectOk(await run(adminDeleteEvent, admin, { id: FX.events.reception }));
+    expect(await a1Reception()).toBeNull();
+
+    // The next SEED_TEST_FIXTURES boot neither fails on the deleted reception nor puts its menu back.
+    await expect(seedTestFixtures(db)).resolves.toBeUndefined();
+    expect(await db.select().from(mealOptions).where(eq(mealOptions.eventId, FX.events.reception))).toHaveLength(0);
+
+    const reception = expectOk(await run(adminUpsertEvent, admin, { name: 'Reception', dateIso: '2027-07-18', placeholder: true, rsvpRequired: true })).data;
+    expect(reception.id).not.toBe(FX.events.reception);
+    expectOk(await run(adminSetEventEntitlements, admin, { changes: [{ guestId: FX.guestA1, eventId: reception.id, invited: true }] }));
+    await answer(reception.id, 'accepted');
+    expect(await a1Reception()).toBe('accepted');
   });
 });
