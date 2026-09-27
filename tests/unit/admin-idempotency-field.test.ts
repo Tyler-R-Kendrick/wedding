@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Admin forms carry their render-time idempotency key in a hidden field, and the action has to read
- * the field by the name the form posts. The console's `<IdemKey />` posts `idem`. The events, RSVP,
+ * the field by the name the form posts. The console's `<IdemKey />` posted `idem` (it went with the forms, below). The events, RSVP,
  * seating and content actions once read `idempotencyKey` from `<IdemKey />` forms, so every
  * submission got a fresh key and a double-submit ran twice. This pins the pairing structurally.
  *
@@ -42,11 +42,8 @@ describe('admin forms and actions agree on the idempotency field name', () => {
     for (const f of files) expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/name="idempotencyKey"/);
   });
 
-  it("IdemKey posts 'idem', and the admin action helpers read 'idem'", () => {
-    const ops = readFileSync(path.join(ADMIN, 'admin/_components/ops.tsx'), 'utf8');
-    expect(ops).toMatch(/export function IdemKey\(\)[\s\S]*?name="idem"/);
-
-    // Every other server-action module that forwards a form's key reads it as `idem`.
+  it("the server-action modules that remain read a form's key as 'idem'", () => {
+    // Every server-action module that forwards a form's key reads it as `idem`.
     const actionModules = files.filter((f) => /^\s*['"]use server['"]/.test(readFileSync(f, 'utf8')) && !rel(f).startsWith('admin/content/'));
     // Fewer every time a screen moves to the admin kit, whose flows call capabilities directly; the
     // check is that the scan still finds the ones that remain, not how many there are.

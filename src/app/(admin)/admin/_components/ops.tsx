@@ -1,5 +1,3 @@
-import { newId } from '@/contracts/ids';
-import type { ReactNode } from 'react';
 import './ops.css';
 
 /*
@@ -11,6 +9,10 @@ import './ops.css';
  * Level 16 moved every screen onto `ConsolePage`; what is left here is the parts that shell does
  * not have — labelled fields, a checkbox that reports its own presence, a submit button and a
  * render-time idempotency key.
+ *
+ * The admin kit (`components/admin/flow`) replaced every form that used the submit button, the
+ * confirm box, the radio group and the idempotency field; what is left here is the two fields the
+ * console's search forms (`FilterBar`) still use.
  */
 
 export function Input({ id, label, type = 'text', name, defaultValue, required, hint, options }: { id: string; label: string; type?: string; name?: string; defaultValue?: string; required?: boolean; hint?: string; options?: { value: string; label: string }[] }) {
@@ -46,51 +48,3 @@ export function Checkbox({ id, label, name, defaultChecked }: { id: string; labe
   );
 }
 
-/**
- * A radio group with a real `<fieldset>`/`<legend>`.
- *
- * The screens that needed one were reaching into `components/rsvp/fields` — the GUEST RSVP kit —
- * for `ChoiceGroup`, so an admin correcting an answer got the guest form's widgets, sizes and
- * error styling on an operations screen. This is the console's own.
- */
-export function Radios({ name, legend, options, describedBy }: { name: string; legend: string; options: { value: string; label: string; defaultChecked?: boolean }[]; describedBy?: string }) {
-  return (
-    <fieldset className="ops-field ops-radios" aria-describedby={describedBy}>
-      <legend>{legend}</legend>
-      {options.map((o) => (
-        <div className="ops-check" key={o.value}>
-          <input type="radio" id={`${name}-${o.value}`} name={name} value={o.value} defaultChecked={o.defaultChecked} />
-          <label htmlFor={`${name}-${o.value}`}>{o.label}</label>
-        </div>
-      ))}
-    </fieldset>
-  );
-}
-
-export function Button({ children, variant = 'primary' }: { children: ReactNode; variant?: 'primary' | 'danger' | 'ghost' }) {
-  return (
-    <button type="submit" className={`ops-button ops-button-${variant}`}>
-      {children}
-    </button>
-  );
-}
-
-/**
- * The explicit "yes" a destructive action needs: deleting a guest, household or table, resetting
- * access, merging or revoking. One click on a red button in a long table used to be the whole
- * decision. `required` stops the submit in the browser; the action checks `confirm=yes` again on
- * the server, so a form posted without it (or with scripts off in an old browser) changes nothing.
- */
-export function ConfirmCheck({ id, label }: { id: string; label: string }) {
-  return (
-    <div className="ops-check">
-      <input id={id} name="confirm" type="checkbox" value="yes" required />
-      <label htmlFor={id}>{label}</label>
-    </div>
-  );
-}
-
-/** Render-time idempotency key so a double-submitted admin form replays instead of repeating. */
-export function IdemKey() {
-  return <input type="hidden" name="idem" value={newId()} />;
-}
