@@ -1,5 +1,6 @@
 import 'server-only';
 import { cookies } from 'next/headers';
+import { isSafeReturnPath } from '@/domain/identity/routes';
 import { env } from '@/lib/env';
 
 /**
@@ -25,6 +26,31 @@ export interface ChallengeCookie {
   /** The person the caller picked, when signing in will bind them to somebody else. */
   picked?: string;
   kind: 'claim' | 'sign_in' | 'admin_sign_in' | 'step_up' | 'change_email';
+}
+
+/**
+ * Where a verified code just sent this browser, for two minutes. A code form can be submitted twice —
+ * a second tap, or one-time-code autofill submitting beside the button — and Next runs the second
+ * action after the first, so its redirect is the one the browser keeps. The first had already used
+ * the challenge, so the second said "that code has expired" to someone it had just signed in.
+ * With this, a repeat (or Back to the code page) goes where the first submit went. Only a safe path
+ * is ever stored, and it is followed only by a browser that is signed in.
+ */
+export const VERIFIED_COOKIE = 'wedding.verified';
+const VERIFIED_MAX_AGE_SECONDS = 2 * 60;
+
+export async function rememberVerified(target: string): Promise<void> {
+  if (!isSafeReturnPath(target)) return;
+  (await cookies()).set(VERIFIED_COOKIE, target, { httpOnly: true, sameSite: 'lax', secure: env.isProduction, path: '/', maxAge: VERIFIED_MAX_AGE_SECONDS });
+}
+
+export async function readVerified(): Promise<string | null> {
+  try {
+    const target = (await cookies()).get(VERIFIED_COOKIE)?.value;
+    return isSafeReturnPath(target) ? target : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function setChallengeCookie(data: ChallengeCookie): Promise<void> {
