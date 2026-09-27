@@ -339,7 +339,8 @@ test.describe('the masthead never collides', () => {
             };
             const name = (e: Element) => ((e as HTMLElement).innerText || e.getAttribute('aria-label') || e.className).trim().replace(/\s+/g, ' ').slice(0, 24);
             const out: string[] = [];
-            const controls = [...header.querySelectorAll('a, button')].filter(shown);
+            // The Botanical–Deco motto is ornament, but it must still never sit on a page link.
+            const controls = [...header.querySelectorAll('a, button, .bd-masthead__motto')].filter(shown);
             for (const c of controls) {
               const r = c.getBoundingClientRect();
               if (r.left < -1 || r.right > innerWidth + 1) out.push(`"${name(c)}" leaves the viewport (${Math.round(r.left)}..${Math.round(r.right)})`);

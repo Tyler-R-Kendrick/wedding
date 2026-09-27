@@ -44,13 +44,15 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
     const fit = () => {
       frame = 0;
       const extra = box.querySelector<HTMLElement>('[data-fit-extra]');
-      let extraRoom = 0;
+      // The room the list would have with the ornament showing, read with it showing (the kit shows
+      // it during `measure-extra` only where it may appear at all): no guessing at gaps or tracks.
+      let roomWithExtra = -Infinity;
       if (extra) {
         // The last answer is withdrawn first, so only the measuring rules apply while measuring.
         delete box.dataset.fitExtra;
         box.dataset.fit = 'measure-extra';
-        const w = extra.getBoundingClientRect().width;
-        extraRoom = w > 0 ? w + (parseFloat(getComputedStyle(box).columnGap) || 0) : Infinity;
+        const list = box.querySelector<HTMLElement>('[data-fit-list]');
+        if (list && extra.getBoundingClientRect().width > 0) roomWithExtra = inner(list);
       }
       box.dataset.fit = 'measure';
       const rows = mode === 'priority' ? [...box.querySelectorAll<HTMLElement>('[data-fit-list]')] : [...box.querySelectorAll<HTMLElement>('[data-fit-row]')];
@@ -86,7 +88,7 @@ export function NavFit({ mode }: { mode: 'priority' | 'whole' }) {
       }
       items.forEach((li, i) => li.toggleAttribute('data-fit-hidden', i >= shown));
       box.dataset.fit = shown < items.length ? 'some' : 'all';
-      if (extra) box.dataset.fitExtra = shown === items.length && total + extraRoom <= room + menuRoom ? 'show' : 'hide';
+      if (extra) box.dataset.fitExtra = shown === items.length && total <= roomWithExtra + menuRoom ? 'show' : 'hide';
     };
 
     /** A row's content box: its width less its own padding. */
