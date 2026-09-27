@@ -106,6 +106,7 @@ npm run design:drift           # the same, plus any size/colour/radius off the D
 npm run slop:detect:rendered   # rendered scan: every route × design × 390/820/1280/1440 (needs a server, BASE_URL)
 npm run lint:css               # stylelint (bans Inter/Roboto/Arial/Helvetica/Fraunces/… in CSS)
 npm run test:a11y              # axe-core WCAG 2.2 AA via Playwright (needs BASE_URL)
+npm run test:e2e:server        # identity/RSVP/security specs against a NODE_ENV=test server, as CI runs them
 npm run quality                # design:lint + slop:detect + lint:css (what CI runs)
 npm run precommit              # the pre-commit design gate over staged files (git runs it for you)
 npm run hooks:install          # point git at .githooks/ (npm install already does, via `prepare`)
