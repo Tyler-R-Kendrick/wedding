@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminOpsMetrics } from '@/capabilities/ops';
+import { FilterBar } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
+import { Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip, formatStamp } from '../_components/console';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +11,7 @@ export const metadata: Metadata = { title: 'Metrics', robots: { index: false, fo
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const WINDOWS = [1, 24, 168, 720];
+const windowLabel = (h: number) => (h === 1 ? 'The last hour' : h < 24 ? `The last ${h} hours` : h === 24 ? 'The last day' : `The last ${h / 24} days`);
 
 /**
  * The deployment's own telemetry, and nothing else: counters and histograms written to the
@@ -39,27 +42,6 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
     <ConsolePage
       title="Metrics"
       lede="What this deployment recorded about itself. No third-party telemetry is sent anywhere."
-      // Every number on this page is scoped to this window, and the switcher used to read as four
-      // words: identical colour and weight to body text, no underline, no border, no background,
-      // and nothing but `aria-current` marking the selected one. An operator could misread a 1-day
-      // figure as an all-time one. It is a control now, and it says which window it is on.
-      actions={
-        <nav aria-label="Time window" className="con-window">
-          <ul>
-            {WINDOWS.map((h) => (
-              <li key={h}>
-                <Link
-                  href={`/admin/metrics?window=${h}`}
-                  aria-current={h === windowHours ? 'page' : undefined}
-                  aria-label={`Show the last ${h < 24 ? `${h} hours` : `${h / 24} days`}`}
-                >
-                  {h < 24 ? `${h}h` : `${h / 24}d`}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      }
     >
       {m.recording ? null : (
         <p className="ops-notice" role="status">
@@ -67,6 +49,13 @@ export default async function AdminMetricsPage({ searchParams }: { searchParams:
           list below means nothing is being recorded, not that nothing happened.
         </p>
       )}
+
+      {/* Every number on this page is scoped to this window, so the choice sits above them and the
+          strip repeats it. It was four links in the header (1h 1d 7d 30d); it is the console's
+          FilterBar now, the same GET form every other screen filters with. */}
+      <FilterBar submitLabel="Show">
+        <Input id="window" label="Time window" defaultValue={String(windowHours)} options={WINDOWS.map((h) => ({ value: String(h), label: windowLabel(h) }))} />
+      </FilterBar>
 
       <StatStrip>
         <Stat label="Window" value={windowHours < 24 ? `${windowHours}h` : `${windowHours / 24}d`} hint={`since ${formatStamp(m.since)}`} />

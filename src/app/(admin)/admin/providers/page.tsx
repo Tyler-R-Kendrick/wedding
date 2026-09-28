@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { adminProviderStatus } from '@/capabilities/ops';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, KeyValues, Pill, Section, Stat, StatStrip } from '../_components/console';
@@ -9,6 +8,8 @@ export const metadata: Metadata = { title: 'Providers', robots: { index: false, 
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const modeTone = (mode: string) => (mode === 'live' ? 'good' : mode === 'unavailable' ? 'bad' : mode === 'mock' ? 'neutral' : 'warn');
+/** A pill is sentence case: `mock` reads "Mock". */
+const sentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1).replace(/_/g, ' ')}`;
 const healthTone = (status: string) => (status === 'up' ? 'good' : status === 'degraded' ? 'warn' : status === 'unconfigured' ? 'neutral' : 'bad');
 
 /**
@@ -40,9 +41,20 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
       title="Providers"
       lede="Every external system sits behind a typed seam with a mock. Unconfigured always means the mock, never a crash."
       actions={
-        <p>
-          {probe ? <Link href="/admin/providers">Stop probing</Link> : <Link href="/admin/providers?probe=1">Probe health now</Link>}
-        </p>
+        probe ? (
+          <form method="get" action="/admin/providers">
+            <button type="submit" className="ops-button ops-button-ghost">
+              Stop checking health
+            </button>
+          </form>
+        ) : (
+          <form method="get" action="/admin/providers">
+            <input type="hidden" name="probe" value="1" />
+            <button type="submit" className="ops-button ops-button-ghost">
+              Check health now
+            </button>
+          </form>
+        )
       }
     >
       <StatStrip>
@@ -54,7 +66,7 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
       <KeyValues
         items={[
           { label: 'Database driver', value: p.db.driver },
-          { label: 'pgvector', value: p.db.vectorAvailable ? <Pill tone="good">available</Pill> : <Pill tone="warn">unavailable</Pill> },
+          { label: 'pgvector', value: p.db.vectorAvailable ? <Pill tone="good">Available</Pill> : <Pill tone="warn">Unavailable</Pill> },
           { label: 'Health probe', value: p.probed ? 'ran just now' : 'not run' },
         ]}
       />
@@ -79,15 +91,15 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
               <th scope="row">{row.kind}</th>
               <td>{row.name}</td>
               <td>
-                <Pill tone={modeTone(row.mode)}>{row.mode}</Pill>
+                <Pill tone={modeTone(row.mode)}>{sentence(row.mode)}</Pill>
               </td>
-              <td>{row.config.ok ? <Pill tone="good">ok</Pill> : <Pill tone="bad">incomplete</Pill>}</td>
+              <td>{row.config.ok ? <Pill tone="good">Complete</Pill> : <Pill tone="bad">Incomplete</Pill>}</td>
               <td className="con-wrap ops-code">{row.config.missing.length ? row.config.missing.join(', ') : '—'}</td>
               {p.probed ? (
                 <td>
                   {row.health ? (
                     <>
-                      <Pill tone={healthTone(row.health.status)}>{row.health.status}</Pill>
+                      <Pill tone={healthTone(row.health.status)}>{sentence(row.health.status)}</Pill>
                       {row.health.latencyMs === null ? null : <span className="con-num"> {row.health.latencyMs}ms</span>}
                     </>
                   ) : (
@@ -97,26 +109,6 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
               ) : null}
             </tr>
           ))}
-        </DataTable>
-      </Section>
-
-      <Section title="Detected operations" id="capabilities" note="What each resolved instance reports it can do right now. A mock answers every call, but says here which of them are real.">
-        <DataTable caption="Operations supported by each adapter" head={
-          <tr>
-            <th scope="col">Kind</th>
-            <th scope="col">Supported</th>
-            <th scope="col">Not supported</th>
-          </tr>
-        } empty={p.providers.every((row) => row.capabilities.length === 0) ? <>No adapter reported an operation list.</> : null}>
-          {p.providers
-            .filter((row) => row.capabilities.length > 0)
-            .map((row) => (
-              <tr key={row.kind}>
-                <th scope="row">{row.kind}</th>
-                <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
-                <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
-              </tr>
-            ))}
         </DataTable>
       </Section>
 
@@ -135,6 +127,30 @@ export default async function AdminProvidersPage({ searchParams }: { searchParam
           )))}
         </DataTable>
       </Section>
+
+      <details className="flow-details" id="capabilities">
+        <summary>What each adapter can do</summary>
+        <div className="flow-details__body">
+          <p className="con-note">What each resolved instance reports it can do right now. A mock answers every call, but says here which of them are real.</p>
+          <DataTable caption="Operations supported by each adapter" head={
+            <tr>
+              <th scope="col">Kind</th>
+              <th scope="col">Supported</th>
+              <th scope="col">Not supported</th>
+            </tr>
+          } empty={p.providers.every((row) => row.capabilities.length === 0) ? <>No adapter reported an operation list.</> : null}>
+            {p.providers
+              .filter((row) => row.capabilities.length > 0)
+              .map((row) => (
+                <tr key={row.kind}>
+                  <th scope="row">{row.kind}</th>
+                  <td className="con-wrap">{row.capabilities.filter((c) => c.supported).map((c) => c.name).join(', ') || '—'}</td>
+                  <td className="con-wrap">{row.capabilities.filter((c) => !c.supported).map((c) => c.name).join(', ') || '—'}</td>
+                </tr>
+              ))}
+          </DataTable>
+        </div>
+      </details>
     </ConsolePage>
   );
 }

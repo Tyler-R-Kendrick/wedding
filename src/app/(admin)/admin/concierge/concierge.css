@@ -1,0 +1,27 @@
+/*
+ * /admin/concierge. Each answer is a kit `RecordRow` (components/admin/flow); this adds only what an
+ * answer carries beyond a record's one line: the answer text, why claims were dropped, and the
+ * sources it cited. Foundation tokens only.
+ */
+
+.cg-answer {
+  margin: 0;
+  max-width: 66ch;
+}
+
+.cg-dropped {
+  color: var(--color-error);
+}
+
+.cg-sources {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-on-surface-muted);
+}
+
+.cg-details {
+  margin-block: 0;
+}

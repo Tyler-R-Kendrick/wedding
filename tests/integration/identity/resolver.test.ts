@@ -187,7 +187,9 @@ describe('principal resolver', () => {
     // 79 -> 80: `admin_delete_reservation_venue` (`admin_content`, ui only).
     // 80 -> 81: `admin_list_content_sources` (`admin_content`, ui only, read), which the content
     // editor's source picker lists instead of bundling the seed file.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(81);
+    // 81 -> 82: `admin_dismiss_media_suggestion` (`admin_media`, ui only), which marks an AI
+    // suggestion reviewed without touching the photo's alt text.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(82);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
