@@ -38,8 +38,23 @@ export function toCapabilityResult(v: RsvpValidation): Result<HouseholdRsvpInput
   return err(new CapabilityError('validation', 'Please check the highlighted fields.', { issues: v.issues }));
 }
 
-export const validateFor = (hc: HouseholdRsvpContext, actsFor: readonly string[], mode: 'guest' | 'admin', input: HouseholdRsvpDraft, parts?: ReadonlySet<RsvpPart>) =>
-  toCapabilityResult(validateHouseholdRsvp(input, validationContext(hc, actsFor, mode, parts)));
+/**
+ * Said when a reply names an event that no longer exists: the couple deleted it (`admin_delete_event`)
+ * after the guest's page loaded. Not "not invited", which reads as a mistake on the guest's side.
+ */
+export const EVENT_REMOVED_MESSAGE = 'One of the events on this RSVP has just been taken off the schedule. Reload the page to see what you are invited to now, and send your reply again.';
+export const eventRemovedError = () => new CapabilityError('conflict', EVENT_REMOVED_MESSAGE, { reason: 'event_removed' });
+
+export function validateFor(hc: HouseholdRsvpContext, actsFor: readonly string[], mode: 'guest' | 'admin', input: HouseholdRsvpDraft, parts?: ReadonlySet<RsvpPart>): Result<HouseholdRsvpInput, CapabilityError> {
+  const v = validateHouseholdRsvp(input, validationContext(hc, actsFor, mode, parts));
+  // Only when every refusal is about an event (someone else's guest is still `forbidden` first), and
+  // one of those events is gone from the file altogether rather than merely not offered to them.
+  if (!v.ok && v.kind === 'forbidden' && v.issues.every((x) => x.path.endsWith('.eventId'))) {
+    const known = new Set(hc.events.map((e) => e.id));
+    if ((input.responses ?? []).some((r) => !known.has(r.eventId))) return err(eventRemovedError());
+  }
+  return toCapabilityResult(v);
+}
 
 const progressInput = (hc: HouseholdRsvpContext) => ({ entitlements: hc.entitlements, events: hc.entitledEvents, mealOptions: hc.mealOptions, responses: hc.responses, needs: hc.needs });
 

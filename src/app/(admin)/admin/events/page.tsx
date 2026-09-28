@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { adminListEvents } from '@/capabilities/rsvp';
-import { isoToChicagoLocal } from '@/domain/events/format';
+import { moveCalls } from '@/components/admin/flow/order';
+import { QuickAction } from '@/components/admin/flow/QuickAction';
+import { RecordList, RecordRow } from '@/components/admin/flow/records';
+import { formatDeadline, formatEventDate, formatEventWindow } from '@/domain/events/format';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, Denied, Note, ScrollRegion, Section } from '../_components/console';
-import { Button, Checkbox, IdemKey, Input, Radios } from '../_components/ops';
-import { saveEntitlementsAction, saveEventAction, saveMealsAction, saveNoticeAction, saveWindowAction } from './actions';
+import { ConsoleGate, ConsolePage, DataTable, Denied, Note, Pill, Section } from '../_components/console';
+import { DeleteEventFlow, DeleteNoticeFlow, EventFlow, InvitationsFlow, MenuFlow, NoticeFlow, WindowFlow, type Policy } from './_components/EventFlows';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Events (admin)', robots: { index: false, follow: false } };
@@ -12,13 +14,28 @@ export const metadata: Metadata = { title: 'Events (admin)', robots: { index: fa
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
+const MODE: Record<string, string> = { auto: 'Automatic', open: 'Open now', closed: 'Closed now' };
+const CELL: Record<string, string> = { none: 'Invited', named: 'Invited + named guest', unnamed: 'Invited + guest' };
+
+type Ordered = { id: string; sortOrder: number };
 /**
- * Events, menus, invitations and the RSVP window — on the admin console shell.
+ * Up/Down for an event: `moveCalls`'s saves (this event and its neighbour, or the whole list when
+ * two share a place) sent as one `admin_reorder_events` call, so they land together or not at all.
+ */
+const move = (list: readonly Ordered[], index: number, direction: 'up' | 'down') => {
+  const moves = moveCalls(list, index, direction, (r, p) => ({ id: r.id, sortOrder: p.sortOrder }), 'admin_reorder_events');
+  return moves.length ? [{ capability: 'admin_reorder_events', input: { moves: moves.map((c) => c.input) } }] : [];
+};
+
+/**
+ * Events, menus, invitations, notices and the RSVP window.
  *
- * Every form here was built from `components/rsvp/fields`, the GUEST RSVP kit: `Field`, `Select`,
- * `Textarea`, `ChoiceGroup` and the `.card` / `.sec` / `.tbl` classes from the guest stylesheet.
- * The console's own primitives are what an operator meets everywhere else in `/admin`, so they are
- * what this screen uses now; the guest kit is no longer imported by any admin route.
+ * Every change here is a flow from the admin kit (`components/admin/flow/CONVENTIONS.md`): adding or
+ * editing an event, publishing a menu version, who is invited to each event, the RSVP window and
+ * Your Weekend notices; deleting an event or a notice is a danger flow, and Up/Down on an event is a
+ * `QuickAction`. They replace a long form per event and per notice (plus a blank one at the
+ * end of each list), a textarea of `Label | description` lines, and a guest × event grid of selects
+ * that scrolled sideways on a phone.
  */
 export default async function AdminEventsPage({ searchParams }: { searchParams: SearchParams }) {
   const { principal } = await adminPrincipal();
@@ -34,165 +51,177 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
     );
   }
   const d = r.value.data;
+  const rooms = d.venueSpaces.map((s) => ({ value: s.ref, label: s.name }));
+  const roomName = (ref: string | null) => (ref ? (rooms.find((x) => x.value === ref)?.label ?? ref) : null);
+  const guests = d.guests.map((g) => ({ guestId: g.guestId, displayName: g.displayName, householdName: g.householdName, isMinor: g.isMinor }));
+  const policyOf = (eventId: string): Record<string, Policy> => Object.fromEntries(d.entitlements.filter((en) => en.eventId === eventId).map((en) => [en.guestId, en.plusOnePolicy]));
+  const cell = (guestId: string, eventId: string) => d.entitlements.find((en) => en.guestId === guestId && en.eventId === eventId);
+
   return (
-    <ConsolePage title="Events, menu, invitations, RSVP window" notice={notice}>
-      <Section
-        title="RSVP window"
-        id="window"
-        note={
-          <>
-            Right now RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> ({d.window.reason.replace('_', ' ')}; lifecycle {d.window.lifecycle}). Manual open/closed beats the schedule.
-          </>
-        }
-      >
-        <form action={saveWindowAction} className="ops-form">
-          <IdemKey />
-          <Radios
-            name="mode"
-            legend="Mode"
-            options={[
-              { value: 'auto', label: 'Automatic (open during RSVP_OPEN until the deadline)', defaultChecked: d.settings.mode === 'auto' },
-              { value: 'open', label: 'Open now', defaultChecked: d.settings.mode === 'open' },
-              { value: 'closed', label: 'Closed now', defaultChecked: d.settings.mode === 'closed' },
-            ]}
-          />
-          <Input id="window-deadline" name="deadlineAt" label="Deadline (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(d.settings.deadlineAt)} hint="Leave empty while TODO(Tyler &amp; Sara)." />
-          <Input id="window-note" name="note" label="Note (internal)" defaultValue={d.settings.note ?? ''} />
-          <div className="ops-form-inline">
-            <Button>Save RSVP window</Button>
-          </div>
-        </form>
+    <ConsolePage
+      title="Events, menu, invitations, RSVP window"
+      lede="The events guests are invited to, what they choose to eat, who is invited to what, and when they can answer."
+      notice={notice}
+      actions={<EventFlow rooms={rooms} label="Add an event" />}
+    >
+      <Section title="RSVP window" id="window">
+        <p className="flow-copy">
+          RSVPs are <strong>{d.window.open ? 'open' : 'closed'}</strong> right now. Setting: {MODE[d.settings.mode] ?? d.settings.mode}
+          {d.settings.deadlineAt ? `; deadline ${formatDeadline(d.settings.deadlineAt)}` : '; no deadline set yet'}. Open or closed by hand beats the schedule.
+        </p>
+        <WindowFlow settings={d.settings} />
       </Section>
 
       <Section title="Events" id="events">
-        {[...d.events, null].map((e, idx) => (
-          <form key={e?.id ?? 'new'} action={saveEventAction} className="ops-form con-panel" aria-label={e ? `Edit ${e.name}` : 'Add an event'}>
-            <IdemKey />
-            {e ? <input type="hidden" name="id" value={e.id} /> : null}
-            <h3>{e ? e.name : 'Add an event'}</h3>
-            {e ? <Note>Invited: {e.invitedCount} · Menu version {e.mealOptionsVersion} ({e.mealOptions.length} options)</Note> : null}
-            <Input id={`ev-${idx}-name`} name="name" label="Name" defaultValue={e?.name ?? ''} required />
-            <Input id={`ev-${idx}-date`} name="dateIso" label="Date" type="date" defaultValue={e?.dateIso ?? '2027-07-17'} required />
-            <Input id={`ev-${idx}-start`} name="startsAt" label="Starts (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(e?.startsAt)} />
-            <Input id={`ev-${idx}-end`} name="endsAt" label="Ends (America/Chicago)" type="datetime-local" defaultValue={isoToChicagoLocal(e?.endsAt)} />
-            <Input id={`ev-${idx}-space`} name="venueSpaceRef" label="Room" defaultValue={e?.venueSpaceRef ?? ''} options={[{ value: '', label: 'Not confirmed' }, ...d.venueSpaces.map((s) => ({ value: s.ref, label: s.name }))]} />
-            <Input id={`ev-${idx}-dress`} name="dressCode" label="Dress code" defaultValue={e?.dressCode ?? ''} />
-            <Input id={`ev-${idx}-sort`} name="sortOrder" label="Order" type="number" defaultValue={String(e?.sortOrder ?? (idx + 1) * 10)} />
-            <Input id={`ev-${idx}-desc`} name="description" label="What happens" type="textarea" defaultValue={e?.description ?? ''} />
-            <Input id={`ev-${idx}-access`} name="accessibilityNote" label="Accessibility note" type="textarea" defaultValue={e?.accessibilityNote ?? ''} />
-            <Checkbox id={`ev-${idx}-placeholder`} name="placeholder" label="Details not confirmed yet (shown as placeholder)" defaultChecked={e ? e.placeholder : true} />
-            <Checkbox id={`ev-${idx}-rsvp`} name="rsvpRequired" label="Guests RSVP to this event" defaultChecked={e ? e.rsvpRequired : true} />
-            <div className="ops-form-inline">
-              <Button>{e ? 'Save event' : 'Add event'}</Button>
-            </div>
-          </form>
-        ))}
+        <RecordList label="Events" empty={d.events.length === 0 ? 'No events yet. Add the first one.' : null}>
+          {d.events.map((e, i) => {
+            const prev = d.events[i - 1];
+            const next = d.events[i + 1];
+            return (
+              <RecordRow
+                key={e.id}
+                data-event-id={e.id}
+                title={e.name}
+                status={
+                  <>
+                    {e.placeholder ? <Pill tone="warn">Not confirmed yet</Pill> : <Pill tone="good">Confirmed</Pill>}
+                    {e.rsvpRequired ? null : <Pill>No RSVP</Pill>}
+                  </>
+                }
+                meta={
+                  <>
+                    {formatEventDate(e.dateIso, e.timezone)} · {formatEventWindow(e.startsAt, e.endsAt, e.timezone)} · {roomName(e.venueSpaceRef) ?? 'room not confirmed'} · {e.invitedCount} invited ·{' '}
+                    {e.mealOptions.length ? `menu version ${e.mealOptionsVersion}, ${e.mealOptions.length} choices` : 'no meal choice'}
+                  </>
+                }
+                actions={
+                  <>
+                    <EventFlow event={e} rooms={rooms} label="Edit" variant="quiet" />
+                    <MenuFlow event={e} />
+                    <InvitationsFlow event={{ id: e.id, name: e.name }} guests={guests} current={policyOf(e.id)} />
+                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${e.name} up.`} unavailable={!prev} accessibleName={`Move ${e.name} up`} calls={move(d.events, i, 'up')} />
+                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${e.name} down.`} unavailable={!next} accessibleName={`Move ${e.name} down`} calls={move(d.events, i, 'down')} />
+                    {e.responseCount === 0 && d.events.length > 1 ? <DeleteEventFlow event={{ id: e.id, name: e.name, invitedCount: e.invitedCount, mealOptionsVersion: e.mealOptionsVersion }} /> : null}
+                  </>
+                }
+              >
+                {e.responseCount > 0 ? (
+                  <p className="flow-row__meta" data-testid="event-kept">
+                    {e.responseCount === 1 ? 'One guest has' : `${e.responseCount} guests have`} answered its RSVP, so it cannot be deleted. Edit it instead.
+                  </p>
+                ) : d.events.length === 1 ? (
+                  <p className="flow-row__meta" data-testid="event-kept">
+                    It is the only event, so it cannot be deleted: a wedding has at least one. Edit it instead.
+                  </p>
+                ) : null}
+              </RecordRow>
+            );
+          })}
+        </RecordList>
       </Section>
 
-      <Section title="Menus" id="menus">
-        {d.events.map((e) => (
-          <form key={e.id} action={saveMealsAction} className="ops-form con-panel" aria-label={`Menu for ${e.name}`}>
-            <IdemKey />
-            <input type="hidden" name="eventId" value={e.id} />
-            <h3>
-              {e.name} — publish menu version {e.mealOptionsVersion + 1}
-            </h3>
-            <Input
-              id={`menu-${e.id}`}
-              name="options"
-              label="One option per line"
-              type="textarea"
-              hint="Format: Label | short description. Empty = no meal choice for this event. Guests who chose from an older version are asked to choose again."
-              defaultValue={e.mealOptions.map((m) => (m.description ? `${m.label} | ${m.description}` : m.label)).join('\n')}
+      <Section title="Who is invited to what" id="entitlements" note="To change it, use Invitations on the event above.">
+        <DataTable
+          caption="Invitations per guest and event"
+          empty={d.guests.length === 0 ? <>No guests yet.</> : d.events.length === 0 ? <>No events yet.</> : null}
+          head={
+            <tr>
+              <th scope="col">Guest</th>
+              {d.events.map((e) => (
+                <th key={e.id} scope="col">
+                  {e.name}
+                </th>
+              ))}
+            </tr>
+          }
+        >
+          {d.guests.map((g) => (
+            <tr key={g.guestId}>
+              <th scope="row">
+                {g.displayName}
+                <br />
+                <span className="con-index__blurb">
+                  {g.householdName}
+                  {g.isMinor ? ' · child' : ''}
+                </span>
+              </th>
+              {d.events.map((e) => {
+                const c = cell(g.guestId, e.id);
+                return <td key={e.id}>{c ? CELL[c.plusOnePolicy] : '—'}</td>;
+              })}
+            </tr>
+          ))}
+        </DataTable>
+      </Section>
+
+      <Section title="Your Weekend notices" id="notices" note="Shown to signed-in guests on Your Weekend, urgent ones first.">
+        <RecordList label="Notices" empty={d.notices.length === 0 ? 'No notices yet.' : null}>
+          {d.notices.map((n) => (
+            <RecordRow
+              key={n.id}
+              data-notice-id={n.id}
+              title={n.title}
+              status={
+                <>
+                  {n.severity === 'urgent' ? <Pill tone="warn">Urgent</Pill> : null}
+                  {n.active ? <Pill tone="good">Shown</Pill> : <Pill>Hidden</Pill>}
+                </>
+              }
+              meta={
+                <>
+                  {n.startsAt ? `From ${formatDeadline(n.startsAt)}` : 'From now'}
+                  {n.endsAt ? ` until ${formatDeadline(n.endsAt)}` : ''}
+                </>
+              }
+              actions={
+                <>
+                  <NoticeFlow notice={n} label="Edit" variant="quiet" />
+                  <QuickAction
+                    label={n.active ? 'Hide' : 'Show'}
+                    busyLabel={n.active ? 'Hiding…' : 'Showing…'}
+                    done={n.active ? `${n.title} hidden.` : `${n.title} shown.`}
+                    accessibleName={`${n.active ? 'Hide' : 'Show'} ${n.title}`}
+                    calls={[{ capability: 'admin_upsert_notice', input: { id: n.id, title: n.title, body: n.body, severity: n.severity, active: !n.active, startsAt: n.startsAt, endsAt: n.endsAt } }]}
+                  />
+                  <DeleteNoticeFlow notice={{ id: n.id, title: n.title, active: n.active }} />
+                </>
+              }
             />
-            <div className="ops-form-inline">
-              <Button variant="ghost">Publish new menu version</Button>
-            </div>
-          </form>
-        ))}
+          ))}
+        </RecordList>
+        <NoticeFlow label="Post a notice" />
       </Section>
 
-      <Section title="Who is invited to what" id="entitlements">
-        <form action={saveEntitlementsAction}>
-          <IdemKey />
-          <ScrollRegion scrollable={d.guests.length > 0}>
-            <table className="ops-table con-table">
-              <caption className="con-caption">Invitations per guest and event</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Guest</th>
-                  {d.events.map((e) => (
-                    <th key={e.id} scope="col">
-                      {e.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {d.guests.map((g) => (
-                  <tr key={g.guestId}>
-                    <th scope="row">
-                      {g.displayName}
-                      <br />
-                      <span className="con-index__blurb">
-                        {g.householdName}
-                        {g.isMinor ? ' · child' : ''}
-                      </span>
-                    </th>
-                    {d.events.map((e) => {
-                      const current = d.entitlements.find((en) => en.guestId === g.guestId && en.eventId === e.id);
-                      const id = `ent-${g.guestId}-${e.id}`;
-                      return (
-                        <td key={e.id}>
-                          <label className="sr-only" htmlFor={id}>
-                            {g.displayName} at {e.name}
-                          </label>
-                          <input type="hidden" name={`was:${g.guestId}:${e.id}`} value={current ? current.plusOnePolicy : 'no'} />
-                          <select id={id} className="ops-input" name={`ent:${g.guestId}:${e.id}`} defaultValue={current ? current.plusOnePolicy : 'no'}>
-                            <option value="no">Not invited</option>
-                            <option value="none">Invited</option>
-                            <option value="named">Invited + named guest</option>
-                            <option value="unnamed">Invited + guest</option>
-                          </select>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollRegion>
-          <div className="ops-form-inline">
-            <Button>Save invitations</Button>
-          </div>
-        </form>
-      </Section>
-
-      <Section title="Your Weekend notices" id="notices">
-        {[...d.notices, null].map((n, idx) => (
-          <form key={n?.id ?? 'new'} action={saveNoticeAction} className="ops-form con-panel" aria-label={n ? `Edit notice ${n.title}` : 'Post a notice'}>
-            <IdemKey />
-            {n ? <input type="hidden" name="id" value={n.id} /> : null}
-            <h3>{n ? n.title : 'Post a notice'}</h3>
-            <Input id={`nt-${idx}-title`} name="title" label="Title" defaultValue={n?.title ?? ''} required />
-            <Input id={`nt-${idx}-body`} name="body" label="Message" type="textarea" defaultValue={n?.body ?? ''} required />
-            <Radios
-              name="severity"
-              legend="Severity"
-              options={[
-                { value: 'info', label: 'Info', defaultChecked: (n?.severity ?? 'info') === 'info' },
-                { value: 'urgent', label: 'Urgent', defaultChecked: n?.severity === 'urgent' },
-              ]}
-            />
-            <Input id={`nt-${idx}-start`} name="startsAt" label="Show from (optional)" type="datetime-local" defaultValue={isoToChicagoLocal(n?.startsAt)} />
-            <Input id={`nt-${idx}-end`} name="endsAt" label="Show until (optional)" type="datetime-local" defaultValue={isoToChicagoLocal(n?.endsAt)} />
-            <Checkbox id={`nt-${idx}-active`} name="active" label="Active" defaultChecked={n ? n.active : true} />
-            <div className="ops-form-inline">
-              <Button variant="ghost">{n ? 'Save notice' : 'Post notice'}</Button>
-            </div>
-          </form>
-        ))}
-      </Section>
+      <details className="flow-details">
+        <summary>Technical details</summary>
+        <div className="flow-details__body">
+          <Note>
+            RSVP window: {d.window.reason.replace('_', ' ')}; lifecycle {d.window.lifecycle}
+            {d.settings.note ? `; note: ${d.settings.note}` : ''}.
+          </Note>
+          <DataTable
+            caption="Events and every menu version"
+            empty={d.events.length ? null : 'No events.'}
+            head={
+              <tr>
+                <th scope="col">Event</th>
+                <th scope="col">Id</th>
+                <th scope="col">Position</th>
+                <th scope="col">Menu versions</th>
+              </tr>
+            }
+          >
+            {d.events.map((e) => (
+              <tr key={e.id}>
+                <th scope="row">{e.name}</th>
+                <td>{e.id}</td>
+                <td>{e.sortOrder}</td>
+                <td className="con-wrap">{e.allVersions.length ? e.allVersions.map((v) => `v${v.version} ${v.label}`).join(', ') : '—'}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
+      </details>
     </ConsolePage>
   );
 }

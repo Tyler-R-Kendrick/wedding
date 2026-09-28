@@ -6,7 +6,7 @@ import { toPrincipalRef } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { eDb } from '@/capabilities/rsvp/db';
 import { RSVP_STATUSES } from '@/db/schema';
-import { SEED_EVENT_IDS } from '@/domain/events/seed';
+import { findReception, listEvents } from '@/domain/events';
 import { listAllGuests, listAllResponses, listHouseholds } from '@/domain/rsvp';
 import { applySeatingImport, assignSeats, deleteTable, draftSnapshot, getLivePublication, listAssignments, listFloorPlans, listPublications, listTables, parseSeatingCsv, publishSeating, snapshotDiffers, unpublishSeating, upsertTable } from '@/domain/seating';
 import { idSchema } from '@/capabilities/rsvp/shared';
@@ -55,11 +55,13 @@ export const adminSeatingOverview = defineCapability<z.infer<typeof overviewInpu
   output: overviewOutput,
   async handler(ctx) {
     const db = await eDb(ctx);
-    const [tables, assignments, plans, live, history, guests, households, responses] = await Promise.all([listTables(db), listAssignments(db), listFloorPlans(db), getLivePublication(db), listPublications(db), listAllGuests(db), listHouseholds(db), listAllResponses(db)]);
+    const [tables, assignments, plans, live, history, guests, households, responses, evs] = await Promise.all([listTables(db), listAssignments(db), listFloorPlans(db), getLivePublication(db), listPublications(db), listAllGuests(db), listHouseholds(db), listAllResponses(db), listEvents(db)]);
     const hh = new Map(households.map((h) => [h.id, h.name]));
     const guestById = new Map(guests.map((g) => [g.id, g]));
     const seated = new Set(assignments.map((a) => a.guestId));
-    const reception = new Map(responses.filter((r) => r.eventId === SEED_EVENT_IDS.reception).map((r) => [r.guestId, r.status]));
+    // By key, name or meal, never the seed's id: the couple can delete the seeded reception and add their own.
+    const receptionId = findReception(evs)?.id;
+    const reception = new Map(responses.filter((r) => r.eventId === receptionId).map((r) => [r.guestId, r.status]));
     const draft = await draftSnapshot(db);
     return ok({
       data: {

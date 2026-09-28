@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
 import type { AdminPrincipal, Entitlement, GuestPrincipal } from '@/contracts/principal';
 import type { Db } from '@/db/client';
@@ -65,13 +65,21 @@ export const FIXTURE_MEALS = [
   { id: FX.mealGarden, label: 'Test entrée C (vegetarian)', description: 'Fixture menu item', sortOrder: 3 },
 ] as const;
 
-/** Idempotent. Requires the real seed (events) to have run first. */
+/**
+ * Idempotent. Requires the real seed (events) to have run first. Runs on every boot of a
+ * SEED_TEST_FIXTURES server, so it adds invitations and the menu only for the seed events that
+ * still exist: one deleted in /admin/events (`admin_delete_event`) stays deleted, and inserting
+ * against its id would fail the foreign key and, with it, the boot seed every RSVP capability waits on.
+ */
 export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<void> {
   for (const h of FIXTURE_HOUSEHOLDS) await db.insert(households).values({ ...h, createdAt: now }).onConflictDoNothing({ target: households.id });
   for (const g of FIXTURE_GUESTS) await db.insert(guests).values({ ...g, createdAt: now }).onConflictDoNothing({ target: guests.id });
+  const present = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, Object.values(E)))).map((r) => r.id));
   for (const [idx, en] of FIXTURE_ENTITLEMENTS.entries()) {
+    if (!present.has(en.eventId)) continue;
     await db.insert(eventEntitlements).values({ id: fixtureId(`ENT${String(idx).padStart(2, '0')}`), ...en, createdAt: now }).onConflictDoNothing();
   }
+  if (!present.has(E.reception)) return;
   for (const m of FIXTURE_MEALS) await db.insert(mealOptions).values({ ...m, eventId: E.reception, version: 1, createdAt: now }).onConflictDoNothing({ target: mealOptions.id });
   await db.update(events).set({ mealOptionsVersion: 1, hasMeal: true }).where(eq(events.id, E.reception));
 }
