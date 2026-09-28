@@ -1583,9 +1583,9 @@
 }
 
 .flow-step__count {
-  font-family: var(--font-label-caps), Georgia, serif;
-  font-size: var(--text-label-caps);
-  letter-spacing: var(--tracking-label-caps);
+  font-family: var(--font-control-caps), Georgia, serif;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
   text-transform: uppercase;
   color: var(--color-secondary);
   margin: 0;
@@ -2075,6 +2075,24 @@ textarea.flow-input {
     transition: none !important;
     animation: none !important;
   }
+}
+
+.flow-inline-form {
+  margin: 0;
+  display: inline;
+}
+
+.flow-pages {
+  align-items: baseline;
+  gap: var(--spacing-sm) var(--spacing-md);
+  flex-wrap: wrap;
+  margin-block-start: var(--spacing-md);
+  display: flex;
+}
+
+.flow-pages__count {
+  color: var(--color-on-surface-muted);
+  margin: 0;
 }
 
 /*# sourceMappingURL=src_0_wq9ub._.css.map*/
