@@ -16,7 +16,7 @@ import { ensureDefaultCollections } from '@/domain/media';
 import { getAnnotation, MEDIA_INDEX_NAMESPACE } from '@/domain/mediaai';
 import { runDueJobs } from '@/lib/jobs';
 import { setReadiness } from '@/lib/flags';
-import { getAuditSink } from '@/lib/audit';
+import { getAuditSink, listAuditEvents } from '@/lib/audit';
 import { LocalFsStorage } from '@/providers/storage';
 import { seedSwarmE } from './helpers/swarm-e';
 import { getProvider, resetProviders, setProviderOverride } from '@/providers/registry';
@@ -242,6 +242,31 @@ describe('semantic media intelligence (PGlite + local-fs storage, deterministic 
     expect((await getAnnotation(db, dusk.assetId))!.reviewedAt).not.toBeNull();
     const after = await call<{ current: { altText: string | null } }>(guestA, 'suggest_alt_text', { assetId: dusk.assetId });
     expect(after.ok && after.data.current.altText).toBe('Friends on the rooftop as the sun goes down.');
+  });
+
+  it('dismisses a suggestion without touching the photo’s own alt text or caption', async () => {
+    const flowers = corpus.get('flowers')!;
+    const db = await getDb();
+    const [before] = await db.select({ altText: mediaAssets.altText, caption: mediaAssets.caption }).from(mediaAssets).where(eq(mediaAssets.id, flowers.assetId));
+    const queued = await call<MediaAiStatusView>(admin, 'admin_media_ai_status', { suggestions: 50 });
+    expect(queued.ok && queued.data.suggestions.some((s) => s.id === flowers.assetId)).toBe(true);
+
+    expect((await call(guestA, 'admin_dismiss_media_suggestion', { assetId: flowers.assetId })).ok).toBe(false);
+    const dismissed = await call<{ assetId: string; reviewedAt: string }>(admin, 'admin_dismiss_media_suggestion', { assetId: flowers.assetId });
+    expect(dismissed).toMatchObject({ ok: true, data: { assetId: flowers.assetId, reviewedAt: clock.toISOString() } });
+
+    const [after] = await db.select({ altText: mediaAssets.altText, caption: mediaAssets.caption }).from(mediaAssets).where(eq(mediaAssets.id, flowers.assetId));
+    expect(after).toEqual(before);
+    const annotation = await getAnnotation(db, flowers.assetId);
+    expect(annotation!.reviewedAt?.toISOString()).toBe(clock.toISOString());
+    expect(annotation!.reviewedBy).toMatchObject({ kind: 'admin', adminId: 'ADMIN1' });
+    expect(annotation!.suggestedAltText).toBeTruthy();
+    const left = await call<MediaAiStatusView>(admin, 'admin_media_ai_status', { suggestions: 50 });
+    expect(left.ok && left.data.suggestions.some((s) => s.id === flowers.assetId)).toBe(false);
+    const audited = await listAuditEvents(db, { action: 'content.updated', targetId: flowers.assetId });
+    expect(audited.some((e) => (e.metadata as Record<string, unknown> | null)?.suggestion === 'dismissed')).toBe(true);
+
+    expect((await call(admin, 'admin_dismiss_media_suggestion', { assetId: newId() })).ok).toBe(false);
   });
 
   it('groups bursts and picks the sharpest frame, for admins only', async () => {

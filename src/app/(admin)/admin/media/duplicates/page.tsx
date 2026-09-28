@@ -13,7 +13,7 @@ export default async function DuplicatesPage() {
   if (principal.kind !== 'admin' || !isMediaAdmin(principal)) return <ConsoleGate what="Duplicate media" />;
   const r = await invokeForRequest<{ clusters: Cluster[] }>('admin_media_duplicates', {}, principal);
   return (
-    <ConsolePage title="Duplicates" lede="Identical files (same checksum) and near-identical images (perceptual hash). Keeping the earliest and rejecting the rest is reversible from the queue." actions={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/duplicates' }))} />}>
+    <ConsolePage title="Duplicates" lede="Identical files (same checksum) and near-identical images (perceptual hash). Keep one copy of each and reject the rest; anything rejected can be restored from the queue." subNav={<SubNav label="Media" items={MEDIA_SUBNAV.map((i) => ({ ...i, current: i.href === '/admin/media/duplicates' }))} />}>
       <Section id="clusters">{r.ok ? <DuplicateClusters clusters={r.data.clusters} /> : <Note>{r.error.message}</Note>}</Section>
     </ConsolePage>
   );

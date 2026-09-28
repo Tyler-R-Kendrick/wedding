@@ -1,0 +1,308 @@
+/*
+ * The admin's media screens: the moderation queue, the professional import, duplicates and the
+ * alt-text review. Root DESIGN.md foundation tokens only, on top of the admin flow kit
+ * (`components/admin/flow/flow.css`): rows are its hairline `.flow-row`s, triggers its quiet
+ * buttons. What is here is only what a queue of photos needs beyond a list of records — a tick box
+ * and a thumbnail per row, a bar that stays in reach while the list scrolls, and progress per file.
+ * The guest media pages keep `media.css`; none of these rules reach them.
+ */
+
+/* --- Status lines --------------------------------------------------------------------------- */
+
+/* A list's own live region: what the last action did. Never `display: none` while empty, so it is
+   already in the accessibility tree when the first message arrives. */
+.am-notice {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--color-secondary);
+}
+
+.am-notice[data-tone="error"] {
+  color: var(--color-error);
+}
+
+.am-notice:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* --- Moderation queue (ModerationQueue.tsx) ------------------------------------------------- */
+
+.mq {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+/* The bulk bar stays at the top of the viewport while the admin works down the list. */
+.mq-bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  padding-block: var(--spacing-sm);
+  background: var(--color-neutral);
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.mq-all,
+.mq-pick {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.mq-pick {
+  justify-content: center;
+  min-width: 2.75rem;
+}
+
+.mq-all input,
+.mq-pick input {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-secondary);
+}
+
+.mq-count {
+  color: var(--color-on-surface-muted);
+}
+
+.mq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.mq-actions .flow-anchor {
+  display: contents;
+}
+
+.mq-actions .flow-announce {
+  flex-basis: auto;
+}
+
+/*
+ * Unavailable, drawn one way for every bulk action (filled, outlined or red when live): muted text on
+ * the page (4.5:1 and more) and a dashed edge in the same muted ink (well over the 3:1 a control's
+ * boundary needs). Not opacity: 0.6 took "Approve and publish" to 2.2:1, which is unreadable, not
+ * unavailable.
+ */
+.mq-actions [aria-disabled="true"] {
+  color: var(--color-on-surface-muted);
+  background: transparent;
+  border: 1px dashed var(--color-on-surface-muted);
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.mq-hint {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+}
+
+.mq-note {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.mq-note[data-tone="error"] {
+  color: var(--color-error);
+}
+
+.mq-rows {
+  max-width: none;
+}
+
+/* Tick box, thumbnail, then the record; the thumbnail grows once there is room for it. */
+.mq-row {
+  display: grid;
+  grid-template-columns: auto 4.5rem minmax(0, 1fr);
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: start;
+}
+
+.mq-row[data-selected] {
+  background: var(--color-surface);
+}
+
+@media (width >= 48rem) {
+  .mq-row {
+    grid-template-columns: auto 6rem minmax(0, 1fr);
+  }
+}
+
+.mq-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-variant);
+}
+
+.mq-name {
+  overflow-wrap: anywhere;
+}
+
+.mq-caption {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.mq-problem {
+  margin: 0;
+  color: var(--color-error);
+}
+
+.mq-details {
+  margin-block: 0;
+}
+
+.mq-code {
+  font-family: var(--font-mono-ops, monospace);
+}
+
+.mq-more {
+  margin: 0;
+}
+
+.mq-actions [aria-disabled="true"]:focus-visible,
+.mq-all input:focus-visible,
+.mq-pick input:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* --- Professional import (ImportForm.tsx) --------------------------------------------------- */
+
+.im-files {
+  min-height: 2.75rem;
+  font: inherit;
+}
+
+.im-files:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.im-progress {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.im-jobs {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-outline);
+}
+
+.im-jobs li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: center;
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.im-job__name {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.im-job__state {
+  color: var(--color-on-surface-muted);
+}
+
+.im-jobs li[data-state="error"] .im-job__state {
+  color: var(--color-error);
+}
+
+.im-jobs progress {
+  flex-basis: 100%;
+  width: 100%;
+  height: var(--spacing-sm);
+  accent-color: var(--color-secondary);
+}
+
+/* --- Duplicates (DuplicateClusters.tsx) ----------------------------------------------------- */
+
+.dc-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dc-strip li {
+  display: grid;
+  gap: var(--spacing-xs);
+  align-content: start;
+}
+
+.dc-strip img,
+.dc-none {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-variant);
+}
+
+.dc-none {
+  display: grid;
+  place-items: center;
+  color: var(--color-on-surface-muted);
+}
+
+/* The kept copy is ringed in sage; a copy already out is dimmed, and says so in words beside it. */
+.dc-strip li[data-keep] img {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.dc-strip li[data-out] img {
+  opacity: 0.5;
+}
+
+.dc-label {
+  color: var(--color-on-surface-muted);
+}
+
+/* --- Alt-text review (mediaai/SuggestionReview.tsx) ----------------------------------------- */
+
+.sr-row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--spacing-md);
+  align-items: start;
+}
+
+.sr-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.sr-text {
+  margin: 0;
+  max-width: 62ch;
+  overflow-wrap: anywhere;
+}
