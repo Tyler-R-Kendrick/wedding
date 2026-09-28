@@ -184,7 +184,8 @@ describe('principal resolver', () => {
     // (`admin_content`; the rail one is step-up, like setting it).
     // 76 -> 79: `admin_delete_event` (`admin_content` and `admin_guest_ops`, step-up; refused once
     // anyone has answered), `admin_reorder_events` and `admin_delete_notice` (`admin_content`), ui only.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(79);
+    // 79 -> 80: `admin_delete_reservation_venue` (`admin_content`, ui only).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(80);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

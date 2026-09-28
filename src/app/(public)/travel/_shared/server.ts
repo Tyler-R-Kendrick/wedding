@@ -99,8 +99,9 @@ export const field = {
   },
   /** The client regenerates the key per submit; without JavaScript one is minted here (that submit is then not replay-safe). */
   idempotencyKey(fd: FormData): string {
-    // Guest forms name the field `idempotencyKey`; admin forms render <IdemKey/>, which names it `idem`.
-    const k = field.str(fd, 'idempotencyKey') ?? field.str(fd, 'idem');
+    // Forms name the field `idempotencyKey`. (The admin console's `idem` field went with its forms:
+    // its screens are admin-kit flows that send the key in the capability request.)
+    const k = field.str(fd, 'idempotencyKey');
     return k && /^[0-9A-HJKMNP-TV-Z]{26}$/.test(k) ? k : newId();
   },
 };

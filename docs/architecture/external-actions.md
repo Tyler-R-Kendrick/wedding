@@ -53,8 +53,12 @@ flowchart LR
 | `admin_list_gift_links` | read | admin | `admin_content` | – | – | – | ui |
 | `admin_upsert_gift_fund` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_upsert_gift_rail` | action | admin | `admin_content` | – | inline | yes | ui |
+| `admin_delete_gift_link` | action | admin | `admin_content` | – | inline | yes | ui |
+| `admin_delete_gift_fund` | action | admin | `admin_content` | – | inline | yes | ui (a built-in fund is reset to its built-in words, not deleted) |
+| `admin_delete_gift_rail` | action | admin | `admin_content` | **yes** | inline | yes | ui |
 | `admin_upsert_reservation_venue` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_list_reservation_venues` | read | admin | `admin_content` | – | – | – | ui |
+| `admin_delete_reservation_venue` | action | admin | `admin_content` | – | inline | yes | ui |
 | `admin_list_external_actions` | read | admin | `admin_audit` | – | – | – | ui |
 
 ## Ride benefits
