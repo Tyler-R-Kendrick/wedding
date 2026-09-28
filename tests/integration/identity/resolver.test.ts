@@ -177,7 +177,12 @@ describe('principal resolver', () => {
     // as one guest, read-only unless it is the administrator's own guest record;
     // `admin_list_own_guest_records` lists those own records; `admin_guest_view_status` names the
     // guest this browser's token is for.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(72);
+    // 72 -> 73: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
+    // call between steps to check a registry link or a way to give before anything is saved.
+    // 73 -> 76: the gifts screen's deletes, each ui only — `admin_delete_gift_link`,
+    // `admin_delete_gift_fund` (a built-in fund is reset instead) and `admin_delete_gift_rail`
+    // (`admin_content`; the rail one is step-up, like setting it).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(76);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

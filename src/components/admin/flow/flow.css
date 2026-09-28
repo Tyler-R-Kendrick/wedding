@@ -1,0 +1,799 @@
+/*
+ * Admin flows: a multi-step task in a sheet (AdminFlow.tsx). Root DESIGN.md foundation tokens only —
+ * paper, ink, hairlines, one sage accent for progress — and no shadow beyond the scrim, because depth
+ * in this system is paper tone, not blur. Motion is transform and opacity, short, ease-out, and off
+ * entirely under reduced motion.
+ */
+
+.flow-anchor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.flow-anchor .ops-button {
+  font-family: inherit;
+}
+
+/*
+ * A text-weight trigger for secondary edits inside a list row ("Change", "Hide"). Still 44px tall.
+ * Ink, not terracotta: a list of rows each with three of these would spend the accent a dozen times
+ * in one screen, and DESIGN.md keeps it for the one action a person most needs.
+ */
+.flow-trigger-quiet {
+  min-height: 2.75rem;
+  padding: 0 var(--spacing-sm);
+  font: inherit;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.flow-trigger-quiet:hover {
+  text-decoration-thickness: 2px;
+}
+
+.flow-trigger-quiet[aria-disabled="true"] {
+  color: var(--color-on-surface-muted);
+  text-decoration: none;
+  cursor: default;
+}
+
+.flow-draft-note {
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+/* Empty until a save lands; a live region has to exist before its text does to be announced. */
+.flow-announce {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-secondary);
+}
+
+.flow-announce:empty {
+  /* Out of sight but still in the accessibility tree: a live region that is display:none when its
+     first message arrives is not announced. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* --- The sheet ------------------------------------------------------------------------------ */
+
+.flow-sheet {
+  --flow-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  inset: auto 0 0;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(92dvh, 100%);
+  margin: 0;
+  padding: 0;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border: 0;
+  border-top: 1px solid var(--color-outline);
+  border-radius: 0;
+  font-family: var(--font-body-md), Georgia, "Times New Roman", serif;
+  font-size: var(--text-body-md);
+  line-height: 1.5;
+}
+
+.flow-sheet::backdrop {
+  background: color-mix(in oklab, var(--color-primary) 38%, transparent);
+}
+
+.flow-sheet[open] {
+  animation: flow-sheet-up 240ms var(--flow-ease);
+}
+
+.flow-sheet[open]::backdrop {
+  animation: flow-fade 240ms var(--flow-ease);
+}
+
+.flow-sheet[data-closing] {
+  animation: flow-sheet-down 180ms var(--flow-ease) forwards;
+}
+
+.flow-sheet[data-closing]::backdrop {
+  animation: flow-fade 180ms var(--flow-ease) reverse forwards;
+}
+
+/* From a tablet up, a side sheet: the page it edits stays visible on the left. */
+@media (width >= 48rem) {
+  .flow-sheet {
+    inset: 0 0 0 auto;
+    width: min(36rem, 100%);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-top: 0;
+    border-left: 1px solid var(--color-outline);
+  }
+
+  .flow-sheet[open] {
+    animation-name: flow-sheet-in;
+  }
+
+  .flow-sheet[data-closing] {
+    animation-name: flow-sheet-out;
+  }
+}
+
+/*
+ * `max-height` is explicit, not `inherit`: the dialog has no fixed height, so a percentage resolved
+ * against it constrained nothing, the whole sheet scrolled, and on a 390px phone the Continue button
+ * sat below the fold (design review 2026-09-27: footer at y=1039 in an 844px viewport). The header
+ * and footer stay put; only the body scrolls.
+ */
+.flow-frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: 92dvh;
+}
+
+@media (width >= 48rem) {
+  .flow-frame {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+}
+
+.flow-head {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.flow-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.flow-title {
+  margin: 0;
+  font-family: var(--font-h3), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h3);
+}
+
+.flow-close,
+.flow-discard {
+  min-height: 2.75rem;
+  padding: 0 var(--spacing-sm);
+  font: inherit;
+  color: var(--color-primary);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.flow-discard {
+  color: var(--color-on-surface-muted);
+}
+
+/* Progress: one hairline bar per step, sage when done, ink when current. Names under each. */
+.flow-progress {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-progress li {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.flow-progress__bar {
+  height: 3px;
+  background: var(--color-outline);
+  transition: background-color 240ms var(--flow-ease);
+}
+
+.flow-progress li[data-state="done"] .flow-progress__bar {
+  background: var(--color-secondary);
+}
+
+.flow-progress li[data-state="current"] .flow-progress__bar {
+  background: var(--color-primary);
+}
+
+.flow-progress__label {
+  overflow: hidden;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-progress li[data-state="current"] .flow-progress__label {
+  color: var(--color-primary);
+}
+
+/* On a phone the names do not fit three across; the bars and the "Step 2 of 3" line carry it. */
+@media (width <= 30rem) {
+  .flow-progress__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+.flow-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  overscroll-behavior: contain;
+}
+
+.flow-notice {
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid color-mix(in oklab, var(--color-secondary) 50%, var(--color-outline));
+  background: color-mix(in oklab, var(--color-secondary) 10%, var(--color-surface));
+}
+
+.flow-step[data-direction="forward"] {
+  animation: flow-step-forward 220ms var(--flow-ease);
+}
+
+.flow-step[data-direction="back"] {
+  animation: flow-step-back 220ms var(--flow-ease);
+}
+
+.flow-step__count {
+  margin: 0;
+  font-family: var(--font-control-caps), Georgia, serif;
+  font-size: var(--text-control-caps);
+  letter-spacing: var(--tracking-control-caps);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.flow-step__title {
+  text-wrap: balance;
+  margin: var(--spacing-xs) 0 0;
+  font-family: var(--font-h2), Georgia, "Times New Roman", serif;
+  font-size: var(--text-h2);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.flow-step__lede {
+  margin: var(--spacing-sm) 0 0;
+  max-width: 52ch;
+  color: var(--color-on-surface-muted);
+}
+
+.flow-step__fields {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.flow-error {
+  margin: var(--spacing-lg) 0 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.flow-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-outline);
+  background: var(--color-surface);
+}
+
+.flow-foot__nav {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.flow-foot .ops-button {
+  font-family: inherit;
+}
+
+.flow-foot .ops-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* --- Fields --------------------------------------------------------------------------------- */
+
+.flow-field {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.flow-label {
+  padding: 0;
+  font-weight: 500;
+}
+
+.flow-optional {
+  font-weight: 400;
+  color: var(--color-on-surface-muted);
+}
+
+.flow-input {
+  font-size: var(--text-body-md);
+  background: var(--color-neutral);
+}
+
+textarea.flow-input {
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+.flow-input:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.flow-field[data-invalid] .flow-input {
+  border-color: var(--color-error);
+}
+
+.flow-hint {
+  margin: 0;
+  max-width: 52ch;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-field-error {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-error);
+}
+
+.flow-field-error::before {
+  content: "Check this: ";
+  font-weight: 500;
+}
+
+.flow-choices {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.flow-choices__list {
+  display: grid;
+  border: 1px solid var(--color-outline);
+}
+
+.flow-choice {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+  min-height: 2.75rem;
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: background-color 160ms var(--flow-ease);
+}
+
+.flow-choice + .flow-choice {
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-choice:hover {
+  background: color-mix(in oklab, var(--color-primary) 4%, var(--color-surface));
+}
+
+.flow-choice:has(input:checked) {
+  background: color-mix(in oklab, var(--color-secondary) 12%, var(--color-surface));
+}
+
+.flow-choice:has(input:focus-visible) {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: -3px;
+}
+
+.flow-choice input,
+.flow-check input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--color-primary);
+}
+
+.flow-choice__text {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.flow-choice__label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: baseline;
+  font-weight: 500;
+}
+
+.flow-choice__desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-badge {
+  font-size: var(--text-body-sm);
+  font-weight: 400;
+  color: var(--color-secondary);
+}
+
+.flow-check {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+/* --- "What guests will see" inside a step --------------------------------------------------- */
+
+.flow-preview {
+  margin: 0;
+  border: 1px solid var(--color-outline);
+  background: var(--color-neutral);
+}
+
+.flow-preview__label {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.flow-preview__body {
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+}
+
+.flow-preview__body > :first-child {
+  margin-top: 0;
+}
+
+/* Focus, last so it outranks each control's own rules. */
+.flow-trigger-quiet:focus-visible,
+.flow-close:focus-visible,
+.flow-discard:focus-visible,
+.flow-step__title:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+/* Plain copy inside a step, at the reading measure. */
+.flow-copy {
+  margin: 0;
+  max-width: 62ch;
+}
+
+/* --- Review, consequences, danger (fields.tsx, AdminFlow tone="danger") ---------------------- */
+
+.flow-review {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-review > div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  gap: var(--spacing-md);
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+@media (width <= 30rem) {
+  .flow-review > div {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+}
+
+.flow-review dt {
+  color: var(--color-on-surface-muted);
+}
+
+.flow-review dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.flow-consequences {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-error);
+}
+
+.flow-consequences > * {
+  margin: 0;
+}
+
+.flow-consequences ul {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-left: var(--spacing-lg);
+}
+
+/* A row's "Delete" or "Revoke": text weight like the other row actions, in the error colour, so a
+   list of rows is not a column of red buttons. The red button is inside the sheet, once. */
+.flow-trigger-danger {
+  color: var(--color-error);
+}
+
+/* --- Filters (records.tsx FilterBar) -------------------------------------------------------- */
+
+.flow-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: end;
+}
+
+.flow-filter .ops-field {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+}
+
+.flow-filter__extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+/* --- Records, links and disclosures (records.tsx, shared by every console screen) ------------ */
+.flow-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-tertiary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.flow-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.flow-empty {
+  margin: 0;
+  max-width: 62ch;
+  padding: var(--spacing-md);
+  border: 1px dashed var(--color-outline);
+}
+
+/* Rows (records.tsx): what is saved, each with its own actions. Hairlines, not cards. */
+.flow-rows {
+  justify-self: stretch;
+  max-width: 48rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.flow-quick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.flow-quick button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.flow-found {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-neutral);
+  border: 1px solid var(--color-outline);
+}
+
+.flow-found p {
+  margin: 0;
+}
+
+.flow-inline-button {
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.flow-details {
+  margin-block: var(--spacing-lg);
+  border-top: 1px solid var(--color-outline);
+}
+
+.flow-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-on-surface-muted);
+  cursor: pointer;
+}
+
+.flow-details > summary:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.flow-row__main {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.flow-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: baseline;
+  margin: 0;
+  font-weight: 500;
+}
+
+.flow-row__meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-row__meta--pre {
+  white-space: pre-line;
+}
+
+.flow-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-xs);
+  align-items: center;
+}
+
+.flow-row__actions .flow-anchor {
+  display: contents;
+}
+
+.flow-row__actions .flow-announce {
+  order: 10;
+}
+
+.flow-found__url {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono-ops, monospace);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-muted);
+}
+
+.flow-details__body {
+  display: grid;
+  gap: var(--spacing-md);
+  padding-block: var(--spacing-md);
+}
+
+/* --- Motion --------------------------------------------------------------------------------- */
+
+@keyframes flow-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes flow-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes flow-sheet-down {
+  to {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes flow-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes flow-sheet-out {
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes flow-step-forward {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes flow-step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-sheet,
+  .flow-sheet::backdrop,
+  .flow-step,
+  .flow-progress__bar,
+  .flow-choice {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* A plain form action beside the kit's triggers (browse as a guest): inline, no box of its own. */
+.flow-inline-form {
+  display: inline;
+  margin: 0;
+}
+
+/* Paging under a long list (paging.tsx): the count, then Previous and Next. */
+.flow-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin-block-start: var(--spacing-md);
+}
+
+.flow-pages__count {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+}

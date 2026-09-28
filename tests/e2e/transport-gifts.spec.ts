@@ -158,3 +158,55 @@ test.describe('admin pages', () => {
     }
   });
 });
+
+/*
+ * /admin/gifts is a guided setup now: each change is a flow in a sheet that checks as it goes, shows
+ * the guest's view before saving, and keeps its draft across a reload. This walks the registry flow
+ * to its last step and DISCARDS it: saving would put a registry or a way to give on the one server
+ * every TEST_SERVER_SPECS spec shares, and the gifts case above asserts an unconfigured section.
+ * Saves, step-up and the funds going live are covered in tests/integration/gifts-reservations.test.ts.
+ */
+test('admin gifts: the registry flow checks each step, keeps its draft over a reload, and saves nothing until asked', async ({ page }) => {
+  await page.setExtraHTTPHeaders(principalHeaders('admin'));
+  await page.goto('/admin/gifts');
+  // Funds say what guests actually get: no way to give, so no funds, whatever the table held.
+  await expect(page.locator('[data-gift-fund-id="honeymoon"]')).toContainText('waiting on a way to give');
+  await expect(page.locator('#gifts-preview')).toContainText('What guests see');
+
+  // Other specs on this server may already have linked a registry, which turns the button into "Add another link".
+  const start = page.getByRole('button', { name: /^(Continue: )?(Link your registry|Add another link)$/i });
+  await start.click();
+  const sheet = page.locator('dialog[open]');
+  await expect(sheet.getByRole('heading', { name: 'Paste the link' })).toBeFocused();
+  // The footer is on screen at every width: on a phone it used to sit below the fold of its own sheet.
+  await expect(sheet.getByRole('button', { name: 'Continue' })).toBeInViewport();
+  await noBlockingAxe(page);
+  await sheet.getByLabel('Link to your registry').fill('https://www.zola.com/');
+  await sheet.getByRole('button', { name: 'Continue' }).click();
+  await expect(sheet.getByText(/That is Zola’s home page/)).toBeVisible();
+  await expect(sheet.getByLabel('Link to your registry')).toHaveAttribute('aria-invalid', 'true');
+  await sheet.getByLabel('Link to your registry').fill('zola.com/registry/e2e-couple');
+  await sheet.getByRole('button', { name: 'Continue' }).click();
+  await expect(sheet.getByRole('heading', { name: 'Check it is yours' })).toBeVisible();
+  await expect(sheet.getByRole('link', { name: /Open it in a new tab/ })).toHaveAttribute('href', 'https://zola.com/registry/e2e-couple');
+  // Continue waits for the admin to say they opened it, and says so rather than sitting disabled.
+  await sheet.getByRole('button', { name: 'Continue' }).click();
+  await expect(sheet.getByText(/tick the box once you have seen it is yours/)).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: 'Check it is yours' })).toBeVisible();
+
+  await page.reload();
+  const resumed = page.locator('dialog[open]');
+  await expect(resumed.getByText('Picked up where you left off.')).toBeVisible();
+  await expect(resumed.getByRole('heading', { name: 'Check it is yours' })).toBeVisible();
+  await resumed.getByLabel('I opened it, and it is our registry.').check();
+  await resumed.getByRole('button', { name: 'Continue' }).click();
+  await expect(resumed.getByRole('heading', { name: 'How guests see it' })).toBeVisible();
+  await expect(resumed.getByLabel('What the link says')).toHaveValue('Our registry on Zola');
+
+  await resumed.getByRole('button', { name: 'Discard' }).click();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await expect(start).not.toHaveText(/^Continue/);
+  await expect(page.locator('[data-gift-link-id^="wishlist-zola"]')).toHaveCount(0);
+});
