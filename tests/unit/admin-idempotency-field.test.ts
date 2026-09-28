@@ -59,7 +59,9 @@ describe('admin forms and actions agree on the idempotency field name', () => {
 
     // Every other server-action module that forwards a form's key reads it as `idem`.
     const actionModules = files.filter((f) => /^\s*['"]use server['"]/.test(readFileSync(f, 'utf8')) && !rel(f).startsWith('admin/content/'));
-    expect(actionModules.length).toBeGreaterThan(3);
+    // Fewer every time a screen moves to the admin kit, whose flows call capabilities directly; the
+    // check is that the scan still finds the ones that remain, not how many there are.
+    expect(actionModules.length).toBeGreaterThan(0);
     for (const f of actionModules) {
       const src = readFileSync(f, 'utf8');
       if (!/idempotencyKey/.test(src)) continue;

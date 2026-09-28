@@ -182,7 +182,9 @@ describe('principal resolver', () => {
     // 73 -> 76: the gifts screen's deletes, each ui only — `admin_delete_gift_link`,
     // `admin_delete_gift_fund` (a built-in fund is reset instead) and `admin_delete_gift_rail`
     // (`admin_content`; the rail one is step-up, like setting it).
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(76);
+    // 76 -> 79: `admin_delete_event` (`admin_content` and `admin_guest_ops`, step-up; refused once
+    // anyone has answered), `admin_reorder_events` and `admin_delete_notice` (`admin_content`), ui only.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(79);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
