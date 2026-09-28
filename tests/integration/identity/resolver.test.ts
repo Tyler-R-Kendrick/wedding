@@ -173,21 +173,23 @@ describe('principal resolver', () => {
     // the funds a gift of money goes toward and the couple's own accounts it goes to.
     // 68 -> 69: `admin_preview_guest_table` (`admin_guest_ops`, ui only), the seating preview the
     // admin guide promised: what one guest would see if the draft chart were published.
-    // 69 -> 70: `admin_browse_as_guest` (ui only), "Browse as a guest": an administrator sees the
-    // site as one guest does, read-only unless it is their own guest record.
-    // 70 -> 71: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
+    // 69 -> 72: "Browse as a guest" (all ui only): `admin_browse_as_guest` starts a view of the site
+    // as one guest, read-only unless it is the administrator's own guest record;
+    // `admin_list_own_guest_records` lists those own records; `admin_guest_view_status` names the
+    // guest this browser's token is for.
+    // 72 -> 73: `admin_check_gift_setup` (`admin_content`, ui only, read), which the /admin/gifts flows
     // call between steps to check a registry link or a way to give before anything is saved.
-    // 71 -> 74: the gifts screen's deletes, each ui only — `admin_delete_gift_link`,
+    // 73 -> 76: the gifts screen's deletes, each ui only — `admin_delete_gift_link`,
     // `admin_delete_gift_fund` (a built-in fund is reset instead) and `admin_delete_gift_rail`
     // (`admin_content`; the rail one is step-up, like setting it).
-    // 74 -> 77: `admin_delete_event` (`admin_content` and `admin_guest_ops`, step-up; refused once
+    // 76 -> 79: `admin_delete_event` (`admin_content` and `admin_guest_ops`, step-up; refused once
     // anyone has answered), `admin_reorder_events` and `admin_delete_notice` (`admin_content`), ui only.
-    // 77 -> 78: `admin_delete_reservation_venue` (`admin_content`, ui only).
-    // 78 -> 79: `admin_list_content_sources` (`admin_content`, ui only, read), which the content
+    // 79 -> 80: `admin_delete_reservation_venue` (`admin_content`, ui only).
+    // 80 -> 81: `admin_list_content_sources` (`admin_content`, ui only, read), which the content
     // editor's source picker lists instead of bundling the seed file.
-    // 79 -> 80: `admin_dismiss_media_suggestion` (`admin_media`, ui only), which marks an AI
+    // 81 -> 82: `admin_dismiss_media_suggestion` (`admin_media`, ui only), which marks an AI
     // suggestion reviewed without touching the photo's alt text.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(80);
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(82);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

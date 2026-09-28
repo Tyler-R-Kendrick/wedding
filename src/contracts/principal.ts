@@ -58,8 +58,6 @@ export type AdminPrincipal = {
   entitlements: ReadonlySet<Entitlement>;
   authenticatedAt: string;
   sessionId: string;
-  /** Optional: admin previewing the site as a guest. Never grants that guest's private data. */
-  previewAs?: { lifecycle?: string; theme?: string };
 };
 
 /** Trusted server-side callers (jobs, webhooks) — never derived from a browser request. */
