@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { adminJobsOverview } from '@/capabilities/ops';
-import { newId } from '@/contracts/ids';
 // Every handler, as the cron runners load them: "no handler" should mean no runner can run the type,
 // not that this page's own module graph happened not to import it.
 import '@/lib/jobs/register-all';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
-import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
-import { cancelJob, retryJob } from '../_lib/ops-actions';
+import { ConsoleGate, ConsolePage, DataTable, Denied, formatStamp, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
+import { CancelJobFlow, RetryJob } from './_components/JobActions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Jobs', robots: { index: false, follow: false } };
@@ -14,6 +13,9 @@ export const metadata: Metadata = { title: 'Jobs', robots: { index: false, follo
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const statusTone = (s: string) => (s === 'dead' || s === 'failed' ? 'bad' : s === 'running' ? 'warn' : s === 'succeeded' ? 'good' : 'neutral');
+/** A job's state in words; an unknown one is shown with its first letter raised rather than hidden. */
+const STATUS: Record<string, string> = { queued: 'Queued', running: 'Running', succeeded: 'Succeeded', failed: 'Failed', dead: 'Dead' };
+const statusLabel = (s: string) => STATUS[s] ?? `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
 
 /**
  * The durable queue. Payloads are deliberately absent: a payload is arbitrary handler input and
@@ -70,10 +72,10 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
             <tr key={row.id}>
               <th scope="row">
                 {row.type}
-                {row.handlerRegistered ? null : <> <Pill tone="bad">no handler</Pill></>}
+                {row.handlerRegistered ? null : <> <Pill tone="bad">No handler</Pill></>}
               </th>
               <td>
-                <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+                <Pill tone={statusTone(row.status)}>{statusLabel(row.status)}</Pill>
               </td>
               <td className="con-num">
                 {row.attempts}/{row.maxAttempts}
@@ -81,13 +83,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
               <td><Stamp at={row.updatedAt} /></td>
               <td className="con-wrap">{row.lastError ?? '—'}</td>
               <td>
-                <form action={retryJob} className="con-inline-form">
-                  <input type="hidden" name="jobId" value={row.id} />
-                  <input type="hidden" name="idem" value={newId()} />
-                  <button type="submit" className="ops-button ops-button-ghost">
-                    Retry
-                  </button>
-                </form>
+                <RetryJob job={{ id: row.id, type: row.type }} />
               </td>
             </tr>
           ))}
@@ -109,7 +105,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
           {j.byType.map((t) => (
             <tr key={t.type}>
               <th scope="row">{t.type}</th>
-              <td>{t.handlerRegistered ? <Pill tone="good">registered</Pill> : <Pill tone="bad">missing</Pill>}</td>
+              <td>{t.handlerRegistered ? <Pill tone="good">Registered</Pill> : <Pill tone="bad">Missing</Pill>}</td>
               <td className="con-num">{t.total}</td>
               <td className="con-num">{t.queued}</td>
               <td className="con-num">{t.running}</td>
@@ -137,7 +133,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
             <tr key={row.id}>
               <th scope="row">{row.type}</th>
               <td>
-                <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+                <Pill tone={statusTone(row.status)}>{statusLabel(row.status)}</Pill>
               </td>
               <td className="con-num">
                 {row.attempts}/{row.maxAttempts}
@@ -147,13 +143,7 @@ export default async function AdminJobsPage({ searchParams }: { searchParams: Se
               <td className="ops-code">{row.lockedBy ?? '—'}</td>
               <td>
                 {row.status === 'queued' ? (
-                  <form action={cancelJob} className="con-inline-form">
-                    <input type="hidden" name="jobId" value={row.id} />
-                    <input type="hidden" name="idem" value={newId()} />
-                    <button type="submit" className="ops-button ops-button-danger">
-                      Cancel
-                    </button>
-                  </form>
+                  <CancelJobFlow job={{ id: row.id, type: row.type, runAt: formatStamp(row.runAt) }} />
                 ) : (
                   '—'
                 )}

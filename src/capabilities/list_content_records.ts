@@ -17,6 +17,10 @@ const summary = z.object({
   freshness: z.enum(['fresh', 'aging', 'stale', 'expired', 'not_yet_valid']),
   daysSinceVerified: z.number().int(),
   sourceType: z.string(),
+  /** The record's web address name or key, when its table has one (a recommendation points at an operational field by it). */
+  key: z.string().optional(),
+  /** Its place in a hand-ordered list; `null` when it has none yet. Absent for tables sorted otherwise. */
+  position: z.number().int().nullable().optional(),
 });
 const output = z.object({
   tables: z.array(z.object({ table: z.string(), label: z.string(), count: z.number().int(), needsAttention: z.number().int(), records: z.array(summary) })),

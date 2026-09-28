@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminSearchAudit } from '@/capabilities/ops';
+import { FilterBar } from '@/components/admin/flow/records';
 import { AUDIT_ACTIONS, type AuditAction } from '@/contracts/audit';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Pill, Section, Stamp, Stat, StatStrip } from '../_components/console';
@@ -18,6 +19,8 @@ const OUTCOMES = ['success', 'denied', 'failed'] as const;
 const ACTOR_KINDS = ['guest', 'admin', 'system', 'anonymous'] as const;
 const isAction = (v: string): v is AuditAction => (AUDIT_ACTIONS as readonly string[]).includes(v);
 const tone = (outcome: string) => (outcome === 'denied' ? 'warn' : outcome === 'failed' ? 'bad' : 'good');
+/** A pill is sentence case: `denied` reads "Denied". */
+const sentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1).replace(/_/g, ' ')}`;
 
 /**
  * The read side of the audit trail: twenty-one admin capabilities and every capability invocation
@@ -82,7 +85,13 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
       </StatStrip>
 
       <Section title="Filter" id="filter" note="Filters are applied server-side inside the capability; nothing is fetched to the browser and narrowed there.">
-        <form method="get" className="con-form">
+        <FilterBar
+          extra={
+            <Link className="link-block" href="/admin/audit">
+              Clear filters
+            </Link>
+          }
+        >
           <div className="ops-field">
             <label htmlFor="f-action">Action</label>
             <select id="f-action" name="action" className="ops-input" defaultValue={action ?? ''}>
@@ -100,7 +109,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               <option value="">Any outcome</option>
               {OUTCOMES.map((o) => (
                 <option key={o} value={o}>
-                  {o}
+                  {sentence(o)}
                 </option>
               ))}
             </select>
@@ -111,7 +120,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               <option value="">Anyone</option>
               {ACTOR_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {k}
+                  {sentence(k)}
                 </option>
               ))}
             </select>
@@ -128,13 +137,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
             <label htmlFor="f-request">Request id</label>
             <input id="f-request" name="requestId" type="text" className="ops-input" defaultValue={filters.requestId ?? ''} maxLength={80} />
           </div>
-          <button type="submit" className="ops-button ops-button-ghost">
-            Search
-          </button>
-          <p className="ops-field">
-            <Link className="link-block" href="/admin/audit">Clear filters</Link>
-          </p>
-        </form>
+        </FilterBar>
       </Section>
 
       {/*
@@ -174,7 +177,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: S
               </td>
               <td data-col="action">{r.action}</td>
               <td data-col="outcome">
-                <Pill tone={tone(r.outcome)}>{r.outcome}</Pill>
+                <Pill tone={tone(r.outcome)}>{sentence(r.outcome)}</Pill>
               </td>
               <td data-col="actor">
                 {r.actor.kind}
