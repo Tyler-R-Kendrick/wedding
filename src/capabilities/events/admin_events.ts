@@ -142,6 +142,9 @@ const deleteEventOutput = z.object({ deleted: z.boolean(), name: z.string(), ent
 
 const answers = (n: number) => (n === 1 ? 'one guest has' : `${n} guests have`);
 
+/** The advisory-lock key `admin_delete_event` holds for its transaction, so event deletes run one at a time. Fixed; any other use of advisory locks picks a different key. */
+const EVENT_DELETE_LOCK = 7_461_001_002;
+
 export const adminDeleteEvent = defineCapability<z.infer<typeof deleteEventInput>, z.infer<typeof deleteEventOutput>>({
   name: 'admin_delete_event',
   title: 'Delete event (admin)',
@@ -163,19 +166,25 @@ export const adminDeleteEvent = defineCapability<z.infer<typeof deleteEventInput
   async handler(ctx, i) {
     const db = await eDb(ctx);
     const r = await db.transaction(async (tx) => {
-      // Lock the rows first. An RSVP being saved holds a key-share lock on its event (the foreign
-      // key), so this waits for that answer to land and the count below sees it; an answer that
-      // starts after this waits for the delete and then fails its foreign key, instead of being
-      // deleted with it (submit_rsvp says so in words). Every event is locked, not only this one, so
-      // two deletes at once cannot each see the other's event and leave the wedding with none.
-      const all = await tx.select().from(events).for('update');
-      const event = all.find((e) => e.id === i.id);
+      // One event delete at a time, across the whole site: two deletes at once must not each see the
+      // other's event and leave the wedding with none. A transaction-scoped advisory lock, not a lock
+      // on every event row: an RSVP that answers several events takes key-share locks on their rows
+      // one by one, and a delete locking them all (in whatever order the table gives) could deadlock
+      // with it. Released at commit or rollback; PGlite has it too.
+      await tx.execute(sql`select pg_advisory_xact_lock(${EVENT_DELETE_LOCK})`);
+      // Then only this event's row, as before. An RSVP being saved holds a key-share lock on its event
+      // (the foreign key), so this waits for that answer to land and the count below sees it; an answer
+      // that starts after this waits for the delete and then fails its foreign key, instead of being
+      // deleted with it (submit_rsvp says so in words).
+      const [event] = await tx.select().from(events).where(eq(events.id, i.id)).for('update');
       if (!event) return { kind: 'missing' as const };
       const answered = Number((await tx.select({ n: count() }).from(rsvpResponses).where(eq(rsvpResponses.eventId, event.id)))[0]?.n ?? 0);
       if (answered > 0) return { kind: 'answered' as const, event, answered };
       // The last one stays: a wedding has at least one event, and an empty table is what the seed
       // (every boot and db:seed) reads as a new site, so it would put back all three placeholders.
-      if (all.length <= 1) return { kind: 'only' as const, event };
+      // A plain count is enough: under the lock above, no other delete is between it and ours.
+      const total = Number((await tx.select({ n: count() }).from(events))[0]?.n ?? 0);
+      if (total <= 1) return { kind: 'only' as const, event };
       // The foreign keys cascade these, but deleting them here says how many went, for the audit.
       const ents = await tx.delete(eventEntitlements).where(eq(eventEntitlements.eventId, event.id)).returning({ id: eventEntitlements.id });
       const meals = await tx.delete(mealOptions).where(eq(mealOptions.eventId, event.id)).returning({ id: mealOptions.id });

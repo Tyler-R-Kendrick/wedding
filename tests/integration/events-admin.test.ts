@@ -202,4 +202,19 @@ describe('the last event', () => {
     await seedEventsAndPlans(db);
     expect((await db.select({ id: events.id }).from(events)).map((r) => r.id)).toEqual([keep!.id]);
   });
+
+  it('stays when two admins delete the last two events at once: one delete goes through, the other is refused', async () => {
+    const second = expectOk(await run(adminUpsertEvent, admin, eventInput('Second to last'))).data;
+    const both = (await db.select({ id: events.id }).from(events)).map((r) => r.id);
+    expect(both).toHaveLength(2);
+    expect(both).toContain(second.id);
+
+    const results = await Promise.all(both.map((id) => run(adminDeleteEvent, admin, { id })));
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    const refused = results.filter((r) => !r.ok).map((r) => expectErr(r));
+    expect(refused).toHaveLength(1);
+    expect(refused[0]!.code).toBe('conflict');
+    expect(refused[0]!.message).toMatch(/cannot be deleted: it is the only event, and a wedding has at least one\. Edit it instead\.$/);
+    expect(await db.select({ id: events.id }).from(events)).toHaveLength(1);
+  });
 });

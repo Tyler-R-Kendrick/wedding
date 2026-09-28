@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql, type SQL } from 'drizzle-orm';
 import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
 import { giftLinks, type GiftLinkKind, type GiftLinkRow } from '@/db/schema';
@@ -61,7 +61,12 @@ export async function upsertGiftLink(db: Db, input: UpsertGiftLinkInput, now: Da
     updatedBy: input.updatedBy,
     updatedAt: now,
   });
-  const [row] = await db.insert(giftLinks).values(values).onConflictDoUpdate({ target: giftLinks.id, set: update }).returning();
+  const set: Omit<typeof update, 'verifiedAt'> & { verifiedAt?: Date | null | SQL } = update;
+  // A saved check vouches for the link it checked. With no word on the check (no `verifiedAt`, which
+  // is also what `confirmed` becomes), a link that now differs from the saved one clears it: keeping
+  // it would say the new link was checked. A link sent back unchanged (Hide, Up, Down) keeps it.
+  if (input.verifiedAt === undefined) set.verifiedAt = sql`case when ${giftLinks.url} is distinct from ${input.url} then null else ${giftLinks.verifiedAt} end`;
+  const [row] = await db.insert(giftLinks).values(values).onConflictDoUpdate({ target: giftLinks.id, set }).returning();
   return row!;
 }
 

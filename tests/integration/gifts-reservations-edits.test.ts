@@ -76,6 +76,30 @@ describe('gift links: an edit keeps what it leaves out', () => {
     expect(stamped).toBeLessThanOrEqual(Date.now() + 1000);
   });
 
+  it('clears the check when a save points the link somewhere new without checking it, and keeps it for the same link', async () => {
+    const id = 'edit-repoint';
+    const url = 'https://www.zola.com/registry/repoint-one';
+    expect((await run(adminUpsertGiftLink, { id, kind: 'registry', label: 'Repoint', url, confirmed: true })).ok).toBe(true);
+    const checked = (await linkRow(id)).verifiedAt;
+    expect(checked).toBeInstanceOf(Date);
+
+    // The same link sent back without a word on the check (Hide, Up, Down): the check stands.
+    expect((await run(adminUpsertGiftLink, { id, kind: 'registry', label: 'Repoint', url, active: false, sortOrder: 40 })).ok).toBe(true);
+    expect((await linkRow(id)).verifiedAt).toEqual(checked);
+
+    // A direct call that changes the link and says nothing of a check: nobody checked the new one.
+    const moved = await run(adminUpsertGiftLink, { id, kind: 'registry', label: 'Repoint', url: 'https://www.zola.com/registry/repoint-two' });
+    expect(moved.ok, JSON.stringify(moved)).toBe(true);
+    expect(moved.ok && moved.value.data.verifiedAt).toBeNull();
+    expect(await linkRow(id)).toMatchObject({ url: 'https://www.zola.com/registry/repoint-two', verifiedAt: null, active: false, sortOrder: 40 });
+
+    // A new link that is confirmed, or sent with an explicit check time, is stamped as asked.
+    expect((await run(adminUpsertGiftLink, { id, kind: 'registry', label: 'Repoint', url, confirmed: true })).ok).toBe(true);
+    expect((await linkRow(id)).verifiedAt).toBeInstanceOf(Date);
+    expect((await run(adminUpsertGiftLink, { id, kind: 'registry', label: 'Repoint', url: 'https://www.zola.com/registry/repoint-two', verifiedAt: '2026-01-01T00:00:00Z' })).ok).toBe(true);
+    expect((await linkRow(id)).verifiedAt).toEqual(new Date('2026-01-01T00:00:00Z'));
+  });
+
   it('refuses a registry site’s home page on save, not only in the check step', async () => {
     for (const url of ['https://www.zola.com/', 'https://www.theknot.com', 'https://withjoy.com/?ref=share']) {
       const r = await run(adminUpsertGiftLink, { id: 'edit-home', kind: 'registry', label: 'Home', url });
@@ -160,6 +184,38 @@ describe('reservable places: an edit keeps what it leaves out', () => {
   it('takes the defaults on a first save', async () => {
     const r = await run(adminUpsertReservationVenue, { id: 'edit-new-place', name: 'New Place' });
     expect(r.ok && r.value.data).toMatchObject({ active: true, placeholder: false, sortOrder: 0, note: null, verifiedAt: null });
+  });
+
+  it('clears the check when a save changes a booking link without checking it, and keeps it when the links are sent back unchanged', async () => {
+    const id = 'edit-relink';
+    const links = { resySlug: 'relink-resy', openTableId: 'relink-ot', url: 'https://www.opentable.com/r/relink' };
+    const first = await run(adminUpsertReservationVenue, { id, name: 'Relink', ...links, confirmed: true });
+    expect(first.ok, JSON.stringify(first)).toBe(true);
+    const checked = (await placeRow(id)).verifiedAt;
+    expect(checked).toBeInstanceOf(Date);
+    const savedUrl = (await placeRow(id)).url;
+
+    // Hide, Up, Down: the same links, or none at all, and no word on the check. It stands.
+    expect((await run(adminUpsertReservationVenue, { id, name: 'Relink', ...links, url: savedUrl, active: false, sortOrder: 7 })).ok).toBe(true);
+    expect((await placeRow(id)).verifiedAt).toEqual(checked);
+    expect((await run(adminUpsertReservationVenue, { id, name: 'Relink, renamed' })).ok).toBe(true);
+    expect((await placeRow(id)).verifiedAt).toEqual(checked);
+
+    // Each link, changed alone by a direct call that says nothing of a check, clears it.
+    for (const change of [{ resySlug: 'relink-resy-2' }, { openTableId: 'relink-ot-2' }, { url: 'https://www.opentable.com/r/relink-2' }, { resySlug: null }]) {
+      expect((await run(adminUpsertReservationVenue, { id, name: 'Relink', confirmed: true })).ok).toBe(true);
+      expect((await placeRow(id)).verifiedAt, JSON.stringify(change)).toBeInstanceOf(Date);
+      const r = await run(adminUpsertReservationVenue, { id, name: 'Relink', ...change });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+      expect(r.ok && r.value.data.verifiedAt, JSON.stringify(change)).toBeNull();
+      expect(await placeRow(id)).toMatchObject({ ...change, verifiedAt: null, active: false, sortOrder: 7 });
+    }
+
+    // A changed link sent with an explicit check time, or confirmed, is stamped as asked.
+    expect((await run(adminUpsertReservationVenue, { id, name: 'Relink', resySlug: 'relink-resy-3', verifiedAt: '2026-01-01T00:00:00Z' })).ok).toBe(true);
+    expect((await placeRow(id)).verifiedAt).toEqual(new Date('2026-01-01T00:00:00Z'));
+    expect((await run(adminUpsertReservationVenue, { id, name: 'Relink', resySlug: 'relink-resy-4', confirmed: true })).ok).toBe(true);
+    expect((await placeRow(id)).verifiedAt!.getTime()).toBeGreaterThan(new Date('2026-01-01T00:00:00Z').getTime());
   });
 
   it('refuses a check dated in the future', async () => {

@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, or, sql, type AnyColumn, type SQL } from 'drizzle-orm';
 import type { ContentSourceId } from '@/contracts/ids';
 import type { PrincipalRef } from '@/contracts/principal';
 import type { Db } from '@/db/client';
@@ -63,8 +63,26 @@ export async function upsertReservationVenue(db: Db, input: UpsertReservationVen
     updatedBy: input.updatedBy,
     updatedAt: now,
   });
-  const [row] = await db.insert(reservationVenues).values(values).onConflictDoUpdate({ target: reservationVenues.id, set: update }).returning();
+  const set: Omit<typeof update, 'verifiedAt'> & { verifiedAt?: Date | null | SQL } = update;
+  // A saved check vouches for the links it checked. With no word on the check (no `verifiedAt`, which
+  // is also what `confirmed` becomes), a booking link that now differs from the saved one clears it:
+  // keeping it would say the new link was checked. Links sent back unchanged (Hide, Up, Down) keep it.
+  if (input.verifiedAt === undefined) {
+    const changed = linkChanges([
+      [reservationVenues.url, input.url],
+      [reservationVenues.resySlug, input.resySlug],
+      [reservationVenues.openTableId, input.openTableId],
+    ]);
+    if (changed) set.verifiedAt = sql`case when ${changed} then null else ${reservationVenues.verifiedAt} end`;
+  }
+  const [row] = await db.insert(reservationVenues).values(values).onConflictDoUpdate({ target: reservationVenues.id, set }).returning();
   return row!;
+}
+
+/** True (in SQL) when any supplied link differs from the saved one; `undefined` (left out, so kept) never counts. Null when none was supplied. */
+function linkChanges(pairs: ReadonlyArray<readonly [AnyColumn, string | null | undefined]>): SQL | undefined {
+  const tests = pairs.filter(([, v]) => v !== undefined).map(([col, v]) => sql`${col} is distinct from ${v}`);
+  return tests.length ? or(...tests) : undefined;
 }
 
 /** The fields a caller actually supplied (`null` included), so an upsert never overwrites a value with "not given". */
