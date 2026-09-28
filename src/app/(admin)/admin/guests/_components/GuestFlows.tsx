@@ -1,6 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
+import { useList } from '@/components/admin/flow/lists';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
 
@@ -20,6 +22,7 @@ export interface GuestSummary {
 }
 
 type Option = { value: string; label: string };
+
 
 const KINDS = [
   { value: 'adult', label: 'Adult', description: 'Signs in with their own email.' },
@@ -47,7 +50,9 @@ interface GuestValues extends Record<string, unknown> {
  * "Managed by" was a text box for a guest id. It is now a choice among the household's own
  * members, fetched when the household is chosen, because that is the only valid answer.
  */
-export function GuestFlow({ guest, households, defaultHouseholdId, label, variant = 'primary' }: { guest?: GuestSummary; households: Option[]; defaultHouseholdId?: string; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
+export function GuestFlow({ guest, households: given, defaultHouseholdId, label, variant = 'primary' }: { guest?: GuestSummary; households?: Option[]; defaultHouseholdId?: string; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
+  // One list for the page (`ListsProvider`), unless the caller passes its own.
+  const households = useList('households', given);
   const initial: GuestValues = {
     householdId: guest?.householdId ?? defaultHouseholdId ?? '',
     firstName: guest?.firstName ?? '',
@@ -261,7 +266,9 @@ export function RebindFlow({ guest }: { guest: GuestSummary }) {
 }
 
 /** Folds a duplicate into the guest to keep: choose which one, then confirm. */
-export function MergeFlow({ guest, others }: { guest: GuestSummary; others: Option[] }) {
+export function MergeFlow({ guest }: { guest: GuestSummary }) {
+  const guests = useList('guests');
+  const others = useMemo(() => guests.filter((o) => o.value !== guest.id), [guests, guest.id]);
   return (
     <AdminFlow<ConfirmValues>
       id={`guests:merge:${guest.id}`}

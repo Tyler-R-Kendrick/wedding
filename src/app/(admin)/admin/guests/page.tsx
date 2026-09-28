@@ -4,6 +4,7 @@ import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest-view';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { startGuestView } from '../_lib/guest-view-actions';
+import { ListsProvider } from '@/components/admin/flow/lists';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
@@ -84,54 +85,56 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Input id="q" label="Search name or email" defaultValue={sp.q} />
           <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
         </FilterBar>
-        <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
-          {rows.map((g) => (
-            <RecordRow
-              key={g.id}
-              data-guest-id={g.id}
-              title={g.displayName}
-              status={
-                g.mergedIntoGuestId ? (
-                  <Pill>Merged</Pill>
-                ) : g.claimed ? (
-                  <Pill tone="good">Signed in</Pill>
-                ) : (
-                  <Pill>Not signed in yet</Pill>
-                )
-              }
-              meta={
-                <>
-                  {g.householdName} · {g.kind === 'plus_one' ? 'plus-one' : g.kind}
-                  {g.isMinor ? ', a minor' : ''} · {g.email ?? 'no email'}
-                  {g.claimed && g.claimedAt ? (
-                    <>
-                      {' '}
-                      · claimed <Day at={g.claimedAt} />
-                    </>
-                  ) : null}
-                </>
-              }
-              actions={
-                g.mergedIntoGuestId ? null : (
+        <ListsProvider lists={{ households, guests: mergeTargets }}>
+          <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
+            {rows.map((g) => (
+              <RecordRow
+                key={g.id}
+                data-guest-id={g.id}
+                title={g.displayName}
+                status={
+                  g.mergedIntoGuestId ? (
+                    <Pill>Merged</Pill>
+                  ) : g.claimed ? (
+                    <Pill tone="good">Signed in</Pill>
+                  ) : (
+                    <Pill>Not signed in yet</Pill>
+                  )
+                }
+                meta={
                   <>
-                    <GuestFlow guest={g} households={households} label="Edit" variant="quiet" />
-                    {g.claimed ? <RebindFlow guest={g} /> : null}
-                    <MergeFlow guest={g} others={mergeTargets.filter((o) => o.value !== g.id)} />
-                    {canBrowseAs ? (
-                      <form action={startGuestView} className="flow-inline-form">
-                        <input type="hidden" name="guestId" value={g.id} />
-                        <button type="submit" className="flow-trigger-quiet">
-                          Browse as <span className="sr-only">{g.displayName}</span>
-                        </button>
-                      </form>
+                    {g.householdName} · {g.kind === 'plus_one' ? 'plus-one' : g.kind}
+                    {g.isMinor ? ', a minor' : ''} · {g.email ?? 'no email'}
+                    {g.claimed && g.claimedAt ? (
+                      <>
+                        {' '}
+                        · claimed <Day at={g.claimedAt} />
+                      </>
                     ) : null}
-                    {g.claimed ? <ResetAccessFlow guest={g} /> : <DeleteGuestFlow guest={g} />}
                   </>
-                )
-              }
-            />
-          ))}
-        </RecordList>
+                }
+                actions={
+                  g.mergedIntoGuestId ? null : (
+                    <>
+                      <GuestFlow guest={g} label="Edit" variant="quiet" />
+                      {g.claimed ? <RebindFlow guest={g} /> : null}
+                      <MergeFlow guest={g} />
+                      {canBrowseAs ? (
+                        <form action={startGuestView} className="flow-inline-form">
+                          <input type="hidden" name="guestId" value={g.id} />
+                          <button type="submit" className="flow-trigger-quiet">
+                            Browse as <span className="sr-only">{g.displayName}</span>
+                          </button>
+                        </form>
+                      ) : null}
+                      {g.claimed ? <ResetAccessFlow guest={g} /> : <DeleteGuestFlow guest={g} />}
+                    </>
+                  )
+                }
+              />
+            ))}
+          </RecordList>
+        </ListsProvider>
       </Section>
 
       <Section title="Browse the site as a guest" id="browse-as">

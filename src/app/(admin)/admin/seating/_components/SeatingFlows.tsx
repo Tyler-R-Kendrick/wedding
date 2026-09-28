@@ -1,5 +1,6 @@
 'use client';
 
+import { useList } from '@/components/admin/flow/lists';
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey, type CapabilityResponse } from '@/components/handoff/client';
@@ -163,7 +164,9 @@ interface SeatValues extends Record<string, unknown> {
 const validSeat = (s: string) => !s.trim() || (/^\d{1,2}$/.test(s.trim()) && Number(s) >= 1 && Number(s) <= 99);
 
 /** Seat one guest at a draft table, or move them. One question, so one step. */
-export function SeatFlow({ guest, tables }: { guest: { guestId: string; displayName: string; tableId: string; seatNumber: number | null }; tables: Option[] }) {
+export function SeatFlow({ guest, tables: given }: { guest: { guestId: string; displayName: string; tableId: string; seatNumber: number | null }; tables?: Option[] }) {
+  // The page's one list of tables (`ListsProvider`), not a copy per guest.
+  const tables = useList('tables', given);
   const from = (): SeatValues => ({ tableId: guest.tableId, seatNumber: guest.seatNumber ? String(guest.seatNumber) : '' });
   const verb = guest.tableId ? 'Move' : 'Seat';
   return (

@@ -7,6 +7,7 @@ import { invokeForPage } from '@/components/handoff/server';
 import { hasEntitlement } from '@/contracts/principal';
 import { DEFAULT_PROGRAM } from '@/domain/transport';
 import { ConsoleGate, ConsolePage, DataTable, Day, Note, Pill, Section } from '../_components/console';
+import { ListsProvider } from '@/components/admin/flow/lists';
 import { AssignRideFlow, RevokeRideFlow, UploadCodesFlow, type GuestOption } from './_components/TransportFlows';
 
 export const dynamic = 'force-dynamic';
@@ -56,65 +57,67 @@ export default async function AdminTransportPage() {
       {!guestList.ok ? <Note>The guest list could not be read, so guests are shown by id: {guestList.error.message}</Note> : null}
 
       <Section title="Who has a ride benefit" id="benefits">
-        <RecordList label="Ride benefits" empty={entitlements.length ? null : 'Nobody has a ride benefit yet.'}>
-          {entitlements.map((e) => {
-            const name = byId.has(e.guestId) ? nameOf(e.guestId) : e.guestId;
-            const ride = {
-              id: e.id,
-              guestId: e.guestId,
-              guestName: name,
-              householdId: e.householdId,
-              program: e.program,
-              amountNote: e.amountNote,
-              validityNote: e.validityNote,
-              geofenceNote: e.geofenceNote,
-              providerProgramRef: e.providerProgramRef,
-              validFrom: e.validFrom,
-              validUntil: e.validUntil,
-              verifiedAt: e.verifiedAt,
-            };
-            return (
-              <RecordRow
-                key={e.id}
-                data-entitlement-id={e.id}
-                title={name}
-                status={
-                  <>
-                    {e.status === 'active' ? <Pill tone="good">Active</Pill> : <Pill>Withdrawn</Pill>}{' '}
-                    {e.guestIsMinor ? <Pill tone="warn">A minor, cannot claim</Pill> : null}
-                  </>
-                }
-                meta={
-                  <>
-                    {byId.get(e.guestId)?.householdName ?? 'Household not found'} · {e.amountNote ?? 'no amount set'} · {e.claim ? CLAIM[e.claim.status] ?? e.claim.status : 'not claimed yet'}
-                    {e.claim?.claimedAt ? (
-                      <>
-                        {' '}
-                        <Day at={e.claim.claimedAt} />
-                      </>
-                    ) : null}
-                  </>
-                }
-                actions={
-                  e.status === 'active' ? (
+        <ListsProvider lists={{ guests: options }}>
+          <RecordList label="Ride benefits" empty={entitlements.length ? null : 'Nobody has a ride benefit yet.'}>
+            {entitlements.map((e) => {
+              const name = byId.has(e.guestId) ? nameOf(e.guestId) : e.guestId;
+              const ride = {
+                id: e.id,
+                guestId: e.guestId,
+                guestName: name,
+                householdId: e.householdId,
+                program: e.program,
+                amountNote: e.amountNote,
+                validityNote: e.validityNote,
+                geofenceNote: e.geofenceNote,
+                providerProgramRef: e.providerProgramRef,
+                validFrom: e.validFrom,
+                validUntil: e.validUntil,
+                verifiedAt: e.verifiedAt,
+              };
+              return (
+                <RecordRow
+                  key={e.id}
+                  data-entitlement-id={e.id}
+                  title={name}
+                  status={
                     <>
-                      <AssignRideFlow guests={options} ride={ride} defaultProgram={DEFAULT_PROGRAM} variant="quiet" label="Edit" accessibleName={`Edit ${name}’s ride benefit`} />
-                      <RevokeRideFlow ride={ride} />
+                      {e.status === 'active' ? <Pill tone="good">Active</Pill> : <Pill>Withdrawn</Pill>}{' '}
+                      {e.guestIsMinor ? <Pill tone="warn">A minor, cannot claim</Pill> : null}
                     </>
-                  ) : (
-                    <QuickAction
-                      label="Reactivate"
-                      busyLabel="Reactivating…"
-                      done={`${name}’s ride benefit is active again.`}
-                      accessibleName={`Reactivate ${name}’s ride benefit`}
-                      calls={[{ capability: 'admin_revoke_transportation_entitlement', input: { entitlementId: e.id, status: 'active' } }]}
-                    />
-                  )
-                }
-              />
-            );
-          })}
-        </RecordList>
+                  }
+                  meta={
+                    <>
+                      {byId.get(e.guestId)?.householdName ?? 'Household not found'} · {e.amountNote ?? 'no amount set'} · {e.claim ? CLAIM[e.claim.status] ?? e.claim.status : 'not claimed yet'}
+                      {e.claim?.claimedAt ? (
+                        <>
+                          {' '}
+                          <Day at={e.claim.claimedAt} />
+                        </>
+                      ) : null}
+                    </>
+                  }
+                  actions={
+                    e.status === 'active' ? (
+                      <>
+                        <AssignRideFlow ride={ride} defaultProgram={DEFAULT_PROGRAM} variant="quiet" label="Edit" accessibleName={`Edit ${name}’s ride benefit`} />
+                        <RevokeRideFlow ride={ride} />
+                      </>
+                    ) : (
+                      <QuickAction
+                        label="Reactivate"
+                        busyLabel="Reactivating…"
+                        done={`${name}’s ride benefit is active again.`}
+                        accessibleName={`Reactivate ${name}’s ride benefit`}
+                        calls={[{ capability: 'admin_revoke_transportation_entitlement', input: { entitlementId: e.id, status: 'active' } }]}
+                      />
+                    )
+                  }
+                />
+              );
+            })}
+          </RecordList>
+        </ListsProvider>
       </Section>
 
       <Section title="Ride codes" id="codes" note="Codes you add from Uber, handed out one per claim. Only the counts are shown.">

@@ -8,6 +8,7 @@ import { FloorPlan } from '@/components/floorplan/FloorPlan';
 import { adminInvoke, adminPrincipal } from '../../_shared/admin';
 import { ConsoleGate, ConsolePage, DataTable, Denied, Note, Pill, Section, Stamp } from '../_components/console';
 import { Checkbox, Input } from '../_components/ops';
+import { ListsProvider } from '@/components/admin/flow/lists';
 import { DeleteTableFlow, ImportChartFlow, PublishFlow, SeatFlow, TableFlow, UnpublishFlow } from './_components/SeatingFlows';
 
 export const dynamic = 'force-dynamic';
@@ -193,35 +194,37 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
           <Input id="seat-q" name="q" label="Search name or household" defaultValue={q} />
           <Checkbox id="seat-unseated" name="unseated" label="Only guests without a seat" defaultChecked={unseatedOnly} />
         </FilterBar>
-        <RecordList label="Guests and their seats" empty={seatRows.length === 0 ? (everyone.length ? 'Nobody matches this search.' : 'No guests yet.') : null}>
-          {seatRows.map((g) => (
-            <RecordRow
-              key={g.guestId}
-              data-guest-id={g.guestId}
-              title={g.displayName}
-              status={g.receptionRsvp === 'accepted' ? <Pill tone="good">Coming</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">Not coming</Pill> : <Pill>No answer yet</Pill>}
-              meta={
-                <>
-                  {g.householdName} · {g.tableId ? `${tableName.get(g.tableId)}${g.seatNumber ? `, seat ${g.seatNumber}` : ''}` : 'no seat yet'}
-                </>
-              }
-              actions={
-                <>
-                  <SeatFlow guest={{ guestId: g.guestId, displayName: g.displayName, tableId: g.tableId, seatNumber: g.seatNumber }} tables={tableOptions} />
-                  {g.tableId ? (
-                    <QuickAction
-                      label="Unseat"
-                      busyLabel="Unseating…"
-                      done={`${g.displayName} unseated (draft).`}
-                      accessibleName={`Unseat ${g.displayName}`}
-                      calls={[{ capability: 'admin_assign_seats', input: { changes: [{ guestId: g.guestId, tableId: null, seatNumber: null }] } }]}
-                    />
-                  ) : null}
-                </>
-              }
-            />
-          ))}
-        </RecordList>
+        <ListsProvider lists={{ tables: tableOptions }}>
+          <RecordList label="Guests and their seats" empty={seatRows.length === 0 ? (everyone.length ? 'Nobody matches this search.' : 'No guests yet.') : null}>
+            {seatRows.map((g) => (
+              <RecordRow
+                key={g.guestId}
+                data-guest-id={g.guestId}
+                title={g.displayName}
+                status={g.receptionRsvp === 'accepted' ? <Pill tone="good">Coming</Pill> : g.receptionRsvp === 'declined' ? <Pill tone="bad">Not coming</Pill> : <Pill>No answer yet</Pill>}
+                meta={
+                  <>
+                    {g.householdName} · {g.tableId ? `${tableName.get(g.tableId)}${g.seatNumber ? `, seat ${g.seatNumber}` : ''}` : 'no seat yet'}
+                  </>
+                }
+                actions={
+                  <>
+                    <SeatFlow guest={{ guestId: g.guestId, displayName: g.displayName, tableId: g.tableId, seatNumber: g.seatNumber }} />
+                    {g.tableId ? (
+                      <QuickAction
+                        label="Unseat"
+                        busyLabel="Unseating…"
+                        done={`${g.displayName} unseated (draft).`}
+                        accessibleName={`Unseat ${g.displayName}`}
+                        calls={[{ capability: 'admin_assign_seats', input: { changes: [{ guestId: g.guestId, tableId: null, seatNumber: null }] } }]}
+                      />
+                    ) : null}
+                  </>
+                }
+              />
+            ))}
+          </RecordList>
+        </ListsProvider>
       </Section>
 
       <Section title="Floor plans" id="plans">

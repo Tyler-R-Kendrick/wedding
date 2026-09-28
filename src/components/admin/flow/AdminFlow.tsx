@@ -178,6 +178,12 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
     if (durable && dirty) writeDraft(id, { values, step, open });
   }, [id, values, step, open, dirty, durable]);
 
+  // The sheet's content exists only while it is open or closing. Rendered always, a page of rows
+  // carried every row's whole form, closed, in its HTML: five flows a guest times two hundred guests
+  // was seconds of server rendering and thousands of nodes nobody could see.
+  const [rendered, setRendered] = useState(open);
+  if (open && !rendered) setRendered(true);
+
   // The sheet is a native modal <dialog>: focus is contained, Escape works, and the page behind it is inert.
   useEffect(() => {
     const d = dialogRef.current;
@@ -190,7 +196,10 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       d.setAttribute('data-closing', '');
       const done = () => {
         d.removeAttribute('data-closing');
-        if (d.open) d.close();
+        if (d.open) {
+          d.close();
+          setRendered(false);
+        }
         // A sheet that opened itself (a restored draft, the return from /step-up) had nothing focused
         // before it, so the browser would drop focus to <body>. The button that opens it is where it lives.
         const active = document.activeElement;
@@ -400,25 +409,26 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
           if (e.target === e.currentTarget) dismiss();
         }}
       >
-        <form className="flow-frame" onSubmit={onSubmit} noValidate>
-          <header className="flow-head">
-            <div className="flow-head__row">
-              <p id={`${uid}--sheet-title`} className="flow-title">
-                {title}
-              </p>
-              <button type="button" className="flow-close" onClick={dismiss}>
-                Close{durable && result === null ? <span className="sr-only"> (your answers are kept)</span> : null}
-              </button>
-            </div>
-            {!single && result === null ? (
-              <ol className="flow-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
-                {steps.map((s, i) => (
-                  <li key={s.title} data-state={i < step ? 'done' : i === step ? 'current' : 'todo'} aria-current={i === step ? 'step' : undefined}>
-                    <span className="flow-progress__bar" aria-hidden="true" />
-                    <span className="flow-progress__label">{s.title}</span>
-                  </li>
-                ))}
-              </ol>
+        {rendered ? (
+          <form className="flow-frame" onSubmit={onSubmit} noValidate>
+            <header className="flow-head">
+              <div className="flow-head__row">
+                <p id={`${uid}--sheet-title`} className="flow-title">
+                  {title}
+                </p>
+                <button type="button" className="flow-close" onClick={dismiss}>
+                  Close{durable && result === null ? <span className="sr-only"> (your answers are kept)</span> : null}
+                </button>
+              </div>
+              {!single && result === null ? (
+                <ol className="flow-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
+                  {steps.map((s, i) => (
+                    <li key={s.title} data-state={i < step ? 'done' : i === step ? 'current' : 'todo'} aria-current={i === step ? 'step' : undefined}>
+                      <span className="flow-progress__bar" aria-hidden="true" />
+                      <span className="flow-progress__label">{s.title}</span>
+                    </li>
+                  ))}
+                </ol>
             ) : null}
           </header>
 
@@ -492,6 +502,7 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
             )}
           </footer>
         </form>
+        ) : null}
       </dialog>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useList } from '@/components/admin/flow/lists';
 import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { CheckField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 
@@ -47,7 +48,9 @@ const PROGRAMME = /^[a-z0-9][a-z0-9-]{0,63}$/;
  * then checked the second matched the first). The guest is now chosen by name, and the household is
  * the one they are in.
  */
-export function AssignRideFlow({ guests, ride, defaultProgram, label, variant = 'primary', accessibleName }: { guests: GuestOption[]; ride?: RideSummary; defaultProgram: string; label: string; variant?: 'primary' | 'ghost' | 'quiet'; accessibleName?: string }) {
+export function AssignRideFlow({ guests: given, ride, defaultProgram, label, variant = 'primary', accessibleName }: { guests?: GuestOption[]; ride?: RideSummary; defaultProgram: string; label: string; variant?: 'primary' | 'ghost' | 'quiet'; accessibleName?: string }) {
+  // The page's one guest list (`ListsProvider`), not a copy per ride.
+  const guests = useList<GuestOption>('guests', given);
   const initial: AssignValues = {
     guestId: ride?.guestId ?? '',
     program: ride?.program ?? defaultProgram,
