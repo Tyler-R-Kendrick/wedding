@@ -1,3 +1,4 @@
+import { moveCalls } from '@/components/admin/flow/order';
 import type { HotelRecommendation, TravelLink } from '@/domain/travel';
 import { assertAllowedRedirect } from '@/lib/redirects';
 
@@ -56,3 +57,12 @@ export const LINK_CATEGORIES = [
   { value: 'other', label: 'Something else', description: '' },
 ];
 export const categoryLabel = (c: string) => LINK_CATEGORIES.find((x) => x.value === c)?.label ?? c;
+
+/**
+ * Up or Down for a partner link. Guests see links grouped by category, so a link moves within its
+ * own group; at either end of its group there is nowhere to go (no calls).
+ */
+export function linkMoves(links: readonly TravelLink[], link: TravelLink, direction: 'up' | 'down') {
+  const group = links.filter((x) => x.category === link.category);
+  return moveCalls(group, group.indexOf(link), direction, linkInput, 'admin_save_travel_link');
+}

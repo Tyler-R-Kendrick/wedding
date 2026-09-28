@@ -156,8 +156,13 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
 
   // Pick up a draft once, after hydration: the server cannot know what this tab left unfinished.
   useEffect(() => {
-    const d = readDraft<V>(id);
     hydrated.current = true;
+    // A secret flow keeps nothing: a draft an older version of it left behind is dropped, not restored.
+    if (secret) {
+      clearDraft(id);
+      return;
+    }
+    const d = readDraft<V>(id);
     if (!d) return;
     /* eslint-disable react-hooks/set-state-in-effect -- restoring browser-only state after hydration is the point */
     setValues({ ...initial, ...d.values });
@@ -194,23 +199,38 @@ export function AdminFlow<V extends Record<string, unknown>>({ id, title, trigge
       headingRef.current?.focus();
     } else if (!open && d.open) {
       d.setAttribute('data-closing', '');
+      let finished = false;
       const done = () => {
+        if (finished) return;
+        finished = true;
+        d.removeEventListener('animationend', onEnd);
         d.removeAttribute('data-closing');
-        if (d.open) {
-          d.close();
-          setRendered(false);
-        }
+        if (d.open) d.close();
+        setRendered(false);
         // A sheet that opened itself (a restored draft, the return from /step-up) had nothing focused
         // before it, so the browser would drop focus to <body>. The button that opens it is where it lives.
         const active = document.activeElement;
         if (!active || active === document.body || d.contains(active)) triggerRef.current?.focus();
       };
-      // The exit animation ends the close; the timer covers reduced motion, where there is none.
-      d.addEventListener('animationend', done, { once: true });
+      // Only the sheet's own exit animation ends the close; a step's animation inside it bubbles up too.
+      const onEnd = (e: AnimationEvent) => {
+        if (e.target === d) done();
+      };
+      // The timer covers reduced motion, where there is no animation at all.
+      d.addEventListener('animationend', onEnd);
       const t = window.setTimeout(done, 260);
-      return () => window.clearTimeout(t);
+      return () => {
+        // Reopened before the close finished: this close is over, and it must not unmount the sheet later.
+        finished = true;
+        window.clearTimeout(t);
+        d.removeEventListener('animationend', onEnd);
+        d.removeAttribute('data-closing');
+      };
+    } else if (!open && !d.open && rendered) {
+      // The browser closed it itself (its close watcher): nothing is showing, so nothing is rendered.
+      setRendered(false);
     }
-  }, [open]);
+  }, [open, rendered]);
 
   useEffect(() => {
     if (open) headingRef.current?.focus();

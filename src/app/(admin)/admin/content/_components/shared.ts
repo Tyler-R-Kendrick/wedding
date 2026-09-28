@@ -5,6 +5,7 @@ import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { ContentRecordsData } from '@/capabilities/list_content_records';
 import type { ContentTableName } from '@/db/schema/content';
 import { TABLE_SPECS, VISIBILITY_LABELS, type ContentPickList, type FieldSpec } from '@/domain/content/admin';
+import { moveCalls } from '@/components/admin/flow/order';
 import type { PillTone } from '../../_components/console';
 import type { ContentEditor, EditorLists, RefOption, SourceOption } from './types';
 
@@ -157,4 +158,16 @@ export function describeValue(f: FieldSpec, v: unknown, editor: Pick<ContentEdit
 
 function clip(text: string): string {
   return text.length > 240 ? `${text.slice(0, 237)}…` : text;
+}
+
+/**
+ * Up or Down in a table sorted by position (`MoveRecord`). A record with no place yet sorts after
+ * those that have one, so it moves as if it held the next free number, and the move writes real
+ * ones. Each save sends only the position (`merge`), so the list's summaries are enough.
+ */
+export function contentMoveCalls(table: string, rows: readonly { id: string; position?: number | null }[], index: number, direction: 'up' | 'down') {
+  const last = Math.max(0, ...rows.map((r) => r.position ?? 0));
+  let unplaced = 0;
+  const placed = rows.map((r) => ({ id: r.id, sortOrder: typeof r.position === 'number' ? r.position : last + 1 + unplaced++ }));
+  return moveCalls(placed, index, direction, (r, patch) => ({ table, id: r.id, data: { order: patch.sortOrder }, merge: true }), 'save_content_record', Number.MAX_SAFE_INTEGER);
 }

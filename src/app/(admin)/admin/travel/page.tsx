@@ -8,7 +8,7 @@ import { ConsoleGate, ConsolePage, DataTable, Day, Denied, KeyValues, Note, Pill
 import { HotelFlow, DeleteHotelFlow } from './_components/HotelFlow';
 import { LinkFlow, DeleteLinkFlow } from './_components/LinkFlow';
 import { moveCalls } from '@/components/admin/flow/order';
-import { categoryLabel, hotelInput, linkInput } from './_components/travel-input';
+import { categoryLabel, hotelInput, linkInput, linkMoves } from './_components/travel-input';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Travel (admin)', robots: { index: false, follow: false } };
@@ -102,9 +102,9 @@ export default async function AdminTravelPage() {
 
       <Section title="Links to book travel" id="links" note="Shown on Travel & Stay, and offered instead of live search when it is unavailable.">
         <RecordList label="Travel links" empty={links.length ? null : 'No links yet. Guests see only the hotels above until you add one.'}>
-          {links.map((l, i) => {
-            const prev = links[i - 1];
-            const next = links[i + 1];
+          {links.map((l) => {
+            const up = linkMoves(links, l, 'up');
+            const down = linkMoves(links, l, 'down');
             return (
               <RecordRow
                 key={l.id}
@@ -131,8 +131,8 @@ export default async function AdminTravelPage() {
                       accessibleName={`${l.active ? 'Hide' : 'Show'} ${l.label}`}
                       calls={[{ capability: 'admin_save_travel_link', input: linkInput(l, { active: !l.active }) }]}
                     />
-                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${l.label} up.`} unavailable={!prev} accessibleName={`Move ${l.label} up`} calls={moveCalls(links, i, 'up', linkInput, 'admin_save_travel_link')} />
-                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${l.label} down.`} unavailable={!next} accessibleName={`Move ${l.label} down`} calls={moveCalls(links, i, 'down', linkInput, 'admin_save_travel_link')} />
+                    <QuickAction label="Up" busyLabel="Moving…" done={`Moved ${l.label} up.`} unavailable={up.length === 0} accessibleName={`Move ${l.label} up`} calls={up} />
+                    <QuickAction label="Down" busyLabel="Moving…" done={`Moved ${l.label} down.`} unavailable={down.length === 0} accessibleName={`Move ${l.label} down`} calls={down} />
                     <DeleteLinkFlow link={l} />
                   </>
                 }

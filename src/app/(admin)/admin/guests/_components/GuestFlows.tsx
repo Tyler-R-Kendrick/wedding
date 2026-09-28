@@ -325,8 +325,8 @@ interface ImportResult {
 
 const counts = (d: ImportResult) => `${d.householdsCreated} households and ${d.guestsCreated} guests to add, ${d.guestsUpdated} guests to update, ${d.skipped} lines skipped.`;
 
-/** The capability route takes 256 KB a request; this leaves room for the rest of the body. */
-const CSV_LIMIT_BYTES = 240 * 1024;
+/** The capability route's limit on one request (`MAX_BODY_BYTES` in the route). */
+const REQUEST_LIMIT_BYTES = 256 * 1024;
 
 /**
  * Import a guest list: paste it, read what a dry run would do, then import. The dry run used to be
@@ -361,8 +361,9 @@ export function ImportGuestsFlow() {
           ready: (v) => v.csv.trim().length > 0,
           readyHint: { field: 'csv', message: 'Paste the list first.' },
           next: async (v) => {
-            // The request, CSV and all, has to fit the capability route's body limit (256 KB).
-            if (new Blob([v.csv]).size > CSV_LIMIT_BYTES) return { errors: { csv: 'That list is too long to send in one go. Split it into files of about a thousand guests each and import them one after another.' } };
+            // The request, CSV and all, has to fit the capability route's body limit (256 KB). Measured
+            // as it is sent: JSON escapes every quote and line break, so a CSV grows on the way.
+            if (new Blob([JSON.stringify({ input: { csv: v.csv, dryRun: true }, idempotencyKey: 'X'.repeat(26) })]).size > REQUEST_LIMIT_BYTES) return { errors: { csv: 'That list is too long to send in one go. Split it into files of about a thousand guests each and import them one after another.' } };
             // A dry run is still an action to the pipeline, so it carries its own idempotency key.
             const res = await callCapability<ImportResult>('admin_import_guests_csv', { input: { csv: v.csv, dryRun: true }, idempotencyKey: newIdempotencyKey() });
             if (!res.ok || !res.data) return { errors: { csv: res.error?.message ?? 'The list could not be read.' } };

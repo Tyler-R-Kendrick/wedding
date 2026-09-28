@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentRecordFlow, MoveRecord } from '@/app/(admin)/admin/content/_components/ContentFlows';
-import { contentEditor, sourceOptions } from '@/app/(admin)/admin/content/_components/shared';
+import { contentEditor, contentMoveCalls, sourceOptions } from '@/app/(admin)/admin/content/_components/shared';
 import type { EditorLists } from '@/app/(admin)/admin/content/_components/types';
 import { SEED_SOURCES } from '@/db/seed/sources';
 
@@ -178,6 +178,29 @@ describe('moving a record', () => {
     expect(sentBody(0).input).toEqual(calls[0]!.input);
     expect(sentBody(1).input).toEqual(calls[1]!.input);
     await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it('builds a move from the list: only the position, and records with no place yet go after the rest', () => {
+    const rows = [{ id: 'A', position: 1 }, { id: 'B', position: 2 }, { id: 'C', position: null }, { id: 'D' }];
+    /** The order after the saves, and that every save sends only a position. */
+    const orderAfter = (i: number, d: 'up' | 'down') => {
+      const pos = new Map<string, number>([['A', 1], ['B', 2], ['C', 3], ['D', 4]]);
+      for (const c of contentMoveCalls('faq_entries', rows, i, d)) {
+        const input = c.input as { table: string; id: string; data: Record<string, unknown>; merge: boolean };
+        expect(c.capability).toBe('save_content_record');
+        expect(input).toMatchObject({ table: 'faq_entries', merge: true });
+        expect(Object.keys(input.data)).toEqual(['order']);
+        pos.set(input.id, input.data.order as number);
+      }
+      expect(new Set(pos.values()).size).toBe(4);
+      return [...pos.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id).join('');
+    };
+    expect(orderAfter(1, 'up')).toBe('BACD');
+    expect(orderAfter(3, 'up')).toBe('ABDC');
+    expect(orderAfter(2, 'down')).toBe('ABDC');
+    // B moves up without touching the records above it that stay put.
+    expect(contentMoveCalls('faq_entries', rows, 1, 'up').map((c) => (c.input as { id: string }).id)).not.toContain('B');
+    expect(contentMoveCalls('faq_entries', rows, 0, 'up')).toEqual([]);
   });
 
   it('keeps the top record’s Up inert', () => {

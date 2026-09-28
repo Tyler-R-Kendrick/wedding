@@ -63,14 +63,15 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
     >
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
       {browsing ? (
-        <Note>
+        // A <div>, not <Note>: a form cannot sit inside a paragraph.
+        <div className="con-note">
           You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself. <a href="/">Open the site</a>{' '}
           <form action={stopGuestView} className="flow-inline-form">
             <button type="submit" className="flow-trigger-quiet">
               Stop browsing as {browsingName}
             </button>
           </form>
-        </Note>
+        </div>
       ) : null}
 
       <Section title={household ? `Guests in ${household.label}` : 'All guests'} id="guests">

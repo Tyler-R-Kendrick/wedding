@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { invoke } from '@/capabilities/invoke';
 import { listContentRecordsCapability } from '@/capabilities/list_content_records';
-import { moveCalls } from '@/components/admin/flow/order';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { CONTENT_TABLE_NAMES, TABLE_SPECS } from '@/domain/content/admin';
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
@@ -13,7 +12,7 @@ import { Breadcrumbs, ConsolePage, Day, Denied, Pill } from '../../_components/c
 import { AdminDenied, adminContentContext } from '../_auth';
 import { ContentRecordFlow, MarkVerified, MoveRecord } from '../_components/ContentFlows';
 import { editorLists } from '../_components/lists';
-import { FRESHNESS_TONE, contentEditor, refTables, visibilityWords, withArticle } from '../_components/shared';
+import { FRESHNESS_TONE, contentEditor, contentMoveCalls, refTables, visibilityWords, withArticle } from '../_components/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,13 +49,7 @@ export default async function AdminContentTable({ params }: { params: Params }) 
   const rows = r.value.data.tables.find((t) => t.table === table)?.records ?? [];
   const editor = contentEditor(table, await editorLists(ctx, [table], r.value.data.tables));
   const ordered = spec.fields.some((f) => f.derive === 'position' && f.name === spec.sortField);
-  // Up and Down trade two records' places (or renumber the list when places are shared). A record
-  // with no place yet sorts after those that have one, so it moves as if it held the next free number
-  // (`moveCalls` then writes real ones). Each save sends only the position (`merge`).
-  const last = Math.max(0, ...rows.map((rec) => rec.position ?? 0));
-  const unplacedBefore = (i: number) => rows.slice(0, i).filter((rec) => typeof rec.position !== 'number').length;
-  const placed = rows.map((rec, i) => ({ id: rec.id, sortOrder: typeof rec.position === 'number' ? rec.position : last + 1 + unplacedBefore(i) }));
-  const moves = (i: number, direction: 'up' | 'down') => moveCalls(placed, i, direction, (rec, patch) => ({ table, id: rec.id, data: { order: patch.sortOrder }, merge: true }), 'save_content_record');
+  const moves = (i: number, direction: 'up' | 'down') => contentMoveCalls(table, rows, i, direction);
   const add = `Add ${withArticle(spec.noun)}`;
 
   return (

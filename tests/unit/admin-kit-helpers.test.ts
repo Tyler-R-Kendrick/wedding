@@ -15,27 +15,36 @@ describe('admin kit helpers', () => {
     return [...next.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id).join('');
   };
 
-  it('trades numbers with the neighbour when every row has its own', () => {
-    expect(moveCalls([{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 10 }], 1, 'up', build, 'cap')).toEqual([
-      { capability: 'cap', input: { id: 'b', sortOrder: 0 } },
-      { capability: 'cap', input: { id: 'a', sortOrder: 10 } },
-    ]);
+  it('moves a row by rewriting only what has to change', () => {
+    // b moves up past a: a is pushed below it, b keeps its number.
+    expect(moveCalls([{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 10 }], 1, 'up', build, 'cap')).toEqual([{ capability: 'cap', input: { id: 'a', sortOrder: 20 } }]);
     expect(after([{ id: 'a', sortOrder: 1 }, { id: 'b', sortOrder: 2 }, { id: 'c', sortOrder: 5 }], 1, 'down')).toBe('acb');
+    expect(inputs([{ id: 'a', sortOrder: 1 }, { id: 'b', sortOrder: 2 }, { id: 'c', sortOrder: 5 }], 1, 'down')).toEqual([{ id: 'b', sortOrder: 15 }]);
   });
 
-  it('renumbers the list when rows share a number, so the move is exactly the one asked for', () => {
+  it('pulls apart rows that share a number, so the move is exactly the one asked for', () => {
     // Three funds that all started at 100: Up on the middle one puts it first and nothing else moves.
     const tied = [{ id: 'a', sortOrder: 100 }, { id: 'b', sortOrder: 100 }, { id: 'z', sortOrder: 100 }];
     expect(after(tied, 1, 'up')).toBe('baz');
     expect(after(tied, 1, 'down')).toBe('azb');
     expect(after(tied, 0, 'down')).toBe('baz');
-    // A tie elsewhere in the list still renumbers, and a row already on its new number is not re-sent.
     const partly = [{ id: 'a', sortOrder: 10 }, { id: 'b', sortOrder: 20 }, { id: 'c', sortOrder: 20 }, { id: 'd', sortOrder: 40 }];
     expect(after(partly, 3, 'up')).toBe('abdc');
-    expect(inputs(partly, 3, 'up')).toEqual([
-      { id: 'd', sortOrder: 30 },
-      { id: 'c', sortOrder: 40 },
-    ]);
+  });
+
+  it('never rewrites a row that stays where it was', () => {
+    // Built-in funds at 0–30, two added funds tied at 100: moving an added fund leaves the built-ins alone.
+    const funds = [{ id: 'h', sortOrder: 0 }, { id: 'o', sortOrder: 10 }, { id: 'd', sortOrder: 20 }, { id: 'n', sortOrder: 30 }, { id: 'x', sortOrder: 100 }, { id: 'y', sortOrder: 100 }];
+    const written = inputs(funds, 5, 'up').map((i) => (i as { id: string }).id);
+    expect(written.every((id) => id === 'x' || id === 'y')).toBe(true);
+    expect(after(funds, 5, 'up')).toBe('hodnyx');
+  });
+
+  it('stays inside the highest number the capability accepts', () => {
+    const high = [{ id: 'a', sortOrder: 995 }, { id: 'b', sortOrder: 995 }];
+    const numbers = inputs(high, 1, 'up').map((i) => (i as { sortOrder: number }).sortOrder);
+    expect(Math.max(...numbers)).toBeLessThanOrEqual(1000);
+    expect(after(high, 1, 'up')).toBe('ba');
   });
 
   it('has nowhere to go past either end', () => {

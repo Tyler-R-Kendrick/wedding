@@ -141,6 +141,28 @@ describe('admin flow kit', () => {
     expect(draft).toMatchObject({ stepUp: true, values: { name: 'Kept' } });
   });
 
+  it('renders a sheet only while it is open, and focuses its heading each time it opens', async () => {
+    render(<NameThing />);
+    // Closed, a flow is its trigger: none of the form is in the page.
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Name it' }));
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('The name'));
+    fireEvent.click(screen.getByRole('button', { name: /^Close/ }));
+    // The close animation's time (260 ms at most), then the form is gone again.
+    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull(), { timeout: 1000 });
+    fireEvent.click(screen.getByRole('button', { name: 'Name it' }));
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('The name'));
+  });
+
+  it('drops a draft an older version of a secret flow left behind', () => {
+    window.sessionStorage.setItem('wedding.admin-flow:test:name', JSON.stringify({ values: { name: 'Pasted before' }, step: 0, open: true }));
+    render(<NameThing secret />);
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(window.sessionStorage.getItem('wedding.admin-flow:test:name')).toBeNull();
+  });
+
   it('keeps nothing of a secret flow, not even across a step-up', async () => {
     render(<NameThing secret />);
     fireEvent.click(screen.getByRole('button', { name: 'Name it' }));

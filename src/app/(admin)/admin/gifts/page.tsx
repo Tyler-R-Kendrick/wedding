@@ -231,7 +231,7 @@ export default async function AdminGiftsPage() {
                   );
                 })}
               </RecordList>
-              <FundFlow takenIds={fundIds} rails={linkRailNames} variant={setup.next === 'funds' && activeRails.length ? 'primary' : 'ghost'} label="Add a fund" />
+              <FundFlow takenIds={fundIds} nextSort={Math.min(1000, Math.max(0, ...data.funds.map((x) => x.sortOrder)) + 10)} rails={linkRailNames} variant={setup.next === 'funds' && activeRails.length ? 'primary' : 'ghost'} label="Add a fund" />
             </SetupCard>
           </>
         ) : (
