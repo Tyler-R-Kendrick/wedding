@@ -4,7 +4,7 @@ One entry per accepted design change. Token changes cite the
 `npx design.md diff` output; direction changes cite the critique or the
 couple's decision. Newest first. Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md) Stage 9.
 
-## 2026-09-27 — Mastheads fit their real labels
+## 2026-09-27 — Mastheads fit their real labels; "Browse as a guest" band
 
 **Reported by Tyler:** "HOME" was overlapping the S|T monogram. Since the sitemap's longer labels
 (#55) the Botanical–Deco list outgrew its centred column in 8 of 9 lifecycle states and spilled over
@@ -18,6 +18,9 @@ the monogram; the Gilded Hour frieze wrapped one wing onto a ragged second line.
 - **Gilded Hour frieze:** a wing that cannot hold its links on one line collapses the whole frieze to
   the plaque and "Menu" (the phone layout), rather than wrapping. Collapsed, the plaque keeps the
   centre axis and "Menu" the right edge, per DESIGN.md "Navigation is a frieze".
+- **"Browse as a guest" band:** an administrator viewing the site as a guest sees a band in the
+  lifecycle preview's colours on every page — whose view, whether read-only, "Stop browsing as
+  <name>" — in flow rather than sticky, with a hairline when it sits under the preview band.
 - **Guard:** `tests/e2e/quality-sweep.spec.ts` › "the masthead never collides" walks every design ×
   lifecycle state × five widths for overlap, overflow, wrapping, clipped focus rings and a reachable
   account menu.

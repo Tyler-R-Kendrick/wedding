@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { stopGuestView } from '@/components/guest-view/actions';
-import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest-view';
-import { getPreviewSecret } from '@/domain/lifecycle/secret';
+import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { startGuestView } from '../_lib/guest-view-actions';
 import { deleteGuest, importGuestsCsv, mergeGuests, rebindIdentity, resetIdentity, saveGuest, setAdminRole } from '../_lib/actions';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
@@ -18,6 +17,21 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const principal = await adminPrincipal();
   if (principal.kind !== 'admin') return <ConsoleGate what="Guests" />;
+  const isOwner = principal.roles.has('owner');
+  const own = await adminInvoke<{ records: { guestId: string; displayName: string }[] }>('admin_list_own_guest_records', {}, { method: 'GET' });
+  const ownRecords = own.ok ? own.value.data.records : [];
+  // Whose view this browser is in, named by the capability whatever the list below is filtered to.
+  const status = await adminInvoke<{ view: { displayName: string } | null }>('admin_guest_view_status', { token: (await cookies()).get(GUEST_VIEW_COOKIE)?.value }, { method: 'GET' });
+  const browsingName = status.ok ? (status.value.data.view?.displayName ?? null) : null;
+  // An administrator without guest operations (a moderator) reaches this screen from "Browse as a
+  // guest" too: they get the one section that is theirs, not a list they may not read.
+  if (!principal.entitlements.has('admin_guest_ops')) {
+    return (
+      <ConsolePage title="Guests" lede="Browse the site as your own guest record." notice={{ ok: sp.ok, error: sp.error }}>
+        <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
+      </ConsolePage>
+    );
+  }
   // The checkbox submits `merged=on`; `1` is kept for links written by hand.
   const showMerged = sp.merged === 'on' || sp.merged === '1';
   const [list, hh] = await Promise.all([
@@ -28,35 +42,12 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const households = hh.ok ? hh.value.data.households : [];
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const editing = sp.edit ? rows.find((g) => g.id === sp.edit) ?? null : null;
-  const isOwner = principal.roles.has('owner');
   // Browsing as anyone but yourself is for owners (`admin_browse_as_guest` re-checks it).
   const canBrowseAs = isOwner;
-  const browsing = verifyGuestViewToken((await cookies()).get(GUEST_VIEW_COOKIE)?.value, principal.sessionId, getPreviewSecret(), new Date());
-  const browsingName = browsing ? (rows.find((g) => g.id === browsing.guestId)?.displayName ?? 'a guest') : null;
   return (
     <ConsolePage title="Guests" lede="People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported here." notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}>
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
-      <Section title="Browse the site as a guest" id="browse-as">
-        <p className="con-note">
-          See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. It is read-only: nothing you do there is saved or sent in their name, and their ride
-          credit and the concierge stay closed. A band on every page says whose view it is, with the way to stop.
-        </p>
-        {browsing ? (
-          <div className="ops-form-inline">
-            <p className="con-note">
-              You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself.
-            </p>
-            <a href="/">Open the site</a>
-            <form action={stopGuestView}>
-              <Button variant="ghost">Stop browsing as {browsingName}</Button>
-            </form>
-          </div>
-        ) : canBrowseAs ? (
-          <p className="con-note">Choose “Browse as” beside a guest in the list below.</p>
-        ) : (
-          <p className="con-note">Browsing as a guest is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.</p>
-        )}
-      </Section>
+      <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
       <Section title={editing ? `Edit ${editing.displayName}` : 'Add a guest'}>
         <form action={saveGuest} className="ops-form">
@@ -113,7 +104,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   <td>
                     <div className="ops-form-inline">
                       <a href={`/admin/guests?edit=${encodeURIComponent(g.id)}${sp.householdId ? `&householdId=${encodeURIComponent(sp.householdId)}` : ''}`}>Edit</a>
-                      {canBrowseAs && !g.mergedIntoGuestId ? (
+                      {canBrowseAs && !g.mergedIntoGuestId && g.kind !== 'child' && !g.isMinor ? (
                         <form action={startGuestView}>
                           <input type="hidden" name="guestId" value={g.id} />
                           <Button variant="ghost">
@@ -188,5 +179,48 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </Section>
       ) : null}
     </ConsolePage>
+  );
+}
+
+/**
+ * "Browse the site as a guest": the current view and the way to stop it, the administrator's own
+ * guest records (anyone may browse as theirs), and, for owners, the pointer to the per-row buttons.
+ */
+function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string | null; isOwner: boolean; ownRecords: { guestId: string; displayName: string }[] }) {
+  return (
+    <Section title="Browse the site as a guest" id="browse-as">
+      <p className="con-note">
+        See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. Anyone else’s view is read-only: nothing you do there is saved or sent in their
+        name, and their ride credit and the concierge stay closed. A band on every page says whose view it is, with the way to stop.
+      </p>
+      {browsingName ? (
+        <div className="ops-form-inline">
+          <p className="con-note">
+            You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself.
+          </p>
+          <a href="/">Open the site</a>
+          <form action={stopGuestView}>
+            <Button variant="ghost">Stop browsing as {browsingName}</Button>
+          </form>
+        </div>
+      ) : null}
+      {ownRecords.length ? (
+        <div className="ops-form-inline">
+          {ownRecords.map((r) => (
+            <form key={r.guestId} action={startGuestView}>
+              <input type="hidden" name="guestId" value={r.guestId} />
+              <Button variant="ghost">Browse as yourself ({r.displayName})</Button>
+            </form>
+          ))}
+        </div>
+      ) : null}
+      <p className="con-note">
+        {isOwner
+          ? 'Choose “Browse as” beside a guest in the list below.'
+          : ownRecords.length
+            ? 'Browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'
+            : 'You have no guest record of your own on the list, and browsing as anyone else is for the site’s owners: a view reads everything that guest can, which reaches past what this role’s screens show.'}
+      </p>
+    </Section>
   );
 }

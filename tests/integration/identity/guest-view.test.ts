@@ -24,6 +24,16 @@ describe('browse as a guest', () => {
     expect(minted.data).toMatchObject({ guestId: f.guests.ana, readOnly: true });
     const cookie = withView(owner.cookie, minted.data.token);
 
+    // The console names whose view it is from the token (on an admin surface, as the console asks).
+    type Status = { view: { guestId: string; displayName: string; readOnly: boolean } | null };
+    const status = expectOk(await call<Status>('admin_guest_view_status', { token: minted.data.token }, { cookie: owner.cookie, method: 'GET' }));
+    expect(status.data.view).toMatchObject({ guestId: f.guests.ana, displayName: minted.data.displayName, readOnly: true });
+    const tampered = expectOk(await call<Status>('admin_guest_view_status', { token: `${minted.data.token}x` }, { cookie: owner.cookie, method: 'GET' }));
+    expect(tampered.data.view).toBeNull();
+    const again = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    const otherSession = expectOk(await call<Status>('admin_guest_view_status', { token: minted.data.token }, { cookie: again.cookie, method: 'GET' }));
+    expect(otherSession.data.view).toBeNull();
+
     const p = await principalFor({ cookie, pathname: '/your-weekend' });
     expect(p.kind).toBe('guest');
     if (p.kind !== 'guest') throw new Error('unreachable');
@@ -102,6 +112,8 @@ describe('browse as a guest', () => {
     expect(bound.ok).toBe(true);
     // A planner may not view anyone else, and this binding does not make Chidi "theirs".
     expectErr(await call('admin_browse_as_guest', { guestId: f.guests.chidi }, { cookie: planner.cookie }), 'forbidden');
+    const own = expectOk(await call<{ records: unknown[] }>('admin_list_own_guest_records', {}, { cookie: planner.cookie, method: 'GET' }));
+    expect(own.data.records).toEqual([]);
   });
 
   it('an administrator who is also invited browses as themself, and that view is their own session: not read-only', async () => {
@@ -111,6 +123,9 @@ describe('browse as a guest', () => {
     // Signed in, an admin is an admin (ADR-0001), even with a guest record…
     expect((await principalFor({ cookie: ana.cookie })).kind).toBe('admin');
     // …until they choose to browse as that record, which needs no guest-operations access.
+    // Their own records are listed for them — the door for an administrator who is not an owner.
+    const records = expectOk(await call<{ records: { guestId: string }[] }>('admin_list_own_guest_records', {}, { cookie: ana.cookie, method: 'GET' }));
+    expect(records.data.records.map((r) => r.guestId)).toEqual([f.guests.ana]);
     const minted = expectOk(await call<Minted>('admin_browse_as_guest', { guestId: f.guests.ana }, { cookie: ana.cookie }));
     expect(minted.data.readOnly).toBe(false);
     const p = await principalFor({ cookie: withView(ana.cookie, minted.data.token) });

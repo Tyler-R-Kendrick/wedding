@@ -9,7 +9,7 @@ import { invitationLifecycle } from './tokens';
 import { activeBindingsForIdentity } from './bindings';
 import { collectEntitlementFacts } from './facts';
 import { currentInvitationForHousehold } from '@/domain/invitations/repo';
-import { listManagedGuests } from '@/domain/guests/repo';
+import { guestDisplayName, listManagedGuests } from '@/domain/guests/repo';
 
 export interface SessionFacts {
   authIdentityId: string;
@@ -45,6 +45,19 @@ export async function buildGuestPrincipal(db: Db, session: SessionFacts, flags: 
 }
 
 /**
+ * The guest records that are an administrator's OWN: bound to their identity by the guest's own
+ * claim (never a delegate binding, never one an administrator made), not merged away, not a child.
+ * Browsing as one of these is their own guest session (`buildGuestViewPrincipal`), whatever role
+ * they hold.
+ */
+export async function ownGuestRecords(db: Db, authIdentityId: string): Promise<{ guestId: string; displayName: string }[]> {
+  const bindings = (await activeBindingsForIdentity(db, authIdentityId)).filter((b) => b.role !== 'delegate' && b.claimMethod !== 'admin');
+  if (!bindings.length) return [];
+  const rows = await db.select().from(guests).where(inArray(guests.id, bindings.map((b) => b.guestId)));
+  return rows.filter((g) => !g.mergedIntoGuestId && g.kind !== 'child' && !g.isMinor).map((g) => ({ guestId: g.id, displayName: guestDisplayName(g) }));
+}
+
+/**
  * The GuestPrincipal an administrator browses as ("Browse as a guest", `guest-view.ts`): the one
  * that guest's own sign-in would produce, with `viewedBy` naming the administrator.
  *
@@ -63,8 +76,7 @@ export async function buildGuestPrincipal(db: Db, session: SessionFacts, flags: 
  */
 export async function buildGuestViewPrincipal(db: Db, session: SessionFacts, admin: AdminPrincipal, guestId: string, flags: FlagValues, now: Date = new Date()): Promise<GuestPrincipal | null> {
   const viewer = (readOnly: boolean) => ({ adminId: admin.adminId, roles: admin.roles, readOnly });
-  const own = await activeBindingsForIdentity(db, session.authIdentityId);
-  if (own.some((b) => b.guestId === guestId && b.role !== 'delegate' && b.claimMethod !== 'admin')) {
+  if ((await ownGuestRecords(db, session.authIdentityId)).some((r) => r.guestId === guestId)) {
     const self = await buildGuestPrincipal(db, { ...session, activeGuestId: guestId }, flags, now);
     return self && self.guestId === guestId ? { ...self, viewedBy: viewer(false) } : null;
   }
