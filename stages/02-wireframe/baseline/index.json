@@ -557,7 +557,7 @@
    "finalUrl": "/admin",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -581,7 +581,7 @@
    "finalUrl": "/admin/lifecycle",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -605,7 +605,7 @@
    "finalUrl": "/admin/content",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -629,7 +629,7 @@
    "finalUrl": "/admin/guests",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -653,7 +653,7 @@
    "finalUrl": "/admin/households",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -677,7 +677,7 @@
    "finalUrl": "/admin/invitations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -701,7 +701,7 @@
    "finalUrl": "/admin/rsvp",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -725,7 +725,7 @@
    "finalUrl": "/admin/events",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -749,7 +749,7 @@
    "finalUrl": "/admin/seating",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -773,7 +773,7 @@
    "finalUrl": "/admin/travel",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -797,7 +797,7 @@
    "finalUrl": "/admin/reservations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -821,7 +821,7 @@
    "finalUrl": "/admin/transport",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -845,7 +845,7 @@
    "finalUrl": "/admin/gifts",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -869,7 +869,7 @@
    "finalUrl": "/admin/media",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -893,7 +893,7 @@
    "finalUrl": "/admin/media/import",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -917,7 +917,7 @@
    "finalUrl": "/admin/media/duplicates",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -941,7 +941,7 @@
    "finalUrl": "/admin/media/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -965,7 +965,7 @@
    "finalUrl": "/admin/concierge",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -989,7 +989,7 @@
    "finalUrl": "/admin/ai",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1013,7 +1013,7 @@
    "finalUrl": "/admin/flags",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1037,7 +1037,7 @@
    "finalUrl": "/admin/providers",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1061,7 +1061,7 @@
    "finalUrl": "/admin/jobs",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1085,7 +1085,7 @@
    "finalUrl": "/admin/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1107,7 +1107,7 @@
    "finalUrl": "/admin/audit",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1283,7 +1283,7 @@
    "finalUrl": "/admin/content/story_sections",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1307,7 +1307,7 @@
    "finalUrl": "/admin/content/story_sections/new",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1331,7 +1331,7 @@
    "finalUrl": "/admin/content/operational_fields/01SEED00000000000000000908",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-27",
+   "capturedAt": "2026-09-28",
    "designs": {
     "botanical-deco": {
      "status": 200,
