@@ -43,7 +43,7 @@
 }
 
 .con-scroll:focus-visible {
-  outline: 3px solid var(--ops-accent);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -63,7 +63,7 @@
   min-width: 18rem;
 }
 
-.con-table tbody tr:last-child td {
+.con-table tbody tr:last-child :is(td, th) {
   border-bottom: 0;
 }
 
@@ -76,7 +76,6 @@
  */
 .con-caption {
   padding: 0.5rem 0.625rem;
-  max-width: 62ch;
   text-align: left;
   font-size: var(--text-control-caps);
   color: var(--ops-muted);
@@ -198,7 +197,10 @@
 }
 
 .con-pill--warn {
-  color: var(--ops-accent);
+  /* Ink and a dashed outline, not terracotta: DESIGN.md keeps the accent for the one action a
+     person most needs, and a screen of "needs attention" pills spent it three times over. */
+  color: var(--color-primary);
+  border-style: dashed;
 }
 
 .con-pill--bad {
@@ -359,7 +361,7 @@
 }
 
 .con-nav summary:focus-visible {
-  outline: 3px solid var(--ops-accent);
+  outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
 
@@ -566,4 +568,15 @@
 .con-subject {
   display: block;
   font-family: var(--font-mono-ops);
+}
+
+/*
+ * The closed "All admin screens" index. A closed <details> keeps its content's layout boxes in
+ * Chromium, so the rendered detector read every screen's twenty links as text hidden under the page
+ * (139 text-occlusion findings in the 2026-09-27 console review). Taking the closed content out of
+ * layout ends that at the source rather than waiving it; the index is a list of links, not text
+ * anyone searches for with the panel shut.
+ */
+.con-nav details:not([open]) > :not(summary) {
+  display: none;
 }

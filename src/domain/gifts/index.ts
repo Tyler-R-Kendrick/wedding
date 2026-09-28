@@ -3,3 +3,4 @@ export * from './repo';
 export * from './service';
 export * from './funds';
 export * from './rails';
+export * from './setup';

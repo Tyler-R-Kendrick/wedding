@@ -34,6 +34,8 @@ export interface RailSpec {
   instructionsWithoutName?: string;
   /** The rail as it reads in a sentence: "send it with Zelle or a check by mail". */
   inSentence: string;
+  /** What /admin/gifts asks for, and the one line under the field that says what shape it takes. */
+  ask: { label: string; hint: string; multiline?: boolean };
   source: { url: string; verifiedAt: string };
 }
 
@@ -60,6 +62,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     fee: 'Zelle itself charges no fee and moves money straight from your bank to ours. A few banks add their own, so check with yours if you are unsure.',
     instructions: 'Open your own bank’s app or website, choose Zelle, and send to {handle}.',
     inSentence: 'Zelle',
+    ask: { label: 'The email or US mobile number you enrolled in Zelle', hint: 'The one your bank shows under Zelle settings. Guests type it into their own bank’s app.' },
     source: { url: 'https://www.zelle.com/faq', verifiedAt: VERIFIED },
   },
   venmo: {
@@ -79,6 +82,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     url: (handle, note) => `https://venmo.com/${encodeURIComponent(handle)}?txn=pay&note=${encodeURIComponent(note)}`,
     fee: 'Free from your Venmo balance, bank account or debit card. Venmo adds 3% if you pay with a credit card.',
     inSentence: 'Venmo',
+    ask: { label: 'Your Venmo username', hint: 'With or without the @, as in @Sara-Tyler.' },
     source: { url: 'https://venmo.com/resources/our-fees/', verifiedAt: VERIFIED },
   },
   paypal: {
@@ -95,6 +99,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     url: (handle) => `https://www.paypal.com/paypalme/${encodeURIComponent(handle)}`,
     fee: 'Free from your PayPal balance or bank account when you choose “Friends and Family”. PayPal adds a fee if you pay with a card.',
     inSentence: 'PayPal',
+    ask: { label: 'Your PayPal.Me name', hint: 'The part after paypal.me/. Pasting the whole link works too.' },
     source: { url: 'https://www.paypal.com/us/digital-wallet/paypal-consumer-fees', verifiedAt: VERIFIED },
   },
   cashapp: {
@@ -111,6 +116,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     url: (handle) => `https://cash.app/$${encodeURIComponent(handle)}`,
     fee: 'Free from your Cash App balance or debit card. Cash App adds 3% if you pay with a credit card.',
     inSentence: 'Cash App',
+    ask: { label: 'Your $Cashtag', hint: 'With or without the $, as in $SaraTyler.' },
     source: { url: 'https://cash.app/help/3123-what-is-a-cashtag', verifiedAt: VERIFIED },
   },
   check: {
@@ -133,6 +139,7 @@ export const RAILS: Readonly<Record<GiftRail, RailSpec>> = {
     instructions: 'Make it out to {name} and mail it to:\n{handle}',
     instructionsWithoutName: 'Mail it to:\n{handle}',
     inSentence: 'a check by mail',
+    ask: { label: 'Mailing address for checks', hint: 'One line per row, as you would write it on an envelope.', multiline: true },
     source: { url: '/gifts', verifiedAt: VERIFIED },
   },
 };
