@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke } from '@/capabilities';
 import { adminListExternalActions } from '@/capabilities/admin_external_actions';
 import { adminCheckGiftSetup, adminDeleteGiftFund, adminDeleteGiftLink, adminDeleteGiftRail, adminListGiftLinks, adminUpsertGiftFund, adminUpsertGiftLink, adminUpsertGiftRail } from '@/capabilities/admin_gifts';
-import { adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
+import { adminDeleteReservationVenue, adminListReservationVenues, adminUpsertReservationVenue } from '@/capabilities/admin_reservations';
 import { getReservationOptions } from '@/capabilities/get_reservation_options';
 import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { openGiftFund } from '@/capabilities/open_gift_fund';
@@ -526,5 +526,28 @@ describe('reservations ladder', () => {
     expect(filtered.ok && filtered.value.data.records).toHaveLength(1);
     expect((await run(adminListExternalActions, guest, {})).ok).toBe(false);
     expect((await run(adminListExternalActions, { ...admin, entitlements: new Set(['admin_content']) }, {})).ok).toBe(false);
+  });
+  it('stamps a confirmed place with the server clock, and deletes places until the placeholders return', async () => {
+    const before = Date.now();
+    const r = await run(adminUpsertReservationVenue, admin, { id: 'test-confirmed', name: 'Checked Place', resySlug: 'checked-place', confirmed: true, verifiedAt: '2000-01-01T00:00:00Z' }, { idempotencyKey: key() });
+    expect(r.ok).toBe(true);
+    const stamped = r.ok ? Date.parse(r.value.data.verifiedAt ?? '') : NaN;
+    expect(stamped).toBeGreaterThanOrEqual(before - 1000);
+    // A saved check sent back unchanged (a one-click Hide) is kept.
+    const kept = await run(adminUpsertReservationVenue, admin, { id: 'test-confirmed', name: 'Checked Place', resySlug: 'checked-place', active: false, verifiedAt: r.ok ? r.value.data.verifiedAt! : undefined }, { idempotencyKey: key() });
+    expect(kept.ok && Date.parse(kept.value.data.verifiedAt ?? '')).toBe(stamped);
+
+    const asGuest = await run(adminDeleteReservationVenue, guest, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(!asGuest.ok && asGuest.error.code).toBe('forbidden');
+    const del = await run(adminDeleteReservationVenue, admin, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(del.ok && del.value.data).toEqual({ id: 'test-confirmed', deleted: true });
+    const again = await run(adminDeleteReservationVenue, admin, { id: 'test-confirmed' }, { idempotencyKey: key() });
+    expect(!again.ok && again.error.code).toBe('not_found');
+
+    // With the last saved place gone, guests see the built-in placeholders again.
+    const listed = await run(adminListReservationVenues, admin, {});
+    for (const row of listed.ok ? listed.value.data.rows : []) expect((await run(adminDeleteReservationVenue, admin, { id: row.id }, { idempotencyKey: key() })).ok, row.id).toBe(true);
+    const opts = await run(getReservationOptions, anon, {});
+    expect(opts.ok && opts.value.data.options.map((o) => o.venue.id)).toContain('caa-cindys');
   });
 });
