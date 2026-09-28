@@ -1,0 +1,457 @@
+{
+ "guests-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add a guest",
+   "steps": [
+    "Who",
+    "How to reach them",
+    "Check and save"
+   ],
+   "heading": "Who",
+   "lede": "Their name as it is printed on the invitation.",
+   "labels": [
+    "Household",
+    "First name",
+    "Last name (optional)",
+    "Kind",
+    "AdultSigns in with their own email.",
+    "ChildAnswered for by the household manager.",
+    "Plus-oneSomeone a guest is bringing.",
+    "A minor"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Who",
+   "errors": [
+    "Choose a household and enter a first name."
+   ]
+  }
+ },
+ "guests-delete": {
+  "disabled": false,
+  "info": {
+   "title": "Delete Dev Fixture",
+   "steps": [],
+   "heading": "Delete Dev Fixture?",
+   "labels": [
+    "Yes, delete Dev Fixture"
+   ],
+   "submit": "Delete Dev Fixture",
+   "submitClass": "ops-button ops-button-danger",
+   "hasConsequences": true,
+   "tone": "danger",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Delete Dev Fixture?",
+   "errors": [
+    "Tick the box to confirm."
+   ]
+  }
+ },
+ "households-delete-none": {
+  "disabled": false,
+  "info": {
+   "title": "Edit Solo household",
+   "steps": [
+    "Name and manager",
+    "Mailing address",
+    "Notes and save"
+   ],
+   "heading": "Name and manager",
+   "labels": [],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Mailing address",
+   "errors": []
+  }
+ },
+ "events-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add an event",
+   "steps": [
+    "What and when",
+    "Where, and what to know",
+    "On the site",
+    "Check and save"
+   ],
+   "heading": "What and when",
+   "labels": [
+    "Name",
+    "Date",
+    "Starts (optional)",
+    "Ends (optional)"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "What and when",
+   "errors": [
+    "Give the event a name (two letters or more) and a date."
+   ]
+  }
+ },
+ "rsvp-record": {
+  "disabled": false,
+  "info": {
+   "title": "Record or correct an answer",
+   "steps": [
+    "Whose answer",
+    "Their answer",
+    "Why, and save"
+   ],
+   "heading": "Whose answer",
+   "labels": [
+    "Guest",
+    "Event"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Whose answer",
+   "errors": [
+    "Choose a guest and one of their events."
+   ]
+  }
+ },
+ "seating-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add a table",
+   "steps": [
+    "Name and size",
+    "Where it is",
+    "Notes and save"
+   ],
+   "heading": "Name and size",
+   "labels": [
+    "Name",
+    "Seats"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Name and size",
+   "errors": [
+    "Give the table a name and a number of seats from 1 to 30."
+   ]
+  }
+ },
+ "travel-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add a hotel",
+   "steps": [
+    "The hotel",
+    "Links and reasons",
+    "Check and save"
+   ],
+   "heading": "The hotel",
+   "lede": "A hotel near the venue you would send a friend to.",
+   "labels": [
+    "Name",
+    "Street address (optional)",
+    "Minutes on foot to the Chicago Athletic Association (optional)",
+    "Price band",
+    "Not sure yetGuests see no price band.",
+    "$Budget.",
+    "$$Moderate.",
+    "$$$Upscale.",
+    "$$$$Luxury."
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "The hotel",
+   "errors": [
+    "Enter the hotel’s name."
+   ]
+  }
+ },
+ "transport-give": {
+  "disabled": false,
+  "info": {
+   "title": "Give a guest a ride home",
+   "steps": [
+    "Who",
+    "What they get",
+    "Check and save"
+   ],
+   "heading": "Who",
+   "labels": [
+    "Guest"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Who",
+   "errors": [
+    "Choose the guest."
+   ]
+  }
+ },
+ "reservations-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add a place to reserve",
+   "steps": [
+    "The place",
+    "How guests book",
+    "Check and save"
+   ],
+   "heading": "The place",
+   "labels": [
+    "Name",
+    "A note for guests (optional)",
+    "Some of this is still to be confirmed"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "The place",
+   "errors": [
+    "Enter the place’s name."
+   ]
+  }
+ },
+ "invitations-make": {
+  "disabled": false,
+  "info": {
+   "title": "Make an invitation link",
+   "steps": [
+    "Which household",
+    "What it invites them to",
+    "Check and make the link"
+   ],
+   "heading": "Which household",
+   "labels": [
+    "Household"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Which household",
+   "errors": [
+    "Choose the household."
+   ]
+  }
+ },
+ "gifts-registry": {
+  "disabled": false,
+  "info": {
+   "title": "Link your registry",
+   "steps": [
+    "Paste the link",
+    "Check it is yours",
+    "How guests see it"
+   ],
+   "heading": "Paste the link",
+   "lede": "Open your registry on Zola, The Knot or Joy, press its Share button, and paste the link it gives you.",
+   "labels": [
+    "Link to your registry"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Paste the link",
+   "errors": [
+    "Paste the link to your registry."
+   ]
+  }
+ },
+ "lifecycle-publish": {
+  "disabled": false,
+  "info": {
+   "title": "Publish a new state",
+   "steps": [
+    "Choose the state",
+    "Check and publish"
+   ],
+   "heading": "Choose the state",
+   "lede": "Reviewing is free and changes nothing. You will see what the move does before anything is published.",
+   "labels": [
+    "Move the site to",
+    "Why (optional)"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Check and publish",
+   "errors": []
+  }
+ },
+ "flags-off": {
+  "disabled": false,
+  "info": {
+   "title": "Switch PRO_MEDIA_AI_PROCESSING readiness off",
+   "steps": [],
+   "heading": "Switch PRO_MEDIA_AI_PROCESSING readiness off?",
+   "labels": [
+    "Yes, switch PRO_MEDIA_AI_PROCESSING readiness off"
+   ],
+   "submit": "Switch PRO_MEDIA_AI_PROCESSING readiness off",
+   "submitClass": "ops-button ops-button-danger",
+   "hasConsequences": true,
+   "tone": "danger",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Switch PRO_MEDIA_AI_PROCESSING readiness off?",
+   "errors": [
+    "Tick the box to confirm."
+   ]
+  }
+ },
+ "content-add": {
+  "disabled": false,
+  "info": {
+   "title": "Add to Ask Us (FAQ)",
+   "steps": [
+    "What it says",
+    "Source and visibility",
+    "Check and save"
+   ],
+   "heading": "What it says",
+   "lede": "The record as guests and the concierge will read it.",
+   "labels": [
+    "Slug",
+    "Order",
+    "Category",
+    "Question",
+    "Answer",
+    "Related route (optional)"
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "What it says",
+   "errors": [
+    "Required.",
+    "Required.",
+    "Required.",
+    "Required."
+   ]
+  }
+ },
+ "media-import": {
+  "disabled": false,
+  "info": {
+   "title": "Import a delivery",
+   "steps": [
+    "Who delivered them",
+    "The rights",
+    "Choose the files and check"
+   ],
+   "heading": "Who delivered them",
+   "labels": [
+    "Vendor",
+    "Chapter",
+    "Full CeremonyThe ceremony, start to finish.",
+    "ToastsThe toasts.",
+    "First DancesThe first dances.",
+    "Guest VideosClips our guests recorded.",
+    "Professional FilmsEdited films from Oakhouse Visuals.",
+    "Raw / ArchiveRaw footage and originals. Admin only."
+   ],
+   "submit": "Continue",
+   "submitClass": "ops-button ops-button-primary",
+   "hasConsequences": false,
+   "tone": "default",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Who delivered them",
+   "errors": [
+    "Enter the vendor’s name."
+   ]
+  }
+ },
+ "media-delete": {
+  "disabled": false,
+  "info": {
+   "title": "Delete items",
+   "steps": [],
+   "heading": "Nothing is selected",
+   "labels": [],
+   "submit": "Delete",
+   "submitClass": "ops-button ops-button-danger",
+   "hasConsequences": false,
+   "tone": "danger",
+   "width": 612
+  },
+  "axe": [],
+  "afterEmptySubmit": {
+   "heading": "Nothing is selected",
+   "errors": [
+    "Nothing is selected yet."
+   ]
+  }
+ }
+}

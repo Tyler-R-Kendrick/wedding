@@ -207,6 +207,12 @@ async function instanceFor(p: SitemapPage, source: Source): Promise<string | nul
   const find = () => (seenLinks.get(source.name) ?? []).find((l) => matches(p.path, l) && l !== p.example && pageForUrl(l)?.id === p.id) ?? null;
   if (find()) return find();
   const parent = p.parent ? PAGES.find((x) => x.id === p.parent) : undefined;
+  // A fixed child of a patterned parent (`/admin/content/[table]/new`) is the parent's instance plus
+  // its own last part. Nothing has to link to it: the content editor's Add flow opens that page
+  // rather than linking there.
+  const rest = parent && p.path.startsWith(`${parent.path}/`) ? p.path.slice(parent.path.length) : null;
+  const parentInstance = parent ? resolved.get(parent.id) : undefined;
+  if (rest && !rest.includes('[') && parentInstance && pageForUrl(parentInstance + rest)?.id === p.id) return parentInstance + rest;
   const parentUrl = parent && (resolved.get(parent.id) ?? (isPatterned(parent.path) ? null : (parent.example ?? parent.path)));
   if (!parentUrl) return null;
   const { data } = await capturePage({ ...source, principal: source.principal ?? (parent!.audience === 'guest' || parent!.audience === 'admin' ? parent!.audience : null) }, DESIGNS[0], parentUrl);

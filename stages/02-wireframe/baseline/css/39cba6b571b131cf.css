@@ -1,0 +1,32 @@
+/* [project]/src/app/(admin)/admin/content/_components/content-flows.css [app-client] (css) */
+.cf-group {
+  gap: var(--spacing-md);
+  border: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.cf-item {
+  gap: var(--spacing-md);
+  min-width: 0;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  margin: 0;
+  display: grid;
+}
+
+.cf-item__legend {
+  padding-inline: var(--spacing-xs);
+  font-weight: 500;
+}
+
+.cf-item__actions {
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  align-items: center;
+  display: flex;
+}
+
+/*# sourceMappingURL=src_app_%28admin%29_admin_content__components_content-flows_03vry--.css.map*/

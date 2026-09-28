@@ -1,0 +1,596 @@
+{
+ "/admin/guests": {
+  "route": "/admin/guests",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Guests"
+   ],
+   "h2": [
+    "All guests",
+    "Who can use this console"
+   ],
+   "lede": "People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported h",
+   "primary": [
+    "Add a guest"
+   ],
+   "ghost": [
+    "Import a list",
+    "Search",
+    "Change someone’s access"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a guest",
+    "Import a list",
+    "Edit [Edit Dev Fixture]",
+    "Merge [Merge Dev Fixture into another guest]",
+    "Delete [Delete Dev Fixture]",
+    "Edit [Edit Eve Fixture]",
+    "Merge [Merge Eve Fixture into another guest]",
+    "Delete [Delete Eve Fixture]",
+    "Edit [Edit Fin Solo]",
+    "Merge [Merge Fin Solo into another guest]",
+    "Delete [Delete Fin Solo]",
+    "Edit [Edit Ada Testhouse]",
+    "Merge [Merge Ada Testhouse into another guest]",
+    "Delete [Delete Ada Testhouse]",
+    "Edit [Edit Ben Testhouse]",
+    "Merge [Merge Ben Testhouse into another guest]",
+    "Delete [Delete Ben Testhouse]",
+    "Edit [Edit Cleo Testhouse]",
+    "Merge [Merge Cleo Testhouse into another guest]",
+    "Delete [Delete Cleo Testhouse]",
+    "Change someone’s access"
+   ],
+   "quiet": [
+    "Edit",
+    "Merge",
+    "Delete"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 6,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [
+    "Not signed in yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Guests"
+   ],
+   "h2": [
+    "All guests",
+    "Who can use this console"
+   ],
+   "lede": "People as printed on the invitations. Emails drive sign-in codes; notes stay admin-only; dietary and accessibility needs live with RSVP and are never exported h",
+   "primary": [
+    "Add a guest"
+   ],
+   "ghost": [
+    "Import a list",
+    "Search",
+    "Change someone’s access"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a guest",
+    "Import a list",
+    "Edit [Edit Dev Fixture]",
+    "Merge [Merge Dev Fixture into another guest]",
+    "Delete [Delete Dev Fixture]",
+    "Edit [Edit Eve Fixture]",
+    "Merge [Merge Eve Fixture into another guest]",
+    "Delete [Delete Eve Fixture]",
+    "Edit [Edit Fin Solo]",
+    "Merge [Merge Fin Solo into another guest]",
+    "Delete [Delete Fin Solo]",
+    "Edit [Edit Ada Testhouse]",
+    "Merge [Merge Ada Testhouse into another guest]",
+    "Delete [Delete Ada Testhouse]",
+    "Edit [Edit Ben Testhouse]",
+    "Merge [Merge Ben Testhouse into another guest]",
+    "Delete [Delete Ben Testhouse]",
+    "Edit [Edit Cleo Testhouse]",
+    "Merge [Merge Cleo Testhouse into another guest]",
+    "Delete [Delete Cleo Testhouse]",
+    "Change someone’s access"
+   ],
+   "quiet": [
+    "Edit",
+    "Merge",
+    "Delete"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 6,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [
+    "Not signed in yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/households": {
+  "route": "/admin/households",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Households"
+   ],
+   "h2": [
+    "All households"
+   ],
+   "lede": "The RSVP unit. One manager per household; children and guests without email are managed by them.",
+   "primary": [
+    "Add a household"
+   ],
+   "ghost": [
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a household",
+    "Edit [Edit Fixture household]",
+    "Edit [Edit Solo household]",
+    "Edit [Edit Testhouse household]"
+   ],
+   "quiet": [
+    "Guests",
+    "Edit"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 3,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "No invitation yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Households"
+   ],
+   "h2": [
+    "All households"
+   ],
+   "lede": "The RSVP unit. One manager per household; children and guests without email are managed by them.",
+   "primary": [
+    "Add a household"
+   ],
+   "ghost": [
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a household",
+    "Edit [Edit Fixture household]",
+    "Edit [Edit Solo household]",
+    "Edit [Edit Testhouse household]"
+   ],
+   "quiet": [
+    "Guests",
+    "Edit"
+   ],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 3,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "No invitation yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/gifts": {
+  "route": "/admin/gifts",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Gifts"
+   ],
+   "h2": [
+    "Guests have nothing to give with yet.",
+    "Step 1: RegistryNext",
+    "Step 2: Ways to give",
+    "Step 3: Funds",
+    "What guests see"
+   ],
+   "lede": "Your registry and gifts of money: what guests can give, how they send it, and what the page looks like to them.",
+   "primary": [
+    "Link your registry"
+   ],
+   "ghost": [
+    "Next: Registry",
+    "Add a way to give",
+    "Add a fund"
+   ],
+   "danger": [],
+   "triggers": [
+    "Link your registry",
+    "Add a way to give",
+    "Change [Change Our honeymoon]",
+    "Change [Change Our home]",
+    "Change [Change Growing our family]",
+    "Change [Change Our next adventures]",
+    "Add a fund"
+   ],
+   "quiet": [
+    "Change",
+    "Hide",
+    "Up",
+    "Down"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 4,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Ready, waiting on a way to give"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Gifts"
+   ],
+   "h2": [
+    "Guests have nothing to give with yet.",
+    "Step 1: RegistryNext",
+    "Step 2: Ways to give",
+    "Step 3: Funds",
+    "What guests see"
+   ],
+   "lede": "Your registry and gifts of money: what guests can give, how they send it, and what the page looks like to them.",
+   "primary": [
+    "Link your registry"
+   ],
+   "ghost": [
+    "Next: Registry",
+    "Add a way to give",
+    "Add a fund"
+   ],
+   "danger": [],
+   "triggers": [
+    "Link your registry",
+    "Add a way to give",
+    "Change [Change Our honeymoon]",
+    "Change [Change Our home]",
+    "Change [Change Growing our family]",
+    "Change [Change Our next adventures]",
+    "Add a fund"
+   ],
+   "quiet": [
+    "Change",
+    "Hide",
+    "Up",
+    "Down"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 4,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Ready, waiting on a way to give"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/events": {
+  "route": "/admin/events",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Events, menu, invitations, RSVP window"
+   ],
+   "h2": [
+    "RSVP window",
+    "Events",
+    "Who is invited to what",
+    "Your Weekend notices"
+   ],
+   "lede": "The events guests are invited to, what they choose to eat, who is invited to what, and when they can answer.",
+   "primary": [
+    "Add an event"
+   ],
+   "ghost": [
+    "Change the RSVP window",
+    "Post a notice"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add an event",
+    "Change the RSVP window",
+    "Edit [Edit Ceremony]",
+    "Menu [Menu for Ceremony]",
+    "Invitations [Who is invited to Ceremony]",
+    "Edit [Edit Cocktail hour]",
+    "Menu [Menu for Cocktail hour]",
+    "Invitations [Who is invited to Cocktail hour]",
+    "Edit [Edit Reception]",
+    "Menu [Menu for Reception]",
+    "Invitations [Who is invited to Reception]",
+    "Post a notice"
+   ],
+   "quiet": [
+    "Edit",
+    "Menu",
+    "Invitations"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 3,
+   "tables": 2,
+   "tablesVisible": 1,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Not confirmed yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Events, menu, invitations, RSVP window"
+   ],
+   "h2": [
+    "RSVP window",
+    "Events",
+    "Who is invited to what",
+    "Your Weekend notices"
+   ],
+   "lede": "The events guests are invited to, what they choose to eat, who is invited to what, and when they can answer.",
+   "primary": [
+    "Add an event"
+   ],
+   "ghost": [
+    "Change the RSVP window",
+    "Post a notice"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add an event",
+    "Change the RSVP window",
+    "Edit [Edit Ceremony]",
+    "Menu [Menu for Ceremony]",
+    "Invitations [Who is invited to Ceremony]",
+    "Edit [Edit Cocktail hour]",
+    "Menu [Menu for Cocktail hour]",
+    "Invitations [Who is invited to Cocktail hour]",
+    "Edit [Edit Reception]",
+    "Menu [Menu for Reception]",
+    "Invitations [Who is invited to Reception]",
+    "Post a notice"
+   ],
+   "quiet": [
+    "Edit",
+    "Menu",
+    "Invitations"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 3,
+   "tables": 2,
+   "tablesVisible": 1,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Not confirmed yet"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/rsvp": {
+  "route": "/admin/rsvp",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "RSVPs"
+   ],
+   "h2": [
+    "By event",
+    "Every answer"
+   ],
+   "lede": "RSVPs are closed (lifecycle).",
+   "primary": [
+    "Record an answer"
+   ],
+   "ghost": [
+    "RSVP CSV",
+    "Dietary & accessibility CSV (audited)",
+    "Show dietary & accessibility notes (audited)"
+   ],
+   "danger": [],
+   "triggers": [
+    "Record an answer"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "no answer"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "RSVPs"
+   ],
+   "h2": [
+    "By event",
+    "Every answer"
+   ],
+   "lede": "RSVPs are closed (lifecycle).",
+   "primary": [
+    "Record an answer"
+   ],
+   "ghost": [
+    "RSVP CSV",
+    "Dietary & accessibility CSV (audited)",
+    "Show dietary & accessibility notes (audited)"
+   ],
+   "danger": [],
+   "triggers": [
+    "Record an answer"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "no answer"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ }
+}
