@@ -1,0 +1,780 @@
+{
+ "/admin/seating": {
+  "route": "/admin/seating",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Seating"
+   ],
+   "h2": [
+    "Publication",
+    "Preview what a guest sees",
+    "Tables (draft)",
+    "Seat a guest (draft)",
+    "Floor plans"
+   ],
+   "lede": "Build the chart as a draft, check what a guest would see, then publish it. Guests see nothing of the draft until it is published.",
+   "primary": [
+    "Add a table"
+   ],
+   "ghost": [
+    "Import the planner’s chart",
+    "Publish seating to guests",
+    "Preview",
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a table",
+    "Import the planner’s chart",
+    "Publish seating to guests",
+    "Seat [Seat Ada Testhouse]",
+    "Seat [Seat Ben Testhouse]",
+    "Seat [Seat Cleo Testhouse]",
+    "Seat [Seat Dev Fixture]",
+    "Seat [Seat Eve Fixture]",
+    "Seat [Seat Fin Solo]"
+   ],
+   "quiet": [
+    "Seat"
+   ],
+   "headerActions": [],
+   "filterBar": 2,
+   "recordRows": 6,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [
+    "get|flow-filter|Preview",
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [
+    "Not published: guests see nothing",
+    "Draft matches",
+    "No answer"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Seating"
+   ],
+   "h2": [
+    "Publication",
+    "Preview what a guest sees",
+    "Tables (draft)",
+    "Seat a guest (draft)",
+    "Floor plans"
+   ],
+   "lede": "Build the chart as a draft, check what a guest would see, then publish it. Guests see nothing of the draft until it is published.",
+   "primary": [
+    "Add a table"
+   ],
+   "ghost": [
+    "Import the planner’s chart",
+    "Publish seating to guests",
+    "Preview",
+    "Search"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a table",
+    "Import the planner’s chart",
+    "Publish seating to guests",
+    "Seat [Seat Ada Testhouse]",
+    "Seat [Seat Ben Testhouse]",
+    "Seat [Seat Cleo Testhouse]",
+    "Seat [Seat Dev Fixture]",
+    "Seat [Seat Eve Fixture]",
+    "Seat [Seat Fin Solo]"
+   ],
+   "quiet": [
+    "Seat"
+   ],
+   "headerActions": [],
+   "filterBar": 2,
+   "recordRows": 6,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [
+    "get|flow-filter|Preview",
+    "get|flow-filter|Search"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [
+    "Not published: guests see nothing",
+    "Draft matches",
+    "No answer"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/travel": {
+  "route": "/admin/travel",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Travel and stay"
+   ],
+   "h2": [
+    "The room block and hotels",
+    "Links to book travel"
+   ],
+   "lede": "Where guests sleep and how they get here: the venue’s room block, the hotels you recommend nearby, and links to book travel.",
+   "primary": [
+    "Add a hotel"
+   ],
+   "ghost": [
+    "Add a link"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a hotel",
+    "Set up [Set up Chicago Athletic Association Hotel]",
+    "Add a link"
+   ],
+   "quiet": [
+    "Set up"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 1,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Venue, holds the room block",
+    "From the brief, not saved yet",
+    "Details to confirm"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Travel and stay"
+   ],
+   "h2": [
+    "The room block and hotels",
+    "Links to book travel"
+   ],
+   "lede": "Where guests sleep and how they get here: the venue’s room block, the hotels you recommend nearby, and links to book travel.",
+   "primary": [
+    "Add a hotel"
+   ],
+   "ghost": [
+    "Add a link"
+   ],
+   "danger": [],
+   "triggers": [
+    "Add a hotel",
+    "Set up [Set up Chicago Athletic Association Hotel]",
+    "Add a link"
+   ],
+   "quiet": [
+    "Set up"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 1,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Venue, holds the room block",
+    "From the brief, not saved yet",
+    "Details to confirm"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/transport": {
+  "route": "/admin/transport",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Ride benefits"
+   ],
+   "h2": [
+    "Who has a ride benefit",
+    "Ride codes"
+   ],
+   "lede": "A ride home, paid for by you, through mock. Codes and redemption links are sealed and never shown here.",
+   "primary": [
+    "Give a guest a ride"
+   ],
+   "ghost": [
+    "Add ride codes"
+   ],
+   "danger": [],
+   "triggers": [
+    "Give a guest a ride",
+    "Add ride codes"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Ride benefits"
+   ],
+   "h2": [
+    "Who has a ride benefit",
+    "Ride codes"
+   ],
+   "lede": "A ride home, paid for by you, through mock. Codes and redemption links are sealed and never shown here.",
+   "primary": [
+    "Give a guest a ride"
+   ],
+   "ghost": [
+    "Add ride codes"
+   ],
+   "danger": [],
+   "triggers": [
+    "Give a guest a ride",
+    "Add ride codes"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/reservations": {
+  "route": "/admin/reservations",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Reservable places"
+   ],
+   "h2": [
+    "What guests see now"
+   ],
+   "lede": "Restaurants and bars you recommend for the weekend, and how guests reserve a table at each.",
+   "primary": [
+    "Add a place"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add a place",
+    "Set up [Set up Cindy’s (rooftop at the Chicago Athletic Association)]",
+    "Set up [Set up a restaurant we love]"
+   ],
+   "quiet": [
+    "Set up"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 2,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Built-in placeholder"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Reservable places"
+   ],
+   "h2": [
+    "What guests see now"
+   ],
+   "lede": "Restaurants and bars you recommend for the weekend, and how guests reserve a table at each.",
+   "primary": [
+    "Add a place"
+   ],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Add a place",
+    "Set up [Set up Cindy’s (rooftop at the Chicago Athletic Association)]",
+    "Set up [Set up a restaurant we love]"
+   ],
+   "quiet": [
+    "Set up"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 2,
+   "tables": 1,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "Built-in placeholder"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/invitations": {
+  "route": "/admin/invitations",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Invitations"
+   ],
+   "h2": [
+    "Links"
+   ],
+   "lede": "Each household’s link to its invitation. A link shows who is invited and lets them claim their place; it is shown once when made, and replaced if it leaks or is",
+   "primary": [
+    "Make a link"
+   ],
+   "ghost": [
+    "Show"
+   ],
+   "danger": [],
+   "triggers": [
+    "Make a link"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Invitations"
+   ],
+   "h2": [
+    "Links"
+   ],
+   "lede": "Each household’s link to its invitation. A link shows who is invited and lets them claim their place; it is shown once when made, and replaced if it leaks or is",
+   "primary": [
+    "Make a link"
+   ],
+   "ghost": [
+    "Show"
+   ],
+   "danger": [],
+   "triggers": [
+    "Make a link"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 1,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [
+    "flow-details|closed|Technical details"
+   ],
+   "forms": [
+    "get|flow-filter|Show"
+   ],
+   "checkboxesOutsideDialog": 1,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [
+    "INPUT::13"
+   ],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/lifecycle": {
+  "route": "/admin/lifecycle",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Lifecycle"
+   ],
+   "h2": [
+    "What each move changes",
+    "Preview another state",
+    "Recent publishes and previews"
+   ],
+   "lede": "What every guest sees right now. A published state always beats the calendar: nothing here changes on its own.",
+   "primary": [
+    "Publish a new state"
+   ],
+   "ghost": [
+    "Start previewing"
+   ],
+   "danger": [],
+   "triggers": [
+    "Publish a new state"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [
+    "post|con-form|Start previewing"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "RSVP_OPEN"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Lifecycle"
+   ],
+   "h2": [
+    "What each move changes",
+    "Preview another state",
+    "Recent publishes and previews"
+   ],
+   "lede": "What every guest sees right now. A published state always beats the calendar: nothing here changes on its own.",
+   "primary": [
+    "Publish a new state"
+   ],
+   "ghost": [
+    "Start previewing"
+   ],
+   "danger": [],
+   "triggers": [
+    "Publish a new state"
+   ],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [
+    "post|con-form|Start previewing"
+   ],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "RSVP_OPEN"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/jobs": {
+  "route": "/admin/jobs",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Jobs"
+   ],
+   "h2": [
+    "Needs a decision",
+    "By type",
+    "Recent"
+   ],
+   "lede": "Background work: retries with backoff, one row per job, claimed optimistically. A runner tick claims from what is queued and due.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Jobs"
+   ],
+   "h2": [
+    "Needs a decision",
+    "By type",
+    "Recent"
+   ],
+   "lede": "Background work: retries with backoff, one row per job, claimed optimistically. A runner tick claims from what is queued and due.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [],
+   "quiet": [],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 0,
+   "tablesVisible": 0,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ },
+ "/admin/flags": {
+  "route": "/admin/flags",
+  "status1280": 200,
+  "probe1280": {
+   "h1": [
+    "Feature flags"
+   ],
+   "h2": [
+    "Legal gates",
+    "Everything else"
+   ],
+   "lede": "A feature is on only when every gate in front of it is open. Flags come from the server environment; readiness switches are rows in the database.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Switch off [Switch PRO_MEDIA_AI_PROCESSING readiness off]"
+   ],
+   "quiet": [
+    "Switch off"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "No switch-on here",
+    "not live",
+    "off",
+    "on"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "axe": [],
+  "errors1280": [],
+  "status390": 200,
+  "probe390": {
+   "h1": [
+    "Feature flags"
+   ],
+   "h2": [
+    "Legal gates",
+    "Everything else"
+   ],
+   "lede": "A feature is on only when every gate in front of it is open. Flags come from the server environment; readiness switches are rows in the database.",
+   "primary": [],
+   "ghost": [],
+   "danger": [],
+   "triggers": [
+    "Switch off [Switch PRO_MEDIA_AI_PROCESSING readiness off]"
+   ],
+   "quiet": [
+    "Switch off"
+   ],
+   "headerActions": [],
+   "filterBar": 0,
+   "recordRows": 0,
+   "tables": 1,
+   "tablesVisible": 1,
+   "detailsFlow": [],
+   "forms": [],
+   "checkboxesOutsideDialog": 0,
+   "overflowX": 0,
+   "wideEls": [],
+   "smallTargets": [],
+   "pills": [
+    "No switch-on here",
+    "not live",
+    "off",
+    "on"
+   ],
+   "fonts": [
+    "\"Libre Caslon Display\"",
+    "Newsreader"
+   ],
+   "subnav": []
+  },
+  "errors390": []
+ }
+}
