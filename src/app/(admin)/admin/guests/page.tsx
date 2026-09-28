@@ -5,6 +5,7 @@ import { GUEST_VIEW_COOKIE, verifyGuestViewToken } from '@/domain/identity/guest
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { startGuestView } from '../_lib/guest-view-actions';
 import { ListsProvider } from '@/components/admin/flow/lists';
+import { PageLinks, paged } from '@/components/admin/flow/paging';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
@@ -36,6 +37,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
+  const shown = paged(rows, sp.page);
   const households = (hh.ok ? hh.value.data.households : []).map((h) => ({ value: h.id, label: h.name }));
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const isOwner = principal.roles.has('owner');
@@ -87,7 +89,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </FilterBar>
         <ListsProvider lists={{ households, guests: mergeTargets }}>
           <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
-            {rows.map((g) => (
+            {shown.rows.map((g) => (
               <RecordRow
                 key={g.id}
                 data-guest-id={g.id}
@@ -135,6 +137,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
             ))}
           </RecordList>
         </ListsProvider>
+        <PageLinks paging={shown} path="/admin/guests" params={sp} noun="guests" anchor="guests" />
       </Section>
 
       <Section title="Browse the site as a guest" id="browse-as">

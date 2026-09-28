@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { adminPreviewGuestTable, adminSeatingOverview } from '@/capabilities/rsvp';
 import { SEATING_MESSAGE } from '@/capabilities/seating/get_my_table';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
+import { PageLinks, paged } from '@/components/admin/flow/paging';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
 import { TableCard } from '@/components/weekend/TableCard';
 import { FloorPlan } from '@/components/floorplan/FloorPlan';
@@ -57,6 +58,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
     ...d.unassigned.map((u) => ({ ...u, tableId: '', seatNumber: null as number | null })),
   ].sort((a, b) => a.displayName.localeCompare(b.displayName));
   const seatRows = everyone.filter((g) => (!unseatedOnly || !g.tableId) && (!q || `${g.displayName} ${g.householdName}`.toLowerCase().includes(q.toLowerCase())));
+  const shown = paged(seatRows, one(sp.page));
   const previewOptions = [{ value: '', label: 'Choose a guest' }, ...everyone.map((g) => ({ value: g.guestId, label: `${g.displayName} (${g.householdName})` }))];
 
   const draft = {
@@ -196,7 +198,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
         </FilterBar>
         <ListsProvider lists={{ tables: tableOptions }}>
           <RecordList label="Guests and their seats" empty={seatRows.length === 0 ? (everyone.length ? 'Nobody matches this search.' : 'No guests yet.') : null}>
-            {seatRows.map((g) => (
+            {shown.rows.map((g) => (
               <RecordRow
                 key={g.guestId}
                 data-guest-id={g.guestId}
@@ -225,6 +227,7 @@ export default async function AdminSeatingPage({ searchParams }: { searchParams:
             ))}
           </RecordList>
         </ListsProvider>
+        <PageLinks paging={shown} path="/admin/seating" params={{ q: q || undefined, unseated: unseatedOnly ? 'on' : undefined, preview: previewId }} noun="guests" anchor="assign" />
       </Section>
 
       <Section title="Floor plans" id="plans">

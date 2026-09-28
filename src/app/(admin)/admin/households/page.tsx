@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/records';
+import { PageLinks, paged } from '@/components/admin/flow/paging';
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Note, Pill, Section } from '../_components/console';
@@ -24,6 +25,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
   if ((await adminPrincipal()).kind !== 'admin') return <ConsoleGate what="Households" />;
   const list = await adminInvoke<{ households: Household[]; truncated: boolean }>('admin_list_households', { q: sp.q || undefined }, { method: 'GET' });
   const rows = list.ok ? list.value.data.households : [];
+  const shown = paged(rows, sp.page);
   return (
     <ConsolePage
       title="Households"
@@ -37,7 +39,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
           <Input id="q" label="Search" defaultValue={sp.q} />
         </FilterBar>
         <RecordList label="Households" empty={rows.length === 0 ? 'No household matches this search.' : null}>
-          {rows.map((h) => {
+          {shown.rows.map((h) => {
             const inv = h.invitation ? INVITATION[h.invitation.status] : undefined;
             return (
               <RecordRow
@@ -64,6 +66,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
             );
           })}
         </RecordList>
+        <PageLinks paging={shown} path="/admin/households" params={sp} noun="households" anchor="households" />
       </Section>
     </ConsolePage>
   );

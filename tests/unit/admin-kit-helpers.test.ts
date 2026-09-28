@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { moveCalls } from '@/components/admin/flow/order';
+import { paged } from '@/components/admin/flow/paging';
 import { possessive } from '@/components/admin/flow/words';
 
 describe('admin kit helpers', () => {
@@ -41,6 +42,16 @@ describe('admin kit helpers', () => {
     const rows = [{ id: 'a', sortOrder: 0 }, { id: 'b', sortOrder: 0 }];
     expect(moveCalls(rows, 0, 'up', build, 'cap')).toEqual([]);
     expect(moveCalls(rows, 1, 'down', build, 'cap')).toEqual([]);
+  });
+
+  it('pages a long list, and treats a missing or impossible page as the nearest real one', () => {
+    const rows = Array.from({ length: 120 }, (_, i) => i);
+    expect(paged(rows, undefined)).toMatchObject({ page: 1, pages: 3, total: 120 });
+    expect(paged(rows, undefined).rows).toHaveLength(50);
+    expect(paged(rows, '3').rows).toEqual(rows.slice(100));
+    expect(paged(rows, '9').page).toBe(3);
+    expect(paged(rows, 'abc').page).toBe(1);
+    expect(paged([], '2')).toMatchObject({ rows: [], page: 1, pages: 1, total: 0 });
   });
 
   it('makes possessives the way the invitations read', () => {

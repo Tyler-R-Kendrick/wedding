@@ -783,3 +783,17 @@ textarea.flow-input {
   display: inline;
   margin: 0;
 }
+
+/* Paging under a long list (paging.tsx): the count, then Previous and Next. */
+.flow-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin-block-start: var(--spacing-md);
+}
+
+.flow-pages__count {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+}

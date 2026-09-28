@@ -58,6 +58,8 @@ Every `/admin` screen uses this kit the same way. `/admin/gifts`, `/admin/guests
 - Drafts are kept on the device (`sessionStorage`) for create/edit flows; `danger` flows keep none.
   A flow whose answers must never sit in the browser (ride codes, a pasted guest list) is `secret`:
   no draft at all, and a step-up detour asks for them again instead of keeping them.
+- A list that can run to hundreds of rows (guests, households, seats) shows fifty at a time:
+  `paged(rows, searchParams.page)` and `PageLinks` under the list. Search narrows it first.
 - A picker every row shares (households, guests, tables) goes to the browser once, through
   `ListsProvider` around the list, and each row's flow reads it with `useList`. Passed to every row,
   it makes the page grow with the rows times the options.
