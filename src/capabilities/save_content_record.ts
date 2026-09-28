@@ -11,6 +11,8 @@ const input = z.object({
   /** Omit to create. */
   id: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/).optional(),
   data: z.record(z.string(), z.unknown()),
+  /** With `id`: `data` holds only the fields that change (Up and Down send just the position); the rest keep their stored values. */
+  merge: z.boolean().optional(),
 });
 const output = z.object({ id: z.string(), contentVersion: z.number().int(), created: z.boolean() });
 
@@ -41,7 +43,7 @@ export const saveContentRecord = defineCapability<z.infer<typeof input>, z.infer
     const db = requireService<Db>(ctx, 'db');
     const result = await save(
       db,
-      { table: i.table as (typeof CONTENT_TABLE_NAMES)[number], id: i.id, data: i.data },
+      { table: i.table as (typeof CONTENT_TABLE_NAMES)[number], id: i.id, data: i.data, merge: i.merge },
       { actor: toPrincipalRef(ctx.principal), editedBy: editedByFor(ctx.principal), requestId: ctx.requestId, audit: ctx.audit, now: ctx.now },
     );
     if (!result.ok) return err(result.error);

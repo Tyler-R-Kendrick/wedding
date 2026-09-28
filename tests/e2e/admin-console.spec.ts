@@ -117,12 +117,21 @@ test('reviewing a lifecycle change explains what it does to guests and publishes
   const page = await ctx.newPage();
   await page.goto('/admin/lifecycle');
   // The labels are uppercased in CSS, so innerText is not the source text; read the value cell.
-  const publishedState = page.locator('#main .con-kv > div').first().locator('dd');
-  const before = (await publishedState.innerText()).trim();
-  expect(before, 'the page must state the published lifecycle state').toMatch(/^[A-Z_]+$/);
+  // The state is said in words ("Save the date"); the model's code rides along as `data-state`
+  // (and in the closed Technical details), so the check is both: stated for a person, and exact.
+  const publishedState = page.locator('#main .con-kv > div').first().locator('dd [data-state]');
+  const before = await publishedState.getAttribute('data-state');
+  expect(before, 'the page must carry the published lifecycle state').toMatch(/^[A-Z_]+$/);
+  const words = (await publishedState.innerText()).trim();
+  expect(words, 'the page must state the published lifecycle state in words').not.toBe('');
+  expect(words, 'the main path shows the state in words, not its code').not.toMatch(/^[A-Z_]+$/);
 
+  // Publishing is a flow from the admin kit: the trigger opens a sheet (a <dialog> inside #main),
+  // step 1 chooses the state, and its Continue drafts the change (no side effects) and issues the
+  // confirmation token that step 2 reviews.
+  await page.getByRole('button', { name: 'Publish a new state' }).click();
   await page.getByLabel('Move the site to').selectOption({ index: 0 });
-  await page.getByRole('button', { name: 'Review the change' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
 
   const publish = page.getByRole('button', { name: /^Publish .* to every guest$/ });
   await expect(publish).toBeVisible();
@@ -131,7 +140,7 @@ test('reviewing a lifecycle change explains what it does to guests and publishes
 
   // A draft has no side effects: the published state is what it was, on a fresh load.
   await page.goto('/admin/lifecycle');
-  const after = (await page.locator('#main .con-kv > div').first().locator('dd').innerText()).trim();
+  const after = await page.locator('#main .con-kv > div').first().locator('dd [data-state]').getAttribute('data-state');
   expect(after).toBe(before);
   await ctx.close();
 });
@@ -168,11 +177,19 @@ test('the flags screen shows the legal gate shut and offers no way to open it', 
     await expect(page.getByRole('button', { name: label })).toHaveCount(0);
   }
   // Stronger than the absence of four phrasings, and immune to flag naming altogether: every
-  // control in the legal-gates list is an off switch.
-  const gateButtons = page.locator('.con-gate button');
-  await expect(gateButtons).toHaveCount(1);
-  for (const name of await gateButtons.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))) {
+  // control in the legal-gates list is an off switch. Each gate's control is a danger flow from the
+  // admin kit, so the list holds one trigger per gate (the button that opens a sheet) …
+  const gateTriggers = page.locator('.con-gate [aria-haspopup="dialog"]');
+  await expect(gateTriggers).toHaveCount(1);
+  for (const name of await gateTriggers.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))) {
     expect(name).toMatch(/ readiness off$/);
+  }
+  // … and inside the closed sheet, the only other buttons are Close and the red submit, which names
+  // the same act. Read from the DOM, hidden or not: no button anywhere in a gate may say anything else.
+  const gateButtonNames = await page.locator('.con-gate button').evaluateAll((els) => els.map((e) => (e.getAttribute('aria-label') ?? e.textContent ?? '').trim()));
+  expect(gateButtonNames.length).toBeGreaterThan(0);
+  for (const name of gateButtonNames) {
+    expect(name, 'a control in a legal gate that is not an off switch').toMatch(/ readiness off$|^Close$/);
   }
   await ctx.close();
 });

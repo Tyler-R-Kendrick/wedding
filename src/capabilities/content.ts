@@ -1,4 +1,5 @@
 import type { AnyCapability } from '@/contracts/capability';
+import { adminListContentSources } from './admin_list_content_sources';
 import { findAdventures } from './find_adventures';
 import { getContentRecordCapability } from './get_content_record';
 import { getFaq } from './get_faq';
@@ -31,9 +32,10 @@ export const contentCapabilities: readonly AnyCapability[] = [
   getContentRecordCapability,
   saveContentRecord,
   markContentVerified,
+  adminListContentSources,
 ];
 
 export {
   getStory, listAdventures, showAdventure, findAdventures, listItineraries, showVenueRoom, getVenueFacts, getFaq, searchWeddingInformationStatic,
-  listContentRecordsCapability, getContentRecordCapability, saveContentRecord, markContentVerified,
+  listContentRecordsCapability, getContentRecordCapability, saveContentRecord, markContentVerified, adminListContentSources,
 };
