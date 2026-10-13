@@ -16,8 +16,11 @@ const anonymous: Principal = { kind: 'anonymous' };
 const guest: GuestPrincipal = { kind: 'guest', authIdentityId: 'a' as never, guestId: 'g1' as never, householdId: 'h1' as never, actsFor: ['g1' as never], entitlements: new Set(['view_event']), authenticatedAt: new Date().toISOString(), sessionId: 's1' };
 const admin = (entitlements: Entitlement[] = ['admin_content']): AdminPrincipal => ({ kind: 'admin', authIdentityId: 'a' as never, adminId: 'adm1' as never, roles: new Set(['owner']), entitlements: new Set(entitlements), authenticatedAt: new Date().toISOString(), sessionId: 's2' });
 
-const ctxFor = (principal: Principal, surface: 'ui' | 'ai' | 'webmcp' = 'ui', extra: { idempotencyKey?: string; requestId?: string } = {}) =>
-  createCapabilityContext({ principal, requestId: extra.requestId ?? `req-${newId()}`, surface, idempotencyKey: extra.idempotencyKey });
+const ctxFor = (
+  principal: Principal,
+  surface: 'ui' | 'ai' | 'webmcp' = 'ui',
+  extra: { idempotencyKey?: string; requestId?: string; now?: Date } = {},
+) => createCapabilityContext({ principal, requestId: extra.requestId ?? `req-${newId()}`, surface, idempotencyKey: extra.idempotencyKey, now: extra.now });
 
 describe('content schema', () => {
   it('every content table carries the ADR-0011 provenance columns', async () => {
@@ -147,7 +150,8 @@ describe('share an adventure', () => {
     expect(r.value.data.plan?.totalMinutes).toBeLessThanOrEqual(60);
     expect(r.value.data.plan?.stops[0]?.recommendation.slug).toBe('caa-self-guided-tour');
     expect(r.value.data.items.every((i) => i.draft)).toBe(true);
-    const inside = await invoke(findAdventures, await ctxFor(anonymous), { insideCaa: true });
+    // Operational freshness uses wall-clock `now`; pin a date shortly after the link-check seed.
+    const inside = await invoke(findAdventures, await ctxFor(anonymous, 'ui', { now: new Date('2026-09-10T12:00:00Z') }), { insideCaa: true });
     expect(inside.ok && inside.value.data.items.every((i) => i.interests.includes('inside-caa'))).toBe(true);
     const cindys = inside.ok ? inside.value.data.items.find((i) => i.slug === 'cindys-rooftop') : undefined;
     expect(cindys?.operational?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
