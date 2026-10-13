@@ -38,6 +38,11 @@ search both use it).
   halfway. If migrations fail the build fails, which is the point: code deployed onto a
   database without its schema answers 500 on every route.
   Off Vercel, run `npm run db:migrate` with `DATABASE_URL` set.
+- Migration `0014_supabase_rls_lockdown` enables row level security on every
+  `public` table and revokes `anon` / `authenticated` grants. The site never
+  calls the Supabase Data API (no `NEXT_PUBLIC_SUPABASE_*` keys); guests and
+  admins reach data only through the Next.js server and `DATABASE_URL`. Do not
+  re-grant `public` tables to API roles without matching RLS policies.
 - **Content syncs itself on deploy too.** Right after the chain, the same step runs
   `npm run db:sync-content` (`src/db/seed/sync-content.ts`): the story, places,
   adventures, recommendations, venue docent and FAQ in `src/content/seed/`, their
