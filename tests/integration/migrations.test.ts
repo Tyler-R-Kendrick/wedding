@@ -20,4 +20,23 @@ describe('migrations', () => {
     const db = await getDb();
     expect(typeof db.vectorAvailable).toBe('boolean');
   });
+
+  it('enables row level security on every public application table', async () => {
+    const db = await getDb();
+    const result = await db.execute(sql`
+      SELECT c.relname AS table_name, c.relrowsecurity AS rls_enabled
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+      ORDER BY c.relname
+    `);
+    const rows = (Array.isArray(result) ? result : (result as { rows: { table_name: string; rls_enabled: boolean }[] }).rows) as {
+      table_name: string;
+      rls_enabled: boolean;
+    }[];
+    expect(rows.length).toBeGreaterThan(0);
+    const without = rows.filter((r) => !r.rls_enabled).map((r) => r.table_name);
+    expect(without, `tables missing RLS: ${without.join(', ')}`).toEqual([]);
+  });
 });
