@@ -13,7 +13,7 @@ const { PageHead, Chips, ItineraryCard, StopList, RecommendationCard } = content
  * Share an Adventure in three acts: 01 itineraries as programmes on the axis, 02 the plan form on a
  * lake wash with its result plaque, 03 every place by category.
  */
-export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recommendations, activeBucket, plan, frame }) => {
+export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recommendations, activeBucket, plan, guestTools, signedIn = false, frame }) => {
   const groups = groupByCategory(recommendations.items);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
@@ -23,6 +23,8 @@ export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recomm
           <Chips items={guideJumpItems(groups)} label={CONTENT_COPY.guide.jump} />
         </nav>
       </PageHead>
+
+      {guestTools}
 
       <Section id="itineraries" number={1} labelledBy="itineraries-title">
         <SectionHeading level={2} id="itineraries-title" title={CONTENT_COPY.guide.time} />
@@ -36,6 +38,7 @@ export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recomm
         </ul>
       </Section>
 
+      {signedIn ? (
       <Section id="plan" number={2} ground="wash" labelledBy="plan-title">
         <SectionHeading level={2} id="plan-title" title={CONTENT_COPY.guide.plan} />
         <form className="gh-form" method="get" action={ROUTES.share}>
@@ -79,6 +82,12 @@ export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recomm
           </article>
         ) : null}
       </Section>
+      ) : (
+        <Section id="plan" labelledBy="plan-title">
+          <SectionHeading level={2} id="plan-title" title="Make the weekend yours" />
+          <Prose><p>Sign in for our Chicago map, to create your agenda, and to review your guest details.</p><p><Link standalone href="/sign-in?next=%2Fshare-an-adventure">Sign in to plan your weekend →</Link></p></Prose>
+        </Section>
+      )}
 
       <Section id="recommendations" number={3} labelledBy="recommendations-title">
         <SectionHeading level={2} id="recommendations-title" title={CONTENT_COPY.guide.all} />

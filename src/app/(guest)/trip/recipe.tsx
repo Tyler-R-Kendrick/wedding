@@ -157,7 +157,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
             ))}
           </ul>
         ) : (
-          <p>Nothing yet. Add your flights below, or search on Travel &amp; Stay and come back to record what you booked.</p>
+          <p>Nothing yet. Build your personal agenda below: add flights, hotel stays, restaurant reservations, and activities you’d like to enjoy.</p>
         )}
         {trip.hostedBookingAvailable ? (
           <form action={hostedFlightsAction} className="rounded-sm border border-primary/30 p-4">
@@ -240,7 +240,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         </p>
       </Section>
 
-      <Section theme={theme} index={3} id="add" title="Add to your trip">
+      <Section theme={theme} index={3} id="add" title="Add to your agenda">
         {slots.addItemForm}
       </Section>
 

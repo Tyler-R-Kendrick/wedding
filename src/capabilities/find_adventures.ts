@@ -56,6 +56,9 @@ export const findAdventures = defineCapability<z.infer<typeof input>, FindAdvent
   output,
   maxOutputChars: 32_000,
   async handler(ctx, i) {
+    if (i?.maxMinutes !== undefined && ctx.principal.kind === 'anonymous') {
+      return err(new CapabilityError('unauthenticated', 'Sign in to create a plan for your weekend.'));
+    }
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     if (i?.slug) {

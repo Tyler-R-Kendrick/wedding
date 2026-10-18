@@ -13,7 +13,7 @@ const { PageHead, Chips, ItineraryCard, StopList, RecommendationCard } = content
  * Share an Adventure on the sheet: itineraries are pressed cards with a vine of stops; the plan form
  * sits on the sky wash with its result mounted beside it; the places follow, one fern rule per category.
  */
-export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recommendations, activeBucket, plan, frame }) => {
+export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recommendations, activeBucket, plan, guestTools, signedIn = false, frame }) => {
   const groups = groupByCategory(recommendations.items);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
@@ -23,6 +23,8 @@ export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, 
           <Chips items={guideJumpItems(groups)} label={CONTENT_COPY.guide.jump} />
         </nav>
       </PageHead>
+
+      {guestTools}
 
       <Section id="itineraries" labelledBy="itineraries-title">
         <div className="cv-section__text">
@@ -38,6 +40,7 @@ export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, 
         </ul>
       </Section>
 
+      {signedIn ? (
       <Section id="plan" ground="wash" labelledBy="plan-title">
         <div className="cv-section__text">
           <SectionHeading level={2} id="plan-title" title={CONTENT_COPY.guide.plan} />
@@ -86,6 +89,12 @@ export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, 
           </div>
         ) : null}
       </Section>
+      ) : (
+        <Section id="plan" labelledBy="plan-title">
+          <SectionHeading level={2} id="plan-title" title="Make the weekend yours" />
+          <Prose><p>Sign in for our Chicago map, to create your agenda, and to review your guest details.</p><p><Link standalone href="/sign-in?next=%2Fshare-an-adventure">Sign in to plan your weekend →</Link></p></Prose>
+        </Section>
+      )}
 
       <Section id="recommendations" labelledBy="recommendations-title">
         <div className="cv-section__text">

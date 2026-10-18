@@ -5,6 +5,9 @@ import { listItineraries } from '@/capabilities/list_itineraries';
 import { ITINERARY_BUCKETS, type ItineraryBucket } from '@/db/schema/content';
 import { publicPageContext } from '@/domain/content/page-context';
 import { recipes } from '../_recipes';
+import { GuestChicagoTools } from '@/components/guide/GuestChicagoTools';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = { title: 'Share an Adventure' };
 
@@ -21,11 +24,12 @@ export default async function ShareAnAdventurePage({ searchParams }: { searchPar
   const interestRaw = one(sp.interest);
   const interest = interestRaw && /^[a-z0-9-]{1,40}$/.test(interestRaw) ? interestRaw : undefined;
 
-  const { ctx } = await publicPageContext();
+  const { ctx, principal } = await publicPageContext();
+  const signedIn = principal.kind === 'guest';
   const [itineraries, all, plan] = await Promise.all([
     invoke(listItineraries, ctx, bucket ? { bucket } : {}),
     invoke(findAdventures, ctx, {}),
-    wantsPlan ? invoke(findAdventures, ctx, { maxMinutes: minutes, kids, ...(interest ? { interests: [interest] } : {}) }) : Promise.resolve(undefined),
+    signedIn && wantsPlan ? invoke(findAdventures, ctx, { maxMinutes: minutes, kids, ...(interest ? { interests: [interest] } : {}) }) : Promise.resolve(undefined),
   ]);
   if (!itineraries.ok) throw new Error(itineraries.error.message);
   if (!all.ok) throw new Error(all.error.message);
@@ -34,6 +38,8 @@ export default async function ShareAnAdventurePage({ searchParams }: { searchPar
       itineraries={itineraries.value.data}
       recommendations={all.value.data}
       activeBucket={bucket}
+      signedIn={signedIn}
+      guestTools={signedIn ? <GuestChicagoTools recommendations={all.value.data.items} /> : undefined}
       plan={plan && plan.ok ? { minutes, kids, interest, result: plan.value.data.plan } : undefined}
     />
   );

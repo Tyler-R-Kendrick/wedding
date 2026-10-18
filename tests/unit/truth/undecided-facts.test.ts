@@ -35,11 +35,20 @@ const plan = (question: string) => {
 
 const FAQ: { slug: string; answer: string }[] = JSON.parse(readFileSync('src/content/seed/faq.json', 'utf8'));
 const answerFor = (slug: string) => FAQ.find((e) => e.slug === slug)!.answer;
+// Keep the historical mixed-record regressions after Sara supplies the final FAQ wording.
+const mixedWeather = 'The ceremony and reception are indoors at the hotel. TODO(Tyler & Sara): any outdoor plans for the weekend.';
+const mixedExamples = [
+  'Confirm with a one-time code sent to your email. TODO(Tyler & Sara): the RSVP deadline.',
+  mixedWeather,
+  answerFor('accessibility'),
+  'Your invitation will say who it covers. TODO(Tyler & Sara): plus-one wording.',
+  'Two professional photographers will be there. TODO(Tyler & Sara): photo policy.',
+];
 
 describe('a decided fact beside an undecided one', () => {
   it('keeps the decided sentences out of the corpus scrubber and drops only the hint', () => {
-    // The exact five seeded answers that mix the two. Each names something a guest acts on.
-    const kept = withoutPlaceholders([answerFor('rsvp'), answerFor('weather'), answerFor('accessibility'), answerFor('plus-ones'), answerFor('photos')]);
+    // Historical examples still exercise mixed records after the public answers are finalized.
+    const kept = withoutPlaceholders(mixedExamples);
     expect(kept).toHaveLength(5);
     const corpus = kept.join(' ');
     expect(corpus).toContain('one-time code sent to your email');
@@ -60,7 +69,7 @@ describe('a decided fact beside an undecided one', () => {
   });
 
   it('splits a mixed string per sentence, not per record', () => {
-    const { settled, hints } = splitPlaceholderText(answerFor('weather'));
+    const { settled, hints } = splitPlaceholderText(mixedWeather);
     expect(settled).toEqual(['The ceremony and reception are indoors at the hotel.']);
     expect(hints).toHaveLength(1);
     expect(hints[0]).toContain('outdoor plans');
@@ -68,7 +77,7 @@ describe('a decided fact beside an undecided one', () => {
 });
 
 describe('the placeholder block', () => {
-  const mixed = answerFor('weather');
+  const mixed = mixedWeather;
 
   it('labels only the hint, and shows the decided sentence as a fact beside it', () => {
     expect(placeholderHint(mixed)).toBe('any outdoor plans for the weekend.');

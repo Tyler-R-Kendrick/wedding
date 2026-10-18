@@ -60,7 +60,7 @@ const PAGES: PageCase[] = [
   {
     key: 'share-an-adventure',
     path: '/share-an-adventure',
-    h1: 'Borrow a few of ours',
+    h1: 'Things to Do in Chicago',
     // 22,600 px at 390: the page's first action is the jump list, not the itinerary filter below it
     primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
     control: true,

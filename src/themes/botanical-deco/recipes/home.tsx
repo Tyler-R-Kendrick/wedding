@@ -53,16 +53,19 @@ function Theme({ data }: { data: HomeData }) {
       <div className="bd-theme__inner">
         <div className="bd-theme__intro">
           <h2 className="bd-h bd-h--2 bd-theme__title" id="theme-title">
-            Love, peace <br />
-            &amp; happiness
+            Rooted in love. Surrounded by peace. Filled with happiness.
           </h2>
           <span className="bd-head__rule" aria-hidden="true" />
           <p className="bd-theme__lede">
-            We have been lucky. A city we love, adventures that changed us, and people who made every one of them better.{' '}
-            {after
-              ? 'Thank you for letting us share them with you.'
-              : `Not everyone we love has been able to share them with us yet, so on ${data.site.date.long}, we are bringing you along to ${data.site.venue.city}.`}
+            {after ? 'Thank you for sharing this celebration with us.' : "We're so happy you're here! We believe life's greatest joys are found in the people we love, the moments we share, and the memories we make along the way."}
           </p>
+          <p className="bd-theme__lede">
+            {after ? 'Thank you for slowing down, being present, and celebrating with us. We’re so grateful to have you in our lives.' : 'We hope our wedding is a reflection of these things and a chance to slow down, be present, and celebrate the happiness that comes from being together. We’re so grateful to have you in our lives.'}
+          </p>
+          <p className="bd-theme__lede">
+            With love,<br />Sara &amp; Tyler
+          </p>
+          <p><More href={throughSignIn('/your-weekend')}>Sign in for your guest experience</More></p>
         </div>
         <ol className="bd-theme__list">
           {words.map((w) => (
@@ -100,7 +103,7 @@ function Share({ data }: { data: HomeData }) {
         <div className="bd-share__body" data-reveal="">
           <p className="bd-eyebrow">Our story</p>
           <h3 className="bd-share__name">How it all started</h3>
-          <p>At Allison and Jamie’s wedding: flirty glances across the room, and a connection that was immediate. Weddings have been good to us; we hope this one is good to you.</p>
+          <p>We met at a friend’s wedding, where an evening of talking, playing games, and getting to know each other became the start of our story.</p>
           <More href={ROUTES.story}>Read our story</More>
         </div>
       </article>

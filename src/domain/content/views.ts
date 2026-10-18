@@ -45,6 +45,7 @@ export type HandoffView = z.infer<typeof handoffViewSchema>;
 export const mediaViewSchema = z.object({ alt: z.string(), caption: z.string().optional(), src: z.string().optional() });
 
 export const placeViewSchema = z.object({
+  coordinates: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
   id: z.string(),
   slug: z.string(),
   name: z.string(),

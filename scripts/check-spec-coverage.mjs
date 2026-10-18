@@ -50,6 +50,7 @@ export const PRODUCTION_SPECS = [
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
 export const TEST_SERVER_SPECS = [
+  'tests/e2e/guest-guide.spec.ts',
   'tests/e2e/claim.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',

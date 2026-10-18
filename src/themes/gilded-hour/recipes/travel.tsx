@@ -35,14 +35,25 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
   sources,
   slots,
   tripHref,
+  signedIn = false,
   frame,
 }) => (
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
     <PageHead
       eyebrow="Travel & Stay"
       title="Getting to Chicago"
-      lede="How to get here and where to sleep. Every link takes you to the airline or the hotel to book — we never handle payments."
+      lede="We know many of you will be traveling to join us, and we’re grateful you’re making the trip. Here’s some helpful information to make planning your stay a little easier. We’ll add more details as our plans come together."
     />
+
+    <Section id="arriving" labelledBy="arriving-title">
+      <SectionHeading level={2} id="arriving-title" title="Getting to Chicago" />
+      <Prose>
+        <p>By air: O’Hare (ORD) and Midway (MDW) both offer public transportation, taxis, and rideshare options for getting downtown. Visit the <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and service information.</p>
+        <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago’s Union Station from cities throughout the country. Check routes, schedules, and tickets before traveling.</p>
+        <p>By car: plan ahead for downtown parking. The hotel offers valet parking; Millennium Park Garage and Millennium Lakeside Garage are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates and reservations. Parking rates and availability may change before the wedding.</p>
+        <p><Link standalone href={tripHref}>{signedIn ? 'Your guest travel details and weekend plans →' : 'Sign in for guest booking details and your weekend plans →'}</Link></p>
+      </Prose>
+    </Section>
 
     <Section id="airports" labelledBy="airports-title">
       <SectionHeading
@@ -73,7 +84,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
           </p>
           {venue.block?.note ? <p>{venue.block.note}</p> : null}
         </Prose>
-        <dl className="gh-stats">
+        {venue.block ? <dl className="gh-stats">
           <Stat
             label="Group rate"
             value={
@@ -108,7 +119,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
               )
             }
           />
-        </dl>
+        </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
         {venue.block?.url ? (
           <p>
             <Link href={venue.block.url} external standalone>
@@ -187,6 +198,11 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
     <Section id="hotel-rates" ground="alt" labelledBy="rates-title">
       <SectionHeading level={2} id="rates-title" title="Check hotel rates" />
       {slots.hotelSearch}
+    </Section>
+
+    <Section id="make-a-trip" labelledBy="make-a-trip-title">
+      <SectionHeading level={2} id="make-a-trip-title" title="Make a trip of it" />
+      <Prose><p>Planning extra time in the city? We’d love for you to enjoy Chicago while you’re here.</p><p><Link standalone href={signedIn ? '/share-an-adventure' : '/sign-in?next=%2Fshare-an-adventure'}>Explore our Chicago guide and map →</Link></p><p>We’re so grateful you’re making the trip to celebrate with us and can’t wait to make wonderful memories together!</p></Prose>
     </Section>
 
     <Section id="getting-around" labelledBy="around-title">

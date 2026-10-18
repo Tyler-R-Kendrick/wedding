@@ -4,9 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { rightsXmp } from '../../../scripts/stamp-photo-rights.mjs';
 import { adventureMemorySeedSchema, crossReferenceProblems, isPlaceholderText, loadContentSeed, PLACEHOLDER_MARKER, storySectionSeedSchema } from '@/content';
 
+import { BRIEF_SOURCE_ID } from '@/db/seed/sources';
+import { SOURCE_KEYS } from '@/content/sources';
+
 const seed = loadContentSeed();
 
 describe('content seed (facts from docs/design/brief.md only)', () => {
+  it('keeps the brief’s identity stable when new authored sources are added', () => {
+    expect(BRIEF_SOURCE_ID).toBe(SOURCE_KEYS.brief);
+    expect(BRIEF_SOURCE_ID).not.toBe(SOURCE_KEYS['sara-feedback']);
+  });
+
   it('validates against the zod schemas with provenance on every record', () => {
     const all = [...seed.story, ...seed.places, ...seed.adventures, ...seed.recommendations, ...seed.itineraries, ...seed.venueSpaces, ...seed.venueFacts, ...seed.operationalFields, ...seed.faq];
     expect(all.length).toBeGreaterThan(40);
@@ -20,9 +28,9 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
   });
 
   it('enforces the placeholder invariant: TODO text without placeholder: true is rejected', () => {
-    const bad = storySectionSeedSchema.safeParse({ ...seed.story[0], placeholder: false });
+    const bad = storySectionSeedSchema.safeParse({ ...seed.story[0], paragraphs: ['TODO(Tyler & Sara): unfinished copy'], placeholder: false });
     expect(bad.success).toBe(false);
-    const ok = storySectionSeedSchema.safeParse({ ...seed.story[0], placeholder: true });
+    const ok = storySectionSeedSchema.safeParse({ ...seed.story[0], paragraphs: ['TODO(Tyler & Sara): unfinished copy'], placeholder: true });
     expect(ok.success).toBe(true);
   });
 

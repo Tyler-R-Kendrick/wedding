@@ -188,6 +188,7 @@ function Modules({ data }: { data: MyItinerary }) {
           <p className="bd-kicker">Travel + stay</p>
           <h2 className="bd-module__title">{data.slots.trip.title}</h2>
           <SlotBody slot={data.slots.trip} />
+          <p><Link className="bd-more" href="/trip">Create or update your personal agenda →</Link></p>
           <Link className="bd-more" href="/travel">
             <span>Where to stay</span>
           </Link>

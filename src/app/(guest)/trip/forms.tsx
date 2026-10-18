@@ -168,11 +168,11 @@ export function AddItemForm() {
             <select id={p.id} name="kind" defaultValue={v('kind', 'flight')} aria-describedby={p.describedBy} className={INPUT}>
               <option value="flight">Flight</option>
               <option value="hotel">Hotel stay</option>
-              <option value="other">Something else</option>
+              <option value="other">Activity or something else</option>
             </select>
           )}
         </Field>
-        <Field label="Title" hint="For example: UA 1234 LAX to ORD" issue={issue('title')}>
+        <Field label="Title" hint="For example: architecture cruise, dinner reservation, or UA 1234 LAX to ORD" issue={issue('title')}>
           {(p) => <input id={p.id} name="title" defaultValue={v('title')} required maxLength={120} aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
         </Field>
         <Field label="Starts" issue={issue('startAt')}>
