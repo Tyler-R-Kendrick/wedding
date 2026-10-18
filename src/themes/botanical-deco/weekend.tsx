@@ -74,11 +74,15 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
       </p>
       {reply ? (
         <>
-          <p className="bd-reply__intro">We would be honored to have you with us. Please tell us your plans for each event below.</p>
+          <p className="bd-reply__intro">Let us know your plans. You can reply now and come back for meals and other details as they open.</p>
           {/* Not interactive (the form is right here), but it shows a first-time guest every part of
               the reply — including the ones that open later — before they start. */}
-          <RsvpTaskList parts={data.rsvp.parts} interactive={false} idPrefix="reply-task" labelledBy="reply-title" />
-          <RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" />
+          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
+          <p><Link className="bd-btn bd-btn--primary bd-reply__submit" href="/rsvp">{replyLabel(data.rsvp)}</Link></p>
+          <details className="guest-disclosure bd-reply__inline">
+            <summary>Reply right here instead</summary>
+            <div className="guest-disclosure__body"><RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" /></div>
+          </details>
         </>
       ) : w.open && data.rsvp.canAnswer && data.rsvp.parts.some((p) => p.state === 'open') ? (
         <>

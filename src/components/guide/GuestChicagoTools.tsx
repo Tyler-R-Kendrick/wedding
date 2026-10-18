@@ -23,7 +23,7 @@ export async function GuestChicagoTools({ recommendations }: { recommendations: 
         <div className={theme === 'conservatory' ? 'cv-section__full' : undefined}>
           <SectionHeading level={2} id="chicago-map-title" title="Our Chicago Guide" />
           <Prose>
-            <p>Explore our recommendations on the map, then open a place for directions. Pins show approximate locations; confirm your destination before heading out. Tours, experiences without a fixed meeting point, and recommendations we’re still putting together are in the list below.</p>
+            <p>Pick a place on the map for a closer look, or find an adventure below. Our venue is your starting point.</p>
           </Prose>
           {/* The shared illustration carries its own palette in every site theme. */}
           <div data-theme="botanical-deco">
@@ -57,20 +57,25 @@ export async function GuestChicagoTools({ recommendations }: { recommendations: 
               {null}
             </AdventureAtlas>
           </div>
-          <Prose>
-            <p><Link standalone href="/trip">Create or update your personal agenda →</Link></p>
-            <p><Link standalone href="/rsvp/meals">Review your meal selections →</Link> Meal choices and changes open when the menu is ready and remain available during the meal editing window.</p>
-          </Prose>
+          <nav className="guest-next" aria-label="Your Chicago plans">
+            <Link standalone href="#plan">Find an adventure →</Link>
+            <Link standalone href="/trip">Your personal agenda →</Link>
+            <Link standalone href="/rsvp/meals">Review your meal selections →</Link>
+          </nav>
+          <details className="guest-disclosure" id="exploring-tips">
+            <summary>Before you head out <span>Getting around, reservations and map notes</span></summary>
+            <div className="guest-disclosure__body">
+              <Prose>
+                <p>Pins show approximate locations; confirm your destination before heading out. Tours, experiences without a fixed meeting point, and recommendations we’re still putting together are in the list below.</p>
+                <p>Book popular restaurants, rooftop spots, tours, and attractions ahead. Group nearby activities together, wear comfortable walking shoes, and check the July forecast. You don’t need a packed itinerary to enjoy Chicago!</p>
+                <p>Downtown is walkable, and CTA buses and trains connect many parts of the city. Taxis and rideshare services are also available. Stay aware of your surroundings, keep valuables secure, and choose well-lit, populated routes at night. Plan your return before heading out.</p>
+                <p>Confirm attraction hours, tickets, tour meeting points, and transit routes before you go. For transit information, visit the <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link>.</p>
+                <p>We’re so happy you’re making the trip to celebrate with us. We hope you enjoy exploring the city, and we can’t wait to see you!</p>
+                <p>Meal choices and changes open when the menu is ready and remain available during the meal editing window.</p>
+              </Prose>
+            </div>
+          </details>
         </div>
-      </Section>
-      <Section id="exploring-tips" labelledBy="exploring-tips-title">
-        <SectionHeading level={2} id="exploring-tips-title" title="Make a trip of it" />
-        <Prose>
-          <p>Book popular restaurants, rooftop spots, tours, and attractions ahead. Group nearby activities together, wear comfortable walking shoes, and check the July forecast. You don’t need a packed itinerary to enjoy Chicago!</p>
-          <p>Downtown is walkable, and CTA buses and trains connect many parts of the city. Taxis and rideshare services are also available. Stay aware of your surroundings, keep valuables secure, and choose well-lit, populated routes at night. Plan your return before heading out.</p>
-          <p>Confirm attraction hours, tickets, tour meeting points, and transit routes before you go. For transit information, visit the <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link>.</p>
-          <p>We’re so happy you’re making the trip to celebrate with us. We hope you enjoy exploring the city, and we can’t wait to see you!</p>
-        </Prose>
       </Section>
     </>
   );

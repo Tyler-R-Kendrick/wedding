@@ -1,18 +1,15 @@
 import { formatMinutes } from '@/domain/adventures/itineraries';
-import { humanize } from '@/domain/content/format';
+import { GuestPlanBuilder } from '@/components/guide/GuestPlanBuilder';
 import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, GuideProps } from '@/themes/content-types';
-import { CONTENT_COPY, INTEREST_OPTIONS, MINUTE_OPTIONS, categoryHeading, groupByCategory, guideJumpItems, itineraryChips, planTitle } from '@/themes/shared/content';
+import { CONTENT_COPY, categoryHeading, groupByCategory, guideJumpItems, itineraryChips, planTitle } from '@/themes/shared/content';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
 import { kit } from '../kit';
 
-const { Shell, Section, SectionHeading, Prose, Button, Link, Form, content } = kit;
+const { Shell, Section, SectionHeading, Prose, Link, content } = kit;
 const { PageHead, Chips, ItineraryCard, StopList, RecommendationCard } = content;
 
-/**
- * Share an Adventure on the sheet: itineraries are pressed cards with a vine of stops; the plan form
- * sits on the sky wash with its result mounted beside it; the places follow, one fern rule per category.
- */
+/** Guests start with the map and a quick personal plan; curated itineraries and places follow. */
 export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recommendations, activeBucket, plan, guestTools, signedIn = false, frame }) => {
   const groups = groupByCategory(recommendations.items);
   return (
@@ -20,61 +17,21 @@ export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, 
       <PageHead eyebrow={CONTENT_COPY.guide.eyebrow} title={CONTENT_COPY.guide.title} lede={CONTENT_COPY.guide.lede}>
         {/* The longest page on the site: without this nothing past the second screen is reachable. */}
         <nav className="cv-jump" aria-label={CONTENT_COPY.guide.jump}>
-          <Chips items={guideJumpItems(groups)} label={CONTENT_COPY.guide.jump} />
+          <Chips items={signedIn ? [{ href: '#chicago-map', label: 'Explore the map' }, { href: '#plan', label: 'Find your adventure' }, { href: '#itineraries', label: 'Ready-made itineraries' }, { href: '#recommendations', label: 'Browse all places' }] : guideJumpItems(groups)} label={CONTENT_COPY.guide.jump} />
         </nav>
       </PageHead>
 
       {guestTools}
 
-      <Section id="itineraries" labelledBy="itineraries-title">
-        <div className="cv-section__text">
-          <SectionHeading level={2} id="itineraries-title" title={CONTENT_COPY.guide.time} />
-          <Chips items={itineraryChips(itineraries, activeBucket)} label={CONTENT_COPY.guide.filter} />
-        </div>
-        <ul className="cv-section__full cv-mount" aria-label="Itineraries">
-          {itineraries.itineraries.map((it, i) => (
-            <li key={it.id} className="cv-mount__item">
-              <ItineraryCard itinerary={it} index={i} />
-            </li>
-          ))}
-        </ul>
-      </Section>
-
       {signedIn ? (
       <Section id="plan" ground="wash" labelledBy="plan-title">
         <div className="cv-section__text">
           <SectionHeading level={2} id="plan-title" title={CONTENT_COPY.guide.plan} />
-          <form className="cv-form" method="get" action={ROUTES.share}>
-            <Form.Field id="plan-minutes" label={CONTENT_COPY.guide.minutes}>
-              <Form.Select id="plan-minutes" name="minutes" defaultValue={plan?.minutes ?? 120}>
-                {MINUTE_OPTIONS.map((m) => (
-                  <option key={m} value={m}>
-                    {formatMinutes(m)}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Field>
-            <Form.Field id="plan-interest" label={CONTENT_COPY.guide.mood}>
-              <Form.Select id="plan-interest" name="interest" defaultValue={plan?.interest ?? ''}>
-                <option value="">Anything</option>
-                {INTEREST_OPTIONS.map((i) => (
-                  <option key={i} value={i}>
-                    {humanize(i)}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Field>
-            <Form.Checkbox id="plan-kids" name="kids" value="1" label={CONTENT_COPY.guide.kids} defaultChecked={plan?.kids ?? false} />
-            <p className="cv-form__actions">
-              <Button type="submit" variant="primary">
-                {CONTENT_COPY.guide.suggest}
-              </Button>
-            </p>
-          </form>
+        <GuestPlanBuilder plan={plan} theme="conservatory" />
         </div>
         {plan?.result ? (
           <div className="cv-section__mount">
-            <article className="cv-card cv-pressed cv-plan" id="plan-result" data-flower="b" aria-live="polite">
+            <article className="cv-card cv-pressed cv-plan" id="plan-result" tabIndex={-1} data-flower="b" aria-live="polite">
               <span className="cv-specimen">Your plan</span>
               <h3 className="cv-card__title">{planTitle(plan)}</h3>
               <div className="cv-card__body">
@@ -95,6 +52,20 @@ export const ConservatoryGuidePage: ContentRecipe<GuideProps> = ({ itineraries, 
           <Prose><p>Sign in for our Chicago map, to create your agenda, and to review your guest details.</p><p><Link standalone href="/sign-in?next=%2Fshare-an-adventure">Sign in to plan your weekend →</Link></p></Prose>
         </Section>
       )}
+
+      <Section id="itineraries" labelledBy="itineraries-title">
+        <div className="cv-section__text">
+          <SectionHeading level={2} id="itineraries-title" title={CONTENT_COPY.guide.time} />
+          <Chips items={itineraryChips(itineraries, activeBucket)} label={CONTENT_COPY.guide.filter} />
+        </div>
+        <ul className="cv-section__full cv-mount" aria-label="Itineraries">
+          {itineraries.itineraries.map((it, i) => (
+            <li key={it.id} className="cv-mount__item">
+              <ItineraryCard itinerary={it} index={i} />
+            </li>
+          ))}
+        </ul>
+      </Section>
 
       <Section id="recommendations" labelledBy="recommendations-title">
         <div className="cv-section__text">
