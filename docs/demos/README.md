@@ -88,3 +88,9 @@ files are never served directly, so kendrick.wedding itself never shows them.
 The 2:05 Webreel recording uses a real email-code sign-in on the isolated test server and shows the map, generated plan, saved agenda, meal change and sign-out boundary.
 
 [![Recorded Chicago guest experience](sara-feedback/preview.gif)](sara-feedback/guest-experience-webreel.mp4)
+
+## Guest journey refinement
+
+[Ten desktop/phone before-and-after comparisons and the complete 3:16 Webreel recording](guest-journey-refinement/README.md) show the compact weekend overview, progressive RSVP, quick Chicago planning choices, readable agenda, and type-specific plan composer. The recorded browser signs in with a real local email code for the seeded Testhouse household, changes and confirms a fixture meal, then signs out.
+
+[![Guest journey refinement](guest-journey-refinement/preview.gif)](guest-journey-refinement/guest-journey-webreel.mp4)

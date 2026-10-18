@@ -1,0 +1,38 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "r_frame_rate": "12/1",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "r_frame_rate": "0/0"
+    }
+  ],
+  "format": {
+    "duration": "78.416667",
+    "size": "1813288"
+  },
+  "tool": "Webreel @webreel/core 0.1.4",
+  "sourceCommit": "892dbef9e45345d27a55029ca2eafb4b9f88ea94",
+  "environment": "Isolated local Next dev/PGlite server and seeded Ada Testhouse household",
+  "browserAuthentication": "Real email OTP session; no principal headers in the recorded browser",
+  "motionPreference": "no-preference",
+  "excerpt": {
+    "startSeconds": 26,
+    "endSeconds": 68
+  },
+  "allJourneyAssertionsPassed": true,
+  "checkpoints": 8,
+  "viewportAssertions": [
+    "Flight origin field visible in viewport",
+    "Hotel name field visible in viewport",
+    "Optional end-time field visible in viewport",
+    "Home city preference visible in viewport"
+  ]
+}

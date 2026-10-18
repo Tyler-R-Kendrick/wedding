@@ -42,7 +42,7 @@ export const GildedGuidePage: ContentRecipe<GuideProps> = ({ itineraries, recomm
         ) : null}
       </Section>
       ) : (
-        <Section id="plan" labelledBy="plan-title">
+        <Section id="plan" number={1} labelledBy="plan-title">
           <SectionHeading level={2} id="plan-title" title="Make the weekend yours" />
           <Prose><p>Sign in for our Chicago map, to create your agenda, and to review your guest details.</p><p><Link standalone href="/sign-in?next=%2Fshare-an-adventure">Sign in to plan your weekend →</Link></p></Prose>
         </Section>

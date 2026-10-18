@@ -1,0 +1,98 @@
+{
+  "version": "after",
+  "capturedAt": "2026-10-18T19:33:28.285Z",
+  "source": "Local isolated PGlite seeded household; fixture identity header used only for still screenshots",
+  "shots": [
+    {
+      "file": "weekend.jpg",
+      "route": "/your-weekend",
+      "target": "#reply",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "planner.jpg",
+      "route": "/share-an-adventure",
+      "target": "#plan",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "agenda.jpg",
+      "route": "/trip",
+      "target": "#items",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "composer.jpg",
+      "route": "/trip",
+      "target": "#add",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "rsvp.jpg",
+      "route": "/rsvp",
+      "target": ".rsvp-person, #ev-01SDEVENTRECEPTN00000000000",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "weekend-mobile.jpg",
+      "route": "/your-weekend",
+      "target": "#reply",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "planner-mobile.jpg",
+      "route": "/share-an-adventure",
+      "target": "#plan",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "agenda-mobile.jpg",
+      "route": "/trip",
+      "target": "#items",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "composer-mobile.jpg",
+      "route": "/trip",
+      "target": "#add",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "rsvp-mobile.jpg",
+      "route": "/rsvp",
+      "target": ".rsvp-person, #ev-01SDEVENTRECEPTN00000000000",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  ],
+  "sourceCommit": "892dbef9e45345d27a55029ca2eafb4b9f88ea94"
+}

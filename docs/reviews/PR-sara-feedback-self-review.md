@@ -82,3 +82,36 @@ Production deploys already run content sync. No migration, flag, credential or p
 ## 9. Posted browser evidence
 
 [Visual comparisons and Webreel recording](../demos/sara-feedback/README.md) compare the base commit with the implemented application. The complete 2:05 take uses a real email-code session for the seeded Ada Testhouse household, with an active local demo invitation. It asserts map behavior, plan generation, an agenda item surviving reload, a fixture meal change from A to B through review and confirmation, and the sign-out privacy boundary. Test-principal headers are used only to prepare local fixtures, never in the recorded guest browser. All nine browser-journey checkpoints passed. No application code or production data was changed to make the recording.
+
+## 10. Whole guest journey refinement
+
+The follow-up review addressed layout, motion and interaction density in the actual application. It preserves the Botanical–Deco identity and applies shared guide, trip and RSVP behavior across the compatibility themes. The weekend hub refinement uses its default Botanical–Deco workspace.
+
+| Finding | Implemented resolution |
+|---|---|
+| The weekend overview opens an entire household questionnaire before a guest chooses a task. | Show actionable reply statuses and a primary next step; retain the complete inline reply behind a native disclosure. |
+| RSVP meals and companion details appear before attendance/bringing a guest is established. | Reveal relevant follow-ups with native checked state. Keep controls mounted so toggling preserves unsent answers; existing server normalization still governs what is saved. Optional needs disclose on demand. |
+| Optional disclosures can hide validation errors. | Open affected disclosures for every failed submission, including the outer inline RSVP, before moving focus. Error-summary anchors reach focusable choice groups. Review/edit and confirmation remain the existing server-action flow. |
+| The agenda mixes flight, hotel and activity fields, with 13 inputs visible at once. | Activity first; type choices reveal appropriate details. Show title, start and time zone initially, with end/reference/note on demand. Server actions discard fields from other types even without JavaScript. |
+| Booking controls dominate every saved plan. | Group by Chicago-local day, display time and status, and put secondary operations under “Manage this plan.” Retain explicit dates for overnight/multiday ends. |
+| Empty helper sections precede adding a plan. | Move the composer directly after the agenda; add clear header actions for adding a plan or exploring Chicago. Travel preferences remain optional. |
+| Personalized planning sits below the long itinerary collection. | Move it immediately after the map, offer visible native duration/interest choices, and collapse longer travel tips. Keep meal selection outside those tips. |
+| Planner navigation drops the selected theme and does not focus its result. | Preserve theme in the GET request; target a focusable result with sticky-header clearance. The planner works without JavaScript. |
+| Motion should explain interaction rather than decorate the whole page. | Short, token-based reveal/selection/saved feedback; no page-wide stagger or delayed page content. Nonessential animation and choice transitions are disabled for reduced motion. |
+
+Impeccable context, critique, craft-floor and animation guidance and Higgsfield's design guidance informed the implementation. Open Design's local application/MCP was not installed or connected, so no Open Design canvas session is claimed. Existing theme decisions take priority; no new generated media, dependencies, providers or wedding facts were introduced.
+
+The independent design reviewer found no remaining actionable blockers after reviewing source and desktop/phone screenshots. Public/private capability checks, household scope, menu availability, editing windows and the review/confirm handshake are preserved.
+
+### Follow-up validation
+
+- TypeScript, ESLint, full repository quality gate and required staged design/style gate pass.
+- Full unit/UI/stage invocation: 1,013 passed, 2 skipped, 5 timing failures under concurrent cold-build load. All five affected files pass on a single-worker rerun: 75/75 tests. This records combined run/rerun evidence.
+- Browser coverage passes: six map/planner journeys (desktop/mobile × three themes), eight trip/accessibility/privacy cases, and eight focused interactions. The latter cover Chicago-local grouping across a UTC date boundary, draft preservation, optional errors, persisted additions/removal, no-JavaScript theme/result focus, reduced motion, and inline RSVP validation/review/edit.
+- Initial browser attempts used a mismatched harness secret, overly broad disclosure selectors, and nonunique demo item names. These test issues were corrected without weakening the behavior assertions. Server-action expectations allow the isolated dev server to finish streaming refreshed pages.
+
+- Focused integration: all four files pass, 50/50 tests (travel, RSVP, RSVP parts and weekend).
+- [Latest rendered comparisons and recordings](../demos/guest-journey-refinement/README.md): ten before/after pairs, a complete 3:16 journey, and a 1:18 focused composer take. Both recordings authenticate through actual local OTP sessions; all 14 broad and eight focused checkpoints pass. The focused take also asserts that revealed controls are inside the viewport. Baseline is the previous PR revision, not a reconstructed mockup.
+
+- Final accessibility review also corrected the signed-out guide’s section numbering after the planner moved ahead of itineraries. The first section is part 1 in both numbered themes; no private tools are rendered there.
+- Final production build passes after the section-numbering correction. Newly tracked evidence documentation also passes the link checker: 92 documents, 180 relative links, all references resolved.

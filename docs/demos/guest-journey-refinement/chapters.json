@@ -1,0 +1,86 @@
+[
+  {
+    "description": "Public guide: query parameters cannot expose the guest map or planner",
+    "seconds": 0.08,
+    "at": "2026-10-18T19:34:38.637Z",
+    "url": "http://localhost:3331/share-an-adventure?minutes=45&interest=architecture"
+  },
+  {
+    "description": "Real email-code sign-in using ada.testhouse@example.test",
+    "seconds": 7.5,
+    "at": "2026-10-18T19:34:47.084Z",
+    "url": "http://localhost:3331/sign-in?next=%2Fshare-an-adventure"
+  },
+  {
+    "description": "Weekend overview: reply status and a clear next step, with the full form available on demand",
+    "seconds": 28.75,
+    "at": "2026-10-18T19:35:12.795Z",
+    "url": "http://localhost:3331/your-weekend"
+  },
+  {
+    "description": "RSVP follow-up questions appear with attendance; toggling preserves the unsent meal choice",
+    "seconds": 42.92,
+    "at": "2026-10-18T19:35:28.415Z",
+    "url": "http://localhost:3331/rsvp"
+  },
+  {
+    "description": "Authenticated guide: map and guest planning links appear",
+    "seconds": 51.42,
+    "at": "2026-10-18T19:35:37.190Z",
+    "url": "http://localhost:3331/share-an-adventure"
+  },
+  {
+    "description": "Map pin opens its place and real Google Maps directions handoff",
+    "seconds": 59.42,
+    "at": "2026-10-18T19:35:43.738Z",
+    "url": "http://localhost:3331/share-an-adventure"
+  },
+  {
+    "description": "45-minute architecture plan, with honest visit-time estimates",
+    "seconds": 78.92,
+    "at": "2026-10-18T19:36:00.188Z",
+    "url": "http://localhost:3331/share-an-adventure?theme=botanical-deco&minutes=45&interest=architecture#plan-result"
+  },
+  {
+    "description": "Personal agenda: add an activity and verify it persists",
+    "seconds": 89.67,
+    "at": "2026-10-18T19:36:08.580Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Agenda composer reveals flight or hotel details only when relevant",
+    "seconds": 90.92,
+    "at": "2026-10-18T19:36:09.616Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Saved activity persists and can be confirmed from secondary management controls",
+    "seconds": 134.83,
+    "at": "2026-10-18T19:36:38.812Z",
+    "url": "http://localhost:3331/trip?notice=confirmed"
+  },
+  {
+    "description": "Travel preferences remain optional and open on demand",
+    "seconds": 141.42,
+    "at": "2026-10-18T19:36:43.140Z",
+    "url": "http://localhost:3331/trip?notice=confirmed"
+  },
+  {
+    "description": "Meal link reaches the actual release and editing-window gate",
+    "seconds": 160.67,
+    "at": "2026-10-18T19:36:57.668Z",
+    "url": "http://localhost:3331/rsvp/meals"
+  },
+  {
+    "description": "Demo window opened with fixture menu: guest changes and confirms a meal",
+    "seconds": 168,
+    "at": "2026-10-18T19:37:03.142Z",
+    "url": "http://localhost:3331/rsvp/meals"
+  },
+  {
+    "description": "Signed out: guest map and planner are hidden again",
+    "seconds": 192.58,
+    "at": "2026-10-18T19:37:24.086Z",
+    "url": "http://localhost:3331/share-an-adventure?minutes=45&interest=architecture"
+  }
+]
