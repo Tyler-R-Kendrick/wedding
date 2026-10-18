@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { principalHeaders } from './helpers/principal';
 
+// This journey covers a map interaction, plan generation, axe and a second page.
+// The isolated dev server can compile themed guest branches on first use.
+test.setTimeout(90_000);
+
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
   test(`signed-in Chicago map and planning tools (${theme})`, async ({ page }) => {
     await page.setExtraHTTPHeaders(principalHeaders('A1'));
