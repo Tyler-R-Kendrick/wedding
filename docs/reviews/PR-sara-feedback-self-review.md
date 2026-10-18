@@ -6,7 +6,7 @@
 | Base | `main` at `44ec8e6` |
 | Reviewer | Codex, manual adversarial review of the working-tree diff |
 | Date | 2026-10-18 |
-| Status | Implementation fixes complete; final checks running before readiness |
+| Status | Self-review findings resolved; local validation complete; hosted CI remains pending |
 
 ## 1. Hostile-reviewer pass
 
@@ -25,6 +25,7 @@
 | Historical placeholder tests depend on FAQ sentences that are now settled. | Should fix | Preserve explicit historical mixed-record fixtures, retaining the same placeholder regression assertions. |
 | The identity test helper can read an old inbox code before asynchronous delivery finishes. | Should fix | Capture the previous message ID before requesting a new code; poll for a different message instead of reusing its code. Direct inbox assertions also await delivery. |
 | The OTP capacity test assumes 61 requests complete before a token refills, which fails under CPU load. | Should fix | Use the existing injectable limiter clock to test capacity deterministically, without changing production throttling. |
+| Conservatory’s desktop section grid squeezes the shared atlas into a narrow half-width column. | Should fix | Use its full-width section slot; assert a minimum usable canvas width in the guest browser journey. |
 | Compatibility maps can cluster the test destination at different frame widths; the browser test clicks a cluster as if it were a place. | Should fix | Open the cluster, then select the actual destination pin. Allow bounded hydration and complete-journey timeouts without removing assertions. |
 | A generated plan may use default visit lengths and omit travel time. | Should fix | State the 45-minute fallback estimate and omitted travel/waiting time alongside the result. |
 
@@ -47,9 +48,13 @@ The supplied email headers and addresses are not committed. No real guest names,
 
 ## 4. Validation
 
-- Targeted content/travel, seed/source and UI regressions run during fixes.
+- Typecheck, ESLint and the repository quality gate pass (including design, tokens, stylelint, links, docs, environment, activation and asset checks).
+- Full unit/UI/stage suite: 127 files passed; 1,018 tests passed, 2 skipped.
+- Full integration run: 53 files passed and 3 failed; all failures were corrected and passed targeted reruns. A subsequent 16-file changed-area run passed 14 files and identified two identity test-timing failures; both files passed after corrections (11 tests). This is combined run/rerun evidence, not a claim of one final all-green integration invocation.
+- Targeted travel API (21), travel UI (6), source/site (21), historical truth/subprocess (33), and concierge evaluation/mock (7) tests pass.
+- Fixture-guest browser journeys pass at mobile and desktop widths in all three themes. Each checks map pins, directions, plan generation, agenda/meal navigation, travel identity and accessibility. The corrected Conservatory desktop case passes with a minimum canvas-width assertion.
 - Concierge evaluation retains every existing expected outcome and threshold; failure diagnostics now include the actual answer.
-- Full unit/UI/stage suite, changed-area integration reruns, typecheck, lint, quality and fixture-guest browser checks run before readiness. Final results are recorded below.
+- Production build passes. Production public smoke: 10 passed, with 3 mobile-project accessibility duplicates intentionally skipped; the separate desktop-project scan passed all 3 theme cases, each at 390, 768 and 1440px.
 - Default-theme pages and map were inspected at 390px and 1440px during implementation. The guest map, tips and planning form had zero axe violations. New browser coverage also checks the compatibility themes.
 - Formal hosted Codex Security scanning was not run: packaged preflight references/callable scan tooling were unavailable here. The access-boundary and changed-file review is manual, backed by capability tests.
 
@@ -72,4 +77,4 @@ Production deploys already run content sync. No migration, flag, credential or p
 
 ## 8. Verdict
 
-**Pending final checks.** No unresolved implementation finding remains from this pass. Do not mark the PR ready until the final validation results are recorded. Public/private behavior is the principal regression risk; the changes include explicit server-boundary coverage and new browser journeys for that reason.
+**Ready for review, pending hosted CI.** No unresolved implementation finding remains from this pass. The repository-required design reviewer also found no remaining actionable findings. GitHub Actions jobs are queued; no hosted-green result is claimed. Public/private behavior is the principal regression risk; the changes include explicit server-boundary coverage and new browser journeys for that reason.

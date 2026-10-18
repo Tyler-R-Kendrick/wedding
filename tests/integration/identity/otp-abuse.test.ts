@@ -64,7 +64,7 @@ describe('OTP abuse controls', () => {
       expect(denied).toBeGreaterThanOrEqual(1);
       expect(devInbox.list().filter((m) => m.to.startsWith('spray'))).toHaveLength(0); // unknown addresses never receive mail
     } finally {
-      setProviderOverride('rate-limit', null);
+      setProviderOverride('rate-limit', undefined);
     }
   });
 

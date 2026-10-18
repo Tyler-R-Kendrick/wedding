@@ -15,6 +15,8 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     await expect(page.getByRole('link', { name: 'Review your meal selections →' })).toHaveAttribute('href', '/rsvp/meals');
     // Draft recommendations remain labelled in the guide, rather than becoming map pins.
     await expect(page.locator('.bd-atlas__target[aria-label*="Richardson Farm"]')).toHaveCount(0);
+    const mapWidth = await page.locator('#chicago-map .bd-atlas__canvas').evaluate((el) => el.getBoundingClientRect().width);
+    expect(mapWidth, 'the themed section must leave the map enough space to use').toBeGreaterThanOrEqual(250);
     const museum = page.locator('.bd-atlas__target[aria-label*="Griffin Museum"]');
     if (!await museum.getAttribute('data-pin')) {
       // A narrower themed frame groups nearby places; open the cluster before the place.
