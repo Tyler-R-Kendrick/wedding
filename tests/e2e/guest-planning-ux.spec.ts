@@ -19,7 +19,7 @@ test('agenda keeps drafts across type changes and reveals optional errors', asyn
   await add.getByRole('radio', { name: 'A flight', exact: true }).check();
   await expect(add.getByLabel('From airport (flights)', { exact: true })).toHaveValue('LAX');
   await add.getByRole('radio', { name: 'An activity', exact: true }).check();
-  const title = `Evening walk ${test.info().project.name}`;
+  const title = `Evening walk ${test.info().project.name} ${key().slice(-6)}`;
   await add.getByLabel('Title', { exact: true }).fill(title);
   await add.getByLabel('Starts', { exact: true }).fill('2027-07-16T23:30');
   await add.locator('details > summary').click();
@@ -78,11 +78,16 @@ test('inline weekend reply keeps errors and review/edit visible', async ({ page,
   const inline = page.locator('.bd-reply__inline');
   await expect(inline.locator('form')).toBeHidden();
   await inline.locator(':scope > summary').click();
+  await inline.getByRole('group', { name: 'Will Ada attend the reception?', exact: true }).getByRole('radio', { name: 'Yes, attending', exact: true }).check();
+  await inline.getByLabel('Meal for Ada', { exact: true }).selectOption('');
   await inline.getByRole('button', { name: 'Review your answers' }).click();
   await expect(inline.locator('#error-summary')).toBeVisible();
   await expect(inline.locator('#error-summary')).toBeFocused();
-  await inline.locator('#error-summary a').first().click();
-  await expect(inline.locator('fieldset[aria-invalid="true"]').first()).toBeFocused();
+  const errorLink = inline.locator('#error-summary a').first();
+  const target = await errorLink.getAttribute('href');
+  expect(target).toBeTruthy();
+  await errorLink.click();
+  await expect(page.locator(target!)).toBeFocused();
   // Declining asks no meals; draft/review/edit must leave the outer disclosure open.
   for (const no of await inline.getByRole('radio', { name: 'No, cannot make it', exact: true }).all()) await no.check();
   await inline.getByRole('button', { name: 'Review your answers' }).click();
