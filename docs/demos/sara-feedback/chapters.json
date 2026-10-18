@@ -1,0 +1,56 @@
+[
+  {
+    "description": "Public guide: query parameters cannot expose the guest map or planner",
+    "seconds": 0.08,
+    "at": "2026-10-18T18:54:27.498Z",
+    "url": "http://localhost:3331/share-an-adventure?minutes=45&interest=architecture"
+  },
+  {
+    "description": "Real email-code sign-in using ada.testhouse@example.test",
+    "seconds": 8.83,
+    "at": "2026-10-18T18:54:35.346Z",
+    "url": "http://localhost:3331/sign-in?next=%2Fshare-an-adventure"
+  },
+  {
+    "description": "Authenticated guide: map and guest planning links appear",
+    "seconds": 29.17,
+    "at": "2026-10-18T18:54:56.447Z",
+    "url": "http://localhost:3331/share-an-adventure"
+  },
+  {
+    "description": "Map pin opens its place and real Google Maps directions handoff",
+    "seconds": 34.58,
+    "at": "2026-10-18T18:55:02.077Z",
+    "url": "http://localhost:3331/share-an-adventure"
+  },
+  {
+    "description": "45-minute architecture plan, with honest visit-time estimates",
+    "seconds": 54.17,
+    "at": "2026-10-18T18:55:35.020Z",
+    "url": "http://localhost:3331/share-an-adventure?minutes=45&interest=architecture"
+  },
+  {
+    "description": "Personal agenda: add an activity and verify it persists",
+    "seconds": 63.08,
+    "at": "2026-10-18T18:55:44.133Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Meal link reaches the actual release and editing-window gate",
+    "seconds": 94.17,
+    "at": "2026-10-18T18:56:12.306Z",
+    "url": "http://localhost:3331/rsvp/meals"
+  },
+  {
+    "description": "Demo window opened with fixture menu: guest changes and confirms a meal",
+    "seconds": 100,
+    "at": "2026-10-18T18:56:18.180Z",
+    "url": "http://localhost:3331/rsvp/meals"
+  },
+  {
+    "description": "Signed out: guest map and planner are hidden again",
+    "seconds": 123.25,
+    "at": "2026-10-18T18:56:42.202Z",
+    "url": "http://localhost:3331/share-an-adventure?minutes=45&interest=architecture"
+  }
+]

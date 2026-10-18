@@ -78,3 +78,7 @@ Production deploys already run content sync. No migration, flag, credential or p
 ## 8. Verdict
 
 **Ready for review, pending hosted CI.** No unresolved implementation finding remains from this pass. The repository-required design reviewer also found no remaining actionable findings. GitHub Actions jobs are queued; no hosted-green result is claimed. Public/private behavior is the principal regression risk; the changes include explicit server-boundary coverage and new browser journeys for that reason.
+
+## 9. Posted browser evidence
+
+[Visual comparisons and Webreel recording](../demos/sara-feedback/README.md) compare the base commit with the implemented application. The complete 2:05 take uses a real email-code session for the seeded Ada Testhouse household, with an active local demo invitation. It asserts map behavior, plan generation, an agenda item surviving reload, a fixture meal change from A to B through review and confirmation, and the sign-out privacy boundary. Test-principal headers are used only to prepare local fixtures, never in the recorded guest browser. All nine browser-journey checkpoints passed. No application code or production data was changed to make the recording.

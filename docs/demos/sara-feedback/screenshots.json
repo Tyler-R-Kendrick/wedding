@@ -13,90 +13,135 @@
   "motion": "reduce",
   "imageProcessing": "Direct browser JPEG screenshots; no compositing or content editing",
   "files": {
+    "after/ceremony-guidance.jpg": {
+      "sha256": "e4075928b99e04f2d238c2fab7f330d2f390e18ed76be267dcd30973b847834d",
+      "bytes": 76338,
+      "capturedAt": "2026-10-18T18:57:11.588316+00:00"
+    },
+    "after/faq-invitation.jpg": {
+      "sha256": "641d5da51c310d4bbc160ae9849a1573ad7c980e7157ab4c04d1711c64a0673c",
+      "bytes": 114874,
+      "capturedAt": "2026-10-18T18:57:07.184516+00:00"
+    },
     "after/faq.jpg": {
       "sha256": "d1c8d5135bc7d2539c1eb9cf6a940181b77557de8a4c45f2c820622f128448d4",
       "bytes": 84898,
-      "capturedAt": "2026-10-18T18:42:17.244867+00:00"
+      "capturedAt": "2026-10-18T18:37:11.358737+00:00"
     },
     "after/guest-map-mobile.jpg": {
       "sha256": "d6f2979f7ba13f4333b7ff22d288eb06c890d8eb79a85bd01f808d6e2b32ec0c",
       "bytes": 63078,
-      "capturedAt": "2026-10-18T18:42:17.250604+00:00"
+      "capturedAt": "2026-10-18T18:37:45.197201+00:00"
     },
     "after/guest-tools.jpg": {
       "sha256": "c2b0b5e63761d531c479b6fdc3b0a1256c1e4772857865ace1e8f099d02324ad",
       "bytes": 137532,
-      "capturedAt": "2026-10-18T18:42:17.251091+00:00"
+      "capturedAt": "2026-10-18T18:37:43.877261+00:00"
     },
     "after/home.jpg": {
       "sha256": "ef985a35c7dab632500c40df4febf61d85fdfb46ee2c4cc1b1a24582f11ec2ce",
       "bytes": 132958,
-      "capturedAt": "2026-10-18T18:42:17.254802+00:00"
+      "capturedAt": "2026-10-18T18:36:48.659767+00:00"
     },
     "after/public-guide.jpg": {
       "sha256": "4e9d75f850f9e6177d98dc80490b53295b163592b3bacfde6acbb077fa120b0a",
       "bytes": 80557,
-      "capturedAt": "2026-10-18T18:42:17.256462+00:00"
+      "capturedAt": "2026-10-18T18:37:34.833672+00:00"
+    },
+    "after/record-agenda-saved.jpg": {
+      "sha256": "bcfc2346253e4413455fe9a3b60d04806172d02edecf428a2e70684bf10d7b56",
+      "bytes": 100360,
+      "capturedAt": "2026-10-18T18:55:59.959559+00:00"
+    },
+    "after/record-map-place.jpg": {
+      "sha256": "3fad8426034d85e90756b50d9c5d492aa031854eb7c845889be01f65c281bc2c",
+      "bytes": 157859,
+      "capturedAt": "2026-10-18T18:55:04.790059+00:00"
+    },
+    "after/record-meal-saved.jpg": {
+      "sha256": "97ea124c3f4d0235cc79f57cac0d1a2519bc1f40106aeca6b877c5a34a888053",
+      "bytes": 99246,
+      "capturedAt": "2026-10-18T18:56:30.694168+00:00"
+    },
+    "after/record-meal-window.jpg": {
+      "sha256": "7cd5430beaaf7b8e9270df636d6b9831d0e117c7b22f8b151d8ceda013c9a7c8",
+      "bytes": 95487,
+      "capturedAt": "2026-10-18T18:56:14.958881+00:00"
+    },
+    "after/record-plan.jpg": {
+      "sha256": "73c735f60feda62d1786a41242c0bf69f8fe9bdc043a875893b7edf179ce59a3",
+      "bytes": 96081,
+      "capturedAt": "2026-10-18T18:55:37.888561+00:00"
     },
     "after/record-public-gate.jpg": {
       "sha256": "862e24fd9fa44f89251a6c5c3ee8fb1f0253c17317afabfc6444a5391298338e",
       "bytes": 86184,
-      "capturedAt": "2026-10-18T18:42:17.258446+00:00"
+      "capturedAt": "2026-10-18T18:54:31.087586+00:00"
     },
     "after/story.jpg": {
       "sha256": "fedd299c0793337853eaab4a4047486d34284095e6cbcaf0a511fbcba02271d5",
       "bytes": 146008,
-      "capturedAt": "2026-10-18T18:42:17.259498+00:00"
+      "capturedAt": "2026-10-18T18:36:59.271285+00:00"
     },
     "after/travel.jpg": {
       "sha256": "dcf99ca78f1080b60835849939b5e5add89704cf4dab40baccb485b0e142de85",
       "bytes": 88613,
-      "capturedAt": "2026-10-18T18:42:17.261012+00:00"
+      "capturedAt": "2026-10-18T18:39:41.815908+00:00"
     },
     "after/wedding.jpg": {
       "sha256": "c7c1bd3625b31d0a40044b58a23cd19ec387632372aba14c598b2389a714e3e6",
       "bytes": 116706,
-      "capturedAt": "2026-10-18T18:42:17.262608+00:00"
+      "capturedAt": "2026-10-18T18:37:04.651041+00:00"
     },
     "after/welcome-signin.jpg": {
       "sha256": "2e86d8a3833db7a432c1ba89bf0c2d103ec41d246347cc3e76f0d71b0f3d85cc",
       "bytes": 66345,
-      "capturedAt": "2026-10-18T18:42:17.264047+00:00"
+      "capturedAt": "2026-10-18T18:39:44.743775+00:00"
+    },
+    "before/ceremony-guidance.jpg": {
+      "sha256": "36ecd782e448cd02fed072d6eeaa28d2c3e86a0f6a0fa601ed01e547ff5679b7",
+      "bytes": 90875,
+      "capturedAt": "2026-10-18T18:58:07.805766+00:00"
+    },
+    "before/faq-invitation.jpg": {
+      "sha256": "a6f9131fe882f064195c11e490e74073dd352ce8d25d09d0bf3f15c81059e2b4",
+      "bytes": 88350,
+      "capturedAt": "2026-10-18T18:58:05.045891+00:00"
     },
     "before/faq.jpg": {
       "sha256": "e2738f99dcf47b37c4add6a023223df5a96aaaa77e24575c3896370f927e24f3",
       "bytes": 82633,
-      "capturedAt": "2026-10-18T18:38:33.652822+00:00"
+      "capturedAt": "2026-10-18T18:34:45.401336+00:00"
     },
     "before/guest-tools.jpg": {
       "sha256": "702e1c9f1695883f997536f0b6af198441a142c2d335290117befba0c55ff726",
       "bytes": 61701,
-      "capturedAt": "2026-10-18T18:38:33.654586+00:00"
+      "capturedAt": "2026-10-18T18:35:00.180689+00:00"
     },
     "before/home.jpg": {
       "sha256": "c43da3af95b194349be21768e096b38f449bb5d538bb12346755762b24cb25a7",
       "bytes": 105924,
-      "capturedAt": "2026-10-18T18:38:33.655002+00:00"
+      "capturedAt": "2026-10-18T18:34:27.474144+00:00"
     },
     "before/public-guide.jpg": {
       "sha256": "439192713b461611fc1e719ddb29b044194af438be318ca909a0120c1a48bd77",
       "bytes": 73050,
-      "capturedAt": "2026-10-18T18:38:33.657494+00:00"
+      "capturedAt": "2026-10-18T18:34:56.576846+00:00"
     },
     "before/story.jpg": {
       "sha256": "263e76cd4587e657cb61aebff5ac60cb11560a479aea55e5cbf8925a7741ca9d",
       "bytes": 119530,
-      "capturedAt": "2026-10-18T18:38:33.659085+00:00"
+      "capturedAt": "2026-10-18T18:34:30.849993+00:00"
     },
     "before/travel.jpg": {
       "sha256": "2cae0cccdfdac6cc44c3624fbbec25ed8f452becb72247e1bdf2cb41487d3cb5",
       "bytes": 127505,
-      "capturedAt": "2026-10-18T18:38:33.660615+00:00"
+      "capturedAt": "2026-10-18T18:34:51.493063+00:00"
     },
     "before/wedding.jpg": {
       "sha256": "d5c1389dd42a04ebfe875221e04a33660eebd1f131da0c9fa9015d8147dbfee0",
       "bytes": 94294,
-      "capturedAt": "2026-10-18T18:38:33.661140+00:00"
+      "capturedAt": "2026-10-18T18:34:38.357654+00:00"
     }
   }
 }

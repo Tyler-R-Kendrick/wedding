@@ -81,3 +81,10 @@ The same stages on one host, as every preview carries them: `/stages` is the hub
 files are never served directly, so kendrick.wedding itself never shows them.
 
 [![Every stage by path](stages-by-path.gif)](stages-by-path.mp4)
+
+## Sara feedback and guest planning (PR #78)
+
+[Before-and-after screenshots, recording chapters and fixture notes](sara-feedback/README.md).
+The 2:05 Webreel recording uses a real email-code sign-in on the isolated test server and shows the map, generated plan, saved agenda, meal change and sign-out boundary.
+
+[![Recorded Chicago guest experience](sara-feedback/preview.gif)](sara-feedback/guest-experience-webreel.mp4)
