@@ -23,7 +23,9 @@
 | Reusing outlet descriptions without updating their provenance falsely implies the website verified Sara’s wording in September. | Should fix | Credit the supplied authored copy while retaining official operational handoffs. |
 | Old browser tests expect a public planning form and public room-block fields. | Should fix | Assert the sign-in boundary; add fixture-guest browser coverage for map pins, planning, meal/agenda links and travel identity. |
 | Historical placeholder tests depend on FAQ sentences that are now settled. | Should fix | Preserve explicit historical mixed-record fixtures, retaining the same placeholder regression assertions. |
-| The identity test helper can read an old inbox code before asynchronous delivery finishes. | Should fix | Capture the previous message ID before requesting a new code; poll for a different message instead of reusing its code. |
+| The identity test helper can read an old inbox code before asynchronous delivery finishes. | Should fix | Capture the previous message ID before requesting a new code; poll for a different message instead of reusing its code. Direct inbox assertions also await delivery. |
+| The OTP capacity test assumes 61 requests complete before a token refills, which fails under CPU load. | Should fix | Use the existing injectable limiter clock to test capacity deterministically, without changing production throttling. |
+| Compatibility maps can cluster the test destination at different frame widths; the browser test clicks a cluster as if it were a place. | Should fix | Open the cluster, then select the actual destination pin. Allow bounded hydration and complete-journey timeouts without removing assertions. |
 | A generated plan may use default visit lengths and omit travel time. | Should fix | State the 45-minute fallback estimate and omitted travel/waiting time alongside the result. |
 
 ## 2. Authorization table

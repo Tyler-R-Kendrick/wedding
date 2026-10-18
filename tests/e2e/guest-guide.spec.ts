@@ -10,13 +10,19 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
   test(`signed-in Chicago map and planning tools (${theme})`, async ({ page }) => {
     await page.setExtraHTTPHeaders(principalHeaders('A1'));
     await page.goto(`/share-an-adventure?theme=${theme}`);
-    await expect(page.locator('#chicago-map .bd-atlas')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('#chicago-map .bd-atlas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
     await expect(page.getByRole('link', { name: 'Create or update your personal agenda →' })).toHaveAttribute('href', '/trip');
     await expect(page.getByRole('link', { name: 'Review your meal selections →' })).toHaveAttribute('href', '/rsvp/meals');
     // Draft recommendations remain labelled in the guide, rather than becoming map pins.
     await expect(page.locator('.bd-atlas__target[aria-label*="Richardson Farm"]')).toHaveCount(0);
     const museum = page.locator('.bd-atlas__target[aria-label*="Griffin Museum"]');
-    await museum.click();
+    if (!await museum.getAttribute('data-pin')) {
+      // A narrower themed frame groups nearby places; open the cluster before the place.
+      await museum.click();
+    }
+    const pin = page.locator('.bd-atlas__target[data-pin][aria-label*="Griffin Museum"]');
+    await expect(pin).toBeVisible();
+    await pin.click();
     const postcard = page.locator('.bd-postcard[data-open="true"]');
     await expect(postcard).toContainText('Griffin Museum of Science and Industry');
     await expect(postcard).not.toContainText('TODO(');

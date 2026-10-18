@@ -651,7 +651,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children, sub
             tabIndex={0}
             role="region"
             aria-roledescription="map"
-            aria-label={`Map of our ${subject}, opening on Chicago around the venue. Arrow keys move the map; plus and minus zoom; 0 comes back to the venue; 9 shows the whole world. The same places are listed below it.}`}
+            aria-label={`Map of our ${subject}, opening on Chicago around the venue. Arrow keys move the map; plus and minus zoom; 0 comes back to the venue; 9 shows the whole world. The same places are listed below it.`}
             data-zoomed={view.k > world.k + 0.01 ? 'true' : undefined}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
