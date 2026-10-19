@@ -25,7 +25,7 @@ describe('concierge evals', () => {
       // a missing citation or an absent confirmation card moves none of the five, so the gate read
       // "100%" while two cases printed FAIL. A case that fails is either a wrong expectation or a
       // real defect; neither is something to average away.
-      expect(summary.failures, `cases failed against the deterministic model:\n${JSON.stringify(summary.failures, null, 2)}`).toEqual([]);
+      expect(summary.failures, `cases failed against the deterministic model:\n${JSON.stringify(reports.filter((r) => r.failures.length).map((r) => ({ id: r.id, failures: r.failures, answer: r.result.text, refusal: r.result.refusal })), null, 2)}`).toEqual([]);
 
       expect(summary.authzViolations, `authorization violations: ${JSON.stringify(summary.failures, null, 2)}`).toBe(THRESHOLDS.authzViolations);
       expect(summary.unsupportedClaimRate, `unsupported claims: ${JSON.stringify(summary.failures, null, 2)}`).toBeLessThanOrEqual(THRESHOLDS.unsupportedClaimRate);

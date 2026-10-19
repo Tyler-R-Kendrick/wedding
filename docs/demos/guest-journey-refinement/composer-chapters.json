@@ -1,0 +1,50 @@
+[
+  {
+    "description": "Private agenda is gated before sign-in",
+    "seconds": 0.08,
+    "at": "2026-10-18T19:44:08.452Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Real email-code sign-in using ada.testhouse@example.test",
+    "seconds": 7.42,
+    "at": "2026-10-18T19:44:12.712Z",
+    "url": "http://localhost:3331/sign-in?next=%2Ftrip"
+  },
+  {
+    "description": "Activity: title, start and time zone, with secondary details on demand",
+    "seconds": 27.42,
+    "at": "2026-10-18T19:44:24.258Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Flight: airport, airline and flight-number fields appear",
+    "seconds": 37.33,
+    "at": "2026-10-18T19:44:29.927Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Hotel: hotel name and address replace flight fields",
+    "seconds": 48.5,
+    "at": "2026-10-18T19:44:35.884Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Activity: return to the compact composer",
+    "seconds": 59.25,
+    "at": "2026-10-18T19:44:42.258Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "More details opens end time, booking reference and a note",
+    "seconds": 66.42,
+    "at": "2026-10-18T19:44:46.412Z",
+    "url": "http://localhost:3331/trip"
+  },
+  {
+    "description": "Travel preferences are optional and open on demand",
+    "seconds": 75.58,
+    "at": "2026-10-18T19:44:56.703Z",
+    "url": "http://localhost:3331/trip"
+  }
+]

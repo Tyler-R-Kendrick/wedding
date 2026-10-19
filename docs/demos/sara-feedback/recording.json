@@ -1,0 +1,18 @@
+{
+  "recorder": "Webreel 0.1.4 (@webreel/core)",
+  "inputDriver": "Playwright native browser input; journey assertions passed",
+  "applicationCommit": "f2b2c5442566ca47fc63ffacd38d4c94b9c8d4ae",
+  "durationSeconds": 125.083333,
+  "width": 1440,
+  "height": 1000,
+  "fps": 12,
+  "video": "guest-experience-webreel.mp4",
+  "sha256": "610d9d854facc7a211044b1cc8d5f2e4d80c280fc5bf48603219a3288d28bc8f",
+  "previewExcerpt": {
+    "file": "preview.gif",
+    "startSeconds": 29,
+    "durationSeconds": 32
+  },
+  "guestAuthentication": "Real email-code UI and normal session cookie; local mock inbox; no principal header in recorded browser",
+  "fixtureSetup": "In-memory PGlite; Ada Testhouse; active demo invitation, initial fixture entree A; local fixture admin opens editing window during take"
+}

@@ -75,7 +75,7 @@ export function ChoiceGroup({ name, legend, hint, error, options, idBase, type =
   const errorId = error ? `${idBase}-error` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
   return (
-    <fieldset className={error ? 'fld fld--error' : 'fld'} aria-describedby={describedBy} aria-invalid={error ? true : undefined}>
+    <fieldset id={idBase} tabIndex={-1} className={error ? 'fld fld--error' : 'fld'} aria-describedby={describedBy} aria-invalid={error ? true : undefined}>
       <legend className="fld__label">{legend}</legend>
       {hint ? (
         <p className="fld__hint" id={hintId}>

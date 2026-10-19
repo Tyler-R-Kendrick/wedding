@@ -40,6 +40,9 @@ export interface GuideProps {
   itineraries: ItinerariesData;
   recommendations: FindAdventuresData;
   activeBucket?: string;
+  /** Server-authorized guest map and account links; never supplied to anonymous readers. */
+  guestTools?: import('react').ReactNode;
+  signedIn?: boolean;
   plan?: { minutes: number; kids: boolean; interest?: string; result: FindAdventuresData['plan'] };
 }
 export interface RecommendationProps {
@@ -105,6 +108,7 @@ export interface PhotoAlbumProps {
 }
 
 export interface TravelProps {
+  signedIn?: boolean;
   venue: HotelRecommendation;
   alternatives: HotelRecommendation[];
   facts: {

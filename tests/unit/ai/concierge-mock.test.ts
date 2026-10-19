@@ -1,5 +1,6 @@
 import type { LanguageModelV4Prompt } from '@ai-sdk/provider';
 import { describe, expect, it } from 'vitest';
+import { citedSentences } from '@/ai/citations';
 import { extractiveAnswer, NO_SOURCE } from '@/providers/ai-model/concierge-mock';
 
 const prompt = (question: string, blocks: { title: string; lines: string[] }[]): LanguageModelV4Prompt => [
@@ -15,6 +16,23 @@ const prompt = (question: string, blocks: { title: string; lines: string[] }[]):
 ];
 
 describe('the extractive stand-in model', () => {
+  it('cites every sentence selected from a narrative paragraph', () => {
+    const blocks = [{ title: 'How we met', lines: ["Sara and Tyler met at a friend’s wedding. Tyler asked Sara out before the night ended."] }];
+    const answer = extractiveAnswer(prompt('How did Sara and Tyler meet?', blocks));
+    expect(answer).toContain('wedding');
+    const sentences = citedSentences(answer);
+    expect(sentences).toHaveLength(2);
+    expect(sentences.every((s) => s.markers.includes('S1'))).toBe(true);
+  });
+
+  it('ranks the meeting fact above unrelated paragraphs that repeat the couple’s names', () => {
+    const blocks = [
+      { title: 'The proposal', lines: ['Tyler took Sara back to meaningful places. Sara and Tyler enjoyed an indoor picnic.'] },
+      { title: 'How we met', lines: ['We met at a friend’s wedding. Before the night ended, Tyler asked Sara out.'] },
+    ];
+    expect(extractiveAnswer(prompt('How did Sara and Tyler meet?', blocks), 1)).toBe('We met at a friend’s wedding [S2].');
+  });
+
   it('does not answer a question about one named place with a line about another', () => {
     const blocks = [{ title: 'Esmé: the dining room', lines: ['Dinner at Esmé, 2200 N Clark.'] }];
     expect(extractiveAnswer(prompt('Is the Cherry Circle Room open for dinner on the Friday before?', blocks))).toBe(NO_SOURCE);

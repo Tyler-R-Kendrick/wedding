@@ -85,6 +85,11 @@ export async function listHotels(db: Db, opts: { includeInactive?: boolean; now:
   return list;
 }
 
+/** Public hotel cards retain general information, never private group booking terms. */
+export function publicHotelRecommendation(hotel: HotelRecommendation): HotelRecommendation {
+  return { ...hotel, block: null, bookingUrl: hotel.isVenue || hotel.block ? null : hotel.bookingUrl };
+}
+
 export async function getHotel(db: Db, id: string, now: Date): Promise<HotelRecommendation | null> {
   const rows = await db.select().from(hotelRecommendations).where(eq(hotelRecommendations.id, id)).limit(1);
   if (rows[0]) return toHotelRecommendation(rows[0], now);

@@ -42,8 +42,8 @@ describe('story + adventures visibility', () => {
     expect(r.value.data.sections.map((s) => s.chapter)).toEqual(['met', 'connection', 'relationship', 'love', 'future', 'engagement', 'marriage']);
     const met = r.value.data.sections[0]!;
     // guestText sets typographer's quotes on the way out; the record keeps what was typed.
-    expect(met.paragraphs[0]).toEqual({ text: 'We met at Allison and Jamie’s wedding.', placeholder: false });
-    expect(met.paragraphs.some((p) => p.placeholder)).toBe(true);
+    expect(met.paragraphs[0]?.text).toContain('We met at a friend’s wedding celebration');
+    expect(met.paragraphs.every((p) => !p.placeholder)).toBe(true);
     for (const s of r.value.sources) {
       expect(s.url).toMatch(/^\/our-story#/);
       expect(s.url).not.toMatch(/^\/docs\//);
@@ -134,7 +134,9 @@ describe('story + adventures visibility', () => {
 describe('share an adventure', () => {
   it('the why-we-share layer follows the memory\'s visibility', async () => {
     const anon = await invoke(findAdventures, await ctxFor(anonymous), { slug: 'museum-of-ice-cream' });
-    expect(anon.ok && anon.value.data.items[0]!.why).toBeUndefined();
+    expect(anon.ok).toBe(false);
+    const signedIn = await invoke(findAdventures, await ctxFor(guest), { slug: 'museum-of-ice-cream' });
+    expect(signedIn.ok && signedIn.value.data.items[0]!.why).toBeUndefined();
     const adm = await invoke(findAdventures, await ctxFor(admin()), { slug: 'museum-of-ice-cream' });
     expect(adm.ok && adm.value.data.items[0]!.why?.experienceSlug).toBe('museum-of-ice-cream');
     const ai = await invoke(findAdventures, await ctxFor(admin(), 'ai'), { slug: 'museum-of-ice-cream' });
@@ -144,12 +146,13 @@ describe('share an adventure', () => {
   });
 
   it('filters and composes a plan inside a time budget; drafts stay labelled', async () => {
-    const r = await invoke(findAdventures, await ctxFor(anonymous), { interests: ['architecture', 'walk'], maxMinutes: 60 });
+    const r = await invoke(findAdventures, await ctxFor(guest), { interests: ['architecture', 'walk'], maxMinutes: 60 });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.plan?.totalMinutes).toBeLessThanOrEqual(60);
     expect(r.value.data.plan?.stops[0]?.recommendation.slug).toBe('caa-self-guided-tour');
-    expect(r.value.data.items.every((i) => i.draft)).toBe(true);
+    expect(r.value.data.items.find((i) => i.slug === 'caa-self-guided-tour')?.draft).toBe(true);
+    expect(r.value.data.items.find((i) => i.slug === 'caa-explore')?.draft).toBe(false);
     // Operational freshness uses wall-clock `now`; pin a date shortly after the link-check seed.
     const inside = await invoke(findAdventures, await ctxFor(anonymous, 'ui', { now: new Date('2026-09-10T12:00:00Z') }), { insideCaa: true });
     expect(inside.ok && inside.value.data.items.every((i) => i.interests.includes('inside-caa'))).toBe(true);
@@ -157,7 +160,7 @@ describe('share an adventure', () => {
     expect(cindys?.operational?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
     expect(cindys?.operational?.provenance.freshness).toBe('fresh');
     expect(cindys?.handoffs.official?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
-    const kids = await invoke(findAdventures, await ctxFor(anonymous), { kids: true, maxMinutes: 120 });
+    const kids = await invoke(findAdventures, await ctxFor(guest), { kids: true, maxMinutes: 120 });
     expect(kids.ok && kids.value.data.plan?.stops.every((s) => s.recommendation.kidFriendly !== false)).toBe(true);
     const ai = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), {});
     expect(ai.ok && ai.value.data.items.length).toBeLessThanOrEqual(12);
@@ -351,5 +354,33 @@ describe('admin editors', () => {
     // And the draft stays invisible to guests.
     const guestView = await invoke(getVenueFacts, await ctxFor(guest), {});
     expect(guestView.ok && guestView.value.data.history.find((h) => h.slug === 'test-fact-2')).toBeUndefined();
+  });
+});
+
+describe('Sara’s Chicago guide privacy', () => {
+  it('serves the complete guide to a guest within the capability output budget', async () => {
+    const r = await invoke(findAdventures, await ctxFor(guest), {});
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.data.items.map((i) => i.slug)).toEqual(expect.arrayContaining(['alinea', 'coffee-at-caa', 'art-institute', 'chicago-botanic-garden']));
+  });
+  it('keeps the new recommendations and map coordinates guest-only on every surface', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const publicResult = await invoke(findAdventures, await ctxFor(anonymous, surface), { slug: 'alinea' });
+      expect(publicResult.ok, surface).toBe(false);
+      const guestResult = await invoke(findAdventures, await ctxFor(guest, surface), { slug: 'alinea' });
+      expect(guestResult.ok, surface).toBe(true);
+      if (guestResult.ok) {
+        expect(guestResult.value.data.items[0]?.place?.coordinates).toBeDefined();
+        expect(guestResult.value.data.items[0]?.draft).toBe(false);
+      }
+    }
+  });
+
+  it('requires sign-in to compose an agenda, including direct capability requests', async () => {
+    const denied = await invoke(findAdventures, await ctxFor(anonymous), { maxMinutes: 120 });
+    expect(denied.ok).toBe(false);
+    if (!denied.ok) expect(denied.error.code).toBe('unauthenticated');
+    const allowed = await invoke(findAdventures, await ctxFor(guest), { maxMinutes: 120 });
+    expect(allowed.ok).toBe(true);
   });
 });

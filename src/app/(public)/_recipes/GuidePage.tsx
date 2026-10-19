@@ -4,6 +4,7 @@ import type { FindAdventuresData } from '@/capabilities/find_adventures';
 import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { humanize } from '@/domain/content/format';
+import { CONTENT_COPY } from '@/themes/shared/content';
 import { ROUTES } from '@/domain/routes';
 import { ChipLinks, DraftBadge, PageIntro, Provenance, RecommendationCardView, Section, Shell, StopLine } from './kit';
 
@@ -11,13 +12,16 @@ export interface GuideRecipeProps {
   itineraries: ItinerariesData;
   recommendations: FindAdventuresData;
   activeBucket?: string;
+  /** Server-authorized guest map and account links; never supplied to anonymous readers. */
+  guestTools?: import('react').ReactNode;
+  signedIn?: boolean;
   plan?: { minutes: number; kids: boolean; interest?: string; result: FindAdventuresData['plan'] };
 }
 
 const MINUTE_OPTIONS = [45, 120, 180, 300] as const;
 const INTEREST_OPTIONS = ['architecture', 'walk', 'food', 'drink', 'outdoors', 'inside-caa'] as const;
 
-export function GuidePage({ itineraries, recommendations, activeBucket, plan }: GuideRecipeProps) {
+export function GuidePage({ itineraries, recommendations, activeBucket, plan, guestTools, signedIn = false }: GuideRecipeProps) {
   const chips = [
     { href: ROUTES.share, label: 'All', active: !activeBucket },
     ...itineraries.buckets.map((b) => ({ href: `${ROUTES.share}?bucket=${b}`, label: humanize(b), active: activeBucket === b })),
@@ -28,10 +32,12 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan }: 
   return (
     <Shell current={ROUTES.share}>
       <PageIntro
-        eyebrow="Share an Adventure"
-        title="Borrow a few of ours"
-        lede="Every card has the practical part first: what, where, how long, and how to get there. Open the memory behind it if you want to know why it matters to us."
+        eyebrow={CONTENT_COPY.guide.eyebrow}
+        title={CONTENT_COPY.guide.title}
+        lede={CONTENT_COPY.guide.lede}
       />
+
+      {guestTools}
 
       <Section id="itineraries" number="01" title="Pick your time">
         <ChipLinks items={chips} label="Itineraries by time and interest" />
@@ -61,6 +67,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan }: 
         </ul>
       </Section>
 
+      {signedIn ? (
       <Section id="plan" number="02" title="Plan around the time you have">
         <form className="wp-form" method="get" action={ROUTES.share}>
           <div className="wp-field">
@@ -113,6 +120,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan }: 
           </div>
         ) : null}
       </Section>
+      ) : <Section id="plan" title="Make the weekend yours"><p><Link className="wp-button" href="/sign-in?next=%2Fshare-an-adventure">Sign in for our Chicago map and your personal agenda.</Link></p></Section>}
 
       <Section id="recommendations" number="03" title="All the places">
         {[...byCategory.entries()].map(([category, items]) => (

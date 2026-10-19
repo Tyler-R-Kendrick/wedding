@@ -55,6 +55,7 @@ export default async function TravelPage() {
   // against the DESIGN.md spacing scale.
   return (
     <recipes.TravelPage
+      signedIn={principal.kind === 'guest'}
       venue={hotels.value.data.venue}
       alternatives={hotels.value.data.alternatives}
       facts={hotels.value.data.facts}

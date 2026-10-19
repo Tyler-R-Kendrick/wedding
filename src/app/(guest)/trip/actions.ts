@@ -48,12 +48,12 @@ export async function deleteProfileAction(fd: FormData): Promise<void> {
 export async function addItemAction(_prev: AddItemFormState, fd: FormData): Promise<AddItemFormState> {
   const values = field.values(fd, ITEM_FIELDS);
   const details = compact({
-    origin: field.str(fd, 'origin'),
-    destination: field.str(fd, 'destination'),
-    carrier: field.str(fd, 'carrier'),
-    flightNumber: field.str(fd, 'flightNumber'),
-    hotelName: field.str(fd, 'hotelName'),
-    address: field.str(fd, 'address'),
+    origin: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'origin') : undefined,
+    destination: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'destination') : undefined,
+    carrier: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'carrier') : undefined,
+    flightNumber: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'flightNumber') : undefined,
+    hotelName: field.str(fd, 'kind') === 'hotel' ? field.str(fd, 'hotelName') : undefined,
+    address: field.str(fd, 'kind') === 'hotel' ? field.str(fd, 'address') : undefined,
     note: field.str(fd, 'note'),
   });
   const input = compact({

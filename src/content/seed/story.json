@@ -5,17 +5,15 @@
     "order": 1,
     "title": "How we met",
     "paragraphs": [
-      "We met at Allison and Jamie's wedding.",
-      "Flirty glances across the room, and an immediate connection.",
-      "TODO(Tyler & Sara): the rest of the story — who noticed whom first, what was said, and what happened after the last dance."
+      "We met at a friend's wedding celebration, where we were each there to celebrate friends we cared about. Neither of us was looking for a relationship, but sometimes life has other plans. We hit it off almost immediately and spent the evening talking, playing games, and getting to know each other. Before the night was over, Tyler asked Sara out, and a new chapter began."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": false
   },
   {
     "slug": "the-connection",
@@ -23,17 +21,16 @@
     "order": 2,
     "title": "The connection",
     "paragraphs": [
-      "Best friendship. Peace. Becoming better together.",
-      "Those are Tyler's words for what this is, and they are the seed of everything on this page.",
-      "TODO(Tyler & Sara): the story of how the connection became a relationship, in your own words."
+      "Our first date involved mini golf, a walk along the river, and sharing plates at The Cheesecake Factory. We were curious about each other, and with every conversation, we found another reason to want to know more.",
+      "By our fourth date, something had shifted. Tyler planned one of his Chicago tours for Sara, showing her some of his favorite places around the city, including the Chicago Athletic Association. We ended the evening at Michael Jordan's Steak House, laughing and smiling throughout dinner. When Tyler dropped Sara off at the train, we both knew this was something special. Little did we know that the Chicago Athletic Association would one day be where we'd say “I do.”"
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": false
   },
   {
     "slug": "our-life-together",
@@ -41,17 +38,15 @@
     "order": 3,
     "title": "Our life together",
     "paragraphs": [
-      "The places that shaped us: the Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, the Madison waterfront, and Starved Rock.",
-      "You can wander through them on Our Adventures, and borrow a few for your own weekend on Share an Adventure.",
-      "TODO(Tyler & Sara): which adventures to tell in full, and the photos to go with them."
+      "Since then, we've built a life around curiosity, shared values, and a sense of adventure. We both love discovering new places, trying new restaurants, and sharing the things that excite us. Tyler is always ready to embrace an adventure and see where it takes us, while Sara brings a thoughtful perspective and notices the little things along the way. We balance each other in the best ways, encouraging one another to try new things, see different perspectives, and keep growing together. Whether we're exploring somewhere new, tending to the garden, or enjoying our favorite traditions, we're happiest experiencing life together."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": false
   },
   {
     "slug": "love",
@@ -59,16 +54,15 @@
     "order": 4,
     "title": "Love",
     "paragraphs": [
-      "We said \"I love you\" for the first time at Starved Rock.",
-      "TODO(Tyler & Sara): which trail, what day, and who said it first are yours to tell."
+      "We said “I love you” for the first time at Starved Rock."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": false
   },
   {
     "slug": "greater-together",
@@ -76,16 +70,15 @@
     "order": 5,
     "title": "Greater together than alone",
     "paragraphs": [
-      "Mutual support. Being each other's rock. Home. Gratitude. A deliberate partnership.",
-      "TODO(Tyler & Sara): what the next chapter looks like, in your words."
+      "Now, we're excited to keep growing together, build a family, and share many more adventures. To us, marriage is about more than the two of us. The people in our lives have helped shape who we are, and those experiences and relationships helped make us the people who found each other. We wouldn't be who we are, or the couple we are today, without our family and friends."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true,
+    "placeholder": false,
     "media": [
       {
         "alt": "The Chicago skyline across Lake Michigan at sunrise, the sky pink and gold.",
@@ -100,15 +93,15 @@
     "order": 6,
     "title": "The proposal",
     "paragraphs": [
-      "TODO(Tyler & Sara): the engagement story and photos (content backlog C-07)."
+      "Our engagement was a love letter to the story we'd been building. Over the course of a summer, Tyler took Sara back to places that held special memories for us. When the day finally came, he surprised her with an indoor picnic surrounded by photos and mementos from our time together, celebrating the journey that brought us here and all the adventures still to come."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true,
+    "placeholder": false,
     "media": [
       {
         "alt": "A close-up of a pale pink diamond ring resting on sparkling beads.",
@@ -123,14 +116,14 @@
     "order": 7,
     "title": "What marriage means to us",
     "paragraphs": [
-      "TODO(Tyler & Sara): what marriage means to you, and what you hope this weekend is for the people you love."
+      "That's why having you celebrate with us means so much. We're bringing together the people who have been part of our stories, and we can't think of a better way to begin this next chapter than surrounded by all of you."
     ],
-    "sourceKey": "brief",
+    "sourceKey": "sara-feedback",
     "sourceType": "authored",
-    "verifiedAt": "2026-09-04T00:00:00.000Z",
+    "verifiedAt": "2026-10-12T00:00:00.000Z",
     "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "seed:brief-2026-09-04",
+    "editedBy": "seed:sara-feedback-2026-10-12",
     "visibility": "public",
-    "placeholder": true
+    "placeholder": false
   }
 ]

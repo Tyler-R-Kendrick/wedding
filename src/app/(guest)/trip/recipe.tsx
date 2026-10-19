@@ -5,8 +5,8 @@ import Link from 'next/link';
 import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
 import { throughSignIn } from '@/domain/lifecycle/account';
-import { formatChicagoDateTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
-import { deleteProfileAction, hostedFlightsAction, itemAction } from './actions';
+import { formatChicagoDateTime, formatChicagoTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
+import { hostedFlightsAction, itemAction } from './actions';
 
 export interface TripPageData {
   trip: {
@@ -33,6 +33,7 @@ const INPUT = 'min-h-11 rounded-sm border border-primary/40 bg-neutral px-3 py-2
 
 const STATUS_LABEL: Record<TripItem['status'], string> = { planned: 'Planned', confirmed: 'Confirmed', cancelled: 'Cancelled' };
 const KIND_LABEL: Record<TripItem['kind'], string> = { flight: 'Flight', hotel: 'Hotel', other: 'Plan' };
+const AGENDA_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
 /**
  * The active design's own section (`themes/<id>/guest.tsx`), not the shared `.sec`.
@@ -82,26 +83,29 @@ function ItemCard({ item, highlighted, theme }: { item: TripItem; highlighted: b
     // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`,
     // which shouts `text-transform: uppercase`; Conservatory's DESIGN.md rejects that by name in
     // favour of Spectral's real small capitals ("instead of shouting uppercase").
-    <li aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
-      <GuestCard theme={theme} title={item.title}>
+    <li id={`trip-item-${item.id}`} className="agenda-entry" data-status={item.status} aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
+      <GuestCard theme={theme} title={item.title} level={4}>
         <p className={theme === 'conservatory' ? 'cv-eyebrow' : theme === 'botanical-deco' ? 'bd-eyebrow' : 'gh-eyebrow'}>
           {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
           {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
         </p>
-      <p className="mt-1 tabular-nums">
-        {formatChicagoDateTime(item.startAt)}
-        {item.endAt ? ` → ${formatChicagoDateTime(item.endAt)}` : ''}
+      <p className="agenda-entry__time mt-1 tabular-nums">
+        <time dateTime={item.startAt}>{formatChicagoTime(item.startAt)}</time>
+        {item.endAt ? ` → ${AGENDA_DAY.format(new Date(item.startAt)) === AGENDA_DAY.format(new Date(item.endAt)) ? formatChicagoTime(item.endAt) : formatChicagoDateTime(item.endAt)}` : ''}
       </p>
       {detailLine ? <p className="mt-1 hint">{detailLine}</p> : null}
       {item.providerRef ? <p className="mt-1">Reference {item.providerRef}</p> : null}
       {d.note ? <p className="mt-2">{d.note}</p> : null}
-      <div className="mt-4 flex flex-col gap-3">
-        {item.status === 'planned' ? <ItemForm item={item} op="confirm" label="I booked this" withReference /> : null}
+      <details className="guest-disclosure agenda-entry__manage">
+        <summary>Manage this plan</summary>
+        <div className="guest-disclosure__body flex flex-col gap-3">
+        {item.status === 'planned' ? <ItemForm item={item} op="confirm" label={item.kind === 'other' ? 'Mark as confirmed' : 'I booked this'} withReference={item.kind !== 'other'} /> : null}
         <div className="flex flex-wrap gap-2">
           {item.status !== 'cancelled' ? <ItemForm item={item} op="cancel" label="Mark cancelled" /> : <ItemForm item={item} op="reopen" label="Back to planned" />}
           <ItemForm item={item} op="remove" label="Remove" />
           </div>
         </div>
+      </details>
       </GuestCard>
     </li>
   );
@@ -124,6 +128,11 @@ function ReturnedBanner({ returned }: { returned: NonNullable<TripPageData['retu
 export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, slots, theme }) => {
   const { trip, returned, notice } = data;
   const block = trip.block.block;
+  const days = new Map<string, TripItem[]>();
+  for (const item of [...trip.items].sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt))) {
+    const day = AGENDA_DAY.format(new Date(item.startAt));
+    days.set(day, [...(days.get(day) ?? []), item]);
+  }
   return (
     /* The guest kit from `components/rsvp/recipes.css`, which the (guest) layout imports: it takes
        the active design's DISPLAY face, its measure and its heading case. This page was the last of
@@ -141,6 +150,10 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
             every household manager, and meaningless in a household of one. It reads as a privacy
             guarantee, so being wrong about it matters more than the words cost. */}
         <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and whoever answers for you can see this.</p>
+        <nav className="guest-next" aria-label="Plan your trip">
+          <a className={`${BUTTON} bg-primary text-neutral`} href="#add">Add to your agenda</a>
+          <Link className="guest-text-link" href="/share-an-adventure">Explore Chicago →</Link>
+        </nav>
       </header>
       {notice ? (
         <p role="status" className="mt-6 rounded-sm border border-primary/40 p-3">
@@ -151,13 +164,17 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
 
       <Section theme={theme} index={0} id="items" title="What you have so far">
         {trip.items.length ? (
-          <ul className="flex flex-col gap-4">
-            {trip.items.map((item) => (
-              <ItemCard key={item.id} item={item} highlighted={returned?.itemId === item.id} theme={theme} />
+          <div className="agenda-days">
+            <p className="hint">Your agenda, in Chicago time. Saving a plan does not make a booking.</p>
+            {[...days].map(([day, items]) => (
+              <section className="agenda-day" key={day} aria-label={day}>
+                <h3 className="agenda-day__title">{day}</h3>
+                <ul>{items.map((item) => <ItemCard key={item.id} item={item} highlighted={returned?.itemId === item.id} theme={theme} />)}</ul>
+              </section>
             ))}
-          </ul>
+          </div>
         ) : (
-          <p>Nothing yet. Add your flights below, or search on Travel &amp; Stay and come back to record what you booked.</p>
+          <p>Nothing yet. Build your personal agenda below: add flights, hotel stays, restaurant reservations, and activities you’d like to enjoy.</p>
         )}
         {trip.hostedBookingAvailable ? (
           <form action={hostedFlightsAction} className="rounded-sm border border-primary/30 p-4">
@@ -190,7 +207,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         ) : null}
       </Section>
 
-      <Section theme={theme} index={1} id="free-time" title="Free time for an adventure">
+      <Section theme={theme} index={1} id="add" title="Add to your agenda">
+        {slots.addItemForm}
+      </Section>
+
+      <Section theme={theme} index={2} id="free-time" title="Free time for an adventure">
         {trip.freeTime.length ? (
           <ul className="flex flex-col gap-2">
             {trip.freeTime.map((w) => (
@@ -214,7 +235,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         )}
       </Section>
 
-      <Section theme={theme} index={2} id="block" title={`Room block at the ${trip.block.hotelName}`}>
+      <Section theme={theme} index={3} id="block" title={`Room block at the ${trip.block.hotelName}`}>
         {block && !block.placeholder ? (
           <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
@@ -240,20 +261,9 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         </p>
       </Section>
 
-      <Section theme={theme} index={3} id="add" title="Add to your trip">
-        {slots.addItemForm}
-      </Section>
-
       <Section theme={theme} index={4} id="profile" title="Your travel preferences">
         {slots.profileForm}
-        {data.profile ? (
-          <form action={deleteProfileAction} className="mt-2">
-            <input type="hidden" name="idempotencyKey" value={newId()} />
-            <button type="submit" className={BUTTON}>
-              Delete my travel preferences
-            </button>
-          </form>
-        ) : null}
+
       </Section>
     </div>
   );

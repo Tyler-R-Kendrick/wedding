@@ -29,6 +29,7 @@ export function toPlaceView(row: PlaceRow): PlaceView {
     ...(row.city ? { city: row.city } : {}),
     ...(row.region ? { region: row.region } : {}),
     ...(row.url && /^https:\/\//.test(row.url) ? { url: row.url } : {}),
+    ...(row.lat !== null && row.lng !== null ? { coordinates: { lat: row.lat, lng: row.lng } } : {}),
     insideVenue: row.insideVenue,
     placeholder: row.placeholder,
   };

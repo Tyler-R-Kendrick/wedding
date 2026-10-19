@@ -15,7 +15,7 @@ import type { ChipItem, StopItem } from '@/themes/content-types';
 
 /** Guest-facing copy shared by both themes (from the placeholder recipes, the content brief's voice). */
 export const CONTENT_COPY = {
-  story: { eyebrow: 'Our Story', lede: 'How we met, what this is, and where it is going. Short on purpose; the long version lives in Our Adventures.', next: 'Keep going', nextLink: 'Wander through our adventures' },
+  story: { eyebrow: 'Our Story', lede: 'From a friend’s wedding to our own, these are the moments that brought us here.', next: 'Keep going', nextLink: 'Wander through our adventures' },
   adventures: {
     eyebrow: 'Our Adventures',
     title: 'The places that shaped us',
@@ -49,9 +49,9 @@ export const CONTENT_COPY = {
     back: 'All adventures',
   },
   guide: {
-    eyebrow: 'Share an Adventure',
-    title: 'Borrow a few of ours',
-    lede: 'Every card has the practical part first: what, where, how long, and how to get there. Open the memory behind it if you want to know why it matters to us.',
+    eyebrow: 'Explore Chicago',
+    title: 'Things to Do in Chicago',
+    lede: 'We’re so excited to share one of our favorite cities with you! We’ve gathered places that are special to us and things we love doing together, from great food and beautiful parks to architecture and unique experiences.',
     jump: 'On this page',
     time: 'Pick your time',
     filter: 'Itineraries by time and interest',
@@ -61,7 +61,7 @@ export const CONTENT_COPY = {
     kids: 'We have kids with us',
     suggest: 'Suggest a plan',
     nothing: 'Nothing fits that combination yet. Try more time or a different mood.',
-    draftNote: 'Everything here is a draft until we have curated it.',
+    draftNote: 'Places without a listed visit length use a 45-minute planning estimate. Travel and waiting time are not included; check hours and reservations before heading out.',
     all: 'All the places',
     hours: 'Hours, menus, and reservation links for the hotel’s own places live on',
     hoursTail: ', each with the day we last checked it.',
@@ -82,11 +82,15 @@ export const CONTENT_COPY = {
     roomFeatures: 'What is in the room',
     roomCapacity: 'Capacity, in the venue’s own figures',
   },
-  wedding: { eyebrow: 'The Wedding', title: 'The Wedding', dress: 'What to wear', rooms: 'About the rooms', roomsLink: 'Our venue and its four spaces' },
+  wedding: {
+    welcome: "We can’t wait to celebrate with you! The people in our lives have helped shape who we are, and sharing this special day with you means so much to us. We hope it’s a day filled with love, peace, and happiness.",
+    together: 'Our ceremony, cocktail hour, and reception will all take place at the Chicago Athletic Association, so you can settle in and enjoy the celebration from beginning to end. We’ll continue adding details as our plans come together.',
+    unplugged: 'We invite you to be fully present with us during our ceremony by putting away your phones and cameras. We’d love for you to share this special moment with us, distraction-free, while our photographer captures the memories.',
+    eyebrow: 'The Wedding', title: 'The Wedding', dress: 'What to wear', rooms: 'About the rooms', roomsLink: 'Our venue and its four spaces' },
   ask: {
     eyebrow: 'Ask Us',
     title: 'Questions, answered',
-    lede: 'The essentials first. Anything we have not decided yet says so, instead of guessing.',
+    lede: 'We’re so excited to celebrate with you! Here are a few helpful details as you plan for our wedding. We’ll update this page as the day gets closer.',
     search: 'Search the site',
     searchLabel: 'What are you looking for?',
     searchHint: 'valet, kids, Cindy’s, dress code',
