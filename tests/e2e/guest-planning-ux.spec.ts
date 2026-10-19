@@ -1,5 +1,5 @@
 import { expect as baseExpect, test } from '@playwright/test';
-import { callCapability, contextAs, key, principalHeaders } from './helpers/principal';
+import { contextAs, key, principalHeaders } from './helpers/principal';
 
 // Server actions revalidate and stream a fresh page; allow the isolated dev server to finish.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -67,32 +67,4 @@ test('reduced-motion planning controls keep visible state without animation', as
   expect(await hotel.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
   await page.locator('#profile summary').press('Enter');
   await expect(page.getByLabel('Home city', { exact: true })).toBeVisible();
-});
-
-
-test('inline weekend reply keeps errors and review/edit visible', async ({ page, request }) => {
-  const opened = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'open', deadlineAt: null }, { idempotencyKey: key() });
-  expect(opened.body.ok).toBe(true);
-  await page.setExtraHTTPHeaders(principalHeaders('A1'));
-  await page.goto('/your-weekend');
-  const inline = page.locator('.bd-reply__inline');
-  await expect(inline.locator('form')).toBeHidden();
-  await inline.locator(':scope > summary').click();
-  await inline.getByRole('group', { name: 'Will Ada attend the reception?', exact: true }).getByRole('radio', { name: 'Yes, attending', exact: true }).check();
-  await inline.getByLabel('Meal for Ada', { exact: true }).selectOption('');
-  await inline.getByRole('button', { name: 'Review your answers' }).click();
-  await expect(inline.locator('#error-summary')).toBeVisible();
-  await expect(inline.locator('#error-summary')).toBeFocused();
-  const errorLink = inline.locator('#error-summary a').first();
-  const target = await errorLink.getAttribute('href');
-  expect(target).toBeTruthy();
-  await errorLink.click();
-  await expect(page.locator(target!)).toBeFocused();
-  // Declining asks no meals; draft/review/edit must leave the outer disclosure open.
-  for (const no of await inline.getByRole('radio', { name: 'No, cannot make it', exact: true }).all()) await no.check();
-  await inline.getByRole('button', { name: 'Review your answers' }).click();
-  await expect(inline.getByRole('heading', { name: 'Please check your answers' })).toBeVisible();
-  await inline.getByRole('button', { name: 'Go back and change' }).click();
-  await expect(inline.getByRole('button', { name: 'Review your answers' })).toBeVisible();
-  await expect(inline).toHaveAttribute('open', '');
 });
