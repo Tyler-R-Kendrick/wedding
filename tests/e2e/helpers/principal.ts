@@ -107,7 +107,15 @@ export async function contextAs(
 ): Promise<BrowserContext> {
   // `browser.newContext()` does not inherit the config's `use.baseURL`, so pass it: specs navigate
   // with relative paths and must land on the server Playwright actually started.
+  // A manually created context does not inherit the project's emulated device.
+  // Preserve it so a test named "mobile" actually exercises the mobile layout and inputs.
+  const device = test.info().project.use;
   return browser.newContext({
+    viewport: device.viewport,
+    userAgent: device.userAgent,
+    deviceScaleFactor: device.deviceScaleFactor,
+    isMobile: device.isMobile,
+    hasTouch: device.hasTouch,
     baseURL: BASE_URL,
     extraHTTPHeaders: principalHeaders(name, TEST_AUTH_SECRET, `browser-${process.pid}-${++contexts}`),
     ...(opts.viewport ? { viewport: opts.viewport } : {}),

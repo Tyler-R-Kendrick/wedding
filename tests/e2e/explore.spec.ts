@@ -34,7 +34,7 @@ test.describe('explore journey', () => {
     // The approved design titles the page with its editorial headline; the page is still "Our Story".
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
     await expect(page).toHaveTitle(/Our Story/);
-    await expect(page.getByText('We met at Allison and Jamie’s wedding.')).toBeVisible();
+    await expect(page.getByText(/We met at a friend[’']s wedding celebration/)).toBeVisible();
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
@@ -178,17 +178,13 @@ test.describe('explore journey', () => {
     }
   });
 
-  test('share an adventure composes a plan for the time available', async ({ page }) => {
-    await page.goto('/share-an-adventure');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  test('the public guide keeps map and planning tools behind sign-in', async ({ page }) => {
+    await page.goto('/share-an-adventure?minutes=45&interest=architecture');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Things to Do in Chicago');
     await expect(page.locator('[data-itinerary]')).toHaveCount(8);
-    await page.getByLabel('How much time do you have?').selectOption('45');
-    await page.getByLabel('What are you in the mood for?').selectOption('architecture');
-    await page.getByRole('button', { name: 'Suggest a plan' }).click();
-    await expect(page).toHaveURL(/minutes=45/);
-    const plan = page.locator('#plan-result');
-    await expect(plan).toBeVisible();
-    await expect(plan.getByRole('link', { name: 'Walk the building' })).toBeVisible();
+    await expect(page.locator('#chicago-map')).toHaveCount(0);
+    await expect(page.locator('#plan form, #plan-result')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Sign in to plan your weekend →' })).toHaveAttribute('href', '/sign-in?next=%2Fshare-an-adventure');
     await axe(page);
   });
 

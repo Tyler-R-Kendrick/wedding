@@ -20,6 +20,7 @@
 @import "../themes/gilded-hour/kit.css" layer(components);
 @import "../themes/conservatory/kit.css" layer(components);
 @import "../themes/shared/print.css";
+@import "../themes/shared/guest-planning.css";
 
 @layer base {
   /*

@@ -26,6 +26,8 @@ import type { ExternalHandoff } from '@/contracts/providers';
 import { ok, type Result } from '@/contracts/result';
 import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID } from '@/domain/travel';
 import { getDb } from '@/db/client';
+import { hotelRecommendations } from '@/db/schema/travel';
+import { eq } from 'drizzle-orm';
 import { FX } from '@/db/seed/fixtures';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isAllowedRedirect } from '@/lib/redirects';
@@ -213,7 +215,7 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
 
 describe('hotel recommendations, block, and admin configuration', () => {
   it('lists the CAA block first as a brief placeholder until an admin saves the real record', async () => {
-    const r = await run(listHotelRecommendations, anonymous, {});
+    const r = await run(listHotelRecommendations, guestA, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.venue).toMatchObject({ id: VENUE_HOTEL_ID, isVenue: true, placeholder: true, synthesized: true, name: 'Chicago Athletic Association Hotel', block: { placeholder: true, url: null, rateText: null, cutoff: null } });
@@ -231,6 +233,32 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['CAA Wedding Kit 2027', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
   });
 
+  it('keeps blocks on alternative hotels private across all capability surfaces', async () => {
+    const saved = await run(adminSaveHotel, contentAdmin, {
+      name: 'Alternate group hotel',
+      block: { url: 'https://www.hyatt.com/group-booking/private-alternate', code: 'GUEST-ONLY', rateText: '$321', placeholder: false },
+      bookingUrl: 'https://www.hyatt.com/group-booking/private-alternate',
+    }, { key: key() });
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) return;
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const ctx = await createCapabilityContext({ principal: anonymous, requestId: `public-block-${newId()}`, surface });
+      const list = await invoke(listHotelRecommendations, ctx, {});
+      expect(list.ok).toBe(true);
+      if (list.ok) {
+        const hotel = list.value.data.alternatives.find((h) => h.id === saved.value.data.id);
+        expect(hotel?.block).toBeNull();
+        expect(hotel?.bookingUrl).toBeNull();
+        expect(JSON.stringify(list.value)).not.toContain('GUEST-ONLY');
+      }
+      const denied = await invoke(openBookingLink, ctx, { kind: 'hotel', hotelId: saved.value.data.id });
+      expectErr(denied, 'unauthenticated');
+    }
+    const guestList = await run(listHotelRecommendations, guestA, {});
+    expect(guestList.ok && guestList.value.data.alternatives.find((h: { id: string; block: { code: string | null } | null }) => h.id === saved.value.data.id)?.block?.code).toBe('GUEST-ONLY');
+    await (await getDb()).delete(hotelRecommendations).where(eq(hotelRecommendations.id, saved.value.data.id));
+  });
+
   it('authorises admin edits by entitlement and refuses links off the allowlist', async () => {
     const venue = { id: VENUE_HOTEL_ID, name: 'Chicago Athletic Association Hotel', address: '12 S Michigan Ave, Chicago, IL 60603', isVenue: true, sortOrder: 0, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', code: 'TODO', rateText: null, checkIn: '2027-07-16', checkOut: '2027-07-18', cutoff: '2027-06-17', note: 'Courtesy block up to 20 rooms, subject to availability.', placeholder: false }, sourceId: null };
     expectErr(await run(adminSaveHotel, guestA, venue, { key: key() }), 'forbidden');
@@ -241,9 +269,12 @@ describe('hotel recommendations, block, and admin configuration', () => {
     if (!bad.ok) expect(bad.error.details?.issues).toEqual([{ path: 'block.url', message: expect.stringMatching(/trusted partners/) }]);
     const saved = await run(adminSaveHotel, contentAdmin, venue, { key: key() });
     expect(saved.ok && saved.value.data).toMatchObject({ id: VENUE_HOTEL_ID, contentVersion: 1, synthesized: false, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', cutoff: '2027-06-17', placeholder: false } });
+    const publicList = await run(listHotelRecommendations, anonymous, {});
+    expect(publicList.ok && publicList.value.data.venue.block).toBeNull();
+    expect(publicList.ok && publicList.value.data.venue.bookingUrl).toBeNull();
     const alt = await run(adminSaveHotel, contentAdmin, { name: 'Fixture Alternative', address: '1 Loop St', walkMinutesToVenue: 6, priceBand: '$$', reasons: [{ kind: 'walk_minutes', text: '6 minute walk to the CAA', value: 6 }, { kind: 'family_suites', text: 'Family suites available' }], websiteUrl: 'https://www.booking.com/hotel/us/fixture.html' }, { key: key() });
     expect(alt.ok && alt.value.data).toMatchObject({ isVenue: false, priceBand: '$$', reasons: [{ kind: 'walk_minutes' }, { kind: 'family_suites' }], freshness: 'fresh' });
-    const list = await run(listHotelRecommendations, anonymous, {});
+    const list = await run(listHotelRecommendations, guestA, {});
     expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-17' } });
     expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual(['Fixture Alternative']);
     const db = await getDb();
@@ -277,7 +308,9 @@ describe('open_booking_link (external hand-offs)', () => {
     expect(flight.ok && flight.value.data).toMatchObject({ placeholder: false, handoff: { provider: 'skyscanner', label: 'Continue on Skyscanner' } });
     const hyatt = await run(openBookingLink, anonymous, { kind: 'hotel_search', partner: 'hyatt', checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(hyatt.ok && hyatt.value.data.handoff.provider).toBe('hyatt');
-    const block = await run(openBookingLink, anonymous, { kind: 'venue_block' });
+    expectErr(await run(openBookingLink, anonymous, { kind: 'venue_block' }), 'unauthenticated');
+    expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: VENUE_HOTEL_ID }), 'unauthenticated');
+    const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
     expect(block.ok && block.value.data).toMatchObject({ placeholder: false, handoff: { provider: 'hyatt.com', url: 'https://www.hyatt.com/group-booking/CHIAA-TODO' } });
     expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: newId() }), 'not_found');
     const list = await run(listHotelRecommendations, anonymous, {});
@@ -299,7 +332,7 @@ describe('open_booking_link (external hand-offs)', () => {
     const { hotelRecommendations } = await import('@/db/schema/travel');
     const { eq } = await import('drizzle-orm');
     await db.delete(hotelRecommendations).where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
-    const block = await run(openBookingLink, anonymous, { kind: 'venue_block' });
+    const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
     expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
   });
 

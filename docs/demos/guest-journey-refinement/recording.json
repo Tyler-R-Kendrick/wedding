@@ -1,0 +1,33 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "r_frame_rate": "12/1",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "r_frame_rate": "0/0"
+    }
+  ],
+  "format": {
+    "duration": "195.916667",
+    "size": "11292494"
+  },
+  "tool": "Webreel @webreel/core 0.1.4",
+  "sourceCommit": "892dbef9e45345d27a55029ca2eafb4b9f88ea94",
+  "environment": "Isolated local Next dev/PGlite test server, seeded Ada Testhouse household and fixture menu",
+  "browserAuthentication": "Real email OTP session; no test-principal headers in recorded browser",
+  "fixturePreparation": "Node API requests with test-only admin/guest headers; demo invitation and editing windows",
+  "motionPreference": "no-preference; reduced-motion behavior verified separately by browser tests",
+  "excerpt": {
+    "startSeconds": 28,
+    "endSeconds": 64
+  },
+  "allJourneyAssertionsPassed": true,
+  "checkpoints": 14
+}

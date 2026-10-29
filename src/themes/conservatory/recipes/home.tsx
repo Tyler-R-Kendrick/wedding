@@ -60,6 +60,17 @@ export function ConservatoryHomePage(data: HomeData) {
   return (
     <Shell frame={data} banner={<PreviewBanner lifecycle={data.lifecycle} />}>
       <Hero content={data.content} site={data.site} countdown={data.countdown} state={data.lifecycle.state} />
+      {data.lifecycle.mode === 'explore' ? (
+        <Section id="welcome" labelledBy="welcome-title">
+          <SectionHeading level={2} id="welcome-title" title="Rooted in love. Surrounded by peace. Filled with happiness." />
+          <Prose>
+            <p>We’re so happy you’re here! We believe life’s greatest joys are found in the people we love, the moments we share, and the memories we make along the way.</p>
+            <p>We hope our wedding is a reflection of these things and a chance to slow down, be present, and celebrate the happiness that comes from being together. We’re so grateful to have you in our lives.</p>
+            <p>With love,<br />Sara &amp; Tyler</p>
+            <p><Button href="/sign-in?next=%2Fyour-weekend" variant="secondary">Sign in for your guest experience</Button></p>
+          </Prose>
+        </Section>
+      ) : null}
       {data.content.sections.map((s, i) => (
         <Sheet key={s.id} section={s} index={i} data={data} />
       ))}

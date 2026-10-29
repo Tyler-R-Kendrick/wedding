@@ -25,7 +25,7 @@ test.describe("Travel & Stay", () => {
   // every assertion here — axe included — only ever visited the default design, and Conservatory's
   // 4.12:1 hint colour went unseen until a design review looked at it by hand.
   for (const theme of THEMES) {
-    test(`renders the CAA block first with honest placeholders, both airports, and no live prices on load (${theme})`, async ({
+    test(`keeps room-block details behind sign-in, shows both airports, and loads no live prices (${theme})`, async ({
       page,
     }) => {
       await page.goto(`/travel?theme=${theme}`);
@@ -40,8 +40,9 @@ test.describe("Travel & Stay", () => {
       ).toBeVisible();
       // The gaps stay visible; the authoring marker does not. This page is public, and it used to
       // print `TODO(Tyler & Sara): …` with an internal backlog id next to it.
-      await expect(page.getByText("the group rate")).toBeVisible();
-      await expect(page.getByText("the date to book by")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Sign in for room-block details as they are confirmed →" })).toBeVisible();
+      await expect(page.getByText("the group rate")).toHaveCount(0);
+      await expect(page.getByText("the date to book by")).toHaveCount(0);
       await expect(page.locator("body")).not.toContainText("TODO(");
       await expect(page.locator("body")).not.toContainText(/backlog [A-Z]-\d/);
       await expect(page.getByText("ORD", { exact: true })).toBeVisible();

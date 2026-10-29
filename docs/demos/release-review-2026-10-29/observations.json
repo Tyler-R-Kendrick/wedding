@@ -1,0 +1,273 @@
+[
+  {
+    "page": "wedding",
+    "theme": "botanical-deco",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 16,
+      "y": 652.625,
+      "width": 193.71875,
+      "height": 36.65625,
+      "top": 652.625,
+      "right": 209.71875,
+      "bottom": 689.28125,
+      "left": 16
+    },
+    "answer": {
+      "x": 16,
+      "y": 754.28125,
+      "width": 358,
+      "height": 123.953125,
+      "top": 754.28125,
+      "right": 374,
+      "bottom": 878.234375,
+      "left": 16
+    },
+    "direction": [
+      {
+        "x": 64,
+        "y": 407.796875,
+        "width": 310,
+        "height": 67.15625,
+        "top": 407.796875,
+        "right": 374,
+        "bottom": 474.953125,
+        "left": 64
+      }
+    ]
+  },
+  {
+    "page": "wedding",
+    "theme": "gilded-hour",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 81.75,
+      "y": 619.890625,
+      "width": 226.484375,
+      "height": 29.734375,
+      "top": 619.890625,
+      "right": 308.234375,
+      "bottom": 649.625,
+      "left": 81.75
+    },
+    "answer": {
+      "x": 20,
+      "y": 665.625,
+      "width": 350,
+      "height": 126.671875,
+      "top": 665.625,
+      "right": 370,
+      "bottom": 792.296875,
+      "left": 20
+    },
+    "direction": [
+      {
+        "x": 24.953125,
+        "y": 367.96875,
+        "width": 340.09375,
+        "height": 49.25,
+        "top": 367.96875,
+        "right": 365.046875,
+        "bottom": 417.21875,
+        "left": 24.953125
+      }
+    ]
+  },
+  {
+    "page": "wedding",
+    "theme": "conservatory",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 20,
+      "y": 618.875,
+      "width": 350,
+      "height": 30.375,
+      "top": 618.875,
+      "right": 370,
+      "bottom": 649.25,
+      "left": 20
+    },
+    "answer": {
+      "x": 42.27285385131836,
+      "y": 718.273681640625,
+      "width": 289.11920166015625,
+      "height": 157.8936767578125,
+      "top": 718.273681640625,
+      "right": 331.3920555114746,
+      "bottom": 876.1673583984375,
+      "left": 42.27285385131836
+    },
+    "direction": [
+      {
+        "x": 20,
+        "y": 349.921875,
+        "width": 330.03125,
+        "height": 45,
+        "top": 349.921875,
+        "right": 350.03125,
+        "bottom": 394.921875,
+        "left": 20
+      }
+    ]
+  },
+  {
+    "page": "weekend",
+    "who": "A1",
+    "expectedState": "partial",
+    "w": 390,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Testhouse household",
+    "cta": "Continue your RSVP",
+    "ctaBeforeList": true,
+    "replyBeforeItinerary": true,
+    "reply": {
+      "x": 16,
+      "y": 737.3125,
+      "width": 358,
+      "height": 851.875,
+      "top": 737.3125,
+      "right": 374,
+      "bottom": 1589.1875,
+      "left": 16
+    },
+    "itinerary": {
+      "x": 16,
+      "y": 1629.1875,
+      "width": 358,
+      "height": 649.890625,
+      "top": 1629.1875,
+      "right": 374,
+      "bottom": 2279.078125,
+      "left": 16
+    },
+    "touch": false,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1"
+  },
+  {
+    "page": "weekend",
+    "who": "A1",
+    "expectedState": "partial",
+    "w": 1440,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Testhouse household",
+    "cta": "Continue your RSVP",
+    "ctaBeforeList": true,
+    "replyBeforeItinerary": true,
+    "reply": {
+      "x": 522.8125,
+      "y": 499.796875,
+      "width": 455.96875,
+      "height": 744.859375,
+      "top": 499.796875,
+      "right": 978.78125,
+      "bottom": 1244.65625,
+      "left": 522.8125
+    },
+    "itinerary": {
+      "x": 92.15625,
+      "y": 499.796875,
+      "width": 406.65625,
+      "height": 1489.28125,
+      "top": 499.796875,
+      "right": 498.8125,
+      "bottom": 1989.078125,
+      "left": 92.15625
+    },
+    "touch": false,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36"
+  },
+  {
+    "page": "weekend",
+    "who": "B1",
+    "expectedState": "not-started",
+    "w": 390,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Fixture household Not answered yet",
+    "cta": "RSVP now",
+    "ctaBeforeList": true,
+    "replyBeforeItinerary": true,
+    "reply": {
+      "x": 16,
+      "y": 737.3125,
+      "width": 358,
+      "height": 1252.8125,
+      "top": 737.3125,
+      "right": 374,
+      "bottom": 1990.125,
+      "left": 16
+    },
+    "itinerary": {
+      "x": 16,
+      "y": 2030.125,
+      "width": 358,
+      "height": 649.890625,
+      "top": 2030.125,
+      "right": 374,
+      "bottom": 2680.015625,
+      "left": 16
+    },
+    "touch": false,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1"
+  },
+  {
+    "page": "weekend",
+    "who": "B1",
+    "expectedState": "not-started",
+    "w": 1440,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Fixture household Not answered yet",
+    "cta": "RSVP now",
+    "ctaBeforeList": true,
+    "replyBeforeItinerary": true,
+    "reply": {
+      "x": 522.8125,
+      "y": 499.796875,
+      "width": 455.96875,
+      "height": 1141.796875,
+      "top": 499.796875,
+      "right": 978.78125,
+      "bottom": 1641.59375,
+      "left": 522.8125
+    },
+    "itinerary": {
+      "x": 92.15625,
+      "y": 499.796875,
+      "width": 406.65625,
+      "height": 1489.28125,
+      "top": 499.796875,
+      "right": 498.8125,
+      "bottom": 1989.078125,
+      "left": 92.15625
+    },
+    "touch": false,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36"
+  }
+]

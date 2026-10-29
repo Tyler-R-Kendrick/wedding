@@ -19,6 +19,34 @@ test.beforeAll(async ({ request }) => {
   expect(open.status, JSON.stringify(open.body)).toBe(200);
 });
 
+// Use the household this suite never confirms, so the inline form remains available across viewports.
+test('inline weekend reply keeps errors and review/edit visible', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'B1');
+  const page = await ctx.newPage();
+  await page.goto('/your-weekend');
+  const inline = page.locator('.bd-reply__inline');
+  await expect(inline.locator('form')).toBeHidden();
+  await inline.locator(':scope > summary').click();
+  await inline.getByRole('group', { name: 'Will Dev attend the reception?', exact: true }).getByRole('radio', { name: 'Yes, attending', exact: true }).check();
+  await inline.getByLabel('Meal for Dev', { exact: true }).selectOption('');
+  await inline.getByRole('button', { name: 'Review your answers' }).click();
+  await expect(inline.locator('#error-summary')).toBeVisible();
+  await expect(inline.locator('#error-summary')).toBeFocused();
+  const errorLink = inline.locator('#error-summary a').first();
+  const target = await errorLink.getAttribute('href');
+  expect(target).toBeTruthy();
+  await errorLink.click();
+  await expect(page.locator(target!)).toBeFocused();
+  // Declining asks no meals; draft/review/edit must leave the outer disclosure open.
+  for (const no of await inline.getByRole('radio', { name: 'No, cannot make it', exact: true }).all()) await no.check();
+  await inline.getByRole('button', { name: 'Review your answers' }).click();
+  await expect(inline.getByRole('heading', { name: 'Please check your answers' })).toBeVisible();
+  await inline.getByRole('button', { name: 'Go back and change' }).click();
+  await expect(inline.getByRole('button', { name: 'Review your answers' })).toBeVisible();
+  await expect(inline).toHaveAttribute('open', '');
+  await ctx.close();
+});
+
 test('a household manager answers for the whole household, reviews inline, confirms, and gets a restated confirmation', async ({ browser }) => {
   const ctx = await contextAs(browser, 'A1');
   const page = await ctx.newPage();
@@ -44,6 +72,7 @@ test('a household manager answers for the whole household, reviews inline, confi
   await page.getByLabel('Meal for Ben', { exact: true }).selectOption({ index: 2 });
   await page.getByRole('group', { name: 'Will Cleo attend the reception?' }).getByLabel('No, cannot make it').check();
   const dietary = page.locator('#main').getByLabel('Dietary needs or allergies').nth(1);
+  await dietary.locator('xpath=ancestor::details').locator('summary').click();
   await dietary.fill('No shellfish, please');
   await page.getByRole('button', { name: 'Review your answers' }).click();
 
@@ -79,6 +108,13 @@ test('a household manager answers for the whole household, reviews inline, confi
   await page.goto('/your-weekend');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Ada');
   await expect(page.locator('#main')).toContainText('Continue your RSVP');
+  if (test.info().project.name === 'mobile') {
+    // A partial reply keeps the next action before the event list, in reading and visual order.
+    expect(await page.evaluate(() => !!(document.querySelector('#reply')!.compareDocumentPosition(document.querySelector('#itinerary')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    const reply = (await page.locator('#reply').boundingBox())!;
+    const itinerary = (await page.locator('#itinerary').boundingBox())!;
+    expect(reply.y).toBeLessThan(itinerary.y);
+  }
   await axeClean(page);
   await ctx.close();
 });

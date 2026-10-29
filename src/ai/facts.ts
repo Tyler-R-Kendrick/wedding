@@ -203,7 +203,7 @@ function siteStatusLines(data: Record<string, unknown>): string[] {
   if (!w) return [];
   return [
     `The wedding is on ${formatDateWithWeekday(w.date ?? '')} (time zone ${w.timezone}).`,
-    `The venue is ${w.venueName}, ${w.venueAddress}.`,
+    `The wedding venue is ${w.venueName}, ${w.venueAddress}.`,
     `The couple is ${w.coupleDisplayName}.`,
     ...(w.venueUrl ? [`The venue's official website is ${w.venueUrl}.`] : []),
   ];

@@ -752,6 +752,18 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
+  /* The next reply leads the single-column reading order; the desktop workspace keeps
+     the itinerary at left and reply at centre regardless of that semantic order. */
+  .bd-itin {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .bd-reply {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .bd-modules {
     grid-column: 1 / -1;
   }

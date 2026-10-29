@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useId, useRef } from 'react';
+import { useActionState, useEffect, useId, useRef } from 'react';
 import { newId } from '@/contracts/ids';
 import type { LocationSuggestion, TravelProfile } from '@/domain/travel/types';
 import { addItemAction, saveProfileAction, type AddItemFormState, type ProfileFormState } from './actions';
@@ -59,14 +59,21 @@ function Summary({ state }: { state: { status: string; error?: { message: string
   );
 }
 
-export function ProfileForm({ profile, suggestion }: { profile: TravelProfile | null; suggestion: LocationSuggestion | null }) {
+export function ProfileForm({ profile, suggestion, deleteAction }: { profile: TravelProfile | null; suggestion: LocationSuggestion | null; deleteAction?: React.ReactNode }) {
   const [state, action, pending] = useActionState(saveProfileAction, { status: 'idle', values: {} } as ProfileFormState);
   const keyRef = useRef<HTMLInputElement>(null);
+  const disclosureRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (state.status === 'error' && disclosureRef.current) disclosureRef.current.open = true;
+  }, [state]);
   const current = state.status === 'saved' ? state.profile ?? profile : profile;
   const v = (name: string, fromProfile: string | number | null | undefined, fallback = '') => state.values[name] ?? (fromProfile === null || fromProfile === undefined ? fallback : String(fromProfile));
   const issue = (path: string) => (state.status === 'error' ? state.error.issues.find((i) => i.path === path)?.message : undefined);
   const helpId = useId();
   return (
+    <details ref={disclosureRef} className="guest-disclosure" open={state.status !== 'idle' || undefined}>
+      <summary>Travel preferences <span>{current?.homeCity ? `${current.homeCity} · Edit saved preferences` : 'Optional · Personalize travel searches'}</span></summary>
+      <div className="guest-disclosure__body">
     <form action={action} onSubmit={() => refreshKey(keyRef)} aria-describedby={helpId} className="flex flex-col gap-4">
       <input ref={keyRef} type="hidden" name="idempotencyKey" defaultValue="" />
       <p id={helpId} className="hint">
@@ -141,45 +148,48 @@ export function ProfileForm({ profile, suggestion }: { profile: TravelProfile | 
         </button>
       </div>
     </form>
+    {deleteAction}
+      </div>
+    </details>
   );
 }
 
 export function AddItemForm() {
   const [state, action, pending] = useActionState(addItemAction, { status: 'idle', values: {} } as AddItemFormState);
   const keyRef = useRef<HTMLInputElement>(null);
+  const disclosureRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (state.status === 'error' && state.error.issues.some((i) => ['endAt', 'providerRef', 'details.note'].includes(i.path)) && disclosureRef.current) disclosureRef.current.open = true;
+  }, [state]);
   const v = (name: string, fallback = '') => state.values[name] ?? fallback;
   const issue = (path: string) => (state.status === 'error' ? state.error.issues.find((i) => i.path === path)?.message : undefined);
   const helpId = useId();
   return (
-    <form action={action} onSubmit={() => refreshKey(keyRef)} aria-describedby={helpId} className="flex flex-col gap-4">
+    <form action={action} onSubmit={() => refreshKey(keyRef)} aria-describedby={helpId} className="agenda-composer flex flex-col gap-4">
       <input ref={keyRef} type="hidden" name="idempotencyKey" defaultValue="" />
       <p id={helpId} className="hint">
         Add what you have booked or plan to book. Times are in the time zone you pick. Adding an item does not book anything.
       </p>
       {state.status === 'added' ? (
         <p role="status" className="rounded-sm border border-primary/30 p-3">
-          Added to your trip.
+          Added to your trip. <a className="guest-text-link" href="#items">See your agenda →</a>
         </p>
       ) : null}
       <Summary state={state} />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="What is it" issue={issue('kind')}>
-          {(p) => (
-            <select id={p.id} name="kind" defaultValue={v('kind', 'flight')} aria-describedby={p.describedBy} className={INPUT}>
-              <option value="flight">Flight</option>
-              <option value="hotel">Hotel stay</option>
-              <option value="other">Something else</option>
-            </select>
-          )}
-        </Field>
-        <Field label="Title" hint="For example: UA 1234 LAX to ORD" issue={issue('title')}>
+      <fieldset className="guest-choices">
+        <legend>What would you like to add?</legend>
+        <div className="guest-choices__options">
+          {([['other', 'An activity'], ['flight', 'A flight'], ['hotel', 'A hotel stay']] as const).map(([kind, label]) => (
+            <label key={kind}><input type="radio" name="kind" value={kind} defaultChecked={v('kind', 'other') === kind} /><span>{label}</span></label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="agenda-composer__basics grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Title" hint="Give this plan a name you’ll recognize." issue={issue('title')}>
           {(p) => <input id={p.id} name="title" defaultValue={v('title')} required maxLength={120} aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
         </Field>
         <Field label="Starts" issue={issue('startAt')}>
           {(p) => <input id={p.id} type="datetime-local" name="startAt" defaultValue={v('startAt')} required aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
-        </Field>
-        <Field label="Ends (optional)" issue={issue('endAt')}>
-          {(p) => <input id={p.id} type="datetime-local" name="endAt" defaultValue={v('endAt')} aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
         </Field>
         <Field label="Time zone of those times" issue={issue('timezone')}>
           {(p) => (
@@ -194,9 +204,8 @@ export function AddItemForm() {
             </select>
           )}
         </Field>
-        <Field label="Booking reference (optional)" issue={issue('providerRef')}>
-          {(p) => <input id={p.id} name="providerRef" defaultValue={v('providerRef')} maxLength={64} aria-describedby={p.describedBy} className={INPUT} />}
-        </Field>
+      </div>
+      <div className="agenda-composer__flight grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="From airport (flights)" issue={issue('details.origin')}>
           {(p) => <input id={p.id} name="origin" defaultValue={v('origin')} maxLength={3} autoCapitalize="characters" aria-describedby={p.describedBy} className={INPUT} />}
         </Field>
@@ -209,6 +218,8 @@ export function AddItemForm() {
         <Field label="Flight number" issue={issue('details.flightNumber')}>
           {(p) => <input id={p.id} name="flightNumber" defaultValue={v('flightNumber')} maxLength={12} aria-describedby={p.describedBy} className={INPUT} />}
         </Field>
+      </div>
+      <div className="agenda-composer__hotel grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Hotel name (stays)" issue={issue('details.hotelName')}>
           {(p) => <input id={p.id} name="hotelName" defaultValue={v('hotelName')} maxLength={120} aria-describedby={p.describedBy} className={INPUT} />}
         </Field>
@@ -216,9 +227,20 @@ export function AddItemForm() {
           {(p) => <input id={p.id} name="address" defaultValue={v('address')} maxLength={200} aria-describedby={p.describedBy} className={INPUT} />}
         </Field>
       </div>
+      <details ref={disclosureRef} className="guest-disclosure" open={state.status === 'error' && state.error.issues.some((i) => ['endAt', 'providerRef', 'details.note'].includes(i.path)) || undefined}>
+        <summary>More details <span>End time, booking reference or a note</span></summary>
+        <div className="guest-disclosure__body grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Ends (optional)" issue={issue('endAt')}>
+          {(p) => <input id={p.id} type="datetime-local" name="endAt" defaultValue={v('endAt')} aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
+        </Field>
+        <Field label="Booking reference (optional)" issue={issue('providerRef')}>
+          {(p) => <input id={p.id} name="providerRef" defaultValue={v('providerRef')} maxLength={64} aria-describedby={p.describedBy} className={INPUT} />}
+        </Field>
       <Field label="Note (optional)" issue={issue('details.note')}>
         {(p) => <textarea id={p.id} name="note" defaultValue={v('note')} maxLength={500} rows={2} aria-describedby={p.describedBy} className={INPUT} />}
       </Field>
+        </div>
+      </details>
       <div>
         <button type="submit" disabled={pending} className={BUTTON}>
           {pending ? 'Adding…' : 'Add to my trip'}

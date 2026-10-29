@@ -27,6 +27,15 @@ const BRIEF_DATE = '2026-09-04T00:00:00.000Z';
 /** The provenance registry for docs/design/brief.md. Never invent facts; these are the sources of the known ones. */
 export const SEED_SOURCES: readonly SeedSource[] = [
   {
+    id: seedId<ContentSourceId>(111),
+    sourceType: 'authored',
+    title: 'Sara and Tyler’s wedding website copy',
+    canonicalUrl: '/our-story',
+    verifiedAt: '2026-10-12T00:00:00.000Z',
+    trustClass: 'TRUSTED_WEDDING',
+    notes: 'Sara’s supplied welcome, story, FAQ and Chicago recommendations. Draft hotel rates and other unconfirmed logistics are excluded.',
+  },
+  {
     id: seedId<ContentSourceId>(101),
     sourceType: 'authored',
     title: "Tyler's brief 2026-09-04",
@@ -125,4 +134,5 @@ export const SEED_SOURCES: readonly SeedSource[] = [
   },
 ];
 
-export const BRIEF_SOURCE_ID = SEED_SOURCES[0]!.id;
+// Stable identity: adding another source must not change the site’s fact citation.
+export const BRIEF_SOURCE_ID = seedId<ContentSourceId>(101);

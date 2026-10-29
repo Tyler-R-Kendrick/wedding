@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { ok } from '@/contracts/result';
-import { AIRPORTS, BRIEF_CITATION, CAA_KIT_CITATION, CAA_SITE_CITATION, hotelRecommendationOutput, listHotels, VENUE } from '@/domain/travel';
+import { AIRPORTS, BRIEF_CITATION, CAA_KIT_CITATION, CAA_SITE_CITATION, hotelRecommendationOutput, listHotels, publicHotelRecommendation, VENUE } from '@/domain/travel';
 import { airportOutput, travelServices } from './_shared';
 
 const input = z.object({}).optional();
@@ -32,7 +32,8 @@ export const listHotelRecommendations = defineCapability<z.infer<typeof input>, 
   maxOutputChars: 12_000,
   async handler(ctx) {
     const { db } = travelServices(ctx);
-    const hotels = await listHotels(db, { now: ctx.now });
+    const configured = await listHotels(db, { now: ctx.now });
+    const hotels = ctx.principal.kind === 'anonymous' ? configured.map(publicHotelRecommendation) : configured;
     const venue = hotels.find((h) => h.isVenue)!;
     return ok({
       data: {

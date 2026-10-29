@@ -71,7 +71,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
       label: 'Memory',
       act: 'memory',
       title: 'How we met',
-      body: ['At Allison and Jamie’s wedding: flirty glances, and a connection that was immediate. ', todo('the rest of the story, in our words')],
+      body: ['We met at a friend’s wedding, where an evening of talking and playing games led to Tyler asking Sara out. A new chapter began.'],
       link: { label: 'Our Story', href: ROUTES.story },
     },
     hospitality: {
@@ -225,7 +225,7 @@ function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
     case 'TEASER':
       return {
         eyebrow: 'We are getting married',
-        lede: ['We are inviting the people we love into the places, adventures, and memories that made us. Details as they are settled.'],
+        lede: ["We're so happy you're here! Rooted in love. Surrounded by peace. Filled with happiness."],
         primary: { label: 'Our Story', href: ROUTES.story, variant: 'primary' },
         secondary: { label: 'See our venue', href: ROUTES.caa, variant: 'ghost' },
         note: ['Many of you will be travelling in: rooms, airports, and getting around will appear here as we confirm them.'],
@@ -233,7 +233,7 @@ function hero(site: SiteFacts, state: LifecycleState): HeroCopy {
     case 'SAVE_THE_DATE':
       return {
         eyebrow: 'Save the date',
-        lede: [`${site.date.weekday}, in Chicago. Details to come. If you are travelling in, this page will fill in as we confirm rooms and flights.`],
+        lede: ["We're so happy you're here! Rooted in love. Surrounded by peace. Filled with happiness."],
         primary: { label: 'Travel & Stay', href: ROUTES.travel, variant: 'primary' },
         secondary: { label: 'Our Story', href: ROUTES.story, variant: 'ghost' },
       };

@@ -1,0 +1,236 @@
+/* Planning is a set of invitations and readable plans, with secondary work on demand. */
+.guest-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md) var(--spacing-lg);
+  margin-block: var(--spacing-lg);
+}
+
+.guest-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.guest-disclosure {
+  border-block-start: 1px solid var(--color-outline);
+  padding-block: var(--spacing-sm);
+}
+
+.guest-disclosure > summary {
+  min-height: 44px;
+  padding-block: var(--spacing-sm);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.guest-disclosure > summary span {
+  display: block;
+  margin-inline-start: var(--spacing-md);
+  color: var(--color-on-surface-muted);
+  font-size: var(--type-body-sm-size, 0.9375rem);
+  font-weight: 400;
+}
+
+.guest-disclosure > summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+.guest-disclosure__body {
+  padding-block: var(--spacing-md);
+}
+
+.guest-choices {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.guest-choices legend {
+  margin-block-end: var(--spacing-sm);
+  font-weight: 600;
+}
+
+.guest-choices__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.guest-choices__options label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm, 2px);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: color var(--duration-fast, 160ms) var(--ease-standard, ease-out), background-color var(--duration-fast, 160ms) var(--ease-standard, ease-out);
+}
+
+.guest-choices__options input {
+  width: 1em;
+  height: 1em;
+  accent-color: currentcolor;
+}
+
+.guest-choices__options label:has(input:checked) {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.guest-choices__options label:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.guest-plan-builder {
+  display: grid;
+  gap: var(--spacing-lg);
+  max-width: 42rem;
+}
+
+.guest-plan-builder__kids {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+}
+
+.guest-plan-builder__kids input {
+  width: 1.15em;
+  height: 1.15em;
+  accent-color: var(--color-primary);
+}
+
+.guest-plan-builder__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xl);
+  justify-self: start;
+  min-height: 48px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  cursor: pointer;
+}
+
+.guest-plan-builder__submit:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+/* Native checked state works before hydration and without JavaScript. Server actions discard
+   fields belonging to another type; keeping the controls mounted preserves an unsent draft. */
+.agenda-composer:not(:has(input[name="kind"][value="flight"]:checked)) .agenda-composer__flight,
+.agenda-composer:not(:has(input[name="kind"][value="hotel"]:checked)) .agenda-composer__hotel {
+  display: none;
+}
+
+.agenda-days {
+  max-width: 42rem;
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+.agenda-day__title {
+  font-family: var(--font-display);
+  font-size: var(--type-title-md-size, 1.5rem);
+  margin-block-end: var(--spacing-md);
+}
+
+.agenda-day > ul {
+  display: grid;
+  gap: var(--spacing-md);
+  border-inline-start: 1px solid var(--color-outline);
+  padding-inline-start: var(--spacing-lg);
+  list-style: none;
+}
+
+.agenda-entry {
+  position: relative;
+  scroll-margin-block-start: var(--spacing-xl);
+}
+
+.agenda-entry::before {
+  position: absolute;
+  content: '';
+  width: 9px;
+  height: 9px;
+  inset-inline-start: calc(-1 * var(--spacing-lg) - 5px);
+  inset-block-start: var(--spacing-lg);
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.agenda-entry[data-status="cancelled"]::before {
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline);
+}
+
+.agenda-entry__manage {
+  margin-block-start: var(--spacing-md);
+}
+
+/* Keep choices mounted: toggling attendance must not erase an unsent meal or companion name.
+   Errors override progressive hiding, so every error-summary anchor can reach its field. */
+.rsvp-person[data-asks-attendance]:not(:has(input[value="accepted"]:checked)) .rsvp-person__followup:not(:has([aria-invalid="true"], [role="alert"])),
+.rsvp-person fieldset:not(:has(input[type="checkbox"]:checked)) > .rsvp-person__companion:not(:has([aria-invalid="true"], [role="alert"])) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .agenda-composer [role="status"],
+  .guest-disclosure[open] > .guest-disclosure__body,
+  .agenda-composer__flight,
+  .agenda-composer__hotel,
+  .rsvp-person__followup,
+  .rsvp-person__companion,
+  #plan-result:target {
+    animation: guest-reveal var(--duration-base, 240ms) var(--ease-standard, ease-out) both;
+  }
+
+  @keyframes guest-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guest-choices__options label { transition: none; }
+}
+
+@media (width <= 480px) {
+  .guest-choices__options--interests label { flex: 1 1 40%; }
+  .agenda-day > ul { padding-inline-start: var(--spacing-md); }
+  .agenda-entry::before { inset-inline-start: calc(-1 * var(--spacing-md) - 5px); }
+}
+
+#plan-result { scroll-margin-block-start: 7rem; }
+
+.agenda-entry__time { font-weight: 600; }
+
+.agenda-composer { max-width: 42rem; }
+.agenda-composer__basics > div:first-child { grid-column: 1 / -1; }
+
+@media (width <= 480px) {
+  .guest-plan-builder .guest-choices__options:not(.guest-choices__options--interests) label { flex: 1 1 40%; }
+}

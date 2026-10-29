@@ -6,7 +6,7 @@ import { CONTENT_COPY } from '@/themes/shared/content';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
 import { kit } from '../kit';
 
-const { Shell, Section, SectionHeading, Prose, Card, content } = kit;
+const { Shell, Section, SectionHeading, Prose, Card, Link, content } = kit;
 const { PageHead, Handoffs, Programme, Provenance } = content;
 
 /**
@@ -35,6 +35,28 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
         </Card>
       </div>
     </Section>
+
+    <Section id="celebrating-together" labelledBy="celebrating-title">
+      <SectionHeading level={2} id="celebrating-title" title="A day together" />
+      <Prose><p>{CONTENT_COPY.wedding.welcome}</p><p>{CONTENT_COPY.wedding.together}</p></Prose>
+    </Section>
+
+    <Section id="ceremony-guidelines" labelledBy="ceremony-guidelines-title">
+      <SectionHeading level={2} id="ceremony-guidelines-title" title="An unplugged ceremony" />
+      <Prose><p>{CONTENT_COPY.wedding.unplugged}</p></Prose>
+    </Section>
+
+    <Section id="helpful-information" labelledBy="helpful-information-title">
+      <SectionHeading level={2} id="helpful-information-title" title="Planning your visit" />
+      <Prose>
+        <p>We’ll share more about accessibility requests and dietary needs as the day approaches.</p>
+        <p><Link standalone href="/travel">Travel and accommodations →</Link></p>
+        <p><Link standalone href="/ask-us">Questions about invitations, children, or plus-ones? →</Link></p>
+        <p><Link standalone href="/sign-in?next=%2Fyour-weekend">Sign in for your events and personal agenda →</Link></p>
+      </Prose>
+    </Section>
+
+
 
     <Section id="programme" labelledBy="programme-title">
       <div className="cv-section__full">
