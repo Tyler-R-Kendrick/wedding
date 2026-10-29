@@ -136,3 +136,10 @@ Fresh [phone screenshots and measurements](../demos/release-review-2026-10-29/RE
 Live verification limit: this environment’s direct browser connection to both production hostnames fails at the network proxy (CONNECT 403). Authenticated Vercel HTTP fetches do reach the deployment and confirm response status, deployment IDs and anonymous privacy markup. Fresh geometry/accessibility/interaction evidence comes from the isolated local fixture server; no production guest records were modified. The detector-overlay attempt was blocked by the application CSP, so no live overlay is claimed. Field Core Web Vitals and a production guest session are not claimed.
 
 Questions skipped: the user explicitly authorized fixing issues and monitoring the production deployment; no design preference is needed for these corrections.
+
+
+### Runtime follow-through
+
+The extra partial-RSVP browser check caught that the pre-existing `data-reply-pending` attribute had no styling or rendering effect. The actual fix now renders Reply before Itinerary for pending replies, and explicitly keeps the desktop grid’s itinerary at left/reply at centre. A browser regression checks both DOM and phone visual order after saving a partial reply. Fresh captures cover partial household A and unanswered household B at 390 and 1440: reply top 737px on phone, before itinerary top 1629/2030px; desktop columns share the same top with reply centred. The primary CTA precedes tasks in both states.
+
+The helper for manually created Playwright contexts also did not inherit project device options: a project named mobile could use the browser’s default desktop context. It now preserves viewport, user agent, touch, mobile and device scale settings before applying explicit test overrides. The complete RSVP suite passes 28/28 with these actual device settings; earlier project labels alone are not treated as phone interaction proof. Direct viewport audits and explicit device captures remain independent evidence.

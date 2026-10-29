@@ -108,6 +108,13 @@ test('a household manager answers for the whole household, reviews inline, confi
   await page.goto('/your-weekend');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Ada');
   await expect(page.locator('#main')).toContainText('Continue your RSVP');
+  if (test.info().project.name === 'mobile') {
+    // A partial reply keeps the next action before the event list, in reading and visual order.
+    expect(await page.evaluate(() => !!(document.querySelector('#reply')!.compareDocumentPosition(document.querySelector('#itinerary')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    const reply = (await page.locator('#reply').boundingBox())!;
+    const itinerary = (await page.locator('#itinerary').boundingBox())!;
+    expect(reply.y).toBeLessThan(itinerary.y);
+  }
   await axeClean(page);
   await ctx.close();
 });

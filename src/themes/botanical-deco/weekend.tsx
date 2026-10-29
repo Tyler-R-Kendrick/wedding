@@ -341,8 +341,9 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
       <div className="bd-workspace">
         <Botanical id="botanical.edge-left" className="bd-bloom--ws-left" />
         <Botanical id="botanical.vine-right" className="bd-bloom--ws-right" />
+        {pending ? <Reply data={data} reply={reply} /> : null}
         <Itinerary data={data} />
-        <Reply data={data} reply={reply} />
+        {!pending ? <Reply data={data} reply={reply} /> : null}
         <Modules data={data} />
         <span className="bd-workspace__skyline" aria-hidden="true" />
       </div>
