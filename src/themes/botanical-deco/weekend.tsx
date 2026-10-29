@@ -75,10 +75,9 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
       {reply ? (
         <>
           <p className="bd-reply__intro">Let us know your plans. You can reply now and come back for meals and other details as they open.</p>
-          {/* Not interactive (the form is right here), but it shows a first-time guest every part of
-              the reply — including the ones that open later — before they start. */}
-          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
           <p><Link className="bd-btn bd-btn--primary bd-reply__submit" href="/rsvp">{replyLabel(data.rsvp)}</Link></p>
+          {/* Show what is done and what opens later without delaying the primary next step. */}
+          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
           <details className="guest-disclosure bd-reply__inline">
             <summary>Reply right here instead</summary>
             <div className="guest-disclosure__body"><RsvpForm data={reply.data} action={reply.action} idempotencyKey={reply.idempotencyKey} theme="botanical-deco" /></div>
@@ -88,12 +87,12 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
         <>
           {/* The profile's view of the reply: each part of it, what is done and what opens later.
               The event-by-event answers are in the itinerary beside it. */}
-          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
           <p>
             <Link className="bd-btn bd-btn--primary bd-reply__submit" href="/rsvp">
               {replyLabel(data.rsvp)}
             </Link>
           </p>
+          <RsvpTaskList parts={data.rsvp.parts} interactive idPrefix="reply-task" labelledBy="reply-title" />
         </>
       ) : w.reason === 'lifecycle' || (w.open && data.rsvp.canAnswer) ? (
         // An open window for someone who may answer, with no part of the reply released yet, is
@@ -286,7 +285,7 @@ const TABS = [
 
 export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
-  const pending = data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status === 'not_started';
+  const pending = data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status !== 'complete';
   return (
     <div className="page bd-weekend" data-reply-pending={pending ? 'true' : undefined}>
       <section className="bd-wkhero" aria-label="Sara and Tyler">

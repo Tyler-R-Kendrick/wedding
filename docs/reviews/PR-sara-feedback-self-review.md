@@ -115,3 +115,24 @@ The independent design reviewer found no remaining actionable blockers after rev
 
 - Final accessibility review also corrected the signed-out guide’s section numbering after the planner moved ahead of itineraries. The first section is part 1 in both numbered themes; no private tools are rendered there.
 - Final production build passes after the section-numbering correction. Newly tracked evidence documentation also passes the link checker: 92 documents, 180 relative links, all references resolved.
+
+
+## 14. Release review — October 29, 2026
+
+This pass checked actual hosted status instead of treating a ready preview as a production release. At the start, PR #78 was open at `0b58571`; its preview was READY, while production `kendrick.wedding` served `44ec8e6` (deployment `dpl_9uurCGjjJ4c7x6vpBLr5hq1VpFxK`). Hosted unit/integration/eval/build, design and stages jobs passed, but the production Playwright job had six failures and the test-server step was skipped.
+
+Resolved findings:
+
+- All three Wedding recipes had placed three new copy sections before dress code, pushing its phone heading beyond 2,000px. Dress code now follows the page heading/directions; Sara’s welcome, unplugged ceremony and planning copy remain below. Existing first-screen assertions pass in all three themes.
+- The public exploration journey still asserted the replaced story sentence. It now asserts Sara’s actual new paragraph, allowing the renderer’s typographic apostrophe. The complete story → memory → public recommendation → directions journey passes on mobile, tablet and desktop. Existing public recommendations remain public; newly added private recommendations remain scoped.
+- The Botanical weekend’s main RSVP action followed the full status list, and partial replies lost the mobile reply-first priority. The action now precedes the list; partial and unanswered replies receive the same priority. Inline review/error/edit still passes on phone and desktop.
+
+Independent assessments followed the repository’s Impeccable/design-review workflow (A: `site_design_assessment`; B: `site_evidence_assessment`). A confirmed the wedding layout regression and next-action friction; B scanned 192 theme/component files with zero detector findings. A captured nine guest route/viewport combinations. B checked twelve combinations of `/your-weekend`, `/rsvp`, `/trip`, `/share-an-adventure` at 390/768/1440: all HTTP 200, zero axe violations, zero horizontal overflow and zero uncaught page errors. Visible header targets were at least 44px high and form input fonts at least 17px. One aborted speculative RSC prefetch did not affect rendering or interaction.
+
+Final local checks: the three wedding first-screen cases and three full public exploration journeys pass; eight focused guest interaction cases pass (saved agenda/drafts/errors, no-JavaScript planner, reduced motion, inline RSVP error/review/edit). TypeScript, ESLint and repository quality gates pass. Hosted checks and production release are tracked in the PR discussion rather than predicted here.
+
+Fresh [phone screenshots and measurements](../demos/release-review-2026-10-29/README.md) document the fixes. Existing real email-code Webreel recordings remain linked in the PR. Unknown attire, event rooms/times, deadline and booking terms remain honestly pending; no facts were invented to improve a score.
+
+Live verification limit: this environment’s direct browser connection to both production hostnames fails at the network proxy (CONNECT 403). Authenticated Vercel HTTP fetches do reach the deployment and confirm response status, deployment IDs and anonymous privacy markup. Fresh geometry/accessibility/interaction evidence comes from the isolated local fixture server; no production guest records were modified. The detector-overlay attempt was blocked by the application CSP, so no live overlay is claimed. Field Core Web Vitals and a production guest session are not claimed.
+
+Questions skipped: the user explicitly authorized fixing issues and monitoring the production deployment; no design preference is needed for these corrections.

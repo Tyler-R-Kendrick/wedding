@@ -25,6 +25,17 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
       {data.directions ? <Handoffs handoffs={[data.directions]} label="Directions" /> : null}
     </PageHead>
 
+    <Section id="dress-code" labelledBy="dress-title">
+      <div className="cv-section__text">
+        <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
+      </div>
+      <div className="cv-section__mount">
+        <Card label="Wear" featured index={1}>
+          <Block block={data.dressCode} />
+        </Card>
+      </div>
+    </Section>
+
     <Section id="celebrating-together" labelledBy="celebrating-title">
       <SectionHeading level={2} id="celebrating-title" title="A day together" />
       <Prose><p>{CONTENT_COPY.wedding.welcome}</p><p>{CONTENT_COPY.wedding.together}</p></Prose>
@@ -45,16 +56,7 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
       </Prose>
     </Section>
 
-    <Section id="dress-code" labelledBy="dress-title">
-      <div className="cv-section__text">
-        <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
-      </div>
-      <div className="cv-section__mount">
-        <Card label="Wear" featured index={1}>
-          <Block block={data.dressCode} />
-        </Card>
-      </div>
-    </Section>
+
 
     <Section id="programme" labelledBy="programme-title">
       <div className="cv-section__full">

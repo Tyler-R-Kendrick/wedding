@@ -1,0 +1,177 @@
+[
+  {
+    "page": "wedding",
+    "theme": "botanical-deco",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 16,
+      "y": 652.625,
+      "width": 193.71875,
+      "height": 36.65625,
+      "top": 652.625,
+      "right": 209.71875,
+      "bottom": 689.28125,
+      "left": 16
+    },
+    "answer": {
+      "x": 16,
+      "y": 754.28125,
+      "width": 358,
+      "height": 123.953125,
+      "top": 754.28125,
+      "right": 374,
+      "bottom": 878.234375,
+      "left": 16
+    },
+    "direction": [
+      {
+        "x": 64,
+        "y": 407.796875,
+        "width": 310,
+        "height": 67.15625,
+        "top": 407.796875,
+        "right": 374,
+        "bottom": 474.953125,
+        "left": 64
+      }
+    ]
+  },
+  {
+    "page": "wedding",
+    "theme": "gilded-hour",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 81.75,
+      "y": 619.890625,
+      "width": 226.484375,
+      "height": 29.734375,
+      "top": 619.890625,
+      "right": 308.234375,
+      "bottom": 649.625,
+      "left": 81.75
+    },
+    "answer": {
+      "x": 20,
+      "y": 665.625,
+      "width": 350,
+      "height": 126.671875,
+      "top": 665.625,
+      "right": 370,
+      "bottom": 792.296875,
+      "left": 20
+    },
+    "direction": [
+      {
+        "x": 24.953125,
+        "y": 367.96875,
+        "width": 340.09375,
+        "height": 49.25,
+        "top": 367.96875,
+        "right": 365.046875,
+        "bottom": 417.21875,
+        "left": 24.953125
+      }
+    ]
+  },
+  {
+    "page": "wedding",
+    "theme": "conservatory",
+    "overflow": 0,
+    "sections": [
+      "dress-code",
+      "celebrating-together",
+      "ceremony-guidelines",
+      "helpful-information",
+      "programme",
+      "rooms"
+    ],
+    "dress": {
+      "x": 20,
+      "y": 618.875,
+      "width": 350,
+      "height": 30.375,
+      "top": 618.875,
+      "right": 370,
+      "bottom": 649.25,
+      "left": 20
+    },
+    "answer": {
+      "x": 42.27285385131836,
+      "y": 718.273681640625,
+      "width": 289.11920166015625,
+      "height": 157.8936767578125,
+      "top": 718.273681640625,
+      "right": 331.3920555114746,
+      "bottom": 876.1673583984375,
+      "left": 42.27285385131836
+    },
+    "direction": [
+      {
+        "x": 20,
+        "y": 349.921875,
+        "width": 330.03125,
+        "height": 45,
+        "top": 349.921875,
+        "right": 350.03125,
+        "bottom": 394.921875,
+        "left": 20
+      }
+    ]
+  },
+  {
+    "page": "weekend",
+    "w": 390,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Testhouse household Not answered yet",
+    "cta": "RSVP now",
+    "ctaBeforeList": true,
+    "reply": {
+      "x": 16,
+      "y": -154.796875,
+      "width": 358,
+      "height": 1082.140625,
+      "top": -154.796875,
+      "right": 374,
+      "bottom": 927.34375,
+      "left": 16
+    },
+    "text": "RSVP\n\nSara + Tyler are still writing this: the date answers are needed by\n\nTesthouse household\nNot answered yet\n\nLet us know your plans. You can reply now and come back for meals and other details as they open.\n\nRSVP NOW\n\nWho is coming\n\nYes or no for each event on your invitation.\n\nNot started\nMeals\n\nA meal for each person who is coming.\n\nAfter you say who is coming\nDietary and access needs\n\nOptional. Only the caterer and the planner see these.\n\nOptional\nReply right here instead\n\nWe can’t wait to celebrate with you."
+  },
+  {
+    "page": "weekend",
+    "w": 1440,
+    "overflow": 0,
+    "pending": "true",
+    "status": "Testhouse household Not answered yet",
+    "cta": "RSVP now",
+    "ctaBeforeList": true,
+    "reply": {
+      "x": 522.8125,
+      "y": 91.796875,
+      "width": 455.96875,
+      "height": 971.125,
+      "top": 91.796875,
+      "right": 978.78125,
+      "bottom": 1062.921875,
+      "left": 522.8125
+    },
+    "text": "RSVP\n\nSara + Tyler are still writing this: the date answers are needed by\n\nTesthouse household\nNot answered yet\n\nLet us know your plans. You can reply now and come back for meals and other details as they open.\n\nRSVP NOW\n\nWho is coming\n\nYes or no for each event on your invitation.\n\nNot started\nMeals\n\nA meal for each person who is coming.\n\nAfter you say who is coming\nDietary and access needs\n\nOptional. Only the caterer and the planner see these.\n\nOptional\nReply right here instead\n\nWe can’t wait to celebrate with you."
+  }
+]

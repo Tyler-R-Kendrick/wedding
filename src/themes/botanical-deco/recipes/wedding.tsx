@@ -40,6 +40,17 @@ export const BotanicalWeddingPage: ContentRecipe<WeddingProps> = ({
       ) : null}
     </PageHead>
 
+    <Section id="dress-code" labelledBy="dress-title">
+      <SectionHeading
+        level={2}
+        id="dress-title"
+        title={CONTENT_COPY.wedding.dress}
+      />
+      <Prose>
+        <Block block={data.dressCode} />
+      </Prose>
+    </Section>
+
     <Section id="celebrating-together" labelledBy="celebrating-title">
       <SectionHeading level={2} id="celebrating-title" title="A day together" />
       <Prose><p>{CONTENT_COPY.wedding.welcome}</p><p>{CONTENT_COPY.wedding.together}</p></Prose>
@@ -60,16 +71,7 @@ export const BotanicalWeddingPage: ContentRecipe<WeddingProps> = ({
       </Prose>
     </Section>
 
-    <Section id="dress-code" labelledBy="dress-title">
-      <SectionHeading
-        level={2}
-        id="dress-title"
-        title={CONTENT_COPY.wedding.dress}
-      />
-      <Prose>
-        <Block block={data.dressCode} />
-      </Prose>
-    </Section>
+
 
     <section
       id="programme"

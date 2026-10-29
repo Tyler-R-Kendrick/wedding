@@ -25,6 +25,13 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
       {data.directions ? <Handoffs handoffs={[data.directions]} label="Directions" /> : null}
     </PageHead>
 
+    <Section id="dress-code" labelledBy="dress-title">
+      <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
+      <Prose>
+        <Block block={data.dressCode} />
+      </Prose>
+    </Section>
+
     <Section id="celebrating-together" labelledBy="celebrating-title">
       <SectionHeading level={2} id="celebrating-title" title="A day together" />
       <Prose><p>{CONTENT_COPY.wedding.welcome}</p><p>{CONTENT_COPY.wedding.together}</p></Prose>
@@ -45,12 +52,7 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
       </Prose>
     </Section>
 
-    <Section id="dress-code" labelledBy="dress-title">
-      <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
-      <Prose>
-        <Block block={data.dressCode} />
-      </Prose>
-    </Section>
+
 
     <Section id="programme" ground="alt">
       <Programme events={data.events} venueName={data.venueName} startNumber={1} />
