@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { adminJobsOverview, adminLifecycleStatus } from '@/capabilities/ops';
 import { adminInvoke, adminPrincipal } from '../_shared/admin';
 import { AdminIndex, ConsoleGate, ConsolePage, Pill, Stat, StatStrip } from './_components/console';
+import { ViewRolePanel } from './_components/ViewRolePanel';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Admin', robots: { index: false, follow: false } };
@@ -39,6 +40,8 @@ export default async function AdminPage() {
           <Link href="/admin/lifecycle">Review the transition</Link>.
         </p>
       ) : null}
+
+      <ViewRolePanel />
 
       <p className="con-note">
         Every admin screen in the application. Access is checked server-side on each one; a link you cannot use is still listed, so you know it exists.

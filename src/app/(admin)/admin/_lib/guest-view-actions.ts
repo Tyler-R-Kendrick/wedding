@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { adminBrowseAsGuest } from '@/capabilities/identity/browse_as_guest';
 import { GUEST_VIEW_COOKIE, GUEST_VIEW_TTL_SECONDS } from '@/domain/identity/guest-view';
+import { VIEW_ROLE_COOKIE } from '@/domain/identity/view-role';
 import { adminInvoke, back, describeError, field } from '../../_shared/admin';
 
 /**
@@ -20,5 +21,6 @@ export async function startGuestView(fd: FormData): Promise<void> {
   if (!r.ok) back('/admin/guests', { error: describeError(r.error) });
   const jar = await cookies();
   jar.set({ name: GUEST_VIEW_COOKIE, value: r.value.data.token, httpOnly: true, sameSite: 'lax', path: '/', maxAge: GUEST_VIEW_TTL_SECONDS, secure: process.env.NODE_ENV === 'production' });
+  jar.delete(VIEW_ROLE_COOKIE);
   redirect('/');
 }

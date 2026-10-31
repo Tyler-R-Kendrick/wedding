@@ -24,11 +24,11 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
       <div className="page">
         <h1 className="page__title">{what} is for invited guests</h1>
         <p className="page__lede">
-          You are signed in as an administrator, and an administrator has no household of their own. To see this page the way a guest does, browse the site as one of them; their answers are in the console.
+          You are signed in as an administrator. Choose <strong>View as role</strong> on the admin home page to preview this screen with a guest role’s entitlements — no guest profile required. To inspect one real guest’s data, use <strong>Inspect a guest</strong> on the Guests screen (owners only).
         </p>
         <div className="page__actions">
-          <Link className="btn btn--primary" href="/admin/guests#browse-as">
-            Browse as a guest
+          <Link className="btn btn--primary" href="/admin#view-as">
+            View as role
           </Link>
           <Link className="btn btn--secondary" href="/admin">
             Go to the admin console

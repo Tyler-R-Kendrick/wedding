@@ -2,6 +2,8 @@ import { eq, inArray } from 'drizzle-orm';
 import type { FlagValues } from '@/contracts/flags';
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
 import { ADMIN_ROLES, type AdminPrincipal, type AdminRole, type GuestPrincipal } from '@/contracts/principal';
+import type { ViewRoleKey } from '@/domain/identity/view-role';
+import { previewGuestIdForRole, PREVIEW } from '@/domain/identity/preview-personas';
 import type { Db } from '@/db/client';
 import { adminRoles, guests, households, type GuestRow, type HouseholdRow } from '@/db/schema';
 import { deriveActsFor, deriveAdminEntitlements, deriveGuestEntitlements } from '@/policy/derive';
@@ -85,6 +87,42 @@ export async function buildGuestViewPrincipal(db: Db, session: SessionFacts, adm
   if (!guest || guest.mergedIntoGuestId || guest.kind === 'child' || guest.isMinor) return null;
   const principal = await principalForGuest(db, guest, { bindingRole: 'self', selfGuestIds: [guest.id as GuestId], delegateGuestIds: [] }, session, flags, now);
   return principal ? { ...principal, viewedBy: viewer(true) } : null;
+}
+
+/**
+ * View-role preview (`domain/identity/view-role.ts`): an administrator sees the site with a role's
+ * entitlements using synthetic preview guest records — never another person's inbox or RSVP rows.
+ * Always read-only (`viewedBy.readOnly`); `authorize` blocks every non-read capability.
+ */
+export async function buildViewRolePrincipal(
+  db: Db,
+  session: SessionFacts,
+  admin: AdminPrincipal,
+  role: ViewRoleKey,
+  flags: FlagValues,
+  now: Date = new Date(),
+): Promise<GuestPrincipal | null> {
+  const guestId = previewGuestIdForRole(role);
+  const guest = (await db.select().from(guests).where(eq(guests.id, guestId)).limit(1))[0];
+  if (!guest || guest.mergedIntoGuestId) return null;
+  const bindingRole = role === 'household_manager' ? ('household_manager' as const) : ('self' as const);
+  const selfGuestIds: GuestId[] =
+    role === 'household_manager'
+      ? ([PREVIEW.managerGuestId, PREVIEW.guestGuestId, PREVIEW.partyGuestId, PREVIEW.plusOneGuestId] as GuestId[])
+      : ([guestId] as GuestId[]);
+  const principal = await principalForGuest(
+    db,
+    guest,
+    { bindingRole, selfGuestIds, delegateGuestIds: [] },
+    session,
+    flags,
+    now,
+  );
+  if (!principal) return null;
+  return {
+    ...principal,
+    viewedBy: { adminId: admin.adminId, roles: admin.roles, readOnly: true, previewRole: role },
+  };
 }
 
 async function principalForGuest(
