@@ -1,6 +1,8 @@
 import { getDb } from '@/db/client';
 import { cookieValue, GUEST_VIEW_COOKIE, isAdminSurface, verifyGuestViewToken } from '@/domain/identity/guest-view';
-import { buildAdminPrincipal, buildGuestPrincipal, buildGuestViewPrincipal, resolveAdminRoles } from '@/domain/identity/principal';
+import { buildAdminPrincipal, buildGuestPrincipal, buildGuestViewPrincipal, buildViewRolePrincipal, resolveAdminRoles } from '@/domain/identity/principal';
+import { VIEW_ROLE_COOKIE, verifyViewRoleToken } from '@/domain/identity/view-role';
+import { seedPreviewPersonas } from '@/domain/identity/preview-personas';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { env } from '@/lib/env';
 import { getFlags } from '@/lib/flags';
@@ -47,10 +49,19 @@ export const betterAuthPrincipalResolver: PrincipalResolver = {
     const roles = await resolveAdminRoles(db, session.user.email, env.ADMIN_EMAILS);
     if (roles.size > 0) {
       const admin = buildAdminPrincipal(facts, roles);
-      const view = verifyGuestViewToken(cookieValue(request.headers.get('cookie'), GUEST_VIEW_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
-      if (view && !isAdminSurface(requestPath(request))) {
-        const asGuest = await buildGuestViewPrincipal(db, facts, admin, view.guestId, getFlags());
-        if (asGuest) return asGuest;
+      const path = requestPath(request);
+      if (!isAdminSurface(path)) {
+        await seedPreviewPersonas(db);
+        const viewRole = verifyViewRoleToken(cookieValue(request.headers.get('cookie'), VIEW_ROLE_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
+        if (viewRole) {
+          const asRole = await buildViewRolePrincipal(db, facts, admin, viewRole.role, getFlags());
+          if (asRole) return asRole;
+        }
+        const view = verifyGuestViewToken(cookieValue(request.headers.get('cookie'), GUEST_VIEW_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
+        if (view) {
+          const asGuest = await buildGuestViewPrincipal(db, facts, admin, view.guestId, getFlags());
+          if (asGuest) return asGuest;
+        }
       }
       return admin;
     }

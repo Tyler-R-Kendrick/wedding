@@ -50,7 +50,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Link href="/admin/jobs">Jobs</Link>
           </li>
           <li>
-            <Link href="/admin/guests#browse-as">Browse as a guest</Link>
+            <Link href="/admin#view-as">View as role</Link>
+          </li>
+          <li>
+            <Link href="/admin/guests#inspect-guest">Inspect a guest</Link>
           </li>
         </ul>
         <details>

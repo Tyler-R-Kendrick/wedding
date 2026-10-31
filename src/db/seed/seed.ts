@@ -75,6 +75,9 @@ export async function seed(db: Db): Promise<void> {
   // production step — left them empty and every RSVP and seating read had nothing to find.
   await seedEventsAndPlans(db, now);
 
+  const { seedPreviewPersonas } = await import('@/domain/identity/preview-personas');
+  await seedPreviewPersonas(db, now);
+
   // Story, adventures, recommendations, venue docent, operational fields, FAQ, and the AI corpus (swarm C).
   await seedContent(db, now);
 

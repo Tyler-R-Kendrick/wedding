@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
@@ -158,10 +159,9 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
  */
 function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string | null; isOwner: boolean; ownRecords: { guestId: string; displayName: string }[] }) {
   return (
-    <Section title="Browse the site as a guest" id="browse-as">
+    <Section title="Inspect a guest profile" id="inspect-guest">
       <p className="con-note">
-        See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. Anyone else’s view is read-only: nothing you do there is saved or sent in their
-        name, and their ride credit and the concierge stay closed. A band on every page says whose view it is, with the way to stop.
+        See the site exactly as one guest on the list does — their RSVP answers, table, and uploads. Anyone else’s view is read-only. Prefer <Link href="/admin#view-as">View as role</Link> when you only need to preview entitlements and pages without touching a real person’s record.
       </p>
       {browsingName ? (
         // A <div>, not a paragraph: a form cannot sit inside one.

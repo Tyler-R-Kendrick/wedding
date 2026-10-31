@@ -189,7 +189,9 @@ describe('principal resolver', () => {
     // editor's source picker lists instead of bundling the seed file.
     // 81 -> 82: `admin_dismiss_media_suggestion` (`admin_media`, ui only), which marks an AI
     // suggestion reviewed without touching the photo's alt text.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(82);
+    // 82 -> 86: view-role preview (`admin_set_view_role`, `admin_clear_view_role`,
+    // `admin_list_view_roles`, `admin_view_role_status`), all ui-only navigate/read.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(86);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

@@ -35,12 +35,12 @@ describe('the account menu', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('offers an administrator the console and "Browse as a guest", not a household they do not have', () => {
+  it('offers an administrator the console and view-role preview, not a household they do not have', () => {
     render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, admin: true })} variant="inline" classNames={CLASSES} />);
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/admin', '/admin/guests#browse-as', '/sign-out']);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/admin', '/admin#view-as', '/admin/guests#inspect-guest', '/sign-out']);
   });
 
-  it('while an administrator browses as a guest: that household\'s pages, then the way back to the console', () => {
+  it('while an administrator previews a role: that household\'s pages, then the way back to the console', () => {
     render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, viewing: true })} variant="inline" classNames={CLASSES} />);
     expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...MEMBER, '/admin', '/sign-out']);
   });

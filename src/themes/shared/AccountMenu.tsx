@@ -30,8 +30,10 @@ const TRIGGER_LABEL = 'Your account';
 
 /** An administrator has no household: the console is their page, and the household's would each send them back to sign in. */
 const ADMIN_CONSOLE: NavItem = { label: 'Admin console', href: '/admin' };
-/** Where an administrator picks a guest to browse the site as (the console's Guests screen). */
-const BROWSE_AS_GUEST: NavItem = { label: 'Browse as a guest', href: '/admin/guests#browse-as' };
+/** Where an administrator opens view-role preview (admin layout switcher). */
+const VIEW_AS_ROLE: NavItem = { label: 'View as role…', href: '/admin#view-as' };
+/** Owners only: inspect a specific guest profile (separate from role preview). */
+const INSPECT_GUEST: NavItem = { label: 'Inspect a guest profile', href: '/admin/guests#inspect-guest' };
 
 function useSession(known: boolean | undefined, knownAdmin: boolean, knownViewing: boolean): SessionHint {
   const [probed, setProbed] = useState<SessionHint>(SIGNED_OUT);
@@ -58,7 +60,7 @@ function useSession(known: boolean | undefined, knownAdmin: boolean, knownViewin
       window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin, viewAs: null, viewing: known && knownViewing });
+  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin, viewAs: null, viewRole: null, viewing: known && knownViewing });
 }
 
 export interface AccountMenuClassNames {
@@ -93,9 +95,12 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
       </a>
     );
   }
-  // An administrator gets the console and the way into "Browse as a guest"; while browsing as one,
-  // they get that guest's pages and the way back.
-  const items = admin ? [ADMIN_CONSOLE, BROWSE_AS_GUEST, SIGN_OUT] : [...(nav.member ?? []), ...(viewing ? [ADMIN_CONSOLE] : []), SIGN_OUT];
+  // Administrator signed in, not previewing: console + way into role preview. While previewing a role
+  // or a guest profile, show the household pages like a guest would, plus the way back to the console.
+  const items =
+    admin && !viewing
+      ? [ADMIN_CONSOLE, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
+      : [...(nav.member ?? []), ...(admin || viewing ? [ADMIN_CONSOLE] : []), SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;

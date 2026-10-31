@@ -21,10 +21,24 @@ export async function GET(request: Request) {
   const principal = await getPrincipal(request);
   const signedIn = principal.kind === 'guest' || principal.kind === 'admin';
   let viewAs: { name: string; household: string; readOnly: boolean } | null = null;
+  let viewRole: { role: string; label: string; readOnly: boolean } | null = null;
   if (principal.kind === 'guest' && principal.viewedBy) {
-    const db = await getDb();
-    const [guest, household] = await Promise.all([getGuest(db, principal.guestId), getHousehold(db, principal.householdId)]);
-    viewAs = { name: guest ? guestDisplayName(guest) : 'a guest', household: household?.name ?? '', readOnly: principal.viewedBy.readOnly };
+    if (principal.viewedBy.previewRole) {
+      const { viewRoleLabel } = await import('@/domain/identity/view-role');
+      viewRole = { role: principal.viewedBy.previewRole, label: viewRoleLabel(principal.viewedBy.previewRole), readOnly: true };
+    } else {
+      const db = await getDb();
+      const [guest, household] = await Promise.all([getGuest(db, principal.guestId), getHousehold(db, principal.householdId)]);
+      viewAs = { name: guest ? guestDisplayName(guest) : 'a guest', household: household?.name ?? '', readOnly: principal.viewedBy.readOnly };
+    }
   }
-  return jsonResponse({ signedIn, admin: principal.kind === 'admin', viewAs }, { requestId: getRequestId(request.headers) });
+  return jsonResponse(
+    {
+      signedIn,
+      admin: principal.kind === 'admin' || (principal.kind === 'guest' && principal.viewedBy !== undefined),
+      viewAs,
+      viewRole,
+    },
+    { requestId: getRequestId(request.headers) },
+  );
 }
