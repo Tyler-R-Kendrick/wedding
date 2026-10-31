@@ -27,8 +27,12 @@ export async function searchKnowledge(ctx: ReadContext, query: string, limit = 8
   return { results, sources };
 }
 
+function faqCitationRoute(row: FaqEntryRow): string {
+  return row.route && isBuiltRoute(row.route) ? row.route : `${ROUTES.ask}#${row.slug}`;
+}
+
 export function toFaqView(row: FaqEntryRow, ctx: ReadContext): FaqView {
-  const route = `${ROUTES.ask}#${row.slug}`;
+  const citeRoute = faqCitationRoute(row);
   return {
     id: row.id,
     slug: row.slug,
@@ -37,7 +41,7 @@ export function toFaqView(row: FaqEntryRow, ctx: ReadContext): FaqView {
     answer: textBlock(row.answer),
     ...(row.route && isBuiltRoute(row.route) ? { route: row.route } : {}),
     placeholder: row.placeholder,
-    provenance: toProvenanceView(row, { route, sources: ctx.sources, now: ctx.now }),
+    provenance: toProvenanceView(row, { route: citeRoute, sources: ctx.sources, now: ctx.now }),
   };
 }
 
@@ -46,7 +50,16 @@ export async function listFaq(ctx: ReadContext): Promise<{ entries: FaqView[]; s
   const visible = filterVisible(rows, ctx.principal, ctx.surface, ctx.now);
   return {
     entries: visible.map((r) => toFaqView(r, ctx)),
-    sources: dedupeCitations(visible.map((r) => toRecordCitation(r, { route: `${ROUTES.ask}#${r.slug}`, title: `Ask Us › ${r.question}`, recordRef: { type: 'faq_entries', id: r.id }, now: ctx.now }))),
+    sources: dedupeCitations(
+      visible.map((r) =>
+        toRecordCitation(r, {
+          route: faqCitationRoute(r),
+          title: `Ask Us › ${r.question}`,
+          recordRef: { type: 'faq_entries', id: r.id },
+          now: ctx.now,
+        }),
+      ),
+    ),
   };
 }
 

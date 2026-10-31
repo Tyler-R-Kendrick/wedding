@@ -66,6 +66,8 @@ export const ON_DEVICE_MODEL_ID = 'browser:prompt-api';
 const SENTENCE_EMIT_SPLIT = /(?<=[.!?](?:\s*\[S\d+(?:\s*,\s*S\d+)*\])?)\s+(?=[A-Z0-9"'(\[])/;
 const SIGN_IN_ROUTE = '/your-weekend';
 const DENIED_CODES = new Set(['unauthenticated', 'forbidden', 'step_up_required', 'feature_disabled', 'not_found', 'rate_limited', 'validation']);
+/** Sentences asking the concierge to submit or change an RSVP must refuse with the RSVP page first. */
+const RSVP_ACTION = /\b(?:please\s+)?submit\b[^.?]{0,40}\brsvp\b|\brsvp\b[^.?]{0,40}\b(?:as\s+)?(?:attending|declin)/i;
 
 interface ToolRun {
   name: string;
@@ -349,7 +351,10 @@ export async function runConcierge(input: ConciergeInput): Promise<ConciergeResu
   if (survivors.length === 0) {
     const undecided = plan.protectedFact ? REFUSAL.undecided(plan.protectedFact) : undefined;
     const message = undecided ?? (toolsDenied.size && plan.personal ? REFUSAL.notOnYourInvitation : REFUSAL.noSource);
-    const links = undecided ? refusalLinks(['/the-wedding'], '/the-wedding') : refusalLinks(routes, '/ask-us');
+    const rsvpAction = RSVP_ACTION.test(question);
+    const refusalRoutes = rsvpAction ? ['/rsvp', ...routes] : routes;
+    const refusalFallback = rsvpAction ? '/rsvp' : '/ask-us';
+    const links = undecided ? refusalLinks(['/the-wedding'], '/the-wedding') : refusalLinks(refusalRoutes, refusalFallback);
     if (raw.trim() && !refusedBySentinel) {
       await ctx.audit.record({ actor, action: 'ai.grounding_failed', target: { type: 'ai_answer', id: answerId }, outcome: 'failed', requestId: ctx.requestId, metadata: { claims: summary.claims, dropped: summary.dropped, reasons: summary.reasons.join(','), intent: plan.intent } });
     }

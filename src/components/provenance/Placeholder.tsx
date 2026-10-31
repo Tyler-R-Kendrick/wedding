@@ -91,7 +91,7 @@ export function Placeholder({ children, inline = false, label = PLACEHOLDER_LABE
  * block holds both — the decided sentences as prose with the hint labelled beside them.
  */
 export function Text({ block, inline = false }: { block: TextBlockView; inline?: boolean }) {
-  if (!block.placeholder) return <>{block.text}</>;
+  if (!block.placeholder) return inline ? <>{block.text}</> : <p>{block.text}</p>;
   const facts = placeholderFacts(block.text);
   const hint = <Placeholder inline={inline}>{placeholderHint(block.text)}</Placeholder>;
   if (!facts) return hint;
