@@ -84,6 +84,7 @@ export const TEST_SERVER_SPECS = [
   // the lifecycle; the media-AI journey expects its own jobs to still be queued), and those paths
   // are covered through the real pipeline in tests/integration/ops-*.test.ts instead.
   'tests/e2e/admin-console.spec.ts',
+  'tests/e2e/admin-guest-ops.spec.ts',
   // Level 16: the computed-font and 17px-floor assertions for the auth journeys and the admin
   // console. It belongs HERE and not with the production specs for one reason: half its routes are
   // console screens, which need the canonical test-principal injector and therefore NODE_ENV=test.

@@ -38,7 +38,7 @@ export default async function HouseholdsPage({ searchParams }: { searchParams: P
         <FilterBar>
           <Input id="q" label="Search" defaultValue={sp.q} />
         </FilterBar>
-        <RecordList label="Households" empty={rows.length === 0 ? 'No household matches this search.' : null}>
+        <RecordList label="Households" empty={rows.length === 0 ? (sp.q ? 'No household matches this search.' : 'No households yet. Add one to start the guest list.') : null}>
           {shown.rows.map((h) => {
             const inv = h.invitation ? INVITATION[h.invitation.status] : undefined;
             return (
