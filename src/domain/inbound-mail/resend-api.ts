@@ -27,7 +27,7 @@ export interface OutboundAttachment {
 
 export interface ForwardOutbound {
   from: string;
-  to: string;
+  to: string[];
   bcc: string[];
   replyTo: string;
   subject: string;
@@ -122,7 +122,7 @@ export async function sendForwardedEmail(
     headers: { Authorization: `Bearer ${token.value}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: message.from,
-      to: [message.to],
+      to: message.to,
       bcc: message.bcc,
       reply_to: message.replyTo,
       subject: message.subject.slice(0, 200),

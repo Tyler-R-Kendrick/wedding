@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       config: {
         connectUserId: env.RESEND_CONNECT_USER_ID ?? '',
         emailFrom: env.EMAIL_FROM ?? '',
-        plannerForwardEmail: env.PLANNER_FORWARD_EMAIL ?? '',
+        plannerForwardEmails: env.PLANNER_FORWARD_EMAIL,
       },
       nonces: new DbIdempotencyStore(db),
       limiter,

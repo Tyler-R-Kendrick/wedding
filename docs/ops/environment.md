@@ -44,7 +44,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `RESEND_CONNECT_USER_ID`, `EMAIL_FROM` | unset -> dev inbox; Connect connector `resend/wedding` must be attached and authorized | auth-email | no |
 | `RESEND_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /api/webhooks/resend` answers 404 | verifies Resend inbound webhook (`svix-*` headers) | no |
-| `PLANNER_FORWARD_EMAIL` | unset -> inbound forward disabled (404) | destination for guest mail to `hello@kendrick.wedding` (e.g. `bustleandlace@gmail.com`) | no |
+| `PLANNER_FORWARD_EMAIL` | empty -> inbound forward disabled (404) | comma-separated forward inboxes for guest mail to `hello@kendrick.wedding` (e.g. `bustleandlace@gmail.com,saraandtyler27@gmail.com`) | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage: R2, Backblaze B2, Supabase Storage or MinIO. `S3_ENDPOINT` is required with the keys, and an Amazon endpoint (or none, which the AWS SDK would resolve to Amazon) is refused: the site does not use AWS | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
 | `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
