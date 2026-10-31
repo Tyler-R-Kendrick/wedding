@@ -61,7 +61,7 @@ describe('navigation by lifecycle state', () => {
     expect(navFor('WEDDING_DAY').primary[0]).toMatchObject({ label: 'Today', href: '/' });
     expect(homeLabelFor('WEDDING_DAY')).toBe('Today');
     expect(homeLabelFor('TEASER')).toBe('Home');
-    expect(navFor('TEASER').primary.map((i) => i.label)).toEqual(['Our Story', 'Travel', 'Things to Do', 'Our Adventures']);
+    expect(navFor('TEASER').primary.map((i) => i.label)).toEqual(['Our Story', 'Travel', 'Things to Do']);
     expect(navFor('INVITATIONS_OPEN').primary.map((i) => i.label)).toEqual(['The Wedding', 'Travel', 'Things to Do', 'Our Story']);
   });
 
