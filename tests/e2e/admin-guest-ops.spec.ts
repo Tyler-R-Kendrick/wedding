@@ -42,8 +42,9 @@ test.describe('admin guest and household ops', () => {
     await dialog.getByLabel('Name as printed').fill(name);
     await dialog.getByRole('button', { name: 'Continue' }).click();
     await dialog.getByRole('button', { name: 'Continue' }).click();
+    const addFlow = page.locator('.flow-anchor').filter({ has: page.getByRole('button', { name: 'Add a household', exact: true }) });
     await dialog.getByRole('button', { name: 'Add a household' }).click();
-    await expect(page.locator('.flow-announce')).toContainText('Household added.', { timeout: 30_000 });
+    await expect(addFlow.getByRole('status')).toContainText('Household added.', { timeout: 30_000 });
     await expect(page.locator('#households [data-household-id]').filter({ hasText: name })).toBeVisible({ timeout: 30_000 });
     await ctx.close();
   });
