@@ -63,7 +63,7 @@ describe('a decided fact beside an undecided one', () => {
   });
 
   it('drops a record only when every sentence in it is a hint', () => {
-    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual([]);
+    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual(['Cocktail attire — for example, a suit or blazer with dress pants, or a cocktail dress.']);
     expect(withoutPlaceholders([answerFor('contact')])).toEqual([answerFor('contact')]);
     expect(withoutPlaceholders([null, undefined, '   '])).toEqual([]);
   });
@@ -86,7 +86,12 @@ describe('the placeholder block', () => {
   });
 
   it('leaves a wholly-undecided block exactly as it was', () => {
-    expect(placeholderHint(answerFor('dress-code')).toLowerCase()).toContain('dress code');
+    expect(placeholderHint(answerFor('accessibility')).toLowerCase()).toContain('ceremony');
+    expect(placeholderFacts(answerFor('accessibility'))).toContain('accessible rooms');
+  });
+
+  it('shows settled dress-code copy without a placeholder hint', () => {
+    expect(placeholderHint(answerFor('dress-code'))).toContain('Cocktail attire');
     expect(placeholderFacts(answerFor('dress-code'))).toBe('');
   });
 

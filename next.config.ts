@@ -65,6 +65,10 @@ const nextConfig: NextConfig = {
     return [
       { source: '/explore-caa', destination: '/our-venue', permanent: true },
       { source: '/explore-caa/:slug', destination: '/our-venue/:slug', permanent: true },
+      { source: '/faq', destination: '/ask-us', permanent: true },
+      { source: '/things-to-do', destination: '/share-an-adventure', permanent: true },
+      { source: '/wedding-day', destination: '/the-wedding', permanent: true },
+      { source: '/registry', destination: '/gifts', permanent: true },
     ];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path

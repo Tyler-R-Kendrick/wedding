@@ -42,6 +42,8 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
   const pinned = numbered.filter((n): n is { card: AdventureCard & { coordinates: NonNullable<AdventureCard['coordinates']> }; number: string } => !!n.card.coordinates);
   const pins: AtlasPin[] = pinned.map(({ card, number }) => ({ id: card.id, title: card.title, number, lat: card.coordinates.lat, lng: card.coordinates.lng }));
   const onMap = new Set(pins.map((p) => p.id));
+  /** Placeholder memories without a location stay in the ledger but are not expected on the map yet. */
+  const mapEligible = data.items.filter((a) => a.coordinates || !a.placeholder);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHead eyebrow={CONTENT_COPY.adventures.eyebrow} title={CONTENT_COPY.adventures.title} lede={CONTENT_COPY.adventures.lede}>
@@ -52,7 +54,7 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
         <AdventureAtlas
           pins={pins}
           venue={{ ...VENUE, name: frame.site.venue.name }}
-          overview={<Overview pinned={pins.length} total={data.items.length} venue={frame.site.venue.name} />}
+          overview={<Overview pinned={pins.length} total={mapEligible.length} venue={frame.site.venue.name} />}
           postcards={
             <>
               {pinned.map(({ card, number }) => (

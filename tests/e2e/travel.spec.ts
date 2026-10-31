@@ -117,9 +117,10 @@ test.describe("Travel & Stay", () => {
     );
     if (mode === "mock") {
       // No invented price, no invented duration, and the guest is told why.
+      const flights = page.locator("#flights");
       await expect(page.getByText(/Live prices are not connected yet/)).toBeVisible();
-      await expect(page.getByText(/Prices as of/)).toHaveCount(0);
-      await expect(page.getByText(/\$\d/).first()).toHaveCount(0);
+      await expect(flights.getByText(/Prices as of/)).toHaveCount(0);
+      await expect(flights.getByText(/\$\d/).first()).toHaveCount(0);
       const hrefs = await page
         .getByRole("link", { name: /Continue on|Search directly|Search with/ })
         .evaluateAll((els) => els.map((e) => e.getAttribute("href") ?? ""));

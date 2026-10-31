@@ -124,7 +124,7 @@ function sections(site: SiteFacts, state: LifecycleState): Record<string, HomeSe
       label: 'Getting there',
       act: 'hospitality',
       title: 'Getting there and home',
-      body: ['Valet, transit, parking, and rides home, with the hotel’s own directions. ', todo('event valet rate and ride vouchers')],
+      body: ['Valet, transit, parking, and rides home, with the hotel’s own directions. ', todo('ride vouchers')],
       link: { label: 'Transportation', href: ROUTES.transport },
     },
     gifts: {

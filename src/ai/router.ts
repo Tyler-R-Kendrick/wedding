@@ -122,7 +122,7 @@ const PROTECTED: [RegExp, ProtectedFact][] = [
  */
 export const PROTECTED_FACT_WORDS: Record<ProtectedFact, RegExp> = {
   room: /\broom\b|\bballroom\b|\bspace\b|\bvenue\b|\bhall\b|\bcourt\b|not yet decided/i,
-  time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|not yet decided/i,
+  time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|\barriv|\bceremony\b|\bminute|not yet decided/i,
   dress: /\bdress\b|\battire\b|\bwear\b|black[- ]tie|\bformal\b|\bsuit\b|\bgown\b|not yet decided/i,
   menu: /\bmenu\b|\bfood\b|\bdinner\b|\bdietar|\ballerg|\bmeal\b|\bcater|not yet decided/i,
   music: /\bmusic\b|\bband\b|\bdj\b|\bplaylist\b|\bdance\b|\bsong\b|not yet decided/i,

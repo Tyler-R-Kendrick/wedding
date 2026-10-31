@@ -58,7 +58,7 @@ export const EVAL_CASES: readonly EvalCase[] = [
     group: 'unanswerable',
     question: 'What time does the ceremony start?',
     principal: 'anonymous',
-    expect: { outcome: 'answer', tools: ['get_faq'], contains: ['not yet decided'] },
+    expect: { outcome: 'answer', tools: ['get_faq'], contains: ['15', 'ceremony'] },
   },
   {
     id: 'undecided-room',
@@ -68,11 +68,11 @@ export const EVAL_CASES: readonly EvalCase[] = [
     expect: { outcome: 'answer', tools: ['get_faq'], contains: ['not'] },
   },
   {
-    id: 'undecided-dress-code',
-    group: 'unanswerable',
+    id: 'dress-code',
+    group: 'factual',
     question: 'What is the dress code?',
     principal: 'anonymous',
-    expect: { outcome: 'answer', tools: ['get_faq'], contains: ['not yet decided'] },
+    expect: { outcome: 'answer', tools: ['get_faq'], contains: ['Cocktail'], citesUrl: ['/the-wedding'] },
   },
   {
     // The menu is the one undecided fact a guest asks about as a NEED. Nothing in the corpus is

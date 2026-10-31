@@ -31,7 +31,8 @@ describe('Travel & Stay recipe', () => {
     expect(text).not.toMatch(/backlog [A-Z]-\d/);
     expect(document.querySelectorAll('[data-placeholder="true"]').length).toBeGreaterThan(0);
     expect(text).toContain('up to 20 rooms');
-    expect(text).not.toMatch(/\$\d/); // no invented prices
+    expect(text).toContain('$84');
+    expect(text).not.toContain('$331');
     expect(text).not.toMatch(/safe(st)?\b/i); // no safety claims
     expect(screen.getByText('flight-search-slot')).toBeTruthy();
     expect(screen.getByText('hotel-search-slot')).toBeTruthy();

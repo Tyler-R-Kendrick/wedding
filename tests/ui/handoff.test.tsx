@@ -65,7 +65,8 @@ describe('handoff cards', () => {
     const text = document.body.textContent ?? '';
     expect(text).not.toContain('TODO(');
     expect(text).not.toMatch(/backlog\s+[A-Z]{1,2}-\d/i);
-    expect(text).toContain('the hotel’s valet entrance is at 71 E Madison.');
+    expect(text).toContain('$84/night');
+    expect(text).toContain('71 E Madison');
     expect(screen.getAllByText(`${PLACEHOLDER_LABEL}:`).length).toBe(2 * TRANSPORTATION_TOPICS.filter((t) => t.paragraphs.some((p) => p.includes('TODO(Tyler & Sara)'))).length);
     for (const node of document.querySelectorAll('[data-placeholder="true"]')) expect(node.textContent ?? '').not.toContain('TODO(');
   });

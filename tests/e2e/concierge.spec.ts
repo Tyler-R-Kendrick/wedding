@@ -105,13 +105,14 @@ test.describe('concierge on Ask Us', () => {
     expect(device.system).not.toBe('');
   });
 
-  test('says an undecided fact is undecided instead of inventing a time', async ({ page }) => {
+  test('says arrival guidance instead of inventing a ceremony start time', async ({ page }) => {
     await page.goto('/ask-us');
     await page.getByTestId('concierge-open').click();
     await page.getByTestId('concierge-input').fill('What time does the ceremony start?');
     await page.getByTestId('concierge-send').click();
     const panel = page.getByTestId('concierge');
-    await expect(panel.locator('.cq__turn--concierge')).toContainText(/not (yet )?decided|not decided yet|don't have that information/i, { timeout: 30_000 });
+    await expect(panel.locator('.cq__turn--concierge')).toContainText(/15.*30.*minute|15–30/i, { timeout: 30_000 });
+    await expect(panel.locator('.cq__turn--concierge')).toContainText(/ceremony/i);
     await expect(panel).not.toContainText(/\b\d{1,2}(:\d{2})?\s?[ap]\.?m\.?\b/i);
   });
 

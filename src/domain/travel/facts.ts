@@ -30,15 +30,24 @@ export const VENUE = {
    * `list_hotel_recommendations`, which is exposed to the concierge and WebMCP, so the marker would
    * have reached assistant transcripts too.
    */
-  valetNote: 'A special event valet rate is part of the CAA package.',
-  /** Backlog X-06. */
-  valetPending: 'the valet rate, and whether we can publish it',
+  valetNote: 'Valet parking is $84/night at the 71 E Madison entrance.',
+  valetPending: null,
 } as const;
 
-/** `note` is a confirmed fact; `pending` names what the couple has still to decide (backlog X-02). */
+/** `note` is a confirmed fact; `pending` names what the couple has still to decide. */
 export const AIRPORTS = [
-  { code: 'ORD', name: "O'Hare International Airport", note: null, pending: 'which airport we recommend, and whether there is a shuttle' },
-  { code: 'MDW', name: 'Chicago Midway International Airport', note: null, pending: 'which airport we recommend, and whether there is a shuttle' },
+  {
+    code: 'ORD',
+    name: "O'Hare International Airport",
+    note: 'We recommend flying into O’Hare. There is no wedding shuttle; take the CTA Blue Line “L” train into downtown. Rideshare pickup details are coming soon; Uber can take you from the airport to the hotel.',
+    pending: null,
+  },
+  {
+    code: 'MDW',
+    name: 'Chicago Midway International Airport',
+    note: 'Midway also serves Chicago with trains, taxis, and rideshare into downtown.',
+    pending: null,
+  },
 ] as const;
 
 /** From the CAA kit (2025/26 edition, verify): a courtesy block up to 20 rooms subject to availability. Everything else is unknown. */
