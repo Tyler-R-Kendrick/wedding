@@ -68,7 +68,7 @@ describe('admin view-role preview', () => {
 
 describe('admin view-role preview — planner role', () => {
   it('planners may preview roles without guest-ops', async () => {
-    const f = await seed('vr5');
+    await seed('vr5');
     const db = await getDb();
     await seedPreviewPersonas(db);
     const email = `planner+vr5@example.test`;
