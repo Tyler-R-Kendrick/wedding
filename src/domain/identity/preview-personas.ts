@@ -44,6 +44,10 @@ export function isPreviewPersonaGuestId(guestId: string): boolean {
   );
 }
 
+export function isPreviewPersonaHouseholdId(householdId: string): boolean {
+  return householdId === PREVIEW.householdId;
+}
+
 /** Idempotent seed for preview personas. Safe on every boot; never overwrites admin edits to real guests. */
 export async function seedPreviewPersonas(db: Db, now: Date = new Date()): Promise<void> {
   await db
