@@ -1,3 +1,4 @@
+import { DressCodeContent } from '@/components/wedding/DressCodeContent';
 import { Text as Block } from '@/components/provenance';
 import { formatDateWithWeekday } from '@/domain/content/format';
 import { ROUTES } from '@/domain/routes';
@@ -28,7 +29,7 @@ export const GildedWeddingPage: ContentRecipe<WeddingProps> = ({ data, frame }) 
     <Section id="dress-code" labelledBy="dress-title">
       <SectionHeading level={2} id="dress-title" title={CONTENT_COPY.wedding.dress} />
       <Prose>
-        <Block block={data.dressCode} />
+        <DressCodeContent />
       </Prose>
     </Section>
 

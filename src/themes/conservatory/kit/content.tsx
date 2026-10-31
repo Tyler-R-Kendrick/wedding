@@ -3,6 +3,7 @@ import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, Provenance
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
 import { guestText } from '@/domain/content/text';
+import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
 import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
 import type { ContentKit, StopItem } from '@/themes/content-types';
 import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
@@ -515,11 +516,11 @@ function FaqList({ entries, labelFor }: Parameters<ContentKit['FaqList']>[0]) {
       {entries.map((e) => (
         <article key={e.id} id={e.slug} className="cv-faq__entry" aria-labelledby={`faq-${e.slug}`}>
           <h3 id={`faq-${e.slug}`} className="cv-faq__q">
-            {guestText(e.question)}
+            {faqQuestionText(e.question)}
           </h3>
           <StatusFlags placeholder={e.placeholder} />
           <div className="cv-prose cv-faq__a">
-            <Block block={e.answer} />
+            <FaqAnswerBody entry={e} />
             {e.route ? (
               <p>
                 <a className="cv-link" href={e.route}>

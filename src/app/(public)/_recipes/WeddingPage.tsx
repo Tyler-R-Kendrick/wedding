@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DressCodeContent } from '@/components/wedding/DressCodeContent';
 import { Paragraphs, Text } from '@/components/provenance';
 import { formatDateWithWeekday } from '@/domain/content/format';
 import type { WeddingPageData } from '@/domain/venue/wedding-page';
@@ -21,7 +22,7 @@ export function WeddingPage({ data }: { data: WeddingPageData }) {
 
       <Section id="dress-code" number="01" title="What to wear">
         <div className="wp-prose">
-          <Text block={data.dressCode} />
+          <DressCodeContent />
         </div>
       </Section>
 

@@ -3,6 +3,7 @@ import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, Provenance
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
 import { guestText } from '@/domain/content/text';
+import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
 import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
 import type { ContentKit, StopItem } from '@/themes/content-types';
 import { Botanical } from '../media';
@@ -613,11 +614,11 @@ function FaqList({ entries, labelFor }: Parameters<ContentKit['FaqList']>[0]) {
       {entries.map((e) => (
         <article key={e.id} id={e.slug} className="bd-faq__entry" aria-labelledby={`faq-${e.slug}`}>
           <h3 id={`faq-${e.slug}`} className="bd-faq__q">
-            {guestText(e.question)}
+            {faqQuestionText(e.question)}
           </h3>
           <StatusFlags placeholder={e.placeholder} />
           <div className="bd-prose bd-faq__a">
-            <Block block={e.answer} />
+            <FaqAnswerBody entry={e} />
             {e.route ? (
               <p>
                 <a className="bd-link bd-link--standalone" href={e.route}>

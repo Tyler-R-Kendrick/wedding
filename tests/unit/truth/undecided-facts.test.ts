@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { DRESS_CODE_FAQ_ANSWER } from '@/domain/venue/dress-code';
 import { planRoute, PROTECTED_FACT_WORDS, toolsFor, type RouterTool } from '@/ai/router';
 import { BUILTIN_CAPABILITIES } from '@/capabilities';
 import { CapabilityRegistryImpl } from '@/capabilities/registry';
@@ -63,7 +64,7 @@ describe('a decided fact beside an undecided one', () => {
   });
 
   it('drops a record only when every sentence in it is a hint', () => {
-    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual(['Cocktail attire — for example, a suit or blazer with dress pants, or a cocktail dress.']);
+    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual([DRESS_CODE_FAQ_ANSWER]);
     expect(withoutPlaceholders([answerFor('contact')])).toEqual([answerFor('contact')]);
     expect(withoutPlaceholders([null, undefined, '   '])).toEqual([]);
   });
@@ -91,7 +92,7 @@ describe('the placeholder block', () => {
   });
 
   it('shows settled dress-code copy without a placeholder hint', () => {
-    expect(placeholderHint(answerFor('dress-code'))).toContain('Cocktail attire');
+    expect(placeholderHint(answerFor('dress-code'))).toContain('cocktail attire');
     expect(placeholderFacts(answerFor('dress-code'))).toBe('');
   });
 

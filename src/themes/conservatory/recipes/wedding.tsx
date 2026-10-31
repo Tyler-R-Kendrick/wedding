@@ -1,3 +1,4 @@
+import { DressCodeContent } from '@/components/wedding/DressCodeContent';
 import { Text as Block } from '@/components/provenance';
 import { formatDateWithWeekday } from '@/domain/content/format';
 import { ROUTES } from '@/domain/routes';
@@ -31,7 +32,7 @@ export const ConservatoryWeddingPage: ContentRecipe<WeddingProps> = ({ data, fra
       </div>
       <div className="cv-section__mount">
         <Card label="Wear" featured index={1}>
-          <Block block={data.dressCode} />
+          <DressCodeContent />
         </Card>
       </div>
     </Section>
