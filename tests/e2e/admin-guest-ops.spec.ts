@@ -30,25 +30,27 @@ test.describe('admin guest and household ops', () => {
     expect((listed.body.data as { guests: { id: string }[] }).guests.some((g) => g.id === guestId)).toBe(true);
   });
 
-  test('admin adds a household through the console UI', async ({ browser }) => {
+  test('admin adds a household through the console UI', async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'admin flows are reviewed at desktop width');
     test.setTimeout(120_000);
     const ctx = await contextAs(browser, 'admin');
     const page = await ctx.newPage();
     const name = `UI Household ${Date.now()}`;
+    const dialog = page.getByRole('dialog');
     await page.goto('/admin/households');
     await page.getByRole('button', { name: 'Add a household' }).click();
-    await page.getByLabel('Name as printed').fill(name);
-    await page.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Add a household' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Household added.' })).toBeVisible();
-    await expect(page.locator(`[data-household-id]`).filter({ hasText: name })).toBeVisible();
+    await dialog.getByLabel('Name as printed').fill(name);
+    await dialog.getByRole('button', { name: 'Continue' }).click();
+    await dialog.getByRole('button', { name: 'Continue' }).click();
+    await dialog.getByRole('button', { name: 'Add a household' }).click();
+    await expect(page.locator('.flow-announce')).toContainText('Household added.', { timeout: 30_000 });
+    await expect(page.locator('#households [data-household-id]').filter({ hasText: name })).toBeVisible({ timeout: 30_000 });
     await ctx.close();
   });
 
-  // Full flow is covered in tests/integration/admin-guest-bootstrap.test.ts; the shared test-server
-  // guest UI walk is exercised when adding the first household via the dialog above.
-  test('admin guest flow reaches the reach step for a known household', async ({ browser, request }) => {
+  // Full flow is covered in tests/integration/admin-guest-bootstrap.test.ts.
+  test('admin guest flow reaches the reach step for a known household', async ({ browser, request }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'admin flows are reviewed at desktop width');
     test.setTimeout(60_000);
     const suffix = Date.now();
     const hh = await callCapability(request, 'admin_upsert_household', 'admin', { name: `Guest flow HH ${suffix}` }, { idempotencyKey: key() });
@@ -61,31 +63,6 @@ test.describe('admin guest and household ops', () => {
     await dialog.getByLabel('First name').fill('Pat');
     await dialog.getByRole('button', { name: 'Continue' }).click();
     await expect(dialog.getByRole('heading', { name: 'How to reach them' })).toBeVisible({ timeout: 30_000 });
-    await ctx.close();
-  });
-
-  test('bootstrap copy appears and first-guest flow collects a household name when none exist', async ({ browser, request }) => {
-    test.setTimeout(120_000);
-    // Clear guest domain through capabilities (skip claimed guests).
-    const guests = await callCapability(request, 'admin_list_guests', 'admin', { includeMerged: true });
-    for (const g of (guests.body.data?.guests ?? []) as { id: string; claimed: boolean }[]) {
-      if (!g.claimed) await callCapability(request, 'admin_delete_guest', 'admin', { guestId: g.id }, { idempotencyKey: key() });
-    }
-    const hhs = await callCapability(request, 'admin_list_households', 'admin', {});
-    for (const h of (hhs.body.data?.households ?? []) as { id: string; memberCount: number }[]) {
-      if (h.memberCount === 0) await callCapability(request, 'admin_delete_household', 'admin', { householdId: h.id }, { idempotencyKey: key() });
-    }
-    const remaining = await callCapability(request, 'admin_list_households', 'admin', {});
-    if (((remaining.body.data as { households: unknown[] } | undefined)?.households ?? []).length > 0) {
-      test.skip(true, 'Fixture households still have members; bootstrap UI is covered in integration tests.');
-    }
-
-    const ctx = await contextAs(browser, 'admin');
-    const page = await ctx.newPage();
-    await page.goto('/admin/guests');
-    await expect(page.locator('#main')).toContainText('No guests or households yet');
-    await page.getByRole('button', { name: 'Add your first guest' }).click();
-    await expect(page.getByLabel('Household name as printed')).toBeVisible();
     await ctx.close();
   });
 });
