@@ -80,10 +80,10 @@ const serverSchema = z.object({
   EMAIL_FROM: optionalString,
   /** Svix signing secret from the Resend inbound webhook (>= 16 chars). Unset -> POST /api/webhooks/resend answers 404. */
   RESEND_WEBHOOK_SECRET: optionalSecret(16),
-  /** Wedding planner inbox for guest mail forwarded from hello@kendrick.wedding. Unset -> inbound forward disabled (404). */
+  /** Comma-separated forward inboxes for guest mail to hello@kendrick.wedding. Empty -> inbound forward disabled (404). */
   PLANNER_FORWARD_EMAIL: z.preprocess(
-    (v) => (v === undefined || v === '' ? undefined : String(v).trim().toLowerCase()),
-    z.email().optional(),
+    (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
+    z.array(z.email()),
   ),
   /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,

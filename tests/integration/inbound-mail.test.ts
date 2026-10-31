@@ -13,7 +13,7 @@ describe('Resend inbound forward', () => {
     const result = await handleResendInboundWebhook(
       {
         webhookSecret: SECRET,
-        config: { connectUserId: 'user_test', emailFrom: 'Sara + Tyler <hello@kendrick.wedding>', plannerForwardEmail: '' },
+        config: { connectUserId: 'user_test', emailFrom: 'Sara + Tyler <hello@kendrick.wedding>', plannerForwardEmails: [] },
         nonces: new MemoryIdempotencyStore(),
         limiter: new MemoryRateLimit(),
       },
@@ -65,7 +65,7 @@ describe('Resend inbound forward', () => {
         config: {
           connectUserId: 'user_test',
           emailFrom: 'Sara + Tyler <hello@kendrick.wedding>',
-          plannerForwardEmail: 'planner@example.test',
+          plannerForwardEmails: ['bustleandlace@gmail.com', 'saraandtyler27@gmail.com'],
         },
         nonces: new MemoryIdempotencyStore(),
         limiter: new MemoryRateLimit(),
@@ -82,7 +82,7 @@ describe('Resend inbound forward', () => {
     expect(sendCall).toBeDefined();
     const payload = JSON.parse(String((sendCall?.[1] as RequestInit).body));
     expect(payload).toMatchObject({
-      to: ['planner@example.test'],
+      to: ['bustleandlace@gmail.com', 'saraandtyler27@gmail.com'],
       bcc: ['contact.tylerkendrick@gmail.com'],
       reply_to: 'Guest <guest@example.test>',
       subject: '[kendrick.wedding] Need my link',

@@ -16,7 +16,8 @@ const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export interface InboundForwardConfig {
   connectUserId: string;
   emailFrom: string;
-  plannerForwardEmail: string;
+  /** One or more forward destinations (from PLANNER_FORWARD_EMAIL). */
+  plannerForwardEmails: readonly string[];
   guestInboxEmail?: string;
 }
 
@@ -66,13 +67,14 @@ function isAutoReply(headers: Record<string, string | string[]>): boolean {
   return false;
 }
 
-function blockedSenders(emailFrom: string, plannerEmail: string): Set<string> {
-  return new Set<string>([
+function blockedSenders(emailFrom: string, plannerEmails: readonly string[]): Set<string> {
+  const blocked = new Set<string>([
     normalizeEmail(GUEST_CONTACT_EMAIL),
-    normalizeEmail(plannerEmail),
     normalizeEmail(INBOUND_FORWARD_BCC),
     parseMailbox(emailFrom),
   ]);
+  for (const planner of plannerEmails) blocked.add(normalizeEmail(planner));
+  return blocked;
 }
 
 export function shouldSkipForward(
@@ -87,7 +89,7 @@ export function shouldSkipForward(
   const subject = (input.subject ?? '').trim();
   if (subject.toLowerCase().startsWith(FORWARDED_SUBJECT_PREFIX.toLowerCase())) return 'loop_subject';
 
-  const blocked = blockedSenders(config.emailFrom, config.plannerForwardEmail);
+  const blocked = blockedSenders(config.emailFrom, config.plannerForwardEmails);
   const sender = parseMailbox(input.from);
   if (blocked.has(sender)) return 'loop_sender';
 
@@ -102,7 +104,7 @@ export async function forwardGuestEmail(
   consumeSenderLimit: (key: string) => Promise<boolean>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const { config } = deps;
-  if (!config.plannerForwardEmail) return { status: 404, body: { ok: false } };
+  if (config.plannerForwardEmails.length === 0) return { status: 404, body: { ok: false } };
 
   const fetchImpl = deps.fetchImpl ?? fetch;
   const received = await fetchReceivedEmail(config.connectUserId, input.emailId, fetchImpl);
@@ -149,7 +151,7 @@ export async function forwardGuestEmail(
       config.connectUserId,
       {
         from: config.emailFrom,
-        to: config.plannerForwardEmail,
+        to: [...config.plannerForwardEmails],
         bcc: [INBOUND_FORWARD_BCC],
         replyTo: received.value.from,
         subject,

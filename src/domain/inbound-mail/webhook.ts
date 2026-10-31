@@ -30,7 +30,7 @@ export async function handleResendInboundWebhook(
   headers: { svixId: string | null; svixTimestamp: string | null; svixSignature: string | null },
   clientIp: string,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
-  if (!deps.webhookSecret || !deps.config.plannerForwardEmail || !deps.config.connectUserId || !deps.config.emailFrom) {
+  if (!deps.webhookSecret || deps.config.plannerForwardEmails.length === 0 || !deps.config.connectUserId || !deps.config.emailFrom) {
     return { status: 404, body: { ok: false } };
   }
 

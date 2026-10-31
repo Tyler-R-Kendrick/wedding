@@ -5,7 +5,7 @@ import { shouldSkipForward } from '@/domain/inbound-mail/forward';
 const config = {
   connectUserId: 'user_123',
   emailFrom: 'Sara + Tyler <hello@kendrick.wedding>',
-  plannerForwardEmail: 'planner@example.test',
+  plannerForwardEmails: ['planner@example.test', 'couple@example.test'],
 };
 
 describe('shouldSkipForward', () => {
@@ -18,6 +18,7 @@ describe('shouldSkipForward', () => {
   it('blocks loops from the planner, site address, and prefixed subjects', () => {
     expect(shouldSkipForward({ from: 'guest@example.test', to: [GUEST_CONTACT_EMAIL], subject: 'Question' }, config)).toBeNull();
     expect(shouldSkipForward({ from: 'planner@example.test', to: [GUEST_CONTACT_EMAIL], subject: 'Re' }, config)).toBe('loop_sender');
+    expect(shouldSkipForward({ from: 'couple@example.test', to: [GUEST_CONTACT_EMAIL], subject: 'Re' }, config)).toBe('loop_sender');
     expect(
       shouldSkipForward({ from: 'guest@example.test', to: [GUEST_CONTACT_EMAIL], subject: '[kendrick.wedding] ping' }, config),
     ).toBe('loop_subject');
