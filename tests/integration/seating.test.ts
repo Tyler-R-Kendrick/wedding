@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { mealOptions, rsvpResponses } from '@/db/schema';
+import { BRIDE_GUEST_ID } from '@/db/seed/bride-guest';
 import { FX, fixtureAdmin, fixturePrincipal, seedTestFixtures } from '@/db/seed/fixtures';
 import { listAuditEvents } from '@/lib/audit';
 import { expectErr, expectOk, run, seedSwarmE } from './helpers/swarm-e';
@@ -55,7 +56,8 @@ describe('draft seating never reaches guests', () => {
     expect(overview.data.publication).toBeNull();
     expect(overview.data.draftDiffers).toBe(true);
     expect(overview.data.tables.map((t) => t.name)).toEqual(['Draft Table Alpha', 'Draft Table Beta', 'Draft Table Gamma']);
-    expect(overview.data.unassigned.map((u) => u.guestId)).toEqual([FX.guestA3]);
+    const unassignedGuestIds = overview.data.unassigned.map((u) => u.guestId).filter((id) => id !== BRIDE_GUEST_ID);
+    expect(unassignedGuestIds).toEqual([FX.guestA3]);
   });
 
   it('previews for the console what a guest would see if the draft were published — and publishes nothing', async () => {
