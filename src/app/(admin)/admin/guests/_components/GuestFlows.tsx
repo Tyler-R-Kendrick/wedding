@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { useList } from '@/components/admin/flow/lists';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
+import { formatDay } from '@/components/admin/flow/dates';
 
 export interface GuestSummary {
   id: string;
@@ -322,6 +323,137 @@ export function RebindFlow({ guest }: { guest: GuestSummary }) {
         },
       ]}
       submit={{ label: `Move ${guest.displayName}’s access`, capability: 'admin_rebind_identity', success: 'Access moved to the new email.', input: (v) => ({ guestId: guest.id, email: v.email.trim(), reason: v.reason.trim() }) }}
+    />
+  );
+}
+
+interface IssuedPass {
+  url: string;
+  code: string;
+  qrSvg: string;
+  pass: { id: string; expiresAt: string };
+}
+
+const passTtlOk = (s: string, max: number) => s.trim() === '' || (/^\d+$/.test(s.trim()) && Number(s) <= max);
+
+function PassLinkPanel({ issued, guestName }: { issued: IssuedPass; guestName: string }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(issued.url);
+      setCopied('Copied.');
+    } catch {
+      setCopied('Select the link and copy it.');
+    }
+  };
+  const downloadSvg = () => {
+    const blob = new Blob([issued.qrSvg], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${guestName.replace(/\s+/g, '-').toLowerCase()}-sign-in-qr.svg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  return (
+    <div className="flow-found" data-testid="issued-pass">
+      <p>
+        <strong>Sign-in link for {guestName}, shown only this once.</strong> Put the link or QR on their invitation. The six-digit code is for your records only — never email or print the code itself.
+      </p>
+      <p className="flow-found__url">{issued.url}</p>
+      <p>
+        Code for your records: <strong>{issued.code}</strong> (do not share separately)
+      </p>
+      <p>
+        <button type="button" className="ops-button ops-button-ghost flow-inline-button" onClick={copy}>
+          Copy the link
+        </button>{' '}
+        <button type="button" className="ops-button ops-button-ghost flow-inline-button" onClick={downloadSvg}>
+          Download QR (SVG)
+        </button>{' '}
+        <span role="status">{copied}</span>
+      </p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- generated data URI */}
+      <img className="ops-qr" alt={`QR code to sign in as ${guestName}`} src={`data:image/svg+xml;utf8,${encodeURIComponent(issued.qrSvg)}`} />
+      <p className="flow-hint">It works until {formatDay(issued.pass.expiresAt)}.</p>
+    </div>
+  );
+}
+
+function EmailPassButton({ passId, guestName }: { passId: string; guestName: string }) {
+  const [status, setStatus] = useState<string | null>(null);
+  const send = async () => {
+    setStatus('Sending…');
+    const res = await callCapability<{ sent: boolean; deliveredTo: string }>('admin_email_guest_sign_in_pass', {
+      input: { passId },
+      idempotencyKey: newIdempotencyKey(),
+    });
+    if (!res.ok || !res.data) {
+      setStatus(res.error?.message ?? 'Could not send.');
+      return;
+    }
+    setStatus(`Sent to ${res.data.deliveredTo}.`);
+  };
+  return (
+    <p>
+      <button type="button" className="ops-button ops-button-ghost" onClick={send}>
+        Email {guestName} the link
+      </button>{' '}
+      <span role="status">{status}</span>
+    </p>
+  );
+}
+
+interface PassValues extends Record<string, unknown> {
+  ttlDays: string;
+  emailNow: boolean;
+}
+
+/** Temporary sign-in link + QR for one guest (printed invitations, older guests). */
+export function SignInPassFlow({ guest }: { guest: GuestSummary }) {
+  if (guest.kind === 'child' || guest.isMinor) return null;
+  const steps: FlowStep<PassValues>[] = [
+    {
+      title: 'How long it lasts',
+      fields: ['ttlDays'],
+      render: (ctx) => (
+        <TextField ctx={ctx} name="ttlDays" label="Days until it expires" inputMode="numeric" hint="Default is 30 days. They can use the link until then unless you revoke it." />
+      ),
+      ready: (v) => passTtlOk(v.ttlDays, 365),
+      readyHint: { field: 'ttlDays', message: 'Enter a number of days up to 365, or leave blank for 30.' },
+    },
+    {
+      title: 'Email the link?',
+      fields: ['emailNow'],
+      render: (ctx) => (
+        <>
+          <CheckField ctx={ctx} name="emailNow" label="Email the short link after it is created" hint={guest.email ? 'The message contains the link only, never the code.' : 'Add an email to this guest first.'} />
+          {!guest.email ? <p className="flow-hint">No email on file — copy the link or QR on the next screen.</p> : null}
+        </>
+      ),
+    },
+  ];
+  return (
+    <AdminFlow<PassValues>
+      id={`guests:pass:${guest.id}`}
+      title={`Sign-in link for ${guest.displayName}`}
+      trigger={{ label: 'Sign-in link', variant: 'quiet', accessibleName: `Create a sign-in link for ${guest.displayName}` }}
+      initial={{ ttlDays: '30', emailNow: false }}
+      steps={steps}
+      submit={{
+        label: 'Create sign-in link',
+        capability: 'admin_issue_guest_sign_in_pass',
+        success: 'Sign-in link created.',
+        input: (v) => ({ guestId: guest.id, ttlDays: v.ttlDays.trim() ? Number(v.ttlDays) : undefined }),
+        result: (data, values) => {
+          const issued = data as IssuedPass;
+          return (
+            <>
+              <PassLinkPanel issued={issued} guestName={guest.displayName} />
+              {values.emailNow && guest.email ? <EmailPassButton passId={issued.pass.id} guestName={guest.displayName} /> : null}
+            </>
+          );
+        },
+      }}
     />
   );
 }

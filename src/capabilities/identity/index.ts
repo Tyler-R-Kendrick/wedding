@@ -11,10 +11,11 @@ import { requestOtp } from '../request_otp';
 import { stepUp } from '../step_up';
 import { updateMyContact } from '../update_my_contact';
 import { verifyOtp } from '../verify_otp';
+import { guestSignInPassCapabilities } from '../guest_sign_in_pass';
 
 /** Swarm D: identity, authentication, entitlements. Registered from src/capabilities/index.ts. */
 export const identityCapabilities: readonly AnyCapability[] = [
-  lookupInvitation, requestOtp, verifyOtp, claimIdentity, registerPasskey, stepUp, getMyInvitation, getMyHousehold, updateMyContact,
+  lookupInvitation, requestOtp, verifyOtp, ...guestSignInPassCapabilities, claimIdentity, registerPasskey, stepUp, getMyInvitation, getMyHousehold, updateMyContact,
   ...adminGuestOpsCapabilities,
   adminBrowseAsGuest,
   adminListOwnGuestRecords,

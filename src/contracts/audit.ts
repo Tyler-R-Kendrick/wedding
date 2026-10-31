@@ -15,6 +15,7 @@ export const AUDIT_ACTIONS = [
   'guest_view.started', 'guest_view.ended',
   'view_role.started', 'view_role.ended',
   'passkey.registered', 'passkey.removed', 'identity.email_changed',
+  'identity.pass_issued', 'identity.pass_revoked', 'identity.pass_emailed',
   'rsvp.submitted', 'rsvp.admin_override',
   'seating.published', 'seating.unpublished', 'seating.changed',
   'transport.entitlement_assigned', 'transport.claimed', 'transport.claim_failed',
