@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';

@@ -6,7 +6,7 @@ import { adminClearViewRole, adminSetViewRole } from '@/capabilities/identity/vi
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import type { ViewRoleKey } from '@/domain/identity/view-role';
 import { VIEW_ROLE_COOKIE, VIEW_ROLE_TTL_SECONDS } from '@/domain/identity/view-role';
-import { adminInvoke, back, describeError } from '../_shared/admin';
+import { adminInvoke, back, describeError } from '../../_shared/admin';
 
 export async function startViewRole(fd: FormData): Promise<void> {
   const role = fd.get('role');

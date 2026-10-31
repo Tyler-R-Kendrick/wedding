@@ -1,8 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { adminListViewRoles, adminViewRoleStatus } from '@/capabilities/identity/view_role';
 import { VIEW_ROLE_COOKIE } from '@/domain/identity/view-role';
-import { adminInvoke, adminPrincipal } from '../../_shared/admin';
+import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Section } from '../_components/console';
 import { clearViewRole, startViewRole } from '../_lib/view-role-actions';
 
@@ -10,13 +9,13 @@ import { clearViewRole, startViewRole } from '../_lib/view-role-actions';
  * "View as: <role>" — preview the guest site with synthetic entitlements, without a real guest profile.
  */
 export async function ViewRolePanel() {
-  const { principal } = await adminPrincipal();
+  const principal = await adminPrincipal();
   if (principal.kind !== 'admin') return null;
   const jar = await cookies();
   const token = jar.get(VIEW_ROLE_COOKIE)?.value;
   const [roles, status] = await Promise.all([
-    adminInvoke(adminListViewRoles, {}, { method: 'GET' }),
-    adminInvoke(adminViewRoleStatus, { token }, { method: 'GET' }),
+    adminInvoke<{ roles: { role: string; label: string }[] }>('admin_list_view_roles', {}, { method: 'GET' }),
+    adminInvoke<{ view: { role: string; label: string; readOnly: true } | null }>('admin_view_role_status', { token }, { method: 'GET' }),
   ]);
   const options = roles.ok ? roles.value.data.roles : [];
   const active = status.ok ? status.value.data.view : null;
