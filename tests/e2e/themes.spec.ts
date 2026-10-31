@@ -189,7 +189,8 @@ test.describe('shell chrome', () => {
         .filter((s) => s.overflow > 1 || s.ellipsis),
     );
     expect(clipped).toEqual([]);
-    await expect(page.locator('.gh-panel__cell', { hasText: /Ask us/i })).toBeVisible();
+    await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toBeVisible();
+    await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toBeVisible();
   });
 
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {
