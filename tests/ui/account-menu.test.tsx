@@ -7,7 +7,7 @@ import { THEME_IDS } from '@/themes/registry';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
 
 const CLASSES = { link: 'nav-link', item: 'menu-link' };
-const MEMBER = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos'];
+const MEMBER = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos', '/ask-us'];
 
 afterEach(() => {
   vi.restoreAllMocks();

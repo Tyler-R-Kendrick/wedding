@@ -90,6 +90,7 @@ describe('routes', () => {
     expect(isPersonalizedRoute('/i/abc')).toBe(true);
     // Zelle and mailing details render for invited guests only (ADR-0013), so no shared cache may keep it.
     expect(isPersonalizedRoute('/gifts')).toBe(true);
+    expect(isPersonalizedRoute('/ask-us')).toBe(true);
     expect(isPersonalizedRoute('/our-story')).toBe(false);
   });
 });

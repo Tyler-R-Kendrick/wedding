@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { headers } from 'next/headers';
 import { preload } from 'react-dom';
 import { getTheme } from '@/themes';
@@ -36,7 +37,7 @@ export default async function NotFound() {
             </Link>
           </p>
           <p>
-            <Link className="link-block" href="/ask-us">
+            <Link className="link-block" href={throughSignIn('/ask-us')}>
               Search the questions guests ask
             </Link>
           </p>

@@ -204,7 +204,7 @@
    "url": "/ask-us",
    "finalUrl": "/ask-us",
    "source": "https://kendrick.wedding",
-   "principal": null,
+   "principal": "guest",
    "capturedAt": "2026-09-24",
    "designs": {
     "botanical-deco": {

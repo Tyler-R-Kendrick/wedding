@@ -12,7 +12,7 @@ export const STATIC_PUBLIC_ROUTES = ['/'] as const;
 // cache must never hand one guest's render to the next visitor. `/photos` and `/media` are signed-in
 // only too (the account menu): a render carries that guest's albums and short-lived signed links.
 // `/transportation` and `/trip` render a guest's ride credit and travel plans.
-export const PERSONALIZED_ROUTE_PREFIXES = ['/your-weekend', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media', '/transportation', '/trip', '/travel', '/share-an-adventure'] as const;
+export const PERSONALIZED_ROUTE_PREFIXES = ['/your-weekend', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media', '/transportation', '/trip', '/travel', '/share-an-adventure', '/ask-us'] as const;
 
 export function isStaticPublicRoute(pathname: string): boolean {
   return (STATIC_PUBLIC_ROUTES as readonly string[]).includes(pathname);

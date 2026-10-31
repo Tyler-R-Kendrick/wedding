@@ -10,7 +10,7 @@ import type { SitemapPage, SitemapSection } from './types';
  */
 export const SECTIONS: SitemapSection[] = [
   { id: 'public', title: 'Public', audience: 'public', blurb: 'Anyone with the link: the story, the place, the plan.' },
-  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: their weekend, their RSVP, their trip, the registry and the photos. Reached only from the account menu.' },
+  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: their weekend, their RSVP, their trip, the registry, the photos, and Ask Us. Reached only from the account menu.' },
   { id: 'gate', title: 'Doors', audience: 'gate', blurb: 'How a guest gets from an invitation link to a session.' },
   { id: 'admin', title: 'Admin', audience: 'admin', blurb: 'Sara, Tyler and the planner run the site from here.' },
 ];
@@ -67,15 +67,15 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Plan your trip', to: 'trip' },
   },
   {
-    id: 'ask', path: '/ask-us', title: 'Ask Us', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
-    job: 'A concierge that answers questions about the weekend from what we have published, with citations.',
-  },
-  {
     id: 'credits', path: '/credits', title: 'Photo credits', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER',
     job: 'Who made every image on the site, and under what licence.',
   },
 
   // ── Guests ────────────────────────────────────────────────────────────────────────────────────
+  {
+    id: 'ask', path: '/ask-us', title: 'Ask Us', parent: null, audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
+    job: 'A concierge that answers questions about the weekend from what we have published, with citations.',
+  },
   {
     id: 'weekend', path: '/your-weekend', title: 'Your Weekend', parent: null, audience: 'guest', mode: ['act'], visibleFrom: 'INVITATIONS_OPEN', inNav: true,
     job: 'Your household\'s hub: invitation, RSVP status, your table, ride benefits and preferences.',

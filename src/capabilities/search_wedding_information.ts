@@ -37,7 +37,7 @@ export const searchWeddingInformation = defineCapability<z.infer<typeof input>, 
     'Each result has a trust class, a route or official link to cite, a verification date and, when the record is aging or stale, a caveat to repeat. ' +
     'Placeholders (undecided details) and drafts are never returned; if nothing matches, the information is not on the site. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   flag: 'AI_CONCIERGE',
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },

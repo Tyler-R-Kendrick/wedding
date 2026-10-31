@@ -3,6 +3,7 @@ import type { TransportationOptions } from '@/capabilities/get_my_transportation
 import type { GiftLinks } from '@/capabilities/list_gift_links';
 import { Placeholder, placeholderHint } from '@/components/provenance/Placeholder';
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
+import { throughSignIn } from '@/domain/lifecycle/account';
 import { ClaimBenefitFlow } from './ClaimBenefitFlow';
 import { ExternalHandoffCard } from './ExternalHandoffCard';
 import { GiftFunds } from './GiftFunds';
@@ -153,7 +154,7 @@ export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> 
         </GuestSection>
       ))}
       <footer className="wp-guest-foot">
-        <p className="hint">Questions? <Link className="underline underline-offset-4" href="/ask-us">Ask us</Link>.</p>
+        <p className="hint">Questions? <Link className="underline underline-offset-4" href={throughSignIn('/ask-us')}>Ask us</Link>.</p>
       </footer>
     </div>
   );

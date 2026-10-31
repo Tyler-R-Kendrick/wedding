@@ -32,16 +32,19 @@ const plan = (question: string, principal: Principal = anonymous, extra: readonl
 
 describe('capability-derived tool list', () => {
   it('offers only AI-exposed capabilities the principal may call', () => {
-    const names = toolsFor(anonymous, flags, registry).map((t) => t.descriptor.name);
-    expect(names).toContain('search_wedding_information');
-    expect(names).toContain('get_faq');
-    // ask_concierge would recurse, list_ai_traces is admin-only.
-    expect(names).not.toContain('ask_concierge');
-    expect(names).not.toContain('list_ai_traces');
+    const anonNames = toolsFor(anonymous, flags, registry).map((t) => t.descriptor.name);
+    expect(anonNames).not.toContain('search_wedding_information');
+    expect(anonNames).not.toContain('get_faq');
+    expect(anonNames).not.toContain('ask_concierge');
+    expect(anonNames).not.toContain('list_ai_traces');
+
+    const guestNames = toolsFor(guest, flags, registry).map((t) => t.descriptor.name);
+    expect(guestNames).toContain('search_wedding_information');
+    expect(guestNames).toContain('get_faq');
   });
 
   it('produces a JSON schema for every offered tool', () => {
-    for (const tool of toolsFor(anonymous, flags, registry)) {
+    for (const tool of toolsFor(guest, flags, registry)) {
       expect(inputJsonSchema(tool.descriptor), tool.descriptor.name).toBeTypeOf('object');
     }
   });

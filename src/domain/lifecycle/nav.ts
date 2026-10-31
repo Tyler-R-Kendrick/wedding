@@ -10,9 +10,9 @@ import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
  * Weekend, Transportation, Gifts, Photos & Video) are `member`: reachable only from the signed-in
  * account menu. Hidden UI is never authorization: every route re-checks entitlements server-side.
  */
-type PageKey = 'home' | 'story' | 'adventures' | 'share' | 'wedding' | 'caa' | 'weekend' | 'travel' | 'transport' | 'gifts' | 'photos' | 'ask' | 'rsvp';
+type PageKey = 'home' | 'story' | 'adventures' | 'share' | 'wedding' | 'caa' | 'weekend' | 'travel' | 'transport' | 'gifts' | 'photos' | 'rsvp';
 
-const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'share', 'wedding', 'caa', 'weekend', 'travel', 'transport', 'gifts', 'photos', 'ask', 'rsvp'];
+const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'share', 'wedding', 'caa', 'weekend', 'travel', 'transport', 'gifts', 'photos', 'rsvp'];
 
 /**
  * Labels and paths come from the sitemap (stages/01-sitemap/lib/sitemap.ts), the first stage of
@@ -20,34 +20,40 @@ const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'share', '
  * and this navigation all follow. The keys ARE sitemap page ids, so `page()` throws at import if
  * one of them leaves the sitemap, rather than rendering a link to nowhere.
  */
-const PAGES = Object.fromEntries(
-  PAGE_KEYS.map((key) => {
-    const p = sitemapPage(key);
-    return [key, { label: navLabel(p), href: p.path }];
-  }),
-) as Record<PageKey, NavItem>;
+const PAGES = {
+  ...Object.fromEntries(
+    PAGE_KEYS.map((key) => {
+      const p = sitemapPage(key);
+      return [key, { label: navLabel(p), href: p.path }];
+    }),
+  ),
+  ask: (() => {
+    const p = sitemapPage('ask');
+    return { label: navLabel(p), href: p.path };
+  })(),
+} as Record<PageKey | 'ask', NavItem>;
 
 /** The account menu's pages: only ever listed for a signed-in reader, never in `primary`/`more`/`sticky`. */
-type MemberKey = 'weekend' | 'rsvp' | 'transport' | 'gifts' | 'photos';
+type MemberKey = 'weekend' | 'rsvp' | 'transport' | 'gifts' | 'photos' | 'ask';
 type PublicKey = Exclude<PageKey, MemberKey>;
 
 interface StateNav {
   primary: PublicKey[];
   more: PublicKey[];
-  sticky: ('directions' | 'ask' | 'now')[];
+  sticky: ('directions' | 'now')[];
 }
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
-  TEASER: { primary: ['story', 'adventures', 'caa'], more: ['ask'], sticky: [] },
+  TEASER: { primary: ['story', 'adventures', 'caa'], more: [], sticky: [] },
   // No 'wedding' yet: the sitemap opens The Wedding at INVITATIONS_OPEN, when there is a ceremony to describe.
-  SAVE_THE_DATE: { primary: ['story', 'travel', 'adventures'], more: ['share', 'caa', 'ask'], sticky: [] },
-  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: [] },
-  RSVP_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: ['directions'] },
-  RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa', 'ask'], sticky: ['directions'] },
-  WEDDING_WEEK: { primary: ['wedding', 'ask', 'share'], more: ['story', 'adventures', 'caa', 'travel'], sticky: ['directions', 'ask'] },
-  WEDDING_DAY: { primary: ['home', 'ask', 'wedding'], more: ['caa', 'share', 'story', 'adventures'], sticky: ['now', 'ask'] },
-  POST_WEDDING: { primary: ['adventures', 'story', 'share'], more: ['caa', 'wedding', 'ask'], sticky: [] },
-  ARCHIVE: { primary: ['story', 'adventures', 'caa'], more: ['share', 'wedding', 'ask'], sticky: [] },
+  SAVE_THE_DATE: { primary: ['story', 'travel', 'adventures'], more: ['share', 'caa'], sticky: [] },
+  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa'], sticky: [] },
+  RSVP_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa'], sticky: ['directions'] },
+  RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa'], sticky: ['directions'] },
+  WEDDING_WEEK: { primary: ['wedding', 'share'], more: ['story', 'adventures', 'caa', 'travel'], sticky: ['directions'] },
+  WEDDING_DAY: { primary: ['home', 'wedding'], more: ['caa', 'share', 'story', 'adventures'], sticky: ['now'] },
+  POST_WEDDING: { primary: ['adventures', 'story', 'share'], more: ['caa', 'wedding'], sticky: [] },
+  ARCHIVE: { primary: ['story', 'adventures', 'caa'], more: ['share', 'wedding'], sticky: [] },
 };
 
 /**
@@ -61,15 +67,15 @@ const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
  * and gifts from the moment the RSVP opens, as the public tables had them.
  */
 const MEMBER_BY_STATE: Record<LifecycleState, MemberKey[]> = {
-  TEASER: ['photos'],
-  SAVE_THE_DATE: ['photos'],
-  INVITATIONS_OPEN: ['weekend', 'transport', 'photos'],
-  RSVP_OPEN: ['rsvp', 'weekend', 'transport', 'gifts', 'photos'],
-  RSVP_CLOSED: ['weekend', 'transport', 'gifts', 'photos'],
-  WEDDING_WEEK: ['weekend', 'transport', 'gifts', 'photos'],
-  WEDDING_DAY: ['weekend', 'photos', 'transport', 'gifts'],
-  POST_WEDDING: ['photos', 'weekend', 'gifts'],
-  ARCHIVE: ['photos'],
+  TEASER: ['photos', 'ask'],
+  SAVE_THE_DATE: ['photos', 'ask'],
+  INVITATIONS_OPEN: ['weekend', 'transport', 'photos', 'ask'],
+  RSVP_OPEN: ['rsvp', 'weekend', 'transport', 'gifts', 'photos', 'ask'],
+  RSVP_CLOSED: ['weekend', 'transport', 'gifts', 'photos', 'ask'],
+  WEDDING_WEEK: ['weekend', 'transport', 'gifts', 'photos', 'ask'],
+  WEDDING_DAY: ['weekend', 'photos', 'transport', 'gifts', 'ask'],
+  POST_WEDDING: ['photos', 'weekend', 'gifts', 'ask'],
+  ARCHIVE: ['photos', 'ask'],
 };
 
 /*
@@ -110,8 +116,6 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
   };
   const sticky: NavItem[] = spec.sticky.map((s) => {
     switch (s) {
-      case 'ask':
-        return PAGES.ask;
       case 'now':
         return { label: 'Now', href: '/#now' };
       case 'directions':

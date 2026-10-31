@@ -22,7 +22,7 @@ export const searchWeddingInformationStatic = defineCapability<z.infer<typeof in
     'Deterministic, no model. Results carry a route to cite, a source type, a verification date and freshness; when a result has a caveat, repeat it. Drafts and placeholders are never returned. ' +
     'If nothing matches, say you do not have that information. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   // ai: false since level 12. `search_wedding_information` supersedes it for the model — same corpus,
