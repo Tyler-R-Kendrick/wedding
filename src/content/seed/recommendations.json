@@ -271,6 +271,7 @@
     "title": "Explore Chicago Athletic Association",
     "category": "architecture",
     "what": "Explore the historic interiors of our wedding venue. Ask the hotel about building tours and access to Stagg Court.",
+    "sourceUrl": "https://www.chicagoathletichotel.com/about/history/",
     "interests": ["architecture", "walk", "inside-caa"],
     "draft": false,
     "visibility": "guest",

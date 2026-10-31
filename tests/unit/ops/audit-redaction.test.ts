@@ -111,7 +111,7 @@ describe('lifecycle transitions', () => {
     const change = describeTransition('TEASER', 'RSVP_OPEN');
     expect(change.direction).toBe('forward');
     expect(change.navGained).toContain('RSVP');
-    expect(change.navGained).toContain('Travel & Stay');
+    expect(change.navGained).toContain('The Wedding');
     const back = describeTransition('RSVP_OPEN', 'INVITATIONS_OPEN');
     expect(back.direction).toBe('back');
     expect(back.navLost).toContain('RSVP');

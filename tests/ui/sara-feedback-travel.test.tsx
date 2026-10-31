@@ -27,6 +27,14 @@ const props = {
 };
 
 describe.each(THEME_IDS)('Travel identity and pending bookings (%s)', (theme) => {
+  it('shows Sara’s upgraded-room note and published valet rate', () => {
+    const Recipe = getTheme(theme).content!.travel!;
+    render(<Recipe {...props} frame={frame(theme)} signedIn={false} tripHref="/sign-in?next=%2Ftrip" />);
+    expect(document.body.textContent).toMatch(/upgraded room or an extended stay, please let us know/i);
+    expect(document.body.textContent).toMatch(/\$84/);
+    expect(document.body.textContent).not.toMatch(/special event valet/i);
+  });
+
   it('offers sign-in to a public visitor without printing group booking fields', () => {
     const Recipe = getTheme(theme).content!.travel!;
     render(<Recipe {...props} frame={frame(theme)} signedIn={false} tripHref="/sign-in?next=%2Ftrip" />);

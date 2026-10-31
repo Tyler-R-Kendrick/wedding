@@ -4,8 +4,10 @@ import { findAdventures } from '@/capabilities/find_adventures';
 import { listItineraries } from '@/capabilities/list_itineraries';
 import { ITINERARY_BUCKETS, type ItineraryBucket } from '@/db/schema/content';
 import { publicPageContext } from '@/domain/content/page-context';
+import { env } from '@/lib/env';
 import { recipes } from '../_recipes';
 import { GuestChicagoTools } from '@/components/guide/GuestChicagoTools';
+import { CuratedChicagoSections } from '@/components/guide/CuratedChicagoSections';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +41,8 @@ export default async function ShareAnAdventurePage({ searchParams }: { searchPar
       recommendations={all.value.data}
       activeBucket={bucket}
       signedIn={signedIn}
-      guestTools={signedIn ? <GuestChicagoTools recommendations={all.value.data.items} /> : undefined}
+      guestTools={signedIn ? <GuestChicagoTools recommendations={all.value.data.items} mapUrl={env.CHICAGO_GUIDE_MAP_URL} /> : undefined}
+      curated={signedIn ? <CuratedChicagoSections items={all.value.data.items} /> : undefined}
       plan={plan && plan.ok ? { minutes, kids, interest, result: plan.value.data.plan } : undefined}
     />
   );
