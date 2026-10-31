@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
+import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { useList } from '@/components/admin/flow/lists';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
@@ -33,6 +33,8 @@ const kindLabel = (k: string) => KINDS.find((x) => x.value === k)?.label ?? k;
 
 interface GuestValues extends Record<string, unknown> {
   householdId: string;
+  /** When there are no households yet, the flow creates one from this name before saving the guest. */
+  newHouseholdName: string;
   firstName: string;
   lastName: string;
   kind: string;
@@ -53,8 +55,10 @@ interface GuestValues extends Record<string, unknown> {
 export function GuestFlow({ guest, households: given, defaultHouseholdId, label, variant = 'primary' }: { guest?: GuestSummary; households?: Option[]; defaultHouseholdId?: string; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
   // One list for the page (`ListsProvider`), unless the caller passes its own.
   const households = useList('households', given);
+  const bootstrapHousehold = !guest && households.length === 0;
   const initial: GuestValues = {
     householdId: guest?.householdId ?? defaultHouseholdId ?? '',
+    newHouseholdName: '',
     firstName: guest?.firstName ?? '',
     lastName: guest?.lastName ?? '',
     kind: guest?.kind ?? 'adult',
@@ -64,31 +68,56 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
     notes: guest?.notes ?? '',
     members: [],
   };
-  const householdName = (id: string) => households.find((h) => h.value === id)?.label ?? '';
+  const householdName = (id: string, v: GuestValues) => households.find((h) => h.value === id)?.label ?? v.newHouseholdName.trim();
 
   const steps: FlowStep<GuestValues>[] = [
     {
-      title: 'Who',
-      lede: 'Their name as it is printed on the invitation.',
-      fields: ['householdId', 'firstName', 'lastName', 'kind', 'isMinor'],
+      title: bootstrapHousehold ? 'Household and who' : 'Who',
+      lede: bootstrapHousehold
+        ? 'Start with the household name as it goes on the envelope, then the first guest in it.'
+        : 'Their name as it is printed on the invitation.',
+      fields: bootstrapHousehold ? ['newHouseholdName', 'firstName', 'lastName', 'kind', 'isMinor'] : ['householdId', 'firstName', 'lastName', 'kind', 'isMinor'],
       render: (ctx) => (
         <>
-          <SelectField ctx={ctx} name="householdId" label="Household" options={households} placeholder={households.length ? 'Choose a household' : 'Add a household first'} />
+          {bootstrapHousehold ? (
+            <TextField ctx={ctx} name="newHouseholdName" label="Household name as printed" hint='As on the envelope: “The Lovelace family”.' />
+          ) : (
+            <SelectField ctx={ctx} name="householdId" label="Household" options={households} placeholder="Choose a household" />
+          )}
           <TextField ctx={ctx} name="firstName" label="First name" autoComplete="off" />
           <TextField ctx={ctx} name="lastName" label="Last name" optional />
           <ChoiceField ctx={ctx} name="kind" legend="Kind" choices={KINDS} />
           <CheckField ctx={ctx} name="isMinor" label="A minor" hint="A minor never signs in; the household manager answers for them." />
         </>
       ),
-      ready: (v) => Boolean(v.householdId && v.firstName.trim()),
-      readyHint: { field: 'firstName', message: 'Choose a household and enter a first name.' },
-      next: async (v) => {
-        const res = await callCapability<{ members: { id: string; displayName: string; kind: string; isMinor: boolean }[] }>('admin_get_household', { input: { householdId: v.householdId } });
-        if (!res.ok || !res.data) return { errors: { householdId: res.error?.message ?? 'That household could not be read.' } };
+      ready: (v) => Boolean((v.householdId || v.newHouseholdName.trim()) && v.firstName.trim()),
+      readyHint: {
+        field: bootstrapHousehold ? 'newHouseholdName' : 'firstName',
+        message: bootstrapHousehold ? 'Give the household a name and enter a first name.' : 'Choose a household and enter a first name.',
+      },
+      next: async (v): Promise<{ errors?: FieldErrors; patch?: Partial<GuestValues> } | void> => {
+        let householdId = v.householdId;
+        if (!householdId && v.newHouseholdName.trim()) {
+          const created = await callCapability<{ household: { id: string; name: string } }>('admin_upsert_household', {
+            input: { name: v.newHouseholdName.trim() },
+            idempotencyKey: newIdempotencyKey(),
+          });
+          if (!created.ok || !created.data) {
+            return { errors: { newHouseholdName: created.error?.message ?? 'That household could not be saved.' } satisfies FieldErrors };
+          }
+          householdId = created.data.household.id;
+        }
+        if (!householdId) {
+          return { errors: { householdId: 'Choose a household first.' } satisfies FieldErrors };
+        }
+        const res = await callCapability<{ household: { name: string; managerGuestId: string | null }; members: { id: string; displayName: string; kind: string; isMinor: boolean }[] }>('admin_get_household', { input: { householdId } });
+        if (!res.ok || !res.data) {
+          return { errors: { householdId: res.error?.message ?? 'That household could not be read.' } satisfies FieldErrors };
+        }
         const members = res.data.members.filter((m) => m.id !== guest?.id && m.kind !== 'child' && !m.isMinor).map((m) => ({ value: m.id, label: m.displayName }));
         // A manager from another household is not a manager of this one.
         const keep = members.some((m) => m.value === v.managedByGuestId) ? v.managedByGuestId : '';
-        return { patch: { members, managedByGuestId: keep } };
+        return { patch: { householdId, newHouseholdName: res.data.household.name, members, managedByGuestId: keep } };
       },
     },
     {
@@ -117,7 +146,7 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
           <ReviewList
             items={[
               { label: 'Name', value: `${v.firstName} ${v.lastName}`.trim() },
-              { label: 'Household', value: householdName(v.householdId) },
+              { label: 'Household', value: householdName(v.householdId, v) },
               { label: 'Kind', value: `${kindLabel(v.kind)}${v.isMinor ? ', a minor' : ''}` },
               { label: 'Email', value: v.email },
               { label: 'Answered for by', value: v.members.find((m) => m.value === v.managedByGuestId)?.label ?? (v.managedByGuestId ? '' : 'The household manager') },
@@ -138,19 +167,51 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
       steps={steps}
       submit={{
         label: guest ? 'Save guest' : 'Add a guest',
-        capability: 'admin_upsert_guest',
         success: guest ? 'Guest saved.' : 'Guest added.',
-        input: (v) => ({
-          id: guest?.id,
-          householdId: v.householdId,
-          firstName: v.firstName.trim(),
-          lastName: v.lastName.trim(),
-          email: v.email.trim() || null,
-          kind: v.kind,
-          isMinor: v.isMinor,
-          managedByGuestId: v.managedByGuestId || null,
-          notes: v.notes.trim() || null,
-        }),
+        ...(guest
+          ? {
+              capability: 'admin_upsert_guest',
+              input: (v: GuestValues) => ({
+                id: guest.id,
+                householdId: v.householdId,
+                firstName: v.firstName.trim(),
+                lastName: v.lastName.trim(),
+                email: v.email.trim() || null,
+                kind: v.kind,
+                isMinor: v.isMinor,
+                managedByGuestId: v.managedByGuestId || null,
+                notes: v.notes.trim() || null,
+              }),
+            }
+          : {
+              run: async (v: GuestValues) => {
+                const guestRes = await callCapability<{ guest: GuestSummary & { email: string | null } }>('admin_upsert_guest', {
+                  input: {
+                    householdId: v.householdId,
+                    firstName: v.firstName.trim(),
+                    lastName: v.lastName.trim(),
+                    email: v.email.trim() || null,
+                    kind: v.kind,
+                    isMinor: v.isMinor,
+                    managedByGuestId: v.managedByGuestId || null,
+                    notes: v.notes.trim() || null,
+                  },
+                  idempotencyKey: newIdempotencyKey(),
+                });
+                if (!guestRes.ok || !guestRes.data) return guestRes;
+                const g = guestRes.data.guest;
+                if (g.kind !== 'child' && !g.isMinor && g.email) {
+                  const hh = await callCapability<{ household: { name: string; managerGuestId: string | null } }>('admin_get_household', { input: { householdId: v.householdId } });
+                  if (hh.ok && hh.data && !hh.data.household.managerGuestId) {
+                    await callCapability('admin_upsert_household', {
+                      input: { id: v.householdId, name: hh.data.household.name, managerGuestId: g.id },
+                      idempotencyKey: newIdempotencyKey(),
+                    });
+                  }
+                }
+                return guestRes;
+              },
+            }),
       }}
     />
   );

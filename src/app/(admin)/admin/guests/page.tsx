@@ -10,6 +10,7 @@ import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
 import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, type GuestSummary } from './_components/GuestFlows';
+import { HouseholdFlow } from '../households/_components/HouseholdFlows';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -56,6 +57,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const household = sp.householdId ? households.find((h) => h.value === sp.householdId) : undefined;
   const mergeTargets = rows.filter((g) => !g.mergedIntoGuestId).map((g) => ({ value: g.id, label: `${g.displayName} (${g.householdName})` }));
+  const noGuestData = households.length === 0 && rows.length === 0;
   // Browsing as anyone but yourself is for owners (`admin_browse_as_guest` re-checks it). It sets a
   // cookie and opens the site, so it stays a plain form action rather than a flow.
   const canBrowseAs = isOwner;
@@ -67,11 +69,17 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}
       actions={
         <>
-          <GuestFlow households={households} defaultHouseholdId={sp.householdId} label="Add a guest" />
+          <GuestFlow households={households} defaultHouseholdId={sp.householdId} label={noGuestData ? 'Add your first guest' : 'Add a guest'} />
+          {noGuestData ? <HouseholdFlow label="Add a household only" variant="ghost" /> : null}
           <ImportGuestsFlow />
         </>
       }
     >
+      {noGuestData ? (
+        <Note>
+          No guests or households yet. Add your first guest here — the flow creates the household for you — or add a household on its own, then come back to add people.
+        </Note>
+      ) : null}
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
       <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
@@ -90,7 +98,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
         </FilterBar>
         <ListsProvider lists={{ households, guests: mergeTargets }}>
-          <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
+          <RecordList label="Guests" empty={rows.length === 0 ? (sp.q || sp.householdId ? 'No guest matches this search.' : 'No guests yet. Add one with the button above.') : null}>
             {shown.rows.map((g) => (
               <RecordRow
                 key={g.id}
