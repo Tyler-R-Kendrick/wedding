@@ -14,7 +14,7 @@ const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long
 export function weddingEventSkeleton(provenance: ProvenanceViewData, dateIso: string = WEDDING_DATE_ISO): WeddingEventView[] {
   const weekdayLabel = WEEKDAY.format(new Date(`${dateIso}T12:00:00`));
   const room = textBlock('TODO(Tyler & Sara): which room (White City Ballroom, Madison Ballroom, Stagg Court, or The Tank) is confirmed with the planner (backlog P-01).');
-  const dressCode = textBlock('TODO(Tyler & Sara): dress code in one sentence, with an example outfit (backlog C-01).');
+  const dressCode = textBlock('Cocktail attire — for example, a suit or blazer with dress pants, or a cocktail dress.');
   const time = (what: string) => textBlock(`TODO(Tyler & Sara): ${what} time, to be confirmed with the planner (backlog P-02).`);
   return [
     {

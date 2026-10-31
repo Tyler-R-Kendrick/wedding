@@ -85,12 +85,13 @@ describe('transportation content', () => {
       if (t.official) expect(t.official.host).toBe('www.chicagoathletichotel.com');
       for (const p of t.paragraphs) if (p.startsWith('TODO(')) expect(t.placeholder).toBe(true);
     }
-    // No invented operational facts: valet rate, airport recommendation and voucher terms are TODOs.
+    // No invented operational facts: airport recommendation and valet are decided; ride voucher terms are still TODOs.
     const text = TRANSPORTATION_TOPICS.flatMap((t) => t.paragraphs).join('\n');
-    expect(text).toMatch(/TODO\(Tyler & Sara\): which airport/);
-    expect(text).toMatch(/TODO\(Tyler & Sara\): the special event valet rate/);
+    expect(text).toMatch(/O’Hare \(ORD\)/);
+    expect(text).toMatch(/\$84\/night/);
     expect(text).toMatch(/TODO\(Tyler & Sara\): ride benefit amount/);
-    expect(text).not.toMatch(/\$\d/);
+    expect(text).not.toMatch(/TODO\(Tyler & Sara\): which airport/);
+    expect(text).not.toMatch(/TODO\(Tyler & Sara\): the special event valet rate/);
   });
 });
 

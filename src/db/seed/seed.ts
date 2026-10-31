@@ -5,6 +5,7 @@ import { seedEventsAndPlans } from '@/domain/events/seed';
 import type { Db } from '../client';
 import { contentSources, featureFlags, lifecycleState, siteSettings } from '../schema';
 import { seedContent } from './content';
+import { seedTravelHotels } from './travel';
 import { BRIEF_SOURCE_ID, SEED_SITE_ID, SEED_SOURCES } from './sources';
 
 /** Facts from docs/design/brief.md section 2. Anything else is a TODO(Tyler & Sara), never invented. */
@@ -76,6 +77,9 @@ export async function seed(db: Db): Promise<void> {
 
   // Story, adventures, recommendations, venue docent, operational fields, FAQ, and the AI corpus (swarm C).
   await seedContent(db, now);
+
+  // Venue room block (Tyler decision T1): signed-in guests only at read time.
+  await seedTravelHotels(db, now);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

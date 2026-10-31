@@ -48,9 +48,14 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
     <Section id="arriving" labelledBy="arriving-title">
       <SectionHeading level={2} id="arriving-title" title="Getting to Chicago" />
       <Prose>
-        <p>By air: O’Hare (ORD) and Midway (MDW) both offer public transportation, taxis, and rideshare options for getting downtown. Visit the <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and service information.</p>
-        <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago’s Union Station from cities throughout the country. Check routes, schedules, and tickets before traveling.</p>
-        <p>By car: plan ahead for downtown parking. The hotel offers valet parking; Millennium Park Garage and Millennium Lakeside Garage are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates and reservations. Parking rates and availability may change before the wedding.</p>
+        <p>
+          We recommend flying into O&apos;Hare (ORD). There is no wedding shuttle; take the CTA Blue Line &ldquo;L&rdquo; train into downtown. Visit the{' '}
+          <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and service information.
+        </p>
+        <p>Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.</p>
+        <p>Midway (MDW) also serves Chicago with trains, taxis, and rideshare into downtown.</p>
+        <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago&apos;s Union Station from cities throughout the country.</p>
+        <p>By car: valet parking is $84/night at the 71 E Madison entrance. Millennium Park Garage and Millennium Lakeside Garage are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates.</p>
         <p><Link standalone href={tripHref}>{signedIn ? 'Your guest travel details and weekend plans →' : 'Sign in for guest booking details and your weekend plans →'}</Link></p>
       </Prose>
     </Section>
@@ -209,14 +214,15 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
       <SectionHeading level={2} id="around-title" title="Getting around" />
       <Prose>
         <p>
-          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}{" "}
-          {facts.venue.valetPending ? (
-            <Placeholder todo={facts.venue.valetPending} />
-          ) : null}
+          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}
         </p>
         <p>
-          Accessibility and transit directions are on the{" "}
-          {/* The full stop stays with the link's arrow rather than starting a line of its own. */}
+          The CTA &ldquo;L&rdquo; and buses run downtown and to the airports. Visit the{' '}
+          <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and fares.
+        </p>
+        <p>Taxis and rideshares serve the hotel; rideshare pickup details are coming soon. Uber can take you from the airport to the hotel.</p>
+        <p>
+          Accessibility and transit directions are on the{' '}
           <span className="bd-nowrap">
             <Link href={facts.venue.faqUrl} external>
               hotel&rsquo;s FAQ page

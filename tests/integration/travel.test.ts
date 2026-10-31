@@ -214,17 +214,20 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
 });
 
 describe('hotel recommendations, block, and admin configuration', () => {
-  it('lists the CAA block first as a brief placeholder until an admin saves the real record', async () => {
+  it('lists the CAA block first with the seeded room-block record for signed-in guests', async () => {
     const r = await run(listHotelRecommendations, guestA, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.data.venue).toMatchObject({ id: VENUE_HOTEL_ID, isVenue: true, placeholder: true, synthesized: true, name: 'Chicago Athletic Association Hotel', block: { placeholder: true, url: null, rateText: null, cutoff: null } });
-    // `note` is the confirmed fact and `pending` is what is still to come. They used to be one
-    // string carrying `TODO(Tyler & Sara): … (backlog P-03)`, which the public travel page printed
-    // verbatim — and this capability is exposed to the concierge and WebMCP, so the marker and the
-    // backlog id would have reached assistant transcripts as well.
-    expect(r.value.data.venue.block.note).toMatch(/up to 20 rooms/);
-    expect(r.value.data.venue.block.pending).toMatch(/booking link, rate, dates and cutoff/);
+    expect(r.value.data.venue).toMatchObject({
+      id: VENUE_HOTEL_ID,
+      isVenue: true,
+      placeholder: false,
+      synthesized: false,
+      name: 'Chicago Athletic Association Hotel',
+      block: { placeholder: false, url: null, code: 'G-FIKE', rateText: '$331–371/night', cutoff: '2027-06-15' },
+    });
+    expect(r.value.data.venue.block?.note).toMatch(/844-312-2221/);
+    expect(r.value.data.venue.block?.pending).toMatch(/Hyatt group booking link/);
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
@@ -260,7 +263,7 @@ describe('hotel recommendations, block, and admin configuration', () => {
   });
 
   it('authorises admin edits by entitlement and refuses links off the allowlist', async () => {
-    const venue = { id: VENUE_HOTEL_ID, name: 'Chicago Athletic Association Hotel', address: '12 S Michigan Ave, Chicago, IL 60603', isVenue: true, sortOrder: 0, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', code: 'TODO', rateText: null, checkIn: '2027-07-16', checkOut: '2027-07-18', cutoff: '2027-06-17', note: 'Courtesy block up to 20 rooms, subject to availability.', placeholder: false }, sourceId: null };
+    const venue = { id: VENUE_HOTEL_ID, name: 'Chicago Athletic Association Hotel', address: '12 S Michigan Ave, Chicago, IL 60603', isVenue: true, sortOrder: 0, block: { url: null, code: 'G-FIKE', rateText: '$331–371/night', checkIn: '2027-07-16', checkOut: '2027-07-18', cutoff: '2027-06-15', note: 'Call 844-312-2221 to book with group code G-FIKE.', placeholder: false }, sourceId: null };
     expectErr(await run(adminSaveHotel, guestA, venue, { key: key() }), 'forbidden');
     expectErr(await run(adminSaveHotel, anonymous, venue), 'unauthenticated');
     expectErr(await run(adminSaveHotel, adminPrincipal(['admin_audit']), venue, { key: key() }), 'forbidden');
@@ -268,14 +271,15 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expectErr(bad, 'validation');
     if (!bad.ok) expect(bad.error.details?.issues).toEqual([{ path: 'block.url', message: expect.stringMatching(/trusted partners/) }]);
     const saved = await run(adminSaveHotel, contentAdmin, venue, { key: key() });
-    expect(saved.ok && saved.value.data).toMatchObject({ id: VENUE_HOTEL_ID, contentVersion: 1, synthesized: false, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', cutoff: '2027-06-17', placeholder: false } });
+    expect(saved.ok && saved.value.data).toMatchObject({ id: VENUE_HOTEL_ID, synthesized: false, block: { code: 'G-FIKE', cutoff: '2027-06-15', placeholder: false } });
+    expect(saved.ok && saved.value.data.contentVersion).toBeGreaterThanOrEqual(1);
     const publicList = await run(listHotelRecommendations, anonymous, {});
     expect(publicList.ok && publicList.value.data.venue.block).toBeNull();
     expect(publicList.ok && publicList.value.data.venue.bookingUrl).toBeNull();
     const alt = await run(adminSaveHotel, contentAdmin, { name: 'Fixture Alternative', address: '1 Loop St', walkMinutesToVenue: 6, priceBand: '$$', reasons: [{ kind: 'walk_minutes', text: '6 minute walk to the CAA', value: 6 }, { kind: 'family_suites', text: 'Family suites available' }], websiteUrl: 'https://www.booking.com/hotel/us/fixture.html' }, { key: key() });
     expect(alt.ok && alt.value.data).toMatchObject({ isVenue: false, priceBand: '$$', reasons: [{ kind: 'walk_minutes' }, { kind: 'family_suites' }], freshness: 'fresh' });
     const list = await run(listHotelRecommendations, guestA, {});
-    expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-17' } });
+    expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-15', code: 'G-FIKE' } });
     expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual(['Fixture Alternative']);
     const db = await getDb();
     expect((await listAuditEvents(db, { action: 'content.updated', targetType: 'hotel_recommendation' })).length).toBeGreaterThanOrEqual(2);
@@ -311,7 +315,7 @@ describe('open_booking_link (external hand-offs)', () => {
     expectErr(await run(openBookingLink, anonymous, { kind: 'venue_block' }), 'unauthenticated');
     expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: VENUE_HOTEL_ID }), 'unauthenticated');
     const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
-    expect(block.ok && block.value.data).toMatchObject({ placeholder: false, handoff: { provider: 'hyatt.com', url: 'https://www.hyatt.com/group-booking/CHIAA-TODO' } });
+    expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
     expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: newId() }), 'not_found');
     const list = await run(listHotelRecommendations, anonymous, {});
     const alt = list.ok ? list.value.data.alternatives[0] : undefined;

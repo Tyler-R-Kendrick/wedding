@@ -214,8 +214,8 @@ describe('CAA docent', () => {
     expect(valet.value).toBe('71 E Madison');
     expect(valet.provenance.url).toBe('https://www.chicagoathletichotel.com/about/faq/');
     const rate = d.gettingHere.find((g) => g.key === 'valet.event-rate')!;
-    expect(rate.placeholder).toBe(true);
-    expect(rate.value).toBeNull();
+    expect(rate.placeholder).toBe(false);
+    expect(rate.value).toBe('$84/night');
     expect(r.value.sources.every((s) => !s.url?.startsWith('/docs/'))).toBe(true);
 
     const ignored = await invoke(getVenueFacts, await ctxFor(guest), { includeExpired: true });
@@ -361,7 +361,7 @@ describe('Sara’s Chicago guide privacy', () => {
   it('serves the complete guide to a guest within the capability output budget', async () => {
     const r = await invoke(findAdventures, await ctxFor(guest), {});
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value.data.items.map((i) => i.slug)).toEqual(expect.arrayContaining(['alinea', 'coffee-at-caa', 'art-institute', 'chicago-botanic-garden']));
+    if (r.ok) expect(r.value.data.items.map((i) => i.slug)).toEqual(expect.arrayContaining(['alinea', 'starbucks-reserve-roastery', 'art-institute', 'chicago-botanic-garden']));
   });
   it('keeps the new recommendations and map coordinates guest-only on every surface', async () => {
     for (const surface of ['ui', 'ai', 'webmcp'] as const) {

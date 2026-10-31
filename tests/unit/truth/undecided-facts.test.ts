@@ -63,7 +63,7 @@ describe('a decided fact beside an undecided one', () => {
   });
 
   it('drops a record only when every sentence in it is a hint', () => {
-    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual([]);
+    expect(withoutPlaceholders([answerFor('dress-code')])).toEqual(['Cocktail attire — for example, a suit or blazer with dress pants, or a cocktail dress.']);
     expect(withoutPlaceholders([answerFor('contact')])).toEqual([]);
     expect(withoutPlaceholders([null, undefined, '   '])).toEqual([]);
   });
