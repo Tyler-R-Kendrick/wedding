@@ -64,7 +64,7 @@ describe('a decided fact beside an undecided one', () => {
 
   it('drops a record only when every sentence in it is a hint', () => {
     expect(withoutPlaceholders([answerFor('dress-code')])).toEqual([]);
-    expect(withoutPlaceholders([answerFor('contact')])).toEqual([]);
+    expect(withoutPlaceholders([answerFor('contact')])).toEqual([answerFor('contact')]);
     expect(withoutPlaceholders([null, undefined, '   '])).toEqual([]);
   });
 
@@ -86,7 +86,12 @@ describe('the placeholder block', () => {
   });
 
   it('leaves a wholly-undecided block exactly as it was', () => {
-    expect(placeholderHint(answerFor('contact')).toLowerCase()).toContain('best way for guests to reach you');
+    expect(placeholderHint(answerFor('dress-code')).toLowerCase()).toContain('dress code');
+    expect(placeholderFacts(answerFor('dress-code'))).toBe('');
+  });
+
+  it('shows settled contact copy without a placeholder hint', () => {
+    expect(placeholderHint(answerFor('contact'))).toContain('hello@kendrick.wedding');
     expect(placeholderFacts(answerFor('contact'))).toBe('');
   });
 
