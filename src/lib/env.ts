@@ -55,6 +55,8 @@ const serverSchema = z.object({
   DEV_STORAGE_SECRET: optionalSecret(16),
   BETTER_AUTH_SECRET: optionalSecret(16),
   BETTER_AUTH_URL: optionalUrl,
+  /** View-only Google My Maps link for the guest Chicago guide (optional; enables link + QR on the signed-in guide). */
+  CHICAGO_GUIDE_MAP_URL: optionalUrl,
   /** Number of trusted reverse proxies in front of the app. 0 = ignore forwarding headers. Default: 1 on Vercel, else 0. */
   TRUSTED_PROXY_HOPS: optionalInt(0, 16),
   /** Bearer that unlocks GET/DELETE /api/dev/inbox outside local development (previews). */

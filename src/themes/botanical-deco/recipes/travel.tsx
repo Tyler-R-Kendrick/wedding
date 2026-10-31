@@ -55,7 +55,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
         <p>Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.</p>
         <p>Midway (MDW) also serves Chicago with trains, taxis, and rideshare into downtown.</p>
         <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago&apos;s Union Station from cities throughout the country.</p>
-        <p>By car: valet parking is $84/night at the 71 E Madison entrance. Millennium Park Garage and Millennium Lakeside Garage are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates.</p>
+        <p>By car: valet parking is $84 per night with in-and-out privileges at the 71 E Madison entrance. Millennium Park Garage (6 S. Columbus Dr.) and Millennium Lakeside Garage (5 S. Columbus Dr.) are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates and reservations. Parking rates and availability may change before the wedding.</p>
         <p><Link standalone href={tripHref}>{signedIn ? 'Your guest travel details and weekend plans →' : 'Sign in for guest booking details and your weekend plans →'}</Link></p>
       </Prose>
     </Section>
@@ -125,6 +125,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
             }
           />
         </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
+        <Prose><p>If you are interested in an upgraded room or an extended stay, please let us know.</p></Prose>
         {venue.block?.url ? (
           <p>
             <Link href={venue.block.url} external standalone>

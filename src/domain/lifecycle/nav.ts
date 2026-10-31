@@ -38,11 +38,11 @@ interface StateNav {
 }
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
-  TEASER: { primary: ['story', 'adventures', 'caa'], more: ['ask'], sticky: [] },
+  TEASER: { primary: ['story', 'travel', 'share'], more: ['adventures', 'caa', 'ask'], sticky: [] },
   // No 'wedding' yet: the sitemap opens The Wedding at INVITATIONS_OPEN, when there is a ceremony to describe.
-  SAVE_THE_DATE: { primary: ['story', 'travel', 'adventures'], more: ['share', 'caa', 'ask'], sticky: [] },
-  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: [] },
-  RSVP_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: ['directions'] },
+  SAVE_THE_DATE: { primary: ['story', 'travel', 'share', 'adventures'], more: ['caa', 'ask'], sticky: [] },
+  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'share', 'story'], more: ['adventures', 'caa', 'ask'], sticky: [] },
+  RSVP_OPEN: { primary: ['wedding', 'travel', 'share', 'story'], more: ['adventures', 'caa', 'ask'], sticky: ['directions'] },
   RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa', 'ask'], sticky: ['directions'] },
   WEDDING_WEEK: { primary: ['wedding', 'ask', 'share'], more: ['story', 'adventures', 'caa', 'travel'], sticky: ['directions', 'ask'] },
   WEDDING_DAY: { primary: ['home', 'ask', 'wedding'], more: ['caa', 'share', 'story', 'adventures'], sticky: ['now', 'ask'] },

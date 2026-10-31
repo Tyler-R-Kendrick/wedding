@@ -30,7 +30,8 @@ export const VENUE = {
    * `list_hotel_recommendations`, which is exposed to the concierge and WebMCP, so the marker would
    * have reached assistant transcripts too.
    */
-  valetNote: 'Valet parking is $84/night at the 71 E Madison entrance.',
+  valetNote: 'Valet parking is $84 per night with in-and-out privileges at the 71 E Madison entrance.',
+  /** Backlog X-06 resolved 2026-10-31 (Sara feedback). */
   valetPending: null,
 } as const;
 

@@ -39,7 +39,7 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Back to the atlas', to: 'adventures' },
   },
   {
-    id: 'share', path: '/share-an-adventure', title: 'Share an Adventure', parent: null, audience: 'public', mode: ['inform', 'celebrate'], visibleFrom: 'SAVE_THE_DATE', inNav: true,
+    id: 'share', path: '/share-an-adventure', title: 'Share an Adventure', navLabel: 'Things to Do', parent: null, audience: 'public', mode: ['inform', 'celebrate'], visibleFrom: 'TEASER', inNav: true,
     job: 'Places we recommend around Chicago: a practical layer and a memory layer, itineraries by duration and mode.',
   },
   {
@@ -62,7 +62,7 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Back to the building', to: 'caa' },
   },
   {
-    id: 'travel', path: '/travel', title: 'Travel & Stay', parent: null, audience: 'public', mode: ['inform', 'act'], visibleFrom: 'SAVE_THE_DATE', inNav: true,
+    id: 'travel', path: '/travel', title: 'Travel & Stay', navLabel: 'Travel', parent: null, audience: 'public', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
     job: 'Airports, the room block, other hotels, the neighbourhood and what the weather will be like.',
     primaryAction: { label: 'Plan your trip', to: 'trip' },
   },

@@ -14,6 +14,8 @@ export interface GuideRecipeProps {
   activeBucket?: string;
   /** Server-authorized guest map and account links; never supplied to anonymous readers. */
   guestTools?: import('react').ReactNode;
+  /** Sara’s curated picks for signed-in guests (replaces draft hotel itineraries). */
+  curated?: import('react').ReactNode;
   signedIn?: boolean;
   plan?: { minutes: number; kids: boolean; interest?: string; result: FindAdventuresData['plan'] };
 }
@@ -21,7 +23,7 @@ export interface GuideRecipeProps {
 const MINUTE_OPTIONS = [45, 120, 180, 300] as const;
 const INTEREST_OPTIONS = ['architecture', 'walk', 'food', 'drink', 'outdoors', 'inside-caa'] as const;
 
-export function GuidePage({ itineraries, recommendations, activeBucket, plan, guestTools, signedIn = false }: GuideRecipeProps) {
+export function GuidePage({ itineraries, recommendations, activeBucket, plan, guestTools, curated, signedIn = false }: GuideRecipeProps) {
   const chips = [
     { href: ROUTES.share, label: 'All', active: !activeBucket },
     ...itineraries.buckets.map((b) => ({ href: `${ROUTES.share}?bucket=${b}`, label: humanize(b), active: activeBucket === b })),
@@ -39,6 +41,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan, gu
 
       {guestTools}
 
+      {signedIn && curated ? curated : (
       <Section id="itineraries" number="01" title="Pick your time">
         <ChipLinks items={chips} label="Itineraries by time and interest" />
         <ul className="wp-list" aria-label="Itineraries">
@@ -66,6 +69,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan, gu
           ))}
         </ul>
       </Section>
+      )}
 
       {signedIn ? (
       <Section id="plan" number="02" title="Plan around the time you have">
