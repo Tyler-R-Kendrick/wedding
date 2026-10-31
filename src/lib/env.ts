@@ -78,6 +78,13 @@ const serverSchema = z.object({
   // ANTHROPIC_API_KEY, OPENAI_API_KEY or AI_GATEWAY_API_KEY is ignored (src/providers/ai-model).
   RESEND_CONNECT_USER_ID: optionalString,
   EMAIL_FROM: optionalString,
+  /** Svix signing secret from the Resend inbound webhook (>= 16 chars). Unset -> POST /api/webhooks/resend answers 404. */
+  RESEND_WEBHOOK_SECRET: optionalSecret(16),
+  /** Wedding planner inbox for guest mail forwarded from hello@kendrick.wedding. Unset -> inbound forward disabled (404). */
+  PLANNER_FORWARD_EMAIL: z.preprocess(
+    (v) => (v === undefined || v === '' ? undefined : String(v).trim().toLowerCase()),
+    z.email().optional(),
+  ),
   /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,
   S3_REGION: z.string().default('auto'),

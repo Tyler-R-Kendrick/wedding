@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { guestContactLostLinkLine, guestContactMailtoHref, GUEST_CONTACT_EMAIL } from '@/domain/contact/copy';
 import { Placeholder } from '@/components/provenance/Placeholder';
 
 /**
@@ -47,7 +48,8 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
         </p>
         <p>Sara and Tyler can put it right; nothing here will fix it by itself, so please do not keep signing in.</p>
         <p className="card__meta">
-          To reach them: <Placeholder inline>how to reach them</Placeholder>
+          To reach them:{' '}
+          <a href={guestContactMailtoHref()}>{GUEST_CONTACT_EMAIL}</a>
         </p>
       </div>
     );
@@ -66,9 +68,7 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
           Find your invitation
         </Link>
       </p>
-      <p className="card__meta">
-        Lost the link? <Placeholder inline>how to reach them</Placeholder>
-      </p>
+      <p className="card__meta">{guestContactLostLinkLine()}</p>
     </div>
   );
 }
