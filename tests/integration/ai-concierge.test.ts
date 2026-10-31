@@ -88,11 +88,11 @@ describe('concierge pipeline', () => {
   });
 
   it('says a protected fact is undecided rather than naming a room or a clock time', async () => {
-    const room = await ask('Which room is the ceremony in?');
+    const room = await ask('Which room is the ceremony in?', guestA);
     const roomShown = `${room.text} ${room.refusal?.message ?? ''}`;
     expect(roomShown.toLowerCase()).toMatch(/not (yet )?decided|not decided yet/);
 
-    const time = await ask('What time does the ceremony start?');
+    const time = await ask('What time does the ceremony start?', guestA);
     const timeShown = `${time.text} ${time.refusal?.message ?? ''}`.toLowerCase();
     expect(timeShown).toContain('15');
     expect(timeShown).toContain('ceremony');
@@ -207,7 +207,7 @@ describe('concierge pipeline', () => {
 
 describe('concierge capabilities', () => {
   it('exposes search to the AI with visibility applied and full record text', async () => {
-    const r = await invoke(searchWeddingInformation, await ctxFor(anonymous), { query: 'white city ballroom' });
+    const r = await invoke(searchWeddingInformation, await ctxFor(guestA), { query: 'white city ballroom' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.results.length).toBeGreaterThan(0);
@@ -221,7 +221,7 @@ describe('concierge capabilities', () => {
   it('is not offered to the model as a tool it could recurse into', async () => {
     expect(askConcierge.exposure.ai).toBe(false);
     expect(askConcierge.exposure.webmcp).toBe(true);
-    const r = await invoke(askConcierge, await ctxFor(anonymous, 'ui'), { question: 'When is the wedding?' });
+    const r = await invoke(askConcierge, await ctxFor(guestA, 'ui'), { question: 'When is the wedding?' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.text).toContain('July 17, 2027');

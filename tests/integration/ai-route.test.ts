@@ -31,9 +31,11 @@ async function readEvents(response: Response): Promise<ConciergeEvent[]> {
 beforeAll(() => setPrincipalResolver({ resolve: async (req) => (req.headers.get('x-test-principal') === 'guest' ? guest : { kind: 'anonymous' }) }));
 afterAll(() => setPrincipalResolver(anonymousResolver));
 
+const guestHeaders = { 'x-test-principal': 'guest', origin: 'http://localhost:3000', 'sec-fetch-site': 'same-origin' } as const;
+
 describe('POST /api/ai/chat', () => {
   it('streams NDJSON events and never a draft the verifier has not accepted', async () => {
-    const response = await post(json({ message: 'When is the wedding?' }, { 'x-request-id': 'req-ai-chat-1' }));
+    const response = await post(json({ message: 'When is the wedding?' }, { 'x-request-id': 'req-ai-chat-1', ...guestHeaders }));
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/x-ndjson');
     expect(response.headers.get('cache-control')).toContain('no-store');
@@ -50,7 +52,7 @@ describe('POST /api/ai/chat', () => {
   });
 
   it('sets the surface server-side: nothing in the request can claim to be the AI', async () => {
-    await post(json({ message: 'When is the wedding?' }, { 'x-request-id': 'req-ai-surface', 'x-capability-surface': 'ui' })).then(readEvents);
+    await post(json({ message: 'When is the wedding?' }, { 'x-request-id': 'req-ai-surface', 'x-capability-surface': 'ui', ...guestHeaders })).then(readEvents);
     const rows = await listAuditEvents(await getDb(), { requestId: 'req-ai-surface' });
     const invoked = rows.filter((r) => r.action === 'capability.invoked');
     // Also proves the route registers the capability list: an unregistered registry would run none.
@@ -65,21 +67,21 @@ describe('POST /api/ai/chat', () => {
     expect(same.status).toBe(200);
   });
 
-  it('requires a JSON content type even from anonymous callers', async () => {
+  it('requires a session before any other check', async () => {
     const res = await post({ body: 'message=hi', headers: { 'content-type': 'application/x-www-form-urlencoded' } });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 
   it('validates the question before any model or tool runs', async () => {
     for (const body of [{}, { message: 'x' }, { message: 'a'.repeat(2001) }, { message: 'ok question', sessionId: 'not-a-ulid' }]) {
-      const res = await post(json(body));
+      const res = await post(json(body, guestHeaders));
       expect(res.status).toBe(422);
       expect((await res.json()).error.code).toBe('validation');
     }
   });
 
   it('caps the body before reading it all', async () => {
-    const res = await post(json({ message: `When is the wedding? ${'x'.repeat(20_000)}` }));
+    const res = await post(json({ message: `When is the wedding? ${'x'.repeat(20_000)}` }, guestHeaders));
     expect(res.status).toBe(422);
     const body = (await res.json()) as { error: { code: string; details?: { maxBytes?: number } } };
     expect(body.error.code).toBe('validation');
