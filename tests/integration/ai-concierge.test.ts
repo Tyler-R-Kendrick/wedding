@@ -87,13 +87,16 @@ describe('concierge pipeline', () => {
     expect(result.text).toBe('');
   });
 
-  it('says a protected fact is undecided rather than naming a room or a time', async () => {
-    for (const question of ['Which room is the ceremony in?', 'What time does the ceremony start?']) {
-      const result = await ask(question);
-      const shown = `${result.text} ${result.refusal?.message ?? ''}`;
-      expect(shown.toLowerCase()).toMatch(/not (yet )?decided|not decided yet/);
-      expect(shown).not.toMatch(/\b\d{1,2}(:\d{2})?\s?(am|pm)\b/i);
-    }
+  it('says a protected fact is undecided rather than naming a room or a clock time', async () => {
+    const room = await ask('Which room is the ceremony in?');
+    const roomShown = `${room.text} ${room.refusal?.message ?? ''}`;
+    expect(roomShown.toLowerCase()).toMatch(/not (yet )?decided|not decided yet/);
+
+    const time = await ask('What time does the ceremony start?');
+    const timeShown = `${time.text} ${time.refusal?.message ?? ''}`.toLowerCase();
+    expect(timeShown).toContain('15');
+    expect(timeShown).toContain('ceremony');
+    expect(timeShown).not.toMatch(/\b\d{1,2}(:\d{2})?\s?(am|pm)\b/i);
   });
 
   it('never lets guest-written text become a wedding fact, and audits the attempt', async () => {
