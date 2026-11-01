@@ -1,6 +1,10 @@
 import type { ExternalHandoff } from '@/contracts/providers';
 import type { HotelSearchRequest } from './types';
 
+/** Keep in sync with `CAA_BOOKING_URL` in `src/domain/travel/stay-copy.ts`. */
+const CAA_GROUP_BOOKING_URL = 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE';
+const CAA_GROUP_BOOKING_LABEL = 'Fitzgerald - Kendrick Wedding Room Block Booking Link';
+
 export const VENUE_HOTEL_URL = 'https://www.chicagoathletichotel.com/';
 
 /**
@@ -68,17 +72,21 @@ export function hyattHandoff(req: HotelSearchRequest, opts: { propertyCode?: str
   };
 }
 
-export function venueHotelHandoff(): ExternalHandoff {
+export function caaGroupHandoff(): ExternalHandoff {
   return {
-    provider: 'chicagoathletichotel.com',
-    label: 'Visit the Chicago Athletic Association Hotel',
-    url: VENUE_HOTEL_URL,
+    provider: 'hyatt',
+    label: CAA_GROUP_BOOKING_LABEL,
+    url: CAA_GROUP_BOOKING_URL,
     opensNewTab: true,
-    disclosure: 'Opens the hotel website in a new tab. TODO(Tyler & Sara): add the courtesy room-block link from the planner.',
+    disclosure: 'Opens Hyatt’s secure group booking page for the Fitzgerald–Kendrick wedding room block (group code G-FIKE). We never see your payment details.',
   };
 }
 
-/** Partner links every hotel adapter offers next to its own search: Hyatt (the venue is a Hyatt property). */
+export function venueHotelHandoff(): ExternalHandoff {
+  return caaGroupHandoff();
+}
+
+/** Partner links every hotel adapter offers next to its own search: CAA group block + general Hyatt search. */
 export function partnerHotelHandoffs(req: HotelSearchRequest): ExternalHandoff[] {
-  return [hyattHandoff(req)];
+  return [caaGroupHandoff(), hyattHandoff(req)];
 }

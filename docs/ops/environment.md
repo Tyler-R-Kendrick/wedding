@@ -48,8 +48,10 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `PLANNER_FORWARD_EMAIL` | empty -> inbound forward disabled (404) | comma-separated forward inboxes for guest mail to `hello@kendrick.wedding` (e.g. `bustleandlace@gmail.com,saraandtyler27@gmail.com`) | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage: R2, Backblaze B2, Supabase Storage or MinIO. `S3_ENDPOINT` is required with the keys, and an Amazon endpoint (or none, which the AWS SDK would resolve to Amazon) is refused: the site does not use AWS | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
-| `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
-| `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`booking`\|`duffel-stays`) | mock | hotels: fixtures; unavailable + Booking.com/Hyatt links; Booking.com Demand API; Duffel Stays | no |
+| `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`google-travel-flights`\|`travelpayouts`\|`skyscanner`\|`duffel-links`) | unset -> `google-travel-flights` (keyless; `NODE_ENV=test` -> mock) | flights: Google Flights RPC; fixtures; deep links; optional Travelpayouts / Skyscanner / Duffel | no |
+| `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`google-travel-hotels`\|`serpapi`\|`booking`\|`duffel-stays`) | unset -> `google-travel-hotels` (keyless; `NODE_ENV=test` -> mock) | hotels: Google Travel RPC; fixtures; links; optional SerpApi / Booking / Duffel | no |
+| `TRAVELPAYOUTS_TOKEN`, `TRAVELPAYOUTS_MARKER` | unset | flights only when `FLIGHTS_PROVIDER=travelpayouts` | no |
+| `SERPAPI_API_KEY` | unset | hotels only when `HOTELS_PROVIDER=serpapi` | no |
 | `SKYSCANNER_API_KEY` | unset | flights `skyscanner` mode (`x-api-key`) | no |
 | `DUFFEL_API_KEY` | unset | flights `duffel-links` and hotels `duffel-stays` (bearer) | no |
 | `DUFFEL_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /travel/webhooks/duffel` answers 404 | verifies `X-Duffel-Signature`; the only automatic path to a confirmed trip item | no |

@@ -106,14 +106,19 @@ const serverSchema = z.object({
   CLOUDFLARE_ACCOUNT_ID: optionalString,
   CLOUDFLARE_STREAM_API_TOKEN: optionalString,
   CLOUDFLARE_STREAM_CUSTOMER_CODE: optionalString,
-  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'skyscanner', 'duffel-links']).optional(),
-  HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'booking', 'duffel-stays']).optional(),
-  /** Travel (level 08): Skyscanner Live Prices, Duffel Links/Stays + signed webhooks, Booking.com Demand API. */
+  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'google-travel-flights', 'travelpayouts', 'skyscanner', 'duffel-links']).optional(),
+  HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'google-travel-hotels', 'serpapi', 'booking', 'duffel-stays']).optional(),
+  /** Travel (level 08): keyless Google Flights/Hotels by default; optional Travelpayouts, Skyscanner, Duffel, Booking, SerpApi when explicitly selected + credentialed. */
+  TRAVELPAYOUTS_TOKEN: optionalString,
+  /** Travelpayouts partner marker for Aviasales affiliate booking links (optional but recommended). */
+  TRAVELPAYOUTS_MARKER: optionalString,
   SKYSCANNER_API_KEY: optionalString,
   DUFFEL_API_KEY: optionalString,
   DUFFEL_WEBHOOK_SECRET: optionalSecret(16),
   BOOKING_DEMAND_API_KEY: optionalString,
   BOOKING_AFFILIATE_ID: optionalString,
+  /** SerpApi key for Google Hotels live rates (`engine=google_hotels`). Free tier: 100 searches/month. */
+  SERPAPI_API_KEY: optionalString,
   UBER_CLIENT_ID: optionalString,
   UBER_CLIENT_SECRET: optionalString,
   /** Uber for Business organisation + voucher programme (level 09 transport swarm); API base is overridable for sandboxes. */

@@ -143,13 +143,9 @@ export const externalHandoffOutput = z.object({
 });
 
 /**
- * `sample` is the mode a provider is in when its numbers are invented — the mock, which is the
- * DEFAULT when no `FLIGHTS_PROVIDER` / `HOTELS_PROVIDER` is configured. It exists because the union
- * previously had no way to say that, so `search.ts` hard-coded `live` on any successful search and
- * a guest was shown "Mock Hotel B (fixture) · 16 min walk · $157.86 / night · Continue to book"
- * under the page's own promise that "prices come from the partner". Every consumer treats anything
- * that is not `live` as "do not show these as real", so adding the value is what makes the honest
- * rendering automatic rather than something each surface has to remember.
+ * `sample` is the mode a provider is in when its numbers are invented — the mock fixtures used
+ * under `NODE_ENV=test` (or when `FLIGHTS_PROVIDER` / `HOTELS_PROVIDER` is `mock`). Production
+ * defaults to keyless Google Travel adapters (`mode: live`) without any env vars.
  */
 export const searchMode = z.enum(['live', 'sample', 'deep-link', 'unavailable']);
 export type SearchMode = z.infer<typeof searchMode>;
