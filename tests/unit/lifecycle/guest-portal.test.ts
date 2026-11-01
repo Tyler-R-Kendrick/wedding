@@ -9,7 +9,7 @@ describe('guest portal routes', () => {
     expect(guestPortalRedirectFor('/share-an-adventure')).toBe(GUEST_PORTAL.thingsToDo);
     expect(guestPortalRedirectFor('/share-an-adventure/starved-rock')).toBe('/guests/things-to-do/starved-rock');
     expect(guestPortalRedirectFor('/ask-us')).toBe(GUEST_PORTAL.askUs);
-    expect(guestPortalRedirectFor('/')).toBe(GUEST_PORTAL.root);
+    expect(guestPortalRedirectFor('/')).toBeNull();
   });
 
   it('guest sign-in landing avoids the anonymous home page', () => {

@@ -29,8 +29,6 @@ export function guestPortalRedirectFor(pathname: string): string | null {
     case '/ask-us':
     case '/faq':
       return GUEST_PORTAL.askUs;
-    case '/':
-      return GUEST_PORTAL.root;
     default:
       if (path.startsWith('/share-an-adventure/')) {
         return `${GUEST_PORTAL.thingsToDo}${path.slice('/share-an-adventure'.length)}`;

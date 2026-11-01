@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { Principal } from '@/contracts/principal';
-import { guestPortalRedirectFor, isGuestPortalExperience, isGuestPortalRoute, guestPortalSignInDoor } from '@/domain/lifecycle/guest-portal';
+import { guestPortalRedirectFor, GUEST_PORTAL, isGuestPortalExperience, isGuestPortalRoute, guestPortalSignInDoor } from '@/domain/lifecycle/guest-portal';
 
 type SearchParams = Record<string, string | string[] | undefined> | Promise<Record<string, string | string[] | undefined>>;
 
@@ -33,6 +33,7 @@ export async function enforceGuestPortalRoute(
     return;
   }
   if (!isGuestPortalExperience(opts)) return;
+  if (normalized === '/') redirect(GUEST_PORTAL.root);
   const target = guestPortalRedirectFor(pathname);
   if (target) redirect(`${target}${search}`);
 }
