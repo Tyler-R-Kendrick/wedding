@@ -1,16 +1,19 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
-import { authAccounts, guests, invitations, socialAuthReviews, type SocialProvider, type SocialReviewReason } from '@/db/schema';
+import { authAccounts, authUsers, guests, invitations, socialAuthReviews, type SocialProvider, type SocialReviewReason } from '@/db/schema';
 import { matchGuestsByName, type ProviderProfileName } from '@/domain/identity/name-match';
 import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, ensureAuthUser, findAuthUserByEmail } from '@/domain/identity/bindings';
+import { verifiedProviderEmail } from '@/domain/identity/social/admin-email';
 import type { CookieSink } from '@/lib/auth';
 import { establishGuestSession } from '@/lib/auth/establish-session';
 import { getAuth } from '@/lib/auth';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
-import { isSafeReturnPath } from '@/domain/identity/routes';
+import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
+import { resolveAdminRoles } from '@/domain/identity/principal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
+import { env } from '@/lib/env';
 import type { OAuthProfile } from './oauth';
 
 export const PENDING_PATH = '/sign-in/pending';
@@ -18,6 +21,50 @@ export const PENDING_PATH = '/sign-in/pending';
 export function syntheticSocialEmail(provider: SocialProvider, accountId: string): string {
   const slug = accountId.replace(/[^a-zA-Z0-9._+-]/g, '_').slice(0, 120);
   return `${provider}+${slug}@users.noreply.kendrick.wedding`.toLowerCase();
+}
+
+export function isSyntheticSocialEmail(email: string): boolean {
+  return email.endsWith('@users.noreply.kendrick.wedding');
+}
+
+async function adminRolesForEmail(db: Db, email: string) {
+  return resolveAdminRoles(db, email, env.ADMIN_EMAILS);
+}
+
+async function establishSocialSession(
+  db: Db,
+  sink: CookieSink,
+  input: { userId: string; activeGuestId: string | null; redirectTo: string; started: number },
+): Promise<SocialSignInResult> {
+  const auth = await getAuth(db);
+  await establishGuestSession(db, auth, sink, { userId: input.userId, activeGuestId: input.activeGuestId });
+  await hold(input.started);
+  return { ok: true, redirectTo: input.redirectTo };
+}
+
+async function completeAdminSocialSignIn(
+  db: Db,
+  sink: CookieSink,
+  input: {
+    provider: SocialProvider;
+    profile: OAuthProfile;
+    accessToken: string;
+    adminEmail: string;
+    next: string | null;
+    started: number;
+  },
+): Promise<SocialSignInResult | null> {
+  const displayName = [input.profile.givenName, input.profile.familyName].filter(Boolean).join(' ') || input.profile.name || 'Administrator';
+  const userResult = await ensureAuthUser(db, input.adminEmail, displayName);
+  if (!userResult.ok) return null;
+  await linkProviderAccount(db, {
+    userId: userResult.value.id,
+    provider: input.provider,
+    accountId: input.profile.providerAccountId,
+    accessToken: input.accessToken,
+  });
+  const redirectTo = safeReturnPath(input.next, '/admin');
+  return establishSocialSession(db, sink, { userId: userResult.value.id, activeGuestId: null, redirectTo, started: input.started });
 }
 
 async function findLinkedAccount(db: Db, provider: SocialProvider, accountId: string) {
@@ -144,12 +191,33 @@ export async function completeSocialSignIn(
 
   const linked = await findLinkedAccount(db, input.provider, input.profile.providerAccountId);
   if (linked) {
-    const auth = await getAuth(db);
+    const user = (await db.select({ id: authUsers.id, email: authUsers.email }).from(authUsers).where(eq(authUsers.id, linked.userId)).limit(1))[0];
+    if (user && !isSyntheticSocialEmail(user.email) && (await adminRolesForEmail(db, user.email)).size > 0) {
+      const redirectTo = safeReturnPath(input.next, '/admin');
+      return establishSocialSession(db, sink, { userId: user.id, activeGuestId: null, redirectTo, started });
+    }
     const ownBindings = await activeBindingsForIdentity(db, linked.userId);
     const activeGuestId = ownBindings.find((b) => b.role === 'self')?.guestId ?? ownBindings[0]?.guestId ?? null;
+    const auth = await getAuth(db);
     await establishGuestSession(db, auth, sink, { userId: linked.userId, activeGuestId });
     await hold(started);
     return { ok: true, redirectTo: redirectSuccess };
+  }
+
+  const verifiedEmail = verifiedProviderEmail(input.profile);
+  if (verifiedEmail) {
+    const roles = await adminRolesForEmail(db, verifiedEmail);
+    if (roles.size > 0) {
+      const adminResult = await completeAdminSocialSignIn(db, sink, {
+        provider: input.provider,
+        profile: input.profile,
+        accessToken: input.accessToken,
+        adminEmail: verifiedEmail,
+        next: input.next,
+        started,
+      });
+      if (adminResult) return adminResult;
+    }
   }
 
   const candidates = (await listMatchableGuests(db)).filter((g) => g.kind !== 'child' && !g.isMinor);

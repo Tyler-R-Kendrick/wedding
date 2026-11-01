@@ -14,7 +14,7 @@ import { qrSvg } from '@/domain/identity/qr';
 import { invitationLifecycle, invitationUrl } from '@/domain/identity/tokens';
 import { adminLinkSocialReview } from '@/domain/identity/social/complete';
 import { currentInvitationsForHouseholds, getInvitation, issueInvitation, listInvitations, revokeInvitation, rotateInvitation } from '@/domain/invitations/repo';
-import { normalizeEmail } from '@/domain/identity/mask';
+import { normalizeEmail, isEmailShape } from '@/domain/identity/mask';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { siteOrigin } from '@/lib/auth';
 import { actorOf, adminOf } from './identity/shared';
@@ -597,7 +597,10 @@ export const adminSetAdminRole = defineCapability({
   confirmation: 'inline',
   idempotent: true,
   annotations: writeAnn,
-  input: z.object({ email: z.string().min(3).max(254), role: z.enum(ADMIN_ROLES).nullable() }),
+  input: z.object({
+    email: z.string().min(3).max(254).refine(isEmailShape, { message: 'Enter a valid email address.' }),
+    role: z.enum(ADMIN_ROLES).nullable(),
+  }),
   output: z.object({ email: z.string(), role: z.enum(ADMIN_ROLES).nullable() }),
   async handler(ctx, i) {
     const guard = adminOf(ctx, ['owner']);
@@ -605,6 +608,7 @@ export const adminSetAdminRole = defineCapability({
     const admin = guard.value;
     const { db } = appServices(ctx);
     const email = normalizeEmail(i.email);
+    if (!isEmailShape(email)) return err(new CapabilityError('validation', 'Enter a valid email address.', { issues: [{ path: 'email', message: 'Enter a valid email address.' }] }));
     if (i.role) {
       await db.insert(adminRoles).values({ email, role: i.role, grantedBy: actorOf(ctx), grantedAt: ctx.now }).onConflictDoUpdate({ target: adminRoles.email, set: { role: i.role, grantedBy: actorOf(ctx), grantedAt: ctx.now } });
     } else {

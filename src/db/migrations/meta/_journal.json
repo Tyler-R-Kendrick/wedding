@@ -148,6 +148,13 @@
       "when": 1762022400000,
       "tag": "0021_caa_room_block",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1762108800000,
+      "tag": "0022_admin_roles_email_required",
+      "breakpoints": true
     }
   ]
 }

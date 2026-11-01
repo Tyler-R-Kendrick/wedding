@@ -33,7 +33,7 @@ export function socialProviderConfig(id: SocialProvider): SocialProviderConfig |
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
       tokenUrl: 'https://oauth2.googleapis.com/token',
-      scopes: ['openid', 'profile'],
+      scopes: ['openid', 'email', 'profile'],
       usePkce: true,
     };
   }
@@ -45,7 +45,7 @@ export function socialProviderConfig(id: SocialProvider): SocialProviderConfig |
       clientSecret: env.FACEBOOK_CLIENT_SECRET,
       authorizationUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
       tokenUrl: 'https://graph.facebook.com/v21.0/oauth/access_token',
-      scopes: ['public_profile'],
+      scopes: ['email', 'public_profile'],
       usePkce: true,
     };
   }
