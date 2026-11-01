@@ -276,6 +276,33 @@
   }
 }
 
+.auth-other {
+  margin-block-start: var(--spacing-xl, 32px);
+  padding-block-start: var(--spacing-lg, 24px);
+  border-block-start: 1px solid var(--color-border-subtle, rgb(0 0 0 / 12%));
+}
+
+.auth-other__heading {
+  font-size: var(--type-small-size, 0.9375rem);
+  font-weight: 600;
+  margin-block-end: var(--spacing-sm, 8px);
+}
+
+.auth-other__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+}
+
+.auth-other__provider {
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+
 /* Botanical–Deco's own controls on the sign-in journey: squared corners, the Deep Gold primary and
    a gold underline on the field, as on every other page of the approved design. */
 [data-theme="botanical-deco"] .auth-shell {

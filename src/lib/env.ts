@@ -128,7 +128,13 @@ const serverSchema = z.object({
   GUEST_PASS_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
-  METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),
+  // --- social OAuth (optional; buttons hidden when unset) ---
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalSecret(16),
+  FACEBOOK_CLIENT_ID: optionalString,
+  FACEBOOK_CLIENT_SECRET: optionalSecret(16),
+  /** When on, show phone OTP sign-in (Twilio not wired yet). */
+  GUEST_PHONE_SIGN_IN: boolish(undefined),
 
   /*
    * --- jobs ---

@@ -6,7 +6,7 @@ import { isGuestPortalInternalRoute } from '@/domain/lifecycle/guest-portal';
  * the public allowlist from navigate_to plus the auth and admin trees. Anything else — absolute
  * URLs, protocol-relative, traversal, control characters — is refused (review S7/N4).
  */
-const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/step-up', '/claim/verify', '/claim/welcome', '/claim/passkey', '/sign-out', '/admin'] as const;
+const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/pending', '/step-up', '/claim/verify', '/claim/welcome', '/claim/passkey', '/sign-out', '/admin', '/guests'] as const;
 const AUTH_PREFIXES = ['/invite/', '/i/', '/claim/', '/admin/'] as const;
 /**
  * Pages that moved, which next.config.ts redirects permanently. A sign-in link minted before the
