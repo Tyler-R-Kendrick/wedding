@@ -98,9 +98,8 @@ function portalItems(session: SessionHint, nav: AccountMenuProps['nav'], signedI
   if (session.portals.length) return session.portals.map((p) => ({ label: p.label, href: p.href }));
   if (nav.portals?.length) return nav.portals;
   if (!signedIn) return [];
-  if (admin && !viewing) return [ADMIN_PORTAL];
-  if (viewing) return [GUEST_PORTAL, ADMIN_PORTAL];
-  return [GUEST_PORTAL];
+  if (viewing || !admin) return [GUEST_PORTAL, ...(admin ? [ADMIN_PORTAL] : [])];
+  return [ADMIN_PORTAL];
 }
 
 export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
@@ -122,10 +121,10 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
     );
   }
   const portals = portalItems(session, nav, signedIn, admin, viewing);
-  const items =
-    admin && !viewing
-      ? [...portals, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
-      : [...portals, ...(nav.member ?? []), SIGN_OUT];
+  const guestMenu = viewing || (!admin && signedIn);
+  const items = admin && !viewing
+    ? [...portals, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
+    : [...portals, ...(guestMenu ? (nav.member ?? []) : []), SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;

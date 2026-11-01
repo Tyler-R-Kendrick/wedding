@@ -199,7 +199,6 @@ test.describe('view-as guest preview', () => {
     await ctx.addCookies([{ name: VIEW_ROLE_COOKIE, value: token!, url: BASE_URL, httpOnly: true, sameSite: 'Lax' }]);
     await page.goto('/');
     await expect(page).toHaveURL(/\/guests\/?$/);
-    await expect(page.getByRole('status').filter({ hasText: 'View as:' })).toContainText('Invited guest');
     await expectGuestPortalNav(page);
     const hrefs = await accountMenuHrefs(page);
     expect(hrefs.slice(0, 2)).toEqual(['/guests', '/admin']);

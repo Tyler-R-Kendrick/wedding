@@ -17,6 +17,11 @@ export function isGuestPortalExperience(opts: { signedIn?: boolean; admin?: bool
   return opts.signedIn === true && opts.admin !== true;
 }
 
+/** Signed-in guest sessions, including an administrator’s view-as preview, use the guest portal. */
+export function isGuestPortalPrincipal(principal: Principal): boolean {
+  return principal.kind === 'guest';
+}
+
 /** Maps a legacy public path to its signed-in guest-portal equivalent, or null when unchanged. */
 export function guestPortalRedirectFor(pathname: string): string | null {
   const path = pathname.replace(/\/+$/, '') || '/';
