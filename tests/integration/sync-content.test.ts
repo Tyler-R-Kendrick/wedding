@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { loadContentSeed, SOURCE_KEYS } from '@/content';
 import { getDb } from '@/db/client';
 import { adventureMemories, contentSources, events, knowledgeRecords } from '@/db/schema';
+import { seedId } from '@/db/seed/sources';
 import { syncContent } from '@/db/seed/sync-content';
+
+const ADVENTURE_ID_BASE = 400;
 
 /**
  * What a production deploy does to content (scripts/deploy/migrate-on-deploy.mjs → db:sync-content).
@@ -51,7 +54,7 @@ describe('syncing content on deploy', () => {
     await db.delete(adventureMemories).where(eq(adventureMemories.slug, photoSlug));
     // A row typed by hand has taken a slug the sync needs for a different id: the upsert clashes.
     const [template] = await db.select().from(adventureMemories).where(eq(adventureMemories.slug, 'starved-rock'));
-    await db.insert(adventureMemories).values({ ...template!, id: 'typed-by-hand' as never, slug: photoSlug, contentVersion: 1 });
+    await db.insert(adventureMemories).values({ ...template!, id: 'typed-by-hand' as never, slug: photoSlug, contentVersion: 1, editedBy: 'admin:e2e-hand' });
     await db.update(contentSources).set({ title: 'before the sync' }).where(eq(contentSources.id, SOURCE_KEYS.photos));
 
     await expect(syncContent(db)).rejects.toThrow();
@@ -60,5 +63,52 @@ describe('syncing content on deploy', () => {
     const [source] = await db.select().from(contentSources).where(eq(contentSources.id, SOURCE_KEYS.photos));
     expect(source?.title).toBe('before the sync');
     await db.delete(adventureMemories).where(eq(adventureMemories.id, 'typed-by-hand' as never));
+  });
+
+  it('reconciles positional seed ids after adventures are merged and retires old slugs', async () => {
+    const db = await getDb();
+    await syncContent(db, new Date('2026-09-24T00:00:00Z'));
+    const seed = loadContentSeed();
+    const carnivaleSlug = 'carnivale-2026-07-19';
+    const carnivaleIndex = seed.adventures.findIndex((a) => a.slug === carnivaleSlug);
+    expect(carnivaleIndex).toBeGreaterThanOrEqual(0);
+    const canonicalId = seedId(ADVENTURE_ID_BASE + carnivaleIndex);
+    const mergedSlug = 'alinea-2026-02-13';
+
+    const [template] = await db.select().from(adventureMemories).where(eq(adventureMemories.slug, 'starved-rock'));
+    expect(template).toBeDefined();
+    const staleId = seedId(88_888);
+    await db.update(adventureMemories).set({ id: staleId }).where(eq(adventureMemories.slug, carnivaleSlug));
+
+    await db.insert(adventureMemories).values({
+      ...template!,
+      id: seedId(88_887),
+      slug: 'alinea-2026-02-13-a',
+      title: 'Retired fragment',
+      editedBy: 'import:photo-exif-2026-09-23',
+      contentVersion: 1,
+    });
+
+    await syncContent(db, new Date('2026-09-24T00:00:00Z'));
+
+    const [carnivale] = await db.select().from(adventureMemories).where(eq(adventureMemories.slug, carnivaleSlug));
+    expect(carnivale?.id).toBe(canonicalId);
+    expect(await db.select().from(adventureMemories).where(eq(adventureMemories.slug, mergedSlug))).toHaveLength(1);
+  });
+
+  it('drops retired merged-away slugs on sync', async () => {
+    const db = await getDb();
+    await syncContent(db, new Date('2026-09-24T00:00:00Z'));
+    const retiredSlug = 'alinea-2026-02-13-a';
+    const [template] = await db.select().from(adventureMemories).where(eq(adventureMemories.slug, 'starved-rock'));
+    await db.insert(adventureMemories).values({
+      ...template!,
+      id: seedId(88_886),
+      slug: retiredSlug,
+      title: 'Retired fragment',
+      contentVersion: 1,
+    });
+    await syncContent(db, new Date('2026-09-24T00:00:00Z'));
+    expect(await db.select().from(adventureMemories).where(eq(adventureMemories.slug, retiredSlug))).toHaveLength(0);
   });
 });
