@@ -150,6 +150,11 @@ const serverSchema = z.object({
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),
+
+  /** Twilio Verify (SMS sign-in). All three required for live mode; mock when absent. */
+  TWILIO_ACCOUNT_SID: optionalString,
+  TWILIO_AUTH_TOKEN: optionalSecret(16),
+  TWILIO_VERIFY_SERVICE_SID: optionalString,
 });
 
 type Parsed = z.infer<typeof serverSchema>;

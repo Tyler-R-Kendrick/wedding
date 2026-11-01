@@ -3,17 +3,18 @@ import type { CapabilityContext } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { err, ok, type Result } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
-import { authSessions, guests } from '@/db/schema';
+import { authSessions, authUsers, guests } from '@/db/schema';
 import { guestDisplayName } from '@/domain/guests/repo';
-import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity } from '@/domain/identity/bindings';
+import { activeBindingForGuest, activeBindingsForIdentity, bindIdentity, ensureAuthUser } from '@/domain/identity/bindings';
 import type { ChallengePayload } from '@/domain/identity/challenge';
 import { hashOtpIdentifier, getOtpLockout } from '@/domain/identity/otp';
+import { phoneAuthEmail } from '@/domain/identity/phone';
 import { markInvitationClaimed } from '@/domain/invitations/repo';
 import { resolveAdminRoles } from '@/domain/identity/principal';
 import { getAuthSession } from '@/lib/auth';
 import { env } from '@/lib/env';
 import type { CookieSink } from '@/lib/auth';
-import { actorOf, authOf, callAuth, consumeLimits, discardMintedSession, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets } from './shared';
+import { actorOf, authOf, callAuth, consumeLimits, discardMintedSession, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets, phoneBuckets } from './shared';
 
 export interface SignInOutcome {
   status: 'signed_in';
@@ -99,7 +100,7 @@ export async function completeOtpSignIn(
   const candidates: SignInOutcome['candidates'] = [];
   const isAdmin = (await resolveAdminRoles(db, user.email, env.ADMIN_EMAILS)).size > 0;
 
-  if (challenge.kind === 'claim' || challenge.kind === 'sign_in') {
+  if (challenge.kind === 'claim' || challenge.kind === 'sign_in' || challenge.kind === 'phone_sign_in') {
     for (const guestId of challenge.guestIds) {
       const existing = await activeBindingForGuest(db, guestId);
       if (existing && existing.authIdentityId !== user.id) continue; // owned by another inbox: never taken over
@@ -125,6 +126,102 @@ export async function completeOtpSignIn(
   }
 
   // Shared inbox: list the other selves so the UI can offer "not you? pick yourself".
+  const own = await activeBindingsForIdentity(db, user.id);
+  const selfIds = own.filter((b) => b.role === 'self').map((b) => b.guestId);
+  if (selfIds.length > 1) {
+    const rows = await db.select().from(guests).where(and(inArray(guests.id, selfIds), isNull(guests.mergedIntoGuestId)));
+    for (const g of rows) candidates.push({ guestId: g.id, displayName: guestDisplayName(g) });
+  }
+  const [updated] = await db.update(authSessions).set({ activeGuestId, authenticatedAt: ctx.now }).where(eq(authSessions.token, sessionToken)).returning({ authenticatedAt: authSessions.authenticatedAt });
+  const householdId = activeGuestId ? ((await db.select({ householdId: guests.householdId }).from(guests).where(eq(guests.id, activeGuestId)).limit(1))[0]?.householdId ?? null) : null;
+  appServices(ctx).metrics?.counter('auth.sign_in', 1, { kind: challenge.kind });
+  return ok({
+    status: 'signed_in',
+    kind: challenge.kind,
+    guestId: activeGuestId,
+    householdId,
+    candidates,
+    isAdmin,
+    authenticatedAt: (updated?.authenticatedAt ?? ctx.now).toISOString(),
+    next: challenge.next ?? null,
+  });
+}
+
+/** Twilio Verify + Better Auth phone session for `phone_sign_in` challenges. */
+export async function completePhoneSignIn(
+  ctx: CapabilityContext,
+  challenge: ChallengePayload,
+  code: string,
+  transport: { headers: Headers; sink: CookieSink },
+): Promise<Result<SignInOutcome, CapabilityError>> {
+  const phone = challenge.phone;
+  if (challenge.kind !== 'phone_sign_in' || !phone || !challenge.smsSent || challenge.guestIds.length === 0) {
+    return err(new CapabilityError('validation', INVALID_CODE_MESSAGE, { issues: [{ path: 'code', message: INVALID_CODE_MESSAGE }] }));
+  }
+  const { db, auth } = await authOf(ctx);
+  const phoneHash = hashOtpIdentifier(phone);
+  const limited = await consumeLimits(ctx, phoneBuckets(ctx, 'verify', phoneHash));
+  if (!limited.ok) {
+    await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'rate_limited' });
+    return err(limited.error);
+  }
+  const lock = await getOtpLockout(db, phoneHash, ipHashOf(ctx), ctx.now);
+  if (lock.locked) {
+    await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'locked' });
+    return err(new CapabilityError('rate_limited', LOCKED_MESSAGE, { retryAfterMs: Math.max(1000, Date.parse(lock.until!) - ctx.now.getTime()) }));
+  }
+  const twilio = appServices(ctx).providers('twilio-verify');
+  const checked = await twilio.checkVerification({ to: phone, code });
+  if (!checked.ok) {
+    await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'failed' });
+    return err(new CapabilityError('validation', INVALID_CODE_MESSAGE, { issues: [{ path: 'code', message: INVALID_CODE_MESSAGE }] }));
+  }
+  const guestRow = await db.select().from(guests).where(eq(guests.id, challenge.guestIds[0]!)).limit(1).then((r) => r[0]);
+  const authEmail = guestRow?.email ?? phoneAuthEmail(phone);
+  const name = guestRow ? guestDisplayName(guestRow) : phone;
+  const ensured = await ensureAuthUser(db, authEmail, name);
+  if (!ensured.ok) return err(ensured.error);
+  await db
+    .update(authUsers)
+    .set({ phoneNumber: phone, phoneNumberVerified: true, updatedAt: ctx.now, ...(guestRow?.email ? {} : { name }) })
+    .where(eq(authUsers.id, ensured.value.id));
+
+  const previous = await getAuthSession(transport.headers, { db, disableRefresh: true }).catch(() => null);
+  const signed = await callAuth(transport.sink, () =>
+    auth.api.verifyPhoneNumber({
+      body: { phoneNumber: phone, code, disableSession: false },
+      headers: transport.headers,
+      returnHeaders: true,
+    }),
+  );
+  if (!signed.ok) {
+    await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'failed' });
+    appServices(ctx).logger?.warn({ code: signed.error.code, message: signed.error.message }, 'phone verify auth failed');
+    return err(new CapabilityError('validation', INVALID_CODE_MESSAGE, { issues: [{ path: 'code', message: INVALID_CODE_MESSAGE }] }));
+  }
+  await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'verified' });
+  const body = signed.value as { response?: { token?: string; user?: { id: string; email: string } }; token?: string; user?: { id: string; email: string } };
+  const sessionToken = (body.response?.token ?? body.token) as string;
+  const user = (body.response?.user ?? body.user) as { id: string; email: string };
+  if (previous?.session.token && previous.session.token !== sessionToken) await db.delete(authSessions).where(eq(authSessions.token, previous.session.token));
+
+  const actor = actorOf(ctx);
+  const sameIdentity = previous?.session.userId === user.id;
+  let activeGuestId: string | null = sameIdentity ? (previous?.session.activeGuestId ?? null) : null;
+  const candidates: SignInOutcome['candidates'] = [];
+  const isAdmin = (await resolveAdminRoles(db, user.email, env.ADMIN_EMAILS)).size > 0;
+
+  for (const guestId of challenge.guestIds) {
+    const existing = await activeBindingForGuest(db, guestId);
+    if (existing && existing.authIdentityId !== user.id) continue;
+    const bound = existing ? ok(existing) : await bindIdentity(db, { authIdentityId: user.id, guestId, role: 'self', claimMethod: 'otp', invitationId: null, actor, requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
+    if (!bound.ok) continue;
+    activeGuestId ??= guestId;
+  }
+  if (!activeGuestId) {
+    const own = await activeBindingsForIdentity(db, user.id);
+    activeGuestId = own.find((b) => b.role === 'self')?.guestId ?? own[0]?.guestId ?? null;
+  }
   const own = await activeBindingsForIdentity(db, user.id);
   const selfIds = own.filter((b) => b.role === 'self').map((b) => b.guestId);
   if (selfIds.length > 1) {

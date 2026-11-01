@@ -170,6 +170,10 @@ export const PAGES: SitemapPage[] = [
     job: 'Neutral holding page when social sign-in cannot match an invitation yet.',
   },
   {
+    id: 'sign-in-phone', path: '/sign-in/phone', title: 'Sign in with your phone', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'TEASER',
+    job: 'Text a six-digit code when Sara and Tyler have your mobile number on file.',
+  },
+  {
     id: 'sign-out', path: '/sign-out', title: 'Sign out', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'TEASER',
     job: 'End the session on this device.',
   },

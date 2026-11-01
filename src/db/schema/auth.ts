@@ -12,11 +12,13 @@ export const authUsers = pgTable(
     name: text('name').notNull().default(''),
     email: text('email').notNull(),
     emailVerified: boolean('email_verified').notNull().default(false),
+    phoneNumber: text('phone_number'),
+    phoneNumberVerified: boolean('phone_number_verified').notNull().default(false),
     image: text('image'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('auth_users_email_idx').on(t.email)],
+  (t) => [uniqueIndex('auth_users_email_idx').on(t.email), uniqueIndex('auth_users_phone_idx').on(t.phoneNumber)],
 );
 
 export const authSessions = pgTable(

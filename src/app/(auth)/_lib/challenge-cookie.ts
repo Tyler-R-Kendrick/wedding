@@ -25,7 +25,7 @@ export interface ChallengeCookie {
   lockedUntil?: string;
   /** The person the caller picked, when signing in will bind them to somebody else. */
   picked?: string;
-  kind: 'claim' | 'sign_in' | 'admin_sign_in' | 'step_up' | 'change_email';
+  kind: 'claim' | 'sign_in' | 'admin_sign_in' | 'step_up' | 'change_email' | 'phone_sign_in';
 }
 
 /**

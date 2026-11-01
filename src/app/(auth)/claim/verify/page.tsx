@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { safeReturnPath } from '@/domain/identity/routes';
 import { verifyCode } from '../../_lib/actions';
@@ -15,7 +16,7 @@ export const metadata: Metadata = { title: 'Enter your code', robots: { index: f
 export default async function VerifyPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const cookie = await readChallengeCookie();
-  const usable = cookie && ['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind) ? cookie : null;
+  const usable = cookie && ['claim', 'sign_in', 'admin_sign_in', 'phone_sign_in'].includes(cookie.kind) ? cookie : null;
   // Back, or a refresh, just after a code was accepted: this browser is signed in and has nothing to
   // enter here. Go where the code led rather than showing a code form with no code behind it.
   if (!usable) {
@@ -36,16 +37,17 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
   // page sits open, and rendering needs no clock of its own (`Date.now()` in render is impure). The
   // capability decided there was a live lock when it sent this code; the cookie carrying it lives
   // ten minutes and the lock fifteen, so it cannot outlast what it describes by much.
+  const isSms = usable?.kind === 'phone_sign_in';
   const lockedTime = usable?.lockedUntil ? new Date(usable.lockedUntil).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago', timeZoneName: 'short' }) : null;
   return (
     <AuthShell
-      eyebrow="Check your email"
+      eyebrow={isSms ? 'Check your phone' : 'Check your email'}
       title="Enter your six-digit code"
       lede={
         usable ? (
           <p>
-            We sent a code to <strong>{usable.to ?? 'the email on file'}</strong>
-            {usable.for ? ` (${usable.for}’s email, since they manage the RSVP)` : ''}. It works for 10 minutes.
+            We sent a code to <strong>{usable.to ?? (isSms ? 'your phone' : 'the email on file')}</strong>
+            {!isSms && usable.for ? ` (${usable.for}’s email, since they manage the RSVP)` : ''}. It works for 10 minutes.
           </p>
         ) : (
           // Said "We sent a code to the email on file" directly above "This page needs a fresh
@@ -55,11 +57,23 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
       }
       footer={
         <p>
-          Nothing arrived? Check spam, then{' '}
+          Nothing arrived?{' '}
+          {isSms ? 'Double-check the number, then' : 'Check spam, then'}{' '}
           <a className="auth-link" href={back}>
             request a new code
           </a>
-          . If the address Sara and Tyler have for you is wrong, a code will never arrive — ask them to fix it.
+          .{' '}
+          {isSms ? (
+            <>
+              Wrong number on file?{' '}
+              <Link className="auth-link" href="/sign-in">
+                try email sign-in
+              </Link>{' '}
+              or ask Sara and Tyler to update your phone.
+            </>
+          ) : (
+            <>If the address Sara and Tyler have for you is wrong, a code will never arrive — ask them to fix it.</>
+          )}
         </p>
       }
     >

@@ -39,6 +39,7 @@ export function testServerEnv(port) {
     BASE_URL: origin,
     SEED_TEST_FIXTURES: '1',
     FLAG_RSVP_MEALS: 'on',
+    FLAG_PHONE_SIGN_IN: 'on',
     DEV_INBOX_TOKEN: 'local-dev-inbox-token-not-real',
     TEST_AUTH_SECRET: 'local-test-auth-secret-not-real',
     MEDIA_PART_SIZE_MB: '1',
@@ -60,7 +61,7 @@ export function testServerEnv(port) {
 
 /** Every path a spec navigates to, plus /api/session (the CI step says why each one is here). */
 export const WARM_ROUTES = [
-  '/', '/sign-in', '/sign-in/admin', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
+  '/', '/sign-in', '/sign-in/admin', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
   '/your-weekend', '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
   '/media/upload', '/media/mine', '/media/search', '/admin/ai',
   '/admin/lifecycle', '/admin/audit', '/admin/jobs', '/admin/metrics', '/admin/providers', '/admin/flags',

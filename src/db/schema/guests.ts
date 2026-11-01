@@ -46,6 +46,8 @@ export const guests = pgTable(
     lastName: text('last_name').notNull().default(''),
     /** Lower-cased, trimmed. Optional: children and some adults have none. */
     email: text('email'),
+    /** E.164 when set (e.g. +15551234567). Optional; drives SMS sign-in when enabled. */
+    phone: text('phone'),
     kind: text('kind').$type<GuestKind>().notNull().default('adult'),
     isMinor: boolean('is_minor').notNull().default(false),
     /** Unnamed plus-ones become named when the inviting guest RSVPs. */
@@ -63,7 +65,7 @@ export const guests = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [index('guests_household_idx').on(t.householdId), index('guests_email_idx').on(t.email), index('guests_managed_by_idx').on(t.managedByGuestId)],
+  (t) => [index('guests_household_idx').on(t.householdId), index('guests_email_idx').on(t.email), index('guests_phone_idx').on(t.phone), index('guests_managed_by_idx').on(t.managedByGuestId)],
 );
 
 export const invitations = pgTable(

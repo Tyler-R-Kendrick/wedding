@@ -7,6 +7,7 @@ import { err, ok, type Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { GUEST_KINDS, guestAccessBindings, guests, households, seatAssignments, type GuestKind, type GuestRow } from '@/db/schema';
 import { isEmailShape, normalizeEmail } from '@/domain/identity/mask';
+import { isPhoneShape, normalizePhoneE164 } from '@/domain/identity/phone';
 
 export interface GuestUpsert {
   id?: string;
@@ -14,6 +15,7 @@ export interface GuestUpsert {
   firstName: string;
   lastName?: string;
   email?: string | null;
+  phone?: string | null;
   kind?: GuestKind;
   isMinor?: boolean;
   isNamed?: boolean;
@@ -45,6 +47,13 @@ export async function findGuestsByEmail(db: Db, email: string): Promise<GuestRow
   const normalized = normalizeEmail(email);
   if (!isEmailShape(normalized)) return [];
   return db.select().from(guests).where(and(eq(guests.email, normalized), notMerged)).orderBy(asc(guests.createdAt));
+}
+
+/** Live guests with this E.164 phone (shared numbers are rare but possible). */
+export async function findGuestsByPhone(db: Db, phone: string): Promise<GuestRow[]> {
+  const normalized = normalizePhoneE164(phone);
+  if (!normalized) return [];
+  return db.select().from(guests).where(and(eq(guests.phone, normalized), notMerged)).orderBy(asc(guests.createdAt));
 }
 
 /**
@@ -83,7 +92,12 @@ export async function listGuests(db: Db, filter: { householdId?: string; q?: str
     filter.householdId ? eq(guests.householdId, filter.householdId) : undefined,
     filter.includeMerged ? undefined : notMerged,
     filter.q
-      ? or(ilike(guests.firstName, `%${filter.q.replace(/[%_]/g, '')}%`), ilike(guests.lastName, `%${filter.q.replace(/[%_]/g, '')}%`), ilike(guests.email, `%${filter.q.replace(/[%_]/g, '')}%`))
+      ? or(
+          ilike(guests.firstName, `%${filter.q.replace(/[%_]/g, '')}%`),
+          ilike(guests.lastName, `%${filter.q.replace(/[%_]/g, '')}%`),
+          ilike(guests.email, `%${filter.q.replace(/[%_]/g, '')}%`),
+          ilike(guests.phone, `%${filter.q.replace(/[%_]/g, '')}%`),
+        )
       : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
   return db
@@ -105,6 +119,11 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
     email = normalizeEmail(input.email);
     if (!isEmailShape(email)) return err(new CapabilityError('validation', 'That email address does not look right.', { issues: [{ path: 'email', message: 'Enter a valid email address.' }] }));
   }
+  let phone: string | null = null;
+  if (input.phone) {
+    phone = normalizePhoneE164(input.phone);
+    if (!phone || !isPhoneShape(phone)) return err(new CapabilityError('validation', 'That phone number does not look right.', { issues: [{ path: 'phone', message: 'Enter a US mobile number with area code.' }] }));
+  }
   const household = (await db.select({ id: households.id }).from(households).where(eq(households.id, input.householdId)).limit(1))[0];
   if (!household) return err(new CapabilityError('not_found', 'That household does not exist.'));
   // Both of these are guest ids typed into a free-text admin field ("Managed by (guest id) — leave
@@ -124,6 +143,7 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
     const patch: Partial<typeof guests.$inferInsert> = { householdId: input.householdId, firstName, updatedAt: new Date() };
     if (input.lastName !== undefined) patch.lastName = input.lastName.trim();
     if (input.email !== undefined) patch.email = email;
+    if (input.phone !== undefined) patch.phone = phone;
     if (input.kind !== undefined) patch.kind = kind;
     if (input.isMinor !== undefined) patch.isMinor = input.isMinor;
     else if (input.kind === 'child') patch.isMinor = true;
@@ -140,6 +160,7 @@ export async function upsertGuest(db: Db, input: GuestUpsert): Promise<Result<Gu
     firstName,
     lastName: (input.lastName ?? '').trim(),
     email,
+    phone,
     kind,
     isMinor: input.isMinor ?? kind === 'child',
     isNamed: input.isNamed ?? true,

@@ -15,6 +15,7 @@ export interface GuestSummary {
   lastName: string;
   displayName: string;
   email: string | null;
+  phone: string | null;
   kind: string;
   isMinor: boolean;
   managedByGuestId: string | null;
@@ -41,6 +42,7 @@ interface GuestValues extends Record<string, unknown> {
   kind: string;
   isMinor: boolean;
   email: string;
+  phone: string;
   managedByGuestId: string;
   notes: string;
   /** The chosen household's members, fetched on step 1, for the "managed by" choice. */
@@ -65,6 +67,7 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
     kind: guest?.kind ?? 'adult',
     isMinor: guest?.isMinor ?? false,
     email: guest?.email ?? '',
+    phone: guest?.phone ?? '',
     managedByGuestId: guest?.managedByGuestId ?? '',
     notes: guest?.notes ?? '',
     members: [],
@@ -123,10 +126,11 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
     },
     {
       title: 'How to reach them',
-      fields: ['email', 'managedByGuestId', 'notes'],
+      fields: ['email', 'phone', 'managedByGuestId', 'notes'],
       render: (ctx) => (
         <>
           <TextField ctx={ctx} name="email" label="Email" type="email" inputMode="email" optional spellCheck={false} hint="Sign-in codes go here. Leave empty for someone the household manager answers for." />
+          <TextField ctx={ctx} name="phone" label="Mobile phone" type="tel" inputMode="tel" optional spellCheck={false} hint="US mobile for SMS sign-in when that is turned on. E.164 is stored." />
           <SelectField
             ctx={ctx}
             name="managedByGuestId"
@@ -150,6 +154,7 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
               { label: 'Household', value: householdName(v.householdId, v) },
               { label: 'Kind', value: `${kindLabel(v.kind)}${v.isMinor ? ', a minor' : ''}` },
               { label: 'Email', value: v.email },
+              { label: 'Phone', value: v.phone },
               { label: 'Answered for by', value: v.members.find((m) => m.value === v.managedByGuestId)?.label ?? (v.managedByGuestId ? '' : 'The household manager') },
               { label: 'Notes', value: v.notes },
             ]}
@@ -178,6 +183,7 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
                 firstName: v.firstName.trim(),
                 lastName: v.lastName.trim(),
                 email: v.email.trim() || null,
+                phone: v.phone.trim() || null,
                 kind: v.kind,
                 isMinor: v.isMinor,
                 managedByGuestId: v.managedByGuestId || null,
@@ -192,6 +198,7 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
                     firstName: v.firstName.trim(),
                     lastName: v.lastName.trim(),
                     email: v.email.trim() || null,
+                phone: v.phone.trim() || null,
                     kind: v.kind,
                     isMinor: v.isMinor,
                     managedByGuestId: v.managedByGuestId || null,

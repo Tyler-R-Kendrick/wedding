@@ -106,7 +106,7 @@ describe('principal resolver', () => {
     // The photos and the registry moved behind the signed-in account menu, and their six
     // capabilities with them (`list_gallery`, `get_media_item`, `search_media`, `list_gift_links`,
     // `open_gift_link`, `open_gift_fund` are `auth: 'guest'`): none of them is an anonymous name.
-    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'show_adventure', 'show_venue_room', 'verify_guest_sign_in_pass', 'verify_otp']);
+    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_reservation_link', 'request_otp', 'request_phone_otp', 'search_travel_options', 'show_adventure', 'show_venue_room', 'verify_guest_sign_in_pass', 'verify_otp', 'verify_phone_otp']);
     const amara = await signIn(f.emails.amara);
     // Level 08 (travel) adds 7 guest capabilities, all `auth: 'guest'` behind `view_travel_tools`,
     // and every mutating one carries `confirmation: 'inline'`. `update_trip_item` is the one absent
@@ -136,7 +136,7 @@ describe('principal resolver', () => {
     // proposes alt text for a guest's own upload and is `ui: true, ai: false, webmcp: false` — a
     // suggestion a person accepts, never applied for them. The three biometric names that used to
     // sit here (read my consent, withdraw it, ask for deletion) went with the feature.
-    expect(names({ principal: guest })).toEqual(['abort_upload', 'add_trip_item', 'ask_concierge', 'claim_identity', 'claim_my_transportation_benefit', 'complete_upload', 'create_upload', 'delete_my_travel_profile', 'delete_my_upload', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'lookup_invitation', 'open_booking_link', 'open_gift_fund', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'resume_upload', 'search_media', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'suggest_alt_text', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_guest_sign_in_pass', 'verify_otp']);
+    expect(names({ principal: guest })).toEqual(['abort_upload', 'add_trip_item', 'ask_concierge', 'claim_identity', 'claim_my_transportation_benefit', 'complete_upload', 'create_upload', 'delete_my_travel_profile', 'delete_my_upload', 'draft_my_transportation_claim', 'draft_rsvp', 'find_adventures', 'get_faq', 'get_media_item', 'get_my_household', 'get_my_invitation', 'get_my_itinerary', 'get_my_rsvp', 'get_my_transportation_options', 'get_my_travel_profile', 'get_my_trip', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_gallery', 'list_gift_links', 'list_hotel_recommendations', 'list_itineraries', 'list_my_events', 'list_my_uploads', 'lookup_invitation', 'open_booking_link', 'open_gift_fund', 'open_gift_link', 'open_reservation_link', 'prepare_reservation', 'register_passkey', 'remove_trip_item', 'request_otp', 'request_phone_otp', 'resume_upload', 'search_media', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'step_up', 'submit_rsvp', 'suggest_alt_text', 'update_my_contact', 'update_my_travel_profile', 'update_trip_item', 'verify_guest_sign_in_pass', 'verify_otp', 'verify_phone_otp']);
     // `search_media` is the ONE level-11 capability an assistant may call. It is a read, its hits
     // are re-checked per asset against the caller's own ACL, and its output is marked untrusted
     // because it carries guest captions and model-suggested text.
@@ -212,9 +212,9 @@ describe('principal resolver', () => {
       'list_adventures', 'list_ai_traces', 'list_content_records', 'list_gallery', 'list_gift_links',
       'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'mark_content_verified',
       'open_booking_link', 'open_gift_fund', 'open_gift_link', 'open_reservation_link',
-      'prepare_reservation', 'register_passkey', 'request_otp', 'save_content_record', 'search_media',
+      'prepare_reservation', 'register_passkey', 'request_otp', 'request_phone_otp', 'save_content_record', 'search_media',
       'search_travel_options', 'search_wedding_information', 'search_wedding_information_static',
-      'show_adventure', 'show_venue_room', 'step_up', 'suggest_alt_text', 'verify_guest_sign_in_pass', 'verify_otp',
+      'show_adventure', 'show_venue_room', 'step_up', 'suggest_alt_text', 'verify_guest_sign_in_pass', 'verify_otp', 'verify_phone_otp',
     ]);
     const inv = expectOk(await call<{ you: { isManager: boolean } }>('get_my_invitation', {}, { cookie: amara.cookie }));
     expect(inv.data.you.isManager).toBe(false);
