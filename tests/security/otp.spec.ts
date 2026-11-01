@@ -49,12 +49,16 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     const box = page.getByRole('textbox', { name: 'Six-digit code' });
     const attempt = async (value: string) => {
       await box.fill(value);
-      await page.getByRole('button', { name: 'Continue' }).click();
+      // VerifyCodeForm auto-submits at six digits; wait for the server round-trip to clear the field.
       await expect(box).toHaveValue('', { timeout: 15_000 });
     };
     for (let i = 0; i < 5; i++) {
       await attempt(String(900000 + i));
-      await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work/);
+      if (i < 4) {
+        await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work/);
+      } else {
+        await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work|Too many incorrect codes/);
+      }
     }
     await attempt(code);
     await expect(page.locator('[role="alert"]').filter({ hasText: /Too many incorrect codes/ })).toBeVisible();
