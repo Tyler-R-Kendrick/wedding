@@ -102,16 +102,16 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/your-weekend'
  */
 
-test.describe.configure({ mode: 'serial' });
-
-test.beforeEach(({}, testInfo) => {
-  test.skip(testInfo.project.name === 'tablet', 'phone and desktop are the review viewports');
-});
-
 const ANON_MS = 480_000;
 const GUEST_MS = 480_000;
 const ADMIN_MS = 900_000;
 const VIEW_ROLE_MS = 1_500_000;
+
+test.describe.configure({ mode: 'serial', timeout: VIEW_ROLE_MS });
+
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.name === 'tablet', 'phone and desktop are the review viewports');
+});
 
 /** Dev overlay and the default favicon probe. Neither is a page we ship. */
 function ignoredNoise(text: string): boolean {

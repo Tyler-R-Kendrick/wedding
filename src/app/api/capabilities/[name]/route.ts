@@ -82,6 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     return errorResponse(new CapabilityError('validation', 'The request body must be JSON with an "input" field.'), requestId);
   }
 
+  const mintSession = SESSION_MINTING.has(name);
   const sink: CookieSink = { setCookies: [] };
   const ctx = await createCapabilityContext({
     principal,
@@ -97,18 +98,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     rateLimit: principal.kind !== 'anonymous',
     clientIp: ip,
   });
-  // A fresh Headers: Next's request headers are not always `instanceof Headers` across realms,
-  // and requireCookieTransport refuses a session when it cannot see either headers or a sink.
-  Object.assign(ctx.services, { requestHeaders: new Headers(request.headers), cookieSink: sink });
+  // Session minting needs inbound headers plus a sink; other capabilities must not gain a sink here
+  // (register_passkey via JSON is intentionally refused without the auth form transport).
+  if (mintSession) {
+    Object.assign(ctx.services, { requestHeaders: new Headers(request.headers), cookieSink: sink });
+  }
   const result = await invokeByName(name, ctx, body.input);
   if (!result.ok) {
     const res = errorResponse(result.error, requestId);
-    applyCookieSink(sink, res.headers);
+    if (mintSession) applyCookieSink(sink, res.headers);
     return res;
   }
   const { data, sources, confirmation, handoffUrl, retrievedAt } = result.value;
   const res = jsonResponse({ ok: true, data, sources, ...(confirmation ? { confirmation } : {}), ...(handoffUrl ? { handoffUrl } : {}), ...(retrievedAt ? { retrievedAt } : {}) }, { requestId });
-  applyCookieSink(sink, res.headers);
+  if (mintSession) applyCookieSink(sink, res.headers);
   return res;
 }
 
