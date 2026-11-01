@@ -1,8 +1,10 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import type { ReactNode } from 'react';
+import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { getCountdown, getLifecycleView, getSiteFacts, navFor, type LifecycleOptions } from '@/domain/lifecycle';
 import { getFlags } from '@/lib/flags';
+import { getPrincipal } from '@/lib/principal';
 import { getTheme } from './index';
 import { isThemeId } from './registry';
 import { resolveTheme, THEME_COOKIE } from './resolve';
@@ -40,7 +42,15 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
 }
 
 export async function renderHome(input: Omit<FrameInput, 'currentPath'>): Promise<ReactNode> {
-  const frame = await buildPageFrame({ ...input, currentPath: '/' });
+  const h = await headers();
+  const principal =
+    input.lifecycle?.principal ?? (await getPrincipal(new Request('http://wedding.local/', { headers: h })));
+  await enforceGuestPortalRoute(principal, '/', undefined, {
+    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
+    admin: principal.kind === 'admin',
+  });
+  const lifecycle: LifecycleOptions = { ...input.lifecycle, principal };
+  const frame = await buildPageFrame({ ...input, currentPath: '/', lifecycle });
   const data: HomeData = { ...frame, content: homeContent(frame.site, frame.lifecycle.state) };
   return getTheme(input.theme).recipes.home(data);
 }

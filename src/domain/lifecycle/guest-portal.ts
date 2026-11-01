@@ -1,5 +1,6 @@
 import { isInternalRoute } from '@/capabilities/routes';
 import type { Principal } from '@/contracts/principal';
+import { safeReturnPath } from '@/domain/identity/routes';
 import { ROUTES } from '@/domain/routes';
 
 export const GUEST_PORTAL = {
@@ -28,6 +29,8 @@ export function guestPortalRedirectFor(pathname: string): string | null {
     case '/ask-us':
     case '/faq':
       return GUEST_PORTAL.askUs;
+    case '/':
+      return GUEST_PORTAL.root;
     default:
       if (path.startsWith('/share-an-adventure/')) {
         return `${GUEST_PORTAL.thingsToDo}${path.slice('/share-an-adventure'.length)}`;
@@ -71,4 +74,12 @@ export function isAllowedGuestPortalReturn(path: string): boolean {
   const [pathname] = path.split('?');
   const clean = pathname!.replace(/\/+$/, '') || '/';
   return isInternalRoute(clean) || isGuestPortalInternalRoute(clean);
+}
+
+/** After guest sign-in, land on the portal — not the anonymous home page — unless `next` names another safe path. */
+export function guestSignInLandingPath(next: unknown, fallback: string = GUEST_PORTAL.root): string {
+  const resolved = safeReturnPath(next, fallback);
+  const pathname = resolved.split('?')[0]!.replace(/\/+$/, '') || '/';
+  if (pathname === '/') return fallback;
+  return resolved;
 }

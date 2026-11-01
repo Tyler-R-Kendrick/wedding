@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import { safeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { clearChallengeCookie, rememberVerified } from '../../../_lib/challenge-cookie';
 import { errorCode } from '../../../_lib/errors';
 import { invokeFromRequest } from '../../../_lib/invoke';
@@ -24,7 +25,7 @@ export async function verifyGuestPass(formData: FormData): Promise<void> {
   if (!d.guestId && !d.isAdmin) redirect(`${back}?error=unlinked`);
   const fallback =
     d.isAdmin && !d.guestId ? '/admin' : d.needsClaimWelcome ? '/claim/welcome' : d.guestId ? '/guests' : '/claim/welcome';
-  const target = safeReturnPath(next || d.next, fallback);
+  const target = guestSignInLandingPath(next || d.next, fallback);
   await clearChallengeCookie();
   await rememberVerified(target);
   redirect(target);

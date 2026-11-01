@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { navFor } from '@/domain/lifecycle/nav';
-import { GUEST_PORTAL, guestPortalRedirectFor, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
+import { GUEST_PORTAL, guestPortalRedirectFor, guestSignInLandingPath, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 
 describe('guest portal routes', () => {
@@ -9,7 +9,14 @@ describe('guest portal routes', () => {
     expect(guestPortalRedirectFor('/share-an-adventure')).toBe(GUEST_PORTAL.thingsToDo);
     expect(guestPortalRedirectFor('/share-an-adventure/starved-rock')).toBe('/guests/things-to-do/starved-rock');
     expect(guestPortalRedirectFor('/ask-us')).toBe(GUEST_PORTAL.askUs);
-    expect(guestPortalRedirectFor('/')).toBeNull();
+    expect(guestPortalRedirectFor('/')).toBe(GUEST_PORTAL.root);
+  });
+
+  it('guest sign-in landing avoids the anonymous home page', () => {
+    expect(guestSignInLandingPath('/', '/guests')).toBe('/guests');
+    expect(guestSignInLandingPath('', '/guests')).toBe('/guests');
+    expect(guestSignInLandingPath('/rsvp', '/guests')).toBe('/rsvp');
+    expect(guestSignInLandingPath('/guests/travel', '/guests')).toBe('/guests/travel');
   });
 
   it('recognises guest-portal URLs', () => {

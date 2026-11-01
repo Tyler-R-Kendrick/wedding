@@ -8,7 +8,8 @@ import type { CookieSink } from '@/lib/auth';
 import { establishGuestSession } from '@/lib/auth/establish-session';
 import { getAuth } from '@/lib/auth';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
-import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
+import { isSafeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { invitationLifecycle } from '@/domain/identity/tokens';
 import type { OAuthProfile } from './oauth';
 
@@ -125,7 +126,7 @@ export async function completeSocialSignIn(
   },
 ): Promise<SocialSignInResult> {
   const started = performance.now();
-  const redirectSuccess = safeReturnPath(input.next, '/guests');
+  const redirectSuccess = guestSignInLandingPath(input.next, '/guests');
   const profileName: ProviderProfileName = { givenName: input.profile.givenName, familyName: input.profile.familyName, name: input.profile.name };
 
   const finishPending = async (reason: SocialReviewReason, candidateGuestIds: string[]) => {
