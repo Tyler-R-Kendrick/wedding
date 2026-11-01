@@ -47,7 +47,7 @@ function useSession(
   const [restored, setRestored] = useState<SessionHint | null>(null);
   useEffect(() => {
     let live = true;
-    if (known === undefined) {
+    if (known === undefined || known === true) {
       void sessionProbe().then((v) => {
         if (live) setProbed(v);
       });
@@ -64,10 +64,9 @@ function useSession(
       window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return (
-    restored ??
-    (known === undefined
-      ? probed
+  const fromServer =
+    known === undefined
+      ? null
       : {
           signedIn: known,
           admin: known && knownAdmin,
@@ -75,8 +74,14 @@ function useSession(
           viewRole: null,
           viewing: known && knownViewing,
           portals: knownPortals ?? [],
-        })
-  );
+        };
+  const merged =
+    restored ??
+    (probed.signedIn
+      ? probed
+      : fromServer ??
+        (known === undefined ? probed : fromServer ?? SIGNED_OUT));
+  return merged ?? SIGNED_OUT;
 }
 
 export interface AccountMenuClassNames {

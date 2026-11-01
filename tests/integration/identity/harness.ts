@@ -28,6 +28,8 @@ export interface Transport {
   logger?: unknown;
   /** The page path the proxy would stamp (`x-pathname`), for a request made from that page. */
   pathname?: string;
+  /** React Server Component flight request (exercises disableRefresh + preview cookies). */
+  rsc?: boolean;
 }
 
 /** Headers the way a browser would send them: same-origin by default. */
@@ -36,6 +38,7 @@ export function requestHeaders(t: Transport = {}): Headers {
   if (t.cookie) h.set('cookie', t.cookie);
   if (t.origin !== null) h.set('origin', t.origin ?? SITE);
   if (t.pathname) h.set('x-pathname', t.pathname);
+  if (t.rsc) h.set('rsc', '1');
   return h;
 }
 
@@ -43,7 +46,8 @@ export async function principalFor(t: Transport = {}): Promise<Principal> {
   // With `pathname`, the request a server component on that page would build: a placeholder URL and
   // the proxy's `x-pathname`. Without it, an /api capability call, whose URL is its real path.
   const url = t.pathname ? `http://wedding.local${t.pathname}` : `${SITE}/api/capabilities/x`;
-  return getPrincipal(new Request(url, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
+  const method = t.method ?? (t.rsc ? 'GET' : 'POST');
+  return getPrincipal(new Request(url, { method, headers: requestHeaders(t) }));
 }
 
 /** Invokes a capability through the real pipeline with the identity transport attached. */
