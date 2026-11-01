@@ -87,10 +87,7 @@ test.describe('client bundle', () => {
     });
 
     await page.goto('/', { waitUntil: 'networkidle' });
-<<<<<<< HEAD
-=======
     expect(seen.length, 'the home page loaded no script at all, so this assertion proves nothing').toBeGreaterThan(0);
->>>>>>> c31b88d (fix(e2e): align production smoke with Ask Us guest sign-in)
     // Nothing on the home page may fetch the chat route, and no script it loads may contain the
     // panel's own markers. Reading the CONTENT is what makes this a real assertion rather than a
     // guess about chunk names, which the bundler is free to change.
