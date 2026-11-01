@@ -242,6 +242,7 @@ export const PAGES: SitemapPage[] = [
   { id: 'admin-jobs', path: '/admin/jobs', title: 'Jobs', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Background work: queued, running, failed.' },
   { id: 'admin-metrics', path: '/admin/metrics', title: 'Metrics', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Visits, replies and the numbers that matter this week.' },
   { id: 'admin-audit', path: '/admin/audit', title: 'Audit log', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Who changed what, and when.' },
+  { id: 'admin-sitemap', path: '/admin/sitemap', title: 'Sitemap', parent: 'admin', audience: 'admin', mode: ['admin'], visibleFrom: null, job: 'Every endpoint the app serves: pages, redirects, APIs and what each one should do.' },
 ];
 
 /**

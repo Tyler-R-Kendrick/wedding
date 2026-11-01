@@ -41,7 +41,7 @@ test.describe('guest sign-in pass short link', () => {
     expect(revoke.body.ok).toBe(true);
     const slug = data.url.split('/s/')[1]!;
     await page.goto(`/s/${slug}`);
-    await expect(page.getByRole('alert')).toContainText(/no longer active/i);
+    await expect(page.getByRole('alert').filter({ hasText: /no longer active/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Sign in with your email/i })).toBeVisible();
   });
 });

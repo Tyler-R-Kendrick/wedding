@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import adventureSlugRedirects from './src/content/adventure-slug-redirects.json';
+import { REDIRECTS } from './src/lib/site-redirects';
 import { rightsHeaders } from './src/lib/rights';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
@@ -62,14 +63,11 @@ const nextConfig: NextConfig = {
   },
   // The venue page was "Explore CAA" at /explore-caa until it became Our Venue. Links already shared
   // and citations already stored keep working; the browser carries the #fragment across.
+  // Named aliases live in src/lib/site-redirects.ts, which the inventory and the crawler read too.
+  // Retired adventure URLs (same-day merges) stay in src/content/adventure-slug-redirects.json.
   async redirects() {
     return [
-      { source: '/explore-caa', destination: '/our-venue', permanent: true },
-      { source: '/explore-caa/:slug', destination: '/our-venue/:slug', permanent: true },
-      { source: '/faq', destination: '/ask-us', permanent: true },
-      { source: '/things-to-do', destination: '/share-an-adventure', permanent: true },
-      { source: '/wedding-day', destination: '/the-wedding', permanent: true },
-      { source: '/registry', destination: '/gifts', permanent: true },
+      ...REDIRECTS.map((r) => ({ source: r.source, destination: r.destination, permanent: r.permanent })),
       ...adventureSlugRedirects,
     ];
   },

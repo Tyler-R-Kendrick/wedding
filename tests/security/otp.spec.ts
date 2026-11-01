@@ -87,7 +87,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     // bucket and this second address was already denied.
     const otherClient = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN, client: 'otp-limit-client-b' });
     expect(otherClient.status(), 'a second client keeps its own allowance for the same address').toBe(200);
-    const verify = await cap(request, 'verify_otp', { challenge: 'x'.repeat(40), code: '123456' });
+    const verify = await cap(request, 'verify_otp', { challenge: 'x'.repeat(40), code: '123456' }, { origin: SITE_ORIGIN });
     expect([422]).toContain(verify.status());
     expect(verify.headers()['set-cookie'] ?? '').not.toContain('session_token');
   });

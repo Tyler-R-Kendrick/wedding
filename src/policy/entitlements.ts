@@ -1,7 +1,6 @@
 import type { AnyCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import type { GuestId } from '@/contracts/ids';
-import { isPreviewPersonaGuestId } from '@/domain/identity/preview-personas';
 import { hasEntitlement, type Entitlement, type Principal } from '@/contracts/principal';
 import { err, ok, type Result } from '@/contracts/result';
 
@@ -80,9 +79,8 @@ export function assertActsFor(principal: Principal, guestId: GuestId): Result<vo
         ? ok(undefined)
         : err(new CapabilityError('forbidden', FORBIDDEN_MESSAGE));
     case 'guest':
-      if (principal.viewedBy?.previewRole && isPreviewPersonaGuestId(guestId)) {
-        return err(new CapabilityError('forbidden', BROWSING_MESSAGE));
-      }
+      // View-role preview may read the synthetic guest (the trip, the table). `authorize` already
+      // refuses every change while `viewedBy.readOnly` is set, so this check stays ownership only.
       return principal.actsFor.includes(guestId)
         ? ok(undefined)
         : err(new CapabilityError('forbidden', 'You can only manage your own household.'));

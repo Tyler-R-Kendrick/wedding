@@ -38,6 +38,7 @@ or if the activation matrix drifts from the code that switches things on.
 | [Content model](architecture/content-model.md) and [provenance](architecture/provenance.md) | Where a fact comes from and how the site says it is uncertain. |
 | [Theme engine](architecture/theme-engine.md) | Two completely different designs over one domain. |
 | [SDLC process](sdlc/PROCESS.md) | How a change gets from an idea to a merged pull request. |
+| [Site audit](ops/site-audit-report.md) | The inventory of every endpoint, the public sitemap, and what the crawler checks. |
 | [ADRs](adr/README.md) | The twelve decisions everything else follows from. |
 
 Domain notes, one per area:

@@ -61,7 +61,7 @@ export function testServerEnv(port) {
 
 /** Every path a spec navigates to, plus /api/session (the CI step says why each one is here). */
 export const WARM_ROUTES = [
-  '/', '/sign-in', '/sign-in/admin', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
+  '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
   '/your-weekend', '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
   '/media/upload', '/media/mine', '/media/search', '/admin/ai',
   '/admin/lifecycle', '/admin/audit', '/admin/jobs', '/admin/metrics', '/admin/providers', '/admin/flags',
@@ -72,7 +72,7 @@ export const WARM_ROUTES = [
   '/admin/media/duplicates', '/admin/media/import', '/admin/media/metrics',
   '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
   '/our-adventures', '/travel',
-  '/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us',
+  '/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
   // Every admin flow saves through /api/capabilities/<name>. A GET compiles the route (and answers
   // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed
@@ -82,6 +82,16 @@ export const WARM_ROUTES = [
   // state through it, and nothing else on this server does. The proxy rewrites on the value's shape,
   // not on who asks, so an anonymous request compiles it.
   '/?preview=RSVP_OPEN',
+  // site-crawler.spec.ts. Concrete seed paths and the aliases it requests by name; the dynamic
+  // route itself is compiled by the first of each pattern. `/admin/sitemap` is also on the console
+  // index, which admin-console.spec walks.
+  '/admin/sitemap', '/credits',
+  '/our-adventures/starved-rock', '/share-an-adventure/starved-rock-state-park', '/our-venue/white-city-ballroom',
+  '/i/example', '/invite/example',
+  '/admin/content/story_sections', '/admin/content/story_sections/new', '/admin/content/story_sections/01SEED00000000000000000200',
+  '/t/botanical-deco', '/t/botanical-deco/preview/RSVP_OPEN',
+  '/explore-caa', '/faq', '/things-to-do', '/wedding-day', '/registry',
+  '/sitemap.xml', '/api/health',
 ];
 
 /** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */

@@ -1,6 +1,6 @@
-import botanicalDecoTokens from './botanical-deco/tokens.generated.json';
-import conservatoryTokens from './conservatory/tokens.generated.json';
-import gildedHourTokens from './gilded-hour/tokens.generated.json';
+import botanicalDecoTokens from './botanical-deco/tokens.generated.json' with { type: 'json' };
+import conservatoryTokens from './conservatory/tokens.generated.json' with { type: 'json' };
+import gildedHourTokens from './gilded-hour/tokens.generated.json' with { type: 'json' };
 import type { ThemeId, ThemeMeta } from './types';
 
 /**

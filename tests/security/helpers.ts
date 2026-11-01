@@ -69,6 +69,42 @@ export async function signInViaUi(page: Page, request: APIRequestContext, email:
   return sessionCookie(page);
 }
 
+/**
+ * Administrator session without the sign-in form. The admin server action often does not
+ * reach `/claim/verify` before Playwright's expect timeout under CI load. The code still
+ * comes from `request_otp`; `verify_otp` delivers the session cookie, which is planted on
+ * `page` so later browser navigations and `cap()` share one session. Returns `${name}=${value}`.
+ */
+export async function signInAdminViaApi(request: APIRequestContext, page: Page, email: string): Promise<string> {
+  const requested = await cap(request, 'request_otp', { purpose: 'admin_sign_in', email });
+  expect(requested.status(), 'admin request_otp').toBe(200);
+  const requestedBody = (await requested.json()) as { ok?: boolean; data?: { challenge?: string } };
+  expect(requestedBody.ok, JSON.stringify(requestedBody)).toBe(true);
+  const challenge = requestedBody.data?.challenge;
+  expect(challenge, 'admin sign-in challenge').toEqual(expect.any(String));
+
+  const code = await readOtp(request, email);
+  // Same-origin JSON: session-minting anonymous calls are refused without Origin (login CSRF).
+  const verified = await cap(request, 'verify_otp', { challenge, code }, { origin: SITE_ORIGIN });
+  const verifiedBody = await verified.json();
+  expect(verified.status(), JSON.stringify(verifiedBody)).toBe(200);
+
+  const sessions = verified
+    .headersArray()
+    .filter((header) => header.name.toLowerCase() === 'set-cookie')
+    .flatMap((header) => {
+      const pair = header.value.split(';', 1)[0] ?? '';
+      const eq = pair.indexOf('=');
+      if (eq <= 0) return [];
+      const name = pair.slice(0, eq).trim();
+      const value = pair.slice(eq + 1).trim();
+      return name.endsWith('session_token') && value ? [{ name, value }] : [];
+    });
+  expect(sessions, 'verify_otp session cookie').not.toHaveLength(0);
+  await page.context().addCookies(sessions.map((cookie) => ({ name: cookie.name, value: cookie.value, url: SITE_ORIGIN, httpOnly: true, sameSite: 'Lax' as const })));
+  return sessionCookie(page);
+}
+
 export async function sessionCookie(page: Page): Promise<string> {
   const cookies = await page.context().cookies();
   const c = cookies.find((k) => k.name.endsWith('session_token'));
