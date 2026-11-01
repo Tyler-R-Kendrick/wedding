@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { apiHeaders, contextAs } from './helpers/principal';
+import { apiHeaders, contextAs, principalHeaders } from './helpers/principal';
 
 /**
  * The concierge on a real server. What matters here is not that the model is clever: it is that the
@@ -22,7 +22,10 @@ let clientCounter = 0;
 async function guestPage(browser: import('@playwright/test').Browser) {
   clientCounter += 1;
   const ctx = await contextAs(browser, 'A1');
-  await ctx.setExtraHTTPHeaders({ 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
+  await ctx.setExtraHTTPHeaders({
+    ...principalHeaders('A1'),
+    'x-forwarded-for': `198.51.100.${clientCounter % 250}`,
+  });
   return { ctx, page: await ctx.newPage() };
 }
 
@@ -215,7 +218,7 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) 
     test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
       const { ctx, page } = await guestPage(browser);
       await page.goto(`/guests/ask-us?theme=${theme}`);
-      await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
+      await expect(page.locator(`.site[data-theme="${theme}"]`).first()).toBeAttached();
 
       const slot = page.locator('#concierge-slot');
       await expect(slot).toBeAttached();
