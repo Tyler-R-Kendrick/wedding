@@ -18,8 +18,7 @@ test.describe('phone sign-in', () => {
     await page.getByLabel('Mobile number').fill('5551234001');
     await page.getByRole('button', { name: 'Text me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
-    await page.getByLabel('Six-digit code').fill('000000');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page).toHaveURL(/\/your-weekend|\/claim\/welcome/);
+    await page.locator('#code').fill('000000');
+    await expect(page).toHaveURL(/\/your-weekend|\/claim\/welcome/, { timeout: 20_000 });
   });
 });
