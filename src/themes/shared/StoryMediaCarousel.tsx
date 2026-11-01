@@ -65,7 +65,7 @@ export function StoryMediaCarousel({ label, slides, className }: StoryMediaCarou
           style={{ transform: `translateX(-${active * 100}%)`, ...(reduced ? { '--story-carousel-duration': '0ms' } : {}) }}
         >
           {slides.map((slide, i) => (
-            <li key={i} id={`${id}-slide-${i + 1}`} className="story-carousel__slide" aria-hidden={i === active ? undefined : true} aria-labelledby={`${id}-label-${i + 1}`}>
+            <li key={i} id={`${id}-slide-${i + 1}`} className="story-carousel__slide" {...(i !== active ? { inert: true } : {})} aria-labelledby={`${id}-label-${i + 1}`}>
               <span id={`${id}-label-${i + 1}`} className="sr-only">
                 {label}: image {i + 1} of {count}
               </span>

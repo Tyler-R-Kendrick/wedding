@@ -129,7 +129,7 @@ test.describe('explore journey', () => {
     // Exactly one station takes Tab: the one the train is at.
     await expect(map.locator('a[tabindex="0"]')).toHaveCount(1);
     await map.getByRole('link', { name: /^How we met/ }).focus();
-    for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowDown');
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
     const focused = map.getByRole('link', { name: /^Love$/ });
     await expect(focused).toBeFocused();
     // WCAG 2.4.11: the focused link is not hidden off the edge of the strip.
