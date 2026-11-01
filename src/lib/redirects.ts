@@ -30,8 +30,11 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'venmo.com', exact: true, pathPattern: /^\/[A-Za-z0-9_-]{5,30}$/ },
   { host: 'www.paypal.com', pathPrefix: '/paypalme/', exact: true },
   { host: 'cash.app', pathPrefix: '/$', exact: true },
-  // Maps only, on the pinned hosts: never google.com/search, docs.google.com, or apple.com/iphone.
+  // Google Maps and Google Travel (Flights / Hotels hand-offs only — not google.com/search).
   { host: 'www.google.com', pathPrefix: '/maps/', exact: true },
+  { host: 'www.google.com', pathPrefix: '/travel/', exact: true },
+  { host: 'kayak.com' },
+  { host: 'www.kayak.com', exact: true },
   { host: 'maps.google.com', exact: true },
   { host: 'www.apple.com', pathPrefix: '/maps/', exact: true },
   { host: 'maps.apple.com', exact: true },

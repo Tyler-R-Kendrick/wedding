@@ -484,6 +484,7 @@ function hostedFakeProvider(): FlightsProvider {
     health: mock.health.bind(mock),
     search: mock.search.bind(mock),
     deepLink: mock.deepLink.bind(mock),
+    extraHandoffs: mock.extraHandoffs.bind(mock),
     createHostedSession: async (req) => ok({ provider: 'duffel', label: 'Continue securely with Duffel', url: `https://links.duffel.com/s/${req.reference}`, opensNewTab: false, disclosure: 'test' }),
     webhook: { verify: (raw, header, now) => verifyDuffelSignature(raw, header, WEBHOOK_SECRET, now), parse: parseDuffelEvent },
   };

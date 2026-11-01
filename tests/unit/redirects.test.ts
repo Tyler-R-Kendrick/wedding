@@ -26,6 +26,9 @@ describe('redirect allowlist', () => {
       'https://www.booking.com/searchresults.html',
       'https://www.aviasales.com/search/LAX1607ORD?t=UA&marker=1',
       'https://aviasales.com/search/test',
+      'https://www.google.com/travel/flights/search?tfs=abc',
+      'https://www.google.com/travel/search?q=hotels',
+      'https://www.kayak.com/flights/LAX-ORD/2027-07-16/2027-07-18',
     ]) {
       expect(isAllowedRedirect(u), u).toBe(true);
     }
@@ -38,6 +41,8 @@ describe('redirect allowlist', () => {
       'https://hyatt.com.evil.example/',
       'https://notuber.com/',
       'https://www.google.com/search?q=x',
+      'https://www.google.com/travel',
+      'https://www.google.com/travelextra/',
       'https://www.google.com/maps',
       'https://www.google.com/mapsomething/',
       'https://google.com/maps/',

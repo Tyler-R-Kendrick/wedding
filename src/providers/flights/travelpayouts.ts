@@ -3,7 +3,7 @@ import type { LiveSnapshot, ProviderFailure } from '@/contracts/providers';
 import { err, ok, type Result } from '@/contracts/result';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { failure, missingConfig, okConfig, unconfiguredHealth, upHealth } from '../base';
-import { assertFlightSearchRequest, flightsHandoff } from './deep-link';
+import { assertFlightSearchRequest, flightsHandoff, partnerFlightHandoffs } from './deep-link';
 import { callJson, CircuitBreaker, GUEST_MESSAGES, toCents, type FetchLike } from './http';
 import type { FlightResult, FlightSearchRequest, FlightsProvider, TransferKind } from './types';
 
@@ -140,6 +140,10 @@ export class TravelpayoutsFlights implements FlightsProvider {
 
   deepLink(req: FlightSearchRequest) {
     return flightsHandoff(req);
+  }
+
+  extraHandoffs(req: FlightSearchRequest) {
+    return partnerFlightHandoffs(req);
   }
 
   async search(req: FlightSearchRequest): Promise<Result<LiveSnapshot<FlightResult[]>, ProviderFailure>> {

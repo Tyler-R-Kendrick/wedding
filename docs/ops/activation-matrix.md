@@ -36,8 +36,8 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_CONNECT_USER_ID` | sendOtp, sendMessage |  |
 | `cash-fund` | mock | mock | — | describeLinks |  |
 | `embeddings` | mock | mock | — | embed |  |
-| `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY`<br>`TRAVELPAYOUTS_MARKER`<br>`TRAVELPAYOUTS_TOKEN` | search, deepLink |  |
-| `hotels` | mock | mock | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER`<br>`SERPAPI_API_KEY` | search, deepLink |  |
+| `flights` | google-travel-flights | live | `BRIGHT_DATA_API_URL`<br>`BRIGHT_DATA_SERP_ZONE`<br>`DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY`<br>`TRAVELPAYOUTS_MARKER`<br>`TRAVELPAYOUTS_TOKEN` | search, deepLink |  |
+| `hotels` | google-travel-hotels | live | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER`<br>`SERPAPI_API_KEY` | search, deepLink |  |
 | `jobs` | unavailable | unavailable | — | — | jobs provider requires a database; call getProvider("jobs", { db }) |
 | `maps` | deep-link | deep-link | — | directionsUrl, staticMapUrl |  |
 | `media-ai` | mock | mock | `FORCE_MOCK_PROVIDERS` | caption, describeScenes, tags, annotate |  |

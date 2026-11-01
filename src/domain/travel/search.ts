@@ -26,6 +26,15 @@ export interface SearchDeps {
 
 const allowed = (handoff: ExternalHandoff): boolean => assertAllowedRedirect(handoff.url).ok;
 
+function dedupeHandoffs(handoffs: ExternalHandoff[]): ExternalHandoff[] {
+  const seen = new Set<string>();
+  return handoffs.filter((h) => {
+    if (seen.has(h.url)) return false;
+    seen.add(h.url);
+    return true;
+  });
+}
+
 /**
  * What the provider says about its own numbers, not what we wish they were. A provider declaring
  * `mode: 'mock'` fabricates prices and walk times; presenting those as `live` is the difference
@@ -88,7 +97,7 @@ export async function searchFlights(deps: SearchDeps, input: FlightSearchInput):
   if (!provider) {
     return { kind: 'flights', mode: 'unavailable', provider: 'none', request, airports, handoffs: adminLinks.filter(allowed), notice: 'Flight search is not set up yet.' };
   }
-  const handoffs = [provider.deepLink(req), ...adminLinks].filter(allowed);
+  const handoffs = dedupeHandoffs([provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks]).filter(allowed);
   const result = await cachedProviderSearch(provider, 'flights', req, request);
   if (!result.ok) {
     const f = result.error;
@@ -147,7 +156,7 @@ export async function searchHotels(deps: SearchDeps, input: HotelSearchInput): P
   if (!provider) {
     return { kind: 'hotels', mode: 'unavailable', provider: 'none', request, handoffs: adminLinks.filter(allowed), notice: 'Hotel search is not set up yet.' };
   }
-  const handoffs = [provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks].filter(allowed);
+  const handoffs = dedupeHandoffs([provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks]).filter(allowed);
   const result = await cachedProviderSearch(provider, 'hotels', req, request);
   if (!result.ok) {
     const f = result.error;

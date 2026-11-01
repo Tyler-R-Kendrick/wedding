@@ -157,7 +157,8 @@ describe('Skyscanner Live Prices adapter (fixture server)', () => {
     expect(!r.ok && r.error.class).toBe('unconfigured');
     expect(server.hits).toHaveLength(0);
     expect(isAllowedRedirect(p.deepLink(req).url)).toBe(true);
-    expect(createFlightsProvider({ FORCE_MOCK_PROVIDERS: false, FLIGHTS_PROVIDER: 'skyscanner', SKYSCANNER_API_KEY: undefined, DUFFEL_API_KEY: undefined, DUFFEL_WEBHOOK_SECRET: undefined }).mode).toBe('unavailable');
+    expect(createFlightsProvider({ NODE_ENV: 'test', FORCE_MOCK_PROVIDERS: false, FLIGHTS_PROVIDER: 'skyscanner', SKYSCANNER_API_KEY: undefined, DUFFEL_API_KEY: undefined, DUFFEL_WEBHOOK_SECRET: undefined }).mode).toBe('unavailable');
+    expect(createFlightsProvider({ NODE_ENV: 'production', FORCE_MOCK_PROVIDERS: false, FLIGHTS_PROVIDER: undefined, SKYSCANNER_API_KEY: undefined, DUFFEL_API_KEY: undefined, DUFFEL_WEBHOOK_SECRET: undefined, TRAVELPAYOUTS_TOKEN: undefined, TRAVELPAYOUTS_MARKER: undefined }).name).toBe('google-travel-flights');
   });
 
   it('rejects malformed requests before calling the partner', async () => {

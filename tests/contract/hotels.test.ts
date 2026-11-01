@@ -84,8 +84,9 @@ describe('Booking.com Demand API adapter (fixture server)', () => {
     expect(server.hits).toHaveLength(0);
     expect(isAllowedRedirect(p.deepLink(req).url)).toBe(true);
     expect(isAllowedRedirect(p.venueHandoff().url)).toBe(true);
-    expect(createHotelsProvider({ FORCE_MOCK_PROVIDERS: false, HOTELS_PROVIDER: 'booking', BOOKING_DEMAND_API_KEY: undefined, BOOKING_AFFILIATE_ID: undefined, DUFFEL_API_KEY: undefined }).mode).toBe('unavailable');
-    expect(createHotelsProvider({ FORCE_MOCK_PROVIDERS: true, HOTELS_PROVIDER: 'booking', BOOKING_DEMAND_API_KEY: 'a', BOOKING_AFFILIATE_ID: 'b', DUFFEL_API_KEY: undefined }).name).toBe('mock');
+    expect(createHotelsProvider({ NODE_ENV: 'test', FORCE_MOCK_PROVIDERS: false, HOTELS_PROVIDER: 'booking', BOOKING_DEMAND_API_KEY: undefined, BOOKING_AFFILIATE_ID: undefined, DUFFEL_API_KEY: undefined }).mode).toBe('unavailable');
+    expect(createHotelsProvider({ NODE_ENV: 'production', FORCE_MOCK_PROVIDERS: false, HOTELS_PROVIDER: undefined, BOOKING_DEMAND_API_KEY: undefined, BOOKING_AFFILIATE_ID: undefined, DUFFEL_API_KEY: undefined, SERPAPI_API_KEY: undefined }).name).toBe('google-travel-hotels');
+    expect(createHotelsProvider({ NODE_ENV: 'test', FORCE_MOCK_PROVIDERS: true, HOTELS_PROVIDER: 'booking', BOOKING_DEMAND_API_KEY: 'a', BOOKING_AFFILIATE_ID: 'b', DUFFEL_API_KEY: undefined }).name).toBe('mock');
   });
 
   it('rejects malformed dates before calling out', async () => {

@@ -3,7 +3,7 @@ import type { ExternalHandoff, LiveSnapshot, ProviderFailure } from '@/contracts
 import { err, ok, type Result } from '@/contracts/result';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import { failure, missingConfig, okConfig, unconfiguredHealth, upHealth } from '../base';
-import { flightsHandoff } from './deep-link';
+import { flightsHandoff, partnerFlightHandoffs } from './deep-link';
 import { parseDuffelEvent, verifyDuffelSignature } from './duffel-webhook';
 import { callJson, CircuitBreaker, GUEST_MESSAGES, type FetchLike } from './http';
 import type { FlightResult, FlightSearchRequest, FlightsProvider, HostedSessionRequest, ProviderWebhook } from './types';
@@ -67,6 +67,10 @@ export class DuffelLinksFlights implements FlightsProvider {
 
   deepLink(req: FlightSearchRequest) {
     return flightsHandoff(req);
+  }
+
+  extraHandoffs(req: FlightSearchRequest) {
+    return partnerFlightHandoffs(req);
   }
 
   /** Duffel Links has no results API of its own: search lives on the hosted page. */
