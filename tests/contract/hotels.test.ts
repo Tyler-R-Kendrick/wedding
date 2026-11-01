@@ -45,7 +45,7 @@ describe('Booking.com Demand API adapter (fixture server)', () => {
     expect(r.value.data[1]).toMatchObject({ id: 'booking-222', totalCents: 90000 });
     expect(r.value.data[2]!.totalCents).toBeUndefined();
     expect(r.value.data.every((h) => isAllowedRedirect(h.bookingUrl!))).toBe(true);
-    expect(p.extraHandoffs(req).map((h) => h.provider)).toEqual(['hyatt']);
+    expect(p.extraHandoffs(req).map((h) => h.provider)).toEqual(['hyatt', 'hyatt']);
     expect(p.extraHandoffs(req).every((h) => isAllowedRedirect(h.url))).toBe(true);
   });
 

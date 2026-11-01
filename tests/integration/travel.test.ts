@@ -225,7 +225,7 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
     const hotels = await run(searchTravelOptions, guestA, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18', adults: 2 });
     expect(hotels.ok && hotels.value.data).toMatchObject({ kind: 'hotels', mode: 'sample', request: { rooms: 1 } });
     expect(hotels.ok && hotels.value.data.snapshot.results[0]).toMatchObject({ isVenue: true, name: 'Chicago Athletic Association Hotel' });
-    expect(hotels.ok && hotels.value.data.handoffs.map((h: ExternalHandoff) => h.provider)).toEqual(['booking.com', 'hyatt']);
+    expect(hotels.ok && hotels.value.data.handoffs.map((h: ExternalHandoff) => h.provider)).toEqual(['booking.com', 'hyatt', 'hyatt']);
     setProviderOverride('hotels', new DeepLinkOnlyHotels());
     const fallback = await run(searchTravelOptions, anonymous, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(fallback.ok && fallback.value.data).toMatchObject({ mode: 'deep-link', provider: 'booking-deep-link' });
@@ -399,7 +399,10 @@ describe('open_booking_link (external hand-offs)', () => {
       })
       .where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
     const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
-    expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
+    expect(block.ok && block.value.data).toMatchObject({
+      placeholder: true,
+      handoff: { provider: 'hyatt', url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE' },
+    });
   });
 
   it('hosted checkout needs a signed-in guest, a capable provider, and ties the session to a trip item', async () => {

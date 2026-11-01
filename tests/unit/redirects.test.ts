@@ -24,6 +24,8 @@ describe('redirect allowlist', () => {
       'https://www.skyscanner.com.au/x',
       'https://app.duffel.com/x',
       'https://www.booking.com/searchresults.html',
+      'https://www.aviasales.com/search/LAX1607ORD?t=UA&marker=1',
+      'https://aviasales.com/search/test',
     ]) {
       expect(isAllowedRedirect(u), u).toBe(true);
     }

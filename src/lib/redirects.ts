@@ -41,6 +41,9 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: /^(?:[a-z0-9-]+\.)*skyscanner\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/ },
   { host: 'duffel.com' },
   { host: 'booking.com' },
+  // Aviasales / Travelpayouts affiliate flight booking links
+  { host: /^(?:www\.)?aviasales\.(?:com|us|ru)$/ },
+  { host: 'jetradar.com' },
 ];
 
 function hostMatches(hostname: string, entry: AllowedHost): boolean {
