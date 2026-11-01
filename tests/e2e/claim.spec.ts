@@ -117,7 +117,7 @@ test.describe('claim journey', () => {
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.shared!));
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page).toHaveURL(/\/guests(\/|$|\?)/);
-    await page.goto('/claim/welcome');
+    await page.goto(`/claim/welcome?picked=${encodeURIComponent('Ruth Fitzgerald')}`);
     // This asserted 'Welcome, Sara' — the manager whose inbox took the code — after the reader had
     // just picked Ruth one screen earlier. That is the defect this branch fixes, so the assertion
     // changes deliberately: the heading names the person who was picked, and the lede has to say
