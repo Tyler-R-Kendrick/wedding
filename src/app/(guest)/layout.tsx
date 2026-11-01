@@ -65,12 +65,7 @@ export default async function GuestLayout({ children }: { children: ReactNode })
   });
   const nav =
     principal.kind === 'guest'
-      ? navFor(frame.lifecycle.state, {
-          signedIn: true,
-          currentPath,
-          venue: frame.site.venue,
-          ...(principal.viewedBy ? { viewing: true } : {}),
-        })
+      ? { ...navFor(frame.lifecycle.state, { signedIn: true, currentPath, venue: frame.site.venue, ...(principal.viewedBy ? { viewing: true } : {}) }), portals: frame.nav.portals }
       : frame.nav;
   const Shell = getTheme(theme).kit.Shell;
   return <Shell frame={{ ...frame, nav }}>{children}</Shell>;

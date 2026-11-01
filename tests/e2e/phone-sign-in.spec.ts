@@ -19,6 +19,6 @@ test.describe('phone sign-in', () => {
     await page.getByRole('button', { name: 'Text me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.locator('#code').fill('000000');
-    await expect(page).toHaveURL(/\/your-weekend|\/claim\/welcome/, { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/guests(\/|$)/, { timeout: 20_000 });
   });
 });
