@@ -18,6 +18,17 @@ export function weddingEventSkeleton(provenance: ProvenanceViewData, dateIso: st
   const time = (what: string) => textBlock(`TODO(Tyler & Sara): ${what} time, to be confirmed with the planner (backlog P-02).`);
   return [
     {
+      id: 'guest-arrival',
+      name: 'Guest arrival',
+      dateIso,
+      weekdayLabel,
+      timeLabel: time('guest arrival'),
+      room,
+      whatHappens: [textBlock('Please arrive 15–30 minutes before the ceremony so you can get settled.')],
+      dressCode,
+      provenance,
+    },
+    {
       id: 'ceremony',
       name: 'Ceremony',
       dateIso,
@@ -47,6 +58,17 @@ export function weddingEventSkeleton(provenance: ProvenanceViewData, dateIso: st
       timeLabel: time('reception'),
       room,
       whatHappens: [textBlock('Dinner, toasts, first dances, and open dancing. The toasts and first dances are filmed; the photographers stay through six songs of open dancing.'), textBlock('TODO(Tyler & Sara): the menu and the music (backlog V-01, C-10).')],
+      dressCode,
+      provenance,
+    },
+    {
+      id: 'end-of-celebration',
+      name: 'End of celebration',
+      dateIso,
+      weekdayLabel,
+      timeLabel: time('end of celebration'),
+      room,
+      whatHappens: [textBlock('When the reception ends, we will say goodnight from the dance floor.')],
       dressCode,
       provenance,
     },

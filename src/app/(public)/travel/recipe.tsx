@@ -211,8 +211,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
 
       <Section id="getting-around" eyebrow="Arrive" title="Getting around">
         <p>
-          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}{' '}
-          {facts.venue.valetPending ? <Todo>{facts.venue.valetPending}</Todo> : null}
+          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}
         </p>
         <p>
           Accessibility and transit directions are on the{' '}
