@@ -344,6 +344,17 @@ CI: wire `node scripts/fetch-commons.mjs --check` into `npm run quality`
 (package.json is not edited by the assets agent; the owner of `quality`
 adds it). Until then, run it before every PR that touches `public/assets/`.
 
+### Travel geodata (nearest-airport prefill)
+
+Bundled under `src/domain/travel/data/` (regenerate with `node scripts/build-travel-geo-data.mjs`):
+
+| File | Source | License |
+|---|---|---|
+| `commercial-airports.json` | [OurAirports](https://ourairports.com/data/) `airports.csv` | Public domain |
+| `us-postal-centroids.json` | [GeoNames](https://www.geonames.org/) US postal codes | CC BY 4.0 (attribution: GeoNames) |
+
+Used only to suggest editable defaults on `/guests/travel`; no outbound geocoding calls.
+
 ## 6. Commands, in one place
 
 ```bash

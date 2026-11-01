@@ -29,7 +29,13 @@ export async function register() {
   // and memoized per `Db`, so the RSVP path is unchanged, and it applies its own production and
   // `SEED_TEST_FIXTURES` guards. A seeding failure must not stop the server from starting.
   try {
-    const [{ getDb }, { ensureSwarmESeeded }] = await Promise.all([import('@/db/client'), import('@/domain/events/boot')]);
+    const [{ getDb }, { ensureSwarmESeeded }, { setLocationSuggestionResolver }, { invitationLocationSuggestion }] = await Promise.all([
+      import('@/db/client'),
+      import('@/domain/events/boot'),
+      import('@/domain/travel/profile'),
+      import('@/domain/travel/invitation-location'),
+    ]);
+    setLocationSuggestionResolver((db, guestId) => invitationLocationSuggestion(db, guestId));
     await ensureSwarmESeeded(await getDb());
   } catch (err) {
     const { logger } = await import('@/lib/logger');

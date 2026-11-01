@@ -24,8 +24,9 @@ import { newId, type AdminId, type AuthIdentityId, type GuestId, type HouseholdI
 import type { AdminPrincipal, Entitlement, GuestPrincipal, Principal } from '@/contracts/principal';
 import type { ExternalHandoff } from '@/contracts/providers';
 import { ok, type Result } from '@/contracts/result';
-import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID } from '@/domain/travel';
+import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID, buildTravelSearchDefaults, invitationLocationSuggestion } from '@/domain/travel';
 import { getDb } from '@/db/client';
+import { households } from '@/db/schema/guests';
 import { hotelRecommendations } from '@/db/schema/travel';
 import { eq } from 'drizzle-orm';
 import { FX } from '@/db/seed/fixtures';
@@ -149,9 +150,28 @@ describe('travel profile (opt-in, editable, deletable)', () => {
     expect(del.ok && del.value.data).toEqual({ guestId: guestA.guestId, deleted: true });
     const again = await run(deleteMyTravelProfile, guestA, {}, { key: key() });
     expect(again.ok && again.value.data.deleted).toBe(false);
-    setLocationSuggestionResolver(async () => ({ source: 'invitation', city: 'Reno', region: 'Nevada', airport: 'RNO' }));
+    const db = await getDb();
+    await db
+      .update(households)
+      .set({ mailingAddress: { city: 'Reno', region: 'NV', postalCode: '89501', country: 'US' }, updatedAt: new Date() })
+      .where(eq(households.id, guestA.householdId));
+    setLocationSuggestionResolver((d, id) => invitationLocationSuggestion(d, id));
     const got = await run(getMyTravelProfile, guestA, {});
-    expect(got.ok && got.value.data).toMatchObject({ optedIn: false, profile: null, suggestion: { source: 'invitation', city: 'Reno', airport: 'RNO' } });
+    expect(got.ok && got.value.data).toMatchObject({ optedIn: false, profile: null, suggestion: { source: 'invitation', city: 'Reno', region: 'NV' } });
+    expect(got.ok && got.value.data.suggestion?.airport).toBeTruthy();
+  });
+
+  it('prefills travel search defaults from household mailing address and party size when no profile is saved', async () => {
+    const db = await getDb();
+    await db
+      .update(households)
+      .set({ mailingAddress: { postalCode: '94102', country: 'US', city: 'San Francisco', region: 'CA' }, updatedAt: new Date() })
+      .where(eq(households.id, guestA.householdId));
+    const defaults = await buildTravelSearchDefaults(db, guestA.guestId, null);
+    expect(defaults.flight.origin).toBe('SFO');
+    expect(defaults.flight).toMatchObject({ destination: 'ORD', departDate: '2027-07-16', returnDate: '2027-07-18', adults: '2', children: '1' });
+    expect(defaults.hotel).toMatchObject({ checkIn: '2027-07-16', checkOut: '2027-07-18', adults: '2', children: '1', rooms: '1' });
+    expect(defaults.originSuggestions.map((s) => s.iata)).toContain('SFO');
   });
 });
 

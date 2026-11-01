@@ -47,7 +47,12 @@ export const FIXTURE_GUESTS = [
 ] as const;
 
 export const FIXTURE_HOUSEHOLDS = [
-  { id: FX.householdA, name: 'Testhouse household', managerGuestId: FX.guestA1 },
+  {
+    id: FX.householdA,
+    name: 'Testhouse household',
+    managerGuestId: FX.guestA1,
+    mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+  },
   { id: FX.householdB, name: 'Fixture household', managerGuestId: FX.guestB1 },
   { id: FX.householdC, name: 'Solo household', managerGuestId: FX.guestC1 },
 ] as const;
@@ -79,6 +84,13 @@ export const FIXTURE_MEALS = [
  */
 export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<void> {
   for (const h of FIXTURE_HOUSEHOLDS) await db.insert(households).values({ ...h, createdAt: now }).onConflictDoNothing({ target: households.id });
+  await db
+    .update(households)
+    .set({
+      mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+      updatedAt: now,
+    })
+    .where(eq(households.id, FX.householdA));
   for (const g of FIXTURE_GUESTS) await db.insert(guests).values({ ...g, createdAt: now }).onConflictDoNothing({ target: guests.id });
   const present = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, Object.values(E)))).map((r) => r.id));
   for (const [idx, en] of FIXTURE_ENTITLEMENTS.entries()) {

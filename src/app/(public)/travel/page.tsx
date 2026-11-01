@@ -9,6 +9,9 @@ import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
 import { headers } from 'next/headers';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
+import { buildTravelSearchDefaults } from '@/domain/travel/prefill';
+import type { TravelProfile } from '@/domain/travel/types';
+import { getDb } from '@/db/client';
 import { throughSignIn } from '@/domain/lifecycle/account';
 import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { currentPrincipal, runAsUi } from './_shared/server';
@@ -39,22 +42,15 @@ export default async function TravelPage() {
       </main>
     );
   }
-  let profile: Awaited<ReturnType<typeof getMyTravelProfile.handler>> extends never ? never : { preferredAirport: string | null; adults: number; children: number; cabin: string; nonstopPreferred: boolean; arriveEarliest: string | null; departLatest: string | null } | null = null;
+  let profile: TravelProfile | null = null;
+  let searchDefaults = { flight: {} as Record<string, string>, hotel: {} as Record<string, string>, originSuggestions: [] as { iata: string; name: string; distanceKm: number }[] };
   if (principal.kind === 'guest') {
     const mine = await runAsUi(getMyTravelProfile, {});
     if (mine.ok) profile = mine.value.data.profile;
+    searchDefaults = await buildTravelSearchDefaults(await getDb(), principal.guestId, profile);
   }
-  const flightDefaults = profile
-    ? {
-        origin: profile.preferredAirport ?? '',
-        adults: String(profile.adults),
-        children: String(profile.children),
-        cabin: profile.cabin,
-        nonstopOnly: profile.nonstopPreferred ? 'on' : '',
-        departDate: profile.arriveEarliest ?? '',
-        returnDate: profile.departLatest ?? '',
-      }
-    : {};
+  const flightDefaults = searchDefaults.flight;
+  const hotelDefaults = searchDefaults.hotel;
   // Swarm F left this seam open ("at integration this becomes `theme.recipes.travel ?? …`"), and
   // this is that integration: the page goes through the same themed dispatch every other public
   // page uses, so it renders inside the active theme's Shell — nav, footer, tokens and all — and
@@ -70,7 +66,10 @@ export default async function TravelPage() {
       sources={hotels.value.sources}
       // Signed out, "Your trip" goes through sign-in and comes back; a direct /trip link was a dead end.
       tripHref={principal.kind === 'guest' ? '/trip' : throughSignIn('/trip')}
-      slots={{ flightSearch: <FlightSearchForm defaults={flightDefaults} />, hotelSearch: <HotelSearchForm defaults={{ adults: String(profile?.adults ?? 2) }} /> }}
+      slots={{
+        flightSearch: <FlightSearchForm defaults={flightDefaults} originSuggestions={searchDefaults.originSuggestions} />,
+        hotelSearch: <HotelSearchForm defaults={hotelDefaults} />,
+      }}
     />
   );
 }
