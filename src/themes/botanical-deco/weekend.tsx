@@ -108,12 +108,12 @@ function Reply({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
   );
 }
 
-function Itinerary({ data }: { data: MyItinerary }) {
+function Itinerary({ data, heading }: { data: MyItinerary; heading: string }) {
   return (
     <section id="itinerary" className="bd-itin" aria-labelledby="page-title">
       <div className="bd-itin__head">
         <h1 id="page-title" className="bd-itin__title">
-          Your weekend, {data.greeting.firstName}
+          {heading}, {data.greeting.firstName}
         </h1>
         <p className="bd-itin__script" aria-hidden="true">
           So glad you’re here
@@ -283,7 +283,7 @@ const TABS = [
   { href: '/ask-us', label: 'FAQ', icon: 'question' },
 ];
 
-export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply?: WeekendReply }) {
+export function BotanicalWeekendPage({ data, reply, heading = 'Your weekend' }: { data: MyItinerary; reply?: WeekendReply; heading?: string }) {
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const pending = data.rsvp.window.open && data.rsvp.canAnswer && data.rsvp.status !== 'complete';
   return (
@@ -342,7 +342,7 @@ export function BotanicalWeekendPage({ data, reply }: { data: MyItinerary; reply
         <Botanical id="botanical.edge-left" className="bd-bloom--ws-left" />
         <Botanical id="botanical.vine-right" className="bd-bloom--ws-right" />
         {pending ? <Reply data={data} reply={reply} /> : null}
-        <Itinerary data={data} />
+        <Itinerary data={data} heading={heading} />
         {!pending ? <Reply data={data} reply={reply} /> : null}
         <Modules data={data} />
         <span className="bd-workspace__skyline" aria-hidden="true" />

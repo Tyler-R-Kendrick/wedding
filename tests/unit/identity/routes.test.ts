@@ -4,7 +4,7 @@ import { errorCode, errorCopy, ERROR_COPY } from '@/app/(auth)/_lib/errors';
 
 describe('safe return paths (review S7/N4)', () => {
   it('accepts same-site public, auth and admin paths', () => {
-    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom', '/rsvp/attending', '/rsvp/meals', "/media/search?q=Sara's%20dress", '/media/search?q=(first)%20dance!']) {
+    for (const p of ['/', '/your-weekend', '/rsvp', '/guests', '/guests/travel', '/guests/ask-us', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom', '/rsvp/attending', '/rsvp/meals', "/media/search?q=Sara's%20dress", '/media/search?q=(first)%20dance!']) {
       expect(isSafeReturnPath(p), p).toBe(true);
     }
   });

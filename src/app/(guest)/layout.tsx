@@ -7,6 +7,7 @@ import { getTheme } from '@/themes';
 import { getThemeMeta } from '@/themes/registry';
 import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
+import { navFor } from '@/domain/lifecycle';
 import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
 
@@ -54,7 +55,16 @@ export default async function GuestLayout({ children }: { children: ReactNode })
     currentPath,
     lifecycle: { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) },
   });
+  const nav =
+    principal.kind === 'guest'
+      ? navFor(frame.lifecycle.state, {
+          signedIn: true,
+          currentPath,
+          venue: frame.site.venue,
+          ...(principal.viewedBy ? { viewing: true } : {}),
+        })
+      : frame.nav;
   for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   const Shell = getTheme(theme).kit.Shell;
-  return <Shell frame={frame}>{children}</Shell>;
+  return <Shell frame={{ ...frame, nav }}>{children}</Shell>;
 }

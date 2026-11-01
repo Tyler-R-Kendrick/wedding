@@ -310,6 +310,7 @@ jobs:
                       /admin/media/duplicates /admin/media/import /admin/media/metrics \
                       /ask-us /our-story /the-wedding /our-venue /share-an-adventure /sign-out \
                       /our-adventures /travel \
+                      /guests /guests/travel /guests/things-to-do /guests/ask-us \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session \
                       /api/capabilities/warmup /?preview=RSVP_OPEN; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true

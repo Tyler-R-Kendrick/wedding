@@ -98,6 +98,8 @@ const PAGES: PageCase[] = [
     control: true,
     signature: { 'botanical-deco': '.bd-programme .bd-date', 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
   },
+  // Ask Us is guest-gated (#86) and lives under /guests/ask-us for signed-in guests — themed
+  // coverage runs on the test server (quality-sweep.spec.ts), not here against anonymous production.
 ];
 
 async function axeClean(page: Page, label: string) {

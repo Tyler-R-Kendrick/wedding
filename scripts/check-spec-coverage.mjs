@@ -36,8 +36,8 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/security-headers.spec.ts',
   // Level 16: the client-bundle and lazy-load budget. Production and nowhere else — a `next dev`
   // bundle is unminified, unsplit and carries the refresh runtime, so the same numbers there would
-  // have to be loosened until they asserted nothing. Anonymous, and `next start` serves prebuilt
-  // routes, so it needs no warm-up.
+  // have to be loosened until they asserted nothing. Public routes only (/ask-us is guest-gated since
+  // #86). `next start` serves prebuilt routes, so it needs no warm-up.
   'tests/e2e/bundle.spec.ts',
 ];
 
@@ -45,6 +45,11 @@ export const PRODUCTION_SPECS = [
 export const TEST_SERVER_SPECS = [
   'tests/e2e/guest-guide.spec.ts',
   'tests/e2e/guest-planning-ux.spec.ts',
+  'tests/e2e/guest-portal.spec.ts',
+  // Level 12: Ask Us and the concierge are guest-gated; signed-in journeys use the test-principal
+  // injector. Grounding, citations, and /api/ai/chat as the only door are still production code
+  // paths — the NODE_ENV=test server is only how CI presents a session.
+  'tests/e2e/concierge.spec.ts',
   'tests/e2e/claim.spec.ts',
   // Temporary sign-in passes: admin issue via capabilities, guest auto-submit on /s/[slug].
   'tests/e2e/guest-sign-in-pass.spec.ts',
@@ -55,9 +60,6 @@ export const TEST_SERVER_SPECS = [
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
   // through identity's test-principal injector, so they need the NODE_ENV=test server.
   'tests/e2e/transport-gifts.spec.ts',
-  // Ask Us and the concierge require a signed-in guest (#86). Production smoke has no test-principal
-  // injector, so these run on the NODE_ENV=test server with fixture guests and the dev inbox.
-  'tests/e2e/concierge.spec.ts',
   'tests/security/redirect.spec.ts',
   'tests/security/voucher.spec.ts',
   'tests/security/idor.spec.ts',

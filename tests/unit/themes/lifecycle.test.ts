@@ -66,7 +66,7 @@ describe('navigation by lifecycle state', () => {
   });
 
   it('keeps the household\'s pages out of the public nav: they are only in the signed-in account menu', () => {
-    const member = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos', '/ask-us'];
+    const member = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos'];
     for (const state of LIFECYCLE_STATES) {
       const nav = navFor(state, { venue: toSiteFacts({ ...SEED_SITE }).venue });
       const shown = [...nav.primary, ...nav.more, ...nav.sticky].map((i) => i.href);
@@ -74,8 +74,8 @@ describe('navigation by lifecycle state', () => {
       for (const item of nav.member ?? []) expect(member, `${state}: ${item.href}`).toContain(item.href);
     }
     const labels = (state: Parameters<typeof navFor>[0]) => (navFor(state).member ?? []).map((i) => i.label);
-    expect(labels('RSVP_OPEN')).toEqual(['RSVP', 'Your Weekend', 'Transportation', 'Gifts', 'Photos & Video', 'Ask Us']);
-    expect(labels('TEASER')).toEqual(['Photos & Video', 'Ask Us']);
+    expect(labels('RSVP_OPEN')).toEqual(['RSVP', 'Your Weekend', 'Transportation', 'Gifts', 'Photos & Video']);
+    expect(labels('TEASER')).toEqual(['Photos & Video']);
     // Your Weekend waits for invitations, RSVP for the reply window.
     for (const state of ['TEASER', 'SAVE_THE_DATE'] as const) expect(labels(state)).not.toContain('Your Weekend');
     expect(labels('RSVP_CLOSED')).not.toContain('RSVP');

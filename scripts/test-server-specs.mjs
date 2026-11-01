@@ -71,6 +71,7 @@ export const WARM_ROUTES = [
   '/admin/media/duplicates', '/admin/media/import', '/admin/media/metrics',
   '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
   '/our-adventures', '/travel',
+  '/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
   // Every admin flow saves through /api/capabilities/<name>. A GET compiles the route (and answers
   // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed

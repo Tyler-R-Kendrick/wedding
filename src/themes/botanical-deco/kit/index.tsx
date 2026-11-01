@@ -119,8 +119,9 @@ function NavLink({ item, nav, className, short = false }: { item: NavItem; nav: 
   );
 }
 
-function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string }) {
-  const items: NavItem[] = [{ label: homeLabel, href: '/' }, ...allItems(nav)];
+function MenuList({ nav, homeLabel, homeHref = '/' }: { nav: NavProps['nav']; homeLabel: string; homeHref?: string }) {
+  const homeItem: NavItem = { label: homeLabel, href: homeHref };
+  const items: NavItem[] = [homeItem, ...allItems(nav).filter((i) => i.href !== homeHref)];
   return (
     <ul className="bd-menu">
       {items.map((item) => (
@@ -143,14 +144,15 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
  * On a desktop, NavFit measures the real labels and sends whatever does not fit beside the Menu
  * button to the sheet; the page-count classes are only the guess it replaces after hydration.
  */
-function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
-  const items: NavItem[] = [{ label: homeLabel, href: '/' }, ...allItems(nav)];
+function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavProps) {
+  const homeItem: NavItem = { label: homeLabel, href: homeHref };
+  const items: NavItem[] = [homeItem, ...allItems(nav).filter((i) => i.href !== homeHref)];
   const inline = items.slice(0, MASTHEAD_MAX);
   // How many pages the state has decides, per breakpoint, whether the Menu sheet is still needed.
   const over = [6, 7, 8].filter((n) => items.length > n).map((n) => ` bd-masthead__inner--gt${n}`).join('');
   return (
     <div className={`bd-masthead__inner${over}`}>
-      <a className="bd-masthead__home" href="/" aria-current={nav.currentPath === '/' ? 'page' : undefined}>
+      <a className="bd-masthead__home" href={homeHref} aria-current={nav.currentPath === homeHref ? 'page' : undefined}>
         <Monogram />
         <span className="sr-only">
           {siteName}: {homeLabel}
@@ -184,7 +186,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
             classNames={DIALOG_CLASSES}
             ornament={<Botanical id="botanical.sprig-right" className="bd-bloom--sheet" />}
           >
-            <MenuList nav={nav} homeLabel={homeLabel} />
+            <MenuList nav={nav} homeLabel={homeLabel} homeHref={homeHref} />
             {switcherEnabled ? <DesignSwitcher variant="menu" id="design-switcher-menu" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
           </DialogBase>
         </div>
@@ -278,7 +280,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 }
 
 function Shell({ frame, children, banner }: ShellProps) {
-  const homeLabel = homeLabelFor(frame.lifecycle.state);
+  const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
+  const homeHref = frame.nav.homeHref ?? '/';
   const printUrls = [
     { label: 'Directions', url: frame.site.venue.mapsUrl },
     ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
@@ -293,7 +296,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       {banner}
       <GuestViewBand />
       <header className="bd-masthead">
-        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
+        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} switcherEnabled={frame.switcherEnabled} />
       </header>
       <main id="main" className="bd-main" tabIndex={-1}>
         {children}

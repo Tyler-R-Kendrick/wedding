@@ -23,7 +23,7 @@ interface Budget {
 
 /*
  * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
- * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. `/ask-us` is guest-
+ * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. Ask Us is guest-
  * only and measured on the NODE_ENV=test server instead (quality-sweep / concierge.spec). The
  * budgets are roughly double that, because the value is catching a step change — a chart
  * library on the home page, a client component that pulls the capability barrel into the browser —
@@ -75,10 +75,10 @@ test.describe('client bundle', () => {
   }
 
   /**
-   * The concierge is the heaviest island on the site, and `/ask-us` is the only page that should
-   * pay for it. If it ever lands in the home page's first view, the page that has to answer "when,
-   * where, and what do I do now" above the fold is carrying a chat client to do it. `/ask-us` itself
-   * is guest-only and asserted on the NODE_ENV=test server (concierge.spec / quality-sweep).
+   * The concierge is the heaviest island on the site, and Ask Us is the only page that should pay
+   * for it. If it ever lands in the home page's first view, the page that has to answer "when,
+   * where, and what do I do now" above the fold is carrying a chat client to do it. Ask Us is
+   * guest-gated; the signed-in load budget is asserted in concierge.spec.ts on the test server.
    */
   test('the concierge island is not in the home page’s first view', async ({ page }) => {
     const seen: string[] = [];

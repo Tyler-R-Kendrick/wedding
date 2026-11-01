@@ -30,8 +30,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
               Go to the admin console
             </Link>
           ) : (
-            <Link className="auth-link" href="/your-weekend">
-              Go to your weekend
+            <Link className="auth-link" href="/guests">
+              Go to your guest portal
             </Link>
           )}
           <Link className="auth-link" href="/sign-out">

@@ -65,7 +65,7 @@ export async function signInViaUi(page: Page, request: APIRequestContext, email:
   const code = await readOtp(request, email);
   await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page).toHaveURL(admin ? /\/admin/ : /\/claim\/welcome/);
+  await expect(page).toHaveURL(admin ? /\/admin/ : /\/guests(\/|$)/);
   return sessionCookie(page);
 }
 

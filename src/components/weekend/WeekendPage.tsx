@@ -16,15 +16,15 @@ import type { ThemeId } from '@/themes/types';
  * `.card` pair — see `src/themes/guest.tsx` for why one shared recipe wearing two palettes was a
  * blocker rather than a shortcut.
  */
-export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: ThemeId; reply?: WeekendReply }) {
+export function WeekendPage({ data, theme, reply, heading = 'Your weekend' }: { data: MyItinerary; theme: ThemeId; reply?: WeekendReply; heading?: string }) {
   // The approved design's Weekend is its own composition (three-column workspace, the reply inline);
   // the two earlier proposals keep this shared recipe.
-  if (theme === 'botanical-deco') return <BotanicalWeekendPage data={data} reply={reply} />;
+  if (theme === 'botanical-deco') return <BotanicalWeekendPage data={data} reply={reply} heading={heading} />;
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const table = data.seating.table;
   return (
     <div className="page">
-      <h1 className="page__title">Your weekend, {data.greeting.firstName}</h1>
+      <h1 className="page__title">{heading}, {data.greeting.firstName}</h1>
       <p className="page__lede">Saturday, July 17, 2027 · Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603.</p>
 
       {notices.map((n) => (
@@ -145,6 +145,17 @@ export function WeekendPage({ data, theme, reply }: { data: MyItinerary; theme: 
           ))}
         </div>
       </GuestSection>
+      {heading === 'Guest portal' ? (
+        <p className="page__lede">
+          <Link href="/guests/travel">Travel &amp; stay</Link>
+          {' · '}
+          <Link href="/guests/things-to-do">Things to do</Link>
+          {' · '}
+          <Link href="/our-story">Our story</Link>
+          {' · '}
+          <Link href="/our-venue">Our venue</Link>
+        </p>
+      ) : null}
     </div>
   );
 }

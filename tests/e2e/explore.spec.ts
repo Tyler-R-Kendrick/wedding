@@ -244,11 +244,6 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('ask us sends anonymous visitors to sign in with a return path', async ({ page }) => {
-    await page.goto('/ask-us');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fask-us/);
-    await axe(page);
-  });
 
   test('capabilities are reachable over HTTP and drafts stay hidden', async ({ request }) => {
     const res = await request.post('/api/capabilities/list_adventures', { data: { input: {} } });
