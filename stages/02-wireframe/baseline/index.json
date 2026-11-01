@@ -1480,6 +1480,28 @@
      "file": "conservatory.json"
     }
    }
+  },
+  "sign-in-pending": {
+   "title": "Sign in | Sara + Tyler",
+   "url": "/sign-in/pending",
+   "finalUrl": "/sign-in/pending",
+   "source": "https://kendrick.wedding",
+   "principal": null,
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
   }
  }
 }

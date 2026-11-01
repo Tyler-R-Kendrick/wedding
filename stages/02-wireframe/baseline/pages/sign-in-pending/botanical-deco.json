@@ -1,0 +1,45 @@
+{
+ "htmlAttrs": {
+  "lang": "en",
+  "data-theme": "botanical-deco"
+ },
+ "bodyAttrs": {},
+ "css": [
+  "c59b130976563c20",
+  "3b2c5472d22e38e5"
+ ],
+ "assets": [
+  "/assets/art/botanical-deco/deco-corner.svg",
+  "/assets/art/botanical-deco/deco-rule.svg",
+  "/assets/art/botanical-deco/monogram-icon.svg",
+  "/assets/art/botanical-deco/skyline-line.svg",
+  "/assets/art/conservatory/fern-divider.svg",
+  "/assets/art/conservatory/leaf-border.svg",
+  "/assets/art/conservatory/pressed-flower-a.svg",
+  "/assets/art/conservatory/pressed-flower-b.svg",
+  "/assets/art/conservatory/pressed-flower-c.svg",
+  "/assets/art/conservatory/sky-wash.svg",
+  "/assets/art/conservatory/specimen-tag.svg",
+  "/assets/art/conservatory/tendril-corner.svg",
+  "/assets/art/gilded-hour/chevron-divider.svg",
+  "/assets/art/gilded-hour/corner-bracket.svg",
+  "/assets/art/gilded-hour/marble-texture.svg",
+  "/assets/art/gilded-hour/monogram-frame.svg",
+  "/assets/art/gilded-hour/stepped-frame.svg",
+  "/assets/art/gilded-hour/sunburst-hero.svg",
+  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
+  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
+  "/fonts/botanical-deco/ms-madi-regular.woff2",
+  "/fonts/botanical-deco/newsreader-text-italic.woff2",
+  "/fonts/botanical-deco/newsreader-text.woff2",
+  "/fonts/conservatory/cardo-italic.woff2",
+  "/fonts/conservatory/gloock-regular.woff2",
+  "/fonts/conservatory/spectral-medium.woff2",
+  "/fonts/conservatory/spectral-regular.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
+  "/fonts/gilded-hour/cinzel-wght.woff2",
+  "/fonts/gilded-hour/josefin-sans-wght.woff2",
+  "/media/botanical-deco/botanical/corner-tl-138.webp"
+ ],
+ "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"botanical-deco\" data-bl-s=\"\"><div class=\"bd-authhead\"><img class=\"bd-bloom bd-bloom--auth\" src=\"/media/botanical-deco/botanical/corner-tl-138.webp\" width=\"138\" height=\"278\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" decoding=\"async\" data-media=\"botanical.corner-tl\" data-bl-m=\"art\"><a class=\"bd-masthead__home\" href=\"/\"><span class=\"bd-monogram\" aria-hidden=\"true\"><span class=\"bd-monogram__s\"><span data-bl-t=\"label\">S</span></span><span class=\"bd-monogram__stem\" data-bl-s=\"\"></span><span class=\"bd-monogram__t\"><span data-bl-t=\"label\">T</span></span></span><span class=\"sr-only\"><span data-bl-t=\"label\">Sara + Tyler: Home</span></span></a></div><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"Come back when your invitation has been sent!\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"Come back when your invitation has been sent!\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Almost there</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">Come back when your invitation has been sent!</span></h1><div class=\"auth-lede\"><p><span data-bl-t=\"copy\">Sara and Tyler will let you know when it is time. If you already have an invitation, try signing in with the email they have for you instead.</span></p></div><div class=\"auth-actions\"><a class=\"auth-link\" href=\"/sign-in\"><span data-bl-t=\"label\">Sign in with email</span></a></div></article></main><!--$--><!--/$--></div>"
+}
