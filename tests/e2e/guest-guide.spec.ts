@@ -18,6 +18,10 @@ async function flightsMode(request: APIRequestContext): Promise<string> {
 // The isolated dev server can compile themed guest branches on first use.
 test.setTimeout(90_000);
 
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.name === 'tablet', 'phone and desktop are the review viewports');
+});
+
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
   test(`signed-in Chicago map and planning tools (${theme})`, async ({ page }) => {
     await page.setExtraHTTPHeaders(principalHeaders('A1'));
