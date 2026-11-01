@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { apiHeaders, contextAs, principalHeaders } from './helpers/principal';
+import { apiHeaders, BASE_URL, contextAs, principalHeaders } from './helpers/principal';
 
 /**
  * The concierge on a real server. What matters here is not that the model is clever: it is that the
@@ -197,7 +197,10 @@ test.describe('concierge on Ask Us', () => {
 
     const get = await request.get('/api/ai/chat');
     expect(get.status()).toBe(405);
-    const form = await request.post('/api/ai/chat', { form: { message: 'hi' }, headers: apiHeaders('A1') });
+    const form = await request.post('/api/ai/chat', {
+      form: { message: 'hi' },
+      headers: { ...principalHeaders('A1'), origin: BASE_URL },
+    });
     expect(form.status()).toBe(403);
 
     const unsigned = await request.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: { 'content-type': 'application/json' } });
