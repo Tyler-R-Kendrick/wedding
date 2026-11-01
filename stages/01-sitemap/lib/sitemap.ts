@@ -166,6 +166,10 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Sign in with email instead', to: 'sign-in' },
   },
   {
+    id: 'sign-in-pending', path: '/sign-in/pending', title: 'Sign in (pending)', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'INVITATIONS_OPEN',
+    job: 'Neutral holding page when social sign-in cannot match an invitation yet.',
+  },
+  {
     id: 'sign-out', path: '/sign-out', title: 'Sign out', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'TEASER',
     job: 'End the session on this device.',
   },

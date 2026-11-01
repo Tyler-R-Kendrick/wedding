@@ -6,6 +6,7 @@ import { currentPrincipal } from '../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { errorCopy } from '../_lib/errors';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
+import { OtherSignInMethods } from './_components/OtherSignInMethods';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign in', robots: { index: false, follow: false } };
@@ -56,6 +57,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         </Actions>
       </form>
       <p className="auth-hint">If you receive nothing within a minute, check spam — or open your invitation link again to start fresh.</p>
+      <OtherSignInMethods next={sp.next} />
       <AdminSignInHint />
     </AuthShell>
   );

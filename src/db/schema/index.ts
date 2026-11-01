@@ -16,6 +16,7 @@ export * from './auth';
 // (`guests.stub.ts`, deleted at integration); its foreign keys now resolve against the real one.
 export * from './guests';
 export * from './guest-sign-in-passes';
+export * from './social-auth';
 // Level 07: events, RSVP, seating.
 export * from './events';
 export * from './rsvp';
