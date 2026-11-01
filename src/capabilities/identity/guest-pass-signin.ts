@@ -127,12 +127,18 @@ export async function completeGuestPassSignIn(
   const actor = actorOf(ctx);
   let activeGuestId: string | null = target.value.activeGuestId;
   const candidates: SignInOutcome['candidates'] = [];
+  let needsClaimWelcome = false;
 
   for (const guestId of target.value.guestIds) {
     const existing = await activeBindingForGuest(db, guestId);
     if (existing && existing.authIdentityId !== user.id) continue;
-    const bound = existing ? ok(existing) : await bindIdentity(db, { authIdentityId: user.id, guestId, role: 'self', claimMethod: 'pass', invitationId: target.value.invitationId, actor, requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
+    if (existing) {
+      activeGuestId ??= guestId;
+      continue;
+    }
+    const bound = await bindIdentity(db, { authIdentityId: user.id, guestId, role: 'self', claimMethod: 'pass', invitationId: target.value.invitationId, actor, requestId: ctx.requestId, audit: ctx.audit, now: ctx.now });
     if (!bound.ok) continue;
+    needsClaimWelcome = true;
     activeGuestId ??= guestId;
   }
   for (const managed of target.value.managedGuestIds) {
@@ -176,5 +182,6 @@ export async function completeGuestPassSignIn(
     isAdmin,
     authenticatedAt: (updated?.authenticatedAt ?? ctx.now).toISOString(),
     next: null,
+    needsClaimWelcome,
   });
 }

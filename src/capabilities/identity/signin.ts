@@ -26,6 +26,8 @@ export interface SignInOutcome {
   isAdmin: boolean;
   authenticatedAt: string;
   next: string | null;
+  /** Set when this sign-in newly bound the guest (magic pass / QR); send them through welcome once. */
+  needsClaimWelcome?: boolean;
 }
 
 /**
