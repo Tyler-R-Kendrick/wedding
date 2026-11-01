@@ -58,6 +58,8 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/claim/verify'
  * '/claim/welcome'
  * '/credits'
+ * '/privacy'
+ * '/terms'
  * '/explore-caa'
  * '/faq'
  * '/gifts'
