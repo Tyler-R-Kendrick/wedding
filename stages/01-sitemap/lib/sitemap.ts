@@ -161,6 +161,11 @@ export const PAGES: SitemapPage[] = [
     job: 'The couple and the planner sign in to run the site.',
   },
   {
+    id: 'guest-sign-in-pass', path: '/s/[slug]', example: '/s/fixtureslug01', title: 'Sign in (link)', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'INVITATIONS_OPEN',
+    job: 'Temporary link from the couple: opens with the code filled in and signs you in.',
+    primaryAction: { label: 'Sign in with email instead', to: 'sign-in' },
+  },
+  {
     id: 'sign-out', path: '/sign-out', title: 'Sign out', parent: 'sign-in', audience: 'gate', mode: ['gate'], visibleFrom: 'TEASER',
     job: 'End the session on this device.',
   },

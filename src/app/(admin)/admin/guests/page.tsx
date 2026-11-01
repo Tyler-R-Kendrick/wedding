@@ -10,7 +10,7 @@ import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/record
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
-import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, type GuestSummary } from './_components/GuestFlows';
+import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, SignInPassFlow, type GuestSummary } from './_components/GuestFlows';
 import { HouseholdFlow } from '../households/_components/HouseholdFlows';
 
 export const dynamic = 'force-dynamic';
@@ -130,6 +130,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   g.mergedIntoGuestId ? null : (
                     <>
                       <GuestFlow guest={g} label="Edit" variant="quiet" />
+                      <SignInPassFlow guest={g} />
                       {g.claimed ? <RebindFlow guest={g} /> : null}
                       <MergeFlow guest={g} />
                       {canBrowseAs && g.kind !== 'child' && !g.isMinor ? (

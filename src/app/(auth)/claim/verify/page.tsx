@@ -5,7 +5,8 @@ import { verifyCode } from '../../_lib/actions';
 import { readChallengeCookie, readVerified } from '../../_lib/challenge-cookie';
 import { errorCopy } from '../../_lib/errors';
 import { currentPrincipal } from '../../_lib/invoke';
-import { Actions, AuthShell, Button, CodeInput, Field, Notice } from '../../_components/kit';
+import { AuthShell, Notice } from '../../_components/kit';
+import { VerifyCodeForm } from '../../_components/VerifyCodeForm';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Enter your code', robots: { index: false, follow: false } };
@@ -76,17 +77,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
               </p>
             </Notice>
           ) : null}
-          <form action={verifyCode}>
-            <Field id="code" label="Six-digit code" hint="Digits only, no spaces." error={error}>
-              <CodeInput error={error} />
-            </Field>
-            <Actions>
-              <Button>Continue</Button>
-              <a className="auth-link" href={back}>
-                Send a new code
-              </a>
-            </Actions>
-          </form>
+          <VerifyCodeForm error={error} backHref={back} verifyAction={verifyCode} />
         </>
       )}
     </AuthShell>

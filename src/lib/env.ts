@@ -124,6 +124,8 @@ const serverSchema = z.object({
   TRANSPORT_MANUAL_CODES: optionalString,
   /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
   TRANSPORT_SECRETS_KEY: optionalSecret(32),
+  /** AES key material for guest sign-in pass codes at rest. Falls back to CONFIRMATION_SECRET-derived material in dev. */
+  GUEST_PASS_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
   METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),

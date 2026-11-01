@@ -23,8 +23,9 @@ interface Budget {
 
 /*
  * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
- * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. The budgets are
- * roughly double that, because the value is catching a step change — a chart
+ * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. Ask Us is guest-
+ * only and measured on the NODE_ENV=test server instead (quality-sweep / concierge.spec). The
+ * budgets are roughly double that, because the value is catching a step change — a chart
  * library on the home page, a client component that pulls the capability barrel into the browser —
  * not policing kilobytes. Raise one with a reason.
  */
