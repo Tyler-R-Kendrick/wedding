@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { principalHeaders } from './helpers/principal';
+import { principalHeaders, callCapability, key } from './helpers/principal';
 
-test('guest travel search forms prefill from household address and party size', async ({ page }) => {
+test('guest travel search forms prefill from household address and party size', async ({ page, request }) => {
+  await callCapability(request, 'delete_my_travel_profile', 'A1', {}, { idempotencyKey: key() });
   await page.setExtraHTTPHeaders(principalHeaders('A1'));
   await page.goto('/guests/travel');
   const flights = page.locator('form').filter({ has: page.locator('input[name="kind"][value="flights"]') });

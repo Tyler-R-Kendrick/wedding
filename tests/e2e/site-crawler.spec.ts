@@ -200,11 +200,12 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\
 function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
   const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
   if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
+  const portalNext = guestPortalRedirectFor(destination) ?? destination;
   const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
   const guestOnly =
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
-  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)` : '';
+  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(portalNext))}(?:$|&)` : '';
   return new RegExp(`(?:${atDestination}${atSignIn})`);
 }
 
