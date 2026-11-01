@@ -119,7 +119,7 @@ for (const theme of THEMES) {
     // path; level 05's content pages use the content kit, which was already correct. This covers
     // the themed public pages, where nobody was looking.
     test('the authoring marker never reaches a visitor', async ({ page }) => {
-      for (const route of ['/', '/travel']) {
+      for (const route of ['/', '/privacy']) {
         await page.goto(`${route}?theme=${theme}`);
         await expect(page.locator('body')).not.toContainText('TODO(');
         await expect(page.locator('body')).not.toContainText(/backlog [A-Z]-\d/);
@@ -178,7 +178,7 @@ test.describe('shell chrome', () => {
     }
   });
 
-  test('Gilded Hour elevator-panel labels are whole and visible at 390', async ({ page }) => {
+  test('Gilded Hour elevator-panel labels are whole and visible at 390 on the signed-out home', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/?theme=gilded-hour');
     const cells = page.locator('.gh-panel__cell > span');
@@ -189,8 +189,8 @@ test.describe('shell chrome', () => {
         .filter((s) => s.overflow > 1 || s.ellipsis),
     );
     expect(clipped).toEqual([]);
-    await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toBeVisible();
-    await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toBeVisible();
+    await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toHaveCount(0);
+    await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toHaveCount(0);
   });
 
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {

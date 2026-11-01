@@ -40,7 +40,7 @@ test.describe('concierge on Ask Us', () => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
     await page.goto('/ask-us');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fask-us/);
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fask-us/);
     await ctx.close();
   });
 

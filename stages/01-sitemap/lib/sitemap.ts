@@ -70,6 +70,14 @@ export const PAGES: SitemapPage[] = [
     id: 'credits', path: '/credits', title: 'Photo credits', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER',
     job: 'Who made every image on the site, and under what licence.',
   },
+  {
+    id: 'privacy', path: '/privacy', title: 'Privacy', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER',
+    job: 'Plain-language account of what the site collects, why, and which services process it.',
+  },
+  {
+    id: 'terms', path: '/terms', title: 'Terms of use', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER',
+    job: 'Simple rules for using this private wedding website.',
+  },
 
   // ── Guests ────────────────────────────────────────────────────────────────────────────────────
   {

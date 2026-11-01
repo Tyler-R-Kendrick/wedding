@@ -52,16 +52,15 @@ interface StateNav {
 }
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
-  TEASER: { primary: ['story', 'travel', 'share'], more: ['adventures', 'caa'], sticky: [] },
-  // No 'wedding' yet: the sitemap opens The Wedding at INVITATIONS_OPEN, when there is a ceremony to describe.
-  SAVE_THE_DATE: { primary: ['story', 'travel', 'share', 'adventures'], more: ['caa'], sticky: [] },
-  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'share', 'story'], more: ['adventures', 'caa'], sticky: [] },
-  RSVP_OPEN: { primary: ['wedding', 'travel', 'share', 'story'], more: ['adventures', 'caa'], sticky: ['directions'] },
-  RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa'], sticky: ['directions'] },
-  WEDDING_WEEK: { primary: ['wedding', 'share'], more: ['story', 'adventures', 'caa', 'travel'], sticky: ['directions'] },
-  WEDDING_DAY: { primary: ['home', 'wedding'], more: ['caa', 'share', 'story', 'adventures'], sticky: ['now'] },
-  POST_WEDDING: { primary: ['adventures', 'story', 'share'], more: ['caa', 'wedding'], sticky: [] },
-  ARCHIVE: { primary: ['story', 'adventures', 'caa'], more: ['share', 'wedding'], sticky: [] },
+  TEASER: { primary: ['story', 'adventures'], more: ['caa'], sticky: [] },
+  SAVE_THE_DATE: { primary: ['story', 'adventures', 'caa'], more: [], sticky: [] },
+  INVITATIONS_OPEN: { primary: ['wedding', 'story', 'adventures'], more: ['caa'], sticky: [] },
+  RSVP_OPEN: { primary: ['wedding', 'story', 'adventures'], more: ['caa'], sticky: ['directions'] },
+  RSVP_CLOSED: { primary: ['wedding', 'adventures', 'story'], more: ['caa'], sticky: ['directions'] },
+  WEDDING_WEEK: { primary: ['wedding', 'adventures'], more: ['story', 'caa'], sticky: ['directions'] },
+  WEDDING_DAY: { primary: ['home', 'wedding'], more: ['caa', 'story', 'adventures'], sticky: ['now'] },
+  POST_WEDDING: { primary: ['adventures', 'story'], more: ['caa', 'wedding'], sticky: [] },
+  ARCHIVE: { primary: ['story', 'adventures', 'caa'], more: ['wedding'], sticky: [] },
 };
 
 /**

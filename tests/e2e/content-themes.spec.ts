@@ -58,23 +58,6 @@ const PAGES: PageCase[] = [
     signature: { 'botanical-deco': '.bd-diptych .bd-diptych__leaf', 'gilded-hour': '.gh-diptych .gh-diptych__leaf', conservatory: '.cv-voices .cv-voice' },
   },
   {
-    key: 'share-an-adventure',
-    path: '/share-an-adventure',
-    h1: 'Things to Do in Chicago',
-    // 22,600 px at 390: the page's first action is the jump list, not the itinerary filter below it
-    primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
-    control: true,
-    signature: { 'botanical-deco': '.bd-stops .bd-stops__num', 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
-  },
-  {
-    key: 'recommendation',
-    path: '/share-an-adventure/starved-rock-state-park',
-    h1: 'Starved Rock State Park',
-    primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-rec .bd-rec__inner', 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
-  },
-  {
     key: 'our-venue',
     path: '/our-venue',
     h1: { 'botanical-deco': 'Our Venue', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
@@ -226,46 +209,6 @@ test.describe('bottom chrome is reserved in every design', () => {
       });
       expect(r.names.length, `${theme}: no fixed bottom control found — the probe needs updating`).toBeGreaterThan(0);
       expect(r.pad, `${theme}: main reserves ${r.pad}px for ${r.needed}px of fixed chrome (${r.names.join(', ')})`).toBeGreaterThanOrEqual(r.needed);
-    });
-  }
-});
-
-/**
- * BL-3 · The longest page on the site (≈22,600 px at 390) has to be navigable by heading and by
- * jump link: a category sits one level above the places it groups, and no two headings share a name.
- */
-test.describe('the guide is navigable', () => {
-  for (const theme of THEMES) {
-    test(`${theme}: heading outline is valid and the jump list reaches every group`, async ({ page }) => {
-      await page.goto(`/share-an-adventure?theme=${theme}`);
-      const r = await page.evaluate(() => {
-        const hs = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => ({ lvl: Number(h.tagName[1]), txt: (h.textContent ?? '').replace(/\s+/g, ' ').trim() }));
-        const names = hs.map((h) => h.txt);
-        const jump = Array.from(document.querySelectorAll('main nav[aria-label="On this page"] a')).map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '');
-        const categories = Array.from(document.querySelectorAll('main section[id^="category-"]')).map((sec) => ({
-          id: sec.id,
-          headingLevel: Number((sec.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
-          placeLevels: Array.from(sec.querySelectorAll('[data-recommendation]')).map((a) => Number((a.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1])),
-        }));
-        return {
-          skips: hs.slice(1).filter((h, i) => h.lvl - (hs[i]?.lvl ?? h.lvl) > 1).length,
-          duplicates: [...new Set(names.filter((n, i) => names.indexOf(n) !== i))],
-          jump,
-          categories,
-          h1: hs.filter((h) => h.lvl === 1).length,
-        };
-      });
-      expect(r.h1).toBe(1);
-      expect(r.skips, `${theme}: the outline skips a heading level`).toBe(0);
-      expect(r.duplicates, `${theme}: two headings share a name, so heading navigation cannot tell them apart`).toEqual([]);
-      expect(r.categories.length).toBeGreaterThan(0);
-      for (const cat of r.categories) {
-        expect(cat.placeLevels.length, `${cat.id} has no places`).toBeGreaterThan(0);
-        for (const lvl of cat.placeLevels) expect(lvl, `${cat.id}: a place is not one level below its category`).toBe(cat.headingLevel + 1);
-        expect(r.jump, `${cat.id} is not reachable from the jump list`).toContain(`#${cat.id}`);
-      }
-      // every jump target exists
-      for (const href of r.jump) await expect(page.locator(href)).toHaveCount(1);
     });
   }
 });

@@ -23,6 +23,11 @@ export async function enforceGuestPortalRoute(
 ): Promise<void> {
   const sp = searchParams ? await searchParams : {};
   const search = searchString(sp);
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  if (principal.kind === 'anonymous') {
+    const portalTarget = guestPortalRedirectFor(normalized);
+    if (portalTarget) redirect(guestPortalSignInDoor(portalTarget, search));
+  }
   if (isGuestPortalRoute(pathname)) {
     if (principal.kind === 'anonymous') redirect(guestPortalSignInDoor(pathname, search));
     return;

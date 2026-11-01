@@ -50,7 +50,7 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/phone', '/claim/ver
  * with on a phone — rendered on every route below and passed CI from the day it landed. The
  * chrome is the same on all of them, so one pass over both designs catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/share-an-adventure'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/privacy', '/terms'] as const;
 
 /**
  * Behind the signed-in account menu: the RSVP, two of its per-part pages, the three pages a guest

@@ -22,10 +22,8 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/smoke.spec.ts',
   'tests/e2e/social-sign-in.spec.ts',
   'tests/e2e/themes.spec.ts',
-  // Level 08: /travel and /trip are public and guest-gated respectively, and the spec only needs an
-  // anonymous visitor — it asserts that /trip and /admin/travel turn one away, rather than signing
-  // one in. It also reads the flights provider mode from /api/health, so the runner exports
-  // HEALTH_TOKEN alongside the server's.
+  // Level 08: /travel and /trip gate anonymous visitors; signed-in travel UI runs on the test
+  // server in guest-guide.spec.ts. Reads flights provider mode from /api/health (HEALTH_TOKEN).
   'tests/e2e/travel.spec.ts',
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.

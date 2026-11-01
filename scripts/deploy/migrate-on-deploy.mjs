@@ -94,6 +94,7 @@ export function childEnv(env, url) {
  */
 export const DEPLOY_STEPS = [
   { script: 'db:migrate', failure: 'migrations failed' },
+  { script: 'db:verify-schema', failure: 'schema verification failed' },
   { script: 'db:sync-content', failure: 'content sync failed' },
 ];
 

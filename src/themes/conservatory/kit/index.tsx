@@ -164,6 +164,19 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
         <p className="cv-footer__signin">
           <AccountMenu nav={nav} variant="link" classNames={{ link: 'cv-link cv-link--standalone', item: 'cv-link' }} />
         </p>
+        <p className="cv-footer__signin">
+          <a className="cv-link cv-link--standalone" href="/credits">
+            Photo credits
+          </a>
+          {' · '}
+          <a className="cv-link cv-link--standalone" href="/privacy">
+            Privacy
+          </a>
+          {' · '}
+          <a className="cv-link cv-link--standalone" href="/terms">
+            Terms
+          </a>
+        </p>
         <p className="cv-footer__rights">{rightsNote}</p>
         <ul className="cv-footer__print">
           {printUrls.map((p) => (

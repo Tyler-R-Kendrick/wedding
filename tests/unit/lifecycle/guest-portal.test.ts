@@ -43,7 +43,12 @@ describe('signed-in navigation centres on the guest portal', () => {
   it('keeps the public masthead for signed-out readers', () => {
     const nav = navFor('RSVP_OPEN', { signedIn: false });
     expect(nav.primary.some((i) => i.href === GUEST_PORTAL.root)).toBe(false);
+    expect(nav.primary.some((i) => i.href === '/travel' || i.href === '/share-an-adventure')).toBe(false);
     expect(nav.homeHref).toBeUndefined();
+  });
+
+  it('sends signed-out readers from legacy travel/things paths to sign-in', () => {
+    expect(guestPortalRedirectFor('/travel')).toBe(GUEST_PORTAL.travel);
   });
 
   it('applies to administrators previewing a guest role', () => {

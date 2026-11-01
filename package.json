@@ -27,6 +27,7 @@
     "test:a11y": "playwright test tests/a11y.spec.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --conditions=react-server --import tsx src/db/migrate.ts",
+    "db:verify-schema": "node scripts/deploy/verify-schema.mjs",
     "db:seed": "node --conditions=react-server --import tsx src/db/seed/seed.ts",
     "db:sync-content": "node --conditions=react-server --import tsx src/db/seed/sync-content.ts",
     "jobs:run": "node --conditions=react-server --import tsx src/lib/jobs/cli.ts",
