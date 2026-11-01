@@ -226,6 +226,7 @@ export function memoryCitation(row: AdventureMemoryRow, ctx: ReadContext): Citat
 }
 
 function dateLabel(row: AdventureMemoryRow) {
+  if (row.dateExact && row.dateApprox) return textBlock(row.dateApprox);
   if (row.dateExact) return textBlock(row.dateExact);
   return optionalText(row.dateApprox);
 }
@@ -304,7 +305,7 @@ export async function listAdventures(ctx: ReadContext, opts: ListAdventuresOptio
   let filtered = visible;
   if (opts.tag) filtered = filtered.filter((r) => r.tags.includes(opts.tag!));
   if (opts.season) filtered = filtered.filter((r) => r.season === opts.season);
-  // One card per photo makes the list long; the AI surfaces get the newest dozen (and the total) so
+  // Same-day memories are one card with several photos; the AI surfaces get the newest dozen (and the total) so
   // the answer stays inside their output budget, as find_adventures does.
   const limit = ctx.surface === 'ui' ? (opts.limit ?? 100) : Math.min(opts.limit ?? AI_ADVENTURE_LIMIT, AI_ADVENTURE_LIMIT);
   const items = filtered.slice(0, limit).map((r) => toAdventureCard(r, ctx, placeMap));

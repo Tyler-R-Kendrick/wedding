@@ -243,6 +243,7 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
+
   test('capabilities are reachable over HTTP and drafts stay hidden', async ({ request }) => {
     const res = await request.post('/api/capabilities/list_adventures', { data: { input: {} } });
     expect(res.status()).toBe(200);
@@ -256,5 +257,21 @@ test.describe('explore journey', () => {
     expect(hidden.status()).toBe(404);
     const admin = await request.post('/api/capabilities/save_content_record', { data: { input: { table: 'venue_facts', data: {} } } });
     expect(admin.status()).toBe(401);
+  });
+
+  test('a combined adventure rotates photos with keyboard controls and passes axe', async ({ page }) => {
+    await page.goto('/our-adventures/alinea-2026-02-13');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Alinea');
+    const carousel = page.getByRole('region', { name: 'Photos from this adventure' });
+    await expect(carousel).toBeVisible();
+    await expect(carousel.getByText('Photo 1 of 3')).toBeVisible();
+    await carousel.getByRole('button', { name: 'Next photo' }).click();
+    await expect(carousel.getByText('Photo 2 of 3')).toBeVisible();
+    await carousel.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(carousel.getByText('Photo 3 of 3')).toBeVisible();
+    await axe(page);
+    const legacy = await page.goto('/our-adventures/alinea-2026-02-13-b');
+    expect(legacy?.url()).toMatch(/\/our-adventures\/alinea-2026-02-13$/);
   });
 });

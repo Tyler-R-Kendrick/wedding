@@ -1,3 +1,4 @@
+import { AdventurePhotoCarousel } from '@/components/adventures/AdventurePhotoCarousel';
 import { Text as Block } from '@/components/provenance';
 import { ROUTES } from '@/domain/routes';
 import type { AdventureDetailProps, ContentRecipe } from '@/themes/content-types';
@@ -23,6 +24,12 @@ export const ConservatoryAdventureDetailPage: ContentRecipe<AdventureDetailProps
       <Section id="memory" labelledBy="memory-title">
         <div className="cv-section__text">
           <SectionHeading level={2} id="memory-title" title={CONTENT_COPY.adventureDetail.memory} />
+          {data.media.some((m) => m.src) ? (
+            <AdventurePhotoCarousel
+              photos={data.media.filter((m): m is typeof m & { src: string } => !!m.src)}
+              className="cv-adventure-photos"
+            />
+          ) : null}
           <MemoryCard memory={data.memory} sara={data.saraMemory} tyler={data.tylerMemory} accessibility={data.accessibilityNotes} provenance={data.provenance} />
         </div>
         {facts.length ? (

@@ -1,0 +1,21 @@
+[
+  { "source": "/our-adventures/alinea-2026-02-13-a", "destination": "/our-adventures/alinea-2026-02-13", "permanent": true },
+  { "source": "/our-adventures/alinea-2026-02-13-b", "destination": "/our-adventures/alinea-2026-02-13", "permanent": true },
+  { "source": "/our-adventures/alinea-2026-02-13-c", "destination": "/our-adventures/alinea-2026-02-13", "permanent": true },
+  { "source": "/our-adventures/ever-2025-02-13-a", "destination": "/our-adventures/ever-2025-02-13", "permanent": true },
+  { "source": "/our-adventures/ever-2025-02-13-b", "destination": "/our-adventures/ever-2025-02-13", "permanent": true },
+  { "source": "/our-adventures/ever-2025-02-13-c", "destination": "/our-adventures/ever-2025-02-13", "permanent": true },
+  { "source": "/our-adventures/esme-2024-02-17-a", "destination": "/our-adventures/esme-2024-02-17", "permanent": true },
+  { "source": "/our-adventures/esme-2024-02-17-b", "destination": "/our-adventures/esme-2024-02-17", "permanent": true },
+  { "source": "/our-adventures/esme-2024-02-17-c", "destination": "/our-adventures/esme-2024-02-17", "permanent": true },
+  { "source": "/our-adventures/esme-2024-02-17-d", "destination": "/our-adventures/esme-2024-02-17", "permanent": true },
+  { "source": "/our-adventures/eleven-madison-park-2025-08-07-a", "destination": "/our-adventures/eleven-madison-park-2025-08-07", "permanent": true },
+  { "source": "/our-adventures/eleven-madison-park-2025-08-07-b", "destination": "/our-adventures/eleven-madison-park-2025-08-07", "permanent": true },
+  { "source": "/our-adventures/eleven-madison-park-2025-08-07-c", "destination": "/our-adventures/eleven-madison-park-2025-08-07", "permanent": true },
+  { "source": "/our-adventures/richardson-farm-2025-10-11-a", "destination": "/our-adventures/richardson-farm-2025-10-11", "permanent": true },
+  { "source": "/our-adventures/richardson-farm-2025-10-11-b", "destination": "/our-adventures/richardson-farm-2025-10-11", "permanent": true },
+  { "source": "/our-adventures/noma-2025-06-24", "destination": "/our-adventures/copenhagen-denmark-2025", "permanent": true },
+  { "source": "/our-adventures/geranium-2025-06-26", "destination": "/our-adventures/copenhagen-denmark-2025", "permanent": true },
+  { "source": "/our-adventures/tivoli-gardens-2025-06-30-a", "destination": "/our-adventures/copenhagen-denmark-2025", "permanent": true },
+  { "source": "/our-adventures/tivoli-gardens-2025-06-30-b", "destination": "/our-adventures/copenhagen-denmark-2025", "permanent": true }
+]

@@ -256,7 +256,7 @@ Procedure when a batch arrives:
    direct message); children only with a parent's agreement. Keep a note in
    `photos.json`'s `consent` field.
 
-**Our Adventures, one adventure per photo (2026-09-23).** The couple's own
+**Our Adventures photo memories (2026-09-23; grouped 2026-11-01).** The couple's own
 phone photos live in `public/assets/photos/adventures/` as 1600px WebP
 renditions with every EXIF/XMP field (GPS included) stripped, then stamped
 with the rights statement below as their only metadata; the originals stay
@@ -264,7 +264,8 @@ outside the repo. `docs/content/adventure-photos.json` is the manifest:
 file, adventure, original file name, date, where the pin came from
 (`exif-gps` — the photo's GPS, reverse-geocoded against OpenStreetMap to
 name the business; `landmark-in-photo` — a sign or marquee in the frame;
-`unknown`), people and consent. Homes are pinned to two decimals (about a
+`unknown`), people and consent. Photos from the same day or trip share one
+adventure record and rotate on its detail page. Homes are pinned to two decimals (about a
 kilometre), never to the door. A photo that shows anyone besides Sara and
 Tyler is `consent: "pending…"`: its rendition is **not in the repo at all**
 (`file: null`; `public/` is served to anyone, and so is this repository), its

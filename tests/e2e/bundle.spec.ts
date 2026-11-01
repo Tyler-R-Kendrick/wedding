@@ -31,6 +31,7 @@ interface Budget {
 const BUDGETS: Budget[] = [
   { route: '/', maxScriptKb: 300, maxScriptRequests: 20 },
   { route: '/the-wedding', maxScriptKb: 300, maxScriptRequests: 20 },
+  { route: '/sign-in', maxScriptKb: 300, maxScriptRequests: 20 },
 ];
 
 test.describe('client bundle', () => {

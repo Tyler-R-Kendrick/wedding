@@ -58,6 +58,9 @@ export const TEST_SERVER_SPECS = [
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
   // through identity's test-principal injector, so they need the NODE_ENV=test server.
   'tests/e2e/transport-gifts.spec.ts',
+  // Ask Us and the concierge require a signed-in guest (#86). Production smoke has no test-principal
+  // injector, so these run on the NODE_ENV=test server with fixture guests and the dev inbox.
+  'tests/e2e/concierge.spec.ts',
   'tests/security/redirect.spec.ts',
   'tests/security/voucher.spec.ts',
   'tests/security/idor.spec.ts',
