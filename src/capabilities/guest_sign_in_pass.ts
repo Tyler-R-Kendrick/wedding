@@ -34,6 +34,7 @@ const verifyOutput = z.object({
   isAdmin: z.boolean(),
   authenticatedAt: z.string(),
   next: z.string().nullable(),
+  needsClaimWelcome: z.boolean().optional(),
 });
 
 export const verifyGuestSignInPass = defineCapability<z.infer<typeof verifyInput>, SignInOutcome>({

@@ -22,7 +22,9 @@ export async function verifyGuestPass(formData: FormData): Promise<void> {
   if (!r.ok) redirect(`${back}?error=${encodeURIComponent(errorCode(r.error))}`);
   const d = r.value.data;
   if (!d.guestId && !d.isAdmin) redirect(`${back}?error=unlinked`);
-  const target = d.isAdmin && !d.guestId ? safeReturnPath(d.next, '/admin') : safeReturnPath(next || d.next, '/claim/welcome');
+  const fallback =
+    d.isAdmin && !d.guestId ? '/admin' : d.needsClaimWelcome ? '/claim/welcome' : d.guestId ? '/guests' : '/claim/welcome';
+  const target = safeReturnPath(next || d.next, fallback);
   await clearChallengeCookie();
   await rememberVerified(target);
   redirect(target);

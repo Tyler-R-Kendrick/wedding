@@ -24,10 +24,16 @@ describe('guest sign-in pass', () => {
     expect(page?.code).toBe(issued.data.code);
 
     const signed = expectOk(
-      await call<{ guestId: string | null; status: string }>('verify_guest_sign_in_pass', { slug, code: issued.data.code }),
+      await call<{ guestId: string | null; status: string; needsClaimWelcome?: boolean }>('verify_guest_sign_in_pass', { slug, code: issued.data.code }),
     );
     expect(signed.data.status).toBe('signed_in');
     expect(signed.data.guestId).toBeTruthy();
+    expect(signed.data.needsClaimWelcome).toBe(true);
+
+    const again = expectOk(
+      await call<{ needsClaimWelcome?: boolean }>('verify_guest_sign_in_pass', { slug, code: issued.data.code }),
+    );
+    expect(again.data.needsClaimWelcome).toBe(false);
 
     const revoked = expectOk(await call<{ pass: { lifecycle: string } }>('admin_revoke_guest_sign_in_pass', { passId: issued.data.pass.id }, { cookie: admin.cookie }));
     expect(revoked.data.pass.lifecycle).toBe('revoked');
