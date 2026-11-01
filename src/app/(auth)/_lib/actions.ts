@@ -96,7 +96,11 @@ export async function verifyCode(formData: FormData): Promise<void> {
   // has to reconcile the two names or it greets a no-email guest by the manager's and tells her she
   // manages the RSVP.
   const defaultGuest =
-    cookie.kind === 'claim' ? '/claim/welcome' : cookie.kind === 'sign_in' && d.guestId ? '/guests' : '/claim/welcome';
+    cookie.kind === 'claim'
+      ? '/claim/welcome'
+      : (cookie.kind === 'sign_in' || cookie.kind === 'phone_sign_in') && d.guestId
+        ? '/guests'
+        : '/claim/welcome';
   const target =
     d.isAdmin && !d.guestId
       ? safeReturnPath(d.next, '/admin')

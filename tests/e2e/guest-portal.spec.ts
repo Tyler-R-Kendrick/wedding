@@ -3,6 +3,15 @@ import { VIEW_ROLE_COOKIE } from '../../src/domain/identity/view-role';
 import { BASE_URL, contextAs } from './helpers/principal';
 import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../security/helpers';
 
+async function waitForSignedInAccountMenu(page: Page) {
+  await page
+    .waitForResponse((r) => r.url().includes('/api/session') && r.ok(), { timeout: 20_000 })
+    .catch(() => undefined);
+  await expect(
+    page.getByRole('button', { name: 'Your account' }).or(page.getByRole('group', { name: 'Your account' })),
+  ).toBeVisible({ timeout: 20_000 });
+}
+
 async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
   const popover = page.getByRole('button', { name: 'Your account' });
   if (await popover.isVisible().catch(() => false)) {
@@ -105,6 +114,7 @@ test.describe('guest portal navigation', () => {
     expect(hrefs).toContain('/sign-out');
 
     await page.goto('/our-story');
+    await waitForSignedInAccountMenu(page);
     hrefs = await accountMenuHrefs(page);
     expect(hrefs[0]).toBe('/guests');
     expect(hrefs).toContain('/sign-out');

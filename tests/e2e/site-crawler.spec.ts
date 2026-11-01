@@ -202,7 +202,8 @@ function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
   const guestOnly =
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
-  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)` : '';
+  const signInNext = guestOnly ? guestPortalRedirectFor(destination) ?? destination : destination;
+  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(signInNext))}(?:$|&)` : '';
   return new RegExp(`(?:${atDestination}${atSignIn})`);
 }
 
