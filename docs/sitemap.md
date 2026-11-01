@@ -20,14 +20,19 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /our-story | /our-story | public | GET | How we met, how it grew, the engagement, and what marriage means to us — told in chapters. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-adventures | /our-adventures | public | GET | An atlas of places we have been, each with "Sara remembers / Tyler remembers". | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-adventures/[slug] | /our-adventures/starved-rock | public | GET | One place: where, when, photos, and both of our memories of it. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /share-an-adventure | /share-an-adventure | public | GET | Places we recommend around Chicago: a practical layer and a memory layer, itineraries by duration and mode. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /share-an-adventure/[slug] | /share-an-adventure/starved-rock-state-park | public | GET | One recommendation: what it is, how to get there from the venue, why we love it. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
+| /share-an-adventure | /share-an-adventure | public | GET | Places we recommend around Chicago: a practical layer and a memory layer, itineraries by duration and mode. | 200 for any visitor. A signed-in guest is sent to /guests/things-to-do. An administrator stays on this URL. |
+| /share-an-adventure/[slug] | /share-an-adventure/starved-rock-state-park | public | GET | One recommendation: what it is, how to get there from the venue, why we love it. | 200 for a known recommendation. A signed-in guest is sent to /guests/things-to-do/<slug>. An administrator stays on this URL. Unknown slug is 404. |
 | /the-wedding | /the-wedding | public | GET | Ceremony, cocktail hour and reception: rooms, times, dress code and accessibility. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-venue | /our-venue | public | GET | A docent for the building: spaces, history with sources, things to look for, and where your table is. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-venue/[slug] | /our-venue/white-city-ballroom | public | GET | One room or feature of the building, its history and what to look for. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /travel | /travel | public | GET | Airports, the room block, other hotels, the neighbourhood and what the weather will be like. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
+| /travel | /travel | public | GET | Airports, the room block, other hotels, the neighbourhood and what the weather will be like. | 200 for any visitor. A signed-in guest is sent to /guests/travel. An administrator stays on this URL. |
 | /credits | /credits | public | GET | Who made every image on the site, and under what licence. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /ask-us | /ask-us | guest | GET | A concierge that answers questions about the weekend from what we have published, with citations. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
+| /guests | /guests | guest | GET | The signed-in landing: RSVP status and action, your schedule, key details, and links into travel and the weekend. | 200 for a signed-in guest: RSVP, schedule, and links into the weekend. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate. |
+| /guests/travel | /guests/travel | guest | GET | The guest view of airports, the room block, neighbourhood notes and live search — same content as the public travel page, centred on the portal. | 200 for a signed-in guest: the same travel page as /travel. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it and is not sent back to /travel. |
+| /guests/things-to-do | /guests/things-to-do | guest | GET | Chicago recommendations, itineraries and the signed-in map — the guest path for Share an Adventure. | 200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it. |
+| /guests/things-to-do/[slug] | /guests/things-to-do/starved-rock-state-park | guest | GET | One Chicago recommendation with directions and why we love it. | 200 for a signed-in guest when the recommendation exists. Signed out: redirect to /sign-in?next=<path>. Unknown slug is 404. An administrator may open a recommendation they can see. |
+| /guests/ask-us | /guests/ask-us | guest | GET | The guest path for the concierge and FAQ — sign-in required; citations from published pages only. | 200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate. |
+| /ask-us | /ask-us | guest | GET | A concierge that answers questions about the weekend from what we have published, with citations. | 200. Signed out: redirect to /sign-in?next=/ask-us. A signed-in guest is sent to /guests/ask-us. An administrator sees the guests-only gate. |
 | /your-weekend | /your-weekend | guest | GET | Your household's hub: invitation, RSVP status, your table, ride benefits and preferences. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /rsvp | /rsvp | guest | GET | Reply for the household in parts — attendance, a guest, meals, needs — each finished on its own. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /rsvp/[step] | /rsvp/attending | guest | GET | One part of the reply: who is coming, bringing a guest, meals, or dietary and access needs. | 200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404. |
@@ -42,6 +47,7 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /sign-in | /sign-in | gate | GET | The one way into a session, for guests and the couple alike. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /sign-in/admin | /sign-in/admin | gate | GET | The couple and the planner sign in to run the site. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /s/[slug] | /s/fixtureslug01 | gate | GET | Temporary link from the couple: opens with the code filled in and signs you in. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
+| /sign-in/pending | /sign-in/pending | gate | GET | Neutral holding page when social sign-in cannot match an invitation yet. | 200. Holding page when social sign-in cannot match an invitation yet. It does not start a session. |
 | /sign-out | /sign-out | gate | GET | End the session on this device. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /step-up | /step-up | gate | GET | Re-verify before a sensitive change, like payment details or who is in the household. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /i/[token] | /i/example | gate | GET | Preview of the household an invitation link belongs to, and an offer to claim it. Never a session by itself. | Redirects to /invite/<token> (the long link). /i/example is the only token this inventory names. |
@@ -108,6 +114,8 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /api/ai/chat | /api/ai/chat | api | POST | Ask the concierge. Answers are grounded in published pages. No hosted model is called. | 200 NDJSON when the body is JSON from this origin. 403 on a form-encoded or cross-origin POST. |
 | /api/auth/[...all] | /api/auth/get-session | api | GET | Better Auth session read and passkey ceremony. OTP and claim are capabilities, not this route. | Better Auth’s own status. A cross-origin mutation is 403 before the library runs. |
 | /api/auth/[...all] | /api/auth/sign-out | api | POST | Better Auth mutations (sign-out, passkey). Same-origin only. | 403 when Origin is not this site. Otherwise Better Auth’s response. The crawler does not call it. |
+| /api/auth/social/[provider]/start | /api/auth/social/google/start | api | GET | Starts Google or Facebook sign-in. The button is hidden when that provider is not configured. | 307 to the provider when it is configured, otherwise 307 to /sign-in. The crawler does not call it. |
+| /api/auth/social/[provider]/callback | /api/auth/social/google/callback | api | GET | OAuth callback. Binds a matching guest, or sends the reader to the social sign-in holding page. | 307 to /sign-in/pending when the state or code is missing. A match continues into the session. The crawler does not call it. |
 | /api/webmcp/manifest | /api/webmcp/manifest | api | GET | WebMCP tools the current principal may see. | 200 JSON manifest. POST is 405. |
 | /api/webmcp/manifest | /api/webmcp/manifest | api | POST | Manifest is read-only. | 405 Allow: GET. |
 | /api/webmcp/invoke/[name] | /api/webmcp/invoke/example | api | GET | WebMCP invoke is POST only. | 405 Allow: POST. |
@@ -198,6 +206,48 @@ public. One room or feature of the building, its history and what to look for.
 - `/our-venue/madison-ballroom`
 - `/our-venue/stagg-court`
 - `/our-venue/the-tank`
+
+### GET /guests/things-to-do/[slug]
+
+guest. One Chicago recommendation with directions and why we love it.
+
+- `/guests/things-to-do/starved-rock-state-park`
+- `/guests/things-to-do/caa-self-guided-tour`
+- `/guests/things-to-do/millennium-park-walk`
+- `/guests/things-to-do/cindys-rooftop`
+- `/guests/things-to-do/game-room`
+- `/guests/things-to-do/drawing-room`
+- `/guests/things-to-do/shake-shack`
+- `/guests/things-to-do/the-ives`
+- `/guests/things-to-do/midosuji`
+- `/guests/things-to-do/fairgrounds`
+- `/guests/things-to-do/topgolf-swing-suite`
+- `/guests/things-to-do/richardson-farm`
+- `/guests/things-to-do/museum-of-ice-cream`
+- `/guests/things-to-do/michael-jordans-steakhouse`
+- `/guests/things-to-do/caa-explore`
+- `/guests/things-to-do/chicago-citypass`
+- `/guests/things-to-do/architecture-river-cruise`
+- `/guests/things-to-do/architecture-walking-tours`
+- `/guests/things-to-do/chicago-riverwalk`
+- `/guests/things-to-do/alinea`
+- `/guests/things-to-do/esme`
+- `/guests/things-to-do/the-aviary`
+- `/guests/things-to-do/chicago-classics`
+- `/guests/things-to-do/grant-park`
+- `/guests/things-to-do/maggie-daley-park`
+- `/guests/things-to-do/lincoln-park-zoo`
+- `/guests/things-to-do/chicago-botanic-garden`
+- `/guests/things-to-do/art-institute`
+- `/guests/things-to-do/shedd-aquarium`
+- `/guests/things-to-do/griffin-msi`
+- `/guests/things-to-do/starbucks-reserve-roastery`
+- `/guests/things-to-do/blue-bottle-grand`
+- `/guests/things-to-do/intelligentsia-monadnock`
+- `/guests/things-to-do/sawada-coffee`
+- `/guests/things-to-do/metric-fulton`
+- `/guests/things-to-do/dollop-dearborn`
+- `/guests/things-to-do/hexe-coffee`
 
 ### GET /rsvp/[step]
 

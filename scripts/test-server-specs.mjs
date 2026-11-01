@@ -61,7 +61,7 @@ export function testServerEnv(port) {
 
 /** Every path a spec navigates to, plus /api/session (the CI step says why each one is here). */
 export const WARM_ROUTES = [
-  '/', '/sign-in', '/sign-in/admin', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
+  '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
   '/your-weekend', '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
   '/media/upload', '/media/mine', '/media/search', '/admin/ai',
   '/admin/lifecycle', '/admin/audit', '/admin/jobs', '/admin/metrics', '/admin/providers', '/admin/flags',
@@ -72,7 +72,7 @@ export const WARM_ROUTES = [
   '/admin/media/duplicates', '/admin/media/import', '/admin/media/metrics',
   '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
   '/our-adventures', '/travel',
-  '/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us',
+  '/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
   // Every admin flow saves through /api/capabilities/<name>. A GET compiles the route (and answers
   // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed

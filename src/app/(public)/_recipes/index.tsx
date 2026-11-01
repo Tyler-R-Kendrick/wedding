@@ -6,12 +6,13 @@ import type { StoryPageData } from '@/capabilities/get_story';
 import type { GiftsProps, PhotoAlbumProps, PhotosProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
+import { GUEST_PORTAL, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
 import { ROUTES } from '@/domain/routes';
 import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import { getPrincipal } from '@/lib/principal';
 import { getTheme } from '@/themes';
 import { selectContentRecipe, type ContentRecipeKey, type ContentRecipes } from '@/themes/content';
-import { PREVIEW_HEADER } from '@/themes/routes';
+import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
 import type { PageFrame } from '@/themes/types';
 import { AdventureDetailPage } from './AdventureDetailPage';
@@ -88,11 +89,23 @@ function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallbac
     }
     const h = await headers();
     const preview = h.get(PREVIEW_HEADER);
+    const requestPath = h.get(PATHNAME_HEADER) ?? currentPath;
+    const onPortal = isGuestPortalRoute(requestPath);
+    // Guest layout does not wrap these routes (the recipe already has a Shell). Use the portal
+    // URL so that Shell's nav is the guest portal, with the section path on a detail page so the
+    // parent item stays current.
+    const pathForFrame =
+      onPortal && opts.within && requestPath.startsWith(`${GUEST_PORTAL.thingsToDo}/`)
+        ? GUEST_PORTAL.thingsToDo
+        : onPortal
+          ? requestPath
+          : currentPath;
     // A signed-in-only page (behind the account menu) hands the frame its principal, so the menu is
     // open at first paint instead of reading "Sign in" until the browser asks /api/session.
-    const principal = preview || opts.signedIn ? await getPrincipal(new Request('http://wedding.local/', { headers: h })) : undefined;
+    // Portal routes need it too: Ask Us is public on `/ask-us` and signed-in on `/guests/ask-us`.
+    const principal = preview || opts.signedIn || onPortal ? await getPrincipal(new Request('http://wedding.local/', { headers: h })) : undefined;
     const lifecycle = principal ? { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) } : undefined;
-    const built = await buildPageFrame({ theme, currentPath, ...(lifecycle ? { lifecycle } : {}) });
+    const built = await buildPageFrame({ theme, currentPath: pathForFrame, ...(lifecycle ? { lifecycle } : {}) });
     // A detail page (`within`) lights its section's item as the place the reader is, not the page.
     const frame = opts.within ? { ...built, nav: { ...built.nav, currentIsAncestor: true } } : built;
     const render = recipe as unknown as (p: PropsOf<K> & { frame: PageFrame }) => ReactNode;

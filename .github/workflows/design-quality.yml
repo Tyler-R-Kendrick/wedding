@@ -299,7 +299,7 @@ jobs:
           # walked five times over, two designs). Every route either was already here or is added
           # above (`/ask-us`), and both specs carry a timeout proportional to their navigations
           # rather than the 30s default, which is the other half of what level 14 learned.
-          for path in / /sign-in /sign-in/admin /sign-in/phone /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp /rsvp/attending /rsvp/meals \
+          for path in / /sign-in /sign-in/admin /sign-in/pending /sign-in/phone /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp /rsvp/attending /rsvp/meals \
                       /your-weekend /trip /transportation /gifts /photos /photos/guest-uploads \
                       /media/upload /media/mine /media/search /admin/ai \
                       /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
@@ -310,7 +310,7 @@ jobs:
                       /admin/media/duplicates /admin/media/import /admin/media/metrics \
                       /ask-us /our-story /the-wedding /our-venue /share-an-adventure /sign-out \
                       /our-adventures /travel \
-                      /guests /guests/travel /guests/things-to-do /guests/ask-us \
+                      /guests /guests/travel /guests/things-to-do /guests/things-to-do/starved-rock-state-park /guests/ask-us \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session \
                       /api/capabilities/warmup /?preview=RSVP_OPEN \
                       /admin/sitemap /credits \

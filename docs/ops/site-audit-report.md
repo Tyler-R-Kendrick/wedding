@@ -8,12 +8,14 @@ Counted from that module on 1 November 2026:
 
 | Group | Rows | Opened in a browser |
 |---|---|---|
-| Pages | 61 | yes |
+| Pages | 67 | yes |
 | Internal theme routes | 2 | yes, signed out only |
 | Redirects | 6 | the five static aliases, signed out only |
-| API, export, and `/sitemap.xml` | 33 | no |
+| API, export, and `/sitemap.xml` | 35 | no |
 
-That is 102 rows. 68 have `crawl: true`. The other 34 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
+That is 110 rows. 74 have `crawl: true`. The other 36 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
+
+The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. A signed-in guest who opens `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>`, or `/ask-us` is sent to the matching portal URL. An administrator stays on the legacy URL. `/guests` and `/guests/ask-us` show that administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
 
 ## The four readers
 
@@ -54,11 +56,11 @@ Each is a 308. The browser keeps the fragment. The crawler asserts the status an
 
 Every inventory row has a `crawl` boolean.
 
-`crawl: true` means a persona opens the row’s `crawlExample` in a browser. The example is one concrete path. Further seed paths are listed under the table in `docs/sitemap.md` and are not each visited. The paths the crawler opens are `/our-adventures/starved-rock`, `/share-an-adventure/starved-rock-state-park`, `/our-venue/white-city-ballroom`, `/rsvp/attending`, `/photos/guest-uploads`, one content table (`story_sections`, including its new-row and seeded-row routes), `/t/botanical-deco`, and `/t/botanical-deco/preview/RSVP_OPEN`.
+`crawl: true` means a persona opens the row’s `crawlExample` in a browser. The example is one concrete path. Further seed paths are listed under the table in `docs/sitemap.md` and are not each visited. The paths the crawler opens are `/our-adventures/starved-rock`, `/share-an-adventure/starved-rock-state-park`, `/guests/things-to-do/starved-rock-state-park`, `/our-venue/white-city-ballroom`, `/rsvp/attending`, `/photos/guest-uploads`, one content table (`story_sections`, including its new-row and seeded-row routes), `/t/botanical-deco`, and `/t/botanical-deco/preview/RSVP_OPEN`.
 
 `crawl: false` is the default for API, export, and probe rows. Those responses are JSON, CSV, XML, or a status with no document, so they are not rendered and they are not asked for an `h1`. `/sitemap.xml` is the probe case: anonymous GET must be 200, and the body is checked separately. The other two probes are `GET /api/health` and `GET /api/session`, both 200 with no guest data in the public health body.
 
-A row the crawler does not call stays in the inventory so the admin page and the doc still name it: capability POST, the concierge, Better Auth mutations, WebMCP invoke, uploads, cron (`/api/jobs/run` and the media and upload aliases), the Resend and Duffel webhooks, the dev inbox, dev identity, and local-fs storage. Exports (`/admin/guests/export`, `/admin/rsvp/export`) are read-only CSVs and are not downloaded by the crawler. The one POST the crawler makes is `admin_set_view_role` on the test server, to mint a preview.
+A row the crawler does not call stays in the inventory so the admin page and the doc still name it: capability POST, the concierge, Better Auth mutations, the social sign-in start and callback, WebMCP invoke, uploads, cron (`/api/jobs/run` and the media and upload aliases), the Resend and Duffel webhooks, the dev inbox, dev identity, and local-fs storage. Exports (`/admin/guests/export`, `/admin/rsvp/export`) are read-only CSVs and are not downloaded by the crawler. The one POST the crawler makes is `admin_set_view_role` on the test server, to mint a preview.
 
 ## What the crawler walks
 
@@ -67,8 +69,8 @@ A row the crawler does not call stays in the inventory so the admin page and the
 - the response is under 400
 - the first `h1` is not empty
 - a static redirect lands on its destination, and `/i/example` lands on `/invite/example`
-- a signed-in guest is not shown the guests-only gate on a guest page
-- an administrator is not shown the administrator sign-in gate on an admin page
+- a signed-in guest, and a view-role preview, land on `/guests/*` when the URL has a portal equivalent, and are not shown the guests-only gate there
+- an administrator stays on the legacy URL, sees the guests-only gate on `/ask-us`, `/guests`, and `/guests/ask-us`, and is not shown the administrator sign-in gate on an admin page
 - a view-role preview shows “View as:” with that role’s label on public and guest pages
 - axe-core reports no serious or critical violations (WCAG 2.2 AA tags)
 - the page adds no `pageerror` and no console error (the Next dev overlay and the favicon probe are ignored)
@@ -78,10 +80,10 @@ Personas, and how many HTML routes each opens:
 
 | Persona | Routes | Who it is |
 |---|---|---|
-| Anonymous | 27 | Signed out. Public pages, gate pages, the five static aliases, and the two internal theme URLs. |
-| Guest | 32 | Fixture household A1. Those public and gate pages, plus every guest page. |
-| Administrator | 60 | Every page row, including the console. Redirects and the theme tree are not repeated. |
-| View-role | 32, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |
+| Anonymous | 29 | Signed out. Public pages, gate pages (including `/sign-in/pending`), the five static aliases, and the two internal theme URLs. |
+| Guest | 39 | Fixture household A1. Those public and gate pages, plus every guest page, including the portal. |
+| Administrator | 67 | Every page row, including the console. Redirects and the theme tree are not repeated. |
+| View-role | 39, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |
 
 `tests/unit/site-inventory.test.ts` reads the spec as text and fails when a crawl path or a probe path is not quoted in it. `scripts/test-server-specs.mjs` uses those quotes to warm the dev server before a named run, and the same paths are in the CI warm-up in `.github/workflows/design-quality.yml`. `tests/unit/agent/test-server-specs.test.ts` fails when those two lists drift. The spec is registered in `scripts/check-spec-coverage.mjs` as a test-server spec, not a production-build spec.
 

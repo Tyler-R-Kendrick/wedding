@@ -23,15 +23,22 @@ import { THEME_IDS } from '@/themes/registry';
  * whose visibility is `public`; the pipeline placeholder `/example` is not a real page and is not
  * listed. Guest-only recommendations stay off the public sitemap because an anonymous visitor is
  * not shown them.
+ *
+ * Signed-in guests are canonicalized onto `/guests`, `/guests/travel`, `/guests/things-to-do`
+ * (and `/guests/things-to-do/<slug>`) and `/guests/ask-us`. Those routes are audience `guest`.
+ * Anonymous readers are sent to `/sign-in?next=<path>`. An administrator is not moved off the
+ * legacy public URL; `/guests` and `/guests/ask-us` show that administrator the guests-only gate.
  */
 
 type SeedRow = { slug: string; visibility?: string };
 
-const publicSlugs = (rows: readonly SeedRow[]) => rows.filter((r) => r.visibility === 'public').map((r) => r.slug);
+const slugsWithVisibility = (rows: readonly SeedRow[], visibility: string) => rows.filter((r) => r.visibility === visibility).map((r) => r.slug);
 
-export const PUBLIC_ADVENTURE_SLUGS = publicSlugs(adventuresJson as SeedRow[]);
-export const PUBLIC_RECOMMENDATION_SLUGS = publicSlugs(recommendationsJson as SeedRow[]);
-export const PUBLIC_VENUE_SLUGS = publicSlugs(venueSpacesJson as SeedRow[]);
+export const PUBLIC_ADVENTURE_SLUGS = slugsWithVisibility(adventuresJson as SeedRow[], 'public');
+export const PUBLIC_RECOMMENDATION_SLUGS = slugsWithVisibility(recommendationsJson as SeedRow[], 'public');
+/** Recommendations whose visibility is `guest`. Signed-in guests open these, and the public ones, at `/guests/things-to-do/<slug>`. */
+export const GUEST_RECOMMENDATION_SLUGS = slugsWithVisibility(recommendationsJson as SeedRow[], 'guest');
+export const PUBLIC_VENUE_SLUGS = slugsWithVisibility(venueSpacesJson as SeedRow[], 'public');
 
 /** First seeded story section. The content editor's row route needs a real id; this one is in the seed. */
 export const SEEDED_STORY_ROW_ID = seedId(200);
@@ -46,6 +53,7 @@ export const RSVP_STEP_PATHS = ['/rsvp/attending', '/rsvp/guest', '/rsvp/meals',
 export const CRAWL_EXAMPLES = {
   adventure: '/our-adventures/starved-rock',
   recommendation: '/share-an-adventure/starved-rock-state-park',
+  guestRecommendation: '/guests/things-to-do/starved-rock-state-park',
   venue: '/our-venue/white-city-ballroom',
   rsvpStep: '/rsvp/attending',
   photo: '/photos/guest-uploads',
@@ -96,19 +104,43 @@ export interface InventoryRow {
 export type CrawlPersonaKind = 'anonymous' | 'guest' | 'admin' | 'view-role';
 
 const pageExpected = (p: SitemapPage): string => {
+  switch (p.id) {
+    case 'travel':
+      return '200 for any visitor. A signed-in guest is sent to /guests/travel. An administrator stays on this URL.';
+    case 'share':
+      return '200 for any visitor. A signed-in guest is sent to /guests/things-to-do. An administrator stays on this URL.';
+    case 'share-item':
+      return '200 for a known recommendation. A signed-in guest is sent to /guests/things-to-do/<slug>. An administrator stays on this URL. Unknown slug is 404.';
+    case 'ask':
+      return '200. Signed out: redirect to /sign-in?next=/ask-us. A signed-in guest is sent to /guests/ask-us. An administrator sees the guests-only gate.';
+    case 'portal':
+      return '200 for a signed-in guest: RSVP, schedule, and links into the weekend. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate.';
+    case 'guest-travel':
+      return '200 for a signed-in guest: the same travel page as /travel. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it and is not sent back to /travel.';
+    case 'guest-things':
+      return '200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it.';
+    case 'guest-thing':
+      return '200 for a signed-in guest when the recommendation exists. Signed out: redirect to /sign-in?next=<path>. Unknown slug is 404. An administrator may open a recommendation they can see.';
+    case 'guest-ask':
+      return '200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate.';
+    case 'sign-in-pending':
+      return '200. Holding page when social sign-in cannot match an invitation yet. It does not start a session.';
+    case 'rsvp-step':
+      return '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.';
+    case 'invitation':
+      return 'Redirects to /invite/<token> (the long link). /i/example is the only token this inventory names.';
+    case 'invite':
+      return '200. A real token previews the household and offers claim; it never starts a session. /invite/example is unknown and shows recovery, not a 404 and not a session.';
+    default:
+      break;
+  }
   switch (p.audience) {
     case 'public':
       return '200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers.';
     case 'guest':
-      return p.id === 'rsvp-step'
-        ? '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.'
-        : '200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply.';
+      return '200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply.';
     case 'gate':
-      return p.id === 'invitation'
-        ? 'Redirects to /invite/<token> (the long link). /i/example is the only token this inventory names.'
-        : p.id === 'invite'
-          ? '200. A real token previews the household and offers claim; it never starts a session. /invite/example is unknown and shows recovery, not a 404 and not a session.'
-          : '200. The door into a session. Signing out is a form; it does not end the session until submitted.';
+      return '200. The door into a session. Signing out is a form; it does not end the session until submitted.';
     case 'admin':
       return '200 for an administrator. Anyone else gets the administrator sign-in gate (200 HTML), not a 404.';
     default:
@@ -122,6 +154,8 @@ function examplesFor(p: SitemapPage): readonly string[] {
       return PUBLIC_ADVENTURE_SLUGS.map((s) => `/our-adventures/${s}`);
     case 'share-item':
       return PUBLIC_RECOMMENDATION_SLUGS.map((s) => `/share-an-adventure/${s}`);
+    case 'guest-thing':
+      return [...PUBLIC_RECOMMENDATION_SLUGS, ...GUEST_RECOMMENDATION_SLUGS].map((s) => `/guests/things-to-do/${s}`);
     case 'caa-space':
       return PUBLIC_VENUE_SLUGS.map((s) => `/our-venue/${s}`);
     case 'rsvp-step':
@@ -149,6 +183,8 @@ function crawlExampleFor(p: SitemapPage, examples: readonly string[]): string | 
       return CRAWL_EXAMPLES.adventure;
     case 'share-item':
       return CRAWL_EXAMPLES.recommendation;
+    case 'guest-thing':
+      return CRAWL_EXAMPLES.guestRecommendation;
     case 'caa-space':
       return CRAWL_EXAMPLES.venue;
     case 'rsvp-step':
@@ -316,6 +352,22 @@ function apiRows(): InventoryRow[] {
       method: 'POST',
       purpose: 'Better Auth mutations (sign-out, passkey). Same-origin only.',
       expected: '403 when Origin is not this site. Otherwise Better Auth’s response. The crawler does not call it.',
+    }),
+    row({
+      url: '/api/auth/social/[provider]/start',
+      examples: ['/api/auth/social/google/start'],
+      audience: 'api',
+      method: 'GET',
+      purpose: 'Starts Google or Facebook sign-in. The button is hidden when that provider is not configured.',
+      expected: '307 to the provider when it is configured, otherwise 307 to /sign-in. The crawler does not call it.',
+    }),
+    row({
+      url: '/api/auth/social/[provider]/callback',
+      examples: ['/api/auth/social/google/callback'],
+      audience: 'api',
+      method: 'GET',
+      purpose: 'OAuth callback. Binds a matching guest, or sends the reader to the social sign-in holding page.',
+      expected: '307 to /sign-in/pending when the state or code is missing. A match continues into the session. The crawler does not call it.',
     }),
     row({
       url: '/api/webmcp/manifest',

@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { VIEW_ROLE_COOKIE, VIEW_ROLES, viewRoleLabel, type ViewRoleKey } from '../../src/domain/identity/view-role';
+import { guestPortalRedirectFor } from '../../src/domain/lifecycle/guest-portal';
 import { crawlUrl, inventory, routesForPersona, type CrawlPersonaKind, type InventoryRow } from '../../src/lib/site-inventory';
 import { REDIRECTS } from '../../src/lib/site-redirects';
 import { cap, seedFixtures, signInViaUi } from '../security/helpers';
@@ -60,6 +61,11 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/explore-caa'
  * '/faq'
  * '/gifts'
+ * '/guests'
+ * '/guests/ask-us'
+ * '/guests/things-to-do'
+ * '/guests/things-to-do/starved-rock-state-park'
+ * '/guests/travel'
  * '/i/example'
  * '/invite/example'
  * '/media/mine'
@@ -80,6 +86,7 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/share-an-adventure/starved-rock-state-park'
  * '/sign-in'
  * '/sign-in/admin'
+ * '/sign-in/pending'
  * '/sign-out'
  * '/sitemap.xml'
  * '/step-up'
@@ -175,14 +182,23 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\
  * Where a permanent alias finishes in the browser. The 308 itself is checked before the browser
  * follows it. A public destination stays on that page. A guest-only destination (Ask Us, gifts)
  * sends a signed-out visitor on to sign-in, with `next` set to the page they asked for.
+ * A signed-in guest is moved one step further, onto the guest portal, when the destination has one.
  */
 function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
+  const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
+  if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
   const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
   const guestOnly =
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
   const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)` : '';
   return new RegExp(`(?:${atDestination}${atSignIn})`);
+}
+
+/** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
+function portalLanding(url: string, kind: CrawlPersonaKind): string | null {
+  if (kind !== 'guest' && kind !== 'view-role') return null;
+  return guestPortalRedirectFor(url);
 }
 
 async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaKind, role?: ViewRoleKey) {
@@ -192,13 +208,27 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
   expect(response!.status(), `${kind} ${url}`).toBeLessThan(400);
   await expect(page.getByRole('heading', { level: 1 }).first(), `${kind} ${url} has no heading`).not.toHaveText('');
 
+  // Legacy travel, things-to-do and Ask Us URLs move a guest principal onto `/guests/*`.
+  // An administrator is not moved. A signed-out reader of a portal URL is sent to sign-in;
+  // the anonymous walk does not open those URLs (they are audience guest).
+  const portal = portalLanding(url, kind);
+  if (portal) await expect(page, `${kind} ${url} should land on the guest portal`).toHaveURL(new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`));
+  if (kind === 'admin') {
+    const moved = guestPortalRedirectFor(url);
+    if (moved) await expect(page, `${url} moved an administrator onto the guest portal`).not.toHaveURL(new RegExp(`${escapeRegExp(moved)}(?:$|[?#])`));
+  }
+
   if (row.kind === 'redirect') {
     const rule = REDIRECTS.find((r) => r.source === row.url);
     if (rule && !rule.source.includes(':')) await expect(page, url).toHaveURL(redirectLanded(rule.destination, kind));
   }
   if (url === '/i/example') await expect(page).toHaveURL(/\/invite\/example(?:$|[?#])/);
 
-  if (kind === 'guest' && row.audience === 'guest') {
+  const guestSurface = row.audience === 'guest' || portal !== null;
+  if (guestSurface && (kind === 'guest' || kind === 'view-role')) {
+    await expect(page, `${kind} ${url} bounced to the sign-in door`).not.toHaveURL(/\/sign-in(?:$|\?)/);
+  }
+  if (kind === 'guest' && guestSurface) {
     await expect(page.locator('body'), `${url} showed the guests-only gate to A1`).not.toContainText('is for invited guests');
   }
   if (kind === 'admin' && row.audience === 'admin') {
@@ -206,9 +236,12 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
     await expect(heading, url).not.toContainText('Administrator sign-in required');
     await expect(heading, url).not.toContainText('Not part of your access');
   }
+  if (kind === 'admin' && (url === '/guests' || url === '/guests/ask-us' || url === '/ask-us')) {
+    await expect(page.locator('body'), `${url} should show the guests-only gate to an administrator`).toContainText('is for invited guests');
+  }
   if (kind === 'view-role' && role && row.kind === 'page' && (row.audience === 'public' || row.audience === 'guest')) {
     await expect(page.getByRole('status').filter({ hasText: 'View as:' }), `${role} ${url}`).toContainText(viewRoleLabel(role), { timeout: 15_000 });
-    if ((role === 'guest' || role === 'household_manager') && row.audience === 'guest') {
+    if ((role === 'guest' || role === 'household_manager') && guestSurface) {
       await expect(page.locator('body'), `${role} ${url}`).not.toContainText('is for invited guests');
     }
   }
@@ -216,6 +249,12 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
 
 async function walk(page: Page, kind: CrawlPersonaKind, role?: ViewRoleKey) {
   page.setDefaultNavigationTimeout(60_000);
+  // The fixture sign-in pass submits itself. Letting that finish replaces the persona: a signed-out
+  // crawl becomes a guest, and a view-role session is no longer the administrator who minted it.
+  // Opening the page is the audit; completing the sign-in is the pass spec's job.
+  await page.addInitScript(() => {
+    HTMLFormElement.prototype.requestSubmit = function () {};
+  });
   const errors = watch(page);
   const seen = new Map<string, string[]>();
   for (const row of routesForPersona(kind)) {
@@ -244,6 +283,7 @@ test('a signed-out visitor can open every public, gate and alias route', async (
   expect(xml).not.toContain('/admin');
   expect(xml).not.toContain('/your-weekend');
   expect(xml).not.toContain('/sign-in');
+  expect(xml).not.toContain('/guests');
 
   for (const rule of REDIRECTS) {
     const source = rule.source.replace(':slug', 'white-city-ballroom');
