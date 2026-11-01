@@ -18,7 +18,7 @@ export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
 export const BINDING_ROLES = ['self', 'household_manager', 'delegate'] as const;
 export type BindingRole = (typeof BINDING_ROLES)[number];
 
-export const CLAIM_METHODS = ['otp', 'passkey', 'admin'] as const;
+export const CLAIM_METHODS = ['otp', 'passkey', 'admin', 'pass'] as const;
 export type ClaimMethod = (typeof CLAIM_METHODS)[number];
 
 export const households = pgTable('households', {

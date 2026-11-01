@@ -56,6 +56,8 @@ interface Source {
   principal: keyof typeof PRINCIPALS | null;
 }
 function sourceFor(p: SitemapPage): Source {
+  // The capture URL is a fixture pass row (see seedTestFixtures); production has no stable instance.
+  if (p.id === 'guest-sign-in-pass') return { name: 'app', origin: APP, principal: null };
   if (p.audience === 'guest' || p.audience === 'admin') return { name: 'app', origin: APP, principal: p.audience };
   return ALL_FROM_APP ? { name: 'app', origin: APP, principal: null } : { name: 'production', origin: PRODUCTION, principal: null };
 }

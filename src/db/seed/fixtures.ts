@@ -2,7 +2,9 @@ import { eq, inArray } from 'drizzle-orm';
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
 import type { AdminPrincipal, Entitlement, GuestPrincipal } from '@/contracts/principal';
 import type { Db } from '@/db/client';
-import { eventEntitlements, events, guests, households, mealOptions } from '@/db/schema';
+import { eventEntitlements, events, guestSignInPasses, guests, households, mealOptions } from '@/db/schema';
+import { defaultGuestPassExpiry, GUEST_PASS_SLUG_PATTERN } from '@/domain/identity/guest-pass';
+import { getGuestPassVault } from '@/domain/identity/guest-pass-vault';
 import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { fixtureId } from './ids';
 
@@ -15,6 +17,10 @@ import { fixtureId } from './ids';
  *  Household B (manager B1): B1 (reception plus-one: named), B2 (NOT invited to the ceremony).
  *  Household C (solo C1): reception plus-one: unnamed.
  */
+/** Stable slug for stages capture and docs (`npm run stages:capture -- --only guest-sign-in-pass`). */
+export const BASELINE_GUEST_PASS_SLUG = 'fixtureslug01';
+if (!GUEST_PASS_SLUG_PATTERN.test(BASELINE_GUEST_PASS_SLUG)) throw new Error('BASELINE_GUEST_PASS_SLUG must match guest pass slug shape');
+
 export const FX = {
   householdA: fixtureId<HouseholdId>('HHA'),
   householdB: fixtureId<HouseholdId>('HHB'),
@@ -82,6 +88,23 @@ export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<
   if (!present.has(E.reception)) return;
   for (const m of FIXTURE_MEALS) await db.insert(mealOptions).values({ ...m, eventId: E.reception, version: 1, createdAt: now }).onConflictDoNothing({ target: mealOptions.id });
   await db.update(events).set({ mealOptionsVersion: 1, hasMeal: true }).where(eq(events.id, E.reception));
+
+  const vault = await getGuestPassVault();
+  const captureCode = '123456';
+  await db
+    .insert(guestSignInPasses)
+    .values({
+      id: fixtureId('PASSBASE01'),
+      slug: BASELINE_GUEST_PASS_SLUG,
+      guestId: FX.guestA1,
+      codeCiphertext: vault.seal(captureCode),
+      codeKeyId: vault.keyId,
+      codeHash: vault.fingerprint(captureCode),
+      expiresAt: defaultGuestPassExpiry(now, 365),
+      issuedBy: { kind: 'system', component: 'seed' },
+      createdAt: now,
+    })
+    .onConflictDoNothing({ target: guestSignInPasses.slug });
 }
 
 const ENT = (list: Entitlement[]) => new Set<Entitlement>(list);
