@@ -278,6 +278,7 @@ test('an administrator can open every console route', async ({ browser }) => {
 });
 
 test('each view-role preview opens the guest site read-only', async ({ browser, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'view-role crawl is desktop review viewport only');
   test.setTimeout(VIEW_ROLE_MS);
   const device = testInfo.project.use;
   const ctx = await browser.newContext({
