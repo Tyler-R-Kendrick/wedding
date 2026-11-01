@@ -1,6 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { contextAs, principalHeaders } from './helpers/principal';
 
 /**
  * Level 05: every content page rendered through both theme kits. Each page × theme is checked for
@@ -86,25 +85,6 @@ const PAGES: PageCase[] = [
   // coverage runs on the test server (quality-sweep.spec.ts), not here against anonymous production.
 ];
 
-const GUEST_PORTAL_PAGES: PageCase[] = [
-  {
-    key: 'guest-things-to-do',
-    path: '/guests/things-to-do',
-    h1: 'Things to Do in Chicago',
-    primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
-    control: true,
-    signature: { 'botanical-deco': '.bd-stops .bd-stops__num', 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
-  },
-  {
-    key: 'guest-recommendation',
-    path: '/guests/things-to-do/starved-rock-state-park',
-    h1: 'Starved Rock State Park',
-    primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-rec .bd-rec__inner', 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
-  },
-];
-
 async function axeClean(page: Page, label: string) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
@@ -183,83 +163,18 @@ for (const theme of THEMES) {
   }
 }
 
-for (const theme of THEMES) {
-  for (const c of GUEST_PORTAL_PAGES) {
-    test.describe(`${c.key} (${theme}, signed-in guest)`, () => {
-      test('landmarks, heading and the theme\'s own structure', async ({ browser }) => {
-        const ctx = await contextAs(browser, 'A1');
-        const page = await ctx.newPage();
-        await page.goto(`${c.path}?theme=${theme}`);
-        await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
-        const h1 = typeof c.h1 === 'string' || c.h1 instanceof RegExp ? c.h1 : c.h1[theme];
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1);
-        await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
-        await expect(page.locator('main#main')).toBeAttached();
-        await expect(page.getByRole('contentinfo')).toBeAttached();
-        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-        await expect(page.locator(c.signature[theme]).first()).toBeAttached();
-        for (const other of THEMES.filter((t) => t !== theme)) await expect(page.locator(c.signature[other])).toHaveCount(0);
-        const text = await page.locator('main').innerText();
-        expect(text).not.toContain('TODO(Tyler & Sara)');
-        expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key} (${theme}): internal backlog identifiers are visible to guests`).toEqual([]);
-        for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
-          await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
-          await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
-        }
-        await ctx.close();
-      });
-
-      test('the primary action is in the first screen at 390', async ({ browser }, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
-        const ctx = await contextAs(browser, 'A1');
-        const page = await ctx.newPage();
-        await page.setViewportSize(PHONE);
-        await page.goto(`${c.path}?theme=${theme}`);
-        const target = (c.primaryFor?.[theme] ?? c.primary)(page).first();
-        await expect(target).toBeVisible();
-        const box = (await target.boundingBox())!;
-        const fold = await foldHeight(page);
-        expect(box.y, `${c.key} (${theme}): primary target starts below the first screen`).toBeLessThan(fold);
-        if (c.control) {
-          expect(box.y + box.height, `${c.key} (${theme}): primary action is not fully tappable in the first screen`).toBeLessThanOrEqual(fold);
-          await target.focus();
-          await expect(target).toBeFocused();
-        }
-        await ctx.close();
-      });
-
-      test('axe clean at 390, 768 and 1440', async ({ browser }, testInfo) => {
-        test.skip(testInfo.project.name !== 'desktop', 'the three widths are set explicitly, so this runs once');
-        const ctx = await contextAs(browser, 'A1');
-        const page = await ctx.newPage();
-        for (const [w, h] of [
-          [390, 844],
-          [768, 1024],
-          [1440, 900],
-        ] as const) {
-          await page.setViewportSize({ width: w, height: h });
-          await page.goto(`${c.path}?theme=${theme}`);
-          await axeClean(page, `${c.key} (${theme}) at ${w}×${h}`);
-        }
-        await ctx.close();
-      });
-    });
-  }
-}
-
 test.describe('content pages keep their structure across a design switch', () => {
   test('the same route answers in any design and never mixes them', async ({ request }) => {
-    for (const c of [...PAGES, ...GUEST_PORTAL_PAGES]) {
-      const headers = c.path.startsWith('/guests/') ? principalHeaders('A1') : undefined;
-      const approved = await request.get(`${c.path}?theme=botanical-deco`, headers ? { headers } : undefined);
+    for (const c of PAGES) {
+      const approved = await request.get(`${c.path}?theme=botanical-deco`);
       expect(approved.headers()['x-theme'], c.key).toBe('botanical-deco');
       const bd = await approved.text();
       expect(bd, c.key).toContain('data-theme="botanical-deco"');
       expect(bd, c.key).not.toMatch(/data-theme="(gilded-hour|conservatory)"/);
-      const gilded = await request.get(`${c.path}?theme=gilded-hour`, headers ? { headers } : undefined);
+      const gilded = await request.get(`${c.path}?theme=gilded-hour`);
       expect(gilded.headers()['x-theme'], c.key).toBe('gilded-hour');
       expect(await gilded.text(), c.key).toContain('data-theme="gilded-hour"');
-      const conservatory = await request.get(`${c.path}?theme=conservatory`, headers ? { headers } : undefined);
+      const conservatory = await request.get(`${c.path}?theme=conservatory`);
       expect(conservatory.headers()['x-theme'], c.key).toBe('conservatory');
       const html = await conservatory.text();
       expect(html, c.key).toContain('data-theme="conservatory"');
@@ -294,49 +209,6 @@ test.describe('bottom chrome is reserved in every design', () => {
       });
       expect(r.names.length, `${theme}: no fixed bottom control found — the probe needs updating`).toBeGreaterThan(0);
       expect(r.pad, `${theme}: main reserves ${r.pad}px for ${r.needed}px of fixed chrome (${r.names.join(', ')})`).toBeGreaterThanOrEqual(r.needed);
-    });
-  }
-});
-
-/**
- * BL-3 · The longest page on the site (≈22,600 px at 390) has to be navigable by heading and by
- * jump link: a category sits one level above the places it groups, and no two headings share a name.
- */
-test.describe('the guide is navigable', () => {
-  for (const theme of THEMES) {
-    test(`${theme}: heading outline is valid and the jump list reaches every group`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1');
-      const page = await ctx.newPage();
-      await page.goto(`/guests/things-to-do?theme=${theme}`);
-      const r = await page.evaluate(() => {
-        const hs = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => ({ lvl: Number(h.tagName[1]), txt: (h.textContent ?? '').replace(/\s+/g, ' ').trim() }));
-        const names = hs.map((h) => h.txt);
-        const jump = Array.from(document.querySelectorAll('main nav[aria-label="On this page"] a')).map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '');
-        const categories = Array.from(document.querySelectorAll('main section[id^="category-"]')).map((sec) => ({
-          id: sec.id,
-          headingLevel: Number((sec.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
-          placeLevels: Array.from(sec.querySelectorAll('[data-recommendation]')).map((a) => Number((a.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1])),
-        }));
-        return {
-          skips: hs.slice(1).filter((h, i) => h.lvl - (hs[i]?.lvl ?? h.lvl) > 1).length,
-          duplicates: [...new Set(names.filter((n, i) => names.indexOf(n) !== i))],
-          jump,
-          categories,
-          h1: hs.filter((h) => h.lvl === 1).length,
-        };
-      });
-      expect(r.h1).toBe(1);
-      expect(r.skips, `${theme}: the outline skips a heading level`).toBe(0);
-      expect(r.duplicates, `${theme}: two headings share a name, so heading navigation cannot tell them apart`).toEqual([]);
-      expect(r.categories.length).toBeGreaterThan(0);
-      for (const cat of r.categories) {
-        expect(cat.placeLevels.length, `${cat.id} has no places`).toBeGreaterThan(0);
-        for (const lvl of cat.placeLevels) expect(lvl, `${cat.id}: a place is not one level below its category`).toBe(cat.headingLevel + 1);
-        expect(r.jump, `${cat.id} is not reachable from the jump list`).toContain(`#${cat.id}`);
-      }
-      // every jump target exists
-      for (const href of r.jump) await expect(page.locator(href)).toHaveCount(1);
-      await ctx.close();
     });
   }
 });

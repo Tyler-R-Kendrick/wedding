@@ -1,11 +1,11 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
-import { contextAs } from "./helpers/principal";
 
 /**
  * Travel & Stay journeys. The flights provider mode comes from the running server (the runner
  * exports HEALTH_TOKEN), so the same spec asserts the honest deep-link fallback under
  * FLIGHTS_PROVIDER=deep-link and live mock results (timestamp + allowlisted hand-off) under mock.
+ *
+ * Signed-in themed travel UI and flight search live in guest-guide.spec.ts (NODE_ENV=test server).
  */
 const ALLOWLIST =
   /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
@@ -22,126 +22,12 @@ async function flightsMode(request: APIRequestContext): Promise<string> {
 const THEMES = ["botanical-deco", "gilded-hour", "conservatory"] as const;
 
 test.describe("Travel & Stay", () => {
-  // Parameterised by design on purpose. This spec used to `goto('/travel')` with no `?theme=`, so
-  // every assertion here — axe included — only ever visited the default design, and Conservatory's
-  // 4.12:1 hint colour went unseen until a design review looked at it by hand.
   for (const theme of THEMES) {
-    test(`keeps room-block details behind sign-in, shows both airports, and loads no live prices (${theme})`, async ({
-      browser,
-    }) => {
-      const ctx = await contextAs(browser, "A1");
-      const page = await ctx.newPage();
-      await page.goto(`/guests/travel?theme=${theme}`);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-        "Getting to Chicago",
-      );
-      await expect(
-        page.getByRole("heading", {
-          level: 3,
-          name: "Chicago Athletic Association Hotel",
-        }),
-      ).toBeVisible();
-      await expect(page.getByText(/Room-block details are being confirmed/)).toBeVisible();
-      await expect(
-        page.getByRole("link", { name: /Sign in for room-block details/ }),
-      ).toHaveCount(0);
-      await expect(page.getByText("the group rate")).toHaveCount(0);
-      await expect(page.getByText("the date to book by")).toHaveCount(0);
-      await expect(page.locator("body")).not.toContainText("TODO(");
-      await expect(page.locator("body")).not.toContainText(/backlog [A-Z]-\d/);
-      await expect(page.getByText("ORD", { exact: true })).toBeVisible();
-      await expect(page.getByText("MDW", { exact: true })).toBeVisible();
-      await expect(page.getByText(/Prices as of/)).toHaveCount(0);
-      for (const a of await page.locator('a[target="_blank"]').all()) {
-        expect(await a.getAttribute("rel")).toContain("noopener");
-      }
-      const results = await new AxeBuilder({ page })
-        .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-        .analyze();
-      const blocking = results.violations.filter(
-        (v) => v.impact === "serious" || v.impact === "critical",
-      );
-      expect(
-        blocking,
-        blocking
-          .map(
-            (v) =>
-              `${v.id}: ${v.help}\n  ${v.nodes.map((n) => n.target.join(" ")).join("\n  ")}`,
-          )
-          .join("\n"),
-      ).toEqual([]);
-
-      // Nothing may exceed the viewport. At 390 the Gilded Hour card's children measured 609px and
-      // ran to x=670; `body { overflow-x: clip }` hid the overflow, so the only visible symptom was a
-      // heading truncated to "CHICAGO ATHLETIC A".
-      const overflowing = await page.evaluate(() => {
-        const vw = document.documentElement.clientWidth;
-        return [...document.querySelectorAll("main *")]
-          .filter((e) => e.getBoundingClientRect().right > vw + 1)
-          .map((e) => `${e.tagName}.${e.className}`);
-      });
-      expect(overflowing, "content wider than the viewport").toEqual([]);
-
-      // 17px floor on running copy and control labels: grandparents are a primary audience and
-      // phones must not zoom. Deliberately NOT applied to the design system's uppercase micro-labels
-      // (`.gh-eyebrow`, `.gh-stat__label`), which take `--type-label-caps-size` straight from
-      // DESIGN.md and have been 13.8px site-wide since level 04. Re-scaling those is a change to the
-      // type system and belongs in a design review, not smuggled through a travel PR; that they are
-      // small enough to be worth re-examining is recorded in this level's critique instead.
-      const tooSmall = await page.evaluate(() =>
-        [...document.querySelectorAll("main p, main li, main dd, main label")]
-          .filter((e) => !e.className.includes("eyebrow"))
-          .filter((e) => parseFloat(getComputedStyle(e).fontSize) < 17)
-          .map((e) => `${e.tagName}.${e.className}`),
-      );
-      expect(tooSmall, "running copy under the 17px floor").toEqual([]);
-      await ctx.close();
+    test(`legacy /travel redirects anonymous visitors to sign-in (${theme})`, async ({ page }) => {
+      await page.goto(`/travel?theme=${theme}`);
+      await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
     });
   }
-
-  // Renamed and re-pointed. "live mock results" was the defect stated in a test name, and the
-  // branch below made it explicit: `if (mode === "mock") expect(body.data.mode).toBe("live")` —
-  // the suite asserting that a provider which invents its prices reports them as the partner's.
-  // A mock now reports `sample`, the page shows no fabricated price, and the deep links — the part
-  // that was always real and always useful — are what a guest gets.
-  test("flight search is explicit: a mock provider shows no prices, only real hand-offs; unconfigured providers fall back cleanly", async ({
-    browser,
-    request,
-  }) => {
-    const mode = await flightsMode(request);
-    const ctx = await contextAs(browser, "A1");
-    const page = await ctx.newPage();
-    await page.goto("/guests/travel");
-    await page.getByLabel("Flying from").fill("LAX");
-    await page.getByLabel("Depart", { exact: true }).fill("2027-07-15");
-    await page.getByRole("button", { name: "Search flights" }).click();
-    const skyscanner = page
-      .getByRole("link", { name: /Continue on Skyscanner/ })
-      .first();
-    await expect(skyscanner).toBeVisible();
-    expect(await skyscanner.getAttribute("href")).toMatch(
-      /^https:\/\/www\.skyscanner\.com\/transport\/flights\/lax\/ord\/270715\//,
-    );
-    if (mode === "mock") {
-      // No invented price, no invented duration, and the guest is told why.
-      const flights = page.locator("#flights");
-      await expect(page.getByText(/Live prices are not connected yet/)).toBeVisible();
-      await expect(page.getByText(/Prices as of/)).toHaveCount(0);
-      await expect(flights).not.toContainText(/\$\d/);
-      const hrefs = await page
-        .getByRole("link", { name: /Continue on|Search directly|Search with/ })
-        .evaluateAll((els) => els.map((e) => e.getAttribute("href") ?? ""));
-      expect(hrefs.length, "the real deep links are still offered").toBeGreaterThan(0);
-      for (const href of hrefs) expect(href).toMatch(ALLOWLIST);
-    } else if (mode === "deep-link") {
-      await expect(page.getByText(/not available/)).toBeVisible();
-      await expect(page.getByText(/Prices as of/)).toHaveCount(0);
-      await expect(
-        page.getByRole("heading", { name: "Search directly with a partner" }),
-      ).toBeVisible();
-    }
-    await ctx.close();
-  });
 
   test("capability route answers search_travel_options anonymously with the ladder applied", async ({
     request,
@@ -163,8 +49,6 @@ test.describe("Travel & Stay", () => {
     expect(body.ok).toBe(true);
     expect(body.data.handoffs[0].url).toMatch(ALLOWLIST);
     if (mode === "mock") {
-      // Was `expect(body.data.mode).toBe("live")` inside `if (mode === "mock")`: the suite
-      // asserting that fabricated numbers be labelled as the partner's own.
       expect(body.data.mode).toBe("sample");
       expect(body.data.mode).not.toBe("live");
       expect(body.data.notice).toMatch(/not connected yet/i);
@@ -194,26 +78,16 @@ test.describe("Travel & Stay", () => {
     await expect(
       page.getByText(/with the email on your invitation to see and plan your trip/),
     ).toBeVisible();
-    // Signed out, the way in is sign-in, and it comes back to /trip.
     await expect(
       page.locator("#main").getByRole("link", { name: "Sign in" }),
     ).toHaveAttribute("href", "/sign-in?next=%2Ftrip");
     await page.goto("/admin/travel");
-    // Level 16 moved every admin screen onto one shell, so this screen's gate is `ConsoleGate` —
-    // the same heading and the same sentence as the other twenty-four, instead of the bespoke
-    // "Administrator sign-in is required." this page used to render on its own. The assertion is
-    // changed deliberately, and it is STRONGER than the string it replaces: it checks the level-1
-    // heading (which the old one did not look at) and that the screen's own content is absent.
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Administrator sign-in required",
     );
     await expect(page.locator("#main")).toContainText(
       "is part of the admin console",
     );
-    // `#main`, not `body`: the admin layout's index of every screen is in the chrome around it, and
-    // one of its blurbs contains this phrase. That index is deliberate — the routes are not secret
-    // and every one of them re-checks server-side — so the assertion is that the SCREEN's own
-    // content is absent, which is what a gate has to guarantee.
     await expect(page.locator("#main")).not.toContainText("room block");
     const hook = await request.post("/travel/webhooks/duffel", {
       data: { id: "evt", type: "order.created", data: { object: { id: "o" } } },

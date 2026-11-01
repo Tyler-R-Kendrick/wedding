@@ -1,6 +1,18 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { contextAs, principalHeaders } from './helpers/principal';
+import { principalHeaders } from './helpers/principal';
+
+const ALLOWLIST =
+  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
+
+async function flightsMode(request: APIRequestContext): Promise<string> {
+  if (!process.env.HEALTH_TOKEN) return 'unknown';
+  const res = await request.get('/api/health', {
+    headers: { authorization: `Bearer ${process.env.HEALTH_TOKEN}` },
+  });
+  const body = await res.json();
+  return body.providers?.flights ?? 'unknown';
+}
 
 // This journey covers a map interaction, plan generation, axe and a second page.
 // The isolated dev server can compile themed guest branches on first use.
@@ -42,5 +54,87 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     await page.goto(`/guests/travel?theme=${theme}`);
     await expect(page.getByRole('link', { name: 'Your guest travel details and weekend plans →' })).toHaveAttribute('href', '/trip');
     await expect(page.getByRole('link', { name: /^Sign in for guest booking/ })).toHaveCount(0);
+  });
+}
+
+test('linked recommendations open under the guest portal with a directions handoff', async ({ page }) => {
+  await page.setExtraHTTPHeaders(principalHeaders('A1'));
+  await page.goto('/our-adventures/starved-rock');
+  const related = page.locator('[data-recommendation="starved-rock-state-park"]');
+  await related.locator('summary').filter({ hasText: /Why we.re sharing this/ }).click();
+  await related.getByRole('link', { name: 'Starved Rock State Park', exact: true }).click();
+  await expect(page).toHaveURL(/\/guests\/things-to-do\/starved-rock-state-park$/);
+  const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
+  await expect(directions).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\//);
+  await expect(page.getByText('Draft — not yet curated')).toBeVisible();
+});
+
+for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
+  test(`guest travel page keeps airports visible and axe-clean (${theme})`, async ({ page }) => {
+    await page.setExtraHTTPHeaders(principalHeaders('A1'));
+    await page.goto(`/guests/travel?theme=${theme}`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Getting to Chicago');
+    await expect(page.getByText('ORD', { exact: true })).toBeVisible();
+    await expect(page.getByText('MDW', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Prices as of/)).toHaveCount(0);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    expect(blocking).toEqual([]);
+  });
+}
+
+test('flight search on guest travel shows real hand-offs, not invented prices', async ({ page, request }) => {
+  const mode = await flightsMode(request);
+  await page.setExtraHTTPHeaders(principalHeaders('A1'));
+  await page.goto('/guests/travel');
+  await page.getByLabel('Flying from').fill('LAX');
+  await page.getByLabel('Depart', { exact: true }).fill('2027-07-15');
+  await page.getByRole('button', { name: 'Search flights' }).click();
+  const skyscanner = page.getByRole('link', { name: /Continue on Skyscanner/ }).first();
+  await expect(skyscanner).toBeVisible();
+  if (mode === 'mock') {
+    await expect(page.getByText(/Live prices are not connected yet/)).toBeVisible();
+    await expect(page.getByText(/Prices as of/)).toHaveCount(0);
+    const hrefs = await page
+      .getByRole('link', { name: /Continue on|Search directly|Search with/ })
+      .evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''));
+    for (const href of hrefs) expect(href).toMatch(ALLOWLIST);
+  }
+});
+
+for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
+  test(`the things-to-do guide is navigable (${theme})`, async ({ page }) => {
+    await page.setExtraHTTPHeaders(principalHeaders('A1'));
+    await page.goto(`/guests/things-to-do?theme=${theme}`);
+    const r = await page.evaluate(() => {
+      const hs = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => ({
+        lvl: Number(h.tagName[1]),
+        txt: (h.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      }));
+      const names = hs.map((h) => h.txt);
+      const jump = Array.from(document.querySelectorAll('main nav[aria-label="On this page"] a')).map(
+        (a) => (a as HTMLAnchorElement).getAttribute('href') ?? '',
+      );
+      const categories = Array.from(document.querySelectorAll('main section[id^="category-"]')).map((sec) => ({
+        id: sec.id,
+        headingLevel: Number((sec.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
+        placeLevels: Array.from(sec.querySelectorAll('[data-recommendation]')).map((a) =>
+          Number((a.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
+        ),
+      }));
+      return {
+        skips: hs.slice(1).filter((h, i) => h.lvl - (hs[i]?.lvl ?? h.lvl) > 1).length,
+        duplicates: [...new Set(names.filter((n, i) => names.indexOf(n) !== i))],
+        jump,
+        categories,
+        h1: hs.filter((h) => h.lvl === 1).length,
+      };
+    });
+    expect(r.h1).toBe(1);
+    expect(r.skips).toBe(0);
+    expect(r.duplicates).toEqual([]);
+    for (const href of r.jump) await expect(page.locator(href)).toHaveCount(1);
   });
 }

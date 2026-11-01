@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { contextAs } from './helpers/principal';
 
 /** The approved design first; the two superseded proposals stay reachable by an explicit link. */
 const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
@@ -179,11 +178,9 @@ test.describe('shell chrome', () => {
     }
   });
 
-  test('Gilded Hour elevator-panel labels are whole and visible at 390 for signed-in guests', async ({ browser }) => {
-    const ctx = await contextAs(browser, 'A1');
-    const page = await ctx.newPage();
+  test('Gilded Hour elevator-panel labels are whole and visible at 390 on the signed-out home', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/guests?theme=gilded-hour');
+    await page.goto('/?theme=gilded-hour');
     const cells = page.locator('.gh-panel__cell > span');
     await expect(cells.first()).toBeVisible();
     const clipped = await cells.evaluateAll((spans) =>
@@ -192,9 +189,8 @@ test.describe('shell chrome', () => {
         .filter((s) => s.overflow > 1 || s.ellipsis),
     );
     expect(clipped).toEqual([]);
-    await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toBeVisible();
-    await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toBeVisible();
-    await ctx.close();
+    await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toHaveCount(0);
+    await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toHaveCount(0);
   });
 
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {

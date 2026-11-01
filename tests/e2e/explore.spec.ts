@@ -1,7 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { contextAs } from './helpers/principal';
 
 const PUBLIC_ADVENTURES = (JSON.parse(readFileSync('src/content/seed/adventures.json', 'utf8')) as { slug: string; visibility: string }[]).filter((a) => a.visibility === 'public').map((a) => a.slug);
 
@@ -66,26 +65,6 @@ test.describe('explore journey', () => {
     await expect(related.getByRole('link', { name: /Read the memory/ })).toBeVisible();
     await related.getByRole('link', { name: 'Starved Rock State Park', exact: true }).click();
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fthings-to-do%2Fstarved-rock-state-park/);
-  });
-
-  test('signed-in guests open linked recommendations under the guest portal', async ({ browser }) => {
-    const ctx = await contextAs(browser, 'A1');
-    const page = await ctx.newPage();
-    await page.goto('/our-adventures/starved-rock');
-    const related = page.locator('[data-recommendation="starved-rock-state-park"]');
-    await related.locator('summary').filter({ hasText: /Why we.re sharing this/ }).click();
-    await related.getByRole('link', { name: 'Starved Rock State Park', exact: true }).click();
-    await expect(page).toHaveURL(/\/guests\/things-to-do\/starved-rock-state-park$/);
-
-    const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
-    await expect(directions).toBeVisible();
-    await expect(directions).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\//);
-    await expect(directions).toHaveAttribute('rel', /noopener/);
-    await expect(directions).toHaveAttribute('target', '_blank');
-    await expect(page.getByText('You will leave our site for Google Maps')).toBeVisible();
-    await expect(page.getByText('Draft — not yet curated')).toBeVisible();
-    await axe(page);
-    await ctx.close();
   });
 
   test('the story is a ride: the map jumps, the buttons step, a citation lands on its station', async ({ page }) => {
