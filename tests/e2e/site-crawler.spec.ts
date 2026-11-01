@@ -154,16 +154,24 @@ function linkPath(href: string): string | null {
 
 /**
  * A missing route is a 404 for the visitor who can see the link. Guest-only pages, such as the
- * Chicago recommendations, answer 404 to a signed-out GET on purpose, so the probe is a fetch from
- * this page and carries that visitor's session. A gate or a redirect is not a dead link.
+ * Chicago recommendations, answer 404 to a signed-out GET on purpose, so the probe uses this
+ * page's request context and carries that visitor's session. Redirects are not followed. A gate
+ * or a redirect is not a dead link. A request that throws is tried once more; only status 404 fails.
  */
 async function assertNoDeadLinks(page: Page, seen: Map<string, string[]>) {
+  const req = page.request;
   const dead: string[] = [];
   for (const [path, from] of seen) {
-    const status = await page.evaluate(async (href) => {
-      const res = await fetch(href);
-      return res.status;
-    }, path);
+    let status = 0;
+    try {
+      status = (await req.get(path, { maxRedirects: 0 })).status();
+    } catch {
+      try {
+        status = (await req.get(path, { maxRedirects: 0 })).status();
+      } catch {
+        continue;
+      }
+    }
     if (status === 404) dead.push(`${path} (linked from ${[...new Set(from)].join(', ')})`);
   }
   expect(dead, 'dead internal links').toEqual([]);
