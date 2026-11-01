@@ -34,7 +34,7 @@ describe('syncing content on deploy', () => {
     expect(starved?.title).toBe('Starved Rock, as we tell it');
     // The AI corpus is re-projected from the synced rows.
     const corpus = await db.select({ title: knowledgeRecords.title }).from(knowledgeRecords);
-    expect(corpus.map((r) => r.title)).toContain('Noma');
+    expect(corpus.map((r) => r.title)).toContain('Copenhagen, Denmark');
     // Events are seeded once, by hand; the sync never touches them.
     expect(await db.select({ n: sql<number>`count(*)::int` }).from(events)).toEqual(eventsBefore);
 

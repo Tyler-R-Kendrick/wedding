@@ -29,13 +29,6 @@ export const PRODUCTION_SPECS = [
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
   'tests/e2e/links.spec.ts',
-  // Level 12: the concierge journey is anonymous end to end — it opens the island on /ask-us and
-  // posts to /api/ai/chat as a visitor, so it needs no test principal. It belongs here rather than
-  // on the test server because the two things it asserts about are production behaviour: the answer
-  // must be grounded and cited against the SEEDED knowledge base, and the chat route must be the
-  // only door (405 on GET, 403 on a form-encoded POST). The server has no hosted model anywhere,
-  // so a browser without the Prompt API (CI's) gets the deterministic extractive answer.
-  'tests/e2e/concierge.spec.ts',
   // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
   // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`
   // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
@@ -60,6 +53,9 @@ export const TEST_SERVER_SPECS = [
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
   // through identity's test-principal injector, so they need the NODE_ENV=test server.
   'tests/e2e/transport-gifts.spec.ts',
+  // Ask Us and the concierge require a signed-in guest (#86). Production smoke has no test-principal
+  // injector, so these run on the NODE_ENV=test server with fixture guests and the dev inbox.
+  'tests/e2e/concierge.spec.ts',
   'tests/security/redirect.spec.ts',
   'tests/security/voucher.spec.ts',
   'tests/security/idor.spec.ts',

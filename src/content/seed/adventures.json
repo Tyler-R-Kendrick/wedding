@@ -199,96 +199,6 @@
     "placeholder": true
   },
   {
-    "slug": "alinea-2026-02-13-a",
-    "title": "Alinea: the booth",
-    "dateExact": "2026-02-13",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.91344,
-    "lng": -87.64817,
-    "summary": "An evening at Alinea, 1723 N Halsted.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler in a booth at Alinea, a dessert painted across the table.",
-        "src": "/assets/photos/adventures/alinea-2026-02-13-a.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "alinea-2026-02-13-b",
-    "title": "Alinea: the glass balloon",
-    "dateExact": "2026-02-13",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.91349,
-    "lng": -87.64808,
-    "summary": "An evening at Alinea, 1723 N Halsted.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "A selfie at Alinea behind a glass balloon.",
-        "src": "/assets/photos/adventures/alinea-2026-02-13-b.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "alinea-2026-02-13-c",
-    "title": "Alinea: the kitchen",
-    "dateExact": "2026-02-13",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.91342,
-    "lng": -87.64795,
-    "summary": "An evening at Alinea, 1723 N Halsted: in the kitchen.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler standing in the Alinea kitchen beside the chefs.",
-        "src": "/assets/photos/adventures/alinea-2026-02-13-c.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
     "slug": "carnivale-2026-07-19",
     "title": "Carnivale",
     "dateExact": "2026-07-19",
@@ -307,96 +217,6 @@
     ],
     "tags": [
       "hospitality"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "ever-2025-02-13-a",
-    "title": "Ever: the sign",
-    "dateExact": "2025-02-13",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Fulton Market, Chicago",
-    "lat": 41.88658,
-    "lng": -87.66048,
-    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler beside the Ever sign on a dark brick wall.",
-        "src": "/assets/photos/adventures/ever-2025-02-13-a.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "ever-2025-02-13-b",
-    "title": "Ever: the table",
-    "dateExact": "2025-02-13",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Fulton Market, Chicago",
-    "lat": 41.88694,
-    "lng": -87.66057,
-    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler at a candlelit table at Ever.",
-        "src": "/assets/photos/adventures/ever-2025-02-13-b.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "ever-2025-02-13-c",
-    "title": "Ever: the dark wall",
-    "dateExact": "2025-02-13",
-    "season": "winter",
-    "timeOfDay": "night",
-    "locationLabel": "Fulton Market, Chicago",
-    "lat": 41.88688,
-    "lng": -87.66028,
-    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler against a dark wall at Ever.",
-        "src": "/assets/photos/adventures/ever-2025-02-13-c.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
     ],
     "relatedRecommendationSlugs": [],
     "sourceKey": "photos",
@@ -512,126 +332,6 @@
       }
     ],
     "tags": [
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "esme-2024-02-17-a",
-    "title": "Esmé: the dining room",
-    "dateExact": "2024-02-17",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.92209,
-    "lng": -87.63883,
-    "summary": "Dinner at Esmé, 2200 N Clark.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "A selfie in the Esmé dining room.",
-        "src": "/assets/photos/adventures/esme-2024-02-17-a.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "esme-2024-02-17-b",
-    "title": "Esmé: making faces",
-    "dateExact": "2024-02-17",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.92209,
-    "lng": -87.63883,
-    "summary": "Dinner at Esmé, 2200 N Clark.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler making faces under a painted face at Esmé.",
-        "src": "/assets/photos/adventures/esme-2024-02-17-b.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "esme-2024-02-17-c",
-    "title": "Esmé: the line drawings",
-    "dateExact": "2024-02-17",
-    "season": "winter",
-    "timeOfDay": "evening",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.92205,
-    "lng": -87.63889,
-    "summary": "Dinner at Esmé, 2200 N Clark.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara in the Esmé dining room under line-drawn faces.",
-        "src": "/assets/photos/adventures/esme-2024-02-17-c.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
-      "adventure"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "esme-2024-02-17-d",
-    "title": "Esmé: the placemat",
-    "dateExact": "2024-02-17",
-    "season": "winter",
-    "timeOfDay": "night",
-    "locationLabel": "Lincoln Park, Chicago",
-    "lat": 41.92209,
-    "lng": -87.63883,
-    "summary": "Dinner at Esmé, 2200 N Clark.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara at the table at Esmé, a face-shaped placemat in front of her.",
-        "src": "/assets/photos/adventures/esme-2024-02-17-d.webp"
-      }
-    ],
-    "tags": [
-      "hospitality",
       "adventure"
     ],
     "relatedRecommendationSlugs": [],
@@ -1024,68 +724,6 @@
     "placeholder": false
   },
   {
-    "slug": "richardson-farm-2025-10-11-a",
-    "title": "Richardson Farm, 2025: the corn maze",
-    "dateExact": "2025-10-11",
-    "season": "autumn",
-    "timeOfDay": "afternoon",
-    "placeSlug": "richardson-farm",
-    "locationLabel": "Spring Grove, IL",
-    "lat": 42.46774,
-    "lng": -88.2151,
-    "summary": "Pumpkin season at Richardson Farm, 2025: above the corn maze.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara on a lookout above the corn maze at Richardson Farm.",
-        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-a.webp"
-      }
-    ],
-    "tags": [
-      "adventure",
-      "place"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "richardson-farm-2025-10-11-b",
-    "title": "Richardson Farm, 2025: the pumpkin house",
-    "dateExact": "2025-10-11",
-    "season": "autumn",
-    "timeOfDay": "afternoon",
-    "placeSlug": "richardson-farm",
-    "locationLabel": "Spring Grove, IL",
-    "lat": 42.46906,
-    "lng": -88.21577,
-    "summary": "Pumpkin season at Richardson Farm, 2025.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
-        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-b.webp"
-      }
-    ],
-    "tags": [
-      "adventure",
-      "place"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
     "slug": "door-county-2024-09-24",
     "title": "Door County",
     "dateExact": "2024-09-24",
@@ -1105,96 +743,6 @@
     "tags": [
       "travel",
       "place"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "eleven-madison-park-2025-08-07-a",
-    "title": "Eleven Madison Park: the doors",
-    "dateExact": "2025-08-07",
-    "season": "summer",
-    "timeOfDay": "evening",
-    "locationLabel": "New York, NY",
-    "lat": 40.74147,
-    "lng": -73.98771,
-    "summary": "Eleven Madison Park, 11 Madison Ave.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler outside the Art Deco doors of Eleven Madison Park.",
-        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-a.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "hospitality"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "eleven-madison-park-2025-08-07-b",
-    "title": "Eleven Madison Park: the kitchen",
-    "dateExact": "2025-08-07",
-    "season": "summer",
-    "timeOfDay": "night",
-    "locationLabel": "New York, NY",
-    "lat": 40.74166,
-    "lng": -73.98703,
-    "summary": "Eleven Madison Park, 11 Madison Ave: in the kitchen.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler in the Eleven Madison Park kitchen.",
-        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-b.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "hospitality"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "eleven-madison-park-2025-08-07-c",
-    "title": "Eleven Madison Park: the dining room",
-    "dateExact": "2025-08-07",
-    "season": "summer",
-    "timeOfDay": "night",
-    "locationLabel": "New York, NY",
-    "lat": 40.74174,
-    "lng": -73.98715,
-    "summary": "Eleven Madison Park, 11 Madison Ave.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler with the Eleven Madison Park team in the dining room.",
-        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-c.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "hospitality"
     ],
     "relatedRecommendationSlugs": [],
     "sourceKey": "photos",
@@ -1339,126 +887,6 @@
       {
         "alt": "A selfie inside the hollow of the Tunnel Tree.",
         "src": "/assets/photos/adventures/tunnel-tree-2025-12-29.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "place"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "noma-2025-06-24",
-    "title": "Noma",
-    "dateExact": "2025-06-24",
-    "season": "summer",
-    "timeOfDay": "evening",
-    "locationLabel": "Copenhagen, Denmark",
-    "lat": 55.68251,
-    "lng": 12.61083,
-    "summary": "Noma, Copenhagen.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler in front of a wall of dried flowers at Noma.",
-        "src": "/assets/photos/adventures/noma-2025-06-24.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "hospitality"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "geranium-2025-06-26",
-    "title": "Geranium",
-    "dateExact": "2025-06-26",
-    "season": "summer",
-    "timeOfDay": "evening",
-    "locationLabel": "Copenhagen, Denmark",
-    "lat": 55.70371,
-    "lng": 12.57203,
-    "summary": "Geranium, Copenhagen, above Fælledparken.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler at a window table at Geranium, dessert in front of them.",
-        "src": "/assets/photos/adventures/geranium-2025-06-26.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "hospitality"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "tivoli-gardens-2025-06-30-a",
-    "title": "Tivoli Gardens: the willow",
-    "dateExact": "2025-06-30",
-    "season": "summer",
-    "timeOfDay": "night",
-    "locationLabel": "Copenhagen, Denmark",
-    "lat": 55.67371,
-    "lng": 12.56988,
-    "summary": "An evening at Tivoli Gardens.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara kissing Tyler on the cheek under a willow at Tivoli Gardens.",
-        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-a.webp"
-      }
-    ],
-    "tags": [
-      "travel",
-      "place"
-    ],
-    "relatedRecommendationSlugs": [],
-    "sourceKey": "photos",
-    "sourceType": "authored",
-    "verifiedAt": "2026-09-23T00:00:00.000Z",
-    "trustClass": "TRUSTED_WEDDING",
-    "editedBy": "import:photo-exif-2026-09-23",
-    "visibility": "public",
-    "placeholder": false
-  },
-  {
-    "slug": "tivoli-gardens-2025-06-30-b",
-    "title": "Tivoli Gardens: the Nimb",
-    "dateExact": "2025-06-30",
-    "season": "summer",
-    "timeOfDay": "night",
-    "locationLabel": "Copenhagen, Denmark",
-    "lat": 55.67371,
-    "lng": 12.56663,
-    "summary": "Tivoli Gardens at night, by the Nimb.",
-    "memory": [],
-    "media": [
-      {
-        "alt": "Sara and Tyler kissing in front of the lit-up Nimb palace at Tivoli.",
-        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-b.webp"
       }
     ],
     "tags": [
@@ -1862,5 +1290,240 @@
     "editedBy": "import:photo-exif-2026-09-23",
     "visibility": "private-draft",
     "placeholder": true
+  },
+  {
+    "slug": "alinea-2026-02-13",
+    "title": "Alinea",
+    "dateExact": "2026-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.91344,
+    "lng": -87.64817,
+    "summary": "An evening at Alinea, 1723 N Halsted.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in a booth at Alinea, a dessert painted across the table.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-a.webp"
+      },
+      {
+        "alt": "A selfie at Alinea behind a glass balloon.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-b.webp"
+      },
+      {
+        "alt": "Sara and Tyler standing in the Alinea kitchen beside the chefs.",
+        "src": "/assets/photos/adventures/alinea-2026-02-13-c.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "ever-2025-02-13",
+    "title": "Ever",
+    "dateExact": "2025-02-13",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Fulton Market, Chicago",
+    "lat": 41.88658,
+    "lng": -87.66048,
+    "summary": "Ever, 1340 W Fulton, on the eve of Valentine's Day.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler beside the Ever sign on a dark brick wall.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-a.webp"
+      },
+      {
+        "alt": "Sara and Tyler at a candlelit table at Ever.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-b.webp"
+      },
+      {
+        "alt": "Sara and Tyler against a dark wall at Ever.",
+        "src": "/assets/photos/adventures/ever-2025-02-13-c.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "esme-2024-02-17",
+    "title": "Esmé",
+    "dateExact": "2024-02-17",
+    "season": "winter",
+    "timeOfDay": "evening",
+    "locationLabel": "Lincoln Park, Chicago",
+    "lat": 41.92209,
+    "lng": -87.63883,
+    "summary": "Dinner at Esmé, 2200 N Clark.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "A selfie in the Esmé dining room.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-a.webp"
+      },
+      {
+        "alt": "Sara and Tyler making faces under a painted face at Esmé.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-b.webp"
+      },
+      {
+        "alt": "Sara in the Esmé dining room under line-drawn faces.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-c.webp"
+      },
+      {
+        "alt": "Sara at the table at Esmé, a face-shaped placemat in front of her.",
+        "src": "/assets/photos/adventures/esme-2024-02-17-d.webp"
+      }
+    ],
+    "tags": [
+      "hospitality",
+      "adventure"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "eleven-madison-park-2025-08-07",
+    "title": "Eleven Madison Park",
+    "dateExact": "2025-08-07",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "New York, NY",
+    "lat": 40.74147,
+    "lng": -73.98771,
+    "summary": "Eleven Madison Park, 11 Madison Ave.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler outside the Art Deco doors of Eleven Madison Park.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-a.webp"
+      },
+      {
+        "alt": "Sara and Tyler in the Eleven Madison Park kitchen.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-b.webp"
+      },
+      {
+        "alt": "Sara and Tyler with the Eleven Madison Park team in the dining room.",
+        "src": "/assets/photos/adventures/eleven-madison-park-2025-08-07-c.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "richardson-farm-2025-10-11",
+    "title": "Richardson Farm, 2025",
+    "dateExact": "2025-10-11",
+    "season": "autumn",
+    "timeOfDay": "afternoon",
+    "placeSlug": "richardson-farm",
+    "locationLabel": "Spring Grove, IL",
+    "lat": 42.46774,
+    "lng": -88.2151,
+    "summary": "Pumpkin season at Richardson Farm, 2025.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara on a lookout above the corn maze at Richardson Farm.",
+        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-a.webp"
+      },
+      {
+        "alt": "Sara and Tyler in the Richardson Farm pumpkin house.",
+        "src": "/assets/photos/adventures/richardson-farm-2025-10-11-b.webp"
+      }
+    ],
+    "tags": [
+      "adventure",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false
+  },
+  {
+    "slug": "copenhagen-denmark-2025",
+    "title": "Copenhagen, Denmark",
+    "dateExact": "2025-06-24",
+    "season": "summer",
+    "timeOfDay": "evening",
+    "locationLabel": "Copenhagen, Denmark",
+    "lat": 55.68251,
+    "lng": 12.61083,
+    "summary": "Noma, Geranium, and Tivoli Gardens in Copenhagen.",
+    "memory": [],
+    "media": [
+      {
+        "alt": "Sara and Tyler in front of a wall of dried flowers at Noma.",
+        "src": "/assets/photos/adventures/noma-2025-06-24.webp"
+      },
+      {
+        "alt": "Sara and Tyler at a window table at Geranium, dessert in front of them.",
+        "src": "/assets/photos/adventures/geranium-2025-06-26.webp"
+      },
+      {
+        "alt": "Sara kissing Tyler on the cheek under a willow at Tivoli Gardens.",
+        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-a.webp"
+      },
+      {
+        "alt": "Sara and Tyler kissing in front of the lit-up Nimb palace at Tivoli.",
+        "src": "/assets/photos/adventures/tivoli-gardens-2025-06-30-b.webp"
+      }
+    ],
+    "tags": [
+      "travel",
+      "hospitality",
+      "place"
+    ],
+    "relatedRecommendationSlugs": [],
+    "sourceKey": "photos",
+    "sourceType": "authored",
+    "verifiedAt": "2026-09-23T00:00:00.000Z",
+    "trustClass": "TRUSTED_WEDDING",
+    "editedBy": "import:photo-exif-2026-09-23",
+    "visibility": "public",
+    "placeholder": false,
+    "dateApprox": "24 June – 30 June 2025"
   }
 ]

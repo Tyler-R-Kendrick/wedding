@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import adventureSlugRedirects from './src/content/adventure-slug-redirects.json';
 import { rightsHeaders } from './src/lib/rights';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
@@ -69,6 +70,7 @@ const nextConfig: NextConfig = {
       { source: '/things-to-do', destination: '/share-an-adventure', permanent: true },
       { source: '/wedding-day', destination: '/the-wedding', permanent: true },
       { source: '/registry', destination: '/gifts', permanent: true },
+      ...adventureSlugRedirects,
     ];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path

@@ -243,14 +243,9 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('ask us has the FAQ, a working static search, and an empty concierge slot', async ({ page }) => {
+  test('ask us sends anonymous visitors to sign in', async ({ page }) => {
     await page.goto('/ask-us');
-    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
-    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
-    await page.getByLabel('What are you looking for?').fill('valet');
-    await page.getByRole('button', { name: 'Search' }).click();
-    await expect(page).toHaveURL(/q=valet/);
-    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fask-us/);
     await axe(page);
   });
 
@@ -267,5 +262,21 @@ test.describe('explore journey', () => {
     expect(hidden.status()).toBe(404);
     const admin = await request.post('/api/capabilities/save_content_record', { data: { input: { table: 'venue_facts', data: {} } } });
     expect(admin.status()).toBe(401);
+  });
+
+  test('a combined adventure rotates photos with keyboard controls and passes axe', async ({ page }) => {
+    await page.goto('/our-adventures/alinea-2026-02-13');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Alinea');
+    const carousel = page.getByRole('region', { name: 'Photos from this adventure' });
+    await expect(carousel).toBeVisible();
+    await expect(carousel.getByText('Photo 1 of 3')).toBeVisible();
+    await carousel.getByRole('button', { name: 'Next photo' }).click();
+    await expect(carousel.getByText('Photo 2 of 3')).toBeVisible();
+    await carousel.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(carousel.getByText('Photo 3 of 3')).toBeVisible();
+    await axe(page);
+    const legacy = await page.goto('/our-adventures/alinea-2026-02-13-b');
+    expect(legacy?.url()).toMatch(/\/our-adventures\/alinea-2026-02-13$/);
   });
 });

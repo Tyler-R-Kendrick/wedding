@@ -52,7 +52,7 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     expect(isPlaceholderText(starved.tylerMemory)).toBe(true);
   });
 
-  it("every one of the couple's photos is its own adventure, located from the photo or flagged as unknown", () => {
+  it("every one of the couple's photos belongs to an adventure, located from the photo or flagged as unknown", () => {
     const manifest = JSON.parse(readFileSync(join(process.cwd(), 'docs/content/adventure-photos.json'), 'utf8')) as { photos: { file: string | null; adventure: string; consent: string }[] };
     expect(manifest.photos).toHaveLength(61);
     const bySlug = new Map(seed.adventures.map((a) => [a.slug, a]));
@@ -60,17 +60,17 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     for (const m of manifest.photos) {
       const a = bySlug.get(m.adventure)!;
       expect(a, m.adventure).toBeDefined();
-      expect(a.media, a.slug).toHaveLength(1);
-      const src = a.media[0]!.src;
+      expect(a.media.some((x) => (m.file ? x.src === `/assets/photos/adventures/${m.file}` : !x.src)), a.slug).toBe(true);
+      const src = m.file ? `/assets/photos/adventures/${m.file}` : undefined;
       const pending = m.consent.startsWith('pending');
       if (pending) {
         // Anyone else in the frame agrees first (docs/ops/asset-licensing.md section 4): until then the
         // photo is not in the repo at all, not even as a file under public/, and its adventure is a draft.
-        expect(src, a.slug).toBeUndefined();
+        expect(a.media.every((x) => !x.src), a.slug).toBe(true);
         expect(m.file, a.slug).toBeNull();
         expect(a.visibility, a.slug).toBe('private-draft');
       } else {
-        expect(src, a.slug).toBe(`/assets/photos/adventures/${m.file}`);
+        expect(a.media.some((x) => x.src === src), a.slug).toBe(true);
         expect(existsSync(join(process.cwd(), 'public', src!)), src).toBe(true);
         files.add(src!);
         // The brief's own drafts (the museum, the first farm visit) stay drafts with a photo added.
@@ -134,6 +134,15 @@ describe('content seed (facts from docs/design/brief.md only)', () => {
     const orphanWhy = { ...seed, recommendations: seed.recommendations.map((r, i) => (i === 0 ? { ...r, experienceSlug: undefined, whyWeShareThis: 'because' } : r)) };
     expect(crossReferenceProblems(orphanWhy).join('\n')).toMatch(/needs an experienceSlug/);
     expect(crossReferenceProblems(seed)).toEqual([]);
+  });
+
+  it('combines same-day and same-trip photo memories into one adventure with several photos', () => {
+    const alinea = seed.adventures.find((a) => a.slug === 'alinea-2026-02-13')!;
+    expect(alinea.media).toHaveLength(3);
+    expect(seed.adventures.some((a) => a.slug === 'alinea-2026-02-13-a')).toBe(false);
+    const denmark = seed.adventures.find((a) => a.slug === 'copenhagen-denmark-2025')!;
+    expect(denmark.media).toHaveLength(4);
+    expect(denmark.dateApprox).toMatch(/24 June/);
   });
 
   it('placeholder marker helper', () => {

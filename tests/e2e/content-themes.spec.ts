@@ -98,14 +98,6 @@ const PAGES: PageCase[] = [
     control: true,
     signature: { 'botanical-deco': '.bd-programme .bd-date', 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
   },
-  {
-    key: 'ask-us',
-    path: '/ask-us',
-    h1: 'Questions, answered',
-    primary: (p) => p.locator('main form[role="search"]').getByRole('button', { name: 'Search' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-faq .bd-faq__entry', 'gilded-hour': '.gh-faq .gh-faq__entry', conservatory: '.cv-faq .cv-faq__entry' },
-  },
 ];
 
 async function axeClean(page: Page, label: string) {

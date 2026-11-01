@@ -21,8 +21,9 @@ import { apiHeaders, contextAs } from './helpers/principal';
 let clientCounter = 0;
 async function guestPage(browser: import('@playwright/test').Browser) {
   clientCounter += 1;
-  const ctx = await contextAs(browser, 'A1');
-  await ctx.setExtraHTTPHeaders({ 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
+  const ctx = await contextAs(browser, 'A1', {
+    extraHTTPHeaders: { 'x-forwarded-for': `198.51.100.${clientCounter % 250}` },
+  });
   return { ctx, page: await ctx.newPage() };
 }
 
@@ -194,7 +195,8 @@ test.describe('concierge on Ask Us', () => {
 
     const get = await request.get('/api/ai/chat');
     expect(get.status()).toBe(405);
-    const form = await request.post('/api/ai/chat', { form: { message: 'hi' }, headers: apiHeaders('A1') });
+    const { 'content-type': _json, ...authOnly } = apiHeaders('A1');
+    const form = await request.post('/api/ai/chat', { form: { message: 'hi' }, headers: authOnly });
     expect(form.status()).toBe(403);
 
     const unsigned = await request.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: { 'content-type': 'application/json' } });

@@ -9,5 +9,7 @@ describe('legacy guest routes', () => {
     expect(bySource['/things-to-do']).toMatchObject({ destination: '/share-an-adventure', permanent: true });
     expect(bySource['/wedding-day']).toMatchObject({ destination: '/the-wedding', permanent: true });
     expect(bySource['/registry']).toMatchObject({ destination: '/gifts', permanent: true });
+    expect(bySource['/our-adventures/alinea-2026-02-13-a']).toMatchObject({ destination: '/our-adventures/alinea-2026-02-13', permanent: true });
+    expect(bySource['/our-adventures/noma-2025-06-24']).toMatchObject({ destination: '/our-adventures/copenhagen-denmark-2025', permanent: true });
   });
 });
