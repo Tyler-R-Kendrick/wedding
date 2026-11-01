@@ -8,6 +8,7 @@ import { AccountMenu } from '@/themes/shared/AccountMenu';
 
 const CLASSES = { link: 'nav-link', item: 'menu-link' };
 const MEMBER = ['/your-weekend', '/transportation', '/gifts', '/photos'];
+const GUEST_PORTALS = [{ label: 'Guest Portal', href: '/guests' }];
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -22,37 +23,45 @@ describe('the account menu', () => {
   });
 
   it('opens on a signed-in reader to their weekend, transport, gifts and photos, then Sign out', () => {
-    render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true })} variant="popover" classNames={CLASSES} />);
+    render(<AccountMenu nav={{ ...navFor('RSVP_OPEN', { signedIn: true }), portals: GUEST_PORTALS }} variant="popover" classNames={CLASSES} />);
     const trigger = screen.getByRole('button', { name: 'Your account' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(trigger);
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual([...MEMBER, '/sign-out']);
+    expect(hrefs).toEqual(['/guests', ...MEMBER, '/sign-out']);
     // Escape closes it and puts focus back on the button.
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('offers an administrator the console and view-role preview, not a household they do not have', () => {
-    render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, admin: true })} variant="inline" classNames={CLASSES} />);
+  it('offers an administrator the admin portal and preview tools, not a household they do not have', () => {
+    render(<AccountMenu nav={{ ...navFor('RSVP_OPEN', { signedIn: true, admin: true }), portals: [{ label: 'Admin Portal', href: '/admin' }] }} variant="inline" classNames={CLASSES} />);
     expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/admin', '/admin#view-as', '/admin/guests#inspect-guest', '/sign-out']);
   });
 
-  it('while an administrator previews a role: that household\'s pages, then the way back to the console', () => {
-    render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true, viewing: true })} variant="inline" classNames={CLASSES} />);
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...MEMBER, '/admin', '/sign-out']);
+  it('while an administrator previews a role: portal links, that household\'s pages, then Sign out', () => {
+    render(
+      <AccountMenu
+        nav={{ ...navFor('RSVP_OPEN', { signedIn: true, viewing: true }), portals: [{ label: 'Guest Portal', href: '/guests' }, { label: 'Admin Portal', href: '/admin' }] }}
+        variant="inline"
+        classNames={CLASSES}
+      />,
+    );
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/guests', '/admin', ...MEMBER, '/sign-out']);
   });
 
   it('asks /api/session on a prerendered page, and opens itself only on a yes', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ signedIn: true }), { status: 200 }));
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ signedIn: true, portals: [{ label: 'Guest Portal', href: '/guests' }] }), { status: 200 }),
+    );
     render(<AccountMenu nav={navFor('RSVP_OPEN')} variant="inline" classNames={CLASSES} />);
     // Before the answer — and with JavaScript off — it is the plain way in.
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('group', { name: 'Your account' })).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledWith('/api/session', expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...(navFor('RSVP_OPEN').member ?? []).map((i) => i.href), '/sign-out']);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/guests', ...(navFor('RSVP_OPEN').member ?? []).map((i) => i.href), '/sign-out']);
   });
 });
 

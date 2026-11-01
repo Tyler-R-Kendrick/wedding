@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { sendPhoneSignInCode } from '../../_lib/actions';
 import { currentPrincipal } from '../../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { errorCopy } from '../../_lib/errors';
 import { Actions, AuthShell, Button, Field, Notice } from '../../_components/kit';
 import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
@@ -18,8 +19,10 @@ export default async function PhoneSignInPage({ searchParams }: { searchParams: 
   const error = errorCopy(sp.error);
   const principal = await currentPrincipal();
   if (principal.kind === 'guest' || principal.kind === 'admin') {
-    if (isSafeReturnPath(sp.next) && sp.next.split('?')[0]!.replace(/\/+$/, '') !== '/sign-in/phone') redirect(sp.next);
-    redirect(principal.kind === 'admin' ? '/admin' : '/your-weekend');
+    if (isSafeReturnPath(sp.next) && sp.next.split('?')[0]!.replace(/\/+$/, '') !== '/sign-in/phone') {
+      redirect(principal.kind === 'admin' ? sp.next : guestSignInLandingPath(sp.next, '/guests'));
+    }
+    redirect(principal.kind === 'admin' ? '/admin' : '/guests');
   }
   return (
     <AuthShell

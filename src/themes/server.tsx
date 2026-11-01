@@ -1,8 +1,12 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import type { ReactNode } from 'react';
+import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { getCountdown, getLifecycleView, getSiteFacts, navFor, type LifecycleOptions } from '@/domain/lifecycle';
+import { accountPortalLinks } from '@/domain/lifecycle/account-portals';
+import { getDb } from '@/db/client';
 import { getFlags } from '@/lib/flags';
+import { getPrincipal } from '@/lib/principal';
 import { getTheme } from './index';
 import { isThemeId } from './registry';
 import { resolveTheme, THEME_COOKIE } from './resolve';
@@ -35,12 +39,22 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   // pages) `signedIn` stays undefined and the account menu asks in the browser.
   const principal = input.lifecycle?.principal;
   const signedIn = principal ? principal.kind === 'guest' || principal.kind === 'admin' : undefined;
-  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}), ...(principal?.kind === 'guest' && principal.viewedBy ? { viewing: true } : {}) });
+  const navBase = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}), ...(principal?.kind === 'guest' && principal.viewedBy ? { viewing: true } : {}) });
+  const portals = principal && (principal.kind === 'guest' || principal.kind === 'admin') ? await accountPortalLinks(await getDb(), principal) : undefined;
+  const nav = portals ? { ...navBase, portals } : navBase;
   return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 
 export async function renderHome(input: Omit<FrameInput, 'currentPath'>): Promise<ReactNode> {
-  const frame = await buildPageFrame({ ...input, currentPath: '/' });
+  const h = await headers();
+  const principal =
+    input.lifecycle?.principal ?? (await getPrincipal(new Request('http://wedding.local/', { headers: h })));
+  await enforceGuestPortalRoute(principal, '/', undefined, {
+    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
+    admin: principal.kind === 'admin',
+  });
+  const lifecycle: LifecycleOptions = { ...input.lifecycle, principal };
+  const frame = await buildPageFrame({ ...input, currentPath: '/', lifecycle });
   const data: HomeData = { ...frame, content: homeContent(frame.site, frame.lifecycle.state) };
   return getTheme(input.theme).recipes.home(data);
 }

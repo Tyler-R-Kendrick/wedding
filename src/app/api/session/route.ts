@@ -1,6 +1,7 @@
 import { getDb } from '@/db/client';
 import { getGuest, guestDisplayName } from '@/domain/guests/repo';
 import { getHousehold } from '@/domain/households/repo';
+import { accountPortalLinks } from '@/domain/lifecycle/account-portals';
 import { getPrincipal } from '@/lib/principal';
 import { getRequestId, jsonResponse } from '@/lib/request';
 
@@ -32,12 +33,15 @@ export async function GET(request: Request) {
       viewAs = { name: guest ? guestDisplayName(guest) : 'a guest', household: household?.name ?? '', readOnly: principal.viewedBy.readOnly };
     }
   }
+  const db = await getDb();
+  const portals = signedIn ? await accountPortalLinks(db, principal) : [];
   return jsonResponse(
     {
       signedIn,
       admin: principal.kind === 'admin' || (principal.kind === 'guest' && principal.viewedBy !== undefined),
       viewAs,
       viewRole,
+      portals,
     },
     { requestId: getRequestId(request.headers) },
   );

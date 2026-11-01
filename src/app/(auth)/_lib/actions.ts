@@ -11,6 +11,7 @@ import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, readVerified, rememberVerified, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
@@ -95,9 +96,15 @@ export async function verifyCode(formData: FormData): Promise<void> {
   // has to reconcile the two names or it greets a no-email guest by the manager's and tells her she
   // manages the RSVP.
   const defaultGuest =
-    cookie.kind === 'claim' ? '/claim/welcome' : cookie.kind === 'sign_in' && d.guestId ? '/guests' : '/claim/welcome';
+    cookie.kind === 'claim'
+      ? '/claim/welcome'
+      : (cookie.kind === 'sign_in' || cookie.kind === 'phone_sign_in') && d.guestId
+        ? '/guests'
+        : '/claim/welcome';
   const target =
-    d.isAdmin && !d.guestId ? safeReturnPath(d.next, '/admin') : safeReturnPath(d.next, d.guestId ? defaultGuest : '/claim/welcome');
+    d.isAdmin && !d.guestId
+      ? safeReturnPath(d.next, '/admin')
+      : guestSignInLandingPath(d.next, d.guestId ? defaultGuest : '/claim/welcome');
   await finishVerified(cookie.picked && target === '/claim/welcome' ? `/claim/welcome?picked=${encodeURIComponent(cookie.picked)}` : target);
 }
 

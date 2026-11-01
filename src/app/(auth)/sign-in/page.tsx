@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { sendSignInCode } from '../_lib/actions';
 import { currentPrincipal } from '../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { errorCopy } from '../_lib/errors';
 import { Actions, AuthShell, Button, Field, Notice } from '../_components/kit';
 import { OtherSignInMethods } from './_components/OtherSignInMethods';
@@ -22,27 +23,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   if (principal.kind === 'guest' || principal.kind === 'admin') {
     // A link that asked for sign-in on the way somewhere (`?next=/rsvp`) goes there: nothing to do here.
     // (`/sign-in` itself is a safe path too, and would loop.)
-    if (isSafeReturnPath(sp.next) && sp.next.split('?')[0]!.replace(/\/+$/, '') !== '/sign-in') redirect(sp.next);
-    return (
-      <AuthShell eyebrow="Welcome back" title="You’re already signed in" lede={<p>Pick up where you left off.</p>}>
-        <Actions>
-          {principal.kind === 'admin' ? (
-            <Link className="auth-link" href="/admin">
-              Go to the admin console
-            </Link>
-          ) : (
-            <Link className="auth-link" href="/guests">
-              Go to your guest portal
-            </Link>
-          )}
-          <Link className="auth-link" href="/sign-out">
-            Sign out
-          </Link>
-        </Actions>
-        {/* A couple who claimed their own invitation are signed in as a guest; the console is a separate sign-in. */}
-        {principal.kind === 'guest' ? <AdminSignInHint /> : null}
-      </AuthShell>
-    );
+    if (isSafeReturnPath(sp.next) && sp.next.split('?')[0]!.replace(/\/+$/, '') !== '/sign-in') {
+      redirect(principal.kind === 'admin' ? sp.next : guestSignInLandingPath(sp.next, '/guests'));
+    }
+    if (principal.kind === 'guest') redirect('/guests');
+    redirect('/admin');
   }
   return (
     <AuthShell eyebrow="Welcome back" title="Sign in with your email" lede={<p>Enter the email Sara and Tyler have for you and we’ll send a six-digit code. No password needed.</p>}>
