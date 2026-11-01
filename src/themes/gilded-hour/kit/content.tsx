@@ -7,6 +7,8 @@ import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
 import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
 import type { ContentKit, StopItem } from '@/themes/content-types';
 import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
+import { legacyAnchorsForSection } from '@/themes/shared/story-anchors';
+import { StorySectionMedia } from '@/themes/shared/StorySectionMedia';
 
 /*
  * Gilded Hour content primitives. Everything sits on the one centred axis: title plaques, a gold
@@ -66,6 +68,9 @@ function StoryTimeline({ sections }: Parameters<ContentKit['StoryTimeline']>[0])
     <ol className="gh-spine" aria-label="Chapters">
       {sections.map((s, i) => (
         <li key={s.id} id={s.slug} className="gh-spine__act">
+          {legacyAnchorsForSection(s.slug).map((legacy) => (
+            <span key={legacy} id={legacy} className="sr-only" aria-hidden="true" />
+          ))}
           <span className="gh-plaque gh-plaque--act gh-spine__plaque" aria-hidden="true">
             {pad(i + 1)}
           </span>
@@ -74,6 +79,7 @@ function StoryTimeline({ sections }: Parameters<ContentKit['StoryTimeline']>[0])
           <h2 className="gh-h gh-h--2 gh-spine__title">{s.title}</h2>
           <StatusFlags placeholder={s.placeholder} />
           <ProseBlock blocks={s.paragraphs} lead={i === 0} />
+          <StorySectionMedia section={s} className="gh-spine__carousel" />
           <Provenance provenance={s.provenance} />
         </li>
       ))}

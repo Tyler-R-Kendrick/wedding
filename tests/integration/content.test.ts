@@ -42,7 +42,7 @@ describe('story + adventures visibility', () => {
     expect(r.value.data.sections.map((s) => s.chapter)).toEqual(['met', 'connection', 'relationship', 'love', 'future', 'engagement', 'marriage']);
     const met = r.value.data.sections[0]!;
     // guestText sets typographer's quotes on the way out; the record keeps what was typed.
-    expect(met.paragraphs[0]?.text).toContain('We met at a friend’s wedding celebration');
+    expect(met.paragraphs[0]?.text).toContain('Allison and Jamie');
     expect(met.paragraphs.every((p) => !p.placeholder)).toBe(true);
     for (const s of r.value.sources) {
       expect(s.url).toMatch(/^\/our-story#/);
@@ -50,30 +50,31 @@ describe('story + adventures visibility', () => {
     }
   });
 
-  it('get_story carries the timeline in line order, undated until the couple supply dates', async () => {
+  it('get_story carries merged chapters; timeline stations are folded into story sections', async () => {
     const r = await invoke(getStory, await ctxFor(anonymous, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const { timeline } = r.value.data;
-    expect(timeline.map((m) => m.slug)).toEqual([
-      'allison-and-jamies-wedding', 'museum-of-ice-cream', 'richardson-farm', 'michael-jordans-steakhouse', 'food-tastings', 'gardening-together', 'madison-waterfront', 'starved-rock',
+    const { timeline, sections } = r.value.data;
+    expect(timeline).toEqual([]);
+    const met = sections.find((s) => s.slug === 'how-we-met')!;
+    expect(met.media.map((m) => m.src)).toContain('/media/timeline/allison-and-jamies-wedding-911.jpg');
+    expect(met.paragraphs.some((p) => p.text.includes('Allison and Jamie'))).toBe(true);
+    const connection = sections.find((s) => s.slug === 'the-connection')!;
+    expect(connection.media.length).toBe(5);
+    const love = sections.find((s) => s.slug === 'love')!;
+    expect(love.media.map((m) => m.src)).toEqual([
+      '/media/timeline/madison-waterfront-911.jpg',
+      '/media/timeline/starved-rock-1024.jpg',
     ]);
-    // Nothing is dated until the Paired export lands: a guessed year is worse than none.
-    expect(timeline.every((m) => m.occurredOn === undefined)).toBe(true);
-    const rock = timeline.find((m) => m.slug === 'starved-rock')!;
-    expect(rock).toMatchObject({ chapter: 'love', adventureRoute: '/our-adventures/starved-rock', placeholder: false, note: { placeholder: false } });
-    // A station links only to an adventure the reader can open: the unpublished drafts are named, not linked.
-    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.adventureRoute).toBeUndefined();
-    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.note.placeholder).toBe(true);
-    expect(r.value.sources.some((s) => s.url === '/our-story#starved-rock')).toBe(true);
-    // Every stand-in photograph resolves to a file the ride's manifest knows.
-    for (const m of timeline) for (const media of m.media) expect(media.src).toMatch(/^\/media\/timeline\/[a-z0-9-]+-\d+\.jpg$/);
+    expect(love.paragraphs.some((p) => p.text.includes('I love you'))).toBe(true);
+    expect(r.value.sources.some((s) => s.url === '/our-story#love')).toBe(true);
+    for (const s of sections) for (const media of s.media) if (media.src) expect(media.src).toMatch(/^\/media\/timeline\/[a-z0-9-]+-\d+\.jpg$/);
   });
 
-  it('projects timeline stations into the concierge corpus without their TODOs', async () => {
+  it('projects merged love chapter into the concierge corpus without TODOs', async () => {
     const rows = await (await getDb()).select().from(knowledgeRecords);
-    const station = rows.find((k) => k.id.startsWith('timeline_moments:') && k.route === '/our-story#starved-rock');
-    expect(station?.content).toContain('I love you');
+    const chapter = rows.find((k) => k.id.startsWith('story_sections:') && k.route === '/our-story#love');
+    expect(chapter?.content).toContain('I love you');
     expect(rows.some((k) => k.id.startsWith('timeline_moments:') && k.content.includes('TODO'))).toBe(false);
   });
 

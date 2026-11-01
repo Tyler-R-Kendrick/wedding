@@ -218,6 +218,15 @@ html:has(.bd-ride) {
   transform: translate3d(calc(var(--d) * 160px), 0, 0);
 }
 
+.bd-stopcard__carousel {
+  grid-area: media;
+  min-height: 0;
+}
+
+.bd-stopcard__carousel .bd-stopcard__media {
+  margin: 0;
+}
+
 .bd-stopcard__media {
   position: relative;
   display: flex;
