@@ -70,6 +70,21 @@ export const OTP_LIMITS = {
   lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
 
+/** Buckets for phone SMS send / verify (same shape as email OTP). */
+export function phoneBuckets(ctx: CapabilityContext, kind: 'send' | 'verify', phoneHash: string): { key: string; policy: RateLimitPolicy }[] {
+  const ip = ipHashOf(ctx);
+  return kind === 'send'
+    ? [
+        { key: `phone:send:${phoneHash}:${ip}`, policy: OTP_LIMITS.sendPerEmailIp },
+        { key: `phone:send:phone:${phoneHash}`, policy: OTP_LIMITS.sendPerEmail },
+        { key: `phone:send:ip:${ip}`, policy: OTP_LIMITS.sendPerIp },
+      ]
+    : [
+        { key: `phone:verify:${phoneHash}:${ip}`, policy: OTP_LIMITS.verifyPerEmailIp },
+        { key: `phone:verify:ip:${ip}`, policy: OTP_LIMITS.verifyPerIp },
+      ];
+}
+
 /** Buckets for a send or verify attempt on `emailHash` from this client. */
 export function otpBuckets(ctx: CapabilityContext, kind: 'send' | 'verify', emailHash: string): { key: string; policy: RateLimitPolicy }[] {
   const ip = ipHashOf(ctx);

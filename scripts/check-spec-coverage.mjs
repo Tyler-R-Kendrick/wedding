@@ -54,6 +54,7 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/claim.spec.ts',
   // Temporary sign-in passes: admin issue via capabilities, guest auto-submit on /s/[slug].
   'tests/e2e/guest-sign-in-pass.spec.ts',
+  'tests/e2e/phone-sign-in.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',
   // Level 08: the signed-in trip page needs the test-principal injector.

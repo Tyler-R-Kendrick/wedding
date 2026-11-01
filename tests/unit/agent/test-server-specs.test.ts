@@ -31,7 +31,7 @@ describe('npm run test:e2e:server mirrors the CI test-server step', () => {
     const ci = Object.keys(step!.env).filter((k) => k !== 'CI').sort();
     expect(Object.keys(testServerEnv('3000')).sort()).toEqual(ci);
     // The values that change behaviour, rather than name a placeholder secret, match exactly.
-    for (const key of ['NODE_ENV', 'SEED_TEST_FIXTURES', 'FLAG_RSVP_MEALS', 'MEDIA_PART_SIZE_MB', 'MEDIA_MULTIPART_THRESHOLD_MB', 'PGLITE_MEMORY', 'DB_AUTO_MIGRATE', 'DB_AUTO_SEED', 'TRUSTED_PROXY_HOPS', 'BASE_URL', 'NEXT_PUBLIC_SITE_URL', 'BETTER_AUTH_URL']) {
+    for (const key of ['NODE_ENV', 'SEED_TEST_FIXTURES', 'FLAG_RSVP_MEALS', 'FLAG_PHONE_SIGN_IN', 'MEDIA_PART_SIZE_MB', 'MEDIA_MULTIPART_THRESHOLD_MB', 'PGLITE_MEMORY', 'DB_AUTO_MIGRATE', 'DB_AUTO_SEED', 'TRUSTED_PROXY_HOPS', 'BASE_URL', 'NEXT_PUBLIC_SITE_URL', 'BETTER_AUTH_URL']) {
       expect(testServerEnv('3000')[key as keyof ReturnType<typeof testServerEnv>], key).toBe(step!.env[key]);
     }
   });

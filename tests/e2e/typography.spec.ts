@@ -40,7 +40,7 @@ const DEFAULTED = /^("?Times( New Roman)?"?|serif|sans-serif|monospace|system-ui
 const DECLARED = /^"?(Cinzel|Josefin Sans|Big Shoulders Display|Gloock|Spectral|Cardo|Newsreader|Libre Caslon Display|Bodoni Moda|Ms Madi|ui-monospace)"?$/i;
 
 /** Auth journeys. Every one renders for an anonymous visitor; none of them needs a principal. */
-const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/claim/verify', '/claim/passkey', '/claim/welcome', '/step-up'] as const;
+const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/phone', '/claim/verify', '/claim/passkey', '/claim/welcome', '/step-up'] as const;
 
 /**
  * The routes a guest actually reads, and the ones behind the invitation.

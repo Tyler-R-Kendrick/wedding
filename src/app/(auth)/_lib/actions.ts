@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import type { RegisterPasskeyResult } from '@/capabilities/register_passkey';
 import type { RequestOtpResult } from '@/capabilities/request_otp';
+import type { RequestPhoneOtpResult } from '@/capabilities/request_phone_otp';
 import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
@@ -52,6 +53,16 @@ export async function startClaim(formData: FormData): Promise<void> {
   redirect('/claim/verify');
 }
 
+export async function sendPhoneSignInCode(formData: FormData): Promise<void> {
+  const phone = str(formData, 'phone');
+  const next = safeReturnPath(str(formData, 'next'), '');
+  const back = withNext('/sign-in/phone', next);
+  const r = await invokeFromRequest<RequestPhoneOtpResult>('request_phone_otp', { phone, next: next || undefined });
+  if (!r.ok) redirect(withError(back, errorCode(r.error)));
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, back, kind: 'phone_sign_in', lockedUntil: r.value.data.lockedUntil ?? undefined });
+  redirect('/claim/verify?channel=sms');
+}
+
 export async function sendSignInCode(formData: FormData): Promise<void> {
   const email = str(formData, 'email');
   const admin = str(formData, 'admin') === '1';
@@ -67,16 +78,17 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
 export async function verifyCode(formData: FormData): Promise<void> {
   const code = str(formData, 'code').replace(/\s+/g, '');
   const cookie = await readChallengeCookie();
-  if (!cookie || !['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind)) {
+  if (!cookie || !['claim', 'sign_in', 'admin_sign_in', 'phone_sign_in'].includes(cookie.kind)) {
     await followVerified();
     redirect(withError('/claim/verify', 'expired'));
   }
-  const r = await invokeFromRequest<SignInOutcome>('verify_otp', { challenge: cookie.c, code });
+  const capability = cookie.kind === 'phone_sign_in' ? 'verify_phone_otp' : 'verify_otp';
+  const r = await invokeFromRequest<SignInOutcome>(capability, { challenge: cookie.c, code });
   if (!r.ok) redirect(withError('/claim/verify', errorCode(r.error)));
   const d = r.value.data;
   if (!d.guestId && !d.isAdmin) {
     await clearChallengeCookie();
-    redirect(withError('/sign-in', 'unlinked'));
+    redirect(withError(cookie.kind === 'phone_sign_in' ? '/sign-in/phone' : '/sign-in', 'unlinked'));
   }
   // Who they said they were, when the session is about to be somebody else. Read before the cookie
   // is cleared, and carried only when the claim went through a household manager — the welcome page

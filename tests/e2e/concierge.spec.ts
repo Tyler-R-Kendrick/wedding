@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { apiHeaders, contextAs, BASE_URL, principalHeaders } from './helpers/principal';
+import { apiHeaders, contextAs, BASE_URL, principalHeaders, type PrincipalName } from './helpers/principal';
 
 /**
  * The concierge on a real server. What matters here is not that the model is clever: it is that the
@@ -19,7 +19,7 @@ import { apiHeaders, contextAs, BASE_URL, principalHeaders } from './helpers/pri
  * taken as the client. The limiter is asserted deliberately in its own test at the end of the file.
  */
 let clientCounter = 0;
-async function guestPage(browser: import('@playwright/test').Browser) {
+async function guestPage(browser: import('@playwright/test').Browser, guest: PrincipalName = 'A1') {
   clientCounter += 1;
   const device = test.info().project.use;
   const ctx = await browser.newContext({
@@ -31,7 +31,7 @@ async function guestPage(browser: import('@playwright/test').Browser) {
     hasTouch: device.hasTouch,
   });
   const page = await ctx.newPage();
-  await page.setExtraHTTPHeaders({ ...principalHeaders('A1'), 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
+  await page.setExtraHTTPHeaders({ ...principalHeaders(guest), 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
   return { ctx, page };
 }
 
@@ -233,9 +233,10 @@ test.describe('concierge on Ask Us', () => {
  * open it, ask, and be given a cited answer with no marker leaking through.
  */
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
+  const themeGuest: PrincipalName = theme === 'gilded-hour' ? 'B1' : theme === 'conservatory' ? 'C1' : 'A1';
   test.describe(`concierge in ${theme}`, () => {
     test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
-      const { ctx, page } = await guestPage(browser);
+      const { ctx, page } = await guestPage(browser, themeGuest);
       await page.goto(`/guests/ask-us?theme=${theme}`);
       await expect(page.locator(`.site[data-theme="${theme}"]`).first()).toBeAttached();
 
@@ -265,7 +266,7 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) 
     });
 
     test('the panel fits its column and every control clears 44px', async ({ browser }) => {
-      const { ctx, page } = await guestPage(browser);
+      const { ctx, page } = await guestPage(browser, themeGuest);
       await page.goto(`/guests/ask-us?theme=${theme}`);
       await page.getByTestId('concierge-open').click();
       await expect(page.getByTestId('concierge-input')).toBeVisible();

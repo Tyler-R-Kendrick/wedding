@@ -1,12 +1,13 @@
 import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
-import { emailOTP } from 'better-auth/plugins';
+import { emailOTP, phoneNumber } from 'better-auth/plugins';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { passkey } from '@better-auth/passkey';
 import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { authAccounts, authPasskeys, authSessions, authUsers, authVerifications } from '@/db/schema';
 import { OTP_POLICY } from '@/domain/identity/otp';
+import { phoneAuthEmail, normalizePhoneE164 } from '@/domain/identity/phone';
 import { env, publicEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { OtpPurpose } from '@/providers/auth-email/types';
@@ -53,6 +54,11 @@ export const DISABLED_AUTH_PATHS = [
   '/forget-password',
   '/send-verification-email',
   '/verify-email',
+  '/phone-number/send-otp',
+  '/phone-number/verify',
+  '/sign-in/phone-number',
+  '/phone-number/request-password-reset',
+  '/phone-number/reset-password',
   '/list-sessions',
   '/revoke-session',
   '/revoke-sessions',
@@ -183,6 +189,24 @@ export function createAuth(db: Db) {
           const result = await provider.sendOtp({ to: email, code: otp, purpose, expiresInMinutes: OTP_POLICY.expiresInSeconds / 60 });
           if (!result.ok) logger.warn({ provider: result.error.provider, class: result.error.class }, 'otp email could not be sent');
           else logger.info({ provider: provider.name, messageId: result.value.messageId, purpose }, 'otp email accepted');
+        },
+      }),
+      phoneNumber({
+        otpLength: OTP_POLICY.digits,
+        expiresIn: OTP_POLICY.expiresInSeconds,
+        allowedAttempts: OTP_POLICY.attemptsPerCode,
+        verifyOTP: async ({ phoneNumber: to, code }) => {
+          if (env.isTest) return true;
+          const normalized = normalizePhoneE164(to) ?? to;
+          const provider = getProvider('twilio-verify');
+          return (await provider.checkVerification({ to: normalized, code })).ok;
+        },
+        sendOTP: async () => {
+          /* SMS is started by the request_phone_otp capability via Twilio Verify. */
+        },
+        signUpOnVerification: {
+          getTempEmail: (to) => phoneAuthEmail(to),
+          getTempName: (to) => to,
         },
       }),
       passkey({

@@ -38,6 +38,8 @@ export const FEATURE_FLAGS = {
    * it is also held shut by the data until a menu exists for an event with a meal.
    */
   RSVP_MEALS: false,
+  /** SMS sign-in via Twilio Verify (requires TWILIO_* env vars; off when unconfigured). */
+  PHONE_SIGN_IN: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

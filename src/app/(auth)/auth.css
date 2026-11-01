@@ -283,7 +283,7 @@
 }
 
 .auth-other__heading {
-  font-size: var(--type-small-size, 0.9375rem);
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
   font-weight: 600;
   margin-block-end: var(--spacing-sm, 8px);
 }

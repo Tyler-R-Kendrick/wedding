@@ -134,6 +134,13 @@
       "when": 1790700000000,
       "tag": "0018_social_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793509587028,
+      "tag": "0019_nervous_zuras",
+      "breakpoints": true
     }
   ]
 }
