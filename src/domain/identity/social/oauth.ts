@@ -6,6 +6,10 @@ export interface OAuthProfile {
   givenName?: string | null;
   familyName?: string | null;
   name?: string | null;
+  /** Provider email when returned; used for administrator matching only. */
+  email?: string | null;
+  /** Google `email_verified`; Facebook omits unconfirmed addresses — treat missing email as unverified. */
+  emailVerified?: boolean;
 }
 
 export function buildAuthorizationUrl(provider: SocialProvider, input: { state: string; codeChallenge: string; next: string | null }): string | null {
@@ -50,18 +54,40 @@ export async function fetchProviderProfile(provider: SocialProvider, accessToken
   if (provider === 'google') {
     const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { authorization: `Bearer ${accessToken}` } });
     if (!res.ok) return null;
-    const json = (await res.json()) as { sub?: string; given_name?: string; family_name?: string; name?: string };
+    const json = (await res.json()) as {
+      sub?: string;
+      given_name?: string;
+      family_name?: string;
+      name?: string;
+      email?: string;
+      email_verified?: boolean;
+    };
     if (!json.sub) return null;
-    return { providerAccountId: json.sub, givenName: json.given_name ?? null, familyName: json.family_name ?? null, name: json.name ?? null };
+    return {
+      providerAccountId: json.sub,
+      givenName: json.given_name ?? null,
+      familyName: json.family_name ?? null,
+      name: json.name ?? null,
+      email: json.email ?? null,
+      emailVerified: json.email_verified === true,
+    };
   }
   if (provider === 'facebook') {
     const url = new URL('https://graph.facebook.com/v21.0/me');
-    url.searchParams.set('fields', 'id,name,first_name,last_name');
+    url.searchParams.set('fields', 'id,name,first_name,last_name,email');
     const res = await fetch(url, { headers: { authorization: `Bearer ${accessToken}` } });
     if (!res.ok) return null;
-    const json = (await res.json()) as { id?: string; first_name?: string; last_name?: string; name?: string };
+    const json = (await res.json()) as { id?: string; first_name?: string; last_name?: string; name?: string; email?: string };
     if (!json.id) return null;
-    return { providerAccountId: json.id, givenName: json.first_name ?? null, familyName: json.last_name ?? null, name: json.name ?? null };
+    const email = json.email?.trim() || null;
+    return {
+      providerAccountId: json.id,
+      givenName: json.first_name ?? null,
+      familyName: json.last_name ?? null,
+      name: json.name ?? null,
+      email,
+      emailVerified: email != null,
+    };
   }
   return null;
 }
