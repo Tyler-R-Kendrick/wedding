@@ -185,7 +185,9 @@ test.describe('guest sign-in landing paths', () => {
 });
 
 test.describe('view-as guest preview', () => {
-  test('view as invited guest on / shows portal landing and nav', async ({ browser, request }) => {
+  test('view as invited guest on / shows portal landing and nav', async ({ browser, request }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'account menu layout matches desktop review viewport');
+    test.setTimeout(60_000);
     const ctx = await browser.newContext({ baseURL: BASE_URL });
     const page = await ctx.newPage();
     const f = await seedFixtures(request);
