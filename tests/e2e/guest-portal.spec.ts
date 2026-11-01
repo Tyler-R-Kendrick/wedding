@@ -42,6 +42,18 @@ test.describe('guest portal navigation', () => {
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
   });
 
+  test('signed-out masthead omits Travel and Things to Do', async ({ page }) => {
+    await page.goto('/');
+    const nav = page.getByRole('navigation', { name: 'Site' });
+    await expect(nav.getByRole('link', { name: /^Travel$/i })).toHaveCount(0);
+    await expect(nav.getByRole('link', { name: /Things to Do/i })).toHaveCount(0);
+  });
+
+  test('signed-out /travel redirects to sign-in with guest travel next', async ({ page }) => {
+    await page.goto('/travel');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
+  });
+
   test('guest ask-us FAQ, static search, and concierge slot at /guests/ask-us', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();

@@ -33,7 +33,7 @@ describe('migrate-on-deploy', () => {
   it('migrates, then syncs the repo\'s content, and both scripts exist', () => {
     // Mutation: dropping the sync (content merged to main never reaches the live site), or running
     // it before the chain (the sync writes columns the chain creates).
-    expect(DEPLOY_STEPS.map((s) => s.script)).toEqual(['db:migrate', 'db:sync-content']);
+    expect(DEPLOY_STEPS.map((s) => s.script)).toEqual(['db:migrate', 'db:verify-schema', 'db:sync-content']);
     const scripts = JSON.parse(readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8')).scripts as Record<string, string>;
     for (const s of DEPLOY_STEPS) expect(scripts[s.script], s.script).toBeTruthy();
   });

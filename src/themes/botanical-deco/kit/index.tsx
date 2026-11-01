@@ -263,6 +263,15 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
           </a>
         </p>
         <p className="bd-footer__credits">
+          <a className="bd-link bd-link--standalone" href="/privacy">
+            Privacy
+          </a>
+          {' · '}
+          <a className="bd-link bd-link--standalone" href="/terms">
+            Terms
+          </a>
+        </p>
+        <p className="bd-footer__credits">
           <AccountMenu nav={nav} variant="link" classNames={{ link: 'bd-link bd-link--standalone', item: 'bd-link' }} />
         </p>
         {rightsNote ? <p className="bd-footer__rights">{rightsNote}</p> : null}

@@ -220,6 +220,19 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
         <p className="gh-footer__signin">
           <AccountMenu nav={nav} variant="link" classNames={{ link: 'gh-link gh-link--standalone', item: 'gh-link' }} />
         </p>
+        <p className="gh-footer__signin">
+          <a className="gh-link gh-link--standalone" href="/credits">
+            Photo credits
+          </a>
+          {' · '}
+          <a className="gh-link gh-link--standalone" href="/privacy">
+            Privacy
+          </a>
+          {' · '}
+          <a className="gh-link gh-link--standalone" href="/terms">
+            Terms
+          </a>
+        </p>
         <p className="gh-footer__rights">{rightsNote}</p>
         <ul className="gh-footer__print">
           {printUrls.map((p) => (
