@@ -48,7 +48,7 @@ export const REFUSAL = {
     ({
       room: 'Which room hosts the ceremony, cocktail hour, and reception is not decided yet. The Wedding page will say as soon as Sara and Tyler confirm it with the planner.',
       time: 'The start times are not decided yet. The date is set, and The Wedding page will list the times once the planner confirms them.',
-  dress: 'The dress code is cocktail attire. See The Wedding page and Ask Us for an example outfit.',
+      dress: 'The dress code is cocktail attire and up—black tie is welcome. See The Wedding page and Ask Us for examples.',
       menu: 'The menu is not decided yet. Dietary needs will be collected with your RSVP.',
       music: 'The music is not decided yet. The Wedding page will say more once it is booked.',
     })[fact],

@@ -74,7 +74,8 @@ describe('typed placeholders never render as facts', () => {
     // Per event (time + room + placeholder what-happens) + rooms note; dress code is decided.
     const perEvent = events.reduce((n, e) => n + 2 + e.whatHappens.filter((w) => w.placeholder).length, 0);
     assertPlaceholdersMarked(container, ['ceremony time', 'which room', 'which room hosts what'], perEvent + 1);
-    expect(container.textContent).toContain('Cocktail attire');
+    expect(container.textContent).toMatch(/cocktail attire/i);
+    expect(container.textContent).toContain('Black tie is welcome');
     expect(container.textContent).toContain('Saturday, July 17, 2027');
     expect(container.querySelector('a[href^="https://www.google.com/maps/dir/"]')?.getAttribute('rel')).toContain('noopener');
     // Facts stay plain: the contracted coverage is not a placeholder.

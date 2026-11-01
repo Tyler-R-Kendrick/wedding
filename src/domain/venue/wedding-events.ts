@@ -1,20 +1,21 @@
 import { WEDDING_DATE_ISO, WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { textBlock } from '@/domain/content/text';
 import type { ProvenanceViewData, WeddingEventView } from '@/domain/content/views';
+import { dressCodeShortBlock } from '@/domain/venue/dress-code';
 import { ROUTES } from '@/domain/routes';
 
 /**
- * The Wedding page skeleton. Facts: the date (brief) and what the vendors are contracted to
- * capture (video contract: full ceremony, first dances, toasts; photo contract: through six
- * songs of open dancing). Times, rooms, and dress code are typed placeholders (backlog P-01,
- * P-02, C-01) and render only inside marked placeholder blocks.
+ * The Wedding page skeleton. Facts: the date (brief), dress code (Tyler 2026-10-31), and what
+ * the vendors are contracted to capture (video contract: full ceremony, first dances, toasts;
+ * photo contract: through six songs of open dancing). Times and rooms are typed placeholders
+ * (backlog P-01, P-02) and render only inside marked placeholder blocks.
  */
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: WEDDING_TIMEZONE });
 
 export function weddingEventSkeleton(provenance: ProvenanceViewData, dateIso: string = WEDDING_DATE_ISO): WeddingEventView[] {
   const weekdayLabel = WEEKDAY.format(new Date(`${dateIso}T12:00:00`));
   const room = textBlock('TODO(Tyler & Sara): which room (White City Ballroom, Madison Ballroom, Stagg Court, or The Tank) is confirmed with the planner (backlog P-01).');
-  const dressCode = textBlock('Cocktail attire — for example, a suit or blazer with dress pants, or a cocktail dress.');
+  const dressCode = dressCodeShortBlock();
   const time = (what: string) => textBlock(`TODO(Tyler & Sara): ${what} time, to be confirmed with the planner (backlog P-02).`);
   return [
     {

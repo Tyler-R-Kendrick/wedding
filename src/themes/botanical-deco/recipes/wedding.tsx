@@ -1,4 +1,5 @@
 import { Text as Block } from "@/components/provenance";
+import { DressCodeContent } from "@/components/wedding/DressCodeContent";
 import { formatDateWithWeekday } from "@/domain/content/format";
 import { ROUTES } from "@/domain/routes";
 import type { ContentRecipe, WeddingProps } from "@/themes/content-types";
@@ -47,7 +48,7 @@ export const BotanicalWeddingPage: ContentRecipe<WeddingProps> = ({
         title={CONTENT_COPY.wedding.dress}
       />
       <Prose>
-        <Block block={data.dressCode} />
+        <DressCodeContent />
       </Prose>
     </Section>
 
