@@ -217,7 +217,7 @@ test.describe('concierge on Ask Us', () => {
     expect(get.status()).toBe(405);
     const { 'content-type': _json, ...authOnly } = apiHeaders('A1');
     const form = await request.post('/api/ai/chat', { form: { message: 'hi' }, headers: authOnly });
-    expect(form.status()).toBe(403);
+    expect(form.status(), 'form-encoded POST must not be accepted as the chat API').toBe(403);
 
     const unsigned = await request.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: { 'content-type': 'application/json' } });
     expect(unsigned.status()).toBe(401);
