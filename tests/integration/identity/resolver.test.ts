@@ -106,7 +106,7 @@ describe('principal resolver', () => {
     // The photos and the registry moved behind the signed-in account menu, and their six
     // capabilities with them (`list_gallery`, `get_media_item`, `search_media`, `list_gift_links`,
     // `open_gift_link`, `open_gift_fund` are `auth: 'guest'`): none of them is an anonymous name.
-    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['ask_concierge', 'find_adventures', 'get_faq', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'search_wedding_information', 'search_wedding_information_static', 'show_adventure', 'show_venue_room', 'verify_otp']);
+    expect(names({ principal: { kind: 'anonymous' } })).toEqual(['find_adventures', 'get_my_transportation_options', 'get_reservation_options', 'get_story', 'get_venue_facts', 'list_adventures', 'list_hotel_recommendations', 'list_itineraries', 'lookup_invitation', 'open_booking_link', 'open_reservation_link', 'request_otp', 'search_travel_options', 'show_adventure', 'show_venue_room', 'verify_otp']);
     const amara = await signIn(f.emails.amara);
     // Level 08 (travel) adds 7 guest capabilities, all `auth: 'guest'` behind `view_travel_tools`,
     // and every mutating one carries `confirmation: 'inline'`. `update_trip_item` is the one absent

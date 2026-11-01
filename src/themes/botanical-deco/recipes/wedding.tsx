@@ -1,6 +1,7 @@
 import { Text as Block } from "@/components/provenance";
 import { DressCodeContent } from "@/components/wedding/DressCodeContent";
 import { formatDateWithWeekday } from "@/domain/content/format";
+import { throughSignIn } from "@/domain/lifecycle/account";
 import { ROUTES } from "@/domain/routes";
 import type { ContentRecipe, WeddingProps } from "@/themes/content-types";
 import { CONTENT_COPY } from "@/themes/shared/content";
@@ -67,7 +68,7 @@ export const BotanicalWeddingPage: ContentRecipe<WeddingProps> = ({
       <Prose>
         <p>We’ll share more about accessibility requests and dietary needs as the day approaches.</p>
         <p><Link standalone href="/travel">Travel and accommodations →</Link></p>
-        <p><Link standalone href="/ask-us">Questions about invitations, children, or plus-ones? →</Link></p>
+        <p><Link standalone href={throughSignIn('/ask-us')}>Questions about invitations, children, or plus-ones? →</Link></p>
         <p><Link standalone href="/sign-in?next=%2Fyour-weekend">Sign in for your events and personal agenda →</Link></p>
       </Prose>
     </Section>

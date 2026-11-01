@@ -17,7 +17,7 @@ const ROUTES = {
   wedding: '/the-wedding',
   caa: '/our-venue',
   travel: '/travel',
-  ask: '/ask-us',
+  ask: throughSignIn('/ask-us'),
   // The household's pages live behind the signed-in account menu, so Home reaches them only
   // through the sign-in door: signed out, sign in and go on; signed in, go straight on.
   weekend: throughSignIn('/your-weekend'),

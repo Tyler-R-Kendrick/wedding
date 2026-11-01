@@ -243,16 +243,16 @@ describe('static search', () => {
   // indistinguishable tools. So the calls below moved to `ui`, the surface the static one still
   // has, and the AI-surface guarantee is asserted separately against the tool the model now calls.
   it('finds operational records with routes and never returns drafts or placeholder text', async () => {
-    const r = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'valet parking' });
+    const r = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'valet parking' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.results.some((x) => x.route === '/our-venue#getting-here')).toBe(true);
     expect(r.value.sources.some((s) => s.url?.match(/^https:\/\/www\.chicagoathletichotel\.com\//))).toBe(true);
     const drafts = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'ice cream museum' });
     expect(drafts.ok && drafts.value.data.results.filter((x) => x.kind === 'adventure')).toEqual([]);
-    const all = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'wedding', limit: 20 });
+    const all = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'wedding', limit: 20 });
     expect(all.ok && all.value.data.results.every((x) => !x.snippet.includes('TODO(Tyler & Sara)'))).toBe(true);
-    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'zebra crossing' });
+    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'zebra crossing' });
     expect(nothing.ok && nothing.value.data.results).toEqual([]);
     // Draft rows are projected (for admin search) but never returned to guests or the AI, whoever asks.
     const db = await getDb();
@@ -270,7 +270,7 @@ describe('static search', () => {
     // tool returns, so every visibility rule has to hold on it too — this is where a level-12
     // regression would leak a draft or a placeholder straight into a model's context.
     const db = await getDb();
-    const hit = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
+    const hit = await invoke(searchWeddingInformation, await ctxFor(guest, 'ai'), { query: 'valet parking' });
     expect(hit.ok).toBe(true);
     if (!hit.ok) return;
     expect(hit.value.data.mode).toBe('static');
@@ -278,7 +278,7 @@ describe('static search', () => {
     expect(hit.value.data.results[0]!.content.length).toBeGreaterThan(0);
     expect(hit.value.sources.some((s) => s.url?.match(/^https:\/\/www\.chicagoathletichotel\.com\//))).toBe(true);
 
-    const wide = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'wedding', limit: 20 });
+    const wide = await invoke(searchWeddingInformation, await ctxFor(guest, 'ai'), { query: 'wedding', limit: 20 });
     expect(wide.ok).toBe(true);
     if (!wide.ok) return;
     // Not the snippet this time, the whole record text the model is handed.
@@ -287,10 +287,12 @@ describe('static search', () => {
 
     const drafted = await db.select().from(knowledgeRecords).where(eq(knowledgeRecords.visibility, 'private-draft'));
     expect(drafted.length).toBeGreaterThan(0);
-    for (const principal of [anonymous, guest, admin()]) {
+    for (const principal of [guest, admin()]) {
       const r = await invoke(searchWeddingInformation, await ctxFor(principal, 'ai'), { query: drafted[0]!.title, limit: 20 });
       expect(r.ok && r.value.data.results.map((x) => x.id)).not.toContain(drafted[0]!.id);
     }
+    const anon = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: drafted[0]!.title, limit: 20 });
+    expect(!anon.ok && anon.error.code).toBe('unauthenticated');
 
     // The static tool is off the AI surface, so the router cannot reach it at all any more.
     const gone = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });

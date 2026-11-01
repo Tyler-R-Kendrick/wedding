@@ -19,7 +19,7 @@ export const getFaq = defineCapability<z.infer<typeof input>, FaqPageData>({
     'Returns the frequently asked questions and their answers (when, where, dress code, kids, plus-ones, parking, weather, photos, accessibility, RSVP, travel, gifts, contact). ' +
     'Answers marked placeholder are not yet decided by the couple: say so and point at the page rather than guessing. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },
