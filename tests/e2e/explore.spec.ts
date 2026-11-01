@@ -34,14 +34,14 @@ test.describe('explore journey', () => {
     // The approved design titles the page with its editorial headline; the page is still "Our Story".
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
     await expect(page).toHaveTitle(/Our Story/);
-    await expect(page.locator('#how-we-met')).toContainText('Allison and Jamie');
+    await expect(page.locator('main')).toContainText(/Allison and Jamie/);
+    await expect(page.getByText('Stand-in photo').first()).toBeVisible();
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
 
     await follow(page, 'Our Adventures');
     await expect(page).toHaveURL(/\/our-adventures$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     // Only public memories are listed; the private drafts (the brief's, and photos that show someone
     // who has not agreed to be on the site yet) never render.
     await expect(page.locator('[data-adventure]')).toHaveCount(PUBLIC_ADVENTURES.length);

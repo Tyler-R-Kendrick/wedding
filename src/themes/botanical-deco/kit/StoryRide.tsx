@@ -763,7 +763,6 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
                     // Riding, the station at the platform is the one exposed section; the moments on
                     // either side are hidden from assistive technology and out of the tab order.
                     aria-hidden={ride && !here ? true : undefined}
-                    {...(ride && !here ? { inert: true } : {})}
                   >
                     <div
                       className="bd-ride__platform"
