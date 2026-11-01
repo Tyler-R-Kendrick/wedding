@@ -233,7 +233,7 @@ test.describe('concierge on Ask Us', () => {
  * open it, ask, and be given a cited answer with no marker leaking through.
  */
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
-  const themeGuest: PrincipalName = theme === 'gilded-hour' ? 'A2' : theme === 'conservatory' ? 'A3' : 'A1';
+  const themeGuest: PrincipalName = theme === 'gilded-hour' ? 'B1' : theme === 'conservatory' ? 'C1' : 'A1';
   test.describe(`concierge in ${theme}`, () => {
     test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
       const { ctx, page } = await guestPage(browser, themeGuest);
