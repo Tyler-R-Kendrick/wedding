@@ -19,7 +19,7 @@ import type { ThemeId } from '@/themes/types';
 export function WeekendPage({ data, theme, reply, heading = 'Your weekend' }: { data: MyItinerary; theme: ThemeId; reply?: WeekendReply; heading?: string }) {
   // The approved design's Weekend is its own composition (three-column workspace, the reply inline);
   // the two earlier proposals keep this shared recipe.
-  if (theme === 'botanical-deco') return <BotanicalWeekendPage data={data} reply={reply} />;
+  if (theme === 'botanical-deco') return <BotanicalWeekendPage data={data} reply={reply} heading={heading} />;
   const notices = [...data.notices].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'urgent' ? -1 : 1));
   const table = data.seating.table;
   return (
