@@ -143,10 +143,10 @@
       "breakpoints": true
     },
     {
-      "idx": 20,
+      "idx": 21,
       "version": "7",
-      "when": 1793544000000,
-      "tag": "0020_auth_schema_repair",
+      "when": 1762022400000,
+      "tag": "0021_caa_room_block",
       "breakpoints": true
     }
   ]

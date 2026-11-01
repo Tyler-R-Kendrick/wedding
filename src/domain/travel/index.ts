@@ -8,3 +8,4 @@ export * from './trip';
 export * from './search';
 export * from './webhook';
 export * from './format';
+export * from './stay-copy';

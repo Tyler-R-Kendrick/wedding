@@ -224,15 +224,23 @@ describe('hotel recommendations, block, and admin configuration', () => {
       placeholder: false,
       synthesized: false,
       name: 'Chicago Athletic Association Hotel',
-      block: { placeholder: false, url: null, code: 'G-FIKE', rateText: '$331–371/night', cutoff: '2027-06-15' },
+      block: {
+        placeholder: false,
+        url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE',
+        code: 'G-FIKE',
+        rateText: '$331–371 per night',
+        checkIn: '2027-07-16',
+        checkOut: '2027-07-18',
+        cutoff: '2027-06-15',
+      },
     });
     expect(r.value.data.venue.block?.note).toMatch(/844-312-2221/);
-    expect(r.value.data.venue.block?.pending).toMatch(/Hyatt group booking link/);
+    expect(r.value.data.venue.block?.pending).toBeNull();
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
     expect(r.value.data.alternatives).toEqual([]);
-    expect(r.value.data.facts.venue.valetEntrance).toBe('71 E Madison');
+    expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['CAA Wedding Kit 2027', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
   });
 
@@ -263,7 +271,24 @@ describe('hotel recommendations, block, and admin configuration', () => {
   });
 
   it('authorises admin edits by entitlement and refuses links off the allowlist', async () => {
-    const venue = { id: VENUE_HOTEL_ID, name: 'Chicago Athletic Association Hotel', address: '12 S Michigan Ave, Chicago, IL 60603', isVenue: true, sortOrder: 0, block: { url: null, code: 'G-FIKE', rateText: '$331–371/night', checkIn: '2027-07-16', checkOut: '2027-07-18', cutoff: '2027-06-15', note: 'Call 844-312-2221 to book with group code G-FIKE.', placeholder: false }, sourceId: null };
+    const venue = {
+      id: VENUE_HOTEL_ID,
+      name: 'Chicago Athletic Association Hotel',
+      address: '12 S. Michigan Avenue, Chicago, IL 60603',
+      isVenue: true,
+      sortOrder: 0,
+      block: {
+        url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE',
+        code: 'G-FIKE',
+        rateText: '$331–371 per night',
+        checkIn: '2027-07-16',
+        checkOut: '2027-07-18',
+        cutoff: '2027-06-15',
+        note: 'Call 844-312-2221 and reference "Fitzgerald - Kendrick Wedding Room Block" (group code G-FIKE).',
+        placeholder: false,
+      },
+      sourceId: null,
+    };
     expectErr(await run(adminSaveHotel, guestA, venue, { key: key() }), 'forbidden');
     expectErr(await run(adminSaveHotel, anonymous, venue), 'unauthenticated');
     expectErr(await run(adminSaveHotel, adminPrincipal(['admin_audit']), venue, { key: key() }), 'forbidden');
@@ -315,7 +340,10 @@ describe('open_booking_link (external hand-offs)', () => {
     expectErr(await run(openBookingLink, anonymous, { kind: 'venue_block' }), 'unauthenticated');
     expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: VENUE_HOTEL_ID }), 'unauthenticated');
     const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
-    expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
+    expect(block.ok && block.value.data).toMatchObject({
+      placeholder: false,
+      handoff: { provider: 'hyatt.com', url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE' },
+    });
     expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: newId() }), 'not_found');
     const list = await run(listHotelRecommendations, anonymous, {});
     const alt = list.ok ? list.value.data.alternatives[0] : undefined;
@@ -331,11 +359,25 @@ describe('open_booking_link (external hand-offs)', () => {
 
   it('falls back to the venue site with placeholder: true when no block link exists', async () => {
     setProviderOverride('hotels', new DeepLinkOnlyHotels());
-    // No admin venue row in this scenario: simulate by asking for the block on a fresh database state via the synthesized row.
     const db = await getDb();
     const { hotelRecommendations } = await import('@/db/schema/travel');
     const { eq } = await import('drizzle-orm');
-    await db.delete(hotelRecommendations).where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
+    await db
+      .update(hotelRecommendations)
+      .set({
+        block: {
+          url: null,
+          code: 'G-FIKE',
+          rateText: '$331–371 per night',
+          checkIn: '2027-07-16',
+          checkOut: '2027-07-18',
+          cutoff: '2027-06-15',
+          note: null,
+          pending: null,
+          placeholder: true,
+        },
+      })
+      .where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
     const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
     expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
   });

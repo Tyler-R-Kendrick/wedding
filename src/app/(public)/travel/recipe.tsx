@@ -3,6 +3,14 @@ import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
 import type { Citation } from '@/contracts/provenance';
 import { Placeholder } from '@/components/provenance/Placeholder';
 import { formatLongDate, type HotelRecommendation } from '@/domain/travel';
+import {
+  CAA_BOOKING_LINK_LABEL,
+  CAA_BOOKING_PHONE,
+  CAA_BOOKING_PHONE_REFERENCE,
+  CAA_STAY_INTRO,
+  CAA_UPGRADES_COPY,
+  venueBlockDatesLabel,
+} from '@/domain/travel/stay-copy';
 import type { PageRecipe } from './_shared/recipe';
 import { HandoffLink } from './handoff';
 
@@ -73,8 +81,9 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
           </a>
         </p>
       ) : null}
-      <p className="mt-3">The wedding is here, so staying here means no travel on the day.</p>
-      {block?.note ? <p className="mt-2">{block.note}</p> : null}
+      <p className="mt-3">{CAA_STAY_INTRO}</p>
+      {venue.address ? <p className="mt-2">{venue.address}</p> : null}
+      <p className="mt-2">The wedding is here, so staying here means no travel on the day.</p>
       <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <dt className="hint">Group rate</dt>
@@ -86,24 +95,34 @@ function BlockCard({ venue }: { venue: HotelRecommendation }) {
         </div>
         <div>
           <dt className="hint">Block dates</dt>
-          <dd>{block?.checkIn && block?.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Todo>the block dates</Todo>}</dd>
-        </div>
-        <div>
-          <dt className="hint">Booking code</dt>
-          <dd>{block?.code ?? <Todo>the booking code or link</Todo>}</dd>
+          <dd>
+            {venueBlockDatesLabel(block) ??
+              (block?.checkIn && block?.checkOut ? (
+                `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}`
+              ) : (
+                <Todo>the block dates</Todo>
+              ))}
+          </dd>
         </div>
       </dl>
       <div className="mt-4 flex flex-col gap-2">
         {block?.url ? (
-          <HandoffLink handoff={{ provider: 'hotel', label: 'Book in the wedding block', url: block.url, opensNewTab: true, disclosure: '' }} />
-        ) : venue.websiteUrl ? (
-          <HandoffLink handoff={{ provider: 'chicagoathletichotel.com', label: 'Visit the hotel website', url: venue.websiteUrl, opensNewTab: true, disclosure: '' }} />
+          <HandoffLink handoff={{ provider: 'hyatt.com', label: CAA_BOOKING_LINK_LABEL, url: block.url, opensNewTab: true, disclosure: '' }} />
+        ) : null}
+        {block && !block.placeholder ? (
+          <p>
+            Or call {CAA_BOOKING_PHONE} (reference &ldquo;{CAA_BOOKING_PHONE_REFERENCE}&rdquo;).
+          </p>
         ) : null}
         <p className="hint">
           {placeholder ? 'The block link is not live yet; the hotel website shows standard rates. We never see your payment details.' : 'You will book directly with the hotel. We never see your payment details.'}
         </p>
       </div>
       <p className="mt-3 hint">Last checked {formatLongDate(venue.verifiedAt.slice(0, 10))}.</p>
+      <p className="mt-3">{CAA_UPGRADES_COPY}</p>
+      {venue.websiteUrl ? (
+        <HandoffLink handoff={{ provider: 'chicagoathletichotel.com', label: 'Visit the hotel website', url: venue.websiteUrl, opensNewTab: true, disclosure: '' }} />
+      ) : null}
     </article>
   );
 }

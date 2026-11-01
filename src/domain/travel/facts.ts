@@ -2,6 +2,7 @@ import type { ContentSourceId } from '@/contracts/ids';
 import type { Citation } from '@/contracts/provenance';
 import type { RoomBlock } from '@/db/schema/travel';
 import { seedId } from '@/db/seed/sources';
+import { CAA_BOOKING_URL, CAA_GROUP_CODE, CAA_BLOCK_CHECK_IN, CAA_BLOCK_CHECK_OUT, caaPhoneBookingSentence } from './stay-copy';
 
 /**
  * The only wedding facts this feature may state, all from docs/design/brief.md §2 with their
@@ -15,11 +16,11 @@ export const CAA_SITE_SOURCE_ID = seedId<ContentSourceId>(103);
 
 export const VENUE = {
   name: 'Chicago Athletic Association Hotel',
-  address: '12 S Michigan Ave, Chicago, IL 60603',
+  address: '12 S. Michigan Avenue, Chicago, IL 60603',
   url: 'https://www.chicagoathletichotel.com/',
   /** Accessibility and transit directions live on the official FAQ (operational: link, never copy). */
   faqUrl: 'https://www.chicagoathletichotel.com/about/faq/',
-  valetEntrance: '71 E Madison',
+  valetEntrance: '71 E. Madison St',
   /**
    * A confirmed fact and a still-unknown one are two fields, not one string.
    *
@@ -30,7 +31,8 @@ export const VENUE = {
    * `list_hotel_recommendations`, which is exposed to the concierge and WebMCP, so the marker would
    * have reached assistant transcripts too.
    */
-  valetNote: 'Valet parking is $84 per night with in-and-out privileges at the 71 E Madison entrance.',
+  valetNote:
+    'Hotel valet 24 hours at 71 E. Madison St, $84 per vehicle, per night, with unlimited in-and-out privileges.',
   /** Backlog X-06 resolved 2026-10-31 (Sara feedback). */
   valetPending: null,
 } as const;
@@ -51,18 +53,17 @@ export const AIRPORTS = [
   },
 ] as const;
 
-/** From the CAA kit (2025/26 edition, verify): a courtesy block up to 20 rooms subject to availability. Everything else is unknown. */
+/** Brief fallback when no admin hotel row exists yet; matches the seeded production block. */
 export const DEFAULT_VENUE_BLOCK: RoomBlock = {
-  url: null,
-  code: null,
-  rateText: null,
-  checkIn: null,
-  checkOut: null,
-  cutoff: null,
-  note: 'The CAA offers a courtesy block of up to 20 rooms, subject to availability (2025/26 kit; to verify).',
-  /** Backlog P-03: the planner supplies these. */
-  pending: 'the booking link, rate, dates and cutoff',
-  placeholder: true,
+  url: CAA_BOOKING_URL,
+  code: CAA_GROUP_CODE,
+  rateText: '$331–371 per night',
+  checkIn: CAA_BLOCK_CHECK_IN,
+  checkOut: CAA_BLOCK_CHECK_OUT,
+  cutoff: '2027-06-15',
+  note: caaPhoneBookingSentence(),
+  pending: null,
+  placeholder: false,
 };
 
 export const BRIEF_CITATION: Citation = { sourceId: BRIEF_SOURCE_ID, title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: BRIEF_VERIFIED_AT };
