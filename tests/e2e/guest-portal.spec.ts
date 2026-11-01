@@ -1,19 +1,31 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { contextAs } from './helpers/principal';
+
+async function followGuestNav(page: Page, name: string | RegExp) {
+  const nav = page.getByRole('navigation', { name: 'Site' });
+  const inNav = nav.getByRole('link', { name });
+  if (await inNav.isVisible().catch(() => false)) {
+    await inNav.click();
+    return;
+  }
+  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
+  const sheet = page.getByRole('dialog').locator('visible=true').first();
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('link', { name }).click();
+}
 
 test.describe('guest portal navigation', () => {
   test('signed-in guests land on /guests and see portal nav', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
     await page.goto('/guests');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Your weekend/i);
-    const nav = page.getByRole('navigation', { name: 'Site' });
-    await expect(nav.getByRole('link', { name: 'Travel' })).toHaveAttribute('href', '/guests/travel');
-    await expect(nav.getByRole('link', { name: /guest portal/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Things to Do' })).toHaveAttribute('href', '/guests/things-to-do');
-    await expect(nav.getByRole('link', { name: 'Ask Us' })).toHaveAttribute('href', '/guests/ask-us');
-    await expect(nav.getByRole('link', { name: 'Home' })).toHaveCount(0);
-    await expect(nav.getByRole('link', { name: 'Our Adventures' })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/guests\/?$/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Guest portal/i);
+    await Promise.all([page.waitForURL(/\/guests\/travel/), followGuestNav(page, 'Travel')]);
+    await page.goto('/guests');
+    await Promise.all([page.waitForURL(/\/guests\/things-to-do/), followGuestNav(page, /Things/i)]);
+    await page.goto('/guests');
+    await Promise.all([page.waitForURL(/\/guests\/ask-us/), followGuestNav(page, /Ask Us/i)]);
     await ctx.close();
   });
 

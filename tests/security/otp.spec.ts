@@ -96,7 +96,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.ana!));
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page).toHaveURL(/\/guests(\/|$|\?)/);
+    await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await context.cookies()).find((k) => k.name === 'wedding.session_token')!;
     expect(c.value).not.toBe('attacker-chosen.value');
     expect((await cap(request, 'get_my_invitation', {}, { cookie: 'wedding.session_token=attacker-chosen.value' })).status()).toBe(401);
@@ -110,7 +110,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.amara!));
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page).toHaveURL(/\/guests(\/|$|\?)/);
+    await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await page.context().cookies()).find((k) => k.name.endsWith('session_token'))!;
     const cookie = `${c.name}=${c.value}`;
     expect((await cap(request, 'get_my_invitation', {}, { cookie, origin: 'https://evil.example' })).status()).toBe(401);
