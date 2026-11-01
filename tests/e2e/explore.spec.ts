@@ -35,7 +35,8 @@ test.describe('explore journey', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
     await expect(page).toHaveTitle(/Our Story/);
     await expect(page.locator('main')).toContainText(/Allison and Jamie/);
-    await expect(page.getByText('Stand-in photo').first()).toBeVisible();
+    await expect(page.locator('#how-we-met')).toHaveAttribute('data-state', 'here');
+    await expect(page.locator('#how-we-met .bd-stopcard__standin')).toBeVisible();
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
 
@@ -243,7 +244,7 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('ask us sends anonymous visitors to sign in', async ({ page }) => {
+  test('ask us sends anonymous visitors to sign in with a return path', async ({ page }) => {
     await page.goto('/ask-us');
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fask-us/);
     await axe(page);

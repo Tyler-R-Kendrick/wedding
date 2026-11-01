@@ -48,6 +48,18 @@ test.describe('concierge on Ask Us', () => {
     await ctx.close();
   });
 
+  test('the FAQ and static search work without opening the concierge', async ({ browser }) => {
+    const { ctx, page } = await guestPage(browser);
+    await page.goto('/ask-us');
+    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
+    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
+    await page.getByLabel('What are you looking for?').fill('valet');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page).toHaveURL(/q=valet/);
+    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
+    await ctx.close();
+  });
+
   test('answers a factual question with a citation that links to a page', async ({ browser }) => {
     const { ctx, page } = await guestPage(browser);
     await page.goto('/ask-us');

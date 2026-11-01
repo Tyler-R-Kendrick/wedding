@@ -93,6 +93,10 @@ export const TEST_SERVER_SPECS = [
   // reaches every lifecycle state through the admin's signed preview. The CI warm-up list holds
   // every route it visits, the preview route included.
   'tests/e2e/quality-sweep.spec.ts',
+  // Level 12 / Ask Us (#86): the FAQ and concierge live behind guest sign-in. Production smoke has
+  // no test-principal injector, so these journeys run on the NODE_ENV=test server with fixture
+  // guests. One production test in explore.spec still asserts the anonymous redirect.
+  'tests/e2e/concierge.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

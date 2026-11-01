@@ -23,8 +23,9 @@ interface Budget {
 
 /*
  * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
- * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8, `/ask-us` 143kB over
- * 8. The budgets are roughly double that, because the value is catching a step change — a chart
+ * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. `/ask-us` is guest-
+ * only and measured on the NODE_ENV=test server instead (quality-sweep / concierge.spec). The
+ * budgets are roughly double that, because the value is catching a step change — a chart
  * library on the home page, a client component that pulls the capability barrel into the browser —
  * not policing kilobytes. Raise one with a reason.
  */
@@ -76,7 +77,8 @@ test.describe('client bundle', () => {
   /**
    * The concierge is the heaviest island on the site, and `/ask-us` is the only page that should
    * pay for it. If it ever lands in the home page's first view, the page that has to answer "when,
-   * where, and what do I do now" above the fold is carrying a chat client to do it.
+   * where, and what do I do now" above the fold is carrying a chat client to do it. `/ask-us` itself
+   * is guest-only and asserted on the NODE_ENV=test server (concierge.spec / quality-sweep).
    */
   test('the concierge island is not in the home page’s first view', async ({ page }) => {
     const seen: string[] = [];
@@ -85,6 +87,10 @@ test.describe('client bundle', () => {
     });
 
     await page.goto('/', { waitUntil: 'networkidle' });
+<<<<<<< HEAD
+=======
+    expect(seen.length, 'the home page loaded no script at all, so this assertion proves nothing').toBeGreaterThan(0);
+>>>>>>> c31b88d (fix(e2e): align production smoke with Ask Us guest sign-in)
     // Nothing on the home page may fetch the chat route, and no script it loads may contain the
     // panel's own markers. Reading the CONTENT is what makes this a real assertion rather than a
     // guess about chunk names, which the bundler is free to change.
