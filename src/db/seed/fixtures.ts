@@ -40,14 +40,19 @@ export const FX = {
 export const FIXTURE_GUESTS = [
   { id: FX.guestA1, householdId: FX.householdA, firstName: 'Ada', lastName: 'Testhouse', email: 'ada.testhouse@example.test', isMinor: false },
   { id: FX.guestA2, householdId: FX.householdA, firstName: 'Ben', lastName: 'Testhouse', email: null, isMinor: false },
-  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', email: null, isMinor: true },
+  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', email: null, kind: 'child' as const, isMinor: true },
   { id: FX.guestB1, householdId: FX.householdB, firstName: 'Dev', lastName: 'Fixture', email: 'dev.fixture@example.test', isMinor: false },
   { id: FX.guestB2, householdId: FX.householdB, firstName: 'Eve', lastName: 'Fixture', email: null, isMinor: false },
   { id: FX.guestC1, householdId: FX.householdC, firstName: 'Fin', lastName: 'Solo', email: 'fin.solo@example.test', isMinor: false },
 ] as const;
 
 export const FIXTURE_HOUSEHOLDS = [
-  { id: FX.householdA, name: 'Testhouse household', managerGuestId: FX.guestA1 },
+  {
+    id: FX.householdA,
+    name: 'Testhouse household',
+    managerGuestId: FX.guestA1,
+    mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+  },
   { id: FX.householdB, name: 'Fixture household', managerGuestId: FX.guestB1 },
   { id: FX.householdC, name: 'Solo household', managerGuestId: FX.guestC1 },
 ] as const;
@@ -79,7 +84,15 @@ export const FIXTURE_MEALS = [
  */
 export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<void> {
   for (const h of FIXTURE_HOUSEHOLDS) await db.insert(households).values({ ...h, createdAt: now }).onConflictDoNothing({ target: households.id });
+  await db
+    .update(households)
+    .set({
+      mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+      updatedAt: now,
+    })
+    .where(eq(households.id, FX.householdA));
   for (const g of FIXTURE_GUESTS) await db.insert(guests).values({ ...g, createdAt: now }).onConflictDoNothing({ target: guests.id });
+  await db.update(guests).set({ kind: 'child', isMinor: true, updatedAt: now }).where(eq(guests.id, FX.guestA3));
   const present = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, Object.values(E)))).map((r) => r.id));
   for (const [idx, en] of FIXTURE_ENTITLEMENTS.entries()) {
     if (!present.has(en.eventId)) continue;

@@ -58,6 +58,8 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/claim/verify'
  * '/claim/welcome'
  * '/credits'
+ * '/privacy'
+ * '/terms'
  * '/explore-caa'
  * '/faq'
  * '/gifts'
@@ -198,12 +200,17 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\
 function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
   const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
   if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
+  const portalNext = guestPortalRedirectFor(destination) ?? destination;
   const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
   const guestOnly =
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
-  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)` : '';
-  return new RegExp(`(?:${atDestination}${atSignIn})`);
+  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(portalNext))}(?:$|&)` : '';
+  const atPortalDoor =
+    kind === 'anonymous' && portalNext !== destination
+      ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(portalNext))}(?:$|&)`
+      : '';
+  return new RegExp(`(?:${atDestination}${atSignIn}${atPortalDoor})`);
 }
 
 /** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
