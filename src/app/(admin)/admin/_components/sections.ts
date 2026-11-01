@@ -28,6 +28,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
       { href: '/admin/flags', label: 'Feature flags', blurb: 'Both halves of every gate, and the two legal switches that stay shut.', entitlement: 'admin_lifecycle' },
       { href: '/admin/content', label: 'Content', blurb: 'Records with provenance, freshness and verification.', entitlement: 'admin_content' },
       { href: '/admin/events', label: 'Events & RSVP window', blurb: 'Events, meal options, notices, and when RSVP opens.', entitlement: 'admin_content' },
+      { href: '/admin/sitemap', label: 'Sitemap', blurb: 'Every endpoint the app serves, and what each one should answer.', entitlement: 'any administrator' },
     ],
   },
   {

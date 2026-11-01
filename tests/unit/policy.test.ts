@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
 import type { AdminPrincipal, GuestPrincipal, Principal } from '@/contracts/principal';
+import { PREVIEW } from '@/domain/identity/preview-personas';
 import { assertActsFor, authorize } from '@/policy/entitlements';
 import { requireFreshSession } from '@/policy/stepUp';
 
@@ -82,6 +83,21 @@ describe('assertActsFor', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('forbidden');
     expect(assertActsFor(guest({ actsFor: ['G1' as GuestId, 'G2' as GuestId] }), 'G2' as GuestId).ok).toBe(true);
+  });
+
+  it('lets a view-role preview read the synthetic guest and still refuse a change', () => {
+    const preview = guest({
+      guestId: PREVIEW.guestGuestId,
+      householdId: PREVIEW.householdId,
+      actsFor: [PREVIEW.guestGuestId],
+      entitlements: new Set(['view_travel_tools']),
+      viewedBy: { adminId: 'AD1' as AdminId, roles: new Set(['owner']), readOnly: true, previewRole: 'guest' },
+    });
+    expect(assertActsFor(preview, PREVIEW.guestGuestId).ok).toBe(true);
+    expect(authorize({ name: 'get_my_trip', kind: 'read', auth: 'guest', requires: ['view_travel_tools'] }, preview).ok).toBe(true);
+    const write = authorize({ name: 'add_trip_item', kind: 'action', auth: 'guest', requires: ['view_travel_tools'] }, preview);
+    expect(write.ok).toBe(false);
+    if (!write.ok) expect(write.error.message).toMatch(/browsing as this guest/);
   });
 
   it('requires admin_guest_ops for admins and always allows system', () => {

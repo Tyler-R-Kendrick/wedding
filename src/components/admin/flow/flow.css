@@ -1,8 +1,9 @@
 /*
  * Admin flows: a multi-step task in a sheet (AdminFlow.tsx). Root DESIGN.md foundation tokens only —
  * paper, ink, hairlines, one sage accent for progress — and no shadow beyond the scrim, because depth
- * in this system is paper tone, not blur. Motion is transform and opacity, short, ease-out, and off
- * entirely under reduced motion.
+ * in this system is paper tone, not blur. Motion is a short ease-out transform, and off entirely
+ * under reduced motion. The sheet and the step do not fade in: axe composites an in-flight opacity
+ * and reports the resting sage and muted ink as failing contrast.
  */
 
 .flow-anchor {
@@ -727,7 +728,6 @@ textarea.flow-input {
 
 @keyframes flow-sheet-up {
   from {
-    opacity: 0;
     transform: translateY(24px);
   }
 }
@@ -741,7 +741,6 @@ textarea.flow-input {
 
 @keyframes flow-sheet-in {
   from {
-    opacity: 0;
     transform: translateX(32px);
   }
 }
@@ -755,14 +754,12 @@ textarea.flow-input {
 
 @keyframes flow-step-forward {
   from {
-    opacity: 0;
     transform: translateX(16px);
   }
 }
 
 @keyframes flow-step-back {
   from {
-    opacity: 0;
     transform: translateX(-16px);
   }
 }

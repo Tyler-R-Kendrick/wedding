@@ -202,12 +202,6 @@
   text-underline-offset: 0.2em;
 }
 
-/* Inside muted hint text colour alone does not mark a link (WCAG 1.4.1): the admin sign-in link on
-   /sign-in sat in grey copy and read as plain text. */
-.auth-hint .auth-link {
-  text-decoration: underline;
-}
-
 .auth-input:focus-visible,
 .auth-select:focus-visible,
 .auth-button:focus-visible,
@@ -215,6 +209,40 @@
 .auth-choice:focus-within {
   outline: 3px solid var(--auth-accent);
   outline-offset: 2px;
+}
+
+/*
+ * Inline links (WCAG 1.4.1 / axe `link-in-text-block`). Colour alone does not
+ * mark a link, and `--auth-accent` (`--color-tertiary`) does not clear the 3:1
+ * the rule asks for against the sentence around it:
+ *
+ *   botanical-deco  #75552d vs muted #59554d = 1.09:1, vs error #8a2c22 = 1.26:1
+ *   gilded-hour     #7a5a16 vs muted #5e5a52 = 1.08:1, vs error #8e2e22 = 1.29:1
+ *   conservatory    pollen #d4b24a is 3.5:1 from muted ink but 1.77:1 on the
+ *                   creme ground, so it cannot be the words or the underline
+ *
+ * No palette colour is both 4.5:1 on the ground and 3:1 from muted ink
+ * (botanical primary vs muted is 2.01:1). The underline is the distinction
+ * that holds on every theme, drawn in the link's own ink so the stroke clears
+ * the same 4.5:1 as the words. A gold underline does not: botanical gold is
+ * 2.63:1 on ivory, gilded gold 2.15:1.
+ *
+ * `.auth-hint` was the first sentence (the admin sign-in line). /claim/verify
+ * puts the same kind of link in the error notice and the footer, which are
+ * not hints. Standalone links in `.auth-actions` stay as they are: they are
+ * the whole control, and the rule does not apply to them.
+ *
+ * Conservatory's tertiary is pollen and is never text (see `.cv-link`). Those
+ * links take leaf-deep, 6.26:1 on creme, the same ink the kit uses.
+ */
+.auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+[data-theme="conservatory"] .auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
+  color: var(--color-leaf-deep, var(--color-primary));
 }
 
 .auth-notice {
@@ -260,21 +288,11 @@
   border-bottom: 1px solid var(--auth-outline);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .auth-card {
-    animation: auth-rise 200ms ease-out;
-  }
-
-  @keyframes auth-rise {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-}
+/*
+ * No entrance fade. Axe composites an in-flight `opacity` with the page behind it, and the
+ * button-primary pair (`--color-on-gold-deep` on `--color-gold-deep`, 4.67:1 at rest) falls
+ * under 4.5:1 while the card is still translucent. Botanical Deco does not fade the first screen.
+ */
 
 .auth-other {
   margin-block-start: var(--spacing-xl, 32px);

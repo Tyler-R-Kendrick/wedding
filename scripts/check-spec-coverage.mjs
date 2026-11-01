@@ -99,6 +99,9 @@ export const TEST_SERVER_SPECS = [
   // reaches every lifecycle state through the admin's signed preview. The CI warm-up list holds
   // every route it visits, the preview route included.
   'tests/e2e/quality-sweep.spec.ts',
+  // Site audit: every persona walks the inventory (public, guest, admin, view-role) on the test
+  // server. Anonymous redirects and probes are GET only; the one POST is admin_set_view_role.
+  'tests/e2e/site-crawler.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

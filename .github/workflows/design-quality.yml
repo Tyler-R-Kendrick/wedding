@@ -312,7 +312,14 @@ jobs:
                       /our-adventures /travel \
                       /guests /guests/travel /guests/things-to-do /guests/ask-us \
                       /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session \
-                      /api/capabilities/warmup /?preview=RSVP_OPEN; do
+                      /api/capabilities/warmup /?preview=RSVP_OPEN \
+                      /admin/sitemap /credits \
+                      /our-adventures/starved-rock /share-an-adventure/starved-rock-state-park /our-venue/white-city-ballroom \
+                      /i/example /invite/example \
+                      /admin/content/story_sections /admin/content/story_sections/new /admin/content/story_sections/01SEED00000000000000000200 \
+                      /t/botanical-deco /t/botanical-deco/preview/RSVP_OPEN \
+                      /explore-caa /faq /things-to-do /wedding-day /registry \
+                      /sitemap.xml /api/health; do
             curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
           done
           npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")

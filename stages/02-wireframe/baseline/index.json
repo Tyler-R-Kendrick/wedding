@@ -1524,6 +1524,30 @@
      "file": "conservatory.json"
     }
    }
+  },
+  "admin-sitemap": {
+   "title": "Sitemap",
+   "url": "/admin/sitemap",
+   "finalUrl": "/admin/sitemap",
+   "source": "app (test server, fixture data)",
+   "principal": "admin",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "botanical-deco.json",
+     "same": "botanical-deco"
+    }
+   }
   }
  }
 }

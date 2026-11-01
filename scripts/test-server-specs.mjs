@@ -82,6 +82,16 @@ export const WARM_ROUTES = [
   // state through it, and nothing else on this server does. The proxy rewrites on the value's shape,
   // not on who asks, so an anonymous request compiles it.
   '/?preview=RSVP_OPEN',
+  // site-crawler.spec.ts. Concrete seed paths and the aliases it requests by name; the dynamic
+  // route itself is compiled by the first of each pattern. `/admin/sitemap` is also on the console
+  // index, which admin-console.spec walks.
+  '/admin/sitemap', '/credits',
+  '/our-adventures/starved-rock', '/share-an-adventure/starved-rock-state-park', '/our-venue/white-city-ballroom',
+  '/i/example', '/invite/example',
+  '/admin/content/story_sections', '/admin/content/story_sections/new', '/admin/content/story_sections/01SEED00000000000000000200',
+  '/t/botanical-deco', '/t/botanical-deco/preview/RSVP_OPEN',
+  '/explore-caa', '/faq', '/things-to-do', '/wedding-day', '/registry',
+  '/sitemap.xml', '/api/health',
 ];
 
 /** Postgres URLs the server reads when DATABASE_URL is unset (src/lib/env.ts DATABASE_URL_ALIASES). */
