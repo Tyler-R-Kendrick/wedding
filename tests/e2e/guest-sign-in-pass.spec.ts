@@ -14,7 +14,7 @@ test.describe('guest sign-in pass short link', () => {
     const slug = url.split('/s/')[1]!;
     await page.context().clearCookies();
     await page.goto(`/s/${slug}`);
-    await expect(page.getByText(/Signing you in/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Signing you in/i })).toBeVisible();
     await expect(page).toHaveURL(/\/claim\/welcome/, { timeout: 20_000 });
   });
 
@@ -24,9 +24,11 @@ test.describe('guest sign-in pass short link', () => {
     const issueRes = await cap(request, 'admin_issue_guest_sign_in_pass', { guestId: f.guests.chidi }, { cookie: adminCookie });
     expect(issueRes.ok()).toBe(true);
     const issue = (await issueRes.json()) as { ok: true; data: { url: string; pass: { id: string } } };
-    await cap(request, 'admin_revoke_guest_sign_in_pass', { passId: issue.data.pass.id }, { cookie: adminCookie });
+    const revokeRes = await cap(request, 'admin_revoke_guest_sign_in_pass', { passId: issue.data.pass.id }, { cookie: adminCookie });
+    expect(revokeRes.ok()).toBe(true);
     const slug = issue.data.url.split('/s/')[1]!;
     await page.goto(`/s/${slug}`);
-    await expect(page.getByText(/no longer active|Sign in with your email/i)).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText(/no longer active/i);
+    await expect(page.getByRole('link', { name: /Sign in with your email/i })).toBeVisible();
   });
 });
