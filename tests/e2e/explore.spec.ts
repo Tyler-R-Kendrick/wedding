@@ -36,7 +36,7 @@ test.describe('explore journey', () => {
     await expect(page).toHaveTitle(/Our Story/);
     await expect(page.locator('main')).toContainText(/Allison and Jamie/);
     await expect(page.locator('#how-we-met')).toHaveAttribute('data-state', 'here');
-    await expect(page.locator('#how-we-met .bd-stopcard__standin')).toBeVisible();
+    await expect(page.locator('#how-we-met .bd-stopcard__standin')).toHaveText('Stand-in photo');
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
 
