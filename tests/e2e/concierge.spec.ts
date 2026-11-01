@@ -21,8 +21,9 @@ import { apiHeaders, contextAs } from './helpers/principal';
 let clientCounter = 0;
 async function guestPage(browser: import('@playwright/test').Browser) {
   clientCounter += 1;
-  const ctx = await contextAs(browser, 'A1');
-  await ctx.setExtraHTTPHeaders({ 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
+  const ctx = await contextAs(browser, 'A1', {
+    extraHTTPHeaders: { 'x-forwarded-for': `198.51.100.${clientCounter % 250}` },
+  });
   return { ctx, page: await ctx.newPage() };
 }
 
