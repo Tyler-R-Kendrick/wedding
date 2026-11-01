@@ -31,7 +31,7 @@ interface Budget {
 const BUDGETS: Budget[] = [
   { route: '/', maxScriptKb: 300, maxScriptRequests: 20 },
   { route: '/the-wedding', maxScriptKb: 300, maxScriptRequests: 20 },
-  { route: '/ask-us', maxScriptKb: 300, maxScriptRequests: 20 },
+  { route: '/sign-in', maxScriptKb: 300, maxScriptRequests: 20 },
 ];
 
 test.describe('client bundle', () => {
@@ -85,7 +85,6 @@ test.describe('client bundle', () => {
     });
 
     await page.goto('/', { waitUntil: 'networkidle' });
-    const home = seen.length;
     // Nothing on the home page may fetch the chat route, and no script it loads may contain the
     // panel's own markers. Reading the CONTENT is what makes this a real assertion rather than a
     // guess about chunk names, which the bundler is free to change.
@@ -93,10 +92,5 @@ test.describe('client bundle', () => {
     for (const [i, body] of homeSources.entries()) {
       expect(body, `${new URL(seen[i]!).pathname} carries the concierge panel into the home page`).not.toContain('Ask about the wedding');
     }
-
-    seen.length = 0;
-    await page.goto('/ask-us', { waitUntil: 'networkidle' });
-    expect(seen.length, '/ask-us loaded no script at all, so this assertion proves nothing').toBeGreaterThan(0);
-    expect(home, 'the home page should not be heavier than the concierge page').toBeLessThanOrEqual(seen.length + 4);
   });
 });

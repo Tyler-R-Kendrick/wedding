@@ -243,14 +243,9 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('ask us has the FAQ, a working static search, and an empty concierge slot', async ({ page }) => {
+  test('ask us sends anonymous visitors to sign in', async ({ page }) => {
     await page.goto('/ask-us');
-    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
-    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
-    await page.getByLabel('What are you looking for?').fill('valet');
-    await page.getByRole('button', { name: 'Search' }).click();
-    await expect(page).toHaveURL(/q=valet/);
-    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fask-us/);
     await axe(page);
   });
 
