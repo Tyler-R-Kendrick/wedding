@@ -206,7 +206,11 @@ function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
   const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(portalNext))}(?:$|&)` : '';
-  return new RegExp(`(?:${atDestination}${atSignIn})`);
+  const atPortalDoor =
+    kind === 'anonymous' && portalNext !== destination
+      ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(portalNext))}(?:$|&)`
+      : '';
+  return new RegExp(`(?:${atDestination}${atSignIn}${atPortalDoor})`);
 }
 
 /** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
