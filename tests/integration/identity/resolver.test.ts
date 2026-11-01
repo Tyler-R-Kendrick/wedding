@@ -191,7 +191,10 @@ describe('principal resolver', () => {
     // suggestion reviewed without touching the photo's alt text.
     // 82 -> 86: view-role preview (`admin_set_view_role`, `admin_clear_view_role`,
     // `admin_list_view_roles`, `admin_view_role_status`), all ui-only navigate/read.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(90);
+    // 86 -> 90: guest sign-in pass admin (`admin_issue_guest_sign_in_pass`, `admin_revoke_guest_sign_in_pass`, …).
+    // 90 -> 93: social sign-in admin queue (`admin_list_social_auth_reviews`, `admin_link_social_auth`,
+    // `admin_mark_invitation_sent`), ui-only navigate/read/write.
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(93);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`
