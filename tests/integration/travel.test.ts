@@ -336,7 +336,11 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expect(saved.ok && saved.value.data).toMatchObject({ category: 'ota', provider: 'Skyscanner', active: true });
     setProviderOverride('flights', new DeepLinkOnlyFlights());
     const search = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' });
-    expect(search.ok && search.value.data.handoffs.map((h: ExternalHandoff) => h.label)).toEqual(['Continue on Skyscanner', 'Compare on Skyscanner']);
+    expect(search.ok && search.value.data.handoffs.map((h: ExternalHandoff) => h.label)).toEqual([
+      'Continue on Skyscanner',
+      'Continue on Kayak',
+      'Compare on Skyscanner',
+    ]);
     const config = await run(adminGetTravelConfig, contentAdmin, {});
     expect(config.ok && config.value.data.providers).toBeNull();
     expect(config.ok && config.value.data.links).toHaveLength(1);

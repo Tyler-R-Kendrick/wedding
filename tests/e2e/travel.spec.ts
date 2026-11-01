@@ -8,7 +8,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  * Signed-in themed travel UI and flight search live in guest-guide.spec.ts (NODE_ENV=test server).
  */
 const ALLOWLIST =
-  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|kayak\.com|google\.com\/travel\/|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
+  /^https:\/\/(?:www\.google\.com\/travel\/|(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|kayak\.com|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com))\//;
 
 async function flightsMode(request: APIRequestContext): Promise<string> {
   if (!process.env.HEALTH_TOKEN) return "unknown";
