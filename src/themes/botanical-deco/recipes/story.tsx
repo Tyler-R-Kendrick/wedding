@@ -6,6 +6,8 @@ import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, StoryProps } from '@/themes/content-types';
 import { formatPartialDate } from '@/themes/shared/format';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
+import { legacyAnchorsForSection } from '@/themes/shared/story-anchors';
+import { StorySectionMedia } from '@/themes/shared/StorySectionMedia';
 import { timelineAnchors } from '@/themes/shared/timeline';
 import { kit, More, PageHero } from '../kit';
 import { StoryRide, type LineKey, type RideStop } from '../kit/StoryRide';
@@ -67,9 +69,12 @@ function Meta({ children }: { children: ReactNode }) {
 }
 
 function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; stop: RideStop; ordinal: number }) {
-  const photo = section.media.find((m) => m.src);
+  const photos = section.media.filter((m) => m.src);
   return (
     <article className="bd-stopcard bd-stopcard--chapter" aria-labelledby={`${stop.slug}-title`}>
+      {legacyAnchorsForSection(section.slug).map((legacy) => (
+        <span key={legacy} id={legacy} className="sr-only" aria-hidden="true" />
+      ))}
       <div className="bd-stopcard__text">
         <Meta>Chapter {ORDINALS[ordinal] ?? ordinal + 1}</Meta>
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
@@ -79,8 +84,12 @@ function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; st
         <ProseBlock blocks={section.paragraphs} />
         <Provenance provenance={section.provenance} />
       </div>
-      {photo?.src ? (
-        <TimelinePhoto src={photo.src} alt={photo.alt} sizes={PHOTO_SIZES} />
+      {photos.length ? (
+        <StorySectionMedia
+          section={section}
+          className="bd-stopcard__carousel"
+          renderSlide={(m) => <TimelinePhoto key={m.src} src={m.src!} alt={m.alt} sizes={PHOTO_SIZES} />}
+        />
       ) : (
         // Where a chapter has no picture, the Deco numeral holds its place; the words already say it.
         <span className="bd-stopcard__numeral" aria-hidden="true">

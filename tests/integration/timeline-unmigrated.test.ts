@@ -19,8 +19,8 @@ describe('Our Story before timeline_moments is migrated', () => {
     expect(r.ok, r.ok ? '' : r.error.message).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.sections).toHaveLength(7);
-    expect(r.value.data.timeline.map((m) => m.slug)).toContain('starved-rock');
-    expect(r.value.data.timeline.map((m) => m.slug)[0]).toBe('allison-and-jamies-wedding');
+    expect(r.value.data.timeline).toEqual([]);
+    expect(r.value.data.sections.find((s) => s.slug === 'love')?.paragraphs.some((p) => p.text.includes('Starved Rock'))).toBe(true);
   });
 
   it('re-projects the concierge corpus without it, so an admin save there cannot 500 after committing', async () => {

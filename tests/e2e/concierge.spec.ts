@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { apiHeaders, contextAs } from './helpers/principal';
+import { apiHeaders, contextAs, BASE_URL, principalHeaders } from './helpers/principal';
 
 /**
  * The concierge on a real server. What matters here is not that the model is clever: it is that the
@@ -21,10 +21,18 @@ import { apiHeaders, contextAs } from './helpers/principal';
 let clientCounter = 0;
 async function guestPage(browser: import('@playwright/test').Browser) {
   clientCounter += 1;
-  const ctx = await contextAs(browser, 'A1', {
-    extraHTTPHeaders: { 'x-forwarded-for': `198.51.100.${clientCounter % 250}` },
+  const device = test.info().project.use;
+  const ctx = await browser.newContext({
+    baseURL: BASE_URL,
+    viewport: device.viewport,
+    userAgent: device.userAgent,
+    deviceScaleFactor: device.deviceScaleFactor,
+    isMobile: device.isMobile,
+    hasTouch: device.hasTouch,
   });
-  return { ctx, page: await ctx.newPage() };
+  const page = await ctx.newPage();
+  await page.setExtraHTTPHeaders({ ...principalHeaders('A1'), 'x-forwarded-for': `198.51.100.${clientCounter % 250}` });
+  return { ctx, page };
 }
 
 test.describe('concierge on Ask Us', () => {
@@ -45,6 +53,18 @@ test.describe('concierge on Ask Us', () => {
     await expect(page.getByRole('searchbox')).toBeVisible();
     await expect(page.getByTestId('concierge-open')).toBeVisible();
     await expect(page.getByTestId('concierge-input')).toHaveCount(0);
+    await ctx.close();
+  });
+
+  test('the FAQ and static search work without opening the concierge', async ({ browser }) => {
+    const { ctx, page } = await guestPage(browser);
+    await page.goto('/ask-us');
+    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
+    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
+    await page.getByLabel('What are you looking for?').fill('valet');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page).toHaveURL(/q=valet/);
+    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
     await ctx.close();
   });
 
@@ -197,7 +217,7 @@ test.describe('concierge on Ask Us', () => {
     expect(get.status()).toBe(405);
     const { 'content-type': _json, ...authOnly } = apiHeaders('A1');
     const form = await request.post('/api/ai/chat', { form: { message: 'hi' }, headers: authOnly });
-    expect(form.status()).toBe(403);
+    expect(form.status(), 'form-encoded POST must not be accepted as the chat API').toBe(403);
 
     const unsigned = await request.post('/api/ai/chat', { data: { message: 'When is the wedding?' }, headers: { 'content-type': 'application/json' } });
     expect(unsigned.status()).toBe(401);

@@ -7,6 +7,8 @@ import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
 import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
 import type { ContentKit, StopItem } from '@/themes/content-types';
 import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
+import { legacyAnchorsForSection } from '@/themes/shared/story-anchors';
+import { StorySectionMedia } from '@/themes/shared/StorySectionMedia';
 
 /*
  * Conservatory content primitives. Everything is mounted on the herbarium sheet: a dashed stem
@@ -76,12 +78,16 @@ function StoryTimeline({ sections }: Parameters<ContentKit['StoryTimeline']>[0])
     <ol className="cv-stem" aria-label="Chapters">
       {sections.map((s, i) => (
         <li key={s.id} id={s.slug} className="cv-stem__node">
+          {legacyAnchorsForSection(s.slug).map((legacy) => (
+            <span key={legacy} id={legacy} className="sr-only" aria-hidden="true" />
+          ))}
           <Leaf className="cv-leaf cv-stem__leaf" />
           <div className="cv-stem__body">
             <span className="cv-specimen cv-specimen--static">{chapterLabel(s.chapter)}</span>
             <h2 className="cv-h cv-h--2 cv-stem__title">{s.title}</h2>
             <StatusFlags placeholder={s.placeholder} />
             <ProseBlock blocks={s.paragraphs} lead={i === 0} />
+            <StorySectionMedia section={s} className="cv-stem__carousel" />
             <Provenance provenance={s.provenance} />
           </div>
         </li>
