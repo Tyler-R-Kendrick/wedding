@@ -7,9 +7,9 @@ test.describe('guest sign-in pass short link', () => {
     const adminCookie = await signInViaUi(page, request, f.emails.admin!, true);
     const issueRes = await cap(request, 'admin_issue_guest_sign_in_pass', { guestId: f.guests.chidi, ttlDays: 30 }, { cookie: adminCookie });
     expect(issueRes.ok()).toBe(true);
-    const issue = (await issueRes.json()) as { ok: boolean; value: { data: { url: string; code: string } } };
+    const issue = (await issueRes.json()) as { ok: true; data: { url: string; code: string } };
     expect(issue.ok).toBe(true);
-    const { url, code } = issue.value.data;
+    const { url, code } = issue.data;
     expect(url).not.toContain(code);
     const slug = url.split('/s/')[1]!;
     await page.context().clearCookies();
@@ -22,9 +22,10 @@ test.describe('guest sign-in pass short link', () => {
     const f = await seedFixtures(request);
     const adminCookie = await signInViaUi(page, request, f.emails.admin!, true);
     const issueRes = await cap(request, 'admin_issue_guest_sign_in_pass', { guestId: f.guests.chidi }, { cookie: adminCookie });
-    const issue = (await issueRes.json()) as { value: { data: { url: string; pass: { id: string } } } };
-    await cap(request, 'admin_revoke_guest_sign_in_pass', { passId: issue.value.data.pass.id }, { cookie: adminCookie });
-    const slug = issue.value.data.url.split('/s/')[1]!;
+    expect(issueRes.ok()).toBe(true);
+    const issue = (await issueRes.json()) as { ok: true; data: { url: string; pass: { id: string } } };
+    await cap(request, 'admin_revoke_guest_sign_in_pass', { passId: issue.data.pass.id }, { cookie: adminCookie });
+    const slug = issue.data.url.split('/s/')[1]!;
     await page.goto(`/s/${slug}`);
     await expect(page.getByText(/no longer active|Sign in with your email/i)).toBeVisible();
   });
