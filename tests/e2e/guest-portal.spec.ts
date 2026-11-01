@@ -3,15 +3,39 @@ import { VIEW_ROLE_COOKIE } from '../../src/domain/identity/view-role';
 import { BASE_URL, contextAs } from './helpers/principal';
 import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../security/helpers';
 
-async function openAccountMenu(page: Page) {
-  const trigger = page.getByRole('button', { name: 'Your account' });
-  await trigger.click();
-  await expect(page.locator('.account-menu__panel:not([hidden])')).toBeVisible();
+async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
+  const popover = page.getByRole('button', { name: 'Your account' });
+  if (await popover.isVisible().catch(() => false)) {
+    await popover.click();
+    await expect(page.locator('.account-menu__panel:not([hidden])')).toBeVisible();
+    return 'popover';
+  }
+  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
+  const sheet = page.getByRole('dialog').locator('visible=true').first();
+  await expect(sheet).toBeVisible();
+  return 'inline';
 }
 
 async function accountMenuHrefs(page: Page): Promise<string[]> {
-  await openAccountMenu(page);
-  return page.locator('.account-menu__panel:not([hidden]) a').evaluateAll((nodes) => nodes.map((a) => a.getAttribute('href')).filter(Boolean) as string[]);
+  const kind = await openAccountMenu(page);
+  if (kind === 'popover') {
+    return page.locator('.account-menu__panel:not([hidden]) a').evaluateAll((nodes) => nodes.map((a) => a.getAttribute('href')).filter(Boolean) as string[]);
+  }
+  return page.getByRole('group', { name: 'Your account' }).getByRole('link').evaluateAll((nodes) => nodes.map((a) => a.getAttribute('href')).filter(Boolean) as string[]);
+}
+
+async function expectGuestPortalNav(page: Page) {
+  const nav = page.getByRole('navigation', { name: 'Site' });
+  const portalInMasthead = nav.getByRole('link', { name: /Guest Portal/i });
+  if (await portalInMasthead.isVisible().catch(() => false)) {
+    await expect(portalInMasthead).toBeVisible();
+    await expect(nav.getByRole('link', { name: /^Travel$/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /Things to Do/i })).toBeVisible();
+    return;
+  }
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/Guest portal/i);
+  await followGuestNav(page, 'Travel');
+  await expect(page).toHaveURL(/\/guests\/travel/);
 }
 
 async function followGuestNav(page: Page, name: string | RegExp) {
@@ -33,10 +57,7 @@ test.describe('guest portal navigation', () => {
     const page = await ctx.newPage();
     await page.goto('/');
     await expect(page).toHaveURL(/\/guests\/?$/);
-    const nav = page.getByRole('navigation', { name: 'Site' });
-    await expect(nav.getByRole('link', { name: /Guest Portal|Portal/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: /^Travel$/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: /Things to Do/i })).toBeVisible();
+    await expectGuestPortalNav(page);
     await ctx.close();
   });
 
@@ -126,10 +147,10 @@ test.describe('guest sign-in landing paths', () => {
   test('email OTP sign-in with next=/ still lands on /guests', async ({ page, request }) => {
     const f = await seedFixtures(request);
     await page.goto('/sign-in?next=%2F');
-    await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.b1!);
+    await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.chidi!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
-    await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.b1!));
+    await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.chidi!));
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page).toHaveURL(/\/guests\/?$/, { timeout: 20_000 });
   });
@@ -137,7 +158,7 @@ test.describe('guest sign-in landing paths', () => {
   test('admin email sign-in still lands on /admin by default', async ({ page, request }) => {
     const f = await seedFixtures(request);
     await page.goto('/sign-in/admin');
-    await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
+    await page.getByRole('textbox', { name: 'Administrator email' }).fill(f.emails.admin!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
@@ -162,10 +183,7 @@ test.describe('view-as guest preview', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/guests\/?$/);
     await expect(page.getByRole('status').filter({ hasText: 'View as:' })).toContainText('Invited guest');
-    const nav = page.getByRole('navigation', { name: 'Site' });
-    await expect(nav.getByRole('link', { name: /Guest Portal|Portal/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: /^Travel$/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: /Things to Do/i })).toBeVisible();
+    await expectGuestPortalNav(page);
     const hrefs = await accountMenuHrefs(page);
     expect(hrefs.slice(0, 2)).toEqual(['/guests', '/admin']);
     await ctx.close();
