@@ -42,7 +42,7 @@ export async function readOtp(request: APIRequestContext, email: string): Promis
   throw new Error(`no OTP for ${email}`);
 }
 
-/** Drives the real claim UI (invite -> pick -> code -> welcome). Returns the session cookie value. */
+/** Drives the real claim UI (invite -> pick -> code -> guest portal). Returns the session cookie value. */
 export async function claimViaUi(page: Page, request: APIRequestContext, token: string, guestId: string, inboxEmail: string): Promise<string> {
   await page.goto(`/invite/${token}`);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -53,7 +53,7 @@ export async function claimViaUi(page: Page, request: APIRequestContext, token: 
   const code = await readOtp(request, inboxEmail);
   await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page).toHaveURL(/\/claim\/welcome/);
+  await expect(page).toHaveURL(/\/guests(\/|$|\?)/);
   return sessionCookie(page);
 }
 
@@ -65,7 +65,7 @@ export async function signInViaUi(page: Page, request: APIRequestContext, email:
   const code = await readOtp(request, email);
   await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page).toHaveURL(admin ? /\/admin/ : /\/guests(\/|$)/);
+  await expect(page).toHaveURL(admin ? /\/admin/ : /\/guests(\/|$|\?)/);
   return sessionCookie(page);
 }
 

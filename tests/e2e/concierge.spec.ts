@@ -237,7 +237,7 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) 
     test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
       const { ctx, page } = await guestPage(browser);
       await page.goto(`/guests/ask-us?theme=${theme}`);
-      await expect(page.locator(`.site[data-theme="${theme}"]`).first()).toBeAttached();
+      await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
 
       const slot = page.locator('#concierge-slot');
       await expect(slot).toBeAttached();
