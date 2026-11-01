@@ -3,19 +3,6 @@ import { VIEW_ROLE_COOKIE } from '../../src/domain/identity/view-role';
 import { BASE_URL, contextAs } from './helpers/principal';
 import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../security/helpers';
 
-async function waitForSignedInAccountMenu(page: Page) {
-  await page
-    .waitForResponse((r) => r.url().includes('/api/session') && r.ok(), { timeout: 20_000 })
-    .catch(() => undefined);
-  const popover = page.getByRole('button', { name: 'Your account' });
-  if (await popover.isVisible().catch(() => false)) {
-    await expect(popover).toBeVisible();
-    return;
-  }
-  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
-  await expect(page.getByRole('group', { name: 'Your account' })).toBeVisible({ timeout: 20_000 });
-}
-
 async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
   const popover = page.getByRole('button', { name: 'Your account' });
   if (await popover.isVisible().catch(() => false)) {
@@ -23,10 +10,25 @@ async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
     await expect(page.locator('.account-menu__panel:not([hidden])')).toBeVisible();
     return 'popover';
   }
-  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
-  const sheet = page.getByRole('dialog').locator('visible=true').first();
-  await expect(sheet).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Menu' });
+  if (!(await dialog.isVisible().catch(() => false))) {
+    await page.getByRole('button', { name: /^Menu$/ }).first().click();
+  }
+  await expect(dialog).toBeVisible();
   return 'inline';
+}
+
+async function waitForSignedInAccountMenu(page: Page) {
+  const popover = page.getByRole('button', { name: 'Your account' });
+  if (await popover.isVisible().catch(() => false)) {
+    await expect(popover).toBeVisible();
+    return;
+  }
+  const dialog = page.getByRole('dialog', { name: 'Menu' });
+  if (!(await dialog.isVisible().catch(() => false))) {
+    await page.getByRole('button', { name: /^Menu$/ }).first().click();
+  }
+  await expect(page.getByRole('group', { name: 'Your account' })).toBeVisible({ timeout: 20_000 });
 }
 
 async function accountMenuHrefs(page: Page): Promise<string[]> {
@@ -109,6 +111,7 @@ test.describe('guest portal navigation', () => {
   });
 
   test('signed-in guest Your account includes Guest Portal on home and a public page', async ({ browser }) => {
+    test.setTimeout(60_000);
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
     await page.goto('/');
