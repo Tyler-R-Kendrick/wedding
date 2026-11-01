@@ -60,7 +60,7 @@ export function synthesizedVenueHotel(now: Date): HotelRecommendation {
       websiteUrl: VENUE.url,
       bookingUrl: null,
       block: DEFAULT_VENUE_BLOCK,
-      placeholder: true,
+      placeholder: false,
       active: true,
       sourceId: CAA_KIT_SOURCE_ID,
       verifiedAt: new Date(BRIEF_VERIFIED_AT),

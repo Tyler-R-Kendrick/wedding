@@ -58,6 +58,8 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/claim/verify'
  * '/claim/welcome'
  * '/credits'
+ * '/privacy'
+ * '/terms'
  * '/explore-caa'
  * '/faq'
  * '/gifts'
@@ -94,6 +96,7 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/step-up'
  * '/t/botanical-deco'
  * '/t/botanical-deco/preview/RSVP_OPEN'
+ * '/terms'
  * '/the-wedding'
  * '/terms'
  * '/things-to-do'
@@ -198,6 +201,7 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\
 function redirectLanded(destination: string, kind: CrawlPersonaKind, source?: string): RegExp {
   const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
   if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
+  const portalNext = guestPortalRedirectFor(destination) ?? destination;
   const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
   const guestOnly =
     kind === 'anonymous' &&
@@ -207,7 +211,8 @@ function redirectLanded(destination: string, kind: CrawlPersonaKind, source?: st
     const fromSource = guestPortalRedirectFor(source.replace(/\/+$/, '') || '/');
     if (fromSource) signInNexts.add(fromSource);
   }
-  if (guestOnly) signInNexts.add(guestPortalRedirectFor(destination) ?? destination);
+  if (guestOnly) signInNexts.add(portalNext);
+  if (kind === 'anonymous' && portalNext !== destination) signInNexts.add(portalNext);
   const atSignIn = [...signInNexts]
     .map((next) => `\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(next))}(?:$|&)`)
     .join('|');

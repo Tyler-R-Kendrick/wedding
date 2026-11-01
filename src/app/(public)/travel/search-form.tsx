@@ -166,10 +166,22 @@ function HotelResults({ outcome }: { outcome: HotelSearchOutcome }) {
   );
 }
 
-export function FlightSearchForm({ defaults = {} }: { defaults?: Defaults }) {
+export function FlightSearchForm({
+  defaults = {},
+  originSuggestions = [],
+}: {
+  defaults?: Defaults;
+  originSuggestions?: { iata: string; name: string; distanceKm?: number; municipality?: string }[];
+}) {
   const [state, action, pending] = useActionState(searchAction, INITIAL);
   const { value, issue } = useValues(state, defaults);
   const helpId = useId();
+  const listId = useId();
+  const suggestions = originSuggestions.length
+    ? originSuggestions
+    : defaults.origin
+      ? [{ iata: defaults.origin.toUpperCase(), name: defaults.origin }]
+      : [];
   return (
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="flights" />
@@ -179,7 +191,32 @@ export function FlightSearchForm({ defaults = {} }: { defaults?: Defaults }) {
       <ErrorSummary state={state} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Flying from" name="origin" hint="3-letter airport code, for example LAX" issue={issue('origin')}>
-          {(p) => <input id={p.id} name="origin" defaultValue={value('origin')} required maxLength={3} autoCapitalize="characters" aria-describedby={p.describedBy} aria-invalid={p.invalid || undefined} className={INPUT} />}
+          {(p) => (
+            <>
+              <input
+                id={p.id}
+                name="origin"
+                list={suggestions.length ? listId : undefined}
+                defaultValue={value('origin')}
+                required
+                maxLength={3}
+                autoCapitalize="characters"
+                aria-describedby={p.describedBy}
+                aria-invalid={p.invalid || undefined}
+                className={INPUT}
+              />
+              {suggestions.length ? (
+                <datalist id={listId}>
+                  {suggestions.map((s) => (
+                    <option key={s.iata} value={s.iata}>
+                      {s.name}
+                      {s.municipality ? ` (${s.municipality})` : ''}
+                    </option>
+                  ))}
+                </datalist>
+              ) : null}
+            </>
+          )}
         </Field>
         <Field label="Flying to" name="destination" issue={issue('destination')}>
           {(p) => (

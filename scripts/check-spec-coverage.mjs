@@ -57,6 +57,8 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/seating.spec.ts',
   // Level 08: the signed-in trip page needs the test-principal injector.
   'tests/e2e/trip.spec.ts',
+  // Level 08: travel search prefill from household mailing address and party counts.
+  'tests/e2e/travel-prefill.spec.ts',
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
   // through identity's test-principal injector, so they need the NODE_ENV=test server.
   'tests/e2e/transport-gifts.spec.ts',
