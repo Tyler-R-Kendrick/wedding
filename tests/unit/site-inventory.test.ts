@@ -18,7 +18,7 @@ describe('site inventory', () => {
     expect(missing, 'quote each path in tests/e2e/site-crawler.spec.ts so the test server warms it').toEqual([]);
   });
 
-  it('names the guest portal, its legacy aliases, and the social sign-in door', () => {
+  it('names the guest portal, its legacy aliases, and the sign-in doors', () => {
     const byUrl = (url: string) => inventory().find((row) => row.url === url && row.method === 'GET');
     for (const url of ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/guests/things-to-do/[slug]']) {
       expect(byUrl(url)?.audience, url).toBe('guest');
@@ -31,7 +31,12 @@ describe('site inventory', () => {
     expect(byUrl('/share-an-adventure')?.expected).toContain('/guests/things-to-do');
     expect(byUrl('/sign-in/pending')?.audience).toBe('gate');
     expect(byUrl('/sign-in/pending')?.crawlExample).toBe('/sign-in/pending');
+    expect(byUrl('/sign-in/phone')?.audience).toBe('gate');
+    expect(byUrl('/sign-in/phone')?.crawl).toBe(true);
+    expect(byUrl('/sign-in/phone')?.crawlExample).toBe('/sign-in/phone');
+    expect(byUrl('/sign-in/phone')?.expected).toContain('FLAG_PHONE_SIGN_IN');
     expect(publicSitemapPaths().some((path) => path === '/guests' || path.startsWith('/guests/'))).toBe(false);
+    expect(publicSitemapPaths()).not.toContain('/sign-in/phone');
     expect(byUrl('/api/auth/social/[provider]/start')?.crawl).toBe(false);
     expect(byUrl('/api/auth/social/[provider]/callback')?.expected).toContain('/sign-in/pending');
   });

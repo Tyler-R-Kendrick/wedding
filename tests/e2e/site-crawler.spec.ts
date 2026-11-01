@@ -87,6 +87,7 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/sign-in'
  * '/sign-in/admin'
  * '/sign-in/pending'
+ * '/sign-in/phone'
  * '/sign-out'
  * '/sitemap.xml'
  * '/step-up'

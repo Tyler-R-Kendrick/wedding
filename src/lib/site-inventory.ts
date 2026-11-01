@@ -125,6 +125,8 @@ const pageExpected = (p: SitemapPage): string => {
       return '200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate.';
     case 'sign-in-pending':
       return '200. Holding page when social sign-in cannot match an invitation yet. It does not start a session.';
+    case 'sign-in-phone':
+      return '200 when phone sign-in is on (FLAG_PHONE_SIGN_IN, with Twilio or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /your-weekend and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session.';
     case 'rsvp-step':
       return '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.';
     case 'invitation':

@@ -8,14 +8,14 @@ Counted from that module on 1 November 2026:
 
 | Group | Rows | Opened in a browser |
 |---|---|---|
-| Pages | 67 | yes |
+| Pages | 68 | yes |
 | Internal theme routes | 2 | yes, signed out only |
 | Redirects | 6 | the five static aliases, signed out only |
 | API, export, and `/sitemap.xml` | 35 | no |
 
-That is 110 rows. 74 have `crawl: true`. The other 36 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
+That is 111 rows. 75 have `crawl: true`. The other 36 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
 
-The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. A signed-in guest who opens `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>`, or `/ask-us` is sent to the matching portal URL. An administrator stays on the legacy URL. `/guests` and `/guests/ask-us` show that administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
+The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. A signed-in guest who opens `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>`, or `/ask-us` is sent to the matching portal URL. An administrator stays on the legacy URL. `/guests` and `/guests/ask-us` show that administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `/sign-in/phone` is SMS sign-in when `FLAG_PHONE_SIGN_IN` is on (Twilio Verify, or the mock outside production); otherwise it redirects to `/sign-in`. The code is checked on `/claim/verify`. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
 
 ## The four readers
 
@@ -80,10 +80,10 @@ Personas, and how many HTML routes each opens:
 
 | Persona | Routes | Who it is |
 |---|---|---|
-| Anonymous | 29 | Signed out. Public pages, gate pages (including `/sign-in/pending`), the five static aliases, and the two internal theme URLs. |
-| Guest | 39 | Fixture household A1. Those public and gate pages, plus every guest page, including the portal. |
-| Administrator | 67 | Every page row, including the console. Redirects and the theme tree are not repeated. |
-| View-role | 39, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |
+| Anonymous | 30 | Signed out. Public pages, gate pages (including `/sign-in/pending` and `/sign-in/phone`), the five static aliases, and the two internal theme URLs. |
+| Guest | 40 | Fixture household A1. Those public and gate pages, plus every guest page, including the portal. |
+| Administrator | 68 | Every page row, including the console. Redirects and the theme tree are not repeated. |
+| View-role | 40, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |
 
 `tests/unit/site-inventory.test.ts` reads the spec as text and fails when a crawl path or a probe path is not quoted in it. `scripts/test-server-specs.mjs` uses those quotes to warm the dev server before a named run, and the same paths are in the CI warm-up in `.github/workflows/design-quality.yml`. `tests/unit/agent/test-server-specs.test.ts` fails when those two lists drift. The spec is registered in `scripts/check-spec-coverage.mjs` as a test-server spec, not a production-build spec.
 
