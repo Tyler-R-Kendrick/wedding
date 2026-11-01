@@ -60,8 +60,11 @@ export function decide(env = {}) {
     return { run: false, fatal: true, reason: `production build has no database URL the app can read: DATABASE_URL, POSTGRES_URL or POSTGRES_PRISMA_URL${near}` };
   }
 
-  // The migrator, though, prefers the direct connection where one exists.
-  const url = env.DATABASE_URL || env.POSTGRES_URL_NON_POOLING || appUrl;
+  // The migrator prefers a direct (non-pooler) connection for DDL. When DATABASE_URL points at a
+  // transaction-mode pooler — common on Neon/Vercel — drizzle can report "migrations applied" while
+  // columns never land; verify-schema then fails the build instead of shipping broken sign-in.
+  const direct = env.POSTGRES_URL_NON_POOLING;
+  const url = direct || env.DATABASE_URL || env.POSTGRES_URL || appUrl;
 
   return { run: true, reason: 'production deploy', url };
 }

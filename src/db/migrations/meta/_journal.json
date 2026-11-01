@@ -141,6 +141,13 @@
       "when": 1793509587028,
       "tag": "0019_nervous_zuras",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793544000000,
+      "tag": "0020_auth_schema_repair",
+      "breakpoints": true
     }
   ]
 }
