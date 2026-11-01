@@ -87,6 +87,10 @@ export interface NavModel {
   more: NavItem[];
   /** Sticky / quick actions for the state (mobile bottom bar). */
   sticky: NavItem[];
+  /** When set, the masthead monogram links here instead of `/` (signed-in guest portal). */
+  homeHref?: string;
+  /** Screen-reader label for the masthead home control; defaults to `homeLabelFor(state)`. */
+  homeLabel?: string;
   currentPath: string;
   /**
    * True on a page inside the current item (a room under Our Venue, one adventure under Our
@@ -301,8 +305,10 @@ export interface NavProps {
   nav: NavModel;
   siteName: string;
   switcherEnabled: boolean;
-  /** "Today" replaces "Home" on WEDDING_DAY. */
+  /** "Today" replaces "Home" on WEDDING_DAY; guest portal uses "Guest Portal". */
   homeLabel: string;
+  /** Masthead monogram target; defaults to `/`. */
+  homeHref?: string;
 }
 
 export interface FooterProps {

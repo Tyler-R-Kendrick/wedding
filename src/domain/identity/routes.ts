@@ -1,4 +1,5 @@
 import { isInternalRoute } from '@/capabilities/routes';
+import { isGuestPortalInternalRoute } from '@/domain/lifecycle/guest-portal';
 
 /**
  * Where an auth journey may send someone afterwards (`next`, `back`). Only same-site paths:
@@ -24,7 +25,7 @@ export function isSafeReturnPath(path: unknown): path is string {
   const [pathname, query = '', ...rest] = path.split('?');
   if (rest.length > 0 || !SAFE_QUERY.test(query) || pathname!.includes('#')) return false;
   const clean = pathname!.replace(/\/+$/, '') || '/';
-  if (isInternalRoute(clean) || (AUTH_ROUTES as readonly string[]).includes(clean)) return true;
+  if (isInternalRoute(clean) || isGuestPortalInternalRoute(clean) || (AUTH_ROUTES as readonly string[]).includes(clean)) return true;
   if (MOVED.some((moved) => clean === moved || (clean.startsWith(`${moved}/`) && SAFE_TAIL.test(clean.slice(moved.length + 1))))) return true;
   return AUTH_PREFIXES.some((prefix) => clean.startsWith(prefix) && SAFE_TAIL.test(clean.slice(prefix.length)));
 }

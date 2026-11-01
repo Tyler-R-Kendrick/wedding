@@ -15,6 +15,7 @@ import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceV
 import { filterVisible, isValidAt } from '@/domain/content/visibility';
 import { toOperationalFieldView } from '@/domain/venue/repo';
 import { ROUTES } from '@/domain/routes';
+import { thingsToDoDetailPath } from '@/domain/lifecycle/guest-portal';
 import { composeItinerary, totalMinutes, type ComposeOptions } from './itineraries';
 
 // ------------------------------------------------------------------------------------ places
@@ -112,7 +113,7 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   const memory = row.experienceId ? deps.memories.get(row.experienceId) : undefined;
   const operational = row.operationalKey ? deps.operational.get(row.operationalKey) : undefined;
-  const route = `${ROUTES.share}/${row.slug}`;
+  const route = thingsToDoDetailPath(row.slug, ctx.principal);
   const handoffs: RecommendationCard['handoffs'] = {};
   if (place) {
     const directions = directionsHandoff(place, { mode: row.category === 'day-trip' ? 'driving' : 'transit' });
@@ -148,12 +149,12 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   };
 }
 
-export function toRecommendationSummary(row: RecommendationRow, deps: RecommendationDeps): RecommendationSummary {
+export function toRecommendationSummary(row: RecommendationRow, deps: RecommendationDeps, ctx: ReadContext): RecommendationSummary {
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   return {
     id: row.id,
     slug: row.slug,
-    href: `${ROUTES.share}/${row.slug}`,
+    href: thingsToDoDetailPath(row.slug, ctx.principal),
     title: row.title,
     category: row.category,
     what: textBlock(row.what),
@@ -166,7 +167,7 @@ export function toRecommendationSummary(row: RecommendationRow, deps: Recommenda
 }
 
 export function recommendationCitation(row: RecommendationRow, ctx: ReadContext): Citation {
-  return toRecordCitation(row, { route: `${ROUTES.share}/${row.slug}`, title: `Share an Adventure › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
+  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug, ctx.principal), title: `Share an Adventure › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
 }
 
 export async function visibleRecommendations(ctx: ReadContext): Promise<RecommendationRow[]> {
@@ -198,7 +199,7 @@ export async function findRecommendations(ctx: ReadContext, opts: FindOptions = 
   }
   const limit = opts.limit ?? (ctx.surface === 'ui' ? 50 : 12);
   const cards = await Promise.all(rows.slice(0, limit).map((r) => toRecommendationCard(r, ctx, deps)));
-  const composable = rows.map((r) => ({ ...toRecommendationSummary(r, deps), interests: r.interests }));
+  const composable = rows.map((r) => ({ ...toRecommendationSummary(r, deps, ctx), interests: r.interests }));
   const composed = opts.maxMinutes ? composeItinerary(composable, { maxMinutes: opts.maxMinutes, interests: opts.interests, kids: opts.kids }) : undefined;
   const sources = dedupeCitations(rows.slice(0, limit).map((r) => recommendationCitation(r, ctx)));
   return { items: cards, plan: composed, sources };
@@ -344,7 +345,7 @@ export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, dep
   for (const s of row.stops) {
     const rec = recById.get(s.recommendationId);
     if (!rec) continue; // not visible to this principal, or removed
-    stops.push({ recommendation: toRecommendationSummary(rec, deps), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
+    stops.push({ recommendation: toRecommendationSummary(rec, deps, ctx), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
   }
   return {
     id: row.id,

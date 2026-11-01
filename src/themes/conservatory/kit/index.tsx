@@ -89,13 +89,14 @@ function Tag({ item, nav, className = 'cv-tag' }: { item: NavItem; nav: NavProps
   );
 }
 
-function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
-  const items: NavItem[] = [{ label: homeLabel, href: '/' }, ...allItems(nav)];
+function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavProps) {
+  const homeItem: NavItem = { label: homeLabel, href: homeHref };
+  const items: NavItem[] = [homeItem, ...allItems(nav).filter((i) => i.href !== homeHref)];
   const bar = nav.sticky.slice(0, 2);
   return (
     <>
       <nav className="cv-rail" aria-label="Site">
-        <a className="cv-rail__home" href="/" aria-current={nav.currentPath === '/' ? 'page' : undefined}>
+        <a className="cv-rail__home" href={homeHref} aria-current={nav.currentPath === homeHref ? 'page' : undefined}>
           <span className="cv-rail__names">{siteName}</span>
           <span className="sr-only">: {homeLabel}</span>
         </a>
@@ -178,7 +179,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 }
 
 function Shell({ frame, children, banner }: ShellProps) {
-  const homeLabel = homeLabelFor(frame.lifecycle.state);
+  const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
+  const homeHref = frame.nav.homeHref ?? '/';
   const printUrls = [
     { label: 'Directions', url: frame.site.venue.mapsUrl },
     ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
@@ -193,7 +195,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <GuestViewBand />
       <div className="cv-sheet">
         <header className="cv-header">
-          <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
+          <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} switcherEnabled={frame.switcherEnabled} />
         </header>
         <main id="main" className="cv-main" tabIndex={-1}>
           {children}

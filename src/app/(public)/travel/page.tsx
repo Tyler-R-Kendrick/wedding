@@ -7,9 +7,12 @@ import type { Metadata } from 'next';
  */
 import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
+import { headers } from 'next/headers';
 import { getMyTravelProfile, listHotelRecommendations } from '@/capabilities/travel';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { currentPrincipal, runAsUi } from './_shared/server';
+import { PATHNAME_HEADER } from '@/themes/routes';
 import { recipes } from '../_recipes';
 import { FlightSearchForm, HotelSearchForm } from './search-form';
 
@@ -21,7 +24,12 @@ export const metadata: Metadata = { title: 'Travel & Stay' };
  * live flight/hotel searches happen only from the forms (explicit action), never on load.
  */
 export default async function TravelPage() {
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? '/travel';
   const { principal } = await currentPrincipal();
+  await enforceGuestPortalRoute(principal, pathname, undefined, {
+    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
+    admin: principal.kind === 'admin',
+  });
   const hotels = await runAsUi(listHotelRecommendations, {});
   if (!hotels.ok) {
     return (

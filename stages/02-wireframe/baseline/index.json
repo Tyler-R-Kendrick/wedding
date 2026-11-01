@@ -1348,6 +1348,116 @@
      "same": "botanical-deco"
     }
    }
+  },
+  "portal": {
+   "title": "Guest Portal | Sara + Tyler",
+   "url": "/guests",
+   "finalUrl": "/guests",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
+  },
+  "guest-ask": {
+   "title": "Ask Us | Sara + Tyler",
+   "url": "/guests/ask-us",
+   "finalUrl": "/guests/ask-us",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
+  },
+  "guest-travel": {
+   "title": "Travel & Stay | Sara + Tyler",
+   "url": "/guests/travel",
+   "finalUrl": "/guests/travel",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
+  },
+  "guest-things": {
+   "title": "Share an Adventure | Sara + Tyler",
+   "url": "/guests/things-to-do",
+   "finalUrl": "/guests/things-to-do",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
+  },
+  "guest-thing": {
+   "title": "Alinea | Sara + Tyler",
+   "url": "/guests/things-to-do/alinea",
+   "finalUrl": "/guests/things-to-do/alinea",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-01",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    },
+    "gilded-hour": {
+     "status": 200,
+     "file": "gilded-hour.json"
+    },
+    "conservatory": {
+     "status": 200,
+     "file": "conservatory.json"
+    }
+   }
   }
  }
 }

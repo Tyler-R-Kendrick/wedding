@@ -7,7 +7,7 @@ import { THEME_IDS } from '@/themes/registry';
 import { AccountMenu } from '@/themes/shared/AccountMenu';
 
 const CLASSES = { link: 'nav-link', item: 'menu-link' };
-const MEMBER = ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos', '/ask-us'];
+const MEMBER = ['/your-weekend', '/transportation', '/gifts', '/photos'];
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -21,7 +21,7 @@ describe('the account menu', () => {
     expect(document.querySelectorAll('a')).toHaveLength(1);
   });
 
-  it('opens on a signed-in reader to RSVP, their weekend, transport, gifts and photos, then Sign out', () => {
+  it('opens on a signed-in reader to their weekend, transport, gifts and photos, then Sign out', () => {
     render(<AccountMenu nav={navFor('RSVP_OPEN', { signedIn: true })} variant="popover" classNames={CLASSES} />);
     const trigger = screen.getByRole('button', { name: 'Your account' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
@@ -52,7 +52,7 @@ describe('the account menu', () => {
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('group', { name: 'Your account' })).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledWith('/api/session', expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...MEMBER, '/sign-out']);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([...(navFor('RSVP_OPEN').member ?? []).map((i) => i.href), '/sign-out']);
   });
 });
 

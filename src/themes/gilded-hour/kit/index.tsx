@@ -110,7 +110,7 @@ function MenuList({ nav, homeLabel }: { nav: NavProps['nav']; homeLabel: string 
   );
 }
 
-function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
+function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavProps) {
   // Up to six links sit mirrored around the plaque in one row; longer states put `more` on an architrave
   // line. The account slot ("Sign in", or the account menu) counts toward the six and always stays in
   // the frieze, never on the architrave. The frieze only works whole: when NavFit finds a wing that
@@ -136,7 +136,7 @@ function Nav({ nav, siteName, homeLabel, switcherEnabled }: NavProps) {
             </li>
           ))}
         </ul>
-        <a className="gh-plaque-link" href="/" aria-current={nav.currentPath === '/' ? 'page' : undefined}>
+        <a className="gh-plaque-link" href={homeHref} aria-current={nav.currentPath === homeHref ? 'page' : undefined}>
           <span className="gh-plaque gh-plaque--mono" aria-hidden="true">
             S+T
           </span>
@@ -235,7 +235,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 }
 
 function Shell({ frame, children, banner }: ShellProps) {
-  const homeLabel = homeLabelFor(frame.lifecycle.state);
+  const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
+  const homeHref = frame.nav.homeHref ?? '/';
   const printUrls = [
     { label: 'Directions', url: frame.site.venue.mapsUrl },
     ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
@@ -250,7 +251,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       {banner}
       <GuestViewBand />
       <header className="gh-header">
-        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} switcherEnabled={frame.switcherEnabled} />
+        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} switcherEnabled={frame.switcherEnabled} />
       </header>
       <main id="main" className="gh-main" tabIndex={-1}>
         {children}

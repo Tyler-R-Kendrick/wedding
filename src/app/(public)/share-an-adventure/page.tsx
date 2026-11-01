@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { invoke } from '@/capabilities/invoke';
 import { findAdventures } from '@/capabilities/find_adventures';
 import { listItineraries } from '@/capabilities/list_itineraries';
 import { ITINERARY_BUCKETS, type ItineraryBucket } from '@/db/schema/content';
 import { publicPageContext } from '@/domain/content/page-context';
+import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { env } from '@/lib/env';
+import { PATHNAME_HEADER } from '@/themes/routes';
 import { recipes } from '../_recipes';
 import { GuestChicagoTools } from '@/components/guide/GuestChicagoTools';
 import { CuratedChicagoSections } from '@/components/guide/CuratedChicagoSections';
@@ -26,7 +29,12 @@ export default async function ShareAnAdventurePage({ searchParams }: { searchPar
   const interestRaw = one(sp.interest);
   const interest = interestRaw && /^[a-z0-9-]{1,40}$/.test(interestRaw) ? interestRaw : undefined;
 
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? '/share-an-adventure';
   const { ctx, principal } = await publicPageContext();
+  await enforceGuestPortalRoute(principal, pathname, searchParams, {
+    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
+    admin: principal.kind === 'admin',
+  });
   const signedIn = principal.kind === 'guest';
   const [itineraries, all, plan] = await Promise.all([
     invoke(listItineraries, ctx, bucket ? { bucket } : {}),

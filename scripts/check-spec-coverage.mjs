@@ -52,6 +52,7 @@ export const PRODUCTION_SPECS = [
 export const TEST_SERVER_SPECS = [
   'tests/e2e/guest-guide.spec.ts',
   'tests/e2e/guest-planning-ux.spec.ts',
+  'tests/e2e/guest-portal.spec.ts',
   'tests/e2e/claim.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',

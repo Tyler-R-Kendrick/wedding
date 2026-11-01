@@ -10,7 +10,7 @@ import type { SitemapPage, SitemapSection } from './types';
  */
 export const SECTIONS: SitemapSection[] = [
   { id: 'public', title: 'Public', audience: 'public', blurb: 'Anyone with the link: the story, the place, the plan.' },
-  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: their weekend, their RSVP, their trip, the registry, the photos, and Ask Us. Reached only from the account menu.' },
+  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: the guest portal at `/guests`, RSVP, travel and Chicago tips under that hub, then the registry, photos, and the rest from the account menu.' },
   { id: 'gate', title: 'Doors', audience: 'gate', blurb: 'How a guest gets from an invitation link to a session.' },
   { id: 'admin', title: 'Admin', audience: 'admin', blurb: 'Sara, Tyler and the planner run the site from here.' },
 ];
@@ -72,6 +72,30 @@ export const PAGES: SitemapPage[] = [
   },
 
   // ── Guests ────────────────────────────────────────────────────────────────────────────────────
+  {
+    id: 'portal', path: '/guests', title: 'Guest portal', navLabel: 'Guest Portal', parent: null, audience: 'guest', mode: ['act', 'inform'], visibleFrom: 'TEASER', inNav: true,
+    job: 'The signed-in landing: RSVP status and action, your schedule, key details, and links into travel and the weekend.',
+    primaryAction: { label: 'RSVP', to: 'rsvp' },
+  },
+  {
+    id: 'guest-travel', path: '/guests/travel', title: 'Travel & Stay', navLabel: 'Travel', parent: 'portal', audience: 'guest', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
+    job: 'The guest view of airports, the room block, neighbourhood notes and live search — same content as the public travel page, centred on the portal.',
+    primaryAction: { label: 'Plan your trip', to: 'trip' },
+  },
+  {
+    id: 'guest-things', path: '/guests/things-to-do', title: 'Things to Do', parent: 'portal', audience: 'guest', mode: ['inform', 'celebrate'], visibleFrom: 'TEASER', inNav: true,
+    job: 'Chicago recommendations, itineraries and the signed-in map — the guest path for Share an Adventure.',
+    primaryAction: { label: 'Open the map', to: 'share' },
+  },
+  {
+    id: 'guest-thing', path: '/guests/things-to-do/[slug]', example: '/guests/things-to-do/starved-rock-state-park', title: 'A recommendation', parent: 'guest-things', audience: 'guest', mode: ['inform'], visibleFrom: 'SAVE_THE_DATE',
+    job: 'One Chicago recommendation with directions and why we love it.',
+    primaryAction: { label: 'All recommendations', to: 'guest-things' },
+  },
+  {
+    id: 'guest-ask', path: '/guests/ask-us', title: 'Ask Us', parent: 'portal', audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
+    job: 'The guest path for the concierge and FAQ — sign-in required; citations from published pages only.',
+  },
   {
     id: 'ask', path: '/ask-us', title: 'Ask Us', parent: null, audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
     job: 'A concierge that answers questions about the weekend from what we have published, with citations.',

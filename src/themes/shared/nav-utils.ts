@@ -14,6 +14,7 @@ const SHORT: Record<string, string> = {
   Travel: 'Travel',
   'Things to Do': 'Things',
   'The Wedding': 'Wedding',
+  'Guest Portal': 'Portal',
   'Ask Us': 'Ask us',
 };
 

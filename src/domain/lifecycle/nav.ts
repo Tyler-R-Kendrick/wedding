@@ -2,6 +2,7 @@ import { navLabel, page as sitemapPage } from '@wedding/sitemap';
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { isBuiltRoute } from '@/domain/routes';
 import { SIGN_IN, SIGN_OUT } from './account';
+import { GUEST_PORTAL } from './guest-portal';
 import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
 
 /**
@@ -33,8 +34,15 @@ const PAGES = {
   })(),
 } as Record<PageKey | 'ask', NavItem>;
 
+const PORTAL_NAV: Record<'portal' | 'travel' | 'things' | 'ask', NavItem> = {
+  portal: { label: navLabel(sitemapPage('portal')), href: GUEST_PORTAL.root },
+  travel: { label: navLabel(sitemapPage('guest-travel')), href: GUEST_PORTAL.travel },
+  things: { label: navLabel(sitemapPage('guest-things')), href: GUEST_PORTAL.thingsToDo },
+  ask: { label: navLabel(sitemapPage('guest-ask')), href: GUEST_PORTAL.askUs },
+};
+
 /** The account menu's pages: only ever listed for a signed-in reader, never in `primary`/`more`/`sticky`. */
-type MemberKey = 'weekend' | 'rsvp' | 'transport' | 'gifts' | 'photos' | 'ask';
+type MemberKey = 'weekend' | 'rsvp' | 'transport' | 'gifts' | 'photos';
 type PublicKey = Exclude<PageKey, MemberKey>;
 
 interface StateNav {
@@ -67,15 +75,15 @@ const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
  * and gifts from the moment the RSVP opens, as the public tables had them.
  */
 const MEMBER_BY_STATE: Record<LifecycleState, MemberKey[]> = {
-  TEASER: ['photos', 'ask'],
-  SAVE_THE_DATE: ['photos', 'ask'],
-  INVITATIONS_OPEN: ['weekend', 'transport', 'photos', 'ask'],
-  RSVP_OPEN: ['rsvp', 'weekend', 'transport', 'gifts', 'photos', 'ask'],
-  RSVP_CLOSED: ['weekend', 'transport', 'gifts', 'photos', 'ask'],
-  WEDDING_WEEK: ['weekend', 'transport', 'gifts', 'photos', 'ask'],
-  WEDDING_DAY: ['weekend', 'photos', 'transport', 'gifts', 'ask'],
-  POST_WEDDING: ['photos', 'weekend', 'gifts', 'ask'],
-  ARCHIVE: ['photos', 'ask'],
+  TEASER: ['photos'],
+  SAVE_THE_DATE: ['photos'],
+  INVITATIONS_OPEN: ['weekend', 'transport', 'photos'],
+  RSVP_OPEN: ['rsvp', 'weekend', 'transport', 'gifts', 'photos'],
+  RSVP_CLOSED: ['weekend', 'transport', 'gifts', 'photos'],
+  WEDDING_WEEK: ['weekend', 'transport', 'gifts', 'photos'],
+  WEDDING_DAY: ['weekend', 'photos', 'transport', 'gifts'],
+  POST_WEDDING: ['photos', 'weekend', 'gifts'],
+  ARCHIVE: ['photos'],
 };
 
 /*
@@ -107,30 +115,54 @@ export function memberNavFor(state: LifecycleState): NavItem[] {
   return MEMBER_BY_STATE[state].filter((k) => isBuiltRoute(PAGES[k].href)).map((k) => ({ ...PAGES[k] }));
 }
 
+function stickyForState(state: LifecycleState, opts: NavOptions): NavItem[] {
+  const spec = NAV_BY_STATE[state];
+  const sticky: NavItem[] = spec.sticky.map((s) => {
+    switch (s) {
+      case 'now':
+        return { label: 'Now', href: '/#now' };
+      case 'directions':
+        return opts.venue
+          ? { label: 'Directions', href: opts.venue.mapsUrl, external: true, provider: opts.venue.mapsProvider }
+          : { label: 'Directions', href: PAGES.wedding.href };
+    }
+  });
+  return sticky.filter((i) => i.external || isBuiltRoute(i.href));
+}
+
+/** Signed-in guests (and admins previewing as a guest) centre the chrome on `/guests`. */
+function guestPortalNav(state: LifecycleState, opts: NavOptions): NavModel {
+  const primary: NavItem[] = [PORTAL_NAV.portal, PORTAL_NAV.travel, PORTAL_NAV.things, PORTAL_NAV.ask];
+  if (MEMBER_BY_STATE[state].includes('rsvp') && isBuiltRoute(PAGES.rsvp.href)) primary.push({ ...PAGES.rsvp });
+  const member = memberNavFor(state).filter((i) => i.href !== PAGES.rsvp.href);
+  return {
+    primary: primary.filter((i) => isBuiltRoute(i.href.split('#')[0] ?? i.href)),
+    more: [],
+    sticky: stickyForState(state, opts),
+    currentPath: opts.currentPath ?? GUEST_PORTAL.root,
+    homeHref: GUEST_PORTAL.root,
+    homeLabel: PORTAL_NAV.portal.label,
+    account: SIGN_IN,
+    member,
+    signedIn: true,
+    ...(opts.viewing ? { viewing: true } : {}),
+  };
+}
+
 export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
+  if (opts.signedIn === true && opts.admin !== true) return guestPortalNav(state, opts);
+
   const spec = NAV_BY_STATE[state];
   const item = (key: PublicKey): NavItem => {
     const base = PAGES[key];
     if (key === 'home' && state === 'WEDDING_DAY') return { ...base, label: 'Today' };
     return { ...base };
   };
-  const sticky: NavItem[] = spec.sticky.map((s) => {
-    switch (s) {
-      case 'now':
-        return { label: 'Now', href: '/#now' };
-      case 'directions':
-        // Without a maps link the public page that says where the rooms are, not Transportation:
-        // that is the household's page and lives under the account menu.
-        return opts.venue
-          ? { label: 'Directions', href: opts.venue.mapsUrl, external: true, provider: opts.venue.mapsProvider }
-          : { label: 'Directions', href: PAGES.wedding.href };
-    }
-  });
   const shipped = (keys: readonly PublicKey[]) => keys.filter((k) => isBuiltRoute(PAGES[k].href));
   return {
     primary: shipped(spec.primary).map(item),
     more: shipped(spec.more).map(item),
-    sticky: sticky.filter((i) => i.external || isBuiltRoute(i.href)),
+    sticky: stickyForState(state, opts),
     currentPath: opts.currentPath ?? '/',
     account: SIGN_IN,
     member: memberNavFor(state),
@@ -140,6 +172,7 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
   };
 }
 
-export function homeLabelFor(state: LifecycleState): string {
+export function homeLabelFor(state: LifecycleState, opts: Pick<NavOptions, 'signedIn' | 'admin'> = {}): string {
+  if (opts.signedIn === true && opts.admin !== true) return navLabel(sitemapPage('portal'));
   return state === 'WEDDING_DAY' ? 'Today' : 'Home';
 }

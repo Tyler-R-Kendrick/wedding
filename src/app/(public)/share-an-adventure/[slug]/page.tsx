@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { invoke } from '@/capabilities/invoke';
 import { findAdventures } from '@/capabilities/find_adventures';
 import { publicPageContext } from '@/domain/content/page-context';
+import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { recipes } from '../../_recipes';
+import { PATHNAME_HEADER } from '@/themes/routes';
 
 type Params = Promise<{ slug: string }>;
 
@@ -28,6 +31,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function RecommendationDetailPage({ params }: { params: Params }) {
   const { slug } = await params;
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? `/share-an-adventure/${slug}`;
+  const { principal } = await publicPageContext();
+  await enforceGuestPortalRoute(principal, pathname, undefined, {
+    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
+    admin: principal.kind === 'admin',
+  });
   const r = await load(slug);
   if (!r.ok) {
     if (r.error.code === 'not_found' || r.error.code === 'validation') notFound();
