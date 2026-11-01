@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { apiHeaders, BASE_URL, contextAs, principalHeaders } from './helpers/principal';
+import { apiHeaders, contextAs } from './helpers/principal';
 
 /**
  * The concierge on a real server. What matters here is not that the model is clever: it is that the
