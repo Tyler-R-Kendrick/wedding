@@ -7,6 +7,16 @@
   margin-block: var(--spacing-lg);
 }
 
+/* WCAG 2.2 target spacing: standalone links sit above a disclosure summary; give both room. */
+.guest-next + .guest-disclosure {
+  margin-block-start: var(--spacing-xl);
+}
+
+.guest-next :is(a.bd-link--standalone, a.cv-link--standalone, a.gh-link--standalone) {
+  box-sizing: border-box;
+  padding-block: max(0px, calc((44px - 1lh) / 2));
+}
+
 .guest-text-link {
   display: inline-flex;
   align-items: center;
