@@ -29,13 +29,6 @@ export const PRODUCTION_SPECS = [
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
   'tests/e2e/links.spec.ts',
-  // Level 12: the concierge journey is anonymous end to end — it opens the island on /ask-us and
-  // posts to /api/ai/chat as a visitor, so it needs no test principal. It belongs here rather than
-  // on the test server because the two things it asserts about are production behaviour: the answer
-  // must be grounded and cited against the SEEDED knowledge base, and the chat route must be the
-  // only door (405 on GET, 403 on a form-encoded POST). The server has no hosted model anywhere,
-  // so a browser without the Prompt API (CI's) gets the deterministic extractive answer.
-  'tests/e2e/concierge.spec.ts',
   // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
   // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`
   // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
@@ -43,8 +36,8 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/security-headers.spec.ts',
   // Level 16: the client-bundle and lazy-load budget. Production and nowhere else — a `next dev`
   // bundle is unminified, unsplit and carries the refresh runtime, so the same numbers there would
-  // have to be loosened until they asserted nothing. Anonymous, and `next start` serves prebuilt
-  // routes, so it needs no warm-up.
+  // have to be loosened until they asserted nothing. Public routes only (/ask-us is guest-gated since
+  // #86). `next start` serves prebuilt routes, so it needs no warm-up.
   'tests/e2e/bundle.spec.ts',
 ];
 
@@ -53,6 +46,10 @@ export const TEST_SERVER_SPECS = [
   'tests/e2e/guest-guide.spec.ts',
   'tests/e2e/guest-planning-ux.spec.ts',
   'tests/e2e/guest-portal.spec.ts',
+  // Level 12: Ask Us and the concierge are guest-gated; signed-in journeys use the test-principal
+  // injector. Grounding, citations, and /api/ai/chat as the only door are still production code
+  // paths — the NODE_ENV=test server is only how CI presents a session.
+  'tests/e2e/concierge.spec.ts',
   'tests/e2e/claim.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',

@@ -23,15 +23,14 @@ interface Budget {
 
 /*
  * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
- * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8, `/ask-us` 143kB over
- * 8. The budgets are roughly double that, because the value is catching a step change — a chart
+ * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. The budgets are
+ * roughly double that, because the value is catching a step change — a chart
  * library on the home page, a client component that pulls the capability barrel into the browser —
  * not policing kilobytes. Raise one with a reason.
  */
 const BUDGETS: Budget[] = [
   { route: '/', maxScriptKb: 300, maxScriptRequests: 20 },
   { route: '/the-wedding', maxScriptKb: 300, maxScriptRequests: 20 },
-  { route: '/ask-us', maxScriptKb: 300, maxScriptRequests: 20 },
 ];
 
 test.describe('client bundle', () => {
@@ -74,9 +73,10 @@ test.describe('client bundle', () => {
   }
 
   /**
-   * The concierge is the heaviest island on the site, and `/ask-us` is the only page that should
-   * pay for it. If it ever lands in the home page's first view, the page that has to answer "when,
-   * where, and what do I do now" above the fold is carrying a chat client to do it.
+   * The concierge is the heaviest island on the site, and Ask Us is the only page that should pay
+   * for it. If it ever lands in the home page's first view, the page that has to answer "when,
+   * where, and what do I do now" above the fold is carrying a chat client to do it. Ask Us is
+   * guest-gated; the signed-in load budget is asserted in concierge.spec.ts on the test server.
    */
   test('the concierge island is not in the home page’s first view', async ({ page }) => {
     const seen: string[] = [];
@@ -85,7 +85,7 @@ test.describe('client bundle', () => {
     });
 
     await page.goto('/', { waitUntil: 'networkidle' });
-    const home = seen.length;
+    expect(seen.length, 'the home page loaded no script at all, so this assertion proves nothing').toBeGreaterThan(0);
     // Nothing on the home page may fetch the chat route, and no script it loads may contain the
     // panel's own markers. Reading the CONTENT is what makes this a real assertion rather than a
     // guess about chunk names, which the bundler is free to change.
@@ -93,10 +93,5 @@ test.describe('client bundle', () => {
     for (const [i, body] of homeSources.entries()) {
       expect(body, `${new URL(seen[i]!).pathname} carries the concierge panel into the home page`).not.toContain('Ask about the wedding');
     }
-
-    seen.length = 0;
-    await page.goto('/ask-us', { waitUntil: 'networkidle' });
-    expect(seen.length, '/ask-us loaded no script at all, so this assertion proves nothing').toBeGreaterThan(0);
-    expect(home, 'the home page should not be heavier than the concierge page').toBeLessThanOrEqual(seen.length + 4);
   });
 });

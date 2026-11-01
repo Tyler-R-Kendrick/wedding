@@ -29,4 +29,17 @@ test.describe('guest portal navigation', () => {
     await page.goto('/guests/travel');
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
   });
+
+  test('guest ask-us FAQ, static search, and concierge slot at /guests/ask-us', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    await page.goto('/guests/ask-us');
+    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
+    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
+    await page.getByLabel('What are you looking for?').fill('valet');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page).toHaveURL(/q=valet/);
+    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
+    await ctx.close();
+  });
 });

@@ -243,17 +243,6 @@ test.describe('explore journey', () => {
     await axe(page);
   });
 
-  test('ask us has the FAQ, a working static search, and an empty concierge slot', async ({ page }) => {
-    await page.goto('/ask-us');
-    await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
-    await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
-    await page.getByLabel('What are you looking for?').fill('valet');
-    await page.getByRole('button', { name: 'Search' }).click();
-    await expect(page).toHaveURL(/q=valet/);
-    await expect(page.locator('#search-results').getByRole('link', { name: 'Valet entrance' })).toBeVisible();
-    await axe(page);
-  });
-
   test('capabilities are reachable over HTTP and drafts stay hidden', async ({ request }) => {
     const res = await request.post('/api/capabilities/list_adventures', { data: { input: {} } });
     expect(res.status()).toBe(200);

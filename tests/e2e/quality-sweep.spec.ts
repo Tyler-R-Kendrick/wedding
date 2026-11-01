@@ -207,9 +207,9 @@ test.describe('without JavaScript', () => {
         const links = await page.locator('#main a, header a').count();
         expect(links, `${route} @ ${theme} offers no navigation without script`).toBeGreaterThan(0);
       }
-      // /ask-us answers without the island: the FAQ below it is server-rendered prose, which is the
+      // /guests/ask-us answers without the island: the FAQ below it is server-rendered prose, which is the
       // no-AI path a guest actually gets when the model is unavailable or script never loads.
-      await page.goto(`/ask-us?theme=${theme}`, { waitUntil: 'load' });
+      await page.goto(`/guests/ask-us?theme=${theme}`, { waitUntil: 'load' });
       await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('');
       const answers = await page.locator('#main details, #main dd, #main p').count();
       expect(answers, 'Ask Us has nothing to read without the concierge island').toBeGreaterThan(3);
