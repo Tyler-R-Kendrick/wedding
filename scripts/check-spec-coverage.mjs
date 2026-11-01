@@ -20,6 +20,7 @@ export const PRODUCTION_SPECS = [
   // against a production build (a dev server's React is several times slower per render).
   'tests/e2e/atlas.spec.ts',
   'tests/e2e/smoke.spec.ts',
+  'tests/e2e/social-sign-in.spec.ts',
   'tests/e2e/themes.spec.ts',
   // Level 08: /travel and /trip are public and guest-gated respectively, and the spec only needs an
   // anonymous visitor — it asserts that /trip and /admin/travel turn one away, rather than signing
