@@ -195,16 +195,23 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\
  * sends a signed-out visitor on to sign-in, with `next` set to the page they asked for.
  * A signed-in guest is moved one step further, onto the guest portal, when the destination has one.
  */
-function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
+function redirectLanded(destination: string, kind: CrawlPersonaKind, source?: string): RegExp {
   const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
   if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
   const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
   const guestOnly =
     kind === 'anonymous' &&
     inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
-  const signInNext = guestOnly ? guestPortalRedirectFor(destination) ?? destination : destination;
-  const atSignIn = guestOnly ? `|\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(signInNext))}(?:$|&)` : '';
-  return new RegExp(`(?:${atDestination}${atSignIn})`);
+  const signInNexts = new Set<string>();
+  if (source) {
+    const fromSource = guestPortalRedirectFor(source.replace(/\/+$/, '') || '/');
+    if (fromSource) signInNexts.add(fromSource);
+  }
+  if (guestOnly) signInNexts.add(guestPortalRedirectFor(destination) ?? destination);
+  const atSignIn = [...signInNexts]
+    .map((next) => `\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(next))}(?:$|&)`)
+    .join('|');
+  return new RegExp(`(?:${atDestination}${atSignIn ? `|${atSignIn}` : ''})`);
 }
 
 /** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
@@ -232,7 +239,7 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
 
   if (row.kind === 'redirect') {
     const rule = REDIRECTS.find((r) => r.source === row.url);
-    if (rule && !rule.source.includes(':')) await expect(page, url).toHaveURL(redirectLanded(rule.destination, kind));
+    if (rule && !rule.source.includes(':')) await expect(page, url).toHaveURL(redirectLanded(rule.destination, kind, rule.source));
   }
   if (url === '/i/example') await expect(page).toHaveURL(/\/invite\/example(?:$|[?#])/);
 

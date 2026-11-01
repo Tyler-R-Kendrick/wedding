@@ -100,11 +100,10 @@ function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallbac
         : onPortal
           ? requestPath
           : currentPath;
-    // A signed-in-only page (behind the account menu) hands the frame its principal, so the menu is
-    // open at first paint instead of reading "Sign in" until the browser asks /api/session.
-    // Portal routes need it too: Ask Us is public on `/ask-us` and signed-in on `/guests/ask-us`.
-    const principal = preview || opts.signedIn || onPortal ? await getPrincipal(new Request('http://wedding.local/', { headers: h })) : undefined;
-    const lifecycle = principal ? { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) } : undefined;
+    // Resolve the principal on every themed page so signed-in guests see portal links and the
+    // account menu at first paint, not only after `/api/session` on prerendered public routes.
+    const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
+    const lifecycle = { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) };
     const built = await buildPageFrame({ theme, currentPath: pathForFrame, ...(lifecycle ? { lifecycle } : {}) });
     // A detail page (`within`) lights its section's item as the place the reader is, not the page.
     const frame = opts.within ? { ...built, nav: { ...built.nav, currentIsAncestor: true } } : built;

@@ -7,9 +7,13 @@ async function waitForSignedInAccountMenu(page: Page) {
   await page
     .waitForResponse((r) => r.url().includes('/api/session') && r.ok(), { timeout: 20_000 })
     .catch(() => undefined);
-  await expect(
-    page.getByRole('button', { name: 'Your account' }).or(page.getByRole('group', { name: 'Your account' })),
-  ).toBeVisible({ timeout: 20_000 });
+  const popover = page.getByRole('button', { name: 'Your account' });
+  if (await popover.isVisible().catch(() => false)) {
+    await expect(popover).toBeVisible();
+    return;
+  }
+  await page.getByRole('button', { name: /^Menu$/ }).locator('visible=true').first().click();
+  await expect(page.getByRole('group', { name: 'Your account' })).toBeVisible({ timeout: 20_000 });
 }
 
 async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
