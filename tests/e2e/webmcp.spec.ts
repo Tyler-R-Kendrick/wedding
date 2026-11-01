@@ -282,7 +282,7 @@ test.describe('webmcp: a browser that supports it', () => {
     // allowlist, then the island's router performs it, which unregisters and re-registers.
     const result = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('navigate_to', { route: '/travel' })));
     expect(result).toMatchObject({ ok: true, data: { route: '/travel' } });
-    await expect.poll(() => new URL(page.url()).pathname, REGISTERED).toBe('/travel');
+    await expect.poll(() => new URL(page.url()).pathname, REGISTERED).toBe('/sign-in');
     await expect.poll(() => page.evaluate(() => window.__webmcp?.names() ?? []), REGISTERED).toEqual(expected);
   });
 

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { contextAs } from './helpers/principal';
 
 /** The approved design first; the two superseded proposals stay reachable by an explicit link. */
 const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
@@ -119,7 +120,7 @@ for (const theme of THEMES) {
     // path; level 05's content pages use the content kit, which was already correct. This covers
     // the themed public pages, where nobody was looking.
     test('the authoring marker never reaches a visitor', async ({ page }) => {
-      for (const route of ['/', '/travel']) {
+      for (const route of ['/', '/privacy']) {
         await page.goto(`${route}?theme=${theme}`);
         await expect(page.locator('body')).not.toContainText('TODO(');
         await expect(page.locator('body')).not.toContainText(/backlog [A-Z]-\d/);
@@ -178,9 +179,11 @@ test.describe('shell chrome', () => {
     }
   });
 
-  test('Gilded Hour elevator-panel labels are whole and visible at 390', async ({ page }) => {
+  test('Gilded Hour elevator-panel labels are whole and visible at 390 for signed-in guests', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/?theme=gilded-hour');
+    await page.goto('/guests?theme=gilded-hour');
     const cells = page.locator('.gh-panel__cell > span');
     await expect(cells.first()).toBeVisible();
     const clipped = await cells.evaluateAll((spans) =>
@@ -191,6 +194,7 @@ test.describe('shell chrome', () => {
     expect(clipped).toEqual([]);
     await expect(page.locator('.gh-panel__cell', { hasText: /Travel/i })).toBeVisible();
     await expect(page.locator('.gh-panel__cell', { hasText: /Things/i })).toBeVisible();
+    await ctx.close();
   });
 
   test('no fixed control covers footer text at maximum scroll', async ({ page }) => {

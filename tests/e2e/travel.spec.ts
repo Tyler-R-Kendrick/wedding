@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { contextAs } from "./helpers/principal";
 
 /**
  * Travel & Stay journeys. The flights provider mode comes from the running server (the runner
@@ -26,9 +27,11 @@ test.describe("Travel & Stay", () => {
   // 4.12:1 hint colour went unseen until a design review looked at it by hand.
   for (const theme of THEMES) {
     test(`keeps room-block details behind sign-in, shows both airports, and loads no live prices (${theme})`, async ({
-      page,
+      browser,
     }) => {
-      await page.goto(`/travel?theme=${theme}`);
+      const ctx = await contextAs(browser, "A1");
+      const page = await ctx.newPage();
+      await page.goto(`/guests/travel?theme=${theme}`);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(
         "Getting to Chicago",
       );
@@ -38,9 +41,10 @@ test.describe("Travel & Stay", () => {
           name: "Chicago Athletic Association Hotel",
         }),
       ).toBeVisible();
-      // The gaps stay visible; the authoring marker does not. This page is public, and it used to
-      // print `TODO(Tyler & Sara): …` with an internal backlog id next to it.
-      await expect(page.getByRole("link", { name: "Sign in for room-block details as they are confirmed →" })).toBeVisible();
+      await expect(page.getByText(/Room-block details are being confirmed/)).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: /Sign in for room-block details/ }),
+      ).toHaveCount(0);
       await expect(page.getByText("the group rate")).toHaveCount(0);
       await expect(page.getByText("the date to book by")).toHaveCount(0);
       await expect(page.locator("body")).not.toContainText("TODO(");
@@ -91,6 +95,7 @@ test.describe("Travel & Stay", () => {
           .map((e) => `${e.tagName}.${e.className}`),
       );
       expect(tooSmall, "running copy under the 17px floor").toEqual([]);
+      await ctx.close();
     });
   }
 
@@ -100,11 +105,13 @@ test.describe("Travel & Stay", () => {
   // A mock now reports `sample`, the page shows no fabricated price, and the deep links — the part
   // that was always real and always useful — are what a guest gets.
   test("flight search is explicit: a mock provider shows no prices, only real hand-offs; unconfigured providers fall back cleanly", async ({
-    page,
+    browser,
     request,
   }) => {
     const mode = await flightsMode(request);
-    await page.goto("/travel");
+    const ctx = await contextAs(browser, "A1");
+    const page = await ctx.newPage();
+    await page.goto("/guests/travel");
     await page.getByLabel("Flying from").fill("LAX");
     await page.getByLabel("Depart", { exact: true }).fill("2027-07-15");
     await page.getByRole("button", { name: "Search flights" }).click();
@@ -133,6 +140,7 @@ test.describe("Travel & Stay", () => {
         page.getByRole("heading", { name: "Search directly with a partner" }),
       ).toBeVisible();
     }
+    await ctx.close();
   });
 
   test("capability route answers search_travel_options anonymously with the ladder applied", async ({

@@ -14,7 +14,7 @@ import { test, expect, type Page } from '@playwright/test';
  * things on a page: the prerendered theme tree (`/`), a dynamic public page with images, the
  * concierge island (the most client-JS-heavy surface), and a form.
  */
-const ROUTES = ['/', '/the-wedding', '/travel', '/gifts', '/ask-us'];
+const ROUTES = ['/', '/the-wedding', '/privacy', '/terms', '/gifts', '/ask-us'];
 
 interface Violation {
   route: string;

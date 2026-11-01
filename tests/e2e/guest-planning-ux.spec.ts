@@ -47,7 +47,7 @@ test('agenda keeps drafts across type changes and reveals optional errors', asyn
 test('native planning works without JavaScript and retains theme and result focus', async ({ browser }) => {
   const context = await contextAs(browser, 'A1', { javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto('/share-an-adventure?theme=gilded-hour');
+  await page.goto('/guests/things-to-do?theme=gilded-hour');
   await page.getByRole('radio', { name: '45 min', exact: true }).check();
   await page.getByRole('radio', { name: 'Architecture', exact: true }).check();
   await page.getByRole('button', { name: 'Suggest a plan' }).click();
