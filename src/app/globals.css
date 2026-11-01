@@ -21,6 +21,7 @@
 @import "../themes/conservatory/kit.css" layer(components);
 @import "../themes/shared/print.css";
 @import "../themes/shared/guest-planning.css";
+@import "../themes/shared/adventure-carousel.css" layer(components);
 
 @layer base {
   /*
