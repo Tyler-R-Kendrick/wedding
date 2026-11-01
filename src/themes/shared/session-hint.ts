@@ -11,9 +11,11 @@ export interface SessionHint {
   viewRole: { role: string; label: string; readOnly: boolean } | null;
   /** A guest experience preview is active (role or profile). */
   viewing: boolean;
+  /** Guest Portal / Admin Portal links for the account menu. */
+  portals: { label: string; href: string }[];
 }
 
-export const SIGNED_OUT: SessionHint = { signedIn: false, admin: false, viewAs: null, viewRole: null, viewing: false };
+export const SIGNED_OUT: SessionHint = { signedIn: false, admin: false, viewAs: null, viewRole: null, viewing: false, portals: [] };
 
 let probe: Promise<SessionHint> | null = null;
 
@@ -21,6 +23,17 @@ function viewAsOf(v: unknown): SessionHint['viewAs'] {
   if (!v || typeof v !== 'object') return null;
   const { name, household, readOnly } = v as Record<string, unknown>;
   return typeof name === 'string' ? { name, household: typeof household === 'string' ? household : '', readOnly: readOnly !== false } : null;
+}
+
+function portalsOf(v: unknown): SessionHint['portals'] {
+  if (!Array.isArray(v)) return [];
+  const out: SessionHint['portals'] = [];
+  for (const row of v) {
+    if (!row || typeof row !== 'object') continue;
+    const { label, href } = row as Record<string, unknown>;
+    if (typeof label === 'string' && typeof href === 'string') out.push({ label, href });
+  }
+  return out;
 }
 
 function viewRoleOf(v: unknown): SessionHint['viewRole'] {
@@ -40,16 +53,18 @@ export function sessionProbe(fresh = false): Promise<SessionHint> {
   const asked: Promise<SessionHint> = fetch('/api/session', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
     .then(async (r) => {
       if (!r.ok) throw new Error(`session probe: ${r.status}`);
-      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown };
+      const body = (await r.json()) as { signedIn?: unknown; admin?: unknown; viewAs?: unknown; viewRole?: unknown; portals?: unknown };
       const signedIn = body.signedIn === true;
       const viewAs = signedIn ? viewAsOf(body.viewAs) : null;
       const viewRole = signedIn ? viewRoleOf(body.viewRole) : null;
+      const portals = signedIn ? portalsOf(body.portals) : [];
       return {
         signedIn,
         admin: signedIn && body.admin === true,
         viewAs,
         viewRole,
         viewing: viewAs !== null || viewRole !== null,
+        portals,
       };
     })
     .catch(() => {

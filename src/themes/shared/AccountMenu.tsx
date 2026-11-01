@@ -1,15 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { SIGN_IN, SIGN_OUT } from '@/domain/lifecycle/account';
+import { ADMIN_PORTAL, GUEST_PORTAL, SIGN_IN, SIGN_OUT } from '@/domain/lifecycle/account';
 import type { NavItem, NavModel } from '@/themes/types';
 import { sessionProbe, SIGNED_OUT, type SessionHint } from './session-hint';
 
 /**
- * The account menu: "Sign in" to anyone, and — once there is a session — the household's own pages
- * (RSVP, Your Weekend, Transportation, Gifts, Photos & Video) followed by "Sign out". Those pages are
- * listed here and nowhere else in the chrome (`domain/lifecycle/nav.ts` keeps them out of `primary`,
- * `more` and `sticky`), and each of them refuses an anonymous request on the server regardless.
+ * The account menu: "Sign in" to anyone, and — once there is a session — portal links (Guest Portal
+ * and/or Admin Portal), the household's own pages (RSVP, Your Weekend, Transportation, Gifts, Photos
+ * & Video), admin tools when applicable, then "Sign out". Those household pages are listed here and
+ * nowhere else in the chrome (`domain/lifecycle/nav.ts` keeps them out of `primary`, `more` and
+ * `sticky`), and each of them refuses an anonymous request on the server regardless.
  *
  * Public pages are prerendered per design and cannot know who is reading, so when the frame leaves
  * `signedIn` undefined the menu asks `/api/session` once per page load (every instance shares the
@@ -28,14 +29,17 @@ import { sessionProbe, SIGNED_OUT, type SessionHint } from './session-hint';
 
 const TRIGGER_LABEL = 'Your account';
 
-/** An administrator has no household: the console is their page, and the household's would each send them back to sign in. */
-const ADMIN_CONSOLE: NavItem = { label: 'Admin console', href: '/admin' };
 /** Where an administrator opens view-role preview (admin layout switcher). */
 const VIEW_AS_ROLE: NavItem = { label: 'View as role…', href: '/admin#view-as' };
 /** Owners only: inspect a specific guest profile (separate from role preview). */
 const INSPECT_GUEST: NavItem = { label: 'Inspect a guest profile', href: '/admin/guests#inspect-guest' };
 
-function useSession(known: boolean | undefined, knownAdmin: boolean, knownViewing: boolean): SessionHint {
+function useSession(
+  known: boolean | undefined,
+  knownAdmin: boolean,
+  knownViewing: boolean,
+  knownPortals: NavItem[] | undefined,
+): SessionHint {
   const [probed, setProbed] = useState<SessionHint>(SIGNED_OUT);
   // A page restored from the back/forward cache kept the menu it had when it was left — after a
   // sign-out in between, that is a menu of pages the reader can no longer open. Ask again then,
@@ -60,7 +64,19 @@ function useSession(known: boolean | undefined, knownAdmin: boolean, knownViewin
       window.removeEventListener('pageshow', onShow);
     };
   }, [known]);
-  return restored ?? (known === undefined ? probed : { signedIn: known, admin: known && knownAdmin, viewAs: null, viewRole: null, viewing: known && knownViewing });
+  return (
+    restored ??
+    (known === undefined
+      ? probed
+      : {
+          signedIn: known,
+          admin: known && knownAdmin,
+          viewAs: null,
+          viewRole: null,
+          viewing: known && knownViewing,
+          portals: knownPortals ?? [],
+        })
+  );
 }
 
 export interface AccountMenuClassNames {
@@ -73,13 +89,23 @@ export interface AccountMenuClassNames {
 }
 
 export interface AccountMenuProps {
-  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'admin' | 'viewing' | 'currentPath' | 'currentIsAncestor'>;
+  nav: Pick<NavModel, 'account' | 'member' | 'signedIn' | 'admin' | 'viewing' | 'currentPath' | 'currentIsAncestor' | 'portals'>;
   variant: 'popover' | 'inline' | 'link';
   classNames: AccountMenuClassNames;
 }
 
+function portalItems(session: SessionHint, nav: AccountMenuProps['nav'], signedIn: boolean, admin: boolean, viewing: boolean): NavItem[] {
+  if (session.portals.length) return session.portals.map((p) => ({ label: p.label, href: p.href }));
+  if (nav.portals?.length) return nav.portals;
+  if (!signedIn) return [];
+  if (admin && !viewing) return [ADMIN_PORTAL];
+  if (viewing) return [GUEST_PORTAL, ADMIN_PORTAL];
+  return [GUEST_PORTAL];
+}
+
 export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
-  const { signedIn, admin, viewing } = useSession(nav.signedIn, nav.admin === true, nav.viewing === true);
+  const session = useSession(nav.signedIn, nav.admin === true, nav.viewing === true, nav.portals);
+  const { signedIn, admin, viewing } = session;
   const signIn = nav.account ?? SIGN_IN;
   if (!signedIn) {
     return (
@@ -95,12 +121,11 @@ export function AccountMenu({ nav, variant, classNames }: AccountMenuProps) {
       </a>
     );
   }
-  // Administrator signed in, not previewing: console + way into role preview. While previewing a role
-  // or a guest profile, show the household pages like a guest would, plus the way back to the console.
+  const portals = portalItems(session, nav, signedIn, admin, viewing);
   const items =
     admin && !viewing
-      ? [ADMIN_CONSOLE, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
-      : [...(nav.member ?? []), ...(admin || viewing ? [ADMIN_CONSOLE] : []), SIGN_OUT];
+      ? [...portals, VIEW_AS_ROLE, INSPECT_GUEST, SIGN_OUT]
+      : [...portals, ...(nav.member ?? []), SIGN_OUT];
   // On a page inside a member page (one photo album), its item is where the reader is, not the page.
   const mark = nav.currentIsAncestor ? 'true' : 'page';
   if (variant === 'inline') return <InlineGroup items={items} currentPath={nav.currentPath} mark={mark} classNames={classNames} />;
@@ -113,7 +138,7 @@ function ItemList({ items, currentPath, mark, className, onPick }: { items: NavI
   return (
     <ul className="account-menu__list">
       {items.map((item) => (
-        <li key={item.href}>
+        <li key={`${item.href}:${item.label}`}>
           <a className={className} href={item.href} aria-current={item.href === currentPath ? mark : undefined} onClick={onPick}>
             {item.label}
           </a>

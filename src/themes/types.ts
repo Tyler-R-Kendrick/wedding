@@ -124,6 +124,8 @@ export interface NavModel {
    * principal; prerendered pages learn it from `/api/session`.
    */
   viewing?: boolean;
+  /** Portal links (Guest Portal / Admin Portal) for the signed-in account menu; from server or `/api/session`. */
+  portals?: NavItem[];
 }
 
 export interface DateFacts {

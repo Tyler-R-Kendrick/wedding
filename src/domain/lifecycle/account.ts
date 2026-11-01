@@ -11,6 +11,11 @@ export const SIGN_IN: NavItem = { label: 'Sign in', href: '/sign-in' };
 /** The last entry in the account menu, under the household's own pages. */
 export const SIGN_OUT: NavItem = { label: 'Sign out', href: '/sign-out' };
 
+/** Always listed first for a signed-in guest (or an admin previewing as a guest). */
+export const GUEST_PORTAL: NavItem = { label: 'Guest Portal', href: '/guests' };
+/** The site console for administrators and owners. */
+export const ADMIN_PORTAL: NavItem = { label: 'Admin Portal', href: '/admin' };
+
 /**
  * A link to one of the household's pages from anywhere that is not the account menu (the home
  * page's calls to action). It goes through the sign-in door: an anonymous reader signs in and is

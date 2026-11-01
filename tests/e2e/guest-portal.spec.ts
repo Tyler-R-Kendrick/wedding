@@ -3,6 +3,17 @@ import { VIEW_ROLE_COOKIE } from '../../src/domain/identity/view-role';
 import { BASE_URL, contextAs } from './helpers/principal';
 import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../security/helpers';
 
+async function openAccountMenu(page: Page) {
+  const trigger = page.getByRole('button', { name: 'Your account' });
+  await trigger.click();
+  await expect(page.locator('.account-menu__panel:not([hidden])')).toBeVisible();
+}
+
+async function accountMenuHrefs(page: Page): Promise<string[]> {
+  await openAccountMenu(page);
+  return page.locator('.account-menu__panel:not([hidden]) a').evaluateAll((nodes) => nodes.map((a) => a.getAttribute('href')).filter(Boolean) as string[]);
+}
+
 async function followGuestNav(page: Page, name: string | RegExp) {
   const nav = page.getByRole('navigation', { name: 'Site' });
   const inNav = nav.getByRole('link', { name });
@@ -61,6 +72,22 @@ test.describe('guest portal navigation', () => {
     const nav = page.getByRole('navigation', { name: 'Site' });
     await expect(nav.getByRole('link', { name: /^Travel$/i })).toHaveCount(0);
     await expect(nav.getByRole('link', { name: /Things to Do/i })).toHaveCount(0);
+  });
+
+  test('signed-in guest Your account includes Guest Portal on home and a public page', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const page = await ctx.newPage();
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/guests\/?$/);
+    let hrefs = await accountMenuHrefs(page);
+    expect(hrefs[0]).toBe('/guests');
+    expect(hrefs).toContain('/sign-out');
+
+    await page.goto('/our-story');
+    hrefs = await accountMenuHrefs(page);
+    expect(hrefs[0]).toBe('/guests');
+    expect(hrefs).toContain('/sign-out');
+    await ctx.close();
   });
 
   test('signed-out /travel redirects to sign-in with guest travel next', async ({ page }) => {
@@ -125,7 +152,7 @@ test.describe('view-as guest preview', () => {
     const page = await ctx.newPage();
     const f = await seedFixtures(request);
     const session = await signInAdminViaApi(request, page, f.emails.admin!);
-    const minted = await cap(request, 'admin_set_view_role', { role: 'invited_guest' }, { cookie: session });
+    const minted = await cap(request, 'admin_set_view_role', { role: 'guest' }, { cookie: session });
     expect(minted.status()).toBe(200);
     const body = (await minted.json()) as { ok?: boolean; data?: { token?: string } };
     expect(body.ok, JSON.stringify(body)).toBe(true);
@@ -139,6 +166,8 @@ test.describe('view-as guest preview', () => {
     await expect(nav.getByRole('link', { name: /Guest Portal|Portal/i })).toBeVisible();
     await expect(nav.getByRole('link', { name: /^Travel$/i })).toBeVisible();
     await expect(nav.getByRole('link', { name: /Things to Do/i })).toBeVisible();
+    const hrefs = await accountMenuHrefs(page);
+    expect(hrefs.slice(0, 2)).toEqual(['/guests', '/admin']);
     await ctx.close();
   });
 });

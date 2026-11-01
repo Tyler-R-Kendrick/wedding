@@ -3,6 +3,8 @@ import { cookies, headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { getCountdown, getLifecycleView, getSiteFacts, navFor, type LifecycleOptions } from '@/domain/lifecycle';
+import { accountPortalLinks } from '@/domain/lifecycle/account-portals';
+import { getDb } from '@/db/client';
 import { getFlags } from '@/lib/flags';
 import { getPrincipal } from '@/lib/principal';
 import { getTheme } from './index';
@@ -37,7 +39,9 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   // pages) `signedIn` stays undefined and the account menu asks in the browser.
   const principal = input.lifecycle?.principal;
   const signedIn = principal ? principal.kind === 'guest' || principal.kind === 'admin' : undefined;
-  const nav = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}), ...(principal?.kind === 'guest' && principal.viewedBy ? { viewing: true } : {}) });
+  const navBase = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}), ...(principal?.kind === 'guest' && principal.viewedBy ? { viewing: true } : {}) });
+  const portals = principal && (principal.kind === 'guest' || principal.kind === 'admin') ? await accountPortalLinks(await getDb(), principal) : undefined;
+  const nav = portals ? { ...navBase, portals } : navBase;
   return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 
