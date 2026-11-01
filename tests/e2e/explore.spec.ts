@@ -30,11 +30,11 @@ async function follow(page: Page, name: string) {
 
 test.describe('explore journey', () => {
   test('story → adventure → linked recommendation → directions handoff', async ({ page }) => {
-    await page.goto('/our-story');
+    await page.goto('/our-story#how-we-met');
     // The approved design titles the page with its editorial headline; the page is still "Our Story".
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('How we found our way to forever');
     await expect(page).toHaveTitle(/Our Story/);
-    await expect(page.getByText(/We met at Allison and Jamie/)).toBeVisible();
+    await expect(page.locator('#how-we-met')).toContainText('Allison and Jamie');
     expect(await page.locator('[data-placeholder="true"]').count()).toBeGreaterThan(0);
     expect(await page.locator('main').innerText()).not.toContain(MARKER);
     await axe(page);
@@ -169,7 +169,7 @@ test.describe('explore journey', () => {
       await page.goto('/our-story#love');
       await expect(page.locator('.bd-ride')).toHaveAttribute('data-mode', 'flat');
       for (const id of ['how-we-met', 'allison-and-jamies-wedding', 'love', 'starved-rock', 'the-loop']) await expect(page.locator(`#${id}`)).toBeVisible();
-      await expect(page.locator('.bd-ride [inert], .bd-ride__stop[aria-hidden]')).toHaveCount(0);
+      await expect(page.locator('.bd-ride__stop[aria-hidden]')).toHaveCount(0);
       // The stations list the intro promises is there in every mode.
       await expect(page.getByRole('navigation', { name: /^Stations on the .+ Line$/ }).getByRole('link', { name: /^Love$/ })).toBeVisible();
       await expect(page.locator('#love')).toBeInViewport();

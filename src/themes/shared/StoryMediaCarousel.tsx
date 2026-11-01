@@ -41,6 +41,18 @@ export function StoryMediaCarousel({ label, slides, className }: StoryMediaCarou
   if (count === 0) return null;
   if (count === 1) return <>{slides[0]}</>;
 
+  if (reduced) {
+    return (
+      <div className={`story-carousel story-carousel--stacked${className ? ` ${className}` : ''}`} aria-label={label}>
+        {slides.map((slide, i) => (
+          <div key={i} className="story-carousel__stack-item">
+            {slide}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const hold = () => setPaused(true);
   const release = () => setPaused(false);
 
