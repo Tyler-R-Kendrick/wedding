@@ -46,7 +46,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `reservations` | mock | deep-link | — | deepLink, url |  |
 | `storage` | local-fs | mock | `AWS_LAMBDA_FUNCTION_NAME`<br>`DEV_STORAGE_SECRET`<br>`FORCE_MOCK_PROVIDERS`<br>`S3_ACCESS_KEY_ID`<br>`S3_BUCKET`<br>`S3_ENDPOINT`<br>`S3_FORCE_PATH_STYLE`<br>`S3_REGION`<br>`S3_SECRET_ACCESS_KEY`<br>`STORAGE_DATA_DIR`<br>`STORAGE_SIGNING_SECRET`<br>`VERCEL` | putObject, getObject, deleteObject, head, signedUpload, signedRead, multipart | local-fs storage is for development only |
 | `transport-benefit` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`TRANSPORT_BENEFIT_MODE`<br>`TRANSPORT_MANUAL_CODES`<br>`UBER_API_BASE_URL`<br>`UBER_CLIENT_ID`<br>`UBER_CLIENT_SECRET`<br>`UBER_ORG_ID`<br>`UBER_VOUCHER_PROGRAM_ID` | createVoucherClaim, getRedemptionLink |  |
-| `twilio-verify` | mock | mock | — | start, check | Twilio Verify mock: SMS codes are not sent; use 000000 in tests. |
+| `twilio-verify` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`TWILIO_ACCOUNT_SID`<br>`TWILIO_AUTH_TOKEN`<br>`TWILIO_VERIFY_SERVICE_SID` | start, check | Twilio Verify mock: SMS codes are not sent; use 000000 in tests. |
 | `vector-index` | memory | mock | — | upsert, query, delete, count |  |
 | `video` | mock | mock | `CLOUDFLARE_ACCOUNT_ID`<br>`CLOUDFLARE_STREAM_API_TOKEN`<br>`CLOUDFLARE_STREAM_CUSTOMER_CODE`<br>`FFMPEG_PATH`<br>`FORCE_MOCK_PROVIDERS`<br>`PATH` | createAsset, getPlayback |  |
 
