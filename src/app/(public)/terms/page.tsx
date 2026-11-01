@@ -14,7 +14,7 @@ export default async function TermsPage() {
     >
       <LegalSection id="purpose" title="What this site is">
         <p>
-          kendrick.wedding is a private site for Sara and Tyler’s wedding. Content here is for invited guests and the couple, not for resale or scraping.
+          kendrick.wedding is a private site for Sara and Tyler’s wedding. What you see here is wedding information for their guests and the couple, not for resale or scraping.
         </p>
       </LegalSection>
       <LegalSection id="account" title="Your account">
