@@ -4,7 +4,7 @@ import { VIEW_ROLE_COOKIE, VIEW_ROLES, viewRoleLabel, type ViewRoleKey } from '.
 import { guestPortalRedirectFor } from '../../src/domain/lifecycle/guest-portal';
 import { crawlUrl, inventory, routesForPersona, type CrawlPersonaKind, type InventoryRow } from '../../src/lib/site-inventory';
 import { REDIRECTS } from '../../src/lib/site-redirects';
-import { cap, seedFixtures, signInViaUi } from '../security/helpers';
+import { cap, seedFixtures, signInAdminViaApi } from '../security/helpers';
 import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
 
 /**
@@ -340,7 +340,7 @@ test('each view-role preview opens the guest site read-only', async ({ browser, 
   });
   const page = await ctx.newPage();
   const fixtures = await seedFixtures(request);
-  const session = await signInViaUi(page, request, fixtures.emails.admin!, true);
+  const session = await signInAdminViaApi(request, page, fixtures.emails.admin!);
 
   for (const role of VIEW_ROLES) {
     const minted = await cap(request, 'admin_set_view_role', { role }, { cookie: session });

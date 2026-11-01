@@ -17,8 +17,9 @@ import type { RateLimitPolicy } from '@/providers/rate-limit/types';
  *  - requestHeaders: the inbound request headers (cookies, origin) for Better Auth calls
  *  - clientIp: from getClientIp() (never from the input)
  *  - cookieSink: where Set-Cookie headers from session creation land
- * Server actions under src/app/(auth) and the dev fixtures route wire these; the generic
- * capability route does not, so session-creating steps refuse there (see requireCookieTransport).
+ * Server actions under src/app/(auth), the dev fixtures route, and POST /api/capabilities
+ * wire these. Session-creating steps refuse when neither is present, so a session is never
+ * minted and then lost (see requireCookieTransport).
  */
 export interface IdentityTransport {
   requestHeaders?: Headers;

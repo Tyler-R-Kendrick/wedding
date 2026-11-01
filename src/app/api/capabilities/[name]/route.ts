@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { invokeByName, createCapabilityContext } from '@/capabilities';
 import { CapabilityError, HTTP_STATUS_FOR_CODE } from '@/contracts/errors';
 import { getDb } from '@/db/client';
+import { applyCookieSink, type CookieSink } from '@/lib/auth/cookies';
 import { env } from '@/lib/env';
 import { getPrincipal } from '@/lib/principal';
 import { assertSameOriginJson, getClientIp, getRequestId, jsonResponse, readBodyText } from '@/lib/request';
@@ -17,6 +18,14 @@ const bodySchema = z.object({
 
 const NAME = /^[a-z][a-z0-9_]{2,63}$/;
 const MAX_BODY_BYTES = 256 * 1024;
+
+/**
+ * Anonymous capabilities that mint a browser session. Signed-in mutations already require
+ * same-origin JSON; these do too, so a foreign page that somehow holds a code cannot plant
+ * `Set-Cookie` on this origin (login CSRF). The cookie is applied from the sink below —
+ * the JSON body never carries the token.
+ */
+const SESSION_MINTING = new Set(['verify_otp', 'verify_phone_otp', 'verify_guest_sign_in_pass']);
 
 function errorResponse(error: CapabilityError, requestId: string) {
   const extra: Record<string, string> = {};
@@ -36,7 +45,8 @@ const rateLimited = (retryAfterMs: number | undefined, requestId: string) =>
  * -> { ok: true, data, sources, confirmation?, handoffUrl?, retrievedAt? } | { ok: false, error }
  * The only HTTP door into the capability layer. Order matters: a coarse per-IP limiter runs
  * before anything is read or looked up, then the session, then the CSRF check for signed-in
- * callers, then the per-principal limiter, and only then is the (hard-capped) body streamed in.
+ * callers and anonymous session-minting actions, then the per-principal limiter, and only then
+ * is the (hard-capped) body streamed in.
  * Every request through here is surface 'ui': the surface is never client-claimed.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ name: string }> }) {
@@ -51,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
   if (!ipDecision.allowed) return rateLimited(ipDecision.retryAfterMs, requestId);
 
   const principal = await getPrincipal(request);
-  if (principal.kind !== 'anonymous') {
+  if (principal.kind !== 'anonymous' || SESSION_MINTING.has(name)) {
     const sameOrigin = assertSameOriginJson(request);
     if (!sameOrigin.ok) return errorResponse(sameOrigin.error, requestId);
   }
@@ -72,6 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     return errorResponse(new CapabilityError('validation', 'The request body must be JSON with an "input" field.'), requestId);
   }
 
+  const sink: CookieSink = { setCookies: [] };
   const ctx = await createCapabilityContext({
     principal,
     requestId,
@@ -86,10 +97,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     rateLimit: principal.kind !== 'anonymous',
     clientIp: ip,
   });
+  // A fresh Headers: Next's request headers are not always `instanceof Headers` across realms,
+  // and requireCookieTransport refuses a session when it cannot see either headers or a sink.
+  Object.assign(ctx.services, { requestHeaders: new Headers(request.headers), cookieSink: sink });
   const result = await invokeByName(name, ctx, body.input);
-  if (!result.ok) return errorResponse(result.error, requestId);
+  if (!result.ok) {
+    const res = errorResponse(result.error, requestId);
+    applyCookieSink(sink, res.headers);
+    return res;
+  }
   const { data, sources, confirmation, handoffUrl, retrievedAt } = result.value;
-  return jsonResponse({ ok: true, data, sources, ...(confirmation ? { confirmation } : {}), ...(handoffUrl ? { handoffUrl } : {}), ...(retrievedAt ? { retrievedAt } : {}) }, { requestId });
+  const res = jsonResponse({ ok: true, data, sources, ...(confirmation ? { confirmation } : {}), ...(handoffUrl ? { handoffUrl } : {}), ...(retrievedAt ? { retrievedAt } : {}) }, { requestId });
+  applyCookieSink(sink, res.headers);
+  return res;
 }
 
 export async function GET() {
