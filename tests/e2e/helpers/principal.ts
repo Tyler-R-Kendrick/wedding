@@ -53,7 +53,8 @@ export type PrincipalName = keyof typeof PRINCIPALS;
  * needs its own principal mechanism to express these.
  */
 export function customPrincipalHeaders(spec: Record<string, unknown>, secret: string = TEST_AUTH_SECRET): Record<string, string> {
-  return { 'x-test-principal-secret': secret, 'x-test-principal': JSON.stringify(spec) };
+  const raw = JSON.stringify(spec);
+  return { 'x-test-auth': secret, 'x-test-principal-secret': secret, 'x-test-principal': raw };
 }
 
 /**
@@ -74,7 +75,8 @@ let contexts = 0;
 
 export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET, sessionId: string = testSession()): Record<string, string> {
   if (!name) return {};
-  return { 'x-test-principal-secret': secret, 'x-test-principal': JSON.stringify({ ...PRINCIPALS[name], sessionId }) };
+  const raw = JSON.stringify({ ...PRINCIPALS[name], sessionId });
+  return { 'x-test-auth': secret, 'x-test-principal-secret': secret, 'x-test-principal': raw };
 }
 
 /** Headers for POST /api/capabilities from a signed-in principal: same-origin JSON (CSRF rule). */
