@@ -8,12 +8,12 @@ Counted from that module on 1 November 2026:
 
 | Group | Rows | Opened in a browser |
 |---|---|---|
-| Pages | 60 | yes |
+| Pages | 61 | yes |
 | Internal theme routes | 2 | yes, signed out only |
 | Redirects | 6 | the five static aliases, signed out only |
 | API, export, and `/sitemap.xml` | 33 | no |
 
-That is 101 rows. 67 have `crawl: true`. The other 34 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
+That is 102 rows. 68 have `crawl: true`. The other 34 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
 
 ## The four readers
 
@@ -27,7 +27,7 @@ node --import tsx scripts/render-sitemap-md.ts
 
 `/admin/sitemap` renders the same rows for any administrator. It is a console page, `noindex`, and it is on the admin index. Authorization is `principal.kind === 'admin'` only: the list is a route map, not a guest record. The page was added to the pipeline sitemap (`admin-sitemap`) so `tests/unit/stages/sitemap-routes.test.ts` still requires every app route to be named there, and the stage 2 wireframe baseline includes the new page.
 
-`src/app/sitemap.ts` serves `/sitemap.xml` from `publicSitemapPaths()`. On this date that is 69 URLs. The rules are:
+`src/app/sitemap.ts` serves `/sitemap.xml` from `publicSitemapPaths()`. On this date that is 56 URLs. The rules are:
 
 - Audience `public` only. Guest, gate, admin, internal theme URLs, APIs, and redirects are omitted.
 - Lifecycle `visibleFrom` is not applied. It decides when a page joins the navigation, not whether the route exists. A later state may still show a coming-soon treatment; the URL stays in the file.
@@ -37,7 +37,7 @@ node --import tsx scripts/render-sitemap-md.ts
 
 The root layout’s site-wide `noindex` is a pre-launch setting. The XML file is the public URL list for when that changes. The anonymous crawler checks the body: it is `application/xml`, it contains `/our-story`, and it does not contain `/admin`, `/your-weekend`, or `/sign-in`.
 
-Permanent aliases live in `src/lib/site-redirects.ts`. `next.config.ts` serves that array; the inventory and the crawler read the same array, so a new alias is added once. These are in-app aliases, not the partner-host allowlist in `src/lib/redirects.ts`.
+Permanent aliases live in `src/lib/site-redirects.ts`. `next.config.ts` serves that array, then the retired adventure URLs in `src/content/adventure-slug-redirects.json`. The inventory and the crawler read the named-alias array, so a new alias is added once. These are in-app aliases, not the partner-host allowlist in `src/lib/redirects.ts`.
 
 | From | To |
 |---|---|

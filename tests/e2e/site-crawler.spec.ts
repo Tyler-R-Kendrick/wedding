@@ -75,6 +75,7 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/registry'
  * '/rsvp'
  * '/rsvp/attending'
+ * '/s/fixtureslug01'
  * '/share-an-adventure'
  * '/share-an-adventure/starved-rock-state-park'
  * '/sign-in'

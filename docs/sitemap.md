@@ -41,6 +41,7 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /media/search | /media/search | guest | GET | Search the weekend's photos by moment, place or people you are allowed to see. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /sign-in | /sign-in | gate | GET | The one way into a session, for guests and the couple alike. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /sign-in/admin | /sign-in/admin | gate | GET | The couple and the planner sign in to run the site. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
+| /s/[slug] | /s/fixtureslug01 | gate | GET | Temporary link from the couple: opens with the code filled in and signs you in. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /sign-out | /sign-out | gate | GET | End the session on this device. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /step-up | /step-up | gate | GET | Re-verify before a sensitive change, like payment details or who is in the household. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /i/[token] | /i/example | gate | GET | Preview of the household an invitation link belongs to, and an offer to claim it. Never a session by itself. | Redirects to /invite/<token> (the long link). /i/example is the only token this inventory names. |
@@ -140,20 +141,10 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 public. One place: where, when, photos, and both of our memories of it.
 
 - `/our-adventures/starved-rock`
-- `/our-adventures/alinea-2026-02-13-a`
-- `/our-adventures/alinea-2026-02-13-b`
-- `/our-adventures/alinea-2026-02-13-c`
 - `/our-adventures/carnivale-2026-07-19`
-- `/our-adventures/ever-2025-02-13-a`
-- `/our-adventures/ever-2025-02-13-b`
-- `/our-adventures/ever-2025-02-13-c`
 - `/our-adventures/teatro-zinzanni-2025-02-14`
 - `/our-adventures/smyth-2024-11-21`
 - `/our-adventures/duet-dance-studio-2024-02-17`
-- `/our-adventures/esme-2024-02-17-a`
-- `/our-adventures/esme-2024-02-17-b`
-- `/our-adventures/esme-2024-02-17-c`
-- `/our-adventures/esme-2024-02-17-d`
 - `/our-adventures/christkindlmarket-2023-12-07`
 - `/our-adventures/grant-park-2023-09-02`
 - `/our-adventures/river-west-2025-08-24`
@@ -161,20 +152,11 @@ public. One place: where, when, photos, and both of our memories of it.
 - `/our-adventures/chicago-botanic-garden-2025-03-14`
 - `/our-adventures/richardson-farm-2023-10-21`
 - `/our-adventures/richardson-farm-2024-10-27`
-- `/our-adventures/richardson-farm-2025-10-11-a`
-- `/our-adventures/richardson-farm-2025-10-11-b`
 - `/our-adventures/door-county-2024-09-24`
-- `/our-adventures/eleven-madison-park-2025-08-07-a`
-- `/our-adventures/eleven-madison-park-2025-08-07-b`
-- `/our-adventures/eleven-madison-park-2025-08-07-c`
 - `/our-adventures/hestia-2026-02-19`
 - `/our-adventures/fresno-2024-12-22`
 - `/our-adventures/fresno-christmas-2025`
 - `/our-adventures/tunnel-tree-2025-12-29`
-- `/our-adventures/noma-2025-06-24`
-- `/our-adventures/geranium-2025-06-26`
-- `/our-adventures/tivoli-gardens-2025-06-30-a`
-- `/our-adventures/tivoli-gardens-2025-06-30-b`
 - `/our-adventures/zurich-airport-2025-07-02`
 - `/our-adventures/photo-2022-11-13`
 - `/our-adventures/photo-2022-12-03`
@@ -184,6 +166,12 @@ public. One place: where, when, photos, and both of our memories of it.
 - `/our-adventures/photo-2023-07-22`
 - `/our-adventures/photo-2023-08-07`
 - `/our-adventures/photo-happily-ever-after`
+- `/our-adventures/alinea-2026-02-13`
+- `/our-adventures/ever-2025-02-13`
+- `/our-adventures/esme-2024-02-17`
+- `/our-adventures/eleven-madison-park-2025-08-07`
+- `/our-adventures/richardson-farm-2025-10-11`
+- `/our-adventures/copenhagen-denmark-2025`
 
 ### GET /share-an-adventure/[slug]
 
