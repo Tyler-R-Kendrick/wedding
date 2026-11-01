@@ -1,4 +1,13 @@
 import { formatLongDate } from "@/domain/travel";
+import {
+  CAA_BOOKING_LINK_LABEL,
+  CAA_BOOKING_PHONE,
+  CAA_BOOKING_PHONE_REFERENCE,
+  CAA_PARKING_ARRIVAL_COPY,
+  CAA_STAY_INTRO,
+  CAA_UPGRADES_COPY,
+  venueBlockDatesLabel,
+} from "@/domain/travel/stay-copy";
 import type { ContentRecipe, TravelProps } from "@/themes/content-types";
 import { PreviewBanner } from "@/themes/shared/PreviewBanner";
 import { kit } from "../kit";
@@ -55,7 +64,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
         <p>Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.</p>
         <p>Midway (MDW) also serves Chicago with trains, taxis, and rideshare into downtown.</p>
         <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago&apos;s Union Station from cities throughout the country.</p>
-        <p>By car: valet parking is $84 per night with in-and-out privileges at the 71 E Madison entrance. Millennium Park Garage (6 S. Columbus Dr.) and Millennium Lakeside Garage (5 S. Columbus Dr.) are nearby alternatives. Check <Link href="https://www.millenniumgarages.com/" external>Millennium Garages</Link> for current rates and reservations. Parking rates and availability may change before the wedding.</p>
+        <p>By car: {CAA_PARKING_ARRIVAL_COPY} Parking rates and availability may change before the wedding.</p>
         <p><Link standalone href={tripHref}>{signedIn ? 'Your guest travel details and weekend plans →' : 'Sign in for guest booking details and your weekend plans →'}</Link></p>
       </Prose>
     </Section>
@@ -84,10 +93,9 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
       <SectionHeading level={2} id="stay-title" title="Where to stay" />
       <Card title={venue.name} headingLevel={3} featured>
         <Prose>
-          <p>
-            The wedding is here, so staying here means no travel on the day.
-          </p>
-          {venue.block?.note ? <p>{venue.block.note}</p> : null}
+          <p>{CAA_STAY_INTRO}</p>
+          {venue.address ? <p>{venue.address}</p> : facts.venue.address ? <p>{facts.venue.address}</p> : null}
+          <p>The wedding is here, so staying here means no travel on the day.</p>
         </Prose>
         {venue.block ? <dl className="gh-stats">
           <Stat
@@ -109,30 +117,31 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
           <Stat
             label="Block dates"
             value={
-              venue.block?.checkIn && venue.block?.checkOut ? (
-                `${formatLongDate(venue.block.checkIn)} to ${formatLongDate(venue.block.checkOut)}`
-              ) : (
-                <Placeholder todo="the block dates" />
-              )
-            }
-          />
-          <Stat
-            label="Booking code"
-            value={
-              venue.block?.code ?? (
-                <Placeholder todo="the booking code or link" />
+              venueBlockDatesLabel(venue.block) ?? (
+                venue.block?.checkIn && venue.block?.checkOut ? (
+                  `${formatLongDate(venue.block.checkIn)} to ${formatLongDate(venue.block.checkOut)}`
+                ) : (
+                  <Placeholder todo="the block dates" />
+                )
               )
             }
           />
         </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
-        <Prose><p>If you are interested in an upgraded room or an extended stay, please let us know.</p></Prose>
-        {venue.block?.url ? (
-          <p>
-            <Link href={venue.block.url} external standalone>
-              Book in the room block
-            </Link>
-          </p>
+        {venue.block ? (
+          <Prose>
+            {venue.block.url ? (
+              <p>
+                <Link href={venue.block.url} external standalone>
+                  {CAA_BOOKING_LINK_LABEL}
+                </Link>
+              </p>
+            ) : null}
+            <p>
+              Or call {CAA_BOOKING_PHONE} (reference &ldquo;{CAA_BOOKING_PHONE_REFERENCE}&rdquo;).
+            </p>
+          </Prose>
         ) : null}
+        <Prose><p>{CAA_UPGRADES_COPY}</p></Prose>
         <p>
           <Link href={facts.venue.url} external standalone>
             Visit the hotel website

@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { hotelRecommendations } from '../schema/travel';
-import { CAA_KIT_SOURCE_ID, VENUE, VENUE_HOTEL_ID } from '@/domain/travel';
+import { CAA_KIT_SOURCE_ID, CAA_BOOKING_URL, CAA_GROUP_CODE, CAA_BLOCK_CHECK_IN, CAA_BLOCK_CHECK_OUT, VENUE, VENUE_HOTEL_ID, caaPhoneBookingSentence } from '@/domain/travel';
 
-const SEED_VERIFIED = '2026-10-31T00:00:00.000Z';
+const SEED_VERIFIED = '2026-11-01T00:00:00.000Z';
 const actor = { kind: 'system', component: 'seed' } as const;
 
 /**
@@ -23,14 +23,14 @@ export async function seedTravelHotels(db: Db, now: Date): Promise<void> {
     websiteUrl: VENUE.url,
     bookingUrl: null,
     block: {
-      url: null,
-      code: 'G-FIKE',
-      rateText: '$331–371/night',
-      checkIn: '2027-07-16',
-      checkOut: '2027-07-18',
+      url: CAA_BOOKING_URL,
+      code: CAA_GROUP_CODE,
+      rateText: '$331–371 per night',
+      checkIn: CAA_BLOCK_CHECK_IN,
+      checkOut: CAA_BLOCK_CHECK_OUT,
       cutoff: '2027-06-15',
-      note: 'Call 844-312-2221 to book with group code G-FIKE.',
-      pending: 'the Hyatt group booking link for this block',
+      note: caaPhoneBookingSentence(),
+      pending: null,
       placeholder: false,
     },
     placeholder: false,

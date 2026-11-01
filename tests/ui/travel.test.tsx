@@ -25,14 +25,13 @@ describe('Travel & Stay recipe', () => {
     // The gaps are still visible — that is the point of a placeholder — but as the editorial
     // treatment the rest of the site uses, never as the raw authoring marker. This page is PUBLIC,
     // and it used to print `TODO(Tyler & Sara): …` including an internal backlog id.
-    expect(text).toContain('the group rate');
-    expect(text).toContain('the date to book by');
+    expect(text).toContain('rooms in our block are limited');
+    expect(text).toContain('$331');
+    expect(text).toContain('Nights of Friday, July 16 and Saturday, July 17, 2027');
+    expect(text).not.toContain('up to 20 rooms');
     expect(text).not.toContain('TODO(');
     expect(text).not.toMatch(/backlog [A-Z]-\d/);
-    expect(document.querySelectorAll('[data-placeholder="true"]').length).toBeGreaterThan(0);
-    expect(text).toContain('up to 20 rooms');
     expect(text).toContain('$84');
-    expect(text).not.toContain('$331');
     expect(text).not.toMatch(/safe(st)?\b/i); // no safety claims
     expect(screen.getByText('flight-search-slot')).toBeTruthy();
     expect(screen.getByText('hotel-search-slot')).toBeTruthy();
@@ -40,7 +39,7 @@ describe('Travel & Stay recipe', () => {
     expect(external.length).toBeGreaterThan(0);
     for (const a of external) expect(a.getAttribute('rel')).toContain('noopener');
     expect(screen.getByRole('link', { name: /Visit the hotel website/ }).getAttribute('href')).toBe('https://www.chicagoathletichotel.com/');
-    expect(screen.getByRole('link', { name: /12 S Michigan Ave/ }).getAttribute('href')).toContain('https://www.google.com/maps/search/');
+    expect(screen.getByRole('link', { name: /12 S\. Michigan Avenue/ }).getAttribute('href')).toContain('https://www.google.com/maps/search/');
     // No hotels are configured, so there is no list to describe. This sentence sat outside the
     // ternary and rendered directly under "we are still confirming a few nearby options" — a
     // present-tense account of a list that does not exist.
