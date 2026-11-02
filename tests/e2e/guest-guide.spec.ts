@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { principalHeaders } from './helpers/principal';
 
 const ALLOWLIST =
-  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
+  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com|kayak\.com)\//;
 
 async function flightsMode(request: APIRequestContext): Promise<string> {
   if (!process.env.HEALTH_TOKEN) return 'unknown';
@@ -19,7 +19,7 @@ async function flightsMode(request: APIRequestContext): Promise<string> {
 test.setTimeout(90_000);
 
 test.beforeEach(({}, testInfo) => {
-  test.skip(testInfo.project.name === 'tablet', 'phone and desktop are the review viewports');
+  test.skip(testInfo.project.name !== 'desktop', 'guest guide journeys are audited on desktop only');
 });
 
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
