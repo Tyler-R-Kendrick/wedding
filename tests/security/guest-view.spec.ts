@@ -19,7 +19,7 @@ test.describe('browse as a guest', () => {
     const browse = page.getByRole('button', { name: /^Browse as/ }).first();
     await expect(browse).toBeVisible();
     await browse.click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/guests\/?$/);
 
     // Every page says whose view it is, and the account menu is Ana's household's, plus the way back.
     const band = page.getByRole('status').filter({ hasText: 'Inspecting as' });

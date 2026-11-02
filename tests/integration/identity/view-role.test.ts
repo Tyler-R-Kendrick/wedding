@@ -50,6 +50,19 @@ describe('admin view-role preview', () => {
     expect(p.kind === 'guest' && p.viewedBy?.previewRole).toBe('household_manager');
   });
 
+  it('view-role resolves on an RSC home fetch when the preview cookie is present', async () => {
+    const f = await seed('vr2b');
+    const db = await getDb();
+    await seedPreviewPersonas(db);
+    const owner = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    const minted = expectOk(await call<Minted>('admin_set_view_role', { role: 'guest' }, { cookie: owner.cookie })).data;
+    const cookie = withRole(owner.cookie, minted.token);
+    const p = await principalFor({ cookie, pathname: '/', rsc: true });
+    expect(p.kind).toBe('guest');
+    if (p.kind !== 'guest') throw new Error('unreachable');
+    expect(p.viewedBy?.previewRole).toBe('guest');
+  });
+
   it('non-admins cannot mint a view-role token', async () => {
     const f = await seed('vr3');
     const db = await getDb();

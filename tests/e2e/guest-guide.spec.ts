@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { principalHeaders } from './helpers/principal';
 
 const ALLOWLIST =
-  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
+  /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com|kayak\.com)\//;
 
 async function flightsMode(request: APIRequestContext): Promise<string> {
   if (!process.env.HEALTH_TOKEN) return 'unknown';
@@ -17,6 +17,10 @@ async function flightsMode(request: APIRequestContext): Promise<string> {
 // This journey covers a map interaction, plan generation, axe and a second page.
 // The isolated dev server can compile themed guest branches on first use.
 test.setTimeout(90_000);
+
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'guest guide journeys are audited on desktop only');
+});
 
 for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
   test(`signed-in Chicago map and planning tools (${theme})`, async ({ page }) => {

@@ -222,6 +222,8 @@ function redirectLanded(destination: string, kind: CrawlPersonaKind, source?: st
 /** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
 function portalLanding(url: string, kind: CrawlPersonaKind): string | null {
   if (kind !== 'guest' && kind !== 'view-role') return null;
+  const path = url.replace(/\/+$/, '') || '/';
+  if (path === '/') return '/guests';
   return guestPortalRedirectFor(url);
 }
 
@@ -342,8 +344,8 @@ test('an administrator can open every console route', async ({ browser }) => {
 });
 
 test('each view-role preview opens the guest site read-only', async ({ browser, request }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'view-role crawl is desktop review viewport only');
   test.setTimeout(VIEW_ROLE_MS);
+  test.skip(testInfo.project.name === 'mobile', 'view-role crawl is desktop review viewport only');
   const device = testInfo.project.use;
   const ctx = await browser.newContext({
     baseURL: BASE_URL,

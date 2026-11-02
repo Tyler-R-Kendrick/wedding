@@ -42,8 +42,13 @@ export const betterAuthPrincipalResolver: PrincipalResolver = {
     if (!request.headers.get('cookie')) return ANONYMOUS;
     if (!isTrustedMutationRequest(request, [siteOrigin()])) return ANONYMOUS;
     const isRsc = request.headers.get('rsc') === '1' && !request.headers.get('next-action');
+    const cookieHeader = request.headers.get('cookie') ?? '';
+    const previewCookie =
+      cookieValue(cookieHeader, VIEW_ROLE_COOKIE) !== null || cookieValue(cookieHeader, GUEST_VIEW_COOKIE) !== null;
+    // View-as tokens are bound to the Better Auth session id. RSC renders normally pass
+    // `disableRefresh: true`, which can leave a stale id and fail verification on client navigations.
     const db = await getDb();
-    const session = await getAuthSession(request.headers, { db, disableRefresh: isRsc });
+    const session = await getAuthSession(request.headers, { db, disableRefresh: isRsc && !previewCookie });
     if (!session) return ANONYMOUS;
     const facts = toSessionFacts(session);
     const roles = await resolveAdminRoles(db, session.user.email, env.ADMIN_EMAILS);
