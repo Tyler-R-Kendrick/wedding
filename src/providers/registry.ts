@@ -35,6 +35,8 @@ import type { VideoProvider } from './video/types';
 import { createVideoProvider } from './video';
 import type { TwilioVerifyProvider } from './twilio-verify/types';
 import { createTwilioVerifyProvider } from './twilio-verify';
+import type { GuestSheetProvider } from './guest-sheet/types';
+import { createGuestSheetProvider } from './guest-sheet';
 
 /** Typed map from provider kind to its interface. */
 export interface ProviderMap {
@@ -55,6 +57,7 @@ export interface ProviderMap {
   'rate-limit': RateLimitProvider;
   jobs: JobsProvider;
   'twilio-verify': TwilioVerifyProvider;
+  'guest-sheet': GuestSheetProvider;
 }
 
 type Factories = { [K in ProviderKind]: (deps: RegistryDeps) => ProviderMap[K] };
@@ -85,6 +88,7 @@ const factories: Factories = {
     return createJobsProvider({ db: d.db });
   },
   'twilio-verify': () => createTwilioVerifyProvider(env),
+  'guest-sheet': () => createGuestSheetProvider(env),
 };
 
 type Cache = Partial<{ [K in ProviderKind]: ProviderMap[K] }>;

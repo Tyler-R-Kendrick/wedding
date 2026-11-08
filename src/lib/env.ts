@@ -160,6 +160,17 @@ const serverSchema = z.object({
   TWILIO_ACCOUNT_SID: optionalString,
   TWILIO_AUTH_TOKEN: optionalSecret(16),
   TWILIO_VERIFY_SERVICE_SID: optionalString,
+  // --- the couple's planning sheet (admin-only, read-only; src/providers/guest-sheet) ---
+  /** Spreadsheet id from the sheet's address (between /d/ and /edit). */
+  GUEST_SHEET_ID: optionalString,
+  /** Tab name or A1 range holding the guest list. */
+  GUEST_SHEET_RANGE: z.string().trim().min(1).default('Guests'),
+  /** Service account the sheet is shared with (Viewer). */
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.email().optional().or(z.literal('').transform(() => undefined)),
+  /** That account's PEM private key; literal \n sequences are accepted. */
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: optionalSecret(64),
+  /** How long a read of the sheet is reused before Google is asked again. */
+  GUEST_SHEET_CACHE_SECONDS: intish(120, 0),
 });
 
 type Parsed = z.infer<typeof serverSchema>;

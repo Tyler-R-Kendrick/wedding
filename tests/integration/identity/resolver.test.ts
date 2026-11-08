@@ -194,7 +194,8 @@ describe('principal resolver', () => {
     // 86 -> 90: guest sign-in pass admin (`admin_issue_guest_sign_in_pass`, `admin_revoke_guest_sign_in_pass`, …).
     // 90 -> 93: social sign-in admin queue (`admin_list_social_auth_reviews`, `admin_link_social_auth`,
     // `admin_mark_invitation_sent`), ui-only navigate/read/write.
-    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(93);
+    // 93 -> 94: `admin_guest_sheet`, the planning sheet read live into /admin/guests (ui-only read).
+    expect(names({ principal: ap }).filter((n) => n.startsWith('admin_'))).toHaveLength(94);
     expect(names({ principal: ap, exposure: 'ai' }).filter((n) => n.startsWith('admin_'))).toEqual([]);
     // Level 15. The counts above are of the `admin_` namespace, so nothing here ever pinned the
     // GUEST-facing capabilities an admin's list also contains — and `meetsAuthLevel('guest', admin)`

@@ -12,6 +12,8 @@ import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
 import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, SignInPassFlow, type GuestSummary } from './_components/GuestFlows';
 import { HouseholdFlow } from '../households/_components/HouseholdFlows';
+import type { GuestSheetView } from '@/capabilities/admin_guest_sheet';
+import { PlanningSheet } from './_components/PlanningSheet';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -48,9 +50,11 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   }
   // The checkbox submits `merged=on`; `1` is kept for links written by hand.
   const showMerged = sp.merged === 'on' || sp.merged === '1';
-  const [list, hh] = await Promise.all([
+  const [list, hh, sheet] = await Promise.all([
     adminInvoke<{ guests: Guest[]; truncated: boolean }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: showMerged }, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
+    // The planning sheet (Google Sheets), read live. `?sheet=fresh` skips the short cache.
+    adminInvoke<GuestSheetView>('admin_guest_sheet', { fresh: sp.sheet === 'fresh' }, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
   const shown = paged(rows, sp.page);
@@ -82,6 +86,8 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </Note>
       ) : null}
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
+      <PlanningSheet sheet={sheet.ok ? sheet.value.data : null} error={sheet.ok ? null : sheet.error.message} />
+
       <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
       <Section title={household ? `Guests in ${household.label}` : 'All guests'} id="guests">
