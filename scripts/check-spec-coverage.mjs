@@ -22,8 +22,10 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/smoke.spec.ts',
   'tests/e2e/social-sign-in.spec.ts',
   'tests/e2e/themes.spec.ts',
-  // Level 08: /travel and /trip gate anonymous visitors; signed-in travel UI runs on the test
-  // server in guest-guide.spec.ts. Reads flights provider mode from /api/health (HEALTH_TOKEN).
+  // Level 08: Travel & Stay (/guests/travel; /travel redirects to it), /trip and the travel
+  // capabilities all refuse anonymous visitors. The signed-in travel UI and the capability's own
+  // answer (which reads the flights provider mode from /api/health) run on the test server in
+  // guest-guide.spec.ts.
   'tests/e2e/travel.spec.ts',
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
@@ -35,8 +37,8 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/security-headers.spec.ts',
   // Level 16: the client-bundle and lazy-load budget. Production and nowhere else — a `next dev`
   // bundle is unminified, unsplit and carries the refresh runtime, so the same numbers there would
-  // have to be loosened until they asserted nothing. Public routes only (/ask-us is guest-gated since
-  // #86). `next start` serves prebuilt routes, so it needs no warm-up.
+  // have to be loosened until they asserted nothing. Public routes only (Ask Us, now /guests/ask-us,
+  // is guest-gated since #86). `next start` serves prebuilt routes, so it needs no warm-up.
   'tests/e2e/bundle.spec.ts',
 ];
 

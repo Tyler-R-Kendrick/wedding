@@ -138,6 +138,21 @@ test.describe('transportation', () => {
     for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
       expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
     }
+    // The ride page wears each design: its section and card are the design's own, inside that
+    // design's Shell. (quality-sweep.spec.ts walked this page for every guest while it was public
+    // guidance; only a guest with a benefit has the page now, so it is asserted here, where one is
+    // arranged.) The approved design goes last, so the claim below runs in it.
+    for (const theme of [...THEMES].reverse()) {
+      await page.goto(`/transportation?theme=${theme}`);
+      const prefix = theme === 'gilded-hour' ? 'gh' : theme === 'conservatory' ? 'cv' : 'bd';
+      await expect(page.locator(`.site.${prefix}`), `the ride page is not inside the ${theme} shell`).toHaveCount(1);
+      await expect(page.locator('main#main')).toHaveCount(1);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your ride');
+      await expect(page.locator('[data-benefit-status="eligible"]')).toBeVisible();
+      const themed = await page.locator('main#main').evaluate((main, p) => [...main.querySelectorAll('*')].filter((e) => String(e.className || '').split(/\s+/).some((c) => c.startsWith(p))).length, `${prefix}-`);
+      expect(themed, `the ride page renders no ${theme} element inside <main>`).toBeGreaterThan(0);
+      await noBlockingAxe(page);
+    }
     await page.getByRole('button', { name: 'Review and claim' }).click();
     await expect(page.getByRole('heading', { level: 3, name: 'Claim your ride benefit' })).toBeVisible();
     await expect(page.getByText('Uber (test mode)')).toBeVisible();

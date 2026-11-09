@@ -108,7 +108,7 @@ type Size = { px: number; where: string; sample: string };
  * guest has to read or operate takes `control-caps` at 1rem instead, which is what level 16 added
  * the style for. This is the one exception, named, rather than a blanket tolerance.
  */
-const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bdash-kicker\b|\bbd-card__label\b/;
+const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
 
 /** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
 const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required|Not part of your access/;

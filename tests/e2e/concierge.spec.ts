@@ -39,8 +39,17 @@ test.describe('concierge on Ask Us', () => {
   test('turns an anonymous visitor away to sign in, with a return path to Ask Us', async ({ browser }) => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
-    await page.goto('/ask-us');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fask-us/);
+    // Ask Us lives in the guest portal; the old address is a permanent redirect to it.
+    const moved = await page.request.get('/ask-us', { maxRedirects: 0 });
+    expect(moved.status()).toBe(308);
+    expect(moved.headers().location).toMatch(/\/guests\/ask-us$/);
+    for (const path of ['/ask-us', '/guests/ask-us']) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(/\/sign-in\?next=%2Fguests%2Fask-us/);
+      // The door says nothing the FAQ would have: no date, no venue, no concierge.
+      await expect(page.locator('body'), path).not.toContainText(/July 17|Chicago Athletic|Michigan Ave/);
+      await expect(page.getByTestId('concierge-open'), path).toHaveCount(0);
+    }
     await ctx.close();
   });
 
@@ -58,7 +67,9 @@ test.describe('concierge on Ask Us', () => {
 
   test('the FAQ and static search work without opening the concierge', async ({ browser }) => {
     const { ctx, page } = await guestPage(browser);
+    // A link a guest kept to the old address still arrives.
     await page.goto('/ask-us');
+    await expect(page).toHaveURL(/\/guests\/ask-us$/);
     await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
     await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
     await page.getByLabel('What are you looking for?').fill('valet');

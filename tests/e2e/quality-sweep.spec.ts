@@ -19,7 +19,22 @@ import { contextAs, principalHeaders } from './helpers/principal';
  * same reason. What is deliberately NOT here is in the level-16 self-review.
  */
 const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/transportation', '/trip'] as const;
+/*
+ * `/guests` is the dashboard (it replaced `/your-weekend`). `/transportation` left this list when it
+ * became "Your ride": the page exists only for a guest with a ride benefit, and anyone else is sent
+ * to `/guests/travel#getting-around`, so which page a walk meets there depends on what another spec
+ * has assigned to this fixture guest. The ride page itself is asserted, in every design, where the
+ * benefit is arranged first (transport-gifts.spec.ts).
+ */
+const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/guests', '/trip'] as const;
+
+/**
+ * The dashboard is one composition for every design: `src/components/weekend/Dashboard.tsx` and its
+ * own stylesheet, dressed by each design's tokens inside that design's Shell. It has no per-design
+ * recipe, so the two checks below that are about a design's own markup inside `<main>` do not apply
+ * to it; everything else in this file does.
+ */
+const ONE_COMPOSITION = ['/guests'] as const;
 
 /**
  * Budgets proportional to the work, not the 30s default.
@@ -99,7 +114,7 @@ test.describe('keyboard and focus order', () => {
     // `tabindex` or a re-ordered flex row breaks it silently and nothing else here would notice.
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto('/your-weekend');
+    await page.goto('/guests');
     const positive = await page.evaluate(() => [...document.querySelectorAll('[tabindex]')].map((e) => Number(e.getAttribute('tabindex'))).filter((n) => n > 0));
     expect(positive, 'a positive tabindex re-orders the keyboard path away from the document').toEqual([]);
 
@@ -153,10 +168,12 @@ test.describe('cache isolation', () => {
     // Same URL, three callers. The bodies must differ, and every response must forbid a shared
     // cache from keeping any of them. This is the failure mode that turns one guest's household
     // into every guest's household, and it is invisible to a spec that only signs in as one person.
-    const url = '/your-weekend';
+    const url = '/guests';
     const a = await request.get(url, { headers: principalHeaders('A1') });
     const b = await request.get(url, { headers: principalHeaders('B1') });
-    const anon = await request.get(url);
+    // Not followed: a signed-out caller is answered with a redirect to sign in, and it is this
+    // URL's own answer that must not be anyone's page.
+    const anon = await request.get(url, { maxRedirects: 0 });
 
     for (const [who, res] of [['A1', a], ['B1', b], ['anonymous', anon]] as const) {
       expect(res.status(), `${who} could not load ${url}`).toBeLessThan(400);
@@ -171,9 +188,16 @@ test.describe('cache isolation', () => {
     // never served each other's bytes — is only testable where identities exist, which is here.
 
     const [bodyA, bodyB, bodyAnon] = await Promise.all([a.text(), b.text(), anon.text()]);
+    expect(a.url(), 'A1 was not served the dashboard').toMatch(/\/guests$/);
+    expect(b.url(), 'B1 was not served the dashboard').toMatch(/\/guests$/);
+    expect(bodyA, 'A1 was not served their own dashboard').toContain('Welcome, Ada');
+    expect(bodyB, 'B1 was not served their own dashboard').toContain('Welcome, Dev');
     expect(bodyA, 'two households were served the same personalized page').not.toBe(bodyB);
+    expect(bodyB, 'household B was served household A’s name').not.toContain('Testhouse');
     expect(bodyAnon, 'a signed-out visitor was served a signed-in page').not.toBe(bodyA);
-    expect(bodyAnon.toLowerCase()).toContain('invitation');
+    expect(anon.status(), 'a signed-out visitor was not sent to sign in').toBe(307);
+    expect(anon.headers().location).toMatch(/\/sign-in\?next=%2Fguests$/);
+    expect(bodyAnon, 'a signed-out visitor was served a household’s dashboard').not.toMatch(/Welcome, |Testhouse|Fixture household/);
 
     // And through the browser: B must not see A's household name after A has just loaded the page
     // in the same process.
@@ -254,6 +278,15 @@ test.describe('the guest tree wears the design end to end', () => {
          * section a 1px full-width rule that Gilded Hour's DESIGN.md contradicts and Conservatory's
          * forbids by name. Every assertion above passed throughout, because a shell is not a page.
          */
+        if ((ONE_COMPOSITION as readonly string[]).includes(route)) {
+          // The dashboard: one composition, dressed by the design's tokens. What must hold is that
+          // the design reached it — its own cards and lead are there, and they take the design's
+          // heading face rather than the browser's.
+          await expect(page.locator('main#main .dash'), `${route} @ ${theme} did not render the dashboard`).toHaveCount(1);
+          const face = await page.locator('main#main h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
+          expect(face, `${route} @ ${theme}: the dashboard heading fell back to a default face`).not.toMatch(/^(Times|serif|sans-serif|-apple-system|system-ui)/i);
+          continue;
+        }
         const themed = await page.locator('main#main').evaluate((main, prefix) => [...main.querySelectorAll('*')].filter((e) => String(e.className || '').split(/\s+/).some((c) => c.startsWith(prefix))).length, `${shellClass}-`);
         expect(themed, `${route} @ ${theme} renders no ${theme} element inside <main>`).toBeGreaterThan(0);
       }
@@ -270,7 +303,9 @@ test.describe('the guest tree wears the design end to end', () => {
   test('the two designs render different structure for the same guest page', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
-    for (const route of ['/your-weekend', '/transportation', '/trip']) {
+    // `/trip` is the guest page with a recipe per design. The dashboard is one composition for all
+    // three (ONE_COMPOSITION), and the ride page needs a benefit arranged first (transport-gifts.spec.ts).
+    for (const route of ['/trip']) {
       const shapes: Record<string, string> = {};
       for (const theme of THEMES) {
         await page.goto(`${route}?theme=${theme}`);
@@ -363,8 +398,10 @@ test.describe('the masthead never collides', () => {
       test.skip(testInfo.project.name !== 'desktop', 'the test sets its own widths; one project is enough');
       const ctx = await contextAs(browser, 'A1', { viewport: { width: 1440, height: 900 } });
       const page = await ctx.newPage();
-      await page.goto(`/?theme=${theme}`);
-      // The prerendered home learns about the session in the browser: measure once it has.
+      // A signed-in guest's home is the dashboard (`/` sends them there), with the portal's own
+      // navigation: Home, Travel, Things to Do, Venue, Ask Us.
+      await page.goto(`/guests?theme=${theme}`);
+      await expect(page).toHaveURL(/\/guests(?:\?|$)/);
       await expect(page.locator('header .account-menu__trigger').first()).toBeAttached();
       const problems: string[] = [];
       for (const width of WIDTHS) problems.push(...(await collisions(page, width)).map((f) => `${width}px: ${f}`));
