@@ -1,4 +1,4 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { apiHeaders, callCapability, principalHeaders } from './helpers/principal';
 
@@ -7,6 +7,21 @@ const ALLOWLIST =
 /** The capability's own hand-offs may also be a Google Flights search (moved here from travel.spec.ts). */
 const CAPABILITY_ALLOWLIST =
   /^https:\/\/www\.google\.com\/travel\/|^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|kayak\.com|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
+
+/**
+ * Waits for the page to stop moving before it is measured. axe reads colours and target sizes as
+ * they are at that instant: run during a disclosure's 240ms fade it reports the half-faded button as
+ * low contrast, and run while the map is still laying out its pins it reports them as too small. Both
+ * are true of that frame and of no frame a guest reads.
+ */
+async function settled(page: Page): Promise<void> {
+  // Entrance animations only: running, and with an end. A design's ambient loop or a paused
+  // animation never finishes, so the wait is also capped at two seconds.
+  await page.evaluate(() => {
+    const entering = document.getAnimations().filter((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().endTime as number));
+    return Promise.race([Promise.all(entering.map((a) => a.finished.catch(() => undefined))), new Promise((resolve) => setTimeout(resolve, 2_000))]);
+  });
+}
 
 async function flightsMode(request: APIRequestContext): Promise<string> {
   if (!process.env.HEALTH_TOKEN) return 'unknown';
@@ -56,6 +71,9 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     await page.getByRole('button', { name: 'Suggest a plan' }).click();
     await expect(page.locator('#plan-result')).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`theme=${theme}`));
+    // Submitting the form loads the page again: the map has to be ready again before it is measured.
+    await expect(page.locator('#chicago-map .bd-atlas')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
+    await settled(page);
     const results = await new AxeBuilder({ page }).include('#chicago-map').include('#plan').withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
     expect(blocking).toEqual([]);
@@ -114,6 +132,7 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     await expect(main).not.toContainText(/coming soon/i);
     await expect(main).not.toContainText(/Uber can take you/i);
     await expect(main).not.toContainText('TODO(');
+    await settled(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze();

@@ -7,8 +7,13 @@ import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../
 async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
   const popover = page.getByRole('button', { name: 'Your account' });
   if (await popover.isVisible().catch(() => false)) {
-    await popover.click();
-    await expect(page.locator('.account-menu__panel:not([hidden])')).toBeVisible();
+    // Straight after a navigation the button is on screen before it is hydrated, and a click then
+    // does nothing. Press it until the panel is open, without pressing an open one shut.
+    const panel = page.locator('.account-menu__panel:not([hidden])');
+    await expect(async () => {
+      if (!(await panel.isVisible())) await popover.click();
+      await expect(panel).toBeVisible({ timeout: 1_500 });
+    }).toPass({ timeout: 15_000 });
     return 'popover';
   }
   const dialog = page.getByRole('dialog', { name: 'Menu' });
