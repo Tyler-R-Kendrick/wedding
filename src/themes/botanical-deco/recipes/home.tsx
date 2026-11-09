@@ -28,7 +28,7 @@ function Theme({ data }: { data: HomeData }) {
   const words = [
     { word: 'Love', line: 'Every one of you is part of how we got here. This celebration is as much about you as it is about us.' },
     { word: 'Peace', line: 'No rush and no guesswork: a chance to slow down, catch up and simply be together.' },
-    { word: 'Happiness', line: 'The places and moments that made us happy, shared with the people we love. Then dinner, toasts and dancing.' },
+    { word: 'Happiness', line: 'The places and moments that made us happy, shared with the people we love.' },
   ];
   return (
     <section className="bd-theme" aria-labelledby="theme-title">
@@ -83,7 +83,7 @@ function Share({ data }: { data: HomeData }) {
         </figure>
         <div className="bd-share__body" data-reveal="">
           <p className="bd-eyebrow">Our story</p>
-          <h3 className="bd-share__name">How it all started</h3>
+          <h3 className="bd-share__name bd-italic">How it all started</h3>
           <p>We met at a friend’s wedding, where an evening of talking, playing games, and getting to know each other became the start of our story.</p>
           <More href={ROUTES.story}>Read our story</More>
         </div>

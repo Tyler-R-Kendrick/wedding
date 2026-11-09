@@ -41,8 +41,8 @@
   text-wrap: pretty;
 }
 
-/* On a phone the date and the count share a row and the place takes the next, so the thing to do
-   starts inside the first screen. */
+/* On a phone the date and the count share a row and the place takes the next, in reading order, so
+   the thing to do starts inside the first screen. */
 .dash-head__facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -52,18 +52,19 @@
   border-block-start: 1px solid var(--color-outline);
 }
 
-.dash-head__facts > :nth-child(2) {
+.dash-head__where {
   grid-column: 1 / -1;
-  grid-row: 2;
 }
 
+/* Labels a guest reads to find a fact — and the line above a card's title, which carries a
+   deadline — are set at the size of the controls (17px), not as ornament. */
 .dash-head__facts dt,
 .dash-facts dt,
 .dash-kicker {
-  font-family: var(--type-label-caps-family, inherit);
-  font-size: max(13px, var(--type-label-caps-size, 0.8125rem));
-  font-weight: var(--type-label-caps-weight, 600);
-  letter-spacing: var(--type-label-caps-tracking, 0.14em);
+  font-family: var(--type-control-caps-family, inherit);
+  font-size: var(--type-control-caps-size, 1.0625rem);
+  font-weight: var(--type-control-caps-weight, 500);
+  letter-spacing: var(--type-control-caps-tracking, 0.08em);
   text-transform: var(--label-transform, uppercase);
   color: var(--color-on-surface-muted);
 }
@@ -89,9 +90,35 @@
     padding-block-start: var(--spacing-md);
   }
 
-  .dash-head__facts > :nth-child(2) {
+  .dash-head__where {
     grid-column: auto;
-    grid-row: auto;
+  }
+}
+
+/* Wide: the greeting on the left and the facts stacked on the right, on the lead card's own two
+   columns, so the head's right half is not empty and its edges are the card's. */
+@media (width >= 1040px) {
+  .dash-head {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: end;
+    gap: var(--spacing-2xl);
+    padding-inline: var(--spacing-xl);
+  }
+
+  .dash-head__facts {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--spacing-xs) var(--spacing-lg);
+    padding-block-start: 0;
+    border-block-start: 0;
+  }
+
+  .dash-head__facts > div {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: baseline;
   }
 }
 
@@ -120,9 +147,11 @@
   margin: 0;
 }
 
+/* Words, the button, the facts, then the quieter ways through. On a phone that order keeps the one
+   thing to do inside the first screen; from 760px the facts stand beside the rest. */
 .dash-lead {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
   border: 1px solid var(--color-outline);
   background: var(--color-surface);
@@ -163,11 +192,23 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-sm) var(--spacing-lg);
-  margin-block-start: var(--spacing-sm);
 }
 
-.dash-lead__actions .btn {
+.dash-lead__cta .btn {
   min-height: 48px;
+}
+
+/* On a phone the one button is as wide as the card: an easy target, and its label on one line. */
+@media (width < 760px) {
+  .dash-lead__cta .btn {
+    inline-size: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+.dash-external {
+  margin-inline-start: 0.4em;
 }
 
 .dash-card__aside {
@@ -175,9 +216,17 @@
   color: var(--color-on-surface-muted);
 }
 
+/* A number a guest can tap to call. Inline in its sentence, with room around it for a thumb. */
+.dash-tel {
+  display: inline-block;
+  padding-block: var(--spacing-sm);
+  color: var(--color-on-surface);
+  white-space: nowrap;
+}
+
 .dash-facts {
   display: grid;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   margin: 0;
 }
 
@@ -197,8 +246,23 @@
   .dash-lead {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
-    gap: var(--spacing-2xl);
+    gap: var(--spacing-lg) var(--spacing-2xl);
     padding: var(--spacing-xl);
+  }
+
+  .dash-lead__main,
+  .dash-lead__cta,
+  .dash-lead__actions {
+    grid-column: 1;
+  }
+
+  .dash-lead__facts {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+
+  .dash-facts {
+    gap: var(--spacing-md);
   }
 
   /* A lead with no facts beside it (the RSVP, a schedule) uses the whole width. */
@@ -339,13 +403,23 @@
   color: var(--color-on-surface-muted);
 }
 
+.dash-events__who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 @media (width >= 700px) {
   .dash-events__item {
     grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 3fr);
     align-items: baseline;
   }
 
-  .dash-events__note {
+  .dash-events__note,
+  .dash-events__who {
     grid-column: 2 / -1;
   }
 }

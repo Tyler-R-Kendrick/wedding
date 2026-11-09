@@ -73,9 +73,9 @@ interface HeroCopy {
   lede: Copy;
 }
 
-const WELCOME: Copy = ['Welcome to our wedding website. If you are one of our guests, everything about the celebration is waiting inside.'];
+const WELCOME: Copy = ['Welcome to our wedding website. If you are one of our guests, sign in to reserve your room and start planning your trip.'];
 
-function hero(site: PublicSiteFacts, state: LifecycleState): HeroCopy {
+function hero(state: LifecycleState): HeroCopy {
   switch (state) {
     case 'TEASER':
       return { eyebrow: 'We are getting married', lede: WELCOME };
@@ -88,9 +88,10 @@ function hero(site: PublicSiteFacts, state: LifecycleState): HeroCopy {
     case 'RSVP_CLOSED':
       return { eyebrow: 'See you soon', lede: ['RSVPs are in and we cannot wait. Sign in for everything you need for the weekend.'] };
     case 'WEDDING_WEEK':
-      return { eyebrow: 'Wedding week', lede: ['Sign in for your schedule and everything you need this week.'] };
+      // Nothing here may say how close the day is: this is the page a stranger sees.
+      return { eyebrow: 'See you soon', lede: ['Sign in for your schedule and everything you need.'] };
     case 'WEDDING_DAY':
-      return { eyebrow: site.coupleDisplayName, lede: ['Sign in for what is happening now and what comes next.'] };
+      return { eyebrow: 'See you soon', lede: ['Sign in for your schedule and everything you need.'] };
     case 'POST_WEDDING':
       return { eyebrow: 'Thank you', lede: ['For travelling, for dancing, for being there. Sign in to add your photos; ours will follow.'] };
     case 'ARCHIVE':
@@ -112,7 +113,7 @@ const SECTION_ORDER: Record<LifecycleState, string[]> = {
 
 export function homeContent(site: PublicSiteFacts, state: LifecycleState): HomeContent {
   const all = sections(state);
-  const h = hero(site, state);
+  const h = hero(state);
   const action = currentGuestAction(state);
   const primary: ActionLink = { label: action.label, href: throughSignIn(action.href), variant: state === 'RSVP_OPEN' ? 'accent' : 'primary' };
   return {
@@ -121,7 +122,6 @@ export function homeContent(site: PublicSiteFacts, state: LifecycleState): HomeC
     lede: h.lede,
     primary,
     secondary: { label: 'Our Story', href: ROUTES.story, variant: 'ghost' },
-    note: ['Invited guests sign in with the email or mobile number we have for you.'],
     sections: SECTION_ORDER[state].map((key) => all[key]!),
   };
 }

@@ -65,7 +65,7 @@ const ROUTE_LABELS: Record<string, string> = {
   [ROUTES.guestThings]: 'Things to Do',
   [ROUTES.guestAsk]: 'Ask Us',
   [ROUTES.guestTravel]: 'Travel & Stay',
-  [ROUTES.transportation]: 'Transportation',
+  [ROUTES.transportation]: 'Your ride',
   [ROUTES.gifts]: 'Gifts',
   [ROUTES.photos]: 'Photos & Video',
   '/rsvp': 'RSVP',
@@ -74,7 +74,11 @@ const ROUTE_LABELS: Record<string, string> = {
 export function labelForRoute(route: string): string {
   const base = route.split('#')[0] ?? route;
   if (ROUTE_LABELS[base]) return ROUTE_LABELS[base]!;
-  const prefix = Object.keys(ROUTE_LABELS).find((k) => k !== '/' && base.startsWith(`${k}/`));
+  // The longest matching section wins: `/guests` is a prefix of every portal page, and taking the
+  // first match called a Things to Do entry "Your dashboard".
+  const prefix = Object.keys(ROUTE_LABELS)
+    .filter((k) => k !== '/' && base.startsWith(`${k}/`))
+    .sort((a, b) => b.length - a.length)[0];
   return prefix ? ROUTE_LABELS[prefix]! : 'the page';
 }
 

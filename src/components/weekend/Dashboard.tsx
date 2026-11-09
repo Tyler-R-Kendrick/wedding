@@ -8,8 +8,7 @@ import { TableCard } from '@/components/weekend/TableCard';
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { formatDeadline } from '@/domain/events/format';
 import { GUEST_PATHS, type DashboardPlan, type ExploreCard, type TaskCard } from '@/domain/lifecycle/guest-actions';
-import { formatLongDate } from '@/domain/travel';
-import { CAA_BOOKING_PHONE, CAA_BOOKING_PHONE_REFERENCE, venueBlockDatesLabel } from '@/domain/travel/stay-copy';
+import { blockNights, CAA_BOOKING_PHONE, CAA_BOOKING_PHONE_REFERENCE, CAA_BOOKING_TEL } from '@/domain/travel/stay-copy';
 import type { RoomBlock } from '@/db/schema/travel';
 
 /**
@@ -45,17 +44,19 @@ export interface DashboardData {
   blockOpen: boolean;
 }
 
-/** One sentence under the greeting: where we are in the timeline, in the couple's voice. */
+/**
+ * One sentence under the greeting, in the couple's voice — only when no card leads. With a lead, the
+ * card says what to do and this line would say it a second time, on the first phone screen, above it.
+ */
 function statusLine(data: DashboardData): string {
-  const answered = data.itinerary?.rsvp.status === 'complete';
   switch (data.state) {
     case 'TEASER':
     case 'SAVE_THE_DATE':
-      return 'Please save the date. First, reserve your room while our block has space.';
+      return 'Please save the date. More will appear here as we settle it.';
     case 'INVITATIONS_OPEN':
-      return 'Your invitation is here. RSVPs open soon; until then, this is a good time to sort out the trip.';
+      return 'Your invitation is here. RSVPs open soon.';
     case 'RSVP_OPEN':
-      return answered ? 'Your RSVP is in. Thank you! Here is what is left before the weekend.' : 'RSVPs are open. Please reply first; everything else can wait until you have.';
+      return 'Thank you! Here is everything for the weekend.';
     case 'RSVP_CLOSED':
       return 'RSVPs are in and we cannot wait. Here is everything for the weekend.';
     case 'WEDDING_WEEK':
@@ -68,6 +69,9 @@ function statusLine(data: DashboardData): string {
       return 'The weekend, kept for the people who shared it.';
   }
 }
+
+/** "June 15, 2027": a deadline short enough to sit on one line above a title on a phone. */
+const shortDate = (iso: string): string => new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`));
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -93,11 +97,18 @@ interface CardContent {
   id?: string;
 }
 
-function External({ href, children, primary = false }: { href: string; children: ReactNode; primary?: boolean }) {
+/**
+ * A link that leaves the site says so, and says where: the mark for the eye, the words for a reader.
+ * It opens in the same tab, as every handoff on the site does, so Back brings a guest home.
+ */
+function External({ href, children, primary = false, to }: { href: string; children: ReactNode; primary?: boolean; to: string }) {
   return (
-    <a className={primary ? 'btn btn--primary' : 'dash-link'} href={href} target="_blank" rel="noopener noreferrer">
+    <a className={primary ? 'btn btn--primary' : 'dash-link'} href={href} rel="noopener">
       {children}
-      <span className="sr-only"> (opens in a new tab)</span>
+      <span className="dash-external" aria-hidden="true">
+        ↗
+      </span>
+      <span className="sr-only"> (opens {to})</span>
     </a>
   );
 }
@@ -107,8 +118,9 @@ function stayCard(data: DashboardData, bookable: boolean): CardContent {
   if (block && bookable && block.url) {
     return {
       id: 'stay',
-      kicker: 'Where to stay',
-      title: 'Reserve your room',
+      // The one fact with a deadline goes where the eye lands first, above the title.
+      kicker: block.cutoff ? `Book by ${shortDate(block.cutoff)}` : 'Where to stay',
+      title: 'Our room block',
       body: (
         <p>
           We have a block of rooms at the {data.hotel.name}, where the wedding is. Rooms in the block are limited.
@@ -117,24 +129,26 @@ function stayCard(data: DashboardData, bookable: boolean): CardContent {
       facts: (
         <dl className="dash-facts">
           <Fact label="Group rate">{block.rateText ?? <Placeholder inline>the group rate</Placeholder>}</Fact>
-          <Fact label="Book by">{block.cutoff ? formatLongDate(block.cutoff) : <Placeholder inline>the date to book by</Placeholder>}</Fact>
-          <Fact label="Nights">
-            {venueBlockDatesLabel(block) ?? (block.checkIn && block.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Placeholder inline>the block dates</Placeholder>)}
-          </Fact>
+          <Fact label="Nights">{blockNights(block) ?? <Placeholder inline>the block dates</Placeholder>}</Fact>
+          {block.code ? <Fact label="Group code">{block.code}</Fact> : null}
         </dl>
       ),
       action: (
-        <External href={block.url} primary>
-          Book in our room block
+        <External href={block.url} primary to="the hotel’s booking page">
+          Book your room
         </External>
       ),
       more: (
         <>
           <span className="dash-card__aside">
-            Or call {CAA_BOOKING_PHONE} and mention “{CAA_BOOKING_PHONE_REFERENCE}”.
+            Or call{' '}
+            <a className="dash-tel" href={CAA_BOOKING_TEL}>
+              {CAA_BOOKING_PHONE}
+            </a>{' '}
+            and mention “{CAA_BOOKING_PHONE_REFERENCE}”.
           </span>
           <Link className="dash-link" href={GUEST_PATHS.stay}>
-            Room details and other hotels
+            Room details
           </Link>
         </>
       ),
@@ -193,6 +207,17 @@ function scheduleCard(data: DashboardData, it: MyItinerary): CardContent {
             <span className="dash-events__where">{e.venueSpaceRef ? e.venueSpaceRef.replace(/-/g, ' ') : data.where.name}</span>
             {e.dressCode ? <span className="dash-events__note">Dress: {e.dressCode}</span> : null}
             {e.accessibilityNote ? <span className="dash-events__note">{e.accessibilityNote}</span> : null}
+            {/* What is on file, once anyone has answered: the reply stays visible after the window closes. */}
+            {e.household.some((h) => h.status) ? (
+              <ul className="dash-events__who" aria-label={`Replies for ${e.name}`}>
+                {e.household.map((h) => (
+                  <li key={h.guestId}>
+                    {h.displayName}
+                    {h.isSelf ? ' (you)' : ''}: {h.status === 'accepted' ? <Badge tone="yes">attending</Badge> : h.status === 'declined' ? <Badge tone="no">not attending</Badge> : <Badge tone="pending">no answer yet</Badge>}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -219,7 +244,7 @@ function taskCard(card: TaskCard, data: DashboardData): CardContent | null {
         id: 'flights',
         kicker: 'Getting here',
         title: 'Book your flights',
-        body: <p>We recommend flying into O’Hare (ORD); Midway (MDW) works too. Search from your home airport. Nothing is booked or charged on our site.</p>,
+        body: <p>Search from your home airport, and see which airport we recommend. Nothing is booked or charged on our site.</p>,
         action: (
           <Link className="dash-link" href={GUEST_PATHS.flights}>
             Search flights
@@ -231,7 +256,7 @@ function taskCard(card: TaskCard, data: DashboardData): CardContent | null {
         id: 'around',
         kicker: 'Once you land',
         title: 'Getting around',
-        body: <p>The Blue Line train runs from O’Hare to downtown. Taxis and rideshares serve the hotel, and there is valet and nearby parking if you drive.</p>,
+        body: <p>From the airport to the hotel and around the city: trains, taxis, rideshare and parking.</p>,
         action: (
           <Link className="dash-link" href={GUEST_PATHS.around}>
             Trains, rides and parking
@@ -295,6 +320,10 @@ const EXPLORE: Record<ExploreCard, { title: string; line: string; href: string }
   ask: { title: 'Ask us', line: 'Answers to the questions we hear most.', href: GUEST_PATHS.ask },
 };
 
+/**
+ * The one thing to do now. Three cells — words, facts, actions — so that on a phone the facts (a
+ * rate, the nights) come before the button they inform, and on a wide screen they stand beside it.
+ */
 function Lead({ content }: { content: CardContent }) {
   return (
     <section className="dash-lead" id={content.id} aria-labelledby="dash-lead-title">
@@ -304,14 +333,12 @@ function Lead({ content }: { content: CardContent }) {
           {content.title}
         </h2>
         <div className="dash-lead__body">{content.body}</div>
-        {content.action || content.more ? (
-          <div className="dash-lead__actions">
-            {content.action}
-            {content.more}
-          </div>
-        ) : null}
       </div>
+      {/* The button, then the facts, then the quieter ways through: on a phone the one thing to do
+          is inside the first screen, with its deadline already said above the title. */}
+      {content.action ? <div className="dash-lead__cta">{content.action}</div> : null}
       {content.facts ? <div className="dash-lead__facts">{content.facts}</div> : null}
+      {content.more ? <div className="dash-lead__actions">{content.more}</div> : null}
     </section>
   );
 }
@@ -350,18 +377,12 @@ export function Dashboard({ data }: { data: DashboardData }) {
       <header className="dash-head">
         <div className="dash-head__text">
           <h1 className="page__title">{data.firstName ? `Welcome, ${data.firstName}` : 'Welcome'}</h1>
-          <p className="dash-head__status">{statusLine(data)}</p>
+          {lead ? null : <p className="dash-head__status">{statusLine(data)}</p>}
         </div>
         <dl className="dash-head__facts">
           <div>
             <dt>When</dt>
             <dd>{data.when}</dd>
-          </div>
-          <div>
-            <dt>Where</dt>
-            <dd>
-              {data.where.name}, {data.where.city}
-            </dd>
           </div>
           {data.daysToGo !== null && data.daysToGo > 0 ? (
             <div>
@@ -371,6 +392,12 @@ export function Dashboard({ data }: { data: DashboardData }) {
               </dd>
             </div>
           ) : null}
+          <div className="dash-head__where">
+            <dt>Where</dt>
+            <dd>
+              {data.where.name}, {data.where.city}
+            </dd>
+          </div>
         </dl>
       </header>
 

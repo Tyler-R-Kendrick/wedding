@@ -3768,7 +3768,7 @@
    other half empty. From 1000px the heading takes a narrow rail and the content takes the rest. */
 @media (width >= 1000px) {
   .bd-section--split > .bd-section__inner {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 10fr);
     gap: 0 var(--spacing-2xl);
     align-items: start;
   }
@@ -3796,10 +3796,11 @@
   margin-block-start: var(--spacing-sm);
 }
 
-/* The hotel beside its terms: words on the left, the rate, the date and the button on the right. */
+/* The hotel's name, its terms and button, then the words. One column on a phone in that order; from
+   760px the words sit left and the terms right, under the name. */
 .bd-travel__stay {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .bd-travel__hotel {
@@ -3826,6 +3827,27 @@
 .bd-travel__block .bd-btn {
   inline-size: 100%;
   justify-content: center;
+}
+
+/* The one action on the page, leaving the site: the gold fill of a primary with the external mark. */
+.bd-btn--solid {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+  box-shadow: none;
+}
+
+.bd-btn--solid:hover {
+  background: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+}
+
+/* A number a guest can tap to call, with room around it for a thumb. */
+.bd-travel__tel {
+  display: inline-block;
+  padding-block: var(--spacing-sm);
+  white-space: nowrap;
 }
 
 .bd-travel__nearby {
@@ -3918,8 +3940,23 @@
 
 @media (width >= 760px) {
   .bd-travel__stay {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: var(--spacing-2xl);
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 1fr);
+    gap: var(--spacing-md) var(--spacing-2xl);
+    align-items: start;
+  }
+
+  .bd-travel__name {
+    grid-column: 1 / -1;
+  }
+
+  .bd-travel__hotel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .bd-travel__block {
+    grid-column: 2;
+    grid-row: 2;
   }
 
   .bd-travel__flights {

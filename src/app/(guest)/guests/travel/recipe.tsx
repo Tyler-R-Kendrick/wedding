@@ -255,9 +255,6 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
         )}
       </Section>
 
-      <footer className="border-t border-primary/20 pt-6 hint">
-        <p>Based on: {data.sources.map((s) => s.title).join(' · ')}.</p>
-      </footer>
     </main>
   );
 };

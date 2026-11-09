@@ -32,6 +32,17 @@ const deploymentSiteUrl = (() => {
   return host ? `https://${host}` : null;
 })();
 
+/**
+ * Build inputs that happen to live under `public/` and so would be served to anyone who asked.
+ *
+ * The media manifest and the photo licence ledger are read at build time (the picture markup, the
+ * credits page). Both list the photographs of the venue by name, which is exactly what a signed-out
+ * reader is not told. Nothing in the browser fetches either file, so the request is sent nowhere and
+ * answers 404; the credits a licence asks for are on `/credits`, where the signed-in reader who can
+ * see those photographs finds them.
+ */
+const UNSERVED_DATA_FILES = ['/media/botanical-deco/manifest.json', '/assets/attributions.json'].map((source) => ({ source, destination: '/_data-not-served' }));
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
@@ -61,10 +72,10 @@ const nextConfig: NextConfig = {
       { source: '/assets/photos/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }] },
     ];
   },
-  // The venue page was "Explore CAA" at /explore-caa until it became Our Venue. Links already shared
-  // and citations already stored keep working; the browser carries the #fragment across.
-  // Named aliases live in src/lib/site-redirects.ts, which the inventory and the crawler read too.
-  // Retired adventure URLs (same-day merges) stay in src/content/adventure-slug-redirects.json.
+  // Pages folded into the guest portal keep their old addresses as permanent redirects, so a link
+  // already shared still arrives. Named aliases live in src/lib/site-redirects.ts, which the
+  // inventory and the crawler read too. Retired adventure URLs (same-day merges) stay in
+  // src/content/adventure-slug-redirects.json.
   async redirects() {
     return [
       ...REDIRECTS.map((r) => ({ source: r.source, destination: r.destination, permanent: r.permanent })),
@@ -74,7 +85,7 @@ const nextConfig: NextConfig = {
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.
   async rewrites() {
-    return { beforeFiles: stageRewrites({ production: process.env.VERCEL_ENV === 'production' }), afterFiles: [], fallback: [] };
+    return { beforeFiles: [...UNSERVED_DATA_FILES, ...stageRewrites({ production: process.env.VERCEL_ENV === 'production' })], afterFiles: [], fallback: [] };
   },
   // Sandboxes with parallel worktrees symlink node_modules outside the project; Turbopack needs its
   // filesystem root to contain the link target. Unset in normal checkouts and CI.

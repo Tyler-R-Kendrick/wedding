@@ -38,7 +38,10 @@ describe('the promotion board', () => {
 
   it('shows a captured page as captured, with its date, and fingerprints its structure', () => {
     const row = board({ signoffs: [] }).find((r) => r.page.id === 'story')!;
-    expect(row.wireframe).toMatchObject({ status: 'captured', source: 'https://kendrick.wedding' });
+    // Where it was captured from: production, or this code run as the app (a page whose public
+    // version changed is captured from the app until production serves it).
+    expect(row.wireframe).toMatchObject({ status: 'captured' });
+    expect(row.wireframe.source).toMatch(/^https:\/\/kendrick\.wedding$|^app /);
     expect(row.wireframe.capturedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(row.wireframe.fingerprint).toMatch(/^[0-9a-f]{8}$/);
   });

@@ -5,9 +5,9 @@
    "title": "Sara + Tyler",
    "url": "/",
    "finalUrl": "/",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -27,9 +27,9 @@
    "title": "Our Story | Sara + Tyler",
    "url": "/our-story",
    "finalUrl": "/our-story",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -49,9 +49,9 @@
    "title": "Our Adventures | Sara + Tyler",
    "url": "/our-adventures",
    "finalUrl": "/our-adventures",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -68,12 +68,12 @@
    }
   },
   "caa": {
-   "title": "Explore CAA | Sara + Tyler",
-   "url": "/explore-caa",
-   "finalUrl": "/explore-caa",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
+   "title": "Our Venue | Sara + Tyler",
+   "url": "/our-venue",
+   "finalUrl": "/our-venue",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -95,7 +95,7 @@
    "finalUrl": "/gifts",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -117,7 +117,7 @@
    "finalUrl": "/photos",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -137,9 +137,9 @@
    "title": "Photo credits | Sara + Tyler",
    "url": "/credits",
    "finalUrl": "/credits",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -159,9 +159,9 @@
    "title": "Privacy | Sara + Tyler",
    "url": "/privacy",
    "finalUrl": "/privacy",
-   "source": "app /privacy",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -169,13 +169,11 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
+     "file": "gilded-hour.json"
     },
     "conservatory": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
+     "file": "conservatory.json"
     }
    }
   },
@@ -183,9 +181,9 @@
    "title": "Terms of use | Sara + Tyler",
    "url": "/terms",
    "finalUrl": "/terms",
-   "source": "app /terms",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -193,13 +191,11 @@
     },
     "gilded-hour": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
+     "file": "gilded-hour.json"
     },
     "conservatory": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
+     "file": "conservatory.json"
     }
    }
   },
@@ -209,7 +205,7 @@
    "finalUrl": "/rsvp",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -226,12 +222,12 @@
    }
   },
   "transport": {
-   "title": "Transportation | Sara + Tyler",
+   "title": "Travel & Stay | Sara + Tyler",
    "url": "/transportation",
-   "finalUrl": "/transportation",
+   "finalUrl": "/guests/travel#getting-around",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -253,7 +249,7 @@
    "finalUrl": "/trip",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -275,7 +271,7 @@
    "finalUrl": "/media/upload",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -297,7 +293,7 @@
    "finalUrl": "/media/mine",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -319,7 +315,7 @@
    "finalUrl": "/media/search",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1062,12 +1058,12 @@
    }
   },
   "adventure": {
-   "title": "starved rock | Sara + Tyler",
+   "title": "Starved Rock | Sara + Tyler",
    "url": "/our-adventures/starved-rock",
    "finalUrl": "/our-adventures/starved-rock",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1084,12 +1080,12 @@
    }
   },
   "caa-space": {
-   "title": "white city ballroom | Sara + Tyler",
-   "url": "/explore-caa/white-city-ballroom",
-   "finalUrl": "/explore-caa/white-city-ballroom",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
+   "title": "White City Ballroom | Sara + Tyler",
+   "url": "/our-venue/white-city-ballroom",
+   "finalUrl": "/our-venue/white-city-ballroom",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1111,7 +1107,7 @@
    "finalUrl": "/photos/engagement",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1129,11 +1125,11 @@
   },
   "rsvp-step": {
    "title": "RSVP | Sara + Tyler",
-   "url": "/rsvp/attending",
-   "finalUrl": "/rsvp/attending",
+   "url": "/rsvp/meals",
+   "finalUrl": "/rsvp/meals",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1266,12 +1262,12 @@
    }
   },
   "portal": {
-   "title": "Guest Portal | Sara + Tyler",
+   "title": "Your dashboard | Sara + Tyler",
    "url": "/guests",
    "finalUrl": "/guests",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1293,7 +1289,7 @@
    "finalUrl": "/guests/ask-us",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1315,7 +1311,7 @@
    "finalUrl": "/guests/travel",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1332,12 +1328,12 @@
    }
   },
   "guest-things": {
-   "title": "Share an Adventure | Sara + Tyler",
+   "title": "Things to Do | Sara + Tyler",
    "url": "/guests/things-to-do",
    "finalUrl": "/guests/things-to-do",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,
@@ -1359,7 +1355,7 @@
    "finalUrl": "/guests/things-to-do/alinea",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-11-01",
+   "capturedAt": "2026-11-09",
    "designs": {
     "botanical-deco": {
      "status": 200,

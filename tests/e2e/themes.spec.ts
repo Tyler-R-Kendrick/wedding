@@ -77,7 +77,7 @@ test.describe('theme resolution', () => {
 
 for (const theme of THEMES) {
   test.describe(`home (${theme})`, () => {
-    test('landmarks, names, date and the primary action above the fold; axe clean', async ({ page }, testInfo) => {
+    test('landmarks, names and the primary action above the fold, and no date or venue; axe clean', async ({ page }, testInfo) => {
       await page.goto(`/?theme=${theme}`);
       await expect(page.locator(`[data-theme="${theme}"]`).first()).toBeVisible();
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sara + Tyler');
@@ -91,8 +91,16 @@ for (const theme of THEMES) {
         expect(box!.y + box!.height, `${selector} within ${viewport.height}px`).toBeLessThanOrEqual(viewport.height);
       };
       await inFold('h1');
-      await inFold('time[datetime="2027-07-17"]');
       await inFold('.bd-hero__actions a, .gh-hero__actions a, .cv-hero__actions a');
+      // Home is for a reader who has not signed in: the first action is the door, the second the
+      // story, and when and where the wedding is are not said — no date, no countdown, no venue.
+      const actions = page.locator('.bd-hero__actions a, .gh-hero__actions a, .cv-hero__actions a');
+      await expect(actions.first()).toHaveAttribute('href', /^\/sign-in\?next=%2F/);
+      await expect(actions.filter({ hasText: 'Our Story' }).first()).toHaveAttribute('href', '/our-story');
+      await expect(page.locator('time[datetime^="2027-07-17"]')).toHaveCount(0);
+      const text = await page.locator('body').innerText();
+      for (const detail of ['July 17', 'Chicago Athletic', 'Michigan Ave']) expect(text, `home (${theme}) shows "${detail}" to a signed-out reader`).not.toContain(detail);
+      expect(text).not.toMatch(/\bdays? to go\b|\bdays? until\b/i);
       if (viewport.width < 900) {
         // the state's quick actions / elevator panel are fixed at the bottom and never cover focus
         const bar = page.locator('.bd-bar, .gh-panel, .cv-bar, .cv-menu').first();

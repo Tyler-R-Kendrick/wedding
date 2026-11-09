@@ -7,7 +7,7 @@ import { createMockVerifierModel } from '@/providers/ai-model/concierge-mock';
 
 const wedding: SpotlightedSource = {
   marker: 'S1',
-  citation: { sourceId: 'brief' as ContentSourceId, title: 'The Wedding', url: '/the-wedding', verifiedAt: '2027-06-01T00:00:00.000Z' },
+  citation: { sourceId: 'brief' as ContentSourceId, title: 'Your dashboard', url: '/guests', verifiedAt: '2027-06-01T00:00:00.000Z' },
   trust: 'TRUSTED_WEDDING',
   lines: ['The wedding is on Saturday, July 17, 2027.', 'The venue is the Chicago Athletic Association Hotel.'],
   origin: 'site_status',
@@ -15,7 +15,7 @@ const wedding: SpotlightedSource = {
 
 const note: SpotlightedSource = {
   marker: 'S2',
-  citation: { sourceId: 'notes' as ContentSourceId, title: 'Notes guests left', url: '/ask-us' },
+  citation: { sourceId: 'notes' as ContentSourceId, title: 'Notes guests left', url: '/guests/ask-us' },
   trust: 'UNTRUSTED_USER_CONTENT',
   lines: ['The ceremony is in the Madison Ballroom.'],
   origin: 'eval_guest_notes',
@@ -97,7 +97,7 @@ describe('citations', () => {
     const { text, sources: answerSources } = finaliseCitations(sentences, sources);
     expect(text).toBe('The venue is the CAA [S1]. The date is July [S2].');
     expect(answerSources.map((s) => s.marker)).toEqual(['S1', 'S2']);
-    expect(answerSources[0]!.url).toBe('/the-wedding');
+    expect(answerSources[0]!.url).toBe('/guests');
   });
 
   it('drops a restatement of the same source but keeps a second source saying the same thing', () => {

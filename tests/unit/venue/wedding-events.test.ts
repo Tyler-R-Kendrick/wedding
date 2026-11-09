@@ -17,7 +17,7 @@ describe('weddingEventSkeleton', () => {
         contentVersion: 1,
         editedBy: 'test',
       },
-      { route: '/the-wedding', now: new Date('2026-10-01'), sources: new Map() },
+      { route: '/guests', now: new Date('2026-10-01'), sources: new Map() },
     );
     const events = weddingEventSkeleton(provenance);
     expect(events.map((e) => e.id)).toEqual(['guest-arrival', 'ceremony', 'cocktail-hour', 'reception', 'end-of-celebration']);

@@ -20,7 +20,15 @@ describe('what a guest should do now', () => {
 
   it('follows the timeline: the room block with the save-the-date, the RSVP when replies open', () => {
     expect(currentGuestAction('SAVE_THE_DATE')).toEqual({ label: 'Book your hotel room', href: '/guests/travel' });
+    // Before the save-the-dates the dashboard already leads with the room block, so Home says the same.
+    expect(currentGuestAction('TEASER')).toEqual(currentGuestAction('SAVE_THE_DATE'));
     expect(currentGuestAction('RSVP_OPEN')).toEqual({ label: 'RSVP', href: '/rsvp' });
+  });
+});
+
+describe('the public button never says how close the day is', () => {
+  it('uses no word that dates the wedding', () => {
+    for (const state of LIFECYCLE_STATES) expect(currentGuestAction(state).label, state).not.toMatch(/today|tonight|this week|tomorrow/i);
   });
 });
 
@@ -64,25 +72,38 @@ describe('the dashboard plan', () => {
   });
 
   it('shows nothing a guest cannot use yet', () => {
-    for (const state of ['TEASER', 'SAVE_THE_DATE', 'INVITATIONS_OPEN', 'RSVP_OPEN', 'RSVP_CLOSED', 'WEDDING_WEEK'] as const) {
-      const plan = planDashboard(state, { ...invited('complete'), seated: true, hasRide: true });
+    // Nothing published, nothing on the invitation: no table, no ride, whatever the state.
+    for (const state of LIFECYCLE_STATES) {
+      const plan = planDashboard(state, invited('complete'));
       const all = [plan.lead, ...plan.next, ...plan.done];
+      expect(all, state).not.toContain('table');
+      expect(all, state).not.toContain('ride');
+    }
+    for (const state of ['TEASER', 'SAVE_THE_DATE', 'INVITATIONS_OPEN', 'RSVP_OPEN', 'RSVP_CLOSED', 'WEDDING_WEEK'] as const) {
+      const all = Object.values(planDashboard(state, { ...invited('complete'), seated: true, hasRide: true })).flat();
       expect(all, state).not.toContain('photos');
-      if (state !== 'WEDDING_WEEK') expect(all, state).not.toContain('table');
     }
     for (const state of ['TEASER', 'SAVE_THE_DATE', 'INVITATIONS_OPEN'] as const) {
       const all = Object.values(planDashboard(state, invited('not_started'))).flat();
       expect(all, state).not.toContain('gifts');
     }
+    // No schedule before invitations are out, even if the events exist.
+    expect(Object.values(planDashboard('SAVE_THE_DATE', invited('not_started', false))).flat()).not.toContain('schedule');
   });
 
-  it('shows a table only once the guest has one, and a ride only when one is on the invitation', () => {
-    const without = planDashboard('WEDDING_WEEK', invited('complete', false));
-    expect([without.lead, ...without.next]).not.toContain('table');
-    expect([without.lead, ...without.next]).not.toContain('ride');
-    const withBoth = planDashboard('WEDDING_WEEK', { ...invited('complete', false), seated: true, hasRide: true });
-    expect(withBoth.lead).toBe('schedule');
-    expect(withBoth.next).toEqual(expect.arrayContaining(['table', 'ride', 'around']));
+  it('shows a table from the day seating is published, and a ride from the day one is on the invitation', () => {
+    for (const state of ['INVITATIONS_OPEN', 'RSVP_OPEN', 'RSVP_CLOSED', 'WEDDING_WEEK', 'WEDDING_DAY'] as const) {
+      const plan = planDashboard(state, { ...invited('complete', false), seated: true, hasRide: true });
+      expect([plan.lead, ...plan.next], state).toEqual(expect.arrayContaining(['table', 'ride']));
+    }
+    expect(planDashboard('WEDDING_WEEK', { ...invited('complete', false), seated: true, hasRide: true }).lead).toBe('schedule');
+  });
+
+  it('leads with the RSVP whenever the window is open, whatever the state says', () => {
+    // The couple can open replies by hand before the site moves to RSVP_OPEN.
+    for (const state of ['SAVE_THE_DATE', 'INVITATIONS_OPEN', 'RSVP_CLOSED'] as const) {
+      expect(planDashboard(state, invited('not_started')).lead, state).toBe('rsvp');
+    }
   });
 
   it('turns to photographs after the day', () => {

@@ -68,10 +68,11 @@ const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
 /**
  * What a signed-in reader finds under the account menu, and nowhere else. Only what they can use
  * now: the gift registry from the moment the RSVP opens, photos and video from the day itself.
- * Before that there is nothing to look at or do on those pages, so there is no link to them — and
- * the pages say so themselves if reached directly (`isOpenIn`).
+ * Before that there is nothing to look at or do on those pages, so there is no link to them. (The
+ * pages themselves still answer a typed address for a signed-in guest, with their own empty state.)
  *
- * RSVP is listed only while replies are open (after that the dashboard shows what is on file).
+ * RSVP is listed only while replies are open; the dashboard carries the reply whenever the window
+ * is open, whatever the state, and who is attending under each event afterwards.
  */
 const MEMBER_BY_STATE: Record<LifecycleState, MemberKey[]> = {
   TEASER: [],

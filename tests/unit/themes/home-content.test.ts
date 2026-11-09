@@ -38,13 +38,14 @@ const WEDDING_DETAILS = [
 
 /** The hero's primary button by state: the one thing a guest should do now, through the sign-in door. */
 const PRIMARY: Record<LifecycleState, { label: string; to: string }> = {
-  TEASER: { label: 'Guest sign-in', to: '/guests' },
+  TEASER: { label: 'Book your hotel room', to: '/guests/travel' },
   SAVE_THE_DATE: { label: 'Book your hotel room', to: '/guests/travel' },
   INVITATIONS_OPEN: { label: 'Open your invitation', to: '/guests' },
   RSVP_OPEN: { label: 'RSVP', to: '/rsvp' },
   RSVP_CLOSED: { label: 'Plan your weekend', to: '/guests' },
   WEDDING_WEEK: { label: 'Your weekend', to: '/guests' },
-  WEDDING_DAY: { label: 'Today’s schedule', to: '/guests' },
+  // Never "today": this is the page a stranger reads.
+  WEDDING_DAY: { label: 'Your weekend', to: '/guests' },
   POST_WEDDING: { label: 'Add your photos', to: '/photos' },
   ARCHIVE: { label: 'Photos and video', to: '/photos' },
 };
@@ -73,7 +74,8 @@ describe('home content by lifecycle state', () => {
     expect(destinationOf(c.primary.href)).toBe(currentGuestAction(state).href);
     expect(c.primary.label).toBe(currentGuestAction(state).label);
     expect(c.secondary).toEqual({ label: 'Our Story', href: '/our-story', variant: 'ghost' });
-    expect(c.note).toEqual(['Invited guests sign in with the email or mobile number we have for you.']);
+    // How a guest gets in is said once, in the invited-guests section, not under the hero as well.
+    expect(c.note).toBeUndefined();
     expect(c.sections.map((s) => s.id)).toEqual(SECTIONS[state]);
     expect(new Set(c.sections.map((s) => s.id)).size).toBe(c.sections.length);
   });
@@ -85,7 +87,7 @@ describe('home content by lifecycle state', () => {
       const text = JSON.stringify(c);
       for (const detail of WEDDING_DETAILS) expect(text, `${state}: "${detail}"`).not.toContain(detail);
       // No countdown, no RSVP deadline, and no section that could hold facts, a schedule or a map.
-      expect(Object.keys(c).sort()).toEqual(['eyebrow', 'lede', 'note', 'primary', 'secondary', 'sections', 'title']);
+      expect(Object.keys(c).sort()).toEqual(['eyebrow', 'lede', 'primary', 'secondary', 'sections', 'title']);
       for (const s of c.sections) {
         expect(['guests', 'our-story', 'adventures', 'thank-you'], `${state}: ${s.id}`).toContain(s.id);
         for (const key of Object.keys(s)) expect(['id', 'act', 'label', 'title', 'body', 'link'], `${state}: ${s.id}.${key}`).toContain(key);

@@ -6,6 +6,10 @@ import AxeBuilder from '@axe-core/playwright';
  * the landmarks a guest navigates by, the structural signature of its theme (the two must not
  * converge), the page's primary action inside the first screen of a 390 phone, and axe-clean
  * WCAG 2.2 AA at 390 / 768 / 1440.
+ *
+ * This file runs signed out, against the production build, so its pages are the public ones: Our
+ * Story and Our Adventures. Everything that says when or where the wedding is sits behind sign-in,
+ * and the last block here asserts exactly that.
  */
 
 /** The approved design, then the two proposals it superseded (still reachable by `?theme=`). */
@@ -57,32 +61,11 @@ const PAGES: PageCase[] = [
     primary: (p) => p.getByRole('heading', { name: 'The memory', level: 2 }),
     signature: { 'botanical-deco': '.bd-diptych .bd-diptych__leaf', 'gilded-hour': '.gh-diptych .gh-diptych__leaf', conservatory: '.cv-voices .cv-voice' },
   },
-  {
-    key: 'our-venue',
-    path: '/our-venue',
-    h1: { 'botanical-deco': 'Our Venue', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
-    primary: (p) => p.locator('[id^="fact-"]').first(),
-    // The approved page opens on the couple, then the venue: its introduction starts in the first screen.
-    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }) },
-    signature: { 'botanical-deco': '.bd-place__frames .bd-place__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
-  },
-  {
-    key: 'venue-space',
-    path: '/our-venue/white-city-ballroom',
-    h1: 'White City Ballroom',
-    primary: (p) => p.locator('#look li').first(),
-    signature: { 'botanical-deco': '.bd-docent .bd-docent__num', 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },
-  },
-  {
-    key: 'the-wedding',
-    path: '/the-wedding',
-    h1: 'The Wedding',
-    primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-programme .bd-date', 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
-  },
-  // Ask Us is guest-gated (#86) and lives under /guests/ask-us for signed-in guests — themed
-  // coverage runs on the test server (quality-sweep.spec.ts), not here against anonymous production.
+  // Our Venue and its rooms say where the wedding is, so they are behind sign-in (asserted below,
+  // signed out) and their themed coverage — heading, each design's own structure, axe — runs with a
+  // session on the test server (guest-portal.spec.ts). The Wedding page is gone: what it said is on
+  // the guest dashboard. Ask Us is guest-gated (#86) and lives under /guests/ask-us; its themed
+  // coverage also runs on the test server (quality-sweep.spec.ts).
 ];
 
 async function axeClean(page: Page, label: string) {
@@ -214,28 +197,87 @@ test.describe('bottom chrome is reserved in every design', () => {
 });
 
 /**
- * BL-6 · The Wedding's first screen used to end on ornament: a bare octagonal "01" under a
- * three-line centred address. It now carries the question a guest actually has and the start of
- * its answer, above the fixed chrome.
+ * Signed out, the site is the two of us and the door. When the wedding is and where — the date, the
+ * venue, its address — are the invited guests', in every design: Home and Our Story say none of it,
+ * and the pages that do answer with the way to sign in.
  */
-test.describe('The Wedding opens with content, not ornament', () => {
+const WEDDING_DETAILS = ['July 17', 'Chicago Athletic', 'Michigan Ave'] as const;
+
+test.describe('a signed-out reader is told nothing about the wedding', () => {
   for (const theme of THEMES) {
-    test(`${theme}: "What to wear" and the start of its answer are in the first screen at 390`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
-      await page.setViewportSize(PHONE);
-      await page.goto(`/the-wedding?theme=${theme}`);
-      const fold = await foldHeight(page);
-      const heading = page.locator('#dress-title');
-      await expect(heading).toBeVisible();
-      const hb = (await heading.boundingBox())!;
-      expect(hb.y + hb.height, `${theme}: the dress-code heading is below the first screen`).toBeLessThanOrEqual(fold);
-      const answer = page.locator('#dress-code').locator('.placeholder, p').first();
-      const ab = (await answer.boundingBox())!;
-      expect(ab.y, `${theme}: the answer does not start in the first screen`).toBeLessThan(fold);
-      // and the directions handoff — the page's one action — is still fully tappable up there
-      const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
-      const db = (await directions.boundingBox())!;
-      expect(db.y + db.height, `${theme}: the directions handoff is not fully in the first screen`).toBeLessThanOrEqual(fold);
+    for (const path of ['/', '/our-story'] as const) {
+      test(`${path} names no date, venue or address (${theme})`, async ({ page }) => {
+        const response = await page.goto(`${path}?theme=${theme}`);
+        expect(response?.status(), path).toBeLessThan(400);
+        await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
+        await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('');
+        // The whole document a reader is given: header, page, footer and anything visually hidden.
+        const text = await page.locator('body').innerText();
+        const html = await page.content();
+        for (const detail of WEDDING_DETAILS) {
+          expect(text, `${path} (${theme}) shows "${detail}" to a signed-out reader`).not.toContain(detail);
+          expect(html, `${path} (${theme}) ships "${detail}" to a signed-out reader in its markup`).not.toContain(detail);
+        }
+        // No countdown and no schedule either: both say when.
+        await expect(page.locator('main time[datetime^="2027-07-17"]')).toHaveCount(0);
+        expect(text).not.toMatch(/\bdays? to go\b/i);
+      });
+    }
+
+    test(`home offers the door and the story, and the two public pages (${theme})`, async ({ page }) => {
+      await page.goto(`/?theme=${theme}`);
+      const main = page.locator('main#main');
+      // The secondary action is always the story; the primary one leads through sign-in.
+      await expect(main.getByRole('link', { name: 'Our Story', exact: true }).first()).toHaveAttribute('href', '/our-story');
+      const throughDoor = await main.locator('a[href^="/sign-in?next="]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+      expect(throughDoor.length, 'home offers no way in').toBeGreaterThan(0);
+      // Nothing on Home links a guest page directly: every such link goes through the door.
+      const direct = await main.locator('a[href^="/guests"], a[href="/rsvp"], a[href="/our-venue"], a[href="/gifts"], a[href="/photos"], a[href="/trip"], a[href="/transportation"]').count();
+      expect(direct, 'home links a guest page without going through sign-in').toBe(0);
+      // The navigation is the two of us and the door. Read from the markup, not from what is on
+      // screen: on a phone the list is in the Menu sheet, and a link hidden there is still offered.
+      const chrome = await page.locator('header a[href], nav a[href], dialog a[href], [role="dialog"] a[href], footer a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+      expect(chrome, 'the signed-out navigation has no Our Story').toContain('/our-story');
+      expect(chrome, 'the signed-out navigation has no Our Adventures').toContain('/our-adventures');
+      expect(chrome, 'the signed-out navigation has no sign-in').toContain('/sign-in');
+      for (const href of chrome) {
+        expect(href, 'the signed-out chrome links a guest page').not.toMatch(/^\/(?:guests|our-venue|rsvp|gifts|photos|media|trip|transportation|travel|the-wedding|your-weekend|ask-us|share-an-adventure)(?:[/?#]|$)/);
+        // Directions name the venue: no map link for a reader who has not signed in.
+        expect(href, 'the signed-out chrome links directions').not.toMatch(/maps\.(?:google|apple)\.|google\.[a-z.]+\/maps/);
+      }
     });
+
+    for (const path of ['/our-venue', '/our-venue/white-city-ballroom'] as const) {
+      test(`${path} sends a signed-out reader to sign in (${theme})`, async ({ page }) => {
+        await page.goto(`${path}?theme=${theme}`);
+        await expect(page).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(path)}$`));
+        const text = await page.locator('body').innerText();
+        for (const detail of WEDDING_DETAILS) expect(text, `the door shows "${detail}"`).not.toContain(detail);
+        await expect(page.locator('[data-space], [id^="fact-"]')).toHaveCount(0);
+      });
+    }
   }
+
+  test('the old addresses lead to sign-in, and the removed ones are gone', async ({ request, page }) => {
+    test.setTimeout(90_000);
+    for (const [source, destination] of [
+      ['/the-wedding', '/guests'],
+      ['/your-weekend', '/guests'],
+      ['/travel', '/guests/travel'],
+      ['/share-an-adventure', '/guests/things-to-do'],
+      ['/share-an-adventure/starved-rock-state-park', '/guests/things-to-do/starved-rock-state-park'],
+      ['/ask-us', '/guests/ask-us'],
+      ['/faq', '/guests/ask-us'],
+      ['/registry', '/gifts'],
+    ] as const) {
+      const moved = await request.get(source, { maxRedirects: 0 });
+      expect(moved.status(), source).toBe(308);
+      expect(moved.headers().location, source).toMatch(new RegExp(`${destination}$`));
+      await page.goto(source);
+      await expect(page, source).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(destination)}$`));
+    }
+    for (const gone of ['/explore-caa', '/explore-caa/white-city-ballroom', '/wedding-day', '/things-to-do']) {
+      expect((await request.get(gone, { maxRedirects: 0 })).status(), gone).toBe(404);
+    }
+  });
 });

@@ -131,7 +131,7 @@ function Provenance({ provenance, freshness = false }: { provenance: ProvenanceV
   if (provenance.trustClass === 'TRUSTED_WEDDING' && !provenance.external && !provenance.url?.startsWith('https://')) {
     return <p className="bd-prov bd-prov--own">From Sara + Tyler</p>;
   }
-  if (!isNamedForGuests(provenance)) return null;
+  if (!isNamedForGuests(provenance) && !freshness) return null;
   return (
     <div className="bd-prov">
       <ProvenanceLine provenance={provenance}>{freshness ? <FreshnessBadge provenance={provenance} /> : null}</ProvenanceLine>

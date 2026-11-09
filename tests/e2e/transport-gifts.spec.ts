@@ -102,7 +102,8 @@ test.describe('transportation', () => {
     await expect(page).toHaveURL(/\/guests\/travel(?:\?[^#]*)?#getting-around$/);
     const around = page.locator('#getting-around');
     await expect(around.getByRole('heading', { level: 2, name: 'Getting around' })).toBeVisible();
-    await expect(around).toContainText(/Taxis and rideshares serve/);
+    await expect(around).toContainText(/rideshare/i);
+    await expect(around).toContainText(/parking/i);
     // No ride is promised to a guest who has none, and no claim is offered.
     await expect(page.locator('[data-benefit-status]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Review and claim' })).toHaveCount(0);

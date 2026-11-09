@@ -212,12 +212,7 @@
   outline-color: var(--color-gold-deep);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  [data-theme="botanical-deco"] .dash-card {
-    transition: border-color var(--duration-fast) var(--ease-standard);
-  }
-}
-
-[data-theme="botanical-deco"] .dash-card:hover {
-  border-color: var(--color-gold);
+[data-theme="botanical-deco"] .dash-tel {
+  color: var(--color-tertiary);
+  text-decoration-color: var(--color-gold);
 }

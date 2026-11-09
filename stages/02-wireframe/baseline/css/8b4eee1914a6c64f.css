@@ -279,37 +279,4 @@
   outline-offset: 2px;
 }
 
-.ai-totals, .ai-tags {
-  gap: var(--spacing-sm, 8px) var(--spacing-lg, 24px);
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-}
-
-.ai-tags {
-  gap: var(--spacing-xs, 4px) var(--spacing-md, 16px);
-  color: var(--color-on-surface-variant, currentcolor);
-  font-size: max(17px, .875rem);
-}
-
-.ai-tags .is-bad {
-  color: var(--color-error, currentcolor);
-  font-weight: 600;
-}
-
-.ai-answer[data-status="refused"], .ai-answer[data-status="error"] {
-  border-inline-start: var(--spacing-xs, 4px) solid var(--color-error, currentcolor);
-}
-
-.ai-sources {
-  gap: var(--spacing-xs, 4px);
-  margin: 0;
-  padding-inline-start: 0;
-  font-size: max(17px, .9375rem);
-  list-style: none;
-  display: grid;
-}
-
 /*# sourceMappingURL=src_components_mediaai_mediaai_01jf43e.css.map*/

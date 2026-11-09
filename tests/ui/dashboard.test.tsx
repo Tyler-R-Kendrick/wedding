@@ -66,12 +66,15 @@ describe('the guest dashboard', () => {
   it('leads with the room block while the save-the-dates are out: the rate, the date, one button', () => {
     const { container } = render(<Dashboard data={data('SAVE_THE_DATE', SAVE_THE_DATE, null)} />);
     const card = container.querySelector<HTMLElement>('.dash-lead')!;
-    expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Reserve your room');
+    expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Our room block');
     expect(within(card).getByText('$331–371 per night')).toBeTruthy();
-    expect(within(card).getByText('Tuesday, June 15, 2027')).toBeTruthy();
-    const book = within(card).getByRole('link', { name: /Book in our room block/ });
+    expect(within(card).getByText('Book by June 15, 2027')).toBeTruthy();
+    expect(within(card).getByText('Friday, July 16 and Saturday, July 17, 2027')).toBeTruthy();
+    expect(within(card).getByRole('link', { name: '844-312-2221' }).getAttribute('href')).toBe('tel:+18443122221');
+    const book = within(card).getByRole('link', { name: /Book your room/ });
     expect(book.getAttribute('href')).toBe(DEFAULT_VENUE_BLOCK.url);
     expect(book.getAttribute('rel')).toContain('noopener');
+    expect(book.textContent).toContain('opens the hotel’s booking page');
     expect(within(card).getAllByRole('link').filter((a) => a.classList.contains('btn--primary'))).toHaveLength(1);
   });
 
@@ -107,7 +110,7 @@ describe('the guest dashboard', () => {
     expect(card.textContent).toMatch(/Kindly reply by/);
     expect(within(card).getByRole('link', { name: 'RSVP now' }).getAttribute('href')).toBe('/rsvp');
     // The room block is still there to book, one step down.
-    expect(screen.getByRole('heading', { level: 3, name: 'Reserve your room' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'Our room block' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Your schedule' })).toBeTruthy();
   });
 
@@ -115,7 +118,7 @@ describe('the guest dashboard', () => {
     const it = itinerary({ status: 'complete', answered: 2, next: [] });
     const facts: DashboardFacts = { rsvp: { open: true, canAnswer: true, status: 'complete' }, hasEvents: true, blockOpen: true, seated: false, hasRide: false };
     const { container } = render(<Dashboard data={data('RSVP_OPEN', facts, it)} />);
-    expect(within(container.querySelector<HTMLElement>('.dash-lead')!).getByRole('heading', { level: 2 }).textContent).toBe('Reserve your room');
+    expect(within(container.querySelector<HTMLElement>('.dash-lead')!).getByRole('heading', { level: 2 }).textContent).toBe('Our room block');
     expect(screen.getByText('RSVP answered for everyone')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Review or change your RSVP' }).getAttribute('href')).toBe('/rsvp');
   });

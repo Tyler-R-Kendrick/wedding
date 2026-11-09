@@ -1,11 +1,12 @@
 import { formatLongDate } from "@/domain/travel";
 import {
+  blockNights,
   CAA_BOOKING_PHONE,
   CAA_BOOKING_PHONE_REFERENCE,
+  CAA_BOOKING_TEL,
   CAA_PARKING_ARRIVAL_COPY,
   CAA_STAY_INTRO,
   CAA_UPGRADES_COPY,
-  venueBlockDatesLabel,
 } from "@/domain/travel/stay-copy";
 import type { ContentRecipe, TravelProps } from "@/themes/content-types";
 import { PreviewBanner } from "@/themes/shared/PreviewBanner";
@@ -53,12 +54,49 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
 
       <Section id="stay" ground="alt" labelledBy="stay-title" layout="split">
         <SectionHeading level={2} id="stay-title" title="Where to stay" />
+        {/* The hotel's name, then the terms and the button, then the words: on a phone the thing to
+            do is directly under the name, not below four paragraphs. From 760px the words take the
+            left and the terms the right, on one row. */}
         <div className="bd-travel__stay">
+          <h3 className="bd-h bd-h--3 bd-travel__name">{venue.name}</h3>
+          <aside className="bd-travel__block" aria-label="Our room block">
+            {block ? (
+              <>
+                <dl className="bd-stats bd-travel__terms">
+                  <Stat label="Group rate" value={block.rateText ?? <Placeholder todo="the group rate" />} />
+                  <Stat label="Book by" value={block.cutoff ? formatLongDate(block.cutoff) : <Placeholder todo="the date to book by" />} />
+                  <Stat label="Nights" value={blockNights(block) ?? <Placeholder todo="the block dates" />} />
+                  {block.code ? <Stat label="Group code" value={block.code} /> : null}
+                </dl>
+                {block.url ? (
+                  <p>
+                    <Button variant="external" href={block.url} provider="the hotel’s booking page" className="bd-btn--solid">
+                      Book your room
+                    </Button>
+                  </p>
+                ) : null}
+                <p className="bd-muted">
+                  Or call{" "}
+                  <a className="bd-link bd-travel__tel" href={CAA_BOOKING_TEL}>
+                    {CAA_BOOKING_PHONE}
+                  </a>{" "}
+                  and mention “{CAA_BOOKING_PHONE_REFERENCE}”.
+                </p>
+              </>
+            ) : (
+              <p>Room-block details are being confirmed. The booking information will appear here when it is ready.</p>
+            )}
+          </aside>
           <div className="bd-travel__hotel">
-            <h3 className="bd-h bd-h--3">{venue.name}</h3>
             <Prose>
               <p>{CAA_STAY_INTRO} The wedding is here, so staying here means no travel on the day.</p>
-              <p className="bd-muted">{venue.address ?? facts.venue.address}</p>
+              {frame.details ? (
+                <p>
+                  <Link href={frame.details.venue.mapsUrl} external standalone>
+                    {frame.details.venue.address}
+                  </Link>
+                </p>
+              ) : null}
               <p>{CAA_UPGRADES_COPY}</p>
               <p>
                 <Link href={facts.venue.url} external standalone>
@@ -67,35 +105,6 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
               </p>
             </Prose>
           </div>
-          <aside className="bd-travel__block" aria-label="Our room block">
-            {block ? (
-              <>
-                <dl className="bd-stats bd-travel__terms">
-                  <Stat label="Group rate" value={block.rateText ?? <Placeholder todo="the group rate" />} />
-                  <Stat label="Book by" value={block.cutoff ? formatLongDate(block.cutoff) : <Placeholder todo="the date to book by" />} />
-                  <Stat
-                    label="Nights"
-                    value={
-                      venueBlockDatesLabel(block) ??
-                      (block.checkIn && block.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Placeholder todo="the block dates" />)
-                    }
-                  />
-                </dl>
-                {block.url ? (
-                  <p>
-                    <Button variant="primary" href={block.url}>
-                      Book in our room block
-                    </Button>
-                  </p>
-                ) : null}
-                <p className="bd-muted">
-                  Or call {CAA_BOOKING_PHONE} and mention “{CAA_BOOKING_PHONE_REFERENCE}”.
-                </p>
-              </>
-            ) : (
-              <p>Room-block details are being confirmed. The booking information will appear here when it is ready.</p>
-            )}
-          </aside>
         </div>
 
         {alternatives.length ? (
@@ -147,11 +156,9 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
           <div className="bd-travel__airports">
             {recommended ? (
               <div className="bd-travel__airport">
-                <p className="bd-eyebrow">
-                  {recommended.code} · Recommended
-                </p>
+                <p className="bd-eyebrow">{recommended.code}</p>
                 <h3 className="bd-h bd-h--3">{recommended.name}</h3>
-                {recommended.note ? <p>{recommended.note}</p> : null}
+                <p>The airport we recommend. There is no wedding shuttle; getting into the city is below.</p>
                 {recommended.pending ? (
                   <p>
                     <Placeholder todo={recommended.pending} />
@@ -163,7 +170,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
               <div key={a.code} className="bd-travel__airport">
                 <p className="bd-eyebrow">{a.code}</p>
                 <h3 className="bd-h bd-h--3">{a.name}</h3>
-                {a.note ? <p>{a.note}</p> : null}
+                <p>Also serves Chicago.</p>
               </div>
             ))}
             <p className="bd-muted">

@@ -53,7 +53,8 @@ export function isNamedForGuests(provenance: Pick<ProvenanceViewData, 'sourceTyp
 
 /** Source + freshness on one line; the standard footer for any record a guest may act on. */
 export function ProvenanceLine({ provenance, showVersion = false, children }: { provenance: ProvenanceViewData; showVersion?: boolean; children?: React.ReactNode }) {
-  if (!isNamedForGuests(provenance)) return null;
+  // An unnamed source still has a freshness worth saying ("No longer current"): only the name goes.
+  if (!isNamedForGuests(provenance)) return children ? <p className="prov">{children}</p> : null;
   return (
     <p className="prov">
       <SourceBadge provenance={provenance} showVersion={showVersion} />

@@ -36,15 +36,15 @@ describe('capability output as evidence', () => {
   it('builds one citable block per provenance-bearing record', () => {
     const data = {
       entries: [
-        { id: '1', slug: 'kids', question: 'Can we bring our kids?', answer: { text: 'Yes, all ages are welcome.', placeholder: false }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/ask-us#kids', trustClass: 'TRUSTED_WEDDING' } },
-        { id: '2', slug: 'dress', question: 'What should I wear?', answer: { text: 'TODO(Tyler & Sara) decide the dress code.', placeholder: true }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/ask-us#dress', trustClass: 'TRUSTED_WEDDING' } },
+        { id: '1', slug: 'kids', question: 'Can we bring our kids?', answer: { text: 'Yes, all ages are welcome.', placeholder: false }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/guests/ask-us#kids', trustClass: 'TRUSTED_WEDDING' } },
+        { id: '2', slug: 'dress', question: 'What should I wear?', answer: { text: 'TODO(Tyler & Sara) decide the dress code.', placeholder: true }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/guests/ask-us#dress', trustClass: 'TRUSTED_WEDDING' } },
       ],
     };
     const blocks = factsFromOutcome(descriptor(), outcome(data), markers());
     expect(blocks.map((b) => b.citation.title)).toEqual(['Can we bring our kids?', 'What should I wear?']);
     expect(blocks[0]!.lines).toEqual(['Yes, all ages are welcome.']);
     expect(blocks[1]!.lines.join(' ')).toContain(UNDECIDED);
-    expect(blocks.every((b) => b.citation.url?.startsWith('/ask-us'))).toBe(true);
+    expect(blocks.every((b) => b.citation.url?.startsWith('/guests/ask-us'))).toBe(true);
   });
 
   it('cites a leftovers block to the capability and its page, never to an unrelated record', () => {

@@ -189,7 +189,7 @@ export function FlightSearchForm({
         We only search when you press the button, and nothing is booked or charged here. Prices come from the partner and change often.
       </p>
       <ErrorSummary state={state} />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
         <Field label="Flying from" name="origin" hint="3-letter airport code, for example LAX" issue={issue('origin')}>
           {(p) => (
             <>
@@ -221,8 +221,8 @@ export function FlightSearchForm({
         <Field label="Flying to" name="destination" issue={issue('destination')}>
           {(p) => (
             <select id={p.id} name="destination" defaultValue={value('destination', 'ORD')} aria-describedby={p.describedBy} className={INPUT}>
-              <option value="ORD">Chicago O&rsquo;Hare (ORD)</option>
-              <option value="MDW">Chicago Midway (MDW)</option>
+              <option value="ORD">O&rsquo;Hare (ORD)</option>
+              <option value="MDW">Midway (MDW)</option>
             </select>
           )}
         </Field>
@@ -275,7 +275,7 @@ export function HotelSearchForm({ defaults = {} }: { defaults?: Defaults }) {
     <form action={action} aria-describedby={helpId} className="flex flex-col gap-4">
       <input type="hidden" name="kind" value="hotels" />
       <p id={helpId} className="fld__hint">
-        Live rates near the venue, only when you ask. The wedding block above has its own link once the planner confirms it.
+        Live rates near the venue, only when you ask.
       </p>
       <ErrorSummary state={state} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

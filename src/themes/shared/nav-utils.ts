@@ -12,7 +12,7 @@ const SHORT: Record<string, string> = {
   'Our Story': 'Story',
   'Travel & Stay': 'Travel',
   Travel: 'Travel',
-  'Things to Do': 'Things',
+  'Things to Do': 'Explore',
   'The Wedding': 'Wedding',
   'Guest Portal': 'Portal',
   'Ask Us': 'Ask us',

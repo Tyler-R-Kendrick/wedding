@@ -23,7 +23,7 @@ const grounded: ConciergeEvent[] = [
   { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
   { type: 'status', stage: 'routing', tools: ['site_status'] },
   { type: 'text', text: 'The wedding is on Saturday, July 17, 2027 [S1].' },
-  { type: 'sources', sources: [{ marker: 'S1', sourceId: 'brief', title: 'The Wedding', url: '/the-wedding', verifiedAt: '2027-06-01T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING' }] },
+  { type: 'sources', sources: [{ marker: 'S1', sourceId: 'brief', title: 'Your dashboard', url: '/guests', verifiedAt: '2027-06-01T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING' }] },
   { type: 'done', status: 'grounded', dropped: 0, latencyMs: 12 },
 ];
 
@@ -79,8 +79,8 @@ describe('concierge panel', () => {
     await ask('When is the wedding?');
     await waitFor(() => expect(screen.getByText(/July 17, 2027/)).toBeTruthy());
     expect(screen.getByText('Based on:')).toBeTruthy();
-    const link = screen.getByRole('link', { name: 'The Wedding' }) as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/the-wedding');
+    const link = screen.getByRole('link', { name: 'Your dashboard' }) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/guests');
     expect(screen.getByText(/checked 2027-06-01/)).toBeTruthy();
   });
 
@@ -101,14 +101,14 @@ describe('concierge panel', () => {
       'fetch',
       stubStream([
         { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAX' },
-        { type: 'refusal', message: "I don't have that information yet.", links: [{ label: 'The Wedding', href: '/the-wedding' }] },
+        { type: 'refusal', message: "I don't have that information yet.", links: [{ label: 'Your dashboard', href: '/guests' }] },
         { type: 'done', status: 'refused', dropped: 0, latencyMs: 8 },
       ]),
     );
     await open();
     await ask('What is the weather in Paris?');
     await waitFor(() => expect(screen.getByText(/don't have that information/)).toBeTruthy());
-    expect((screen.getByRole('link', { name: 'The Wedding' }) as HTMLAnchorElement).getAttribute('href')).toBe('/the-wedding');
+    expect((screen.getByRole('link', { name: 'Your dashboard' }) as HTMLAnchorElement).getAttribute('href')).toBe('/guests');
   });
 
   it('renders a confirmation as a link to the website, never as a completed action', async () => {
@@ -281,7 +281,7 @@ describe('the concierge on the guest\'s own device', () => {
   it('does not ask twice when the server refused before handing over evidence', async () => {
     const refusal: ConciergeEvent[] = [
       { type: 'session', sessionId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', answerId: '01ARZ3NDEKTSV4RRFFQ69G5FAW' },
-      { type: 'refusal', message: 'That is personal to your invitation.', links: [{ label: 'Sign in', href: '/your-weekend' }] },
+      { type: 'refusal', message: 'That is personal to your invitation.', links: [{ label: 'Sign in', href: '/guests' }] },
       { type: 'done', status: 'refused', dropped: 0, latencyMs: 4 },
     ];
     const encoder = new TextEncoder();

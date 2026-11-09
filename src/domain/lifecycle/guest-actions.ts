@@ -40,13 +40,15 @@ export interface GuestAction {
 
 /** The one action for a state: Home's primary button. */
 const ACTION_BY_STATE: Record<LifecycleState, GuestAction> = {
-  TEASER: { label: 'Guest sign-in', href: GUEST_PATHS.portal },
+  // The same as the save-the-date: the dashboard already leads with the room block in both.
+  TEASER: { label: 'Book your hotel room', href: GUEST_PATHS.travel },
   SAVE_THE_DATE: { label: 'Book your hotel room', href: GUEST_PATHS.travel },
   INVITATIONS_OPEN: { label: 'Open your invitation', href: GUEST_PATHS.portal },
   RSVP_OPEN: { label: 'RSVP', href: GUEST_PATHS.rsvp },
   RSVP_CLOSED: { label: 'Plan your weekend', href: GUEST_PATHS.portal },
   WEDDING_WEEK: { label: 'Your weekend', href: GUEST_PATHS.portal },
-  WEDDING_DAY: { label: 'Today’s schedule', href: GUEST_PATHS.portal },
+  // Not "today": this label is on the public home page, and it would tell a stranger the date.
+  WEDDING_DAY: { label: 'Your weekend', href: GUEST_PATHS.portal },
   POST_WEDDING: { label: 'Add your photos', href: GUEST_PATHS.photos },
   ARCHIVE: { label: 'Photos and video', href: GUEST_PATHS.photos },
 };
@@ -64,14 +66,22 @@ export type TaskCard = (typeof TASK_CARDS)[number];
 export const EXPLORE_CARDS = ['things', 'venue', 'story', 'ask'] as const;
 export type ExploreCard = (typeof EXPLORE_CARDS)[number];
 
-/** Priority order per state. A card that is not in a state's list is not shown in that state. */
+/**
+ * Priority order per state. A card that is not in a state's list is not shown in that state.
+ *
+ * The state sets the ORDER; whether a card appears at all is a fact about this guest (`available`).
+ * So the cards that depend on something the couple switch on by hand are listed in every state they
+ * could be true in, not only the state it usually happens in: a reply window opened early leads the
+ * moment it opens, a table shows from the day seating is published, a ride from the day one is put
+ * on the invitation. Listing them only "when expected" left each of those with no way in.
+ */
 const TASKS_BY_STATE: Record<LifecycleState, readonly TaskCard[]> = {
-  TEASER: ['stay', 'flights', 'around'],
-  SAVE_THE_DATE: ['stay', 'flights', 'around'],
-  INVITATIONS_OPEN: ['schedule', 'stay', 'flights', 'around'],
-  RSVP_OPEN: ['rsvp', 'stay', 'flights', 'around', 'schedule', 'gifts'],
-  RSVP_CLOSED: ['schedule', 'stay', 'flights', 'around', 'gifts'],
-  WEDDING_WEEK: ['schedule', 'table', 'ride', 'around', 'gifts'],
+  TEASER: ['rsvp', 'stay', 'flights', 'around', 'schedule', 'table', 'ride'],
+  SAVE_THE_DATE: ['rsvp', 'stay', 'flights', 'around', 'schedule', 'table', 'ride'],
+  INVITATIONS_OPEN: ['rsvp', 'schedule', 'stay', 'flights', 'around', 'table', 'ride'],
+  RSVP_OPEN: ['rsvp', 'stay', 'flights', 'around', 'schedule', 'table', 'ride', 'gifts'],
+  RSVP_CLOSED: ['rsvp', 'schedule', 'stay', 'flights', 'around', 'table', 'ride', 'gifts'],
+  WEDDING_WEEK: ['rsvp', 'schedule', 'table', 'ride', 'around', 'gifts'],
   WEDDING_DAY: ['schedule', 'table', 'ride', 'around', 'photos'],
   POST_WEDDING: ['photos', 'gifts'],
   ARCHIVE: ['photos'],
@@ -113,12 +123,13 @@ export interface DashboardPlan {
   explore: ExploreCard[];
 }
 
-function available(card: TaskCard, facts: DashboardFacts): boolean {
+function available(card: TaskCard, facts: DashboardFacts, state: LifecycleState): boolean {
   switch (card) {
     case 'rsvp':
       return !!facts.rsvp && facts.rsvp.open && facts.rsvp.canAnswer;
     case 'schedule':
-      return facts.hasEvents;
+      // The events are on the invitation; before invitations are out there is nothing to show.
+      return facts.hasEvents && state !== 'TEASER' && state !== 'SAVE_THE_DATE';
     case 'table':
       return facts.seated;
     case 'ride':
@@ -141,7 +152,7 @@ function actionable(card: TaskCard, facts: DashboardFacts): boolean {
  * information but no longer leads.
  */
 export function planDashboard(state: LifecycleState, facts: DashboardFacts): DashboardPlan {
-  const shown = TASKS_BY_STATE[state].filter((card) => available(card, facts));
+  const shown = TASKS_BY_STATE[state].filter((card) => available(card, facts, state));
   const done = shown.filter((card) => card === 'rsvp' && facts.rsvp?.status === 'complete');
   const open = shown.filter((card) => !done.includes(card));
   const lead = open.find((card) => actionable(card, facts)) ?? null;

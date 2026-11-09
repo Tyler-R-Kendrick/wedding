@@ -86,9 +86,9 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     await page.goto(`/guests/travel?theme=${theme}`);
     const approved = theme === 'botanical-deco';
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(approved ? 'Plan your trip' : 'Getting to Chicago');
-    // The approved page marks the airport we recommend; the proposals title a card with each code.
-    await expect(page.getByText(approved ? 'ORD · Recommended' : 'ORD', { exact: true })).toBeVisible();
-    await expect(page.getByText('MDW', { exact: true })).toBeVisible();
+    // Both airports are named by their codes, as a label of their own (not only inside the search form).
+    await expect(page.locator('#flights, #airports').getByText(/^ORD\b/).first()).toBeVisible();
+    await expect(page.locator('#flights, #airports').getByText(/^MDW\b/).first()).toBeVisible();
     await expect(page.getByText(/Prices as of/)).toHaveCount(0);
     // One page for the trip, in the order a guest books it. Every design keeps these anchors: the
     // dashboard's cards and the ride page point at them.

@@ -394,7 +394,7 @@ export function UnpublishFlow() {
           render: (ctx) => (
             <>
               <Consequences>
-                <p>Every table disappears from the guest dashboard at once; guests are told the seating is not ready yet. The draft is untouched, and publishing again brings it back.</p>
+                <p>Every table disappears from the guest dashboard at once; guests simply no longer see a table. The draft is untouched, and publishing again brings it back.</p>
               </Consequences>
               <CheckField ctx={ctx} name="confirmed" label="Yes, hide the seating from guests" />
             </>
