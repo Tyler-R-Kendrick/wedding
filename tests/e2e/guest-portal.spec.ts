@@ -164,13 +164,24 @@ test.describe('guest portal navigation', () => {
     expect(state).toMatch(/^[A-Z_]+$/);
     if (state === 'TEASER' || state === 'SAVE_THE_DATE') {
       for (const id of ['stay', 'flights', 'around']) await expect(dash.locator(`#${id}`), `#${id}`).toHaveCount(1);
-      for (const id of ['rsvp', 'schedule', 'now', 'table', 'ride', 'photos', 'gifts']) await expect(dash.locator(`#${id}`), `#${id} is shown before a guest can use it`).toHaveCount(0);
+      for (const id of ['schedule', 'now', 'photos', 'gifts']) await expect(dash.locator(`#${id}`), `#${id} is shown before a guest can use it`).toHaveCount(0);
+      // A reply, a table and a ride follow a fact about this guest, not the state: each shows from
+      // the day the couple open the window, publish seating or put a ride on the invitation. Other
+      // specs do exactly that to this household on the shared server, so here they may be present;
+      // `planDashboard`'s unit tests pin when. Present, each must lead somewhere a guest can use.
+      for (const [id, href] of [['rsvp', '/rsvp'], ['ride', '/transportation']] as const) {
+        if (await dash.locator(`#${id}`).count()) await expect(dash.locator(`#${id} a[href^="${href}"]`).first()).toBeVisible();
+      }
       // Each card's step leads to the part of Travel & Stay that answers it.
       await expect(dash.locator('#flights a[href="/guests/travel#flights"]')).toHaveCount(1);
       await expect(dash.locator('#around a[href="/guests/travel#getting-around"]')).toHaveCount(1);
       await expect(dash.locator('#stay a[href="/guests/travel#stay"]')).toHaveCount(1);
       const book = dash.locator('#stay a.btn--primary[href^="https://"]');
-      if (await book.count()) {
+      // An open reply window outranks the room block (it has a deadline and a person waiting).
+      const replyLeads = (await dash.locator('section.dash-lead#rsvp').count()) > 0;
+      if (replyLeads) {
+        await expect(dash.locator('section.dash-lead#stay')).toHaveCount(0);
+      } else if (await book.count()) {
         // A room block that can be booked is the lead: its terms beside one button, which leaves
         // for the hotel's own booking page and says so in words, not only with a mark.
         await expect(lead).toHaveAttribute('id', 'stay');
