@@ -33,7 +33,10 @@ describe('get_my_itinerary', () => {
     expect(it0.data.slots.trip).toMatchObject({ status: 'ready', placeholder: false });
     expect(it0.data.slots.transport).not.toHaveProperty('owner');
     expect(it0.data.slots.trip).not.toHaveProperty('owner');
-    expect(JSON.stringify(it0.data.slots)).toMatch(/\/transportation/);
+    // The transport slot leads to Travel & Stay: `/transportation` is "Your ride" now, a page only
+    // a guest with a ride benefit has, and it sends everyone else on to Travel & Stay anyway.
+    expect(it0.data.slots.transport.items.map((i) => i.href)).toEqual(['/guests/travel']);
+    expect(JSON.stringify(it0.data.slots)).not.toMatch(/\/transportation/);
     expect(JSON.stringify(it0.data.slots)).toMatch(/\/trip/);
     // A gap is signalled by the TYPED flag above (`placeholder`), never by the authoring marker
     // appearing in the payload. This used to require the opposite — that the literal

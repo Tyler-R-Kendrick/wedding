@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TravelPageRecipe, type TravelPageData } from '@/app/(public)/travel/recipe';
+import { TravelPageRecipe, type TravelPageData } from '@/app/(guest)/guests/travel/recipe';
 import { AIRPORTS, BRIEF_CITATION, synthesizedVenueHotel, VENUE } from '@/domain/travel';
 
 const data: TravelPageData = {

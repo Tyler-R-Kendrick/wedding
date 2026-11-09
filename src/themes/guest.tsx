@@ -7,7 +7,7 @@ import type { ThemeId } from './types';
 /**
  * Section and Card for the GUEST recipes, per design.
  *
- * Level 16 moved `/rsvp`, `/your-weekend`, `/transportation` and `/trip` inside the active design's
+ * Level 16 moved `/rsvp`, `/guests`, `/transportation` and `/trip` inside the active design's
  * `Shell`. That was half the job: the shell changed and the page bodies did not. An independent
  * review measured **zero** themed elements inside `<main>` on all four routes and identical DOM
  * element counts under both designs — one shared recipe wearing two palettes. `.sec` gave every

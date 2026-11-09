@@ -62,7 +62,7 @@ export function testServerEnv(port) {
 /** Every path a spec navigates to, plus /api/session (the CI step says why each one is here). */
 export const WARM_ROUTES = [
   '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
-  '/your-weekend', '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
+  '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
   '/media/upload', '/media/mine', '/media/search', '/admin/ai',
   '/admin/lifecycle', '/admin/audit', '/admin/jobs', '/admin/metrics', '/admin/providers', '/admin/flags',
   '/admin/concierge', '/admin/content', '/admin/events', '/admin/gifts', '/admin/guests',
@@ -70,8 +70,8 @@ export const WARM_ROUTES = [
   '/admin/seating', '/admin/transport', '/admin/travel',
   '/admin/guests/export', '/admin/rsvp/export',
   '/admin/media/duplicates', '/admin/media/import', '/admin/media/metrics',
-  '/ask-us', '/our-story', '/the-wedding', '/our-venue', '/share-an-adventure', '/sign-out',
-  '/our-adventures', '/travel',
+  '/our-story', '/our-venue', '/sign-out',
+  '/our-adventures',
   '/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us',
   '/invite/warmup-token-0000000000000000000000', '/api/dev/inbox', '/api/session',
   // Every admin flow saves through /api/capabilities/<name>. A GET compiles the route (and answers
@@ -86,7 +86,7 @@ export const WARM_ROUTES = [
   // route itself is compiled by the first of each pattern. `/admin/sitemap` is also on the console
   // index, which admin-console.spec walks.
   '/admin/sitemap', '/credits',
-  '/our-adventures/starved-rock', '/share-an-adventure/starved-rock-state-park', '/our-venue/white-city-ballroom',
+  '/our-adventures/starved-rock', '/our-venue/white-city-ballroom',
   '/i/example', '/invite/example',
   '/admin/content/story_sections', '/admin/content/story_sections/new', '/admin/content/story_sections/01SEED00000000000000000200',
   '/t/botanical-deco', '/t/botanical-deco/preview/RSVP_OPEN',

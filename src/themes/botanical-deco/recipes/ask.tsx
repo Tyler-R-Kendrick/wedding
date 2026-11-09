@@ -13,9 +13,9 @@ export const BotanicalAskPage: ContentRecipe<AskProps> = ({ faq, search, concier
   <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
     <PageHead eyebrow={CONTENT_COPY.ask.eyebrow} title={CONTENT_COPY.ask.title} lede={CONTENT_COPY.ask.lede} />
 
-    <Section id="search" labelledBy="search-title">
+    <Section id="search" labelledBy="search-title" layout="split">
       <SectionHeading level={2} id="search-title" title={CONTENT_COPY.ask.search} />
-      <form className="bd-form bd-form--search" method="get" action={ROUTES.ask} role="search">
+      <form className="bd-form bd-form--search" method="get" action={ROUTES.guestAsk} role="search">
         <Form.Field id="ask-q" label={CONTENT_COPY.ask.searchLabel} hint={`For example: ${CONTENT_COPY.ask.searchHint}`}>
           <Form.Input id="ask-q" name="q" type="search" defaultValue={search?.query ?? ''} minLength={2} maxLength={200} aria-describedby="ask-q-hint" />
         </Form.Field>
@@ -28,12 +28,12 @@ export const BotanicalAskPage: ContentRecipe<AskProps> = ({ faq, search, concier
       {search ? <SearchResults search={search} /> : null}
     </Section>
 
-    <Section id="faq" ground="alt" labelledBy="faq-title">
+    <Section id="faq" ground="alt" labelledBy="faq-title" layout="split">
       <SectionHeading level={2} id="faq-title" title={CONTENT_COPY.ask.faq} />
       <FaqList entries={faq.entries} labelFor={labelForRoute} />
     </Section>
 
-    <Section id="concierge" labelledBy="concierge-title">
+    <Section id="concierge" labelledBy="concierge-title" layout="split">
       <SectionHeading level={2} id="concierge-title" title={CONTENT_COPY.ask.concierge} />
       <div className="bd-slot" id="concierge-slot" data-slot="concierge">
         {concierge ?? (

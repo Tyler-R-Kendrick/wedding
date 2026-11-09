@@ -16,7 +16,7 @@ export const ConservatoryAskPage: ContentRecipe<AskProps> = ({ faq, search, conc
     <Section id="search" ground="wash" labelledBy="search-title">
       <div className="cv-section__text">
         <SectionHeading level={2} id="search-title" title={CONTENT_COPY.ask.search} />
-        <form className="cv-form cv-form--search" method="get" action={ROUTES.ask} role="search">
+        <form className="cv-form cv-form--search" method="get" action={ROUTES.guestAsk} role="search">
           <Form.Field id="ask-q" label={CONTENT_COPY.ask.searchLabel} hint={`For example: ${CONTENT_COPY.ask.searchHint}`}>
             <Form.Input id="ask-q" name="q" type="search" defaultValue={search?.query ?? ''} minLength={2} maxLength={200} aria-describedby="ask-q-hint" />
           </Form.Field>

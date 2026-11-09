@@ -43,7 +43,7 @@ async function responseCounts(db: Awaited<ReturnType<typeof eDb>>): Promise<Map<
 export const adminListEvents = defineCapability<z.infer<typeof listInput>, AdminEventsView>({
   name: 'admin_list_events',
   title: 'Events (admin)',
-  description: 'Admin view of every event, its meal option versions, the RSVP window, every guest and their event entitlements, and Your Weekend notices.',
+  description: 'Admin view of every event, its meal option versions, the RSVP window, every guest and their event entitlements, and dashboard notices.',
   kind: 'read',
   auth: 'admin',
   // The output carries every guest's name, household and event entitlements, so this is a roster read
@@ -369,8 +369,8 @@ const noticeOutput = z.object({ id: z.string(), title: z.string(), body: z.strin
 
 export const adminUpsertNotice = defineCapability<z.infer<typeof noticeInput>, z.infer<typeof noticeOutput>>({
   name: 'admin_upsert_notice',
-  title: 'Post a Your Weekend notice (admin)',
-  description: 'Creates or updates a notice shown to signed-in guests on Your Weekend (info or urgent), optionally time-boxed.',
+  title: 'Post a dashboard notice (admin)',
+  description: 'Creates or updates a notice shown to signed-in guests on their dashboard (info or urgent), optionally time-boxed.',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_content'],
@@ -390,8 +390,8 @@ export const adminUpsertNotice = defineCapability<z.infer<typeof noticeInput>, z
 
 export const adminDeleteNotice = defineCapability<{ id: string }, { deleted: boolean; title: string }>({
   name: 'admin_delete_notice',
-  title: 'Delete a Your Weekend notice (admin)',
-  description: 'Deletes a Your Weekend notice for good. Guests stop seeing it at once. To take one down for a while, hide it instead (admin_upsert_notice with active=false).',
+  title: 'Delete a dashboard notice (admin)',
+  description: 'Deletes a dashboard notice for good. Guests stop seeing it at once. To take one down for a while, hide it instead (admin_upsert_notice with active=false).',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_content'],

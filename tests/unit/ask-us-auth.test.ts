@@ -5,10 +5,12 @@ import { createCapabilityContext } from '@/capabilities/context';
 import nextConfig from '../../next.config';
 
 describe('/faq legacy redirect', () => {
-  it('still points at Ask Us', async () => {
+  it('still points at Ask Us, which is on the guest portal', async () => {
     const rules = await nextConfig.redirects!();
     const bySource = Object.fromEntries(rules.map((r) => [r.source, r]));
-    expect(bySource['/faq']).toMatchObject({ destination: '/ask-us', permanent: true });
+    expect(bySource['/faq']).toMatchObject({ destination: '/guests/ask-us', permanent: true });
+    // The old public address leads to the same place; neither is a page a signed-out reader can read.
+    expect(bySource['/ask-us']).toMatchObject({ destination: '/guests/ask-us', permanent: true });
   });
 });
 

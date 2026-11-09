@@ -8,7 +8,6 @@ import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
 import { GUEST_PORTAL, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
 import { ROUTES } from '@/domain/routes';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import { getPrincipal } from '@/lib/principal';
 import { getTheme } from '@/themes';
 import { selectContentRecipe, type ContentRecipeKey, type ContentRecipes } from '@/themes/content';
@@ -23,7 +22,6 @@ import { GuidePage, type GuideRecipeProps } from './GuidePage';
 import { RecommendationPage } from './RecommendationPage';
 import { StoryPage } from './StoryPage';
 import { VenueSpacePage } from './VenueSpacePage';
-import { WeddingPage } from './WeddingPage';
 import { TravelPage } from './TravelPage';
 import { GiftsPage } from './GiftsPage';
 import { PhotoAlbumPage } from './PhotoAlbumPage';
@@ -42,7 +40,6 @@ export interface PageRecipes {
   RecommendationPage: ComponentType<{ card: RecommendationCard }>;
   OurVenuePage: ComponentType<{ data: OurVenuePageData }>;
   VenueSpacePage: ComponentType<{ data: VenueSpaceData }>;
-  WeddingPage: ComponentType<{ data: WeddingPageData }>;
   AskPage: ComponentType<AskRecipeProps>;
   /** Level 08. The fallback is swarm F's single recipe; both themes now supply their own. */
   TravelPage: ComponentType<Omit<TravelProps, 'frame'>>;
@@ -62,7 +59,6 @@ export const placeholderRecipes: PageRecipes = {
   RecommendationPage,
   OurVenuePage,
   VenueSpacePage,
-  WeddingPage,
   AskPage,
   TravelPage,
   GiftsPage,
@@ -118,13 +114,12 @@ export const themedRecipes: PageRecipes = {
   StoryPage: themed('story', ROUTES.story, StoryPage),
   AdventuresPage: themed('adventures', ROUTES.adventures, AdventuresPage),
   AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage, { within: true }),
-  GuidePage: themed('guide', ROUTES.share, GuidePage, { signedIn: true }),
-  RecommendationPage: themed('recommendation', ROUTES.share, RecommendationPage, { signedIn: true, within: true }),
+  GuidePage: themed('guide', ROUTES.guestThings, GuidePage, { signedIn: true }),
+  RecommendationPage: themed('recommendation', ROUTES.guestThings, RecommendationPage, { signedIn: true, within: true }),
   OurVenuePage: themed('ourVenue', ROUTES.ourVenue, OurVenuePage),
   VenueSpacePage: themed('venueSpace', ROUTES.ourVenue, VenueSpacePage, { within: true }),
-  WeddingPage: themed('wedding', ROUTES.wedding, WeddingPage),
-  AskPage: themed('ask', ROUTES.ask, AskPage),
-  TravelPage: themed('travel', ROUTES.travel, TravelPage, { signedIn: true }),
+  AskPage: themed('ask', ROUTES.guestAsk, AskPage),
+  TravelPage: themed('travel', ROUTES.guestTravel, TravelPage, { signedIn: true }),
   GiftsPage: themed('gifts', ROUTES.gifts, GiftsPage, { signedIn: true }),
   PhotosPage: themed('photos', ROUTES.photos, PhotosPage, { signedIn: true }),
   PhotoAlbumPage: themed('photoAlbum', ROUTES.photos, PhotoAlbumPage, { signedIn: true, within: true }),

@@ -54,7 +54,7 @@ export const getMyTransportationOptions = defineCapability<z.infer<typeof input>
     'accessible routes, and, for a signed-in guest, the status of their personal ride benefit. Reads only; it never claims anything. ' +
     'Ride codes and links are only shown on the website, never here.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

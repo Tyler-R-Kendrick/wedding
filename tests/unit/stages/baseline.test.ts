@@ -30,7 +30,7 @@ describe('the baseline', () => {
   });
 
   it('frames the real page with the real stylesheets and this stage\'s rules', () => {
-    const doc = frameDocument('wedding', 'botanical-deco', 'skeleton', '/skeleton')!;
+    const doc = frameDocument('story', 'botanical-deco', 'skeleton', '/skeleton')!;
     expect(doc).toContain('data-bl-stage="skeleton"');
     expect(doc).toContain('data-theme="botanical-deco"');
     expect(doc).toMatch(/<link rel="stylesheet" href="\/skeleton\/baseline\/css\/[0-9a-f]{16}\.css">/);

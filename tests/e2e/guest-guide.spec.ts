@@ -1,9 +1,12 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { principalHeaders } from './helpers/principal';
+import { apiHeaders, callCapability, principalHeaders } from './helpers/principal';
 
 const ALLOWLIST =
   /^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com|kayak\.com)\//;
+/** The capability's own hand-offs may also be a Google Flights search (moved here from travel.spec.ts). */
+const CAPABILITY_ALLOWLIST =
+  /^https:\/\/www\.google\.com\/travel\/|^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|kayak\.com|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
 
 async function flightsMode(request: APIRequestContext): Promise<string> {
   if (!process.env.HEALTH_TOKEN) return 'unknown';
@@ -57,8 +60,11 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
     expect(blocking).toEqual([]);
     await page.goto(`/guests/travel?theme=${theme}`);
-    await expect(page.getByRole('link', { name: 'Your guest travel details and weekend plans →' })).toHaveAttribute('href', '/trip');
-    await expect(page.getByRole('link', { name: /^Sign in for guest booking/ })).toHaveCount(0);
+    // The approved design keeps the way to "Your trip" under "Make a trip of it"; the two proposals
+    // keep their line under "Getting to Chicago". Either way a guest is linked straight to /trip.
+    const tripLink = theme === 'botanical-deco' ? page.locator('#make-a-trip').getByRole('link', { name: 'Keep your plans in one place' }) : page.getByRole('link', { name: 'Your guest travel details and weekend plans →' });
+    await expect(tripLink).toHaveAttribute('href', '/trip');
+    await expect(page.getByRole('link', { name: /^Sign in for / })).toHaveCount(0);
   });
 }
 
@@ -78,10 +84,36 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
   test(`guest travel page keeps airports visible and axe-clean (${theme})`, async ({ page }) => {
     await page.setExtraHTTPHeaders(principalHeaders('A1'));
     await page.goto(`/guests/travel?theme=${theme}`);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Getting to Chicago');
-    await expect(page.getByText('ORD', { exact: true })).toBeVisible();
+    const approved = theme === 'botanical-deco';
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(approved ? 'Plan your trip' : 'Getting to Chicago');
+    // The approved page marks the airport we recommend; the proposals title a card with each code.
+    await expect(page.getByText(approved ? 'ORD · Recommended' : 'ORD', { exact: true })).toBeVisible();
     await expect(page.getByText('MDW', { exact: true })).toBeVisible();
     await expect(page.getByText(/Prices as of/)).toHaveCount(0);
+    // One page for the trip, in the order a guest books it. Every design keeps these anchors: the
+    // dashboard's cards and the ride page point at them.
+    for (const id of ['stay', 'flights', 'getting-around', 'make-a-trip']) await expect(page.locator(`section#${id}, #${id}`).first(), `#${id}`).toBeAttached();
+    if (approved) {
+      const order = await page.locator('main section[id]').evaluateAll((els) => els.map((e) => e.id).filter((id) => ['stay', 'flights', 'getting-around', 'make-a-trip'].includes(id)));
+      expect(order).toEqual(['stay', 'flights', 'getting-around', 'make-a-trip']);
+      for (const gone of ['airports', 'arriving', 'hotel-rates']) await expect(page.locator(`#${gone}`), `#${gone}`).toHaveCount(0);
+      await expect(page.locator('#stay').getByRole('heading', { level: 2 })).toHaveText('Where to stay');
+      await expect(page.locator('#flights').getByRole('heading', { level: 2 })).toHaveText('Flights');
+      await expect(page.locator('#getting-around').getByRole('heading', { level: 2 })).toHaveText('Getting around');
+      // Hotel rates are a disclosure inside "Where to stay", closed until asked for.
+      const compare = page.locator('#stay details').filter({ has: page.locator('summary', { hasText: 'Compare rates at other hotels nearby' }) });
+      await expect(compare).toHaveCount(1);
+      await expect(compare.getByLabel('Check in')).toBeHidden();
+      await compare.locator('summary').click();
+      await expect(compare.getByLabel('Check in')).toBeVisible();
+      await expect(compare.getByRole('button', { name: 'Check rates' })).toBeVisible();
+    }
+    // Promises nobody has made, and where a sentence came from, are not printed for guests.
+    const main = page.locator('main');
+    await expect(main).not.toContainText(/Based on:/);
+    await expect(main).not.toContainText(/coming soon/i);
+    await expect(main).not.toContainText(/Uber can take you/i);
+    await expect(main).not.toContainText('TODO(');
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze();
@@ -89,6 +121,44 @@ for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
     expect(blocking).toEqual([]);
   });
 }
+
+test('the travel capabilities answer a guest, with the provider ladder applied', async ({ request }) => {
+  // Signed out, these are refused (travel.spec.ts, on the production build). A guest gets the answer.
+  const mode = await flightsMode(request);
+  const res = await request.post('/api/capabilities/search_travel_options', {
+    headers: apiHeaders('A1'),
+    data: { input: { kind: 'flights', origin: 'LAX', departDate: '2027-07-15', adults: 2 } },
+  });
+  expect(res.status()).toBe(200);
+  expect(res.headers()['cache-control']).toContain('no-store');
+  const body = await res.json();
+  expect(body.ok).toBe(true);
+  expect(body.data.handoffs[0].url).toMatch(CAPABILITY_ALLOWLIST);
+  if (mode === 'mock') {
+    expect(body.data.mode).toBe('sample');
+    expect(body.data.mode).not.toBe('live');
+    expect(body.data.notice).toMatch(/not connected yet/i);
+    expect(body.retrievedAt).toBe(body.data.snapshot.retrievedAt);
+    expect(body.data.snapshot.refreshBeforeBooking).toBe(true);
+  } else if (mode === 'deep-link') {
+    expect(body.data.mode).toBe('deep-link');
+    expect(body.data.snapshot).toBeUndefined();
+    expect(body.data.notice).toMatch(/not available/);
+  }
+  const bad = await request.post('/api/capabilities/search_travel_options', {
+    headers: apiHeaders('A1'),
+    data: { input: { kind: 'flights', origin: 'ORD', departDate: '2027-07-15' } },
+  });
+  expect(bad.status()).toBe(422);
+
+  const hotels = await callCapability(request, 'list_hotel_recommendations', 'A1', {});
+  expect(hotels.status).toBe(200);
+  expect((hotels.body.data as { venue: { name: string } }).venue.name).toContain('Chicago Athletic');
+  const anonymous = await callCapability(request, 'list_hotel_recommendations', null, {});
+  expect(anonymous.status).toBe(401);
+  expect(anonymous.body.error?.code).toBe('unauthenticated');
+  expect(anonymous.body.data).toBeUndefined();
+});
 
 test('flight search on guest travel shows real hand-offs, not invented prices', async ({ page, request }) => {
   const mode = await flightsMode(request);

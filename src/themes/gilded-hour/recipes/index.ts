@@ -14,7 +14,6 @@ import { GildedRecommendationPage } from './recommendation';
 import { GildedStoryPage } from './story';
 import { GildedTravelPage } from './travel';
 import { GildedVenueSpacePage } from './venue-space';
-import { GildedWeddingPage } from './wedding';
 
 export const recipes: ThemeRecipes = {
   home: GildedHomePage,
@@ -30,7 +29,6 @@ export const content: ContentRecipes = {
   recommendation: GildedRecommendationPage,
   ourVenue: GildedOurVenuePage,
   venueSpace: GildedVenueSpacePage,
-  wedding: GildedWeddingPage,
   travel: GildedTravelPage,
   gifts: GildedGiftsPage,
   photos: GildedPhotosPage,

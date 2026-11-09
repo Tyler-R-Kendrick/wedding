@@ -6,7 +6,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'Sara + Tyler', template: '%s | Sara + Tyler' },
-  description: 'Sara and Tyler are getting married in Chicago on Saturday, July 17, 2027.',
+  // Says who, never when or where: this is the line a link preview and a search result print.
+  description: 'Sara and Tyler’s wedding website, for their invited guests.',
   // noai/noimageai: the couple's photos and words are not for AI training (LICENSE, src/lib/rights.ts).
   robots: 'noindex, nofollow, noai, noimageai',
   // The default design's mark, for the trees whose layouts set none (auth, admin): without it every

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { noticeFor } from '@/app/(public)/travel/_shared/recipe';
-import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { noticeFor } from '@/app/(guest)/guests/travel/_shared/recipe';
+import { currentPrincipal, runAsUi } from '@/app/(guest)/guests/travel/_shared/server';
 import { getMyTravelProfile, getMyTrip } from '@/capabilities/travel';
 import { deleteProfileAction } from './actions';
 import { newId } from '@/contracts/ids';

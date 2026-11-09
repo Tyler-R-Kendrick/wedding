@@ -7,7 +7,9 @@ import { completeSocialSignIn, hashSocialAttemptIp, PENDING_PATH } from '@/domai
 import { exchangeCode, fetchProviderProfile } from '@/domain/identity/social/oauth';
 import { isSocialProvider, socialProviderConfig } from '@/domain/identity/social/providers';
 import { decodeOAuthState, oauthStateCookieOptions } from '@/domain/identity/social/state';
+import { siteOrigin } from '@/lib/auth';
 import { env } from '@/lib/env';
+import { relayTargetFor, requestHost, siteOriginOf } from '@/lib/site-hosts';
 import { getClientIp, getRequestId } from '@/lib/request';
 import { getProvider } from '@/providers/registry';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
@@ -17,11 +19,22 @@ const CALLBACK_FLOOR_MS = 150;
 export async function GET(req: NextRequest, ctx: { params: Promise<{ provider: string }> }) {
   const started = performance.now();
   const { provider: raw } = await ctx.params;
-  const pending = () => new URL(PENDING_PATH, req.url);
+  // Where this request was made: the session cookie is set for this host, so the guest stays on it.
+  const here = siteOriginOf(req.headers, siteOrigin(), req.nextUrl.origin);
+  const pending = () => new URL(PENDING_PATH, here);
 
   if (!isSocialProvider(raw) || !socialProviderConfig(raw)) {
     await floor(started);
     return NextResponse.redirect(pending());
+  }
+
+  // A sign-in that began on an alias host comes back here, because the provider knows one redirect
+  // address. This host has no state cookie for it; the alias does. Pass the answer on unchanged and
+  // let that host finish: it verifies `state` against its own cookie and holds the PKCE verifier,
+  // so forwarding trusts nothing. Only ever to one of our own hosts (`relayTargetFor`).
+  const relay = relayTargetFor(req.nextUrl.searchParams.get('state'), requestHost(req.headers), siteOrigin());
+  if (relay) {
+    return NextResponse.redirect(`${relay}/api/auth/social/${raw}/callback${req.nextUrl.search}`);
   }
 
   const jar = await cookies();
@@ -71,7 +84,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ provider: s
     audit,
   });
 
-  const target = new URL(result.redirectTo, req.url);
+  const target = new URL(result.redirectTo, here);
   const res = NextResponse.redirect(target);
   applyCookieSink(sink, res.headers);
   await floor(started);

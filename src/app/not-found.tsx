@@ -37,7 +37,7 @@ export default async function NotFound() {
             </Link>
           </p>
           <p>
-            <Link className="link-block" href={throughSignIn('/ask-us')}>
+            <Link className="link-block" href={throughSignIn('/guests/ask-us')}>
               Search the questions guests ask
             </Link>
           </p>

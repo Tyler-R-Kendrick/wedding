@@ -4,7 +4,7 @@
  * `impeccable detect` drives a browser at a URL and takes no `--header` or `--cookie` option, and
  * the canonical test principal (`src/domain/testing/testPrincipal.ts`) is honored only through the
  * `x-test-auth` / `x-test-principal` request headers. So the detector on its own can reach only the
- * signed-out view of `/rsvp`, `/your-weekend`, `/transportation` and `/trip` — the four routes an
+ * signed-out view of `/rsvp`, `/guests` (then `/your-weekend`), `/transportation` and `/trip` — the four routes an
  * independent review measured as unthemed. Those four are the ones that most need scanning, and
  * they were the ones the gate could not see.
  *

@@ -12,6 +12,7 @@ import { env, publicEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { OtpPurpose } from '@/providers/auth-email/types';
 import { getProvider } from '@/providers/registry';
+import { siteOriginsFor } from '@/lib/site-hosts';
 import { weddingCookies } from './cookies';
 
 export const DEV_AUTH_SECRET = 'dev-only-better-auth-secret-change-me';
@@ -106,6 +107,15 @@ export function siteOrigin(): string {
   return (env.BETTER_AUTH_URL ?? publicEnv.siteUrl).replace(/\/+$/, '');
 }
 
+/**
+ * Every origin the site answers on: the canonical one, then its aliases (`src/lib/site-hosts.ts`).
+ * A request from any of them is same-site for CSRF, for Better Auth's own origin check and for a
+ * passkey ceremony. `siteOrigin()` stays the one that absolute links in e-mail are built on.
+ */
+export function siteOrigins(): string[] {
+  return siteOriginsFor(siteOrigin());
+}
+
 /** Passkey relying-party id: the registrable domain of the public origin. */
 export function relyingPartyId(): string {
   try {
@@ -124,7 +134,7 @@ export function createAuth(db: Db) {
   const baseURL = env.BETTER_AUTH_URL
     ? env.BETTER_AUTH_URL
     : { allowedHosts: ['localhost', 'localhost:*', '127.0.0.1', '127.0.0.1:*'], fallback: publicEnv.siteUrl, protocol: 'http' as const };
-  const trustedOrigins = [...new Set([publicEnv.siteUrl, env.BETTER_AUTH_URL].filter((v): v is string => !!v).map((v) => v.replace(/\/+$/, '')))];
+  const trustedOrigins = [...new Set([publicEnv.siteUrl, env.BETTER_AUTH_URL].filter((v): v is string => !!v).flatMap((v) => siteOriginsFor(v)))];
   const rateLimit = getProvider('rate-limit', { db });
 
   return betterAuth({
@@ -212,7 +222,9 @@ export function createAuth(db: Db) {
       passkey({
         rpID: relyingPartyId(),
         rpName: RP_NAME,
-        origin: env.BETTER_AUTH_URL ? [siteOrigin()] : null,
+        // The relying-party id is the canonical host, which a subdomain may use; the origin list is what
+        // lets the ceremony finish on an alias instead of being refused for where it ran.
+        origin: env.BETTER_AUTH_URL ? siteOrigins() : null,
         authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
       }),
       httpAllowlist(),

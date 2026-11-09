@@ -59,8 +59,25 @@ test.describe('voucher security', () => {
   });
 
   test('no payment fields on any guest page', async ({ request }) => {
-    for (const route of ['/gifts', '/transportation', '/']) {
-      const html = await (await request.get(route)).text();
+    // Signed out, `/gifts` and `/transportation` answer with the sign-in door, so the pages
+    // themselves are read as a guest too: the registry, the dashboard, and the ride page. The ride
+    // page is read without following its redirect — a guest with no benefit is sent on to Travel &
+    // Stay, whose flight and hotel search asks for a head count, which is not a payment field.
+    const guest = principalHeaders('B1');
+    const reads: { route: string; as: 'anonymous' | 'guest' }[] = [
+      { route: '/gifts', as: 'anonymous' },
+      { route: '/transportation', as: 'anonymous' },
+      { route: '/', as: 'anonymous' },
+      { route: '/gifts', as: 'guest' },
+      { route: '/guests', as: 'guest' },
+      { route: '/transportation', as: 'guest' },
+    ];
+    for (const { route: path, as } of reads) {
+      const route = `${path} (${as})`;
+      const res = as === 'guest' ? await request.get(path, { headers: guest, maxRedirects: path === '/transportation' ? 0 : 20 }) : await request.get(path);
+      expect(res.status(), route).toBeLessThan(400);
+      if (as === 'guest' && path !== '/transportation') expect(res.url(), route).not.toMatch(/\/sign-in/);
+      const html = await res.text();
       // Match against the DOCUMENT, with script and style contents removed. Matching raw HTML made
       // this security assertion randomly false: it fired on `self.__next_r="4H-O3ACvVcldM9As2v-F9"`,
       // a framework-generated React root id that happened to contain `CvV`. Turbopack chunk hashes

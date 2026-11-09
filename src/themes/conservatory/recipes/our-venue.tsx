@@ -63,11 +63,14 @@ export const ConservatoryOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, f
         </div>
         <div className="cv-section__full">
           <OutletList fields={data.gettingHere} label="Practical details" />
-          <Prose>
-            <p className="cv-muted">
-              Address: {frame.site.venue.address}. {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.wedding}>The Wedding</Link>.
-            </p>
-          </Prose>
+          {/* The address is the invited guests': a signed-out reader gets neither it nor the way there. */}
+          {frame.details ? (
+            <Prose>
+              <p className="cv-muted">
+                Address: {frame.details.venue.address}. {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.guestTravel}>Travel &amp; Stay</Link>.
+              </p>
+            </Prose>
+          ) : null}
         </div>
       </Section>
     </Shell>

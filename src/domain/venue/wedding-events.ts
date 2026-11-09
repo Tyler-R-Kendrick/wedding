@@ -76,4 +76,4 @@ export function weddingEventSkeleton(provenance: ProvenanceViewData, dateIso: st
   ];
 }
 
-export const WEDDING_ROUTE = ROUTES.wedding;
+export const WEDDING_ROUTE = ROUTES.guestPortal;

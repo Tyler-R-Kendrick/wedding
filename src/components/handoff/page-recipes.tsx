@@ -1,11 +1,8 @@
 import Link from 'next/link';
+import { Placeholder } from '@/components/provenance/Placeholder';
 import type { TransportationOptions } from '@/capabilities/get_my_transportation_options';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
-import { Placeholder, placeholderHint } from '@/components/provenance/Placeholder';
-import { PLACEHOLDER_MARKER } from '@/content/schemas';
-import { throughSignIn } from '@/domain/lifecycle/account';
 import { ClaimBenefitFlow } from './ClaimBenefitFlow';
-import { ExternalHandoffCard } from './ExternalHandoffCard';
 import { GiftFunds } from './GiftFunds';
 import { GiftLinkCard } from './GiftLinkCard';
 import { HandoffClickRecorder } from './HandoffClickRecorder';
@@ -34,31 +31,6 @@ export interface ThemedPageRecipe<D> {
 
 const SECTION = 'mx-auto w-full max-w-[42rem] px-5 py-10';
 
-/**
- * A topic paragraph, which may be a fact, a placeholder, or a fact that trails off into one.
- *
- * This used to print the authoring marker to the guest — literally `TODO(Tyler & Sara): which
- * airport we recommend` on /transportation — behind an `sr-only` "Still to be confirmed", so a
- * sighted guest got the marker with no label at all. It also tested `startsWith`, and two of the
- * seeded topics carry the marker mid-sentence ("the valet entrance is at 71 E Madison.
- * TODO(Tyler & Sara): the special event valet rate…"), which therefore rendered as plain fact.
- *
- * The marker is a split point, not text: everything before it is what the couple have confirmed and
- * stays a paragraph; everything after is the hint, handed to the shared `Placeholder` that names
- * who is still writing, visibly and to assistive tech alike.
- */
-function Paragraph({ text }: { text: string }) {
-  const at = text.indexOf(PLACEHOLDER_MARKER);
-  if (at < 0) return <p className="measure">{text}</p>;
-  const fact = text.slice(0, at).trim();
-  return (
-    <>
-      {fact ? <p className="measure">{fact}</p> : null}
-      <Placeholder>{placeholderHint(text.slice(at))}</Placeholder>
-    </>
-  );
-}
-
 export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> = ({ data, theme }) => {
   const claimable = data.benefits.filter((b) => b.status === 'eligible' || b.status === 'failed');
   const claimed = data.benefits.filter((b) => b.status === 'claimed');
@@ -72,22 +44,11 @@ export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> 
     <div className="page">
       <HandoffClickRecorder />
       <header>
-        <h1 className="page__title">Getting here, getting around, getting home.</h1>
-        <p className="page__lede">The wedding is at the Chicago Athletic Association Hotel, 12 S Michigan Ave. Everything below is meant to take the guesswork out of the day so you can relax and dance.</p>
+        <h1 className="page__title">Your ride</h1>
+        <p className="page__lede">A ride benefit on your invitation. It is personal to you, so the code or link below is yours alone.</p>
       </header>
 
       <GuestSection theme={theme} id="ride-benefit" index={0} title="Your ride home">
-        {!data.signedIn ? (
-          <p className="mt-3 measure">
-            Ride benefits are personal. Open this page from your invitation link to see whether one is waiting for you.{' '}
-            <Link className="underline underline-offset-4" href={data.signInRoute}>
-              Find your invitation
-            </Link>
-            .
-          </p>
-        ) : data.benefits.length === 0 ? (
-          <p className="mt-3 measure">There is no ride benefit on your invitation yet. If you were expecting one, ask us and we will sort it out.</p>
-        ) : null}
         {claimed.map((b) => (
           <RedemptionCard key={b.entitlementId} benefit={b} />
         ))}
@@ -127,34 +88,21 @@ export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> 
         ))}
       </GuestSection>
 
-      {data.topics.map((t, i) => (
-        <GuestSection theme={theme} key={t.id} id={`topic-${t.id}`} index={i + 1} title={t.title}>
-          <div className="mt-3 space-y-3">
-            {/* Keyed by position, not by the text: a paragraph's text is the authoring string, so
-                keying on it wrote `TODO(Tyler & Sara): …` into the RSC payload as a React key —
-                invisible on the page but sitting in view-source. The list is a fixed, ordered
-                array from the content record, so the index is a stable key. */}
-            {t.paragraphs.map((p, i) => (
-              <Paragraph key={`${t.id}-${i}`} text={p} />
-            ))}
-          </div>
-          {t.directions ? (
-            <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-              <a className="inline-flex min-h-11 items-center underline underline-offset-4" href={t.directions.google.url} target="_blank" rel="noopener noreferrer external">
-                {t.directions.google.label}
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-              <a className="inline-flex min-h-11 items-center underline underline-offset-4" href={t.directions.apple.url} target="_blank" rel="noopener noreferrer external">
-                {t.directions.apple.label}
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            </p>
-          ) : null}
-          {t.official ? <ExternalHandoffCard heading="On the hotel’s site" handoff={t.official} meta={<span>Checked <time dateTime={t.verifiedAt}>{new Date(t.verifiedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</time></span>} /> : null}
-        </GuestSection>
-      ))}
+      {/* Trains, taxis, parking and directions are on Travel & Stay, once: this page used to repeat
+          them under four more headings, which is how the same Blue Line sentence came to be on the
+          site three times. */}
       <footer className="wp-guest-foot">
-        <p className="hint">Questions? <Link className="underline underline-offset-4" href={throughSignIn('/ask-us')}>Ask us</Link>.</p>
+        <p className="hint">
+          Trains, taxis and parking are on{' '}
+          <Link className="underline underline-offset-4" href="/guests/travel#getting-around">
+            Travel &amp; Stay
+          </Link>
+          . Questions?{' '}
+          <Link className="underline underline-offset-4" href="/guests/ask-us">
+            Ask us
+          </Link>
+          .
+        </p>
       </footer>
     </div>
   );
@@ -210,7 +158,7 @@ export const GiftsPageRecipe: PageRecipe<GiftsPageData> = ({ data }) => {
         {pending ? (
           <p className="mt-4 measure">
             {data.copy.askIntro}{' '}
-            <Link className="underline underline-offset-4" href="/ask-us">
+            <Link className="underline underline-offset-4" href="/guests/ask-us">
               {data.copy.askLabel}
             </Link>
             .

@@ -201,22 +201,27 @@ const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], current
 
 // `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
 // without a frame, and then it is the plain way in.
-function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
+function Footer({ site, details, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="gh-footer">
       <div className="gh-footer__inner">
         <p className="gh-footer__names">{site.coupleDisplayName}</p>
-        <p className="gh-footer__date">
-          <span className="gh-numeral">{site.date.motif}</span>
-        </p>
-        <p className="gh-footer__place">
-          {site.venue.name}
-          <br />
-          <a className="gh-link" href={site.venue.mapsUrl} rel="noopener">
-            {site.venue.address}
-            <ExternalMark provider={site.venue.mapsProvider} />
-          </a>
-        </p>
+        {/* When and where are the invited guests': a signed-out reader's footer is the two names. */}
+        {details ? (
+          <>
+            <p className="gh-footer__date">
+              <span className="gh-numeral">{details.date.motif}</span>
+            </p>
+            <p className="gh-footer__place">
+              {details.venue.name}
+              <br />
+              <a className="gh-link" href={details.venue.mapsUrl} rel="noopener">
+                {details.venue.address}
+                <ExternalMark provider={details.venue.mapsProvider} />
+              </a>
+            </p>
+          </>
+        ) : null}
         <p className="gh-footer__signin">
           <AccountMenu nav={nav} variant="link" classNames={{ link: 'gh-link gh-link--standalone', item: 'gh-link' }} />
         </p>
@@ -250,10 +255,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 function Shell({ frame, children, banner }: ShellProps) {
   const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
   const homeHref = frame.nav.homeHref ?? '/';
-  const printUrls = [
-    { label: 'Directions', url: frame.site.venue.mapsUrl },
-    ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
-  ];
+  const venue = frame.details?.venue;
+  const printUrls = venue ? [{ label: 'Directions', url: venue.mapsUrl }, ...(venue.url ? [{ label: venue.name, url: venue.url }] : [])] : [];
   return (
     <div className="site gh" data-theme="gilded-hour" data-bottom-bar="" data-lifecycle={frame.lifecycle.state} suppressHydrationWarning>
       <script dangerouslySetInnerHTML={{ __html: CURTAIN_SCRIPT }} />
@@ -272,6 +275,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Panel nav={frame.nav} />
       <Footer
         site={frame.site}
+        details={frame.details}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="gilded-hour" themes={THEME_OPTIONS} /> : null}
         nav={frame.nav}
         rightsNote={RIGHTS_NOTE}
@@ -365,7 +369,7 @@ function Card({ title, headingLevel = 3, children, media, actions, label, featur
     <div className="gh-card__inner">
       {/*
         A plaque is a MARK: a monogram, a numeral, a short word cut into stone. Long labels are not
-        marks. `/travel` passes the airport CODE as the title and the full name as the label, so
+        marks. `/guests/travel` passes the airport CODE as the title and the full name as the label, so
         "Chicago Midway International Airport" was rendered in tracked uppercase inside an octagon —
         `impeccable detect <url>` reported `[all-caps-body] 36 chars` and `[cramped-padding] 0px`
         against it — AND it was `aria-hidden`, so the only place the airport's name appeared was the
@@ -592,8 +596,7 @@ function ErrorSummary({ title = 'Please check the highlighted fields', errors }:
   );
 }
 
-function Hero({ content, site, countdown, state }: HeroProps) {
-  const isToday = state === 'WEDDING_DAY';
+function Hero({ content }: HeroProps) {
   return (
     <section className="gh-hero" aria-labelledby="hero-title">
       <div className="gh-hero__curtain" aria-hidden="true" />
@@ -602,24 +605,10 @@ function Hero({ content, site, countdown, state }: HeroProps) {
         <h1 id="hero-title" className="gh-hero__title">
           {content.title}
         </h1>
-        <p className="gh-hero__date">
-          <time dateTime={site.date.iso} className="gh-numeral gh-hero__motif">
-            {site.date.motif}
-          </time>
-          <span className="gh-hero__long">{isToday ? `${site.date.weekday}, ${site.date.long.split(', ').slice(1).join(', ')}` : site.date.long}</span>
-        </p>
-        <p className="gh-hero__place">
-          {site.venue.name}, {site.venue.city}
-        </p>
         <p className="gh-hero__status">{content.eyebrow}.</p>
         <p className="gh-hero__lede">
           <Text copy={content.lede} />
         </p>
-        {content.showCountdown ? (
-          <div className="gh-hero__countdown-slot">
-            <Countdown {...countdown} />
-          </div>
-        ) : null}
         <div className="gh-hero__actions">
           <Button variant={content.primary.variant ?? 'primary'} href={content.primary.href} provider={content.primary.provider}>
             {content.primary.label}
@@ -630,11 +619,6 @@ function Hero({ content, site, countdown, state }: HeroProps) {
             </Button>
           ) : null}
         </div>
-        {content.deadline ? (
-          <p className="gh-hero__deadline">
-            <Text copy={content.deadline} />
-          </p>
-        ) : null}
         {content.note ? (
           <p className="gh-hero__note">
             <Text copy={content.note} />

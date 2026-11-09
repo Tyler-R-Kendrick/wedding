@@ -37,7 +37,7 @@ export const getVenueFacts = defineCapability<z.infer<typeof input>, OurVenuePag
     'on-property outlets, valet, parking, transit and accessibility as dated operational records with official links. Every operational fact carries a verification date; ' +
     'always mention the date and the official link when a record is aging or stale. Closed outlets are excluded for guests. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

@@ -83,16 +83,32 @@ test.describe('gifts', () => {
 });
 
 test.describe('transportation', () => {
-  test('public guidance renders with map handoffs and honest placeholders', async ({ page }) => {
+  /*
+   * `/transportation` is "Your ride" now: a guest's own ride benefit and nothing else. It used to be
+   * a public page of guidance (trains, taxis, parking) with the benefit as one section; that
+   * guidance is said once, on Travel & Stay, and the page itself is behind sign-in.
+   */
+  test('signed out it is the sign-in door, and a guest without a ride benefit is taken to "Getting around"', async ({ page, context }) => {
     await page.goto('/transportation');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Getting here');
-    await expect(page.getByRole('heading', { level: 2, name: 'Your ride home' })).toBeVisible();
-    await expect(page.getByText('Find your invitation')).toBeVisible();
-    await expect(page.locator('[data-placeholder="true"]').first()).toBeVisible();
-    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
-      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
-    }
-    await noBlockingAxe(page);
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Ftransportation$/);
+    // Nothing of the page came with the redirect: no benefit, no claim, no venue.
+    await expect(page.locator('body')).not.toContainText(/ride benefit|Your ride home|Review and claim|Chicago Athletic/i);
+
+    // C1 holds no ride benefit in any spec (household A is this file's, B is voucher.spec.ts's).
+    // A page saying "there is nothing here" is no use to them; the part of Travel & Stay that
+    // answers what they came for is.
+    await context.setExtraHTTPHeaders(principalHeaders('C1'));
+    await page.goto('/transportation');
+    await expect(page).toHaveURL(/\/guests\/travel(?:\?[^#]*)?#getting-around$/);
+    const around = page.locator('#getting-around');
+    await expect(around.getByRole('heading', { level: 2, name: 'Getting around' })).toBeVisible();
+    await expect(around).toContainText(/Taxis and rideshares serve/);
+    // No ride is promised to a guest who has none, and no claim is offered.
+    await expect(page.locator('[data-benefit-status]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Review and claim' })).toHaveCount(0);
+    const text = await page.locator('main').innerText();
+    expect(text).not.toMatch(/coming soon|Uber can take you/i);
+    expect(text).not.toContain('TODO(');
   });
 
   test('an eligible guest reviews, confirms, and gets an "Open in Uber" handoff card', async ({ page, request, context }, testInfo) => {
@@ -113,8 +129,15 @@ test.describe('transportation', () => {
 
     await context.setExtraHTTPHeaders(principalHeaders('A1'));
     await page.goto('/transportation');
+    // With a benefit on the invitation the page renders, and it is the benefit alone.
+    await expect(page).toHaveURL(/\/transportation$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your ride');
+    await expect(page.getByRole('heading', { level: 2, name: 'Your ride home' })).toBeVisible();
     await expect(page.locator('[data-benefit-status="eligible"]')).toBeVisible();
     expect(await page.locator('main').innerText()).not.toContain('TODO(');
+    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
+      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
+    }
     await page.getByRole('button', { name: 'Review and claim' }).click();
     await expect(page.getByRole('heading', { level: 3, name: 'Claim your ride benefit' })).toBeVisible();
     await expect(page.getByText('Uber (test mode)')).toBeVisible();
@@ -133,7 +156,10 @@ test.describe('transportation', () => {
     // would wrongly pass a different-household check.
     await context.setExtraHTTPHeaders(principalHeaders('A2'));
     await page.goto('/transportation');
+    // A2 has no benefit of their own, so the ride page is not theirs to open at all.
+    await expect(page).toHaveURL(/\/guests\/travel(?:\?[^#]*)?#getting-around$/);
     await expect(page.locator('article[data-handoff-host="www.uber.com"]')).toHaveCount(0);
+    await expect(page.locator('[data-benefit-status]')).toHaveCount(0);
     expect(await page.content()).not.toMatch(/uber\.com\/redeem/);
   });
 });

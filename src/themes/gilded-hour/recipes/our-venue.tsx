@@ -46,11 +46,14 @@ export const GildedOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, frame }
       <Section id="getting-here" number={5} labelledBy="getting-here-title">
         <SectionHeading level={2} id="getting-here-title" title={CONTENT_COPY.ourVenue.gettingHere} />
         <OutletList fields={data.gettingHere} label="Practical details" />
-        <Prose>
-          <p className="gh-muted">
-            Address: {frame.site.venue.address}. {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.wedding}>The Wedding</Link>.
-          </p>
-        </Prose>
+        {/* The address is the invited guests': a signed-out reader gets neither it nor the way there. */}
+        {frame.details ? (
+          <Prose>
+            <p className="gh-muted">
+              Address: {frame.details.venue.address}. {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.guestTravel}>Travel &amp; Stay</Link>.
+            </p>
+          </Prose>
+        ) : null}
       </Section>
     </Shell>
   );

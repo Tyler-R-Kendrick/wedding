@@ -122,7 +122,7 @@ export const getMyTable = defineCapability<z.infer<typeof input>, MyTable>({
     if (!found) return err(new CapabilityError('not_found', TABLE_NOT_PUBLISHED_MESSAGE));
     return ok({
       data: found.data,
-      sources: [{ sourceId: found.live.id as never, title: 'Seating chart (published)', url: '/your-weekend', verifiedAt: found.live.publishedAt.toISOString(), recordRef: { type: 'seating_publication', id: found.live.id } }],
+      sources: [{ sourceId: found.live.id as never, title: 'Seating chart (published)', url: '/guests', verifiedAt: found.live.publishedAt.toISOString(), recordRef: { type: 'seating_publication', id: found.live.id } }],
     });
   },
 });

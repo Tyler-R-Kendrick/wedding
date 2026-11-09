@@ -42,7 +42,7 @@ export const AIRPORTS = [
   {
     code: 'ORD',
     name: "O'Hare International Airport",
-    note: 'We recommend flying into O’Hare. There is no wedding shuttle; take the CTA Blue Line “L” train into downtown. Rideshare pickup details are coming soon; Uber can take you from the airport to the hotel.',
+    note: 'We recommend flying into O’Hare. There is no wedding shuttle; take the CTA Blue Line “L” train into downtown.',
     pending: null,
   },
   {
@@ -66,6 +66,6 @@ export const DEFAULT_VENUE_BLOCK: RoomBlock = {
   placeholder: false,
 };
 
-export const BRIEF_CITATION: Citation = { sourceId: BRIEF_SOURCE_ID, title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: BRIEF_VERIFIED_AT };
+export const BRIEF_CITATION: Citation = { sourceId: BRIEF_SOURCE_ID, title: "Tyler's brief 2026-09-04", url: '/guests', verifiedAt: BRIEF_VERIFIED_AT };
 export const CAA_KIT_CITATION: Citation = { sourceId: CAA_KIT_SOURCE_ID, title: 'CAA Wedding Kit 2027', verifiedAt: BRIEF_VERIFIED_AT };
 export const CAA_SITE_CITATION: Citation = { sourceId: CAA_SITE_SOURCE_ID, title: 'chicagoathletichotel.com', url: VENUE.url, verifiedAt: BRIEF_VERIFIED_AT };

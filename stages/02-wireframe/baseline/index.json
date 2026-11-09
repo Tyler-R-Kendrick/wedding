@@ -67,76 +67,10 @@
     }
    }
   },
-  "share": {
-   "title": "Share an Adventure | Sara + Tyler",
-   "url": "/share-an-adventure",
-   "finalUrl": "/share-an-adventure",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "wedding": {
-   "title": "The Wedding | Sara + Tyler",
-   "url": "/the-wedding",
-   "finalUrl": "/the-wedding",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
   "caa": {
    "title": "Explore CAA | Sara + Tyler",
    "url": "/explore-caa",
    "finalUrl": "/explore-caa",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "travel": {
-   "title": "Travel & Stay | Sara + Tyler",
-   "url": "/travel",
-   "finalUrl": "/travel",
    "source": "https://kendrick.wedding",
    "principal": null,
    "capturedAt": "2026-09-24",
@@ -182,28 +116,6 @@
    "url": "/photos",
    "finalUrl": "/photos",
    "source": "app (test server, fixture data)",
-   "principal": "guest",
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "ask": {
-   "title": "Ask Us | Sara + Tyler",
-   "url": "/ask-us",
-   "finalUrl": "/ask-us",
-   "source": "https://kendrick.wedding",
    "principal": "guest",
    "capturedAt": "2026-09-24",
    "designs": {
@@ -288,28 +200,6 @@
      "status": 200,
      "file": "botanical-deco.json",
      "same": "botanical-deco"
-    }
-   }
-  },
-  "weekend": {
-   "title": "Your Weekend | Sara + Tyler",
-   "url": "/your-weekend",
-   "finalUrl": "/your-weekend",
-   "source": "app (test server, fixture data)",
-   "principal": "guest",
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1175,28 +1065,6 @@
    "title": "starved rock | Sara + Tyler",
    "url": "/our-adventures/starved-rock",
    "finalUrl": "/our-adventures/starved-rock",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "share-item": {
-   "title": "caa self guided tour | Sara + Tyler",
-   "url": "/share-an-adventure/caa-self-guided-tour",
-   "finalUrl": "/share-an-adventure/caa-self-guided-tour",
    "source": "https://kendrick.wedding",
    "principal": null,
    "capturedAt": "2026-09-24",

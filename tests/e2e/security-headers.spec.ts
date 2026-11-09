@@ -11,10 +11,13 @@ import { test, expect, type Page } from '@playwright/test';
  * serves the relaxed one.
  *
  * The routes are the public shell a visitor actually meets, chosen to cover the ways this app puts
- * things on a page: the prerendered theme tree (`/`), a dynamic public page with images, the
- * concierge island (the most client-JS-heavy surface), and a form.
+ * things on a page: the prerendered theme tree (`/`), a dynamic public page with images
+ * (`/our-story`), and a form — the sign-in door, which is where `/gifts` and `/guests/ask-us` send
+ * a signed-out reader. Everything about the wedding is behind that door, so the signed-in pages
+ * (the concierge island among them) are loaded on the test server, by quality-sweep.spec.ts and
+ * concierge.spec.ts; the strict production policy is asserted here on what this server can show.
  */
-const ROUTES = ['/', '/the-wedding', '/privacy', '/terms', '/gifts', '/ask-us'];
+const ROUTES = ['/', '/our-story', '/privacy', '/terms', '/gifts', '/guests/ask-us'];
 
 interface Violation {
   route: string;
@@ -123,7 +126,7 @@ test.describe('security headers', () => {
    *
    * `src/proxy.ts` marks every personalized route and every cookie-resolved public URL
    * `private, no-store` with `Vary: Cookie`, and the reason is not politeness: without it a shared
-   * cache may serve one household's Your Weekend to another, and a browser may reuse a themed RSC
+   * cache may serve one household's dashboard to another, and a browser may reuse a themed RSC
    * payload across a design switch. `next dev` replaces that header with
    * `no-cache, must-revalidate`, so this can only be asserted against `next start` — which is why
    * it is here and not in `quality-sweep.spec.ts`, where the identities live.
@@ -133,9 +136,12 @@ test.describe('security headers', () => {
    */
   test('personalized and theme-resolved URLs forbid a shared cache from keeping them', async ({ request }) => {
     // `/gifts` shows Zelle and mailing details to invited guests (ADR-0013).
-    const PERSONALIZED = ['/your-weekend', '/rsvp', '/trip', '/transportation', '/media/mine', '/gifts'];
-    for (const path of [...PERSONALIZED, '/', '/the-wedding']) {
-      const res = await request.get(path);
+    // `/guests`, `/guests/travel` and `/our-venue` carry the date, the venue and the room block.
+    // Redirects are not followed: a signed-out request to most of these is sent to sign in, and it
+    // is this path's own answer — the one the proxy marked — that a cache would be keeping.
+    const PERSONALIZED = ['/guests', '/guests/travel', '/our-venue', '/rsvp', '/trip', '/transportation', '/media/mine', '/gifts'];
+    for (const path of [...PERSONALIZED, '/']) {
+      const res = await request.get(path, { maxRedirects: 0 });
       const cc = res.headers()['cache-control'] ?? '';
       expect(cc, `${path} may be stored by a shared cache`).toContain('no-store');
       expect(cc, `${path} is not marked private`).toContain('private');
@@ -144,7 +150,7 @@ test.describe('security headers', () => {
     // A validator invites a conditional request, and a conditional request is how a shared cache
     // revalidates one identity's copy for another. No personalized route may carry one.
     for (const path of PERSONALIZED) {
-      expect((await request.get(path)).headers()['etag'], `${path} carries an ETag`).toBeUndefined();
+      expect((await request.get(path, { maxRedirects: 0 })).headers()['etag'], `${path} carries an ETag`).toBeUndefined();
     }
 
     /*
@@ -154,7 +160,7 @@ test.describe('security headers', () => {
      * that header never reaches the wire: Next.js sets its own `Vary` for the RSC protocol
      * (`rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch,
      * Accept-Encoding`) on every one of these responses and the appended value is lost. Measured on
-     * `next start` at this head, on all seven paths above.
+     * `next start` on the seven paths this list held then.
      *
      * The guarantee still holds, on `no-store` alone: a response no cache may store is a response
      * no cache can serve to the wrong identity, and `Vary` was insurance behind that. Asserting the

@@ -42,17 +42,18 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   const navBase = navFor(lifecycle.state, { currentPath: input.currentPath, venue: site.venue, ...(signedIn !== undefined ? { signedIn } : {}), ...(principal?.kind === 'admin' ? { admin: true } : {}), ...(principal?.kind === 'guest' && principal.viewedBy ? { viewing: true } : {}) });
   const portals = principal && (principal.kind === 'guest' || principal.kind === 'admin') ? await accountPortalLinks(await getDb(), principal) : undefined;
   const nav = portals ? { ...navBase, portals } : navBase;
-  return { theme: input.theme, site, lifecycle, countdown, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
+  // When and where the wedding is goes only to a reader who is signed in. For anyone else the frame
+  // carries the two names and nothing more, so no shell or recipe can print the rest.
+  const details = signedIn ? { date: site.date, venue: site.venue, countdown } : null;
+  const publicSite = { coupleDisplayName: site.coupleDisplayName, partner1: site.partner1, partner2: site.partner2 };
+  return { theme: input.theme, site: publicSite, details, lifecycle, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
 }
 
 export async function renderHome(input: Omit<FrameInput, 'currentPath'>): Promise<ReactNode> {
   const h = await headers();
   const principal =
     input.lifecycle?.principal ?? (await getPrincipal(new Request('http://wedding.local/', { headers: h })));
-  await enforceGuestPortalRoute(principal, '/', undefined, {
-    signedIn: principal.kind === 'guest' || principal.kind === 'admin',
-    admin: principal.kind === 'admin',
-  });
+  await enforceGuestPortalRoute(principal, '/');
   const lifecycle: LifecycleOptions = { ...input.lifecycle, principal };
   const frame = await buildPageFrame({ ...input, currentPath: '/', lifecycle });
   const data: HomeData = { ...frame, content: homeContent(frame.site, frame.lifecycle.state) };

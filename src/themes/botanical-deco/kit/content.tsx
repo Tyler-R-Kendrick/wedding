@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, ProvenanceLine, Text as Block, placeholderHint } from '@/components/provenance';
+import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, ProvenanceLine, Text as Block, isNamedForGuests, placeholderHint } from '@/components/provenance';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
 import { guestText } from '@/domain/content/text';
@@ -131,6 +131,7 @@ function Provenance({ provenance, freshness = false }: { provenance: ProvenanceV
   if (provenance.trustClass === 'TRUSTED_WEDDING' && !provenance.external && !provenance.url?.startsWith('https://')) {
     return <p className="bd-prov bd-prov--own">From Sara + Tyler</p>;
   }
+  if (!isNamedForGuests(provenance)) return null;
   return (
     <div className="bd-prov">
       <ProvenanceLine provenance={provenance}>{freshness ? <FreshnessBadge provenance={provenance} /> : null}</ProvenanceLine>

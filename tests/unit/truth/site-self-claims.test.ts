@@ -23,11 +23,14 @@ describe('the public nav', () => {
       expect(labels, state).not.toContain('Claim your invitation');
       for (const l of labels) expect(l, `${state}: ${l}`).not.toMatch(/^Claim\b/);
     }
-    // Nor does it offer the invitation itself: Your Weekend is the household's page, and lives in
-    // the signed-in account menu with the RSVP.
+    // Nor does it offer the invitation itself: the dashboard is the household's page, and it is
+    // the signed-in navigation's Home, never a link on a page a signed-out reader is shown.
     const open = navFor('INVITATIONS_OPEN');
-    expect([...open.sticky, ...open.primary, ...open.more].map((i) => i.href)).not.toContain('/your-weekend');
-    expect((open.member ?? []).map((i) => i.label)).toContain('Your Weekend');
+    const shown = [...open.sticky, ...open.primary, ...open.more].map((i) => i.href);
+    expect(shown).not.toContain('/guests');
+    expect(shown).not.toContain('/your-weekend');
+    expect((open.member ?? []).map((i) => i.label)).not.toContain('Your Weekend');
+    expect(navFor('INVITATIONS_OPEN', { signedIn: true }).primary[0]).toEqual({ label: 'Home', href: '/guests' });
   });
 });
 
@@ -82,7 +85,7 @@ describe('editorial metadata never reaches a guest', () => {
   });
 });
 
-describe('Your Weekend does not describe a site that is not this one', () => {
+describe('the dashboard does not describe a site that is not this one', () => {
   it('never says a tool is not live yet when it is live in the same nav', async () => {
     // Both slots were written at level 03 and were true then. Levels 08 and 09 shipped
     // /transportation and /trip into the same nav; the slot copy was never revisited, and
@@ -99,7 +102,11 @@ describe('Your Weekend does not describe a site that is not this one', () => {
       expect(slot.placeholder, kind).toBe(false);
       expect(slot, kind).not.toHaveProperty('owner');
     }
-    expect(json).toContain('/transportation');
-    expect(json).toContain('/trip');
+    // Each slot points at the page that holds the answer. Getting there and home is on Travel &
+    // Stay; `/transportation` is only a guest's own ride benefit, and sends everyone else there too.
+    expect(slots.transport).toMatchObject({ status: 'ready', items: [{ href: '/guests/travel' }] });
+    expect(slots.trip).toMatchObject({ status: 'ready', items: [{ href: '/trip' }] });
+    expect(json).not.toContain('/transportation');
+    expect(json).not.toMatch(/"\/travel"|\/your-weekend|\/the-wedding/);
   });
 });

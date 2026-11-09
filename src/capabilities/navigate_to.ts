@@ -10,7 +10,7 @@ import { isThemeId, THEME_IDS } from '@/themes/registry';
 import { isInternalRoute } from './routes';
 
 const input = z.object({
-  /** Internal path such as "/travel". External URLs are rejected; use an `external` capability for handoffs. */
+  /** Internal path such as "/guests/travel". External URLs are rejected; use an `external` capability for handoffs. */
   route: z.string().min(1).max(200),
   /** Optional element id / anchor to highlight after navigating. */
   highlight: z.string().regex(/^[a-z0-9-]{1,64}$/).optional(),
@@ -32,7 +32,7 @@ export const navigateTo = defineCapability<z.infer<typeof input>, NavigateToOutp
   name: 'navigate_to',
   title: 'Go to a page',
   description:
-    'Navigate to a page on this wedding site by its internal path (for example "/travel" or "/rsvp"). ' +
+    'Navigate to a page on this wedding site by its internal path (for example "/guests/travel" or "/rsvp"). ' +
     'Use it when a guest asks where something is. It only opens pages on this site, never external links, ' +
     'and it changes nothing. It can also switch the visual design for this device ("botanical-deco" is the approved default; "gilded-hour" and "conservatory" are the earlier proposals), ' +
     'and, for administrators only, issue a preview of another lifecycle state.',

@@ -54,8 +54,8 @@ export default async function MyUploadsPage() {
             <>
               <p className="media-lede">{result.error.message}</p>
               <p>
-                <Link className="media-button" href="/your-weekend">
-                  Back to Your Weekend
+                <Link className="media-button" href="/guests">
+                  Back to your dashboard
                 </Link>
               </p>
             </>

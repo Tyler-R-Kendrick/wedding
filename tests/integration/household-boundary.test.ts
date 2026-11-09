@@ -55,7 +55,7 @@ describe('a guest id from another household', () => {
     expect(ctx.entitlements.every((e) => e.guestId !== FX.guestC1)).toBe(true);
   });
 
-  it('never reaches /your-weekend or /rsvp through a forged actsFor', async () => {
+  it('never reaches the guest dashboard (/guests) or /rsvp through a forged actsFor', async () => {
     const forged = fixturePrincipal('A1', { actsFor: [FX.guestA1, FX.guestC1] });
     const res = expectOk(await run(getMyRsvp, forged, {}));
     const names = JSON.stringify(res.data);

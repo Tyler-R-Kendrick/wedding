@@ -28,7 +28,7 @@ export const ConservatoryAdventuresPage: ContentRecipe<AdventuresProps> = ({ dat
         <div className="cv-section__text">
           <Prose>
             <p className="cv-muted">
-              {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.share}>Share an Adventure</Link>.
+              {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.guestThings}>Share an Adventure</Link>.
             </p>
           </Prose>
         </div>

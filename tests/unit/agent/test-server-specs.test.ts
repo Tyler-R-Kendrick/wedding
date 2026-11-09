@@ -45,11 +45,11 @@ describe('npm run test:e2e:server mirrors the CI test-server step', () => {
 
   it('warms everything for a full run, and for named specs only what they reach', () => {
     expect(routesToWarm([])).toEqual(WARM_ROUTES);
-    const spec = "await page.goto('/sign-in?next=%2Frsvp'); await page.goto(\"/admin/rsvp/export\"); await page.goto(`/trip`); const x = '/travelling';";
+    const spec = "await page.goto('/sign-in?next=%2Frsvp'); await page.goto(\"/admin/rsvp/export\"); await page.goto(`/trip`); const x = '/giftshop';";
     const warm = routesToWarm(['a.spec.ts'], () => spec);
     for (const route of ['/', '/sign-in', '/sign-out', '/admin', '/admin/rsvp/export', '/trip']) expect(warm, route).toContain(route);
-    // '/travel' is a prefix of a different string, not a navigation; the big console pages are not reached.
-    for (const route of ['/travel', '/admin/guests/export', '/admin/media/duplicates']) expect(warm, route).not.toContain(route);
+    // '/gifts' is a prefix of a different string, not a navigation; the big console pages are not reached.
+    for (const route of ['/gifts', '/admin/guests/export', '/admin/media/duplicates']) expect(warm, route).not.toContain(route);
     expect(new Set(warm).size).toBe(warm.length);
   });
 

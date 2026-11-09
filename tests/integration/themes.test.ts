@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { createCapabilityContext, invoke, navigateTo, siteStatus } from '@/capabilities';
-import type { AdminPrincipal } from '@/contracts/principal';
+import type { AdminPrincipal, GuestPrincipal } from '@/contracts/principal';
 import { verifyPreviewToken } from '@/domain/lifecycle/preview';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { getDb } from '@/db/client';
 import { listAuditEvents } from '@/lib/audit';
 
 const admin: AdminPrincipal = { kind: 'admin', authIdentityId: 'auth' as never, adminId: 'adm-1' as never, roles: new Set(['owner']), entitlements: new Set(['admin_lifecycle']), authenticatedAt: '2026-09-05T12:00:00Z', sessionId: 's' };
+// `site_status` carries the date, the venue and the stage's navigation, so it needs a signed-in reader.
+const guest: GuestPrincipal = { kind: 'guest', authIdentityId: 'auth-g' as never, guestId: 'g-theme' as never, householdId: 'h-theme' as never, actsFor: ['g-theme' as never], entitlements: new Set(['view_event']), authenticatedAt: '2026-09-05T12:00:00Z', sessionId: 'sg' };
 
 describe('site_status (theme + lifecycle extensions)', () => {
   it('returns countdown, navigation, the active theme and the switcher flag', async () => {
-    const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-theme-1', view: { theme: 'conservatory' } });
+    const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-theme-1', view: { theme: 'conservatory' } });
     const r = await invoke(siteStatus, ctx, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -25,11 +27,20 @@ describe('site_status (theme + lifecycle extensions)', () => {
   });
 
   it('falls back to the default theme for unknown view themes and ignores previews for non-admins', async () => {
-    const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-theme-2', view: { theme: 'neon', lifecycle: 'RSVP_OPEN' } });
+    const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-theme-2', view: { theme: 'neon', lifecycle: 'RSVP_OPEN' } });
     const r = await invoke(siteStatus, ctx, {});
     expect(r.ok && r.value.data.theme.active).toBe('botanical-deco');
     expect(r.ok && r.value.data.lifecycle.state).toBe('TEASER');
     expect(r.ok && r.value.data.lifecycle.preview).toBe(false);
+  });
+
+  it('refuses an anonymous caller, whatever view or preview the request asks for', async () => {
+    for (const view of [undefined, { theme: 'conservatory' }, { theme: 'neon', lifecycle: 'RSVP_OPEN' as const }]) {
+      const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-theme-anon', view });
+      const r = await invoke(siteStatus, ctx, {});
+      expect(!r.ok && r.error.code).toBe('unauthenticated');
+      expect(JSON.stringify(r)).not.toMatch(/July 17|2027-07-17|Chicago Athletic|google\.com\/maps/);
+    }
   });
 });
 

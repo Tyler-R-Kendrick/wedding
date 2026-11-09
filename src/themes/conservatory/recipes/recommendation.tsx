@@ -16,7 +16,7 @@ export const ConservatoryRecommendationPage: ContentRecipe<RecommendationProps> 
         <RecommendationCard card={card} headingLevel={2} />
       </div>
       <div className="cv-section__hang">
-        <BackLink href={ROUTES.share}>{CONTENT_COPY.guide.back}</BackLink>
+        <BackLink href={ROUTES.guestThings}>{CONTENT_COPY.guide.back}</BackLink>
       </div>
     </Section>
   </Shell>

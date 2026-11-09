@@ -30,6 +30,6 @@ export const getFaq = defineCapability<z.infer<typeof input>, FaqPageData>({
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const { entries, sources } = await listFaq(rctx);
-    return ok({ data: { route: ROUTES.ask, entries }, sources });
+    return ok({ data: { route: ROUTES.guestAsk, entries }, sources });
   },
 });

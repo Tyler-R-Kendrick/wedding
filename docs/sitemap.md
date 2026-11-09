@@ -6,6 +6,8 @@ The admin page at `/admin/sitemap` renders the same rows.
 
 Audiences match the pipeline sitemap (`stages/01-sitemap/lib/sitemap.ts`): public, guest, gate, admin. API routes are `api`.
 
+Only the pages about the couple are **public**: Home, Our Story, Our Adventures, the photo credits, Privacy and Terms. Every page that says when or where the wedding is — the dashboard, travel, things to do, the venue, the RSVP, gifts and photos — is **guest**, and a signed-out reader is sent to sign in first.
+
 `/sitemap.xml` lists **public** pages only. Lifecycle `visibleFrom` is not applied: it controls navigation, not whether the route exists. Dynamic public routes use seed rows whose visibility is `public`. The placeholder `/example` is not listed. Admin, guest, gate, internal theme URLs, APIs and redirects are omitted. The site-wide `noindex` in the root layout is a pre-launch setting; this file is the public URL list for when that changes.
 
 Invitation tokens are named only as `/i/example` and `/invite/example`. No real guest token appears here.
@@ -16,33 +18,27 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 
 | URL | Example | Audience | Method | Purpose | Expected |
 | --- | --- | --- | --- | --- | --- |
-| / | / | public | GET | Names, date and place, the one action that matters in the current state, and a way into the story. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
+| / | / | public | GET | Our names, a welcome, and the one thing a guest should do now — which leads through sign-in into the dashboard. | 200 for a signed-out visitor and for an administrator: our names and the door, with no date, venue or city. A signed-in guest is sent to /guests. |
 | /our-story | /our-story | public | GET | How we met, how it grew, the engagement, and what marriage means to us — told in chapters. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-adventures | /our-adventures | public | GET | An atlas of places we have been, each with "Sara remembers / Tyler remembers". | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /our-adventures/[slug] | /our-adventures/starved-rock | public | GET | One place: where, when, photos, and both of our memories of it. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /share-an-adventure | /share-an-adventure | public | GET | Places we recommend around Chicago: a practical layer and a memory layer, itineraries by duration and mode. | 200 for any visitor. A signed-in guest is sent to /guests/things-to-do. An administrator stays on this URL. |
-| /share-an-adventure/[slug] | /share-an-adventure/starved-rock-state-park | public | GET | One recommendation: what it is, how to get there from the venue, why we love it. | 200 for a known recommendation. A signed-in guest is sent to /guests/things-to-do/<slug>. An administrator stays on this URL. Unknown slug is 404. |
-| /the-wedding | /the-wedding | public | GET | Ceremony, cocktail hour and reception: rooms, times, dress code and accessibility. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /our-venue | /our-venue | public | GET | A docent for the building: spaces, history with sources, things to look for, and where your table is. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /our-venue/[slug] | /our-venue/white-city-ballroom | public | GET | One room or feature of the building, its history and what to look for. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /travel | /travel | public | GET | Airports, the room block, other hotels, the neighbourhood and what the weather will be like. | 200 for any visitor. A signed-in guest is sent to /guests/travel. An administrator stays on this URL. |
 | /credits | /credits | public | GET | Who made every image on the site, and under what licence. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /privacy | /privacy | public | GET | Plain-language account of what the site collects, why, and which services process it. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
 | /terms | /terms | public | GET | Simple rules for using this private wedding website. | 200 for any visitor. Lifecycle may hide it from the nav before visibleFrom; the route still answers. |
-| /guests | /guests | guest | GET | The signed-in landing: RSVP status and action, your schedule, key details, and links into travel and the weekend. | 200 for a signed-in guest: RSVP, schedule, and links into the weekend. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate. |
-| /guests/travel | /guests/travel | guest | GET | The guest view of airports, the room block, neighbourhood notes and live search — same content as the public travel page, centred on the portal. | 200 for a signed-in guest: the same travel page as /travel. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it and is not sent back to /travel. |
-| /guests/things-to-do | /guests/things-to-do | guest | GET | Chicago recommendations, itineraries and the signed-in map — the guest path for Share an Adventure. | 200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it. |
+| /guests | /guests | guest | GET | The dashboard: the one thing to do now first (reserve a room, then RSVP), then what comes next, then the rest. It reorders as the timeline moves. | 200 for a signed-in guest: the dashboard, with the one thing to do now first. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate. |
+| /guests/travel | /guests/travel | guest | GET | One page for the trip: the room block, flights, and getting from the airport and around the city. | 200 for a signed-in guest: the room block, flights and getting around. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it. |
+| /trip | /trip | guest | GET | Your flights and hotel, kept in one place so we can help if plans change. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
+| /transportation | /transportation | guest | GET | A ride benefit on your invitation, when there is one, and how to claim it. Everything else about getting around is on Travel. | 200 for a signed-in guest whose invitation carries a ride benefit. A guest with no ride benefit is redirected to /guests/travel#getting-around. Signed out: redirect to /sign-in?next=/transportation. |
+| /guests/things-to-do | /guests/things-to-do | guest | GET | Chicago recommendations, itineraries and the map. | 200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it. |
 | /guests/things-to-do/[slug] | /guests/things-to-do/starved-rock-state-park | guest | GET | One Chicago recommendation with directions and why we love it. | 200 for a signed-in guest when the recommendation exists. Signed out: redirect to /sign-in?next=<path>. Unknown slug is 404. An administrator may open a recommendation they can see. |
-| /guests/ask-us | /guests/ask-us | guest | GET | The guest path for the concierge and FAQ — sign-in required; citations from published pages only. | 200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate. |
-| /ask-us | /ask-us | guest | GET | A concierge that answers questions about the weekend from what we have published, with citations. | 200. Signed out: redirect to /sign-in?next=/ask-us. A signed-in guest is sent to /guests/ask-us. An administrator sees the guests-only gate. |
-| /your-weekend | /your-weekend | guest | GET | Your household's hub: invitation, RSVP status, your table, ride benefits and preferences. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
+| /our-venue | /our-venue | guest | GET | A docent for the building: spaces, history with sources, and things to look for. | 200 for a signed-in guest: the building, its spaces and its history. Signed out: redirect to /sign-in?next=/our-venue. An administrator may open it. |
+| /our-venue/[slug] | /our-venue/white-city-ballroom | guest | GET | One room or feature of the building, its history and what to look for. | 200 for a signed-in guest when the space exists. Signed out: redirect to /sign-in?next=/our-venue/<slug>, whatever the slug. Unknown slug is 404 once signed in. An administrator may open it. |
+| /guests/ask-us | /guests/ask-us | guest | GET | The concierge and FAQ: answers from what we have published, with citations. | 200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate. |
 | /rsvp | /rsvp | guest | GET | Reply for the household in parts — attendance, a guest, meals, needs — each finished on its own. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /rsvp/[step] | /rsvp/attending | guest | GET | One part of the reply: who is coming, bringing a guest, meals, or dietary and access needs. | 200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404. |
-| /transportation | /transportation | guest | GET | Valet, transit, rides and your ride voucher, parking and accessibility. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
-| /trip | /trip | guest | GET | Your flights and hotel, kept in one place so we can help if plans change. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
-| /gifts | /gifts | guest | GET | "Help us with our next adventures": registry links and person-to-person funds. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
-| /photos | /photos | guest | GET | Engagement photos, guest uploads and the professional galleries, each by its rights. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
-| /photos/[collection] | /photos/guest-uploads | guest | GET | One gallery, with credits and a way to download what its rights allow. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
+| /gifts | /gifts | guest | GET | "Help us with our next adventures": registry links and person-to-person funds. | 200 for a signed-in guest: registry and fund links. Signed out: redirect to /sign-in?next=/gifts. |
+| /photos | /photos | guest | GET | Guest uploads and the professional galleries, each by its rights. Opens on the day. | 200 for a signed-in guest: the galleries their invitation may see. Signed out: redirect to /sign-in?next=/photos. |
+| /photos/[collection] | /photos/guest-uploads | guest | GET | One gallery, with credits and a way to download what its rights allow. | 200 for a signed-in guest when the collection exists. Signed out: redirect to /sign-in?next=/photos/<collection>. Unknown collection is 404. |
 | /media/upload | /media/upload | guest | GET | Upload photos and videos from the weekend; say who may see them. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /media/mine | /media/mine | guest | GET | What you have uploaded, its visibility, and a way to take anything down. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
 | /media/search | /media/search | guest | GET | Search the weekend's photos by moment, place or people you are allowed to see. | 200. Signed out: a sign-in or guests-only gate (the route exists). Signed-in guest: the household page. An administrator sees the gate on pages that are the guest’s own reply. |
@@ -50,7 +46,7 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /sign-in/admin | /sign-in/admin | gate | GET | The couple and the planner sign in to run the site. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /s/[slug] | /s/fixtureslug01 | gate | GET | Temporary link from the couple: opens with the code filled in and signs you in. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /sign-in/pending | /sign-in/pending | gate | GET | Neutral holding page when social sign-in cannot match an invitation yet. | 200. Holding page when social sign-in cannot match an invitation yet. It does not start a session. |
-| /sign-in/phone | /sign-in/phone | gate | GET | Text a six-digit code when Sara and Tyler have your mobile number on file. | 200 when phone sign-in is on (FLAG_PHONE_SIGN_IN, with Twilio or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /your-weekend and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session. |
+| /sign-in/phone | /sign-in/phone | gate | GET | Text a six-digit code when Sara and Tyler have your mobile number on file. | 200 when phone sign-in is on (FLAG_PHONE_SIGN_IN, with Twilio or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /guests and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session. |
 | /sign-out | /sign-out | gate | GET | End the session on this device. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /step-up | /step-up | gate | GET | Re-verify before a sensitive change, like payment details or who is in the household. | 200. The door into a session. Signing out is a form; it does not end the session until submitted. |
 | /i/[token] | /i/example | gate | GET | Preview of the household an invitation link belongs to, and an offer to claim it. Never a session by itself. | Redirects to /invite/<token> (the long link). /i/example is the only token this inventory names. |
@@ -98,12 +94,14 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 
 | URL | Example | Audience | Method | Purpose | Expected |
 | --- | --- | --- | --- | --- | --- |
-| /explore-caa | /explore-caa | public | GET | Permanent alias of /our-venue. | 308 to /our-venue. The fragment is kept by the browser. |
-| /explore-caa/:slug | /explore-caa/white-city-ballroom | public | GET | Permanent alias of /our-venue/:slug. | 308 to /our-venue/:slug. The fragment is kept by the browser. |
-| /faq | /faq | public | GET | Permanent alias of /ask-us. | 308 to /ask-us. The fragment is kept by the browser. |
-| /things-to-do | /things-to-do | public | GET | Permanent alias of /share-an-adventure. | 308 to /share-an-adventure. The fragment is kept by the browser. |
-| /wedding-day | /wedding-day | public | GET | Permanent alias of /the-wedding. | 308 to /the-wedding. The fragment is kept by the browser. |
-| /registry | /registry | public | GET | Permanent alias of /gifts. | 308 to /gifts. The fragment is kept by the browser. |
+| /your-weekend | /your-weekend | public | GET | Permanent alias of /guests. | 308 to /guests. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /the-wedding | /the-wedding | public | GET | Permanent alias of /guests. | 308 to /guests. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /travel | /travel | public | GET | Permanent alias of /guests/travel. | 308 to /guests/travel. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /share-an-adventure | /share-an-adventure | public | GET | Permanent alias of /guests/things-to-do. | 308 to /guests/things-to-do. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /share-an-adventure/:slug | /share-an-adventure/starved-rock-state-park | public | GET | Permanent alias of /guests/things-to-do/:slug. | 308 to /guests/things-to-do/:slug. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /ask-us | /ask-us | public | GET | Permanent alias of /guests/ask-us. | 308 to /guests/ask-us. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /faq | /faq | public | GET | Permanent alias of /guests/ask-us. | 308 to /guests/ask-us. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
+| /registry | /registry | public | GET | Permanent alias of /gifts. | 308 to /gifts. The fragment is kept by the browser. A signed-out reader is then asked to sign in. |
 
 ## API and export routes
 
@@ -184,32 +182,6 @@ public. One place: where, when, photos, and both of our memories of it.
 - `/our-adventures/richardson-farm-2025-10-11`
 - `/our-adventures/copenhagen-denmark-2025`
 
-### GET /share-an-adventure/[slug]
-
-public. One recommendation: what it is, how to get there from the venue, why we love it.
-
-- `/share-an-adventure/starved-rock-state-park`
-- `/share-an-adventure/caa-self-guided-tour`
-- `/share-an-adventure/millennium-park-walk`
-- `/share-an-adventure/cindys-rooftop`
-- `/share-an-adventure/game-room`
-- `/share-an-adventure/drawing-room`
-- `/share-an-adventure/shake-shack`
-- `/share-an-adventure/the-ives`
-- `/share-an-adventure/midosuji`
-- `/share-an-adventure/fairgrounds`
-- `/share-an-adventure/topgolf-swing-suite`
-- `/share-an-adventure/richardson-farm`
-
-### GET /our-venue/[slug]
-
-public. One room or feature of the building, its history and what to look for.
-
-- `/our-venue/white-city-ballroom`
-- `/our-venue/madison-ballroom`
-- `/our-venue/stagg-court`
-- `/our-venue/the-tank`
-
 ### GET /guests/things-to-do/[slug]
 
 guest. One Chicago recommendation with directions and why we love it.
@@ -251,6 +223,15 @@ guest. One Chicago recommendation with directions and why we love it.
 - `/guests/things-to-do/metric-fulton`
 - `/guests/things-to-do/dollop-dearborn`
 - `/guests/things-to-do/hexe-coffee`
+
+### GET /our-venue/[slug]
+
+guest. One room or feature of the building, its history and what to look for.
+
+- `/our-venue/white-city-ballroom`
+- `/our-venue/madison-ballroom`
+- `/our-venue/stagg-court`
+- `/our-venue/the-tank`
 
 ### GET /rsvp/[step]
 

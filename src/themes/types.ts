@@ -147,10 +147,14 @@ export interface VenueFacts {
   mapsProvider: string;
 }
 
-export interface SiteFacts {
+/** What anyone may read: who we are. Nothing about when or where. */
+export interface PublicSiteFacts {
   coupleDisplayName: string;
   partner1: string;
   partner2: string;
+}
+
+export interface SiteFacts extends PublicSiteFacts {
   date: DateFacts;
   venue: VenueFacts;
 }
@@ -175,11 +179,24 @@ export interface LifecycleView {
 }
 
 /** Everything a page recipe needs besides its own content. */
+/**
+ * The wedding's own facts: when, where, and how long until. They are the invited guests', so a frame
+ * carries them only for a reader who is signed in (`PageFrame.details`); for everyone else the field
+ * is null, and because the date and the venue are not on `PageFrame.site` at all, a shell, hero or
+ * recipe cannot print them for a signed-out reader by forgetting to check.
+ */
+export interface WeddingDetails {
+  date: DateFacts;
+  venue: VenueFacts;
+  countdown: CountdownView;
+}
+
 export interface PageFrame {
   theme: ThemeId;
-  site: SiteFacts;
+  site: PublicSiteFacts;
+  /** Null for a signed-out reader, and on any render that did not resolve who is reading. */
+  details: WeddingDetails | null;
   lifecycle: LifecycleView;
-  countdown: CountdownView;
   nav: NavModel;
   /** FLAG_DESIGN_SWITCHER: kits render the switcher in the shell (nav, Menu sheet, footer) when true. */
   switcherEnabled: boolean;
@@ -199,25 +216,17 @@ export interface HomeSection {
   title: string;
   body: Copy;
   link?: ActionLink;
-  /** Optional structured facts (e.g. venue) rendered as Stat / MapHandoff by the theme. */
-  facts?: StatProps[];
-  /** Timeline events for the "Today" / wedding-week acts. */
-  timeline?: TimelineEvent[];
-  map?: boolean;
 }
 
 export interface HomeContent {
-  /** "Today" on WEDDING_DAY; otherwise the couple's names. */
+  /** The couple's names. */
   title: string;
   eyebrow: string;
   lede: Copy;
   primary: ActionLink;
   secondary?: ActionLink;
-  /** RSVP deadline etc. shown beside the primary action. */
-  deadline?: Copy;
-  /** One quiet line under the actions (e.g. the travel heads-up in TEASER). */
+  /** One quiet line under the actions: how an invited guest gets in. */
   note?: Copy;
-  showCountdown: boolean;
   sections: HomeSection[];
 }
 
@@ -314,7 +323,9 @@ export interface NavProps {
 }
 
 export interface FooterProps {
-  site: SiteFacts;
+  site: PublicSiteFacts;
+  /** The date and the venue, for a signed-in reader only; null prints neither. */
+  details: WeddingDetails | null;
   switcher: ReactNode;
   rightsNote: string;
   printUrls: { label: string; url: string }[];
@@ -322,8 +333,7 @@ export interface FooterProps {
 
 export interface HeroProps {
   content: HomeContent;
-  site: SiteFacts;
-  countdown: CountdownView;
+  site: PublicSiteFacts;
   state: LifecycleState;
 }
 
@@ -334,6 +344,12 @@ export interface SectionProps {
   ground?: 'default' | 'alt' | 'inverse' | 'wash';
   children: ReactNode;
   labelledBy?: string;
+  /**
+   * `split`: on a wide screen the section's heading sits in a left rail and everything after it
+   * fills the rest, so a section of words uses the page's width instead of one column beside an
+   * empty half. A design that has no such layout ignores it. One column on a phone either way.
+   */
+  layout?: 'split';
 }
 
 export interface SectionHeadingProps {

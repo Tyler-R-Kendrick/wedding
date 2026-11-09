@@ -22,7 +22,7 @@ export const showMyTableOnFloorplan = defineCapability<z.infer<typeof input>, z.
   name: 'show_my_table_on_floorplan',
   title: 'Show my table on the floor plan',
   description:
-    "Opens Your Weekend with the guest's table highlighted on the room's floor plan. Only works after seating is published (otherwise not_found). It changes nothing.",
+    "Opens the guest dashboard with the guest's table highlighted on the room's floor plan. Only works after seating is published (otherwise not_found). It changes nothing.",
   kind: 'navigate',
   auth: 'guest',
   // About the caller's own guest identity: an admin clears the `guest` floor but has none.
@@ -42,6 +42,6 @@ export const showMyTableOnFloorplan = defineCapability<z.infer<typeof input>, z.
     const found = await readPublishedTable(ctx, guestId);
     if (!found) return err(new CapabilityError('not_found', TABLE_NOT_PUBLISHED_MESSAGE));
     const { table, floorPlan } = found.data;
-    return ok({ data: { route: '/your-weekend', highlight: highlightIdFor(table.anchorId, table.id), floorPlanId: floorPlan?.id ?? null, anchorId: table.anchorId, tableName: table.name }, sources: [] });
+    return ok({ data: { route: '/guests', highlight: highlightIdFor(table.anchorId, table.id), floorPlanId: floorPlan?.id ?? null, anchorId: table.anchorId, tableName: table.name }, sources: [] });
   },
 });

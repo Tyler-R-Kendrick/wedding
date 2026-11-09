@@ -11,7 +11,7 @@ export const searchTravelOptions = defineCapability<TravelSearchInput, TravelSea
     'Results are a timestamped snapshot from a partner (mode "live") that must be refreshed before booking; when no live partner is available (mode "deep-link") it returns partner links to continue the search instead. ' +
     'Every price is the partner’s, and the final price is always the one shown at the partner’s checkout. It never books or pays.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   flag: 'TRAVEL_LIVE_SEARCH',
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },

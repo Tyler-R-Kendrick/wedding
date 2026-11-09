@@ -861,8 +861,19 @@
   margin-block-end: var(--spacing-md);
 }
 
+/* The welcome, and what to do now, at reading size: it is the hero's one sentence. */
 .bd-hero__lede {
-  max-width: 29rem;
+  max-width: 27rem;
+  margin-block: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--type-body-md-size);
+  line-height: 1.5;
+  color: var(--color-on-surface);
+  text-wrap: pretty;
+}
+
+/* How an invited guest gets in: quiet, under the buttons. */
+.bd-hero__note {
+  max-width: 27rem;
   margin-block-start: var(--spacing-md);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
@@ -3632,6 +3643,25 @@
   font-weight: 400;
 }
 
+/* On a wide screen a question sits beside its answer, so the list reads across the page instead of
+   down one narrow column with the other half of the sheet empty. */
+@media (width >= 1000px) {
+  .bd-faq__entry {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--spacing-sm) var(--spacing-2xl);
+    align-items: start;
+  }
+
+  .bd-faq__entry > :not(.bd-faq__q) {
+    grid-column: 2;
+  }
+
+  .bd-faq__q {
+    grid-row: 1 / span 4;
+    text-wrap: balance;
+  }
+}
+
 .bd-results {
   display: grid;
   gap: var(--spacing-md);
@@ -3732,10 +3762,175 @@
   gap: var(--spacing-md);
 }
 
+/* ---------- split sections: a title rail and a body that uses the rest of the page ---------- */
+
+/* A section of words used to sit in one 33rem column down the left of a 1200px frame, with the
+   other half empty. From 1000px the heading takes a narrow rail and the content takes the rest. */
+@media (width >= 1000px) {
+  .bd-section--split > .bd-section__inner {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    gap: 0 var(--spacing-2xl);
+    align-items: start;
+  }
+
+  /* The rail spans however many blocks the body has. Rows carry no gap (the spanned-but-unused
+     ones would each add one); the blocks space themselves instead. */
+  .bd-section--split > .bd-section__inner > .bd-head {
+    grid-column: 1;
+    grid-row: 1 / span 12;
+  }
+
+  .bd-section--split > .bd-section__inner > :not(.bd-head, .sr-only) {
+    grid-column: 2;
+  }
+
+  .bd-section--split > .bd-section__inner > :not(.bd-head, .sr-only) ~ :not(.bd-head, .sr-only) {
+    margin-block-start: var(--spacing-xl);
+  }
+}
+
+/* ---------- travel ---------- */
+
+/* Jump links under the page title: three places on one page, each a 44px target. */
+.bd-pagehead__facts .bd-chips {
+  margin-block-start: var(--spacing-sm);
+}
+
+/* The hotel beside its terms: words on the left, the rate, the date and the button on the right. */
+.bd-travel__stay {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.bd-travel__hotel {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+}
+
+.bd-travel__block {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-neutral);
+  border-block-start: 2px solid var(--color-gold);
+}
+
+.bd-travel__terms {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-md);
+  margin: 0;
+}
+
+.bd-travel__block .bd-btn {
+  inline-size: 100%;
+  justify-content: center;
+}
+
+.bd-travel__nearby {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.bd-travel__hotels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The airports beside the search: where to fly into, then the form that searches it. */
+.bd-travel__flights {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
 .bd-travel__airports {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-content: start;
   gap: var(--spacing-lg);
+}
+
+.bd-travel__airport {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-block-start: var(--spacing-md);
+  border-block-start: var(--bd-gold-hair);
+}
+
+.bd-travel__airport > p:not([class]) {
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-travel__search {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+/* Getting around: four ways, each a term and its answer, two across on a wide screen. */
+.bd-travel__ways {
+  display: grid;
+  gap: 0 var(--spacing-2xl);
+  margin: 0;
+}
+
+.bd-travel__way {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-xs);
+  padding-block: var(--spacing-md);
+  border-block-start: var(--bd-hair);
+}
+
+.bd-travel__way dt {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: 1.25;
+  color: var(--color-primary);
+}
+
+.bd-travel__way dd {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-travel__more {
+  display: grid;
+  gap: 0 var(--spacing-2xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-travel__more li {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--spacing-md);
+  border-block-start: var(--bd-hair);
+}
+
+@media (width >= 760px) {
+  .bd-travel__stay {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--spacing-2xl);
+  }
+
+  .bd-travel__flights {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--spacing-2xl);
+  }
+
+  .bd-travel__ways,
+  .bd-travel__more {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .bd-outlet__value {

@@ -41,7 +41,6 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
   venue,
   alternatives,
   facts,
-  sources,
   slots,
   tripHref,
   signedIn = false,
@@ -61,7 +60,6 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
           We recommend flying into O&apos;Hare (ORD). There is no wedding shuttle; take the CTA Blue Line &ldquo;L&rdquo; train into downtown. Visit the{' '}
           <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and service information.
         </p>
-        <p>Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.</p>
         <p>Midway (MDW) also serves Chicago with trains, taxis, and rideshare into downtown.</p>
         <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago&apos;s Union Station from cities throughout the country.</p>
         <p>By car: {CAA_PARKING_ARRIVAL_COPY} Parking rates and availability may change before the wedding.</p>
@@ -126,7 +124,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
               )
             }
           />
-        </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
+        </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Fguests%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
         {venue.block ? (
           <Prose>
             {venue.block.url ? (
@@ -217,7 +215,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
 
     <Section id="make-a-trip" labelledBy="make-a-trip-title">
       <SectionHeading level={2} id="make-a-trip-title" title="Make a trip of it" />
-      <Prose><p>Planning extra time in the city? We’d love for you to enjoy Chicago while you’re here.</p><p><Link standalone href={signedIn ? '/share-an-adventure' : '/sign-in?next=%2Fshare-an-adventure'}>Explore our Chicago guide and map →</Link></p><p>We’re so grateful you’re making the trip to celebrate with us and can’t wait to make wonderful memories together!</p></Prose>
+      <Prose><p>Planning extra time in the city? We’d love for you to enjoy Chicago while you’re here.</p><p><Link standalone href="/guests/things-to-do">Explore our Chicago guide and map →</Link></p><p>We’re so grateful you’re making the trip to celebrate with us and can’t wait to make wonderful memories together!</p></Prose>
     </Section>
 
     <Section id="getting-around" labelledBy="around-title">
@@ -230,7 +228,7 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
           The CTA &ldquo;L&rdquo; and buses run downtown and to the airports. Visit the{' '}
           <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and fares.
         </p>
-        <p>Taxis and rideshares serve the hotel; rideshare pickup details are coming soon. Uber can take you from the airport to the hotel.</p>
+        <p>Taxis and rideshares serve the hotel.</p>
         <p>
           Accessibility and transit directions are on the{" "}
           <Link href={facts.venue.faqUrl} external>
@@ -241,9 +239,6 @@ export const GildedTravelPage: ContentRecipe<TravelProps> = ({
         <p>
           <Link href={tripHref} standalone>Your trip →</Link>
         </p>
-      </Prose>
-      <Prose>
-        <p>Based on: {sources.map((c) => c.title).join(" · ")}.</p>
       </Prose>
     </Section>
   </Shell>

@@ -50,13 +50,15 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/phone', '/claim/ver
  * with on a phone — rendered on every route below and passed CI from the day it landed. The
  * chrome is the same on all of them, so one pass over both designs catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/privacy', '/terms'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/privacy', '/terms'] as const;
 
 /**
- * Behind the signed-in account menu: the RSVP, two of its per-part pages, the three pages a guest
- * plans their weekend from, the registry and the photos.
+ * Behind sign-in: the dashboard, Travel & Stay, the venue, the RSVP and two of its per-part pages,
+ * the trip, the ride page (which sends a guest without a ride benefit on to Travel & Stay), the
+ * registry and the photos. Everything that says when or where the wedding is lives here; a
+ * signed-out reader is sent to sign in, and a walk of the door would measure nothing.
  */
-const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation', '/gifts', '/photos'] as const;
+const GUEST_ROUTES = ['/guests', '/guests/travel', '/our-venue', '/rsvp', '/rsvp/attending', '/rsvp/meals', '/trip', '/transportation', '/gifts', '/photos'] as const;
 
 /** The console. One per family of screens, plus the index; `admin-console.spec.ts` walks all 21. */
 const ADMIN_ROUTES = ['/admin', '/admin/audit', '/admin/jobs', '/admin/flags', '/admin/guests', '/admin/invitations', '/admin/events', '/admin/rsvp', '/admin/content', '/admin/travel', '/admin/media', '/admin/ai'] as const;
@@ -106,7 +108,7 @@ type Size = { px: number; where: string; sample: string };
  * guest has to read or operate takes `control-caps` at 1rem instead, which is what level 16 added
  * the style for. This is the one exception, named, rather than a blanket tolerance.
  */
-const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
+const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bdash-kicker\b|\bbd-card__label\b/;
 
 /** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
 const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required|Not part of your access/;
@@ -126,12 +128,14 @@ const GATE = /is for invited guests|is not on your invitation|Open the link from
  *
  * These are the same three checks the family walks above already make, in one place.
  */
-async function floorWalk(page: Page, routes: readonly string[], theme?: string): Promise<string[]> {
+async function floorWalk(page: Page, routes: readonly string[], theme?: string, behindSignIn = false): Promise<string[]> {
   const under: string[] = [];
   for (const route of routes) {
     const url = theme ? `${route}?theme=${theme}` : route;
     const response = await page.goto(url);
     expect(response?.status(), `${url} did not render`).toBeLessThan(400);
+    // A signed-out reader of a guest page is sent to the sign-in door, and the door is not the page.
+    if (behindSignIn) await expect(page, `${url} was sent to the sign-in door, so nothing on it was measured`).not.toHaveURL(/\/sign-in(?:$|[?/])/);
     await expect(
       page.getByText(GATE),
       `${url} rendered a sign-in gate, so nothing on it was measured. This spec needs the test server CI starts (NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET); a plain \`npm run dev\` gates every signed-in route`,
@@ -239,7 +243,7 @@ test.describe('the 17px floor', () => {
     test(`the guest routes · ${theme}`, async ({ browser }) => {
       const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
       const page = await ctx.newPage();
-      expect(await floorWalk(page, GUEST_ROUTES, theme), 'text under PRODUCT.md’s 17px floor').toEqual([]);
+      expect(await floorWalk(page, GUEST_ROUTES, theme, true), 'text under PRODUCT.md’s 17px floor').toEqual([]);
       await ctx.close();
     });
   }

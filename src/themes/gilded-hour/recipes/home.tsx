@@ -2,10 +2,10 @@ import type { HomeData, HomeSection } from '@/themes/types';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
 import { kit } from '../kit';
 
-const { Shell, Hero, Section, SectionHeading, Prose, Button, Stat, Timeline, MapHandoff, Text } = kit;
+const { Shell, Hero, Section, SectionHeading, Prose, Button, Text } = kit;
 
 /** Home as five numbered acts on one axis: the hero is a monument, each act opens the same way. */
-function Act({ section, index, data }: { section: HomeSection; index: number; data: HomeData }) {
+function Act({ section, index }: { section: HomeSection; index: number }) {
   const grounds: NonNullable<Parameters<typeof Section>[0]['ground']>[] = ['default', 'alt', 'default', 'wash', 'default', 'alt'];
   const ground = section.act === 'now' ? 'wash' : section.act === 'thanks' ? 'inverse' : grounds[index % grounds.length];
   const headingId = `${section.id}-title`;
@@ -17,15 +17,6 @@ function Act({ section, index, data }: { section: HomeSection; index: number; da
           <Text copy={section.body} />
         </p>
       </Prose>
-      {section.facts?.length ? (
-        <dl className="gh-stats">
-          {section.facts.map((f) => (
-            <Stat key={f.label} {...f} />
-          ))}
-        </dl>
-      ) : null}
-      {section.timeline ? <Timeline events={section.timeline} timezone={data.site.date.timezone} label={section.title} nowId={data.lifecycle.state === 'WEDDING_DAY' ? section.timeline[0]?.id : null} /> : null}
-      {section.map ? <MapHandoff venue={data.site.venue} /> : null}
       {section.link ? (
         <p className="gh-section__action">
           <Button variant={section.link.variant ?? 'secondary'} href={section.link.href} provider={section.link.provider}>
@@ -40,7 +31,7 @@ function Act({ section, index, data }: { section: HomeSection; index: number; da
 export function GildedHomePage(data: HomeData) {
   return (
     <Shell frame={data} banner={<PreviewBanner lifecycle={data.lifecycle} />}>
-      <Hero content={data.content} site={data.site} countdown={data.countdown} state={data.lifecycle.state} />
+      <Hero content={data.content} site={data.site} state={data.lifecycle.state} />
       {data.lifecycle.mode === 'explore' ? (
         <Section id="welcome" labelledBy="welcome-title">
           <SectionHeading level={2} id="welcome-title" title="Rooted in love. Surrounded by peace. Filled with happiness." />
@@ -48,12 +39,12 @@ export function GildedHomePage(data: HomeData) {
             <p>We’re so happy you’re here! We believe life’s greatest joys are found in the people we love, the moments we share, and the memories we make along the way.</p>
             <p>We hope our wedding is a reflection of these things and a chance to slow down, be present, and celebrate the happiness that comes from being together. We’re so grateful to have you in our lives.</p>
             <p>With love,<br />Sara &amp; Tyler</p>
-            <p><Button href="/sign-in?next=%2Fyour-weekend" variant="secondary">Sign in for your guest experience</Button></p>
+            <p><Button href="/sign-in?next=%2Fguests" variant="secondary">Sign in for your guest experience</Button></p>
           </Prose>
         </Section>
       ) : null}
       {data.content.sections.map((s, i) => (
-        <Act key={s.id} section={s} index={i} data={data} />
+        <Act key={s.id} section={s} index={i} />
       ))}
     </Shell>
   );

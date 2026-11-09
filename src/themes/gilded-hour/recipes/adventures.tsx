@@ -25,7 +25,7 @@ export const GildedAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, act
         )}
         <Prose>
           <p className="gh-muted gh-ledger__foot">
-            {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.share}>Share an Adventure</Link>.
+            {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.guestThings}>Share an Adventure</Link>.
           </p>
         </Prose>
       </Section>

@@ -16,7 +16,6 @@ import type {
 } from '@/domain/content/views';
 import type { Citation } from '@/contracts/provenance';
 import type { HotelRecommendation } from '@/domain/travel';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import type { PageFrame } from './types';
 
 /*
@@ -53,9 +52,6 @@ export interface OurVenueProps {
 }
 export interface VenueSpaceProps {
   data: VenueRoomData;
-}
-export interface WeddingProps {
-  data: WeddingPageData;
 }
 export interface AskProps {
   faq: FaqPageData;
@@ -132,7 +128,6 @@ export interface ContentRecipes {
   recommendation: ContentRecipe<RecommendationProps>;
   ourVenue: ContentRecipe<OurVenueProps>;
   venueSpace: ContentRecipe<VenueSpaceProps>;
-  wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;
   travel: ContentRecipe<TravelProps>;
   gifts: ContentRecipe<GiftsProps>;

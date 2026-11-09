@@ -20,6 +20,9 @@ test('guest travel search forms prefill from household address and party size', 
   await page.goto('/guests/travel');
   const flights = page.locator('form').filter({ has: page.locator('input[name="kind"][value="flights"]') });
   const hotels = page.locator('form').filter({ has: page.locator('input[name="kind"][value="hotels"]') });
+  // The hotel-rate search sits in a disclosure under "Where to stay": open it, as a guest would.
+  await page.locator('#stay details > summary').filter({ hasText: 'Compare rates at other hotels nearby' }).click();
+  await expect(hotels.getByLabel('Check in')).toBeVisible();
   await expect(flights.getByLabel('Flying from')).toHaveValue('LAX');
   await expect(flights.getByLabel('Flying to')).toHaveValue('ORD');
   await expect(flights.getByLabel('Depart', { exact: true })).toHaveValue('2027-07-16');

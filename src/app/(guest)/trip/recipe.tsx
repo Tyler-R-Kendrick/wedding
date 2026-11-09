@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { GuestCard, GuestSection } from '@/themes/guest';
 import type { ThemeId } from '@/themes/types';
 import Link from 'next/link';
-import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
+import type { PageRecipe } from '@/app/(guest)/guests/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
 import { throughSignIn } from '@/domain/lifecycle/account';
 import { formatChicagoDateTime, formatChicagoTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
@@ -152,7 +152,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and whoever answers for you can see this.</p>
         <nav className="guest-next" aria-label="Plan your trip">
           <a className={`${BUTTON} bg-primary text-neutral`} href="#add">Add to your agenda</a>
-          <Link className="guest-text-link" href="/share-an-adventure">Explore Chicago →</Link>
+          <Link className="guest-text-link" href="/guests/things-to-do">Explore Chicago →</Link>
         </nav>
       </header>
       {notice ? (
@@ -223,7 +223,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
                 <p className="mt-1">
                   {/* `Link` since level 05 merged: /share-an-adventure is a real route now, so this
                       is client-side navigation and gets prefetched, not a full document load. */}
-                  <Link className="inline-flex min-h-11 items-center underline underline-offset-4" href="/share-an-adventure">
+                  <Link className="inline-flex min-h-11 items-center underline underline-offset-4" href="/guests/things-to-do">
                     See what we suggest for this window
                   </Link>
                 </p>
@@ -255,7 +255,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
           <p>The block details (link, rate, dates, cutoff) are still coming from the planner. Travel &amp; Stay will update as soon as they are confirmed.</p>
         )}
         <p>
-          <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/travel#stay">
+          <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/guests/travel#stay">
             All the details on Travel &amp; Stay
           </a>
         </p>
@@ -284,7 +284,7 @@ export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
         ) : (
           'This page is for invited guests. Everything about getting here is on '
         )}
-        <a className="underline underline-offset-4" href="/travel">
+        <a className="underline underline-offset-4" href="/guests/travel">
           Travel &amp; Stay
         </a>
         .

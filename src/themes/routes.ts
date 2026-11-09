@@ -11,8 +11,9 @@ export const STATIC_PUBLIC_ROUTES = ['/'] as const;
 // `/gifts` shows Zelle and mailing details to a guest who arrived by invitation (ADR-0013), so a
 // cache must never hand one guest's render to the next visitor. `/photos` and `/media` are signed-in
 // only too (the account menu): a render carries that guest's albums and short-lived signed links.
-// `/transportation` and `/trip` render a guest's ride credit and travel plans.
-export const PERSONALIZED_ROUTE_PREFIXES = ['/your-weekend', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media', '/transportation', '/trip', '/travel', '/share-an-adventure', '/ask-us', '/guests'] as const;
+// `/transportation` and `/trip` render a guest's ride credit and travel plans. `/our-venue` is
+// where the wedding is, which only a signed-in reader is shown.
+export const PERSONALIZED_ROUTE_PREFIXES = ['/guests', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media', '/transportation', '/trip', '/our-venue'] as const;
 
 export function isStaticPublicRoute(pathname: string): boolean {
   return (STATIC_PUBLIC_ROUTES as readonly string[]).includes(pathname);

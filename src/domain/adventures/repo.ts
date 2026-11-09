@@ -113,7 +113,7 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   const memory = row.experienceId ? deps.memories.get(row.experienceId) : undefined;
   const operational = row.operationalKey ? deps.operational.get(row.operationalKey) : undefined;
-  const route = thingsToDoDetailPath(row.slug, ctx.principal);
+  const route = thingsToDoDetailPath(row.slug);
   const handoffs: RecommendationCard['handoffs'] = {};
   if (place) {
     const directions = directionsHandoff(place, { mode: row.category === 'day-trip' ? 'driving' : 'transit' });
@@ -149,12 +149,12 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   };
 }
 
-export function toRecommendationSummary(row: RecommendationRow, deps: RecommendationDeps, ctx: ReadContext): RecommendationSummary {
+export function toRecommendationSummary(row: RecommendationRow, deps: RecommendationDeps): RecommendationSummary {
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   return {
     id: row.id,
     slug: row.slug,
-    href: thingsToDoDetailPath(row.slug, ctx.principal),
+    href: thingsToDoDetailPath(row.slug),
     title: row.title,
     category: row.category,
     what: textBlock(row.what),
@@ -167,7 +167,7 @@ export function toRecommendationSummary(row: RecommendationRow, deps: Recommenda
 }
 
 export function recommendationCitation(row: RecommendationRow, ctx: ReadContext): Citation {
-  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug, ctx.principal), title: `Share an Adventure › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
+  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug), title: `Things to Do › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
 }
 
 export async function visibleRecommendations(ctx: ReadContext): Promise<RecommendationRow[]> {
@@ -199,7 +199,7 @@ export async function findRecommendations(ctx: ReadContext, opts: FindOptions = 
   }
   const limit = opts.limit ?? (ctx.surface === 'ui' ? 50 : 12);
   const cards = await Promise.all(rows.slice(0, limit).map((r) => toRecommendationCard(r, ctx, deps)));
-  const composable = rows.map((r) => ({ ...toRecommendationSummary(r, deps, ctx), interests: r.interests }));
+  const composable = rows.map((r) => ({ ...toRecommendationSummary(r, deps), interests: r.interests }));
   const composed = opts.maxMinutes ? composeItinerary(composable, { maxMinutes: opts.maxMinutes, interests: opts.interests, kids: opts.kids }) : undefined;
   const sources = dedupeCitations(rows.slice(0, limit).map((r) => recommendationCitation(r, ctx)));
   return { items: cards, plan: composed, sources };
@@ -346,7 +346,7 @@ export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, dep
   for (const s of row.stops) {
     const rec = recById.get(s.recommendationId);
     if (!rec) continue; // not visible to this principal, or removed
-    stops.push({ recommendation: toRecommendationSummary(rec, deps, ctx), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
+    stops.push({ recommendation: toRecommendationSummary(rec, deps), ...(s.minutes ? { minutes: s.minutes } : {}), ...(s.note ? { note: s.note } : {}) });
   }
   return {
     id: row.id,
@@ -361,7 +361,7 @@ export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, dep
     totalMinutes: totalMinutes(stops.map((s) => ({ minutes: s.minutes, durationMinutes: s.recommendation.durationMinutes }))),
     draft: row.draft,
     placeholder: row.placeholder,
-    provenance: toProvenanceView(row, { route: `${ROUTES.share}#${row.slug}`, sources: ctx.sources, now: ctx.now }),
+    provenance: toProvenanceView(row, { route: `${ROUTES.guestThings}#${row.slug}`, sources: ctx.sources, now: ctx.now }),
   };
 }
 
@@ -373,7 +373,7 @@ export async function listItineraries(ctx: ReadContext, opts: { bucket?: Itinera
   visible.sort((a, b) => order.indexOf(a.bucket) - order.indexOf(b.bucket));
   const itineraries = visible.map((r) => toItineraryView(r, ctx, deps, recById));
   const sources = dedupeCitations(
-    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.share}#${r.slug}`, title: `Share an Adventure › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
+    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.guestThings}#${r.slug}`, title: `Things to Do › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
   );
   return { itineraries, sources };
 }

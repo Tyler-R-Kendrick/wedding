@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { generatedImageCredits, licensedPhotoCredits, PROFESSIONAL_MEDIA_NOTE } from '@/domain/media/credits';
+import { publicPageContext } from '@/domain/content/page-context';
+import { mayKnowVenue, mentionsVenue } from '@/domain/content/venue-guard';
 import { ROUTES } from '@/domain/routes';
 import rights from '@/content/photo-rights.json';
 import { getTheme } from '@/themes';
@@ -14,9 +16,14 @@ export const metadata: Metadata = { title: 'Photo credits' };
  */
 export default async function CreditsPage() {
   const theme = await getRequestTheme();
-  const frame = await buildPageFrame({ theme, currentPath: '/credits' });
+  const { principal } = await publicPageContext();
+  const frame = await buildPageFrame({ theme, currentPath: '/credits', lifecycle: { principal } });
   const Shell = getTheme(theme).kit.Shell;
-  const photos = licensedPhotoCredits();
+  // A credit sits one step from its picture, and the pictures of the building are on the guests'
+  // pages. A signed-out reader is shown none of them, so their list carries none of those credits
+  // either: the file names alone say which building it is.
+  const signedIn = mayKnowVenue(principal);
+  const photos = licensedPhotoCredits().filter((p) => signedIn || !mentionsVenue(`${p.title} ${p.id.replace(/-/g, ' ')}`));
   const generated = generatedImageCredits();
   return (
     <Shell frame={frame}>
@@ -26,7 +33,9 @@ export default async function CreditsPage() {
           <h1 id="page-title" className="credits__title">
             Photo credits
           </h1>
-          <p className="credits__lede">The building and the city are shown in photographs their photographers share under open licences. Each is credited here, with its licence and a link to the original.</p>
+          <p className="credits__lede">
+            {signedIn ? 'The building and the city are shown' : 'Some of the places in these pages are shown'} in photographs their photographers share under open licences. Each is credited here, with its licence and a link to the original.
+          </p>
         </header>
 
         {/* The page each photo's embedded rights statement links to (src/content/photo-rights.json). */}
@@ -41,7 +50,7 @@ export default async function CreditsPage() {
 
         <section className="credits__section" aria-labelledby="credits-photos">
           <h2 id="credits-photos" className="credits__h2">
-            Photographs of the building and the city
+            {signedIn ? 'Photographs of the building and the city' : 'Photographs of places'}
           </h2>
           <ul className="credits__list">
             {photos.map((p) => (
@@ -89,14 +98,16 @@ export default async function CreditsPage() {
           </ul>
         </section>
 
-        <section className="credits__section" aria-labelledby="credits-pro">
-          <h2 id="credits-pro" className="credits__h2">
-            The wedding photographs and films
-          </h2>
-          <p>
-            {PROFESSIONAL_MEDIA_NOTE} They will be on <a href={ROUTES.photos}>Photos &amp; Video</a>.
-          </p>
-        </section>
+        {signedIn ? (
+          <section className="credits__section" aria-labelledby="credits-pro">
+            <h2 id="credits-pro" className="credits__h2">
+              The wedding photographs and films
+            </h2>
+            <p>
+              {PROFESSIONAL_MEDIA_NOTE} They will be on <a href={ROUTES.photos}>Photos &amp; Video</a>.
+            </p>
+          </section>
+        ) : null}
       </article>
     </Shell>
   );

@@ -96,7 +96,7 @@ export const GildedGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) => {
           ) : null}
           {pending ? (
             <p>
-              {data.copy.askIntro} <Link href={ROUTES.ask}>{data.copy.askLabel}</Link>.
+              {data.copy.askIntro} <Link href={ROUTES.guestAsk}>{data.copy.askLabel}</Link>.
             </p>
           ) : null}
           <p>{data.copy.thanks}</p>

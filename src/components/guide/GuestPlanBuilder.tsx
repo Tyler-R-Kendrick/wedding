@@ -8,7 +8,7 @@ import { CONTENT_COPY, INTEREST_OPTIONS, MINUTE_OPTIONS } from '@/themes/shared/
 /** Native choices keep planning quick, keyboard friendly and usable without JavaScript. */
 export function GuestPlanBuilder({ plan, theme }: { plan: GuideProps['plan']; theme: ThemeId }) {
   return (
-    <form className="guest-plan-builder" method="get" action={`${ROUTES.share}#plan-result`}>
+    <form className="guest-plan-builder" method="get" action={`${ROUTES.guestThings}#plan-result`}>
       <input type="hidden" name="theme" value={theme} />
       <p>A little free time or a whole afternoon? Start with what sounds good.</p>
       <fieldset className="guest-choices">

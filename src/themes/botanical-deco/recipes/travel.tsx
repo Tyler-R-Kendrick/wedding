@@ -1,6 +1,5 @@
 import { formatLongDate } from "@/domain/travel";
 import {
-  CAA_BOOKING_LINK_LABEL,
   CAA_BOOKING_PHONE,
   CAA_BOOKING_PHONE_REFERENCE,
   CAA_PARKING_ARRIVAL_COPY,
@@ -12,241 +11,219 @@ import type { ContentRecipe, TravelProps } from "@/themes/content-types";
 import { PreviewBanner } from "@/themes/shared/PreviewBanner";
 import { kit } from "../kit";
 
-const {
-  Shell,
-  Section,
-  SectionHeading,
-  Prose,
-  Link,
-  Card,
-  Stat,
-  Placeholder,
-  content,
-} = kit;
-const { PageHead } = content;
+const { Shell, Section, SectionHeading, Prose, Link, Button, Card, Stat, Placeholder, content } = kit;
+const { PageHead, Chips } = content;
 
 /**
- * Travel & Stay, Botanical Hour.
+ * Travel & Stay, Botanical Hour: one page for the whole trip, in the order a guest books it.
  *
- * What differs from Conservatory is the kit and the grounds: deco plaques, stepped frames and a
- * symmetrical spine here; specimen labels, a sky wash and asymmetry there. The information
- * architecture is deliberately the same in both — airports, stay, flights, rates, getting around —
- * because a guest comparing designs should find the page, not learn a new one.
+ * **Stay, then flights, then getting around.** The room block is first because it is the first thing
+ * to do and the only one with a deadline. Each fact is said once: the earlier page told a guest to
+ * fly into O'Hare and take the Blue Line in three separate sections, and described the valet twice.
  *
- * Stated plainly because an earlier version of this comment did not: this is one IA in two
- * expressions, not two compositions. A first design review called that out, and making the two
- * pages structurally different is the next round's work, not something to claim here.
+ * **Every section uses the page's width.** The earlier page set every paragraph in one 33rem column
+ * down the left of a 1200px frame and left the other half empty, which read as an image that had not
+ * loaded. Here a section's title sits in a narrow left rail and its content fills the rest
+ * (`layout="split"`); within the content, words sit beside the thing they are about — the hotel
+ * beside its rate and booking button, the airports beside the search form. On a phone it is one
+ * column, in the same order.
+ *
+ * Nothing here promises what is not decided: there is no line about ride pickup points or ride
+ * benefits. If one is settled it is added to "Getting around" then.
  */
-export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({
-  venue,
-  alternatives,
-  facts,
-  sources,
-  slots,
-  tripHref,
-  signedIn = false,
-  frame,
-}) => (
-  <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
-    <PageHead
-      eyebrow="Travel & Stay"
-      title="Getting to Chicago"
-      lede="We know many of you will be traveling to join us, and we’re grateful you’re making the trip. Here’s some helpful information to make planning your stay a little easier. We’ll add more details as our plans come together."
-    />
+export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alternatives, facts, slots, tripHref, frame }) => {
+  const block = venue.block && !venue.block.placeholder ? venue.block : null;
+  const [recommended, ...otherAirports] = facts.airports;
+  return (
+    <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
+      <PageHead
+        eyebrow="Travel & Stay"
+        title="Plan your trip"
+        lede="We’re grateful you’re making the trip. Here is where to stay, how to get here, and how to get around once you land."
+      >
+        <Chips
+          label="On this page"
+          items={[
+            { label: "Where to stay", href: "#stay" },
+            { label: "Flights", href: "#flights" },
+            { label: "Getting around", href: "#getting-around" },
+          ]}
+        />
+      </PageHead>
 
-    <Section id="arriving" labelledBy="arriving-title">
-      <SectionHeading level={2} id="arriving-title" title="Getting to Chicago" />
-      <Prose>
-        <p>
-          We recommend flying into O&apos;Hare (ORD). There is no wedding shuttle; take the CTA Blue Line &ldquo;L&rdquo; train into downtown. Visit the{' '}
-          <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and service information.
-        </p>
-        <p>Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.</p>
-        <p>Midway (MDW) also serves Chicago with trains, taxis, and rideshare into downtown.</p>
-        <p>By train: <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago&apos;s Union Station from cities throughout the country.</p>
-        <p>By car: {CAA_PARKING_ARRIVAL_COPY} Parking rates and availability may change before the wedding.</p>
-        <p><Link standalone href={tripHref}>{signedIn ? 'Your guest travel details and weekend plans →' : 'Sign in for guest booking details and your weekend plans →'}</Link></p>
-      </Prose>
-    </Section>
-
-    <Section id="airports" labelledBy="airports-title">
-      <SectionHeading
-        level={2}
-        id="airports-title"
-        title="Two airports serve Chicago"
-      />
-      <div className="bd-travel__airports">
-        {facts.airports.map((a) => (
-          <Card key={a.code} title={a.name} headingLevel={3} label={a.code}>
-            <Prose>{a.note ? <p>{a.note}</p> : null}</Prose>
-          </Card>
-        ))}
-      </div>
-      {facts.airports[0]?.pending ? (
-        <p>
-          <Placeholder todo={facts.airports[0].pending} />
-        </p>
-      ) : null}
-    </Section>
-
-    <Section id="stay" ground="alt" labelledBy="stay-title">
-      <SectionHeading level={2} id="stay-title" title="Where to stay" />
-      <Card title={venue.name} headingLevel={3} featured>
-        <Prose>
-          <p>{CAA_STAY_INTRO}</p>
-          {venue.address ? <p>{venue.address}</p> : facts.venue.address ? <p>{facts.venue.address}</p> : null}
-          <p>The wedding is here, so staying here means no travel on the day.</p>
-        </Prose>
-        {venue.block ? <dl className="bd-stats">
-          <Stat
-            label="Group rate"
-            value={
-              venue.block?.rateText ?? <Placeholder todo="the group rate" />
-            }
-          />
-          <Stat
-            label="Book by"
-            value={
-              venue.block?.cutoff ? (
-                formatLongDate(venue.block.cutoff)
-              ) : (
-                <Placeholder todo="the date to book by" />
-              )
-            }
-          />
-          <Stat
-            label="Block dates"
-            value={
-              venueBlockDatesLabel(venue.block) ?? (
-                venue.block?.checkIn && venue.block?.checkOut ? (
-                  `${formatLongDate(venue.block.checkIn)} to ${formatLongDate(venue.block.checkOut)}`
-                ) : (
-                  <Placeholder todo="the block dates" />
-                )
-              )
-            }
-          />
-        </dl> : <Prose>{signedIn ? <p>Room-block details are being confirmed. We’ll share the booking information here when it is ready.</p> : <p><Link standalone href="/sign-in?next=%2Ftravel">Sign in for room-block details as they are confirmed →</Link></p>}</Prose>}
-        {venue.block ? (
-          <Prose>
-            {venue.block.url ? (
+      <Section id="stay" ground="alt" labelledBy="stay-title" layout="split">
+        <SectionHeading level={2} id="stay-title" title="Where to stay" />
+        <div className="bd-travel__stay">
+          <div className="bd-travel__hotel">
+            <h3 className="bd-h bd-h--3">{venue.name}</h3>
+            <Prose>
+              <p>{CAA_STAY_INTRO} The wedding is here, so staying here means no travel on the day.</p>
+              <p className="bd-muted">{venue.address ?? facts.venue.address}</p>
+              <p>{CAA_UPGRADES_COPY}</p>
               <p>
-                <Link href={venue.block.url} external standalone>
-                  {CAA_BOOKING_LINK_LABEL}
+                <Link href={facts.venue.url} external standalone>
+                  Visit the hotel website
                 </Link>
               </p>
-            ) : null}
-            <p>
-              Or call {CAA_BOOKING_PHONE} (reference &ldquo;{CAA_BOOKING_PHONE_REFERENCE}&rdquo;).
-            </p>
-          </Prose>
-        ) : null}
-        <Prose><p>{CAA_UPGRADES_COPY}</p></Prose>
-        <p>
-          <Link href={facts.venue.url} external standalone>
-            Visit the hotel website
-          </Link>
-        </p>
-      </Card>
-
-      <SectionHeading level={3} title="Nearby, hand-picked" />
-      {alternatives.length ? (
-        <ul className="list list--plain">
-          {alternatives.map((h) => (
-            <li key={h.id}>
-              <Card title={h.name} headingLevel={4}>
-                <Prose>
-                  {h.walkMinutesToVenue ? (
-                    <p>{h.walkMinutesToVenue} minutes on foot.</p>
-                  ) : null}
-                  {h.reasons.length ? (
-                    <ul>
-                      {h.reasons.map((r, i) => (
-                        <li key={i}>{r.text}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {h.placeholder ? (
-                    <p>
-                      <Placeholder todo="the details for this one" />
-                    </p>
-                  ) : null}
-                </Prose>
-                {h.bookingUrl ? (
+            </Prose>
+          </div>
+          <aside className="bd-travel__block" aria-label="Our room block">
+            {block ? (
+              <>
+                <dl className="bd-stats bd-travel__terms">
+                  <Stat label="Group rate" value={block.rateText ?? <Placeholder todo="the group rate" />} />
+                  <Stat label="Book by" value={block.cutoff ? formatLongDate(block.cutoff) : <Placeholder todo="the date to book by" />} />
+                  <Stat
+                    label="Nights"
+                    value={
+                      venueBlockDatesLabel(block) ??
+                      (block.checkIn && block.checkOut ? `${formatLongDate(block.checkIn)} to ${formatLongDate(block.checkOut)}` : <Placeholder todo="the block dates" />)
+                    }
+                  />
+                </dl>
+                {block.url ? (
                   <p>
-                    <Link href={h.bookingUrl} external standalone>
-                      Check rates
-                    </Link>
+                    <Button variant="primary" href={block.url}>
+                      Book in our room block
+                    </Button>
                   </p>
                 ) : null}
-              </Card>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <Prose>
-          <p>
-            We are still confirming a few nearby options at different prices.{" "}
-            <Placeholder todo="which hotels we recommend nearby" />
-          </p>
-        </Prose>
-      )}
-      {/* "We list why we picked each place" sat outside the ternary, so with no hotels configured
-          it rendered directly under "we are still confirming a few nearby options" — a present-tense
-          description of a list that does not exist. It belongs with the list it describes. */}
-      {alternatives.length ? (
-        <Prose>
-          <p>
-            We list why we picked each place (walk time, staffed desk, family
-            suites, price, step-free route, transit). We do not rate safety;
-            please use your own judgement.
-          </p>
-        </Prose>
-      ) : null}
-    </Section>
+                <p className="bd-muted">
+                  Or call {CAA_BOOKING_PHONE} and mention “{CAA_BOOKING_PHONE_REFERENCE}”.
+                </p>
+              </>
+            ) : (
+              <p>Room-block details are being confirmed. The booking information will appear here when it is ready.</p>
+            )}
+          </aside>
+        </div>
 
-    <Section id="flights" labelledBy="flights-title">
-      <SectionHeading level={2} id="flights-title" title="Search flights" />
-      {slots.flightSearch}
-    </Section>
+        {alternatives.length ? (
+          <div className="bd-travel__nearby">
+            <h3 className="bd-h bd-h--3">Other hotels close by</h3>
+            <ul className="bd-travel__hotels">
+              {alternatives.map((h) => (
+                <li key={h.id}>
+                  <Card title={h.name} headingLevel={4}>
+                    <Prose>
+                      {h.walkMinutesToVenue ? <p>{h.walkMinutesToVenue} minutes on foot.</p> : null}
+                      {h.reasons.length ? (
+                        <ul>
+                          {h.reasons.map((r, i) => (
+                            <li key={i}>{r.text}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {h.placeholder ? (
+                        <p>
+                          <Placeholder todo="the details for this one" />
+                        </p>
+                      ) : null}
+                    </Prose>
+                    {h.bookingUrl ? (
+                      <p>
+                        <Link href={h.bookingUrl} external standalone>
+                          Check rates
+                        </Link>
+                      </p>
+                    ) : null}
+                  </Card>
+                </li>
+              ))}
+            </ul>
+            <p className="bd-muted">We list why we picked each place. We do not rate safety; please use your own judgement.</p>
+          </div>
+        ) : null}
 
-    <Section id="hotel-rates" ground="alt" labelledBy="rates-title">
-      <SectionHeading level={2} id="rates-title" title="Check hotel rates" />
-      {slots.hotelSearch}
-    </Section>
+        <details className="guest-disclosure bd-travel__compare">
+          <summary>Compare rates at other hotels nearby</summary>
+          <div className="guest-disclosure__body">{slots.hotelSearch}</div>
+        </details>
+      </Section>
 
-    <Section id="make-a-trip" labelledBy="make-a-trip-title">
-      <SectionHeading level={2} id="make-a-trip-title" title="Make a trip of it" />
-      <Prose><p>Planning extra time in the city? We’d love for you to enjoy Chicago while you’re here.</p><p><Link standalone href={signedIn ? '/share-an-adventure' : '/sign-in?next=%2Fshare-an-adventure'}>Explore our Chicago guide and map →</Link></p><p>We’re so grateful you’re making the trip to celebrate with us and can’t wait to make wonderful memories together!</p></Prose>
-    </Section>
+      <Section id="flights" labelledBy="flights-title" layout="split">
+        <SectionHeading level={2} id="flights-title" title="Flights" />
+        <div className="bd-travel__flights">
+          <div className="bd-travel__airports">
+            {recommended ? (
+              <div className="bd-travel__airport">
+                <p className="bd-eyebrow">
+                  {recommended.code} · Recommended
+                </p>
+                <h3 className="bd-h bd-h--3">{recommended.name}</h3>
+                {recommended.note ? <p>{recommended.note}</p> : null}
+                {recommended.pending ? (
+                  <p>
+                    <Placeholder todo={recommended.pending} />
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {otherAirports.map((a) => (
+              <div key={a.code} className="bd-travel__airport">
+                <p className="bd-eyebrow">{a.code}</p>
+                <h3 className="bd-h bd-h--3">{a.name}</h3>
+                {a.note ? <p>{a.note}</p> : null}
+              </div>
+            ))}
+            <p className="bd-muted">
+              Coming by train? <Link href="https://www.amtrak.com/" external>Amtrak</Link> serves Chicago’s Union Station from cities across the country.
+            </p>
+          </div>
+          <div className="bd-travel__search">
+            <h3 className="bd-h bd-h--3">Search flights</h3>
+            {slots.flightSearch}
+          </div>
+        </div>
+      </Section>
 
-    <Section id="getting-around" labelledBy="around-title">
-      <SectionHeading level={2} id="around-title" title="Getting around" />
-      <Prose>
-        <p>
-          Valet entrance: {facts.venue.valetEntrance}. {facts.venue.valetNote}
-        </p>
-        <p>
-          The CTA &ldquo;L&rdquo; and buses run downtown and to the airports. Visit the{' '}
-          <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> for routes and fares.
-        </p>
-        <p>Taxis and rideshares serve the hotel; rideshare pickup details are coming soon. Uber can take you from the airport to the hotel.</p>
-        <p>
-          Accessibility and transit directions are on the{' '}
-          <span className="bd-nowrap">
-            <Link href={facts.venue.faqUrl} external>
-              hotel&rsquo;s FAQ page
+      <Section id="getting-around" ground="alt" labelledBy="around-title" layout="split">
+        <SectionHeading level={2} id="around-title" title="Getting around" />
+        <dl className="bd-travel__ways">
+          <div className="bd-travel__way">
+            <dt>Trains and buses</dt>
+            <dd>
+              The CTA “L” and buses run downtown and to both airports; the Blue Line connects O’Hare to the Loop. Routes and fares are on the{" "}
+              <Link href="https://www.transitchicago.com/" external>Chicago Transit Authority</Link> site.
+            </dd>
+          </div>
+          <div className="bd-travel__way">
+            <dt>Taxis and rideshare</dt>
+            <dd>Taxis and rideshares serve both airports and the hotel.</dd>
+          </div>
+          <div className="bd-travel__way">
+            <dt>Driving and parking</dt>
+            <dd>{CAA_PARKING_ARRIVAL_COPY} Rates and availability may change before the wedding.</dd>
+          </div>
+          <div className="bd-travel__way">
+            <dt>Accessibility</dt>
+            <dd>
+              Step-free routes and transit directions are on the{" "}
+              <span className="bd-nowrap">
+                <Link href={facts.venue.faqUrl} external>hotel’s FAQ page</Link>.
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </Section>
+
+      <Section id="make-a-trip" labelledBy="make-a-trip-title" layout="split">
+        <SectionHeading level={2} id="make-a-trip-title" title="Make a trip of it" />
+        <ul className="bd-travel__more">
+          <li>
+            <Link standalone href="/guests/things-to-do">
+              Our Chicago guide and map
             </Link>
-            .
-          </span>
-        </p>
-        <p>
-          <Link href={tripHref} standalone>Your trip →</Link>
-        </p>
-      </Prose>
-      <Prose>
-        <p>Based on: {sources.map((c) => c.title).join(" · ")}.</p>
-      </Prose>
-    </Section>
-  </Shell>
-);
+            <span className="bd-muted">Our favorite places, and a plan for a free afternoon.</span>
+          </li>
+          <li>
+            <Link standalone href={tripHref}>
+              Keep your plans in one place
+            </Link>
+            <span className="bd-muted">Add your flights and hotel so we can help if plans change.</span>
+          </li>
+        </ul>
+      </Section>
+    </Shell>
+  );
+};

@@ -6,7 +6,8 @@ import { seedId } from '@/db/seed/sources';
  * Non-transactional transportation guidance. Facts come only from docs/design/brief.md §2
  * (venue address; valet entrance 71 E Madison, accessibility and transit directions on the
  * hotel FAQ; special event valet rate is a kit item to verify). Anything the couple have not
- * decided is a TODO(Tyler & Sara), never a plausible guess (backlog X-02, X-06, P-05).
+ * decided is left out until they do: nothing here promises a ride benefit or a pickup point
+ * (backlog X-02, X-06, P-05). When one is decided it is a topic added to this list.
  */
 export const BRIEF_SOURCE = seedId<ContentSourceId>(101);
 export const CAA_OFFICIAL_SOURCE = seedId<ContentSourceId>(103);
@@ -39,7 +40,6 @@ export const TRANSPORTATION_TOPICS: readonly TransportationTopic[] = [
     title: 'Arriving in Chicago',
     paragraphs: [
       'We recommend flying into O’Hare (ORD). There is no wedding shuttle; take the CTA Blue Line “L” train into downtown.',
-      'Rideshare pickup details at the airport are coming soon. Uber can take you from the airport to the hotel.',
       'Midway (MDW) also serves Chicago with trains, taxis, and rideshare.',
     ],
     directionsTo: 'venue',
@@ -64,7 +64,7 @@ export const TRANSPORTATION_TOPICS: readonly TransportationTopic[] = [
     title: 'Getting around: trains, buses, taxis',
     paragraphs: [
       'The CTA runs Chicago’s trains and buses, including the “L” around the Loop and to the airports.',
-      'Taxis and rideshares serve downtown; rideshare pickup details are coming soon.',
+      'Taxis and rideshares serve downtown and the hotel.',
       'The hotel publishes transit and accessibility directions on its FAQ page, including step-free routes into the building.',
     ],
     officialUrl: CAA_FAQ_URL,
@@ -73,20 +73,9 @@ export const TRANSPORTATION_TOPICS: readonly TransportationTopic[] = [
     verifiedAt: BRIEF_VERIFIED_AT,
     placeholder: false,
   },
-  {
-    id: 'getting-home',
-    title: 'Getting home after the reception',
-    paragraphs: [
-      'We want everyone home safely and without fuss. Eligible adult guests will find a ride benefit on this page once it is ready; the code or link is personal to you.',
-      'TODO(Tyler & Sara): ride benefit amount, area and validity (backlog P-05).',
-    ],
-    sourceId: BRIEF_SOURCE,
-    verifiedAt: BRIEF_VERIFIED_AT,
-    placeholder: true,
-  },
 ];
 
 export const TRANSPORTATION_CITATIONS: Citation[] = [
-  { sourceId: BRIEF_SOURCE, title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: BRIEF_VERIFIED_AT },
+  { sourceId: BRIEF_SOURCE, title: "Tyler's brief 2026-09-04", url: '/guests', verifiedAt: BRIEF_VERIFIED_AT },
   { sourceId: CAA_OFFICIAL_SOURCE, title: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/', verifiedAt: BRIEF_VERIFIED_AT },
 ];

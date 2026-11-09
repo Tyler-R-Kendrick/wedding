@@ -63,7 +63,7 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
     'the venue, the days remaining, the navigation for this stage, and the active and available visual designs. ' +
     'Use it to orient before answering questions about timing. It reads only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

@@ -113,7 +113,7 @@ describe('authoring markers never reach a guest', () => {
 describe('citations point at pages that exist', () => {
   // A citation is an invitation to go and check. A route that 404s, or that is not the page holding
   // the fact, is worse than no citation at all — and the table below is the only thing standing
-  // between a capability and `/ask-us`, the page the guest is already reading.
+  // between a capability and `/guests/ask-us`, the page the guest is already reading.
   it('every authored citation route is a real internal route', () => {
     for (const [capability, route] of Object.entries(HOME_ROUTE)) {
       expect((INTERNAL_ROUTES as readonly string[]).includes(route.split('#')[0]!), `${capability} -> ${route}`).toBe(true);
@@ -122,13 +122,13 @@ describe('citations point at pages that exist', () => {
 
   it('falls back to a single unambiguous source before falling back to Ask Us', () => {
     const unmapped = descriptor({ name: 'not_in_the_table', title: 'Something new' });
-    const one = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 's' as ContentSourceId, title: 'The chart', url: '/your-weekend' }] }), markers());
-    expect(one[0]!.citation.url).toBe('/your-weekend');
+    const one = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 's' as ContentSourceId, title: 'The chart', url: '/guests' }] }), markers());
+    expect(one[0]!.citation.url).toBe('/guests');
     expect(one[0]!.citation.title).toBe('Something new');
-    const many = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 'a' as ContentSourceId, title: 'A', url: '/travel' }, { sourceId: 'b' as ContentSourceId, title: 'B', url: '/gifts' }] }), markers());
-    expect(many[0]!.citation.url).toBe('/ask-us');
+    const many = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 'a' as ContentSourceId, title: 'A', url: '/guests/travel' }, { sourceId: 'b' as ContentSourceId, title: 'B', url: '/gifts' }] }), markers());
+    expect(many[0]!.citation.url).toBe('/guests/ask-us');
     const none = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [] }), markers());
-    expect(none[0]!.citation.url).toBe('/ask-us');
+    expect(none[0]!.citation.url).toBe('/guests/ask-us');
   });
 });
 

@@ -147,20 +147,23 @@ const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], current
 
 // `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
 // without a frame, and then it is the plain way in.
-function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
+function Footer({ site, details, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="cv-footer">
       <div className="cv-footer__inner">
         <p className="cv-footer__names">{site.coupleDisplayName}</p>
-        <p className="cv-footer__specimen">
-          <span>{site.date.long}</span>
-          <br />
-          {site.venue.name},{' '}
-          <a className="cv-link" href={site.venue.mapsUrl} rel="noopener">
-            {site.venue.address}
-            <ExternalMark provider={site.venue.mapsProvider} />
-          </a>
-        </p>
+        {/* When and where are the invited guests': a signed-out reader's footer is the two names. */}
+        {details ? (
+          <p className="cv-footer__specimen">
+            <span>{details.date.long}</span>
+            <br />
+            {details.venue.name},{' '}
+            <a className="cv-link" href={details.venue.mapsUrl} rel="noopener">
+              {details.venue.address}
+              <ExternalMark provider={details.venue.mapsProvider} />
+            </a>
+          </p>
+        ) : null}
         <p className="cv-footer__signin">
           <AccountMenu nav={nav} variant="link" classNames={{ link: 'cv-link cv-link--standalone', item: 'cv-link' }} />
         </p>
@@ -194,10 +197,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 function Shell({ frame, children, banner }: ShellProps) {
   const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
   const homeHref = frame.nav.homeHref ?? '/';
-  const printUrls = [
-    { label: 'Directions', url: frame.site.venue.mapsUrl },
-    ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
-  ];
+  const venue = frame.details?.venue;
+  const printUrls = venue ? [{ label: 'Directions', url: venue.mapsUrl }, ...(venue.url ? [{ label: venue.name, url: venue.url }] : [])] : [];
   return (
     <div className="site cv" data-theme="conservatory" data-bottom-bar={frame.nav.sticky.length ? '' : undefined} data-floating-menu="" data-lifecycle={frame.lifecycle.state}>
       <ThemeSync theme={"conservatory"} />
@@ -216,6 +217,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       </div>
       <Footer
         site={frame.site}
+        details={frame.details}
         switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="conservatory" themes={THEME_OPTIONS} /> : null}
         nav={frame.nav}
         rightsNote={RIGHTS_NOTE}
@@ -521,7 +523,7 @@ function Names({ text }: { text: string }) {
   );
 }
 
-function Hero({ content, site, countdown, state }: HeroProps) {
+function Hero({ content, state }: HeroProps) {
   const isToday = state === 'WEDDING_DAY';
   return (
     <section className="cv-hero" aria-labelledby="hero-title">
@@ -531,20 +533,10 @@ function Hero({ content, site, countdown, state }: HeroProps) {
         </h1>
         <p className="cv-hero__status">{content.eyebrow}.</p>
       </div>
-      <p className="cv-hero__tag">
-        <time dateTime={site.date.iso} className="cv-hero__date">
-          {site.date.long}
-        </time>
-        <span className="cv-hero__motif">{site.date.motif}</span>
-        <span className="cv-hero__place">
-          {site.venue.name}, {site.venue.city}
-        </span>
-      </p>
       <div className="cv-hero__rest">
         <p className="cv-hero__lede">
           <Text copy={content.lede} />
         </p>
-        {content.showCountdown ? <Countdown {...countdown} /> : null}
         <div className="cv-hero__actions">
           <Button variant={content.primary.variant ?? 'primary'} href={content.primary.href} provider={content.primary.provider}>
             {content.primary.label}
@@ -555,11 +547,6 @@ function Hero({ content, site, countdown, state }: HeroProps) {
             </Button>
           ) : null}
         </div>
-        {content.deadline ? (
-          <p className="cv-hero__deadline">
-            <Text copy={content.deadline} />
-          </p>
-        ) : null}
         {content.note ? (
           <p className="cv-hero__note">
             <Text copy={content.note} />

@@ -4,16 +4,16 @@
  * at a phone, a tablet and two desktop widths.
  *
  *   BASE_URL=http://localhost:3000 npm run slop:detect:rendered
- *   npm run slop:detect:rendered -- --viewports 390x844 --themes conservatory /gifts /travel
+ *   npm run slop:detect:rendered -- --viewports 390x844 --themes conservatory /gifts /guests/travel
  *
  * The source scan (`npm run slop:detect`, `check-design-drift.mjs`) reads CSS and JSX; it cannot
  * see a layout. The rendered scan can, and on 2026-09-23 it was the only check that found three
- * real bugs with everything else green: a nowrap provenance badge that pushed /share-an-adventure
- * off a 390px screen, an ivory script line reading 2.6:1 on the weekend photograph, and 89-102
+ * real bugs with everything else green: a nowrap provenance badge that pushed Things to Do (then
+ * /share-an-adventure) off a 390px screen, an ivory script line reading 2.6:1 on the weekend photograph, and 89-102
  * character lines in three designs. (impeccable itself says so: "Next.js project detected … scan via
  * URL for best results".)
  *
- * Guest routes render a sign-in gate to an anonymous browser, and a gate is not the page. With
+ * Guest routes send an anonymous browser to sign in (or render a gate), and that is not the page. With
  * TEST_AUTH_SECRET set (a NODE_ENV=test server started with SEED_TEST_FIXTURES=1, the way the e2e
  * suite runs), the scan goes through a loopback proxy that adds the fixture household's principal
  * headers, the same ones `tests/e2e/helpers/principal.ts` sends. Without it, guest routes are
@@ -36,8 +36,9 @@ import { classify, format } from './check-design-drift.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The same lists the 17px-floor walk uses (tests/e2e/typography.spec.ts). */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/travel', '/gifts', '/ask-us', '/photos', '/share-an-adventure', '/sign-in'];
-const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation'];
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/sign-in'];
+// Everything about the wedding is behind sign-in: an anonymous browser is sent to the door.
+const GUEST_ROUTES = ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/our-venue', '/rsvp', '/rsvp/attending', '/rsvp/meals', '/trip', '/transportation', '/gifts', '/photos'];
 const VIEWPORTS = ['390x844', '820x1180', '1280x800', '1440x900'];
 
 const argv = process.argv.slice(2);
@@ -52,7 +53,7 @@ const themes = opt('themes', [...THEME_IDS]);
 const base = (process.env.BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const secret = process.env.TEST_AUTH_SECRET;
 const routes = argv.length ? argv : [...PUBLIC_ROUTES, ...(secret ? GUEST_ROUTES : [])];
-if (!secret && !argv.length) console.log(`note: TEST_AUTH_SECRET is unset, so the ${GUEST_ROUTES.length} guest routes are skipped (they would render the sign-in gate).`);
+if (!secret && !argv.length) console.log(`note: TEST_AUTH_SECRET is unset, so the ${GUEST_ROUTES.length} guest routes are skipped (they would render the sign-in door).`);
 
 function browser() {
   if (process.env.IMPECCABLE_BROWSER) return process.env.IMPECCABLE_BROWSER;

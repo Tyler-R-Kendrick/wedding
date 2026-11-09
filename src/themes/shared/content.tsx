@@ -27,7 +27,7 @@ export const CONTENT_COPY = {
       eyebrow: 'The atlas',
       title: 'Everywhere it has taken us',
       pinned: (pinned: number, total: number) =>
-        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. It opens on Chicago around the venue; zoom out, or choose the globe, for everywhere else. Choose a pin to read about it, or find it in the list below.`,
+        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. It opens close to home; zoom out, or choose the globe, for everywhere else. Choose a pin to read about it, or find it in the list below.`,
       keyPin: 'An adventure, numbered as in the list',
       keyCluster: 'Several close together: choose it to zoom in',
       keyVenue: 'Where we are getting married',
@@ -137,7 +137,7 @@ export function adventureChips(data: AdventuresPageData, active: { tag?: string;
 }
 
 export function itineraryChips(data: ItinerariesData, activeBucket?: string): ChipItem[] {
-  return [{ href: ROUTES.share, label: 'All', active: !activeBucket }, ...data.buckets.map((b) => ({ href: `${ROUTES.share}?bucket=${b}`, label: humanize(b), active: activeBucket === b }))];
+  return [{ href: ROUTES.guestThings, label: 'All', active: !activeBucket }, ...data.buckets.map((b) => ({ href: `${ROUTES.guestThings}?bucket=${b}`, label: humanize(b), active: activeBucket === b }))];
 }
 
 export function groupByCategory(items: FindAdventuresData['items']): [string, RecommendationCard[]][] {
@@ -229,10 +229,10 @@ export function adventureFacts(data: AdventureDetail): { label: string; value: s
 export function labelForRoute(route: string): string {
   const base = route.split('#')[0] ?? route;
   const known: Record<string, string> = {
-    [ROUTES.wedding]: 'The Wedding',
+    [ROUTES.guestPortal]: 'your dashboard',
     [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
-    [ROUTES.travel]: 'Travel & Stay',
+    [ROUTES.guestTravel]: 'Travel & Stay',
     [ROUTES.gifts]: 'Gifts',
     '/rsvp': 'RSVP',
   };

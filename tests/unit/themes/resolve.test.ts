@@ -85,12 +85,20 @@ describe('routes', () => {
   it('knows which routes are static and which are personalized', () => {
     expect(isStaticPublicRoute('/')).toBe(true);
     expect(isStaticPublicRoute('/rsvp')).toBe(false);
-    expect(isPersonalizedRoute('/your-weekend')).toBe(true);
+    expect(isPersonalizedRoute('/guests')).toBe(true);
+    expect(isPersonalizedRoute('/guests/travel')).toBe(true);
     expect(isPersonalizedRoute('/rsvp/edit')).toBe(true);
     expect(isPersonalizedRoute('/i/abc')).toBe(true);
     // Zelle and mailing details render for invited guests only (ADR-0013), so no shared cache may keep it.
     expect(isPersonalizedRoute('/gifts')).toBe(true);
-    expect(isPersonalizedRoute('/ask-us')).toBe(true);
+    expect(isPersonalizedRoute('/guests/ask-us')).toBe(true);
+    // Where the wedding is, a guest's ride and their trip: signed-in only, so never from a shared cache.
+    expect(isPersonalizedRoute('/our-venue')).toBe(true);
+    expect(isPersonalizedRoute('/our-venue/white-city-ballroom')).toBe(true);
+    expect(isPersonalizedRoute('/transportation')).toBe(true);
+    expect(isPersonalizedRoute('/trip')).toBe(true);
+    expect(isPersonalizedRoute('/photos/guest-uploads')).toBe(true);
     expect(isPersonalizedRoute('/our-story')).toBe(false);
+    expect(isPersonalizedRoute('/our-adventures/starved-rock')).toBe(false);
   });
 });

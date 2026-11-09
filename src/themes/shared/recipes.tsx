@@ -105,8 +105,8 @@ export function createGenericRecipes(kit: ThemeComponentKit, opts: GenericRecipe
               </p>
             </Prose>
             {facts(s.facts)}
-            {s.timeline ? <Timeline events={s.timeline} timezone={d.site.date.timezone} label={s.heading} /> : null}
-            {s.map ? <MapHandoff venue={d.site.venue} /> : null}
+            {s.timeline && d.details ? <Timeline events={s.timeline} timezone={d.details.date.timezone} label={s.heading} /> : null}
+            {s.map && d.details ? <MapHandoff venue={d.details.venue} /> : null}
           </Section>
         ))}
       </Shell>

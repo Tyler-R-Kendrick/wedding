@@ -14,7 +14,6 @@ import { ConservatoryRecommendationPage } from './recommendation';
 import { ConservatoryStoryPage } from './story';
 import { ConservatoryTravelPage } from './travel';
 import { ConservatoryVenueSpacePage } from './venue-space';
-import { ConservatoryWeddingPage } from './wedding';
 
 export const recipes: ThemeRecipes = {
   home: ConservatoryHomePage,
@@ -30,7 +29,6 @@ export const content: ContentRecipes = {
   recommendation: ConservatoryRecommendationPage,
   ourVenue: ConservatoryOurVenuePage,
   venueSpace: ConservatoryVenueSpacePage,
-  wedding: ConservatoryWeddingPage,
   travel: ConservatoryTravelPage,
   gifts: ConservatoryGiftsPage,
   photos: ConservatoryPhotosPage,
