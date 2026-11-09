@@ -288,7 +288,9 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
     expect(r.value.data.alternatives).toEqual([]);
     expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
-    expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['CAA Wedding Kit 2027', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
+    expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['Travel › Our room block', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
+    // The venue's planning PDF is never named to a guest: the citation points at the page instead.
+    expect(JSON.stringify(r.value.sources)).not.toMatch(/Wedding Kit/i);
   });
 
   it('keeps blocks on alternative hotels private across all capability surfaces', async () => {

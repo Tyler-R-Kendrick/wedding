@@ -15,7 +15,7 @@ Counted from that module on 1 November 2026:
 
 That is 111 rows. 75 have `crawl: true`. The other 36 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
 
-The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. A signed-in guest who opens `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>`, or `/ask-us` is sent to the matching portal URL. An administrator stays on the legacy URL. `/guests` and `/guests/ask-us` show that administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `/sign-in/phone` is SMS sign-in when `FLAG_PHONE_SIGN_IN` is on (Twilio Verify, or the mock outside production); otherwise it redirects to `/sign-in`. The code is checked on `/claim/verify`. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
+The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. The older addresses `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>` and `/ask-us` are permanent redirects to the matching portal URL for everyone (the table below). `/guests` and `/guests/ask-us` show an administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `/sign-in/phone` is SMS sign-in when `FLAG_PHONE_SIGN_IN` is on (Twilio Verify, or the mock outside production); otherwise it redirects to `/sign-in`. The code is checked on `/claim/verify`. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
 
 ## The four readers
 
@@ -43,11 +43,13 @@ Permanent aliases live in `src/lib/site-redirects.ts`. `next.config.ts` serves t
 
 | From | To |
 |---|---|
-| `/explore-caa` | `/our-venue` |
-| `/explore-caa/:slug` | `/our-venue/:slug` |
-| `/faq` | `/ask-us` |
-| `/things-to-do` | `/share-an-adventure` |
-| `/wedding-day` | `/the-wedding` |
+| `/your-weekend` | `/guests` |
+| `/the-wedding` | `/guests` |
+| `/travel` | `/guests/travel` |
+| `/share-an-adventure` | `/guests/things-to-do` |
+| `/share-an-adventure/:slug` | `/guests/things-to-do/:slug` |
+| `/ask-us` | `/guests/ask-us` |
+| `/faq` | `/guests/ask-us` |
 | `/registry` | `/gifts` |
 
 Each is a 308. The browser keeps the fragment. The crawler asserts the status and the `Location` header before following. The dynamic venue alias is checked that way and is not opened as an HTML document.
@@ -69,8 +71,8 @@ A row the crawler does not call stays in the inventory so the admin page and the
 - the response is under 400
 - the first `h1` is not empty
 - a static redirect lands on its destination, and `/i/example` lands on `/invite/example`
-- a signed-in guest, and a view-role preview, land on `/guests/*` when the URL has a portal equivalent, and are not shown the guests-only gate there
-- an administrator stays on the legacy URL, sees the guests-only gate on `/ask-us`, `/guests`, and `/guests/ask-us`, and is not shown the administrator sign-in gate on an admin page
+- a signed-in guest, and a view-role preview, land on `/guests/*` from an older address, and are not shown the guests-only gate there
+- an administrator sees the guests-only gate on `/guests` and `/guests/ask-us`, and is not shown the administrator sign-in gate on an admin page
 - a view-role preview shows “View as:” with that role’s label on public and guest pages
 - axe-core reports no serious or critical violations (WCAG 2.2 AA tags)
 - the page adds no `pageerror` and no console error (the Next dev overlay and the favicon probe are ignored)

@@ -67,5 +67,10 @@ export const DEFAULT_VENUE_BLOCK: RoomBlock = {
 };
 
 export const BRIEF_CITATION: Citation = { sourceId: BRIEF_SOURCE_ID, title: "Tyler's brief 2026-09-04", url: '/guests', verifiedAt: BRIEF_VERIFIED_AT };
-export const CAA_KIT_CITATION: Citation = { sourceId: CAA_KIT_SOURCE_ID, title: 'CAA Wedding Kit 2027', verifiedAt: BRIEF_VERIFIED_AT };
+/**
+ * The room block's terms come from the venue's planning kit, a PDF the couple were sent. A guest
+ * cannot open it, so the citation names the page that says the same thing (the concierge prints
+ * this title under "Based on:"); the source id still points at the kit for the admin console.
+ */
+export const CAA_KIT_CITATION: Citation = { sourceId: CAA_KIT_SOURCE_ID, title: 'Travel › Our room block', url: '/guests/travel#stay', verifiedAt: BRIEF_VERIFIED_AT };
 export const CAA_SITE_CITATION: Citation = { sourceId: CAA_SITE_SOURCE_ID, title: 'chicagoathletichotel.com', url: VENUE.url, verifiedAt: BRIEF_VERIFIED_AT };

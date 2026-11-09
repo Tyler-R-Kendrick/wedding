@@ -51,8 +51,8 @@ driver, whether pgvector loaded, lifecycle state, and the mode of every provider
 Try a capability:
 
 ```bash
-curl -s localhost:3000/api/capabilities/site_status -H 'content-type: application/json' -d '{"input":{}}' | jq
-curl -s localhost:3000/api/capabilities/navigate_to -H 'content-type: application/json' -d '{"input":{"route":"/travel"}}' | jq
+curl -s localhost:3000/api/capabilities/get_story -H 'content-type: application/json' -d '{"input":{}}' | jq
+curl -s localhost:3000/api/capabilities/navigate_to -H 'content-type: application/json' -d '{"input":{"route":"/our-story"}}' | jq
 ```
 
 ## Tests

@@ -1,7 +1,7 @@
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { throughSignIn } from '@/domain/lifecycle/account';
 import { currentGuestAction } from '@/domain/lifecycle/guest-actions';
-import type { ActionLink, Copy, HomeContent, HomeSection, PublicSiteFacts, TimelineEvent } from '@/themes/types';
+import type { ActionLink, Copy, HomeContent, HomeSection, PublicSiteFacts } from '@/themes/types';
 
 /**
  * Home, for a reader who is not signed in (design-doc §3 "Home's job", ADR-0012 §4). A signed-in
@@ -21,15 +21,6 @@ const ROUTES = {
   adventures: '/our-adventures',
   portal: throughSignIn('/guests'),
 } as const;
-
-/** The three parts of the day, named and nothing more; rooms and times are the dashboard's. */
-export function placeholderTimeline(): TimelineEvent[] {
-  return [
-    { id: 'ceremony', name: 'Ceremony', placeholder: true },
-    { id: 'cocktail-hour', name: 'Cocktail hour', placeholder: true },
-    { id: 'reception', name: 'Reception', placeholder: true, description: ['Dinner, toasts, and dancing.'] },
-  ];
-}
 
 function sections(state: LifecycleState): Record<string, HomeSection> {
   const action = currentGuestAction(state);
