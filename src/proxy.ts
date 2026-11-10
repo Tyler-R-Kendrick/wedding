@@ -9,6 +9,18 @@ import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEAD
 const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
 
 /**
+ * Is this a request for a page, as opposed to one of its scripts, fonts or fetches? A browser says
+ * so (`Sec-Fetch-Dest`, or `text/html` in `Accept`); a client that says nothing is taken at the
+ * address's word: no file extension and not under `/_next/`.
+ */
+function asksForPage(headers: Headers, pathname: string): boolean {
+  const dest = headers.get('sec-fetch-dest');
+  if (dest) return dest === 'document';
+  if ((headers.get('accept') ?? '').includes('text/html')) return true;
+  return !pathname.startsWith('/_next/') && !/\.[A-Za-z0-9]+$/.test(pathname);
+}
+
+/**
  * Theme + lifecycle-preview resolution per request (ADR-0009 §4, ADR-0012 §2).
  *   - `?theme=` → `theme` cookie → default; a valid `?theme=` is remembered on this device.
  *   - Every page passes through with `x-theme`, `x-pathname` (and `x-lifecycle-preview`) request headers.
@@ -39,7 +51,7 @@ export function proxy(request: NextRequest) {
         ticket: url.searchParams.get('t'),
         to: url.searchParams.get('to'),
         pass: request.cookies.get(STAGE_PASS_COOKIE)?.value,
-        document: request.method === 'GET' && (request.headers.get('sec-fetch-dest') === 'document' || (request.headers.get('accept') ?? '').includes('text/html')),
+        document: request.method === 'GET' && asksForPage(request.headers, url.pathname),
       },
       { VERCEL: process.env.VERCEL, BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET },
     );
