@@ -211,6 +211,24 @@ jobs:
           RATE_LIMIT_BACKEND: db
           TRUSTED_PROXY_HOPS: '1'
 
+      - name: Swap, as a cushion for the dev server over a long run
+        # The warm-up no longer needs this (see the next step). What still grows is the dev
+        # server's own JavaScript heap: over the three-project run it climbs from about 0.6 GB to
+        # several GB, and with the compiler's share and three browsers beside it a 16 GB runner has
+        # little to spare. Out of memory, the kernel takes the runner agent ("the runner has
+        # received a shutdown signal"). Production does not do this: `next start` holds about
+        # 225 MB of heap across 3,000 requests. Until the dev server's growth is understood, the
+        # swap file stays; it costs a few seconds and is only touched if the run needs it.
+        run: |
+          dir=/mnt
+          [ "$(df --output=avail -BG "$dir" | tail -1 | tr -dc 0-9)" -ge 20 ] || dir="$RUNNER_TEMP"
+          sudo swapoff -a || true
+          sudo fallocate -l 16G "$dir/ci-swapfile"
+          sudo chmod 600 "$dir/ci-swapfile"
+          sudo mkswap "$dir/ci-swapfile"
+          sudo swapon "$dir/ci-swapfile"
+          free -m
+
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
         # Two things exist only on this server, and both are deliberate:
         #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
@@ -225,12 +243,11 @@ jobs:
         # TEST_SERVER_SPECS, and stops the server. It is the same command a developer runs
         # (`npm run test:e2e:server`), so the two cannot drift.
         #
-        # This step used to need 16 GB of swap. Warming eighty routes back to back took the dev
-        # server past 13 GB, and out of memory the kernel took the runner agent ("the runner has
-        # received a shutdown signal"). Three changes removed the need: the test server builds no
-        # source maps and no longer bundles the server libraries (next.config.ts), and the warm-up
-        # pauses whenever the server has grown 2.5 GB, which is when Turbopack lets go of what it
-        # compiled. The script prints the server's peak; it is about 6 GB.
+        # Warming eighty routes back to back used to take the dev server past 13 GB. Three changes
+        # brought that to about 6 GB: the test server builds no source maps and no longer bundles the
+        # server libraries (next.config.ts), and the warm-up pauses whenever the server has grown
+        # 2.5 GB, which is when Turbopack lets go of what it compiled. The script prints the
+        # server's peak for the warm-up and for the whole run.
         run: node scripts/test-server-specs.mjs
         env:
           CI: 'true'

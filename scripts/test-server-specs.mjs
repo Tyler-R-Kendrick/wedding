@@ -17,8 +17,9 @@
  *
  * The warm-up is paced by the server's own memory (`warmUp`). Turbopack holds what it compiled until
  * it has been idle for a few seconds, so eighty routes requested back to back took the server past
- * 13 GB, which is why CI once needed a swap file. Asked for in bursts with a pause whenever the server
- * has grown by `WARM_HEADROOM_MB`, the same routes compile inside a few GB.
+ * 13 GB. Asked for in bursts with a pause whenever the server has grown by `WARM_HEADROOM_MB`, the
+ * same routes compile inside about 6 GB. (The dev server's own heap still grows over a long run,
+ * which is what CI keeps its swap file for; production does not.)
  *
  * The server starts on PORT (default 3100), and is stopped whatever happens. It never reaches a real
  * system: `next dev` loads `.env` too, so every credential and database setting there is blanked

@@ -23,10 +23,6 @@ describe('npm run test:e2e:server is the CI test-server step', () => {
     expect(env.sort()).toEqual(['CI', 'PORT']);
   });
 
-  it('needs no swap: nothing in the workflow adds any', () => {
-    expect(readFileSync('.github/workflows/design-quality.yml', 'utf8')).not.toMatch(/swapon|mkswap|fallocate/);
-  });
-
   it('gives the server the settings the specs depend on', () => {
     const env = testServerEnv('3000');
     expect(env).toMatchObject({ NODE_ENV: 'test', SEED_TEST_FIXTURES: '1', FLAG_RSVP_MEALS: 'on', FLAG_PHONE_SIGN_IN: 'on', MEDIA_PART_SIZE_MB: '1', MEDIA_MULTIPART_THRESHOLD_MB: '1', PGLITE_MEMORY: '1', DB_AUTO_MIGRATE: '1', DB_AUTO_SEED: '1', TRUSTED_PROXY_HOPS: '1' });
