@@ -143,7 +143,7 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
   /** The connector's public settings as Vercel reports them, for the log line that says why no text can be sent. */
   private async connectorSettings(): Promise<string> {
     try {
-      return summarize(await this.getMetadata(this.connector)).slice(0, 900);
+      return summarize(await this.getMetadata(this.connector), 6).slice(0, 8000);
     } catch (e) {
       return `unreadable (${describe(e)})`;
     }
