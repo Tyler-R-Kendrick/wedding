@@ -143,7 +143,7 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
   /** The connector's public settings as Vercel reports them, for the log line that says why no text can be sent. */
   private async connectorSettings(): Promise<string> {
     try {
-      return summarize(await this.getMetadata(this.connector), 6).slice(0, 8000);
+      return summarize(await this.getMetadata(this.connector), 6).slice(0, 2500);
     } catch (e) {
       return `unreadable (${describe(e)})`;
     }
@@ -227,15 +227,7 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
     const ask = async (connector: string): Promise<ConnectTokenAnswer | undefined> => {
       for (const subject of this.subject ? [this.subject] : this.subjects) {
         try {
-          const answer = await this.getTokenResponse(connector, { subject }).catch(async (first: unknown) => {
-            // TEMP while the connector is worked out: the same request with no scopes at all.
-            if (subject.type !== 'app') throw first;
-            try {
-              return await (this.getTokenResponse as (c: string, p: object) => Promise<ConnectTokenAnswer>)(connector, { subject, scopes: [] });
-            } catch (second) {
-              throw Object.assign(new Error(`${describe(first)} | no scopes: ${describe(second)}`), { name: 'Error' });
-            }
-          });
+          const answer = await this.getTokenResponse(connector, { subject });
           if (answer?.token) {
             this.subject = subject;
             return answer;
