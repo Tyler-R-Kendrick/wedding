@@ -59,11 +59,18 @@ function Text({ copy }: { copy: Copy }) {
   return <>{renderCopy(copy, Placeholder)}</>;
 }
 
+/**
+ * Every link that carries the external mark opens in a new tab: the mark promises it, so the anchor
+ * does it. Spread these on the anchor next to the mark. `noreferrer` keeps the guest's page address
+ * from the site they go to.
+ */
+export const NEW_TAB = { target: '_blank', rel: 'noopener noreferrer' } as const;
+
 export function ExternalMark({ provider }: { provider?: string }) {
   return (
     <>
       <Icon name="external" className="bd-external" />
-      <span className="sr-only">{`, opens ${provider ? providerLabel(provider) : 'in a new tab'}`}</span>
+      <span className="sr-only">{`, opens ${provider ? `${providerLabel(provider)} ` : ''}in a new tab`}</span>
     </>
   );
 }
@@ -83,7 +90,7 @@ function NavLink({ item, nav, className, short = false }: { item: NavItem; nav: 
   const label = short ? shortLabel(item.label) : item.label;
   if (item.external) {
     return (
-      <a className={className} href={item.href} rel="noopener">
+      <a className={className} href={item.href} {...NEW_TAB}>
         {short ? <Icon name={iconForHref(item.href)} /> : null}
         <span>{label}</span>
         <ExternalMark provider={item.provider} />
@@ -240,7 +247,7 @@ function Footer({ site, details, rightsNote, printUrls, nav = FOOTER_NAV }: Foot
         {details ? (
           <p className="bd-footer__place">
             {details.venue.name},{' '}
-            <a className="bd-link" href={details.venue.mapsUrl} rel="noopener">
+            <a className="bd-link" href={details.venue.mapsUrl} {...NEW_TAB}>
               <span className="bd-nowrap">
                 {details.venue.address}
                 <ExternalMark provider={details.venue.mapsProvider} />
@@ -322,7 +329,7 @@ function Button({ variant = 'primary', href, type = 'button', loading, provider,
   if (href) {
     const external = variant === 'external' || /^https?:/.test(href);
     return (
-      <a className={cls} href={href} rel={external ? 'noopener' : undefined}>
+      <a className={cls} href={href} {...(external ? NEW_TAB : {})}>
         {inner}
       </a>
     );
@@ -346,7 +353,7 @@ export function Arrow() {
 function Link({ href, external, standalone, children, className, ...rest }: LinkProps) {
   const ext = external ?? /^https?:/.test(href);
   return (
-    <a className={`bd-link${standalone ? ' bd-link--standalone' : ''}${className ? ` ${className}` : ''}`} href={href} rel={ext ? 'noopener' : undefined} {...rest}>
+    <a className={`bd-link${standalone ? ' bd-link--standalone' : ''}${className ? ` ${className}` : ''}`} href={href} {...(ext ? NEW_TAB : {})} {...rest}>
       {ext ? withTail(children, <ExternalMark />) : children}
     </a>
   );
@@ -359,7 +366,7 @@ function Link({ href, external, standalone, children, className, ...rest }: Link
 export function More({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
   const ext = /^https?:/.test(href);
   return (
-    <a className={`bd-more${className ? ` ${className}` : ''}`} href={href} rel={ext ? 'noopener' : undefined}>
+    <a className={`bd-more${className ? ` ${className}` : ''}`} href={href} {...(ext ? NEW_TAB : {})}>
       <span>{children}</span>
       {ext ? <ExternalMark /> : <Arrow />}
     </a>
@@ -516,7 +523,7 @@ function MapHandoff({ venue, note }: MapHandoffProps) {
       <p className="bd-map__name">{venue.name}</p>
       <p className="bd-map__address">{venue.address}</p>
       {note ? <p className="bd-map__note">{note}</p> : null}
-      <a className="bd-btn bd-btn--external" href={venue.mapsUrl} rel="noopener">
+      <a className="bd-btn bd-btn--external" href={venue.mapsUrl} {...NEW_TAB}>
         <span>Open in {venue.mapsProvider}</span>
         <ExternalMark provider={venue.mapsProvider} />
       </a>

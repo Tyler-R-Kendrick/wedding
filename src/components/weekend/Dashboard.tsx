@@ -99,16 +99,16 @@ interface CardContent {
 
 /**
  * A link that leaves the site says so, and says where: the mark for the eye, the words for a reader.
- * It opens in the same tab, as every handoff on the site does, so Back brings a guest home.
+ * It opens in a new tab, as the mark promises, so the dashboard is still there when they come back.
  */
 function External({ href, children, primary = false, to }: { href: string; children: ReactNode; primary?: boolean; to: string }) {
   return (
-    <a className={primary ? 'btn btn--primary' : 'dash-link'} href={href} rel="noopener">
+    <a className={primary ? 'btn btn--primary' : 'dash-link'} href={href} target="_blank" rel="noopener noreferrer">
       {children}
       <span className="dash-external" aria-hidden="true">
         ↗
       </span>
-      <span className="sr-only"> (opens {to})</span>
+      <span className="sr-only"> (opens {to} in a new tab)</span>
     </a>
   );
 }

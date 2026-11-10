@@ -172,9 +172,10 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
           </h3>
           <p className="bd-stopcard__where">
             {details.venue.name},{' '}
-            <a className="bd-stopcard__map" href={details.venue.mapsUrl} rel="noopener">
+            <a className="bd-stopcard__map" href={details.venue.mapsUrl} target="_blank" rel="noopener noreferrer">
               {details.venue.address}
               <span className="bd-stopcard__map-provider"> · directions in {details.venue.mapsProvider}</span>
+              <span className="sr-only">, opens in a new tab</span>
             </a>
           </p>
           <p className="bd-stopcard__note">Everyone off here. The next chapter starts with all of you in the room.</p>

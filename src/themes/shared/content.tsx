@@ -169,8 +169,9 @@ export function handoffList(handoffs: RecommendationCard['handoffs']): HandoffVi
 }
 
 /** Anchor attributes for an explicit external handoff (new tab, no referrer, marked external). */
-export function handoffAttrs(h: HandoffView): { href: string; target?: '_blank'; rel: string } {
-  return { href: h.url, target: h.opensNewTab ? '_blank' : undefined, rel: 'noopener noreferrer external' };
+export function handoffAttrs(h: HandoffView): { href: string; target: '_blank'; rel: string } {
+  // Always a new tab: every handoff is drawn with the external mark, and the mark promises one.
+  return { href: h.url, target: '_blank', rel: 'noopener noreferrer external' };
 }
 
 export const OFFICIAL_LINK_ATTRS = { rel: 'noopener noreferrer external', target: '_blank' } as const;
