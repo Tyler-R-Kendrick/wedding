@@ -214,30 +214,24 @@ test('each part has its own page that asks only that part and keeps the rest', a
 });
 
 /**
- * The guest pages must wear the guest's chosen design.
+ * The guest pages must wear the design.
  *
  * They shipped unthemed and nothing caught it: the layout kept a level-03 fallback stylesheet whose
- * own header said the theme engine supersedes it at merge, so both designs rendered the admin
- * foundation in Times New Roman and the switcher changed nothing. Every assertion in this file
+ * own header said the theme engine supersedes it at merge, so they rendered the admin foundation
+ * in Times New Roman. Every assertion in this file
  * passed throughout — axe was clean, the journey worked — because none of them looked at what the
  * page was wearing.
  */
 test.describe('the guest surfaces are themed', () => {
   for (const route of ['/rsvp', '/guests']) {
-    test(`${route} carries the requested theme and renders it differently per design`, async ({ browser }) => {
+    test(`${route} carries the theme and sets its heading in the design's display face`, async ({ browser }) => {
       const ctx = await contextAs(browser, 'A1');
       const page = await ctx.newPage();
-      const seen: Record<string, string> = {};
-      for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-        await page.goto(`${route}?theme=${theme}`);
-        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-        // The heading resolves to a real, theme-specific face — not the browser's serif default.
-        const font = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
-        expect(font, `${route} @ ${theme} fell back to a default face`).not.toMatch(/^(Times|serif|-apple-system)/i);
-        seen[theme] = font;
-      }
-      expect(seen['gilded-hour'], 'both designs resolved to the same heading face').not.toBe(seen['conservatory']);
-      expect(seen['botanical-deco'], 'the approved design resolved to a proposal\'s heading face').not.toBe(seen['gilded-hour']);
+      await page.goto(route);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'botanical-deco');
+      // The heading resolves to the design's own face — not the browser's serif default.
+      const font = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
+      expect(font, `${route} fell back to a default face`).toMatch(/^"?Bodoni Moda"?,/);
       await ctx.close();
     });
   }
@@ -251,26 +245,23 @@ test.describe('the guest surfaces are themed', () => {
      *
      * The assertion changes with it, deliberately, and gets stronger rather than weaker. It used to
      * measure EVERY `header a`, which on the themed header at 390 includes the link lists the
-     * design collapses into its Menu sheet and elevator panel — laid out at 0x0, so the old form
-     * reported "link 0 is under the tap target: 0". It now measures every link a phone can actually
-     * reach, in BOTH designs (it only ever ran in the default one), and requires the collapsed
-     * header to still offer at least one.
+     * design collapses into its Menu sheet — laid out at 0x0, so the old form reported "link 0 is
+     * under the tap target: 0". It now measures every link a phone can actually reach, and requires
+     * the collapsed header to still offer at least one.
      */
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-      for (const route of ['/rsvp', '/guests']) {
-        await page.goto(`${route}?theme=${theme}`);
-        const boxes = await page.locator('header a').evaluateAll((els) =>
-          els
-            .map((e) => ({ text: (e.textContent ?? '').trim().slice(0, 24), rect: e.getBoundingClientRect() }))
-            .filter((x) => x.rect.width > 0 && x.rect.height > 0)
-            .map((x) => ({ text: x.text, height: Math.round(x.rect.height), width: Math.round(x.rect.width) })),
-        );
-        expect(boxes.length, `${route} @ ${theme} offers no tappable header link at 390`).toBeGreaterThan(0);
-        for (const box of boxes) {
-          expect(box.height, `${route} @ ${theme}: header link "${box.text}" is ${box.height}px tall`).toBeGreaterThanOrEqual(44);
-        }
+    for (const route of ['/rsvp', '/guests']) {
+      await page.goto(route);
+      const boxes = await page.locator('header a').evaluateAll((els) =>
+        els
+          .map((e) => ({ text: (e.textContent ?? '').trim().slice(0, 24), rect: e.getBoundingClientRect() }))
+          .filter((x) => x.rect.width > 0 && x.rect.height > 0)
+          .map((x) => ({ text: x.text, height: Math.round(x.rect.height), width: Math.round(x.rect.width) })),
+      );
+      expect(boxes.length, `${route} offers no tappable header link at 390`).toBeGreaterThan(0);
+      for (const box of boxes) {
+        expect(box.height, `${route}: header link "${box.text}" is ${box.height}px tall`).toBeGreaterThanOrEqual(44);
       }
     }
     await ctx.close();
@@ -281,30 +272,28 @@ test.describe('the guest surfaces are themed', () => {
   // pages rendered their running copy in the browser's default serif for the whole pre-hydration
   // window — and permanently for a guest browsing without JavaScript. Measured before this test
   // existed: 12 of 14 text elements on /rsvp and 55 of 66 on /your-weekend (now the dashboard at
-  // /guests), in both designs.
-  for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-    test(`${theme} styles the running copy with script disabled, not only the headings`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
-      const page = await ctx.newPage();
-      for (const route of ['/rsvp', '/guests']) {
-        await page.goto(`${route}?theme=${theme}`, { waitUntil: 'load' });
-        // Not `html`: without script nothing carries the attribute there, and that is the point.
-        await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
-        const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
-          const themed = /Cinzel|Josefin|Spectral|Gloock|Cardo|Big Shoulders|Bodoni Moda|Newsreader|Ms Madi/i;
-          const holdsText = (e: Element) =>
-            !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
-            [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());
-          return [root, ...root.querySelectorAll('*')]
-            .filter(holdsText)
-            .filter((e) => !themed.test(getComputedStyle(e).fontFamily))
-            .map((e) => `${e.tagName}.${e.className}: ${getComputedStyle(e).fontFamily}`);
-        });
-        expect(unthemed, `${route} @ ${theme} fell back to a default face without script`).toEqual([]);
-      }
-      await ctx.close();
-    });
-  }
+  // /guests).
+  test('the running copy is styled with script disabled, not only the headings', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    for (const route of ['/rsvp', '/guests']) {
+      await page.goto(route, { waitUntil: 'load' });
+      // Not `html`: without script nothing carries the attribute there, and that is the point.
+      await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'botanical-deco');
+      const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
+        const themed = /Bodoni Moda|Newsreader|Ms Madi/i;
+        const holdsText = (e: Element) =>
+          !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
+          [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());
+        return [root, ...root.querySelectorAll('*')]
+          .filter(holdsText)
+          .filter((e) => !themed.test(getComputedStyle(e).fontFamily))
+          .map((e) => `${e.tagName}.${e.className}: ${getComputedStyle(e).fontFamily}`);
+      });
+      expect(unthemed, `${route} fell back to a default face without script`).toEqual([]);
+    }
+    await ctx.close();
+  });
 
   test('the authoring marker never reaches a guest', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');

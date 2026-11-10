@@ -9,27 +9,24 @@ import { test, expect } from "@playwright/test";
  * allowlisted hand-offs) live in guest-guide.spec.ts (NODE_ENV=test server).
  */
 
-const THEMES = ["botanical-deco", "gilded-hour", "conservatory"] as const;
 
 test.describe("Travel & Stay", () => {
-  for (const theme of THEMES) {
-    test(`legacy /travel redirects anonymous visitors to sign-in (${theme})`, async ({ page }) => {
-      // The old address is a permanent redirect; the page it leads to asks for a session.
-      const moved = await page.request.get(`/travel?theme=${theme}`, { maxRedirects: 0 });
-      expect(moved.status()).toBe(308);
-      expect(moved.headers().location).toMatch(/\/guests\/travel(?:\?|$)/);
-      await page.goto(`/travel?theme=${theme}`);
-      await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
-      // Nothing of the page was rendered on the way: no hotel, no block, no address.
-      await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
-    });
+  test('legacy /travel redirects anonymous visitors to sign-in', async ({ page }) => {
+    // The old address is a permanent redirect; the page it leads to asks for a session.
+    const moved = await page.request.get('/travel', { maxRedirects: 0 });
+    expect(moved.status()).toBe(308);
+    expect(moved.headers().location).toMatch(/\/guests\/travel(?:\?|$)/);
+    await page.goto('/travel');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
+    // Nothing of the page was rendered on the way: no hotel, no block, no address.
+    await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
+  });
 
-    test(`/guests/travel sends anonymous visitors to sign-in (${theme})`, async ({ page }) => {
-      await page.goto(`/guests/travel?theme=${theme}`);
-      await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
-      await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
-    });
-  }
+  test('/guests/travel sends anonymous visitors to sign-in', async ({ page }) => {
+    await page.goto('/guests/travel');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
+    await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
+  });
 
   test("capability route refuses an anonymous search_travel_options call before reading it", async ({
     request,

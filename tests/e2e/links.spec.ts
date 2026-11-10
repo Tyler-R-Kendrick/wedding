@@ -13,10 +13,8 @@ import { test, expect } from '@playwright/test';
  * `/claim/passkey`, which you reach with a token.
  *
  * A unit test now walks `src/app` for the nav model (tests/unit/themes/lifecycle.test.ts); this is
- * the part it cannot see, because a link inside a page component is not in the nav model. Both
- * designs, because a theme kit can render links the other does not.
+ * the part it cannot see, because a link inside a page component is not in the nav model.
  */
-const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
 // Anonymous on the production build, so this is the link graph a signed-out reader meets: the
 // public pages, and the door or gate each guest page answers with (`/guests`, `/our-venue`,
 // `/gifts` and `/transportation` send them to sign in; `/trip` and `/rsvp` render a gate). The
@@ -32,35 +30,33 @@ test.describe('no dead internal links', () => {
     test.skip(testInfo.project.name !== 'desktop', 'the link graph does not vary by viewport');
   });
 
-  for (const theme of THEMES) {
-    test(`every same-origin link on a guest-reachable page resolves (${theme})`, async ({ page, request }) => {
-      // Our Adventures links one page per photo (60-odd), and every one of them is requested.
-      test.slow();
-      const seen = new Map<string, string[]>();
-      for (const route of ROUTES) {
-        const res = await page.goto(`${route}?theme=${theme}`);
-        expect(res?.status(), `${route} itself`).toBeLessThan(400);
-        const hrefs = await page.locator('a[href]').evaluateAll((as) =>
-          as.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '').filter((h) => h.startsWith('/') && !h.startsWith('//')),
-        );
-        for (const href of hrefs) {
-          const path = href.split('#')[0] ?? '';
-          if (!path) continue;
-          if (!seen.has(path)) seen.set(path, []);
-          seen.get(path)!.push(route);
-        }
+  test('every same-origin link on a guest-reachable page resolves', async ({ page, request }) => {
+    // Our Adventures links one page per photo (60-odd), and every one of them is requested.
+    test.slow();
+    const seen = new Map<string, string[]>();
+    for (const route of ROUTES) {
+      const res = await page.goto(route);
+      expect(res?.status(), `${route} itself`).toBeLessThan(400);
+      const hrefs = await page.locator('a[href]').evaluateAll((as) =>
+        as.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '').filter((h) => h.startsWith('/') && !h.startsWith('//')),
+      );
+      for (const href of hrefs) {
+        const path = href.split('#')[0] ?? '';
+        if (!path) continue;
+        if (!seen.has(path)) seen.set(path, []);
+        seen.get(path)!.push(route);
       }
-      expect(seen.size).toBeGreaterThan(8); // sanity: we actually collected a link graph
-      const dead: string[] = [];
-      for (const [path, from] of seen) {
-        const res = await request.get(path, { maxRedirects: 0 });
-        // 2xx or a redirect is fine; a 404 is a link to nowhere. 401/403 means the route exists and
-        // is gated, which is the correct answer for a personalized page seen anonymously.
-        if (res.status() === 404) dead.push(`${path} (linked from ${[...new Set(from)].join(', ')})`);
-      }
-      expect(dead, `dead internal links in ${theme}`).toEqual([]);
-    });
-  }
+    }
+    expect(seen.size).toBeGreaterThan(8); // sanity: we actually collected a link graph
+    const dead: string[] = [];
+    for (const [path, from] of seen) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      // 2xx or a redirect is fine; a 404 is a link to nowhere. 401/403 means the route exists and
+      // is gated, which is the correct answer for a personalized page seen anonymously.
+      if (res.status() === 404) dead.push(`${path} (linked from ${[...new Set(from)].join(', ')})`);
+    }
+    expect(dead, 'dead internal links').toEqual([]);
+  });
 
   /**
    * PRODUCT.md's surface table is the route table every agent on this project starts from, and

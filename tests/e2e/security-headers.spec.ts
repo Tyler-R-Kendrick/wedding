@@ -67,7 +67,7 @@ test.describe('security headers', () => {
     // `/` is rewritten to `/t/<theme>` by the proxy, but `/t/<theme>` is also a real, prerendered,
     // directly reachable URL — and the proxy's matcher skips `t/`. This is the case that decided
     // where these headers live: set in the proxy, this assertion would fail.
-    for (const url of ['/', '/t/conservatory', '/api/health']) {
+    for (const url of ['/', '/t/botanical-deco', '/api/health']) {
       const res = await request.get(url);
       const csp = res.headers()['content-security-policy'];
       expect(csp, `${url} has no CSP`).toBeTruthy();

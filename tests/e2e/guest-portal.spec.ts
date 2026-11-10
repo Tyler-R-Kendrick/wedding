@@ -476,43 +476,39 @@ test('our venue lists current outlets with dates and never the closed ones', asy
 });
 
 /**
- * Our Venue, in every design, as a signed-in guest.
+ * Our Venue, as a signed-in guest.
  *
- * These pages say where the wedding is, so a signed-out reader is sent to sign in and the themed
- * coverage that ran anonymously against the production build (content-themes.spec.ts) runs here,
- * with a session: the landmarks a guest navigates by, the structural signature of each design (the
- * kits must not converge), the page's first content inside the first screen of a 390 phone, and
- * axe-clean WCAG 2.2 AA at 390 / 768 / 1440.
+ * These pages say where the wedding is, so a signed-out reader is sent to sign in and the coverage
+ * that runs anonymously against the production build for the public pages (content-themes.spec.ts)
+ * runs here, with a session: the landmarks a guest navigates by, the design's own structure, the
+ * page's first content inside the first screen of a 390 phone, and axe-clean WCAG 2.2 AA at
+ * 390 / 768 / 1440.
  */
-const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-type Theme = (typeof THEMES)[number];
 const PHONE = { width: 390, height: 844 };
 
 interface VenueCase {
   key: string;
   path: string;
-  h1: string | Record<Theme, string>;
+  h1: string;
   primary: (page: Page) => ReturnType<Page['locator']>;
-  primaryFor?: Partial<Record<Theme, (page: Page) => ReturnType<Page['locator']>>>;
-  signature: Record<Theme, string>;
+  signature: string;
 }
 
 const VENUE_PAGES: VenueCase[] = [
   {
     key: 'our-venue',
     path: '/our-venue',
-    h1: { 'botanical-deco': 'Our Venue', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
-    primary: (p) => p.locator('[id^="fact-"]').first(),
-    // The approved page opens on the couple, then the venue: its introduction starts in the first screen.
-    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }) },
-    signature: { 'botanical-deco': '.bd-place__frames .bd-place__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
+    h1: 'Our Venue',
+    // The page opens on the couple, then the venue: its introduction starts in the first screen.
+    primary: (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }),
+    signature: '.bd-place__frames .bd-place__frame',
   },
   {
     key: 'venue-space',
     path: '/our-venue/white-city-ballroom',
     h1: 'White City Ballroom',
     primary: (p) => p.locator('#look li').first(),
-    signature: { 'botanical-deco': '.bd-docent .bd-docent__num', 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },
+    signature: '.bd-docent .bd-docent__num',
   },
 ];
 
@@ -529,69 +525,66 @@ async function foldHeight(page: Page): Promise<number> {
   });
 }
 
-for (const theme of THEMES) {
-  for (const c of VENUE_PAGES) {
-    test.describe(`${c.key} for a signed-in guest (${theme})`, () => {
-      test.setTimeout(90_000);
+for (const c of VENUE_PAGES) {
+  test.describe(`${c.key} for a signed-in guest`, () => {
+    test.setTimeout(90_000);
 
-      test('landmarks, heading and the theme\'s own structure', async ({ browser }) => {
-        const ctx = await contextAs(browser, 'A1');
-        const page = await ctx.newPage();
-        await page.goto(`${c.path}?theme=${theme}`);
-        await expect(page).toHaveURL(new RegExp(`${c.path}\\?theme=${theme}$`));
-        await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(typeof c.h1 === 'string' ? c.h1 : c.h1[theme]);
-        await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
-        await expect(page.locator('main#main')).toBeAttached();
-        await expect(page.getByRole('contentinfo')).toBeAttached();
-        // exactly one H1, and the theme's own markup — the kits never converge on one structure
-        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-        await expect(page.locator(c.signature[theme]).first()).toBeAttached();
-        for (const other of THEMES.filter((t) => t !== theme)) await expect(page.locator(c.signature[other])).toHaveCount(0);
-        // placeholders stay visibly marked and the raw marker never reaches a guest
-        const text = await page.locator('main').innerText();
-        expect(text).not.toContain('TODO(Tyler & Sara)');
-        expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key} (${theme}): internal backlog identifiers are visible to guests`).toEqual([]);
-        for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
-          await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
-          await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
-        }
-        // No link on the page leads to a page that was removed.
-        for (const href of await page.locator('main a[href^="/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))) {
-          expect(href, `${c.key} (${theme}) links a removed page`).not.toMatch(/^\/(?:your-weekend|the-wedding|travel|ask-us|share-an-adventure|explore-caa|wedding-day|things-to-do)(?:[/?#]|$)/);
-        }
-        await ctx.close();
-      });
-
-      test('the first content is in the first screen at 390', async ({ browser }, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
-        const ctx = await contextAs(browser, 'A1', { viewport: PHONE });
-        const page = await ctx.newPage();
-        await page.goto(`${c.path}?theme=${theme}`);
-        const target = (c.primaryFor?.[theme] ?? c.primary)(page).first();
-        await expect(target).toBeVisible();
-        const box = (await target.boundingBox())!;
-        expect(box.y, `${c.key} (${theme}): primary target starts below the first screen`).toBeLessThan(await foldHeight(page));
-        await ctx.close();
-      });
-
-      test('axe clean at 390, 768 and 1440', async ({ browser }, testInfo) => {
-        test.skip(testInfo.project.name !== 'desktop', 'the three widths are set explicitly, so this runs once');
-        const ctx = await contextAs(browser, 'A1');
-        const page = await ctx.newPage();
-        for (const [w, h] of [
-          [390, 844],
-          [768, 1024],
-          [1440, 900],
-        ] as const) {
-          await page.setViewportSize({ width: w, height: h });
-          await page.goto(`${c.path}?theme=${theme}`);
-          const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-          const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-          expect(blocking, `${c.key} (${theme}) at ${w}×${h}\n${blocking.map((v) => `${v.id}: ${v.help}\n  ${v.nodes.map((n) => n.target.join(' ')).join('\n  ')}`).join('\n\n')}`).toEqual([]);
-        }
-        await ctx.close();
-      });
+    test('landmarks, heading and the design\'s own structure', async ({ browser }) => {
+      const ctx = await contextAs(browser, 'A1');
+      const page = await ctx.newPage();
+      await page.goto(c.path);
+      await expect(page).toHaveURL(new RegExp(`${c.path}$`));
+      await expect(page.locator('.site[data-theme="botanical-deco"]')).toBeAttached();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(c.h1);
+      await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
+      await expect(page.locator('main#main')).toBeAttached();
+      await expect(page.getByRole('contentinfo')).toBeAttached();
+      // exactly one H1, and the design's own markup for this page
+      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+      await expect(page.locator(c.signature).first()).toBeAttached();
+      // placeholders stay visibly marked and the raw marker never reaches a guest
+      const text = await page.locator('main').innerText();
+      expect(text).not.toContain('TODO(Tyler & Sara)');
+      expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key}: internal backlog identifiers are visible to guests`).toEqual([]);
+      for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
+        await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
+        await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
+      }
+      // No link on the page leads to a page that was removed.
+      for (const href of await page.locator('main a[href^="/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))) {
+        expect(href, `${c.key} links a removed page`).not.toMatch(/^\/(?:your-weekend|the-wedding|travel|ask-us|share-an-adventure|explore-caa|wedding-day|things-to-do)(?:[/?#]|$)/);
+      }
+      await ctx.close();
     });
-  }
+
+    test('the first content is in the first screen at 390', async ({ browser }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
+      const ctx = await contextAs(browser, 'A1', { viewport: PHONE });
+      const page = await ctx.newPage();
+      await page.goto(c.path);
+      const target = c.primary(page).first();
+      await expect(target).toBeVisible();
+      const box = (await target.boundingBox())!;
+      expect(box.y, `${c.key}: primary target starts below the first screen`).toBeLessThan(await foldHeight(page));
+      await ctx.close();
+    });
+
+    test('axe clean at 390, 768 and 1440', async ({ browser }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the three widths are set explicitly, so this runs once');
+      const ctx = await contextAs(browser, 'A1');
+      const page = await ctx.newPage();
+      for (const [w, h] of [
+        [390, 844],
+        [768, 1024],
+        [1440, 900],
+      ] as const) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto(c.path);
+        const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+        const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+        expect(blocking, `${c.key} at ${w}×${h}\n${blocking.map((v) => `${v.id}: ${v.help}\n  ${v.nodes.map((n) => n.target.join(' ')).join('\n  ')}`).join('\n\n')}`).toEqual([]);
+      }
+      await ctx.close();
+    });
+  });
 }
