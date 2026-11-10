@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PAGES } from '@wedding/sitemap';
-import { baselineFor, designsFor, frameDocument, frameFiles, parseFrameName, shapeOf, standIn, transformBody } from '@wedding/wireframe/baseline';
+import { baselineFor, DESIGN, frameDocument, frameFiles, parseFrameName, shapeOf, standIn, transformBody } from '@wedding/wireframe/baseline';
 
 /**
  * Stages 2 to 4 redraw the real site as captured (stages/02-wireframe/lib/baseline.ts). These pin
@@ -15,22 +15,20 @@ describe('the baseline', () => {
   it('holds production\'s design for every page, and says where each page came from', () => {
     for (const p of PAGES) {
       const meta = baselineFor(p.id)!;
-      expect(designsFor(p.id)[0], p.id).toBe('botanical-deco');
+      expect(Object.keys(meta.designs), p.id).toEqual([DESIGN]);
       expect(meta.source, p.id).toMatch(/^https:\/\/kendrick\.wedding$|^app /);
       if (p.audience === 'guest' || p.audience === 'admin') expect(meta.principal, `${p.id} is captured signed in`).toBe(p.audience);
     }
   });
 
-  it('writes one document per page for the wireframe and skeleton, one per design for the placeholder', () => {
-    expect(frameFiles('wireframe')).toHaveLength(PAGES.length);
-    expect(frameFiles('placeholder').length).toBeGreaterThan(PAGES.length);
-    expect(parseFrameName('rsvp.gilded-hour.html')).toEqual({ pageId: 'rsvp', design: 'gilded-hour' });
-    expect(parseFrameName('rsvp.html')).toEqual({ pageId: 'rsvp', design: 'botanical-deco' });
+  it('writes one document per page at every stage', () => {
+    expect(frameFiles()).toHaveLength(PAGES.length);
+    expect(parseFrameName('rsvp.html')).toBe('rsvp');
     expect(parseFrameName('nope.html')).toBeNull();
   });
 
   it('frames the real page with the real stylesheets and this stage\'s rules', () => {
-    const doc = frameDocument('story', 'botanical-deco', 'skeleton', '/skeleton')!;
+    const doc = frameDocument('story', 'skeleton', '/skeleton')!;
     expect(doc).toContain('data-bl-stage="skeleton"');
     expect(doc).toContain('data-theme="botanical-deco"');
     expect(doc).toMatch(/<link rel="stylesheet" href="\/skeleton\/baseline\/css\/[0-9a-f]{16}\.css">/);

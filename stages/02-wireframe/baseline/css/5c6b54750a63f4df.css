@@ -778,10 +778,6 @@
   text-decoration-thickness: 1px;
 }
 
-[data-theme="conservatory"] .auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
-  color: var(--color-leaf-deep, var(--color-primary));
-}
-
 .auth-notice {
   border: 1px solid var(--auth-outline);
   border-radius: var(--auth-radius);

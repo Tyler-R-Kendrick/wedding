@@ -143,7 +143,7 @@ for (const s of STAGES) {
   await expectPage(`${s.id} by path`, 'localhost', `/${s.id}/our-adventures/example`, `Stage ${s.n}</title>`);
 }
 
-// Stage 4 wears the real designs: their fonts must load by both addresses.
+// Stage 4 wears the real design: its fonts must load by both addresses.
 for (const [host, prefix] of [[`placeholder.${domain}`, ''], ['localhost', '/placeholder']]) {
   checks++;
   const r = await get(host, `${prefix}/fonts/botanical-deco/bodoni-moda-core.woff2`);

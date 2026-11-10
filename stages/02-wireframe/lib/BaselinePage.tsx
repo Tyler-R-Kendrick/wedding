@@ -1,5 +1,5 @@
 import { StageBar } from '@wedding/sitemap/chrome';
-import { baselineFor, DESIGN_NAMES, designsFor, frameName, type FrameStage } from './baseline';
+import { baselineFor, frameName, type FrameStage } from './baseline';
 import { BaselineView } from './BaselineView';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -12,13 +12,11 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 export function BaselinePage({ stage, pageId, url }: { stage: FrameStage; pageId: string; url: string }) {
   const meta = baselineFor(pageId);
   if (!meta) return null;
-  const designs = stage === 'placeholder' ? designsFor(pageId) : designsFor(pageId).slice(0, 1);
-  const frames = designs.map((d) => ({ design: d, name: DESIGN_NAMES[d], src: `${BASE}/baseline/${frameName(pageId, d)}` }));
   const source = meta.principal ? `the app's test server, signed in as the fixture ${meta.principal},` : meta.source.replace(/^https?:\/\//, '');
   return (
     <div className="bl-screen">
       <StageBar current={stage} path={url} />
-      <BaselineView stage={stage} title={meta.title} frames={frames} source={source} capturedAt={meta.capturedAt} captured={meta.finalUrl || meta.url} />
+      <BaselineView stage={stage} title={meta.title} src={`${BASE}/baseline/${frameName(pageId)}`} source={source} capturedAt={meta.capturedAt} captured={meta.finalUrl || meta.url} />
     </div>
   );
 }

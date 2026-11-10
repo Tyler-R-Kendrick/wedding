@@ -5,14 +5,14 @@ import { OVERRIDES } from './overrides';
  * Stage 4's content: every slot the skeleton exposes, answered with copy that is honest about
  * being a stand-in. No lorem ipsum (it reads as a template), and no plausible fiction (CLAUDE.md:
  * placeholder facts are TODO(Tyler & Sara), never invented). Paragraphs are sized to the slot, so
- * each design's measure, rhythm and line breaks can be judged before a real word is written.
+ * the design's measure, rhythm and line breaks can be judged before a real word is written.
  *
- * To try a specific line in every design at once, add it to ./overrides.ts by slot key.
+ * To try a specific line, add it to ./overrides.ts by slot key.
  */
 
 const SENTENCES = [
   'It is set at about the length the real copy should run.',
-  'That way each design can be judged with its measure, rhythm and line breaks in place.',
+  'That way the design can be judged with its measure, rhythm and line breaks in place.',
   'Tyler and Sara will replace it; until then, nothing in it is a fact.',
   'Long words, short words and the occasional comma are here on purpose.',
   'A guest reading on a phone should never have to pinch to follow it.',

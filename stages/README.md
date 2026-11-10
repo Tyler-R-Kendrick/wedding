@@ -9,12 +9,12 @@ change made upstream reaches every stage downstream on its next build.
 | 1 | **Sitemap** | Which pages exist, who are they for, when do they appear? | [`01-sitemap`](01-sitemap/) `@wedding/sitemap` | :3101 | nothing |
 | 2 | **Wireframe** | What is on each page, and in what order? | [`02-wireframe`](02-wireframe/) `@wedding/wireframe` | :3102 | 1, the baseline |
 | 3 | **Skeleton** | Can you click through every flow, and does the layout hold at every width? | [`03-skeleton`](03-skeleton/) `@wedding/skeleton` | :3103 | 1, 2 |
-| 4 | **Placeholder** | How does each design carry the structure, before any real content? | [`04-placeholder`](04-placeholder/) `@wedding/placeholder` | :3104 | 1, 2, 3, `src/themes/*` |
+| 4 | **Placeholder** | How does the design carry the structure, before any real content? | [`04-placeholder`](04-placeholder/) `@wedding/placeholder` | :3104 | 1, 2, 3, `src/themes/*` |
 | 5 | **Real** | Is every word and image true, and is it ready for guests? | the repo root (`src/`) | :3000 | 1 (routes, nav labels) |
 
 Every stage serves **every sitemap URL**. `/rsvp` is the RSVP page's row in
 the map at stage 1, and at stages 2, 3 and 4 it is **the real RSVP page as
-production renders it**: greyed out, then as bones, then in each design with
+production renders it**: greyed out, then as bones, then in its real design with
 stand-in copy. Stage 5 is the page itself. The bar across the top of each stage
 links the same URL at the other four, so one page can be walked from map to
 real in five clicks.
@@ -34,7 +34,7 @@ breakpoints are production's, not a sketch of them
 |---|---|
 | 2 Wireframe | Greys it: every surface and block outlined, each block labelled (`section · What to wear`), copy as lines, photographs and illustrations as crossed boxes, headings and labels kept. |
 | 3 Skeleton | Turns its content into bones. Navigation, buttons and form labels stay readable, links still go where they went, the Menu opens. |
-| 4 Placeholder | Keeps its real design and swaps only the copy, for stand-in copy of the same length ("Stand-in copy sized to the real text"), and photographs for labelled panels. The design picker switches between the designs it was captured in. |
+| 4 Placeholder | Keeps its real design and swaps only the copy, for stand-in copy of the same length ("Stand-in copy sized to the real text"), and photographs for labelled panels. |
 
 Each stage page shows its rendering in a same-origin frame under the stage bar,
 so the real stylesheets lay it out in a viewport of their own: at 390px it is the
@@ -47,9 +47,8 @@ Where each page comes from, and how:
 - **Guest and admin pages** cannot be seen in production without a real account,
   so they come from the same code run as the app's test server, signed in as the
   seeded fixture household or admin (`npm run test:e2e:server` starts the same server).
-- **Every design** is captured with `?theme=<id>`. Botanical Deco is production's
-  and comes first; a design that renders a page no differently (the admin
-  console) is not stored twice.
+- **One design**: the site ships Botanical Deco and nothing else, so each page has one
+  capture, `pages/<page>/botanical-deco.json`.
 - **A patterned page** (`/our-adventures/[slug]`) is captured at a real instance
   its parent page links to.
 - **Photographs never enter the baseline**: each is swapped for an empty image of
@@ -76,7 +75,7 @@ stages/01-sitemap/lib/sitemap.ts        PAGES: id, path, title, audience, visibl
         │        └──► 03-skeleton  the same captured page with its content as bones; a page not
         │                 │         built yet: the kit's components with boneyard bones
         │                 │  imported as @wedding/skeleton
-        │                 └──► 04-placeholder  the same captured page in each real design, copy
+        │                 └──► 04-placeholder  the same captured page in its real design, copy
         │                                      swapped for stand-ins; not built yet: the kit, dressed
         └──► src/ (real)   nav labels + paths (src/domain/lifecycle/nav.ts), and
                            tests/unit/stages/sitemap-routes.test.ts: every sitemap page is a

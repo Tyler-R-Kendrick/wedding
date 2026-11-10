@@ -8,7 +8,7 @@
  *   skeleton      the real layout with its content as bones. Labels (navigation, buttons, form
  *                 labels) stay readable and every link still goes where it went.
  *   placeholder   the real page in its real design, copy swapped for stand-ins sized to it and
- *                 photographs for labelled panels; one document per design the capture holds.
+ *                 photographs for labelled panels.
  *
  * Each stage page shows its document in a same-origin frame, so the real CSS lays the page out in
  * a viewport of its own. Server-only (it reads files): route handlers and server components.
@@ -17,13 +17,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export const DESIGNS = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-export type Design = (typeof DESIGNS)[number];
-export const DESIGN_NAMES: Record<Design, string> = {
-  'botanical-deco': 'Botanical Deco (production)',
-  'gilded-hour': 'Gilded Hour',
-  conservatory: 'Conservatory',
-};
+/** The site's one design (src/themes/registry.ts). It names each page's capture file. */
+export const DESIGN = 'botanical-deco';
 export type FrameStage = 'wireframe' | 'skeleton' | 'placeholder';
 
 export interface BaselineMeta {
@@ -33,7 +28,7 @@ export interface BaselineMeta {
   source: string;
   principal: 'guest' | 'admin' | null;
   capturedAt: string;
-  designs: Partial<Record<Design, { status: number; file: string; same?: Design }>>;
+  designs: Partial<Record<typeof DESIGN, { status: number; file: string }>>;
 }
 interface Capture {
   htmlAttrs: Record<string, string>;
@@ -59,39 +54,27 @@ export function baselineIndex(): Record<string, BaselineMeta> {
 }
 export const baselineFor = (pageId: string): BaselineMeta | undefined => baselineIndex()[pageId];
 
-/**
- * The designs this page was captured in, production's first. A design that renders the page exactly
- * as another does (the admin console looks the same in all of them) is not offered twice.
- */
-export function designsFor(pageId: string): Design[] {
-  const meta = baselineFor(pageId);
-  return meta ? DESIGNS.filter((d) => meta.designs[d] && !meta.designs[d]!.same) : [];
-}
-
-function capture(pageId: string, design: Design): Capture | undefined {
-  const entry = baselineFor(pageId)?.designs[design];
+function capture(pageId: string): Capture | undefined {
+  const entry = baselineFor(pageId)?.designs[DESIGN];
   if (!entry) return undefined;
   const file = path.join(baselineDir(), 'pages', pageId, entry.file);
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Capture) : undefined;
 }
 
-/** `home.html` for production's design, `home.gilded-hour.html` for another. */
-export function frameName(pageId: string, design: Design = DESIGNS[0]): string {
-  return design === DESIGNS[0] ? `${pageId}.html` : `${pageId}.${design}.html`;
+/** A captured page's document at a stage: `home.html`. */
+export const frameName = (pageId: string): string => `${pageId}.html`;
+export function frameFiles(): string[] {
+  return Object.keys(baselineIndex()).filter((id) => capture(id)).map(frameName);
 }
-export function frameFiles(stage: FrameStage): string[] {
-  return Object.keys(baselineIndex()).flatMap((id) => (stage === 'placeholder' ? designsFor(id) : designsFor(id).slice(0, 1)).map((d) => frameName(id, d)));
-}
-export function parseFrameName(file: string): { pageId: string; design: Design } | null {
-  const m = file.match(/^(.+?)(?:\.([a-z-]+))?\.html$/);
-  if (!m) return null;
-  const design = (m[2] ?? DESIGNS[0]) as Design;
-  return baselineFor(m[1]!) && DESIGNS.includes(design) ? { pageId: m[1]!, design } : null;
+/** The page a frame file is for, or null when the baseline has no such page. */
+export function parseFrameName(file: string): string | null {
+  const pageId = file.match(/^(.+)\.html$/)?.[1];
+  return pageId && baselineFor(pageId) ? pageId : null;
 }
 
 // --- Shared files: stylesheets and the assets they (and the markup) point at. ------------------------
 function allCaptures(): Capture[] {
-  return Object.keys(baselineIndex()).flatMap((id) => designsFor(id).map((d) => capture(id, d)).filter((c): c is Capture => !!c));
+  return Object.keys(baselineIndex()).map((id) => capture(id)).filter((c): c is Capture => !!c);
 }
 export const cssFiles = (): string[] => [...new Set(allCaptures().flatMap((c) => c.css))].map((h) => `${h}.css`);
 
@@ -172,7 +155,7 @@ export function shapeOf(body: string): string {
 
 /** The page's shape without its words: what a sign-off approves. Copy edits do not change it. */
 export function structureFingerprint(pageId: string): string | null {
-  const c = capture(pageId, DESIGNS[0]);
+  const c = capture(pageId);
   return c ? createHash('sha256').update(shapeOf(c.body)).digest('hex').slice(0, 8) : null;
 }
 
@@ -261,8 +244,8 @@ const SHIM = (stage: FrameStage) => `(() => {
   new ResizeObserver(draw).observe(document.body);` : ''}
 })();`;
 
-export function frameDocument(pageId: string, design: Design, stage: FrameStage, base: string): string | null {
-  const c = capture(pageId, design);
+export function frameDocument(pageId: string, stage: FrameStage, base: string): string | null {
+  const c = capture(pageId);
   const meta = baselineFor(pageId);
   if (!c || !meta) return null;
   const attrs = (a: Record<string, string>) => Object.entries(a).map(([k, v]) => ` ${k}="${attr(v)}"`).join('');
