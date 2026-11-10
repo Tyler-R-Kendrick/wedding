@@ -4,6 +4,8 @@ import { REDIRECTS } from './src/lib/site-redirects';
 import { rightsHeaders } from './src/lib/rights';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
 import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
+import { DEFAULT_THEME } from './src/themes/registry';
+import { STATIC_PUBLIC_ROUTES, STATIC_UNLESS, staticTreePath } from './src/themes/routes';
 
 // CSP and HSTS live here rather than in `src/proxy.ts`: the proxy's matcher skips `api/`, `_next/`,
 // `t/`, `fonts/`, `assets/` and any path with a dot, and `/t/<theme>` is the statically rendered
@@ -42,6 +44,14 @@ const deploymentSiteUrl = (() => {
  * see those photographs finds them.
  */
 const UNSERVED_DATA_FILES = ['/media/botanical-deco/manifest.json', '/assets/attributions.json'].map((source) => ({ source, destination: '/_data-not-served' }));
+
+/**
+ * A request with no session, for a public page that has a prerendered copy, is answered from that
+ * copy (src/themes/routes.ts). Decided here, on the request alone and before the proxy's matcher
+ * would have let it in, so on Vercel the cached page is served without running a function; a
+ * request that carries any of `STATIC_UNLESS` falls through to the page that renders for its reader.
+ */
+const STATIC_PUBLIC_REWRITES = STATIC_PUBLIC_ROUTES.map((source) => ({ source, missing: [...STATIC_UNLESS], destination: staticTreePath(DEFAULT_THEME, source) }));
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -96,8 +106,9 @@ const nextConfig: NextConfig = {
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.
+  // The prerendered public pages come last: a stage host's `/` has already been rewritten by then.
   async rewrites() {
-    return { beforeFiles: [...UNSERVED_DATA_FILES, ...stageRewrites({ production: process.env.VERCEL_ENV === 'production' })], afterFiles: [], fallback: [] };
+    return { beforeFiles: [...UNSERVED_DATA_FILES, ...stageRewrites({ production: process.env.VERCEL_ENV === 'production' }), ...STATIC_PUBLIC_REWRITES], afterFiles: [], fallback: [] };
   },
   // Sandboxes with parallel worktrees symlink node_modules outside the project; Turbopack needs its
   // filesystem root to contain the link target. Unset in normal checkouts and CI.

@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect, type Page } from '@playwright/test';
 import { VIEW_ROLE_COOKIE } from '../../src/domain/identity/view-role';
 import { BASE_URL, contextAs, customPrincipalHeaders, IDS } from './helpers/principal';
+import { WEDDING_DETAILS } from './helpers/wedding-details';
 import { forwardedFor, readOtp, seedFixtures, signInAdminViaApi, cap } from '../security/helpers';
 
 async function openAccountMenu(page: Page): Promise<'popover' | 'inline'> {
@@ -96,6 +97,18 @@ test.describe('guest portal navigation', () => {
     await expect(page).toHaveURL(/\/guests\/?$/);
     await expectGuestPortalNav(page);
     await ctx.close();
+  });
+
+  // The public pages have a prerendered copy for a reader with no session (src/themes/routes.ts).
+  // A guest's request is not answered from it: Our Story, to them, still says where.
+  test('Our Story is rendered for its reader: a guest is told where, a signed-out reader is not', async ({ browser, page }) => {
+    const ctx = await contextAs(browser, 'A1');
+    const guest = await ctx.newPage();
+    await guest.goto('/our-story');
+    await expect(guest.getByRole('main')).toContainText(WEDDING_DETAILS);
+    await ctx.close();
+    await page.goto('/our-story');
+    await expect(page.locator('body')).not.toContainText(WEDDING_DETAILS);
   });
 
   test('signed-in guests land on /guests and see portal nav', async ({ browser }) => {

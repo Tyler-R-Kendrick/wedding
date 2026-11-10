@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { WEDDING_DETAILS } from './helpers/wedding-details';
 
 /**
  * Level 15 (level-03 review N15): the CSP and HSTS the ladder deferred.
@@ -11,8 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
  * serves the relaxed one.
  *
  * The routes are the public shell a visitor actually meets, chosen to cover the ways this app puts
- * things on a page: the prerendered theme tree (`/`), a dynamic public page with images
- * (`/our-story`), and a form — the sign-in door, which is where `/gifts` and `/guests/ask-us` send
+ * things on a page: the prerendered tree (`/`, and `/our-story` with its images), and a form — the sign-in door, which is where `/gifts` and `/guests/ask-us` send
  * a signed-out reader. Everything about the wedding is behind that door, so the signed-in pages
  * (the concierge island among them) are loaded on the test server, by quality-sweep.spec.ts and
  * concierge.spec.ts; the strict production policy is asserted here on what this server can show.
@@ -64,9 +64,9 @@ test.describe('security headers', () => {
   });
 
   test('the policy is present on the prerendered theme tree, not only on the rewritten URL', async ({ request }) => {
-    // `/` is rewritten to `/t/<theme>` by the proxy, but `/t/<theme>` is also a real, prerendered,
-    // directly reachable URL — and the proxy's matcher skips `t/`. This is the case that decided
-    // where these headers live: set in the proxy, this assertion would fail.
+    // `/` is rewritten to `/t/<theme>` for a reader with no session, but `/t/<theme>` is also a
+    // real, prerendered, directly reachable URL, and the proxy sees neither. This is the case that
+    // decided where these headers live: set in the proxy, this assertion would fail.
     for (const url of ['/', '/t/botanical-deco', '/api/health']) {
       const res = await request.get(url);
       const csp = res.headers()['content-security-policy'];
@@ -122,56 +122,60 @@ test.describe('security headers', () => {
   });
 
   /**
-   * Level 16, cache isolation — the header half.
+   * Level 16, cache isolation: the header half.
    *
-   * `src/proxy.ts` marks every personalized route and every cookie-resolved public URL
-   * `private, no-store` with `Vary: Cookie`, and the reason is not politeness: without it a shared
-   * cache may serve one household's dashboard to another, and a browser may reuse a themed RSC
-   * payload across a design switch. `next dev` replaces that header with
-   * `no-cache, must-revalidate`, so this can only be asserted against `next start` — which is why
-   * it is here and not in `quality-sweep.spec.ts`, where the identities live.
+   * `src/proxy.ts` marks every personalized route `private, no-store`, and the reason is not
+   * politeness: without it a shared cache may serve one household's dashboard to another.
+   * `next dev` replaces that header with `no-cache, must-revalidate`, so this can only be asserted
+   * against `next start`, which is why it is here and not in `quality-sweep.spec.ts`, where the
+   * identities live.
    *
    * Anonymous is enough: the proxy sets the header by path, before any handler decides who the
    * caller is, so the status of the personalized routes below does not matter.
    */
-  test('personalized and theme-resolved URLs forbid a shared cache from keeping them', async ({ request }) => {
+  test('personalized URLs forbid a shared cache from keeping them', async ({ request }) => {
     // `/gifts` shows Zelle and mailing details to invited guests (ADR-0013).
     // `/guests`, `/guests/travel` and `/our-venue` carry the date, the venue and the room block.
     // Redirects are not followed: a signed-out request to most of these is sent to sign in, and it
-    // is this path's own answer — the one the proxy marked — that a cache would be keeping.
+    // is this path's own answer, the one the proxy marked, that a cache would be keeping.
     const PERSONALIZED = ['/guests', '/guests/travel', '/our-venue', '/rsvp', '/trip', '/transportation', '/media/mine', '/gifts'];
-    for (const path of [...PERSONALIZED, '/']) {
+    for (const path of PERSONALIZED) {
       const res = await request.get(path, { maxRedirects: 0 });
       const cc = res.headers()['cache-control'] ?? '';
       expect(cc, `${path} may be stored by a shared cache`).toContain('no-store');
       expect(cc, `${path} is not marked private`).toContain('private');
+      // A validator invites a conditional request, and a conditional request is how a shared cache
+      // revalidates one identity's copy for another. No personalized route may carry one.
+      expect(res.headers()['etag'], `${path} carries an ETag`).toBeUndefined();
     }
+  });
 
-    // A validator invites a conditional request, and a conditional request is how a shared cache
-    // revalidates one identity's copy for another. No personalized route may carry one.
-    for (const path of PERSONALIZED) {
-      expect((await request.get(path, { maxRedirects: 0 })).headers()['etag'], `${path} carries an ETag`).toBeUndefined();
+  /**
+   * The public pages have two renders at one address (src/themes/routes.ts). A request with no
+   * session is answered from a prerendered copy that a shared cache may keep, and that copy is the
+   * signed-out page: nothing in it says when or where the wedding is. A request that carries a
+   * session, even one that turns out to be nobody's, is rendered for its reader and may not be
+   * kept by anyone. The cookie alone decides, before any page code runs, so the cached copy is
+   * never a page that was rendered for somebody.
+   */
+  test('a public page is cacheable for a reader with no session, and never for one with a session', async ({ request }) => {
+    for (const path of ['/', '/our-story', '/our-adventures', '/our-adventures/starved-rock', '/privacy', '/terms', '/credits']) {
+      const anonymous = await request.get(path);
+      expect(anonymous.status(), path).toBe(200);
+      const cached = anonymous.headers()['cache-control'] ?? '';
+      expect(cached, `${path} is not kept by a shared cache`).toMatch(/s-maxage=[1-9]\d*, stale-while-revalidate=[1-9]/);
+      expect(cached, path).not.toMatch(/private|no-store/);
+      // The whole response, markup and the data React ships with it.
+      expect(await anonymous.text(), `${path}: the cached copy says when or where the wedding is`).not.toMatch(WEDDING_DETAILS);
+
+      for (const cookie of ['__Secure-wedding.session_token=nobody', 'theme=v2.botanical-deco; wedding.session_token=nobody', 'view-role=guest.1.x']) {
+        const theirs = await request.get(path, { headers: { cookie }, maxRedirects: 0 });
+        const cc = theirs.headers()['cache-control'] ?? '';
+        expect(cc, `${path} with ${cookie} may be stored`).toContain('no-store');
+        expect(cc, `${path} with ${cookie} is not marked private`).toContain('private');
+      }
     }
-
-    /*
-     * `Vary` is NOT asserted here, and the reason is a measurement rather than an opinion.
-     *
-     * `src/proxy.ts` does `response.headers.append('Vary', 'Cookie')` on exactly these paths, and
-     * that header never reaches the wire: Next.js sets its own `Vary` for the RSC protocol
-     * (`rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch,
-     * Accept-Encoding`) on every one of these responses and the appended value is lost. Measured on
-     * `next start` on the seven paths this list held then.
-     *
-     * The guarantee still holds, on `no-store` alone: a response no cache may store is a response
-     * no cache can serve to the wrong identity, and `Vary` was insurance behind that. Asserting the
-     * header would therefore be asserting something the app does not do and does not need to do —
-     * so this says what is true, names what is missing, and leaves the proxy line as the dead code
-     * it is for a level that owns the proxy to remove.
-     *
-     * `/` does carry an ETag, and that is correct: the clean URL is rewritten to the prerendered
-     * `/t/<theme>` tree, the ETag is that tree's own validator, the theme is in the rewritten URL,
-     * and `no-store` sits in front of it. `themes.spec.ts` proves the second switch in a session is
-     * not served from cache, which is the behaviour this would otherwise be a proxy for.
-     */
+    // A filtered list is a request's own too: the prerendered copy is the whole list.
+    expect((await request.get('/our-adventures?season=summer')).headers()['cache-control']).toContain('no-store');
   });
 });

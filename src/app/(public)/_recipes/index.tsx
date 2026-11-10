@@ -8,12 +8,14 @@ import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
 import { GUEST_PORTAL, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
 import { ROUTES } from '@/domain/routes';
-import { getPrincipal } from '@/lib/principal';
+import type { Reader } from '@/domain/content/page-context';
+import { ANONYMOUS, getPrincipal } from '@/lib/principal';
 import { getTheme } from '@/themes';
+import { DEFAULT_THEME } from '@/themes/registry';
 import { selectContentRecipe, type ContentRecipeKey, type ContentRecipes } from '@/themes/content';
 import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
-import type { PageFrame } from '@/themes/types';
+import type { PageFrame, ThemeId } from '@/themes/types';
 import { AdventureDetailPage } from './AdventureDetailPage';
 import { AdventuresPage, type AdventuresRecipeProps } from './AdventuresPage';
 import { AskPage, type AskRecipeProps } from './AskPage';
@@ -68,39 +70,43 @@ export const placeholderRecipes: PageRecipes = {
 
 type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0], 'frame'>;
 
+/** The frame for whoever sent this request: their lifecycle (an admin's preview included), their navigation. */
+async function requestFrame(theme: ThemeId, currentPath: string, within: boolean | undefined): Promise<PageFrame> {
+  const h = await headers();
+  const preview = h.get(PREVIEW_HEADER);
+  const requestPath = h.get(PATHNAME_HEADER) ?? currentPath;
+  const onPortal = isGuestPortalRoute(requestPath);
+  // Guest layout does not wrap these routes (the recipe already has a Shell). Use the portal
+  // URL so that Shell's nav is the guest portal, with the section path on a detail page so the
+  // parent item stays current.
+  const pathForFrame =
+    onPortal && within && requestPath.startsWith(`${GUEST_PORTAL.thingsToDo}/`)
+      ? GUEST_PORTAL.thingsToDo
+      : onPortal
+        ? requestPath
+        : currentPath;
+  // Resolve the principal on every themed page so signed-in guests see portal links and the
+  // account menu at first paint.
+  const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
+  return buildPageFrame({ theme, currentPath: pathForFrame, lifecycle: { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) } });
+}
+
 /**
- * Themed dispatch (level 05). Each page component resolves the active theme server-side from the
- * request (`?theme=` → cookie → default, already applied by the proxy), builds the page frame
- * (facts, lifecycle incl. an admin preview when the proxy forwarded one, nav for the current path)
- * and renders that theme's recipe. A theme without a recipe for the page falls back
- * to Swarm C's placeholder recipe, so unknown themes never break a route.
+ * Themed dispatch (level 05). Each page component builds the page frame (facts, lifecycle, nav for
+ * the current path) and renders the design's recipe; a design without a recipe for the page falls
+ * back to Swarm C's placeholder recipe. For the `request` reader the frame is that reader's own,
+ * resolved from the request; for `anonymous` it is nobody's and reads no request, which is what
+ * lets the page be prerendered (`src/themes/routes.ts`).
  */
-function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean; within?: boolean } = {}): ComponentType<PropsOf<K>> {
+function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean; within?: boolean } = {}, reader: Reader = 'request'): ComponentType<PropsOf<K>> {
   const Themed = async (props: PropsOf<K>): Promise<ReactNode> => {
-    const theme = await getRequestTheme();
+    const theme = reader === 'anonymous' ? DEFAULT_THEME : await getRequestTheme();
     const recipe = selectContentRecipe(getTheme(theme), key);
     if (!recipe) {
       const Fallback = fallback;
       return <Fallback {...props} />;
     }
-    const h = await headers();
-    const preview = h.get(PREVIEW_HEADER);
-    const requestPath = h.get(PATHNAME_HEADER) ?? currentPath;
-    const onPortal = isGuestPortalRoute(requestPath);
-    // Guest layout does not wrap these routes (the recipe already has a Shell). Use the portal
-    // URL so that Shell's nav is the guest portal, with the section path on a detail page so the
-    // parent item stays current.
-    const pathForFrame =
-      onPortal && opts.within && requestPath.startsWith(`${GUEST_PORTAL.thingsToDo}/`)
-        ? GUEST_PORTAL.thingsToDo
-        : onPortal
-          ? requestPath
-          : currentPath;
-    // Resolve the principal on every themed page so signed-in guests see portal links and the
-    // account menu at first paint, not only after `/api/session` on prerendered public routes.
-    const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
-    const lifecycle = { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) };
-    const built = await buildPageFrame({ theme, currentPath: pathForFrame, ...(lifecycle ? { lifecycle } : {}) });
+    const built = reader === 'anonymous' ? await buildPageFrame({ theme, currentPath, lifecycle: { principal: ANONYMOUS } }) : await requestFrame(theme, currentPath, opts.within);
     // A detail page (`within`) lights its section's item as the place the reader is, not the page.
     const frame = opts.within ? { ...built, nav: { ...built.nav, currentIsAncestor: true } } : built;
     const render = recipe as unknown as (p: PropsOf<K> & { frame: PageFrame }) => ReactNode;
@@ -127,5 +133,14 @@ export const themedRecipes: PageRecipes = {
 
 /** Swap point: the theme kit's recipes, with the placeholders as the fallback for unknown themes. */
 export const recipes: PageRecipes = themedRecipes;
+
+/** The public pages' recipes with no reader: what a prerendered copy renders. */
+const anonymousRecipes = {
+  StoryPage: themed('story', ROUTES.story, StoryPage, {}, 'anonymous'),
+  AdventuresPage: themed('adventures', ROUTES.adventures, AdventuresPage, {}, 'anonymous'),
+  AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage, { within: true }, 'anonymous'),
+} satisfies Partial<PageRecipes>;
+
+export const publicRecipes = (reader: Reader): typeof anonymousRecipes => (reader === 'anonymous' ? anonymousRecipes : recipes);
 
 export type { AdventuresRecipeProps, AskRecipeProps, GuideRecipeProps };

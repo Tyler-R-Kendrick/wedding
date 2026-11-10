@@ -89,10 +89,10 @@ export const WARM_ROUTES = [
   // 405) so the first flow in a run is not the one that waits for it: the lifecycle review timed
   // out on [mobile], the first project to run, while tablet and desktop passed.
   '/api/capabilities/warmup',
-  // The lifecycle preview route (`/t/[theme]/preview/[token]`): the masthead sweep reaches every
-  // state through it, and nothing else on this server does. The proxy rewrites on the value's shape,
-  // not on who asks, so an anonymous request compiles it.
-  '/?preview=RSVP_OPEN',
+  // The public pages have two renders (src/themes/routes.ts): the prerendered copy an anonymous
+  // request compiles, and the page a signed-in reader gets, which every spec with a test principal
+  // opens. `?preview=` asks for the second without one, so both are compiled before the run.
+  '/?preview=RSVP_OPEN', '/our-story?preview=RSVP_OPEN', '/our-adventures?preview=RSVP_OPEN', '/our-adventures/starved-rock?preview=RSVP_OPEN', '/credits?preview=RSVP_OPEN',
   // site-crawler.spec.ts. Concrete seed paths and the aliases it requests by name; the dynamic
   // route itself is compiled by the first of each pattern. `/admin/sitemap` is also on the console
   // index, which admin-console.spec walks.
@@ -100,7 +100,7 @@ export const WARM_ROUTES = [
   '/our-adventures/starved-rock', '/our-venue/white-city-ballroom',
   '/i/example', '/invite/example',
   '/admin/content/story_sections', '/admin/content/story_sections/new', '/admin/content/story_sections/01SEED00000000000000000200',
-  '/t/botanical-deco', '/t/botanical-deco/preview/RSVP_OPEN',
+  '/t/botanical-deco',
   '/explore-caa', '/faq', '/things-to-do', '/wedding-day', '/registry',
   '/sitemap.xml', '/api/health',
 ];
@@ -130,7 +130,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Pages sign-in journeys pass through or land on, whether or not a spec names them in quotes (specs
  * reach the invite page through a template string and assert `/admin` and `/rsvp` with regexes).
  */
-const ALWAYS_WARM = ['/', '/api/session', '/api/capabilities/warmup', '/api/dev/inbox', '/sign-in', '/sign-out', '/invite/warmup-token-0000000000000000000000', '/claim/verify', '/claim/welcome', '/admin', '/rsvp'];
+const ALWAYS_WARM = ['/', '/?preview=RSVP_OPEN', '/api/session', '/api/capabilities/warmup', '/api/dev/inbox', '/sign-in', '/sign-out', '/invite/warmup-token-0000000000000000000000', '/claim/verify', '/claim/welcome', '/admin', '/rsvp'];
 
 /** The warm-up for a run of `specs`: everything for a full run, else what those files name. */
 export function routesToWarm(specs, read = (f) => readFileSync(f, 'utf8')) {

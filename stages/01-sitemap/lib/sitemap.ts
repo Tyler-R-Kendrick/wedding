@@ -219,8 +219,9 @@ export const PAGES: SitemapPage[] = [
 ];
 
 /**
- * Routes the real app serves that are not pages in the site's sense: the statically rendered theme
- * tree the proxy rewrites clean URLs onto (ADR-0009 §4). Listed so the route test can tell an
- * intentional omission from a forgotten one.
+ * Routes the real app serves that are not pages in the site's sense: the prerendered tree
+ * (ADR-0009 §4). Each is the copy of a public page that a reader with no session is served, built
+ * ahead and cached; the page itself, at its clean address, renders for a reader who has one. Listed
+ * so the route test can tell an intentional omission from a forgotten one.
  */
-export const INTERNAL_ROUTES = ['/t/[theme]', '/t/[theme]/preview/[token]'] as const;
+export const INTERNAL_ROUTES = ['/t/[theme]', '/t/[theme]/our-story', '/t/[theme]/our-adventures', '/t/[theme]/our-adventures/[slug]', '/t/[theme]/credits', '/t/[theme]/privacy', '/t/[theme]/terms'] as const;

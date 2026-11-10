@@ -8,7 +8,6 @@ import { toSiteFacts, mapsUrlFor } from '@/domain/lifecycle/facts';
 import { navFor, homeLabelFor, memberNavFor } from '@/domain/lifecycle/nav';
 import { mintPreviewToken, parsePreviewValue, verifyPreviewToken } from '@/domain/lifecycle/preview';
 import { resolveLifecycle } from '@/domain/lifecycle/state';
-import { STATIC_PUBLIC_ROUTES } from '@/themes/routes';
 import { SEED_SITE } from '@/db/seed/seed';
 
 const SECRET = 'unit-test-secret-at-least-16';
@@ -174,9 +173,6 @@ describe('navigation by lifecycle state', () => {
       }
     };
     walk(join(process.cwd(), 'src', 'app'), '');
-    // Home has no `src/app/page.tsx`: the proxy rewrites it into the per-theme static tree
-    // (`/t/<theme>`), so the walk cannot see it. That rewrite list is the authority for those.
-    for (const r of STATIC_PUBLIC_ROUTES) routes.add(r);
     expect(routes.has('/gifts')).toBe(true); // sanity: the walk finds real pages
 
     expect(routes.has('/guests/travel')).toBe(true);

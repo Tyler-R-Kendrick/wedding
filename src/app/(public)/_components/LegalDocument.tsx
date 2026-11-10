@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
+import type { Reader } from '@/domain/content/page-context';
+import { ANONYMOUS } from '@/lib/principal';
 import { getTheme } from '@/themes';
+import { DEFAULT_THEME } from '@/themes/registry';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
 
 export const LEGAL_LAST_UPDATED = 'November 1, 2026';
@@ -8,15 +11,19 @@ export async function LegalDocument({
   title,
   lede,
   currentPath,
+  reader,
   children,
 }: {
   title: string;
   lede: string;
   currentPath: '/privacy' | '/terms';
+  reader: Reader;
   children: ReactNode;
 }) {
-  const theme = await getRequestTheme();
-  const frame = await buildPageFrame({ theme, currentPath });
+  // The prerendered copy is nobody's, so its menu is the signed-out one outright. The per-request
+  // page leaves the question open and the account menu asks in the browser, as it always has here.
+  const theme = reader === 'anonymous' ? DEFAULT_THEME : await getRequestTheme();
+  const frame = await buildPageFrame({ theme, currentPath, ...(reader === 'anonymous' ? { lifecycle: { principal: ANONYMOUS } } : {}) });
   const Shell = getTheme(theme).kit.Shell;
   return (
     <Shell frame={frame}>

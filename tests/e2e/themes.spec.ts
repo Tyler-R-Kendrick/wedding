@@ -11,7 +11,6 @@ test.describe('theme resolution', () => {
   test('the design is Botanical–Deco and data-theme is in the server HTML (no flash)', async ({ request }) => {
     const res = await request.get('/');
     expect(res.status()).toBe(200);
-    expect(res.headers()['x-theme']).toBe('botanical-deco');
     const html = await res.text();
     expect(html).toContain('data-theme="botanical-deco"');
     // Only the two faces the first paint needs are preloaded (Bodoni Moda, Newsreader).
@@ -23,12 +22,14 @@ test.describe('theme resolution', () => {
     for (const font of html.match(/\/fonts\/[a-z-]+\//g) ?? []) expect(font).toBe('/fonts/botanical-deco/');
   });
 
+  // The proxy resolves the design on every page it handles. Home is not one of them for a reader
+  // with no session (it is served from its prerendered copy), so these ask for the sign-in door.
   test('?theme= is remembered for a year, and invalid values are ignored', async ({ request }) => {
-    const q = await request.get('/?theme=botanical-deco');
+    const q = await request.get('/sign-in?theme=botanical-deco');
     expect(q.headers()['x-theme']).toBe('botanical-deco');
     expect(q.headers()['set-cookie']).toContain('theme=v2.botanical-deco');
     expect(q.headers()['set-cookie']).toMatch(/Max-Age=31536000/i);
-    const invalid = await request.get('/?theme=neon');
+    const invalid = await request.get('/sign-in?theme=neon');
     expect(invalid.status()).toBe(200);
     expect(invalid.headers()['x-theme']).toBe('botanical-deco');
     expect(invalid.headers()['set-cookie'] ?? '').not.toContain('neon');
@@ -38,16 +39,19 @@ test.describe('theme resolution', () => {
     for (const retired of ['gilded-hour', 'conservatory']) {
       // An old review link: the one design, and nothing stored under the retired name.
       const link = await playwright.request.newContext({ baseURL });
-      const viaLink = await link.get(`/?theme=${retired}`);
-      expect(viaLink.status(), `?theme=${retired}`).toBe(200);
-      expect(viaLink.headers()['x-theme']).toBe('botanical-deco');
-      expect(await viaLink.text()).toContain('data-theme="botanical-deco"');
-      expect(viaLink.headers()['set-cookie'] ?? '').not.toContain(retired);
+      for (const path of ['/', '/sign-in']) {
+        const viaLink = await link.get(`${path}?theme=${retired}`);
+        expect(viaLink.status(), `${path}?theme=${retired}`).toBe(200);
+        expect(await viaLink.text()).toContain('data-theme="botanical-deco"');
+        expect(viaLink.headers()['set-cookie'] ?? '').not.toContain(retired);
+      }
       await link.dispose();
       // A cookie from before: bare, as the old switcher wrote it, or in the later versioned form.
+      // It changes nothing on the prerendered Home, and the first page the proxy handles clears it.
       for (const cookie of [retired, `v2.${retired}`]) {
         const ctx = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { cookie: `theme=${cookie}` } });
-        const res = await ctx.get('/');
+        expect(await (await ctx.get('/')).text(), `theme=${cookie}`).toContain('data-theme="botanical-deco"');
+        const res = await ctx.get('/sign-in');
         expect(res.status(), `theme=${cookie}`).toBe(200);
         expect(res.headers()['x-theme']).toBe('botanical-deco');
         expect(await res.text()).toContain('data-theme="botanical-deco"');

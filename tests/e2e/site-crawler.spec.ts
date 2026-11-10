@@ -5,6 +5,7 @@ import { crawlUrl, inventory, routesForPersona, type CrawlPersonaKind, type Inve
 import { REDIRECTS } from '../../src/lib/site-redirects';
 import { cap, seedFixtures, signInAdminViaApi } from '../security/helpers';
 import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
+import { WEDDING_DETAILS } from './helpers/wedding-details';
 
 /**
  * Site audit. Each persona opens the HTML routes `routesForPersona` names:
@@ -94,7 +95,6 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/sitemap.xml'
  * '/step-up'
  * '/t/botanical-deco'
- * '/t/botanical-deco/preview/RSVP_OPEN'
  * '/terms'
  * '/the-wedding'
  * '/terms'
@@ -113,13 +113,6 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
 
 /** Addresses that used to be aliases and are now nothing: neither a page nor a redirect. */
 const REMOVED = ['/explore-caa', '/explore-caa/white-city-ballroom', '/things-to-do', '/wedding-day'] as const;
-
-/**
- * What a signed-out reader must never be shown: when the wedding is, and where. The venue is matched
- * as `src/domain/content/venue-guard.ts` matches it (its name, or its street address), so a public
- * memory of somewhere else on Michigan Avenue is not mistaken for it.
- */
-const WEDDING_DETAILS = /July 17|chicago\s+athletic|\b12\s+s(?:outh|\.)?\s+michigan\b/i;
 
 const ANON_MS = 480_000;
 const GUEST_MS = 480_000;

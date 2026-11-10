@@ -1,16 +1,14 @@
-import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
-import { getPrincipal } from '@/lib/principal';
-import { isThemeId } from '@/themes/registry';
-import { renderHome } from '@/themes/server';
+import { HomeView, staticParams } from '@/app/(public)/_views';
 
-/** Home resolves the reader so signed-in guests and view-role previews canonicalize onto `/guests`. */
-export const dynamic = 'force-dynamic';
+/**
+ * Home as a signed-out reader sees it, prerendered. A lifecycle change reaches it within five
+ * minutes, or at once when an administrator publishes one (src/app/api/capabilities/[name]/route.ts).
+ */
+export const revalidate = 300;
+export const dynamic = 'error';
+export const dynamicParams = false;
+export const generateStaticParams = staticParams;
 
-export default async function HomeRoute({ params }: { params: Promise<{ theme: string }> }) {
-  const { theme } = await params;
-  if (!isThemeId(theme)) notFound();
-  const h = await headers();
-  const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
-  return renderHome({ theme, lifecycle: { principal } });
+export default function StaticHomePage() {
+  return <HomeView reader="anonymous" />;
 }

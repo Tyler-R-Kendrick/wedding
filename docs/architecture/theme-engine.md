@@ -9,10 +9,10 @@ the theme owns expression only. The lifecycle state machine (ADR-0012) decides w
 navigation do; the theme decides how it looks.
 
 ```
-request ──proxy.ts──▶ theme = ?theme → cookie → default        preview = ?preview | cookie (shape-checked only)
-   │                                                            │
-   ├─ static public route (/) ────▶ rewrite /t/<theme>/…        └─▶ rewrite /t/<theme>/preview/<token>/…  (dynamic, no-store)
-   └─ every other route ──────────▶ pass through + x-theme / x-lifecycle-preview request headers
+request
+   ├─ static public route, no session ──next.config rewrite──▶ /t/<theme>/…   (prerendered, cached; no proxy, no page code)
+   └─ everything else ──proxy.ts──▶ theme = ?theme → cookie → default; preview = ?preview | cookie (shape-checked only)
+                           └─▶ pass through + x-theme / x-pathname / x-lifecycle-preview request headers
                                         │
                         page: data (capabilities / domain) ──▶ getTheme(theme).recipes.<page>(data) ──▶ Shell[data-theme]
 ```
@@ -24,7 +24,7 @@ request ──proxy.ts──▶ theme = ?theme → cookie → default        pre
 | `src/themes/types.ts` | `ThemeDefinition`, `ThemeComponentKit` (22 component contracts), `ThemeRecipes`, `PageData` types |
 | `src/themes/registry.ts` | Metadata only (id, name, fonts, icon, theme colour). Importable from the proxy and the browser. `DEFAULT_THEME = 'botanical-deco'` |
 | `src/themes/resolve.ts` | Pure `resolveTheme({ query, cookie })` → `{ theme, source, stale? }`; cookie name/options |
-| `src/themes/routes.ts` | `STATIC_PUBLIC_ROUTES` (routes with a `src/app/t/[theme]/…` page), personalized prefixes, header names |
+| `src/themes/routes.ts` | `STATIC_PUBLIC_ROUTES` (routes with a prerendered copy under `src/app/t/[theme]/…`), `STATIC_UNLESS` (what a request must not carry to be served that copy), personalized prefixes, header names |
 | `src/themes/index.ts` | `getTheme(id)` → full definition with kit + recipes (server / render harness only) |
 | `src/themes/server.tsx` | `getRequestTheme()`, `buildPageFrame()`, `renderHome()` (server-only) |
 | `src/themes/<id>/DESIGN.md` + `design.json` | Source of truth for tokens (Google DESIGN.md spec) |
@@ -36,9 +36,10 @@ request ──proxy.ts──▶ theme = ?theme → cookie → default        pre
 | `src/themes/<id>/recipes/` | `home.tsx` (per lifecycle state) + generic recipes from `shared/recipes.tsx` |
 | `src/themes/shared/` | Theme-neutral pieces: `home-content.ts` (copy per state), `recipes.tsx` (Story/Archive/Detail/Form/Dashboard/Gallery), `DialogBase.tsx`, `use-countdown.ts`, `ThemeSync.tsx`, `base.css`, `print.css`, icons |
 | `src/domain/lifecycle/` | `countdown.ts` (America/Chicago calendar days), `nav.ts` (nav per state), `preview.ts` (signed tokens), `state.ts` (`resolveLifecycle`, gated by `requireAdmin`), `index.ts` (server loader) |
-| `src/proxy.ts` | Theme + preview resolution and rewrites (Next.js 16 `proxy` convention lives at `src/proxy.ts`, not inside `app/`) |
-| `src/app/t/[theme]/` | Static theme trees: `layout.tsx` (font preload, html mirror), `page.tsx` (Home, `revalidate = 60`), `preview/[token]/page.tsx` (dynamic admin preview) |
-| `src/app/(public)/layout.tsx` | Dynamic public routes other swarms add; reads the proxy's `x-theme` |
+| `src/proxy.ts` | Theme + preview resolution for every request that is rendered for its reader (Next.js 16 `proxy` convention lives at `src/proxy.ts`, not inside `app/`) |
+| `src/app/t/[theme]/` | The prerendered tree: `layout.tsx` (font preload, html mirror) and one page for each static public route, each the signed-out render with `revalidate = 300` |
+| `src/app/(public)/_views.tsx` | What each static public route renders, for either reader: the page under `(public)/` passes `request`, its twin under `t/[theme]/` passes `anonymous` |
+| `src/app/(public)/layout.tsx` | The public pages as rendered for a reader with a session; reads the proxy's `x-theme` |
 | `scripts/design-sync.mjs` | Token generator + `--check` drift gate |
 | `scripts/render-home.tsx`, `scripts/screenshot-home.mjs`, `scripts/harness-register.mjs` | Review harness: Home × 9 states as static HTML + screenshots at 390/768/1440 (the register hook stubs `server-only`/`next/*`) |
 | `scripts/measure-cls.mjs` | Lab CLS/LCP under 4× CPU + 1.6 Mbps |
@@ -52,24 +53,51 @@ device (one-year, `SameSite=Lax`, `HttpOnly` cookie set by the proxy, stored as 
 request that names a retired design still renders the site: `?theme=gilded-hour` is ignored like
 any unknown value, and a stored cookie that names one (bare, as the old design switcher wrote it,
 or `v2.<id>`) is reported `stale` by `resolveTheme` and deleted by the proxy. The choice is never
-tied to a guest identity. Responses carry an `x-theme` header (tests and debugging).
+tied to a guest identity. Responses the proxy handles carry an `x-theme` header (tests and debugging).
 
 ## Static rendering
 
-The theme is a real route tree under `/t/[theme]` (`generateStaticParams`, `dynamicParams = false`).
-The proxy rewrites clean URLs listed in `STATIC_PUBLIC_ROUTES` to `/t/<theme><path>`; guests never
-see `/t/`. Home is prerendered and revalidates every 60 s, so a lifecycle publish
-propagates within a minute (the client countdown re-computes on mount and at each Chicago
-midnight, so a stale-by-minutes page never shows a stale day count). Personalized routes
-(`/your-weekend`, `/rsvp`, `/admin`, `/i/…`, `/claim`) and every preview response are
-`Cache-Control: private, no-store` (the proxy sets it; Next's dynamic-route default in production
-is `private, no-cache, no-store, …` as well).
+The public pages (`STATIC_PUBLIC_ROUTES`: Home, Our Story, Our Adventures and each adventure, the
+credits, privacy and terms) have two renders at one address.
 
-**Adding a page.** Dynamic: put it under `src/app/(public)/<route>/page.tsx`, fetch theme-agnostic
-data, then `const theme = await getRequestTheme(); return getTheme(theme).recipes.detail(data)`
-(build the `PageFrame` with `buildPageFrame({ theme, currentPath })`). Static: add
-`src/app/t/[theme]/<route>/page.tsx` mirroring `t/[theme]/page.tsx` and append the route to
-`STATIC_PUBLIC_ROUTES`. Never write `new Date()` in
+- **A reader with no session** is served a prerendered copy from `/t/[theme]/…`. It is the
+  signed-out render, built with no request in hand (`reader="anonymous"`), so it cannot contain
+  anything a signed-in reader is shown. Next sends it with `s-maxage=300, stale-while-revalidate=…`;
+  on Vercel it is answered from the CDN without running a function.
+- **A reader with a session** gets the page under `src/app/(public)/…`, rendered for them on every
+  request and sent `private, no-store`: Our Story with the sentences about the venue, the guest
+  navigation, and `/` sending a guest on to `/guests`.
+
+The choice is made on the request alone, before any page code: `next.config.ts` rewrites the clean
+URL onto the prerendered tree when the request carries none of `STATIC_UNLESS` (a session cookie,
+an administrator's view-as or lifecycle-preview cookie, `?preview=`, the test suites' principal
+header, an adventure filter). The proxy's matcher is the complement, so it runs exactly for the
+requests that are rendered for their reader. A stale or forged cookie only costs a render: the
+request-time page finds nobody and renders the signed-out page, uncached. A cached page is never one
+that was rendered for somebody. `tests/unit/themes/static-routes.test.ts` holds the two lists
+together; `tests/e2e/security-headers.spec.ts` asserts the headers against `next start`.
+
+**Freshness.** Each prerendered page revalidates every five minutes, and an administrator's change
+through `/api/capabilities/<name>` (a published lifecycle state, an edited story or adventure) marks
+the whole tree stale at once (`revalidatePath('/t/[theme]', 'layout')`). The client countdown
+re-computes on mount, so a stale-by-minutes page never shows a stale day count.
+
+**Builds.** Home, the credits, privacy and terms are built at `next build`; they need nothing a
+build lacks (the lifecycle loader falls back to the brief's facts when the database is unreachable).
+Our Story and the adventures are read from the database: they are built ahead when it can be read at
+build time and otherwise on their first visit, then cached the same way (`staticParamsWhenReadable`
+in `_views.tsx`). `src/app/not-found.tsx` reads no request: Next renders that boundary into every
+page's tree, and a `headers()` there made every route in the app dynamic.
+
+Personalized routes (`/guests`, `/rsvp`, `/admin`, `/i/…`, `/claim`, …) and every preview response
+are `Cache-Control: private, no-store` (the proxy sets it; Next's dynamic-route default in
+production is `private, no-cache, no-store, …` as well).
+
+**Adding a public page.** Put what it renders in `src/app/(public)/_views.tsx` as a view that takes a
+`reader`, add `src/app/(public)/<route>/page.tsx` (`reader="request"`) and
+`src/app/t/[theme]/<route>/page.tsx` (`reader="anonymous"`, `revalidate`, `generateStaticParams`),
+and append the route to `STATIC_PUBLIC_ROUTES` and to the pattern beside it. A page that is only
+ever a reader's own (a guest page) goes under its route group alone. Never write `new Date()` in
 `src/app` or `src/components` (the lifecycle module owns the clock).
 
 ## Why `data-theme` is on the Shell, mirrored to `<html>`
@@ -140,7 +168,7 @@ signed form) is applied by `resolveLifecycle` **only when `requireAdmin(principa
 signature alone grants nothing, and anonymous or guest requests always render the published state.
 Admins mint signed tokens through `navigate_to({ route, lifecycle })` (audited as
 `lifecycle.previewed`); tokens are HMAC-signed with `CONFIRMATION_SECRET` (no new secret) and expire
-after 12 h. Previews render through the dynamic `/t/[theme]/preview/[token]` tree, are visibly
+after 12 h. Previews render through the request-time pages (never the prerendered tree), are visibly
 banded ("Previewing RSVP_OPEN (published state: TEASER)"), and are never cached. Because admin
 sessions arrive with the auth swarm, the e2e suite covers the negative path (non-admins) and the
 integration suite the positive path with a synthetic admin principal.

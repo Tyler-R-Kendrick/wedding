@@ -68,7 +68,6 @@ export const CRAWL_EXAMPLES = {
   invitation: '/i/example',
   invite: '/invite/example',
   theme: '/t/botanical-deco',
-  preview: '/t/botanical-deco/preview/RSVP_OPEN',
   contentTable: '/admin/content/story_sections',
   contentNew: '/admin/content/story_sections/new',
   contentRow: `/admin/content/story_sections/${SEEDED_STORY_ROW_ID}`,
@@ -237,33 +236,27 @@ function pageRows(): InventoryRow[] {
   });
 }
 
+/**
+ * The prerendered tree: one row for each public page's cached copy. The crawler opens the first by
+ * its own address; the rest it reaches the way a reader does, through the clean URL.
+ */
 function internalRows(): InventoryRow[] {
-  return [
-    {
-      url: INTERNAL_ROUTES[0],
-      examples: THEME_IDS.map((t) => `/t/${t}`),
-      crawlExample: CRAWL_EXAMPLES.theme,
-      audience: 'public',
+  return INTERNAL_ROUTES.map((url) => {
+    const clean = url.slice('/t/[theme]'.length) || '/';
+    const home = clean === '/';
+    return {
+      url,
+      examples: THEME_IDS.map((t) => url.replace('[theme]', t).replace('[slug]', CRAWL_EXAMPLES.adventure.split('/').pop()!)),
+      crawlExample: home ? CRAWL_EXAMPLES.theme : null,
+      audience: 'public' as const,
       method: 'GET',
-      purpose: 'The statically rendered theme tree the proxy rewrites a clean public URL onto. Not a page in the guest’s sense.',
-      expected: '200 for a known theme. An unknown theme is 404. Visitors normally arrive via the clean URL (/), which the proxy rewrites here.',
-      kind: 'internal',
-      crawl: true,
+      purpose: `The prerendered copy of ${clean}: the page as a signed-out reader sees it, built ahead and cached. Not a page in the guest’s sense.`,
+      expected: `200 for a known theme, always the signed-out render. An unknown theme is 404. Visitors arrive via the clean URL (${clean.replace('[slug]', '<slug>')}), which is rewritten here when the request carries no session; with one, the clean URL renders for that reader instead.`,
+      kind: 'internal' as const,
+      crawl: home,
       probe: null,
-    },
-    {
-      url: INTERNAL_ROUTES[1],
-      examples: [CRAWL_EXAMPLES.preview],
-      crawlExample: CRAWL_EXAMPLES.preview,
-      audience: 'public',
-      method: 'GET',
-      purpose: 'Home with an admin lifecycle preview token. The proxy rewrites /?preview=… here.',
-      expected: '200 for any visitor. The preview changes what an administrator sees; everyone else sees the published lifecycle.',
-      kind: 'internal',
-      crawl: true,
-      probe: null,
-    },
-  ];
+    };
+  });
 }
 
 /** A seeded recommendation: the only `:slug` alias is `/share-an-adventure/:slug`. */

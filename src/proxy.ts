@@ -11,11 +11,13 @@ const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
 /**
  * Theme + lifecycle-preview resolution per request (ADR-0009 §4, ADR-0012 §2).
  *   - `?theme=` → `theme` cookie → default; a valid `?theme=` is remembered on this device.
- *   - Static public routes are rewritten to `/t/<theme><path>`, a real, cacheable tree;
- *     a preview request goes to the dynamic `/t/<theme>/preview/<token><path>` tree instead.
- *   - Everything else passes through with `x-theme` (and `x-lifecycle-preview`) request headers.
- *   - Personalized areas and previews are always `Cache-Control: private, no-store`.
- * No authorization happens here: the preview page verifies the admin server-side.
+ *   - Every page passes through with `x-theme`, `x-pathname` (and `x-lifecycle-preview`) request headers.
+ *   - Personalized areas, previews, and the public pages' own per-request renders are always
+ *     `Cache-Control: private, no-store`.
+ * It never sees a signed-out request for a static public route (`src/themes/routes.ts`): the matcher
+ * below leaves those to `next.config.ts`, which rewrites them onto the prerendered tree, so on
+ * Vercel they are answered from the cache without running this function.
+ * No authorization happens here: the pages verify the reader server-side.
  */
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
@@ -40,17 +42,7 @@ export function proxy(request: NextRequest) {
   if (preview) requestHeaders.set(PREVIEW_HEADER, preview);
   else requestHeaders.delete(PREVIEW_HEADER);
 
-  let response: NextResponse;
-  if (isStaticPublicRoute(url.pathname)) {
-    const target = url.clone();
-    const suffix = url.pathname === '/' ? '' : url.pathname;
-    target.pathname = preview ? `/t/${theme}/preview/${encodeURIComponent(preview)}${suffix}` : `/t/${theme}${suffix}`;
-    target.searchParams.delete(THEME_QUERY);
-    target.searchParams.delete(PREVIEW_QUERY);
-    response = NextResponse.rewrite(target, { request: { headers: requestHeaders } });
-  } else {
-    response = NextResponse.next({ request: { headers: requestHeaders } });
-  }
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   response.headers.set(THEME_HEADER, theme);
   if (source === 'query' && parseThemeCookie(cookieTheme).theme !== theme) {
@@ -60,20 +52,27 @@ export function proxy(request: NextRequest) {
     // ignored; clearing it stops it riding along on every request.
     response.cookies.delete(THEME_COOKIE);
   }
-  // The response to a clean public URL depends on cookies (the theme, a lifecycle preview), so
-  // neither a shared cache nor the browser may reuse it across them; the rewritten `/t/<theme>` tree
-  // itself stays static and cacheable at its own URL.
+  // A static public route arrives here only when the request carries a session (the matcher), so
+  // what follows is that reader's own render: no cache may keep it, shared or the browser's.
   if (preview || isPersonalizedRoute(url.pathname) || isStaticPublicRoute(url.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store');
-    response.headers.append('Vary', 'Cookie');
   }
   return response;
 }
 
 export const config = {
   matcher: [
-    // Skip API routes, Next internals, the theme trees themselves, and static files.
-    '/((?!api/|_next/|t/|fonts/|assets/|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\..*).*)',
+    // Skip API routes, Next internals, the prerendered tree, static files, and the static public
+    // routes: those take one of the entries below instead.
+    '/((?!api/|_next/|t/|fonts/|assets/|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\..*|(?:our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?$).*)',
+    // A static public route, when the request is one the prerendered copy cannot answer. One entry
+    // for each of STATIC_UNLESS in src/themes/routes.ts, and the same pattern: literal, because Next
+    // reads this at build time; tests/unit/themes/static-routes.test.ts holds the two together.
+    { source: '/(our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?', has: [{ type: 'header', key: 'cookie', value: '(?:^|.*;\\s*)(?:(?:__Secure-|__Host-)?wedding\\.session_token|view-role|guest-view|lifecycle-preview)=.*' }] },
+    { source: '/(our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?', has: [{ type: 'header', key: 'x-test-principal' }] },
+    { source: '/(our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?', has: [{ type: 'query', key: 'preview' }] },
+    { source: '/(our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?', has: [{ type: 'query', key: 'tag' }] },
+    { source: '/(our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits)?', has: [{ type: 'query', key: 'season' }] },
     // Every request for a design stage, its scripts and captured pages included: the access rule
     // above has to see the files, not only the documents. Literal, because Next reads this at build
     // time; tests/unit/stages/stage-access.test.ts holds it to STAGE_IDS.

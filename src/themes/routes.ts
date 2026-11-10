@@ -1,11 +1,42 @@
 /**
- * Which public routes have a statically rendered theme tree under `src/app/t/[theme]/…`.
- * The proxy rewrites these clean URLs to `/t/<theme><path>` (ADR-0009 §4). Every other public
- * route renders dynamically under `src/app/(public)/…` and reads the theme from the request
- * (`getRequestTheme()`); a swarm that wants static rendering adds its page under `t/[theme]/`
- * and appends its route here.
+ * The public pages that have a prerendered copy under `src/app/t/[theme]/…`.
+ *
+ * Each of these addresses has two renders. A reader with no session gets the prerendered copy,
+ * which is the anonymous render and is cached; `next.config.ts` rewrites the clean URL onto it, so
+ * neither the proxy nor a page runs. Anyone else gets the page under `src/app/(public)/…`, rendered
+ * for them on every request. The choice is made on the request alone (`STATIC_UNLESS`), before any
+ * page code, so a cached page is never one that was rendered for somebody.
  */
-export const STATIC_PUBLIC_ROUTES = ['/'] as const;
+export const STATIC_PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-adventures/:slug', '/privacy', '/terms', '/credits'] as const;
+
+/** The same list as one alternation (Home is the empty path): what the proxy's matcher repeats literally. */
+export const STATIC_PUBLIC_PATTERN = 'our-story|our-adventures(?:/[^/]+)?|privacy|terms|credits';
+
+/**
+ * A `Cookie` header that names a session: Better Auth's session cookie (`wedding.session_token`, with
+ * the `__Secure-` prefix on https), an administrator's view-as cookies, or a lifecycle preview. A
+ * stale or forged one only means the page is rendered on request, as nobody.
+ */
+export const SESSION_COOKIES = '(?:^|.*;\\s*)(?:(?:__Secure-|__Host-)?wedding\\.session_token|view-role|guest-view|lifecycle-preview)=.*';
+
+/**
+ * What a request must not carry to be answered from the prerendered copy: a session cookie, the
+ * test suites' injected principal, a lifecycle preview, or a filter only a request can answer (the
+ * adventure chips). In `next.config.ts` these are the rewrite's `missing` list; the proxy's matcher
+ * holds one entry for each, so it runs exactly when the rewrite does not apply.
+ */
+export const STATIC_UNLESS = [
+  { type: 'header', key: 'cookie', value: SESSION_COOKIES },
+  { type: 'header', key: 'x-test-principal' },
+  { type: 'query', key: 'preview' },
+  { type: 'query', key: 'tag' },
+  { type: 'query', key: 'season' },
+] as const;
+
+/** `/our-story` → `/t/<theme>/our-story`: where the prerendered copy of a static public route lives. */
+export function staticTreePath(theme: string, route: string): string {
+  return `/t/${theme}${route === '/' ? '' : route}`;
+}
 
 /** Personalized areas: responses are always `Cache-Control: private, no-store`. */
 // `/gifts` shows Zelle and mailing details to a guest who arrived by invitation (ADR-0013), so a
@@ -15,8 +46,10 @@ export const STATIC_PUBLIC_ROUTES = ['/'] as const;
 // where the wedding is, which only a signed-in reader is shown.
 export const PERSONALIZED_ROUTE_PREFIXES = ['/guests', '/rsvp', '/admin', '/i/', '/claim', '/gifts', '/photos', '/media', '/transportation', '/trip', '/our-venue'] as const;
 
+const STATIC_PUBLIC = new RegExp(`^/(?:${STATIC_PUBLIC_PATTERN})?$`);
+
 export function isStaticPublicRoute(pathname: string): boolean {
-  return (STATIC_PUBLIC_ROUTES as readonly string[]).includes(pathname);
+  return STATIC_PUBLIC.test(pathname);
 }
 
 export function isPersonalizedRoute(pathname: string): boolean {
