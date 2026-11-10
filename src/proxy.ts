@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
 import { parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import { decideStage, STAGE_ENTER_PATH, STAGE_PASS_COOKIE } from '@/lib/stage-access';
-import { isStageHost, isStagePath } from '@/lib/stage-hosting';
+import { isStageHost, isStagePath, namesStageFiles } from '@/lib/stage-hosting';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
 /** `RSVP_OPEN` or `RSVP_OPEN.<exp>.<sig>`; anything else is dropped before it reaches a route. */
@@ -37,8 +37,10 @@ export function proxy(request: NextRequest) {
   // The design pipeline's stages (src/lib/stage-hosting.ts) are static drafts with no theme or
   // lifecycle of their own; next.config's rewrites serve them. Rewriting `/` onto the theme tree
   // here would show the wedding home page on sitemap.dev.<domain>.
-  const host = request.headers.get('host') ?? url.host;
+  const host = (request.headers.get('host') ?? url.host).toLowerCase();
   const production = process.env.VERCEL_ENV === 'production';
+  // The assembled stage files are never an address of their own, however the path is spelled.
+  if (namesStageFiles(url.pathname)) return new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
   if (isStageHost(host) || isStagePath(url.pathname, { production }) || (url.pathname === STAGE_ENTER_PATH && !production)) {
     // They redraw the guest and admin pages with their headings readable, on addresses that take no
     // sign-in of their own, so a deployed stage is for a signed-in admin (src/lib/stage-access.ts).
@@ -111,6 +113,11 @@ export const config = {
     // above has to see the files, not only the documents. Literal, because Next reads this at build
     // time; tests/unit/stages/stage-access.test.ts holds it to STAGE_IDS.
     { source: '/:path*', has: [{ type: 'host', value: '(?:(?:sitemap|wireframe|skeleton|placeholder)\\.)?dev\\..+' }] },
+    // The assembled files asked for directly, and any path with percent-encoding in it, which is
+    // how `/_stages` can be spelled so that the entry before it does not see it. Neither is caught
+    // by the first entry, which leaves every path with a dot in it alone.
+    '/_stages/:path*',
+    '/(.*%.*)',
     '/:stage(sitemap|wireframe|skeleton|placeholder|stages)/:path*',
     '/:stage(sitemap|wireframe|skeleton|placeholder|stages)',
   ],

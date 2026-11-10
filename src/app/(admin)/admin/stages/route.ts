@@ -16,7 +16,7 @@ const redirect = (location: string) => new Response(null, { status: 307, headers
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const host = request.headers.get('host') ?? url.host;
+  const host = (request.headers.get('host') ?? url.host).toLowerCase();
   const secret = process.env.BETTER_AUTH_SECRET;
   const back = stageReturn(url.searchParams.get('via'), url.searchParams.get('to'), host);
   if (stageAccess({ VERCEL: process.env.VERCEL, BETTER_AUTH_SECRET: secret }) !== 'admin' || !secret || !back) return notFound();
