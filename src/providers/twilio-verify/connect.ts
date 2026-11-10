@@ -121,7 +121,7 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
       options.getMetadata ??
       (async (connector) => {
         const { getConnectorMetadata } = await import('@vercel/connect');
-        return (await getConnectorMetadata(connector)).vendor;
+        return getConnectorMetadata(connector);
       });
     this.discover = options.discover ?? (() => projectTwilioConnectors(this.fetchImpl));
   }
@@ -136,7 +136,16 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
       await this.serviceSid();
       return { ok: true };
     } catch (e) {
-      return { ok: false, reason: describe(e) };
+      return { ok: false, reason: `${describe(e)} [connector settings: ${await this.connectorSettings()}]` };
+    }
+  }
+
+  /** The connector's public settings as Vercel reports them, for the log line that says why no text can be sent. */
+  private async connectorSettings(): Promise<string> {
+    try {
+      return summarize(await this.getMetadata(this.connector)).slice(0, 900);
+    } catch (e) {
+      return `unreadable (${describe(e)})`;
     }
   }
 
@@ -275,5 +284,33 @@ function describe(e: unknown): string {
   if (!(e instanceof Error)) return 'unknown error';
   const code = (e as { code?: unknown }).code;
   const status = (e as { status?: unknown }).status;
-  return [e.name !== 'Error' ? e.name : '', typeof code === 'string' ? code : '', typeof status === 'number' ? String(status) : '', e.message].filter(Boolean).join(' ').slice(0, 300);
+  const vendor = (e as { vendor?: unknown }).vendor;
+  return [e.name !== 'Error' ? e.name : '', typeof code === 'string' ? code : '', typeof status === 'number' ? String(status) : '', e.message, vendor ? `vendor ${summarize(vendor)}` : '']
+    .filter(Boolean)
+    .join(' ')
+    .slice(0, 500);
+}
+
+/**
+ * A settings object as one log-safe line: names, and values only where they cannot be a credential
+ * (booleans, numbers, URLs, short plain words). Anything else is its length and first two letters.
+ */
+export function summarize(value: unknown, depth = 3): string {
+  if (value === null || value === undefined) return 'none';
+  if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+  if (typeof value === 'string') {
+    if (value === '') return 'empty';
+    if (/^https?:\/\/[^\s?#]+$/.test(value)) return value;
+    if (value.length <= 32 && /^[a-z][a-z0-9_.\-/ ]*$/i.test(value) && !/^(AC|SK|OQ|VA)[0-9a-f]{16,}/i.test(value)) return value;
+    return `<${value.length} chars, ${value.slice(0, 2)}…>`;
+  }
+  if (depth === 0) return '…';
+  if (Array.isArray(value)) return `[${value.slice(0, 8).map((v) => summarize(v, depth - 1)).join(', ')}]`;
+  if (typeof value === 'object') {
+    return `{${Object.entries(value)
+      .slice(0, 30)
+      .map(([k, v]) => `${k}: ${/secret|token|password|credential|private/i.test(k) && typeof v === 'string' ? (v ? '<set>' : 'empty') : summarize(v, depth - 1)}`)
+      .join(', ')}}`;
+  }
+  return typeof value;
 }
