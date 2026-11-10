@@ -869,20 +869,6 @@
     }
    }
   },
-  "sign-in-phone": {
-   "title": "Sign in with your phone | Sara + Tyler",
-   "url": "/sign-in/phone",
-   "finalUrl": "/sign-in/phone",
-   "source": "app (test server, fixture data)",
-   "principal": null,
-   "capturedAt": "2026-11-10",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    }
-   }
-  },
   "admin-sitemap": {
    "title": "Sitemap",
    "url": "/admin/sitemap",

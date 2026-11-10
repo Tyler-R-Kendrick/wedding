@@ -330,3 +330,52 @@
   background: var(--color-surface);
   border-block-end-color: var(--color-gold-deep);
 }
+
+/*
+ * Email or text: two equal tabs at the top of /sign-in, not a primary method and an "instead" link.
+ * Links (`?method=text`), so the choice survives an error and needs no script. The chosen one takes
+ * the primary pair, the same colours as "Send me a code"; the other stays full-strength ink, so
+ * neither reads as the lesser way in. 3rem tall: the 44px target floor with room to spare.
+ */
+.auth-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-block-end: var(--spacing-lg, 24px);
+  border: 1px solid var(--auth-outline);
+  border-radius: var(--auth-radius);
+  overflow: hidden;
+}
+
+.auth-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: var(--color-primary);
+  font-size: var(--type-control-caps-size, var(--text-control-caps, 1rem));
+  font-weight: var(--type-control-caps-weight, var(--font-weight-control-caps, 500));
+  letter-spacing: var(--type-control-caps-tracking, var(--tracking-control-caps, 0.14em));
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.auth-method + .auth-method {
+  border-inline-start: 1px solid var(--auth-outline);
+}
+
+.auth-method[aria-current="page"] {
+  color: var(--color-neutral);
+  background: var(--color-primary);
+}
+
+.auth-method:focus-visible {
+  outline: 3px solid var(--auth-accent);
+  outline-offset: -3px;
+}
+
+[data-theme="botanical-deco"] .auth-method[aria-current="page"] {
+  color: var(--color-on-gold-deep);
+  background: var(--color-gold-deep);
+}
