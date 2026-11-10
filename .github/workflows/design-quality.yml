@@ -243,7 +243,10 @@ jobs:
         # server libraries (next.config.ts), and the warm-up pauses whenever the server has grown
         # 2.5 GB, which is when Turbopack lets go of what it compiled. The script prints the
         # server's peak for the warm-up and for the whole run.
-        run: node scripts/test-server-specs.mjs --project=mobile --project=desktop
+        #
+        # Once per project, each with a fresh server and warm-up: a dev server slows down as it
+        # ages, and after forty minutes of requests one page took over a minute to answer.
+        run: node scripts/test-server-specs.mjs --project=mobile && node scripts/test-server-specs.mjs --project=desktop
         env:
           CI: 'true'
           PORT: '3000'

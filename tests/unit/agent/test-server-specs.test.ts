@@ -16,7 +16,8 @@ describe('npm run test:e2e:server is the CI test-server step', () => {
   it('is what CI runs, so there is one warm-up list and one set of server settings', () => {
     const step = ciStep();
     expect(step, 'the "Identity, RSVP and security specs" step moved or was renamed').toBeDefined();
-    expect(step).toMatch(/^ {8}run: node scripts\/test-server-specs\.mjs( --project=\w+)*$/m);
+    // The script and nothing else, once or chained once per project (each run gets a fresh server).
+    expect(step).toMatch(/^ {8}run: node scripts\/test-server-specs\.mjs( --project=\w+)*( && node scripts\/test-server-specs\.mjs( --project=\w+)*)*$/m);
     // No second copy of the routes or the settings in the workflow.
     expect(step).not.toMatch(/for path in|curl /);
     const env = [...step!.slice(step!.indexOf('\n        env:\n')).matchAll(/^ {10}([A-Z0-9_]+):/gm)].map((m) => m[1]);
