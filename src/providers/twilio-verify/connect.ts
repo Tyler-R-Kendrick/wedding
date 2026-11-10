@@ -227,7 +227,15 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
     const ask = async (connector: string): Promise<ConnectTokenAnswer | undefined> => {
       for (const subject of this.subject ? [this.subject] : this.subjects) {
         try {
-          const answer = await this.getTokenResponse(connector, { subject });
+          const answer = await this.getTokenResponse(connector, { subject }).catch(async (first: unknown) => {
+            // TEMP while the connector is worked out: the same request with no scopes at all.
+            if (subject.type !== 'app') throw first;
+            try {
+              return await (this.getTokenResponse as (c: string, p: object) => Promise<ConnectTokenAnswer>)(connector, { subject, scopes: [] });
+            } catch (second) {
+              throw Object.assign(new Error(`${describe(first)} | no scopes: ${describe(second)}`), { name: 'Error' });
+            }
+          });
           if (answer?.token) {
             this.subject = subject;
             return answer;
@@ -295,6 +303,7 @@ function describe(e: unknown): string {
  * A settings object as one log-safe line: names, and values only where they cannot be a credential
  * (booleans, numbers, URLs, short plain words). Anything else is its length and first two letters.
  */
+const PUBLIC_SETTING = /^(https:\/\/[a-z0-9.\-]+\/[a-z0-9.\-/_]*|client_secret_post|client_secret_basic|private_key_jwt|none)$/i;
 export function summarize(value: unknown, depth = 3): string {
   if (value === null || value === undefined) return 'none';
   if (typeof value === 'boolean' || typeof value === 'number') return String(value);
@@ -309,7 +318,7 @@ export function summarize(value: unknown, depth = 3): string {
   if (typeof value === 'object') {
     return `{${Object.entries(value)
       .slice(0, 30)
-      .map(([k, v]) => `${k}: ${/secret|token|password|credential|private/i.test(k) && typeof v === 'string' ? (v ? '<set>' : 'empty') : summarize(v, depth - 1)}`)
+      .map(([k, v]) => `${k}: ${/secret|token|password|credential|private/i.test(k) && typeof v === 'string' && !PUBLIC_SETTING.test(v) ? (v ? '<set>' : 'empty') : summarize(v, depth - 1)}`)
       .join(', ')}}`;
   }
   return typeof value;
