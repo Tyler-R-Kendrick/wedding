@@ -55,11 +55,22 @@ interface Source {
   name: 'production' | 'app';
   origin: string;
   principal: keyof typeof PRINCIPALS | null;
+  /** The day a guest page is captured on: see `openDay`. */
+  lifecycle?: string;
 }
+
+/**
+ * Photos, uploads and gifts are closed to guests until their day (`requireOpenNow` in the app): on
+ * the test server's own day a guest who asks for one is sent to the dashboard, and the capture would
+ * file the dashboard under that page's name. The fixture guest is therefore seen on the day the page
+ * opens (the test-principal injector's `lifecycle`), which is the sitemap's `visibleFrom`.
+ */
+const LATER_DAYS = ['RSVP_OPEN', 'RSVP_CLOSED', 'WEDDING_WEEK', 'WEDDING_DAY', 'POST_WEDDING', 'ARCHIVE'];
+const openDay = (p: SitemapPage): string | undefined => (p.audience === 'guest' && p.visibleFrom && LATER_DAYS.includes(p.visibleFrom) ? p.visibleFrom : undefined);
 function sourceFor(p: SitemapPage): Source {
   // The capture URL is a fixture pass row (see seedTestFixtures); production has no stable instance.
   if (p.id === 'guest-sign-in-pass') return { name: 'app', origin: APP, principal: null };
-  if (p.audience === 'guest' || p.audience === 'admin') return { name: 'app', origin: APP, principal: p.audience };
+  if (p.audience === 'guest' || p.audience === 'admin') return { name: 'app', origin: APP, principal: p.audience, ...(openDay(p) ? { lifecycle: openDay(p) } : {}) };
   return ALL_FROM_APP ? { name: 'app', origin: APP, principal: null } : { name: 'production', origin: PRODUCTION, principal: null };
 }
 
@@ -94,10 +105,10 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 6): P
 const contexts = new Map<string, BrowserContext>();
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 async function contextFor(source: Source, design: string): Promise<BrowserContext> {
-  const key = `${source.name}|${source.principal}|${design}`;
+  const key = `${source.name}|${source.principal}|${source.lifecycle ?? ''}|${design}`;
   const known = contexts.get(key);
   if (known) return known;
-  const headers: Record<string, string> = source.principal ? { 'x-test-auth': TEST_AUTH_SECRET, 'x-test-principal': JSON.stringify(PRINCIPALS[source.principal]) } : {};
+  const headers: Record<string, string> = source.principal ? { 'x-test-auth': TEST_AUTH_SECRET, 'x-test-principal': JSON.stringify({ ...PRINCIPALS[source.principal], ...(source.lifecycle && source.principal === 'guest' ? { lifecycle: source.lifecycle } : {}) }) } : {};
   // The sandbox and CI reach production through proxies that re-sign TLS; the capture reads public pages.
   const ctx = await browser.newContext({ viewport: { width: WIDTH, height: 900 }, extraHTTPHeaders: headers, ignoreHTTPSErrors: true, serviceWorkers: 'block' });
   await ctx.route('**/*', async (route) => {

@@ -5,8 +5,8 @@
  },
  "bodyAttrs": {},
  "css": [
-  "c59b130976563c20",
-  "3b2c5472d22e38e5"
+  "79dca0556553e25a",
+  "f82e70d4e5636efb"
  ],
  "assets": [
   "/assets/art/botanical-deco/deco-corner.svg",
@@ -27,18 +27,30 @@
   "/assets/art/gilded-hour/monogram-frame.svg",
   "/assets/art/gilded-hour/stepped-frame.svg",
   "/assets/art/gilded-hour/sunburst-hero.svg",
-  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
-  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
-  "/fonts/botanical-deco/ms-madi-regular.woff2",
-  "/fonts/botanical-deco/newsreader-text-italic.woff2",
-  "/fonts/botanical-deco/newsreader-text.woff2",
-  "/fonts/conservatory/cardo-italic.woff2",
-  "/fonts/conservatory/gloock-regular.woff2",
-  "/fonts/conservatory/spectral-medium.woff2",
-  "/fonts/conservatory/spectral-regular.woff2",
-  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
-  "/fonts/gilded-hour/cinzel-wght.woff2",
-  "/fonts/gilded-hour/josefin-sans-wght.woff2"
+  "/fonts/botanical-deco/bodoni-moda-core.woff2",
+  "/fonts/botanical-deco/bodoni-moda-ext.woff2",
+  "/fonts/botanical-deco/bodoni-moda-italic-core.woff2",
+  "/fonts/botanical-deco/bodoni-moda-italic-ext.woff2",
+  "/fonts/botanical-deco/ms-madi-core.woff2",
+  "/fonts/botanical-deco/ms-madi-ext.woff2",
+  "/fonts/botanical-deco/newsreader-core.woff2",
+  "/fonts/botanical-deco/newsreader-ext.woff2",
+  "/fonts/botanical-deco/newsreader-italic-core.woff2",
+  "/fonts/botanical-deco/newsreader-italic-ext.woff2",
+  "/fonts/conservatory/cardo-italic-core.woff2",
+  "/fonts/conservatory/cardo-italic-ext.woff2",
+  "/fonts/conservatory/gloock-core.woff2",
+  "/fonts/conservatory/gloock-ext.woff2",
+  "/fonts/conservatory/spectral-core.woff2",
+  "/fonts/conservatory/spectral-ext.woff2",
+  "/fonts/conservatory/spectral-medium-core.woff2",
+  "/fonts/conservatory/spectral-medium-ext.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-core.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-ext.woff2",
+  "/fonts/gilded-hour/cinzel-core.woff2",
+  "/fonts/gilded-hour/cinzel-ext.woff2",
+  "/fonts/gilded-hour/josefin-sans-core.woff2",
+  "/fonts/gilded-hour/josefin-sans-ext.woff2"
  ],
  "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"gilded-hour\" data-bl-s=\"\"><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"Come back when your invitation has been sent!\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"Come back when your invitation has been sent!\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Almost there</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">Come back when your invitation has been sent!</span></h1><div class=\"auth-lede\"><p><span data-bl-t=\"copy\">Sara and Tyler will let you know when it is time. If you already have an invitation, try signing in with the email they have for you instead.</span></p></div><div class=\"auth-actions\"><a class=\"auth-link\" href=\"/sign-in\"><span data-bl-t=\"label\">Sign in with email</span></a></div></article></main><!--$--><!--/$--></div>"
 }

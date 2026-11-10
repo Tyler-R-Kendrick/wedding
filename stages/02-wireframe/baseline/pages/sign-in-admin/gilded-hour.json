@@ -5,10 +5,8 @@
  },
  "bodyAttrs": {},
  "css": [
-  "4431b68db8ab51fe",
-  "3d42c237c8678d4b",
-  "8fb57b611fbb2e88",
-  "f71563c31298aa6c"
+  "79dca0556553e25a",
+  "f82e70d4e5636efb"
  ],
  "assets": [
   "/assets/art/botanical-deco/deco-corner.svg",
@@ -29,18 +27,30 @@
   "/assets/art/gilded-hour/monogram-frame.svg",
   "/assets/art/gilded-hour/stepped-frame.svg",
   "/assets/art/gilded-hour/sunburst-hero.svg",
-  "/fonts/botanical-deco/bodoni-moda-italic-wght.woff2",
-  "/fonts/botanical-deco/bodoni-moda-wght.woff2",
-  "/fonts/botanical-deco/ms-madi-regular.woff2",
-  "/fonts/botanical-deco/newsreader-text-italic.woff2",
-  "/fonts/botanical-deco/newsreader-text.woff2",
-  "/fonts/conservatory/cardo-italic.woff2",
-  "/fonts/conservatory/gloock-regular.woff2",
-  "/fonts/conservatory/spectral-medium.woff2",
-  "/fonts/conservatory/spectral-regular.woff2",
-  "/fonts/gilded-hour/big-shoulders-display-wght.woff2",
-  "/fonts/gilded-hour/cinzel-wght.woff2",
-  "/fonts/gilded-hour/josefin-sans-wght.woff2"
+  "/fonts/botanical-deco/bodoni-moda-core.woff2",
+  "/fonts/botanical-deco/bodoni-moda-ext.woff2",
+  "/fonts/botanical-deco/bodoni-moda-italic-core.woff2",
+  "/fonts/botanical-deco/bodoni-moda-italic-ext.woff2",
+  "/fonts/botanical-deco/ms-madi-core.woff2",
+  "/fonts/botanical-deco/ms-madi-ext.woff2",
+  "/fonts/botanical-deco/newsreader-core.woff2",
+  "/fonts/botanical-deco/newsreader-ext.woff2",
+  "/fonts/botanical-deco/newsreader-italic-core.woff2",
+  "/fonts/botanical-deco/newsreader-italic-ext.woff2",
+  "/fonts/conservatory/cardo-italic-core.woff2",
+  "/fonts/conservatory/cardo-italic-ext.woff2",
+  "/fonts/conservatory/gloock-core.woff2",
+  "/fonts/conservatory/gloock-ext.woff2",
+  "/fonts/conservatory/spectral-core.woff2",
+  "/fonts/conservatory/spectral-ext.woff2",
+  "/fonts/conservatory/spectral-medium-core.woff2",
+  "/fonts/conservatory/spectral-medium-ext.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-core.woff2",
+  "/fonts/gilded-hour/big-shoulders-display-ext.woff2",
+  "/fonts/gilded-hour/cinzel-core.woff2",
+  "/fonts/gilded-hour/cinzel-ext.woff2",
+  "/fonts/gilded-hour/josefin-sans-core.woff2",
+  "/fonts/gilded-hour/josefin-sans-ext.woff2"
  ],
- "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"gilded-hour\" data-bl-s=\"\"><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"Sign in to the console\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"Sign in to the console\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Administration</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">Sign in to the console</span></h1><div class=\"auth-lede\"><p><span data-bl-t=\"copy\">Enter your administrator email. We’ll send a six-digit code.</span></p></div><form enctype=\"multipart/form-data\" method=\"POST\" data-bl-k=\"form\" data-bl-form=\"\"><input type=\"hidden\" name=\"$ACTION_ID_4073b463291cb639890c5320e65417ba4124dc208c\"><input type=\"hidden\" name=\"admin\" value=\"1\"><input type=\"hidden\" name=\"next\" value=\"/admin\"><div class=\"auth-field\"><label for=\"email\" class=\"auth-label\"><span data-bl-t=\"label\">Administrator email</span></label><input id=\"email\" type=\"email\" class=\"auth-input\" autocomplete=\"email\" required=\"\" maxlength=\"254\" name=\"email\" data-bl-s=\"\" data-bl-b=\"\"></div><div class=\"auth-actions\"><button type=\"submit\" class=\"auth-button auth-button-primary\" data-bl-s=\"\" data-bl-dark=\"\"><span data-bl-t=\"label\">Send me a code</span></button></div></form></article></main><!--$--><!--/$--></div>"
+ "body": "<div hidden=\"\"><!--$--><!--/$--></div><p id=\"design-announcer\" class=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\"></p><div class=\"auth-root\" data-theme=\"gilded-hour\" data-bl-s=\"\"><main id=\"main\" class=\"auth-shell\" data-bl-k=\"main\" data-bl-label=\"Sign in to the console\"><article class=\"auth-card\" aria-labelledby=\"auth-title\" data-bl-s=\"\" data-bl-b=\"\" data-bl-k=\"article\" data-bl-label=\"Sign in to the console\"><p class=\"auth-eyebrow\"><span data-bl-t=\"copy\">Administration</span></p><h1 id=\"auth-title\" class=\"auth-title\"><span data-bl-t=\"heading\">Sign in to the console</span></h1><div class=\"auth-lede\"><p><span data-bl-t=\"copy\">Enter your administrator email. We’ll send a six-digit code.</span></p></div><form enctype=\"multipart/form-data\" method=\"POST\" data-bl-k=\"form\" data-bl-form=\"\"><input type=\"hidden\" name=\"$ACTION_ID_402d8c3cf1c59fe0cd6677c65875fbe4ecf282ad15\"><input type=\"hidden\" name=\"admin\" value=\"1\"><input type=\"hidden\" name=\"next\" value=\"/admin\"><div class=\"auth-field\"><label for=\"email\" class=\"auth-label\"><span data-bl-t=\"label\">Administrator email</span></label><input id=\"email\" type=\"email\" class=\"auth-input\" autocomplete=\"email\" required=\"\" maxlength=\"254\" name=\"email\" data-bl-s=\"\" data-bl-b=\"\"></div><div class=\"auth-actions\"><button type=\"submit\" class=\"auth-button auth-button-primary\" data-bl-s=\"\" data-bl-dark=\"\"><span data-bl-t=\"label\">Send me a code</span></button></div></form></article></main><!--$--><!--/$--></div>"
 }

@@ -110,27 +110,3 @@
   display: inline;
 }
 
-/* [project]/src/app/(admin)/admin/concierge/concierge.css [app-client] (css) */
-.cg-answer {
-  max-width: 66ch;
-  margin: 0;
-}
-
-.cg-dropped {
-  color: var(--color-error);
-}
-
-.cg-sources {
-  gap: var(--spacing-xs);
-  color: var(--color-on-surface-muted);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-}
-
-.cg-details {
-  margin-block: 0;
-}
-
-/*# sourceMappingURL=src_1xw7yya._.css.map*/

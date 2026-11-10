@@ -2030,7 +2030,6 @@ textarea.flow-input {
 
 @keyframes flow-sheet-up {
   from {
-    opacity: 0;
     transform: translateY(24px);
   }
 }
@@ -2044,7 +2043,6 @@ textarea.flow-input {
 
 @keyframes flow-sheet-in {
   from {
-    opacity: 0;
     transform: translateX(32px);
   }
 }
@@ -2058,14 +2056,12 @@ textarea.flow-input {
 
 @keyframes flow-step-forward {
   from {
-    opacity: 0;
     transform: translateX(16px);
   }
 }
 
 @keyframes flow-step-back {
   from {
-    opacity: 0;
     transform: translateX(-16px);
   }
 }
@@ -2095,4 +2091,3 @@ textarea.flow-input {
   margin: 0;
 }
 
-/*# sourceMappingURL=src_0_wq9ub._.css.map*/
