@@ -4,6 +4,21 @@ One entry per accepted design change. Token changes cite the
 `npx design.md diff` output; direction changes cite the critique or the
 couple's decision. Newest first. Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md) Stage 9.
 
+## 2026-11-10 — Gilded Hour and Conservatory retired; one design
+
+**Decided by Tyler:** the two preview designs go. Botanical–Deco, approved and already the default,
+is the only design.
+
+- **Removed:** both theme folders (DESIGN.md, tokens, kits, recipes, stylesheets), their seven font
+  faces, procedural art and icons, the design switcher and its flag (`FLAG_DESIGN_SWITCHER`), and
+  the checks and tests that compared designs with each other.
+- **Kept, with one theme:** the registry, the kit and recipe contracts, the `/t/[theme]` tree and
+  `?theme=` parsing (`docs/architecture/theme-engine.md`). A link or a stored cookie that names a
+  retired design gets Botanical–Deco, and the stale cookie is cleared.
+- **Tailwind `@theme` base:** generated from Botanical–Deco's DESIGN.md now (it was Gilded Hour's).
+  The admin console declares its own foundation tokens on top, so it is unchanged.
+- **Stage pipeline:** one capture per page; the design pickers in stage 4 are gone.
+
 ## 2026-09-27 — Mastheads fit their real labels; "Browse as a guest" band
 
 **Reported by Tyler:** "HOME" was overlapping the S|T monogram. Since the sitemap's longer labels
@@ -116,7 +131,7 @@ files lands with the theme DESIGN.md files (Stage 3).
 
 ## 2026-09-05 — Level 02: two theme systems committed
 
-- `src/themes/gilded-hour/DESIGN.md` and `src/themes/conservatory/DESIGN.md`
+- src/themes/gilded-hour/DESIGN.md and src/themes/conservatory/DESIGN.md (both since removed)
   both lint clean (0 errors, 0 warnings). Token diff Gilded Hour → Conservatory:
   colors: +8 −4 ~0; typography: +2 −1 ~0; rounded: +1 −0 ~0; spacing: +0 −1 ~0; components: +14 −8 ~0.
 - Inspo boards: `docs/design/inspo/gilded-hour.html`, `docs/design/inspo/conservatory.html`

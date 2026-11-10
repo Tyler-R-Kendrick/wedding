@@ -178,12 +178,11 @@ components:
 
 # Sara + Tyler — Shared foundation (admin and utility surfaces)
 
-> The guest-facing site ships two complete designs, **Gilded Hour**
-> (`src/themes/gilded-hour/DESIGN.md`) and **Conservatory**
-> (`src/themes/conservatory/DESIGN.md`). This root file is the calm, neutral
+> The guest-facing site ships one design, **Botanical Deco**
+> (`src/themes/botanical-deco/DESIGN.md`). This root file is the calm, neutral
 > foundation used by admin screens, the dev inbox, error pages, e-mail, and
 > print styles, and it defines the shared spacing and rounding scales the
-> themes inherit. See `docs/design/design-doc.md` §5.
+> theme inherits. See `docs/design/design-doc.md` §5.
 
 ## Overview
 

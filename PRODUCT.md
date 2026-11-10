@@ -137,14 +137,14 @@ re-prioritizes by state and identity; see `docs/design/design-doc.md` §3.
 
 ## Themes
 
-Two complete, switchable designs over one content layer (ADR-0009):
-**Gilded Hour** (Art Deco: marble, gold leaf, sunburst/chevron, stepped
-frames, numbered sections, symmetry; Cinzel / Josefin Sans / Big Shoulders
-Display) and **Conservatory** (Botanical: foliage, moss, pressed-flower
-cards, sky washes over creme, organic asymmetry; Gloock / Spectral / Cardo
-italic). Tokens per theme in `src/themes/<id>/DESIGN.md`. Resolution
-`?theme=` → cookie → default; switcher visible to everyone until chosen.
-Default theme: TODO(Tyler & Sara). Five motifs in both: Adventure, Place,
+One design, **Botanical Deco**, the synthesis Sara and Tyler approved
+(`docs/design/approved-botanical-deco/`): her flowers and foliage with his
+Art Deco and Chicago architecture, on ivory with fine gold rules; Bodoni
+Moda / Newsreader / Ms Madi. Tokens in
+`src/themes/botanical-deco/DESIGN.md`. The two earlier proposals (Gilded
+Hour, Conservatory) were retired and their code removed; the theme engine
+(ADR-0009) keeps its seams with one theme, and a link or cookie that names
+a retired design gets Botanical Deco. Five motifs: Adventure, Place,
 Memory, Hospitality, Future.
 
 ## Constraints

@@ -2,8 +2,8 @@
 
 Sara and Tyler approved four page designs (Home, Our Story, Explore CAA + Chicago, Your Weekend)
 that join her botanicals and his Art Deco and Chicago architecture into one light, portrait-led
-design. It is the site's default and only guest-facing design; the two earlier proposals (Gilded
-Hour, Conservatory) remain reachable by an explicit `?theme=` link for review.
+design. It is the site's only design; the two earlier proposals (Gilded Hour, Conservatory) were
+retired and their code removed.
 
 | File | What it is |
 |---|---|

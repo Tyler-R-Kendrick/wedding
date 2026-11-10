@@ -9,8 +9,8 @@ resolves the proxy from the project root, not from `app/`), `src/app/globals.css
 (extend), `tests/e2e/themes*.spec.ts`, `tests/unit/themes/**`,
 `docs/architecture/theme-engine.md`, design critique outputs.
 
-**Inputs:** ADR-0009, ADR-0012, `src/themes/gilded-hour/DESIGN.md` +
-`design.json`, `src/themes/conservatory/DESIGN.md` + `design.json`,
+**Inputs:** ADR-0009, ADR-0012, src/themes/gilded-hour/DESIGN.md +
+`design.json`, src/themes/conservatory/DESIGN.md + `design.json` (both since removed),
 `docs/design/inspo/*.md`, `public/assets/art/*/manifest.json`,
 `docs/design/design-doc.md` §3–§8.
 

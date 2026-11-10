@@ -114,8 +114,7 @@ something else already answers on, and its server log is in the OS temp director
 ## The rendered design scan
 
 The source scans read CSS and JSX and cannot see a layout. `npm run slop:detect:rendered` runs
-impeccable against the live pages: every public route in all three designs at 390, 820, 1280 and
-1440px. It uses `BASE_URL` (default `http://localhost:3000`). To cover the guest routes too, which
+impeccable against the live pages: every public route at 390, 820, 1280 and 1440px. It uses `BASE_URL` (default `http://localhost:3000`). To cover the guest routes too, which
 otherwise show their sign-in gate, start the server the way the e2e suite does and pass the same
 secret:
 
@@ -125,7 +124,7 @@ NODE_ENV=test TEST_AUTH_SECRET=e2e-test-secret-0123456789 SEED_TEST_FIXTURES=1 \
 BASE_URL=http://localhost:3100 TEST_AUTH_SECRET=e2e-test-secret-0123456789 npm run slop:detect:rendered
 ```
 
-Narrow it with `--viewports 390x844`, `--themes conservatory`, or route arguments (`-- /gifts`).
+Narrow it with `--viewports 390x844` or route arguments (`-- /gifts`).
 It finds Playwright's Chromium itself (set `IMPECCABLE_BROWSER` to override) and adds
 `--no-sandbox` when it runs as root.
 

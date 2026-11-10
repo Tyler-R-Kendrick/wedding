@@ -17,8 +17,9 @@ guest media pipeline, semantic media search, feature-gated biometrics,
 closed-world AI concierge, WebMCP progressive enhancement, admin, threat model,
 evals, and docs. Delivery model: **incremental commits, stacked PRs, adversarial
 self-review between levels, parallel subagent swarms integrated one level at a
-time** (ADR-0010). Two completely different, switchable designs: **Gilded
-Hour** (Art Deco) and **Conservatory** (botanical).
+time** (ADR-0010). It began with two switchable designs, **Gilded Hour**
+(Art Deco) and **Conservatory** (botanical); the couple approved a synthesis,
+**Botanical Deco**, which is now the only design.
 
 Facts come only from the brief; unknowns are typed `TODO(Tyler & Sara)`
 placeholders tracked in `docs/content/backlog.md`.
@@ -85,7 +86,7 @@ planner or a vendor. Start at `docs/content/for-sara-and-tyler.md`.
 | Storage | S3-compatible adapter (Cloudflare R2 in production), local filesystem in dev; private originals, signed reads, EXIF/GPS stripped from derivatives |
 | AI | Vercel AI SDK 7 with `@browser-ai/core`: the guest's own browser model (Prompt API) writes each answer and the server verifies it; no hosted model anywhere (a browser without one gets an answer quoted from the site's pages); embeddings in-process |
 | Hosting | Vercel (project link attempted: the connector returned 403 "no permission to create the project"; needs Tyler to grant it or create the project once in the dashboard) + Supabase + R2 |
-| Themes | `gilded-hour` (default) and `conservatory`; switcher visible to everyone (`FLAG_DESIGN_SWITCHER`), `?theme=` links, cookie |
+| Themes | One: `botanical-deco` (approved). The two proposals and the design switcher were removed; `?theme=` and the cookie still resolve, to the one design |
 | Placeholders | Procedural SVG art (`scripts/art/*`) + Wikimedia Commons CC/PD photos with a hash-verified ledger; AI imagery never shipped as a "photo of the couple" |
 | Branching | Stacked PRs; squash-merge at the bottom of the stack; after each squash, rebase the next level with `git rebase --onto origin/main <old-base-head>` |
 | Secrets | Set in Vercel (Marketplace connectors or `vercel env add`) and, locally, `.env`; local development needs none. The Secret Drop was removed |

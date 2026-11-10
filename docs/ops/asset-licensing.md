@@ -44,7 +44,7 @@ NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --dry-run            # resol
 NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs "File:Some file.jpg" --use "Explore CAA — lobby detail"
 NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --list-only          # candidates in the CAA building category (never downloads)
 NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs "fern pressed specimen" --license cc0,pdm
-NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "Conservatory — pressed-fern card"
+NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "pressed-fern card"
 node scripts/fetch-commons.mjs --check                                   # ledger gate (no network); see §5
 ```
 
