@@ -11,7 +11,7 @@ export interface UnavailableCardProps {
 }
 
 /** The honest last rung of the ladder (ADR-0004 §3): says what is unavailable and offers the couple's contact route. Never a fake button. */
-export function UnavailableCard({ heading, message, contactRoute = '/ask-us', note, placeholder }: UnavailableCardProps) {
+export function UnavailableCard({ heading, message, contactRoute = '/guests/ask-us', note, placeholder }: UnavailableCardProps) {
   return (
     <article className="border-t border-primary/20 py-6" data-handoff-rung="unavailable">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">

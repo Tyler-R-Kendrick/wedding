@@ -2,7 +2,7 @@
  * The promotion board: where every page stands in the pipeline, and who signed off what.
  *
  * A stage's question ("what goes on the page?", "can you click through it?", "does it work in
- * each design?") is settled when someone, usually Sara or Tyler, signs that page off at that
+ * the design?") is settled when someone, usually Sara or Tyler, signs that page off at that
  * stage. A sign-off records the fingerprint of the page it approved: the structure of its baseline
  * (the real page as captured, stages/02-wireframe/lib/baseline.ts), or of its drawn wireframe when
  * it is not built yet. When that changes afterwards (a re-capture after the real page's layout

@@ -30,7 +30,7 @@ export const openReservationLink = defineCapability<z.infer<typeof input>, z.inf
     'Hands the guest off to reserve a table at a recommended place: a Resy or OpenTable deep link (with date and party size when given) or the place’s ' +
     'own booking page, opened in a new tab. Use it when the guest wants to reserve. It records the handoff and never books, pays, or confirms anything.',
   kind: 'external',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   confirmation: 'inline',
   idempotent: false,

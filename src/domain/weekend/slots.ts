@@ -56,7 +56,7 @@ const DEFAULTS: Record<WeekendSlotKind, WeekendSlot> = {
     status: 'ready',
     placeholder: false,
     title: 'Getting there and home',
-    items: [{ label: 'Rides, valet and parking', detail: 'on the Transportation page', href: '/transportation' }],
+    items: [{ label: 'Trains, rides, valet and parking', detail: 'on Travel & Stay', href: '/guests/travel' }],
   },
   trip: {
     kind: 'trip',

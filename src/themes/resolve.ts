@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, isLegacyThemeId, isThemeId } from './registry';
+import { DEFAULT_THEME, isThemeId } from './registry';
 import type { ThemeId } from './types';
 
 /**
@@ -6,18 +6,10 @@ import type { ThemeId } from './types';
  * ignored (never an error: a stale cookie or a typo in a shared link still renders the site).
  * Pure: usable from proxy.ts, server components, capabilities, and tests.
  *
- * **The cookie is versioned.** Before Sara and Tyler approved Botanical–Deco, the design switcher
- * was visible to everyone and stored the choice as a bare id (`theme=gilded-hour`). Honouring that
- * forever would keep every guest who once tapped the switcher on a design the couple rejected,
- * with nothing on the page to say so. So a preference is only honoured when it was written after the
- * approval, in the `v2.<id>` form; a bare legacy id is treated as no preference (`source: 'default'`,
- * `stale: true`) and the proxy clears it. A bare `botanical-deco` is harmless and still honoured.
- *
- * An explicit `?theme=gilded-hour` link keeps working exactly as before — it is how the earlier
- * proposals stay reviewable — and is remembered as `v2.gilded-hour` for the rest of the visit, and
- * no longer: with the switcher off there is nothing on the page to leave a rejected design by, so a
- * relative who opens an old review link must not be kept on it for a year. Only the approved design
- * is stored as a lasting preference.
+ * There is one design, so every request resolves to it. What is left to do is tidy up after the two
+ * retired proposals (`gilded-hour`, `conservatory`): a `?theme=` that names one is ignored like any
+ * other unknown value, and a stored cookie that names one — bare, as the old switcher wrote it, or
+ * in the later `v2.<id>` form — is reported as `stale` so the proxy clears it.
  */
 export const THEME_COOKIE = 'theme';
 export const THEME_QUERY = 'theme';
@@ -31,25 +23,20 @@ export type ThemeSource = 'query' | 'cookie' | 'default';
 export interface ThemeResolution {
   theme: ThemeId;
   source: ThemeSource;
-  /** The request carried a pre-approval preference that was deliberately ignored; clear it. */
+  /** The request carried a preference for a design that no longer exists; clear it. */
   stale?: boolean;
 }
 
-/** `v2.gilded-hour` → `gilded-hour`; a bare legacy id → null; anything else → null. */
+/** `v2.botanical-deco` or a bare `botanical-deco` → the id; anything else → null, and stale. */
 export function parseThemeCookie(raw: string | null | undefined): { theme: ThemeId | null; stale: boolean } {
   const value = raw?.trim().toLowerCase();
   if (!value) return { theme: null, stale: false };
   const prefix = `${THEME_COOKIE_VERSION}.`;
-  if (value.startsWith(prefix)) {
-    const id = value.slice(prefix.length);
-    return { theme: isThemeId(id) ? id : null, stale: !isThemeId(id) };
-  }
-  // A bare id written before the approval. Only the approved design is safe to keep honouring.
-  if (value === DEFAULT_THEME) return { theme: DEFAULT_THEME, stale: false };
-  return { theme: null, stale: isLegacyThemeId(value) || !isThemeId(value) };
+  const id = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  return isThemeId(id) ? { theme: id, stale: false } : { theme: null, stale: true };
 }
 
-/** The value the proxy (or a switcher action) stores for an explicitly requested design. */
+/** The value the proxy stores for an explicitly requested design. */
 export function themeCookieValue(theme: ThemeId): string {
   return `${THEME_COOKIE_VERSION}.${theme}`;
 }
@@ -62,21 +49,13 @@ export function resolveTheme(input: { query?: string | null; cookie?: string | n
   return { theme: input.fallback ?? DEFAULT_THEME, source: 'default', ...(stale ? { stale: true } : {}) };
 }
 
-/**
- * Cookie attributes shared by the proxy and the switcher's server action. `lasting: false` gives a
- * session cookie (no Max-Age), which the browser drops when it closes.
- */
-export function themeCookieOptions(secure: boolean, lasting = true) {
+/** Cookie attributes for the stored design choice: a device preference, never tied to a guest. */
+export function themeCookieOptions(secure: boolean) {
   return {
     path: '/',
-    ...(lasting ? { maxAge: THEME_COOKIE_MAX_AGE_SECONDS } : {}),
+    maxAge: THEME_COOKIE_MAX_AGE_SECONDS,
     sameSite: 'lax' as const,
     httpOnly: true,
     secure,
   };
-}
-
-/** Only the approved design is kept beyond the visit; an earlier proposal is remembered for the session. */
-export function isLastingThemeChoice(theme: ThemeId): boolean {
-  return theme === DEFAULT_THEME;
 }

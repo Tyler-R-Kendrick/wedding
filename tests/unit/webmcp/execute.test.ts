@@ -142,11 +142,11 @@ describe('execute: idempotency keys', () => {
 describe('execute: navigation and output budget', () => {
   it('performs the move for a navigate capability once the server validated the route', async () => {
     const moves: [string, string | undefined][] = [];
-    const t = transport({ status: 200, body: { ok: true, data: { route: '/travel', highlight: 'hotel-block' }, sources: [] } });
+    const t = transport({ status: 200, body: { ok: true, data: { route: '/guests/travel', highlight: 'hotel-block' }, sources: [] } });
     const navigateTool = toWebMcpTool(cap({ name: 'navigate_somewhere', kind: 'navigate', output: z.object({ route: z.string() }) }));
     const execute = createExecute(navigateTool, { post: t.post, principalKind: 'anonymous', navigate: (r, h) => moves.push([r, h]) });
-    await execute({ route: '/travel' }, { signal: new AbortController().signal });
-    expect(moves).toEqual([['/travel', 'hotel-block']]);
+    await execute({ route: '/guests/travel' }, { signal: new AbortController().signal });
+    expect(moves).toEqual([['/guests/travel', 'hotel-block']]);
   });
 
   it('does not navigate for a read, whatever the payload looks like', async () => {

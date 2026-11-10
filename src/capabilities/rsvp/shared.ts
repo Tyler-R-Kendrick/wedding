@@ -100,6 +100,6 @@ export const partProgressSchema = z.object({
 });
 
 /** Event facts trace to the brief until the couple confirms them (ADR-0011). */
-export const briefCitation = (verifiedAt: Date): Citation => ({ sourceId: BRIEF_SOURCE_ID as Citation['sourceId'], title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: verifiedAt.toISOString() });
+export const briefCitation = (verifiedAt: Date): Citation => ({ sourceId: BRIEF_SOURCE_ID as Citation['sourceId'], title: "Tyler's brief 2026-09-04", url: '/guests', verifiedAt: verifiedAt.toISOString() });
 
 export const GUEST_READ_MAX_CHARS = 12_000;

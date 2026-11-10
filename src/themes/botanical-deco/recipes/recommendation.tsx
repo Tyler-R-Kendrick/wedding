@@ -14,7 +14,7 @@ export const BotanicalRecommendationPage: ContentRecipe<RecommendationProps> = (
     <Section id="card">
       <RecommendationCard card={card} headingLevel={2} />
       <Prose>
-        <BackLink href={ROUTES.share}>{CONTENT_COPY.guide.back}</BackLink>
+        <BackLink href={ROUTES.guestThings}>{CONTENT_COPY.guide.back}</BackLink>
       </Prose>
     </Section>
   </Shell>

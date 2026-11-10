@@ -9,19 +9,21 @@ import type { SitemapPage, SitemapSection } from './types';
  * (`tests/unit/stages/sitemap-routes.test.ts`) fails until `src/app` serves the path.
  */
 export const SECTIONS: SitemapSection[] = [
-  { id: 'public', title: 'Public', audience: 'public', blurb: 'Anyone with the link: the story, the place, the plan.' },
-  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: the guest portal at `/guests`, RSVP, travel and Chicago tips under that hub, then the registry, photos, and the rest from the account menu.' },
+  { id: 'public', title: 'Public', audience: 'public', blurb: 'Anyone with the link: who we are and how we got here. Nothing about the wedding itself — no date, no venue, no city.' },
+  { id: 'guest', title: 'Guests', audience: 'guest', blurb: 'An invited household, signed in: the dashboard at `/guests` puts what matters now first, with travel, Chicago tips, the venue and the RSVP under it.' },
   { id: 'gate', title: 'Doors', audience: 'gate', blurb: 'How a guest gets from an invitation link to a session.' },
   { id: 'admin', title: 'Admin', audience: 'admin', blurb: 'Sara, Tyler and the planner run the site from here.' },
 ];
 
 export const PAGES: SitemapPage[] = [
   // ── Public ────────────────────────────────────────────────────────────────────────────────────
+  // Nothing here says when or where the wedding is. Those details are the invited guests' and sit
+  // behind sign-in; the public pages are the two of us, and the door.
   {
     id: 'home', path: '/', title: 'Home', parent: null, audience: 'public', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Names, date and place, the one action that matters in the current state, and a way into the story.',
-    primaryAction: { label: 'RSVP', to: 'rsvp' },
-    notes: ['The primary action changes with the lifecycle state (save the date → open your invitation → RSVP → today).'],
+    job: 'Our names, a welcome, and the one thing a guest should do now — which leads through sign-in into the dashboard.',
+    primaryAction: { label: 'Sign in', to: 'portal' },
+    notes: ['The primary action changes with the lifecycle state (reserve a room → open your invitation → RSVP → today).', 'No date, venue or city for a signed-out reader.'],
   },
   {
     id: 'story', path: '/our-story', title: 'Our Story', parent: null, audience: 'public', mode: ['celebrate'], visibleFrom: 'TEASER', inNav: true,
@@ -31,40 +33,11 @@ export const PAGES: SitemapPage[] = [
   {
     id: 'adventures', path: '/our-adventures', title: 'Our Adventures', parent: null, audience: 'public', mode: ['celebrate'], visibleFrom: 'TEASER', inNav: true,
     job: 'An atlas of places we have been, each with "Sara remembers / Tyler remembers".',
-    primaryAction: { label: 'Share an Adventure', to: 'share' },
   },
   {
     id: 'adventure', path: '/our-adventures/[slug]', example: '/our-adventures/example', title: 'An adventure', parent: 'adventures', audience: 'public', mode: ['celebrate'], visibleFrom: 'TEASER',
     job: 'One place: where, when, photos, and both of our memories of it.',
     primaryAction: { label: 'Back to the atlas', to: 'adventures' },
-  },
-  {
-    id: 'share', path: '/share-an-adventure', title: 'Share an Adventure', navLabel: 'Things to Do', parent: null, audience: 'public', mode: ['inform', 'celebrate'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Places we recommend around Chicago: a practical layer and a memory layer, itineraries by duration and mode.',
-  },
-  {
-    id: 'share-item', path: '/share-an-adventure/[slug]', example: '/share-an-adventure/example', title: 'A recommendation', parent: 'share', audience: 'public', mode: ['inform'], visibleFrom: 'SAVE_THE_DATE',
-    job: 'One recommendation: what it is, how to get there from the venue, why we love it.',
-    primaryAction: { label: 'All recommendations', to: 'share' },
-  },
-  {
-    id: 'wedding', path: '/the-wedding', title: 'The Wedding', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'INVITATIONS_OPEN', inNav: true,
-    job: 'Ceremony, cocktail hour and reception: rooms, times, dress code and accessibility.',
-    primaryAction: { label: 'RSVP', to: 'rsvp' },
-  },
-  {
-    id: 'caa', path: '/our-venue', title: 'Our Venue', parent: null, audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER', inNav: true,
-    job: 'A docent for the building: spaces, history with sources, things to look for, and where your table is.',
-  },
-  {
-    id: 'caa-space', path: '/our-venue/[slug]', example: '/our-venue/example', title: 'A space in the building', parent: 'caa', audience: 'public', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER',
-    job: 'One room or feature of the building, its history and what to look for.',
-    primaryAction: { label: 'Back to the building', to: 'caa' },
-  },
-  {
-    id: 'travel', path: '/travel', title: 'Travel & Stay', navLabel: 'Travel', parent: null, audience: 'public', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Airports, the room block, other hotels, the neighbourhood and what the weather will be like.',
-    primaryAction: { label: 'Plan your trip', to: 'trip' },
   },
   {
     id: 'credits', path: '/credits', title: 'Photo credits', parent: null, audience: 'public', mode: ['inform'], visibleFrom: 'TEASER',
@@ -81,40 +54,48 @@ export const PAGES: SitemapPage[] = [
 
   // ── Guests ────────────────────────────────────────────────────────────────────────────────────
   {
-    id: 'portal', path: '/guests', title: 'Guest portal', navLabel: 'Guest Portal', parent: null, audience: 'guest', mode: ['act', 'inform'], visibleFrom: 'TEASER', inNav: true,
-    job: 'The signed-in landing: RSVP status and action, your schedule, key details, and links into travel and the weekend.',
-    primaryAction: { label: 'RSVP', to: 'rsvp' },
+    id: 'portal', path: '/guests', title: 'Guest portal', navLabel: 'Home', parent: null, audience: 'guest', mode: ['act', 'inform'], visibleFrom: 'TEASER', inNav: true,
+    job: 'The dashboard: the one thing to do now first (reserve a room, then RSVP), then what comes next, then the rest. It reorders as the timeline moves.',
+    primaryAction: { label: 'Reserve your room', to: 'guest-travel' },
+    notes: ['Nothing a guest cannot act on yet is shown: no table before seating is published, no photos before the day.'],
   },
   {
     id: 'guest-travel', path: '/guests/travel', title: 'Travel & Stay', navLabel: 'Travel', parent: 'portal', audience: 'guest', mode: ['inform', 'act'], visibleFrom: 'TEASER', inNav: true,
-    job: 'The guest view of airports, the room block, neighbourhood notes and live search — same content as the public travel page, centred on the portal.',
-    primaryAction: { label: 'Plan your trip', to: 'trip' },
+    job: 'One page for the trip: the room block, flights, and getting from the airport and around the city.',
+    primaryAction: { label: 'Book in our room block', to: 'guest-travel' },
+  },
+  {
+    id: 'trip', path: '/trip', title: 'Your trip', parent: 'guest-travel', audience: 'guest', mode: ['act'], visibleFrom: 'TEASER',
+    job: 'Your flights and hotel, kept in one place so we can help if plans change.',
+  },
+  {
+    id: 'transport', path: '/transportation', title: 'Your ride', parent: 'guest-travel', audience: 'guest', mode: ['act'], visibleFrom: 'INVITATIONS_OPEN',
+    job: 'A ride benefit on your invitation, when there is one, and how to claim it. Everything else about getting around is on Travel.',
   },
   {
     id: 'guest-things', path: '/guests/things-to-do', title: 'Things to Do', parent: 'portal', audience: 'guest', mode: ['inform', 'celebrate'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Chicago recommendations, itineraries and the signed-in map — the guest path for Share an Adventure.',
-    primaryAction: { label: 'Open the map', to: 'share' },
+    job: 'Chicago recommendations, itineraries and the map.',
   },
   {
-    id: 'guest-thing', path: '/guests/things-to-do/[slug]', example: '/guests/things-to-do/starved-rock-state-park', title: 'A recommendation', parent: 'guest-things', audience: 'guest', mode: ['inform'], visibleFrom: 'SAVE_THE_DATE',
+    id: 'guest-thing', path: '/guests/things-to-do/[slug]', example: '/guests/things-to-do/starved-rock-state-park', title: 'A recommendation', parent: 'guest-things', audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER',
     job: 'One Chicago recommendation with directions and why we love it.',
     primaryAction: { label: 'All recommendations', to: 'guest-things' },
   },
   {
+    id: 'caa', path: '/our-venue', title: 'Our Venue', navLabel: 'Venue', parent: 'portal', audience: 'guest', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER', inNav: true,
+    job: 'A docent for the building: spaces, history with sources, and things to look for.',
+  },
+  {
+    id: 'caa-space', path: '/our-venue/[slug]', example: '/our-venue/example', title: 'A space in the building', parent: 'caa', audience: 'guest', mode: ['celebrate', 'inform'], visibleFrom: 'TEASER',
+    job: 'One room or feature of the building, its history and what to look for.',
+    primaryAction: { label: 'Back to the building', to: 'caa' },
+  },
+  {
     id: 'guest-ask', path: '/guests/ask-us', title: 'Ask Us', parent: 'portal', audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
-    job: 'The guest path for the concierge and FAQ — sign-in required; citations from published pages only.',
+    job: 'The concierge and FAQ: answers from what we have published, with citations.',
   },
   {
-    id: 'ask', path: '/ask-us', title: 'Ask Us', parent: null, audience: 'guest', mode: ['inform'], visibleFrom: 'TEASER', inNav: true,
-    job: 'A concierge that answers questions about the weekend from what we have published, with citations.',
-  },
-  {
-    id: 'weekend', path: '/your-weekend', title: 'Your Weekend', parent: null, audience: 'guest', mode: ['act'], visibleFrom: 'INVITATIONS_OPEN', inNav: true,
-    job: 'Your household\'s hub: invitation, RSVP status, your table, ride benefits and preferences.',
-    primaryAction: { label: 'RSVP', to: 'rsvp' },
-  },
-  {
-    id: 'rsvp', path: '/rsvp', title: 'RSVP', parent: 'weekend', audience: 'guest', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
+    id: 'rsvp', path: '/rsvp', title: 'RSVP', parent: 'portal', audience: 'guest', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
     job: 'Reply for the household in parts — attendance, a guest, meals, needs — each finished on its own.',
     primaryAction: { label: 'Who is coming', to: 'rsvp-step' },
     notes: ['Keyboard-complete. Every part opens and saves independently; none depends on another being done first.'],
@@ -125,24 +106,16 @@ export const PAGES: SitemapPage[] = [
     primaryAction: { label: 'Back to your RSVP', to: 'rsvp' },
   },
   {
-    id: 'transport', path: '/transportation', title: 'Transportation', parent: 'weekend', audience: 'guest', mode: ['inform', 'act'], visibleFrom: 'INVITATIONS_OPEN', inNav: true,
-    job: 'Valet, transit, rides and your ride voucher, parking and accessibility.',
-  },
-  {
-    id: 'trip', path: '/trip', title: 'Your trip', parent: 'weekend', audience: 'guest', mode: ['act'], visibleFrom: 'INVITATIONS_OPEN',
-    job: 'Your flights and hotel, kept in one place so we can help if plans change.',
-  },
-  {
-    id: 'gifts', path: '/gifts', title: 'Gifts', parent: null, audience: 'guest', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
+    id: 'gifts', path: '/gifts', title: 'Gifts', parent: 'portal', audience: 'guest', mode: ['act'], visibleFrom: 'RSVP_OPEN', inNav: true,
     job: '"Help us with our next adventures": registry links and person-to-person funds.',
   },
   {
-    id: 'photos', path: '/photos', title: 'Photos & Video', parent: null, audience: 'guest', mode: ['celebrate'], visibleFrom: 'TEASER', inNav: true,
-    job: 'Engagement photos, guest uploads and the professional galleries, each by its rights.',
+    id: 'photos', path: '/photos', title: 'Photos & Video', parent: 'portal', audience: 'guest', mode: ['celebrate'], visibleFrom: 'WEDDING_DAY', inNav: true,
+    job: 'Guest uploads and the professional galleries, each by its rights. Opens on the day.',
     primaryAction: { label: 'Add your photos', to: 'media-upload' },
   },
   {
-    id: 'photo-collection', path: '/photos/[collection]', example: '/photos/example', title: 'A collection', parent: 'photos', audience: 'guest', mode: ['celebrate'], visibleFrom: 'TEASER',
+    id: 'photo-collection', path: '/photos/[collection]', example: '/photos/example', title: 'A collection', parent: 'photos', audience: 'guest', mode: ['celebrate'], visibleFrom: 'WEDDING_DAY',
     job: 'One gallery, with credits and a way to download what its rights allow.',
     primaryAction: { label: 'All collections', to: 'photos' },
   },
@@ -206,12 +179,12 @@ export const PAGES: SitemapPage[] = [
   {
     id: 'claim-welcome', path: '/claim/welcome', title: 'Welcome', parent: 'invitation', audience: 'gate', mode: ['gate'], visibleFrom: 'INVITATIONS_OPEN',
     job: 'You are in: what you can do now, and an optional passkey for next time.',
-    primaryAction: { label: 'Go to your weekend', to: 'weekend' },
+    primaryAction: { label: 'Go to your dashboard', to: 'portal' },
   },
   {
     id: 'claim-passkey', path: '/claim/passkey', title: 'Add a passkey', parent: 'invitation', audience: 'gate', mode: ['gate'], visibleFrom: 'INVITATIONS_OPEN',
     job: 'Save a passkey so the next sign-in is one tap. Optional.',
-    primaryAction: { label: 'Go to your weekend', to: 'weekend' },
+    primaryAction: { label: 'Go to your dashboard', to: 'portal' },
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────────────────────────────
@@ -246,8 +219,9 @@ export const PAGES: SitemapPage[] = [
 ];
 
 /**
- * Routes the real app serves that are not pages in the site's sense: the statically rendered theme
- * tree the proxy rewrites clean URLs onto (ADR-0009 §4). Listed so the route test can tell an
- * intentional omission from a forgotten one.
+ * Routes the real app serves that are not pages in the site's sense: the prerendered tree
+ * (ADR-0009 §4). Each is the copy of a public page that a reader with no session is served, built
+ * ahead and cached; the page itself, at its clean address, renders for a reader who has one. Listed
+ * so the route test can tell an intentional omission from a forgotten one.
  */
-export const INTERNAL_ROUTES = ['/t/[theme]', '/t/[theme]/preview/[token]'] as const;
+export const INTERNAL_ROUTES = ['/t/[theme]', '/t/[theme]/our-story', '/t/[theme]/our-adventures', '/t/[theme]/our-adventures/[slug]', '/t/[theme]/credits', '/t/[theme]/privacy', '/t/[theme]/terms'] as const;

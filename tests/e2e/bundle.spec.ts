@@ -23,7 +23,9 @@ interface Budget {
 
 /*
  * Measured at this head against `next start` (`scripts/probes/bundle.mjs`, fresh context per route,
- * `responseBodySize`): `/` 141kB over 7 scripts, `/the-wedding` 143kB over 8. Ask Us is guest-
+ * `responseBodySize`): `/` 141kB over 7 scripts, and 143kB over 8 on The Wedding, the dynamic public
+ * page this list held until everything about the wedding moved behind sign-in; `/our-story` is the
+ * dynamic public page in its place. Ask Us is guest-
  * only and measured on the NODE_ENV=test server instead (quality-sweep / concierge.spec). The
  * budgets are roughly double that, because the value is catching a step change — a chart
  * library on the home page, a client component that pulls the capability barrel into the browser —
@@ -31,7 +33,7 @@ interface Budget {
  */
 const BUDGETS: Budget[] = [
   { route: '/', maxScriptKb: 300, maxScriptRequests: 20 },
-  { route: '/the-wedding', maxScriptKb: 300, maxScriptRequests: 20 },
+  { route: '/our-story', maxScriptKb: 300, maxScriptRequests: 20 },
   { route: '/sign-in', maxScriptKb: 300, maxScriptRequests: 20 },
 ];
 

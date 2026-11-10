@@ -22,7 +22,7 @@ describe('admin view-role preview', () => {
     expect(minted.data.readOnly).toBe(true);
     const cookie = withRole(owner.cookie, minted.data.token);
 
-    const p = await principalFor({ cookie, pathname: '/your-weekend' });
+    const p = await principalFor({ cookie, pathname: '/guests' });
     expect(p.kind).toBe('guest');
     if (p.kind !== 'guest') throw new Error('unreachable');
     expect(p.viewedBy?.previewRole).toBe('guest');

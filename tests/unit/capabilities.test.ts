@@ -21,20 +21,28 @@ const base = (): CapabilityContext => ({
 
 describe('navigate_to', () => {
   it('accepts allowlisted internal routes and normalises trailing slashes', async () => {
-    const r = await invoke(navigateTo, base(), { route: '/travel/' });
+    const r = await invoke(navigateTo, base(), { route: '/guests/travel/' });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value.data).toEqual({ route: '/travel' });
+    if (r.ok) expect(r.value.data).toEqual({ route: '/guests/travel' });
     const h = await invoke(navigateTo, base(), { route: '/our-adventures/starved-rock', highlight: 'first-i-love-you' });
     expect(h.ok).toBe(true);
     if (h.ok) expect(h.value.data).toEqual({ route: '/our-adventures/starved-rock', highlight: 'first-i-love-you' });
   });
 
   it('rejects external, protocol-relative, traversal, and unknown routes', async () => {
-    for (const route of ['https://evil.example', '//evil.example', '/travel/../admin', '/admin', '/our-adventures/Bad Slug', 'travel']) {
+    for (const route of ['https://evil.example', '//evil.example', '/guests/travel/../admin', '/admin', '/our-adventures/Bad Slug', 'travel']) {
       const r = await invoke(navigateTo, base(), { route });
       expect(r.ok, route).toBe(false);
       if (!r.ok) expect(r.error.code).toBe('validation');
     }
+    // The pages folded into the guest portal are not places to navigate to any more, nor are their dropped aliases.
+    for (const route of ['/travel', '/the-wedding', '/your-weekend', '/ask-us', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/explore-caa']) {
+      const r = await invoke(navigateTo, base(), { route });
+      expect(r.ok, route).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe('validation');
+      expect(isInternalRoute(route), route).toBe(false);
+    }
+    expect(isInternalRoute('/guests/things-to-do/starved-rock-state-park')).toBe(true);
     expect(isInternalRoute('/')).toBe(true);
     expect(isInternalRoute('/photos/abc-123')).toBe(true);
   });

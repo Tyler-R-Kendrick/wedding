@@ -7,7 +7,7 @@ import { sessionProbe, SIGNED_OUT, type SessionHint } from './session-hint';
 
 /**
  * The account menu: "Sign in" to anyone, and — once there is a session — portal links (Guest Portal
- * and/or Admin Portal), the household's own pages (RSVP, Your Weekend, Transportation, Gifts, Photos
+ * and/or Admin Portal), the household's own pages for this point in the timeline (RSVP, Gifts, Photos
  * & Video), admin tools when applicable, then "Sign out". Those household pages are listed here and
  * nowhere else in the chrome (`domain/lifecycle/nav.ts` keeps them out of `primary`, `more` and
  * `sticky`), and each of them refuses an anonymous request on the server regardless.

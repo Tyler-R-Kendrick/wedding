@@ -19,7 +19,7 @@ export const showVenueRoom = defineCapability<z.infer<typeof input>, VenueRoomDa
     'Returns one Chicago Athletic Association event space by slug (white-city-ballroom, madison-ballroom, stagg-court, the-tank): character, features, "look for this" details, ' +
     'and kit capacities that are explicitly unverified. Which room hosts the ceremony or reception is NOT confirmed; never state one as the wedding room. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

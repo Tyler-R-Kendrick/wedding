@@ -8,7 +8,6 @@ Do not edit between the markers; edit the code and regenerate.
 | Flag | Default | Readiness switch also required | To change it |
 |---|---|---|---|
 | `AI_CONCIERGE` | on | no | `FLAG_AI_CONCIERGE=off` |
-| `DESIGN_SWITCHER` | **off** | no | `FLAG_DESIGN_SWITCHER=on` |
 | `GUEST_UPLOADS` | on | no | `FLAG_GUEST_UPLOADS=off` |
 | `MEDIA_SEMANTIC_SEARCH` | on | no | `FLAG_MEDIA_SEMANTIC_SEARCH=off` |
 | `PHONE_SIGN_IN` | **off** | no | `FLAG_PHONE_SIGN_IN=on` |

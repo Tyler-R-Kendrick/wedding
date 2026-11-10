@@ -5,10 +5,10 @@ import { baselineFor } from '../lib/baseline';
 
 /** A drawing with nested blocks, as a planned page would have. */
 const DRAWN: Wireframe = {
-  page: 'weekend',
+  page: 'portal',
   status: 'draft',
   blocks: [
-    { kind: 'masthead', title: 'Your weekend' },
+    { kind: 'masthead', title: 'Your dashboard' },
     { kind: 'split', columns: [[{ kind: 'facts', label: 'When', items: ['Day'] }], [{ id: 'rsvp-status', kind: 'prose', label: 'Reply', paragraphs: 1 }]] },
   ],
 };

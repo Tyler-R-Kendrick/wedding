@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
-import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { SIGN_IN } from '@/domain/lifecycle/account';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
-import { listThemes } from '@/themes/registry';
 import { providerLabel } from '@/themes/shared/content';
 import { renderCopy } from '@/themes/shared/copy';
 import { DialogBase } from '@/themes/shared/DialogBase';
@@ -21,7 +19,7 @@ import type {
 } from '@/themes/types';
 import { Botanical, Photo } from '../media';
 import { content, withTail } from './content';
-import { Countdown, HeroCountdown } from './Countdown';
+import { Countdown } from './Countdown';
 
 /*
  * Botanical–Deco kit: the design Sara and Tyler approved (docs/design/approved-botanical-deco/).
@@ -40,8 +38,6 @@ const DIALOG_CLASSES = {
   body: 'bd-sheet__body',
 };
 
-const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }));
-
 const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.';
 
 /** The most pages the masthead ever shows inline (at 1440px and up); the rest live in the Menu sheet. */
@@ -49,7 +45,7 @@ const MASTHEAD_MAX = 8;
 
 /**
  * An unwritten fact, marked as one: the editorial label the rest of the site uses, never the
- * authoring marker (see gilded-hour/kit for the history of that defect).
+ * authoring marker.
  */
 function Placeholder({ todo, block }: PlaceholderProps) {
   return (
@@ -79,23 +75,6 @@ export function Monogram({ className }: { className?: string }) {
       <span className="bd-monogram__s">S</span>
       <span className="bd-monogram__stem" />
       <span className="bd-monogram__t">T</span>
-    </span>
-  );
-}
-
-/**
- * The stepped Deco frame around the monogram at the edge of the moss and journey panels: an
- * elongated hexagon drawn twice, one stroke inside the other, stretching to whatever height the
- * panel's real content gives it.
- */
-export function DecoFrame({ className }: { className?: string }) {
-  return (
-    <span className={`bd-decoframe${className ? ` ${className}` : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 64 240" preserveAspectRatio="none" focusable="false">
-        <path d="M32 1L63 20V220L32 239L1 220V20Z" fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        <path d="M32 9L56 24V216L32 231L8 216V24Z" fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <Monogram />
     </span>
   );
 }
@@ -144,7 +123,7 @@ function MenuList({ nav, homeLabel, homeHref = '/' }: { nav: NavProps['nav']; ho
  * On a desktop, NavFit measures the real labels and sends whatever does not fit beside the Menu
  * button to the sheet; the page-count classes are only the guess it replaces after hydration.
  */
-function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavProps) {
+function Nav({ nav, siteName, homeLabel, homeHref = '/' }: NavProps) {
   const homeItem: NavItem = { label: homeLabel, href: homeHref };
   const items: NavItem[] = [homeItem, ...allItems(nav).filter((i) => i.href !== homeHref)];
   const inline = items.slice(0, MASTHEAD_MAX);
@@ -187,7 +166,6 @@ function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavP
             ornament={<Botanical id="botanical.sprig-right" className="bd-bloom--sheet" />}
           >
             <MenuList nav={nav} homeLabel={homeLabel} homeHref={homeHref} />
-            {switcherEnabled ? <DesignSwitcher variant="menu" id="design-switcher-menu" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
           </DialogBase>
         </div>
       </nav>
@@ -229,13 +207,19 @@ const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], current
 
 // `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
 // without a frame, and then it is the plain way in.
-function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
+function Footer({ site, details, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
         <span className="bd-footer__skyline" aria-hidden="true" />
         <p className="bd-footer__motto">
-          Love <span aria-hidden="true">+</span> peace <span aria-hidden="true">+</span> happiness <span aria-hidden="true">+</span> Chicago
+          Love <span aria-hidden="true">+</span> peace <span aria-hidden="true">+</span> happiness
+          {details ? (
+            <>
+              {' '}
+              <span aria-hidden="true">+</span> {details.venue.city}
+            </>
+          ) : null}
         </p>
         <p className="bd-footer__mark" aria-hidden="true">
           <span className="bd-footer__rule" />
@@ -243,20 +227,27 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
         </p>
         <p className="bd-footer__facts">
           <span>{site.coupleDisplayName}</span>
-          <span className="bd-footer__sep" aria-hidden="true" />
-          <time dateTime={site.date.iso}>{site.date.long}</time>
-          <span className="bd-footer__sep" aria-hidden="true" />
-          <span>{site.venue.city}</span>
+          {/* When and where are the invited guests': a signed-out reader's footer is the two names. */}
+          {details ? (
+            <>
+              <span className="bd-footer__sep" aria-hidden="true" />
+              <time dateTime={details.date.iso}>{details.date.long}</time>
+              <span className="bd-footer__sep" aria-hidden="true" />
+              <span>{details.venue.city}</span>
+            </>
+          ) : null}
         </p>
-        <p className="bd-footer__place">
-          {site.venue.name},{' '}
-          <a className="bd-link" href={site.venue.mapsUrl} rel="noopener">
-            <span className="bd-nowrap">
-              {site.venue.address}
-              <ExternalMark provider={site.venue.mapsProvider} />
-            </span>
-          </a>
-        </p>
+        {details ? (
+          <p className="bd-footer__place">
+            {details.venue.name},{' '}
+            <a className="bd-link" href={details.venue.mapsUrl} rel="noopener">
+              <span className="bd-nowrap">
+                {details.venue.address}
+                <ExternalMark provider={details.venue.mapsProvider} />
+              </span>
+            </a>
+          </p>
+        ) : null}
         <p className="bd-footer__credits">
           <a className="bd-link bd-link--standalone" href="/credits">
             Photo credits
@@ -282,7 +273,6 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
             </li>
           ))}
         </ul>
-        {switcher ? <div className="bd-footer__switcher">{switcher}</div> : null}
       </div>
     </footer>
   );
@@ -291,10 +281,8 @@ function Footer({ site, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: Foo
 function Shell({ frame, children, banner }: ShellProps) {
   const homeLabel = frame.nav.homeLabel ?? homeLabelFor(frame.lifecycle.state, { signedIn: frame.nav.signedIn, admin: frame.nav.admin });
   const homeHref = frame.nav.homeHref ?? '/';
-  const printUrls = [
-    { label: 'Directions', url: frame.site.venue.mapsUrl },
-    ...(frame.site.venue.url ? [{ label: frame.site.venue.name, url: frame.site.venue.url }] : []),
-  ];
+  const venue = frame.details?.venue;
+  const printUrls = venue ? [{ label: 'Directions', url: venue.mapsUrl }, ...(venue.url ? [{ label: venue.name, url: venue.url }] : [])] : [];
   const hasBar = bottomCells(frame.nav, 3).length > 0;
   return (
     <div className="site bd" data-theme="botanical-deco" data-bottom-bar={hasBar ? '' : undefined} data-lifecycle={frame.lifecycle.state} suppressHydrationWarning>
@@ -305,7 +293,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       {banner}
       <GuestViewBand />
       <header className="bd-masthead">
-        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} switcherEnabled={frame.switcherEnabled} />
+        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} />
       </header>
       <main id="main" className="bd-main" tabIndex={-1}>
         {children}
@@ -313,7 +301,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       <ActionBar nav={frame.nav} />
       <Footer
         site={frame.site}
-        switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
+        details={frame.details}
         nav={frame.nav}
         rightsNote={PRO_MEDIA_PATHS.test(frame.nav.currentPath) ? RIGHTS_NOTE : ''}
         printUrls={printUrls}
@@ -402,9 +390,9 @@ function SectionHeading({ level, title, eyebrow, lede, id }: SectionHeadingProps
 
 const GROUND: Record<NonNullable<SectionProps['ground']>, string> = { default: 'paper', alt: 'sheet', wash: 'wash', inverse: 'moss' };
 
-function Section({ id, number, ground = 'default', children, labelledBy }: SectionProps) {
+function Section({ id, number, ground = 'default', children, labelledBy, layout }: SectionProps) {
   return (
-    <section id={id} className={`bd-section bd-section--${GROUND[ground]}`} aria-labelledby={labelledBy} data-number={number}>
+    <section id={id} className={`bd-section bd-section--${GROUND[ground]}${layout === 'split' ? ' bd-section--split' : ''}`} aria-labelledby={labelledBy} data-number={number}>
       <div className="bd-section__inner">
         {number ? <span className="sr-only">Part {number}.</span> : null}
         {children}
@@ -648,19 +636,15 @@ export function Names({ names }: { names: string }) {
 }
 
 /**
- * Home's opening: the invitation on quiet ivory across the left, Sara and Tyler on the riverfront
- * across the rest, running to the page edge (the carved-words column that used to cut the portrait
- * off at the right is gone), flowers entering from the lower left. Names, the wedding wording, the
- * date, the venue and the state's two actions are all live text; none of it sits on a face.
+ * Home's opening, for a reader who has not signed in: Sara and Tyler on the riverfront, their names,
+ * a welcome, and the one thing a guest should do now. The primary button names that thing in plain
+ * words ("Book your hotel room", then "RSVP" when replies open) and leads through sign-in to the
+ * page that does it; the second is the story, which anyone may read.
  *
- * The day count is a plate set over the lower right of the portrait, clear of both faces: the one
- * number every guest wants from the first screen, with the wedding's theme under a gold rule (from a
- * tablet up; on a phone the theme is the very next section).
- * On a phone the portrait comes first and the plate sits on its lower corner, so the invitation
- * still starts directly under the photograph, in the first screen.
+ * No date, no venue and no day count: those are the invited guests', and they are the first thing
+ * the dashboard shows once signed in. The line under the buttons says how to get in.
  */
-function Hero({ content, site, countdown, state }: HeroProps) {
-  const isToday = state === 'WEDDING_DAY';
+function Hero({ content }: HeroProps) {
   return (
     <section className="bd-hero" aria-labelledby="hero-title">
       <div className="bd-hero__media">
@@ -668,20 +652,13 @@ function Hero({ content, site, countdown, state }: HeroProps) {
       </div>
       <Botanical id="botanical.corner-tl" className="bd-bloom--hero-left" priority />
       <div className="bd-hero__copy">
-        {/* The approved hero opens with a short tracked line above the names; here it is the one the
-            handoff asks for near the names. See docs/design/approved-botanical-deco/detector-waivers.md. */}
-        <p className="bd-eyebrow bd-hero__kicker">Join us for our wedding</p>
+        <p className="bd-eyebrow bd-hero__kicker">{content.eyebrow}</p>
         <h1 id="hero-title" className="bd-hero__title">
-          {isToday ? content.title : <Names names={content.title} />}
+          <Names names={content.title} />
         </h1>
         <span className="bd-head__rule" aria-hidden="true" />
-        <p className="bd-hero__date">
-          <time dateTime={site.date.iso}>{site.date.long}</time>
-        </p>
-        <span className="bd-head__rule" aria-hidden="true" />
-        <p className="bd-hero__place">
-          <span>{site.venue.name}</span>
-          <span>{/,\s*IL\b/.test(site.venue.address) ? `${site.venue.city}, Illinois` : site.venue.city}</span>
+        <p className="bd-hero__lede">
+          <Text copy={content.lede} />
         </p>
         <div className="bd-hero__actions">
           <Button variant={content.primary.variant === 'accent' ? 'accent' : 'primary'} href={content.primary.href} provider={content.primary.provider}>
@@ -693,21 +670,12 @@ function Hero({ content, site, countdown, state }: HeroProps) {
             </Button>
           ) : null}
         </div>
-        <p className="bd-hero__lede">
-          <span className="bd-hero__status">{content.eyebrow}.</span> <Text copy={content.lede} />
-          {content.deadline ? (
-            <>
-              {' '}
-              <Text copy={content.deadline} />
-            </>
-          ) : null}
-        </p>
+        {content.note ? (
+          <p className="bd-hero__note">
+            <Text copy={content.note} />
+          </p>
+        ) : null}
       </div>
-      {content.showCountdown ? (
-        <HeroCountdown {...countdown}>
-          <p className="bd-hero__theme">Love, peace &amp; happiness</p>
-        </HeroCountdown>
-      ) : null}
     </section>
   );
 }

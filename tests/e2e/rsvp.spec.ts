@@ -19,35 +19,44 @@ test.beforeAll(async ({ request }) => {
   expect(open.status, JSON.stringify(open.body)).toBe(200);
 });
 
-// Use the household this suite never confirms, so the inline form remains available across viewports.
-test('inline weekend reply keeps errors and review/edit visible', async ({ browser }) => {
+/*
+ * The reply lives at /rsvp and nowhere else. "Your Weekend" used to carry a second copy of the form
+ * in a disclosure ("Reply right here instead"); the dashboard that replaced it links to /rsvp. This
+ * is that journey on the one form: an error is summarised and focused, its link lands on the field,
+ * and review and "go back and change" keep the guest on the page with their answers.
+ */
+// Use the household this suite never confirms, so the form is still unanswered on every viewport.
+test('the reply keeps errors, review and edit on the page', async ({ browser }) => {
   const ctx = await contextAs(browser, 'B1');
   const page = await ctx.newPage();
-  await page.goto('/your-weekend');
-  const inline = page.locator('.bd-reply__inline');
-  await expect(inline.locator('form')).toBeHidden();
-  await inline.locator(':scope > summary').click();
-  await inline.getByRole('group', { name: 'Will Dev attend the reception?', exact: true }).getByRole('radio', { name: 'Yes, attending', exact: true }).check();
-  await inline.getByLabel('Meal for Dev', { exact: true }).selectOption('');
-  await inline.getByRole('button', { name: 'Review your answers' }).click();
-  await expect(inline.locator('#error-summary')).toBeVisible();
-  await expect(inline.locator('#error-summary')).toBeFocused();
-  const errorLink = inline.locator('#error-summary a').first();
+  await page.goto('/rsvp');
+  const form = page.locator('#main');
+  await form.getByRole('group', { name: 'Will Dev attend the reception?', exact: true }).getByRole('radio', { name: 'Yes, attending', exact: true }).check();
+  await form.getByLabel('Meal for Dev', { exact: true }).selectOption('');
+  await form.getByRole('button', { name: 'Review your answers' }).click();
+  await expect(form.locator('#error-summary')).toBeVisible();
+  await expect(form.locator('#error-summary')).toBeFocused();
+  const errorLink = form.locator('#error-summary a').first();
   const target = await errorLink.getAttribute('href');
   expect(target).toBeTruthy();
   await errorLink.click();
   await expect(page.locator(target!)).toBeFocused();
-  // Declining asks no meals; draft/review/edit must leave the outer disclosure open.
-  for (const no of await inline.getByRole('radio', { name: 'No, cannot make it', exact: true }).all()) await no.check();
-  await inline.getByRole('button', { name: 'Review your answers' }).click();
-  await expect(inline.getByRole('heading', { name: 'Please check your answers' })).toBeVisible();
-  await inline.getByRole('button', { name: 'Go back and change' }).click();
-  await expect(inline.getByRole('button', { name: 'Review your answers' })).toBeVisible();
-  await expect(inline).toHaveAttribute('open', '');
+  // Declining asks no meals; review and edit both stay on this page.
+  for (const no of await form.getByRole('radio', { name: 'No, cannot make it', exact: true }).all()) await no.check();
+  await form.getByRole('button', { name: 'Review your answers' }).click();
+  await expect(form.getByRole('heading', { name: 'Please check your answers' })).toBeVisible();
+  await form.getByRole('button', { name: 'Go back and change' }).click();
+  await expect(form.getByRole('button', { name: 'Review your answers' })).toBeVisible();
+  await expect(page).toHaveURL(/\/rsvp(?:[?#].*)?$/);
+  // The dashboard has no form of its own: one place to answer, so one answer on file.
+  await page.goto('/guests');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Dev');
+  await expect(page.locator('#main form')).toHaveCount(0);
+  await expect(page.locator('#main input, #main select, #main textarea')).toHaveCount(0);
   await ctx.close();
 });
 
-test('a household manager answers for the whole household, reviews inline, confirms, and gets a restated confirmation', async ({ browser }) => {
+test('a household manager answers for the whole household, reviews inline, confirms, and gets a restated confirmation', async ({ browser, request }) => {
   const ctx = await contextAs(browser, 'A1');
   const page = await ctx.newPage();
   await page.goto('/rsvp');
@@ -105,21 +114,33 @@ test('a household manager answers for the whole household, reviews inline, confi
   await expect(task('Dietary and access needs')).toContainText('Added');
   // Household A's invitation has no plus-ones, so the part is not offered at all.
   await expect(tasks).not.toContainText('Bringing a guest');
-  await page.goto('/your-weekend');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Ada');
-  await expect(page.locator('#main')).toContainText('Continue your RSVP');
-  if (test.info().project.name === 'mobile') {
-    // A partial reply keeps the next action before the event list, in reading and visual order.
-    expect(await page.evaluate(() => !!(document.querySelector('#reply')!.compareDocumentPosition(document.querySelector('#itinerary')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
-    const reply = (await page.locator('#reply').boundingBox())!;
-    const itinerary = (await page.locator('#itinerary').boundingBox())!;
-    expect(reply.y).toBeLessThan(itinerary.y);
+  // The dashboard is planned from this same reply.
+  const itinerary = await callCapability(request, 'get_my_itinerary', 'A1', {});
+  expect(itinerary.status).toBe(200);
+  // Answered in part, with something left to do: what "Continue your RSVP" is said for.
+  const onFile = itinerary.body.data!.rsvp as { status: string; next: unknown[] };
+  expect(onFile.status).not.toBe('not_started');
+  expect(onFile.next.length).toBeGreaterThan(0);
+  await page.goto('/guests');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ada');
+  const dash = page.locator('#main .dash');
+  // The RSVP leads the dashboard while replies are open (`planDashboard`); the shared test server
+  // opens the RSVP window without publishing that state, so this holds whenever it is the state.
+  if ((await dash.getAttribute('data-lifecycle')) === 'RSVP_OPEN') {
+    const lead = page.locator('section.dash-lead#rsvp');
+    await expect(lead.getByRole('heading', { level: 2, name: 'RSVP' })).toBeVisible();
+    await expect(lead.getByRole('link', { name: 'Continue your RSVP' })).toHaveAttribute('href', '/rsvp');
+    // A partial reply keeps the next action before everything else, in reading and visual order.
+    expect(await page.evaluate(() => !!(document.querySelector('#rsvp')!.compareDocumentPosition(document.querySelector('.dash-next')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    const reply = (await lead.boundingBox())!;
+    const next = (await page.locator('.dash-next').boundingBox())!;
+    expect(reply.y).toBeLessThan(next.y);
   }
   await axeClean(page);
   await ctx.close();
 });
 
-test('another household member sees only themselves; another household sees nothing of the first', async ({ browser }) => {
+test('another household member sees only themselves; another household sees nothing of the first', async ({ browser, request }) => {
   const a2 = await contextAs(browser, 'A2');
   const page = await a2.newPage();
   await page.goto('/rsvp');
@@ -131,14 +152,20 @@ test('another household member sees only themselves; another household sees noth
 
   const b1 = await contextAs(browser, 'B1');
   const page2 = await b1.newPage();
-  await page2.goto('/your-weekend');
-  await expect(page2.getByRole('heading', { level: 1 })).toContainText('Dev');
-  await expect(page2.locator('#main')).not.toContainText('Testhouse');
-  await expect(page2.locator('#main')).toContainText('Not answered yet');
+  for (const route of ['/guests', '/rsvp']) {
+    await page2.goto(route);
+    if (route === '/guests') await expect(page2.getByRole('heading', { level: 1 })).toHaveText('Welcome, Dev');
+    await expect(page2.locator('#main')).not.toContainText('Testhouse');
+    await expect(page2.locator('#main')).not.toContainText(/\bAda\b|\bBen\b|\bCleo\b/);
+  }
+  // Household A's reply changed nothing for household B: theirs is still unanswered.
+  const theirs = await callCapability(request, 'get_my_itinerary', 'B1', {});
+  expect((theirs.body.data!.rsvp as { status: string }).status).toBe('not_started');
+  expect(JSON.stringify(theirs.body)).not.toContain('Testhouse');
   await b1.close();
 });
 
-test('errors are inline text, summarised, and focused; nothing is saved until confirmed', async ({ browser }) => {
+test('errors are inline text, summarised, and focused; nothing is saved until confirmed', async ({ browser, request }) => {
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
   await page.goto('/rsvp');
@@ -151,8 +178,13 @@ test('errors are inline text, summarised, and focused; nothing is saved until co
   await expect(summary).toContainText('Please choose a meal');
   await expect(page.getByLabel('Meal for Fin', { exact: true })).toHaveAttribute('aria-invalid', 'true');
   await axeClean(page);
-  await page.goto('/your-weekend');
-  await expect(page.locator('#main')).toContainText('Not answered yet');
+  // A reviewed-and-refused draft is not an answer: nothing is on file for this household.
+  const onFile = await callCapability(request, 'get_my_itinerary', 'C1', {});
+  expect(onFile.status).toBe(200);
+  expect((onFile.body.data!.rsvp as { status: string }).status).toBe('not_started');
+  await page.goto('/guests');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Fin');
+  await expect(page.locator('#main')).not.toContainText(/RSVP answered/);
   await ctx.close();
 });
 
@@ -182,30 +214,24 @@ test('each part has its own page that asks only that part and keeps the rest', a
 });
 
 /**
- * The guest pages must wear the guest's chosen design.
+ * The guest pages must wear the design.
  *
  * They shipped unthemed and nothing caught it: the layout kept a level-03 fallback stylesheet whose
- * own header said the theme engine supersedes it at merge, so both designs rendered the admin
- * foundation in Times New Roman and the switcher changed nothing. Every assertion in this file
+ * own header said the theme engine supersedes it at merge, so they rendered the admin foundation
+ * in Times New Roman. Every assertion in this file
  * passed throughout — axe was clean, the journey worked — because none of them looked at what the
  * page was wearing.
  */
 test.describe('the guest surfaces are themed', () => {
-  for (const route of ['/rsvp', '/your-weekend']) {
-    test(`${route} carries the requested theme and renders it differently per design`, async ({ browser }) => {
+  for (const route of ['/rsvp', '/guests']) {
+    test(`${route} carries the theme and sets its heading in the design's display face`, async ({ browser }) => {
       const ctx = await contextAs(browser, 'A1');
       const page = await ctx.newPage();
-      const seen: Record<string, string> = {};
-      for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-        await page.goto(`${route}?theme=${theme}`);
-        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-        // The heading resolves to a real, theme-specific face — not the browser's serif default.
-        const font = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
-        expect(font, `${route} @ ${theme} fell back to a default face`).not.toMatch(/^(Times|serif|-apple-system)/i);
-        seen[theme] = font;
-      }
-      expect(seen['gilded-hour'], 'both designs resolved to the same heading face').not.toBe(seen['conservatory']);
-      expect(seen['botanical-deco'], 'the approved design resolved to a proposal\'s heading face').not.toBe(seen['gilded-hour']);
+      await page.goto(route);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'botanical-deco');
+      // The heading resolves to the design's own face — not the browser's serif default.
+      const font = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
+      expect(font, `${route} fell back to a default face`).toMatch(/^"?Bodoni Moda"?,/);
       await ctx.close();
     });
   }
@@ -219,26 +245,23 @@ test.describe('the guest surfaces are themed', () => {
      *
      * The assertion changes with it, deliberately, and gets stronger rather than weaker. It used to
      * measure EVERY `header a`, which on the themed header at 390 includes the link lists the
-     * design collapses into its Menu sheet and elevator panel — laid out at 0x0, so the old form
-     * reported "link 0 is under the tap target: 0". It now measures every link a phone can actually
-     * reach, in BOTH designs (it only ever ran in the default one), and requires the collapsed
-     * header to still offer at least one.
+     * design collapses into its Menu sheet — laid out at 0x0, so the old form reported "link 0 is
+     * under the tap target: 0". It now measures every link a phone can actually reach, and requires
+     * the collapsed header to still offer at least one.
      */
     const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
-    for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-      for (const route of ['/rsvp', '/your-weekend']) {
-        await page.goto(`${route}?theme=${theme}`);
-        const boxes = await page.locator('header a').evaluateAll((els) =>
-          els
-            .map((e) => ({ text: (e.textContent ?? '').trim().slice(0, 24), rect: e.getBoundingClientRect() }))
-            .filter((x) => x.rect.width > 0 && x.rect.height > 0)
-            .map((x) => ({ text: x.text, height: Math.round(x.rect.height), width: Math.round(x.rect.width) })),
-        );
-        expect(boxes.length, `${route} @ ${theme} offers no tappable header link at 390`).toBeGreaterThan(0);
-        for (const box of boxes) {
-          expect(box.height, `${route} @ ${theme}: header link "${box.text}" is ${box.height}px tall`).toBeGreaterThanOrEqual(44);
-        }
+    for (const route of ['/rsvp', '/guests']) {
+      await page.goto(route);
+      const boxes = await page.locator('header a').evaluateAll((els) =>
+        els
+          .map((e) => ({ text: (e.textContent ?? '').trim().slice(0, 24), rect: e.getBoundingClientRect() }))
+          .filter((x) => x.rect.width > 0 && x.rect.height > 0)
+          .map((x) => ({ text: x.text, height: Math.round(x.rect.height), width: Math.round(x.rect.width) })),
+      );
+      expect(boxes.length, `${route} offers no tappable header link at 390`).toBeGreaterThan(0);
+      for (const box of boxes) {
+        expect(box.height, `${route}: header link "${box.text}" is ${box.height}px tall`).toBeGreaterThanOrEqual(44);
       }
     }
     await ctx.close();
@@ -248,35 +271,34 @@ test.describe('the guest surfaces are themed', () => {
   // <html>. Every assertion above runs with script enabled, so all of them passed while the guest
   // pages rendered their running copy in the browser's default serif for the whole pre-hydration
   // window — and permanently for a guest browsing without JavaScript. Measured before this test
-  // existed: 12 of 14 text elements on /rsvp and 55 of 66 on /your-weekend, in both designs.
-  for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-    test(`${theme} styles the running copy with script disabled, not only the headings`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
-      const page = await ctx.newPage();
-      for (const route of ['/rsvp', '/your-weekend']) {
-        await page.goto(`${route}?theme=${theme}`, { waitUntil: 'load' });
-        // Not `html`: without script nothing carries the attribute there, and that is the point.
-        await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
-        const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
-          const themed = /Cinzel|Josefin|Spectral|Gloock|Cardo|Big Shoulders|Bodoni Moda|Newsreader|Ms Madi/i;
-          const holdsText = (e: Element) =>
-            !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
-            [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());
-          return [root, ...root.querySelectorAll('*')]
-            .filter(holdsText)
-            .filter((e) => !themed.test(getComputedStyle(e).fontFamily))
-            .map((e) => `${e.tagName}.${e.className}: ${getComputedStyle(e).fontFamily}`);
-        });
-        expect(unthemed, `${route} @ ${theme} fell back to a default face without script`).toEqual([]);
-      }
-      await ctx.close();
-    });
-  }
+  // existed: 12 of 14 text elements on /rsvp and 55 of 66 on /your-weekend (now the dashboard at
+  // /guests).
+  test('the running copy is styled with script disabled, not only the headings', async ({ browser }) => {
+    const ctx = await contextAs(browser, 'A1', { javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    for (const route of ['/rsvp', '/guests']) {
+      await page.goto(route, { waitUntil: 'load' });
+      // Not `html`: without script nothing carries the attribute there, and that is the point.
+      await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'botanical-deco');
+      const unthemed = await page.locator('[data-theme]').first().evaluate((root) => {
+        const themed = /Bodoni Moda|Newsreader|Ms Madi/i;
+        const holdsText = (e: Element) =>
+          !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(e.tagName) &&
+          [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim());
+        return [root, ...root.querySelectorAll('*')]
+          .filter(holdsText)
+          .filter((e) => !themed.test(getComputedStyle(e).fontFamily))
+          .map((e) => `${e.tagName}.${e.className}: ${getComputedStyle(e).fontFamily}`);
+      });
+      expect(unthemed, `${route} fell back to a default face without script`).toEqual([]);
+    }
+    await ctx.close();
+  });
 
   test('the authoring marker never reaches a guest', async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
-    for (const route of ['/rsvp', '/your-weekend']) {
+    for (const route of ['/rsvp', '/guests']) {
       await page.goto(route);
       // The editorial treatment ("Sara + Tyler are still writing this") is intended; the raw
       // `TODO(Tyler & Sara)` syntax is an authoring detail and reads as a bug on the page.
@@ -318,18 +340,22 @@ test.describe('a closed RSVP window', () => {
     await ctx.close();
   });
 
-  test('names the deadline gap once, and says the same thing as /your-weekend', async ({ browser, request }) => {
+  test('names the deadline gap once on /rsvp, and the dashboard never says it twice', async ({ browser, request }) => {
     const open = await callCapability(request, 'admin_set_rsvp_window', 'admin', { mode: 'open', deadlineAt: null }, { idempotencyKey: key() });
     expect(open.status, JSON.stringify(open.body)).toBe(200);
 
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
-    for (const route of ['/rsvp', '/your-weekend']) {
-      await page.goto(route);
-      // Once, not zero times (the deadline was the one unknown the page papered over) and not
-      // twice (the fallback sentence was printed by both the route and the form).
-      await expect(page.getByText('the date answers are needed by')).toHaveCount(1);
-    }
+    await page.goto('/rsvp');
+    // Once, not zero times (the deadline was the one unknown the page papered over) and not
+    // twice (the fallback sentence was printed by both the route and the form).
+    await expect(page.getByText('the date answers are needed by')).toHaveCount(1);
+    // The dashboard's RSVP card names a deadline only when there is one ("Kindly reply by …"), so
+    // the gap is at most named once there, and an invented date never stands in for it.
+    await page.goto('/guests');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ada');
+    expect(await page.getByText('the date answers are needed by').count()).toBeLessThanOrEqual(1);
+    await expect(page.locator('#main')).not.toContainText(/Kindly reply by/);
     await ctx.close();
   });
 });

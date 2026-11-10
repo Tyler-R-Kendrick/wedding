@@ -26,10 +26,31 @@ const STAGES = STAGE_IDS.join('|');
 /** Next's `has.value` for a stage subdomain; `stage` is a named group the destinations use. */
 const STAGE_HOST_VALUE = `(?<stage>${STAGES})\\.dev\\..+`;
 const HUB_HOST_VALUE = 'dev\\..+';
+/** Any address this module serves by host: a stage's subdomain or the hub. The proxy's matcher names the same. */
+export const STAGE_OR_HUB_HOST_VALUE = `(?:(?:${STAGES})\\.)?dev\\..+`;
 
 /** `sitemap.dev.kendrick.wedding`, `wireframe.dev.kendrick.localhost:3000`, and the hub's `dev.…`. */
 export function isStageHost(host: string | null | undefined): boolean {
-  return !!host && new RegExp(`^(?:(?:${STAGES})\\.)?dev\\.`).test(host);
+  // Lower-cased here because Next lower-cases the host before it tests a rewrite's `has`: read as
+  // written, `WIREFRAME.dev.…` was a stage to the rewrites and not to the proxy that guards them.
+  return !!host && new RegExp(`^(?:(?:${STAGES})\\.)?dev\\.`).test(host.toLowerCase());
+}
+
+/**
+ * Is this a request for the assembled files themselves? `/_stages/…` is never an address: a stage
+ * is reached by its host or its path, and the rewrites above turn those into `/_stages/…` after
+ * the proxy has run. Asked for directly it is refused, and so is every spelling of it: a rewrite
+ * is matched against the path as sent, but the file is then looked up decoded, so
+ * `/%5Fstages/_hub/index.html` walked past the rule that sends `/_stages/…` nowhere.
+ */
+export function namesStageFiles(pathname: string): boolean {
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    // Not valid percent-encoding: judged as written.
+  }
+  return /_stages/i.test(pathname) || /_stages/i.test(decoded);
 }
 
 /** `/sitemap/rsvp`, `/stages`: a stage by path, which only a non-production build serves. */

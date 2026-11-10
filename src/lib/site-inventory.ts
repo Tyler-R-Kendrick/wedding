@@ -16,18 +16,22 @@ import { THEME_IDS } from '@/themes/registry';
  * examples come from the content seed and the fixture steps — never an invented slug, and never a
  * real invitation token (`/i/example` only).
  *
- * `/sitemap.xml` lists audience `public` only. Lifecycle `visibleFrom` is not applied: it decides
- * when a page joins the navigation, not whether the route exists. The URLs are stable across
- * states (a later state may still show a coming-soon treatment). Guest, gate, admin, internal
- * theme trees, APIs and redirects are omitted. Dynamic public routes are expanded with seed rows
- * whose visibility is `public`; the pipeline placeholder `/example` is not a real page and is not
- * listed. Guest-only recommendations stay off the public sitemap because an anonymous visitor is
- * not shown them.
+ * Only the pages about the two of us are audience `public`: Home, Our Story, Our Adventures (and
+ * each public adventure), the photo credits, Privacy and Terms. Everything that says when or where
+ * the wedding is — the dashboard at `/guests`, Travel, Things to Do, the venue pages, Ask Us, the
+ * RSVP, the ride, gifts and photos — is audience `guest`, and a signed-out reader who asks for one
+ * is sent to `/sign-in?next=<path>` (or shown the sign-in gate; each row says which).
  *
- * Signed-in guests are canonicalized onto `/guests`, `/guests/travel`, `/guests/things-to-do`
- * (and `/guests/things-to-do/<slug>`) and `/guests/ask-us`. Those routes are audience `guest`.
- * Anonymous readers are sent to `/sign-in?next=<path>`. An administrator is not moved off the
- * legacy public URL; `/guests` and `/guests/ask-us` show that administrator the guests-only gate.
+ * `/sitemap.xml` lists audience `public` only, so it names no page that carries the date, the
+ * venue or the city. Lifecycle `visibleFrom` is not applied: it decides when a page joins the
+ * navigation, not whether the route exists. Guest, gate, admin, internal theme trees, APIs and
+ * redirects are omitted. The one dynamic public route, `/our-adventures/[slug]`, is expanded with
+ * seed rows whose visibility is `public`; the pipeline placeholder `/example` is not a real page
+ * and is not listed.
+ *
+ * The pages folded into the guest portal (`/your-weekend`, `/the-wedding`, `/travel`,
+ * `/share-an-adventure`, `/ask-us`) are no longer pages. They are permanent redirects, listed from
+ * `src/lib/site-redirects.ts` like every other alias, so an old link still arrives.
  */
 
 type SeedRow = { slug: string; visibility?: string };
@@ -38,7 +42,12 @@ export const PUBLIC_ADVENTURE_SLUGS = slugsWithVisibility(adventuresJson as Seed
 export const PUBLIC_RECOMMENDATION_SLUGS = slugsWithVisibility(recommendationsJson as SeedRow[], 'public');
 /** Recommendations whose visibility is `guest`. Signed-in guests open these, and the public ones, at `/guests/things-to-do/<slug>`. */
 export const GUEST_RECOMMENDATION_SLUGS = slugsWithVisibility(recommendationsJson as SeedRow[], 'guest');
-export const PUBLIC_VENUE_SLUGS = slugsWithVisibility(venueSpacesJson as SeedRow[], 'public');
+/**
+ * Spaces in the building a signed-in guest may open at `/our-venue/<slug>`. The seed's `public`
+ * visibility is the lowest tier of the content model, not the page's audience: the venue pages ask
+ * for a session, so none of these is on the public sitemap.
+ */
+export const VENUE_SPACE_SLUGS = slugsWithVisibility(venueSpacesJson as SeedRow[], 'public');
 
 /** First seeded story section. The content editor's row route needs a real id; this one is in the seed. */
 export const SEEDED_STORY_ROW_ID = seedId(200);
@@ -52,7 +61,6 @@ export const RSVP_STEP_PATHS = ['/rsvp/attending', '/rsvp/guest', '/rsvp/meals',
  */
 export const CRAWL_EXAMPLES = {
   adventure: '/our-adventures/starved-rock',
-  recommendation: '/share-an-adventure/starved-rock-state-park',
   guestRecommendation: '/guests/things-to-do/starved-rock-state-park',
   venue: '/our-venue/white-city-ballroom',
   rsvpStep: '/rsvp/attending',
@@ -60,7 +68,6 @@ export const CRAWL_EXAMPLES = {
   invitation: '/i/example',
   invite: '/invite/example',
   theme: '/t/botanical-deco',
-  preview: '/t/botanical-deco/preview/RSVP_OPEN',
   contentTable: '/admin/content/story_sections',
   contentNew: '/admin/content/story_sections/new',
   contentRow: `/admin/content/story_sections/${SEEDED_STORY_ROW_ID}`,
@@ -105,28 +112,34 @@ export type CrawlPersonaKind = 'anonymous' | 'guest' | 'admin' | 'view-role';
 
 const pageExpected = (p: SitemapPage): string => {
   switch (p.id) {
-    case 'travel':
-      return '200 for any visitor. A signed-in guest is sent to /guests/travel. An administrator stays on this URL.';
-    case 'share':
-      return '200 for any visitor. A signed-in guest is sent to /guests/things-to-do. An administrator stays on this URL.';
-    case 'share-item':
-      return '200 for a known recommendation. A signed-in guest is sent to /guests/things-to-do/<slug>. An administrator stays on this URL. Unknown slug is 404.';
-    case 'ask':
-      return '200. Signed out: redirect to /sign-in?next=/ask-us. A signed-in guest is sent to /guests/ask-us. An administrator sees the guests-only gate.';
+    case 'home':
+      return '200 for a signed-out visitor and for an administrator: our names and the door, with no date, venue or city. A signed-in guest is sent to /guests.';
     case 'portal':
-      return '200 for a signed-in guest: RSVP, schedule, and links into the weekend. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate.';
+      return '200 for a signed-in guest: the dashboard, with the one thing to do now first. Signed out: redirect to /sign-in?next=/guests. An administrator sees the guests-only gate.';
     case 'guest-travel':
-      return '200 for a signed-in guest: the same travel page as /travel. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it and is not sent back to /travel.';
+      return '200 for a signed-in guest: the room block, flights and getting around. Signed out: redirect to /sign-in?next=/guests/travel. An administrator may open it.';
     case 'guest-things':
       return '200 for a signed-in guest: Chicago recommendations on the portal. Signed out: redirect to /sign-in?next=/guests/things-to-do. An administrator may open it.';
     case 'guest-thing':
       return '200 for a signed-in guest when the recommendation exists. Signed out: redirect to /sign-in?next=<path>. Unknown slug is 404. An administrator may open a recommendation they can see.';
     case 'guest-ask':
       return '200 for a signed-in guest: the concierge and FAQ. Signed out: redirect to /sign-in?next=/guests/ask-us. An administrator sees the guests-only gate.';
+    case 'caa':
+      return '200 for a signed-in guest: the building, its spaces and its history. Signed out: redirect to /sign-in?next=/our-venue. An administrator may open it.';
+    case 'caa-space':
+      return '200 for a signed-in guest when the space exists. Signed out: redirect to /sign-in?next=/our-venue/<slug>, whatever the slug. Unknown slug is 404 once signed in. An administrator may open it.';
+    case 'transport':
+      return '200 for a signed-in guest whose invitation carries a ride benefit. A guest with no ride benefit is redirected to /guests/travel#getting-around. Signed out: redirect to /sign-in?next=/transportation.';
+    case 'gifts':
+      return '200 for a signed-in guest: registry and fund links. Signed out: redirect to /sign-in?next=/gifts.';
+    case 'photos':
+      return '200 for a signed-in guest: the galleries their invitation may see. Signed out: redirect to /sign-in?next=/photos.';
+    case 'photo-collection':
+      return '200 for a signed-in guest when the collection exists. Signed out: redirect to /sign-in?next=/photos/<collection>. Unknown collection is 404.';
     case 'sign-in-pending':
       return '200. Holding page when social sign-in cannot match an invitation yet. It does not start a session.';
     case 'sign-in-phone':
-      return '200 when phone sign-in is on (FLAG_PHONE_SIGN_IN, with Twilio or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /your-weekend and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session.';
+      return '200 when phone sign-in is on (FLAG_PHONE_SIGN_IN, with Twilio or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /guests and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session.';
     case 'rsvp-step':
       return '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.';
     case 'invitation':
@@ -154,12 +167,10 @@ function examplesFor(p: SitemapPage): readonly string[] {
   switch (p.id) {
     case 'adventure':
       return PUBLIC_ADVENTURE_SLUGS.map((s) => `/our-adventures/${s}`);
-    case 'share-item':
-      return PUBLIC_RECOMMENDATION_SLUGS.map((s) => `/share-an-adventure/${s}`);
     case 'guest-thing':
       return [...PUBLIC_RECOMMENDATION_SLUGS, ...GUEST_RECOMMENDATION_SLUGS].map((s) => `/guests/things-to-do/${s}`);
     case 'caa-space':
-      return PUBLIC_VENUE_SLUGS.map((s) => `/our-venue/${s}`);
+      return VENUE_SPACE_SLUGS.map((s) => `/our-venue/${s}`);
     case 'rsvp-step':
       return RSVP_STEP_PATHS;
     case 'photo-collection':
@@ -183,8 +194,6 @@ function crawlExampleFor(p: SitemapPage, examples: readonly string[]): string | 
   switch (p.id) {
     case 'adventure':
       return CRAWL_EXAMPLES.adventure;
-    case 'share-item':
-      return CRAWL_EXAMPLES.recommendation;
     case 'guest-thing':
       return CRAWL_EXAMPLES.guestRecommendation;
     case 'caa-space':
@@ -227,48 +236,54 @@ function pageRows(): InventoryRow[] {
   });
 }
 
+/**
+ * The prerendered tree: one row for each public page's cached copy. The crawler opens the first by
+ * its own address; the rest it reaches the way a reader does, through the clean URL.
+ */
 function internalRows(): InventoryRow[] {
-  return [
-    {
-      url: INTERNAL_ROUTES[0],
-      examples: THEME_IDS.map((t) => `/t/${t}`),
-      crawlExample: CRAWL_EXAMPLES.theme,
-      audience: 'public',
+  return INTERNAL_ROUTES.map((url) => {
+    const clean = url.slice('/t/[theme]'.length) || '/';
+    const home = clean === '/';
+    return {
+      url,
+      examples: THEME_IDS.map((t) => url.replace('[theme]', t).replace('[slug]', CRAWL_EXAMPLES.adventure.split('/').pop()!)),
+      crawlExample: home ? CRAWL_EXAMPLES.theme : null,
+      audience: 'public' as const,
       method: 'GET',
-      purpose: 'The statically rendered theme tree the proxy rewrites a clean public URL onto. Not a page in the guest’s sense.',
-      expected: '200 for a known theme. An unknown theme is 404. Visitors normally arrive via the clean URL (/), which the proxy rewrites here.',
-      kind: 'internal',
-      crawl: true,
+      purpose: `The prerendered copy of ${clean}: the page as a signed-out reader sees it, built ahead and cached. Not a page in the guest’s sense.`,
+      expected: `200 for a known theme, always the signed-out render. An unknown theme is 404. Visitors arrive via the clean URL (${clean.replace('[slug]', '<slug>')}), which is rewritten here when the request carries no session; with one, the clean URL renders for that reader instead.`,
+      kind: 'internal' as const,
+      crawl: home,
       probe: null,
-    },
-    {
-      url: INTERNAL_ROUTES[1],
-      examples: [CRAWL_EXAMPLES.preview],
-      crawlExample: CRAWL_EXAMPLES.preview,
-      audience: 'public',
-      method: 'GET',
-      purpose: 'Home with an admin lifecycle preview token. The proxy rewrites /?preview=… here.',
-      expected: '200 for any visitor. The preview changes what an administrator sees; everyone else sees the published lifecycle.',
-      kind: 'internal',
-      crawl: true,
-      probe: null,
-    },
-  ];
+    };
+  });
 }
 
+/** A seeded recommendation: the only `:slug` alias is `/share-an-adventure/:slug`. */
+const REDIRECT_SLUG_EXAMPLE = 'starved-rock-state-park';
+
+/**
+ * One row per entry in `src/lib/site-redirects.ts`, nothing added and nothing left out. The alias
+ * itself answers anyone (audience `public`); what it leads to has its own row and its own door, so
+ * an alias of a guest page lands a signed-out reader on sign-in.
+ */
 function redirectRows(): InventoryRow[] {
-  return REDIRECTS.map((r) => ({
-    url: r.source,
-    examples: [r.source.replace(':slug', 'white-city-ballroom')],
-    crawlExample: r.source.includes(':') ? null : r.source,
-    audience: 'public' as const,
-    method: 'GET',
-    purpose: `Permanent alias of ${r.destination}.`,
-    expected: `308 to ${r.destination}. The fragment is kept by the browser.`,
-    kind: 'redirect' as const,
-    crawl: !r.source.includes(':'),
-    probe: null,
-  }));
+  return REDIRECTS.map((r) => {
+    const destination = PAGES.find((p) => p.path === r.destination.replace(/:(\w+)/g, '[$1]'));
+    const door = destination && destination.audience !== 'public' ? ' A signed-out reader is then asked to sign in.' : '';
+    return {
+      url: r.source,
+      examples: [r.source.replace(':slug', REDIRECT_SLUG_EXAMPLE)],
+      crawlExample: r.source.includes(':') ? null : r.source,
+      audience: 'public' as const,
+      method: 'GET',
+      purpose: `Permanent alias of ${r.destination}.`,
+      expected: `308 to ${r.destination}. The fragment is kept by the browser.${door}`,
+      kind: 'redirect' as const,
+      crawl: !r.source.includes(':'),
+      probe: null,
+    };
+  });
 }
 
 function apiRows(): InventoryRow[] {
@@ -602,19 +617,22 @@ export function routesForPersona(kind: CrawlPersonaKind): InventoryRow[] {
   });
 }
 
-/** Paths listed in /sitemap.xml. Public audience only, real seed slugs, no lifecycle filter. */
+/**
+ * Paths listed in /sitemap.xml: the sitemap's audience `public` pages and nothing else — Home, Our
+ * Story, Our Adventures and each public adventure, the photo credits, Privacy and Terms. No
+ * lifecycle filter. A page that asks for a session (the venue, travel, the dashboard, gifts,
+ * photos) is audience `guest` and is never listed, and neither is a redirect, whatever it leads to.
+ */
 export function publicSitemapPaths(): string[] {
   const paths = new Set<string>();
   for (const row of inventory()) {
-    if (row.audience !== 'public' || row.kind === 'redirect' || row.kind === 'internal' || row.kind === 'api') continue;
-    if (row.url === CRAWL_EXAMPLES.sitemapXml) continue;
+    if (row.kind !== 'page' || row.audience !== 'public' || row.url === CRAWL_EXAMPLES.sitemapXml) continue;
     const page = PAGES.find((p) => p.path === row.url);
-    if (page?.audience === 'public') {
-      if (page.path.includes('[')) {
-        for (const example of row.examples) paths.add(example);
-      } else {
-        paths.add(page.path);
-      }
+    if (page?.audience !== 'public') continue;
+    if (page.path.includes('[')) {
+      for (const example of row.examples) paths.add(example);
+    } else {
+      paths.add(page.path);
     }
   }
   return [...paths].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)));
@@ -636,6 +654,8 @@ export function inventoryMarkdown(): string {
     'The admin page at `/admin/sitemap` renders the same rows.',
     '',
     'Audiences match the pipeline sitemap (`stages/01-sitemap/lib/sitemap.ts`): public, guest, gate, admin. API routes are `api`.',
+    '',
+    'Only the pages about the couple are **public**: Home, Our Story, Our Adventures, the photo credits, Privacy and Terms. Every page that says when or where the wedding is — the dashboard, travel, things to do, the venue, the RSVP, gifts and photos — is **guest**, and a signed-out reader is sent to sign in first.',
     '',
     '`/sitemap.xml` lists **public** pages only. Lifecycle `visibleFrom` is not applied: it controls navigation, not whether the route exists. Dynamic public routes use seed rows whose visibility is `public`. The placeholder `/example` is not listed. Admin, guest, gate, internal theme URLs, APIs and redirects are omitted. The site-wide `noindex` in the root layout is a pre-launch setting; this file is the public URL list for when that changes.',
     '',

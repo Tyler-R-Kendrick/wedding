@@ -110,11 +110,13 @@ describe('lifecycle transitions', () => {
   it('describes a move by the guest navigation it changes', () => {
     const change = describeTransition('TEASER', 'RSVP_OPEN');
     expect(change.direction).toBe('forward');
-    expect(change.navGained).toContain('RSVP');
-    expect(change.navGained).toContain('The Wedding');
+    // Signed out, the navigation is the same in every state; what a move changes is the account menu.
+    expect(change.navGained).toEqual(['RSVP', 'Gifts']);
+    expect(change.navLost).toEqual([]);
     const back = describeTransition('RSVP_OPEN', 'INVITATIONS_OPEN');
     expect(back.direction).toBe('back');
-    expect(back.navLost).toContain('RSVP');
+    expect(back.navLost).toEqual(['RSVP', 'Gifts']);
+    expect(describeTransition('WEDDING_WEEK', 'WEDDING_DAY').navGained).toEqual(['Photos & Video']);
   });
 
   it('has no transition out of the last state', () => {

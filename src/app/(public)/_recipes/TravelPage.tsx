@@ -1,6 +1,6 @@
 import type { TravelProps } from '@/themes/content-types';
 import { DEFAULT_THEME } from '@/themes/registry';
-import { TravelPageRecipe } from '../travel/recipe';
+import { TravelPageRecipe } from '@/app/(guest)/guests/travel/recipe';
 
 /**
  * Theme-agnostic fallback for Travel & Stay: swarm F's single recipe, adapted to the recipe props.

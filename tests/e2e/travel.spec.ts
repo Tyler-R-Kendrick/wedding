@@ -1,38 +1,39 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 /**
- * Travel & Stay journeys. The flights provider mode comes from the running server (the runner
- * exports HEALTH_TOKEN), so the same spec asserts the honest deep-link fallback under
- * FLIGHTS_PROVIDER=deep-link and live mock results (timestamp + allowlisted hand-off) under mock.
+ * Travel & Stay, as a signed-out visitor on the production build: the page, the trip and the
+ * travel capabilities are all behind sign-in, and each one refuses without saying anything about
+ * the wedding.
  *
- * Signed-in themed travel UI and flight search live in guest-guide.spec.ts (NODE_ENV=test server).
+ * Signed-in themed travel UI, flight search and the capability's own answer (the provider ladder,
+ * allowlisted hand-offs) live in guest-guide.spec.ts (NODE_ENV=test server).
  */
-const ALLOWLIST =
-  /^https:\/\/www\.google\.com\/travel\/|^https:\/\/(?:[a-z0-9-]+\.)*(?:skyscanner\.[a-z.]+|kayak\.com|booking\.com|hyatt\.com|chicagoathletichotel\.com|duffel\.com)\//;
 
-async function flightsMode(request: APIRequestContext): Promise<string> {
-  if (!process.env.HEALTH_TOKEN) return "unknown";
-  const res = await request.get("/api/health", {
-    headers: { authorization: `Bearer ${process.env.HEALTH_TOKEN}` },
-  });
-  const body = await res.json();
-  return body.providers?.flights ?? "unknown";
-}
-
-const THEMES = ["botanical-deco", "gilded-hour", "conservatory"] as const;
 
 test.describe("Travel & Stay", () => {
-  for (const theme of THEMES) {
-    test(`legacy /travel redirects anonymous visitors to sign-in (${theme})`, async ({ page }) => {
-      await page.goto(`/travel?theme=${theme}`);
-      await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
-    });
-  }
+  test('legacy /travel redirects anonymous visitors to sign-in', async ({ page }) => {
+    // The old address is a permanent redirect; the page it leads to asks for a session.
+    const moved = await page.request.get('/travel', { maxRedirects: 0 });
+    expect(moved.status()).toBe(308);
+    expect(moved.headers().location).toMatch(/\/guests\/travel(?:\?|$)/);
+    await page.goto('/travel');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
+    // Nothing of the page was rendered on the way: no hotel, no block, no address.
+    await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
+  });
 
-  test("capability route answers search_travel_options anonymously with the ladder applied", async ({
+  test('/guests/travel sends anonymous visitors to sign-in', async ({ page }) => {
+    await page.goto('/guests/travel');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
+    await expect(page.locator("body")).not.toContainText(/Chicago Athletic|Michigan Ave|room block|Group rate/i);
+  });
+
+  test("capability route refuses an anonymous search_travel_options call before reading it", async ({
     request,
   }) => {
-    const mode = await flightsMode(request);
+    // Travel search is the invited guests': a signed-out caller is refused, with nothing about
+    // flights, hotels or the venue in the answer. A guest's search, with the ladder applied, is
+    // asserted in guest-guide.spec.ts on the test server, where a session exists.
     const res = await request.post("/api/capabilities/search_travel_options", {
       data: {
         input: {
@@ -43,28 +44,28 @@ test.describe("Travel & Stay", () => {
         },
       },
     });
-    expect(res.status()).toBe(200);
+    expect(res.status()).toBe(401);
     expect(res.headers()["cache-control"]).toContain("no-store");
     const body = await res.json();
-    expect(body.ok).toBe(true);
-    expect(body.data.handoffs[0].url).toMatch(ALLOWLIST);
-    if (mode === "mock") {
-      expect(body.data.mode).toBe("sample");
-      expect(body.data.mode).not.toBe("live");
-      expect(body.data.notice).toMatch(/not connected yet/i);
-      expect(body.retrievedAt).toBe(body.data.snapshot.retrievedAt);
-      expect(body.data.snapshot.refreshBeforeBooking).toBe(true);
-    } else if (mode === "deep-link") {
-      expect(body.data.mode).toBe("deep-link");
-      expect(body.data.snapshot).toBeUndefined();
-      expect(body.data.notice).toMatch(/not available/);
-    }
+    expect(body.ok).toBe(false);
+    expect(body.error.code).toBe("unauthenticated");
+    expect(body.data).toBeUndefined();
+    expect(JSON.stringify(body)).not.toMatch(/handoffs|skyscanner|Chicago Athletic|Michigan Ave/i);
+    // The refusal comes before the input is read: a request that would be invalid for a guest
+    // (the origin is the destination) gets the same answer, not a validation message.
     const bad = await request.post("/api/capabilities/search_travel_options", {
       data: {
         input: { kind: "flights", origin: "ORD", departDate: "2027-07-15" },
       },
     });
-    expect(bad.status()).toBe(422);
+    expect(bad.status()).toBe(401);
+    expect((await bad.json()).error.code).toBe("unauthenticated");
+    // The hotel list carries the room block's rate, dates and booking link: guests only.
+    const hotels = await request.post("/api/capabilities/list_hotel_recommendations", { data: { input: {} } });
+    expect(hotels.status()).toBe(401);
+    const hotelsBody = await hotels.json();
+    expect(hotelsBody.error.code).toBe("unauthenticated");
+    expect(JSON.stringify(hotelsBody)).not.toMatch(/block|rate|Chicago Athletic|Michigan Ave/i);
   });
 
   test("guest and admin surfaces gate anonymous visitors, and the webhook answers uniformly", async ({

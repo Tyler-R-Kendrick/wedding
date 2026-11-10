@@ -36,9 +36,9 @@ stages below take a surface from there to shipped.
 | 2 | Research + inspo boards | `docs/design/inspo/<theme>.md` + `.html` | Board has all sections in the template; no pixels copied |
 | 3 | Design doc + tokens | `docs/design/design-doc.md`, `src/themes/<id>/DESIGN.md` | `npx design.md lint` 0 errors per theme; diff reviewed |
 | 4 | Direction comps | `comp` build path output | One comp per surface per theme, 390 + 1440 |
-| 5 | Critique loop | `docs/design/critiques/<date>-<target>.md` | All axes ≥ 7, Usability ≥ 8 |
+| 5 | Critique loop | A critique attached to the pull request | All axes ≥ 7, Usability ≥ 8 |
 | 6 | Build | `src/**`, tests | `npm run quality` green; hook findings resolved |
-| 7 | Adversarial self-review | `docs/reviews/PR-NN-self-review.md` | Verdict written; blockers fixed or ADR'd |
+| 7 | Adversarial self-review | A self-review in the pull request | Verdict written; blockers fixed or ADR'd |
 | 8 | Stacked PR | PR on `claude/wedding-NN-<slug>` | All CI gates green; base is previous level |
 | 9 | Iterate | new critique → comps → `design.md diff` → `docs/design/CHANGELOG.md` | Changelog entry per accepted change |
 
@@ -175,9 +175,11 @@ Mode B → `/impeccable critique` + `/impeccable audit` → `web-design-guidelin
 Delegate to the `design-reviewer` agent when the critique should not share
 context with the builder.
 
-**Outputs.** `docs/design/critiques/<YYYY-MM-DD>-<target>.md` from
-[`templates/design-critique.md`](templates/design-critique.md) (the skill also
-writes `.impeccable/critique/`; the docs copy is the one reviewed in the PR).
+**Outputs.** A critique from
+[`templates/design-critique.md`](templates/design-critique.md), attached to the
+pull request. The skill writes its working copy and screenshots under
+`.impeccable/critique/`, which is not committed: reports go stale with the next
+commit, and the committed ones had grown to most of the repository's size.
 
 **Exit gate (ship gate).** Design ≥ 7, Usability ≥ 8, Creativity ≥ 7,
 Content ≥ 7 for *each theme*. Detector findings are blockers unless waived
@@ -235,8 +237,9 @@ open findings; both themes screenshot-verified at 390px.
 | Secrets/PII | `grep -rnE "(sk_|pk_|FAL_KEY|STITCH_API_KEY|BEGIN (RSA|EC) PRIVATE|@gmail\\.com|[0-9]{3}-[0-9]{3}-[0-9]{4})" src tests docs` — paste the result |
 | Authorization | Fill the route/action → capability → entitlement → IDOR test table |
 
-**Outputs.** `docs/reviews/PR-NN-self-review.md` from
-[`templates/self-review.md`](templates/self-review.md).
+**Outputs.** A self-review from
+[`templates/self-review.md`](templates/self-review.md), in the pull request's
+description or a comment on it. It is not committed.
 
 **Exit gate.** Every blocker either fixed in a new commit or converted into
 an ADR/backlog item with an owner. No secrets, no PII, no invented facts.

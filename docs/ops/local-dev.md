@@ -51,8 +51,8 @@ driver, whether pgvector loaded, lifecycle state, and the mode of every provider
 Try a capability:
 
 ```bash
-curl -s localhost:3000/api/capabilities/site_status -H 'content-type: application/json' -d '{"input":{}}' | jq
-curl -s localhost:3000/api/capabilities/navigate_to -H 'content-type: application/json' -d '{"input":{"route":"/travel"}}' | jq
+curl -s localhost:3000/api/capabilities/get_story -H 'content-type: application/json' -d '{"input":{}}' | jq
+curl -s localhost:3000/api/capabilities/navigate_to -H 'content-type: application/json' -d '{"input":{"route":"/our-story"}}' | jq
 ```
 
 ## Tests
@@ -96,10 +96,14 @@ npm run test:e2e:server   # all of them, after warming every route, as CI does
 npm run test:e2e:server -- tests/e2e/rsvp.spec.ts --project=mobile --headed   # other arguments go to Playwright
 ```
 
-Specs can be files, `file:line` filters or directories. The no-argument run warms every route first,
-and `next dev` peaks near 14 GB doing it (CI adds swap for it), so on a laptop name the specs you
-want. The script's settings and warm-up list mirror the CI step, and
-`tests/unit/agent/test-server-specs.test.ts` fails when they drift.
+Specs can be files, `file:line` filters or directories. The no-argument run warms every route first;
+name the specs you want and only their routes are warmed. CI runs this same script, so there is one
+warm-up list and one set of server settings.
+
+The warm-up is paced by the server's memory: it pauses whenever `next dev` has grown 2.5 GB
+(`WARM_HEADROOM_MB`) and resumes once Turbopack has let go of what it compiled. A full warm-up peaks
+near 6 GB that way, where the same routes requested back to back took the server past 13 GB. The
+script prints the server's peak at the end of a run.
 
 The server never reaches a real system. `next dev` loads `.env` too, so the script blanks every
 credential and database setting there (`DATABASE_URL` and its Postgres aliases, `RESEND_*`, `S3_*`,
@@ -110,8 +114,7 @@ something else already answers on, and its server log is in the OS temp director
 ## The rendered design scan
 
 The source scans read CSS and JSX and cannot see a layout. `npm run slop:detect:rendered` runs
-impeccable against the live pages: every public route in all three designs at 390, 820, 1280 and
-1440px. It uses `BASE_URL` (default `http://localhost:3000`). To cover the guest routes too, which
+impeccable against the live pages: every public route at 390, 820, 1280 and 1440px. It uses `BASE_URL` (default `http://localhost:3000`). To cover the guest routes too, which
 otherwise show their sign-in gate, start the server the way the e2e suite does and pass the same
 secret:
 
@@ -121,7 +124,7 @@ NODE_ENV=test TEST_AUTH_SECRET=e2e-test-secret-0123456789 SEED_TEST_FIXTURES=1 \
 BASE_URL=http://localhost:3100 TEST_AUTH_SECRET=e2e-test-secret-0123456789 npm run slop:detect:rendered
 ```
 
-Narrow it with `--viewports 390x844`, `--themes conservatory`, or route arguments (`-- /gifts`).
+Narrow it with `--viewports 390x844` or route arguments (`-- /gifts`).
 It finds Playwright's Chromium itself (set `IMPECCABLE_BROWSER` to override) and adds
 `--no-sandbox` when it runs as root.
 

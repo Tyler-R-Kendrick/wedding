@@ -40,7 +40,7 @@ export const SEED_SOURCES: readonly SeedSource[] = [
     sourceType: 'authored',
     title: "Tyler's brief 2026-09-04",
     // Citations link guests to a public route, never to a repository path.
-    canonicalUrl: '/the-wedding',
+    canonicalUrl: '/guests',
     documentName: 'docs/design/brief.md',
     verifiedAt: BRIEF_DATE,
     trustClass: 'TRUSTED_WEDDING',

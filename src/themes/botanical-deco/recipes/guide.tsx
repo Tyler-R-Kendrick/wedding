@@ -26,7 +26,7 @@ export const BotanicalGuidePage: ContentRecipe<GuideProps> = ({ itineraries, rec
       {signedIn ? (
       <Section id="plan" number={1} ground="wash" labelledBy="plan-title">
         <SectionHeading level={2} id="plan-title" title={CONTENT_COPY.guide.plan} />
-        <GuestPlanBuilder plan={plan} theme="botanical-deco" />
+        <GuestPlanBuilder plan={plan} />
         {plan?.result ? (
           <article className="bd-card bd-card--featured bd-plan-result" id="plan-result" tabIndex={-1} aria-live="polite">
             <div className="bd-card__inner">

@@ -1,7 +1,7 @@
 /**
  * Lab CLS / LCP at 390×844 under 4× CPU throttling and 1.6 Mbps / 150 ms, the conditions the
  * design review used. Requires a running server.
- *   node scripts/measure-cls.mjs http://localhost:3104/?theme=gilded-hour [more urls]
+ *   node scripts/measure-cls.mjs http://localhost:3000/ [more urls]
  */
 import { existsSync } from 'node:fs';
 import { chromium, devices } from '@playwright/test';

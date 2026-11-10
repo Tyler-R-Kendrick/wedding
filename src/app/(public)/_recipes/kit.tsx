@@ -16,10 +16,9 @@ export const NAV = [
   { href: '/', label: 'Home' },
   { href: ROUTES.story, label: 'Our Story' },
   { href: ROUTES.adventures, label: 'Our Adventures' },
-  { href: ROUTES.share, label: 'Share an Adventure' },
-  { href: ROUTES.wedding, label: 'The Wedding' },
+  { href: ROUTES.guestThings, label: 'Things to Do' },
   { href: ROUTES.ourVenue, label: 'Our Venue' },
-  { href: ROUTES.ask, label: 'Ask Us' },
+  { href: ROUTES.guestAsk, label: 'Ask Us' },
 ] as const;
 
 export function Shell({ current, children }: { current: string; children: ReactNode }) {
@@ -48,7 +47,7 @@ export function Shell({ current, children }: { current: string; children: ReactN
         {children}
       </main>
       <footer className="wp-footer">
-        <p>Sara + Tyler · Saturday, July 17, 2027 · Chicago Athletic Association Hotel, 12 S Michigan Ave, Chicago, IL 60603</p>
+        <p>Sara + Tyler</p>
       </footer>
     </>
   );

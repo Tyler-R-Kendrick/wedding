@@ -8,7 +8,7 @@ import type { ReservationRung, ReservationsProvider } from '@/providers/reservat
 import { toGuestHandoff, type GuestHandoff } from '../external/handoff';
 import { getReservationVenue, listReservationVenues } from './repo';
 
-export const CONTACT_ROUTE = '/ask-us';
+export const CONTACT_ROUTE = '/guests/ask-us';
 
 export interface ReservationVenueView {
   id: string;

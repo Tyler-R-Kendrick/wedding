@@ -79,11 +79,16 @@ describe('manifest authorization filtering', () => {
   });
 
   it('gives an anonymous principal only anonymous-auth tools', () => {
-    expect(names(anonymous)).toEqual(['flagged_read', 'navigate_to', 'public_read', 'site_status']);
+    expect(names(anonymous)).toEqual(['flagged_read', 'navigate_to', 'public_read']);
+    // The date and the venue are a signed-in guest's: `site_status` is not advertised without a session.
+    expect(siteStatus.auth).toBe('guest');
+    expect(names(anonymous)).not.toContain('site_status');
+    expect(authorize(siteStatus, anonymous)).toMatchObject({ ok: false, error: { code: 'unauthenticated' } });
   });
 
   it('adds a guest tool only when the guest holds its entitlement', () => {
-    expect(names(guest([]))).toEqual(names(anonymous));
+    // A session alone adds what asks only for a session (`site_status`), and nothing entitled.
+    expect(names(guest([]))).toEqual([...names(anonymous), 'site_status']);
     expect(names(guest(['view_table_assignment']))).toContain('guest_read');
     expect(names(guest(['view_table_assignment']))).not.toContain('guest_draft');
     const full = names(guest(['view_table_assignment', 'rsvp_self']));
@@ -110,7 +115,8 @@ describe('manifest authorization filtering', () => {
   it('derives new capabilities automatically: registering one exposes it with no code change here', () => {
     const later = new CapabilityRegistryImpl();
     later.registerAll([siteStatus]);
-    expect(later.list({ exposure: 'webmcp', principal: anonymous, flags }).map((c) => c.name)).toEqual(['site_status']);
+    expect(later.list({ exposure: 'webmcp', principal: anonymous, flags }).map((c) => c.name)).toEqual([]);
+    expect(later.list({ exposure: 'webmcp', principal: guest([]), flags }).map((c) => c.name)).toEqual(['site_status']);
     later.register(cap({ name: 'seating_lookup', auth: 'guest', requires: ['view_table_assignment'] }));
     expect(buildManifest({ registry: later, principal: guest(['view_table_assignment']), flags }).tools.map((t) => t.name)).toEqual(['seating_lookup', 'site_status']);
   });
@@ -141,7 +147,7 @@ describe('manifest envelope', () => {
 describe('review extras: the manifest cannot disagree with invoke', () => {
   const gated = cap({ name: 'import_pro_media', flag: 'PRO_MEDIA_AI_PROCESSING' });
   const reg = new CapabilityRegistryImpl();
-  reg.registerAll([siteStatus, gated]);
+  reg.registerAll([navigateTo, gated]);
 
   it('hides a readiness-gated capability whose readiness switch is off, even with the flag on', () => {
     const on = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on' });
@@ -156,9 +162,9 @@ describe('review extras: the manifest cannot disagree with invoke', () => {
   it('leaves a ready gated capability listed, and never touches ungated ones', () => {
     const on = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on' });
     const ready = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set() });
-    expect(ready.tools.map((t) => t.name)).toEqual(['import_pro_media', 'site_status']);
+    expect(ready.tools.map((t) => t.name)).toEqual(['import_pro_media', 'navigate_to']);
     const noneReady = buildManifest({ registry: reg, principal: anonymous, flags: on, unreadyFlags: new Set(['PRO_MEDIA_AI_PROCESSING']) });
-    expect(noneReady.tools.map((t) => t.name)).toEqual(['site_status']);
+    expect(noneReady.tools.map((t) => t.name)).toEqual(['navigate_to']);
   });
 });
 
@@ -201,7 +207,37 @@ describe('N4: an admin manifest advertises no capability an admin cannot complet
     // can run it. `get_my_household` and `get_my_invitation` were the two that leaked.
     // The photos and the registry are the same "signed-in principal" sense of `guest`: they moved
     // behind the account menu, the couple are signed in when they look, and none names a guest.
-    expect(guestAuth.sort()).toEqual(['ask_concierge', 'get_faq', 'get_media_item', 'list_gallery', 'list_gift_links', 'open_gift_fund', 'open_gift_link', 'prepare_reservation', 'search_media', 'search_wedding_information', 'search_wedding_information_static']);
+    // So are the date, the venue, travel and the Chicago recommendations since they moved behind
+    // sign-in: shared wedding details, which the couple read as their guests do.
+    // `get_my_transportation_options` is among them because it returns the shared getting-around
+    // topics to any signed-in reader and adds a ride benefit only for a guest principal.
+    expect(guestAuth.sort()).toEqual([
+      'ask_concierge',
+      'find_adventures',
+      'get_faq',
+      'get_media_item',
+      'get_my_transportation_options',
+      'get_reservation_options',
+      'get_venue_facts',
+      'list_gallery',
+      'list_gift_links',
+      'list_hotel_recommendations',
+      'list_itineraries',
+      'open_booking_link',
+      'open_gift_fund',
+      'open_gift_link',
+      'open_reservation_link',
+      'prepare_reservation',
+      'search_media',
+      'search_travel_options',
+      'search_wedding_information',
+      'search_wedding_information_static',
+      'show_venue_room',
+      'site_status',
+    ]);
+    // None of them is advertised to a caller with no session.
+    const anonymousTools = buildManifest({ registry: real, principal: anonymous, flags: { ...flags, WEBMCP: true } }).tools.map((t) => t.name);
+    expect(anonymousTools).toEqual(['get_story', 'list_adventures', 'navigate_to', 'show_adventure']);
     // `get_my_table` is deliberately NOT in this list and never was: it requires
     // `view_table_assignment`, which only `deriveGuestEntitlements` grants, so entitlements already
     // excluded it. Its `guestIdentityRequired` marker states the intrinsic property anyway — the

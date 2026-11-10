@@ -4,7 +4,7 @@
 //
 //   export -n NODE_OPTIONS; NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs "fern pressed specimen"
 //   NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs "art deco sunburst brass" --license cc0,pdm --page-size 10
-//   NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "Conservatory — pressed-fern card texture"
+//   NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "pressed-fern card texture"
 //   Options: --license cc0,pdm,by   licenses to search (default). Only cc0, pdm, by, by-sa are ever passed through.
 //            --page-size 20 --page 1 --source wikimedia,flickr,…   paging and provider filter
 //            --json                 print the raw API results instead of the table

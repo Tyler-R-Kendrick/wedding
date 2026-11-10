@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { currentPrincipal, runAsUi } from '@/app/(guest)/guests/travel/_shared/server';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminGetTravelConfig } from '@/capabilities/travel';

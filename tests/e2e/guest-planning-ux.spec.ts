@@ -44,14 +44,14 @@ test('agenda keeps drafts across type changes and reveals optional errors', asyn
   await expect(page.getByRole('heading', { name: title, exact: true })).toHaveCount(0, { timeout: 15_000 });
 });
 
-test('native planning works without JavaScript and retains theme and result focus', async ({ browser }) => {
+test('native planning works without JavaScript and keeps result focus', async ({ browser }) => {
   const context = await contextAs(browser, 'A1', { javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto('/guests/things-to-do?theme=gilded-hour');
+  await page.goto('/guests/things-to-do');
   await page.getByRole('radio', { name: '45 min', exact: true }).check();
   await page.getByRole('radio', { name: 'Architecture', exact: true }).check();
   await page.getByRole('button', { name: 'Suggest a plan' }).click();
-  await expect(page).toHaveURL(/theme=gilded-hour.*#plan-result/);
+  await expect(page).toHaveURL(/#plan-result$/);
   await expect(page.locator('#plan-result')).toBeFocused();
   await expect(page.locator('#plan-result')).toBeVisible();
   await context.close();

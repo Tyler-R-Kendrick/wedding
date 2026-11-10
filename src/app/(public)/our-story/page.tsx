@@ -1,14 +1,9 @@
 import type { Metadata } from 'next';
-import { invoke } from '@/capabilities/invoke';
-import { getStory } from '@/capabilities/get_story';
-import { publicPageContext } from '@/domain/content/page-context';
-import { recipes } from '../_recipes';
+import { StoryView } from '../_views';
 
 export const metadata: Metadata = { title: 'Our Story' };
 
-export default async function OurStoryPage() {
-  const { ctx } = await publicPageContext();
-  const r = await invoke(getStory, ctx, {});
-  if (!r.ok) throw new Error(r.error.message);
-  return <recipes.StoryPage data={r.value.data} />;
+/** For a reader with a session; anyone else is served the prerendered copy (src/themes/routes.ts). */
+export default function OurStoryPage() {
+  return <StoryView reader="request" />;
 }

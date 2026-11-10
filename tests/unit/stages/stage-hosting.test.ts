@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { IncomingMessage } from 'node:http';
 import { describe, expect, it } from 'vitest';
 import { getPathMatch } from 'next/dist/shared/lib/router/utils/path-match';
@@ -85,5 +86,30 @@ describe('stage hosting rewrites', () => {
     expect(isStagePath('/rsvp', preview)).toBe(false);
     // Production serves no stage by path, so the proxy treats /sitemap like any other request.
     expect(isStagePath('/sitemap/rsvp', { production: true })).toBe(false);
+  });
+});
+
+describe('the assembled stage files are never an address', () => {
+  it('recognises /_stages however it is spelled, and nothing else', async () => {
+    const { namesStageFiles } = await import('@/lib/stage-hosting');
+    for (const path of ['/_stages/_hub/index.html', '/%5Fstages/_hub/index.html', '/%5fstages/x', '/_stages%2F_hosts/wireframe/index.html', '/_%73tages/x', '/_STAGES/x', '/a/%2E%2E/_stages/x']) {
+      expect(namesStageFiles(path), path).toBe(true);
+    }
+    for (const path of ['/', '/stages', '/wireframe/guests', '/admin/stages', '/our-adventures/a%20b', '/media/a%ZZb.jpg']) {
+      expect(namesStageFiles(path), path).toBe(false);
+    }
+  });
+
+  it('the proxy is asked about those paths: the literal one, and any with percent-encoding', () => {
+    const proxy = readFileSync('src/proxy.ts', 'utf8');
+    expect(proxy).toContain("'/_stages/:path*',");
+    expect(proxy).toContain("'/(.*%.*)',");
+  });
+
+  it('a stage host is a stage host in any letter case, as it is to the rewrites', async () => {
+    const { isStageHost } = await import('@/lib/stage-hosting');
+    expect(isStageHost('WIREFRAME.dev.example.test')).toBe(true);
+    expect(isStageHost('Dev.Example.Test')).toBe(true);
+    expect(isStageHost('example.test')).toBe(false);
   });
 });

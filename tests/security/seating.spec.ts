@@ -50,14 +50,33 @@ test('before publication: not_found everywhere, and no draft table id or name in
   });
   expect(JSON.stringify(stabilize(itinerary), null, 2)).toMatchSnapshot('c1-itinerary-before-publish.json');
 
+  // The guest's own page. The dashboard shows a table only once there is one to show: before
+  // publication it carries no table card, no floor plan, and no placeholder sentence about one —
+  // and never the draft's id or name. The heading proves it is the dashboard that was read (a
+  // sign-in door would also "not contain" the draft).
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/your-weekend`);
+  await page.goto(`${BASE_URL}/guests`);
+  await expect(page).toHaveURL(/\/guests\/?$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Fin');
+  await expect(page.locator('#table')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Your table' })).toHaveCount(0);
+  await expect(page.locator('#main .fp')).toHaveCount(0);
+  await expect(page.locator('#main [id^="table-"]')).toHaveCount(0);
   const html = await page.content();
-  expect(html).toContain('Your table will appear here once seating is published.');
   expect(html).not.toContain(tableId);
   expect(html).not.toContain(TABLE_NAME);
+  expect(html).not.toContain('seatNumber');
   await ctx.close();
+
+  // Signed out, there is no page to read at all: the dashboard and the old address both end at sign-in.
+  for (const path of ['/guests', '/your-weekend']) {
+    const res = await request.get(`${BASE_URL}${path}`);
+    expect(res.url(), path).toMatch(/\/sign-in\?next=%2Fguests$/);
+    const anonymous = await res.text();
+    expect(anonymous, path).not.toContain(tableId);
+    expect(anonymous, path).not.toContain(TABLE_NAME);
+  }
 });
 
 test('after publication: the seated guest sees their table; other households, other guests, anonymous and wrong secrets do not', async ({ request, browser }) => {
@@ -68,7 +87,7 @@ test('after publication: the seated guest sees their table; other households, ot
   expect(mine.status).toBe(200);
   expect(mine.body.data!.table).toMatchObject({ id: tableId, name: TABLE_NAME, seatNumber: 2 });
   const nav = await callCapability(request, 'show_my_table_on_floorplan', 'C1', {});
-  expect(nav.body.data).toMatchObject({ route: '/your-weekend', highlight: 'table-t3' });
+  expect(nav.body.data).toMatchObject({ route: '/guests', highlight: 'table-t3' });
 
   expect((await callCapability(request, 'get_my_table', 'B1', { guestId: IDS.C1 })).status).toBe(403);
   expect((await callCapability(request, 'get_my_table', 'A2', { guestId: IDS.A1 })).status).toBe(403);
@@ -80,13 +99,34 @@ test('after publication: the seated guest sees their table; other households, ot
   const b1 = await callCapability(request, 'get_my_itinerary', 'B1', {});
   expect(JSON.stringify(b1.body)).not.toContain(tableId);
 
+  // What the dashboard is planned from now carries the table, for its owner and nobody else.
+  const c1 = await callCapability(request, 'get_my_itinerary', 'C1', {});
+  expect(c1.body.data!.seating).toMatchObject({ published: true, state: 'seated', table: { table: { id: tableId, name: TABLE_NAME, seatNumber: 2 } } });
+
+  // On the page: the table is a card on the dashboard in the states whose plan lists it
+  // (`TASKS_BY_STATE` in src/domain/lifecycle/guest-actions.ts: wedding week and the day).
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/your-weekend`);
-  await expect(page.getByRole('heading', { name: 'Your table' })).toBeVisible();
-  await expect(page.locator('#main')).toContainText(TABLE_NAME);
-  await expect(page.locator('#table-t3')).toHaveCount(1);
+  await page.goto(`${BASE_URL}/guests`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Fin');
+  const state = (await page.locator('#main .dash').getAttribute('data-lifecycle')) ?? '';
+  if (state === 'WEDDING_WEEK' || state === 'WEDDING_DAY') {
+    await expect(page.locator('#table').getByRole('heading', { name: 'Your table' })).toBeVisible();
+    await expect(page.locator('#table')).toContainText(TABLE_NAME);
+    await expect(page.locator('#table-t3')).toHaveCount(1);
+  }
   await ctx.close();
+
+  // Nobody else's dashboard carries it, in any state: another household's guest, signed in.
+  const otherCtx = await contextAs(browser, 'B1');
+  const otherPage = await otherCtx.newPage();
+  await otherPage.goto(`${BASE_URL}/guests`);
+  await expect(otherPage.getByRole('heading', { level: 1 })).toHaveText('Welcome, Dev');
+  await expect(otherPage.locator('#table')).toHaveCount(0);
+  const otherHtml = await otherPage.content();
+  expect(otherHtml).not.toContain(tableId);
+  expect(otherHtml).not.toContain(TABLE_NAME);
+  await otherCtx.close();
 
   // Draft edits after publication stay invisible.
   const moved = await callCapability(request, 'admin_assign_seats', 'admin', { changes: [{ guestId: IDS.C1, tableId, seatNumber: 3 }] }, { idempotencyKey: key() });

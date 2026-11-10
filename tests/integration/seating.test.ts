@@ -100,7 +100,7 @@ describe('published seating', () => {
     expect(mine.data.floorPlan).toMatchObject({ id: planId, venueSpaceRef: 'white-city-ballroom', placeholder: true });
     expect(mine.sources[0]).toMatchObject({ title: 'Seating chart (published)', recordRef: { type: 'seating_publication', id: pub.data.publicationId } });
     const nav = expectOk(await run(showMyTableOnFloorplan, A1, {}));
-    expect(nav.data).toEqual({ route: '/your-weekend', highlight: 'table-t1', floorPlanId: planId, anchorId: 't1', tableName: 'Draft Table Alpha' });
+    expect(nav.data).toEqual({ route: '/guests', highlight: 'table-t1', floorPlanId: planId, anchorId: 't1', tableName: 'Draft Table Alpha' });
     const itinerary = expectOk(await run(getMyItinerary, A1, {}));
     expect(itinerary.data.seating.published).toBe(true);
     expect(itinerary.data.seating.table?.table.name).toBe('Draft Table Alpha');

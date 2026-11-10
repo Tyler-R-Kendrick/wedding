@@ -174,8 +174,8 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
         mobilePhoto="couple.hero.explore.mobile"
         words={['Love', 'peace', 'happiness']}
         actions={
-          <Button variant="secondary" href={ROUTES.wedding}>
-            The wedding
+          <Button variant="secondary" href={`${ROUTES.guestTravel}#getting-around`}>
+            Getting here
           </Button>
         }
       />
@@ -229,16 +229,19 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
         <div data-reveal="list">
           <OutletList fields={data.gettingHere} label="Practical details" />
         </div>
-        <Prose>
-          <p className="bd-muted">
-            Address:{' '}
-            <a className="bd-link" href={mapsUrlFor(frame.site.venue.address)} target="_blank" rel="noopener noreferrer">
-              {frame.site.venue.address}
-              <span className="sr-only">, opens Google Maps</span>
-            </a>
-            . {CONTENT_COPY.ourVenue.directions} <Link href={ROUTES.wedding}>The Wedding</Link>.
-          </p>
-        </Prose>
+        {/* The page is behind sign-in, so the details are always here; the check is the type's. */}
+        {frame.details ? (
+          <Prose>
+            <p className="bd-muted">
+              Address:{' '}
+              <a className="bd-link" href={mapsUrlFor(frame.details.venue.address)} target="_blank" rel="noopener noreferrer">
+                {frame.details.venue.address}
+                <span className="sr-only">, opens Google Maps</span>
+              </a>
+              . {CONTENT_COPY.ourVenue.directions} <Link href={`${ROUTES.guestTravel}#getting-around`}>Travel &amp; Stay</Link>.
+            </p>
+          </Prose>
+        ) : null}
       </Section>
 
       <section id="city" className="bd-city" aria-labelledby="city-title">
@@ -282,7 +285,7 @@ export const BotanicalOurVenuePage: ContentRecipe<OurVenueProps> = ({ data, fram
           <p className="bd-ribbon__sub">More of our favorite places, and how to reach them from the hotel.</p>
         </div>
         <p className="bd-ribbon__action">
-          <Button variant="primary" href={ROUTES.share}>
+          <Button variant="primary" href={ROUTES.guestThings}>
             Our Chicago guide
           </Button>
         </p>

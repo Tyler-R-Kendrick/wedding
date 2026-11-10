@@ -62,7 +62,7 @@ export function AdventuresPage({ data, active }: AdventuresRecipeProps) {
         </ul>
       )}
       <p className="wp-prose wp-muted">
-        {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. Borrow a few for your weekend on <Link href={ROUTES.share}>Share an Adventure</Link>.
+        {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. Borrow a few for your weekend on <Link href={ROUTES.guestThings}>Share an Adventure</Link>.
       </p>
     </Shell>
   );

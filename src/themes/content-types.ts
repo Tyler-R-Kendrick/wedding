@@ -12,11 +12,10 @@ import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type {
   AdventureCard, FaqView, HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary, StorySectionView, TextBlockView, VenueFactView,
-  VenueSpaceView, WeddingEventView,
+  VenueSpaceView,
 } from '@/domain/content/views';
 import type { Citation } from '@/contracts/provenance';
 import type { HotelRecommendation } from '@/domain/travel';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import type { PageFrame } from './types';
 
 /*
@@ -53,9 +52,6 @@ export interface OurVenueProps {
 }
 export interface VenueSpaceProps {
   data: VenueRoomData;
-}
-export interface WeddingProps {
-  data: WeddingPageData;
 }
 export interface AskProps {
   faq: FaqPageData;
@@ -132,7 +128,6 @@ export interface ContentRecipes {
   recommendation: ContentRecipe<RecommendationProps>;
   ourVenue: ContentRecipe<OurVenueProps>;
   venueSpace: ContentRecipe<VenueSpaceProps>;
-  wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;
   travel: ContentRecipe<TravelProps>;
   gifts: ContentRecipe<GiftsProps>;
@@ -142,9 +137,8 @@ export interface ContentRecipes {
 export type ContentRecipeKey = keyof ContentRecipes;
 
 /* ------------------------------------------------------------------------------------------------
- * Content kit: the primitives the content recipes compose. Same props, names and states in both
- * themes; markup and CSS differ (Gilded Hour: plaques, ledgers, diptychs, floor plans on one axis;
- * Conservatory: stems, pressed cards, kraft tags, jar labels on the sheet).
+ * Content kit: the primitives the content recipes compose. The props, names and states are the
+ * contract; the markup and CSS are the theme's own.
  * ---------------------------------------------------------------------------------------------- */
 
 export interface ChipItem {
@@ -202,7 +196,7 @@ export interface ContentKit {
   ItineraryCard: (p: { itinerary: ItineraryView; index: number }) => ReactNode;
   /** Docent list: what to look for in the building or a room. */
   LookForList: (p: { items: { id: string; text: string }[]; label: string }) => ReactNode;
-  /** The four event spaces (`article[data-space]`): floor plan (Gilded Hour) / specimen sheets (Conservatory). */
+  /** The four event spaces (`article[data-space]`). */
   RoomGrid: (p: { spaces: VenueSpaceView[] }) => ReactNode;
   /** Kit capacity figures with the caption that says they are kit figures. */
   CapacityTable: (p: { capacities: VenueSpaceView['capacities'] }) => ReactNode;
@@ -210,8 +204,6 @@ export interface ContentKit {
   OutletList: (p: { fields: OperationalFieldView[]; label: string }) => ReactNode;
   /** Cited statements (`li#fact-<slug>`). */
   FactList: (p: { facts: VenueFactView[]; label: string }) => ReactNode;
-  /** The wedding-day skeleton: times and rooms only as placeholders. */
-  Programme: (p: { events: WeddingEventView[]; venueName: string; startNumber: number }) => ReactNode;
   /** FAQ entries; questions are headings under the section heading. */
   FaqList: (p: { entries: FaqView[]; labelFor: (route: string) => string }) => ReactNode;
   /** Static search results (`#search-results`, polite live region). */

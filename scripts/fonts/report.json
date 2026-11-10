@@ -1,0 +1,148 @@
+[
+ {
+  "source": "botanical-deco/bodoni-moda-wght.woff2",
+  "sourceBytes": 46260,
+  "dropped": 7,
+  "files": [
+   {
+    "file": "botanical-deco/bodoni-moda-core.woff2",
+    "bytes": 25172,
+    "characters": 127,
+    "glyphs": 152,
+    "features": [
+     "ccmp",
+     "kern",
+     "liga",
+     "locl",
+     "mark",
+     "tnum"
+    ]
+   },
+   {
+    "file": "botanical-deco/bodoni-moda-ext.woff2",
+    "bytes": 12716,
+    "characters": 90,
+    "glyphs": 115,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/bodoni-moda-italic-wght.woff2",
+  "sourceBytes": 53756,
+  "dropped": 7,
+  "files": [
+   {
+    "file": "botanical-deco/bodoni-moda-italic-core.woff2",
+    "bytes": 17188,
+    "characters": 127,
+    "glyphs": 142,
+    "features": [
+     "ccmp",
+     "kern",
+     "liga",
+     "locl",
+     "mark"
+    ]
+   },
+   {
+    "file": "botanical-deco/bodoni-moda-italic-ext.woff2",
+    "bytes": 8516,
+    "characters": 90,
+    "glyphs": 115,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/newsreader-text.woff2",
+  "sourceBytes": 43936,
+  "dropped": 9,
+  "files": [
+   {
+    "file": "botanical-deco/newsreader-core.woff2",
+    "bytes": 24824,
+    "characters": 126,
+    "glyphs": 149,
+    "features": [
+     "kern",
+     "liga",
+     "mark",
+     "mkmk",
+     "rvrn",
+     "tnum"
+    ]
+   },
+   {
+    "file": "botanical-deco/newsreader-ext.woff2",
+    "bytes": 11324,
+    "characters": 89,
+    "glyphs": 123,
+    "features": [
+     "kern",
+     "tnum"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/newsreader-text-italic.woff2",
+  "sourceBytes": 46004,
+  "dropped": 9,
+  "files": [
+   {
+    "file": "botanical-deco/newsreader-italic-core.woff2",
+    "bytes": 26116,
+    "characters": 126,
+    "glyphs": 149,
+    "features": [
+     "kern",
+     "liga",
+     "mark",
+     "mkmk",
+     "rvrn"
+    ]
+   },
+   {
+    "file": "botanical-deco/newsreader-italic-ext.woff2",
+    "bytes": 11444,
+    "characters": 89,
+    "glyphs": 123,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/ms-madi-regular.woff2",
+  "sourceBytes": 34848,
+  "dropped": 11,
+  "files": [
+   {
+    "file": "botanical-deco/ms-madi-core.woff2",
+    "bytes": 17396,
+    "characters": 119,
+    "glyphs": 136,
+    "features": [
+     "kern",
+     "liga",
+     "locl"
+    ]
+   },
+   {
+    "file": "botanical-deco/ms-madi-ext.woff2",
+    "bytes": 9048,
+    "characters": 89,
+    "glyphs": 121,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ }
+]

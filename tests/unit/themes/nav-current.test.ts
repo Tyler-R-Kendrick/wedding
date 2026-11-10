@@ -3,8 +3,14 @@ import { navFor } from '@/domain/lifecycle/nav';
 import { ariaCurrent } from '@/themes/shared/nav-utils';
 
 describe('aria-current on the site navigation', () => {
-  const nav = navFor('RSVP_OPEN');
+  // The venue is in a signed-in guest's navigation only.
+  const nav = navFor('RSVP_OPEN', { signedIn: true });
   const venue = [...nav.primary, ...nav.more].find((i) => i.href === '/our-venue')!;
+
+  it('has no venue item to mark for a signed-out reader', () => {
+    const publicNav = navFor('RSVP_OPEN');
+    expect([...publicNav.primary, ...publicNav.more].some((i) => i.href === '/our-venue')).toBe(false);
+  });
 
   it('marks the item for the page itself as the page', () => {
     expect(ariaCurrent(venue, { ...nav, currentPath: '/our-venue' })).toBe('page');
@@ -15,6 +21,6 @@ describe('aria-current on the site navigation', () => {
   });
 
   it('leaves every other item unmarked', () => {
-    expect(ariaCurrent(venue, { ...nav, currentPath: '/the-wedding' })).toBeUndefined();
+    expect(ariaCurrent(venue, { ...nav, currentPath: '/guests/travel' })).toBeUndefined();
   });
 });

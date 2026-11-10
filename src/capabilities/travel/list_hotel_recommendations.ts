@@ -23,7 +23,7 @@ export const listHotelRecommendations = defineCapability<z.infer<typeof input>, 
     'Lists where to stay for the wedding: the Chicago Athletic Association Hotel room block first (link, rate, dates and cutoff appear only once the planner confirms them; until then the record says so), ' +
     'then the couple’s hand-picked alternatives with their reasons and any price band. It states no prices of its own and makes no safety claims. Use search_travel_options for live rates.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

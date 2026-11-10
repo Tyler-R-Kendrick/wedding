@@ -9,8 +9,36 @@ name: stages
 
 on:
   pull_request:
+    # Only when something a stage is built from changes. These five jobs took ten minutes on every
+    # push, most of which touched none of it.
+    paths:
+      - 'stages/**'
+      - 'scripts/stages/**'
+      - 'src/lib/stage-hosting.ts'
+      - 'src/lib/stage-access.ts'
+      - 'src/proxy.ts'
+      - 'src/themes/**'
+      - 'public/fonts/**'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/stages.yml'
   push:
     branches: [main]
+    # Only when something a stage is built from changes. These five jobs took ten minutes on every
+    # push, most of which touched none of it.
+    paths:
+      - 'stages/**'
+      - 'scripts/stages/**'
+      - 'src/lib/stage-hosting.ts'
+      - 'src/lib/stage-access.ts'
+      - 'src/proxy.ts'
+      - 'src/themes/**'
+      - 'public/fonts/**'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/stages.yml'
 
 permissions:
   contents: read

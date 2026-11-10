@@ -1,11 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { VIEW_ROLE_COOKIE, VIEW_ROLES, viewRoleLabel, type ViewRoleKey } from '../../src/domain/identity/view-role';
-import { guestPortalRedirectFor } from '../../src/domain/lifecycle/guest-portal';
 import { crawlUrl, inventory, routesForPersona, type CrawlPersonaKind, type InventoryRow } from '../../src/lib/site-inventory';
 import { REDIRECTS } from '../../src/lib/site-redirects';
 import { cap, seedFixtures, signInAdminViaApi } from '../security/helpers';
 import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
+import { WEDDING_DETAILS } from './helpers/wedding-details';
 
 /**
  * Site audit. Each persona opens the HTML routes `routesForPersona` names:
@@ -16,7 +16,9 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  *
  * Anonymous work is GET only, plus that one POST. Redirects are asserted at 308
  * before the browser follows them. Probes are the inventory rows that name a
- * status and are not HTML.
+ * status and are not HTML. A signed-out reader is shown who we are and the door,
+ * and nothing about the wedding: every page the anonymous walk opens is checked
+ * for the date and the venue, and every guest page for its redirect to sign-in.
  *
  * The warm-up in scripts/test-server-specs.mjs reads this file as text. Every
  * path the crawl requests is quoted below so a named run compiles it first.
@@ -60,7 +62,6 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/credits'
  * '/privacy'
  * '/terms'
- * '/explore-caa'
  * '/faq'
  * '/gifts'
  * '/guests'
@@ -86,7 +87,6 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/rsvp/attending'
  * '/s/fixtureslug01'
  * '/share-an-adventure'
- * '/share-an-adventure/starved-rock-state-park'
  * '/sign-in'
  * '/sign-in/admin'
  * '/sign-in/pending'
@@ -95,17 +95,24 @@ import { BASE_URL, contextAs, type PrincipalName } from './helpers/principal';
  * '/sitemap.xml'
  * '/step-up'
  * '/t/botanical-deco'
- * '/t/botanical-deco/preview/RSVP_OPEN'
  * '/terms'
  * '/the-wedding'
  * '/terms'
- * '/things-to-do'
  * '/transportation'
  * '/travel'
  * '/trip'
- * '/wedding-day'
  * '/your-weekend'
+ *
+ * Aliases that were removed outright (no page, no redirect). The walk does not open them; the
+ * signed-out test asks for each by name and expects a 404:
+ *
+ * '/explore-caa'
+ * '/things-to-do'
+ * '/wedding-day'
  */
+
+/** Addresses that used to be aliases and are now nothing: neither a page nor a redirect. */
+const REMOVED = ['/explore-caa', '/explore-caa/white-city-ballroom', '/things-to-do', '/wedding-day'] as const;
 
 const ANON_MS = 480_000;
 const GUEST_MS = 480_000;
@@ -192,39 +199,27 @@ function remember(seen: Map<string, string[]>, href: string, from: string) {
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/**
- * Where a permanent alias finishes in the browser. The 308 itself is checked before the browser
- * follows it. A public destination stays on that page. A guest-only destination (Ask Us, gifts)
- * sends a signed-out visitor on to sign-in, with `next` set to the page they asked for.
- * A signed-in guest is moved one step further, onto the guest portal, when the destination has one.
- */
-function redirectLanded(destination: string, kind: CrawlPersonaKind, source?: string): RegExp {
-  const portal = kind === 'guest' || kind === 'view-role' ? guestPortalRedirectFor(destination) : null;
-  if (portal) return new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`);
-  const portalNext = guestPortalRedirectFor(destination) ?? destination;
-  const atDestination = `${escapeRegExp(destination)}(?:$|[?#])`;
-  const guestOnly =
-    kind === 'anonymous' &&
-    inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === destination || candidate.examples.includes(destination)));
-  const signInNexts = new Set<string>();
-  if (source) {
-    const fromSource = guestPortalRedirectFor(source.replace(/\/+$/, '') || '/');
-    if (fromSource) signInNexts.add(fromSource);
-  }
-  if (guestOnly) signInNexts.add(portalNext);
-  if (kind === 'anonymous' && portalNext !== destination) signInNexts.add(portalNext);
-  const atSignIn = [...signInNexts]
-    .map((next) => `\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(next))}(?:$|&)`)
-    .join('|');
-  return new RegExp(`(?:${atDestination}${atSignIn ? `|${atSignIn}` : ''})`);
+/** A page of the inventory that only a signed-in reader is shown (audience `guest`). */
+function isGuestOnly(path: string): boolean {
+  return inventory().some((candidate) => candidate.kind === 'page' && candidate.audience === 'guest' && (candidate.url === path || candidate.examples.includes(path)));
 }
 
-/** Signed-in guests and view-role previews are guest principals, so legacy URLs canonicalize onto `/guests/*`. */
+/**
+ * Where a permanent alias finishes in the browser. The 308 itself is checked before the browser
+ * follows it. Every alias now leads to a guest page (the dashboard, Travel & Stay, Things to Do,
+ * Ask Us, gifts), so a signed-out visitor is sent on to sign-in with `next` set to that page, and
+ * never lands on the page itself. Anyone signed in stays on the destination.
+ */
+function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
+  if (kind === 'anonymous' && isGuestOnly(destination)) return new RegExp(`\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)`);
+  return new RegExp(`${escapeRegExp(destination)}(?:$|[?#])`);
+}
+
+/** A signed-in guest's home is the dashboard: `/` sends a guest principal (and a view-role preview, which is one) to `/guests`. */
 function portalLanding(url: string, kind: CrawlPersonaKind): string | null {
   if (kind !== 'guest' && kind !== 'view-role') return null;
   const path = url.replace(/\/+$/, '') || '/';
-  if (path === '/') return '/guests';
-  return guestPortalRedirectFor(url);
+  return path === '/' ? '/guests' : null;
 }
 
 async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaKind, role?: ViewRoleKey) {
@@ -234,20 +229,20 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
   expect(response!.status(), `${kind} ${url}`).toBeLessThan(400);
   await expect(page.getByRole('heading', { level: 1 }).first(), `${kind} ${url} has no heading`).not.toHaveText('');
 
-  // Legacy travel, things-to-do and Ask Us URLs move a guest principal onto `/guests/*`.
-  // An administrator is not moved. A signed-out reader of a portal URL is sent to sign-in;
-  // the anonymous walk does not open those URLs (they are audience guest).
+  // Home sends a guest principal to the dashboard. An administrator is not moved. A signed-out
+  // reader of a guest page is sent to sign-in; the anonymous walk does not open those pages (they
+  // are audience guest), only the aliases that lead to them.
   const portal = portalLanding(url, kind);
   if (portal) await expect(page, `${kind} ${url} should land on the guest portal`).toHaveURL(new RegExp(`${escapeRegExp(portal)}(?:$|[?#])`));
-  if (kind === 'admin') {
-    const moved = guestPortalRedirectFor(url);
-    if (moved) await expect(page, `${url} moved an administrator onto the guest portal`).not.toHaveURL(new RegExp(`${escapeRegExp(moved)}(?:$|[?#])`));
-  }
+  if (kind === 'admin' && url === '/') await expect(page, 'home moved an administrator onto the guest portal').not.toHaveURL(/\/guests(?:$|[/?#])/);
 
   if (row.kind === 'redirect') {
     const rule = REDIRECTS.find((r) => r.source === row.url);
-    if (rule && !rule.source.includes(':')) await expect(page, url).toHaveURL(redirectLanded(rule.destination, kind, rule.source));
+    if (rule && !rule.source.includes(':')) await expect(page, url).toHaveURL(redirectLanded(rule.destination, kind));
   }
+  // Nothing a signed-out reader can open says when or where the wedding is: not Home, not a
+  // public page, not a door, not the page an old address ends on.
+  if (kind === 'anonymous') await expect(page.locator('body'), `${url} shows a signed-out reader the date or the venue`).not.toContainText(WEDDING_DETAILS);
   if (url === '/i/example') await expect(page).toHaveURL(/\/invite\/example(?:$|[?#])/);
 
   const guestSurface = row.audience === 'guest' || portal !== null;
@@ -262,7 +257,7 @@ async function assertDocument(page: Page, row: InventoryRow, kind: CrawlPersonaK
     await expect(heading, url).not.toContainText('Administrator sign-in required');
     await expect(heading, url).not.toContainText('Not part of your access');
   }
-  if (kind === 'admin' && (url === '/guests' || url === '/guests/ask-us' || url === '/ask-us')) {
+  if (kind === 'admin' && (url === '/guests' || url === '/guests/ask-us')) {
     await expect(page.locator('body'), `${url} should show the guests-only gate to an administrator`).toContainText('is for invited guests');
   }
   if (kind === 'view-role' && role && row.kind === 'page' && (row.audience === 'public' || row.audience === 'guest')) {
@@ -310,6 +305,9 @@ test('a signed-out visitor can open every public, gate and alias route', async (
   expect(xml).not.toContain('/your-weekend');
   expect(xml).not.toContain('/sign-in');
   expect(xml).not.toContain('/guests');
+  // The venue is the invited guests' to know: its pages are not listed for a crawler either.
+  expect(xml).not.toContain('/our-venue');
+  for (const path of ['/gifts', '/transportation', '/trip', '/rsvp', '/photos', '/travel', '/the-wedding', '/ask-us', '/share-an-adventure']) expect(xml, path).not.toContain(`${path}<`);
 
   for (const rule of REDIRECTS) {
     const source = rule.source.replace(':slug', 'white-city-ballroom');
@@ -320,6 +318,22 @@ test('a signed-out visitor can open every public, gate and alias route', async (
     expect(location.endsWith(destination) || location.includes(`${destination}?`) || location.includes(`${destination}#`), `${source} -> ${location}`).toBe(true);
   }
 
+  // Aliases that were removed rather than redirected answer 404, and are followed nowhere.
+  for (const path of REMOVED) {
+    const res = await request.get(path, { maxRedirects: 0 });
+    expect(res.status(), `${path} should be gone`).toBe(404);
+  }
+
+  // Every guest page answers a signed-out GET with a redirect to sign-in that carries the way back,
+  // and nothing of the page. (`/rsvp`, `/trip` and the upload pages render a gate in place instead;
+  // they are opened by the guest walk.)
+  for (const path of ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation', '/gifts', '/photos', '/photos/guest-uploads']) {
+    const res = await request.get(path, { maxRedirects: 0 });
+    expect(res.status(), `${path} signed out`).toBe(307);
+    expect(res.headers().location, `${path} signed out`).toMatch(new RegExp(`\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(path))}$`));
+    expect(await res.text(), `${path} signed out`).not.toMatch(WEDDING_DETAILS);
+  }
+
   const ctx = await contextAs(browser, null);
   const page = await ctx.newPage();
   await walk(page, 'anonymous');
@@ -328,7 +342,9 @@ test('a signed-out visitor can open every public, gate and alias route', async (
 
 test('guest A1 can open every guest route', async ({ browser }) => {
   test.setTimeout(GUEST_MS);
-  const ctx = await contextAs(browser, 'A1' satisfies PrincipalName);
+  // After the wedding, when every guest page is open: before the day, photos, uploads and gifts send
+  // a guest to the dashboard, and the walk would be reading that page under their names.
+  const ctx = await contextAs(browser, 'A1' satisfies PrincipalName, { lifecycle: 'POST_WEDDING' });
   const page = await ctx.newPage();
   await walk(page, 'guest');
   await ctx.close();

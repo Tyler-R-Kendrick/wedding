@@ -1,5 +1,5 @@
 import { toNextJsHandler } from 'better-auth/next-js';
-import { getAuth, isTrustedMutationRequest, siteOrigin } from '@/lib/auth';
+import { getAuth, isTrustedMutationRequest, siteOrigins } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * asserted that was blocked; it was not, because that suite had never run in CI.
  */
 const handler = async (request: Request) => {
-  if (!isTrustedMutationRequest(request, [siteOrigin()])) {
+  if (!isTrustedMutationRequest(request, siteOrigins())) {
     return new Response(JSON.stringify({ error: 'origin_not_allowed' }), { status: 403, headers: { 'content-type': 'application/json' } });
   }
   return (await getAuth()).handler(request);

@@ -4,6 +4,7 @@ import { ok } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { createReadContext } from '@/domain/content/read-context';
 import { storySectionViewSchema, timelineMomentViewSchema } from '@/domain/content/views';
+import { mayKnowVenue, mentionsVenue, publicBlocks, withoutVenueSentences } from '@/domain/content/venue-guard';
 import { getStory as readStory } from '@/domain/story/repo';
 import { getTimeline } from '@/domain/timeline/repo';
 import { ROUTES } from '@/domain/routes';
@@ -37,6 +38,14 @@ export const getStory = defineCapability<z.infer<typeof input>, StoryPageData>({
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const [story, timeline] = await Promise.all([readStory(rctx), getTimeline(rctx)]);
-    return ok({ data: { route: ROUTES.story, title: 'Our Story', sections: story.sections, timeline: timeline.moments }, sources: [...story.sources, ...timeline.sources] });
+    // The story is public; where the wedding is, is not (domain/content/venue-guard.ts).
+    const known = mayKnowVenue(ctx.principal);
+    const sections = known ? story.sections : story.sections.map((s) => ({ ...s, paragraphs: publicBlocks(s.paragraphs) }));
+    const moments = known
+      ? timeline.moments
+      : timeline.moments
+          .filter((m) => !mentionsVenue(m.title))
+          .map((m) => ({ ...m, note: { ...m.note, text: withoutVenueSentences(m.note.text) }, ...(m.locationLabel && mentionsVenue(m.locationLabel) ? { locationLabel: undefined } : {}) }));
+    return ok({ data: { route: ROUTES.story, title: 'Our Story', sections, timeline: moments }, sources: [...story.sources, ...timeline.sources] });
   },
 });

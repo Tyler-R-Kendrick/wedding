@@ -1,5 +1,5 @@
 import { test as base, expect, request as playwrightRequest, type APIRequestContext, type Page } from '@playwright/test';
-import { customPrincipalHeaders, IDS, principalHeaders } from './helpers/principal';
+import { apiHeaders, customPrincipalHeaders, IDS, principalHeaders } from './helpers/principal';
 
 /**
  * WebMCP progressive enhancement (docs/architecture/webmcp.md).
@@ -58,12 +58,12 @@ async function warmRoutes(): Promise<void> {
   try {
     await Promise.all([
       context.get('/'),
-      context.get('/travel'),
+      context.get('/sign-in'),
       context.get('/api/webmcp/manifest'),
       // The invoke route too: a cold `next dev` compile of it has been seen to surface as a
       // transient 500 on the very first request, which has nothing to do with what any test asserts.
-      context.post('/api/webmcp/invoke/site_status', { headers: SAME_ORIGIN, data: { input: {} } }),
-      context.post('/api/capabilities/site_status', { data: { input: {} } }),
+      context.post('/api/webmcp/invoke/show_adventure', { headers: SAME_ORIGIN, data: { input: { slug: 'starved-rock' } } }),
+      context.post('/api/capabilities/show_adventure', { data: { input: { slug: 'starved-rock' } } }),
     ]);
   } catch {
     // Warming is an optimisation; a failure here must not be reported as a test failure.
@@ -71,6 +71,28 @@ async function warmRoutes(): Promise<void> {
     await context.dispose();
   }
 }
+
+/**
+ * Capabilities that say something about the wedding — when, where, how to get there, where to stay,
+ * what to do in the city. They are an invited guest's: a signed-out agent is not offered them, and
+ * cannot call them by name.
+ */
+const GUEST_ONLY_TOOLS = [
+  'site_status',
+  'get_venue_facts',
+  'show_venue_room',
+  'list_hotel_recommendations',
+  'search_travel_options',
+  'open_booking_link',
+  'find_adventures',
+  'list_itineraries',
+  'get_reservation_options',
+  'open_reservation_link',
+  'get_my_transportation_options',
+] as const;
+
+/** What a signed-out agent may still use: the couple's story, their adventures, and finding a page. */
+const PUBLIC_TOOLS = ['get_story', 'list_adventures', 'show_adventure', 'navigate_to'] as const;
 
 type Kind = 'guest' | 'guest-fresh' | 'admin';
 
@@ -242,7 +264,9 @@ test.describe('webmcp: a browser that supports it', () => {
     const manifest = await manifestFor(request);
     expect(manifest.principal.kind).toBe('anonymous');
     const expected = manifest.tools.map((t) => t.name).sort();
-    expect(expected).toContain('site_status');
+    for (const name of PUBLIC_TOOLS) expect(expected, `a signed-out agent is not offered ${name}`).toContain(name);
+    // Nothing about the wedding is a signed-out agent's tool.
+    for (const name of GUEST_ONLY_TOOLS) expect(expected, `a signed-out agent is offered ${name}`).not.toContain(name);
 
     // The registered set IS the manifest: not a superset (no tool the principal cannot use) and
     // not a subset (nothing silently dropped).
@@ -262,15 +286,48 @@ test.describe('webmcp: a browser that supports it', () => {
     }
 
     // Same capability, two surfaces, one answer: the WebMCP tool call and the UI's own route.
-    const viaTool = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('site_status', {})));
-    const viaRoute = await (await request.post('/api/capabilities/site_status', { data: { input: {} } })).json();
+    const viaTool = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('show_adventure', { slug: 'starved-rock' })));
+    const viaRoute = await (await request.post('/api/capabilities/show_adventure', { data: { input: { slug: 'starved-rock' } } })).json();
     expect(viaTool.ok).toBe(true);
     expect(viaRoute.ok).toBe(true);
     expect(viaTool.data).toEqual(viaRoute.data);
-    expect(viaTool.data.wedding.date).toBe('2027-07-17');
+    // What a signed-out agent is told never says when or where the wedding is.
+    expect(JSON.stringify(viaTool)).not.toMatch(/2027-07-17|July 17|Chicago Athletic|12 S Michigan/);
 
     expect(await page.evaluate(() => window.__errors ?? [])).toEqual([]);
     expect(errors).toEqual([]);
+  });
+
+  test('the date and the venue are a signed-in guest\'s to ask for: two surfaces, one answer, and neither for anyone else', async ({ request }) => {
+    // Signed out: not listed, not callable through the bridge (which does not even confirm the
+    // tool exists), and refused by the UI's own route. No answer carries the date or the venue.
+    const anonymous = await manifestFor(request);
+    expect(anonymous.tools.map((t) => t.name)).not.toContain('site_status');
+    const bridged = await request.post('/api/webmcp/invoke/site_status', { headers: SAME_ORIGIN, data: { input: {} } });
+    expect(bridged.status()).toBe(404);
+    const bridgedBody = await bridged.json();
+    expect(bridgedBody.error.code).toBe('not_found');
+    const routed = await request.post('/api/capabilities/site_status', { data: { input: {} } });
+    expect(routed.status()).toBe(401);
+    const routedBody = await routed.json();
+    expect(routedBody.error.code).toBe('unauthenticated');
+    for (const body of [bridgedBody, routedBody]) {
+      expect(body.data).toBeUndefined();
+      expect(JSON.stringify(body)).not.toMatch(/2027-07-17|July 17|Chicago Athletic|Michigan/);
+    }
+
+    // Signed in: listed, and the tool call and the UI route give the same answer.
+    const guest = await manifestFor(request, as('guest-fresh'));
+    const guestNames = guest.tools.map((t) => t.name);
+    for (const name of GUEST_ONLY_TOOLS) expect(guestNames, `a guest is not offered ${name}`).toContain(name);
+    for (const name of PUBLIC_TOOLS) expect(guestNames, `a guest is not offered ${name}`).toContain(name);
+    const viaTool = await (await request.post('/api/webmcp/invoke/site_status', { headers: { ...SAME_ORIGIN, ...as('guest-fresh') }, data: { input: {} } })).json();
+    const viaRoute = await (await request.post('/api/capabilities/site_status', { headers: apiHeaders('A1'), data: { input: {} } })).json();
+    expect(viaTool.ok, JSON.stringify(viaTool)).toBe(true);
+    expect(viaRoute.ok, JSON.stringify(viaRoute)).toBe(true);
+    expect(viaTool.data).toEqual(viaRoute.data);
+    expect(viaTool.data.wedding.date).toBe('2027-07-17');
+    expect(viaTool.data.wedding.venueName).toContain('Chicago Athletic');
   });
 
   test('re-registers after a client-side navigation', async ({ page, request }) => {
@@ -280,9 +337,15 @@ test.describe('webmcp: a browser that supports it', () => {
 
     // `navigate_to` is a real navigation: the server validates the route against the internal
     // allowlist, then the island's router performs it, which unregisters and re-registers.
-    const result = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('navigate_to', { route: '/travel' })));
-    expect(result).toMatchObject({ ok: true, data: { route: '/travel' } });
+    // Travel & Stay is a guest page: the tool only finds it, and the page itself asks a signed-out
+    // reader to sign in. (The old address, `/travel`, is no longer a page of this site to the tool.)
+    const stale = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('navigate_to', { route: '/travel' })));
+    expect(stale.ok).toBe(false);
+    expect(new URL(page.url()).pathname).toBe('/');
+    const result = JSON.parse(await page.evaluate(() => window.__webmcp!.execute('navigate_to', { route: '/guests/travel' })));
+    expect(result).toMatchObject({ ok: true, data: { route: '/guests/travel' } });
     await expect.poll(() => new URL(page.url()).pathname, REGISTERED).toBe('/sign-in');
+    expect(new URL(page.url()).searchParams.get('next')).toBe('/guests/travel');
     await expect.poll(() => page.evaluate(() => window.__webmcp?.names() ?? []), REGISTERED).toEqual(expected);
   });
 
@@ -343,6 +406,7 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
     expect(anonymousNames).not.toContain('webmcp_test_admin_read');
     // Every anonymous tool really is anonymous-auth; omission is UX, but the list must be honest.
     for (const tool of anonymous.tools) expect(tool.execution.auth, tool.name).toBe('anonymous');
+    for (const name of GUEST_ONLY_TOOLS) expect(anonymousNames, name).not.toContain(name);
 
     // Not listed is not the check. Calling it anyway is refused — and the refusal says only
     // "not available", so it does not confirm that the capability exists (review finding 2).
@@ -388,29 +452,40 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
     expect(hidden.status()).toBe(404);
 
     // Forging `webmcp` on the UI route changes nothing: that route is always surface `ui`.
-    const plain = await request.post('/api/capabilities/site_status', { data: { input: {} } });
-    const forgedWebmcp = await request.post('/api/capabilities/site_status', {
+    const plain = await request.post('/api/capabilities/show_adventure', { data: { input: { slug: 'starved-rock' } } });
+    const forgedWebmcp = await request.post('/api/capabilities/show_adventure', {
       headers: { 'x-surface': 'webmcp', 'x-capability-surface': 'webmcp' },
-      data: { input: {}, surface: 'webmcp' },
+      data: { input: { slug: 'starved-rock' }, surface: 'webmcp' },
     });
+    expect(plain.status()).toBe(200);
     expect(forgedWebmcp.status()).toBe(plain.status());
-    expect((await forgedWebmcp.json()).data).toEqual((await plain.json()).data);
+    const plainData = (await plain.json()).data;
+    expect(plainData).toBeTruthy();
+    expect((await forgedWebmcp.json()).data).toEqual(plainData);
+    // Nor does claiming a surface get a signed-out caller a guest's capability on either route.
+    const forgedGuest = await request.post('/api/capabilities/site_status', { headers: { 'x-surface': 'webmcp', 'x-capability-surface': 'ai' }, data: { input: {}, surface: 'ai' } });
+    expect(forgedGuest.status()).toBe(401);
   });
 
   test('refuses cross-origin JSON, missing origin metadata, and non-JSON bodies', async ({ request }) => {
-    const cross = await request.post('/api/webmcp/invoke/site_status', {
+    // `navigate_to` is a tool a signed-out caller may use, so each refusal below is about where the
+    // request came from and nothing else.
+    const cross = await request.post('/api/webmcp/invoke/navigate_to', {
       headers: { 'content-type': 'application/json', 'sec-fetch-site': 'cross-site', origin: 'https://evil.example' },
-      data: { input: {} },
+      data: { input: { route: '/' } },
     });
     expect(cross.status()).toBe(403);
     expect((await cross.json()).error).toMatchObject({ code: 'forbidden', details: { reason: 'origin' } });
 
     // Unlike the UI route, the bridge demands proof of origin from EVERY caller, anonymous
     // included: only page script may drive it.
-    const bare = await request.post('/api/webmcp/invoke/site_status', { headers: { 'content-type': 'application/json' }, data: { input: {} } });
+    const bare = await request.post('/api/webmcp/invoke/navigate_to', { headers: { 'content-type': 'application/json' }, data: { input: { route: '/' } } });
     expect(bare.status()).toBe(403);
+    // The positive control: the same call with a browser's same-origin metadata is answered.
+    const sameOrigin = await request.post('/api/webmcp/invoke/navigate_to', { headers: SAME_ORIGIN, data: { input: { route: '/' } } });
+    expect(sameOrigin.status()).toBe(200);
 
-    const form = await request.post('/api/webmcp/invoke/site_status', {
+    const form = await request.post('/api/webmcp/invoke/navigate_to', {
       headers: { 'content-type': 'application/x-www-form-urlencoded', 'sec-fetch-site': 'same-origin' },
       data: 'input=%7B%7D',
     });
@@ -479,6 +554,8 @@ test.describe('webmcp: authorization and surface cannot be bypassed', () => {
       malformedName: await request.post('/api/webmcp/invoke/NotSnakeCase', { headers: SAME_ORIGIN, data: { input: {} } }),
       notExposed: await request.post('/api/webmcp/invoke/webmcp_test_hidden', { headers: SAME_ORIGIN, data: { input: {} } }),
       needsSignIn: await request.post('/api/webmcp/invoke/webmcp_test_guest_read', { headers: SAME_ORIGIN, data: { input: {} } }),
+      weddingDetailsSignedOut: await request.post('/api/webmcp/invoke/site_status', { headers: SAME_ORIGIN, data: { input: {} } }),
+      hotelsSignedOut: await request.post('/api/webmcp/invoke/list_hotel_recommendations', { headers: SAME_ORIGIN, data: { input: {} } }),
       needsEntitlement: await request.post('/api/webmcp/invoke/webmcp_test_admin_read', { headers: { ...SAME_ORIGIN, ...as('guest') }, data: { input: {} } }),
     };
     const answers = new Set<string>();

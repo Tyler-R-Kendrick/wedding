@@ -1,7 +1,5 @@
 import { isInternalRoute } from '@/capabilities/routes';
-import type { Principal } from '@/contracts/principal';
 import { safeReturnPath } from '@/domain/identity/routes';
-import { ROUTES } from '@/domain/routes';
 
 export const GUEST_PORTAL = {
   root: '/guests',
@@ -11,36 +9,6 @@ export const GUEST_PORTAL = {
 } as const;
 
 export type GuestPortalPath = (typeof GUEST_PORTAL)[keyof typeof GUEST_PORTAL];
-
-/** True when the nav and redirects should treat the reader as an invited guest (not the admin console). */
-export function isGuestPortalExperience(opts: { signedIn?: boolean; admin?: boolean }): boolean {
-  return opts.signedIn === true && opts.admin !== true;
-}
-
-/** Signed-in guest sessions, including an administrator’s view-as preview, use the guest portal. */
-export function isGuestPortalPrincipal(principal: Principal): boolean {
-  return principal.kind === 'guest';
-}
-
-/** Maps a legacy public path to its signed-in guest-portal equivalent, or null when unchanged. */
-export function guestPortalRedirectFor(pathname: string): string | null {
-  const path = pathname.replace(/\/+$/, '') || '/';
-  switch (path) {
-    case '/travel':
-      return GUEST_PORTAL.travel;
-    case '/share-an-adventure':
-    case '/things-to-do':
-      return GUEST_PORTAL.thingsToDo;
-    case '/ask-us':
-    case '/faq':
-      return GUEST_PORTAL.askUs;
-    default:
-      if (path.startsWith('/share-an-adventure/')) {
-        return `${GUEST_PORTAL.thingsToDo}${path.slice('/share-an-adventure'.length)}`;
-      }
-      return null;
-  }
-}
 
 export function isGuestPortalRoute(pathname: string): boolean {
   const path = pathname.replace(/\/+$/, '') || '/';
@@ -68,9 +36,9 @@ export function isGuestPortalInternalRoute(route: string): boolean {
   return false;
 }
 
-/** Detail page for a Chicago recommendation: guest portal path when the reader is a signed-in guest. */
-export function thingsToDoDetailPath(slug: string, principal: Principal): string {
-  return principal.kind === 'guest' ? `${GUEST_PORTAL.thingsToDo}/${slug}` : `${ROUTES.share}/${slug}`;
+/** Detail page for a Chicago recommendation. */
+export function thingsToDoDetailPath(slug: string): string {
+  return `${GUEST_PORTAL.thingsToDo}/${slug}`;
 }
 
 export function isAllowedGuestPortalReturn(path: string): boolean {

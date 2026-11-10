@@ -27,10 +27,15 @@ export { TEST_AUTH_SECRET };
 export { customPrincipalHeaders, IDS, principalHeaders } from '../e2e/helpers/principal';
 export const CRON_SECRET = process.env.CRON_SECRET ?? 'e2e-cron-secret-0123456789abcdefghij';
 
+/**
+ * The media journeys happen on the wedding day: photos, uploads and albums are closed to guests
+ * before it (`requireOpenNow`), so these guests are seen on that day (the injector's `lifecycle`).
+ */
+const MEDIA_DAY = 'WEDDING_DAY' as const;
 /** Household A's manager: uploads, and may see what the household uploaded. */
-export const guestA = principalHeaders('A1');
+export const guestA = principalHeaders('A1', undefined, undefined, MEDIA_DAY);
 /** Household B — a different household, for the cross-household read denials. */
-export const guestB = principalHeaders('B1');
+export const guestB = principalHeaders('B1', undefined, undefined, MEDIA_DAY);
 /**
  * An owner WITHOUT `view_private_media`: the sharper case, because the row is theirs and only the
  * entitlement stands between them and it. `customPrincipalHeaders` because the named principals

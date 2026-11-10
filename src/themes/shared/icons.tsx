@@ -1,7 +1,7 @@
 import { destinationOf } from '@/domain/lifecycle/account';
 import type { SVGProps } from 'react';
 
-/** Authored line icons, one stroke weight, used by the Gilded Hour elevator panel and external links. */
+/** Authored line icons, one stroke weight, used by the nav, the action bar and external links. */
 const PATHS: Record<string, string> = {
   home: 'M4 11l8-7 8 7v9H4zM10 20v-6h4v6',
   rsvp: 'M3 6h18v12H3zM3 7l9 6 9-6',
@@ -37,16 +37,15 @@ export function iconForHref(link: string): IconName {
   const href = destinationOf(link);
   if (href === '/' || href.startsWith('/#')) return 'home';
   if (href.startsWith('/rsvp')) return 'rsvp';
-  if (href.startsWith('/your-weekend')) return 'calendar';
-  if (href.startsWith('/travel')) return 'suitcase';
+  if (href.startsWith('/guests/travel')) return 'suitcase';
   if (href.startsWith('/transportation')) return 'car';
-  if (href.startsWith('/ask-us')) return 'chat';
+  if (href.startsWith('/guests/ask-us')) return 'chat';
   if (href.startsWith('/photos')) return 'camera';
   if (href.startsWith('/our-story')) return 'book';
   if (href.startsWith('/our-adventures')) return 'compass';
-  if (href.startsWith('/share-an-adventure')) return 'route';
+  if (href.startsWith('/guests/things-to-do')) return 'route';
   if (href.startsWith('/our-venue')) return 'building';
-  if (href.startsWith('/the-wedding')) return 'sun';
+  if (href.startsWith('/guests')) return 'calendar';
   if (href.startsWith('/gifts')) return 'gift';
   if (href.startsWith('http')) return 'pin';
   return 'route';

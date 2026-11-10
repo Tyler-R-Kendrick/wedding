@@ -4,14 +4,13 @@ import { PreviewBanner } from './PreviewBanner';
 export interface GenericRecipeOptions {
   /** Number chapters and detail sections (only real sequences). */
   numbered: boolean;
-  /** Mount cards in the theme's aside/mounting area (Conservatory) rather than on the axis. */
+  /** Mount cards in the theme's aside/mounting area rather than on the axis. */
   mounted: boolean;
 }
 
 /**
  * Generic page recipes other swarms compose (StoryPage, ArchivePage, DetailPage, FormPage,
- * DashboardPage, GalleryPage). Structure comes from the theme's kit: Gilded Hour sets sections on
- * one axis with numerals; Conservatory hangs cards in the mounting area with washes.
+ * DashboardPage, GalleryPage). Structure comes from the theme's kit.
  */
 export function createGenericRecipes(kit: ThemeComponentKit, opts: GenericRecipeOptions): Omit<ThemeRecipes, 'home'> {
   const { Shell, Section, SectionHeading, Prose, Card, ImageFrame, Gallery, Button, Timeline, Stat, MapHandoff, Text, Badge } = kit;
@@ -105,8 +104,8 @@ export function createGenericRecipes(kit: ThemeComponentKit, opts: GenericRecipe
               </p>
             </Prose>
             {facts(s.facts)}
-            {s.timeline ? <Timeline events={s.timeline} timezone={d.site.date.timezone} label={s.heading} /> : null}
-            {s.map ? <MapHandoff venue={d.site.venue} /> : null}
+            {s.timeline && d.details ? <Timeline events={s.timeline} timezone={d.details.date.timezone} label={s.heading} /> : null}
+            {s.map && d.details ? <MapHandoff venue={d.details.venue} /> : null}
           </Section>
         ))}
       </Shell>

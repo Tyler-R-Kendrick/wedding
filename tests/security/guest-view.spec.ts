@@ -24,7 +24,15 @@ test.describe('browse as a guest', () => {
     // Every page says whose view it is, and the account menu is Ana's household's, plus the way back.
     const band = page.getByRole('status').filter({ hasText: 'Inspecting as' });
     await expect(band).toContainText('Read-only');
+    // Her dashboard is what opens, not the sign-in door and not the administrator's "guests only" gate.
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/^Welcome/);
+    await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
+    // The old address leads to the same page, still as her.
     await page.goto('/your-weekend');
+    await expect(page).toHaveURL(/\/guests\/?$/);
+    await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
+    await expect(page.getByRole('status').filter({ hasText: 'Inspecting as' })).toBeVisible();
+    await page.goto('/rsvp');
     await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
     await expect(page.getByRole('status').filter({ hasText: 'Inspecting as' })).toBeVisible();
 

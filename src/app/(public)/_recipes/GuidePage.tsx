@@ -25,14 +25,14 @@ const INTEREST_OPTIONS = ['architecture', 'walk', 'food', 'drink', 'outdoors', '
 
 export function GuidePage({ itineraries, recommendations, activeBucket, plan, guestTools, curated, signedIn = false }: GuideRecipeProps) {
   const chips = [
-    { href: ROUTES.share, label: 'All', active: !activeBucket },
-    ...itineraries.buckets.map((b) => ({ href: `${ROUTES.share}?bucket=${b}`, label: humanize(b), active: activeBucket === b })),
+    { href: ROUTES.guestThings, label: 'All', active: !activeBucket },
+    ...itineraries.buckets.map((b) => ({ href: `${ROUTES.guestThings}?bucket=${b}`, label: humanize(b), active: activeBucket === b })),
   ];
   const byCategory = new Map<string, FindAdventuresData['items']>();
   for (const r of recommendations.items) byCategory.set(r.category, [...(byCategory.get(r.category) ?? []), r]);
 
   return (
-    <Shell current={ROUTES.share}>
+    <Shell current={ROUTES.guestThings}>
       <PageIntro
         eyebrow={CONTENT_COPY.guide.eyebrow}
         title={CONTENT_COPY.guide.title}
@@ -73,7 +73,7 @@ export function GuidePage({ itineraries, recommendations, activeBucket, plan, gu
 
       {signedIn ? (
       <Section id="plan" number="02" title="Plan around the time you have">
-        <form className="wp-form" method="get" action={ROUTES.share}>
+        <form className="wp-form" method="get" action={ROUTES.guestThings}>
           <div className="wp-field">
             <label htmlFor="plan-minutes">How much time do you have?</label>
             <select id="plan-minutes" name="minutes" defaultValue={plan?.minutes ?? 120}>

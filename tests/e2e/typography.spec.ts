@@ -20,9 +20,9 @@ import { contextAs } from './helpers/principal';
  *     links inside it computed to `"Times New Roman"` — they sit outside `.ops`, which is the only
  *     element level 14's fix touched, and `html { font-family: var(--font-text) }` is invalid on a
  *     route with no `[data-theme]`;
- *   - the auth journeys resolved `--font-text` from the DEFAULT design's Tailwind `@theme` block at
- *     `:root`, so a guest who had chosen Conservatory claimed their invitation in Gilded Hour's
- *     faces — with no fallback stack behind them, because that block declares bare family names.
+ *   - the auth journeys carried no `[data-theme]` and resolved `--font-text` from the Tailwind
+ *     `@theme` block at `:root`, with no fallback stack behind the faces, because that block
+ *     declares bare family names.
  *
  * Registered in TEST_SERVER_SPECS: the console screens need the canonical test-principal injector.
  */
@@ -37,7 +37,7 @@ const BANNED = /^"?(Inter|Roboto|Arial|Helvetica( Neue)?|Space Grotesk|Fraunces|
 const DEFAULTED = /^("?Times( New Roman)?"?|serif|sans-serif|monospace|system-ui|-apple-system|ui-sans-serif|ui-serif|BlinkMacSystemFont)$/i;
 
 /** The faces this repo ships or deliberately falls back to, plus the console's monospace. */
-const DECLARED = /^"?(Cinzel|Josefin Sans|Big Shoulders Display|Gloock|Spectral|Cardo|Newsreader|Libre Caslon Display|Bodoni Moda|Ms Madi|ui-monospace)"?$/i;
+const DECLARED = /^"?(Newsreader|Libre Caslon Display|Bodoni Moda|Ms Madi|ui-monospace)"?$/i;
 
 /** Auth journeys. Every one renders for an anonymous visitor; none of them needs a principal. */
 const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/phone', '/claim/verify', '/claim/passkey', '/claim/welcome', '/step-up'] as const;
@@ -46,17 +46,19 @@ const AUTH_ROUTES = ['/sign-in', '/sign-in/admin', '/sign-in/phone', '/claim/ver
  * The routes a guest actually reads, and the ones behind the invitation.
  *
  * This walk covered `AUTH_ROUTES` and `ADMIN_ROUTES` and nothing else, which is how a 13.005px
- * label in Gilded Hour's mobile elevator panel — the control a guest moves around the whole site
- * with on a phone — rendered on every route below and passed CI from the day it landed. The
- * chrome is the same on all of them, so one pass over both designs catches it at the source.
+ * label in a phone's bottom bar — the control a guest moves around the whole site with — rendered
+ * on every route below and passed CI from the day it landed. The chrome is the same on all of
+ * them, so one pass catches it at the source.
  */
-const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/our-venue', '/the-wedding', '/privacy', '/terms'] as const;
+const PUBLIC_ROUTES = ['/', '/our-story', '/our-adventures', '/privacy', '/terms'] as const;
 
 /**
- * Behind the signed-in account menu: the RSVP, two of its per-part pages, the three pages a guest
- * plans their weekend from, the registry and the photos.
+ * Behind sign-in: the dashboard, Travel & Stay, the venue, the RSVP and two of its per-part pages,
+ * the trip, the ride page (which sends a guest without a ride benefit on to Travel & Stay), the
+ * registry and the photos. Everything that says when or where the wedding is lives here; a
+ * signed-out reader is sent to sign in, and a walk of the door would measure nothing.
  */
-const GUEST_ROUTES = ['/rsvp', '/rsvp/attending', '/rsvp/meals', '/your-weekend', '/trip', '/transportation', '/gifts', '/photos'] as const;
+const GUEST_ROUTES = ['/guests', '/guests/travel', '/our-venue', '/rsvp', '/rsvp/attending', '/rsvp/meals', '/trip', '/transportation', '/gifts', '/photos'] as const;
 
 /** The console. One per family of screens, plus the index; `admin-console.spec.ts` walks all 21. */
 const ADMIN_ROUTES = ['/admin', '/admin/audit', '/admin/jobs', '/admin/flags', '/admin/guests', '/admin/invitations', '/admin/events', '/admin/rsvp', '/admin/content', '/admin/travel', '/admin/media', '/admin/ai'] as const;
@@ -101,12 +103,12 @@ type Family = { first: string; stack: string; where: string; sample: string };
 type Size = { px: number; where: string; sample: string };
 
 /**
- * `label-caps` is the ornament step in all three DESIGN.md files — an eyebrow, a countdown unit —
+ * `label-caps` is the ornament step in DESIGN.md — an eyebrow, a countdown unit —
  * and it is 0.8125rem on purpose. PRODUCT.md's floor is about text a guest has to READ; anything a
  * guest has to read or operate takes `control-caps` at 1rem instead, which is what level 16 added
  * the style for. This is the one exception, named, rather than a blanket tolerance.
  */
-const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bgh-eyebrow\b|\bcv-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
+const ORNAMENT = /\bauth-eyebrow\b|\bops-eyebrow\b|\bbd-eyebrow\b|\bbd-kicker\b|\bbd-card__label\b/;
 
 /** Copy that means a sign-in gate is on the screen instead of the page that was asked for. */
 const GATE = /is for invited guests|is not on your invitation|Open the link from your invitation|Administrator sign-in required|Not part of your access/;
@@ -126,12 +128,13 @@ const GATE = /is for invited guests|is not on your invitation|Open the link from
  *
  * These are the same three checks the family walks above already make, in one place.
  */
-async function floorWalk(page: Page, routes: readonly string[], theme?: string): Promise<string[]> {
+async function floorWalk(page: Page, routes: readonly string[], behindSignIn = false): Promise<string[]> {
   const under: string[] = [];
-  for (const route of routes) {
-    const url = theme ? `${route}?theme=${theme}` : route;
+  for (const url of routes) {
     const response = await page.goto(url);
     expect(response?.status(), `${url} did not render`).toBeLessThan(400);
+    // A signed-out reader of a guest page is sent to the sign-in door, and the door is not the page.
+    if (behindSignIn) await expect(page, `${url} was sent to the sign-in door, so nothing on it was measured`).not.toHaveURL(/\/sign-in(?:$|[?/])/);
     await expect(
       page.getByText(GATE),
       `${url} rendered a sign-in gate, so nothing on it was measured. This spec needs the test server CI starts (NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET); a plain \`npm run dev\` gates every signed-in route`,
@@ -189,23 +192,16 @@ test.describe('every surface renders in a face this repo declares', () => {
   }
 
   /**
-   * The two designs must not resolve to the same faces on the auth journey, which is the assertion
-   * that fails if `[data-theme]` ever stops reaching it: without the attribute both `?theme=` values
-   * fall through to whatever the default design left at `:root`, and this test is the only thing
-   * that would say so.
+   * The assertion that fails if `[data-theme]` ever stops reaching the auth journey: without the
+   * attribute the heading falls through to the bare family name at `:root`, with no fallback stack.
    */
-  test('the auth journey wears the design the guest chose', async ({ browser }) => {
+  test('the auth journey wears the design', async ({ browser }) => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
-    const seen: Record<string, string> = {};
-    for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory']) {
-      await page.goto(`/claim/verify?theme=${theme}`);
-      await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', theme);
-      seen[theme] = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
-      expect(seen[theme], `/claim/verify @ ${theme} has no fallback stack behind its heading face`).toContain(',');
-    }
-    expect(seen['gilded-hour'], 'both designs resolved to the same heading face on the claim journey').not.toBe(seen['conservatory']);
-    expect(seen['botanical-deco'], 'the approved design resolved to a proposal\'s heading face on the claim journey').not.toBe(seen['gilded-hour']);
+    await page.goto('/claim/verify');
+    await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'botanical-deco');
+    const face = await page.locator('h1').first().evaluate((n) => getComputedStyle(n).fontFamily);
+    expect(face, '/claim/verify does not set its heading in the design\'s display face').toMatch(/^"?Bodoni Moda"?,/);
     await ctx.close();
   });
 });
@@ -226,21 +222,18 @@ test.describe('the 17px floor', () => {
     await ctx.close();
   });
 
-  // Both designs, because the two do not share a kit: Conservatory's menu has been on the 1rem
-  // step all along while Gilded Hour's panel was on 0.765rem, and only a walk over both sees that.
-  for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
-    test(`the public routes · ${theme}`, async ({ browser }) => {
-      const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
-      const page = await ctx.newPage();
-      expect(await floorWalk(page, PUBLIC_ROUTES, theme), 'text under PRODUCT.md’s 17px floor').toEqual([]);
-      await ctx.close();
-    });
+  test('the public routes', async ({ browser }) => {
+    const ctx = await contextAs(browser, null, { viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    expect(await floorWalk(page, PUBLIC_ROUTES), 'text under PRODUCT.md’s 17px floor').toEqual([]);
+    await ctx.close();
+  });
 
-    test(`the guest routes · ${theme}`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
-      const page = await ctx.newPage();
-      expect(await floorWalk(page, GUEST_ROUTES, theme), 'text under PRODUCT.md’s 17px floor').toEqual([]);
-      await ctx.close();
-    });
-  }
+  test('the guest routes', async ({ browser }) => {
+    // On the wedding day, when every one of these pages is open (gifts and photos are not before).
+    const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 }, lifecycle: 'WEDDING_DAY' });
+    const page = await ctx.newPage();
+    expect(await floorWalk(page, GUEST_ROUTES, true), 'text under PRODUCT.md’s 17px floor').toEqual([]);
+    await ctx.close();
+  });
 });

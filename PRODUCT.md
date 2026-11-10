@@ -58,8 +58,10 @@ lifecycle state (below).
 3. **Celebrate**: the couple's story, their adventures, recommendations
    with a memory layer, the building, photos.
 
-The home page must answer "when, where, and what do I do now" above the
-fold on a 390px-wide phone in every lifecycle state.
+The dashboard (`/guests`) must answer "when, where, and what do I do now"
+above the fold on a 390px-wide phone in every lifecycle state. The home page,
+which a signed-out reader sees, answers only "who, and what do I do now": the
+when and the where are behind sign-in (see Surfaces).
 
 ## Purpose
 
@@ -135,14 +137,14 @@ re-prioritizes by state and identity; see `docs/design/design-doc.md` §3.
 
 ## Themes
 
-Two complete, switchable designs over one content layer (ADR-0009):
-**Gilded Hour** (Art Deco: marble, gold leaf, sunburst/chevron, stepped
-frames, numbered sections, symmetry; Cinzel / Josefin Sans / Big Shoulders
-Display) and **Conservatory** (Botanical: foliage, moss, pressed-flower
-cards, sky washes over creme, organic asymmetry; Gloock / Spectral / Cardo
-italic). Tokens per theme in `src/themes/<id>/DESIGN.md`. Resolution
-`?theme=` → cookie → default; switcher visible to everyone until chosen.
-Default theme: TODO(Tyler & Sara). Five motifs in both: Adventure, Place,
+One design, **Botanical Deco**, the synthesis Sara and Tyler approved
+(`docs/design/approved-botanical-deco/`): her flowers and foliage with his
+Art Deco and Chicago architecture, on ivory with fine gold rules; Bodoni
+Moda / Newsreader / Ms Madi. Tokens in
+`src/themes/botanical-deco/DESIGN.md`. The two earlier proposals (Gilded
+Hour, Conservatory) were retired and their code removed; the theme engine
+(ADR-0009) keeps its seams with one theme, and a link or cookie that names
+a retired design gets Botanical Deco. Five motifs: Adventure, Place,
 Memory, Hospitality, Future.
 
 ## Constraints
@@ -155,8 +157,8 @@ Memory, Hospitality, Future.
 - **Fast on hotel Wi-Fi:** LCP under 2.5s on a mid-range phone; images are
   responsive and lazy; fonts self-hosted, ≤ 4 files (≤ 120 KB) per theme,
   `font-display: swap` with tuned fallbacks.
-- **Printable:** The Wedding, Travel & Stay, Transportation, and Your
-  Weekend print legibly in black and white.
+- **Printable:** the dashboard and Travel & Stay print legibly in black and
+  white.
 - **Low guest friction, managed ops:** no passwords, no visible accounts;
   managed Postgres, storage, and hosting; no CMS beyond the admin surface.
 - **Stack:** Next.js 16 App Router + TypeScript + Tailwind v4; Drizzle +
@@ -236,36 +238,53 @@ Names are the guests' vocabulary (brief §5). States per ADR-0012. Details and
 
 **These are the slugs the app serves, not proposals.** They were proposals at the
 scaffold level and three of them were never updated when the routes landed:
-`/story`, `/adventures` and `/ask` are 404s, and the app has served `/our-story`,
-`/our-adventures` and `/ask-us` since level 05. A route table that 404s is worse
+`/story`, `/adventures` and `/ask` are 404s, and the app has served `/our-story`
+and `/our-adventures` since level 05. A route table that 404s is worse
 than none — every agent that reads this file starts from it.
 `tests/e2e/links.spec.ts` now walks this table and fails on a route it names that
 the app does not serve, so the two cannot drift again.
 
-**Account menu only**: the household's pages (Your Weekend, RSVP, Transportation,
-Gifts, Photos & Video) are listed in the signed-in account menu and nowhere else in the
-site's chrome — not the public navigation, the Menu sheet or the quick-action bar. An
-anonymous visitor sees "Sign in" in that place. Gifts and Photos & Video also refuse an
-anonymous request (the page sends them to sign in and back; the capabilities answer 401).
+**Nothing about the wedding is public.** Sara and Tyler's decision (November 2026): the date,
+the venue, the city, the schedule and everything practical are for invited guests, behind
+sign-in. A signed-out reader gets the two of us — Home, Our Story, Our Adventures — and the
+door. This is enforced three ways, not by hiding links: every guest page sends a signed-out
+request to `/sign-in?next=…` (`requireSignedIn`); every capability that returns wedding
+details is `auth: 'guest'`; and the page frame carries the date and venue only for a
+signed-in reader (`PageFrame.details`), so a shell or recipe has nothing to print otherwise.
 
-| Surface | Route | Job | Visitor mode | Visible from |
-|---|---|---|---|---|
-| Home | `/` | Names, date, place, state-specific primary action, story teaser | Inform + Act | TEASER |
-| Our Story | `/our-story` | Met → connection → relationship → love → future → engagement → what marriage means | Celebrate | TEASER |
-| Our Adventures | `/our-adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | TEASER |
-| Share an Adventure | `/share-an-adventure` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | SAVE_THE_DATE |
-| The Wedding | `/the-wedding` | Ceremony, cocktail hour, reception; rooms, times, dress code (all TODO), accessibility | Inform | INVITATIONS_OPEN |
-| Our Venue | `/our-venue` | Docent: building, spaces, history with provenance, live outlet links, "look for this", floor plan with your table | Celebrate + Inform | TEASER |
-| Your Weekend | `/your-weekend` | Authenticated hub: invitation, RSVP status, table, benefits, preferences. **Account menu only** | Act | INVITATIONS_OPEN |
-| RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message. **Account menu only** | Act | RSVP_OPEN |
-| Travel & Stay | `/travel` | Airports, CAA block, alternative hotels, neighbourhood, weather expectations | Inform + Act | SAVE_THE_DATE |
-| Transportation | `/transportation` | Valet, transit, rides and voucher, parking, accessibility. **Account menu only** | Inform + Act | INVITATIONS_OPEN |
-| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards; funds (honeymoon, home, adoption, next adventures) given person to person via Zelle / Venmo / PayPal / Cash App / check (ADR-0013). **Signed in, account menu only** | Act | RSVP_OPEN |
-| Photos & Video | `/photos` | Engagement photos, guest uploads, professional galleries by rights. **Signed in, account menu only** | Celebrate | TEASER |
-| Ask Us | `/ask-us` | Grounded concierge with citations | Inform | TEASER |
-| Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | INVITATIONS_OPEN |
-| Claim | `/claim/verify` | Email OTP → binding; optional passkey (`/claim/welcome`, `/claim/passkey`) | Gate | INVITATIONS_OPEN |
-| Admin | `/admin/*` | Lifecycle, content + provenance, moderation, tables | Admin | — |
+**The dashboard leads.** A signed-in guest's home is `/guests`: one thing to do now, then
+what is next, ordered by where we are in the timeline (`src/domain/lifecycle/guest-actions.ts`).
+When the save-the-dates go out it is the room block, then flights and getting around; when
+RSVPs open the RSVP takes the lead. Nothing a guest cannot use yet is linked — no photos
+before the day, no gifts before the RSVP, no table before seating is published. Home's hero
+button names the same action for a reader who has not signed in yet.
+
+| Surface | Route | Job | Visitor mode | Audience | Visible from |
+|---|---|---|---|---|---|
+| Home | `/` | Names, a welcome, the state's one action (through sign-in), story teaser. No date, venue or city | Inform + Act | Public | TEASER |
+| Our Story | `/our-story` | Met → connection → relationship → love → future → engagement → what marriage means | Celebrate | Public | TEASER |
+| Our Adventures | `/our-adventures` | Structured `AdventureMemory` records; "Sara remembers / Tyler remembers" | Celebrate | Public | TEASER |
+| Dashboard | `/guests` | What to do now, what is next, your schedule and reply; reorders with the timeline | Act + Inform | Guest | TEASER |
+| Travel & Stay | `/guests/travel` | The room block, flights, getting from the airport and around the city. One page, each fact once | Inform + Act | Guest | TEASER |
+| Your trip | `/trip` | Your own flights and hotel, kept in one place | Act | Guest | TEASER |
+| Your ride | `/transportation` | A ride benefit on your invitation, when there is one. Otherwise redirects to Travel & Stay | Act | Guest | INVITATIONS_OPEN |
+| Things to Do | `/guests/things-to-do` | Recommendations with a practical layer and a memory layer; itineraries by duration and mode | Inform + Celebrate | Guest | TEASER |
+| Our Venue | `/our-venue` | Docent: building, spaces, history with provenance, live outlet links, "look for this" | Celebrate + Inform | Guest | TEASER |
+| Ask Us | `/guests/ask-us` | FAQ and the grounded concierge with citations | Inform | Guest | TEASER |
+| RSVP | `/rsvp` | Household-aware RSVP: per-event, per-person meal, dietary, +1 per invitation, message | Act | Guest | RSVP_OPEN |
+| Gifts | `/gifts` | "Help us with our next adventures": registry, experiences, gift cards; funds given person to person via Zelle / Venmo / PayPal / Cash App / check (ADR-0013). Account menu | Act | Guest | RSVP_OPEN |
+| Photos & Video | `/photos` | Guest uploads and the professional galleries by rights. Account menu | Celebrate | Guest | WEDDING_DAY |
+| Invitation discovery | `/i/[token]` | Household preview + claim offer; never a session | Gate | Gate | INVITATIONS_OPEN |
+| Claim | `/claim/verify` | Email OTP → binding; optional passkey (`/claim/welcome`, `/claim/passkey`) | Gate | Gate | INVITATIONS_OPEN |
+| Admin | `/admin/*` | Lifecycle, content + provenance, moderation, tables | Admin | Admin | — |
+
+Removed in November 2026, each redirecting to where its content went
+(`src/lib/site-redirects.ts`): `/your-weekend` and `/the-wedding` (the dashboard), `/travel`,
+`/share-an-adventure`, `/ask-us` (their `/guests/…` pages).
+
+**Two hostnames, one site.** `kendrick.wedding` is canonical; `fitzgerald.kendrick.wedding`
+serves the same site (`src/lib/site-hosts.ts`). Sessions are per host; links in e-mail use the
+canonical host.
 
 ## Build path
 

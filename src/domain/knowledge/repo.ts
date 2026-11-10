@@ -28,7 +28,7 @@ export async function searchKnowledge(ctx: ReadContext, query: string, limit = 8
 }
 
 function faqCitationRoute(row: FaqEntryRow): string {
-  return row.route && isBuiltRoute(row.route) ? row.route : `${ROUTES.ask}#${row.slug}`;
+  return row.route && isBuiltRoute(row.route) ? row.route : `${ROUTES.guestAsk}#${row.slug}`;
 }
 
 export function toFaqView(row: FaqEntryRow, ctx: ReadContext): FaqView {

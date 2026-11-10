@@ -36,15 +36,15 @@ describe('capability output as evidence', () => {
   it('builds one citable block per provenance-bearing record', () => {
     const data = {
       entries: [
-        { id: '1', slug: 'kids', question: 'Can we bring our kids?', answer: { text: 'Yes, all ages are welcome.', placeholder: false }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/ask-us#kids', trustClass: 'TRUSTED_WEDDING' } },
-        { id: '2', slug: 'dress', question: 'What should I wear?', answer: { text: 'TODO(Tyler & Sara) decide the dress code.', placeholder: true }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/ask-us#dress', trustClass: 'TRUSTED_WEDDING' } },
+        { id: '1', slug: 'kids', question: 'Can we bring our kids?', answer: { text: 'Yes, all ages are welcome.', placeholder: false }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/guests/ask-us#kids', trustClass: 'TRUSTED_WEDDING' } },
+        { id: '2', slug: 'dress', question: 'What should I wear?', answer: { text: 'TODO(Tyler & Sara) decide the dress code.', placeholder: true }, provenance: { sourceId: 'faq', verifiedAt: '2027-06-01T00:00:00.000Z', url: '/guests/ask-us#dress', trustClass: 'TRUSTED_WEDDING' } },
       ],
     };
     const blocks = factsFromOutcome(descriptor(), outcome(data), markers());
     expect(blocks.map((b) => b.citation.title)).toEqual(['Can we bring our kids?', 'What should I wear?']);
     expect(blocks[0]!.lines).toEqual(['Yes, all ages are welcome.']);
     expect(blocks[1]!.lines.join(' ')).toContain(UNDECIDED);
-    expect(blocks.every((b) => b.citation.url?.startsWith('/ask-us'))).toBe(true);
+    expect(blocks.every((b) => b.citation.url?.startsWith('/guests/ask-us'))).toBe(true);
   });
 
   it('cites a leftovers block to the capability and its page, never to an unrelated record', () => {
@@ -113,7 +113,7 @@ describe('authoring markers never reach a guest', () => {
 describe('citations point at pages that exist', () => {
   // A citation is an invitation to go and check. A route that 404s, or that is not the page holding
   // the fact, is worse than no citation at all — and the table below is the only thing standing
-  // between a capability and `/ask-us`, the page the guest is already reading.
+  // between a capability and `/guests/ask-us`, the page the guest is already reading.
   it('every authored citation route is a real internal route', () => {
     for (const [capability, route] of Object.entries(HOME_ROUTE)) {
       expect((INTERNAL_ROUTES as readonly string[]).includes(route.split('#')[0]!), `${capability} -> ${route}`).toBe(true);
@@ -122,13 +122,13 @@ describe('citations point at pages that exist', () => {
 
   it('falls back to a single unambiguous source before falling back to Ask Us', () => {
     const unmapped = descriptor({ name: 'not_in_the_table', title: 'Something new' });
-    const one = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 's' as ContentSourceId, title: 'The chart', url: '/your-weekend' }] }), markers());
-    expect(one[0]!.citation.url).toBe('/your-weekend');
+    const one = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 's' as ContentSourceId, title: 'The chart', url: '/guests' }] }), markers());
+    expect(one[0]!.citation.url).toBe('/guests');
     expect(one[0]!.citation.title).toBe('Something new');
-    const many = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 'a' as ContentSourceId, title: 'A', url: '/travel' }, { sourceId: 'b' as ContentSourceId, title: 'B', url: '/gifts' }] }), markers());
-    expect(many[0]!.citation.url).toBe('/ask-us');
+    const many = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [{ sourceId: 'a' as ContentSourceId, title: 'A', url: '/guests/travel' }, { sourceId: 'b' as ContentSourceId, title: 'B', url: '/gifts' }] }), markers());
+    expect(many[0]!.citation.url).toBe('/guests/ask-us');
     const none = factsFromOutcome(unmapped, outcome({ note: 'A fact.' }, { sources: [] }), markers());
-    expect(none[0]!.citation.url).toBe('/ask-us');
+    expect(none[0]!.citation.url).toBe('/guests/ask-us');
   });
 });
 

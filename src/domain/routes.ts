@@ -1,19 +1,15 @@
 /**
- * Public routes this swarm renders. Mirrors src/capabilities/routes.ts (the navigate_to
+ * The pages citations and links may name. Mirrors src/capabilities/routes.ts (the navigate_to
  * allowlist) so citations and links never drift from real pages.
  */
 export const ROUTES = {
   story: '/our-story',
   adventures: '/our-adventures',
-  share: '/share-an-adventure',
-  wedding: '/the-wedding',
   ourVenue: '/our-venue',
-  ask: '/ask-us',
   guestPortal: '/guests',
   guestTravel: '/guests/travel',
   guestThings: '/guests/things-to-do',
   guestAsk: '/guests/ask-us',
-  travel: '/travel',
   transportation: '/transportation',
   gifts: '/gifts',
   photos: '/photos',

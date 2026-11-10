@@ -34,7 +34,7 @@ describe('browse as a guest', () => {
     const otherSession = expectOk(await call<Status>('admin_guest_view_status', { token: minted.data.token }, { cookie: again.cookie, method: 'GET' }));
     expect(otherSession.data.view).toBeNull();
 
-    const p = await principalFor({ cookie, pathname: '/your-weekend' });
+    const p = await principalFor({ cookie, pathname: '/guests' });
     expect(p.kind).toBe('guest');
     if (p.kind !== 'guest') throw new Error('unreachable');
     expect(p.guestId).toBe(f.guests.ana);

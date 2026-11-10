@@ -56,7 +56,7 @@ describe('gifts', () => {
     expect(JSON.stringify(r.value.data)).not.toMatch(/zola|theknot|withjoy/i);
     const text = JSON.stringify(r.value.data.copy);
     for (const re of FORBIDDEN_GIFT_WORDS) expect(text).not.toMatch(re);
-    expect(r.value.sources[0]?.url).toBe('/the-wedding');
+    expect(r.value.sources[0]?.url).toBe('/guests');
   });
 
   it('records a handoff (host only) when a link is opened, never a purchase', async () => {
@@ -439,7 +439,7 @@ describe('deleting from /admin/gifts', () => {
 
 describe('reservations ladder', () => {
   it('answers with the url rung for Cindy’s and an honest unavailable rung for the placeholder', async () => {
-    const r = await run(getReservationOptions, anon, {});
+    const r = await run(getReservationOptions, guest, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.retrievedAt).toBeTruthy();
@@ -447,15 +447,35 @@ describe('reservations ladder', () => {
       ['caa-cindys', 'url', false, 'www.chicagoathletichotel.com'],
       ['placeholder-restaurant', 'unavailable', false, null],
     ]);
-    expect(r.value.data.options[1]!.unavailable).toEqual({ message: expect.stringMatching(/Ask us/), contactRoute: '/ask-us' });
+    expect(r.value.data.options[1]!.unavailable).toEqual({ message: expect.stringMatching(/Ask us/), contactRoute: '/guests/ask-us' });
     expect(r.value.sources.map((s) => s.title).sort()).toEqual(["Tyler's brief 2026-09-04", 'chicagoathletichotel.com']);
-    const missing = await run(getReservationOptions, anon, { venueId: 'nowhere' });
+    const missing = await run(getReservationOptions, guest, { venueId: 'nowhere' });
     expect(!missing.ok && missing.error.code).toBe('not_found');
   });
 
+  it('refuses an anonymous caller the options and the hand-off, on every surface, and records nothing', async () => {
+    // Where the weekend's dinners are is for invited guests. Both capabilities answered an anonymous
+    // caller until sign-in became required; a real venue and an invented one are now refused alike.
+    const db = await getDb();
+    const before = (await db.select().from(externalActionRecords)).length;
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      for (const input of [{}, { venueId: 'caa-cindys' }, { venueId: 'nowhere' }, { date: '2027-07-16', partySize: 4 }]) {
+        const options = await run(getReservationOptions, anon, input, { surface });
+        expect(!options.ok && options.error.code, `${surface} ${JSON.stringify(input)}`).toBe('unauthenticated');
+        expect(JSON.stringify(options)).not.toMatch(/cindys|chicagoathletichotel|resy|opentable/i);
+      }
+      for (const input of [{ venueId: 'caa-cindys' }, { venueId: 'placeholder-restaurant' }, { venueId: 'nowhere' }]) {
+        const open = await run(openReservationLink, anon, input, { surface });
+        expect(!open.ok && open.error.code, `${surface} ${JSON.stringify(input)}`).toBe('unauthenticated');
+        expect(JSON.stringify(open)).not.toMatch(/https?:/);
+      }
+    }
+    expect((await db.select().from(externalActionRecords)).length).toBe(before);
+  });
+
   it('unavailable rung: open_reservation_link returns no handoff and records nothing', async () => {
-    const r = await run(openReservationLink, anon, { venueId: 'placeholder-restaurant' });
-    expect(r.ok && r.value.data).toMatchObject({ rung: 'unavailable', unavailable: { contactRoute: '/ask-us' } });
+    const r = await run(openReservationLink, guest, { venueId: 'placeholder-restaurant' });
+    expect(r.ok && r.value.data).toMatchObject({ rung: 'unavailable', unavailable: { contactRoute: '/guests/ask-us' } });
     expect(r.ok && r.value.handoffUrl).toBeUndefined();
     const db = await getDb();
     expect((await db.select().from(externalActionRecords)).filter((x) => x.kind === 'reservation_link')).toHaveLength(0);
@@ -476,7 +496,7 @@ describe('reservations ladder', () => {
     const db = await getDb();
     await db.insert(reservationVenues).values({ id: 'tampered-venue', name: 'Tampered', url: 'https://evil.example/book', placeholder: false, active: true, sortOrder: 9, updatedBy: { kind: 'system', component: 'test' } });
 
-    const opts = await run(getReservationOptions, anon, { date: '2027-07-16', partySize: 4 });
+    const opts = await run(getReservationOptions, guest, { date: '2027-07-16', partySize: 4 });
     expect(opts.ok).toBe(true);
     if (!opts.ok) return;
     const byId = Object.fromEntries(opts.value.data.options.map((o) => [o.venue.id, o]));
@@ -487,14 +507,20 @@ describe('reservations ladder', () => {
     expect(JSON.stringify(opts)).not.toContain('evil.example');
     expect(byId['caa-cindys']).toBeUndefined(); // admin rows replace the built-in defaults
 
-    const open = await run(openReservationLink, anon, { venueId: 'test-resy', date: '2027-07-16', partySize: 2 }, { requestId: 'req-res-open' });
+    // An anonymous caller gets no deep link, and its attempt leaves no hand-off record behind.
+    const anonOpen = await run(openReservationLink, anon, { venueId: 'test-resy', date: '2027-07-16', partySize: 2 });
+    expect(!anonOpen.ok && anonOpen.error.code).toBe('unauthenticated');
+    expect((await db.select().from(externalActionRecords)).filter((x) => x.kind === 'reservation_link')).toHaveLength(0);
+    const open = await run(openReservationLink, guest, { venueId: 'test-resy', date: '2027-07-16', partySize: 2 }, { requestId: 'req-res-open' });
     expect(open.ok && open.value.handoffUrl).toBe('https://resy.com/cities/chi/test-resy-place?date=2027-07-16&seats=2');
     const rec = (await db.select().from(externalActionRecords)).find((x) => x.kind === 'reservation_link');
     expect(rec).toMatchObject({ provider: 'resy', status: 'initiated', urlHost: 'resy.com', targetId: 'test-resy', metadata: { rung: 'deep-link', partySize: 2, date: '2027-07-16' } });
     expect(JSON.stringify(rec)).not.toContain('seats='); // host only, never the full deep link
-    const tamperedOpen = await run(openReservationLink, anon, { venueId: 'tampered-venue' });
+    const tamperedOpen = await run(openReservationLink, guest, { venueId: 'tampered-venue' });
+    expect(tamperedOpen.ok).toBe(true);
     expect(tamperedOpen.ok && tamperedOpen.value.handoffUrl).toBeUndefined();
-    expect((await run(openReservationLink, anon, { venueId: 'x', date: '16/07/2027' })).ok).toBe(false);
+    const badDate = await run(openReservationLink, guest, { venueId: 'x', date: '16/07/2027' });
+    expect(!badDate.ok && badDate.error.code).toBe('validation');
   });
 
   it('prepare_reservation builds the card for a signed-in guest and keeps contact details out of records', async () => {
@@ -547,7 +573,7 @@ describe('reservations ladder', () => {
     // With the last saved place gone, guests see the built-in placeholders again.
     const listed = await run(adminListReservationVenues, admin, {});
     for (const row of listed.ok ? listed.value.data.rows : []) expect((await run(adminDeleteReservationVenue, admin, { id: row.id }, { idempotencyKey: key() })).ok, row.id).toBe(true);
-    const opts = await run(getReservationOptions, anon, {});
+    const opts = await run(getReservationOptions, guest, {});
     expect(opts.ok && opts.value.data.options.map((o) => o.venue.id)).toContain('caa-cindys');
   });
 });

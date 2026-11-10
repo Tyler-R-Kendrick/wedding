@@ -6,7 +6,7 @@ function card(slug: string, overrides: Partial<RecommendationCard> = {}): Recomm
   return {
     id: slug,
     slug,
-    href: `/share-an-adventure/${slug}`,
+    href: `/guests/things-to-do/${slug}`,
     title: slug,
     category: 'food-drink',
     what: { text: slug, placeholder: false, provenance: { sources: [] } },
