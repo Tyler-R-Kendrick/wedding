@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { authorizationCandidates, ConnectTwilioVerify, type ConnectTokenAnswer } from '@/providers/twilio-verify/connect';
+import { authorizationCandidates, ConnectTwilioVerify, summarize, type ConnectTokenAnswer } from '@/providers/twilio-verify/connect';
 
 const AC = `AC${'a'.repeat(32)}`;
 const SK = `SK${'b'.repeat(32)}`;
@@ -145,5 +145,39 @@ describe('Twilio Verify through the Vercel connector', () => {
     await provider.startVerification({ to: '+13125550100' });
     expect(asked[0]).toBe('twilio/wedding');
     expect(asked.slice(1).every((c) => c === 'twilio/sms')).toBe(true);
+  });
+});
+
+describe('a connector\'s settings as a log line', () => {
+  it('shows names, endpoints and plain settings, and never a value that could be a credential', () => {
+    const line = summarize({
+      type: 'oauth',
+      service: 'twilio',
+      hasStoredTokens: true,
+      vendor: { clientId: AC, clientSecret: 'hunter2hunter2', tokenEndpointAuthMethod: 'client_secret_post', serverConfig: { token_endpoint: 'https://oauth.twilio.com/v2/token' } },
+      triggerData: { authToken: 'abcdef0123456789abcdef0123456789' },
+    });
+    expect(line).toContain('type: oauth');
+    expect(line).toContain('token_endpoint: https://oauth.twilio.com/v2/token');
+    expect(line).toContain('tokenEndpointAuthMethod: client_secret_post');
+    expect(line).toContain('clientId: <34 chars, AC…>');
+    expect(line).toContain('clientSecret: <set>');
+    expect(line).not.toContain('hunter2');
+    expect(line).not.toContain(AC);
+    expect(line).not.toContain('abcdef0123456789');
+  });
+
+  it('adds the settings to the reason a text cannot be sent', async () => {
+    const provider = new ConnectTwilioVerify({
+      ...OFFLINE,
+      getMetadata: async () => ({ type: 'oauth', vendor: { clientId: AC } }),
+      getTokenResponse: async () => {
+        throw Object.assign(new Error('OAuth client secret is required'), { name: 'ConnectError', code: 'unprocessable_entity', status: 422 });
+      },
+      fetchImpl: twilio('never').fetchImpl,
+    });
+    const ready = await provider.ready();
+    expect(ready.ok ? '' : ready.reason).toContain('OAuth client secret is required');
+    expect(ready.ok ? '' : ready.reason).toContain('[connector settings: {type: oauth');
   });
 });
