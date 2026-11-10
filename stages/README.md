@@ -199,11 +199,11 @@ How it fits together:
   production, `/<stage>/…` and `/stages` work on any host. The assembled files are never served
   at `/_stages/…` directly, so kendrick.wedding itself never shows them. Every response is
   `X-Robots-Tag: noindex`.
-- **Never public.** The stages redraw the guest and admin pages with their headings readable, on
-  addresses that take no sign-in. Deployed (on Vercel), `src/proxy.ts` answers every stage request
-  with 404 until `STAGES_PASSWORD` is set, and then asks for it with the browser's own password
-  prompt (any user name). A local checkout and CI serve them without one
-  (`src/lib/stage-access.ts`).
+- **For admins only, once deployed.** The stages redraw the guest and admin pages with their
+  headings readable, on addresses with no sign-in of their own. Deployed (on Vercel), a stage
+  address sends the browser to the site's admin sign-in and back, and remembers it for twelve
+  hours; anyone else gets a 404. There is no password and nothing to set. A local checkout and CI
+  serve them to anyone (`src/lib/stage-access.ts`).
 - **Links need no configuration.** The stage bar and the hub work out every link from the
   address you are on (`stageHref()` in `01-sitemap/lib/pipeline.ts`). On
   `sitemap.dev.kendrick.wedding`, "Wireframe" is `wireframe.dev.kendrick.wedding` and "Real" is

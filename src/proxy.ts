@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
 import { parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
-import { stageAccess, stageDenial } from '@/lib/stage-access';
+import { decideStage, STAGE_ENTER_PATH, STAGE_PASS_COOKIE } from '@/lib/stage-access';
 import { isStageHost, isStagePath } from '@/lib/stage-hosting';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
 
@@ -17,18 +17,40 @@ const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
  * It never sees a signed-out request for a static public route (`src/themes/routes.ts`): the matcher
  * below leaves those to `next.config.ts`, which rewrites them onto the prerendered tree, so on
  * Vercel they are answered from the cache without running this function.
- * No authorization happens here: the pages verify the reader server-side.
+ * No authorization of the site's pages happens here: they verify the reader server-side. The one
+ * check made here is the design stages' pass, because a stage is static files with no server side.
  */
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
   // The design pipeline's stages (src/lib/stage-hosting.ts) are static drafts with no theme or
   // lifecycle of their own; next.config's rewrites serve them. Rewriting `/` onto the theme tree
   // here would show the wedding home page on sitemap.dev.<domain>.
-  if (isStageHost(request.headers.get('host')) || isStagePath(url.pathname, { production: process.env.VERCEL_ENV === 'production' })) {
+  const host = request.headers.get('host') ?? url.host;
+  const production = process.env.VERCEL_ENV === 'production';
+  if (isStageHost(host) || isStagePath(url.pathname, { production }) || (url.pathname === STAGE_ENTER_PATH && !production)) {
     // They redraw the guest and admin pages with their headings readable, on addresses that take no
-    // sign-in, so a deployed stage is closed or behind its password (src/lib/stage-access.ts).
-    const denied = stageDenial(stageAccess({ VERCEL: process.env.VERCEL, STAGES_PASSWORD: process.env.STAGES_PASSWORD }), request.headers.get('authorization'), process.env.STAGES_PASSWORD);
-    return denied ? new NextResponse(denied.body, { status: denied.status, headers: denied.headers }) : NextResponse.next();
+    // sign-in of their own, so a deployed stage is for a signed-in admin (src/lib/stage-access.ts).
+    const protocol = (request.headers.get('x-forwarded-proto') ?? url.protocol.replace(':', '')) === 'http' ? 'http' : 'https';
+    const decision = decideStage(
+      {
+        host,
+        protocol,
+        pathname: url.pathname,
+        ticket: url.searchParams.get('t'),
+        to: url.searchParams.get('to'),
+        pass: request.cookies.get(STAGE_PASS_COOKIE)?.value,
+        document: request.method === 'GET' && (request.headers.get('sec-fetch-dest') === 'document' || (request.headers.get('accept') ?? '').includes('text/html')),
+      },
+      { VERCEL: process.env.VERCEL, BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET },
+    );
+    if (decision.kind === 'serve') return NextResponse.next();
+    if (decision.kind === 'not-found') return new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    const response = NextResponse.redirect(new URL(decision.location, `${protocol}://${host}`), 307);
+    response.headers.set('Cache-Control', 'no-store');
+    if (decision.pass) {
+      response.cookies.set(STAGE_PASS_COOKIE, decision.pass.value, { httpOnly: true, secure: protocol === 'https', sameSite: 'lax', path: '/', maxAge: decision.pass.maxAge, ...(decision.pass.domain ? { domain: decision.pass.domain } : {}) });
+    }
+    return response;
   }
   const cookieTheme = request.cookies.get(THEME_COOKIE)?.value;
   const { theme, source, stale } = resolveTheme({ query: url.searchParams.get(THEME_QUERY), cookie: cookieTheme });
