@@ -5,9 +5,9 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
-  // How long a cold start takes and where: the process's age when this hook ran (the platform and
-  // the framework), then our own libraries, then the database. One line per server start.
-  const boot = { beforeHookMs: Math.round(process.uptime() * 1000), librariesMs: 0, databaseMs: 0 };
+  // How long a cold start takes and where: our own libraries, then the database. One line per
+  // server start. (The process's own age says nothing here: the platform starts it ahead of time.)
+  const boot = { librariesMs: 0, databaseMs: 0 };
   const hookStarted = performance.now();
 
   // Before anything can call a model: a model named by a string must never reach Vercel's AI Gateway.
