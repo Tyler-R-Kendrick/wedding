@@ -4,7 +4,7 @@ import type { Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
 import { testLifecycleOf } from '@/domain/testing/testPrincipal';
 import { getLifecycle as getLifecycleRow, getSiteSettings } from '@/db/repos/site';
-import { SEED_SITE } from '@/db/seed/seed';
+import { SEED_SITE } from '@/db/seed/site';
 import { logger } from '@/lib/logger';
 import { ANONYMOUS } from '@/lib/principal';
 import type { CountdownView, LifecycleView, SiteFacts } from '@/themes/types';

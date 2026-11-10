@@ -98,14 +98,14 @@ export async function staticParamsWhenReadable(): Promise<{ theme: string }[]> {
 }
 
 /**
- * No adventure page is built ahead: each is rendered on its first visit and cached from then on.
+ * Every adventure the database holds at build time is built ahead, so its first reader gets the
+ * cached copy too; one added later is rendered on its first visit and cached from then on.
  *
- * Building them ahead failed a deployment. The build renders many pages at once, and with more
- * than ten queries in flight the database client writes the next one onto a connection that is
- * still answering; through the transaction-mode pooler the answers came back crossed (a row decoded
- * against another query's columns) or not at all, and every page waited past its minute. The list
- * page links to every adventure, so the first reader of each one waits for one render.
+ * A build renders many pages at once. That used to put more queries in flight than the pool has
+ * connections, which the transaction-mode pooler answered crossed or not at all, and the build
+ * timed out on every page. The query gate (`src/db/query-gate.ts`) keeps that from happening, in a
+ * build and on a busy server alike. A build that cannot read the database builds none and passes.
  */
 export async function adventureStaticParams(): Promise<{ theme: string; slug: string }[]> {
-  return [];
+  return (await adventureSlugsAtBuild()).map((slug) => ({ theme: DEFAULT_THEME, slug }));
 }

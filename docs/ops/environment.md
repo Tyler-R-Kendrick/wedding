@@ -41,6 +41,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | dev default / `localhost:*` (both required in production) | auth: Better Auth (`src/lib/auth`); the URL sets the passkey relying-party id and the trusted origin | no |
 | `CHICAGO_GUIDE_MAP_URL` | unset | content: optional view-only Google My Maps link for the signed-in Chicago guide (link + QR when set) | no |
 | `TEST_AUTH_SECRET` | unset | `src/lib/auth/test-principal.ts`: enables `x-test-principal` injection **only** under `NODE_ENV=test`; never set on a deployed host | no |
+| `REAL_POSTGRES_URL` | unset | tests only: a Postgres server for `tests/integration/db-real-postgres.test.ts`, which checks the query gate (`src/db/query-gate.ts`) against the real client. Unset, that file is skipped; the rest of the suite runs on PGlite, which has no pool | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `RESEND_CONNECT_USER_ID`, `EMAIL_FROM` | unset -> dev inbox; Connect connector `resend/wedding` must be attached and authorized | auth-email | no |
