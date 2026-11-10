@@ -435,6 +435,14 @@ function apiRows(): InventoryRow[] {
       expected: 'Same rules as /api/capabilities. The crawler does not upload.',
     }),
     row({
+      url: '/api/warm',
+      examples: ['/api/warm'],
+      audience: 'api',
+      method: 'GET',
+      purpose: 'Cron: asks for each landing page once so its function stays started.',
+      expected: '401 without the CRON_SECRET bearer, and then it asks for nothing. The crawler does not call it.',
+    }),
+    row({
       url: '/api/jobs/run',
       examples: ['/api/jobs/run'],
       audience: 'api',
