@@ -189,7 +189,10 @@ jobs:
         # cookie-resolved public URLs — `next dev` replaces that header, so they only mean
         # anything here. The list lives in scripts/check-spec-coverage.mjs, which fails the
         # build if a spec belongs to neither step.
-        run: npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.PRODUCTION_SPECS.join(' ')))")
+        # Phone and desktop are the review viewports (several specs already skip the tablet
+        # profile for that reason); running every spec a third time bought a third more minutes
+        # and no findings.
+        run: npx playwright test --project=mobile --project=desktop $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.PRODUCTION_SPECS.join(' ')))")
         env:
           CI: 'true'
           PW_WEB_SERVER_COMMAND: npm run start
@@ -248,7 +251,7 @@ jobs:
         # server libraries (next.config.ts), and the warm-up pauses whenever the server has grown
         # 2.5 GB, which is when Turbopack lets go of what it compiled. The script prints the
         # server's peak for the warm-up and for the whole run.
-        run: node scripts/test-server-specs.mjs
+        run: node scripts/test-server-specs.mjs --project=mobile --project=desktop
         env:
           CI: 'true'
           PORT: '3000'
