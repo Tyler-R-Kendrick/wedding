@@ -115,14 +115,15 @@ async function connectPostgres(url: string): Promise<Db> {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
-    // One query at a time on each pooled connection. postgres-js otherwise writes the next query
-    // onto a connection that is still answering the last one (`max_pipeline`, 100 by default) as
-    // soon as all ten are busy. A real server answers those in order; a transaction-mode pooler
-    // hands each one to whichever backend is free, and the answers can come back crossed or not at
-    // all. That is what a deployment build did when it rendered thirty pages at once: a row decoded
-    // against another query's columns, and every page then waited past its minute. With 0 the
-    // eleventh query waits in this process for a free connection instead.
-    ...(pooled ? { prepare: false, max_pipeline: 0 } : {}),
+    // Do not set `max_pipeline: 0` here to stop postgres-js writing a second query onto a busy
+    // connection. It was tried: postgres-js marks a connection as reserved for a transaction in
+    // the same expression that checks the pipeline limit, so at 0 no connection is ever reserved
+    // and every `sql.begin` (every `db.transaction`, the migrations included) fails with
+    // UNSAFE_TRANSACTION. The production deploy that carried it stopped at the migration step.
+    // The hazard it was aimed at is real (more than ten queries in flight through the
+    // transaction-mode pooler can come back crossed) and is avoided at build time by not rendering
+    // many database pages at once: see `adventureStaticParams`.
+    ...(pooled ? { prepare: false } : {}),
   });
   const base = drizzle({ client, schema });
   let vectorAvailable = false;
