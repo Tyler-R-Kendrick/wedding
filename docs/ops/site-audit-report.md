@@ -15,7 +15,7 @@ Counted from that module on 1 November 2026:
 
 That is 111 rows. 75 have `crawl: true`. The other 36 have `crawl: false`: every API row, both CSV exports, `/sitemap.xml`, and the dynamic alias `/explore-caa/:slug`.
 
-The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. The older addresses `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>` and `/ask-us` are permanent redirects to the matching portal URL for everyone (the table below). `/guests` and `/guests/ask-us` show an administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. `/sign-in/phone` is SMS sign-in wherever a text can be sent (Twilio Verify, configured or through the Vercel connector, or the mock outside production); otherwise it is a 404. The code is checked on `/claim/verify`. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
+The guest portal (`/guests`, `/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/<slug>`, `/guests/ask-us`) is audience `guest`. The older addresses `/travel`, `/share-an-adventure`, `/share-an-adventure/<slug>` and `/ask-us` are permanent redirects to the matching portal URL for everyone (the table below). `/guests` and `/guests/ask-us` show an administrator the guests-only gate. Signed out, a portal URL redirects to `/sign-in?next=<path>`. Those URLs stay off `/sitemap.xml`. `/sign-in/pending` is the holding page when social sign-in cannot match an invitation. SMS sign-in is the Text tab of `/sign-in` (`?method=text`), shown wherever a text can be sent (Twilio Verify, configured or through the Vercel connector, or the mock outside production); there is no separate phone page. The code is checked on `/claim/verify`. `GET /api/auth/social/[provider]/start` and `.../callback` are named and are not called by the crawler.
 
 ## The four readers
 
@@ -82,7 +82,7 @@ Personas, and how many HTML routes each opens:
 
 | Persona | Routes | Who it is |
 |---|---|---|
-| Anonymous | 30 | Signed out. Public pages, gate pages (including `/sign-in/pending` and `/sign-in/phone`), the five static aliases, and the two internal theme URLs. |
+| Anonymous | 30 | Signed out. Public pages, gate pages (including `/sign-in/pending`), the five static aliases, and the two internal theme URLs. |
 | Guest | 40 | Fixture household A1. Those public and gate pages, plus every guest page, including the portal. |
 | Administrator | 68 | Every page row, including the console. Redirects and the theme tree are not repeated. |
 | View-role | 40, four times | A real administrator session (the injector would skip the resolver the cookie lives in), then each of `guest`, `plus_one`, `household_manager`, and `party` from `src/domain/identity/view-role.ts`. Admin screens are not part of this walk: the preview does not apply there. |

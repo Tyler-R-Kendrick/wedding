@@ -71,7 +71,7 @@ export function testServerEnv(port) {
  *   grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u
  */
 export const WARM_ROUTES = [
-  '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
+  '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
   '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
   '/media/upload', '/media/mine', '/media/search', '/admin/ai',
   '/admin/lifecycle', '/admin/audit', '/admin/jobs', '/admin/metrics', '/admin/providers', '/admin/flags',

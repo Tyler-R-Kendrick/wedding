@@ -47,13 +47,9 @@ describe('site inventory', () => {
     }
     expect(byUrl('/sign-in/pending')?.audience).toBe('gate');
     expect(byUrl('/sign-in/pending')?.crawlExample).toBe('/sign-in/pending');
-    expect(byUrl('/sign-in/phone')?.audience).toBe('gate');
-    expect(byUrl('/sign-in/phone')?.crawl).toBe(true);
-    expect(byUrl('/sign-in/phone')?.crawlExample).toBe('/sign-in/phone');
-    expect(byUrl('/sign-in/phone')?.expected).toContain('Twilio');
-    expect(byUrl('/sign-in/phone')?.expected).toContain('continues to /guests');
+    // Text sign-in is a tab of /sign-in (`?method=text`), never a page of its own.
+    expect(byUrl('/sign-in/phone')).toBeUndefined();
     expect(publicSitemapPaths().some((path) => path === '/guests' || path.startsWith('/guests/'))).toBe(false);
-    expect(publicSitemapPaths()).not.toContain('/sign-in/phone');
     expect(byUrl('/api/auth/social/[provider]/start')?.crawl).toBe(false);
     expect(byUrl('/api/auth/social/[provider]/callback')?.expected).toContain('/sign-in/pending');
   });
