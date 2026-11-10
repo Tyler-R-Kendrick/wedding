@@ -95,7 +95,7 @@ describe('Twilio Verify through the Vercel connector', () => {
     expect(await new ConnectTwilioVerify({ ...OFFLINE, getTokenResponse: async () => answer, fetchImpl: empty.fetchImpl }).ready()).toEqual({ ok: true });
     const created = empty.calls.find((c) => c.method === 'POST')!;
     expect(created.url).toBe('https://verify.twilio.com/v2/Services');
-    expect(created.body).toContain('FriendlyName=Sara+%2B+Tyler');
+    expect(created.body).toContain('FriendlyName=Sara+and+Tyler');
   });
 
   it('says why it cannot send, without throwing, when the connector gives no token', async () => {

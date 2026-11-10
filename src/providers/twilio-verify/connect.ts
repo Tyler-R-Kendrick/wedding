@@ -23,8 +23,8 @@ import { TWILIO_VERIFY_POLICY } from './types';
  */
 export const DEFAULT_TWILIO_CONNECTOR = 'twilio/wedding';
 const VERIFY = 'https://verify.twilio.com/v2';
-/** What a text from a service this code creates says it is from: "Your Sara + Tyler verification code is …". */
-const SERVICE_NAME = 'Sara + Tyler';
+/** What a text from a service this code creates says it is from: "Your Sara and Tyler verification code is …". Letters and spaces only: Twilio refused "Sara + Tyler" (60200 Invalid parameter: FriendlyName). */
+const SERVICE_NAME = 'Sara and Tyler';
 
 type Subject = { type: 'app' } | { type: 'user'; id: string };
 export interface ConnectTokenAnswer {
