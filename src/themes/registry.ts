@@ -37,8 +37,8 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     icon: { svg: '/icons/botanical-deco.svg', apple: '/icons/botanical-deco-180.png' },
     // Only the two roman files are preloaded; the italics and the script accent swap in on use.
     fonts: [
-      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-wght.woff2', weight: '400 700', style: 'normal' },
-      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-text.woff2', weight: '400 600', style: 'normal' },
+      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-core.woff2', weight: '400 700', style: 'normal' },
+      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-core.woff2', weight: '400 600', style: 'normal' },
     ],
     structure: {
       layout: 'portrait-led-editorial-split',
@@ -64,9 +64,9 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     themeColor: gildedHourTokens.colors.neutral,
     icon: { svg: '/icons/gilded-hour.svg', apple: '/icons/gilded-hour-180.png' },
     fonts: [
-      { family: 'Cinzel', url: '/fonts/gilded-hour/cinzel-wght.woff2', weight: '400 900', style: 'normal' },
-      { family: 'Josefin Sans', url: '/fonts/gilded-hour/josefin-sans-wght.woff2', weight: '100 700', style: 'normal' },
-      { family: 'Big Shoulders Display', url: '/fonts/gilded-hour/big-shoulders-display-wght.woff2', weight: '100 900', style: 'normal' },
+      { family: 'Cinzel', url: '/fonts/gilded-hour/cinzel-core.woff2', weight: '400 900', style: 'normal' },
+      { family: 'Josefin Sans', url: '/fonts/gilded-hour/josefin-sans-core.woff2', weight: '100 700', style: 'normal' },
+      { family: 'Big Shoulders Display', url: '/fonts/gilded-hour/big-shoulders-display-core.woff2', weight: '100 900', style: 'normal' },
     ],
     structure: {
       layout: 'centered-axis',
@@ -92,10 +92,10 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     themeColor: conservatoryTokens.colors.neutral,
     icon: { svg: '/icons/conservatory.svg', apple: '/icons/conservatory-180.png' },
     fonts: [
-      { family: 'Gloock', url: '/fonts/conservatory/gloock-regular.woff2', weight: '400', style: 'normal' },
-      { family: 'Spectral', url: '/fonts/conservatory/spectral-regular.woff2', weight: '400', style: 'normal' },
-      { family: 'Spectral', url: '/fonts/conservatory/spectral-medium.woff2', weight: '500', style: 'normal' },
-      { family: 'Cardo', url: '/fonts/conservatory/cardo-italic.woff2', weight: '400', style: 'italic' },
+      { family: 'Gloock', url: '/fonts/conservatory/gloock-core.woff2', weight: '400', style: 'normal' },
+      { family: 'Spectral', url: '/fonts/conservatory/spectral-core.woff2', weight: '400', style: 'normal' },
+      { family: 'Spectral', url: '/fonts/conservatory/spectral-medium-core.woff2', weight: '500', style: 'normal' },
+      { family: 'Cardo', url: '/fonts/conservatory/cardo-italic-core.woff2', weight: '400', style: 'italic' },
     ],
     structure: {
       layout: 'left-weighted-sheet',

@@ -216,9 +216,10 @@ jobs:
 
       - name: Swap, as a cushion for the dev server over a long run
         # The warm-up no longer needs this (see the next step). What still grows is the dev
-        # server's own JavaScript heap: over the three-project run it climbs from about 0.6 GB to
-        # several GB, and with the compiler's share and three browsers beside it a 16 GB runner has
-        # little to spare. Out of memory, the kernel takes the runner agent ("the runner has
+        # server's own JavaScript heap: over the run it climbs from about 0.6 GB to several GB (the
+        # script lets it use up to 8 GB, because at Node's default 4 GB it died near the end of the
+        # run), and with the compiler's share and the browsers beside it a 16 GB runner has little
+        # to spare. Out of memory, the kernel takes the runner agent ("the runner has
         # received a shutdown signal"). Production does not do this: `next start` holds about
         # 225 MB of heap across 3,000 requests. Until the dev server's growth is understood, the
         # swap file stays; it costs a few seconds and is only touched if the run needs it.

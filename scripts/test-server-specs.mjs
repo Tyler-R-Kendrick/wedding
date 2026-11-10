@@ -269,7 +269,12 @@ async function main(args) {
   const log = path.join(tmpdir(), `wedding-test-server-${port}.log`);
   const out = openSync(log, 'w'); // one descriptor for both streams, so neither overwrites the other
   // Its own process group, so stopping it takes `next dev`, next-server and the Turbopack workers too.
-  const server = spawn('npx', ['next', 'dev', '-p', port], { cwd: ROOT, env, detached: true, stdio: ['ignore', out, out] });
+  // The dev server's own heap grows with every request it has served (0.6 GB after the warm-up,
+  // past 3.6 GB twenty minutes in) and Node stops at about 4 GB by default: the server then dies
+  // near the end of a full run, and the last specs fail with ECONNRESET. Production does not grow
+  // (225 MB across 3,000 requests). Until the dev-mode growth is understood, give it room.
+  const serverEnv = { ...env, NODE_OPTIONS: `${env.NODE_OPTIONS ?? ''} --max-old-space-size=${process.env.TEST_SERVER_HEAP_MB ?? '8192'}`.trim() };
+  const server = spawn('npx', ['next', 'dev', '-p', port], { cwd: ROOT, env: serverEnv, detached: true, stdio: ['ignore', out, out] });
   closeSync(out);
   let serverError;
   let serverExited = false;

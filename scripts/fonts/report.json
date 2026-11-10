@@ -1,0 +1,345 @@
+[
+ {
+  "source": "botanical-deco/bodoni-moda-wght.woff2",
+  "sourceBytes": 46260,
+  "dropped": 7,
+  "files": [
+   {
+    "file": "botanical-deco/bodoni-moda-core.woff2",
+    "bytes": 25172,
+    "characters": 127,
+    "glyphs": 152,
+    "features": [
+     "ccmp",
+     "kern",
+     "liga",
+     "locl",
+     "mark",
+     "tnum"
+    ]
+   },
+   {
+    "file": "botanical-deco/bodoni-moda-ext.woff2",
+    "bytes": 12716,
+    "characters": 90,
+    "glyphs": 115,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/bodoni-moda-italic-wght.woff2",
+  "sourceBytes": 53756,
+  "dropped": 7,
+  "files": [
+   {
+    "file": "botanical-deco/bodoni-moda-italic-core.woff2",
+    "bytes": 17188,
+    "characters": 127,
+    "glyphs": 142,
+    "features": [
+     "ccmp",
+     "kern",
+     "liga",
+     "locl",
+     "mark"
+    ]
+   },
+   {
+    "file": "botanical-deco/bodoni-moda-italic-ext.woff2",
+    "bytes": 8516,
+    "characters": 90,
+    "glyphs": 115,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/newsreader-text.woff2",
+  "sourceBytes": 43936,
+  "dropped": 9,
+  "files": [
+   {
+    "file": "botanical-deco/newsreader-core.woff2",
+    "bytes": 24824,
+    "characters": 126,
+    "glyphs": 149,
+    "features": [
+     "kern",
+     "liga",
+     "mark",
+     "mkmk",
+     "rvrn",
+     "tnum"
+    ]
+   },
+   {
+    "file": "botanical-deco/newsreader-ext.woff2",
+    "bytes": 11324,
+    "characters": 89,
+    "glyphs": 123,
+    "features": [
+     "kern",
+     "tnum"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/newsreader-text-italic.woff2",
+  "sourceBytes": 46004,
+  "dropped": 9,
+  "files": [
+   {
+    "file": "botanical-deco/newsreader-italic-core.woff2",
+    "bytes": 26116,
+    "characters": 126,
+    "glyphs": 149,
+    "features": [
+     "kern",
+     "liga",
+     "mark",
+     "mkmk",
+     "rvrn"
+    ]
+   },
+   {
+    "file": "botanical-deco/newsreader-italic-ext.woff2",
+    "bytes": 11444,
+    "characters": 89,
+    "glyphs": 123,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "botanical-deco/ms-madi-regular.woff2",
+  "sourceBytes": 34848,
+  "dropped": 11,
+  "files": [
+   {
+    "file": "botanical-deco/ms-madi-core.woff2",
+    "bytes": 26456,
+    "characters": 119,
+    "glyphs": 136,
+    "features": [
+     "kern",
+     "liga",
+     "locl"
+    ]
+   },
+   {
+    "file": "botanical-deco/ms-madi-ext.woff2",
+    "bytes": 14776,
+    "characters": 89,
+    "glyphs": 121,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "gilded-hour/cinzel-wght.woff2",
+  "sourceBytes": 35860,
+  "dropped": 10,
+  "files": [
+   {
+    "file": "gilded-hour/cinzel-core.woff2",
+    "bytes": 15808,
+    "characters": 119,
+    "glyphs": 124,
+    "features": [
+     "kern",
+     "locl"
+    ]
+   },
+   {
+    "file": "gilded-hour/cinzel-ext.woff2",
+    "bytes": 9204,
+    "characters": 89,
+    "glyphs": 120,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "gilded-hour/josefin-sans-wght.woff2",
+  "sourceBytes": 26788,
+  "dropped": 13,
+  "files": [
+   {
+    "file": "gilded-hour/josefin-sans-core.woff2",
+    "bytes": 13244,
+    "characters": 119,
+    "glyphs": 132,
+    "features": [
+     "kern",
+     "liga",
+     "locl"
+    ]
+   },
+   {
+    "file": "gilded-hour/josefin-sans-ext.woff2",
+    "bytes": 7868,
+    "characters": 89,
+    "glyphs": 114,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "gilded-hour/big-shoulders-display-wght.woff2",
+  "sourceBytes": 45644,
+  "dropped": 18,
+  "files": [
+   {
+    "file": "gilded-hour/big-shoulders-display-core.woff2",
+    "bytes": 14352,
+    "characters": 126,
+    "glyphs": 141,
+    "features": [
+     "kern",
+     "liga",
+     "locl"
+    ]
+   },
+   {
+    "file": "gilded-hour/big-shoulders-display-ext.woff2",
+    "bytes": 8428,
+    "characters": 89,
+    "glyphs": 119,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "conservatory/gloock-regular.woff2",
+  "sourceBytes": 16740,
+  "dropped": 14,
+  "files": [
+   {
+    "file": "conservatory/gloock-core.woff2",
+    "bytes": 11032,
+    "characters": 119,
+    "glyphs": 156,
+    "features": [
+     "ccmp",
+     "kern",
+     "liga",
+     "locl",
+     "tnum"
+    ]
+   },
+   {
+    "file": "conservatory/gloock-ext.woff2",
+    "bytes": 5228,
+    "characters": 89,
+    "glyphs": 120,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "conservatory/spectral-regular.woff2",
+  "sourceBytes": 22504,
+  "dropped": 19,
+  "files": [
+   {
+    "file": "conservatory/spectral-core.woff2",
+    "bytes": 10976,
+    "characters": 125,
+    "glyphs": 206,
+    "features": [
+     "c2sc",
+     "kern",
+     "liga",
+     "locl",
+     "smcp"
+    ]
+   },
+   {
+    "file": "conservatory/spectral-ext.woff2",
+    "bytes": 6192,
+    "characters": 89,
+    "glyphs": 171,
+    "features": [
+     "c2sc",
+     "kern",
+     "smcp"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "conservatory/spectral-medium.woff2",
+  "sourceBytes": 24472,
+  "dropped": 19,
+  "files": [
+   {
+    "file": "conservatory/spectral-medium-core.woff2",
+    "bytes": 11972,
+    "characters": 125,
+    "glyphs": 206,
+    "features": [
+     "c2sc",
+     "kern",
+     "liga",
+     "locl",
+     "smcp"
+    ]
+   },
+   {
+    "file": "conservatory/spectral-medium-ext.woff2",
+    "bytes": 6456,
+    "characters": 89,
+    "glyphs": 171,
+    "features": [
+     "c2sc",
+     "kern",
+     "smcp"
+    ]
+   }
+  ]
+ },
+ {
+  "source": "conservatory/cardo-italic.woff2",
+  "sourceBytes": 21816,
+  "dropped": 46,
+  "files": [
+   {
+    "file": "conservatory/cardo-italic-core.woff2",
+    "bytes": 13748,
+    "characters": 139,
+    "glyphs": 150,
+    "features": [
+     "kern",
+     "liga"
+    ]
+   },
+   {
+    "file": "conservatory/cardo-italic-ext.woff2",
+    "bytes": 6996,
+    "characters": 89,
+    "glyphs": 111,
+    "features": [
+     "kern"
+    ]
+   }
+  ]
+ }
+]

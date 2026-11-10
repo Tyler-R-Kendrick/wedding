@@ -146,7 +146,7 @@ for (const s of STAGES) {
 // Stage 4 wears the real designs: their fonts must load by both addresses.
 for (const [host, prefix] of [[`placeholder.${domain}`, ''], ['localhost', '/placeholder']]) {
   checks++;
-  const r = await get(host, `${prefix}/fonts/botanical-deco/bodoni-moda-wght.woff2`);
+  const r = await get(host, `${prefix}/fonts/botanical-deco/bodoni-moda-core.woff2`);
   if (r.status !== 200) failures.push(`placeholder font at ${host}${prefix}/fonts/… → ${r.status}`);
 }
 
