@@ -178,4 +178,14 @@ test.describe('security headers', () => {
     // A filtered list is a request's own too: the prerendered copy is the whole list.
     expect((await request.get('/our-adventures?season=summer')).headers()['cache-control']).toContain('no-store');
   });
+
+  test('the files under public/ are kept by the browser: fonts for good, pictures for a day', async ({ request }) => {
+    const html = await (await request.get('/')).text();
+    const fonts = [...new Set(html.match(/\/fonts\/botanical-deco\/[a-z-]+\.woff2\?v=[0-9a-f]+/g) ?? [])];
+    expect(fonts.length, 'Home preloads its fonts by content hash').toBeGreaterThanOrEqual(2);
+    for (const font of fonts) expect((await request.get(font)).headers()['cache-control'], font).toBe('public, max-age=31536000, immutable');
+    const picture = html.match(/\/media\/botanical-deco\/[^"\s\\]+\.(?:avif|jpg|webp|png)/)?.[0];
+    expect(picture, 'Home has a picture').toBeTruthy();
+    for (const file of [picture!, '/icons/botanical-deco.svg']) expect((await request.get(file)).headers()['cache-control'], file).toMatch(/^public, max-age=86400, stale-while-revalidate=\d+$/);
+  });
 });

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -40,9 +41,19 @@ describe('the generated web fonts', () => {
       const css = readFileSync(`src/themes/${theme.id}/fonts.css`, 'utf8');
       const urls = [...css.matchAll(/url\("(\/fonts\/[^"]+)"\)/g)].map((m) => m[1]!);
       expect(urls.length, theme.id).toBeGreaterThan(0);
-      for (const url of [...urls, ...theme.fonts.map((f) => f.url)]) expect(existsSync(join('public', url)), url).toBe(true);
-      // What is preloaded is the small core file of a face, never the extended one.
-      for (const font of theme.fonts) expect(font.url, font.family).toMatch(/-core\.woff2$/);
+      // Each is its file's address by content: the hash in `?v=` is the file's own, so the address
+      // can be served as immutable (next.config.ts) and a regenerated file gets a new one.
+      for (const url of urls) {
+        const [file, version] = url.split('?v=');
+        expect(existsSync(join('public', file!)), url).toBe(true);
+        expect(version, url).toBe(createHash('sha256').update(readFileSync(join('public', file!))).digest('hex').slice(0, 12));
+      }
+      // A preload names the stylesheet's own address, or the browser fetches the font twice. And
+      // what is preloaded is the small core file of a face, never the extended one.
+      for (const font of theme.fonts) {
+        expect(urls, `${font.family}: copy its address from src/themes/${theme.id}/fonts.css`).toContain(font.url);
+        expect(font.url, font.family).toMatch(/-core\.woff2\?v=/);
+      }
     }
   });
 

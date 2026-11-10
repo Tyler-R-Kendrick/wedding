@@ -16,7 +16,10 @@ What it writes (commit all of it)
     public/fonts/<theme>/<name>-core.woff2   ASCII and the punctuation and letters the pages use; preloaded
     public/fonts/<theme>/<name>-ext.woff2    the rest of Latin-1 and Latin Extended-A the source has; fetched
                                              only by a page that shows one of its characters (unicode-range)
-    src/themes/<theme>/fonts.css             the @font-face rules between the GENERATED markers
+    src/themes/<theme>/fonts.css             the @font-face rules between the GENERATED markers; each
+                                             names its file by content hash (`?v=`). A preloaded file's
+                                             address in src/themes/registry.ts has to be the same one
+                                             (tests/unit/fonts.test.ts says so when it is not).
 
 Rerun it when
     * copy starts using a character outside `chars` in fonts.json (tests/unit/fonts.test.ts says which);
@@ -32,7 +35,7 @@ Rules it keeps
     * Hinting is kept unless fonts.json says `"hinting": "drop"` (it changes rendering on Windows).
     * A font whose licence reserves its name (OFL "Reserved Font Name") is renamed inside the file.
 """
-import argparse, io, json, os, re, sys
+import argparse, hashlib, io, json, os, re, sys
 from fontTools import subset
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
@@ -163,8 +166,14 @@ def plan(spec, config):
     return source, core, keep - core, have - keep
 
 
-def face_css(spec, file, cps):
-    lines = ['@font-face {', f'  font-family: {spec["family"]};', f'  src: url("/fonts/{file}") format("woff2");', f'  font-weight: {spec["weight"]};', f'  font-style: {spec["style"]};', f'  font-display: {spec["display"]};', f'  unicode-range: {ranges(cps)};', '}']
+def versioned(file, data):
+    """The address a page asks for: the file, named by its content. next.config.ts serves `/fonts/…?v=`
+    as immutable, so a browser never asks again, and a regenerated file arrives under a new URL."""
+    return f'/fonts/{file}?v={hashlib.sha256(data).hexdigest()[:12]}'
+
+
+def face_css(spec, url, cps):
+    lines = ['@font-face {', f'  font-family: {spec["family"]};', f'  src: url("{url}") format("woff2");', f'  font-weight: {spec["weight"]};', f'  font-style: {spec["style"]};', f'  font-display: {spec["display"]};', f'  unicode-range: {ranges(cps)};', '}']
     return '\n'.join(lines)
 
 
@@ -212,7 +221,7 @@ def main():
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 open(target, 'wb').write(data)
             entry['files'].append({'file': name, 'bytes': len(data), 'characters': len(cps), 'glyphs': written['maxp'].numGlyphs, 'features': sorted(features_of(written))})
-            css.setdefault(theme, []).append(face_css(spec, name, cps | SPACES if part == 'core' else cps))
+            css.setdefault(theme, []).append(face_css(spec, versioned(name, data), cps | SPACES if part == 'core' else cps))
         report.append(entry)
 
     for theme, faces in ([] if args.out else css.items()):

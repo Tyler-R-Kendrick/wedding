@@ -25,9 +25,12 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     themeColor: botanicalDecoTokens.colors.neutral,
     icon: { svg: '/icons/botanical-deco.svg', apple: '/icons/botanical-deco-180.png' },
     // Only the two roman files are preloaded; the italics and the script accent swap in on use.
+    // Each address is the one fonts.css names, content hash included: a preload for any other URL
+    // is a second download of the same file. scripts/fonts/subset.py writes the stylesheet's;
+    // tests/unit/fonts.test.ts fails when these two fall behind it.
     fonts: [
-      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-core.woff2', weight: '400 700', style: 'normal' },
-      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-core.woff2', weight: '400 600', style: 'normal' },
+      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-core.woff2?v=1f8f833d7ca6', weight: '400 700', style: 'normal' },
+      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-core.woff2?v=c3a356699635', weight: '400 600', style: 'normal' },
     ],
   },
 };

@@ -53,7 +53,7 @@ describe('theme registry', () => {
     for (const t of listThemes()) {
       expect(t.themeColor).toMatch(/^#[0-9a-f]{6}$/);
       expect(t.icon.svg).toMatch(/^\/icons\//);
-      for (const f of t.fonts) expect(f.url).toMatch(new RegExp(`^/fonts/${t.id}/.+\\.woff2$`));
+      for (const f of t.fonts) expect(f.url).toMatch(new RegExp(`^/fonts/${t.id}/.+\\.woff2\\?v=[0-9a-f]{12}$`));
     }
   });
 });

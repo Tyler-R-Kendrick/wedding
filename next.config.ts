@@ -86,12 +86,16 @@ const nextConfig: NextConfig = {
       { source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) },
       ...rightsHeaders(),
       ...stageHeaders(stageFramingHeaders(headerOptions)),
-      // The atlas files are addressed by content hash (src/themes/shared/atlas/files.ts), so a
-      // returning guest never re-downloads the map. Only the hashed address is immutable: a request
-      // without `?v=` (a stage's captured page) revalidates as before. Photos keep their names: a
-      // day, then revalidate.
-      { source: '/assets/atlas/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
-      { source: '/assets/photos/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }] },
+      // Files under public/. Next's default for them is `max-age=0`: a returning guest's browser
+      // asked about every picture and font on every visit. Pictures and icons keep their names when
+      // they are replaced, so a day, then revalidate in the background for a month. Only real file
+      // types: `/media/mine` and its neighbours are guests' pages, and stay `no-store`.
+      { source: '/:dir(media|icons|assets)/:file(.+\\.(?:avif|jpe?g|png|svg|webp))', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=2592000' }] },
+      // The fonts and the atlas are addressed by content hash (`?v=`: scripts/fonts/subset.py,
+      // src/themes/shared/atlas/files.ts), so they are never asked about again, and a regenerated
+      // file arrives under a new URL. Only the hashed address is immutable: a request without `?v=`
+      // revalidates as before.
+      { source: '/:dir(fonts|assets/atlas)/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
     ];
   },
   // Pages folded into the guest portal keep their old addresses as permanent redirects, so a link

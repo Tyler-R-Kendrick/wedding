@@ -15,6 +15,11 @@ python3 -m venv .venv-fonts
 .venv-fonts/bin/python scripts/fonts/subset.py
 ```
 
+Each `@font-face` rule it writes names its file by content hash (`…-core.woff2?v=1f8f833d7ca6`),
+and `next.config.ts` serves that address as immutable. When a preloaded file changes, copy its new
+address into `src/themes/registry.ts` (`tests/unit/fonts.test.ts` fails until the two agree: a
+preload for any other URL downloads the font twice).
+
 `--check` exits 1 if the committed files differ from what the script would write (the output is
 byte-reproducible). `--measure` prints each source file's size, glyphs, axes, features and hinting.
 `--out <dir>` writes the fonts somewhere else and leaves the stylesheets alone.
