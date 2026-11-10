@@ -46,6 +46,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `TWILIO_CONNECT_USER_ID` | unset | phone sign-in: the user the Twilio connector was authorized by, for a per-user connector. The app-wide grant is tried first, then this, then `RESEND_CONNECT_USER_ID` | no |
 | `REAL_POSTGRES_URL` | unset | tests only: a Postgres server for `tests/integration/db-real-postgres.test.ts`, which checks the query gate (`src/db/query-gate.ts`) against the real client. Unset, that file is skipped; the rest of the suite runs on PGlite, which has no pool | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
+| `ADMIN_PHONES` | empty | phone sign-in: the administrators' own mobiles as `email=phone` pairs, comma-separated. Phone sign-in puts each on the guest record with that email (creating one if there is none) before it looks a number up, so the couple can sign in by text with nothing typed into `/admin`. Kept in Vercel, never in this public repository | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `RESEND_CONNECT_USER_ID`, `EMAIL_FROM` | unset -> dev inbox; Connect connector `resend/wedding` must be attached and authorized | auth-email | no |
 | `RESEND_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /api/webhooks/resend` answers 404 | verifies Resend inbound webhook (`svix-*` headers) | no |
