@@ -12,9 +12,9 @@ import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign in with your phone', robots: { index: false, follow: false } };
 
-/** SMS sign-in when FLAG_PHONE_SIGN_IN is on and Twilio Verify is configured (or mock locally). */
+/** SMS sign-in wherever a text can be sent: Twilio configured or connected, or the mock locally (src/lib/phone-sign-in.ts). */
 export default async function PhoneSignInPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  if (!isPhoneSignInAvailable()) redirect('/sign-in');
+  if (!(await isPhoneSignInAvailable())) redirect('/sign-in');
   const sp = await searchParams;
   const error = errorCopy(sp.error);
   const principal = await currentPrincipal();

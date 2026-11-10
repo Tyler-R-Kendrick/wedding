@@ -45,7 +45,7 @@ export const requestPhoneOtp = defineCapability<z.infer<typeof input>, RequestPh
   output,
   async handler(ctx, i) {
     const startedMs = performance.now();
-    if (!isPhoneSignInAvailable()) {
+    if (!(await isPhoneSignInAvailable())) {
       return err(new CapabilityError('forbidden', 'Phone sign-in is not available on this site yet.', { reason: 'phone_sign_in_disabled' }));
     }
     const e164 = normalizePhoneE164(i.phone);

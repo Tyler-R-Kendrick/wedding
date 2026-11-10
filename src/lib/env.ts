@@ -158,6 +158,10 @@ const serverSchema = z.object({
   TWILIO_ACCOUNT_SID: optionalString,
   TWILIO_AUTH_TOKEN: optionalSecret(16),
   TWILIO_VERIFY_SERVICE_SID: optionalString,
+  /** The Vercel connector that holds the Twilio credential when the three above are unset. Default `twilio/wedding`. */
+  TWILIO_CONNECTOR: optionalString,
+  /** The user the Twilio connector was authorized by, when it is not an app-wide connector. */
+  TWILIO_CONNECT_USER_ID: optionalString,
 });
 
 type Parsed = z.infer<typeof serverSchema>;
