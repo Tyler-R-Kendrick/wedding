@@ -62,14 +62,18 @@ const nextConfig: NextConfig = {
   ...(process.env.NODE_ENV === 'test' ? { experimental: { turbopackSourceMaps: false, turbopackInputSourceMaps: false, serverSourceMaps: false } } : {}),
   reactStrictMode: true,
   ...(deploymentSiteUrl ? { env: { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } } : {}),
-  // Loaded by Node at run time, not compiled into the server bundle. The first line has to be
-  // (native, wasm or worker-based packages). The second is there for memory: every route reaches
-  // these libraries, and bundling them again for each route and layer was another third of the
-  // compiler's footprint (5.9 GB -> 4.2 GB over the same 34 routes) for no gain, since none of
-  // them needs a bundler. Server-side only: the browser bundle is unaffected.
+  // Loaded by Node at run time, not compiled into the server bundle. The first list has to be
+  // (native, wasm or worker-based packages). The second is there for the dev and test servers'
+  // memory only: every route reaches these libraries, and compiling them again for each route and
+  // layer was another third of the compiler's footprint (5.9 GB -> 4.2 GB over the same 34
+  // routes). A production build bundles them instead, because a cold server start has to read every
+  // file it loads: left external, the startup hook alone read some 2,000 small files from
+  // node_modules. Server-side only: the browser bundle is unaffected.
   serverExternalPackages: [
     '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm',
-    'better-auth', '@better-auth/passkey', '@better-auth/drizzle-adapter', 'ai', 'zod', 'heic-convert', 'exifr', 'file-type', '@vercel/connect', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner',
+    ...(process.env.NODE_ENV === 'production'
+      ? []
+      : ['better-auth', '@better-auth/passkey', '@better-auth/drizzle-adapter', 'ai', 'zod', 'heic-convert', 'exifr', 'file-type', '@vercel/connect', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner']),
   ],
   // Migrations are read from disk at runtime (db:migrate, dev auto-migrate).
   outputFileTracingIncludes: { '/**': ['./src/db/migrations/**'] },
