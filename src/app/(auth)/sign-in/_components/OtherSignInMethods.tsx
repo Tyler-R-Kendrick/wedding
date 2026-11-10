@@ -5,9 +5,9 @@ import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 
 const LABELS = { google: 'Continue with Google', facebook: 'Continue with Facebook' } as const;
 
-export function OtherSignInMethods({ next }: { next?: string }) {
+export async function OtherSignInMethods({ next }: { next?: string }) {
   const providers = configuredSocialProviders();
-  const phone = isPhoneSignInAvailable();
+  const phone = await isPhoneSignInAvailable();
   if (!providers.length && !phone) return null;
   const nextParam = isSafeReturnPath(next) ? `?next=${encodeURIComponent(next)}` : '';
   const phoneHref = isSafeReturnPath(next) ? `/sign-in/phone?next=${encodeURIComponent(next)}` : '/sign-in/phone';

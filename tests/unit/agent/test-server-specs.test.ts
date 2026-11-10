@@ -26,7 +26,7 @@ describe('npm run test:e2e:server is the CI test-server step', () => {
 
   it('gives the server the settings the specs depend on', () => {
     const env = testServerEnv('3000');
-    expect(env).toMatchObject({ NODE_ENV: 'test', SEED_TEST_FIXTURES: '1', FLAG_RSVP_MEALS: 'on', FLAG_PHONE_SIGN_IN: 'on', MEDIA_PART_SIZE_MB: '1', MEDIA_MULTIPART_THRESHOLD_MB: '1', PGLITE_MEMORY: '1', DB_AUTO_MIGRATE: '1', DB_AUTO_SEED: '1', TRUSTED_PROXY_HOPS: '1' });
+    expect(env).toMatchObject({ NODE_ENV: 'test', SEED_TEST_FIXTURES: '1', FLAG_RSVP_MEALS: 'on', MEDIA_PART_SIZE_MB: '1', MEDIA_MULTIPART_THRESHOLD_MB: '1', PGLITE_MEMORY: '1', DB_AUTO_MIGRATE: '1', DB_AUTO_SEED: '1', TRUSTED_PROXY_HOPS: '1' });
     for (const key of ['BASE_URL', 'NEXT_PUBLIC_SITE_URL', 'BETTER_AUTH_URL'] as const) expect(env[key], key).toBe('http://localhost:3000');
     // The dev inbox bearer and the principal injector's secret reach the server and the runner alike.
     expect(env.DEV_INBOX_TOKEN).toBeTruthy();

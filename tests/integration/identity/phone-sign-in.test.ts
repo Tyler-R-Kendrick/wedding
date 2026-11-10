@@ -10,7 +10,6 @@ describe('phone sign-in', () => {
     resetProviders();
     setProviderOverride('twilio-verify', new MockTwilioVerify());
     MockTwilioVerify.clearPending();
-    process.env.FLAG_PHONE_SIGN_IN = 'on';
   });
 
   it('returns the same shape for unknown and known numbers', async () => {

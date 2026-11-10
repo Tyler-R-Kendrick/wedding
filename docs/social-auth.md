@@ -14,7 +14,7 @@ This feature was implemented with **Cursor Cloud Agent** (Grok Build CLI was una
 | `GOOGLE_CLIENT_SECRET` | Google button | Stored server-side only |
 | `FACEBOOK_CLIENT_ID` | Facebook button | Facebook Login app ID |
 | `FACEBOOK_CLIENT_SECRET` | Facebook button | App secret |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` | "Sign in with your phone instead" | All three set: the option shows. `FLAG_PHONE_SIGN_IN=off` hides it |
+| Vercel connector `twilio/wedding`, or `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_VERIFY_SERVICE_SID` | "Sign in with your phone instead" | Either one: the option shows within a minute. There is no flag |
 
 `BETTER_AUTH_URL` / production canonical origin must match the host you register with each provider.
 

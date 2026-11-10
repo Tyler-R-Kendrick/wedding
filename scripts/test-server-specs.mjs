@@ -43,7 +43,6 @@ export function testServerEnv(port) {
     BASE_URL: origin,
     SEED_TEST_FIXTURES: '1',
     FLAG_RSVP_MEALS: 'on',
-    FLAG_PHONE_SIGN_IN: 'on',
     DEV_INBOX_TOKEN: 'local-dev-inbox-token-not-real',
     TEST_AUTH_SECRET: 'local-test-auth-secret-not-real',
     MEDIA_PART_SIZE_MB: '1',
