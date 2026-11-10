@@ -7,7 +7,7 @@ resolves the proxy from the project root, not from `app/`), `src/app/globals.css
 `src/app/layout.tsx`, `src/components/switcher/**`, `src/domain/lifecycle/**`,
 `src/capabilities/site_status.ts` (extend), `src/capabilities/navigate_to.ts`
 (extend), `tests/e2e/themes*.spec.ts`, `tests/unit/themes/**`,
-`docs/architecture/theme-engine.md`, `docs/design/critiques/` outputs.
+`docs/architecture/theme-engine.md`, design critique outputs.
 
 **Inputs:** ADR-0009, ADR-0012, `src/themes/gilded-hour/DESIGN.md` +
 `design.json`, `src/themes/conservatory/DESIGN.md` + `design.json`,
@@ -49,8 +49,8 @@ resolves the proxy from the project root, not from `app/`), `src/app/globals.css
    `/t/[theme]/…` with `generateStaticParams`; guest/admin routes stay
    dynamic; personalized responses `private, no-store`.
 8. **Design review**: run the `design-review` skill on Home for both themes
-   at 390/768/1440; fix blockers; commit reports under
-   `docs/design/critiques/`. Ship gate: all axes ≥7, Usability ≥8.
+   at 390/768/1440; fix blockers; attach the reports to the
+   pull request. Ship gate: all axes ≥7, Usability ≥8.
 
 ## Tests
 

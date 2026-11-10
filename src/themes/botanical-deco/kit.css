@@ -898,51 +898,6 @@
   letter-spacing: 0.06em;
 }
 
-/* The day count: a Sheet plate with a gold hairline and stepped corners, over the portrait's lower
-   right where there is only suit and railing. */
-.bd-hero__count {
-  position: absolute;
-  z-index: 3;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 14px 18px 12px;
-  background: var(--color-surface);
-  border: var(--bd-gold-hair);
-  box-shadow: 0 0 0 4px var(--color-surface), 0 0 0 5px color-mix(in oklab, var(--color-gold) 55%, transparent);
-  text-align: center;
-}
-
-.bd-countdown--hero {
-  display: grid;
-  justify-items: center;
-  margin: 0;
-}
-
-.bd-countdown--hero .bd-countdown__num {
-  --bd-shown: var(--bd-days);
-
-  font-family: var(--font-display);
-  font-size: clamp(var(--type-h1-size), 1.713rem + 2.275vw, var(--type-display-xl-size));
-  font-weight: 400;
-  line-height: 1;
-  font-variant-numeric: lining-nums tabular-nums;
-  color: var(--color-primary);
-}
-
-.bd-countdown__digits::after {
-  content: counter(bd-days);
-  counter-reset: bd-days var(--bd-shown);
-}
-
-.bd-countdown--hero .bd-countdown__label {
-  font-family: var(--font-text);
-  font-size: var(--type-control-caps-size);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-tertiary);
-}
-
 .bd-hero__theme {
   display: none;
   margin: 0;
@@ -995,18 +950,6 @@
     block-size: var(--bd-hero-photo);
   }
 
-  /* On the phone the plate sits on the photograph's lower corner, never over the invitation. */
-  .bd-hero__count {
-    inset-block-start: calc(var(--bd-hero-photo) - 12px);
-    inset-inline-end: var(--bd-gutter);
-    translate: 0 -100%;
-    padding: 8px 12px 6px;
-  }
-
-  .bd-countdown--hero .bd-countdown__num {
-    font-size: 2.25rem;
-  }
-
   .bd-hero .bd-head__rule {
     margin-block: 4px;
   }
@@ -1048,12 +991,6 @@
     grid-column: 1;
     padding-block: var(--spacing-xl) calc(var(--spacing-xl) * 1.5);
     padding-inline: clamp(24px, 6.4vw, 104px) var(--spacing-md);
-  }
-
-  .bd-hero__count {
-    inset-inline-end: clamp(20px, 3.5vw, 56px);
-    inset-block-end: clamp(20px, 3.5vw, 48px);
-    padding: 18px 26px 16px;
   }
 
 }
@@ -2153,26 +2090,6 @@
   background-image: linear-gradient(var(--color-gilt), var(--color-gilt));
 }
 
-.bd-decoframe {
-  position: absolute;
-  display: none;
-  place-items: center;
-  inline-size: 60px;
-  color: var(--color-gilt);
-}
-
-.bd-decoframe svg {
-  position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-.bd-decoframe .bd-monogram {
-  font-size: 1.25rem;
-  color: inherit;
-}
-
 .bd-schedule__intro {
   display: grid;
   justify-items: start;
@@ -2268,13 +2185,6 @@
 }
 
 /* The stepped frame stands in the margin, outside the reading column, where there is one. */
-@media (width >= 1360px) {
-  .bd-schedule .bd-decoframe {
-    display: grid;
-    inset-block: clamp(40px, 6vw, 80px);
-    inset-inline-start: calc(var(--bd-gutter) - 96px);
-  }
-}
 
 /* ---------- home: the closing invitation ---------- */
 .bd-closing {
@@ -3600,29 +3510,6 @@
   color: var(--color-tertiary);
 }
 
-.bd-programme {
-  display: grid;
-  gap: var(--spacing-xl);
-  max-inline-size: 46rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bd-programme__act {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--spacing-lg);
-  align-items: start;
-  scroll-margin-block-start: 96px;
-}
-
-.bd-programme__body {
-  display: grid;
-  gap: var(--spacing-md);
-  min-width: 0;
-}
-
 .bd-faq {
   display: grid;
   gap: 0;
@@ -4063,14 +3950,6 @@
   color: var(--color-on-moss);
 }
 
-@media (width >= 1100px) {
-  .bd-programme-band .bd-decoframe {
-    display: grid;
-    inset-block: 24px;
-    inset-inline-start: 24px;
-  }
-}
-
 .bd-rooms-split {
   display: grid;
   gap: var(--spacing-xl);
@@ -4152,11 +4031,6 @@
 
   /* Only where @property is supported: unregistered, the count would sit at 0 for a second. No
      @supports test exists for it; allow-discrete shipped after it in every engine. */
-  @supports (transition-behavior: allow-discrete) {
-    .bd-countdown--hero .bd-countdown__num {
-      animation: bd-count 1.6s var(--ease-settle) 0.3s both;
-    }
-  }
 
   .bd [data-reveal-state="pending"] {
     opacity: 0;
@@ -4956,10 +4830,8 @@
 
   .bd::before,
   .bd-bloom,
-  .bd-decoframe,
   .bd-masthead__menu,
-  .bd-masthead__motto,
-  .bd-hero__count {
+  .bd-masthead__motto {
     display: none !important;
   }
 

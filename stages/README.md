@@ -46,7 +46,7 @@ Where each page comes from, and how:
   `https://kendrick.wedding`: what anyone with the link is served today.
 - **Guest and admin pages** cannot be seen in production without a real account,
   so they come from the same code run as the app's test server, signed in as the
-  seeded fixture household or admin (docs/ops/demos.md, "the test server").
+  seeded fixture household or admin (`npm run test:e2e:server` starts the same server).
 - **Every design** is captured with `?theme=<id>`. Botanical Deco is production's
   and comes first; a design that renders a page no differently (the admin
   console) is not stored twice.
@@ -198,8 +198,13 @@ How it fits together:
   included, and a 404 for any page the sitemap lacks. `dev.` gets the hub at `/` and nothing
   else: every other path there is a 404, never the wedding app under a second name. Outside
   production, `/<stage>/…` and `/stages` work on any host. The assembled files are never served
-  at `/_stages/…` directly, so kendrick.wedding itself never shows them. `src/proxy.ts` steps
-  aside for these requests, and every response is `X-Robots-Tag: noindex`.
+  at `/_stages/…` directly, so kendrick.wedding itself never shows them. Every response is
+  `X-Robots-Tag: noindex`.
+- **Never public.** The stages redraw the guest and admin pages with their headings readable, on
+  addresses that take no sign-in. Deployed (on Vercel), `src/proxy.ts` answers every stage request
+  with 404 until `STAGES_PASSWORD` is set, and then asks for it with the browser's own password
+  prompt (any user name). A local checkout and CI serve them without one
+  (`src/lib/stage-access.ts`).
 - **Links need no configuration.** The stage bar and the hub work out every link from the
   address you are on (`stageHref()` in `01-sitemap/lib/pipeline.ts`). On
   `sitemap.dev.kendrick.wedding`, "Wireframe" is `wireframe.dev.kendrick.wedding` and "Real" is
@@ -216,8 +221,7 @@ How it fits together:
   matcher. `npm run stages:probe` asks a running app for the hub and every stage at both
   addresses, every script, stylesheet and font they reference, and the 404s (the hub host's other
   paths, `/_stages/…`, an unknown stage page). CI runs it against `next start` (`stages.yml`,
-  job 5). `docs/demos/stages-by-subdomain.mp4` and `stages-by-path.mp4` are the same walk,
-  recorded in a browser (`npm run demos:stages`, docs/ops/demos.md).
+  job 5).
 - **Domains.** `dev.kendrick.wedding` and `*.dev.kendrick.wedding` belong on the wedding project.
   kendrick.wedding is on Vercel's nameservers, so the wildcard needs no DNS work.
   `npm run deploy:vercel` attaches both (step 7, "Stage domains"), and never takes a stage host

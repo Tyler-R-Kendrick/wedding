@@ -12,7 +12,7 @@ import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type {
   AdventureCard, FaqView, HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary, StorySectionView, TextBlockView, VenueFactView,
-  VenueSpaceView, WeddingEventView,
+  VenueSpaceView,
 } from '@/domain/content/views';
 import type { Citation } from '@/contracts/provenance';
 import type { HotelRecommendation } from '@/domain/travel';
@@ -205,8 +205,6 @@ export interface ContentKit {
   OutletList: (p: { fields: OperationalFieldView[]; label: string }) => ReactNode;
   /** Cited statements (`li#fact-<slug>`). */
   FactList: (p: { facts: VenueFactView[]; label: string }) => ReactNode;
-  /** The wedding-day skeleton: times and rooms only as placeholders. */
-  Programme: (p: { events: WeddingEventView[]; venueName: string; startNumber: number }) => ReactNode;
   /** FAQ entries; questions are headings under the section heading. */
   FaqList: (p: { entries: FaqView[]; labelFor: (route: string) => string }) => ReactNode;
   /** Static search results (`#search-results`, polite live region). */

@@ -4,6 +4,7 @@ import type { GalleryPage } from '@/capabilities/media';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { hasEntitlement } from '@/contracts/principal';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 import { recipes } from '../_recipes';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,8 @@ const COPY = {
 export default async function PhotosPage() {
   const principal = await currentPrincipal();
   if (principal.kind === 'anonymous') redirect(throughSignIn('/photos'));
+  // Photos and video open on the wedding day; until then a guest is sent to their dashboard.
+  await requireOpenNow(principal, 'photos');
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', {}, principal);
   // "Nothing to show yet" is a statement about the albums; a failure to read them (a rate limit, the
   // database) is not that, and goes to the error page, which offers to try again.

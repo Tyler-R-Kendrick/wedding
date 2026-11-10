@@ -83,23 +83,6 @@ export function Monogram({ className }: { className?: string }) {
   );
 }
 
-/**
- * The stepped Deco frame around the monogram at the edge of the moss and journey panels: an
- * elongated hexagon drawn twice, one stroke inside the other, stretching to whatever height the
- * panel's real content gives it.
- */
-export function DecoFrame({ className }: { className?: string }) {
-  return (
-    <span className={`bd-decoframe${className ? ` ${className}` : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 64 240" preserveAspectRatio="none" focusable="false">
-        <path d="M32 1L63 20V220L32 239L1 220V20Z" fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        <path d="M32 9L56 24V216L32 231L8 216V24Z" fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <Monogram />
-    </span>
-  );
-}
-
 function NavLink({ item, nav, className, short = false }: { item: NavItem; nav: NavProps['nav']; className: string; short?: boolean }) {
   const label = short ? shortLabel(item.label) : item.label;
   if (item.external) {

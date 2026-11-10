@@ -1,6 +1,10 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { page as sitemapPage, visibleIn, type PageId } from '@wedding/sitemap';
 import type { Principal } from '@/contracts/principal';
+import { getLifecycleView } from '@/domain/lifecycle';
 import { GUEST_PORTAL, guestPortalSignInDoor, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
+import { PREVIEW_HEADER } from '@/themes/routes';
 
 type SearchParams = Record<string, string | string[] | undefined> | Promise<Record<string, string | string[] | undefined>>;
 
@@ -26,6 +30,25 @@ export async function requireSignedIn(principal: Principal, pathname: string, se
   if (principal.kind !== 'anonymous') return;
   const search = searchParams ? searchString(await searchParams) : '';
   redirect(guestPortalSignInDoor(pathname, search));
+}
+
+/**
+ * A page a guest cannot use yet sends them to their dashboard: photos and uploads before the wedding
+ * day, gifts before the RSVP is open. When each opens is the sitemap's `visibleFrom`, the same field
+ * that keeps its link out of the navigation until then, so the link and the page cannot disagree.
+ *
+ * It is the page's own check: a typed or bookmarked address arrives here the same as a tapped one.
+ * An administrator is not turned away (they prepare these pages before guests see them), and one
+ * previewing a later state, or browsing as a guest in it, sees what a guest will see then.
+ *
+ * Call it after `requireSignedIn` (or the page's own sign-in redirect): a signed-out reader is sent
+ * to sign in first, and is not told which pages exist yet.
+ */
+export async function requireOpenNow(principal: Principal, pageId: PageId): Promise<void> {
+  if (principal.kind !== 'guest') return;
+  const preview = (await headers()).get(PREVIEW_HEADER);
+  const lifecycle = await getLifecycleView({ principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) });
+  if (!visibleIn(sitemapPage(pageId), lifecycle.state)) redirect(GUEST_PORTAL.root);
 }
 
 /**

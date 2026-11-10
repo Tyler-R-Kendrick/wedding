@@ -18,4 +18,3 @@ workspace, media slots). Media: `public/media/botanical-deco/` (manifest with pr
 `public/assets/art/botanical-deco/` (original S|T monogram, schematic skyline, Deco rules).
 Scripts: `scripts/botanical-deco-media.mjs`, `scripts/art/botanical-deco.mjs`.
 
-Recordings of the built pages: [`docs/demos/`](../../demos/README.md).

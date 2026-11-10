@@ -13,8 +13,9 @@
  *                  with the link is served today.
  *   guest, admin   production cannot show these without a real account, so they come from the same
  *                  code run as the app's test server (--app, default http://localhost:3331), signed in
- *                  as the seeded fixture household or admin. Start it as docs/ops/demos.md does
- *                  ("the test server": NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET).
+ *                  as the seeded fixture household or admin. Start it with the settings
+ *                  `testServerEnv` gives it in scripts/test-server-specs.mjs (NODE_ENV=test,
+ *                  SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET).
  * Each design is captured with `?theme=<id>` in a browser context of its own. A patterned page
  * (`/our-adventures/[slug]`) is captured at the first real instance its parent page links to.
  *

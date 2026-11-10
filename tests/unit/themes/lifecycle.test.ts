@@ -244,4 +244,11 @@ describe('admin lifecycle preview', () => {
     expect(resolveLifecycle({ ...base, principal: admin, preview: { value: 'bogus', source: 'query' } }).preview).toBeNull();
     expect(resolveLifecycle({ ...base, principal: admin, preview: null }).state).toBe('TEASER');
   });
+
+  it('reads an override for the request without touching the published state; an admin preview still wins', () => {
+    const base = { persisted: 'TEASER' as const, secret: SECRET, now, preview: null };
+    expect(resolveLifecycle({ ...base, principal: guest, override: 'WEDDING_DAY' })).toMatchObject({ state: 'WEDDING_DAY', mode: 'operate', persistedState: 'TEASER', preview: null });
+    expect(resolveLifecycle({ ...base, principal: guest, override: null }).state).toBe('TEASER');
+    expect(resolveLifecycle({ ...base, principal: admin, override: 'WEDDING_DAY', preview: { value: 'ARCHIVE', source: 'cookie' } }).state).toBe('ARCHIVE');
+  });
 });

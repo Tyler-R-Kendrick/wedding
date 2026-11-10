@@ -1,6 +1,6 @@
 # Design critique — `<target>` — `<theme>` — YYYY-MM-DD
 
-> Copy to `docs/design/critiques/<YYYY-MM-DD>-<target>-<theme>.md`. Produced by
+> Attach to the pull request (not committed). Produced by
 > the `design-review` skill or the `design-reviewer` agent; never by the
 > builder. One critique per theme. Rubric: `wedding-site-standards` §5.
 

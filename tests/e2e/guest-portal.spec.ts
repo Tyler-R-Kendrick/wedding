@@ -237,7 +237,8 @@ test.describe('guest portal navigation', () => {
 
   test('the old addresses bring a signed-in guest to where their content went', async ({ browser }) => {
     test.setTimeout(90_000);
-    const ctx = await contextAs(browser, 'A1');
+    // Seen with the RSVP open, so the registry's own page is where its old address ends.
+    const ctx = await contextAs(browser, 'A1', { lifecycle: 'RSVP_OPEN' });
     const page = await ctx.newPage();
     for (const [source, destination] of [
       ['/travel', '/guests/travel'],
@@ -261,6 +262,32 @@ test.describe('guest portal navigation', () => {
       expect((await page.request.get(gone, { maxRedirects: 0 })).status(), gone).toBe(404);
     }
     await ctx.close();
+  });
+
+  test('a page that is not open yet sends a guest to the dashboard, typed address or not', async ({ browser }) => {
+    test.setTimeout(90_000);
+    const CLOSED = { '/gifts': 'RSVP_OPEN', '/photos': 'WEDDING_DAY', '/photos/guest-uploads': 'WEDDING_DAY', '/media/upload': 'WEDDING_DAY', '/media/mine': 'WEDDING_DAY', '/media/search': 'POST_WEDDING' } as const;
+    // Today (the published state on this server is before the invitations): none of them opens.
+    const today = await contextAs(browser, 'A1');
+    const page = await today.newPage();
+    for (const path of Object.keys(CLOSED)) {
+      await page.goto(path);
+      await expect(page, `${path} before its day`).toHaveURL(/\/guests$/);
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Welcome');
+    }
+    await today.close();
+    // On its day each opens, and the ones due later still do not.
+    for (const state of ['RSVP_OPEN', 'WEDDING_DAY', 'POST_WEDDING'] as const) {
+      const ctx = await contextAs(browser, 'A1', { lifecycle: state });
+      const then = await ctx.newPage();
+      const order = ['RSVP_OPEN', 'WEDDING_DAY', 'POST_WEDDING'];
+      for (const [path, opens] of Object.entries(CLOSED)) {
+        await then.goto(path);
+        if (order.indexOf(opens) <= order.indexOf(state)) await expect(then, `${path} in ${state}`).toHaveURL(new RegExp(`${path}$`));
+        else await expect(then, `${path} in ${state}`).toHaveURL(/\/guests$/);
+      }
+      await ctx.close();
+    }
   });
 
   test('signed-out /guests/travel goes to sign-in with next', async ({ page }) => {

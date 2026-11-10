@@ -45,10 +45,22 @@ const UNSERVED_DATA_FILES = ['/media/botanical-deco/manifest.json', '/assets/att
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The browser suites run against `next dev` with NODE_ENV=test and compile every route in one
+  // burst. Nothing in that run reads a source map, and building them was a third of the compiler's
+  // memory (8.9 GB -> 5.9 GB over the same 34 routes, measured cold). A developer's own `next dev`
+  // keeps them.
+  ...(process.env.NODE_ENV === 'test' ? { experimental: { turbopackSourceMaps: false, turbopackInputSourceMaps: false, serverSourceMaps: false } } : {}),
   reactStrictMode: true,
   ...(deploymentSiteUrl ? { env: { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } } : {}),
-  // Native / wasm / worker-based packages must stay outside the server bundle.
-  serverExternalPackages: ['@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm'],
+  // Loaded by Node at run time, not compiled into the server bundle. The first line has to be
+  // (native, wasm or worker-based packages). The second is there for memory: every route reaches
+  // these libraries, and bundling them again for each route and layer was another third of the
+  // compiler's footprint (5.9 GB -> 4.2 GB over the same 34 routes) for no gain, since none of
+  // them needs a bundler. Server-side only: the browser bundle is unaffected.
+  serverExternalPackages: [
+    '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm',
+    'better-auth', '@better-auth/passkey', '@better-auth/drizzle-adapter', 'ai', 'zod', 'heic-convert', 'exifr', 'file-type', '@vercel/connect', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner',
+  ],
   // Migrations are read from disk at runtime (db:migrate, dev auto-migrate).
   outputFileTracingIncludes: { '/**': ['./src/db/migrations/**'] },
   async headers() {

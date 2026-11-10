@@ -67,15 +67,11 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-# Design-review screenshots are regenerable evidence, not source (plan: "screenshot artifacts, not committed").
-docs/design/critiques/screens/
+# Design-review reports and their screenshots are working notes for the change in hand, not source:
+# they are regenerable, they go stale with the next commit, and they had grown to 50 MB of the tree.
+.impeccable/critique/
 .vercel
 .env*
-
-# Demo recorder working files (scripts/demos/record.mjs); the encoded demos live in docs/demos
-demos/.out/
-demos/.webreel/
-demos/.webreel.local.json
 
 # The design pipeline's stages, assembled into the app by `npm run stages:assemble` (src/lib/stage-hosting.ts)
 public/_stages/

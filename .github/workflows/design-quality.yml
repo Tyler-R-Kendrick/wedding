@@ -211,149 +211,30 @@ jobs:
           RATE_LIMIT_BACKEND: db
           TRUSTED_PROXY_HOPS: '1'
 
-      - name: Swap for the dev server's warm-up peak
-        # Measured, not guessed. Warming every route the next step lists takes `next dev`
-        # (Turbopack) to ~13.8 GB resident, ~17 GB counting its transient peak, on a machine with
-        # 16 GB. Out of memory, the kernel takes the runner agent, and that is "the runner has
-        # received a shutdown signal": #38's PR run and two runs on #35 died that way inside the
-        # next step, with no other run in the repository at the time, so a repository-wide
-        # concurrency group was never the cure (it has since been removed). Reproduced in a 16 GB sandbox (the server died at 13.4 GB,
-        # on /admin/rsvp/export, 45 routes in) and fixed there by 10 GB of swap. Turbopack frees
-        # most of it once idle, so swap only has to carry the peak, not the steady state.
-        run: |
-          dir=/mnt
-          [ "$(df --output=avail -BG "$dir" | tail -1 | tr -dc 0-9)" -ge 20 ] || dir="$RUNNER_TEMP"
-          sudo swapoff -a || true
-          sudo fallocate -l 16G "$dir/ci-swapfile"
-          sudo chmod 600 "$dir/ci-swapfile"
-          sudo mkswap "$dir/ci-swapfile"
-          sudo swapon "$dir/ci-swapfile"
-          free -m
-
       - name: Identity, RSVP and security specs against a NODE_ENV=test server
-        # Two things exist only here, and both are deliberate:
-        #   * the dev inbox and fixtures route — refused outright under NODE_ENV=production
-        #     (security review S5), and on any hosted runner (CI/VERCEL) they additionally
-        #     require the DEV_INBOX_TOKEN bearer, which must be set on the SERVER as well as
-        #     on the test runner;
+        # Two things exist only on this server, and both are deliberate:
+        #   * the dev inbox and fixtures route, refused outright under NODE_ENV=production
+        #     (security review S5); on a hosted runner (CI/VERCEL) they also require the
+        #     DEV_INBOX_TOKEN bearer, set on the server and on the test runner alike;
         #   * the test-principal injector, which needs NODE_ENV=test exactly.
         # tests/security/** never ran in CI before this step existed, which is how a
         # cross-origin sign-out reached main with a passing suite asserting it was blocked.
-        run: |
-          npm run dev -- -p 3000 > "$RUNNER_TEMP/test-server.log" 2>&1 &
-          for _ in $(seq 1 60); do
-            curl -fsS -o /dev/null "http://localhost:3000/api/health" && break
-            sleep 2
-          done
-          curl -fsS -o /dev/null "http://localhost:3000/api/health" \
-            || { echo "::error::test server did not become ready"; cat "$RUNNER_TEMP/test-server.log"; exit 1; }
-          # A dev server compiles each route on first request; warm the journeys' routes so a cold
-          # compile cannot outlast a navigation timeout.
-          # /admin and the media surfaces were absent from this list until level 11, when this step
-          # failed on `signInViaUi(admin)`: Continue clicked, then a 5s wait for /admin that ended
-          # with the page still on /claim/verify — on the run AND its retry — while a concurrent
-          # request in another spec hit a 30s test timeout. Both are the shape of a server busy
-          # compiling, and /admin had never been requested; the level-11 journeys added load to the
-          # same dev server. That is the diagnosis, not a proof: it was not reproducible locally,
-          # where the suite passes either way. Adding the routes costs a few seconds and is what
-          # this list is for, so it is the first thing to try; if the step fails again the next
-          # suspect is worker contention rather than cold compiles.
-          #
-          # Level 14 turned that diagnosis into proof. `admin-console.spec.ts` walks EVERY href in
-          # the console index — 21 admin routes — and the step failed with
-          # `page.goto: net::ERR_ABORTED at /admin/rsvp` and, on retry, `/admin/content`: two routes
-          # this list did not have. Level 14 had added only its own six. Those cold compiles also
-          # starved the specs running beside them, which is why claim.spec and otp.spec — untouched
-          # by that level and green before it — began timing out on the same runner. The failing
-          # navigations name the unwarmed routes by URL, so this is no longer inference.
-          #
-          # EVERY admin route belongs here now, not just the ones a level happens to add: the walk
-          # visits all of them by construction, so a screen added without a line here re-creates the
-          # failure. The walk asserts `hrefs.length >= 20`, which is the tripwire.
-          #
-          # That tripwire has a blind spot, and it cost a run at level 16. The walk enumerates
-          # `#main .con-index a` — so it only covers routes reachable as a LINK from the console
-          # index. A `route.ts` export endpoint is never a link there, and neither are the media
-          # sub-pages, so `/admin/guests/export` stayed cold while `/admin/guests` beside it was
-          # warm. `idor.spec.ts` hit it and blew its 30s test budget compiling; on the retry the
-          # same contention took out a 5s `toHaveURL` in `claimViaUi`, two specs away. Measured
-          # locally against this same server: that test takes 26s cold and 5s warm.
-          #
-          # So when adding a route here, read `src/app`, not the console index — the walk cannot
-          # see what is not a link.
-          #
-          # Guest routes have the same blind spot, and the level-16 run showed it: with the admin
-          # exports warmed, `claim.spec.ts` went flaky on `page.goto('/sign-out')` — 30s test
-          # budget gone, then green on the retry. Six guest pages the specs navigate to were
-          # missing here. The list below is now every path any spec calls `page.goto` on, which is
-          # a rule that can be re-derived rather than remembered:
-          #   comm -23 <(grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u) <this list>
-          #
-          # `/api/session` is not a page but every page asks it: the account menu calls it on load
-          # to learn whether the reader is signed in. Left cold, its first compile landed mid-run
-          # and took `claim.spec`'s `page.goto('/sign-out')` past its 30s budget — the same
-          # starvation as above, from a route no `page.goto` names.
-          #
-          # Level 16 added two many-navigation specs to this step — `typography.spec.ts` (6 auth
-          # routes + 12 console routes, per project) and `quality-sweep.spec.ts` (4 guest routes,
-          # walked five times over, two designs). Every route either was already here or is added
-          # above (`/guests/ask-us`), and both specs carry a timeout proportional to their navigations
-          # rather than the 30s default, which is the other half of what level 14 learned.
-          for path in / /sign-in /sign-in/admin /sign-in/pending /sign-in/phone /admin /claim /claim/verify /claim/welcome /claim/passkey /step-up /rsvp /rsvp/attending /rsvp/meals \
-                      /trip /transportation /gifts /photos /photos/guest-uploads \
-                      /media/upload /media/mine /media/search /admin/ai \
-                      /admin/lifecycle /admin/audit /admin/jobs /admin/metrics /admin/providers /admin/flags \
-                      /admin/concierge /admin/content /admin/events /admin/gifts /admin/guests \
-                      /admin/households /admin/invitations /admin/media /admin/reservations /admin/rsvp \
-                      /admin/seating /admin/transport /admin/travel \
-                      /admin/guests/export /admin/rsvp/export \
-                      /admin/media/duplicates /admin/media/import /admin/media/metrics \
-                      /our-story /our-venue /sign-out \
-                      /our-adventures \
-                      /guests /guests/travel /guests/things-to-do /guests/things-to-do/starved-rock-state-park /guests/ask-us \
-                      /invite/warmup-token-0000000000000000000000 /api/dev/inbox /api/session \
-                      /api/capabilities/warmup /?preview=RSVP_OPEN \
-                      /admin/sitemap /credits \
-                      /our-adventures/starved-rock /our-venue/white-city-ballroom \
-                      /i/example /invite/example \
-                      /admin/content/story_sections /admin/content/story_sections/new /admin/content/story_sections/01SEED00000000000000000200 \
-                      /t/botanical-deco /t/botanical-deco/preview/RSVP_OPEN \
-                      /explore-caa /faq /things-to-do /wedding-day /registry \
-                      /sitemap.xml /api/health; do
-            curl -s -o /dev/null -m 120 "http://localhost:3000$path" || true
-          done
-          npx playwright test $(node -e "import('./scripts/check-spec-coverage.mjs').then(m => console.log(m.TEST_SERVER_SPECS.join(' ')))")
+        #
+        # The script is the whole step: it starts `next dev` with the test settings, warms every
+        # route a spec navigates to (WARM_ROUTES, with the reason each is there), runs the
+        # TEST_SERVER_SPECS, and stops the server. It is the same command a developer runs
+        # (`npm run test:e2e:server`), so the two cannot drift.
+        #
+        # This step used to need 16 GB of swap. Warming eighty routes back to back took the dev
+        # server past 13 GB, and out of memory the kernel took the runner agent ("the runner has
+        # received a shutdown signal"). Three changes removed the need: the test server builds no
+        # source maps and no longer bundles the server libraries (next.config.ts), and the warm-up
+        # pauses whenever the server has grown 2.5 GB, which is when Turbopack lets go of what it
+        # compiled. The script prints the server's peak; it is about 6 GB.
+        run: node scripts/test-server-specs.mjs
         env:
           CI: 'true'
-          NODE_ENV: test
-          # Playwright treats the server above as external and does not start its own.
-          BASE_URL: http://localhost:3000
-          SEED_TEST_FIXTURES: '1'
-          # Meals ship off until the menu is set; the RSVP journey exercises them, as a deploy will once it is.
-          FLAG_RSVP_MEALS: 'on'
-          FLAG_PHONE_SIGN_IN: 'on'
-          # CI-only placeholders. The dev bearer opens the dev routes on this runner only, and the
-          # test-auth secret enables the principal injector; both are refused on a production host.
-          DEV_INBOX_TOKEN: ci-only-dev-inbox-token-not-real
-          TEST_AUTH_SECRET: ci-only-test-auth-secret-not-real
-          # Level 10: the upload journey interrupts a MULTIPART part-2 PUT to prove resume works.
-          # Its largest fixture is ~4 MB, so at the 8 MB default nothing is multipart, the route
-          # interception never fires and the spec fails asserting 2 interruptions and seeing 0. A
-          # 1 MiB part size makes the fixture ~5 parts, which is the shape the journey is about.
-          MEDIA_PART_SIZE_MB: '1'
-          MEDIA_MULTIPART_THRESHOLD_MB: '1'
-          PGLITE_MEMORY: '1'
-          DB_AUTO_MIGRATE: '1'
-          DB_AUTO_SEED: '1'
-          LOG_FORMAT: json
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
-          CONFIRMATION_SECRET: ci-only-confirmation-secret-not-real
-          CRON_SECRET: ci-only-cron-secret-not-real-32-chars-minimum
-          STORAGE_SIGNING_SECRET: ci-only-storage-signing-secret-not-real
-          HEALTH_TOKEN: ci-only-health-token-not-real
-          BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-real
-          BETTER_AUTH_URL: http://localhost:3000
-          TRUSTED_PROXY_HOPS: '1'
+          PORT: '3000'
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()

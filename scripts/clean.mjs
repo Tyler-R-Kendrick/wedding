@@ -18,7 +18,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUTPUT = ['.next', 'test-results', 'playwright-report', 'coverage', 'demos/.out', 'demos/.webreel', 'demos/.webreel.local.json', '.impeccable/review', 'tsconfig.tsbuildinfo', 'stages/01-sitemap/.next', 'stages/02-wireframe/.next', 'stages/03-skeleton/.next', 'stages/04-placeholder/.next', 'stages/01-sitemap/out', 'stages/02-wireframe/out', 'stages/03-skeleton/out', 'stages/04-placeholder/out'];
+const OUTPUT = ['.next', 'test-results', 'playwright-report', 'coverage', '.impeccable/review', '.impeccable/critique', 'tsconfig.tsbuildinfo', 'stages/01-sitemap/.next', 'stages/02-wireframe/.next', 'stages/03-skeleton/.next', 'stages/04-placeholder/.next', 'stages/01-sitemap/out', 'stages/02-wireframe/out', 'stages/03-skeleton/out', 'stages/04-placeholder/out'];
 if (process.argv.includes('--data')) OUTPUT.push('.data');
 
 /** The argument vector of a process, as it was started (or as it renamed itself: `next-server (v…)`). */

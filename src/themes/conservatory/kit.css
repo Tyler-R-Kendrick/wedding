@@ -1909,20 +1909,6 @@
   color: var(--color-on-surface-muted);
 }
 
-/* ---------- order of the day ---------- */
-.cv-programme {
-  gap: var(--spacing-xl);
-  margin-block-start: var(--spacing-lg);
-}
-
-.cv-programme__stop {
-  align-items: start;
-}
-
-.cv-programme__name {
-  margin: 0 0 var(--spacing-sm);
-}
-
 /* ---------- the FAQ column ---------- */
 .cv-faq {
   display: grid;

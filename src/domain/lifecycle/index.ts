@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import type { Principal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
+import { testLifecycleOf } from '@/domain/testing/testPrincipal';
 import { getLifecycle as getLifecycleRow, getSiteSettings } from '@/db/repos/site';
 import { SEED_SITE } from '@/db/seed/seed';
 import { logger } from '@/lib/logger';
@@ -80,6 +81,7 @@ export async function getLifecycleView(opts: LifecycleOptions = {}): Promise<Lif
     note: lifecycle?.note ?? null,
     principal: opts.principal ?? ANONYMOUS,
     preview: opts.preview ?? null,
+    override: testLifecycleOf(opts.principal) ?? null,
     secret: getPreviewSecret,
     now: opts.now ?? nowInLifecycle(),
     weddingDateIso: site.weddingDate,

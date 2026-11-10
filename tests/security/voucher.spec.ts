@@ -63,7 +63,8 @@ test.describe('voucher security', () => {
     // themselves are read as a guest too: the registry, the dashboard, and the ride page. The ride
     // page is read without following its redirect — a guest with no benefit is sent on to Travel &
     // Stay, whose flight and hotel search asks for a head count, which is not a payment field.
-    const guest = principalHeaders('B1');
+    // Seen with the RSVP open, when the registry page is: before then `/gifts` is the dashboard.
+    const guest = principalHeaders('B1', undefined, undefined, 'RSVP_OPEN');
     const reads: { route: string; as: 'anonymous' | 'guest' }[] = [
       { route: '/gifts', as: 'anonymous' },
       { route: '/transportation', as: 'anonymous' },

@@ -15,6 +15,12 @@ export interface ResolveLifecycleInput {
   secret: string | (() => string);
   now: Date;
   weddingDateIso?: string;
+  /**
+   * A state to read instead of the published one, for this request only. Set by the test-principal
+   * injector alone (`testLifecycleOf`): a browser spec that needs the wedding day says so for its
+   * own guest instead of moving the one row every spec shares. An admin preview still wins.
+   */
+  override?: LifecycleState | null;
 }
 
 /**
@@ -41,7 +47,7 @@ export function resolveLifecycle(input: ResolveLifecycleInput): LifecycleView {
       if (parsed.ok) preview = { state: parsed.value.state, source: input.preview.source, expiresAt: parsed.value.expiresAt || null };
     }
   }
-  const state = preview?.state ?? persisted;
+  const state = preview?.state ?? input.override ?? persisted;
   const publishedAt = input.publishedAt ? new Date(input.publishedAt).toISOString() : null;
   return {
     state,

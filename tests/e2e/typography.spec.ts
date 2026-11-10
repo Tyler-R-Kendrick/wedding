@@ -241,7 +241,8 @@ test.describe('the 17px floor', () => {
     });
 
     test(`the guest routes · ${theme}`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
+      // On the wedding day, when every one of these pages is open (gifts and photos are not before).
+      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 }, lifecycle: 'WEDDING_DAY' });
       const page = await ctx.newPage();
       expect(await floorWalk(page, GUEST_ROUTES, theme, true), 'text under PRODUCT.md’s 17px floor').toEqual([]);
       await ctx.close();

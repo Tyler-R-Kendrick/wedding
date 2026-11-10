@@ -23,6 +23,8 @@ const guest = customPrincipalHeaders({
   householdId: IDS.householdC,
   actsFor: [IDS.C1],
   entitlements: ['upload_media', 'view_private_media'],
+  // Photo search opens once the wedding is over; before then the page sends a guest home.
+  lifecycle: 'POST_WEDDING',
 });
 const aiAdmin = customPrincipalHeaders({ kind: 'admin', adminId: IDS.admin, entitlements: ['admin_media', 'admin_ai', 'admin_lifecycle', 'upload_media'] });
 

@@ -46,7 +46,11 @@ test.describe('gifts', () => {
       // Signed out, the registry is a door to sign in; it is behind the account menu.
       await page.goto(`/gifts?theme=${theme}`);
       await expect(page).toHaveURL(/\/sign-in\?next=%2Fgifts$/);
+      // Gifts open with the RSVP. Before then the address sends a guest to their dashboard.
       await page.setExtraHTTPHeaders(principalHeaders('A1'));
+      await page.goto(`/gifts?theme=${theme}`);
+      await expect(page).toHaveURL(/\/guests$/);
+      await page.setExtraHTTPHeaders(principalHeaders('A1', undefined, undefined, 'RSVP_OPEN'));
       await page.goto(`/gifts?theme=${theme}`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
       const card = page.locator('article[data-handoff-provider="theknot"]');

@@ -9,13 +9,16 @@
  * bucket, and otp.spec's "a second client keeps its own allowance" fails for a reason that has
  * nothing to do with the code under test.
  *
- * TEST_SERVER_ENV and WARM_ROUTES mirror the CI step (.github/workflows/design-quality.yml);
- * tests/unit/agent/test-server-specs.test.ts fails when the two drift. With no arguments this warms
- * every route and runs every TEST_SERVER_SPECS file, like CI. That warm-up peaks near 14 GB of
- * `next dev` (the CI step adds swap for it), so on a laptop name the specs you want: only the routes
- * those files mention, and the pages every journey passes through, are warmed first. Skipping the
- * warm-up altogether is not an option — a cold compile of `/` after sign-out outlasts claim.spec's
- * 5s `toHaveURL`, the flake the CI step's warm-up comment describes.
+ * The CI step (.github/workflows/design-quality.yml) runs this script, so there is one warm-up list
+ * and one set of server settings (tests/unit/agent/test-server-specs.test.ts). With no arguments
+ * it warms every route and runs every TEST_SERVER_SPECS file; name spec files to warm only the routes
+ * they mention and the pages every journey passes through. Skipping the warm-up altogether is not an
+ * option — a cold compile of `/` after sign-out outlasts claim.spec's 5s `toHaveURL`.
+ *
+ * The warm-up is paced by the server's own memory (`warmUp`). Turbopack holds what it compiled until
+ * it has been idle for a few seconds, so eighty routes requested back to back took the server past
+ * 13 GB, which is why CI once needed a swap file. Asked for in bursts with a pause whenever the server
+ * has grown by `WARM_HEADROOM_MB`, the same routes compile inside a few GB.
  *
  * The server starts on PORT (default 3100), and is stopped whatever happens. It never reaches a real
  * system: `next dev` loads `.env` too, so every credential and database setting there is blanked
@@ -59,7 +62,14 @@ export function testServerEnv(port) {
   };
 }
 
-/** Every path a spec navigates to, plus /api/session (the CI step says why each one is here). */
+/**
+ * Every path a spec navigates to, plus the routes every page asks for (`/api/session`). A dev server
+ * compiles a route on its first request, and a cold compile in the middle of a run outlasts a
+ * navigation timeout, in that spec and in the ones running beside it. Read `src/app` when adding a
+ * route, not the console index: an export `route.ts` or a media sub-page is never a link there. The
+ * list can be re-derived:
+ *   grep -rhoE "page\.goto\(\s*'/[a-z0-9/_-]*'" tests/ | grep -oE "/[a-z0-9/_-]*" | sort -u
+ */
 export const WARM_ROUTES = [
   '/', '/sign-in', '/sign-in/admin', '/sign-in/pending', '/sign-in/phone', '/admin', '/claim', '/claim/verify', '/claim/welcome', '/claim/passkey', '/step-up', '/rsvp', '/rsvp/attending', '/rsvp/meals',
   '/trip', '/transportation', '/gifts', '/photos', '/photos/guest-uploads',
@@ -182,6 +192,63 @@ function groupRunning(pgid) {
   return false;
 }
 
+/** Resident memory of every process in the group, in MB. Null where there is no /proc to read. */
+export function groupRssMb(pgid) {
+  if (!existsSync('/proc')) return null;
+  let kb = 0;
+  for (const pid of readdirSync('/proc').filter((d) => /^\d+$/.test(d))) {
+    try {
+      if (parseStat(readFileSync(`/proc/${pid}/stat`, 'utf8')).pgrp !== pgid) continue;
+      kb += Number(/^VmRSS:\s+(\d+)/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1] ?? 0);
+    } catch {
+      // gone
+    }
+  }
+  return Math.round(kb / 1024);
+}
+
+/** How far the server may grow during the warm-up before it is given time to let go. */
+export const WARM_HEADROOM_MB = Number(process.env.WARM_HEADROOM_MB ?? 2500);
+
+/**
+ * Requests each route once, pausing whenever the server has grown `headroomMb` past where it last
+ * settled. A pause ends when the memory has come down and stopped moving (the compiler has written
+ * its snapshot and dropped what it held), or after `maxPauseMs`. Returns the highest reading.
+ *
+ * `memory` and `pause` are parameters so the pacing can be tested without a server.
+ *
+ * @param {readonly string[]} routes
+ * @param {(route: string) => Promise<unknown>} request
+ * @param {{ memory: () => number | null, headroomMb?: number, pause?: (ms: number) => Promise<unknown>, maxPauseMs?: number, stepMs?: number, stop?: () => boolean }} options
+ */
+export async function warmUp(routes, request, { memory, headroomMb = WARM_HEADROOM_MB, pause = sleep, maxPauseMs = 30_000, stepMs = 500, stop = () => false }) {
+  let floor = memory();
+  let peak = floor ?? 0;
+  for (const route of routes) {
+    if (stop()) break;
+    await request(route);
+    let now = memory();
+    if (now === null || floor === null) continue;
+    peak = Math.max(peak, now);
+    if (now - floor <= headroomMb) continue;
+    let high = now;
+    let steady = 0;
+    for (let waited = 0; waited < maxPauseMs && !stop(); waited += stepMs) {
+      await pause(stepMs);
+      const next = memory();
+      if (next === null) break;
+      peak = Math.max(peak, next);
+      high = Math.max(high, next);
+      // Released: well under the high-water mark, and no longer falling.
+      steady = high - next > headroomMb / 2 && Math.abs(next - now) < 50 ? steady + 1 : 0;
+      now = next;
+      if (steady >= 2) break;
+    }
+    floor = now;
+  }
+  return peak;
+}
+
 async function main(args) {
   const { specs, passThrough } = splitArgs(args);
   const missing = specs.filter((s) => !existsSync(path.resolve(ROOT, s.replace(/(:\d+)+$/, ''))));
@@ -243,16 +310,21 @@ async function main(args) {
       return 1;
     }
     const warm = routesToWarm(specs.flatMap(specFiles));
-    console.log(`warming ${warm.length} route${warm.length === 1 ? '' : 's'}${specs.length ? '' : ' (a full run peaks near 14 GB; name spec files to warm only theirs)'}`);
-    for (const route of warm) {
-      if (interrupted) return 130;
-      await fetch(`${env.BASE_URL}${route}`, { signal: AbortSignal.timeout(120_000) }).catch(() => {});
-    }
+    console.log(`warming ${warm.length} route${warm.length === 1 ? '' : 's'}`);
+    const memory = () => groupRssMb(server.pid);
+    let peak = await warmUp(warm, (route) => fetch(`${env.BASE_URL}${route}`, { signal: AbortSignal.timeout(120_000) }).catch(() => {}), { memory, stop: () => interrupted });
+    if (interrupted) return 130;
+    if (memory() !== null) console.log(`warm: the server peaked at ${peak} MB and holds ${memory()} MB`);
+    // The same reading through the run, so a log says what the server needed and not only that it fit.
+    const watch = setInterval(() => (peak = Math.max(peak, memory() ?? 0)), 2000);
+    watch.unref();
     const playwright = spawn('npx', ['playwright', 'test', ...(specs.length ? specs : TEST_SERVER_SPECS), ...passThrough], { cwd: ROOT, env, stdio: 'inherit' });
     const status = await new Promise((resolve) => {
       playwright.on('error', () => resolve(1));
       playwright.on('exit', (code) => resolve(code ?? 1));
     });
+    clearInterval(watch);
+    if (memory() !== null) console.log(`test server: peak ${peak} MB resident over the run`);
     return interrupted ? 130 : status;
   } finally {
     await stop();

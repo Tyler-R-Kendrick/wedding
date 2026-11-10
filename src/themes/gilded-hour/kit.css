@@ -2155,49 +2155,6 @@
   color: var(--color-on-surface-muted);
 }
 
-/* order of the day: acts on the spine */
-.gh-programme {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.gh-programme__act {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: var(--spacing-sm);
-  padding-block-start: var(--spacing-3xl);
-}
-
-.gh-programme__act:first-child {
-  padding-block-start: 0;
-}
-
-.gh-programme__act::before {
-  content: "";
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 50%;
-  width: 1px;
-  height: calc(var(--spacing-3xl) - var(--spacing-md));
-  background: var(--color-gold);
-}
-
-.gh-programme__act:first-child::before {
-  display: none;
-}
-
-.gh-programme__act > .gh-h {
-  margin: 0;
-}
-
-.gh-programme__act > .gh-meta,
-.gh-programme__act > .gh-prose {
-  width: 100%;
-  max-width: var(--gh-measure);
-}
-
 /* the FAQ column */
 .gh-faq {
   max-width: var(--gh-prose);

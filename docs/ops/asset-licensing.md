@@ -142,12 +142,11 @@ this repository is public (`docs/content/paired-timeline.md`).
 
 ### 1e. Demo recordings
 
-`docs/demos/` holds screen recordings of the site made by
-`scripts/demos/record.mjs` (see [demos](demos.md)). They show the pages as they
-are, so they contain the images above: the licensed photographs keep the
-credits listed in `public/assets/ATTRIBUTIONS.md`, and the portraits remain
-generated portrayals. A recording is never cut to present a portrait as a
-photograph, and the guest recording uses the seeded test household only.
+None are kept. The screen recordings that used to live in the repository were
+removed in November 2026 along with the scripts that made them. A recording
+made in future shows the pages as they are, so it contains the images above
+and carries the same credits; it is never cut to present a portrait as a
+photograph, and a guest recording uses the seeded test household only.
 
 ### 1f. Cartographic data: the Our Adventures atlas
 

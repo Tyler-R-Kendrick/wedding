@@ -45,7 +45,7 @@ level opens, but numbering is stable.
 ### Rules
 
 1. **Adversarial self-review between every level.** No PR opens without
-   `docs/reviews/PR-NN-self-review.md` (template in
+   a self-review (in the pull request since November 2026; template in
    `docs/sdlc/templates/self-review.md`) written by an agent other than the
    builder where possible, running `/code-review high`, `/security-review`,
    `design-reviewer` per theme, and `impeccable-finish-reviewer`.
@@ -84,7 +84,7 @@ survives. Parallel work has no merge conflicts by construction.
 level changes. Ownership manifests need discipline; an agent that strays
 costs a commit rollback.
 
-**Follow-ups.** `docs/reviews/` directory created at level 03. Branch
+**Follow-ups.** A reviews directory was created at level 03 (removed in November 2026, when the build was long finished; a review now stays with its pull request). Branch
 protection with required checks once gates exist.
 
 ## Alternatives considered

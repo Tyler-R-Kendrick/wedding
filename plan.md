@@ -67,8 +67,7 @@ not exist, or describing the reader as somebody else.
 | #25 `3c43d80` | Greeted by the household manager's name; "Answered for everyone" after one person |
 | #26 | "Claim your invitation" — to a guest who had claimed; travel tools "not live" one tap from the live travel tools |
 
-This is the most transferable finding of the whole run and is written up in
-`docs/evidence/final-validation.md`.
+This is the most transferable finding of the whole run.
 
 ### What is left, and it is not code
 
@@ -130,7 +129,7 @@ WebMCP tools ───────┘        validate → authorize → step-up 
 
 It is closed. The two blockers and eighteen should-fixes landed before PR 03
 opened; the nits deliberately deferred (N2, N8–N11, N15 CSP/HSTS, N17, N18, N20,
-N21) landed at level 15, and `docs/reviews/PR-19-self-review.md` records which.
+N21) landed at level 15.
 The current security posture — what is worth stealing, what stops it, and the
 test that fails if the control goes away — is
 `docs/architecture/threat-model.md`, not this section.

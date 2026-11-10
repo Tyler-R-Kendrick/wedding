@@ -4,6 +4,7 @@ import type { MyUploadItem } from '@/capabilities/media';
 import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { UploadList } from '@/components/media/UploadList';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,7 @@ export const metadata: Metadata = { title: 'My uploads', robots: { index: false,
 
 export default async function MyUploadsPage() {
   const principal = await currentPrincipal();
+  await requireOpenNow(principal, 'media-mine');
   const result = principal.kind === 'guest' ? await invokeForRequest<{ items: MyUploadItem[] }>('list_my_uploads', { limit: 100 }, principal) : null;
   return (
     <MediaPage

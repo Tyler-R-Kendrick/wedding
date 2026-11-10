@@ -219,7 +219,7 @@ See brief §6 and ADR-0011. Every operational record carries `sourceId`,
 | Accessibility | Every surface | Axe 0 serious/critical; keyboard walk documented |
 | Performance | Every surface on preview | LCP < 2.5 s on a mid-range phone; CLS < 0.1; fonts ≤ 3 files per theme |
 | Domain checklist | Every page | `wedding-site-standards` §8 all ticked |
-| Self-review | Every level | `docs/reviews/PR-NN-self-review.md` verdict READY |
+| Self-review | Every level | Self-review in the pull request, verdict READY |
 
 ## 11. Open questions
 

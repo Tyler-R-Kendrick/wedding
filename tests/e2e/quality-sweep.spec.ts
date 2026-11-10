@@ -140,7 +140,8 @@ test.describe('prefers-reduced-motion', () => {
   test.setTimeout(NAV_HEAVY);
   for (const theme of THEMES) {
     test(`the guest tree animates nothing above 200ms under reduce (${theme})`, async ({ browser }) => {
-      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 } });
+      // On the wedding day, so the upload page (closed to guests before it) is the page measured.
+      const ctx = await contextAs(browser, 'A1', { viewport: { width: 390, height: 844 }, lifecycle: 'WEDDING_DAY' });
       const page = await ctx.newPage();
       await page.emulateMedia({ reducedMotion: 'reduce' });
       for (const route of [...GUEST_ROUTES, '/media/upload']) {

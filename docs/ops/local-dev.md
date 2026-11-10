@@ -96,10 +96,14 @@ npm run test:e2e:server   # all of them, after warming every route, as CI does
 npm run test:e2e:server -- tests/e2e/rsvp.spec.ts --project=mobile --headed   # other arguments go to Playwright
 ```
 
-Specs can be files, `file:line` filters or directories. The no-argument run warms every route first,
-and `next dev` peaks near 14 GB doing it (CI adds swap for it), so on a laptop name the specs you
-want. The script's settings and warm-up list mirror the CI step, and
-`tests/unit/agent/test-server-specs.test.ts` fails when they drift.
+Specs can be files, `file:line` filters or directories. The no-argument run warms every route first;
+name the specs you want and only their routes are warmed. CI runs this same script, so there is one
+warm-up list and one set of server settings.
+
+The warm-up is paced by the server's memory: it pauses whenever `next dev` has grown 2.5 GB
+(`WARM_HEADROOM_MB`) and resumes once Turbopack has let go of what it compiled. A full warm-up peaks
+near 6 GB that way, where the same routes requested back to back took the server past 13 GB. The
+script prints the server's peak at the end of a run.
 
 The server never reaches a real system. `next dev` loads `.env` too, so the script blanks every
 credential and database setting there (`DATABASE_URL` and its Postgres aliases, `RESEND_*`, `S3_*`,

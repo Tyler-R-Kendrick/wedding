@@ -349,7 +349,9 @@ test('a signed-out visitor can open every public, gate and alias route', async (
 
 test('guest A1 can open every guest route', async ({ browser }) => {
   test.setTimeout(GUEST_MS);
-  const ctx = await contextAs(browser, 'A1' satisfies PrincipalName);
+  // After the wedding, when every guest page is open: before the day, photos, uploads and gifts send
+  // a guest to the dashboard, and the walk would be reading that page under their names.
+  const ctx = await contextAs(browser, 'A1' satisfies PrincipalName, { lifecycle: 'POST_WEDDING' });
   const page = await ctx.newPage();
   await walk(page, 'guest');
   await ctx.close();

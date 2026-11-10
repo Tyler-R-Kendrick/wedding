@@ -551,64 +551,6 @@ function FactList({ facts, label }: Parameters<ContentKit['FactList']>[0]) {
   );
 }
 
-function Programme({ events, venueName, startNumber }: Parameters<ContentKit['Programme']>[0]) {
-  return (
-    <ol className="bd-programme" aria-label="Order of the day">
-      {events.map((e, i) => (
-        <li key={e.id} id={e.id} className="bd-programme__act">
-          <DateTile iso={e.dateIso} />
-          <span className="sr-only">Part {startNumber + i}.</span>
-          <div className="bd-programme__body">
-          <h2 className="bd-h bd-h--2">{e.name}</h2>
-          <MetaList
-            items={[
-              {
-                /*
-                 * One fact per line when the other half is a placeholder, never joined by a middot.
-                 * `Chicago Athletic Association Hotel · Sara + Tyler are still writing this: which
-                 * room` reads as one run-on claim, and at 390 the separator lands alone on a line
-                 * between them. `WeekendPage` fixed the same defect at level 09; this is the themed
-                 * copy of it, on the page that carries the wedding's own facts.
-                 */
-                label: 'When',
-                value: e.timeLabel.placeholder ? (
-                  <>
-                    <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
-                    <Block block={e.timeLabel} />
-                  </>
-                ) : (
-                  <>
-                    <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
-                    {' · '}
-                    <Block block={e.timeLabel} inline />
-                  </>
-                ),
-              },
-              {
-                label: 'Where',
-                value: e.room.placeholder ? (
-                  <>
-                    {venueName}
-                    <Block block={e.room} />
-                  </>
-                ) : (
-                  <>
-                    {venueName}
-                    {' · '}
-                    <Block block={e.room} inline />
-                  </>
-                ),
-              },
-            ]}
-          />
-          <ProseBlock blocks={e.whatHappens} />
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 function FaqList({ entries, labelFor }: Parameters<ContentKit['FaqList']>[0]) {
   return (
     <div className="bd-faq">
@@ -695,7 +637,6 @@ export const content: ContentKit = {
   CapacityTable,
   OutletList,
   FactList,
-  Programme,
   FaqList,
   SearchResults,
   Provenance,
