@@ -190,8 +190,11 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
     const found = services.find((s) => typeof s.sid === 'string' && s.sid.startsWith('VA'))?.sid;
     if (found) return (this.service = found);
     const created = await this.call(`${VERIFY}/Services`, { method: 'POST', body: new URLSearchParams({ FriendlyName: SERVICE_NAME, CodeLength: '6' }) });
-    const json = (await created.json().catch(() => ({}))) as { sid?: string };
-    if (!created.ok || !json.sid) throw new TwilioUnavailable(`Twilio answered ${created.status} when asked to create a Verify service`);
+    const json = (await created.json().catch(() => ({}))) as { sid?: string; code?: number; message?: string };
+    if (!created.ok || !json.sid) {
+      // Twilio's own error code and message (never a credential), after how many services the list returned.
+      throw new TwilioUnavailable(`Twilio answered ${created.status} when asked to create a Verify service (code ${json.code ?? 'none'}: ${json.message ?? 'no message'}; the account listed ${services.length} service(s))`);
+    }
     return (this.service = json.sid);
   }
 
