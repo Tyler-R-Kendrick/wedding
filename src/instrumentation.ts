@@ -5,6 +5,10 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  // How long a cold start takes and where: the process's age when this hook ran (the platform and
+  // the framework), then our own libraries, then the database. One line per server start.
+  const boot = { beforeHookMs: Math.round(process.uptime() * 1000), librariesMs: 0, databaseMs: 0 };
+  const hookStarted = performance.now();
 
   // Before anything can call a model: a model named by a string must never reach Vercel's AI Gateway.
   const { refuseHostedModels } = await import('@/lib/ai/no-hosted-models');
@@ -17,6 +21,7 @@ export async function register() {
 
   const { installTestPrincipalResolver } = await import('@/domain/testing/testPrincipal');
   installTestPrincipalResolver();
+  boot.librariesMs = Math.round(performance.now() - hookStarted);
 
   // Seed once at boot, not lazily from one swarm's capability path.
   //
@@ -41,4 +46,7 @@ export async function register() {
     const { logger } = await import('@/lib/logger');
     logger.error({ err }, 'boot seed failed; capabilities will retry lazily');
   }
+  boot.databaseMs = Math.round(performance.now() - hookStarted) - boot.librariesMs;
+  const { logger } = await import('@/lib/logger');
+  logger.info({ boot }, 'server started');
 }
