@@ -23,8 +23,8 @@ import { TWILIO_VERIFY_POLICY } from './types';
  */
 export const DEFAULT_TWILIO_CONNECTOR = 'twilio/wedding';
 const VERIFY = 'https://verify.twilio.com/v2';
-/** What a text from a service this code creates says it is from: "Your Sara + Tyler verification code is …". */
-const SERVICE_NAME = 'Sara + Tyler';
+/** What a text from a service this code creates says it is from: "Your Sara and Tyler verification code is …". Letters and spaces only: Twilio refused "Sara + Tyler" (60200 Invalid parameter: FriendlyName). */
+const SERVICE_NAME = 'Sara and Tyler';
 
 type Subject = { type: 'app' } | { type: 'user'; id: string };
 export interface ConnectTokenAnswer {
@@ -190,8 +190,11 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
     const found = services.find((s) => typeof s.sid === 'string' && s.sid.startsWith('VA'))?.sid;
     if (found) return (this.service = found);
     const created = await this.call(`${VERIFY}/Services`, { method: 'POST', body: new URLSearchParams({ FriendlyName: SERVICE_NAME, CodeLength: '6' }) });
-    const json = (await created.json().catch(() => ({}))) as { sid?: string };
-    if (!created.ok || !json.sid) throw new TwilioUnavailable(`Twilio answered ${created.status} when asked to create a Verify service`);
+    const json = (await created.json().catch(() => ({}))) as { sid?: string; code?: number; message?: string };
+    if (!created.ok || !json.sid) {
+      // Twilio's own error code and message (never a credential), after how many services the list returned.
+      throw new TwilioUnavailable(`Twilio answered ${created.status} when asked to create a Verify service (code ${json.code ?? 'none'}: ${json.message ?? 'no message'}; the account listed ${services.length} service(s))`);
+    }
     return (this.service = json.sid);
   }
 

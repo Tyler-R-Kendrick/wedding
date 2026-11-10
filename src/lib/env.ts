@@ -68,6 +68,12 @@ const serverSchema = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
     z.array(z.email()),
   ),
+  /**
+   * The administrators' own mobile numbers, `email=phone` pairs separated by commas, put on their
+   * guest records so they can sign in by text (src/domain/guests/admin-phones.ts). Private: never
+   * in the repository.
+   */
+  ADMIN_PHONES: optionalString,
   /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
   HEALTH_TOKEN: optionalSecret(16),
   /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */

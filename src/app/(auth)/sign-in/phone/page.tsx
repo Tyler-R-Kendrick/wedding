@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { sendPhoneSignInCode } from '../../_lib/actions';
 import { currentPrincipal } from '../../_lib/invoke';
 import { isSafeReturnPath } from '@/domain/identity/routes';
@@ -12,9 +12,13 @@ import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign in with your phone', robots: { index: false, follow: false } };
 
-/** SMS sign-in wherever a text can be sent: Twilio configured or connected, or the mock locally (src/lib/phone-sign-in.ts). */
+/**
+ * SMS sign-in wherever a text can be sent: Twilio configured or connected, or the mock locally
+ * (src/lib/phone-sign-in.ts). Where no text can be sent the page does not exist: a 404, not a
+ * redirect, and nothing on the site links to it.
+ */
 export default async function PhoneSignInPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  if (!(await isPhoneSignInAvailable())) redirect('/sign-in');
+  if (!(await isPhoneSignInAvailable())) notFound();
   const sp = await searchParams;
   const error = errorCopy(sp.error);
   const principal = await currentPrincipal();

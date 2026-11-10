@@ -5,12 +5,14 @@ import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
 import { requireService } from '@/capabilities/services';
 import type { Db } from '@/db/client';
+import { ensureAdminPhones } from '@/domain/guests/admin-phones';
 import { findGuestsByPhone } from '@/domain/guests/repo';
 import { issueChallenge, type ChallengePayload } from '@/domain/identity/challenge';
 import { getOtpLockout, hashOtpIdentifier } from '@/domain/identity/otp';
 import { maskPhone, normalizePhoneE164 } from '@/domain/identity/phone';
 import { isSafeReturnPath } from '@/domain/identity/routes';
 import { afterResponse } from '@/lib/after-response';
+import { env } from '@/lib/env';
 import { isPhoneSignInAvailable } from '@/lib/phone-sign-in';
 import { authOf, challengeSecret, challengeStore, consumeLimits, holdToFloor, ipHashOf, logOtp, phoneBuckets, REQUEST_OTP_FLOOR_MS } from './identity/shared';
 
@@ -52,6 +54,8 @@ export const requestPhoneOtp = defineCapability<z.infer<typeof input>, RequestPh
     if (!e164) return err(new CapabilityError('validation', 'Enter a mobile number with area code.', { issues: [{ path: 'phone', message: 'Enter a valid US mobile number.' }] }));
     const next = isSafeReturnPath(i.next) ? i.next : undefined;
     const db = requireService<Db>(ctx, 'db');
+    // The couple's own numbers are on their guest records before anyone's number is looked up.
+    await ensureAdminPhones(db, env.ADMIN_PHONES).catch((e: unknown) => appServices(ctx).logger?.warn({ err: e instanceof Error ? e.message : 'unknown' }, 'admin phones not seeded'));
     const byGuest = (await findGuestsByPhone(db, e164)).filter((g) => g.kind !== 'child' && !g.isMinor);
     const guestIds = byGuest.map((g) => g.id);
     const phoneHash = hashOtpIdentifier(e164);
