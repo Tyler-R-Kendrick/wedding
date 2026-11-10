@@ -91,14 +91,14 @@ describe('the account menu', () => {
   });
 });
 
-describe('every design keeps the wedding out of its chrome for an anonymous reader', () => {
+describe('the design keeps the wedding out of its chrome for an anonymous reader', () => {
   it.each(THEME_IDS)('%s', (theme) => {
     const { Nav } = getTheme(theme).kit;
     const venue = toSiteFacts({ ...SEED_SITE }).venue;
     for (const state of LIFECYCLE_STATES) {
       // `signedIn: false` rather than the probe: the probe answers once per page load, and the test
       // above already spent this file's answer on a yes. The venue is handed over to show it is not used.
-      const { container, unmount } = render(<Nav nav={navFor(state, { currentPath: '/', signedIn: false, venue })} siteName="Sara + Tyler" homeLabel="Home" switcherEnabled={false} />);
+      const { container, unmount } = render(<Nav nav={navFor(state, { currentPath: '/', signedIn: false, venue })} siteName="Sara + Tyler" homeLabel="Home" />);
       const hrefs = [...container.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '');
       for (const href of WEDDING_PAGES) expect(hrefs, `${theme} ${state}: ${href}`).not.toContain(href);
       // Home, the two pages about the couple, and the way in. Nothing else, in any state.

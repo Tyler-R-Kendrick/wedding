@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * impeccable's rendered scan over the running site: every public and guest route, in every design,
- * at a phone, a tablet and two desktop widths.
+ * impeccable's rendered scan over the running site: every public and guest route, at a phone, a
+ * tablet and two desktop widths.
  *
  *   BASE_URL=http://localhost:3000 npm run slop:detect:rendered
- *   npm run slop:detect:rendered -- --viewports 390x844 --themes conservatory /gifts /guests/travel
+ *   npm run slop:detect:rendered -- --viewports 390x844 /gifts /guests/travel
  *
  * The source scan (`npm run slop:detect`, `check-design-drift.mjs`) reads CSS and JSX; it cannot
  * see a layout. The rendered scan can, and on 2026-09-23 it was the only check that found three
  * real bugs with everything else green: a nowrap provenance badge that pushed Things to Do (then
  * /share-an-adventure) off a 390px screen, an ivory script line reading 2.6:1 on the weekend photograph, and 89-102
- * character lines in three designs. (impeccable itself says so: "Next.js project detected … scan via
+ * character lines. (impeccable itself says so: "Next.js project detected … scan via
  * URL for best results".)
  *
  * Guest routes send an anonymous browser to sign in (or render a gate), and that is not the page. With
@@ -29,7 +29,6 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { THEME_IDS } from '../src/themes/registry.ts';
 import { principalHeaders } from '../tests/e2e/helpers/principal.ts';
 import { classify, format } from './check-design-drift.mjs';
 
@@ -49,7 +48,6 @@ const opt = (name, fallback) => {
   return value.split(',');
 };
 const viewports = opt('viewports', VIEWPORTS);
-const themes = opt('themes', [...THEME_IDS]);
 const base = (process.env.BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const secret = process.env.TEST_AUTH_SECRET;
 const routes = argv.length ? argv : [...PUBLIC_ROUTES, ...(secret ? GUEST_ROUTES : [])];
@@ -111,7 +109,7 @@ if (!exe) {
 }
 const proxy = secret ? await guestProxy() : null;
 const origin = proxy?.origin ?? base;
-const urls = themes.flatMap((t) => routes.map((r) => `${origin}${r}${r.includes('?') ? '&' : '?'}theme=${t}`));
+const urls = routes.map((r) => `${origin}${r}`);
 
 // A dev server compiles each route on first request; warm them so a cold compile is not a finding.
 for (const u of urls) await fetch(u).then((r) => r.arrayBuffer(), () => {});

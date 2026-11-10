@@ -3,40 +3,21 @@ import type { LifecycleState } from '@/contracts/lifecycle';
 import type { ContentKit, ContentRecipes } from './content-types';
 
 /**
- * Theme engine contracts (ADR-0009). One domain, several themes: routes, data, capabilities and
- * copy are theme-agnostic; a theme owns expression only. Every kit component has the same
- * props, accessible name, focus order and states in every theme; markup and CSS may differ.
+ * Theme engine contracts (ADR-0009). Routes, data, capabilities and copy are theme-agnostic; a theme
+ * owns expression only (markup and CSS behind one kit contract).
  *
  * `botanical-deco` is the design Sara and Tyler approved (docs/design/approved-botanical-deco/) and
- * the default. `gilded-hour` and `conservatory` were the two proposals it superseded; they stay as
- * explicit-preview compatibility surfaces (`?theme=gilded-hour`), never the ordinary experience.
+ * the only one. The registry, the kit contract and the `/t/[theme]` tree keep their shape, so a
+ * second design would be an addition rather than a rewrite.
  */
-export type ThemeId = 'botanical-deco' | 'gilded-hour' | 'conservatory';
+export type ThemeId = 'botanical-deco';
 
 export interface ThemeFontFile {
   family: string;
-  /** Public URL of the woff2 file (preloaded only for the active theme). */
+  /** Public URL of the woff2 file (preloaded by the layouts). */
   url: string;
   weight: string;
   style: 'normal' | 'italic';
-}
-
-/** Motion vocabulary per theme (design-doc §7). Both collapse to opacity-only ≤200 ms under reduced motion. */
-export interface MotionSpec {
-  pageEnter: string;
-  sectionReveal: string;
-  interaction: string;
-  dialog: string;
-  reducedMotion: string;
-}
-
-/** Structural signature, asserted by tests so the two themes stay structurally different. */
-export interface ThemeStructure {
-  layout: 'centered-axis' | 'left-weighted-sheet' | 'portrait-led-editorial-split';
-  navDesktop: 'frieze' | 'tag-rail' | 'monogram-masthead';
-  navMobile: 'elevator-panel' | 'menu-tag-and-two-action-bar' | 'monogram-sheet-and-action-bar';
-  sections: 'numbered-acts' | 'washes-and-fern-dividers' | 'photo-strips-and-colour-bands';
-  ornament: 'gold-geometry' | 'line-art-foliage' | 'edge-botanicals-and-gold-rules';
 }
 
 export interface ThemeMeta {
@@ -49,8 +30,6 @@ export interface ThemeMeta {
   /** DESIGN.md `neutral`, read from the generated tokens JSON (never a literal in TS). */
   themeColor: string;
   icon: { svg: string; apple: string };
-  structure: ThemeStructure;
-  motion: MotionSpec;
 }
 
 /* ------------------------------------------------------------------------------------------------
@@ -198,8 +177,6 @@ export interface PageFrame {
   details: WeddingDetails | null;
   lifecycle: LifecycleView;
   nav: NavModel;
-  /** FLAG_DESIGN_SWITCHER: kits render the switcher in the shell (nav, Menu sheet, footer) when true. */
-  switcherEnabled: boolean;
 }
 
 export interface HomeData extends PageFrame {
@@ -211,7 +188,7 @@ export type HomeAct = 'adventure' | 'place' | 'memory' | 'hospitality' | 'future
 export interface HomeSection {
   id: string;
   act: HomeAct;
-  /** Eyebrow (Gilded Hour) / specimen label (Conservatory): the five motifs in explore mode, a functional word otherwise. */
+  /** Eyebrow: the five motifs in explore mode, a functional word otherwise. */
   label: string;
   title: string;
   body: Copy;
@@ -315,7 +292,6 @@ export interface ShellProps {
 export interface NavProps {
   nav: NavModel;
   siteName: string;
-  switcherEnabled: boolean;
   /** "Today" replaces "Home" on WEDDING_DAY; guest portal uses "Guest Portal". */
   homeLabel: string;
   /** Masthead monogram target; defaults to `/`. */
@@ -326,7 +302,6 @@ export interface FooterProps {
   site: PublicSiteFacts;
   /** The date and the venue, for a signed-in reader only; null prints neither. */
   details: WeddingDetails | null;
-  switcher: ReactNode;
   rightsNote: string;
   printUrls: { label: string; url: string }[];
 }
@@ -376,7 +351,7 @@ export interface CardProps {
   children: ReactNode;
   media?: ReactNode;
   actions?: ReactNode;
-  /** Plaque numeral (Gilded Hour) or kraft specimen label (Conservatory). */
+  /** A short label above the title. */
   label?: string;
   featured?: boolean;
   index?: number;

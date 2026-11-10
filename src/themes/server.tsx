@@ -5,7 +5,6 @@ import { enforceGuestPortalRoute } from '@/app/(guest)/guests/_lib/gate';
 import { getCountdown, getLifecycleView, getSiteFacts, navFor, type LifecycleOptions } from '@/domain/lifecycle';
 import { accountPortalLinks } from '@/domain/lifecycle/account-portals';
 import { getDb } from '@/db/client';
-import { getFlags } from '@/lib/flags';
 import { getPrincipal } from '@/lib/principal';
 import { getTheme } from './index';
 import { isThemeId } from './registry';
@@ -32,7 +31,7 @@ export interface FrameInput {
   lifecycle?: LifecycleOptions;
 }
 
-/** Everything a recipe needs besides its own content: facts, lifecycle, countdown, nav, switcher. */
+/** Everything a recipe needs besides its own content: facts, lifecycle, countdown, nav. */
 export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   const [site, lifecycle, countdown] = await Promise.all([getSiteFacts(), getLifecycleView(input.lifecycle), getCountdown()]);
   // Only a render that resolved the principal knows the answer; without one (prerendered public
@@ -46,7 +45,7 @@ export async function buildPageFrame(input: FrameInput): Promise<PageFrame> {
   // carries the two names and nothing more, so no shell or recipe can print the rest.
   const details = signedIn ? { date: site.date, venue: site.venue, countdown } : null;
   const publicSite = { coupleDisplayName: site.coupleDisplayName, partner1: site.partner1, partner2: site.partner2 };
-  return { theme: input.theme, site: publicSite, details, lifecycle, nav, switcherEnabled: getFlags().DESIGN_SWITCHER };
+  return { theme: input.theme, site: publicSite, details, lifecycle, nav };
 }
 
 export async function renderHome(input: Omit<FrameInput, 'currentPath'>): Promise<ReactNode> {

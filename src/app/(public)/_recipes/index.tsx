@@ -71,8 +71,8 @@ type PropsOf<K extends ContentRecipeKey> = Omit<Parameters<ContentRecipes[K]>[0]
 /**
  * Themed dispatch (level 05). Each page component resolves the active theme server-side from the
  * request (`?theme=` → cookie → default, already applied by the proxy), builds the page frame
- * (facts, lifecycle incl. an admin preview when the proxy forwarded one, nav for the current path,
- * switcher flag) and renders that theme's recipe. A theme without a recipe for the page falls back
+ * (facts, lifecycle incl. an admin preview when the proxy forwarded one, nav for the current path)
+ * and renders that theme's recipe. A theme without a recipe for the page falls back
  * to Swarm C's placeholder recipe, so unknown themes never break a route.
  */
 function themed<K extends ContentRecipeKey>(key: K, currentPath: string, fallback: ComponentType<PropsOf<K>>, opts: { signedIn?: boolean; within?: boolean } = {}): ComponentType<PropsOf<K>> {

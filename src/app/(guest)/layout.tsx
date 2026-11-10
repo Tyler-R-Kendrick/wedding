@@ -35,8 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
  * ornament: the sheet, the fern rules, the kraft tags and the pressed-card footer all live in
  * `Shell`, so a guest who followed a link from Home into /transportation arrived at what looked
  * like a different site. Now `/rsvp`, `/guests`, `/transportation`, `/trip` and the media
- * pages are inside the same `Shell` as `/`, `/guests/travel` and `/gifts`, and the design switcher, the
- * elevator panel and the print URLs come with it.
+ * pages are inside the same `Shell` as `/`, `/guests/travel` and `/gifts`, and the action bar and
+ * the print URLs come with it.
  *
  * `Shell` renders `<main id="main">`, so the pages under it render a plain `<div className="page">`
  * — one `main` per document, which `tests/e2e` and axe both check. The guest-portal content

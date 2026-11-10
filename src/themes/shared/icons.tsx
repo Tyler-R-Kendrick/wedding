@@ -1,7 +1,7 @@
 import { destinationOf } from '@/domain/lifecycle/account';
 import type { SVGProps } from 'react';
 
-/** Authored line icons, one stroke weight, used by the Gilded Hour elevator panel and external links. */
+/** Authored line icons, one stroke weight, used by the nav, the action bar and external links. */
 const PATHS: Record<string, string> = {
   home: 'M4 11l8-7 8 7v9H4zM10 20v-6h4v6',
   rsvp: 'M3 6h18v12H3zM3 7l9 6 9-6',

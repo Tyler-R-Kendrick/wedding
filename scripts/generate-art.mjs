@@ -2,7 +2,7 @@
 // Procedural placeholder art for the wedding site. License-free by construction:
 // every asset is generated from code in scripts/art/<theme>.mjs.
 //   node scripts/generate-art.mjs            # all themes
-//   node scripts/generate-art.mjs conservatory
+//   node scripts/generate-art.mjs botanical-deco
 // Each theme module exports `generate()` → Array<{ file: string, svg: string, alt: string }>.
 // Output: public/assets/art/<theme>/<file>.svg + public/assets/art/<theme>/manifest.json
 import { readdir, mkdir, writeFile } from 'node:fs/promises';

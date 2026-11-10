@@ -3902,10 +3902,6 @@
   background: var(--color-gold);
 }
 
-.bd-footer__switcher {
-  grid-column: 1 / -1;
-}
-
 /* ---------- the invitation-access journey (sign-in, claim, verify, passkey, step-up) ---------- */
 .bd-authhead {
   position: relative;

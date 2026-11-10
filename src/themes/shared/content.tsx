@@ -103,7 +103,7 @@ export const CONTENT_COPY = {
     // Shown only when AI_CONCIERGE is off. The live invitation copy lives with the island itself
     // (src/components/concierge/ConciergeSlot.tsx), which is what a guest reads when it is on.
     conciergeNote: 'The concierge is not switched on right now. The search above and the questions below cover the essentials.',
-    /** Conservatory's kraft tag on the concierge card: descriptive when live, 'Soon' when off. */
+    /** The tag on the concierge card: descriptive when live, 'Soon' when off. */
     conciergeTag: 'In your own words',
     conciergeTagOff: 'Soon',
   },

@@ -26,7 +26,6 @@ function homeData(theme: ThemeId, state: LifecycleState): HomeData {
     lifecycle: { state, mode: LIFECYCLE_MODE[state], persistedState: state, preview: null, suggested: 'RSVP_OPEN', publishedAt: null, note: null },
     // The frame hands the navigation the venue whoever is reading; signed out, nothing may come of it.
     nav: navFor(state, { venue: full.venue, currentPath: '/', signedIn: false }),
-    switcherEnabled: false,
     content: homeContent(site, state),
   };
 }
@@ -104,7 +103,7 @@ describe.each(THEME_IDS)('Home recipe (%s)', (theme) => {
     }
     // No date element, no countdown, no schedule, no map, no directions.
     expect(container.querySelector('time')).toBeNull();
-    expect(container.querySelector('.gh-countdown, .cv-sky, .bd-countdown, [class*="countdown"]')).toBeNull();
+    expect(container.querySelector('.bd-countdown, [class*="countdown"]')).toBeNull();
     expect(container.querySelector('#now, #schedule, #the-wedding, .bd-schedule, [class*="timeline"], [class*="schedule"]')).toBeNull();
     expect(container.querySelector('iframe, [class*="map"], [data-map]')).toBeNull();
     expect(container.textContent).not.toMatch(/Directions|days? to go|Ceremony|Cocktail hour|Reception/);
@@ -185,27 +184,6 @@ describe('the approved design has its own structure', () => {
     expect(bd.container.textContent).not.toMatch(/college|\b20(17|18|20|22|24)\b|Sarah/);
     // Decoration is decoration: botanicals are hidden from assistive technology.
     for (const img of bd.container.querySelectorAll('img.bd-bloom')) expect(img.getAttribute('alt')).toBe('');
-    expect(bd.container.querySelector('.gh-plaque--act, .cv-pressed, .gh-panel, .cv-rail')).toBeNull();
     bd.unmount();
-  });
-});
-
-describe('the two earlier proposals are structurally different', () => {
-  it('Gilded Hour numbers its acts on one axis with an elevator panel; Conservatory hangs kraft tags on a tag rail', () => {
-    const gh = render(<>{getTheme('gilded-hour').recipes.home(homeData('gilded-hour', 'TEASER'))}</>);
-    expect(gh.container.querySelectorAll('.gh-plaque--act').length).toBe(3);
-    expect(gh.container.querySelector('.gh-panel')).not.toBeNull();
-    expect(gh.container.querySelector('.gh-frieze')).not.toBeNull();
-    expect(gh.container.querySelector('[class^="cv-"], [class*=" cv-"]')).toBeNull();
-    gh.unmount();
-    const cv = render(<>{getTheme('conservatory').recipes.home(homeData('conservatory', 'TEASER'))}</>);
-    expect(cv.container.querySelector('.cv-rail')).not.toBeNull();
-    // The pressed cards held the facts and the schedule. Home has neither now, so it has none.
-    expect(cv.container.querySelector('.cv-pressed')).toBeNull();
-    // Every section hangs its link as a tag: the story, the adventures, and the door.
-    expect([...cv.container.querySelectorAll('.cv-tag--hang')].map((a) => a.getAttribute('href'))).toEqual(['/our-story', '/our-adventures', '/sign-in?next=%2Fguests%2Ftravel']);
-    expect(cv.container.querySelector('.cv-plaque, .gh-plaque--act, .gh-panel')).toBeNull();
-    expect(cv.container.querySelector('[class^="gh-"], [class*=" gh-"]')).toBeNull();
-    cv.unmount();
   });
 });

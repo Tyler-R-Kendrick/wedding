@@ -31,9 +31,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {/* Persistent polite live region: the design switcher announces a change here, outside the
-            themed shell that unmounts and remounts when the design swaps. */}
-        <p id="design-announcer" className="sr-only" aria-live="polite" aria-atomic="true" />
         {children}
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}

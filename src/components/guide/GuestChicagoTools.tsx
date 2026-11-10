@@ -21,7 +21,7 @@ export async function GuestChicagoTools({ recommendations, mapUrl }: { recommend
   return (
     <>
       <Section id="chicago-map" labelledBy="chicago-map-title">
-        <div className={theme === 'conservatory' ? 'cv-section__full' : undefined}>
+        <div>
           <SectionHeading level={2} id="chicago-map-title" title="Our Chicago Guide" />
           <Prose>
             <p>Pick a place on the map for a closer look, or browse our curated picks below. Our venue is your starting point.</p>
@@ -40,7 +40,7 @@ export async function GuestChicagoTools({ recommendations, mapUrl }: { recommend
               <figcaption>Scan for our shared Chicago map (for printed materials).</figcaption>
             </figure>
           ) : null}
-          {/* The shared illustration carries its own palette in every site theme. */}
+          {/* The illustration reads its palette from the nearest [data-theme]. */}
           <div data-theme="botanical-deco">
             <AdventureAtlas
               pins={pins}

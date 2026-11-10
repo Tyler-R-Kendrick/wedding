@@ -80,12 +80,10 @@ function ItemCard({ item, highlighted, theme }: { item: TripItem; highlighted: b
   return (
     // The active design's card. The small-caps line is the item's kind and status and sits BELOW
     // the card heading, so it is a meta line, not a kicker — impeccable's craft floor bans the
-    // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`,
-    // which shouts `text-transform: uppercase`; Conservatory's DESIGN.md rejects that by name in
-    // favour of Spectral's real small capitals ("instead of shouting uppercase").
+    // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`.
     <li id={`trip-item-${item.id}`} className="agenda-entry" data-status={item.status} aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
       <GuestCard theme={theme} title={item.title} level={4}>
-        <p className={theme === 'conservatory' ? 'cv-eyebrow' : theme === 'botanical-deco' ? 'bd-eyebrow' : 'gh-eyebrow'}>
+        <p className="bd-eyebrow">
           {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
           {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
         </p>

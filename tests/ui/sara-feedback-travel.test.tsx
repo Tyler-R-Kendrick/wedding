@@ -16,7 +16,6 @@ function frame(theme: ThemeId): PageFrame {
     theme,
     site: { coupleDisplayName: full.coupleDisplayName, partner1: full.partner1, partner2: full.partner2 },
     details: { date: full.date, venue: full.venue, countdown: countdownView(new Date('2026-10-18T12:00:00Z')) },
-    switcherEnabled: false,
     lifecycle: { state: 'SAVE_THE_DATE', mode: 'explore', persistedState: 'SAVE_THE_DATE', preview: null, suggested: 'SAVE_THE_DATE', publishedAt: null, note: null },
     nav: navFor('SAVE_THE_DATE', { venue: full.venue, currentPath: '/guests/travel', signedIn: true }),
   };

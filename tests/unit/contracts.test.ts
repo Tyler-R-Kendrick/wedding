@@ -50,13 +50,12 @@ describe('readFlags', () => {
   it('uses production-safe defaults and honours FLAG_* overrides', () => {
     const defaults = readFlags({});
     expect(defaults.PRO_MEDIA_AI_PROCESSING).toBe(false);
-    // Off since Sara and Tyler approved one design: guests see it, and nothing offers to swap it.
-    expect(defaults.DESIGN_SWITCHER).toBe(false);
-    const flags = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on', NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'on', FLAG_WEBMCP: 'nonsense' });
+    expect(defaults.RSVP_MEALS).toBe(false);
+    const flags = readFlags({ FLAG_PRO_MEDIA_AI_PROCESSING: 'on', NEXT_PUBLIC_FLAG_RSVP_MEALS: 'on', FLAG_WEBMCP: 'nonsense' });
     expect(flags.PRO_MEDIA_AI_PROCESSING).toBe(true);
-    // The override still works both ways, for a review session that wants the proposals side by side.
-    expect(flags.DESIGN_SWITCHER).toBe(true);
-    expect(readFlags({ NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'off' }).DESIGN_SWITCHER).toBe(false);
+    // The public mirror of a flag overrides the default too, both ways.
+    expect(flags.RSVP_MEALS).toBe(true);
+    expect(readFlags({ NEXT_PUBLIC_FLAG_RSVP_MEALS: 'off' }).RSVP_MEALS).toBe(false);
     expect(flags.WEBMCP).toBe(FEATURE_FLAGS.WEBMCP);
   });
 });

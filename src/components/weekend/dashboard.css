@@ -5,9 +5,9 @@
  * tablet up the lead card puts its facts beside its words, and the cards under it sit two or three
  * across. The lead is the only large object on the page; everything after it is quieter on purpose.
  *
- * Shared by every design, so it reads only the role tokens and the `--type-*` set each theme
- * publishes under `[data-theme]` (scripts/check-theme-tokens.mjs). The approved design's own accents
- * — the gold rule, the Bodoni titles — are in `themes/botanical-deco/guest.css`.
+ * It reads only the role tokens and the `--type-*` set the theme publishes under `[data-theme]`.
+ * The approved design's own accents — the gold rule, the Bodoni titles — are in
+ * `themes/botanical-deco/guest.css`.
  */
 .dash {
   display: grid;

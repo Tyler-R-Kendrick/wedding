@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { PLACEHOLDER_LABEL, stripBacklogRefs } from '@/components/provenance';
-import { DesignSwitcher } from '@/components/switcher/DesignSwitcher';
 import { SIGN_IN } from '@/domain/lifecycle/account';
 import { homeLabelFor } from '@/domain/lifecycle/nav';
-import { listThemes } from '@/themes/registry';
 import { providerLabel } from '@/themes/shared/content';
 import { renderCopy } from '@/themes/shared/copy';
 import { DialogBase } from '@/themes/shared/DialogBase';
@@ -40,8 +38,6 @@ const DIALOG_CLASSES = {
   body: 'bd-sheet__body',
 };
 
-const THEME_OPTIONS = listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline }));
-
 const RIGHTS_NOTE = 'Photographs by Brooke Alaina Photography and films by Oakhouse Visuals are shared here for personal, non-commercial viewing.';
 
 /** The most pages the masthead ever shows inline (at 1440px and up); the rest live in the Menu sheet. */
@@ -49,7 +45,7 @@ const MASTHEAD_MAX = 8;
 
 /**
  * An unwritten fact, marked as one: the editorial label the rest of the site uses, never the
- * authoring marker (see gilded-hour/kit for the history of that defect).
+ * authoring marker.
  */
 function Placeholder({ todo, block }: PlaceholderProps) {
   return (
@@ -127,7 +123,7 @@ function MenuList({ nav, homeLabel, homeHref = '/' }: { nav: NavProps['nav']; ho
  * On a desktop, NavFit measures the real labels and sends whatever does not fit beside the Menu
  * button to the sheet; the page-count classes are only the guess it replaces after hydration.
  */
-function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavProps) {
+function Nav({ nav, siteName, homeLabel, homeHref = '/' }: NavProps) {
   const homeItem: NavItem = { label: homeLabel, href: homeHref };
   const items: NavItem[] = [homeItem, ...allItems(nav).filter((i) => i.href !== homeHref)];
   const inline = items.slice(0, MASTHEAD_MAX);
@@ -170,7 +166,6 @@ function Nav({ nav, siteName, homeLabel, homeHref = '/', switcherEnabled }: NavP
             ornament={<Botanical id="botanical.sprig-right" className="bd-bloom--sheet" />}
           >
             <MenuList nav={nav} homeLabel={homeLabel} homeHref={homeHref} />
-            {switcherEnabled ? <DesignSwitcher variant="menu" id="design-switcher-menu" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
           </DialogBase>
         </div>
       </nav>
@@ -212,7 +207,7 @@ const FOOTER_NAV: NavProps['nav'] = { primary: [], more: [], sticky: [], current
 
 // `nav` is optional: Footer is part of the kit contract (`ThemeComponentKit`), rendered on its own
 // without a frame, and then it is the plain way in.
-function Footer({ site, details, switcher, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
+function Footer({ site, details, rightsNote, printUrls, nav = FOOTER_NAV }: FooterProps & { nav?: NavProps['nav'] }) {
   return (
     <footer className="bd-footer">
       <div className="bd-footer__inner">
@@ -278,7 +273,6 @@ function Footer({ site, details, switcher, rightsNote, printUrls, nav = FOOTER_N
             </li>
           ))}
         </ul>
-        {switcher ? <div className="bd-footer__switcher">{switcher}</div> : null}
       </div>
     </footer>
   );
@@ -299,7 +293,7 @@ function Shell({ frame, children, banner }: ShellProps) {
       {banner}
       <GuestViewBand />
       <header className="bd-masthead">
-        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} switcherEnabled={frame.switcherEnabled} />
+        <Nav nav={frame.nav} siteName={frame.site.coupleDisplayName} homeLabel={homeLabel} homeHref={homeHref} />
       </header>
       <main id="main" className="bd-main" tabIndex={-1}>
         {children}
@@ -308,7 +302,6 @@ function Shell({ frame, children, banner }: ShellProps) {
       <Footer
         site={frame.site}
         details={frame.details}
-        switcher={frame.switcherEnabled ? <DesignSwitcher variant="trigger" id="design-switcher-footer" current="botanical-deco" themes={THEME_OPTIONS} /> : null}
         nav={frame.nav}
         rightsNote={PRO_MEDIA_PATHS.test(frame.nav.currentPath) ? RIGHTS_NOTE : ''}
         printUrls={printUrls}

@@ -2,14 +2,12 @@ import { formatMinutes } from '@/domain/adventures/itineraries';
 import { humanize } from '@/domain/content/format';
 import { ROUTES } from '@/domain/routes';
 import type { GuideProps } from '@/themes/content-types';
-import type { ThemeId } from '@/themes/types';
 import { CONTENT_COPY, INTEREST_OPTIONS, MINUTE_OPTIONS } from '@/themes/shared/content';
 
 /** Native choices keep planning quick, keyboard friendly and usable without JavaScript. */
-export function GuestPlanBuilder({ plan, theme }: { plan: GuideProps['plan']; theme: ThemeId }) {
+export function GuestPlanBuilder({ plan }: { plan: GuideProps['plan'] }) {
   return (
     <form className="guest-plan-builder" method="get" action={`${ROUTES.guestThings}#plan-result`}>
-      <input type="hidden" name="theme" value={theme} />
       <p>A little free time or a whole afternoon? Start with what sounds good.</p>
       <fieldset className="guest-choices">
         <legend>{CONTENT_COPY.guide.minutes}</legend>

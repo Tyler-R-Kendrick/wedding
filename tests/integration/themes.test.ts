@@ -11,14 +11,13 @@ const admin: AdminPrincipal = { kind: 'admin', authIdentityId: 'auth' as never, 
 const guest: GuestPrincipal = { kind: 'guest', authIdentityId: 'auth-g' as never, guestId: 'g-theme' as never, householdId: 'h-theme' as never, actsFor: ['g-theme' as never], entitlements: new Set(['view_event']), authenticatedAt: '2026-09-05T12:00:00Z', sessionId: 'sg' };
 
 describe('site_status (theme + lifecycle extensions)', () => {
-  it('returns countdown, navigation, the active theme and the switcher flag', async () => {
+  it('returns countdown, navigation and the one design, even when the view names a retired one', async () => {
     const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-theme-1', view: { theme: 'conservatory' } });
     const r = await invoke(siteStatus, ctx, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // An explicit view still reaches an earlier proposal; the switcher is off since the approval.
-    expect(r.value.data.theme).toMatchObject({ active: 'conservatory', switcherEnabled: false });
-    expect(r.value.data.theme.available.map((t) => t.id)).toEqual(['botanical-deco', 'gilded-hour', 'conservatory']);
+    expect(r.value.data.theme.active).toBe('botanical-deco');
+    expect(r.value.data.theme.available.map((t) => t.id)).toEqual(['botanical-deco']);
     expect(r.value.data.countdown.days).toBeGreaterThan(0);
     expect(r.value.data.navigation.primary.length).toBeGreaterThan(0);
     expect(r.value.data.lifecycle).toMatchObject({ state: 'TEASER', preview: false, persistedState: 'TEASER' });
@@ -44,15 +43,7 @@ describe('site_status (theme + lifecycle extensions)', () => {
   });
 });
 
-describe('navigate_to (theme + preview extensions)', () => {
-  it('validates the theme id', async () => {
-    const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-nav-t1' });
-    const ok = await invoke(navigateTo, ctx, { route: '/', theme: 'conservatory' });
-    expect(ok.ok && ok.value.data).toEqual({ route: '/', theme: 'conservatory' });
-    const bad = await invoke(navigateTo, ctx, { route: '/', theme: 'neon' });
-    expect(!bad.ok && bad.error.code).toBe('validation');
-  });
-
+describe('navigate_to (preview extension)', () => {
   it('issues lifecycle previews for admins only and audits them', async () => {
     const anon = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-nav-p1' });
     const denied = await invoke(navigateTo, anon, { route: '/', lifecycle: 'RSVP_OPEN' });

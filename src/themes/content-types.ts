@@ -137,9 +137,8 @@ export interface ContentRecipes {
 export type ContentRecipeKey = keyof ContentRecipes;
 
 /* ------------------------------------------------------------------------------------------------
- * Content kit: the primitives the content recipes compose. Same props, names and states in both
- * themes; markup and CSS differ (Gilded Hour: plaques, ledgers, diptychs, floor plans on one axis;
- * Conservatory: stems, pressed cards, kraft tags, jar labels on the sheet).
+ * Content kit: the primitives the content recipes compose. The props, names and states are the
+ * contract; the markup and CSS are the theme's own.
  * ---------------------------------------------------------------------------------------------- */
 
 export interface ChipItem {
@@ -197,7 +196,7 @@ export interface ContentKit {
   ItineraryCard: (p: { itinerary: ItineraryView; index: number }) => ReactNode;
   /** Docent list: what to look for in the building or a room. */
   LookForList: (p: { items: { id: string; text: string }[]; label: string }) => ReactNode;
-  /** The four event spaces (`article[data-space]`): floor plan (Gilded Hour) / specimen sheets (Conservatory). */
+  /** The four event spaces (`article[data-space]`). */
   RoomGrid: (p: { spaces: VenueSpaceView[] }) => ReactNode;
   /** Kit capacity figures with the caption that says they are kit figures. */
   CapacityTable: (p: { capacities: VenueSpaceView['capacities'] }) => ReactNode;

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PREVIEW_COOKIE, PREVIEW_QUERY } from '@/domain/lifecycle/constants';
-import { isLastingThemeChoice, parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
+import { parseThemeCookie, resolveTheme, THEME_COOKIE, THEME_QUERY, themeCookieOptions, themeCookieValue } from '@/themes/resolve';
 import { stageAccess, stageDenial } from '@/lib/stage-access';
 import { isStageHost, isStagePath } from '@/lib/stage-hosting';
 import { isPersonalizedRoute, isStaticPublicRoute, PATHNAME_HEADER, PREVIEW_HEADER, THEME_HEADER } from '@/themes/routes';
@@ -11,7 +11,7 @@ const PREVIEW_SHAPE = /^[A-Z_]{4,32}(?:\.\d{1,12}\.[A-Za-z0-9_-]{16,128})?$/;
 /**
  * Theme + lifecycle-preview resolution per request (ADR-0009 §4, ADR-0012 §2).
  *   - `?theme=` → `theme` cookie → default; a valid `?theme=` is remembered on this device.
- *   - Static public routes are rewritten to `/t/<theme><path>` so each theme is a real, cacheable tree;
+ *   - Static public routes are rewritten to `/t/<theme><path>`, a real, cacheable tree;
  *     a preview request goes to the dynamic `/t/<theme>/preview/<token><path>` tree instead.
  *   - Everything else passes through with `x-theme` (and `x-lifecycle-preview`) request headers.
  *   - Personalized areas and previews are always `Cache-Control: private, no-store`.
@@ -54,15 +54,15 @@ export function proxy(request: NextRequest) {
 
   response.headers.set(THEME_HEADER, theme);
   if (source === 'query' && parseThemeCookie(cookieTheme).theme !== theme) {
-    response.cookies.set({ name: THEME_COOKIE, value: themeCookieValue(theme), ...themeCookieOptions(url.protocol === 'https:', isLastingThemeChoice(theme)) });
+    response.cookies.set({ name: THEME_COOKIE, value: themeCookieValue(theme), ...themeCookieOptions(url.protocol === 'https:') });
   } else if (stale) {
-    // A design preference stored before Sara and Tyler approved Botanical–Deco (see resolveTheme).
-    // It is already being ignored; clearing it stops it riding along on every request.
+    // A stored preference for a design that was retired (see resolveTheme). It is already being
+    // ignored; clearing it stops it riding along on every request.
     response.cookies.delete(THEME_COOKIE);
   }
-  // The response to a clean public URL depends on the theme cookie, so neither a shared cache nor the
-  // browser may reuse it across choices (a cached RSC payload defeated the second in-session switch);
-  // the rewritten `/t/<theme>` tree itself stays static and cacheable at its own URL.
+  // The response to a clean public URL depends on cookies (the theme, a lifecycle preview), so
+  // neither a shared cache nor the browser may reuse it across them; the rewritten `/t/<theme>` tree
+  // itself stays static and cacheable at its own URL.
   if (preview || isPersonalizedRoute(url.pathname) || isStaticPublicRoute(url.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store');
     response.headers.append('Vary', 'Cookie');
