@@ -139,7 +139,7 @@ const pageExpected = (p: SitemapPage): string => {
     case 'sign-in-pending':
       return '200. Holding page when social sign-in cannot match an invitation yet. It does not start a session.';
     case 'sign-in-phone':
-      return '200 wherever a text can be sent (Twilio configured or connected through Vercel, or the non-production mock). Otherwise redirect to /sign-in. A signed-in guest continues to /guests and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session.';
+      return '200 wherever a text can be sent (Twilio configured or connected through Vercel, or the non-production mock). Otherwise 404: the page does not exist. A signed-in guest continues to /guests and an administrator to /admin. The code is checked on /claim/verify; this page does not start a session.';
     case 'rsvp-step':
       return '200 when that part applies to the signed-in household. 404 when it does not (a household with no plus-one has no /rsvp/guest). Signed out: the guests-only gate, not a 404.';
     case 'invitation':
