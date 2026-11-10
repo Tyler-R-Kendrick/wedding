@@ -35,21 +35,17 @@ byte-reproducible). `--measure` prints each source file's size, glyphs, axes, fe
 | Core file | ASCII, combining accents, and every character in `chars` | Text is shaped one file at a time, so a kerning pair cannot span two files. Keeping every character the pages render today in one file keeps today's words pixel-identical. |
 | Extended file | The rest of Latin-1 and Latin Extended-A | Downloaded only by a page that shows one of them (`unicode-range`). |
 | Axes | Narrowed to the range in use; pinned only where one value is used | See the table below. |
-| Features | The ones a browser applies by default (`ccmp locl mark mkmk rlig calt clig liga kern rvrn`) plus what the CSS turns on | `tnum` where a theme sets tabular figures; `smcp c2sc` for Spectral. |
-| Hinting | Kept | Only Ms Madi is hinted. Dropping it saves about 11.7 KB across its two files and changes its rasterisation on Windows. Set `"hinting": "drop"` on its entry to take the saving. |
-| Reserved Font Name | Josefin Sans is renamed inside the file | Its OFL reserves the name, and a subset is a modified version. The CSS family name is unchanged. |
+| Features | The ones a browser applies by default (`ccmp locl mark mkmk rlig calt clig liga kern rvrn`) plus what the CSS turns on | `tnum` where the theme sets tabular figures. |
+| Hinting | Dropped for Ms Madi (`"hinting": "drop"` on its entry), at the owner's request | Only Ms Madi carried hinting; the other fonts have none. Without it the two files are 26,444 bytes instead of 41,232 (14.4 KB less). It may change the face's rasterisation very slightly on Windows; other platforms ignore hinting. |
+| Reserved Font Name | A font whose OFL reserves its name is renamed inside the file (`rename` / `reserved` in `fonts.json`) | A subset is a modified version. The CSS family name is unchanged. None of the current faces needs it. |
 
 | Face | Axis ranges kept | What the site asks for |
 |---|---|---|
 | Bodoni Moda roman | wght 400–700, opsz 13–40 (source: 400–900, 6–96) | Weights 400 and 500 on the pages, 600 and 700 once each in the kit. The kit sets `opsz` 18; elements outside it use automatic optical sizing at 13.8–38.2 px. |
 | Bodoni Moda italic | wght 400, opsz 18–40 | Only ever 400. `opsz` 18 and 40 are set explicitly; automatic sizing covers 18–25.5 px. |
 | Newsreader roman / italic | unchanged (400–600 / 400–500) | 400, 500, 600 (a request for 700 already resolves to 600). |
-| Cinzel | wght 400–500 (source 400–900) | 400 and 500. |
-| Josefin Sans | wght 400–700 (source 100–700) | 400, 500, 600, 700. |
-| Big Shoulders Display | wght 600–700 (source 100–900) | 600 on the pages; the tokens also define 700. |
 
-The usage figures come from a crawl of every public, guest and admin route in all three designs at
-390 and 1440 px (computed family, weight, style, size, `font-variation-settings`,
+The usage figures come from a crawl of every public, guest and admin route at 390 and 1440 px (computed family, weight, style, size, `font-variation-settings`,
 `font-feature-settings`, `font-variant-*`, `text-transform`, `hyphens`, pseudo-element content,
 placeholders, list markers), together with a scan of the source for non-ASCII characters and of the
 stylesheets and tokens for weights. No component sets font properties in an inline style.
@@ -58,8 +54,9 @@ stylesheets and tokens for weights. No component sets font properties in an inli
 
 - Both files of a face use the same `font-family`. Naming them differently and listing them either
   side of the metric-matched fallback face would let the fallback draw the extended characters.
-- `hyphens: auto` (one rule, Gilded Hour) breaks words with U+2010 where the font has it; it is in
-  `chars` for that reason, with U+2011, the no-break space and the soft hyphen.
+- `hyphens: auto` breaks words with U+2010 where the font has it; it is in `chars` for that
+  reason, with U+2011, the no-break space and the soft hyphen. (The one rule that used it went with
+  a retired design; the characters stay, because removing them would change the files.)
 - The instancer's output cannot be subset in place (`KeyError` on a glyph without deltas); the
   script saves and reloads between the two steps.
 - The browser's own controls print characters no crawl of the page sees. A date-and-time field puts
