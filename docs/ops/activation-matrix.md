@@ -10,7 +10,7 @@ Do not edit between the markers; edit the code and regenerate.
 | `AI_CONCIERGE` | on | no | `FLAG_AI_CONCIERGE=off` |
 | `GUEST_UPLOADS` | on | no | `FLAG_GUEST_UPLOADS=off` |
 | `MEDIA_SEMANTIC_SEARCH` | on | no | `FLAG_MEDIA_SEMANTIC_SEARCH=off` |
-| `PHONE_SIGN_IN` | **off** | no | `FLAG_PHONE_SIGN_IN=on` |
+| `PHONE_SIGN_IN` | on (shows once the three `TWILIO_*` variables are set) | no | `FLAG_PHONE_SIGN_IN=off` |
 | `PRO_MEDIA_AI_PROCESSING` | **off** | yes — legal gate | `FLAG_PRO_MEDIA_AI_PROCESSING=on` **and** the readiness switch on `/admin/flags` |
 | `RSVP_ATTENDANCE` | on | no | `FLAG_RSVP_ATTENDANCE=off` |
 | `RSVP_MEALS` | **off** | no | `FLAG_RSVP_MEALS=on` |

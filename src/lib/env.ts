@@ -138,8 +138,6 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_SECRET: optionalSecret(16),
   FACEBOOK_CLIENT_ID: optionalString,
   FACEBOOK_CLIENT_SECRET: optionalSecret(16),
-  /** When on, show phone OTP sign-in (Twilio not wired yet). */
-  GUEST_PHONE_SIGN_IN: boolish(undefined),
 
   /*
    * --- jobs ---

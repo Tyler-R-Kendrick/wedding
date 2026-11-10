@@ -32,8 +32,13 @@ export const FEATURE_FLAGS = {
    * it is also held shut by the data until a menu exists for an event with a meal.
    */
   RSVP_MEALS: false,
-  /** SMS sign-in via Twilio Verify (requires TWILIO_* env vars; off when unconfigured). */
-  PHONE_SIGN_IN: false,
+  /**
+   * SMS sign-in via Twilio Verify. On: the option shows wherever Twilio is configured (the three
+   * TWILIO_* variables in production; the mock elsewhere), with nothing else to switch.
+   * `FLAG_PHONE_SIGN_IN=off` hides it. It used to default off, so a production with Twilio set up
+   * and no flag showed no phone option at all.
+   */
+  PHONE_SIGN_IN: true,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
