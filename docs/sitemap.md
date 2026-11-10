@@ -128,6 +128,7 @@ A dynamic route’s Example column is the path the crawler opens. Further seed p
 | /api/webmcp/invoke/[name] | /api/webmcp/invoke/example | api | POST | Run one WebMCP tool as the current principal. | The tool’s own status. Unknown name is refused. The crawler does not call it. |
 | /api/uploads/[action] | /api/uploads/create | api | GET | Upload aliases of media capabilities. GET is refused. | 405 Allow: POST. POST create, resume, complete or abort. Any other action is 404. |
 | /api/uploads/[action] | /api/uploads/create | api | POST | Start, resume, finish or abort an upload through the capability pipeline. | Same rules as /api/capabilities. The crawler does not upload. |
+| /api/warm | /api/warm | api | GET | Cron: asks for each landing page once so its function stays started. | 401 without the CRON_SECRET bearer, and then it asks for nothing. The crawler does not call it. |
 | /api/jobs/run | /api/jobs/run | api | GET | Cron: run a bounded batch of due jobs. GET and POST are the same handler. | 401 without the CRON_SECRET bearer. The handler does not run jobs when it refuses. The crawler does not call it. |
 | /api/jobs/run | /api/jobs/run | api | POST | Cron: same handler as GET. | 401 without the CRON_SECRET bearer. With the bearer, runs due jobs. Never called by the crawler. |
 | /api/media-ai/jobs/run | /api/media-ai/jobs/run | api | GET | Cron alias that keeps the media index scan queued and runs a bounded batch. | 401 without the CRON_SECRET bearer. Does not run when it refuses. |
