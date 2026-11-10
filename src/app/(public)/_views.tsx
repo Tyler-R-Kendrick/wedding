@@ -98,14 +98,13 @@ export async function staticParamsWhenReadable(): Promise<{ theme: string }[]> {
 }
 
 /**
- * No adventure page is built ahead: each is rendered on its first visit and cached from then on.
+ * Every adventure the database holds at build time is built ahead, so its first reader gets the
+ * cached copy too; one added later is rendered on its first visit and cached from then on.
  *
- * Building them ahead was tried and failed the deployment. The deploy build reaches the real
- * database, and some thirty pages rendered at once from the build machine each took more than a
- * minute and exhausted their retries (a build without a database had none to build, which is why it
- * passed everywhere else). The list page links to every adventure, so the first reader of each one
- * waits for one render, as every reader did before these pages were cached at all.
+ * The first attempt at this failed the deployment: the build renders many pages at once, and the
+ * database client piled their queries onto busy pooled connections (see `max_pipeline` in
+ * `src/db/client.ts`). A build that cannot read the database builds none and still passes.
  */
 export async function adventureStaticParams(): Promise<{ theme: string; slug: string }[]> {
-  return [];
+  return (await adventureSlugsAtBuild()).map((slug) => ({ theme: DEFAULT_THEME, slug }));
 }

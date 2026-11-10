@@ -115,7 +115,14 @@ async function connectPostgres(url: string): Promise<Db> {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
-    ...(pooled ? { prepare: false } : {}),
+    // One query at a time on each pooled connection. postgres-js otherwise writes the next query
+    // onto a connection that is still answering the last one (`max_pipeline`, 100 by default) as
+    // soon as all ten are busy. A real server answers those in order; a transaction-mode pooler
+    // hands each one to whichever backend is free, and the answers can come back crossed or not at
+    // all. That is what a deployment build did when it rendered thirty pages at once: a row decoded
+    // against another query's columns, and every page then waited past its minute. With 0 the
+    // eleventh query waits in this process for a free connection instead.
+    ...(pooled ? { prepare: false, max_pipeline: 0 } : {}),
   });
   const base = drizzle({ client, schema });
   let vectorAvailable = false;
