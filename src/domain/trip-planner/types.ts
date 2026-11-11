@@ -53,7 +53,7 @@ export type Part = (typeof PARTS)[number];
 /** A place the guest saved to "My weekend", and when. */
 export type SavedItem = { id: string; day: Day; part: Part; name?: string };
 
-export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar';
+export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule';
 
 export type PlanPick = {
   id: string;
@@ -109,7 +109,7 @@ export type Theme =
 
 /** What a request asks for, read by plain rules. */
 export type Intent = {
-  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'open';
+  kind: 'places' | 'stay' | 'arrive' | 'weekend' | 'calendar' | 'schedule' | 'open';
   days: Day[];
   parts: Part[];
   /** "two hours", "90 minutes". */
@@ -123,6 +123,31 @@ export type Intent = {
   words: string[];
   /** The guest asked for Saturday afternoon or evening, which belongs to the wedding. */
   weddingTime: boolean;
+  /** A question about the wedding itself: what time something starts, or what to wear. */
+  asks: { time: boolean; dress: boolean };
+};
+
+/**
+ * One of the wedding's own events, as the couple set it in /admin/events and the guest's invitation
+ * carries it (`list_my_events`). Every field is the couple's; one they have not set is absent, and
+ * the planner says so rather than filling it in.
+ */
+export type WeddingEventInput = {
+  id: string;
+  name: string;
+  dateIso: string;
+  startsAt?: string | Date | null;
+  endsAt?: string | Date | null;
+  /** The couple's own words about it, settled sentences only. */
+  description?: string | null;
+  /** The room at the venue, by name, once it is chosen. */
+  room?: string | null;
+  /** Where it is, as one line for a calendar: the room, the venue and its address. */
+  location?: string | null;
+  dressCode?: string | null;
+  accessibilityNote?: string | null;
+  /** The couple marked its details as not confirmed yet. */
+  unconfirmed?: boolean;
 };
 
 /** One entry on the guest's calendar: a wedding event, a place they planned, or their own travel. */
@@ -154,4 +179,6 @@ export type ComposeContext = {
   saved: readonly SavedItem[];
   /** The `calendar` shape's days (from `calendarModel`). */
   calendar?: readonly CalendarDayModel[];
+  /** The `schedule` shape's events, as the guest's invitation carries them. */
+  events?: readonly WeddingEventInput[];
 };

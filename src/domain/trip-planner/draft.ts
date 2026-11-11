@@ -1,7 +1,8 @@
-import { DAY_NAME, isWeddingTime, stayFacts } from './facts';
+import { DAY_NAME, dateLabel, isWeddingTime, stayFacts, weekendDate } from './facts';
 import { understand } from './intent';
 import { matchItinerary } from './itineraries';
-import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme } from './types';
+import { scheduleOf, type ScheduleItem } from './schedule';
+import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme, WeddingEventInput } from './types';
 
 /**
  * The deterministic planner: intent rules, then keyword and tag scoring over the couple's own
@@ -284,6 +285,8 @@ function duration(minutes: number): string {
 
 function nextFor(intent: Intent, saved: readonly SavedItem[], shape: Plan['shape']): string[] {
   const pool: [boolean, string][] = [
+    // A request for the wedding's own hours was planned around them; the schedule is one tap away.
+    [intent.weddingTime && shape !== 'schedule', 'The wedding day'],
     [saved.length >= 3 && shape !== 'calendar', 'Put my weekend in my calendar'],
     [!intent.kids && shape !== 'stay' && shape !== 'arrive', 'Make it kid-friendly'],
     [intent.minutes === null && (shape === 'picks' || shape === 'route'), 'I only have two hours'],
@@ -500,9 +503,13 @@ export function draftPlan(args: {
   scores?: Map<string, number>;
   /** The couple's own itineraries a guest may see; a request one of them answers is answered from it. */
   itineraries?: readonly PlannerItinerary[];
+  /** The wedding's own events on this guest's invitation, for a question about the day itself. */
+  events?: readonly WeddingEventInput[];
 }): Plan {
-  const { request, places, saved, scores, itineraries = [] } = args;
+  const { request, places, saved, scores, itineraries = [], events = [] } = args;
   const intent = understand(request);
+
+  if (intent.kind === 'schedule') return schedulePlan(intent, request, events);
 
   if (intent.kind === 'stay') {
     return {
@@ -667,3 +674,64 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     candidates: candidatesOf(ranked, picks),
   };
 }
+
+/** "Ceremony" → "the ceremony"; a name with capitals of its own after the first letter keeps them. */
+function inSentence(name: string): string {
+  const n = name.trim().replace(/^the\s+/i, '');
+  return `the ${/^[A-Z][a-z0-9 '’-]*$/.test(n) ? n.charAt(0).toLowerCase() + n.slice(1) : n}`;
+}
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The events a request names ("the ceremony", "cocktail hour"), by the words of their own names. */
+function named(request: string, items: readonly ScheduleItem[]): ScheduleItem[] {
+  const text = request.toLowerCase().replace(/[’]/g, "'");
+  return items.filter((e) => {
+    const core = e.name.toLowerCase().replace(/^the\s+/, '').trim();
+    return !!core && new RegExp(`\\b${escapeRe(core)}\\b`).test(text);
+  });
+}
+
+/**
+ * The wedding day: the guest's own events in order, each with its time or "Time to be announced",
+ * then the room block. A question about one event's time, or about what to wear, is answered in
+ * the first line, plainly, including when the answer is that it is not set yet.
+ */
+function schedulePlan(intent: Intent, request: string, events: readonly WeddingEventInput[]): Plan {
+  const items = scheduleOf(events);
+  const asked = named(request, items);
+  const about = asked.length ? asked : items;
+  const untimed = about.filter((e) => !e.time);
+  const days = [...new Set(items.map((e) => e.dateIso))];
+  const day = dateLabel(days.length === 1 ? days[0]! : weekendDate('sat'));
+  let title = days.length > 1 ? 'Our wedding events' : 'The wedding day';
+  let intro: string;
+  if (!items.length) {
+    intro = 'The events on your invitation will be listed here as soon as we have set them.';
+  } else if (intent.asks.dress && !intent.asks.time) {
+    title = 'What to wear';
+    const codes = [...new Set(about.map((e) => e.dressCode).filter((c): c is string => !!c))];
+    if (!codes.length) intro = 'We have not set a dress code yet. We will put it here as soon as we have.';
+    else if (codes.length === 1 && about.every((e) => e.dressCode)) intro = `Dress code: ${codes[0]}${/[.!?]$/.test(codes[0]!) ? '' : '.'}`;
+    else intro = 'The dress code for each part of the day is below.';
+  } else if (asked.length === 1 && intent.asks.time) {
+    const e = asked[0]!;
+    intro = e.time ? `${capital(inSentence(e.name))}: ${e.time}, ${e.day}.` : `We have not announced the time of ${inSentence(e.name)} yet. We will put it here as soon as it is set.`;
+  } else if (untimed.length === about.length) {
+    intro = intent.asks.time ? 'We have not announced the times yet. We will put them here as soon as they are set.' : `${day}. We will add the times here as soon as they are set.`;
+  } else if (untimed.length) {
+    intro = `${day}, in order. Some times are still to be announced; we will add them as soon as they are set.`;
+  } else {
+    intro = `${day}, in order.`;
+  }
+  return {
+    shape: 'schedule',
+    title,
+    intro,
+    picks: [],
+    next: ['Getting here from the airport', 'A free Saturday morning', 'Where should we get dinner on Friday?'],
+    fixed: ['title', 'intro'],
+  };
+}
+
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

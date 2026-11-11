@@ -76,6 +76,20 @@ const STAY = /\b(where (should|do|can|could) (i|we) stay|place to stay|room bloc
 const ARRIVE = /\b(where (do|can|should|could) (i|we) park|airports?|fly|flying|flights?|o['’]?hare|midway|parking|park (the|my|our) car|driv(e|ing) (in|here|there|to)|getting (here|there|in|downtown)|get (here|there|downtown)|arriv\w*|blue line|valet|train from)\b/;
 const WEEKEND = /\b((whole|entire|full|all) (of )?(the |my |our )?weekend|plan (my|our|the) (whole )?(weekend|trip|stay)|weekend plan|plan everything|fill (my|our) weekend)\b/;
 const CALENDAR = /\b(calendar|ics|confirm (my|our) (plans?|weekend)|(these|those) are (my|our) plans|(my|our) (plans are|weekend is) (set|done|final)|that'?s my (plan|weekend)|i'?m (set|done) planning|export)\b/;
+/**
+ * The wedding itself. A named part of the day or what to wear is always a question about the
+ * schedule ("what time is the ceremony", "is there a dress code"); a looser one ("Saturday night",
+ * "what time", "the wedding day") only when the request asks for nothing else, so "Saturday evening
+ * drinks" and "a free Saturday morning before the wedding" stay requests for places.
+ */
+const SCHEDULE_NAMED = /\b(ceremony|ceremonies|reception|cocktail hour|dress[ -]?code|attire|black[ -]tie|(what|how) (should|do|can|to|will) (i|we)? ?(wear|dress)|what to wear|vows)\b/;
+const SCHEDULE_LOOSE = /\b(schedule|timeline|order of (the )?(day|events)|what time|when (is|does|do|are|will|should)|what'?s happening|what is happening|wedding|saturday (afternoon|evening|night))\b/;
+const AROUND_WEDDING = /\b(before|after|around|ahead of) the (wedding|ceremony|reception)\b/;
+/** Words that ask for something to do, which the schedule does not answer. */
+const LOOKING = /\b(something|somewhere|anything|things to|ideas?|plan|visit|explore|free|(to|we|i|you) do)\b/;
+const ASKS_TIME = /\b(what time|when|start(s|ing)?|begin(s|ning)?|end(s|ing)?|finish(es)?|times?|schedule|timeline)\b/;
+const ASKS_DRESS = /\b(dress[ -]?code|attire|wear|dress|black[ -]tie|formal)\b/;
+
 const KIDS = /\b(kids?|child(ren)?|toddlers?|bab(y|ies)|famil(y|ies)|little ones?|strollers?|son|daughter)\b/;
 const INDOORS = /\b(rain\w*|indoors?|inside|wet|storm\w*|cold|bad weather)\b/;
 const ON_FOOT = /\b(on foot|walk\w*|nearby|close by|near (the|our) hotel|around the hotel|no car|without a car)\b/;
@@ -101,14 +115,25 @@ export function understand(request: string): Intent {
   if (kids && !themes.includes('kids')) themes.push('kids');
   const asStay = text.replace(HOTEL_AS_PLACE, ' ');
 
+  // Only the wedding's own day, and never its morning (which is free): "Saturday evening" asks for the wedding.
+  const onlyTheDay = days.every((d) => d === 'sat') && !parts.includes('morning');
+  // "Cocktail hour" names a part of the wedding, not a request for a bar.
+  const otherThemes = themes.filter((t) => !(t === 'drinks' && /\bcocktail hour\b/.test(text)));
+  const nothingElse = !otherThemes.length && minutes === null && !kids && !indoors && !onFoot && !LOOKING.test(text);
+  const named = SCHEDULE_NAMED.test(text) && !AROUND_WEDDING.test(text);
+  const loose = SCHEDULE_LOOSE.test(text) && !AROUND_WEDDING.test(text) && onlyTheDay && nothingElse;
+
   let kind: Intent['kind'] = 'places';
   if (CALENDAR.test(text)) kind = 'calendar';
   else if (WEEKEND.test(text)) kind = 'weekend';
+  else if (named && onlyTheDay) kind = 'schedule';
   else if (ARRIVE.test(text)) kind = 'arrive';
   else if (STAY.test(asStay) && !themes.some((t) => t !== 'hotel' && t !== 'quiet')) kind = 'stay';
+  else if (loose) kind = 'schedule';
   else if (!themes.length && !days.length && !parts.length && minutes === null && !kids && !indoors && !onFoot) kind = 'open';
 
   // Saturday afternoon or evening named at all, even beside another day ("Saturday or Sunday evening").
   const weddingTime = days.includes('sat') && parts.some((p) => p !== 'morning');
-  return { kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime };
+  const asks = kind === 'schedule' ? { time: ASKS_TIME.test(text), dress: ASKS_DRESS.test(text) } : { time: false, dress: false };
+  return { kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime, asks };
 }

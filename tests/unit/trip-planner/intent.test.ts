@@ -54,6 +54,14 @@ describe('understand', () => {
     expect(understand('a park with a view').themes).toEqual(expect.arrayContaining(['outdoors', 'view']));
   });
 
+  it('routes a question about the wedding itself to its schedule', () => {
+    expect(understand('What time is the ceremony?').kind).toBe('schedule');
+    expect(understand('Is there a dress code?').kind).toBe('schedule');
+    expect(understand('Saturday night').kind).toBe('schedule');
+    expect(understand('Saturday evening drinks').kind).toBe('places');
+    expect(understand('A free Saturday morning before the wedding').kind).toBe('places');
+  });
+
   it('flags a request for the wedding itself', () => {
     expect(understand('Saturday evening drinks').weddingTime).toBe(true);
     expect(understand('Saturday morning coffee').weddingTime).toBe(false);

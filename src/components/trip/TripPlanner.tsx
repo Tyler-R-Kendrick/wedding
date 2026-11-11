@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { downloadIcs, TripPlannerProvider, TripRenderer, type TripAction, type TripHotel } from '@/components/trip/openui';
 import {
+  blockDateLines,
+  blockEntries,
   buildIcs,
   calendarModel,
   compose,
@@ -16,6 +18,10 @@ import {
   PARTS,
   planEntries,
   safeSlot,
+  scheduleOf,
+  stayFacts,
+  staysInBlock,
+  timeText,
   tripEntries,
   weddingEntries,
   weekendDate,
@@ -76,6 +82,9 @@ type Turn = { id: number; request: string; program: string; waiting: boolean; st
 
 type Starter = { label: string; hint: string; request: string; icon: IconName };
 
+/** The wedding itself: always the first starter, answered from the guest's own invitation. */
+export const WEDDING_STARTER: Starter = { label: 'The wedding day', hint: 'Times, rooms and what to wear', request: 'The wedding day', icon: 'rings' };
+
 /** The starters when the couple have no itinerary for them; `key` is the kind of itinerary each stands in for. */
 export const STARTERS: (Starter & { key: string })[] = [
   { key: 'saturday-morning', label: 'A free Saturday morning', hint: 'Before the wedding', request: 'A free Saturday morning before the wedding', icon: 'sunrise' },
@@ -100,8 +109,9 @@ const MOST_STARTERS = 6;
 const NO_ITINERARIES: PlannerItinerary[] = [];
 
 /**
- * The starters: one for each of the couple's own itineraries a guest can use (each sends a request
- * that lands on it), then the plain ones for what no itinerary covers, and "Plan my whole weekend" last.
+ * The starters: the wedding day first, then one for each of the couple's own itineraries a guest can
+ * use (each sends a request that lands on it), then the plain ones for what no itinerary covers, and
+ * "Plan my whole weekend" last.
  */
 export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: ReadonlySet<string>): Starter[] {
   const own: (Starter & { key: string })[] = [];
@@ -117,7 +127,7 @@ export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: 
   if (own.some((o) => o.key === '45-min' || o.key === '2-3-h')) covered.add('2-3-h');
   const weekend = STARTERS.find((s) => s.key === 'weekend')!;
   const plain = STARTERS.filter((s) => s.key !== 'weekend' && !covered.has(s.key));
-  return [...own, ...plain].slice(0, MOST_STARTERS - 1).concat(weekend).map(({ label, hint, request, icon }) => ({ label, hint, request, icon }));
+  return [WEDDING_STARTER, ...[...own, ...plain].slice(0, MOST_STARTERS - 2), weekend].map(({ label, hint, request, icon }) => ({ label, hint, request, icon }));
 }
 
 const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
@@ -127,7 +137,7 @@ const CONFIRMED_KEY = 'your-trip:weekend-set';
 const ENOUGH = 3;
 /** How long a request waits for the matcher to install before answering without it. */
 const MATCH_WAIT_MS = 6000;
-const NO_WORDS = new Set<Plan['shape']>(['calendar', 'stay', 'arrive']);
+const NO_WORDS = new Set<Plan['shape']>(['calendar', 'stay', 'arrive', 'schedule']);
 const SAVE_FAILED = 'We could not save that just now. Please try again in a moment.';
 const REMOVE_FAILED = 'We could not take that out just now. Please try again in a moment.';
 const TOAST_MS = 5000;
@@ -205,6 +215,7 @@ async function matchScores(request: string, places: PlannerPlace[], signal: Abor
 
 export function TripPlanner({ places, saved: initialSaved, bookings, events, hotel, stay, itineraries = NO_ITINERARIES, actions }: TripPlannerProps) {
   const byId = useMemo(() => new Map(places.map((p) => [p.id, p])), [places]);
+  const block = useMemo(() => stay ?? stayFacts(), [stay]);
   const starters = useMemo(() => startersFor(itineraries, new Set(byId.keys())), [itineraries, byId]);
   const [saved, setSaved] = useState<PlannerSaved[]>(() => initialSaved.filter((s) => byId.has(s.id) || s.name));
   // The weekend as of the last change, for handlers that run between renders; every write updates both.
@@ -262,12 +273,14 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
 
   const calendarEntries = useCallback((): CalendarEntry[] => {
     const origin = typeof location === 'undefined' ? undefined : location.origin;
-    return [...weddingEntries(events), ...planEntries(savedRef.current, byId, origin ? { origin } : {}), ...tripEntries(bookings)];
-  }, [events, bookings, byId]);
+    // The block's check-in and check-out only for a guest staying in it: they may be staying elsewhere.
+    const blockDays = staysInBlock(bookings, block) ? blockEntries(block) : [];
+    return [...weddingEntries(events), ...planEntries(savedRef.current, byId, origin ? { origin } : {}), ...blockDays, ...tripEntries(bookings)];
+  }, [events, bookings, byId, block]);
 
   const composeFor = useCallback(
-    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
-    [byId, calendarEntries],
+    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
+    [byId, events, calendarEntries],
   );
 
   /** The better answer, while the guest has not started using the first one. */
@@ -281,7 +294,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       let current = first;
       const scores = await matchScores(request, places, signal).catch(() => null);
       if (scores && !signal.aborted && !touched.current.has(id)) {
-        const better = draftPlan({ request, places, saved: savedRef.current, scores, itineraries });
+        const better = draftPlan({ request, places, saved: savedRef.current, scores, itineraries, events });
         if (apply(better, false)) current = better;
       }
       if (signal.aborted || touched.current.has(id) || NO_WORDS.has(current.shape)) return;
@@ -290,7 +303,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const text = await writeLines({ system, prompt, signal, onText: (t) => void apply(mergeWritten(base, t, places), true) }).catch(() => null);
       if (text) apply(mergeWritten(base, text, places, { complete: true }), false);
     },
-    [places, itineraries, composeFor, patch],
+    [places, itineraries, events, composeFor, patch],
   );
 
   const send = useCallback(
@@ -301,7 +314,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const ac = new AbortController();
       ctl.current = ac;
       const id = nextId.current++;
-      const plan = draftPlan({ request, places, saved: savedRef.current, itineraries });
+      const plan = draftPlan({ request, places, saved: savedRef.current, itineraries, events });
       const quiet = NO_WORDS.has(plan.shape);
       setTurns((all) => [...all.map((t) => (t.waiting || t.streaming ? { ...t, waiting: false, streaming: false } : t)), { id, request, program: composeFor(plan), waiting: !quiet, streaming: false }]);
       setDraft('');
@@ -312,7 +325,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         if (ctl.current === ac) patch(id, { waiting: false, streaming: false });
       });
     },
-    [places, itineraries, composeFor, upgrade, patch],
+    [places, itineraries, events, composeFor, upgrade, patch],
   );
 
   const startOver = useCallback(() => {
@@ -516,7 +529,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const openWeekend = tab === 'weekend' ? undefined : () => (setTab('weekend'), closeToast());
 
   return (
-    <TripPlannerProvider places={byId} saved={savedItems} hotel={hotel} {...(stay ? { stay } : {})} onAction={onAction}>
+    <TripPlannerProvider places={byId} saved={savedItems} hotel={hotel} stay={block} onAction={onAction}>
       <div className="trip-planner" onPointerDownCapture={(e) => (lastPress.current = (e.target as Element).closest?.('button')?.getBoundingClientRect() ?? null)}>
         <div className="trip-tabs" role="tablist" aria-label="Planner">
           <button type="button" role="tab" id="trip-tab-ask" aria-selected={tab === 'ask'} aria-controls="trip-panel-ask" tabIndex={tab === 'ask' ? 0 : -1} className="trip-tab" onClick={() => setTab('ask')} onKeyDown={(e) => e.key === 'ArrowRight' && (setTab('weekend'), tabRef.current?.focus())}>
@@ -626,7 +639,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         </div>
 
         <div id="trip-panel-weekend" role="tabpanel" aria-labelledby="trip-tab-weekend" hidden={tab !== 'weekend'} className="trip-panel">
-          <Board saved={saved} byId={byId} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
+          <Board saved={saved} byId={byId} events={events} stay={block} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
         </div>
 
         <div className="trip-toast trip-toast--float" role="status" aria-live="polite">
@@ -674,10 +687,12 @@ function Toast({
   );
 }
 
-/** The three days, each in parts; Saturday afternoon and evening belong to the wedding. */
+/** The three days, each in parts; Saturday afternoon and evening belong to the wedding, and list its events. */
 function Board({
   saved,
   byId,
+  events,
+  stay,
   confirmed,
   onMove,
   onRemove,
@@ -687,6 +702,8 @@ function Board({
 }: {
   saved: PlannerSaved[];
   byId: ReadonlyMap<string, PlannerPlace>;
+  events: readonly WeddingEventInput[];
+  stay: StayFacts;
   confirmed: boolean;
   onMove: (id: string, day: Day, part: Part) => void;
   onRemove: (id: string) => void;
@@ -726,6 +743,8 @@ function Board({
     setDragging(null);
   };
   const enough = saved.length >= ENOUGH;
+  const schedule = useMemo(() => scheduleOf(events), [events]);
+  const lines = blockDateLines(stay);
   return (
     <div className="trip-board" ref={boardRef}>
       <div className="trip-board__bar">
@@ -755,18 +774,55 @@ function Board({
             <h3 id={`trip-day-${day}`} className="trip-title trip-title--md" tabIndex={-1}>
               {dateLabel(weekendDate(day))}
             </h3>
+            {stay.checkIn === weekendDate(day) && lines.checkIn ? (
+              <p className="trip-day__fact">
+                <Icon name="bed" className="trip-icon" />
+                {lines.checkIn}
+              </p>
+            ) : null}
+            {stay.checkOut === weekendDate(day) && lines.checkOut ? (
+              <p className="trip-day__fact">
+                <Icon name="bed" className="trip-icon" />
+                {lines.checkOut}
+              </p>
+            ) : null}
+            {day !== 'sat'
+              ? schedule
+                  .filter((e) => e.dateIso === weekendDate(day))
+                  .map((e) => (
+                    <p key={e.id} className="trip-day__fact">
+                      <Icon name="rings" className="trip-icon" />
+                      {`${e.name}: ${timeText(e)}`}
+                    </p>
+                  ))
+              : null}
             {PARTS.map((part) => {
               const key = `${day}-${part}`;
               if (isWeddingTime(day, part)) {
-                return part === 'afternoon' ? (
+                if (part !== 'afternoon') return null;
+                const ours = schedule.filter((e) => e.dateIso === weekendDate('sat'));
+                return (
                   <div key={key} className="trip-slot is-wedding">
                     <p className="trip-slot__label">
                       <Icon name="rings" className="trip-icon trip-icon--caps" />
-                      Afternoon and evening
+                      Afternoon and evening: the wedding
                     </p>
-                    <p className="trip-slot__wedding">The wedding</p>
+                    {ours.length ? (
+                      <ol className="trip-slot__events" aria-label="The wedding">
+                        {ours.map((e) => (
+                          <li key={e.id} className="trip-slot__event">
+                            <span className="trip-slot__wedding">{e.name}</span>
+                            <span>{timeText(e)}</span>
+                            {e.room ? <span>{e.room}</span> : null}
+                            {e.dressCode ? <span>{`Dress code: ${e.dressCode}`}</span> : null}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="trip-slot__wedding">The wedding</p>
+                    )}
                   </div>
-                ) : null;
+                );
               }
               const here = saved.filter((s) => s.day === day && s.part === part);
               return (

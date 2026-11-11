@@ -1,4 +1,4 @@
-import type { PlannerItinerary, PlannerPlace } from '@/domain/trip-planner';
+import type { PlannerItinerary, PlannerPlace, WeddingEventInput } from '@/domain/trip-planner';
 
 /** Neutral places: invented names and coordinates, shaped like the couple's real list. */
 const P = (p: Omit<PlannerPlace, 'slug' | 'href'> & { slug?: string }): PlannerPlace => ({ slug: p.id, href: `/guests/things-to-do/${p.id}`, ...p });
@@ -104,4 +104,21 @@ export const ITINERARIES: PlannerItinerary[] = [
       { placeId: 'rooftop', minutes: 90 },
     ],
   },
+];
+
+/**
+ * Neutral wedding events, shaped like the couple's: the seeded three with nothing set yet (their
+ * description is the hint list_my_events leaves once it strips the marker, which the page never
+ * passes on), and the same three once the couple have filled some in.
+ */
+export const UNSET_EVENTS: WeddingEventInput[] = [
+  { id: 'ev-ceremony', name: 'Ceremony', dateIso: '2031-05-10', startsAt: null, endsAt: null, unconfirmed: true },
+  { id: 'ev-cocktails', name: 'Cocktail hour', dateIso: '2031-05-10', startsAt: null, endsAt: null, unconfirmed: true },
+  { id: 'ev-reception', name: 'Reception', dateIso: '2031-05-10', startsAt: null, endsAt: null, unconfirmed: true },
+];
+
+export const SET_EVENTS: WeddingEventInput[] = [
+  { id: 'ev-ceremony', name: 'Ceremony', dateIso: '2031-05-10', startsAt: '2031-05-10T21:30:00.000Z', endsAt: '2031-05-10T22:00:00.000Z', room: 'Garden Room', location: 'Garden Room, Our Hotel, 1 Main St', dressCode: 'Garden formal', accessibilityNote: 'Step-free from the lobby.', description: 'Short and sweet.' },
+  { id: 'ev-cocktails', name: 'Cocktail hour', dateIso: '2031-05-10', startsAt: null, endsAt: null, room: 'The Long Bar', unconfirmed: true },
+  { id: 'ev-reception', name: 'Reception', dateIso: '2031-05-10', startsAt: '2031-05-10T23:30:00.000Z', endsAt: '2031-05-11T04:00:00.000Z', room: 'Ballroom', dressCode: 'Garden formal', unconfirmed: true },
 ];

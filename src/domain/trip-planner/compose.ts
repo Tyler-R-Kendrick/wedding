@@ -1,5 +1,6 @@
 import { fitIn } from './draft';
 import { DAY_NAME, dateLabel, weekendDate } from './facts';
+import { scheduleOf } from './schedule';
 import { DAYS, type ComposeContext, type Day, type Part, type Plan, type PlanPick, type PlannerPlace } from './types';
 
 /**
@@ -187,7 +188,11 @@ function weekendProgram(plan: Plan, ctx: ComposeContext): string {
     const mine = picks.filter((x) => x.day === day);
     if (!mine.length && day !== 'sat') continue;
     const parts: string[] = [`Title(${str(dateLabel(weekendDate(day)))}, "md")`];
-    if (day === 'sat') parts.push('Text("The afternoon and evening are the wedding.", "md", "muted")');
+    if (day === 'sat') {
+      // The wedding's own events, by name, when the invitation carries them.
+      const names = scheduleOf(ctx.events ?? []).filter((e) => e.dateIso === weekendDate('sat')).map((e) => e.name);
+      parts.push(`Text(${str(names.length ? `The afternoon and evening are the wedding: ${names.join(', ')}.` : 'The afternoon and evening are the wedding.')}, "md", "muted")`);
+    }
     if (mine.length) parts.push(grid(mine));
     p.root.push(day);
     p.lines.push(`${day} = Col(${list(parts)}, 2)`);
@@ -210,6 +215,20 @@ function calendarProgram(plan: Plan, ctx: ComposeContext): string {
   });
   p.root.push('cal');
   p.lines.push(`cal = Calendar(${list(days)})`);
+  return end(p, plan);
+}
+
+/** The wedding's events in order, then the room block with its check-in and check-out days. */
+function scheduleProgram(plan: Plan, ctx: ComposeContext): string {
+  const p = begin(plan);
+  const items = scheduleOf(ctx.events ?? []);
+  if (items.length) {
+    const rows = items.map((e) => `WeddingEvent(${[str(e.name), str(e.day), opt(e.time), opt(e.room), opt(e.dressCode), opt(e.accessibilityNote), opt(e.about), opt(e.note)].join(', ').replace(/(, null)+$/, '')})`);
+    p.root.push('day');
+    p.lines.push(`day = Schedule(${list(rows)})`);
+  }
+  p.root.push('stay');
+  p.lines.push('stay = Stay(null, true)');
   return end(p, plan);
 }
 
@@ -244,6 +263,8 @@ export function compose(plan: Plan, ctx: ComposeContext): string {
       return weekendProgram(safe, ctx);
     case 'calendar':
       return calendarProgram(safe, ctx);
+    case 'schedule':
+      return scheduleProgram(safe, ctx);
     case 'picks':
     default:
       return picksProgram(safe, ctx, false);

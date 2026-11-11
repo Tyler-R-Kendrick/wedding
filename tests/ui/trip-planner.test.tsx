@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { weekendDate, type WeddingEventInput } from '@/domain/trip-planner';
+import { dateLabel, eventTime, stayFacts, weekendDate, type WeddingEventInput } from '@/domain/trip-planner';
 import { ITINERARIES, PLACES } from '../unit/trip-planner/fixtures';
 
 /**
@@ -95,8 +95,9 @@ describe('the Your Trip planner', () => {
     const starters = within(screen.getByRole('group', { name: 'Ideas to start with' }))
       .getAllByRole('button')
       .map((b) => b.querySelector('.trip-starter__label')?.textContent);
-    // One per itinerary with stops (the couple's title where it reads as a phrase), at most six, the whole weekend last.
-    expect(starters).toEqual(['I have 45 minutes', 'Two to three hours', 'With kids', 'For the architecture people', 'Food and drink', 'Plan my whole weekend']);
+    // The wedding day first, then one per itinerary with stops (the couple's title where it reads as a
+    // phrase), at most six in all, the whole weekend last.
+    expect(starters).toEqual(['The wedding day', 'I have 45 minutes', 'Two to three hours', 'With kids', 'For the architecture people', 'Plan my whole weekend']);
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /With kids/ })));
     expect(await screen.findByRole('heading', { level: 3, name: 'With kids' })).toBeTruthy();
     expect(screen.getByText(/^Short legs, short stops\./)).toBeTruthy();
@@ -108,7 +109,7 @@ describe('the Your Trip planner', () => {
     const labels = within(screen.getByRole('group', { name: 'Ideas to start with' }))
       .getAllByRole('button')
       .map((b) => b.querySelector('.trip-starter__label')?.textContent);
-    expect(labels).toEqual(['For the architecture people', 'A free Saturday morning', 'I have two hours', 'With kids', 'Where should we get dinner?', 'Plan my whole weekend']);
+    expect(labels).toEqual(['The wedding day', 'For the architecture people', 'A free Saturday morning', 'I have two hours', 'With kids', 'Plan my whole weekend']);
   });
 
   it('rewords the answer as the written lines arrive, until the guest starts using it', async () => {
@@ -168,7 +169,10 @@ describe('the Your Trip planner', () => {
     // Saturday afternoon and evening belong to the wedding, and are never offered.
     const move = screen.getByRole('combobox', { name: 'Move Bean House Coffee to' }) as HTMLSelectElement;
     expect([...move.options].map((o) => o.value)).not.toContain('sat-afternoon');
-    expect(screen.getByText('The wedding')).toBeTruthy();
+    // That slot lists the wedding's own events instead.
+    const wedding = screen.getByRole('list', { name: 'The wedding' });
+    expect(within(wedding).getByText('The Ceremony')).toBeTruthy();
+    expect(within(wedding).getByText('Time to be announced')).toBeTruthy();
     await act(async () => fireEvent.change(move, { target: { value: 'sun-afternoon' } }));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon' });
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('link', { name: 'Bean House Coffee' }).getAttribute('href')).toBe('/guests/things-to-do/bean-house');
@@ -223,6 +227,96 @@ describe('the Your Trip planner', () => {
     expect(text.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
     for (const title of ['The Ceremony', 'Bean House Coffee', 'Art Museum', 'The Aquarium', 'Flight home']) expect(text).toContain(`SUMMARY:${title}`);
     expect(document.body.textContent).toContain('Your calendar file is saved.');
+  });
+
+  // The couple's three events once some details are set; times in UTC, read in the wedding's zone.
+  const sat = weekendDate('sat');
+  const SET: WeddingEventInput[] = [
+    { id: 'ev-c', name: 'Ceremony', dateIso: sat, startsAt: `${sat}T21:30:00.000Z`, endsAt: `${sat}T22:00:00.000Z`, room: 'Garden Room', dressCode: 'Garden formal', description: 'Short and sweet.' },
+    { id: 'ev-k', name: 'Cocktail hour', dateIso: sat, startsAt: null, endsAt: null, unconfirmed: true },
+    { id: 'ev-r', name: 'Reception', dateIso: sat, startsAt: `${sat}T23:30:00.000Z`, endsAt: null, room: 'Ballroom' },
+  ];
+
+  it('the board lists the wedding\'s events in their slot, and the room block\'s check-in and check-out on Friday and Sunday', async () => {
+    const stay = stayFacts();
+    setup({ events: SET, stay });
+    await act(async () => fireEvent.click(tab(/My weekend/)));
+    const wedding = screen.getByRole('list', { name: 'The wedding' });
+    const rows = within(wedding).getAllByRole('listitem').map((li) => li.textContent);
+    expect(rows).toEqual([
+      `Ceremony${eventTime(SET[0]!.startsAt, SET[0]!.endsAt)}Garden RoomDress code: Garden formal`,
+      'Cocktail hourTime to be announced',
+      `Reception${eventTime(SET[2]!.startsAt)}Ballroom`,
+    ]);
+    // The block's dates are facts about the block, on the days they fall on.
+    const friday = screen.getByRole('region', { name: /^Friday/ });
+    const sunday = screen.getByRole('region', { name: /^Sunday/ });
+    expect(stay.checkIn).toBe(weekendDate('fri'));
+    expect(within(friday).getByText(`Our room block: check-in ${dateLabel(stay.checkIn!)}`)).toBeTruthy();
+    expect(within(sunday).getByText(`Our room block: check-out ${dateLabel(stay.checkOut!)}`)).toBeTruthy();
+    expect(within(friday).queryByText(/check-out/)).toBeNull();
+  });
+
+  it('the wedding day starter comes first, and answers with the schedule, the room block and what to ask next', async () => {
+    setup({ events: SET });
+    const first = within(screen.getByRole('group', { name: 'Ideas to start with' })).getAllByRole('button')[0]!;
+    expect(first.querySelector('.trip-starter__label')?.textContent).toBe('The wedding day');
+    await act(async () => fireEvent.click(first));
+    expect(await screen.findByRole('heading', { level: 3, name: 'The wedding day' })).toBeTruthy();
+    const day = screen.getByRole('region', { name: 'The wedding day' });
+    const names = [...day.querySelectorAll('.trip-sched__name')].map((n) => n.textContent);
+    expect(names).toEqual(['Ceremony', 'Cocktail hour', 'Reception']);
+    expect(within(day).getByText(eventTime(SET[0]!.startsAt, SET[0]!.endsAt)!)).toBeTruthy();
+    expect(within(day).getByText('Time to be announced')).toBeTruthy();
+    expect(within(day).getByText('Garden Room')).toBeTruthy();
+    expect(within(day).getByText('Dress code: Garden formal')).toBeTruthy();
+    expect(within(day).getByText('Short and sweet.')).toBeTruthy();
+    const block = screen.getByRole('region', { name: 'Our room block' });
+    expect(within(block).getByText(/^Our room block: check-in /)).toBeTruthy();
+    expect(within(block).getByText(/^Our room block: check-out /)).toBeTruthy();
+    expect(within(block).getByText(stayFacts().address)).toBeTruthy();
+    expect(within(block).getByRole('link', { name: /Book your room/ })).toBeTruthy();
+    for (const next of ['Getting here from the airport', 'A free Saturday morning', 'Where should we get dinner on Friday?']) expect(screen.getByRole('button', { name: next })).toBeTruthy();
+    // No written rewording for this answer: the facts stand as they are.
+    expect(local.writeLines).not.toHaveBeenCalled();
+  });
+
+  it('asked about the ceremony\'s time before it is set, says so plainly', async () => {
+    setup();
+    await ask('What time is the ceremony?');
+    expect(await screen.findByText('We have not announced the time of the ceremony yet. We will put it here as soon as it is set.')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'The wedding day' })).getByText('Time to be announced')).toBeTruthy();
+  });
+
+  it('the calendar file carries the block\'s check-in and check-out only for a guest staying there', async () => {
+    const files: string[] = [];
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((b) => (void (b as Blob).text().then((t) => files.push(t)), 'blob:calendar'));
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const saved = [
+      { id: 'bean-house', day: 'sat' as const, part: 'morning' as const, name: 'Bean House Coffee', itemId: ITEM(1) },
+      { id: 'art-museum', day: 'fri' as const, part: 'afternoon' as const, name: 'Art Museum', itemId: ITEM(2) },
+      { id: 'aquarium', day: 'sun' as const, part: 'morning' as const, name: 'The Aquarium', itemId: ITEM(3) },
+    ];
+    const stay = stayFacts();
+    const exportFile = async (bookings: Props['bookings']) => {
+      const u = setup({ saved, events: SET, stay, bookings });
+      await act(async () => fireEvent.click(tab(/My weekend/)));
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: /Confirm my weekend|Show my calendar/ })));
+      await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Add to my calendar' })));
+      await waitFor(() => expect(files.length).toBeGreaterThan(0));
+      u.unmount();
+      return files.pop()!.replace(/\r\n /g, '');
+    };
+    const elsewhere = await exportFile([]);
+    expect(elsewhere).toContain('SUMMARY:Ceremony');
+    expect(elsewhere).toContain('LOCATION:Garden Room');
+    expect(elsewhere).toContain('DESCRIPTION:Short and sweet. Dress code: Garden formal.');
+    expect(elsewhere).not.toContain('SUMMARY:Check-in');
+    const staying = await exportFile([{ id: 'h-1', kind: 'hotel', status: 'confirmed', title: stay.hotelName, startAt: `${weekendDate('fri')}T21:00:00.000Z`, endAt: `${weekendDate('sun')}T16:00:00.000Z`, provider: null }]);
+    expect(staying).toContain(`SUMMARY:Check-in at the ${stay.hotelName}`);
+    expect(staying).toContain(`DTSTART;VALUE=DATE:${stay.checkIn!.replace(/-/g, '')}`);
+    expect(staying).toContain(`SUMMARY:Check-out at the ${stay.hotelName}`);
   });
 
   it('a next step from an answer sends it as a new request', async () => {
