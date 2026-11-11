@@ -91,7 +91,10 @@ test.describe('security headers', () => {
     // relaxed dev policy is not the thing being asserted.
     expect(csp).not.toContain('unsafe-eval');
     expect(csp).toContain('upgrade-insecure-requests');
-    expect(csp).toContain("connect-src 'self'");
+    // Same-origin plus the model hub the on-device models download from; nothing else off-site.
+    expect(csp).toContain("connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co;");
+    expect(csp).toMatch(/script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'(;|$)/);
+    expect(res.headers()['permissions-policy']).toBe('camera=(), microphone=(self), geolocation=(), on-device-speech-recognition=(self)');
     expect(hsts).toBe('max-age=63072000; includeSubDomains');
     // `preload` is deliberately absent: the preload list is effectively one-way.
     expect(hsts).not.toContain('preload');

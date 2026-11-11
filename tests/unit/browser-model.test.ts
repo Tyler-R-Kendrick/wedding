@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { askOnDevice, isSupported, prepare, probe, warm } from '@/lib/ai/browser-model';
+import { askOnDevice, isSupported, prepare, probe, streamOnDevice, warm } from '@/lib/ai/browser-model';
 
 type CreateOptions = { initialPrompts?: { role: string; content: string }[] };
 type Prompt = (messages: unknown, options?: { signal?: AbortSignal }) => Promise<string>;
@@ -12,6 +12,25 @@ function stubLanguageModel(impl: Record<string, unknown>) {
 /** A Prompt API session as Chrome shapes it: `prompt`, `destroy`, and the overflow event target. */
 function session(prompt: Prompt) {
   return { prompt, destroy: vi.fn(), addEventListener: vi.fn() };
+}
+
+/** A session that streams `chunks` from `promptStreaming`, failing after them when `fail` is set. */
+function streamingSession(chunks: string[], options: { fail?: boolean; hang?: boolean } = {}) {
+  return {
+    ...session(async () => chunks.join('')),
+    promptStreaming: (_messages: unknown, opts?: { signal?: AbortSignal }) =>
+      new ReadableStream<string>({
+        async start(controller) {
+          for (const chunk of chunks) controller.enqueue(chunk);
+          if (options.fail) return controller.error(new Error('model crashed'));
+          if (options.hang) {
+            await new Promise((resolve) => opts?.signal?.addEventListener('abort', resolve));
+            return;
+          }
+          controller.close();
+        },
+      }),
+  };
 }
 
 afterEach(() => {
@@ -107,5 +126,56 @@ describe('the on-device concierge, through the AI SDK', () => {
       new Promise((_resolve, reject) => options?.signal?.addEventListener('abort', () => reject(options.signal?.reason)));
     stubLanguageModel({ availability: async () => 'available', create: async () => session(hang) });
     await expect(askOnDevice('anything', { signal: AbortSignal.timeout(20) })).resolves.toBeNull();
+  });
+
+  it('passes download progress through to the caller', async () => {
+    const create = vi.fn(async (options: { monitor?: (m: EventTarget) => void }) => {
+      const monitor = new EventTarget();
+      options.monitor?.(monitor);
+      const progress = new Event('downloadprogress') as Event & { loaded: number };
+      progress.loaded = 0.5;
+      monitor.dispatchEvent(progress);
+      return session(async () => 'ok');
+    });
+    stubLanguageModel({ availability: async () => 'downloadable', create });
+    const seen: number[] = [];
+    await prepare('downloadable', (p) => seen.push(p));
+    expect(seen).toContain(0.5);
+  });
+
+  describe('streamed', () => {
+    it('hands the whole text so far to the caller as it arrives, and closes the session', async () => {
+      const opened = streamingSession(['TITLE A walk', '\nINTRO Close by.']);
+      stubLanguageModel({ availability: async () => 'available', create: async () => opened });
+      const seen: string[] = [];
+      const text = await streamOnDevice('plan my morning', { systemPrompt: 'Lines only.', onText: (t) => seen.push(t) });
+      expect(text).toBe('TITLE A walk\nINTRO Close by.');
+      expect(seen).toEqual(['TITLE A walk', 'TITLE A walk\nINTRO Close by.']);
+      expect(opened.destroy).toHaveBeenCalledOnce();
+    });
+
+    it('resolves null without the Prompt API, for an unavailable model, and for an empty stream', async () => {
+      const onText = vi.fn();
+      await expect(streamOnDevice('x', { onText })).resolves.toBeNull();
+      const create = vi.fn();
+      stubLanguageModel({ availability: async () => 'unavailable', create });
+      await expect(streamOnDevice('x', { onText })).resolves.toBeNull();
+      expect(create).not.toHaveBeenCalled();
+      stubLanguageModel({ availability: async () => 'available', create: async () => streamingSession([]) });
+      await expect(streamOnDevice('x', { onText })).resolves.toBeNull();
+      expect(onText).not.toHaveBeenCalled();
+    });
+
+    it('resolves null when the stream fails part-way, and still closes the session', async () => {
+      const opened = streamingSession(['TITLE half'], { fail: true });
+      stubLanguageModel({ availability: async () => 'available', create: async () => opened });
+      await expect(streamOnDevice('x', { onText: () => {} })).resolves.toBeNull();
+      expect(opened.destroy).toHaveBeenCalledOnce();
+    });
+
+    it('resolves null when the caller aborts', async () => {
+      stubLanguageModel({ availability: async () => 'available', create: async () => streamingSession(['TITLE'], { hang: true }) });
+      await expect(streamOnDevice('x', { onText: () => {}, signal: AbortSignal.timeout(20) })).resolves.toBeNull();
+    });
   });
 });

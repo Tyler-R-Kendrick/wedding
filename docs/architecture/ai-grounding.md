@@ -203,6 +203,31 @@ each ends in phase 2 with no `draft`, and the server answers by quoting the retr
 the deterministic extractive answerer (`src/providers/ai-model/concierge-mock.ts`). No model is
 called and nothing is billed on either path.
 
+### 8b. The other on-device models
+
+Two small open models also run in the guest's browser, for the trip planner, from
+`src/lib/ai/local` (a module worker, `local.worker.ts`, using `@huggingface/transformers` on the
+`wasm` device):
+
+| Part | Model | Does |
+|---|---|---|
+| matcher | `Xenova/bge-small-en-v1.5`, q8, about 34 MB | sentence vectors that rank the couple's places against a request |
+| speech | `onnx-community/whisper-tiny.en`, q8, about 42 MB | dictation where the browser has no on-device speech recognition |
+
+Their weights are fetched from the Hugging Face Hub (`huggingface.co`, redirecting to `*.hf.co`)
+into the browser's Cache API; the ONNX runtime's wasm is served by this site from `/ort/`, copied
+there from `node_modules` by `scripts/copy-ort-wasm.mjs`. Nothing else leaves the device, and the
+server never loads either library. Dictation (`src/lib/speech`) uses the browser's own recognition
+only with `processLocally` (never the server-based kind), and otherwise records the microphone and
+transcribes it with the speech model.
+
+`<LocalModelKeeper />` in the root layout looks for all three parts (these two and the Prompt API
+model of 8a) on every page once it is idle. It installs the matcher, and the speech model where the
+browser has no on-device dictation, unless the guest has Save-Data on, is on a cellular connection,
+or has less than 300 MB of storage free; then the planner installs on first use. A Prompt API model
+the browser reports as `downloadable` is started on the guest's first tap or key press, because the
+browser requires a gesture. Each part is optional: every caller has a deterministic path without it.
+
 `ask_concierge` is the same pipeline as a non-streaming capability for the UI and WebMCP. It is
 deliberately **not** exposed to the model (`exposure.ai: false`): a model must not recurse into the
 concierge.

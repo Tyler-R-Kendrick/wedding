@@ -84,7 +84,7 @@ minimisation on top of the same check, never the check itself.
 |---|---|---|
 | Submit a state-changing request from another origin | Every cookie-bearing mutation checks the `Origin` against this site's own | `tests/security/otp.spec.ts` — "CSRF: cookie-bearing mutations from a foreign origin are rejected everywhere" |
 | Frame the site to harvest clicks | `frame-ancestors 'none'` plus `X-Frame-Options` | `tests/e2e/security-headers.spec.ts` |
-| Inject a `<base>` or an off-site script/form | `base-uri 'self'`, `form-action 'self'`, `script-src 'self'`, `connect-src 'self'`, `object-src 'none'` | `tests/e2e/security-headers.spec.ts` |
+| Inject a `<base>` or an off-site script/form | `base-uri 'self'`, `form-action 'self'`, `script-src 'self'`, `connect-src 'self'` plus only the Hugging Face Hub the on-device models download from, `object-src 'none'` | `tests/e2e/security-headers.spec.ts` |
 | Turn a redirect into an open redirect | A host allowlist on every outbound link; the capability route never redirects at all; `javascript:`, `data:`, plain http, foreign and lookalike hosts are rejected | `tests/security/redirect.spec.ts` |
 | Downgrade to http | HSTS in production only (a dev server is http on purpose) | `tests/e2e/security-headers.spec.ts` |
 

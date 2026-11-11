@@ -29,7 +29,18 @@
  *   - `form-action 'self'` — an injected form cannot post a guest's RSVP or contact details off-site;
  *   - `script-src 'self'` (no external origins) — an injected `<script src>` pointing anywhere else
  *     is still blocked, which is the shape most third-party compromise takes;
- *   - `connect-src 'self'` — exfiltration by fetch/XHR/WebSocket to another origin is blocked.
+ *   - `connect-src` is this origin plus the Hugging Face Hub only — exfiltration by fetch/XHR/
+ *     WebSocket anywhere else is blocked. The Hub is there for one reason: the on-device models
+ *     (src/lib/ai/local) download their weights from it into the guest's browser cache. Its file
+ *     redirects land on `*.hf.co` CDN hosts, hence the two wildcards, and nothing is ever sent there
+ *     but the download request itself.
+ *
+ * Two more additions for those models, each as narrow as it can be:
+ *   - `script-src 'wasm-unsafe-eval'` lets the browser compile WebAssembly (the ONNX runtime, served
+ *     from `/ort/` on this origin). It does not allow JavaScript `eval`; production still has none.
+ *   - Permissions-Policy grants the microphone and on-device speech recognition to this origin only,
+ *     for dictation in the trip planner. Nothing is granted to any frame, and the camera and
+ *     geolocation stay off.
  *
  * The upgrade path, when someone wants it: `experimental.sri` (hash-based, keeps static rendering)
  * would let `'unsafe-inline'` come out of `script-src`. It is experimental, so it is named rather
@@ -56,6 +67,20 @@ export interface SecurityHeaderOptions {
 const IMAGE_SOURCES = "'self' data: blob: https:";
 
 /**
+ * Where the on-device models' weights come from: the Hugging Face Hub, whose file URLs redirect to
+ * its CDN hosts under `hf.co`. Downloads only, into the guest's own browser cache.
+ */
+export const MODEL_HOSTS = 'https://huggingface.co https://*.huggingface.co https://*.hf.co';
+
+/**
+ * The browser features this site asks for. The microphone and on-device speech recognition, for
+ * the trip planner's dictation, on this origin only; everything else stays off.
+ * `on-device-speech-recognition` is the Web Speech API's own policy token, gating
+ * `SpeechRecognition.available()` and `.install()`.
+ */
+export const PERMISSIONS_POLICY = 'camera=(), microphone=(self), geolocation=(), on-device-speech-recognition=(self)';
+
+/**
  * `framing: 'self'` is for the design pipeline's stages only (src/lib/stage-hosting.ts): each stage
  * page shows its captured page in a same-origin frame. The wedding site itself is never framed.
  */
@@ -64,14 +89,15 @@ export function contentSecurityPolicy({ production }: SecurityHeaderOptions, { f
     'default-src': "'self'",
     // See the header comment: no nonce, so Next's inline RSC payload needs 'unsafe-inline'.
     // React's dev build uses eval() to rebuild server stacks in the browser; production does not.
-    'script-src': production ? "'self' 'unsafe-inline'" : "'self' 'unsafe-inline' 'unsafe-eval'",
+    // 'wasm-unsafe-eval': WebAssembly compilation only, for the on-device models' runtime.
+    'script-src': production ? "'self' 'unsafe-inline' 'wasm-unsafe-eval'" : "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
     // Next emits inline <style> for critical CSS, and React writes inline style attributes.
     'style-src': "'self' 'unsafe-inline'",
     'img-src': IMAGE_SOURCES,
     'media-src': "'self' blob: https:",
     'font-src': "'self'",
-    // Every request the browser makes is same-origin. `next dev` adds an HMR websocket.
-    'connect-src': production ? "'self'" : "'self' ws: wss:",
+    // Same-origin, plus the Hub the on-device models download from. `next dev` adds an HMR websocket.
+    'connect-src': production ? `'self' ${MODEL_HOSTS}` : `'self' ${MODEL_HOSTS} ws: wss:`,
     'worker-src': "'self' blob:",
     'manifest-src': "'self'",
     'object-src': "'none'",
@@ -101,7 +127,7 @@ export function securityHeaders(options: SecurityHeaderOptions): { key: string; 
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'X-Frame-Options', value: 'DENY' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
     { key: 'Content-Security-Policy', value: contentSecurityPolicy(options) },
     ...(options.production ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }] : []),
   ];

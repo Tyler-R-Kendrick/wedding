@@ -110,7 +110,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET` (32+ random chars) and `ADMIN_EMAILS` for the couple.
 4. Storage: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` for R2, B2, Supabase Storage or MinIO (never AWS).
 5. Email: attach and authorize `resend/wedding` in Vercel Connect; set `RESEND_CONNECT_USER_ID` and verified `EMAIL_FROM`.
-6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set.
+6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set. The trip planner's matching and speech models also run in the browser; their weights download from the Hugging Face Hub (allowed in the CSP) and the ONNX runtime is copied into `public/ort/` by `npm install`, `npm run dev` and `npm run build`, with no key or variable.
 7. Cron: nothing to add on Vercel. `vercel.json` schedules `/api/jobs/run`, `/api/uploads/jobs/run` and `/api/media-ai/jobs/run` every 5 minutes (`*/5 * * * *`); Vercel Cron sends `GET` with `Authorization: Bearer $CRON_SECRET`. Another scheduler calls the same routes (`GET` or `POST`) with that bearer.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
 9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.
