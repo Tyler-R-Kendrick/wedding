@@ -99,7 +99,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.locator(`input[name="guestId"][value="${f.guests.ana}"]`).check();
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.ana!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await context.cookies()).find((k) => k.name === 'wedding.session_token')!;
     expect(c.value).not.toBe('attacker-chosen.value');
@@ -113,7 +113,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.locator(`input[name="guestId"][value="${f.guests.amara}"]`).check();
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.amara!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await page.context().cookies()).find((k) => k.name.endsWith('session_token'))!;
     const cookie = `${c.name}=${c.value}`;

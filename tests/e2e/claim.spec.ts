@@ -21,7 +21,7 @@ test.describe('claim journey', () => {
     expect(await codeInput.evaluate((el) => getComputedStyle(el).fontSize)).not.toBe('16px');
     expect(Number.parseFloat(await codeInput.evaluate((el) => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(17);
     await codeInput.fill(await readOtp(request, f.emails.ana!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ana');
     await expect(page.locator('body')).toContainText('you manage the RSVP');
@@ -77,7 +77,7 @@ test.describe('claim journey', () => {
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/admin(\/|$)/);
   });
 
@@ -112,7 +112,7 @@ test.describe('claim journey', () => {
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page.locator('body')).toContainText('Sara Fitzgerald’s email');
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.shared!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     // This asserted 'Welcome, Sara' — the manager whose inbox took the code — after the reader had
     // just picked Ruth one screen earlier. That is the defect this branch fixes, so the assertion
     // changes deliberately: the heading names the person who was picked, and the lede has to say
