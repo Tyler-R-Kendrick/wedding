@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { guestContactLostLinkLine, guestContactMailtoHref, GUEST_CONTACT_EMAIL } from '@/domain/contact/copy';
 import { Placeholder } from '@/components/provenance/Placeholder';
 
 /**
@@ -24,11 +25,11 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
       <div className="page">
         <h1 className="page__title">{what} is for invited guests</h1>
         <p className="page__lede">
-          You are signed in as an administrator, and an administrator has no household of their own. To see this page the way a guest does, browse the site as one of them; their answers are in the console.
+          You are signed in as an administrator. Choose <strong>View as role</strong> on the admin home page to preview this screen with a guest role’s entitlements — no guest profile required. To inspect one real guest’s data, use <strong>Inspect a guest</strong> on the Guests screen (owners only).
         </p>
         <div className="page__actions">
-          <Link className="btn btn--primary" href="/admin/guests#browse-as">
-            Browse as a guest
+          <Link className="btn btn--primary" href="/admin#view-as">
+            View as role
           </Link>
           <Link className="btn btn--secondary" href="/admin">
             Go to the admin console
@@ -47,7 +48,8 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
         </p>
         <p>Sara and Tyler can put it right; nothing here will fix it by itself, so please do not keep signing in.</p>
         <p className="card__meta">
-          To reach them: <Placeholder inline>how to reach them</Placeholder>
+          To reach them:{' '}
+          <a href={guestContactMailtoHref()}>{GUEST_CONTACT_EMAIL}</a>
         </p>
       </div>
     );
@@ -66,9 +68,7 @@ export function GuestsOnly({ what, signedIn = false, admin = false, returnTo }: 
           Find your invitation
         </Link>
       </p>
-      <p className="card__meta">
-        Lost the link? <Placeholder inline>how to reach them</Placeholder>
-      </p>
+      <p className="card__meta">{guestContactLostLinkLine()}</p>
     </div>
   );
 }

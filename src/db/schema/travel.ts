@@ -59,7 +59,7 @@ export interface RoomBlock {
   checkOut: string | null;
   /** YYYY-MM-DD: last day to book at the block rate. */
   cutoff: string | null;
-  /** From the CAA kit: "courtesy block up to 20 rooms subject to availability". A confirmed fact. */
+  /** Optional guest-facing note (e.g. phone booking instructions). Never unverified kit figures. */
   note: string | null;
   /** What is still to be confirmed, in the guest's words. Rendered as an editorial placeholder. */
   pending: string | null;
@@ -76,6 +76,12 @@ export interface ItineraryDetails {
   address?: string;
   /** Guest-visible note (max 500 chars, validated by the domain schema). */
   note?: string;
+  /** A place saved from the Your Trip planner: the recommendation's slug and where it sits in the weekend. */
+  placeId?: string;
+  day?: 'fri' | 'sat' | 'sun';
+  part?: 'morning' | 'afternoon' | 'evening';
+  /** A day of the guest's stay before or after the weekend ("YYYY-MM-DD"); `day` is then the nearest. */
+  date?: string;
 }
 
 /** Opt-in, editable, deletable travel preferences. Never inferred from IP. One row per guest. */

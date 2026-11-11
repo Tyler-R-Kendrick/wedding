@@ -10,6 +10,14 @@ import { test, expect, type Page } from '@playwright/test';
  *   - a drag that ended on a pin also opened that pin.
  */
 
+/**
+ * The control that returns the map to its opening frame. This spec runs signed out, and where the
+ * wedding is belongs to the invited guests: the atlas opens on the same frame with no marker for the
+ * venue, and the button says where it goes without naming it. (Signed in, it reads "Back to Chicago
+ * and the venue".)
+ */
+const HOME = 'Back to where the map opened';
+
 const canvas = (page: Page) => page.locator('.bd-atlas__canvas');
 const viewBoxOf = (page: Page) => page.locator('.bd-atlas__svg').getAttribute('viewBox');
 const openPostcard = (page: Page) => page.locator('[data-atlas-entry][data-open="true"]');
@@ -19,6 +27,17 @@ async function openAtlas(page: Page) {
   await expect(page.locator('.bd-atlas[data-ready="true"]')).toBeVisible();
   await canvas(page).scrollIntoViewIfNeeded();
 }
+
+test('a signed-out reader\'s atlas carries no marker, label or key entry for the venue', async ({ page }) => {
+  await openAtlas(page);
+  await expect(page.locator('.bd-atlas [data-kind="venue"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /the venue/i })).toHaveCount(0);
+  await expect(canvas(page)).not.toHaveAttribute('aria-label', /venue/i);
+  const text = await page.locator('main').innerText();
+  expect(text).not.toMatch(/Our wedding|where we are getting married|Chicago Athletic|12 S\.? Michigan|July 17/);
+  // Not in the markup either: a label drawn off screen is still handed to the reader.
+  expect(await page.content()).not.toMatch(/where we are getting married|Chicago Athletic/);
+});
 
 /** Wait until the map is at rest: two frames apart, the same viewBox. */
 async function settled(page: Page) {
@@ -40,7 +59,7 @@ test.describe('the adventures atlas', () => {
     await page.getByRole('button', { name: 'Show the whole world' }).click();
     await settled(page);
     for (const cls of ['bd-atlas__tropics', 'bd-atlas__equator', 'bd-atlas__grid']) await expect(page.locator(`use.${cls}`)).not.toHaveAttribute('data-off', '');
-    await page.getByRole('button', { name: 'Back to Chicago and the venue' }).click();
+    await page.getByRole('button', { name: HOME }).click();
     await settled(page);
     await expect(page.locator('use.bd-atlas__tropics')).toHaveAttribute('data-off', '');
   });
@@ -78,7 +97,7 @@ test.describe('the adventures atlas', () => {
     await expect(openPostcard(page)).toHaveCount(0);
 
     // Zoom in until a single pin shows, then tap it.
-    await page.getByRole('button', { name: 'Back to Chicago and the venue' }).click();
+    await page.getByRole('button', { name: HOME }).click();
     await settled(page);
     const single = page.locator('.bd-atlas__target[data-pin]:not([data-off])');
     for (let i = 0; i < 6 && (await single.count()) === 0; i++) {
@@ -135,9 +154,9 @@ test.describe('the adventures atlas', () => {
 
     // A touch drag is not followed by a click, so the next tap on a button must work, not be
     // swallowed: back to Chicago (well short of the deepest zoom), a drag, then "+".
-    await page.getByRole('button', { name: 'Back to Chicago and the venue' }).tap();
+    await page.getByRole('button', { name: HOME }).tap();
     await settled(page);
-    await expect(page.getByRole('button', { name: 'Back to Chicago and the venue' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: HOME })).toBeDisabled();
     await touch('touchStart', [[fx, fy]]);
     for (let i = 1; i <= 5; i++) await touch('touchMove', [[fx - i * 10, fy]]);
     await touch('touchEnd', []);
@@ -167,6 +186,6 @@ test.describe('the adventures atlas', () => {
     await expect(page.getByRole('button', { name: 'Show the whole world' })).toBeDisabled();
     await page.keyboard.press('0');
     await settled(page);
-    await expect(page.getByRole('button', { name: 'Back to Chicago and the venue' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: HOME })).toBeDisabled();
   });
 });

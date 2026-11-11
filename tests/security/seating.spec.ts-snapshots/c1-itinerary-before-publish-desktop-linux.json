@@ -154,9 +154,9 @@
         "title": "Getting there and home",
         "items": [
           {
-            "label": "Rides, valet and parking",
-            "detail": "on the Transportation page",
-            "href": "/transportation"
+            "label": "Trains, rides, valet and parking",
+            "detail": "on Your Trip",
+            "href": "/guests/travel"
           }
         ]
       },
@@ -164,11 +164,11 @@
         "kind": "trip",
         "status": "ready",
         "placeholder": false,
-        "title": "Your trip",
+        "title": "Your flights and hotel",
         "items": [
           {
             "label": "Flights, where you are staying, and the free time in between",
-            "detail": "on your Trip page",
+            "detail": "on Your flights and hotel",
             "href": "/trip"
           }
         ]
@@ -180,7 +180,7 @@
     {
       "sourceId": "01SEED00000000000000000101",
       "title": "Tyler's brief 2026-09-04",
-      "url": "/the-wedding",
+      "url": "/guests",
       "verifiedAt": "<timestamp>"
     }
   ]

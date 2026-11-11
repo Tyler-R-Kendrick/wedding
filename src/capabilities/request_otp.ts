@@ -144,22 +144,25 @@ export const requestOtp = defineCapability<z.infer<typeof input>, RequestOtpResu
         email = roles.size > 0 ? typedEmail : null;
         payload = { kind: 'admin_sign_in', guestIds: [], invitationId: null, userId: null, next };
       } else {
-        const byGuest = (await findGuestsByEmail(db, typedEmail)).filter((g) => g.kind !== 'child' && !g.isMinor);
-        const user = await findAuthUserByEmail(db, typedEmail);
-        const byBinding = user ? (await activeBindingsForIdentity(db, user.id)).filter((b) => b.role === 'self').map((b) => b.guestId) : [];
-        const guestIds = [...new Set([...byBinding, ...byGuest.map((g) => g.id)])];
-        if (guestIds.length > 0) {
-          email = typedEmail;
-          payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
-        } else if ((await resolveAdminRoles(db, typedEmail, env.ADMIN_EMAILS)).size > 0) {
-          // An administrator who is not on the guest list, typing into the guest form. This used to be
-          // suppressed like any unknown address: "we sent a code", and nothing ever arrived. Send the
-          // admin code instead. The response is identical either way, so it tells a stranger nothing.
+        const adminRoles = await resolveAdminRoles(db, typedEmail, env.ADMIN_EMAILS);
+        if (adminRoles.size > 0) {
+          // Administrators (including owners typing the guest form) must not depend on guest-table
+          // columns being migrated before we can send a code — production once shipped code that
+          // selected `guests.alternate_names` before this check and broke owner sign-in.
           email = typedEmail;
           payload = { kind: 'admin_sign_in', guestIds: [], invitationId: null, userId: null, next };
         } else {
-          email = null;
-          payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+          const byGuest = (await findGuestsByEmail(db, typedEmail)).filter((g) => g.kind !== 'child' && !g.isMinor);
+          const user = await findAuthUserByEmail(db, typedEmail);
+          const byBinding = user ? (await activeBindingsForIdentity(db, user.id)).filter((b) => b.role === 'self').map((b) => b.guestId) : [];
+          const guestIds = [...new Set([...byBinding, ...byGuest.map((g) => g.id)])];
+          if (guestIds.length > 0) {
+            email = typedEmail;
+            payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+          } else {
+            email = null;
+            payload = { kind: 'sign_in', guestIds, invitationId: null, userId: null, next };
+          }
         }
       }
     } else {

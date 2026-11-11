@@ -33,7 +33,7 @@ describe('time zone helpers', () => {
   });
 });
 
-describe('free-time windows for Share an Adventure', () => {
+describe('free-time windows for Things to Do', () => {
   const arrive = item({ id: 'a', startAt: '2027-07-16T15:00:00.000Z', endAt: '2027-07-16T18:30:00.000Z' }); // lands Fri 13:30 Chicago
   const depart = item({ id: 'd', startAt: '2027-07-18T20:00:00.000Z', endAt: '2027-07-18T23:00:00.000Z' }); // leaves Sun 15:00 Chicago
   const hotel = item({ id: 'h', kind: 'hotel', startAt: '2027-07-16T20:00:00.000Z', endAt: '2027-07-18T16:00:00.000Z' });

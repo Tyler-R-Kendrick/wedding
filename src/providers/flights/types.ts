@@ -98,6 +98,8 @@ export interface FlightsProvider extends ProviderDescriptor {
   search(request: FlightSearchRequest): Promise<Result<LiveSnapshot<FlightResult[]>, ProviderFailure>>;
   /** Always available: hands the guest to a search site with the request pre-filled. */
   deepLink(request: FlightSearchRequest): ExternalHandoff;
+  /** Skyscanner, Kayak, and other partner search links (Google Flights is usually `deepLink`). */
+  extraHandoffs(request: FlightSearchRequest): ExternalHandoff[];
   /** Hosted checkout (Duffel Links). Absent when the adapter cannot create sessions. Never takes payment on our site. */
   createHostedSession?(request: HostedSessionRequest): Promise<Result<ExternalHandoff, ProviderFailure>>;
   /** Present when the adapter can verify provider webhooks (the trusted path to "confirmed"). */

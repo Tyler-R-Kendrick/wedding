@@ -2,6 +2,7 @@ import { CapabilityError } from '@/contracts/errors';
 import { newId } from '@/contracts/ids';
 import { err, ok, type Result } from '@/contracts/result';
 import { publicEnv } from './env.public';
+import { siteOriginsFor } from './site-hosts';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{8,128}$/;
 export const REQUEST_ID_HEADER = 'x-request-id';
@@ -70,8 +71,9 @@ export function assertSameOriginJson(request: Request, opts: { siteUrl?: string 
   const site = request.headers.get('sec-fetch-site')?.trim().toLowerCase();
   if (site === 'same-origin' || site === 'none') return ok(undefined);
   const origin = request.headers.get('origin')?.trim().replace(/\/+$/, '').toLowerCase();
-  const expected = (opts.siteUrl ?? publicEnv.siteUrl).replace(/\/+$/, '').toLowerCase();
-  if (origin && origin === expected) return ok(undefined);
+  // The canonical origin or one of its aliases (src/lib/site-hosts.ts): each is the site.
+  const expected = siteOriginsFor(opts.siteUrl ?? publicEnv.siteUrl).map((o) => o.toLowerCase());
+  if (origin && expected.includes(origin)) return ok(undefined);
   return err(new CapabilityError('forbidden', SAME_ORIGIN_MESSAGE, { reason: 'origin' }));
 }
 

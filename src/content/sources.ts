@@ -6,6 +6,8 @@ import { seedId } from '@/db/seed/sources';
  * (src/db/seed/sources.ts). Adding a source means adding it there first.
  */
 export const SOURCE_KEYS = {
+  /** Sara’s supplied page copy, October 12, 2026. */
+  'sara-feedback': seedId<ContentSourceId>(111),
   /** Tyler's brief 2026-09-04 (authored, TRUSTED_WEDDING). */
   brief: seedId<ContentSourceId>(101),
   /** CAA Wedding Kit 2027, 2025/26 edition (venue-document, EXTERNAL_DATA, already stale for outlets). */

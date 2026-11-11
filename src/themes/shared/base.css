@@ -1,5 +1,5 @@
 /*
- * Shared base for both themes: rhythm, accessibility, reduced motion. Everything visual is a token
+ * Shared base: rhythm, accessibility, reduced motion. Everything visual is a token
  * from the active theme (see src/themes/<id>/theme.css); nothing here names a colour or a font.
  */
 html {
@@ -16,20 +16,14 @@ html {
  * nothing at all: measured at 390px on `/photos`, the bar sat on the "Find a photo" heading and
  * the first half of its sentence, and tabbing to the link inside put focus entirely underneath.
  *
- * Per theme, because each design pins something different, and `data-theme` is already mirrored
- * onto `<html>` before paint. Each reserves the MOST its design can show on a phone: Gilded Hour
- * the elevator panel, Conservatory its floating Menu plus a bar on routes that have quick actions.
- * Reserving too much lands a target a little further up the screen; reserving too little puts it
- * back under the bar, which is the failure.
+ * On the themed root, because `data-theme` is already mirrored onto `<html>` before paint. It
+ * reserves the most the design can show on a phone: the action bar. Reserving too much lands a
+ * target a little further up the screen; reserving too little puts it back under the bar, which is
+ * the failure.
  */
 @media (width < 900px) {
-  :root[data-theme='botanical-deco'],
-  :root[data-theme='gilded-hour'] {
+  :root[data-theme='botanical-deco'] {
     scroll-padding-block-end: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px));
-  }
-
-  :root[data-theme='conservatory'] {
-    scroll-padding-block-end: calc(var(--bottom-bar-h) + var(--floating-menu-h) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -52,8 +46,6 @@ body {
 
 .site {
   --bottom-bar-height: 0px;
-  --floating-menu-height: 0px;
-  --bottom-chrome: calc(var(--bottom-bar-height) + var(--floating-menu-height));
 
   min-height: 100dvh;
   display: flex;
@@ -231,45 +223,20 @@ a:not([class]) {
 
 
 /*
- * Fixed bottom chrome must never obscure focus or the end of the measure (WCAG 2.2 2.4.11): every
- * design reserves the height of whatever it pins to the bottom of the viewport. `data-bottom-bar`
- * is a full-width action bar / elevator panel; `data-floating-menu` is a floating Menu control.
- * A design may carry both, and the reservations add.
- */
-
-/*
- * Fixed-chrome heights, PER DESIGN. Both designs read `--bottom-bar-h`, and they pin different
- * things to the bottom of a phone, so one number cannot be right for both — `--wp-measure` below
- * is the precedent for this shape: a default at `:root`, each `[data-theme]` overriding it with
- * its own measured height.
- *
- * It was one number, tuned to Gilded Hour. Measured at 390px: Gilded Hour's elevator panel is
- * 81px (72px until its labels moved off the 13.005px step — see `.gh-panel__cell`), and
- * Conservatory's `.cv-bar` is 61px, one row of `.cv-btn` between two `--spacing-sm`. The shared
- * 4.5rem therefore over-reserved Conservatory by 15px and floated its Menu 31.5px above a bar it
- * is meant to ride `--spacing-md` (16px) above; raising it to 5rem for Gilded Hour's sake pushed
- * that to 40px. Each design now reserves what it actually pins.
+ * Fixed bottom chrome must never obscure focus or the end of the measure (WCAG 2.2 2.4.11): a page
+ * with the action bar (`data-bottom-bar`) reserves its measured height, `--bottom-bar-h`.
  */
 .site[data-bottom-bar] {
   --bottom-bar-height: var(--bottom-bar-h);
 }
 
-.site[data-floating-menu] {
-  --floating-menu-height: var(--floating-menu-h);
-}
-
-.site[data-bottom-bar] main,
-.site[data-floating-menu] main {
-  padding-block-end: calc(var(--bottom-chrome) + env(safe-area-inset-bottom, 0px));
+.site[data-bottom-bar] main {
+  padding-block-end: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (width >= 900px) {
   .site[data-bottom-bar] {
     --bottom-bar-height: 0px;
-  }
-
-  .site[data-floating-menu] {
-    --floating-menu-height: 0px;
   }
 }
 
@@ -425,26 +392,6 @@ a:not([class]) {
   border-block-start: 1px solid currentcolor;
 }
 
-/* Floating design switcher: theme-neutral chrome coloured by the active theme's tokens. */
-.switcher--trigger {
-  display: inline-block;
-}
-
-.switcher--menu {
-  margin-block-start: var(--spacing-lg);
-  padding-block-start: var(--spacing-md);
-  border-block-start: 1px solid var(--color-outline);
-}
-
-.switcher__heading {
-  margin: 0 0 var(--spacing-sm);
-  font-weight: 600;
-}
-
-.switcher__intro {
-  margin: 0 0 var(--spacing-md);
-}
-
 /* Taps respond immediately (no double-tap zoom delay). */
 .site a,
 .site button,
@@ -452,119 +399,6 @@ a:not([class]) {
 .site select,
 .site textarea {
   touch-action: manipulation;
-}
-
-.switcher__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  min-height: 44px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--rounded-sm);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  cursor: pointer;
-}
-
-.switcher__trigger:hover {
-  background: var(--color-neutral-variant);
-}
-
-.switcher__dialog {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  width: min(92vw, 30rem);  overscroll-behavior: contain;
-}
-
-.switcher__dialog::backdrop {
-  background: color-mix(in srgb, var(--color-primary) 50%, transparent);
-}
-
-.switcher__panel {
-  background: var(--color-surface);
-  color: var(--color-on-surface);
-  border: 1px solid var(--color-outline);
-  padding: var(--spacing-lg);
-}
-
-.switcher__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--spacing-md);
-  margin-block-end: var(--spacing-md);
-}
-
-.switcher__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: var(--type-h2-weight);
-  font-size: var(--type-h2-size);
-  line-height: var(--type-h2-line);
-}
-
-.switcher__close {
-  min-height: 44px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-outline);
-
-  /* The same shape as the primary buttons beside it: square in Gilded Hour, 8px in Conservatory.
-     `--rounded-sm` left it at 2px in both, so the switcher read as chrome from another design. */
-  border-radius: var(--radius-button, 2px);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-family: var(--font-text);
-  cursor: pointer;
-}
-
-.switcher__options {
-  display: grid;
-  gap: var(--spacing-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.switcher__option {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  min-height: 56px;
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-outline);
-  border-radius: var(--rounded-sm);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-family: var(--font-text);
-  text-align: start;
-  cursor: pointer;
-}
-
-.switcher__option:hover {
-  background: var(--color-neutral-variant);
-}
-
-.switcher__option[aria-pressed="true"] {
-  border-color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-
-.switcher__name {
-  font-weight: 600;
-}
-
-.switcher__tagline {
-  font-size: var(--type-body-sm-size);
-  color: var(--color-on-surface-muted);
-}
-
-.switcher__error {
-  margin: var(--spacing-sm) 0 0;
-  color: var(--color-error);
 }
 
 /* Layout helpers used by the generic recipes; each theme refines them. */
@@ -617,27 +451,10 @@ a:not([class]) {
 }
 
 /*
- * Button shape, per design, as a role token.
- *
- * The shared guest components hard-coded `rounded-full` (Tailwind's 9999px), so every primary
- * action on /gifts, /transportation and the RSVP pages measured `border-radius: 33554432px` in
- * BOTH designs. Each DESIGN.md forbids exactly that: Gilded Hour — "Buttons are rectangles with a
- * 1px inset hairline; there are no pills" (`button-primary.rounded: {rounded.none}`); Conservatory
- * — buttons take `rounded.md` "without becoming pills (pills are the editorial baseline's
- * signature)". Both `--rounded-*` scales are generated from DESIGN.md into `theme.css`; this maps
- * the button role onto each, so a shared component can ask for the shape without knowing the
- * design. Gilded Hour publishes no `--rounded-md`, which is the point.
- */
-
-/*
- * Heading case and tracking, per design, as role tokens for the same reason.
- *
- * Gilded Hour's DESIGN.md ties the two together — Cinzel is "set in capitals with wide tracking
- * (0.04–0.06em)" — and its kit does exactly that (`.gh-h { text-transform: uppercase;
- * letter-spacing: var(--type-h1-tracking) }`). Applying the tracking without the capitals is not a
- * half-measure but a different, worse thing: `impeccable detect` flags 0.06em on sentence-case text
- * as `wide-tracking` (three findings on /transportation), and it is right — wide tracking is for
- * short uppercase runs. Conservatory sets Gloock in sentence case with no tracking, and says so.
+ * Role tokens. Shared components (RSVP, media, concierge, provenance) ask for a role — the button
+ * shape, the heading case and tracking, how caps are made, the link ink — rather than a value, and
+ * the design's `[data-theme]` block below answers. Wide tracking belongs with capitals only:
+ * `impeccable detect` flags it on sentence-case text, and it is right.
  */
 
 /*
@@ -649,10 +466,8 @@ a:not([class]) {
  * extra steps, and that is exactly the defect an independent review found here at level 11.
  *
  * The 42rem here is the value for surfaces with NO design — admin, print, the dev inbox, error
- * pages. Each design overrides it in its own kit (`[data-theme="<id>"] { --wp-measure: … }`) with
- * the measure its DESIGN.md asks for, because 42rem renders 82 characters in Gilded Hour and 78 in
- * Conservatory: one number cannot be right for two faces. Level 16, measured before and after with
- * a Range walk over rendered line boxes.
+ * pages. The design overrides it in its own kit (`[data-theme="<id>"] { --wp-measure: … }`) with
+ * the measure its DESIGN.md asks for.
  */
 :root {
   --wp-measure: 42rem;
@@ -664,7 +479,6 @@ a:not([class]) {
    * makes and the one the scroll container makes read the same two numbers.
    */
   --bottom-bar-h: 5rem;
-  --floating-menu-h: 5.25rem;
 }
 
 /*
@@ -688,91 +502,6 @@ a:not([class]) {
   --media-tile-pad: 0px;
   --link-color: var(--color-tertiary);
   --link-underline: var(--color-gold);
-  --media-link-color: var(--link-color);
-  --media-link-underline: var(--link-underline);
-}
-
-[data-theme="gilded-hour"] {
-  /* The elevator panel: 81px measured at 390px, reserved with the same four pixels of margin it
-     has always carried. */
-  --bottom-bar-h: 5rem;
-  --radius-button: var(--rounded-none);
-  --heading-transform: uppercase;
-  --heading-tracking: var(--type-h1-tracking);
-
-  /*
-   * How caps are MADE, per design. Gilded Hour sets Josefin in real uppercase with wide tracking;
-   * Conservatory has Spectral's `smcp`/`c2sc` and its DESIGN.md says so in as many words — "real
-   * small caps, so eyebrows and nav tags can be set in `smcp` small capitals instead of shouting
-   * uppercase". A shared component that hard-codes `text-transform: uppercase` gives Conservatory
-   * both at once: small-cap glyph substitution on already-capital letters, which is neither.
-   */
-  --control-transform: uppercase;
-  --label-transform: uppercase;
-
-  /* Gilded Hour is the symmetrical design: DESIGN.md's axis rule puts a section's content on the
-     same centre line as its heading, so a row that does not fill its tracks centres rather than
-     hugging the left edge. The media grids read these; a fixed `justify-content` in shared CSS
-     would make one design wear the other's rule. */
-  --media-justify: center;
-  --media-align: center;
-  --media-grid-inline: auto;
-
-  /* The full-width hairline is this design's own device (gold double rules across the measure). */
-  --media-rule-size: 100%;
-
-  /* DESIGN.md's photograph treatment: a 3px gold mat. `.gh-frame__mat` builds it from
-     `--color-gold` (#c9a648), so the tiles use the same token rather than the darker Bronze
-     `--color-tertiary` — the point is that the design's frame appears on the one surface that is
-     entirely photographs, and it was `border: 0` there in both designs. Decorative: the tile is
-     identified by the photograph it holds and by a 2px Lake Blue focus ring, not by this edge. */
-  --media-tile-frame: 3px solid var(--color-gold, var(--color-tertiary));
-  --media-tile-pad: 4px;
-
-  /* DESIGN.md: "link: Bronze … never changes to blue", plus the One Blue Rule that reserves Lake
-     Blue for focus. The media surfaces rendered their links in Lake Blue #2E5B7B while Bronze went
-     unused on the page.
-
-     Promoted from `--media-link-*` at level 12: the concierge's source list repeated the identical
-     defect on a different surface (`--color-tertiary` as link ink, measured at 1.93:1 in
-     Conservatory), because there was a per-design link colour but its name tied it to one feature.
-     One token per design, read by every surface that draws a link outside a theme kit. */
-  --link-color: var(--color-tertiary);
-  --link-underline: var(--color-gold);
-  --media-link-color: var(--link-color);
-  --media-link-underline: var(--link-underline);
-}
-
-[data-theme="conservatory"] {
-  /* `.cv-bar`: 61px measured at 390px (one `.cv-btn` row between two `--spacing-sm`). 3.75rem is
-     63.75, which clears it without pushing the floating Menu off the bar it rides on. */
-  --bottom-bar-h: 3.75rem;
-  --radius-button: var(--rounded-md);
-  --heading-transform: none;
-  --heading-tracking: normal;
-
-  /* Small capitals, never shouting uppercase (DESIGN.md § Typography). */
-  --control-transform: none;
-  --label-transform: none;
-
-  /* Conservatory's DESIGN.md is explicit in the other direction — "Nothing is centred by default;
-     things are placed" — so the same grids start at the left margin here. */
-  --media-justify: start;
-  --media-align: start;
-  --media-grid-inline: 0;
-
-  /* And its dividers "grow from the left margin and stop at 12rem, not full-width rules". */
-  --media-rule-size: 12rem;
-
-  /* The herbarium sheet mounts a specimen on kraft rather than matting it in gold. */
-  --media-tile-frame: 1px solid var(--color-outline, currentcolor);
-  --media-tile-pad: 3px;
-
-  /* DESIGN.md: leaf-deep text with a 1px pollen underline — which is what `.cv-link` already does
-     everywhere else on the site. Pollen is 1.77:1 on creme and is never the ink; as the concierge's
-     source links it measured 1.93:1 against the card, an outright WCAG AA failure. */
-  --link-color: var(--color-secondary);
-  --link-underline: var(--color-tertiary);
   --media-link-color: var(--link-color);
   --media-link-underline: var(--link-underline);
 }

@@ -35,7 +35,7 @@ export const BotanicalGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) =
       <HandoffClickRecorder />
       <PageHead eyebrow={data.copy.eyebrow} title={data.copy.title} lede={data.copy.lede} />
 
-      <Section id="gifts-registry" labelledBy="gifts-registry-title">
+      <Section id="gifts-registry" labelledBy="gifts-registry-title" layout="split">
         <SectionHeading level={2} id="gifts-registry-title" title={data.copy.registryHeading} />
         {/* The intro describes a list that is kept with a provider. Until one exists it is a claim the
             site has no right to make — and it used to render directly above the placeholder saying
@@ -60,7 +60,7 @@ export const BotanicalGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) =
         )}
       </Section>
 
-      <Section id="gifts-adventures" ground="alt" labelledBy="gifts-adventures-title">
+      <Section id="gifts-adventures" ground="alt" labelledBy="gifts-adventures-title" layout="split">
         <SectionHeading level={2} id="gifts-adventures-title" title={data.copy.adventureHeading} />
         {funds ? (
           <Prose>
@@ -96,7 +96,7 @@ export const BotanicalGiftsPage: ContentRecipe<GiftsProps> = ({ data, frame }) =
           ) : null}
           {pending ? (
             <p>
-              {data.copy.askIntro} <Link href={ROUTES.ask}>{data.copy.askLabel}</Link>.
+              {data.copy.askIntro} <Link href={ROUTES.guestAsk}>{data.copy.askLabel}</Link>.
             </p>
           ) : null}
           <p>{data.copy.thanks}</p>

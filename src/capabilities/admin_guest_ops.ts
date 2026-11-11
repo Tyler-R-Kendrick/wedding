@@ -1,19 +1,20 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { CapabilityError } from '@/contracts/errors';
 import { ADMIN_ROLES } from '@/contracts/principal';
 import { err, ok } from '@/contracts/result';
 import { appServices } from '@/capabilities/context';
-import { adminRoles, GUEST_KINDS, guestAccessBindings, guests, households, INVITATION_STATUSES, invitations, type GuestRow } from '@/db/schema';
+import { adminRoles, GUEST_KINDS, guestAccessBindings, guests, households, INVITATION_STATUSES, invitations, socialAuthReviews, type GuestRow } from '@/db/schema';
 import { GUEST_CSV_COLUMNS, GUEST_CSV_OPTIONAL_COLUMNS, parseGuestCsv, toCsv } from '@/domain/guests/csv';
 import { deleteGuest, getGuest, guestDisplayName, listGuests, mergeGuests, upsertGuest } from '@/domain/guests/repo';
 import { deleteHousehold, findHouseholdByName, getHousehold, listHouseholds, upsertHousehold } from '@/domain/households/repo';
 import { activeBindingsForGuests, getAuthUser, rebindIdentity, resetIdentity } from '@/domain/identity/bindings';
 import { qrSvg } from '@/domain/identity/qr';
 import { invitationLifecycle, invitationUrl } from '@/domain/identity/tokens';
+import { adminLinkSocialReview } from '@/domain/identity/social/complete';
 import { currentInvitationsForHouseholds, getInvitation, issueInvitation, listInvitations, revokeInvitation, rotateInvitation } from '@/domain/invitations/repo';
-import { normalizeEmail } from '@/domain/identity/mask';
+import { normalizeEmail, isEmailShape } from '@/domain/identity/mask';
 import { hashOtpIdentifier } from '@/domain/identity/otp';
 import { siteOrigin } from '@/lib/auth';
 import { actorOf, adminOf } from './identity/shared';
@@ -54,6 +55,7 @@ const guestOut = z.object({
   lastName: z.string(),
   displayName: z.string(),
   email: z.string().nullable(),
+  phone: z.string().nullable(),
   kind: z.enum(GUEST_KINDS),
   isMinor: z.boolean(),
   isNamed: z.boolean(),
@@ -81,6 +83,7 @@ async function decorate(db: Parameters<typeof listGuests>[0], rows: GuestRow[]) 
       lastName: g.lastName,
       displayName: guestDisplayName(g),
       email: g.email,
+      phone: g.phone,
       kind: g.kind,
       isMinor: g.isMinor,
       isNamed: g.isNamed,
@@ -129,6 +132,7 @@ export const adminUpsertGuest = defineCapability({
     firstName: z.string().min(1).max(100),
     lastName: z.string().max(100).optional(),
     email: z.string().max(254).nullable().optional(),
+    phone: z.string().max(32).nullable().optional(),
     kind: z.enum(GUEST_KINDS).optional(),
     isMinor: z.boolean().optional(),
     isNamed: z.boolean().optional(),
@@ -593,7 +597,10 @@ export const adminSetAdminRole = defineCapability({
   confirmation: 'inline',
   idempotent: true,
   annotations: writeAnn,
-  input: z.object({ email: z.string().min(3).max(254), role: z.enum(ADMIN_ROLES).nullable() }),
+  input: z.object({
+    email: z.string().min(3).max(254).refine(isEmailShape, { message: 'Enter a valid email address.' }),
+    role: z.enum(ADMIN_ROLES).nullable(),
+  }),
   output: z.object({ email: z.string(), role: z.enum(ADMIN_ROLES).nullable() }),
   async handler(ctx, i) {
     const guard = adminOf(ctx, ['owner']);
@@ -601,6 +608,7 @@ export const adminSetAdminRole = defineCapability({
     const admin = guard.value;
     const { db } = appServices(ctx);
     const email = normalizeEmail(i.email);
+    if (!isEmailShape(email)) return err(new CapabilityError('validation', 'Enter a valid email address.', { issues: [{ path: 'email', message: 'Enter a valid email address.' }] }));
     if (i.role) {
       await db.insert(adminRoles).values({ email, role: i.role, grantedBy: actorOf(ctx), grantedAt: ctx.now }).onConflictDoUpdate({ target: adminRoles.email, set: { role: i.role, grantedBy: actorOf(ctx), grantedAt: ctx.now } });
     } else {
@@ -612,11 +620,115 @@ export const adminSetAdminRole = defineCapability({
   },
 });
 
+export const adminListSocialAuthReviews = defineCapability({
+  name: 'admin_list_social_auth_reviews',
+  title: 'Social sign-in review queue',
+  description: 'Lists social sign-in attempts that could not be matched automatically.',
+  kind: 'read',
+  ...adminBase,
+  confirmation: 'none',
+  idempotent: true,
+  annotations: readAnn,
+  input: z.object({ status: z.enum(['open', 'linked', 'dismissed']).optional(), limit: listLimit }),
+  output: z.object({
+    reviews: z.array(
+      z.object({
+        id: z.string(),
+        providerId: z.string(),
+        profileName: z.object({ givenName: z.string().nullable().optional(), familyName: z.string().nullable().optional(), name: z.string().nullable().optional() }),
+        reason: z.string(),
+        candidateGuestIds: z.array(z.string()),
+        status: z.string(),
+        createdAt: z.string(),
+      }),
+    ),
+    truncated: z.boolean(),
+  }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const { rows, truncated } = await upToCeiling(async (limit) => {
+      const base = db.select().from(socialAuthReviews).orderBy(desc(socialAuthReviews.createdAt)).limit(limit);
+      if (i.status) return base.where(eq(socialAuthReviews.status, i.status));
+      return base.where(eq(socialAuthReviews.status, 'open'));
+    }, i.limit);
+    return ok({
+      data: {
+        reviews: rows.map((r) => ({
+          id: r.id,
+          providerId: r.providerId,
+          profileName: r.profileName,
+          reason: r.reason,
+          candidateGuestIds: r.candidateGuestIds ?? [],
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+        })),
+        truncated,
+      },
+      sources: [],
+    });
+  },
+});
+
+export const adminLinkSocialAuth = defineCapability({
+  name: 'admin_link_social_auth',
+  title: 'Link a social account to a guest',
+  description: 'Resolves an open social sign-in review by binding the provider account to the chosen guest.',
+  kind: 'action',
+  ...adminBase,
+  stepUp: true,
+  confirmation: 'none',
+  idempotent: false,
+  annotations: writeAnn,
+  input: z.object({ reviewId: z.string().min(1).max(64), guestId: z.string().min(1).max(64) }),
+  output: z.object({ linked: z.literal(true), guestId: z.string() }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx, ['owner', 'planner']);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const result = await adminLinkSocialReview(db, {
+      reviewId: i.reviewId,
+      guestId: i.guestId,
+      actor: actorOf(ctx),
+      requestId: ctx.requestId,
+      audit: ctx.audit,
+    });
+    if (!result.ok) return err(new CapabilityError('validation', result.message));
+    return ok({ data: { linked: true, guestId: i.guestId }, sources: [] });
+  },
+});
+
+export const adminMarkInvitationSent = defineCapability({
+  name: 'admin_mark_invitation_sent',
+  title: 'Mark invitation as sent',
+  description: 'Records that the printed or emailed invitation went out (required before social sign-in can match).',
+  kind: 'action',
+  ...adminBase,
+  confirmation: 'none',
+  idempotent: true,
+  annotations: writeAnn,
+  input: z.object({ invitationId: z.string().min(1).max(64) }),
+  output: z.object({ sentAt: z.string() }),
+  async handler(ctx, i) {
+    const guard = adminOf(ctx);
+    if (!guard.ok) return err(guard.error);
+    const { db } = appServices(ctx);
+    const row = await getInvitation(db, i.invitationId);
+    if (!row) return err(new CapabilityError('not_found', 'Invitation not found.'));
+    const sentAt = ctx.now;
+    await db.update(invitations).set({ sentAt }).where(eq(invitations.id, i.invitationId));
+    await ctx.audit.record({ actor: actorOf(ctx), action: 'invitation.issued', target: { type: 'invitation', id: i.invitationId }, outcome: 'success', requestId: ctx.requestId, metadata: { markedSent: true } });
+    return ok({ data: { sentAt: sentAt.toISOString() }, sources: [] });
+  },
+});
+
 export const adminGuestOpsCapabilities = [
   adminListGuests, adminUpsertGuest, adminDeleteGuest, adminMergeGuests,
   adminListHouseholds, adminGetHousehold, adminUpsertHousehold, adminDeleteHousehold,
   adminListInvitations, adminIssueInvitation, adminRotateInvitation, adminRevokeInvitation,
   adminResetIdentity, adminRebindIdentity, adminImportGuestsCsv, adminExportGuestsCsv, adminSetAdminRole,
+  adminListSocialAuthReviews, adminLinkSocialAuth, adminMarkInvitationSent,
 ];
 
 export { guestAccessBindings, invitations };

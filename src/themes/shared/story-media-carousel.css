@@ -1,0 +1,98 @@
+.story-carousel {
+  position: relative;
+}
+
+.story-carousel--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 1rem);
+}
+
+.story-carousel__stack-item {
+  min-width: 0;
+}
+
+.story-carousel__viewport {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.story-carousel__track {
+  display: flex;
+  transition: transform var(--story-carousel-duration, 600ms) ease;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story-carousel[data-reduced] .story-carousel__track {
+  transition: none;
+}
+
+.story-carousel__slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+}
+
+.story-carousel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm, 0.5rem);
+  margin-top: var(--space-sm, 0.5rem);
+}
+
+.story-carousel__dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs, 0.35rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story-carousel__dot {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.story-carousel__dot::after {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: currentcolor;
+  opacity: 0.35;
+}
+
+.story-carousel__dot[aria-current='true']::after {
+  opacity: 1;
+}
+
+.story-carousel__dot:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+.story-carousel__pause {
+  font: inherit;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-carousel__track {
+    transition: none;
+  }
+}

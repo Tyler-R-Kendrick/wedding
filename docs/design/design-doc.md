@@ -5,6 +5,12 @@
 > this document explains the design, it does not restate the tokens.
 > Process: [`../sdlc/PROCESS.md`](../sdlc/PROCESS.md). Decisions:
 > [`../adr/README.md`](../adr/README.md). Changes: [`CHANGELOG.md`](CHANGELOG.md).
+>
+> **Superseded in part.** This document describes the two proposals, Gilded Hour and
+> Conservatory. Sara and Tyler approved a synthesis, Botanical Deco
+> ([`approved-botanical-deco/`](approved-botanical-deco/README.md)), and the two proposals were
+> retired and their code removed. What follows about those two designs is a record of how the
+> site was first designed, not a description of what ships.
 
 ## 1. Goals and north star
 
@@ -101,7 +107,7 @@ Hospitality, Future.** Anti-references apply to both (brief §4).
 
 | | Gilded Hour | Conservatory |
 |---|---|---|
-| Tokens | `src/themes/gilded-hour/DESIGN.md` | `src/themes/conservatory/DESIGN.md` |
+| Tokens | src/themes/gilded-hour/DESIGN.md (removed) | src/themes/conservatory/DESIGN.md (removed) |
 | Inspo board | [`inspo/gilded-hour.md`](inspo/gilded-hour.md) | [`inspo/conservatory.md`](inspo/conservatory.md) |
 | Direction | Art Deco. White marble ground, gold leaf, sunburst and chevron geometry, stepped frames, numbered sections, symmetrical monumental layouts | Botanical. Foliage, moss, pressed-flower cards, light-blue sky washes over creme, botanical line-art borders, organic asymmetry |
 | Type | Cinzel (display) · Josefin Sans (text/labels) · Big Shoulders Display (numerals; Chicago's municipal typeface) | Gloock (display) · Spectral (text) · Cardo italic (accents). No script faces |
@@ -219,7 +225,7 @@ See brief §6 and ADR-0011. Every operational record carries `sourceId`,
 | Accessibility | Every surface | Axe 0 serious/critical; keyboard walk documented |
 | Performance | Every surface on preview | LCP < 2.5 s on a mid-range phone; CLS < 0.1; fonts ≤ 3 files per theme |
 | Domain checklist | Every page | `wedding-site-standards` §8 all ticked |
-| Self-review | Every level | `docs/reviews/PR-NN-self-review.md` verdict READY |
+| Self-review | Every level | Self-review in the pull request, verdict READY |
 
 ## 11. Open questions
 

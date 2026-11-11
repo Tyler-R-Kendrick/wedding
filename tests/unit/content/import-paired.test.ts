@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assignChapters, merge, normalize, parseCsv, parsePartialDate, slugify } from '../../../scripts/import-paired.mjs';
 import { timelineMomentSeedSchema } from '@/content/schemas';
-import seedTimeline from '@/content/seed/timeline.json';
 
 describe('Paired import', () => {
   it('reads dates only as precisely as they were written', () => {
@@ -57,8 +56,41 @@ describe('Paired import', () => {
   });
 
   it('replaces a matching stand-in, keeps its Our Adventures link, and keeps unmatched stand-ins', () => {
+    const standIns = [
+      {
+        slug: 'starved-rock',
+        chapter: 'love',
+        order: 1,
+        title: 'Starved Rock',
+        note: 'We said “I love you” for the first time.',
+        media: [{ alt: 'French Canyon at Starved Rock State Park.', src: '/media/timeline/starved-rock-1024.jpg' }],
+        adventureSlug: 'starved-rock',
+        sourceKey: 'brief',
+        sourceType: 'authored',
+        verifiedAt: '2026-09-04T00:00:00.000Z',
+        trustClass: 'TRUSTED_WEDDING',
+        editedBy: 'seed:brief-2026-09-04',
+        visibility: 'public',
+        placeholder: false,
+      },
+      {
+        slug: 'museum-of-ice-cream',
+        chapter: 'relationship',
+        order: 2,
+        title: 'Museum of Ice Cream',
+        note: 'TODO(Tyler & Sara): one line.',
+        media: [],
+        sourceKey: 'brief',
+        sourceType: 'authored',
+        verifiedAt: '2026-09-04T00:00:00.000Z',
+        trustClass: 'TRUSTED_WEDDING',
+        editedBy: 'seed:brief-2026-09-04',
+        visibility: 'public',
+        placeholder: true,
+      },
+    ];
     const { stops } = normalize([{ id: 'x1', title: 'Starved Rock', date: '2023-05', note: 'We said I love you' }]);
-    const { rows, report } = merge(seedTimeline, assignChapters(stops), { now: new Date('2026-09-22T00:00:00Z'), storySlugs: new Set(['love']) });
+    const { rows, report } = merge(standIns, assignChapters(stops), { now: new Date('2026-09-22T00:00:00Z'), storySlugs: new Set(['love']) });
     const rock = rows.find((r: { slug: string }) => r.slug === 'starved-rock');
     expect(rock).toMatchObject({ externalRef: 'paired:x1', occurredOn: '2023-05', adventureSlug: 'starved-rock', sourceKey: 'paired', placeholder: false });
     expect(report.replaced).toEqual(['starved-rock']);

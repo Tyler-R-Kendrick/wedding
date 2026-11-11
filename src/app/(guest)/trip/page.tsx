@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
-import { noticeFor } from '@/app/(public)/travel/_shared/recipe';
-import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { noticeFor } from '@/app/(guest)/guests/travel/_shared/recipe';
+import { currentPrincipal, runAsUi } from '@/app/(guest)/guests/travel/_shared/server';
 import { getMyTravelProfile, getMyTrip } from '@/capabilities/travel';
+import { deleteProfileAction } from './actions';
+import { newId } from '@/contracts/ids';
 import { AddItemForm, ProfileForm } from './forms';
 import { getRequestTheme } from '@/themes/server';
 import { TripGate, TripPageRecipe, type TripPageData } from './recipe';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Your trip', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Your flights and hotel', robots: { index: false, follow: false } };
 
 /** Guest-only. Personalised: rendered per request, never cached across identities. */
 export default async function TripPage({ searchParams }: { searchParams: Promise<{ ref?: string; outcome?: string; notice?: string }> }) {
@@ -26,5 +28,20 @@ export default async function TripPage({ searchParams }: { searchParams: Promise
   };
   const Recipe = TripPageRecipe; // theme kit seam: theme.recipes.trip ?? TripPageRecipe
   // The recipe renders the active design's own sections; same resolution the layout's Shell used.
-  return <Recipe theme={await getRequestTheme()} data={data} slots={{ profileForm: <ProfileForm profile={data.profile} suggestion={data.suggestion} />, addItemForm: <AddItemForm /> }} />;
+  const deleteAction = data.profile ? (
+    <form action={deleteProfileAction} className="mt-4">
+      <input type="hidden" name="idempotencyKey" value={newId()} />
+      <button type="submit" className="guest-text-link">Delete my travel preferences</button>
+    </form>
+  ) : null;
+  return (
+    <Recipe
+      theme={await getRequestTheme()}
+      data={data}
+      slots={{
+        profileForm: <ProfileForm profile={data.profile} suggestion={data.suggestion} deleteAction={deleteAction} />,
+        addItemForm: <AddItemForm />,
+      }}
+    />
+  );
 }

@@ -39,14 +39,24 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `AUDIT_HASH_KEY` | derived from `CONFIRMATION_SECRET` | HMAC key for the audit `inputHash` fingerprint | no |
 | `TRUSTED_PROXY_HOPS` | `1` when `VERCEL` is set, else `0` | `getClientIp`: how many reverse proxies to trust for `x-forwarded-for`; `0` ignores forwarding headers entirely (all clients share the `direct` bucket) | no |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | dev default / `localhost:*` (both required in production) | auth: Better Auth (`src/lib/auth`); the URL sets the passkey relying-party id and the trusted origin | no |
+| `CHICAGO_GUIDE_MAP_URL` | unset | content: optional view-only Google My Maps link for the signed-in Chicago guide (link + QR when set) | no |
 | `TEST_AUTH_SECRET` | unset | `src/lib/auth/test-principal.ts`: enables `x-test-principal` injection **only** under `NODE_ENV=test`; never set on a deployed host | no |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` | unset | phone sign-in: Twilio Verify credentials, when they are set directly. Unset, production asks the Vercel connector for Twilio instead (`src/providers/twilio-verify/connect.ts`); `TWILIO_VERIFY_SERVICE_SID` alone pins the Verify service the connector sends through | no |
+| `TWILIO_CONNECTOR` | `twilio/wedding` | phone sign-in: the Vercel connector that holds the Twilio credential | no |
+| `TWILIO_CONNECT_USER_ID` | unset | phone sign-in: the user the Twilio connector was authorized by, for a per-user connector. The app-wide grant is tried first, then this, then `RESEND_CONNECT_USER_ID` | no |
+| `REAL_POSTGRES_URL` | unset | tests only: a Postgres server for `tests/integration/db-real-postgres.test.ts`, which checks the query gate (`src/db/query-gate.ts`) against the real client. Unset, that file is skipped; the rest of the suite runs on PGlite, which has no pool | no |
 | `ADMIN_EMAILS` | empty | auth: comma-separated allowlist granted the `owner` role; `admin_roles` rows add planner/moderator/owner | no |
+| `ADMIN_PHONES` | empty | phone sign-in: the administrators' own mobiles as `email=phone` pairs, comma-separated. Phone sign-in puts each on the guest record with that email (creating one if there is none) before it looks a number up, so the couple can sign in by text with nothing typed into `/admin`. Kept in Vercel, never in this public repository | no |
 | `FORCE_MOCK_PROVIDERS` | `false` | provider registry | no |
 | `RESEND_CONNECT_USER_ID`, `EMAIL_FROM` | unset -> dev inbox; Connect connector `resend/wedding` must be attached and authorized | auth-email | no |
+| `RESEND_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /api/webhooks/resend` answers 404 | verifies Resend inbound webhook (`svix-*` headers) | no |
+| `PLANNER_FORWARD_EMAIL` | empty -> inbound forward disabled (404) | comma-separated forward inboxes for guest mail to `hello@kendrick.wedding` (e.g. `bustleandlace@gmail.com,saraandtyler27@gmail.com`) | no |
 | `S3_ENDPOINT`, `S3_REGION` (`auto`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` (`true`) | unset -> local-fs | storage: R2, Backblaze B2, Supabase Storage or MinIO. `S3_ENDPOINT` is required with the keys, and an Amazon endpoint (or none, which the AWS SDK would resolve to Amazon) is refused: the site does not use AWS | no |
 | `STORAGE_DATA_DIR` | `./.data/storage` | storage local-fs | no |
-| `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`skyscanner`\|`duffel-links`) | mock | flights: fixtures; honest unavailable + Skyscanner links; Skyscanner Live Prices; Duffel Links hosted checkout (search stays on deep links). A live mode without its key reports the missing name and keeps links working | no |
-| `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`booking`\|`duffel-stays`) | mock | hotels: fixtures; unavailable + Booking.com/Hyatt links; Booking.com Demand API; Duffel Stays | no |
+| `FLIGHTS_PROVIDER` (`mock`\|`deep-link`\|`google-travel-flights`\|`travelpayouts`\|`skyscanner`\|`duffel-links`) | unset -> `google-travel-flights` (keyless; `NODE_ENV=test` -> mock) | flights: Google Flights RPC; fixtures; deep links; optional Travelpayouts / Skyscanner / Duffel | no |
+| `HOTELS_PROVIDER` (`mock`\|`deep-link`\|`google-travel-hotels`\|`serpapi`\|`booking`\|`duffel-stays`) | unset -> `google-travel-hotels` (keyless; `NODE_ENV=test` -> mock) | hotels: Google Travel RPC; fixtures; links; optional SerpApi / Booking / Duffel | no |
+| `TRAVELPAYOUTS_TOKEN`, `TRAVELPAYOUTS_MARKER` | unset | flights only when `FLIGHTS_PROVIDER=travelpayouts` | no |
+| `SERPAPI_API_KEY` | unset | hotels only when `HOTELS_PROVIDER=serpapi` | no |
 | `SKYSCANNER_API_KEY` | unset | flights `skyscanner` mode (`x-api-key`) | no |
 | `DUFFEL_API_KEY` | unset | flights `duffel-links` and hotels `duffel-stays` (bearer) | no |
 | `DUFFEL_WEBHOOK_SECRET` (>= 16 chars) | unset -> `POST /travel/webhooks/duffel` answers 404 | verifies `X-Duffel-Signature`; the only automatic path to a confirmed trip item | no |
@@ -56,11 +66,12 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 | `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET`, `UBER_ORG_ID`, `UBER_VOUCHER_PROGRAM_ID` | unset -> mock | transport-benefit `uber` mode (Uber for Business Vouchers adapter); all four required, missing names reported by `validateConfig` | no |
 | `UBER_API_BASE_URL` | `https://api.uber.com` | transport-benefit `uber` mode (partner sandbox override) | no |
 | `TRANSPORT_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | AES-256-GCM key material (>= 32 chars) sealing unclaimed ride codes and issued redemption links at rest (`src/domain/external/vault.ts`); set a dedicated value in production | no |
+| `GUEST_PASS_SECRETS_KEY` | derived from `CONFIRMATION_SECRET` (warns) | Seals admin-issued guest sign-in pass codes at rest for short-link auto sign-in (`src/domain/identity/guest-pass-vault.ts`) | no |
 | `DEV_TEST_PRINCIPALS` | `false` | dev/e2e only: installs the cookie-driven test principal resolver (`wedding-dev-principal=guest:<id>:<household>[:stale][:noclaim]` / `admin:<id>`); refused in production; replaced by the identity swarm's resolver whenever it loads | no |
 | `RATE_LIMIT_BACKEND` (`memory`\|`db`) | db in production, memory elsewhere | rate-limit | no |
 | `JOBS_BATCH_SIZE` | `10` | how many due jobs one run takes. There is no in-process poller: a run is a cron route (`/api/jobs/run`, `/api/uploads/jobs/run`, `/api/media-ai/jobs/run`) or `npm run jobs:run`. Each registers every job handler (`src/lib/jobs/register-all.ts`) and claims only the types it has a handler for | no |
 | `METRICS_RETENTION_DAYS` | `30` | `housekeeping.purge` job: delete `metrics` rows older than this | no |
-| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags; the design switcher is off by default since the couple approved Botanical–Deco — `FLAG_DESIGN_SWITCHER=on` brings the chooser back for reviewing the two superseded proposals | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
+| `FLAG_<NAME>` (`on`\|`off`) | `src/contracts/flags.ts` defaults | feature flags | no (mirror with `NEXT_PUBLIC_FLAG_<NAME>`) |
 | `FFMPEG_PATH` | `ffmpeg` on PATH, else mock | video provider (ffmpeg adapter for posters/probing; capabilities detected from the binary) | no |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_API_TOKEN`, `CLOUDFLARE_STREAM_CUSTOMER_CODE` | unset -> ffmpeg/mock | video delivery via Cloudflare Stream (skeleton); all three required | no |
 | `MEDIA_MAX_IMAGE_MB` | `40` | media: per-file cap for images | no |
@@ -99,7 +110,7 @@ Also enforced at boot in production: `RATE_LIMIT_BACKEND=memory` is refused (per
 3. `NEXT_PUBLIC_SITE_URL` = the public origin; `BETTER_AUTH_URL` the same, plus `BETTER_AUTH_SECRET` (32+ random chars) and `ADMIN_EMAILS` for the couple.
 4. Storage: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` for R2, B2, Supabase Storage or MinIO (never AWS).
 5. Email: attach and authorize `resend/wedding` in Vercel Connect; set `RESEND_CONNECT_USER_ID` and verified `EMAIL_FROM`.
-6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set.
+6. AI: nothing. The concierge is written in the guest's browser (Prompt API) and the server calls no hosted model, so there is no AI key to set. The trip planner's matching and speech models also run in the browser; their weights download from the Hugging Face Hub (allowed in the CSP) and the ONNX runtime is copied into `public/ort/` by `npm install`, `npm run dev` and `npm run build`, with no key or variable.
 7. Cron: nothing to add on Vercel. `vercel.json` schedules `/api/jobs/run`, `/api/uploads/jobs/run` and `/api/media-ai/jobs/run` every 5 minutes (`*/5 * * * *`); Vercel Cron sends `GET` with `Authorization: Bearer $CRON_SECRET`. Another scheduler calls the same routes (`GET` or `POST`) with that bearer.
 8. Run `npm run db:migrate` during deploy (or `DB_AUTO_MIGRATE=1` for a single instance). Do not set `DB_AUTO_SEED` in production unless you want the brief seed applied.
 9. Keep `FLAG_PRO_MEDIA_AI_PROCESSING` off until vendor sign-off; the readiness switch is a second, persisted gate.

@@ -1,12 +1,14 @@
-import { notFound } from 'next/navigation';
-import { isThemeId } from '@/themes/registry';
-import { renderHome } from '@/themes/server';
+import { HomeView, staticParams } from '@/app/(public)/_views';
 
-/** Home, statically rendered per theme; lifecycle changes propagate within a minute. */
-export const revalidate = 60;
+/**
+ * Home as a signed-out reader sees it, prerendered. A lifecycle change reaches it within five
+ * minutes, or at once when an administrator publishes one (src/app/api/capabilities/[name]/route.ts).
+ */
+export const revalidate = 300;
+export const dynamic = 'error';
+export const dynamicParams = false;
+export const generateStaticParams = staticParams;
 
-export default async function HomeRoute({ params }: { params: Promise<{ theme: string }> }) {
-  const { theme } = await params;
-  if (!isThemeId(theme)) notFound();
-  return renderHome({ theme });
+export default function StaticHomePage() {
+  return <HomeView reader="anonymous" />;
 }

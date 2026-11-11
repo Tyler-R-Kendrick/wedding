@@ -15,6 +15,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <button type="button" onClick={reset}>
               Try again
             </button>{' '}
+            {/* A full navigation, deliberately: this boundary replaced the root layout. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             or <a href="/">go to the home page</a>.
           </p>
           {error.digest ? <p>Reference: {error.digest}</p> : null}

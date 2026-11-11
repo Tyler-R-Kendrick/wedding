@@ -8,8 +8,9 @@ import { UnavailableCard } from '@/components/handoff/UnavailableCard';
 import { PLACEHOLDER_LABEL } from '@/components/provenance';
 import { FORBIDDEN_GIFT_WORDS, GIFTS_COPY, giftsStatement } from '@/domain/gifts/copy';
 import { DEFAULT_RESERVATION_VENUES } from '@/domain/reservations/repo';
-import { venueView } from '@/domain/reservations/service';
+import { CONTACT_ROUTE, venueView } from '@/domain/reservations/service';
 import { TRANSPORTATION_TOPICS } from '@/domain/transport/content';
+import { THEME_IDS } from '@/themes/registry';
 
 const handoff = { provider: 'zola', providerDisplayName: 'Zola', label: 'Continue securely with Zola', url: 'https://www.zola.com/registry/x', host: 'www.zola.com', opensNewTab: true, disclosure: 'You will leave our site.' };
 
@@ -39,35 +40,50 @@ describe('handoff cards', () => {
     // `TODO(Tyler & Sara): a restaurant we love` and the card prints the name as its <h3>, so a
     // view assembled by hand in the test would have proved nothing about what a guest reads.
     const venue = venueView(DEFAULT_RESERVATION_VENUES.find((v) => v.id === 'placeholder-restaurant')!);
-    render(<ReservationHandoffCard option={{ venue, rung: 'unavailable', canCommit: false, unavailable: { message: 'Not yet. Ask us.', contactRoute: '/ask-us' } }} />);
+    render(<ReservationHandoffCard option={{ venue, rung: 'unavailable', canCommit: false, unavailable: { message: 'Not yet. Ask us.', contactRoute: CONTACT_ROUTE } }} />);
     expect(screen.queryByRole('link', { name: /Continue|Reserve/ })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Ask us' }).getAttribute('href')).toBe('/ask-us');
+    expect(CONTACT_ROUTE).toBe('/guests/ask-us');
+    expect(screen.getByRole('link', { name: 'Ask us' }).getAttribute('href')).toBe('/guests/ask-us');
     expect(screen.getByText(/not bookable here yet/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('a restaurant we love');
     expect(screen.getByText(`${PLACEHOLDER_LABEL}:`)).toBeTruthy();
     expect(document.body.textContent ?? '').not.toContain('TODO(');
+    // With no route given, the card still sends the guest to Ask Us on the portal, never the old public page.
     render(<UnavailableCard heading="X" message="m" />);
-    expect(screen.getAllByRole('link', { name: 'Ask us' }).length).toBeGreaterThan(1);
+    const askLinks = screen.getAllByRole('link', { name: 'Ask us' });
+    expect(askLinks.length).toBeGreaterThan(1);
+    for (const link of askLinks) expect(link.getAttribute('href')).toBe('/guests/ask-us');
   });
 
-  it('transportation topics show the couple as still writing, never the authoring marker', () => {
-    // Every built-in topic is a placeholder, and two carry the marker MID-sentence after a
-    // confirmed fact ("the valet entrance is at 71 E Madison. TODO(Tyler & Sara): the special
-    // event valet rate…"). The fact must survive as prose and the rest become a labelled
-    // placeholder — the recipe used to test `startsWith`, so those two rendered as plain fact with
-    // the marker inline, and the one that did match printed the marker behind an `sr-only` label.
-    // Both designs, because level 16 gave the recipe the ACTIVE DESIGN's sections and cards: the
-    // markup differs per theme now, and a placeholder that survives one arrangement of it and not
-    // the other is exactly the regression this test exists to catch.
-    for (const theme of ['gilded-hour', 'conservatory'] as const) {
-      render(<TransportationPageRecipe theme={theme} data={{ signedIn: false, signInRoute: '/claim', benefits: [], topics: TRANSPORTATION_TOPICS.map((t) => ({ ...t, paragraphs: [...t.paragraphs] })) }} />);
+  it('Your ride shows a guest their own ride benefit and nothing else: getting around is on Travel & Stay', () => {
+    // The page used to repeat the airport, train and valet topics under the benefit, with the
+    // couple's unfinished notes among them. It is the benefit alone now, in every design; the page
+    // itself sends a guest who has none to Travel & Stay before this recipe is reached.
+    const benefit = { entitlementId: 'ent-1', program: 'ride-home', status: 'unavailable' as const, statusMessage: 'Ride claims open closer to the day.', amountNote: null, validityNote: '11pm to 2am after the reception', geofenceNote: null, verifiedAt: null };
+    for (const theme of THEME_IDS) {
+      const { container, unmount } = render(
+        <TransportationPageRecipe theme={theme} data={{ signedIn: true, signInRoute: '/transportation', benefits: [benefit], topics: TRANSPORTATION_TOPICS.map((t) => ({ ...t, paragraphs: [...t.paragraphs] })) }} />,
+      );
+      expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent), theme).toEqual(['Your ride']);
+      expect(container.querySelector('#ride-benefit'), theme).toBeTruthy();
+      expect(container.querySelectorAll('[data-benefit-status="unavailable"]'), theme).toHaveLength(1);
+      const text = container.textContent ?? '';
+      expect(text, theme).toContain('Ride claims open closer to the day.');
+      expect(text, theme).toContain('11pm to 2am after the reception');
+      expect(text, theme).toContain('To be confirmed');
+      // The topics the capability still returns are not printed here, nor any of their facts.
+      for (const topic of TRANSPORTATION_TOPICS) {
+        expect(text, `${theme}: ${topic.id}`).not.toContain(topic.title);
+        for (const paragraph of topic.paragraphs) expect(text, `${theme}: ${topic.id}`).not.toContain(paragraph);
+      }
+      expect(text, theme).not.toMatch(/O’Hare|\$84\/night|71 E Madison|Blue Line/);
+      // No directions and no hotel link: the only links are the two pages that answer everything else.
+      expect([...container.querySelectorAll('a')].map((a) => a.getAttribute('href')), theme).toEqual(['/guests/travel#getting-around', '/guests/ask-us']);
+      expect(text, theme).not.toContain('TODO(');
+      expect(text, theme).not.toMatch(/backlog\s+[A-Z]{1,2}-\d/i);
+      expect(container.querySelector('[data-placeholder="true"]'), theme).toBeNull();
+      unmount();
     }
-    const text = document.body.textContent ?? '';
-    expect(text).not.toContain('TODO(');
-    expect(text).not.toMatch(/backlog\s+[A-Z]{1,2}-\d/i);
-    expect(text).toContain('the hotel’s valet entrance is at 71 E Madison.');
-    expect(screen.getAllByText(`${PLACEHOLDER_LABEL}:`).length).toBe(2 * TRANSPORTATION_TOPICS.filter((t) => t.paragraphs.some((p) => p.includes('TODO(Tyler & Sara)'))).length);
-    for (const node of document.querySelectorAll('[data-placeholder="true"]')) expect(node.textContent ?? '').not.toContain('TODO(');
   });
 
   it('confirmation card lists what is being agreed to', () => {

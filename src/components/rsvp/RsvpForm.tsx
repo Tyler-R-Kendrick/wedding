@@ -69,7 +69,18 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
   const [state, formAction, pending] = useActionState(action, INITIAL_RSVP_STATE);
 
   useEffect(() => {
-    if (state.stage === 'form' && (Object.keys(state.errors).length || state.messages.length)) document.getElementById('error-summary')?.focus();
+    if (state.stage === 'form' && (Object.keys(state.errors).length || state.messages.length)) {
+      // Expand every ancestor before focusing errors, including an optional inline weekend reply.
+      const summary = document.getElementById('error-summary');
+      for (const alert of summary?.closest('form')?.querySelectorAll('[role="alert"]') ?? []) {
+        let ancestor = alert.parentElement;
+        while (ancestor) {
+          if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+          ancestor = ancestor.parentElement;
+        }
+      }
+      summary?.focus();
+    }
     if (state.stage === 'review') document.getElementById('review-title')?.focus();
     if (state.stage === 'done') document.getElementById('done-title')?.focus();
   }, [state]);
@@ -136,6 +147,7 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
             const plusOneName = onFile?.plusOne?.name ?? null;
             return (
               <GuestCard theme={theme} key={guestId} title={guest.displayName}>
+                <div className="rsvp-person" data-asks-attendance={asksAttendance || undefined}>
                 {asksAttendance && onFile ? (
                   <p className="card__meta">
                     On file: {onFile.status === 'accepted' ? 'attending' : 'not attending'}
@@ -154,6 +166,7 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
                     ]}
                   />
                 ) : null}
+                <div className="rsvp-person__followup">
                 {asksMeal ? (
                   <Field
                     id={cssId(fieldNames.meal(guestId, event.id))}
@@ -185,15 +198,19 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
                       </p>
                     ) : null}
                     <Checkbox id={cssId(fieldNames.plusOne(guestId, event.id))} name={fieldNames.plusOne(guestId, event.id)} label={`${guest.firstName} is bringing a guest`} defaultChecked={plusOne?.attending === true} describedBy={`${base}-p1-hint`} />
+                    <div className="rsvp-person__companion">
                     <Field id={cssId(fieldNames.plusOneName(guestId, event.id))} label="Guest's name" error={state.errors[fieldNames.plusOneName(guestId, event.id)]} required={plusOnePolicy === 'named'}>
                       {(a) => <TextInput id={a.id} name={fieldNames.plusOneName(guestId, event.id)} describedBy={a.describedBy} invalid={a.invalid} defaultValue={plusOne?.name ?? ''} autoComplete="off" maxLength={80} />}
                     </Field>
                     {asksMeal ? <PlusOneMeal guestId={guestId} event={event} label="Meal for the guest" defaultValue={plusOne?.mealOptionId ?? ''} error={state.errors[fieldNames.plusOneMeal(guestId, event.id)]} /> : null}
+                    </div>
                   </fieldset>
                 ) : null}
                 {asksPlusOneMealAlone ? (
                   <PlusOneMeal guestId={guestId} event={event} label={`Meal for ${plusOneName ?? `${guest.firstName}'s guest`}`} defaultValue={plusOne?.mealOptionId ?? ''} error={state.errors[fieldNames.plusOneMeal(guestId, event.id)]} />
                 ) : null}
+                </div>
+                </div>
               </GuestCard>
             );
           })}
@@ -203,6 +220,9 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
       {asks.has('notes') ? (
         <GuestSection theme={theme} id="needs" index={sections.length} title="Anything we should know?">
           <p className="card__meta">Allergies, dietary needs, mobility or seating needs. We share these only with the caterer and the planner.</p>
+          <details className="guest-disclosure" open={parts.length === 1 || Object.keys(state.errors).some((key) => key.startsWith('dietary:') || key.startsWith('accessibility:')) || undefined}>
+            <summary>Add or update personal details <span>Optional · Dietary, accessibility or seating needs</span></summary>
+            <div className="guest-disclosure__body">
           {data.guests.map((g) => {
             const prevNeeds = values?.needs.find((n) => n.guestId === g.guestId) ?? data.needs.find((n) => n.guestId === g.guestId);
             return (
@@ -216,6 +236,8 @@ function RsvpFormRound({ data, action, idempotencyKey, theme, parts = data.next,
               </GuestCard>
             );
           })}
+            </div>
+          </details>
         </GuestSection>
       ) : null}
 

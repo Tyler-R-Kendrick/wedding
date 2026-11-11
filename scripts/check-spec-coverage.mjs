@@ -20,22 +20,16 @@ export const PRODUCTION_SPECS = [
   // against a production build (a dev server's React is several times slower per render).
   'tests/e2e/atlas.spec.ts',
   'tests/e2e/smoke.spec.ts',
+  'tests/e2e/social-sign-in.spec.ts',
   'tests/e2e/themes.spec.ts',
-  // Level 08: /travel and /trip are public and guest-gated respectively, and the spec only needs an
-  // anonymous visitor — it asserts that /trip and /admin/travel turn one away, rather than signing
-  // one in. It also reads the flights provider mode from /api/health, so the runner exports
-  // HEALTH_TOKEN alongside the server's.
+  // Level 08: Travel & Stay (/guests/travel; /travel redirects to it), /trip and the travel
+  // capabilities all refuse anonymous visitors. The signed-in travel UI and the capability's own
+  // answer (which reads the flights provider mode from /api/health) run on the test server in
+  // guest-guide.spec.ts.
   'tests/e2e/travel.spec.ts',
   // Level 09: the dead-internal-link walk. Anonymous, and it wants the production route table —
   // a dev server compiles on demand, so a missing page is slower to distinguish from a slow one.
   'tests/e2e/links.spec.ts',
-  // Level 12: the concierge journey is anonymous end to end — it opens the island on /ask-us and
-  // posts to /api/ai/chat as a visitor, so it needs no test principal. It belongs here rather than
-  // on the test server because the two things it asserts about are production behaviour: the answer
-  // must be grounded and cited against the SEEDED knowledge base, and the chat route must be the
-  // only door (405 on GET, 403 on a form-encoded POST). The server has no hosted model anywhere,
-  // so a browser without the Prompt API (CI's) gets the deterministic extractive answer.
-  'tests/e2e/concierge.spec.ts',
   // Level 15: the CSP and HSTS. It belongs here and nowhere else — the production policy is the
   // strict one (no 'unsafe-eval', no ws:, plus upgrade-insecure-requests and HSTS) and `next dev`
   // serves the relaxed one, so on a dev server the spec would be asserting the wrong policy.
@@ -43,18 +37,33 @@ export const PRODUCTION_SPECS = [
   'tests/e2e/security-headers.spec.ts',
   // Level 16: the client-bundle and lazy-load budget. Production and nowhere else — a `next dev`
   // bundle is unminified, unsplit and carries the refresh runtime, so the same numbers there would
-  // have to be loosened until they asserted nothing. Anonymous, and `next start` serves prebuilt
-  // routes, so it needs no warm-up.
+  // have to be loosened until they asserted nothing. Public routes only (Ask Us, now /guests/ask-us,
+  // is guest-gated since #86). `next start` serves prebuilt routes, so it needs no warm-up.
   'tests/e2e/bundle.spec.ts',
 ];
 
 /** Needs NODE_ENV=test: the dev inbox (claim) or the test-principal injector (everything else). */
 export const TEST_SERVER_SPECS = [
+  'tests/e2e/guest-guide.spec.ts',
+  'tests/e2e/guest-planning-ux.spec.ts',
+  'tests/e2e/guest-portal.spec.ts',
+  // Level 12: Ask Us and the concierge are guest-gated; signed-in journeys use the test-principal
+  // injector. Grounding, citations, and /api/ai/chat as the only door are still production code
+  // paths — the NODE_ENV=test server is only how CI presents a session.
+  'tests/e2e/concierge.spec.ts',
   'tests/e2e/claim.spec.ts',
+  // Temporary sign-in passes: admin issue via capabilities, guest auto-submit on /s/[slug].
+  'tests/e2e/guest-sign-in-pass.spec.ts',
+  'tests/e2e/phone-sign-in.spec.ts',
   'tests/e2e/rsvp.spec.ts',
   'tests/e2e/seating.spec.ts',
   // Level 08: the signed-in trip page needs the test-principal injector.
   'tests/e2e/trip.spec.ts',
+  // Your Trip's planner: a signed-in guest saves places as their own trip items, through the
+  // test-principal injector; the room block, the old list address and the 390px layout ride along.
+  'tests/e2e/your-trip.spec.ts',
+  // Level 08: travel search prefill from household mailing address and party counts.
+  'tests/e2e/travel-prefill.spec.ts',
   // Level 09: transport claims and the voucher/redirect suites all drive signed-in principals
   // through identity's test-principal injector, so they need the NODE_ENV=test server.
   'tests/e2e/transport-gifts.spec.ts',
@@ -82,6 +91,7 @@ export const TEST_SERVER_SPECS = [
   // the lifecycle; the media-AI journey expects its own jobs to still be queued), and those paths
   // are covered through the real pipeline in tests/integration/ops-*.test.ts instead.
   'tests/e2e/admin-console.spec.ts',
+  'tests/e2e/admin-guest-ops.spec.ts',
   // Level 16: the computed-font and 17px-floor assertions for the auth journeys and the admin
   // console. It belongs HERE and not with the production specs for one reason: half its routes are
   // console screens, which need the canonical test-principal injector and therefore NODE_ENV=test.
@@ -94,6 +104,9 @@ export const TEST_SERVER_SPECS = [
   // reaches every lifecycle state through the admin's signed preview. The CI warm-up list holds
   // every route it visits, the preview route included.
   'tests/e2e/quality-sweep.spec.ts',
+  // Site audit: every persona walks the inventory (public, guest, admin, view-role) on the test
+  // server. Anonymous redirects and probes are GET only; the one POST is admin_set_view_role.
+  'tests/e2e/site-crawler.spec.ts',
   'tests/security/otp.spec.ts',
   'tests/security/rsvp.spec.ts',
   'tests/security/seating.spec.ts',

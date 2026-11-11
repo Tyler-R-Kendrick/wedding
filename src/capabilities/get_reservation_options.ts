@@ -28,7 +28,7 @@ export const reservationOptionSchema = z.object({
   rung: z.enum(['api', 'deep-link', 'url', 'unavailable']),
   canCommit: z.boolean(),
   handoff: guestHandoffSchema.optional(),
-  unavailable: z.object({ message: z.string(), contactRoute: z.literal('/ask-us') }).optional(),
+  unavailable: z.object({ message: z.string(), contactRoute: z.literal('/guests/ask-us') }).optional(),
 });
 
 const output = z.object({ options: z.array(reservationOptionSchema) });
@@ -43,7 +43,7 @@ export const getReservationOptions = defineCapability<z.infer<typeof input>, Res
     'the place’s own booking page, or honestly "not available yet" with how to ask the couple. Optional date and party size are passed into deep links. ' +
     'Reads only; it never books.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },

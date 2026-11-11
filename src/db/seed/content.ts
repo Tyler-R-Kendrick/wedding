@@ -4,10 +4,11 @@ import type { Db } from '../client';
 import { loadContentSeed, SOURCE_KEYS, type ContentSeed, type ProvenanceSeed } from '@/content';
 import { projectKnowledge } from '@/domain/knowledge/projection';
 import {
-  adventureMemories, faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
+  faqEntries, itineraryTemplates, operationalFields, places, recommendations, storySections, timelineMoments, venueFacts, venueSpaces,
   type TimelineMomentRow,
 } from '../schema';
 import { seedId } from './sources';
+import { reconcileAdventureSeedKeys, removeRetiredSeedAdventures, upsertSeedAdventure } from './adventure-sync';
 
 /** Stable id ranges per table so the seed is idempotent and recognisable in audit rows. */
 const ID_BASE = { story: 200, places: 300, adventures: 400, recommendations: 500, itineraries: 600, venueSpaces: 700, venueFacts: 800, operational: 900, faq: 1000, timeline: 1100 } as const;
@@ -112,9 +113,11 @@ export async function seedContent(db: Db, now: Date = new Date()): Promise<void>
       lat: p.lat ?? null, lng: p.lng ?? null, url: p.url ?? null, resySlug: p.resySlug ?? null, openTableId: p.openTableId ?? null, insideVenue: p.insideVenue, ...provenance(p, now),
     });
   }
-  for (const [i, a] of seed.adventures.entries()) {
-    await upsert(adventureMemories, {
-      id: seedId(ID_BASE.adventures + i), slug: a.slug, title: a.title, dateExact: a.dateExact ?? null, dateApprox: a.dateApprox ?? null, season: a.season ?? null, timeOfDay: a.timeOfDay ?? null,
+  await removeRetiredSeedAdventures(db);
+  await reconcileAdventureSeedKeys(db, seed, adventureIds, ID_BASE.adventures);
+  for (const a of seed.adventures) {
+    await upsertSeedAdventure(db, {
+      id: adventureIds.get(a.slug)!, slug: a.slug, title: a.title, dateExact: a.dateExact ?? null, dateApprox: a.dateApprox ?? null, season: a.season ?? null, timeOfDay: a.timeOfDay ?? null,
       placeId: a.placeSlug ? placeIds.get(a.placeSlug)! : null, locationLabel: a.locationLabel ?? null, lat: a.lat ?? null, lng: a.lng ?? null, summary: a.summary, memory: a.memory,
       saraMemory: a.saraMemory ?? null, tylerMemory: a.tylerMemory ?? null, media: a.media, tags: a.tags, durationMinutes: a.durationMinutes ?? null, accessibilityNotes: a.accessibilityNotes ?? null,
       relatedRecommendationIds: a.relatedRecommendationSlugs.map((s) => recommendationIds.get(s)!), ...provenance(a, now),

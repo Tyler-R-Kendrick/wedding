@@ -1,3 +1,4 @@
+import { AdventurePhotoCarousel } from '@/components/adventures/AdventurePhotoCarousel';
 import { Text as Block } from '@/components/provenance';
 import { ROUTES } from '@/domain/routes';
 import type { AdventureDetailProps, ContentRecipe } from '@/themes/content-types';
@@ -19,17 +20,10 @@ export const BotanicalAdventureDetailPage: ContentRecipe<AdventureDetailProps> =
     <Section id="memory" number={1} labelledBy="memory-title">
       <SectionHeading level={2} id="memory-title" title={CONTENT_COPY.adventureDetail.memory} />
       {data.media.some((m) => m.src) ? (
-        <div className="bd-adventure-photos">
-          {data.media
-            .filter((m): m is typeof m & { src: string } => !!m.src)
-            .map((m) => (
-              <figure key={m.src} className="bd-adventure-photos__item">
-                {/* eslint-disable-next-line @next/next/no-img-element -- couple-supplied photo of unknown size; the kit draws every photo with <img> */}
-                <img className="bd-adventure-photos__img" src={m.src} alt={m.alt} loading="lazy" decoding="async" />
-                {m.caption ? <figcaption>{m.caption}</figcaption> : null}
-              </figure>
-            ))}
-        </div>
+        <AdventurePhotoCarousel
+          photos={data.media.filter((m): m is typeof m & { src: string } => !!m.src)}
+          className="bd-adventure-photos"
+        />
       ) : null}
       <MemoryCard memory={data.memory} sara={data.saraMemory} tyler={data.tylerMemory} accessibility={data.accessibilityNotes} provenance={data.provenance} />
     </Section>

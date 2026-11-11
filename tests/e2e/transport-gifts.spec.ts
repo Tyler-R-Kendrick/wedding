@@ -15,8 +15,6 @@ import { BASE_URL, IDS, principalHeaders } from './helpers/principal';
  */
 const PARTNER_HOSTS = /(^|\.)(uber\.com|zola\.com|theknot\.com|withjoy\.com|google\.com|apple\.com|opentable\.com|resy\.com|chicagoathletichotel\.com|hyatt\.com)$/;
 
-const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-
 const apiAs = (name: 'A1' | 'A2' | 'admin') => ({ ...principalHeaders(name), origin: BASE_URL, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' });
 
 async function noBlockingAxe(page: import('@playwright/test').Page) {
@@ -26,73 +24,88 @@ async function noBlockingAxe(page: import('@playwright/test').Page) {
 }
 
 test.describe('gifts', () => {
-  // Parameterised by design, as the travel spec is and for the same reason: /gifts now renders
-  // through the theme engine, so a `goto('/gifts')` with no `?theme=` would exercise Gilded Hour
-  // only and leave Conservatory's recipe — and its axe pass — entirely unvisited.
-  //
   // The page shows BOTH states at once, which is the point of the case: the registry link is
   // configured here through the admin capability, and the adventure fund is left unconfigured. A
   // configured link is a real hand-off naming a real provider; an unconfigured one is an editorial
   // "still to come" that names nobody. The built-in rows this replaces pointed at zola.com and made
   // the page say "via Zola" for a registry the couple have not chosen (brief §2: NOT settled).
-  for (const theme of THEMES) {
-    test(`frames "next adventures", hands off only where a provider is configured (${theme})`, async ({ page, request }) => {
-      const configured = await request.post('/api/capabilities/admin_upsert_gift_link', {
-        headers: apiAs('admin'),
-        data: { input: { id: 'e2e-registry', kind: 'registry', provider: 'theknot', label: 'Our registry on The Knot', url: 'https://www.theknot.com/us/sara-and-tyler', note: 'Physical wishlist' }, idempotencyKey: `e2e-gift-${theme}-${Date.now()}` },
-      });
-      expect(configured.status(), await configured.text()).toBe(200);
-
-      // Signed out, the registry is a door to sign in; it is behind the account menu.
-      await page.goto(`/gifts?theme=${theme}`);
-      await expect(page).toHaveURL(/\/sign-in\?next=%2Fgifts$/);
-      await page.setExtraHTTPHeaders(principalHeaders('A1'));
-      await page.goto(`/gifts?theme=${theme}`);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
-      const card = page.locator('article[data-handoff-provider="theknot"]');
-      await expect(card).toHaveCount(1);
-      await expect(card).toContainText('via The Knot');
-      const link = card.getByRole('link');
-      await expect(link).toHaveAttribute('target', '_blank');
-      await expect(link).toHaveAttribute('rel', /noopener/);
-      for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
-        expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
-        expect(href.startsWith('https://')).toBe(true);
-      }
-
-      // The unconfigured kind names no company and offers no destination — it is a labelled
-      // placeholder saying the couple are still deciding.
-      const adventures = page.locator('#gifts-adventures');
-      await expect(adventures.locator('[data-placeholder="true"]')).toHaveCount(1);
-      await expect(adventures.locator('article[data-handoff-provider]')).toHaveCount(0);
-
-      const text = await page.locator('main').innerText();
-      expect(text).not.toMatch(/cash\s*fund|donat/i);
-      expect(text).not.toContain('TODO(');
-      // The site is never the merchant of record: gifts are a hand-off, never a checkout. This
-      // used to count `input, iframe, form` across the whole document, which held only because
-      // /gifts rendered a bare <main> with no site chrome. Now that it renders inside the active
-      // design's Shell it has a header and footer like every other public page, and the design
-      // switcher's own <form> lives there — chrome this rule was never about. The guarantee
-      // restated: the page's own content collects nothing, and no embedded frame appears on it.
-      expect(await page.locator('main input, main textarea, main select, main form').count()).toBe(0);
-      expect(await page.locator('iframe, object, embed').count()).toBe(0);
-      await noBlockingAxe(page);
+  test('frames "next adventures", hands off only where a provider is configured', async ({ page, request }) => {
+    const configured = await request.post('/api/capabilities/admin_upsert_gift_link', {
+      headers: apiAs('admin'),
+      data: { input: { id: 'e2e-registry', kind: 'registry', provider: 'theknot', label: 'Our registry on The Knot', url: 'https://www.theknot.com/us/sara-and-tyler', note: 'Physical wishlist' }, idempotencyKey: `e2e-gift-${Date.now()}` },
     });
-  }
+    expect(configured.status(), await configured.text()).toBe(200);
+
+    // Signed out, the registry is a door to sign in; it is behind the account menu.
+    await page.goto('/gifts');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fgifts$/);
+    // Gifts open with the RSVP. Before then the address sends a guest to their dashboard.
+    await page.setExtraHTTPHeaders(principalHeaders('A1'));
+    await page.goto('/gifts');
+    await expect(page).toHaveURL(/\/guests$/);
+    await page.setExtraHTTPHeaders(principalHeaders('A1', undefined, undefined, 'RSVP_OPEN'));
+    await page.goto('/gifts');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Help us with our next adventures');
+    const card = page.locator('article[data-handoff-provider="theknot"]');
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText('via The Knot');
+    const link = card.getByRole('link');
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', /noopener/);
+    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
+      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
+      expect(href.startsWith('https://')).toBe(true);
+    }
+
+    // The unconfigured kind names no company and offers no destination — it is a labelled
+    // placeholder saying the couple are still deciding.
+    const adventures = page.locator('#gifts-adventures');
+    await expect(adventures.locator('[data-placeholder="true"]')).toHaveCount(1);
+    await expect(adventures.locator('article[data-handoff-provider]')).toHaveCount(0);
+
+    const text = await page.locator('main').innerText();
+    expect(text).not.toMatch(/cash\s*fund|donat/i);
+    expect(text).not.toContain('TODO(');
+    // The site is never the merchant of record: gifts are a hand-off, never a checkout. This
+    // used to count `input, iframe, form` across the whole document, which held only because
+    // /gifts rendered a bare <main> with no site chrome. Now that it renders inside the active
+    // design's Shell it has a header and footer like every other public page, and the design
+    // switcher's own <form> lives there — chrome this rule was never about. The guarantee
+    // restated: the page's own content collects nothing, and no embedded frame appears on it.
+    expect(await page.locator('main input, main textarea, main select, main form').count()).toBe(0);
+    expect(await page.locator('iframe, object, embed').count()).toBe(0);
+    await noBlockingAxe(page);
+  });
 });
 
 test.describe('transportation', () => {
-  test('public guidance renders with map handoffs and honest placeholders', async ({ page }) => {
+  /*
+   * `/transportation` is "Your ride" now: a guest's own ride benefit and nothing else. It used to be
+   * a public page of guidance (trains, taxis, parking) with the benefit as one section; that
+   * guidance is said once, on Travel & Stay, and the page itself is behind sign-in.
+   */
+  test('signed out it is the sign-in door, and a guest without a ride benefit is taken to "Getting around"', async ({ page, context }) => {
     await page.goto('/transportation');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Getting here');
-    await expect(page.getByRole('heading', { level: 2, name: 'Your ride home' })).toBeVisible();
-    await expect(page.getByText('Find your invitation')).toBeVisible();
-    await expect(page.locator('[data-placeholder="true"]').first()).toBeVisible();
-    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
-      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
-    }
-    await noBlockingAxe(page);
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Ftransportation$/);
+    // Nothing of the page came with the redirect: no benefit, no claim, no venue.
+    await expect(page.locator('body')).not.toContainText(/ride benefit|Your ride home|Review and claim|Chicago Athletic/i);
+
+    // C1 holds no ride benefit in any spec (household A is this file's, B is voucher.spec.ts's).
+    // A page saying "there is nothing here" is no use to them; the part of Travel & Stay that
+    // answers what they came for is.
+    await context.setExtraHTTPHeaders(principalHeaders('C1'));
+    await page.goto('/transportation');
+    await expect(page).toHaveURL(/\/guests\/travel(?:\?[^#]*)?#getting-around$/);
+    const around = page.locator('#getting-around');
+    await expect(around.getByRole('heading', { level: 2, name: 'Getting around' })).toBeVisible();
+    await expect(around).toContainText(/rideshare/i);
+    await expect(around).toContainText(/parking/i);
+    // No ride is promised to a guest who has none, and no claim is offered.
+    await expect(page.locator('[data-benefit-status]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Review and claim' })).toHaveCount(0);
+    const text = await page.locator('main').innerText();
+    expect(text).not.toMatch(/coming soon|Uber can take you/i);
+    expect(text).not.toContain('TODO(');
   });
 
   test('an eligible guest reviews, confirms, and gets an "Open in Uber" handoff card', async ({ page, request, context }, testInfo) => {
@@ -113,8 +126,27 @@ test.describe('transportation', () => {
 
     await context.setExtraHTTPHeaders(principalHeaders('A1'));
     await page.goto('/transportation');
+    // With a benefit on the invitation the page renders, and it is the benefit alone.
+    await expect(page).toHaveURL(/\/transportation$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your ride');
+    await expect(page.getByRole('heading', { level: 2, name: 'Your ride home' })).toBeVisible();
     await expect(page.locator('[data-benefit-status="eligible"]')).toBeVisible();
     expect(await page.locator('main').innerText()).not.toContain('TODO(');
+    for (const href of await page.locator('a[href^="http"]').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href))) {
+      expect(new URL(href).hostname, href).toMatch(PARTNER_HOSTS);
+    }
+    // The ride page wears the design: its section and card are the design's own, inside the
+    // design's Shell. (quality-sweep.spec.ts walked this page for every guest while it was public
+    // guidance; only a guest with a benefit has the page now, so it is asserted here, where one is
+    // arranged.)
+    await page.goto('/transportation');
+    await expect(page.locator('.site.bd'), 'the ride page is not inside the design\'s shell').toHaveCount(1);
+    await expect(page.locator('main#main')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your ride');
+    await expect(page.locator('[data-benefit-status="eligible"]')).toBeVisible();
+    const themed = await page.locator('main#main').evaluate((main, p) => [...main.querySelectorAll('*')].filter((e) => String(e.className || '').split(/\s+/).some((c) => c.startsWith(p))).length, 'bd-');
+    expect(themed, 'the ride page renders none of the design\'s own elements inside <main>').toBeGreaterThan(0);
+    await noBlockingAxe(page);
     await page.getByRole('button', { name: 'Review and claim' }).click();
     await expect(page.getByRole('heading', { level: 3, name: 'Claim your ride benefit' })).toBeVisible();
     await expect(page.getByText('Uber (test mode)')).toBeVisible();
@@ -133,7 +165,10 @@ test.describe('transportation', () => {
     // would wrongly pass a different-household check.
     await context.setExtraHTTPHeaders(principalHeaders('A2'));
     await page.goto('/transportation');
+    // A2 has no benefit of their own, so the ride page is not theirs to open at all.
+    await expect(page).toHaveURL(/\/guests\/travel(?:\?[^#]*)?#getting-around$/);
     await expect(page.locator('article[data-handoff-host="www.uber.com"]')).toHaveCount(0);
+    await expect(page.locator('[data-benefit-status]')).toHaveCount(0);
     expect(await page.content()).not.toMatch(/uber\.com\/redeem/);
   });
 });

@@ -1,6 +1,6 @@
 /*
  * The pipeline's drafting sheet: the one token layer stages 1–3 draw with, and the semantic names
- * stage 4 remaps onto each design (stages/04-placeholder/app/themes.css). Every value is a step of
+ * stage 4 remaps onto the real design (stages/04-placeholder/app/designs.css). Every value is a step of
  * the root DESIGN.md scale, so a lo-fi stage never invents a colour, size or radius of its own.
  *
  *   --st-*        what a stage component may read. Nothing below the stage kits reads a raw value.
@@ -212,23 +212,6 @@ a {
   color: var(--st-ink-muted);
   font-family: var(--st-font-note);
   font-size: var(--st-size-label);
-}
-
-.bl-design {
-  display: inline-flex;
-  gap: var(--st-space-sm);
-  align-items: center;
-  color: var(--st-ink);
-}
-
-.bl-design select {
-  min-block-size: 44px;
-  padding: 0 var(--st-space-sm);
-  border: 1px solid var(--st-line);
-  border-radius: var(--st-radius);
-  background: var(--st-paper);
-  color: var(--st-ink);
-  font: inherit;
 }
 
 .bl-frame {

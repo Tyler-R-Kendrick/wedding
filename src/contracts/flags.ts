@@ -5,12 +5,6 @@
 export const FEATURE_FLAGS = {
   /** Third-party AI processing of professionally delivered media (needs written vendor confirmation). */
   PRO_MEDIA_AI_PROCESSING: false,
-  /**
-   * The design chooser. Off: Sara and Tyler approved one design (Botanical–Deco) and the approved
-   * experience has no visible two-theme chooser. The earlier proposals stay reachable by an explicit
-   * `?theme=` link for review; turning this on exposes the chooser again.
-   */
-  DESIGN_SWITCHER: false,
   /** Register WebMCP tools when `document.modelContext` exists. */
   WEBMCP: true,
   /** Embedded concierge (uses the mock model when no provider key is configured). */

@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TravelPageRecipe, type TravelPageData } from '@/app/(public)/travel/recipe';
+import { TravelPageRecipe, type TravelPageData } from '@/app/(guest)/guests/travel/recipe';
 import { AIRPORTS, BRIEF_CITATION, synthesizedVenueHotel, VENUE } from '@/domain/travel';
 
 const data: TravelPageData = {
@@ -11,13 +11,14 @@ const data: TravelPageData = {
   viewer: { kind: 'anonymous', hasProfile: false },
 };
 
-describe('Travel & Stay recipe', () => {
+describe('Your Trip recipe (fallback)', () => {
   it('renders landmarks, the block first with honest placeholders, both airports, and no live search on load', () => {
-    render(<TravelPageRecipe theme="gilded-hour" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
+    render(<TravelPageRecipe theme="botanical-deco" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p>, planner: <p>planner-slot</p> }} />);
     expect(screen.getByRole('main')).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Getting to Chicago');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your Trip');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'Your trip']);
+    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'Itinerary']);
+    expect(screen.getByText('planner-slot')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Chicago Athletic Association Hotel' })).toBeTruthy();
     expect(screen.getByText('ORD')).toBeTruthy();
     expect(screen.getByText('MDW')).toBeTruthy();
@@ -25,13 +26,13 @@ describe('Travel & Stay recipe', () => {
     // The gaps are still visible — that is the point of a placeholder — but as the editorial
     // treatment the rest of the site uses, never as the raw authoring marker. This page is PUBLIC,
     // and it used to print `TODO(Tyler & Sara): …` including an internal backlog id.
-    expect(text).toContain('the group rate');
-    expect(text).toContain('the date to book by');
+    expect(text).toContain('rooms in our block are limited');
+    expect(text).toContain('$331');
+    expect(text).toContain('Nights of Friday, July 16 and Saturday, July 17, 2027');
+    expect(text).not.toContain('up to 20 rooms');
     expect(text).not.toContain('TODO(');
     expect(text).not.toMatch(/backlog [A-Z]-\d/);
-    expect(document.querySelectorAll('[data-placeholder="true"]').length).toBeGreaterThan(0);
-    expect(text).toContain('up to 20 rooms');
-    expect(text).not.toMatch(/\$\d/); // no invented prices
+    expect(text).toContain('$84');
     expect(text).not.toMatch(/safe(st)?\b/i); // no safety claims
     expect(screen.getByText('flight-search-slot')).toBeTruthy();
     expect(screen.getByText('hotel-search-slot')).toBeTruthy();
@@ -39,18 +40,22 @@ describe('Travel & Stay recipe', () => {
     expect(external.length).toBeGreaterThan(0);
     for (const a of external) expect(a.getAttribute('rel')).toContain('noopener');
     expect(screen.getByRole('link', { name: /Visit the hotel website/ }).getAttribute('href')).toBe('https://www.chicagoathletichotel.com/');
-    expect(screen.getByRole('link', { name: /12 S Michigan Ave/ }).getAttribute('href')).toContain('https://www.google.com/maps/search/');
+    expect(screen.getByRole('link', { name: /12 S\. Michigan Avenue/ }).getAttribute('href')).toContain('https://www.google.com/maps/search/');
     // No hotels are configured, so there is no list to describe. This sentence sat outside the
     // ternary and rendered directly under "we are still confirming a few nearby options" — a
     // present-tense account of a list that does not exist.
     expect(text).not.toContain('We list why we picked each place');
   });
 
-  it('describes the criteria only once there are hotels to describe', () => {
+  it('describes the criteria only once there are hotels that list them', () => {
     // Built from the real recommendation the page already renders, not by hand: a hand-made view
     // object missed `verifiedAt` and threw inside the card, which proved nothing about the copy.
     const hotel = { ...data.venue, id: 'alt-1', name: 'A Nearby Hotel', placeholder: false };
-    render(<TravelPageRecipe theme="gilded-hour" data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    render(<TravelPageRecipe theme="botanical-deco" data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
     expect(document.body.textContent ?? '').toContain('We list why we picked each place');
+    cleanup();
+    // A hotel known by name only lists no reasons, so there is nothing for the sentence to describe.
+    render(<TravelPageRecipe theme="botanical-deco" data={{ ...data, alternatives: [{ ...hotel, reasons: [] }] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    expect(document.body.textContent ?? '').not.toContain('We list why we picked each place');
   });
 });

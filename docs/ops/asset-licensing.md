@@ -44,7 +44,7 @@ NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --dry-run            # resol
 NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs "File:Some file.jpg" --use "Explore CAA — lobby detail"
 NODE_USE_ENV_PROXY=1 node scripts/fetch-commons.mjs --list-only          # candidates in the CAA building category (never downloads)
 NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs "fern pressed specimen" --license cc0,pdm
-NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "Conservatory — pressed-fern card"
+NODE_USE_ENV_PROXY=1 node scripts/fetch-openverse.mjs --download <identifier> --use "pressed-fern card"
 node scripts/fetch-commons.mjs --check                                   # ledger gate (no network); see §5
 ```
 
@@ -140,14 +140,30 @@ through `scripts/import-paired.mjs --with-photos`, an explicit opt-in because
 this repository is public (`docs/content/paired-timeline.md`).
 `npm run assets:check` verifies both the ledger and the timeline manifest.
 
+### 1d″. Photographs of the places we recommend
+
+The cards on Your Trip (`/guests/travel#plan`) show a photograph **of the place
+itself** (the zoo, the fountain, the Game Room), never a generic stand-in: a
+recommendation with no correctly licensed photo of that place has none.
+
+- Fetched through `scripts/fetch-openverse.mjs` (`--allow-by` where needed), so
+  each file is in the ledger and on `/credits`. Openverse's licence can be stale:
+  each Flickr page was re-read on 2026-11-11, and one marked "Public Domain" there
+  had since become All Rights Reserved and was dropped.
+- `node scripts/place-photos.mjs` crops each to 4:3 and writes 640px and 1024px
+  AVIF + WebP to `public/media/places/` with `manifest.json` (ledger id and hash,
+  alt text, licence, credit line). The card shows the 640px WebP (≤ 78 KB).
+- `src/domain/media/place-photos.ts` reads it by recommendation slug;
+  `planner-data.ts` sets `image` (with `credit` for CC BY / BY-SA, which the card
+  must show beside the picture). `npm run assets:check` runs `--check`.
+
 ### 1e. Demo recordings
 
-`docs/demos/` holds screen recordings of the site made by
-`scripts/demos/record.mjs` (see [demos](demos.md)). They show the pages as they
-are, so they contain the images above: the licensed photographs keep the
-credits listed in `public/assets/ATTRIBUTIONS.md`, and the portraits remain
-generated portrayals. A recording is never cut to present a portrait as a
-photograph, and the guest recording uses the seeded test household only.
+None are kept. The screen recordings that used to live in the repository were
+removed in November 2026 along with the scripts that made them. A recording
+made in future shows the pages as they are, so it contains the images above
+and carries the same credits; it is never cut to present a portrait as a
+photograph, and a guest recording uses the seeded test household only.
 
 ### 1f. Cartographic data: the Our Adventures atlas
 
@@ -256,7 +272,7 @@ Procedure when a batch arrives:
    direct message); children only with a parent's agreement. Keep a note in
    `photos.json`'s `consent` field.
 
-**Our Adventures, one adventure per photo (2026-09-23).** The couple's own
+**Our Adventures photo memories (2026-09-23; grouped 2026-11-01).** The couple's own
 phone photos live in `public/assets/photos/adventures/` as 1600px WebP
 renditions with every EXIF/XMP field (GPS included) stripped, then stamped
 with the rights statement below as their only metadata; the originals stay
@@ -264,7 +280,8 @@ outside the repo. `docs/content/adventure-photos.json` is the manifest:
 file, adventure, original file name, date, where the pin came from
 (`exif-gps` — the photo's GPS, reverse-geocoded against OpenStreetMap to
 name the business; `landmark-in-photo` — a sign or marquee in the frame;
-`unknown`), people and consent. Homes are pinned to two decimals (about a
+`unknown`), people and consent. Photos from the same day or trip share one
+adventure record and rotate on its detail page. Homes are pinned to two decimals (about a
 kilometre), never to the door. A photo that shows anyone besides Sara and
 Tyler is `consent: "pending…"`: its rendition is **not in the repo at all**
 (`file: null`; `public/` is served to anyone, and so is this repository), its
@@ -342,6 +359,17 @@ survive re-runs.
 CI: wire `node scripts/fetch-commons.mjs --check` into `npm run quality`
 (package.json is not edited by the assets agent; the owner of `quality`
 adds it). Until then, run it before every PR that touches `public/assets/`.
+
+### Travel geodata (nearest-airport prefill)
+
+Bundled under `src/domain/travel/data/` (regenerate with `node scripts/build-travel-geo-data.mjs`):
+
+| File | Source | License |
+|---|---|---|
+| `commercial-airports.json` | [OurAirports](https://ourairports.com/data/) `airports.csv` | Public domain |
+| `us-postal-centroids.json` | [GeoNames](https://www.geonames.org/) US postal codes | CC BY 4.0 (attribution: GeoNames) |
+
+Used only to suggest editable defaults on `/guests/travel`; no outbound geocoding calls.
 
 ## 6. Commands, in one place
 

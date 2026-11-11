@@ -6,7 +6,7 @@ import { guests, households } from '@/db/schema';
 import { upsertGuest } from '@/domain/guests/repo';
 import { upsertHousehold } from '@/domain/households/repo';
 import { listAuditEvents } from '@/lib/audit';
-import { call, claim, expectErr, expectOk, principalFor, seed, signIn } from './harness';
+import { call, claim, expectErr, expectOk, latestCode, principalFor, seed, signIn } from './harness';
 
 describe('forwarded links and cross-guest attempts', () => {
   it('a forwarded link cannot take over a claimed guest: the code goes to the bound inbox only', async () => {
@@ -16,6 +16,7 @@ describe('forwarded links and cross-guest attempts', () => {
     // Attacker holds the link and picks Chidi: nothing reaches the attacker, only Chidi's inbox.
     const req = expectOk(await call<{ sent: boolean; challenge: string; deliveredTo: string }>('request_otp', { purpose: 'claim', token: f.invitations.okafor.token, guestId: f.guests.chidi }));
     expect(req.data.sent).toBe(true);
+    await latestCode(f.emails.chidi);
     expect(devInbox.list().map((m) => m.to)).toEqual([f.emails.chidi]);
     expectErr(await call('verify_otp', { challenge: req.data.challenge, code: '123456' }), 'validation');
     // Chidi himself (owning the inbox) can still sign in through the same link.
@@ -31,6 +32,7 @@ describe('forwarded links and cross-guest attempts', () => {
     const unknown = expectOk(await call<{ sent: boolean; challenge: string; deliveredTo: string }>('request_otp', { purpose: 'sign_in', email: `nobody+${Math.random().toString(36).slice(2)}@example.test` }));
     expect(Object.keys(known.data).sort()).toEqual(Object.keys(unknown.data).sort());
     expect(unknown.data.sent).toBe(true);
+    await latestCode(f.emails.amara);
     expect(devInbox.list().map((m) => m.to)).toEqual([f.emails.amara]);
     const fail = expectErr(await call('verify_otp', { challenge: unknown.data.challenge, code: '123456' }), 'validation');
     expect(fail.message).toMatch(/didn’t work/);

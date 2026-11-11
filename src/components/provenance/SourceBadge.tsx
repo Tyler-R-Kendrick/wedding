@@ -40,8 +40,21 @@ export function SourceBadge({ provenance, showVersion = false }: { provenance: P
   );
 }
 
+/**
+ * A source a guest gains nothing from being told about. The venue's wedding kit is a planning PDF
+ * the couple were sent: "External source · CAA Wedding Kit 2027" under a paragraph about a ballroom
+ * told a guest nothing they could open or check, and read as an editor's note left on the page. The
+ * record keeps its source for the admin console and for the capability envelope; the page does not
+ * print it. Anything a guest can follow (the hotel's own site, a transit page) is still named.
+ */
+export function isNamedForGuests(provenance: Pick<ProvenanceViewData, 'sourceType'>): boolean {
+  return provenance.sourceType !== 'venue-document';
+}
+
 /** Source + freshness on one line; the standard footer for any record a guest may act on. */
 export function ProvenanceLine({ provenance, showVersion = false, children }: { provenance: ProvenanceViewData; showVersion?: boolean; children?: React.ReactNode }) {
+  // An unnamed source still has a freshness worth saying ("No longer current"): only the name goes.
+  if (!isNamedForGuests(provenance)) return children ? <p className="prov">{children}</p> : null;
   return (
     <p className="prov">
       <SourceBadge provenance={provenance} showVersion={showVersion} />

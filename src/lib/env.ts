@@ -55,6 +55,8 @@ const serverSchema = z.object({
   DEV_STORAGE_SECRET: optionalSecret(16),
   BETTER_AUTH_SECRET: optionalSecret(16),
   BETTER_AUTH_URL: optionalUrl,
+  /** View-only Google My Maps link for the guest Chicago guide (optional; enables link + QR on the signed-in guide). */
+  CHICAGO_GUIDE_MAP_URL: optionalUrl,
   /** Number of trusted reverse proxies in front of the app. 0 = ignore forwarding headers. Default: 1 on Vercel, else 0. */
   TRUSTED_PROXY_HOPS: optionalInt(0, 16),
   /** Bearer that unlocks GET/DELETE /api/dev/inbox outside local development (previews). */
@@ -66,6 +68,12 @@ const serverSchema = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
     z.array(z.email()),
   ),
+  /**
+   * The administrators' own mobile numbers, `email=phone` pairs separated by commas, put on their
+   * guest records so they can sign in by text (src/domain/guests/admin-phones.ts). Private: never
+   * in the repository.
+   */
+  ADMIN_PHONES: optionalString,
   /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
   HEALTH_TOKEN: optionalSecret(16),
   /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */
@@ -78,6 +86,13 @@ const serverSchema = z.object({
   // ANTHROPIC_API_KEY, OPENAI_API_KEY or AI_GATEWAY_API_KEY is ignored (src/providers/ai-model).
   RESEND_CONNECT_USER_ID: optionalString,
   EMAIL_FROM: optionalString,
+  /** Svix signing secret from the Resend inbound webhook (>= 16 chars). Unset -> POST /api/webhooks/resend answers 404. */
+  RESEND_WEBHOOK_SECRET: optionalSecret(16),
+  /** Comma-separated forward inboxes for guest mail to hello@kendrick.wedding. Empty -> inbound forward disabled (404). */
+  PLANNER_FORWARD_EMAIL: z.preprocess(
+    (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
+    z.array(z.email()),
+  ),
   /** Required with S3 credentials, and never an AWS host: storage is R2, B2, Supabase or MinIO (src/providers/storage). */
   S3_ENDPOINT: optionalUrl,
   S3_REGION: z.string().default('auto'),
@@ -97,14 +112,19 @@ const serverSchema = z.object({
   CLOUDFLARE_ACCOUNT_ID: optionalString,
   CLOUDFLARE_STREAM_API_TOKEN: optionalString,
   CLOUDFLARE_STREAM_CUSTOMER_CODE: optionalString,
-  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'skyscanner', 'duffel-links']).optional(),
-  HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'booking', 'duffel-stays']).optional(),
-  /** Travel (level 08): Skyscanner Live Prices, Duffel Links/Stays + signed webhooks, Booking.com Demand API. */
+  FLIGHTS_PROVIDER: z.enum(['mock', 'deep-link', 'google-travel-flights', 'travelpayouts', 'skyscanner', 'duffel-links']).optional(),
+  HOTELS_PROVIDER: z.enum(['mock', 'deep-link', 'google-travel-hotels', 'serpapi', 'booking', 'duffel-stays']).optional(),
+  /** Travel (level 08): keyless Google Flights/Hotels by default; optional Travelpayouts, Skyscanner, Duffel, Booking, SerpApi when explicitly selected + credentialed. */
+  TRAVELPAYOUTS_TOKEN: optionalString,
+  /** Travelpayouts partner marker for Aviasales affiliate booking links (optional but recommended). */
+  TRAVELPAYOUTS_MARKER: optionalString,
   SKYSCANNER_API_KEY: optionalString,
   DUFFEL_API_KEY: optionalString,
   DUFFEL_WEBHOOK_SECRET: optionalSecret(16),
   BOOKING_DEMAND_API_KEY: optionalString,
   BOOKING_AFFILIATE_ID: optionalString,
+  /** SerpApi key for Google Hotels live rates (`engine=google_hotels`). Free tier: 100 searches/month. */
+  SERPAPI_API_KEY: optionalString,
   UBER_CLIENT_ID: optionalString,
   UBER_CLIENT_SECRET: optionalString,
   /** Uber for Business organisation + voucher programme (level 09 transport swarm); API base is overridable for sandboxes. */
@@ -115,9 +135,15 @@ const serverSchema = z.object({
   TRANSPORT_MANUAL_CODES: optionalString,
   /** AES-256-GCM key material for unclaimed ride codes / redemption links at rest. Unset -> derived from CONFIRMATION_SECRET. */
   TRANSPORT_SECRETS_KEY: optionalSecret(32),
+  /** AES key material for guest sign-in pass codes at rest. Falls back to CONFIRMATION_SECRET-derived material in dev. */
+  GUEST_PASS_SECRETS_KEY: optionalSecret(32),
   /** Dev/e2e only: install the cookie-driven test principal resolver (refused in production and on Vercel/CI). */
   RATE_LIMIT_BACKEND: z.enum(['memory', 'db']).optional(),
-  METRICS_SINK: z.enum(['console', 'db', 'none']).optional(),
+  // --- social OAuth (optional; buttons hidden when unset) ---
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalSecret(16),
+  FACEBOOK_CLIENT_ID: optionalString,
+  FACEBOOK_CLIENT_SECRET: optionalSecret(16),
 
   /*
    * --- jobs ---
@@ -133,6 +159,15 @@ const serverSchema = z.object({
   JOBS_BATCH_SIZE: intish(10, 1),
   /** housekeeping.purge keeps `metrics` rows this many days. */
   METRICS_RETENTION_DAYS: intish(30, 1),
+
+  /** Twilio Verify (SMS sign-in). All three required for live mode; mock when absent. */
+  TWILIO_ACCOUNT_SID: optionalString,
+  TWILIO_AUTH_TOKEN: optionalSecret(16),
+  TWILIO_VERIFY_SERVICE_SID: optionalString,
+  /** The Vercel connector that holds the Twilio credential when the three above are unset. Default `twilio/wedding`. */
+  TWILIO_CONNECTOR: optionalString,
+  /** The user the Twilio connector was authorized by, when it is not an app-wide connector. */
+  TWILIO_CONNECT_USER_ID: optionalString,
 });
 
 type Parsed = z.infer<typeof serverSchema>;

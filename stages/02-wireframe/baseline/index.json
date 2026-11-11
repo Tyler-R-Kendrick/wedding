@@ -5,21 +5,13 @@
    "title": "Sara + Tyler",
    "url": "/",
    "finalUrl": "/",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -27,21 +19,13 @@
    "title": "Our Story | Sara + Tyler",
    "url": "/our-story",
    "finalUrl": "/our-story",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -49,109 +33,27 @@
    "title": "Our Adventures | Sara + Tyler",
    "url": "/our-adventures",
    "finalUrl": "/our-adventures",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "share": {
-   "title": "Share an Adventure | Sara + Tyler",
-   "url": "/share-an-adventure",
-   "finalUrl": "/share-an-adventure",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "wedding": {
-   "title": "The Wedding | Sara + Tyler",
-   "url": "/the-wedding",
-   "finalUrl": "/the-wedding",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
   "caa": {
-   "title": "Explore CAA | Sara + Tyler",
-   "url": "/explore-caa",
-   "finalUrl": "/explore-caa",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
+   "title": "Our Venue | Sara + Tyler",
+   "url": "/our-venue",
+   "finalUrl": "/our-venue",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "travel": {
-   "title": "Travel & Stay | Sara + Tyler",
-   "url": "/travel",
-   "finalUrl": "/travel",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -161,19 +63,11 @@
    "finalUrl": "/gifts",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -183,41 +77,11 @@
    "finalUrl": "/photos",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "ask": {
-   "title": "Ask Us | Sara + Tyler",
-   "url": "/ask-us",
-   "finalUrl": "/ask-us",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -225,43 +89,41 @@
    "title": "Photo credits | Sara + Tyler",
    "url": "/credits",
    "finalUrl": "/credits",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
-  "weekend": {
-   "title": "Your Weekend | Sara + Tyler",
-   "url": "/your-weekend",
-   "finalUrl": "/your-weekend",
+  "privacy": {
+   "title": "Privacy | Sara + Tyler",
+   "url": "/privacy",
+   "finalUrl": "/privacy",
    "source": "app (test server, fixture data)",
-   "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "principal": null,
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
+    }
+   }
+  },
+  "terms": {
+   "title": "Terms of use | Sara + Tyler",
+   "url": "/terms",
+   "finalUrl": "/terms",
+   "source": "app (test server, fixture data)",
+   "principal": null,
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
      "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
+     "file": "botanical-deco.json"
     }
    }
   },
@@ -271,41 +133,25 @@
    "finalUrl": "/rsvp",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
   "transport": {
-   "title": "Transportation | Sara + Tyler",
+   "title": "Travel & Stay | Sara + Tyler",
    "url": "/transportation",
-   "finalUrl": "/transportation",
+   "finalUrl": "/guests/travel#getting-around",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -315,19 +161,11 @@
    "finalUrl": "/trip",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -337,19 +175,11 @@
    "finalUrl": "/media/upload",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -359,19 +189,11 @@
    "finalUrl": "/media/mine",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -381,19 +203,11 @@
    "finalUrl": "/media/search",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -401,21 +215,13 @@
    "title": "Sign in | Sara + Tyler",
    "url": "/sign-in",
    "finalUrl": "/sign-in",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -423,21 +229,13 @@
    "title": "Administrator sign-in | Sara + Tyler",
    "url": "/sign-in/admin",
    "finalUrl": "/sign-in/admin",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -445,21 +243,13 @@
    "title": "Sign out | Sara + Tyler",
    "url": "/sign-out",
    "finalUrl": "/sign-out",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -467,21 +257,13 @@
    "title": "Confirm it’s you | Sara + Tyler",
    "url": "/step-up",
    "finalUrl": "/step-up",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -489,21 +271,13 @@
    "title": "Enter your code | Sara + Tyler",
    "url": "/claim/verify",
    "finalUrl": "/claim/verify",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -511,21 +285,13 @@
    "title": "You’re in | Sara + Tyler",
    "url": "/claim/welcome",
    "finalUrl": "/claim/welcome",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -533,21 +299,13 @@
    "title": "Passkey | Sara + Tyler",
    "url": "/claim/passkey",
    "finalUrl": "/claim/passkey",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -557,21 +315,11 @@
    "finalUrl": "/admin",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -581,21 +329,11 @@
    "finalUrl": "/admin/lifecycle",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -605,21 +343,11 @@
    "finalUrl": "/admin/content",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -629,21 +357,11 @@
    "finalUrl": "/admin/guests",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -653,21 +371,11 @@
    "finalUrl": "/admin/households",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -677,21 +385,11 @@
    "finalUrl": "/admin/invitations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -701,21 +399,11 @@
    "finalUrl": "/admin/rsvp",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -725,21 +413,11 @@
    "finalUrl": "/admin/events",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -749,21 +427,11 @@
    "finalUrl": "/admin/seating",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -773,21 +441,11 @@
    "finalUrl": "/admin/travel",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -797,21 +455,11 @@
    "finalUrl": "/admin/reservations",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -821,21 +469,11 @@
    "finalUrl": "/admin/transport",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -845,21 +483,11 @@
    "finalUrl": "/admin/gifts",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -869,21 +497,11 @@
    "finalUrl": "/admin/media",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -893,21 +511,11 @@
    "finalUrl": "/admin/media/import",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -917,21 +525,11 @@
    "finalUrl": "/admin/media/duplicates",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -941,21 +539,11 @@
    "finalUrl": "/admin/media/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -965,21 +553,11 @@
    "finalUrl": "/admin/concierge",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -989,21 +567,11 @@
    "finalUrl": "/admin/ai",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1013,21 +581,11 @@
    "finalUrl": "/admin/flags",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1037,21 +595,11 @@
    "finalUrl": "/admin/providers",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1061,21 +609,11 @@
    "finalUrl": "/admin/jobs",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1085,19 +623,11 @@
    "finalUrl": "/admin/metrics",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1107,85 +637,39 @@
    "finalUrl": "/admin/audit",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
   "adventure": {
-   "title": "starved rock | Sara + Tyler",
+   "title": "Starved Rock | Sara + Tyler",
    "url": "/our-adventures/starved-rock",
    "finalUrl": "/our-adventures/starved-rock",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
-    }
-   }
-  },
-  "share-item": {
-   "title": "caa self guided tour | Sara + Tyler",
-   "url": "/share-an-adventure/caa-self-guided-tour",
-   "finalUrl": "/share-an-adventure/caa-self-guided-tour",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
-   "designs": {
-    "botanical-deco": {
-     "status": 200,
-     "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
   "caa-space": {
-   "title": "white city ballroom | Sara + Tyler",
-   "url": "/explore-caa/white-city-ballroom",
-   "finalUrl": "/explore-caa/white-city-ballroom",
-   "source": "https://kendrick.wedding",
-   "principal": null,
-   "capturedAt": "2026-09-24",
+   "title": "White City Ballroom | Sara + Tyler",
+   "url": "/our-venue/white-city-ballroom",
+   "finalUrl": "/our-venue/white-city-ballroom",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1195,41 +679,25 @@
    "finalUrl": "/photos/engagement",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
   "rsvp-step": {
    "title": "RSVP | Sara + Tyler",
-   "url": "/rsvp/attending",
-   "finalUrl": "/rsvp/attending",
+   "url": "/rsvp/meals",
+   "finalUrl": "/rsvp/meals",
    "source": "app (test server, fixture data)",
    "principal": "guest",
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1237,21 +705,13 @@
    "title": "Your invitation | Sara + Tyler",
    "url": "/i/example",
    "finalUrl": "/invite/example",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1259,21 +719,13 @@
    "title": "Your invitation | Sara + Tyler",
    "url": "/invite/example",
    "finalUrl": "/invite/example",
-   "source": "https://kendrick.wedding",
+   "source": "app (test server, fixture data)",
    "principal": null,
-   "capturedAt": "2026-09-24",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "gilded-hour.json"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "conservatory.json"
     }
    }
   },
@@ -1283,21 +735,11 @@
    "finalUrl": "/admin/content/story_sections",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1307,21 +749,11 @@
    "finalUrl": "/admin/content/story_sections/new",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
-     "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
     }
    }
   },
@@ -1331,21 +763,109 @@
    "finalUrl": "/admin/content/operational_fields/01SEED00000000000000000908",
    "source": "app (test server, fixture data)",
    "principal": "admin",
-   "capturedAt": "2026-09-28",
+   "capturedAt": "2026-11-10",
    "designs": {
     "botanical-deco": {
      "status": 200,
      "file": "botanical-deco.json"
-    },
-    "gilded-hour": {
+    }
+   }
+  },
+  "portal": {
+   "title": "Your dashboard | Sara + Tyler",
+   "url": "/guests",
+   "finalUrl": "/guests",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
-    },
-    "conservatory": {
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "guest-ask": {
+   "title": "Ask Us | Sara + Tyler",
+   "url": "/guests/ask-us",
+   "finalUrl": "/guests/ask-us",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
      "status": 200,
-     "file": "botanical-deco.json",
-     "same": "botanical-deco"
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "guest-travel": {
+   "title": "Your Trip | Sara + Tyler",
+   "url": "/guests/travel",
+   "finalUrl": "/guests/travel",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-11",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "guest-thing": {
+   "title": "Alinea | Sara + Tyler",
+   "url": "/guests/things-to-do/alinea",
+   "finalUrl": "/guests/things-to-do/alinea",
+   "source": "app (test server, fixture data)",
+   "principal": "guest",
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "guest-sign-in-pass": {
+   "title": "Sign in | Sara + Tyler",
+   "url": "/s/fixtureslug01",
+   "finalUrl": "/s/fixtureslug01",
+   "source": "app (test server, fixture data)",
+   "principal": null,
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "sign-in-pending": {
+   "title": "Sign in | Sara + Tyler",
+   "url": "/sign-in/pending",
+   "finalUrl": "/sign-in/pending",
+   "source": "app (test server, fixture data)",
+   "principal": null,
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
+    }
+   }
+  },
+  "admin-sitemap": {
+   "title": "Sitemap",
+   "url": "/admin/sitemap",
+   "finalUrl": "/admin/sitemap",
+   "source": "app (test server, fixture data)",
+   "principal": "admin",
+   "capturedAt": "2026-11-10",
+   "designs": {
+    "botanical-deco": {
+     "status": 200,
+     "file": "botanical-deco.json"
     }
    }
   }

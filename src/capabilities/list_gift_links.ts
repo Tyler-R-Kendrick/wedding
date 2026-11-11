@@ -92,7 +92,7 @@ const output = z.object({
 
 export type GiftLinks = z.infer<typeof output>;
 
-export const BRIEF_CITATION = { sourceId: seedId<ContentSourceId>(101), title: "Tyler's brief 2026-09-04", url: '/the-wedding', verifiedAt: '2026-09-04T00:00:00.000Z' };
+export const BRIEF_CITATION = { sourceId: seedId<ContentSourceId>(101), title: "Tyler's brief 2026-09-04", url: '/guests', verifiedAt: '2026-09-04T00:00:00.000Z' };
 
 export const listGiftLinksCapability = defineCapability<z.infer<typeof input>, GiftLinks>({
   name: 'list_gift_links',

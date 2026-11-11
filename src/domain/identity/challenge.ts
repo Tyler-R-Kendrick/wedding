@@ -11,13 +11,17 @@ import { hmacSha256, randomToken, timingSafeEqualString } from '@/lib/crypto';
  * byte-indistinguishable for known and unknown addresses and decode to nothing. The HMAC lets
  * the server reject forged nonces without touching the database.
  */
-export const CHALLENGE_KINDS = ['claim', 'sign_in', 'step_up', 'admin_sign_in', 'change_email'] as const;
+export const CHALLENGE_KINDS = ['claim', 'sign_in', 'step_up', 'admin_sign_in', 'change_email', 'phone_sign_in'] as const;
 export type ChallengeKind = (typeof CHALLENGE_KINDS)[number];
 
 export interface ChallengePayload {
   kind: ChallengeKind;
   /** Lower-cased address the code went to, or null when nothing was sent (unknown email). */
   email: string | null;
+  /** E.164 when the challenge is for SMS sign-in. */
+  phone?: string | null;
+  /** True when an SMS was actually requested (guest matched). */
+  smsSent?: boolean;
   /** Guests this verification may bind (claim / sign-in). Empty when nothing matched. */
   guestIds: string[];
   invitationId: string | null;

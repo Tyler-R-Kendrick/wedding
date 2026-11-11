@@ -218,6 +218,18 @@ html:has(.bd-ride) {
   transform: translate3d(calc(var(--d) * 160px), 0, 0);
 }
 
+/* No `grid-area` here: the card names no areas, so one created implicit columns and squeezed a
+   chapter's words into a 100px strip beside an empty card. The carousel is simply the card's
+   second cell, as a single photograph is. */
+.bd-stopcard__carousel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.bd-stopcard__carousel .bd-stopcard__media {
+  margin: 0;
+}
+
 .bd-stopcard__media {
   position: relative;
   display: flex;
@@ -243,6 +255,7 @@ html:has(.bd-ride) {
   position: absolute;
   left: var(--spacing-sm);
   top: var(--spacing-sm);
+  z-index: 2;
   padding: 2px 10px;
   background: var(--color-surface);
   color: var(--color-primary);
@@ -590,6 +603,11 @@ html[data-ride-pinned] .bd-bar {
   will-change: transform, opacity;
 }
 
+.bd-ride[data-mode="ride"] .bd-ride__stop[data-state="here"] :is(.bd-stopcard__text, .bd-stopcard__media) {
+  opacity: 1;
+  transform: none;
+}
+
 .bd-ride[data-mode="ride"] :is(.bd-stopcard__text, .bd-stopcard__media, .bd-stopcard__numeral) {
   --d: calc(var(--i) - var(--p));
   --ad: max(var(--d), var(--d) * -1);
@@ -733,7 +751,10 @@ html[data-ride-pinned] .bd-bar {
 }
 
 /* A moment that would not fit lets its picture go first (StoryRide measures and sets data-tight). */
-.bd-ride[data-mode="ride"] .bd-ride__stop[data-tight] .bd-stopcard__media {
+
+/* A chapter's carousel goes with its pictures: left behind, its dots and pause button stood under
+   an empty frame. */
+.bd-ride[data-mode="ride"] .bd-ride__stop[data-tight] :is(.bd-stopcard__media, .bd-stopcard__carousel) {
   display: none;
 }
 

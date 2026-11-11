@@ -1,11 +1,14 @@
-import type { ExternalHandoff } from '@/contracts/providers';
+import type { ExternalHandoff, LiveSnapshot, ProviderFailure } from '@/contracts/providers';
+import type { Result } from '@/contracts/result';
 import type { Db } from '@/db/client';
 import { assertAllowedRedirect } from '@/lib/redirects';
 import type { FlightSearchRequest, FlightsProvider } from '@/providers/flights/types';
-import type { HotelSearchRequest, HotelsProvider } from '@/providers/hotels/types';
+import type { HotelSearchRequest, HotelResult, HotelsProvider } from '@/providers/hotels/types';
+import { getCachedTravelSnapshot, setCachedTravelSnapshot, travelSearchCacheKey } from './snapshot-cache';
 import { AIRPORTS } from './facts';
 import { linkToHandoff, listTravelLinks } from './links';
 import { snapshotExpiresAt, transferLabel } from './snapshot';
+import { CAA_BOOKING_URL } from './stay-copy';
 import type { FlightSearchInput, FlightSearchOutcome, HotelSearchInput, HotelSearchOutcome } from './types';
 
 /**
@@ -23,6 +26,15 @@ export interface SearchDeps {
 
 const allowed = (handoff: ExternalHandoff): boolean => assertAllowedRedirect(handoff.url).ok;
 
+function dedupeHandoffs(handoffs: ExternalHandoff[]): ExternalHandoff[] {
+  const seen = new Set<string>();
+  return handoffs.filter((h) => {
+    if (seen.has(h.url)) return false;
+    seen.add(h.url);
+    return true;
+  });
+}
+
 /**
  * What the provider says about its own numbers, not what we wish they were. A provider declaring
  * `mode: 'mock'` fabricates prices and walk times; presenting those as `live` is the difference
@@ -39,6 +51,33 @@ function modeFor(provider: { mode?: string }): 'live' | 'sample' {
  * The deep links beside it are real and are the useful answer.
  */
 const SAMPLE_NOTICE = 'Live prices are not connected yet, so we are not showing any here. Search with a partner below and you will get their real prices.';
+
+async function cachedProviderSearch<TReq, TData>(
+  provider: { name: string; search: (req: TReq) => Promise<Result<LiveSnapshot<TData>, ProviderFailure>> },
+  kind: 'flights' | 'hotels',
+  req: TReq,
+  cacheParams: Record<string, unknown>,
+): Promise<Result<LiveSnapshot<TData>, ProviderFailure>> {
+  const key = travelSearchCacheKey(provider.name, kind, cacheParams);
+  const hit = getCachedTravelSnapshot<TData>(key, Date.now());
+  if (hit) return { ok: true, value: hit };
+  const result = await provider.search(req);
+  if (result.ok) setCachedTravelSnapshot(key, result.value, Date.now());
+  return result;
+}
+
+const VENUE_HOTEL_RESULT: Omit<HotelResult, 'id'> = {
+  name: 'Chicago Athletic Association Hotel',
+  address: '12 S Michigan Ave, Chicago, IL 60603',
+  walkMinutesToVenue: 0,
+  isVenue: true,
+  bookingUrl: CAA_BOOKING_URL,
+};
+
+function featureVenueHotel(results: HotelResult[]): HotelResult[] {
+  const withoutVenue = results.filter((h) => !h.isVenue && !/chicago athletic association/i.test(h.name));
+  return [{ id: 'venue-caa-group', ...VENUE_HOTEL_RESULT }, ...withoutVenue];
+}
 
 export async function searchFlights(deps: SearchDeps, input: FlightSearchInput): Promise<FlightSearchOutcome> {
   const provider = deps.flights;
@@ -58,8 +97,8 @@ export async function searchFlights(deps: SearchDeps, input: FlightSearchInput):
   if (!provider) {
     return { kind: 'flights', mode: 'unavailable', provider: 'none', request, airports, handoffs: adminLinks.filter(allowed), notice: 'Flight search is not set up yet.' };
   }
-  const handoffs = [provider.deepLink(req), ...adminLinks].filter(allowed);
-  const result = await provider.search(req);
+  const handoffs = dedupeHandoffs([provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks]).filter(allowed);
+  const result = await cachedProviderSearch(provider, 'flights', req, request);
   if (!result.ok) {
     const f = result.error;
     deps.warn?.({ provider: f.provider, class: f.class }, 'flight search fell back to deep links');
@@ -117,15 +156,16 @@ export async function searchHotels(deps: SearchDeps, input: HotelSearchInput): P
   if (!provider) {
     return { kind: 'hotels', mode: 'unavailable', provider: 'none', request, handoffs: adminLinks.filter(allowed), notice: 'Hotel search is not set up yet.' };
   }
-  const handoffs = [provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks].filter(allowed);
-  const result = await provider.search(req);
+  const handoffs = dedupeHandoffs([provider.deepLink(req), ...provider.extraHandoffs(req), ...adminLinks]).filter(allowed);
+  const result = await cachedProviderSearch(provider, 'hotels', req, request);
   if (!result.ok) {
     const f = result.error;
     deps.warn?.({ provider: f.provider, class: f.class }, 'hotel search fell back to deep links');
     return { kind: 'hotels', mode: 'deep-link', provider: provider.name, request, handoffs, notice: f.message, ...(f.retryAfterMs ? { retryAfterMs: Math.ceil(f.retryAfterMs) } : {}) };
   }
   const snap = result.value;
-  const results = snap.data.map((h) => ({
+  const results = featureVenueHotel(
+    snap.data.map((h) => ({
     id: h.id,
     name: h.name,
     ...(h.address ? { address: h.address } : {}),
@@ -136,7 +176,8 @@ export async function searchHotels(deps: SearchDeps, input: HotelSearchInput): P
     ...(h.nightlyCents !== undefined || h.totalCents !== undefined ? { pricedAt: h.pricedAt ?? snap.retrievedAt } : {}),
     ...(h.bookingUrl && assertAllowedRedirect(h.bookingUrl).ok ? { bookingUrl: h.bookingUrl } : {}),
     ...(h.isVenue ? { isVenue: true } : {}),
-  }));
+  })),
+  );
   const hotelMode = modeFor(provider);
   return {
     kind: 'hotels',

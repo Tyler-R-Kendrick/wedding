@@ -24,15 +24,20 @@ import { newId, type AdminId, type AuthIdentityId, type GuestId, type HouseholdI
 import type { AdminPrincipal, Entitlement, GuestPrincipal, Principal } from '@/contracts/principal';
 import type { ExternalHandoff } from '@/contracts/providers';
 import { ok, type Result } from '@/contracts/result';
-import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID } from '@/domain/travel';
+import { handleBookingWebhook, setLocationSuggestionResolver, VENUE_HOTEL_ID, buildTravelSearchDefaults, invitationLocationSuggestion } from '@/domain/travel';
 import { getDb } from '@/db/client';
+import { households } from '@/db/schema/guests';
+import { hotelRecommendations } from '@/db/schema/travel';
+import { eq } from 'drizzle-orm';
 import { FX } from '@/db/seed/fixtures';
+import { PLANNER_SUGGESTED_HOTELS } from '@/db/seed/travel';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isAllowedRedirect } from '@/lib/redirects';
 import { DeepLinkOnlyFlights, MockFlights, parseDuffelEvent, signDuffelPayload, verifyDuffelSignature, type FlightsProvider } from '@/providers/flights';
 import { DeepLinkOnlyHotels } from '@/providers/hotels';
 import { setProviderOverride } from '@/providers/registry';
-import { seedSwarmE } from './helpers/swarm-e';
+import { getStory } from '@/capabilities/get_story';
+import { runHandler, seedSwarmE } from './helpers/swarm-e';
 
 const guestPrincipal = (over: Partial<GuestPrincipal> = {}): GuestPrincipal => {
   const guestId = over.guestId ?? newId<GuestId>();
@@ -147,9 +152,28 @@ describe('travel profile (opt-in, editable, deletable)', () => {
     expect(del.ok && del.value.data).toEqual({ guestId: guestA.guestId, deleted: true });
     const again = await run(deleteMyTravelProfile, guestA, {}, { key: key() });
     expect(again.ok && again.value.data.deleted).toBe(false);
-    setLocationSuggestionResolver(async () => ({ source: 'invitation', city: 'Reno', region: 'Nevada', airport: 'RNO' }));
+    const db = await getDb();
+    await db
+      .update(households)
+      .set({ mailingAddress: { city: 'Reno', region: 'NV', postalCode: '89501', country: 'US' }, updatedAt: new Date() })
+      .where(eq(households.id, guestA.householdId));
+    setLocationSuggestionResolver((d, id) => invitationLocationSuggestion(d, id));
     const got = await run(getMyTravelProfile, guestA, {});
-    expect(got.ok && got.value.data).toMatchObject({ optedIn: false, profile: null, suggestion: { source: 'invitation', city: 'Reno', airport: 'RNO' } });
+    expect(got.ok && got.value.data).toMatchObject({ optedIn: false, profile: null, suggestion: { source: 'invitation', city: 'Reno', region: 'NV' } });
+    expect(got.ok && got.value.data.suggestion?.airport).toBeTruthy();
+  });
+
+  it('prefills travel search defaults from household mailing address and party size when no profile is saved', async () => {
+    const db = await getDb();
+    await db
+      .update(households)
+      .set({ mailingAddress: { postalCode: '94102', country: 'US', city: 'San Francisco', region: 'CA' }, updatedAt: new Date() })
+      .where(eq(households.id, guestA.householdId));
+    const defaults = await buildTravelSearchDefaults(db, guestA.guestId, null);
+    expect(defaults.flight.origin).toBe('SFO');
+    expect(defaults.flight).toMatchObject({ destination: 'ORD', departDate: '2027-07-16', returnDate: '2027-07-18', adults: '2', children: '1' });
+    expect(defaults.hotel).toMatchObject({ checkIn: '2027-07-16', checkOut: '2027-07-18', adults: '2', children: '1', rooms: '1' });
+    expect(defaults.originSuggestions.map((s) => s.iata)).toContain('SFO');
   });
 });
 
@@ -160,7 +184,7 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
   // that "prices come from the partner". The shape assertions below are unchanged; only the claim
   // about what the numbers ARE has changed, and it now matches what the provider says of itself.
   it('returns a timestamped sample snapshot from the mock with transfer labels and allowlisted links', async () => {
-    const r = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'lax', departDate: '2027-07-15', returnDate: '2027-07-19', adults: 2 });
+    const r = await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'lax', departDate: '2027-07-15', returnDate: '2027-07-19', adults: 2 });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const d = r.value.data;
@@ -185,54 +209,154 @@ describe('search_travel_options (explicit action, snapshot, fallback ladder)', (
 
   it('falls back to deep links with an honest notice when the provider is unconfigured, rate limited, or failing', async () => {
     setProviderOverride('flights', new DeepLinkOnlyFlights());
-    const unconfigured = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
+    const unconfigured = await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
     expect(unconfigured.ok && unconfigured.value.data).toMatchObject({ mode: 'deep-link', provider: 'skyscanner-deep-link', notice: expect.stringMatching(/not available/) });
     expect(unconfigured.ok && unconfigured.value.data.snapshot).toBeUndefined();
     expect(unconfigured.ok && unconfigured.value.data.handoffs[0].url).toContain('skyscanner.com/transport/flights/sfo/ord/270716/');
     setProviderOverride('flights', new MockFlights({ fault: 'rate_limited', retryAfterMs: 5000 }));
-    const limited = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
+    const limited = await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
     expect(limited.ok && limited.value.data).toMatchObject({ mode: 'deep-link', retryAfterMs: 5000 });
     setProviderOverride('flights', new MockFlights({ fault: 'timeout' }));
-    const timeout = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
+    const timeout = await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'SFO', departDate: '2027-07-16' });
     expect(timeout.ok && timeout.value.data.notice).toMatch(/took too long/);
   });
 
   it('validates input, honours the feature flag, and searches hotels with the venue first', async () => {
-    expectErr(await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'ORD', departDate: '2027-07-16' }), 'validation');
-    expectErr(await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' }, { flags: { TRAVEL_LIVE_SEARCH: false } }), 'feature_disabled');
+    expectErr(await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'ORD', departDate: '2027-07-16' }), 'validation');
+    expectErr(await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' }, { flags: { TRAVEL_LIVE_SEARCH: false } }), 'feature_disabled');
     const hotels = await run(searchTravelOptions, guestA, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18', adults: 2 });
     expect(hotels.ok && hotels.value.data).toMatchObject({ kind: 'hotels', mode: 'sample', request: { rooms: 1 } });
     expect(hotels.ok && hotels.value.data.snapshot.results[0]).toMatchObject({ isVenue: true, name: 'Chicago Athletic Association Hotel' });
-    expect(hotels.ok && hotels.value.data.handoffs.map((h: ExternalHandoff) => h.provider)).toEqual(['booking.com', 'hyatt']);
+    expect(hotels.ok && hotels.value.data.handoffs.map((h: ExternalHandoff) => h.provider)).toEqual(['booking.com', 'hyatt', 'hyatt']);
     setProviderOverride('hotels', new DeepLinkOnlyHotels());
-    const fallback = await run(searchTravelOptions, anonymous, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18' });
+    const fallback = await run(searchTravelOptions, guestA, { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(fallback.ok && fallback.value.data).toMatchObject({ mode: 'deep-link', provider: 'booking-deep-link' });
     expect(fallback.ok && fallback.value.data.handoffs.every((h: ExternalHandoff) => isAllowedRedirect(h.url))).toBe(true);
+  });
+
+  // The travel page moved behind sign-in (`/guests/travel`), and its search with it: this was the
+  // public page's own search, answered for anyone. Whatever the provider is doing, an anonymous
+  // caller is now refused before any input is looked at, so a bad origin is not told to fix itself.
+  it('refuses an anonymous caller on every surface, whatever the provider is doing', async () => {
+    const searches = [
+      { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' },
+      { kind: 'flights', origin: 'ORD', departDate: '2027-07-16' }, // invalid for a guest: still "sign in", not "fix your input"
+      { kind: 'hotels', checkIn: '2027-07-16', checkOut: '2027-07-18' },
+    ];
+    const refuseAll = async (label: string) => {
+      for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+        for (const input of searches) {
+          const r = await run(searchTravelOptions, anonymous, input, { surface });
+          expectErr(r, 'unauthenticated');
+          expect(JSON.stringify(r), `${label} ${surface}`).not.toMatch(/skyscanner|booking\.com|hyatt|Chicago Athletic/i);
+        }
+      }
+    };
+    await refuseAll('mock');
+    setProviderOverride('flights', new DeepLinkOnlyFlights());
+    setProviderOverride('hotels', new DeepLinkOnlyHotels());
+    await refuseAll('deep-link');
+    setProviderOverride('flights', new MockFlights({ fault: 'rate_limited', retryAfterMs: 5000 }));
+    await refuseAll('rate-limited');
   });
 });
 
 describe('hotel recommendations, block, and admin configuration', () => {
-  it('lists the CAA block first as a brief placeholder until an admin saves the real record', async () => {
-    const r = await run(listHotelRecommendations, anonymous, {});
+  it('lists the CAA block first with the seeded room-block record for signed-in guests', async () => {
+    const r = await run(listHotelRecommendations, guestA, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.data.venue).toMatchObject({ id: VENUE_HOTEL_ID, isVenue: true, placeholder: true, synthesized: true, name: 'Chicago Athletic Association Hotel', block: { placeholder: true, url: null, rateText: null, cutoff: null } });
-    // `note` is the confirmed fact and `pending` is what is still to come. They used to be one
-    // string carrying `TODO(Tyler & Sara): … (backlog P-03)`, which the public travel page printed
-    // verbatim — and this capability is exposed to the concierge and WebMCP, so the marker and the
-    // backlog id would have reached assistant transcripts as well.
-    expect(r.value.data.venue.block.note).toMatch(/up to 20 rooms/);
-    expect(r.value.data.venue.block.pending).toMatch(/booking link, rate, dates and cutoff/);
+    expect(r.value.data.venue).toMatchObject({
+      id: VENUE_HOTEL_ID,
+      isVenue: true,
+      placeholder: false,
+      synthesized: false,
+      name: 'Chicago Athletic Association Hotel',
+      block: {
+        placeholder: false,
+        url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE',
+        code: 'G-FIKE',
+        rateText: '$331–371 per night',
+        checkIn: '2027-07-16',
+        checkOut: '2027-07-18',
+        cutoff: '2027-06-15',
+      },
+    });
+    expect(r.value.data.venue.block?.note).toMatch(/844-312-2221/);
+    expect(r.value.data.venue.block?.pending).toBeNull();
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
-    expect(r.value.data.alternatives).toEqual([]);
-    expect(r.value.data.facts.venue.valetEntrance).toBe('71 E Madison');
-    expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['CAA Wedding Kit 2027', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
+    // The nearby hotels, by name only: nothing invented, nothing pending, and no "suggested by" line.
+    expect(r.value.data.alternatives.map((h: { name: string; reasons: { text: string }[]; address: string | null; walkMinutesToVenue: number | null; websiteUrl: string | null; bookingUrl: string | null; placeholder: boolean }) => [h.name, h.reasons.map((x) => x.text), h.address, h.walkMinutesToVenue, h.websiteUrl, h.bookingUrl, h.placeholder])).toEqual(
+      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, [], null, null, null, null, false]),
+    );
+    expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
+    expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['Travel › Our room block', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
+    // The venue's planning PDF is never named to a guest: the citation points at the page instead.
+    expect(JSON.stringify(r.value.sources)).not.toMatch(/Wedding Kit/i);
+  });
+
+  it('keeps blocks on alternative hotels private across all capability surfaces', async () => {
+    const saved = await run(adminSaveHotel, contentAdmin, {
+      name: 'Alternate group hotel',
+      block: { url: 'https://www.hyatt.com/group-booking/private-alternate', code: 'GUEST-ONLY', rateText: '$321', placeholder: false },
+      bookingUrl: 'https://www.hyatt.com/group-booking/private-alternate',
+    }, { key: key() });
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) return;
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const ctx = await createCapabilityContext({ principal: anonymous, requestId: `public-block-${newId()}`, surface });
+      // The whole list is behind sign-in now, not only the blocks on it: the pipeline refuses.
+      const list = await invoke(listHotelRecommendations, ctx, {});
+      expectErr(list, 'unauthenticated');
+      expect(JSON.stringify(list)).not.toMatch(/GUEST-ONLY|private-alternate|Alternate group hotel/);
+      const denied = await invoke(openBookingLink, ctx, { kind: 'hotel', hotelId: saved.value.data.id });
+      expectErr(denied, 'unauthenticated');
+      expect(JSON.stringify(denied)).not.toMatch(/GUEST-ONLY|private-alternate/);
+
+      // The handlers' own guards are a second, independent layer (see `runHandler`): they are what
+      // is left if a descriptor's `auth` line is ever edited back, so they stay covered. Reached
+      // without the pipeline, the list still strips every block and booking link for an anonymous
+      // principal, and the hand-off still refuses a hotel that carries a block.
+      const bare = await runHandler(listHotelRecommendations, anonymous, {}, { surface });
+      expect(bare.ok).toBe(true);
+      if (bare.ok) {
+        const hotel = bare.value.data.alternatives.find((h) => h.id === saved.value.data.id);
+        expect(hotel).toBeDefined();
+        expect(hotel?.block).toBeNull();
+        expect(hotel?.bookingUrl).toBeNull();
+        expect(bare.value.data.venue.block).toBeNull();
+        expect(bare.value.data.venue.bookingUrl).toBeNull();
+        expect(JSON.stringify(bare.value)).not.toMatch(/GUEST-ONLY|G-FIKE|group-booking/);
+      }
+      expectErr(await runHandler(openBookingLink, anonymous, { kind: 'hotel', hotelId: saved.value.data.id, adults: 2 }, { surface }), 'unauthenticated');
+      expectErr(await runHandler(openBookingLink, anonymous, { kind: 'venue_block' }, { surface }), 'unauthenticated');
+    }
+    const guestList = await run(listHotelRecommendations, guestA, {});
+    expect(guestList.ok && guestList.value.data.alternatives.find((h: { id: string; block: { code: string | null } | null }) => h.id === saved.value.data.id)?.block?.code).toBe('GUEST-ONLY');
+    await (await getDb()).delete(hotelRecommendations).where(eq(hotelRecommendations.id, saved.value.data.id));
   });
 
   it('authorises admin edits by entitlement and refuses links off the allowlist', async () => {
-    const venue = { id: VENUE_HOTEL_ID, name: 'Chicago Athletic Association Hotel', address: '12 S Michigan Ave, Chicago, IL 60603', isVenue: true, sortOrder: 0, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', code: 'TODO', rateText: null, checkIn: '2027-07-16', checkOut: '2027-07-18', cutoff: '2027-06-17', note: 'Courtesy block up to 20 rooms, subject to availability.', placeholder: false }, sourceId: null };
+    const venue = {
+      id: VENUE_HOTEL_ID,
+      name: 'Chicago Athletic Association Hotel',
+      address: '12 S. Michigan Avenue, Chicago, IL 60603',
+      isVenue: true,
+      sortOrder: 0,
+      block: {
+        url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE',
+        code: 'G-FIKE',
+        rateText: '$331–371 per night',
+        checkIn: '2027-07-16',
+        checkOut: '2027-07-18',
+        cutoff: '2027-06-15',
+        note: 'Call 844-312-2221 and reference "Fitzgerald - Kendrick Wedding Room Block" (group code G-FIKE).',
+        placeholder: false,
+      },
+      sourceId: null,
+    };
     expectErr(await run(adminSaveHotel, guestA, venue, { key: key() }), 'forbidden');
     expectErr(await run(adminSaveHotel, anonymous, venue), 'unauthenticated');
     expectErr(await run(adminSaveHotel, adminPrincipal(['admin_audit']), venue, { key: key() }), 'forbidden');
@@ -240,12 +364,22 @@ describe('hotel recommendations, block, and admin configuration', () => {
     expectErr(bad, 'validation');
     if (!bad.ok) expect(bad.error.details?.issues).toEqual([{ path: 'block.url', message: expect.stringMatching(/trusted partners/) }]);
     const saved = await run(adminSaveHotel, contentAdmin, venue, { key: key() });
-    expect(saved.ok && saved.value.data).toMatchObject({ id: VENUE_HOTEL_ID, contentVersion: 1, synthesized: false, block: { url: 'https://www.hyatt.com/group-booking/CHIAA-TODO', cutoff: '2027-06-17', placeholder: false } });
+    expect(saved.ok && saved.value.data).toMatchObject({ id: VENUE_HOTEL_ID, synthesized: false, block: { code: 'G-FIKE', cutoff: '2027-06-15', placeholder: false } });
+    expect(saved.ok && saved.value.data.contentVersion).toBeGreaterThanOrEqual(1);
+    // The saved block reaches no anonymous caller: the pipeline refuses the list outright, and the
+    // handler behind it (the layer that survives a descriptor edit) still strips the block.
+    const publicList = await run(listHotelRecommendations, anonymous, {});
+    expectErr(publicList, 'unauthenticated');
+    expect(JSON.stringify(publicList)).not.toMatch(/G-FIKE|844-312-2221|group-booking/);
+    const bareList = await runHandler(listHotelRecommendations, anonymous, {});
+    expect(bareList.ok && bareList.value.data.venue.block).toBeNull();
+    expect(bareList.ok && bareList.value.data.venue.bookingUrl).toBeNull();
+    expect(JSON.stringify(bareList)).not.toMatch(/G-FIKE|844-312-2221|group-booking/);
     const alt = await run(adminSaveHotel, contentAdmin, { name: 'Fixture Alternative', address: '1 Loop St', walkMinutesToVenue: 6, priceBand: '$$', reasons: [{ kind: 'walk_minutes', text: '6 minute walk to the CAA', value: 6 }, { kind: 'family_suites', text: 'Family suites available' }], websiteUrl: 'https://www.booking.com/hotel/us/fixture.html' }, { key: key() });
     expect(alt.ok && alt.value.data).toMatchObject({ isVenue: false, priceBand: '$$', reasons: [{ kind: 'walk_minutes' }, { kind: 'family_suites' }], freshness: 'fresh' });
-    const list = await run(listHotelRecommendations, anonymous, {});
-    expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-17' } });
-    expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual(['Fixture Alternative']);
+    const list = await run(listHotelRecommendations, guestA, {});
+    expect(list.ok && list.value.data.venue).toMatchObject({ synthesized: false, placeholder: false, block: { cutoff: '2027-06-15', code: 'G-FIKE' } });
+    expect(list.ok && list.value.data.alternatives.map((h: { name: string }) => h.name)).toEqual([...PLANNER_SUGGESTED_HOTELS.map((h) => h.name), 'Fixture Alternative']);
     const db = await getDb();
     expect((await listAuditEvents(db, { action: 'content.updated', targetType: 'hotel_recommendation' })).length).toBeGreaterThanOrEqual(2);
   });
@@ -255,8 +389,12 @@ describe('hotel recommendations, block, and admin configuration', () => {
     const saved = await run(adminSaveTravelLink, contentAdmin, { category: 'ota', provider: 'Skyscanner', label: 'Compare on Skyscanner', url: 'https://www.skyscanner.com/transport/flights/lax/ord/', note: 'Compare fares, then book with the airline.' }, { key: key() });
     expect(saved.ok && saved.value.data).toMatchObject({ category: 'ota', provider: 'Skyscanner', active: true });
     setProviderOverride('flights', new DeepLinkOnlyFlights());
-    const search = await run(searchTravelOptions, anonymous, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' });
-    expect(search.ok && search.value.data.handoffs.map((h: ExternalHandoff) => h.label)).toEqual(['Continue on Skyscanner', 'Compare on Skyscanner']);
+    const search = await run(searchTravelOptions, guestA, { kind: 'flights', origin: 'LAX', departDate: '2027-07-16' });
+    expect(search.ok && search.value.data.handoffs.map((h: ExternalHandoff) => h.label)).toEqual([
+      'Continue on Skyscanner',
+      'Continue on Kayak',
+      'Compare on Skyscanner',
+    ]);
     const config = await run(adminGetTravelConfig, contentAdmin, {});
     expect(config.ok && config.value.data.providers).toBeNull();
     expect(config.ok && config.value.data.links).toHaveLength(1);
@@ -272,35 +410,88 @@ describe('hotel recommendations, block, and admin configuration', () => {
 
 describe('open_booking_link (external hand-offs)', () => {
   it('builds allowlisted hand-offs for searches, the block, hotels and links, and audits each one', async () => {
-    const flight = await run(openBookingLink, anonymous, { kind: 'flight_search', origin: 'LAX', departDate: '2027-07-16', adults: 2 });
+    const flight = await run(openBookingLink, guestA, { kind: 'flight_search', origin: 'LAX', departDate: '2027-07-16', adults: 2 });
     expect(flight.ok && flight.value.handoffUrl).toContain('https://www.skyscanner.com/transport/flights/lax/ord/270716/');
     expect(flight.ok && flight.value.data).toMatchObject({ placeholder: false, handoff: { provider: 'skyscanner', label: 'Continue on Skyscanner' } });
-    const hyatt = await run(openBookingLink, anonymous, { kind: 'hotel_search', partner: 'hyatt', checkIn: '2027-07-16', checkOut: '2027-07-18' });
+    const hyatt = await run(openBookingLink, guestA, { kind: 'hotel_search', partner: 'hyatt', checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(hyatt.ok && hyatt.value.data.handoff.provider).toBe('hyatt');
-    const block = await run(openBookingLink, anonymous, { kind: 'venue_block' });
-    expect(block.ok && block.value.data).toMatchObject({ placeholder: false, handoff: { provider: 'hyatt.com', url: 'https://www.hyatt.com/group-booking/CHIAA-TODO' } });
-    expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: newId() }), 'not_found');
-    const list = await run(listHotelRecommendations, anonymous, {});
-    const alt = list.ok ? list.value.data.alternatives[0] : undefined;
-    const hotel = await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: alt.id, checkIn: '2027-07-16', checkOut: '2027-07-18' });
+    expectErr(await run(openBookingLink, anonymous, { kind: 'venue_block' }), 'unauthenticated');
+    expectErr(await run(openBookingLink, anonymous, { kind: 'hotel', hotelId: VENUE_HOTEL_ID }), 'unauthenticated');
+    const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
+    expect(block.ok && block.value.data).toMatchObject({
+      placeholder: false,
+      handoff: { provider: 'hyatt.com', url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE' },
+    });
+    expectErr(await run(openBookingLink, guestA, { kind: 'hotel', hotelId: newId() }), 'not_found');
+    const list = await run(listHotelRecommendations, guestA, {});
+    const alt = list.ok ? list.value.data.alternatives.find((h: { name: string }) => h.name === 'Fixture Alternative') : undefined;
+    const hotel = await run(openBookingLink, guestA, { kind: 'hotel', hotelId: alt.id, checkIn: '2027-07-16', checkOut: '2027-07-18' });
     expect(hotel.ok && hotel.value.data.handoff).toMatchObject({ provider: 'booking.com', label: 'Search Fixture Alternative on Booking.com' });
-    expectErr(await run(openBookingLink, anonymous, { kind: 'travel_link', linkId: newId() }), 'not_found');
-    expectErr(await run(openBookingLink, anonymous, { kind: 'flight_search', origin: 'LAX', departDate: '2027-07-16' }, { key: key() }), 'validation'); // anonymous cannot hold keys
+    expectErr(await run(openBookingLink, guestA, { kind: 'travel_link', linkId: newId() }), 'not_found');
     const db = await getDb();
     const audits = await listAuditEvents(db, { action: 'external_action.initiated' });
     expect(audits.length).toBeGreaterThanOrEqual(4);
     expect(audits.map((a) => a.targetId)).toContain('skyscanner');
+
+    // No hand-off of any kind for an anonymous caller. The partner searches (Skyscanner, Hyatt), a
+    // plain hotel and a partner link all answered anyone until the travel page went behind sign-in.
+    // A hotel or link that exists and one that does not are refused alike, so the refusal is not an
+    // oracle for ids, and a refused attempt writes no `external_action.initiated` row.
+    const initiated = audits.length;
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      for (const input of [
+        { kind: 'flight_search', origin: 'LAX', departDate: '2027-07-16', adults: 2 },
+        { kind: 'hotel_search', partner: 'hyatt', checkIn: '2027-07-16', checkOut: '2027-07-18' },
+        { kind: 'hotel_search', checkIn: '2027-07-16', checkOut: '2027-07-18' },
+        { kind: 'venue_block' },
+        { kind: 'hotel', hotelId: VENUE_HOTEL_ID },
+        { kind: 'hotel', hotelId: alt.id, checkIn: '2027-07-16', checkOut: '2027-07-18' },
+        { kind: 'hotel', hotelId: newId() },
+        { kind: 'travel_link', linkId: newId() },
+        { kind: 'hosted_flights', origin: 'LAX', departDate: '2027-07-16' },
+      ]) {
+        const refused = await run(openBookingLink, anonymous, input, { surface });
+        expectErr(refused, 'unauthenticated');
+        expect(refused.ok ? undefined : refused.error.message, `${surface} ${JSON.stringify(input)}`).toBe('Please sign in to continue.');
+        expect(JSON.stringify(refused)).not.toMatch(/https?:|skyscanner|hyatt|booking\.com/i);
+      }
+    }
+    expect((await listAuditEvents(db, { action: 'external_action.initiated' })).length).toBe(initiated);
+    // With a key it is refused the same way: sign-in is decided before anything else about the request.
+    expectErr(await run(openBookingLink, anonymous, { kind: 'flight_search', origin: 'LAX', departDate: '2027-07-16' }, { key: key() }), 'unauthenticated');
+    // The rule this line used to pin here still holds wherever an anonymous caller IS let in: all
+    // anonymous callers share one identity, so none of them can hold an idempotency key.
+    const keyed = await run(getStory, anonymous, {}, { key: key() });
+    expectErr(keyed, 'validation');
+    if (!keyed.ok) expect(keyed.error.details?.issues).toEqual([{ path: 'idempotencyKey', message: expect.stringMatching(/signed-in guest/) }]);
   });
 
   it('falls back to the venue site with placeholder: true when no block link exists', async () => {
     setProviderOverride('hotels', new DeepLinkOnlyHotels());
-    // No admin venue row in this scenario: simulate by asking for the block on a fresh database state via the synthesized row.
     const db = await getDb();
     const { hotelRecommendations } = await import('@/db/schema/travel');
     const { eq } = await import('drizzle-orm');
-    await db.delete(hotelRecommendations).where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
-    const block = await run(openBookingLink, anonymous, { kind: 'venue_block' });
-    expect(block.ok && block.value.data).toMatchObject({ placeholder: true, handoff: { provider: 'chicagoathletichotel.com', url: 'https://www.chicagoathletichotel.com/' } });
+    await db
+      .update(hotelRecommendations)
+      .set({
+        block: {
+          url: null,
+          code: 'G-FIKE',
+          rateText: '$331–371 per night',
+          checkIn: '2027-07-16',
+          checkOut: '2027-07-18',
+          cutoff: '2027-06-15',
+          note: null,
+          pending: null,
+          placeholder: true,
+        },
+      })
+      .where(eq(hotelRecommendations.id, VENUE_HOTEL_ID));
+    const block = await run(openBookingLink, guestA, { kind: 'venue_block' });
+    expect(block.ok && block.value.data).toMatchObject({
+      placeholder: true,
+      handoff: { provider: 'hyatt', url: 'https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE' },
+    });
   });
 
   it('hosted checkout needs a signed-in guest, a capable provider, and ties the session to a trip item', async () => {
@@ -382,6 +573,7 @@ function hostedFakeProvider(): FlightsProvider {
     health: mock.health.bind(mock),
     search: mock.search.bind(mock),
     deepLink: mock.deepLink.bind(mock),
+    extraHandoffs: mock.extraHandoffs.bind(mock),
     createHostedSession: async (req) => ok({ provider: 'duffel', label: 'Continue securely with Duffel', url: `https://links.duffel.com/s/${req.reference}`, opensNewTab: false, disclosure: 'test' }),
     webhook: { verify: (raw, header, now) => verifyDuffelSignature(raw, header, WEBHOOK_SECRET, now), parse: parseDuffelEvent },
   };
@@ -469,9 +661,17 @@ describe('booking webhook (trusted path to confirmed)', () => {
   });
 
   it('is reachable by name through the registry and hidden capabilities stay hidden per surface', async () => {
-    const ctx = await createCapabilityContext({ principal: anonymous, requestId: 'req-names', surface: 'ai' });
+    const ctx = await createCapabilityContext({ principal: guestA, requestId: 'req-names', surface: 'ai' });
     expect((await invokeByName('list_hotel_recommendations', ctx, {})).ok).toBe(true);
     const hidden = await invokeByName('admin_get_travel_config', ctx, {});
     expect(!hidden.ok && hidden.error.code).toBe('not_found');
+    // By name, an anonymous caller is refused the travel reads and still told nothing of hidden ones.
+    const anonCtx = await createCapabilityContext({ principal: anonymous, requestId: 'req-names-anon', surface: 'ai' });
+    for (const name of ['list_hotel_recommendations', 'search_travel_options', 'open_booking_link']) {
+      const refused = await invokeByName(name, anonCtx, {});
+      expect(!refused.ok && refused.error.code, name).toBe('unauthenticated');
+    }
+    const anonHidden = await invokeByName('admin_get_travel_config', anonCtx, {});
+    expect(!anonHidden.ok && anonHidden.error.code).toBe('not_found');
   });
 });

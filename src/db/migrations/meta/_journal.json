@@ -99,6 +99,62 @@
       "when": 1790137892935,
       "tag": "0013_gift_funds_and_rails",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790400000000,
+      "tag": "0014_supabase_rls_lockdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790500000000,
+      "tag": "0015_sara_fitzgerald_guest",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790600000000,
+      "tag": "0016_sara_fitzgerald_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793490638509,
+      "tag": "0017_striped_colleen_wing",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790700000000,
+      "tag": "0018_social_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793509587028,
+      "tag": "0019_nervous_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1762022400000,
+      "tag": "0021_caa_room_block",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1762108800000,
+      "tag": "0022_admin_roles_email_required",
+      "breakpoints": true
     }
   ]
 }

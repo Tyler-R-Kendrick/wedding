@@ -361,7 +361,7 @@ export function PublishFlow({ draft }: { draft: DraftSummary }) {
           render: (ctx) => (
             <>
               <Consequences>
-                <p>Every guest with a seat sees their table, their tablemates and the floor plan on Your Weekend straight away.</p>
+                <p>Every guest with a seat sees their table, their tablemates and the floor plan on their dashboard straight away.</p>
                 {draft.published ? <p>This replaces the seating guests see now. You can unpublish it again later.</p> : <p>You can unpublish it again later.</p>}
               </Consequences>
               <TextField ctx={ctx} name="note" label="Note to yourselves" optional hint="Kept with this publication in the history. Never shown to guests." />
@@ -394,7 +394,7 @@ export function UnpublishFlow() {
           render: (ctx) => (
             <>
               <Consequences>
-                <p>Every table disappears from Your Weekend at once; guests are told the seating is not ready yet. The draft is untouched, and publishing again brings it back.</p>
+                <p>Every table disappears from the guest dashboard at once; guests simply no longer see a table. The draft is untouched, and publishing again brings it back.</p>
               </Consequences>
               <CheckField ctx={ctx} name="confirmed" label="Yes, hide the seating from guests" />
             </>

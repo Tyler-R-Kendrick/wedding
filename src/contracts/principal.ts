@@ -1,4 +1,5 @@
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from './ids';
+import type { ViewRoleKey } from '@/domain/identity/view-role';
 
 /**
  * Capability-based entitlements. Authorization decisions are made server-side
@@ -47,7 +48,7 @@ export type GuestPrincipal = {
    * record: `authorize` then refuses every capability that is not a read, so an owner looking at a
    * household's weekend can never answer its RSVP or claim its ride. Absent for a real guest.
    */
-  viewedBy?: { adminId: AdminId; roles: ReadonlySet<AdminRole>; readOnly: boolean };
+  viewedBy?: { adminId: AdminId; roles: ReadonlySet<AdminRole>; readOnly: boolean; previewRole?: ViewRoleKey };
 };
 
 export type AdminPrincipal = {
@@ -91,7 +92,7 @@ export function isSessionFresh(p: Principal, now: Date = new Date(), maxAgeSecon
 /** Minimal, log-safe reference to a principal for audit rows. */
 export type PrincipalRef =
   | { kind: 'anonymous' }
-  | { kind: 'guest'; guestId: GuestId; householdId: HouseholdId; viewedBy?: { adminId: AdminId; readOnly: boolean } }
+  | { kind: 'guest'; guestId: GuestId; householdId: HouseholdId; viewedBy?: { adminId: AdminId; readOnly: boolean; previewRole?: ViewRoleKey } }
   | { kind: 'admin'; adminId: AdminId }
   | { kind: 'system'; component: string };
 
@@ -101,7 +102,9 @@ export function toPrincipalRef(p: Principal): PrincipalRef {
       return { kind: 'anonymous' };
     case 'guest':
       // An administrator browsing as this guest: every audit row and every per-principal key says so.
-      return p.viewedBy ? { kind: 'guest', guestId: p.guestId, householdId: p.householdId, viewedBy: { adminId: p.viewedBy.adminId, readOnly: p.viewedBy.readOnly } } : { kind: 'guest', guestId: p.guestId, householdId: p.householdId };
+      return p.viewedBy
+        ? { kind: 'guest', guestId: p.guestId, householdId: p.householdId, viewedBy: { adminId: p.viewedBy.adminId, readOnly: p.viewedBy.readOnly, ...(p.viewedBy.previewRole ? { previewRole: p.viewedBy.previewRole } : {}) } }
+        : { kind: 'guest', guestId: p.guestId, householdId: p.householdId };
     case 'admin':
       return { kind: 'admin', adminId: p.adminId };
     case 'system':

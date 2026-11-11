@@ -1,12 +1,14 @@
 import { getDb } from '@/db/client';
 import { cookieValue, GUEST_VIEW_COOKIE, isAdminSurface, verifyGuestViewToken } from '@/domain/identity/guest-view';
-import { buildAdminPrincipal, buildGuestPrincipal, buildGuestViewPrincipal, resolveAdminRoles } from '@/domain/identity/principal';
+import { buildAdminPrincipal, buildGuestPrincipal, buildGuestViewPrincipal, buildViewRolePrincipal, resolveAdminRoles } from '@/domain/identity/principal';
+import { VIEW_ROLE_COOKIE, verifyViewRoleToken } from '@/domain/identity/view-role';
+import { seedPreviewPersonas } from '@/domain/identity/preview-personas';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { env } from '@/lib/env';
 import { getFlags } from '@/lib/flags';
 import { ANONYMOUS, type PrincipalResolver } from '@/lib/principal';
 import { isTrustedMutationRequest } from './csrf';
-import { siteOrigin } from './config';
+import { siteOrigins } from './config';
 import { getAuthSession, toSessionFacts } from './session';
 import { readTestPrincipal } from './test-principal';
 import { PATHNAME_HEADER } from '@/themes/routes';
@@ -38,19 +40,33 @@ export const betterAuthPrincipalResolver: PrincipalResolver = {
     const injected = readTestPrincipal(request); // null outside NODE_ENV=test + TEST_AUTH_SECRET
     if (injected) return injected;
     if (!request.headers.get('cookie')) return ANONYMOUS;
-    if (!isTrustedMutationRequest(request, [siteOrigin()])) return ANONYMOUS;
+    if (!isTrustedMutationRequest(request, siteOrigins())) return ANONYMOUS;
     const isRsc = request.headers.get('rsc') === '1' && !request.headers.get('next-action');
+    const cookieHeader = request.headers.get('cookie') ?? '';
+    const previewCookie =
+      cookieValue(cookieHeader, VIEW_ROLE_COOKIE) !== null || cookieValue(cookieHeader, GUEST_VIEW_COOKIE) !== null;
+    // View-as tokens are bound to the Better Auth session id. RSC renders normally pass
+    // `disableRefresh: true`, which can leave a stale id and fail verification on client navigations.
     const db = await getDb();
-    const session = await getAuthSession(request.headers, { db, disableRefresh: isRsc });
+    const session = await getAuthSession(request.headers, { db, disableRefresh: isRsc && !previewCookie });
     if (!session) return ANONYMOUS;
     const facts = toSessionFacts(session);
     const roles = await resolveAdminRoles(db, session.user.email, env.ADMIN_EMAILS);
     if (roles.size > 0) {
       const admin = buildAdminPrincipal(facts, roles);
-      const view = verifyGuestViewToken(cookieValue(request.headers.get('cookie'), GUEST_VIEW_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
-      if (view && !isAdminSurface(requestPath(request))) {
-        const asGuest = await buildGuestViewPrincipal(db, facts, admin, view.guestId, getFlags());
-        if (asGuest) return asGuest;
+      const path = requestPath(request);
+      if (!isAdminSurface(path)) {
+        await seedPreviewPersonas(db);
+        const viewRole = verifyViewRoleToken(cookieValue(request.headers.get('cookie'), VIEW_ROLE_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
+        if (viewRole) {
+          const asRole = await buildViewRolePrincipal(db, facts, admin, viewRole.role, getFlags());
+          if (asRole) return asRole;
+        }
+        const view = verifyGuestViewToken(cookieValue(request.headers.get('cookie'), GUEST_VIEW_COOKIE), facts.sessionId, getPreviewSecret(), new Date());
+        if (view) {
+          const asGuest = await buildGuestViewPrincipal(db, facts, admin, view.guestId, getFlags());
+          if (asGuest) return asGuest;
+        }
       }
       return admin;
     }

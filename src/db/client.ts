@@ -7,7 +7,7 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import * as schema from './schema';
 import { runMigrations } from './migrate';
-import { seed } from './seed/seed';
+import { createQueryGate, gatePostgresClient } from './query-gate';
 
 export type DbDriver = 'pglite' | 'postgres';
 
@@ -53,7 +53,13 @@ async function connect(): Promise<Db> {
   const db = env.DATABASE_URL ? await connectPostgres(env.DATABASE_URL) : await connectPglite();
   if (env.DB_AUTO_MIGRATE ?? !env.isProduction) {
     await runMigrations(db);
-    if (env.DB_AUTO_SEED ?? !env.isProduction) await seed(db);
+    if (env.DB_AUTO_SEED ?? !env.isProduction) {
+      // Loaded here, not at the top. The seed is every page's content, and a server that does not
+      // seed (production) should not read it on each start; and `npm run db:seed` starts from
+      // seed.ts, which imports this file, so a static import back made a cycle that never settled.
+      const { seed } = await import('./seed/seed');
+      await seed(db);
+    }
   }
   logger.info({ driver: db.driver, vector: db.vectorAvailable }, 'database ready');
   return db;
@@ -71,7 +77,8 @@ async function connectPglite(): Promise<Db> {
   if (!dataDir.includes('://')) mkdirSync(dataDir, { recursive: true });
   const vector = await loadPgVector();
   const client = await PGlite.create({ dataDir, ...(vector ? { extensions: { vector } } : {}) });
-  const base = drizzle({ client, schema });
+  // As many slots as connections: the eleventh query waits in this process for a free one.
+  const base = drizzle({ client: gatePostgresClient(client, createQueryGate(POOL_SIZE)), schema });
   let vectorAvailable = false;
   if (vector) {
     try {
@@ -106,18 +113,24 @@ export function usesTransactionPooler(url: string): boolean {
   return /(^|[.-])pooler\./i.test(parsed.hostname);
 }
 
+/** Connections in the pool, and so queries and open transactions allowed in flight at once. */
+const POOL_SIZE = 10;
+
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import('postgres');
   const { drizzle } = await import('drizzle-orm/postgres-js');
   const pooled = usesTransactionPooler(url);
   if (pooled) logger.info({ prepare: false }, 'transaction-mode pooler detected; prepared statements disabled');
   const client = postgres(url, {
-    max: 10,
+    max: POOL_SIZE,
     idle_timeout: 20,
     connect_timeout: 10,
+    // Pipelining is not switched off here (`max_pipeline: 0` also breaks every transaction): the
+    // gate below keeps the pool from ever having to pipeline. See src/db/query-gate.ts.
     ...(pooled ? { prepare: false } : {}),
   });
-  const base = drizzle({ client, schema });
+  // As many slots as connections: the eleventh query waits in this process for a free one.
+  const base = drizzle({ client: gatePostgresClient(client, createQueryGate(POOL_SIZE)), schema });
   let vectorAvailable = false;
   try {
     await base.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`);

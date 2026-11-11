@@ -60,7 +60,7 @@ export function ExternalHandoffCard({ handoff, heading, note, placeholder, testM
            */
           className="btn btn--primary"
           href={handoff.url}
-          target={handoff.opensNewTab ? '_blank' : undefined}
+          target="_blank"
           rel="noopener noreferrer external"
           data-record-capability={recordVia?.capability}
           data-record-input={recordVia ? JSON.stringify(recordVia.input) : undefined}

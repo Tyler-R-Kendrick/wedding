@@ -1,0 +1,63 @@
+@layer components {
+  .w-adventure-carousel {
+    display: grid;
+    gap: var(--space-sm, 0.75rem);
+  }
+
+  .w-adventure-carousel__viewport {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--rounded-sm);
+  }
+
+  .w-adventure-carousel__slide {
+    margin: 0;
+  }
+
+  .w-adventure-carousel__slide[hidden] {
+    display: none;
+  }
+
+  .w-adventure-carousel__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(70vh, 32rem);
+    object-fit: cover;
+  }
+
+  .w-adventure-carousel__slide figcaption {
+    margin-top: var(--space-xs, 0.5rem);
+    font-size: var(--type-small-size, 0.9375rem);
+    color: var(--color-text-muted, inherit);
+  }
+
+  .w-adventure-carousel__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs, 0.5rem);
+  }
+
+  .w-adventure-carousel__status {
+    margin: 0;
+    flex: 1 1 auto;
+    font-size: var(--type-small-size, 0.9375rem);
+  }
+
+  .w-adventure-carousel__btn {
+    font: inherit;
+    font-size: var(--type-small-size, 0.9375rem);
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border, currentColor);
+    border-radius: var(--rounded-sm);
+    background: var(--color-surface, transparent);
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .w-adventure-carousel__btn:focus-visible {
+    outline: 2px solid var(--color-focus, currentColor);
+    outline-offset: 2px;
+  }
+}

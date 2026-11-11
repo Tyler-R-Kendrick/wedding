@@ -70,8 +70,8 @@ A page is made in five fidelities, each its own project with its own dev
 server, tests, build and deployment, each built from the one before it:
 **sitemap** (`stages/01-sitemap`, :3101) → **wireframe** (`02-wireframe`,
 :3102) → **skeleton** (`03-skeleton`, :3103, clickable, content as bones) →
-**placeholder** (`04-placeholder`, :3104, stand-in copy in every real design,
-design picker) → **real** (this app, :3000). Stages 2 to 4 redraw the **baseline**:
+**placeholder** (`04-placeholder`, :3104, stand-in copy in the real design) →
+**real** (this app, :3000). Stages 2 to 4 redraw the **baseline**:
 every page as production renders it, captured with `npm run stages:capture`
 into `stages/02-wireframe/baseline/` (guest and admin pages from the test server
 as fixture users), so their layout is the real site's, never a sketch of it. Settle each stage's
@@ -103,7 +103,7 @@ npm run design:export:tailwind # DESIGN.md → Tailwind v4 @theme CSS
 npm run design:export:dtcg     # DESIGN.md → W3C design tokens JSON
 npm run slop:detect            # impeccable's 61 anti-slop rules over the repo (exit 2 = findings)
 npm run design:drift           # the same, plus any size/colour/radius off the DESIGN.md scale (what CI and quality run)
-npm run slop:detect:rendered   # rendered scan: every route × design × 390/820/1280/1440 (needs a server, BASE_URL)
+npm run slop:detect:rendered   # rendered scan: every route × 390/820/1280/1440 (needs a server, BASE_URL)
 npm run lint:css               # stylelint (bans Inter/Roboto/Arial/Helvetica/Fraunces/… in CSS)
 npm run test:a11y              # axe-core WCAG 2.2 AA via Playwright (needs BASE_URL)
 npm run test:e2e:server        # identity/RSVP/security specs against a NODE_ENV=test server, as CI runs them
@@ -133,7 +133,11 @@ needs no account at all (dev defaults, Better Auth, PGlite, local-fs storage, th
   site's own pages. The site never calls a hosted model — no Anthropic, no Vercel AI Gateway, no
   OpenAI-compatible vendor, whatever keys are set — and embeddings and photo captions run
   in-process. Never add a hosted AI adapter or an `@ai-sdk/<vendor>` package;
-  `tests/unit/ai-model-provider.test.ts` fails if one appears.
+  `tests/unit/ai-model-provider.test.ts` fails if one appears. The trip planner's matching model
+  (`Xenova/bge-small-en-v1.5`) and speech model (`onnx-community/whisper-tiny.en`) also run in the
+  guest's browser, in a worker (`src/lib/ai/local`, installed for signed-in guests
+  only, by `<GuestModelKeeper />` on the guest pages); their weights download from the Hugging Face Hub into the browser's cache
+  and the ONNX runtime is served from `/ort/` (`scripts/copy-ort-wasm.mjs`).
 - **Gift links are not a credential.** Registry and "next adventures" links live in the
   `gift_links` table and are edited in `/admin/gifts`, which validates every URL against the
   redirect allowlist at write time and again at read time. `REGISTRY_LINKS_JSON` and
@@ -159,7 +163,7 @@ needs no account at all (dev defaults, Better Auth, PGlite, local-fs storage, th
   on staged UI files (plus all of `src/` when DESIGN.md or `.impeccable/config.json` changes;
   anti-patterns and off-scale sizes, colours and radii both block), and stylelint on staged CSS.
 - A fluid size runs between ramp steps: `clamp(var(--type-<step>-size), …, var(--type-<step>-size))`.
-  A size the ramp lacks goes into that theme's DESIGN.md first (then `npm run design:sync`). A finding is fixed, or waived through `impeccable hooks ignore-value`
+  A size the ramp lacks goes into the theme's DESIGN.md (`src/themes/botanical-deco/DESIGN.md`) first (then `npm run design:sync`). A finding is fixed, or waived through `impeccable hooks ignore-value`
   with a reason; `--no-verify` is not a way to land UI work.
 - Placeholder facts use `TODO(Tyler & Sara)`; never plausible fiction.
 

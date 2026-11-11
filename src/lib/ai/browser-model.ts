@@ -58,14 +58,15 @@ export function warm(): void {
  * Fetch the model in the background when the browser offers to download it — `state` is what
  * `probe()` just reported. Never throws: a failed download is not this question's problem, and the
  * next one simply checks again. The session that starts the download is closed once it is done.
+ * `onProgress` hears the download's progress, 0 to 1, as the browser reports it.
  */
-export async function prepare(state: BrowserModelState): Promise<void> {
+export async function prepare(state: BrowserModelState, onProgress?: (progress: number) => void): Promise<void> {
   if (state !== 'downloadable' && state !== 'downloading') return;
   try {
     const { browserAI } = await import('@browser-ai/core');
     const model = browserAI('text');
     try {
-      await model.createSessionWithProgress();
+      await model.createSessionWithProgress(onProgress);
     } finally {
       release(model);
     }
@@ -101,6 +102,51 @@ export async function askOnDevice(prompt: string, options: AskOptions = {}): Pro
         // A retry would spend the caller's whole deadline on a device that has already failed once.
         maxRetries: 0,
       });
+      return text.trim() ? text : null;
+    } finally {
+      release(model);
+    }
+  } catch {
+    return null;
+  }
+}
+
+export type StreamOptions = AskOptions & {
+  /** Called with the whole text so far, each time more of it arrives. */
+  onText(text: string): void;
+};
+
+/**
+ * `askOnDevice`, streamed: the same fresh model per call and the same session release, with the
+ * draft handed to `onText` as it is written. Resolves the whole text, or `null` when the device
+ * cannot answer, the stream reports an error, or the caller aborts — text already handed out is
+ * then the caller's to discard.
+ */
+export async function streamOnDevice(prompt: string, options: StreamOptions): Promise<string | null> {
+  if (!isSupported()) return null;
+  try {
+    const [{ streamText }, { browserAI }] = await Promise.all([import('ai'), import('@browser-ai/core')]);
+    const model = browserAI('text');
+    try {
+      // streamText never throws mid-stream: an error arrives here, and the text stream just ends.
+      let failed = false;
+      const result = streamText({
+        model,
+        ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
+        prompt,
+        ...(options.signal ? { abortSignal: options.signal } : {}),
+        maxRetries: 0,
+        onError: () => {
+          failed = true;
+        },
+      });
+      let text = '';
+      for await (const delta of result.textStream) {
+        if (!delta) continue;
+        text += delta;
+        options.onText(text);
+      }
+      if (failed || options.signal?.aborted) return null;
       return text.trim() ? text : null;
     } finally {
       release(model);

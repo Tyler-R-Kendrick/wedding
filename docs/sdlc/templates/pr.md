@@ -35,7 +35,7 @@ Paste `npx design.md diff` output if any DESIGN.md changed.
 
 ## Self-review
 
-`docs/reviews/PR-NN-self-review.md` — verdict: READY / READY WITH FOLLOW-UPS.
+Self-review (below, or in a comment) — verdict: READY / READY WITH FOLLOW-UPS.
 
 ## Risks
 

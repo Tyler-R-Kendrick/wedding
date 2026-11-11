@@ -27,7 +27,7 @@ const TARGET_RULE =
   '.link-block { min-height: 44px; }\n' +
   '.media-link--block { min-height: 44px; }\n' +
   '.wp-brand a { min-height: 44px; }\n' +
-  '.gh-entry__title .gh-link { min-height: 44px; }\n' +
+  '.bd-entry__title .bd-link { min-height: 44px; }\n' +
   '.wp-why summary { min-height: 44px; }\n' +
   '.tiny { min-height: 24px; }\n';
 
@@ -107,17 +107,17 @@ describe('the standalone-link gate', () => {
   });
 
   it('does not let a scoped rule cover its last compound on its own', () => {
-    // `.gh-entry__title .gh-link` sizes `.gh-link` only INSIDE the title. Crediting `gh-link` for
+    // `.bd-entry__title .bd-link` sizes `.bd-link` only INSIDE the title. Crediting `bd-link` for
     // it accepted every link both kits render, since `<Link>` always emits that base class.
-    const root = fixture({ 'src/a.css': TARGET_RULE, 'src/P.tsx': '<p><a className="gh-link" href="/x">loose</a></p>' });
+    const root = fixture({ 'src/a.css': TARGET_RULE, 'src/P.tsx': '<p><a className="bd-link" href="/x">loose</a></p>' });
     expect(findUnmarked(root)).toHaveLength(1);
-    expect(coverage(root).onSelf.has('gh-link')).toBe(false);
+    expect(coverage(root).onSelf.has('bd-link')).toBe(false);
   });
 
   it('accepts that same link once its scope is visible above the paragraph', () => {
     const root = fixture({
       'src/a.css': TARGET_RULE,
-      'src/P.tsx': ['<h2 className="gh-entry__title">', '  <p><a className="gh-link" href="/x">in scope</a></p>', '</h2>'].join('\n'),
+      'src/P.tsx': ['<h2 className="bd-entry__title">', '  <p><a className="bd-link" href="/x">in scope</a></p>', '</h2>'].join('\n'),
     });
     expect(findUnmarked(root)).toEqual([]);
   });
@@ -134,10 +134,10 @@ describe('the standalone-link gate', () => {
   });
 
   it('will not let a scope shelter a link that does not match its subject', () => {
-    // `.gh-entry__title .gh-link` is in scope, but this anchor is not a `.gh-link`.
+    // `.bd-entry__title .bd-link` is in scope, but this anchor is not a `.bd-link`.
     const root = fixture({
       'src/a.css': TARGET_RULE,
-      'src/P.tsx': ['<h2 className="gh-entry__title">', '  <p><a className="something-else" href="/x">not the subject</a></p>', '</h2>'].join('\n'),
+      'src/P.tsx': ['<h2 className="bd-entry__title">', '  <p><a className="something-else" href="/x">not the subject</a></p>', '</h2>'].join('\n'),
     });
     expect(findUnmarked(root)).toHaveLength(1);
   });
@@ -145,7 +145,7 @@ describe('the standalone-link gate', () => {
   it('cannot see a scope further above than SCOPE_LINES, and says so by failing', () => {
     const root = fixture({
       'src/a.css': TARGET_RULE,
-      'src/P.tsx': ['<div className="gh-entry__title">', ...Array(20).fill('  {null}'), '  <p><a className="gh-link" href="/x">out of sight</a></p>'].join('\n'),
+      'src/P.tsx': ['<div className="bd-entry__title">', ...Array(20).fill('  {null}'), '  <p><a className="bd-link" href="/x">out of sight</a></p>'].join('\n'),
     });
     expect(findUnmarked(root)).toHaveLength(1);
   });

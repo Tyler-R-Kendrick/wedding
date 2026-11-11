@@ -156,8 +156,15 @@ const TARGET_MARGIN_PX = 20;
  * not patch. A thousandth of a drawing unit is far below a pixel at any zoom.
  */
 const drawn = (n: number): number => Math.round(n * 1000) / 1000;
+/** Avoid server/browser math differences in SVG attributes during hydration. */
+const boxAttribute = (box: ViewBox) => [box.x, box.y, box.w, box.h].map((n) => Number(n.toFixed(8))).join(' ');
 
-export function AdventureAtlas({ pins, venue, overview, postcards, children }: { pins: AtlasPin[]; venue: AtlasVenue; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
+/**
+ * `showVenue` is whether the wedding's own marker is drawn. It is for a signed-in reader only: the
+ * map still opens on the same frame without it (`venue` is the point the frame is built around), but
+ * a signed-out reader gets no marker, no "our wedding" label and no word of where it is.
+ */
+export function AdventureAtlas({ pins, venue, showVenue = true, overview, postcards, children, subject = 'adventures' }: { subject?: string; pins: AtlasPin[]; venue: AtlasVenue; showVenue?: boolean; overview: ReactNode; postcards: ReactNode; children: ReactNode }) {
   const uid = useId();
   const clipId = `atlas-clip-${uid.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const root = useRef<HTMLDivElement>(null);
@@ -169,9 +176,9 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
   const points = useMemo<Point[]>(
     () => [
       ...pins.map((p) => ({ id: p.id, kind: 'pin' as const, title: p.title, number: p.number, ...project(p.lat, p.lng) })),
-      { id: venue.id, kind: 'venue' as const, title: venue.name, ...project(venue.lat, venue.lng) },
+      ...(showVenue ? [{ id: venue.id, kind: 'venue' as const, title: venue.name, ...project(venue.lat, venue.lng) }] : []),
     ],
-    [pins, venue],
+    [pins, venue, showVenue],
   );
   const focus = useMemo<AtlasFocus>(() => {
     const u = unitsPerKm(venue.lat);
@@ -200,7 +207,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
     const height = width / aspect;
     const v = live.current;
     const vb = viewBox(v, aspect);
-    svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    svg.setAttribute('viewBox', boxAttribute(vb));
     const inRegionView = regionInView(vb);
     const region = svg.querySelector<SVGGElement>('[data-region]');
     if (region) region.toggleAttribute('data-off', !inRegionView);
@@ -649,7 +656,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             tabIndex={0}
             role="region"
             aria-roledescription="map"
-            aria-label="Map of our adventures, opening on Chicago around the venue. Arrow keys move the map; plus and minus zoom; 0 comes back to the venue; 9 shows the whole world. The same adventures are listed below it."
+            aria-label={showVenue ? `Map of our ${subject}, opening on Chicago around the venue. Arrow keys move the map; plus and minus zoom; 0 comes back to the venue; 9 shows the whole world. The same places are listed below it.` : `Map of our ${subject}. Arrow keys move the map; plus and minus zoom; 0 comes back to where it opened; 9 shows the whole world. The same places are listed below it.`}
             data-zoomed={view.k > world.k + 0.01 ? 'true' : undefined}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -660,7 +667,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             onDoubleClick={onDoubleClick}
             onKeyDown={onKeyDown}
           >
-            <svg ref={baseSvg} className="bd-atlas__svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+            <svg ref={baseSvg} className="bd-atlas__svg" viewBox={boxAttribute(vb)} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
               <defs>
                 {/* The world everywhere but the close-up's rectangle; the close-up only inside it. */}
                 <clipPath id={`${clipId}-world`}>
@@ -763,7 +770,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
                   <path d="M4 10h12" />
                 </svg>
               </button>
-              <button type="button" className="bd-atlas__zoombtn" onClick={goHome} disabled={atHome} aria-label="Back to Chicago and the venue">
+              <button type="button" className="bd-atlas__zoombtn" onClick={goHome} disabled={atHome} aria-label={showVenue ? 'Back to Chicago and the venue' : 'Back to where the map opened'}>
                 <svg className="bd-atlas__icon" viewBox="0 0 20 20" aria-hidden="true">
                   <path d="M10 3l7 7-7 7-7-7Z" />
                 </svg>
@@ -787,7 +794,7 @@ export function AdventureAtlas({ pins, venue, overview, postcards, children }: {
             Drag to move. Zoom with + and −, a pinch, a double-click, or Ctrl (⌘ on a Mac) and scroll. Coastlines, lakes and roads from Natural Earth; Chicago’s lakefront and community areas from the City of Chicago.
           </figcaption>
         </figure>
-        <aside className="bd-atlas__panel" aria-label="The chosen adventure">
+        <aside className="bd-atlas__panel" aria-label={`The chosen ${subject === 'adventures' ? 'adventure' : 'place'}`}>
           <div className="bd-atlas__overview" hidden={chosen !== null}>
             {overview}
           </div>

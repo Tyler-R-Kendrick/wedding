@@ -1,6 +1,4 @@
-import botanicalDecoTokens from './botanical-deco/tokens.generated.json';
-import conservatoryTokens from './conservatory/tokens.generated.json';
-import gildedHourTokens from './gilded-hour/tokens.generated.json';
+import botanicalDecoTokens from './botanical-deco/tokens.generated.json' with { type: 'json' };
 import type { ThemeId, ThemeMeta } from './types';
 
 /**
@@ -8,23 +6,14 @@ import type { ThemeId, ThemeMeta } from './types';
  * Component kits and recipes live behind `getTheme` in `./index.ts` (server only).
  * Token values live in each theme's DESIGN.md (exported by `npm run design:sync`); nothing here is a color.
  */
-export const THEME_IDS = ['botanical-deco', 'gilded-hour', 'conservatory'] as const satisfies readonly ThemeId[];
+export const THEME_IDS = ['botanical-deco'] as const satisfies readonly ThemeId[];
 
 /**
- * Decision 1 in docs/design/design-doc.md §11 was "Gilded Hour until Tyler & Sara choose". They chose:
- * the Botanical–Deco synthesis in docs/design/approved-botanical-deco/. It is the default for every
- * guest, and the design switcher is off by default (`FLAG_DESIGN_SWITCHER`), because the approved
- * experience is one design, not a choice between two.
+ * The one design: the Botanical–Deco synthesis Sara and Tyler approved
+ * (docs/design/approved-botanical-deco/). The two earlier proposals were retired; a link or a
+ * stored cookie that still names one resolves here (see `resolveTheme`).
  */
 export const DEFAULT_THEME: ThemeId = 'botanical-deco';
-
-/**
- * The two proposals the approved design superseded. They stay compatible — `/t/gilded-hour`, an
- * explicit `?theme=gilded-hour` preview link — but a stored preference for one of them from before
- * the approval is not honoured (see `resolveTheme`), so no returning guest keeps seeing a rejected
- * design without asking for it.
- */
-export const LEGACY_THEME_IDS = ['gilded-hour', 'conservatory'] as const satisfies readonly ThemeId[];
 
 export const THEME_META: Record<ThemeId, ThemeMeta> = {
   'botanical-deco': {
@@ -36,90 +25,18 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     themeColor: botanicalDecoTokens.colors.neutral,
     icon: { svg: '/icons/botanical-deco.svg', apple: '/icons/botanical-deco-180.png' },
     // Only the two roman files are preloaded; the italics and the script accent swap in on use.
+    // Each address is the one fonts.css names, content hash included: a preload for any other URL
+    // is a second download of the same file. scripts/fonts/subset.py writes the stylesheet's;
+    // tests/unit/fonts.test.ts fails when these two fall behind it.
     fonts: [
-      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-wght.woff2', weight: '400 700', style: 'normal' },
-      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-text.woff2', weight: '400 600', style: 'normal' },
+      { family: 'Bodoni Moda', url: '/fonts/botanical-deco/bodoni-moda-core.woff2?v=1f8f833d7ca6', weight: '400 700', style: 'normal' },
+      { family: 'Newsreader', url: '/fonts/botanical-deco/newsreader-core.woff2?v=c3a356699635', weight: '400 600', style: 'normal' },
     ],
-    structure: {
-      layout: 'portrait-led-editorial-split',
-      navDesktop: 'monogram-masthead',
-      navMobile: 'monogram-sheet-and-action-bar',
-      sections: 'photo-strips-and-colour-bands',
-      ornament: 'edge-botanicals-and-gold-rules',
-    },
-    motion: {
-      pageEnter: 'the portrait settles from 1.03 scale and the edge botanicals ease in from the margin, once, ≤560 ms',
-      sectionReveal: 'none: every band is visible at rest; a gold rule may draw under a heading once',
-      interaction: 'a gold rule extends under links; photo tiles lift 2 px and their image eases to 1.03',
-      dialog: 'the sheet rises 16 px into place over 280 ms',
-      reducedMotion: 'no scale, translate or drawing; state changes are instantaneous or a ≤120 ms fade',
-    },
-  },
-  'gilded-hour': {
-    id: 'gilded-hour',
-    name: 'Gilded Hour',
-    tagline: 'Art Deco: marble, gold leaf, one monumental axis.',
-    designMd: 'src/themes/gilded-hour/DESIGN.md',
-    colorScheme: 'light',
-    themeColor: gildedHourTokens.colors.neutral,
-    icon: { svg: '/icons/gilded-hour.svg', apple: '/icons/gilded-hour-180.png' },
-    fonts: [
-      { family: 'Cinzel', url: '/fonts/gilded-hour/cinzel-wght.woff2', weight: '400 900', style: 'normal' },
-      { family: 'Josefin Sans', url: '/fonts/gilded-hour/josefin-sans-wght.woff2', weight: '100 700', style: 'normal' },
-      { family: 'Big Shoulders Display', url: '/fonts/gilded-hour/big-shoulders-display-wght.woff2', weight: '100 900', style: 'normal' },
-    ],
-    structure: {
-      layout: 'centered-axis',
-      navDesktop: 'frieze',
-      navMobile: 'elevator-panel',
-      sections: 'numbered-acts',
-      ornament: 'gold-geometry',
-    },
-    motion: {
-      pageEnter: 'curtain rise: a marble panel lifts off the hero once, then stillness',
-      sectionReveal: 'engraved reveal: the chevron rule draws itself in, the heading fades up',
-      interaction: 'a gold rule extends under links; buttons swap ink and bronze',
-      dialog: 'curtain: the sheet drops from the top edge',
-      reducedMotion: 'every choreography becomes a 120 ms opacity fade; countdown digits swap without transition',
-    },
-  },
-  conservatory: {
-    id: 'conservatory',
-    name: 'Conservatory',
-    tagline: 'Botanical: creme paper, moss ink, pressed cards laid by hand.',
-    designMd: 'src/themes/conservatory/DESIGN.md',
-    colorScheme: 'light',
-    themeColor: conservatoryTokens.colors.neutral,
-    icon: { svg: '/icons/conservatory.svg', apple: '/icons/conservatory-180.png' },
-    fonts: [
-      { family: 'Gloock', url: '/fonts/conservatory/gloock-regular.woff2', weight: '400', style: 'normal' },
-      { family: 'Spectral', url: '/fonts/conservatory/spectral-regular.woff2', weight: '400', style: 'normal' },
-      { family: 'Spectral', url: '/fonts/conservatory/spectral-medium.woff2', weight: '500', style: 'normal' },
-      { family: 'Cardo', url: '/fonts/conservatory/cardo-italic.woff2', weight: '400', style: 'italic' },
-    ],
-    structure: {
-      layout: 'left-weighted-sheet',
-      navDesktop: 'tag-rail',
-      navMobile: 'menu-tag-and-two-action-bar',
-      sections: 'washes-and-fern-dividers',
-      ornament: 'line-art-foliage',
-    },
-    motion: {
-      pageEnter: 'leaves settle: pressed sheets arrive at rest from +2°, 700 ms, ≤5 sheets staggered 80 ms',
-      sectionReveal: 'soft parallax: the sky wash drifts at most 12 px over its section',
-      interaction: 'underline thickens; the kraft tag nudges 1.5°',
-      dialog: 'settle: the sheet drifts down 12 px into place',
-      reducedMotion: 'cards render at rest, parallax off, countdown digits swap without motion',
-    },
   },
 };
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value);
-}
-
-export function isLegacyThemeId(value: unknown): boolean {
-  return typeof value === 'string' && (LEGACY_THEME_IDS as readonly string[]).includes(value);
 }
 
 export function getThemeMeta(id: ThemeId): ThemeMeta {

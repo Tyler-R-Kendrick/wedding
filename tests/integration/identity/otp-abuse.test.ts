@@ -39,24 +39,33 @@ describe('OTP abuse controls', () => {
 
   it('send limits: 5 per (email, client), a soft 20 per email across clients, and a per-IP cap', async () => {
     const f = await seed('ab2');
-    for (let i = 0; i < 5; i++) expectOk(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.1' }));
-    expectErr(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.1' }), 'rate_limited');
-    // A different client (the guest's own phone) still gets codes: a stranger cannot exhaust the guest's allowance.
-    expectOk(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.2' }));
-    let softDenied = 0;
-    for (let i = 0; i < 20; i++) {
-      const r = await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: `10.9.5.${i + 1}` });
-      if (!r.ok && r.error.code === 'rate_limited') softDenied++;
+    const { MemoryRateLimit } = await import('@/providers/rate-limit');
+    const { setProviderOverride } = await import('@/providers/registry');
+    // 61 real requests take at least nine seconds because of the anti-enumeration floor.
+    // Freeze the limiter clock so CPU load cannot refill a token during this capacity test.
+    setProviderOverride('rate-limit', new MemoryRateLimit(() => 0, { shared: false }));
+    try {
+      for (let i = 0; i < 5; i++) expectOk(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.1' }));
+      expectErr(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.1' }), 'rate_limited');
+      // A different client (the guest's own phone) still gets codes: a stranger cannot exhaust the guest's allowance.
+      expectOk(await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: '10.9.2.2' }));
+      let softDenied = 0;
+      for (let i = 0; i < 20; i++) {
+        const r = await call('request_otp', { purpose: 'sign_in', email: f.emails.amara }, { ip: `10.9.5.${i + 1}` });
+        if (!r.ok && r.error.code === 'rate_limited') softDenied++;
+      }
+      expect(softDenied).toBeGreaterThanOrEqual(1); // the per-email ceiling bounds inbox flooding
+      const ip = '10.9.3.3';
+      let denied = 0;
+      for (let i = 0; i < 61; i++) {
+        const r = await call('request_otp', { purpose: 'sign_in', email: `spray${i}+ab2@example.test` }, { ip });
+        if (!r.ok && r.error.code === 'rate_limited') denied++;
+      }
+      expect(denied).toBeGreaterThanOrEqual(1);
+      expect(devInbox.list().filter((m) => m.to.startsWith('spray'))).toHaveLength(0); // unknown addresses never receive mail
+    } finally {
+      setProviderOverride('rate-limit', undefined);
     }
-    expect(softDenied).toBeGreaterThanOrEqual(1); // the per-email ceiling bounds inbox flooding
-    const ip = '10.9.3.3';
-    let denied = 0;
-    for (let i = 0; i < 61; i++) {
-      const r = await call('request_otp', { purpose: 'sign_in', email: `spray${i}+ab2@example.test` }, { ip });
-      if (!r.ok && r.error.code === 'rate_limited') denied++;
-    }
-    expect(denied).toBeGreaterThanOrEqual(1);
-    expect(devInbox.list().filter((m) => m.to.startsWith('spray'))).toHaveLength(0); // unknown addresses never receive mail
   });
 
   it('S8: the provider send is not awaited — a slow mailer does not delay the answer, and known/unknown take the same floor', async () => {

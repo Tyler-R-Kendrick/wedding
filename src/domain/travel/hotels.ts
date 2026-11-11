@@ -60,7 +60,7 @@ export function synthesizedVenueHotel(now: Date): HotelRecommendation {
       websiteUrl: VENUE.url,
       bookingUrl: null,
       block: DEFAULT_VENUE_BLOCK,
-      placeholder: true,
+      placeholder: false,
       active: true,
       sourceId: CAA_KIT_SOURCE_ID,
       verifiedAt: new Date(BRIEF_VERIFIED_AT),
@@ -83,6 +83,11 @@ export async function listHotels(db: Db, opts: { includeInactive?: boolean; now:
   const list = rows.map((r) => toHotelRecommendation(r, opts.now));
   if (!list.some((h) => h.isVenue && h.active)) list.unshift(synthesizedVenueHotel(opts.now));
   return list;
+}
+
+/** Public hotel cards retain general information, never private group booking terms. */
+export function publicHotelRecommendation(hotel: HotelRecommendation): HotelRecommendation {
+  return { ...hotel, block: null, bookingUrl: hotel.isVenue || hotel.block ? null : hotel.bookingUrl };
 }
 
 export async function getHotel(db: Db, id: string, now: Date): Promise<HotelRecommendation | null> {

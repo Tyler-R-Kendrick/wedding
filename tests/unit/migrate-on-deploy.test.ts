@@ -33,7 +33,7 @@ describe('migrate-on-deploy', () => {
   it('migrates, then syncs the repo\'s content, and both scripts exist', () => {
     // Mutation: dropping the sync (content merged to main never reaches the live site), or running
     // it before the chain (the sync writes columns the chain creates).
-    expect(DEPLOY_STEPS.map((s) => s.script)).toEqual(['db:migrate', 'db:sync-content']);
+    expect(DEPLOY_STEPS.map((s) => s.script)).toEqual(['db:migrate', 'db:verify-schema', 'db:sync-content']);
     const scripts = JSON.parse(readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8')).scripts as Record<string, string>;
     for (const s of DEPLOY_STEPS) expect(scripts[s.script], s.script).toBeTruthy();
   });
@@ -72,6 +72,15 @@ describe('migrate-on-deploy', () => {
     expect(d.reason).toBe('not a Vercel build');
   });
 
+  it('prefers the direct connection over DATABASE_URL for DDL when both are set', () => {
+    const d = decide({
+      ...PROD,
+      DATABASE_URL: 'postgres://u:p@ep-abc-pooler.us-east-1.aws.neon.tech/neondb',
+      POSTGRES_URL_NON_POOLING: 'postgres://u:p@ep-abc.us-east-1.aws.neon.tech/neondb',
+    });
+    expect(d.url).toBe('postgres://u:p@ep-abc.us-east-1.aws.neon.tech/neondb');
+  });
+
   it('prefers the direct connection over the pooled one for DDL', () => {
     // Migrations are DDL in transactions; a transaction-mode pooler serves those across
     // connections and fails mid-chain. Mutation: reorder the fallback chain.
@@ -79,10 +88,9 @@ describe('migrate-on-deploy', () => {
     expect(d.url).toBe('postgres://u:p@db.h.supabase.co:5432/app');
   });
 
-  it('lets an explicit DATABASE_URL win, exactly as src/lib/env.ts does', () => {
-    // Mutation: put DATABASE_URL last in the chain, and the app and the migrator would
-    // disagree about which database they are talking to.
-    const d = decide({ ...PROD, DATABASE_URL: 'postgres://mine/db', POSTGRES_URL_NON_POOLING: 'postgres://theirs/db' });
+  it('uses DATABASE_URL when no direct connection is configured', () => {
+    // Runtime and migrate share the same URL when only the pooler name exists.
+    const d = decide({ ...PROD, DATABASE_URL: 'postgres://mine/db', POSTGRES_URL: 'postgres://also/db' });
     expect(d.url).toBe('postgres://mine/db');
   });
 

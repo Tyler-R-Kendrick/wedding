@@ -26,8 +26,9 @@ const SPECULATION = JSON.stringify({
 });
 
 /**
- * The hotel's doorstep, the same point the Chicago map on Explore marks. The wedding is always on
- * the atlas, whatever the filter: it is where every pin is heading.
+ * The hotel's doorstep, the same point the Chicago map on Explore marks. For a signed-in guest the
+ * wedding is always on the atlas, whatever the filter: it is where every pin is heading. A signed-out
+ * reader's atlas opens on the same frame with no marker there (`showVenue`), and no postcard for it.
  */
 const VENUE = { id: 'venue', lat: 41.8815, lng: -87.6246 };
 
@@ -37,11 +38,14 @@ const VENUE = { id: 'venue', lat: 41.8815, lng: -87.6246 };
  * complete version, which is all a guest without JavaScript or with a screen reader needs.
  */
 export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, active, frame }) => {
+  const details = frame.details;
   const chips = adventureChips(data, active);
   const numbered = data.items.map((a, i) => ({ card: a, number: adventureNumber(i) }));
   const pinned = numbered.filter((n): n is { card: AdventureCard & { coordinates: NonNullable<AdventureCard['coordinates']> }; number: string } => !!n.card.coordinates);
   const pins: AtlasPin[] = pinned.map(({ card, number }) => ({ id: card.id, title: card.title, number, lat: card.coordinates.lat, lng: card.coordinates.lng }));
   const onMap = new Set(pins.map((p) => p.id));
+  /** Placeholder memories without a location stay in the ledger but are not expected on the map yet. */
+  const mapEligible = data.items.filter((a) => a.coordinates || !a.placeholder);
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHead eyebrow={CONTENT_COPY.adventures.eyebrow} title={CONTENT_COPY.adventures.title} lede={CONTENT_COPY.adventures.lede}>
@@ -51,14 +55,15 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
       <Section id="archive">
         <AdventureAtlas
           pins={pins}
-          venue={{ ...VENUE, name: frame.site.venue.name }}
-          overview={<Overview pinned={pins.length} total={data.items.length} venue={frame.site.venue.name} />}
+          venue={{ ...VENUE, name: details?.venue.name ?? '' }}
+          showVenue={!!details}
+          overview={<Overview pinned={pins.length} total={mapEligible.length} venue={details?.venue.name ?? null} />}
           postcards={
             <>
               {pinned.map(({ card, number }) => (
                 <Postcard key={card.id} card={card} number={number} />
               ))}
-              <VenuePostcard site={frame.site} />
+              {details ? <VenuePostcard details={details} /> : null}
             </>
           }
         >
@@ -71,7 +76,13 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
           )}
           <Prose>
             <p className="bd-muted bd-ledger__foot">
-              {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far. {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.share}>Share an Adventure</Link>.
+              {data.total} {data.total === 1 ? 'adventure' : 'adventures'} shared so far.
+              {details ? (
+                <>
+                  {' '}
+                  {CONTENT_COPY.adventures.borrow} <Link href={`${ROUTES.guestTravel}#plan`}>Your Trip</Link>.
+                </>
+              ) : null}
             </p>
           </Prose>
         </AdventureAtlas>
@@ -80,7 +91,7 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
   );
 };
 
-function Overview({ pinned, total, venue }: { pinned: number; total: number; venue: string }) {
+function Overview({ pinned, total, venue }: { pinned: number; total: number; venue: string | null }) {
   return (
     <div className="bd-atlas__intro">
       <p className="bd-eyebrow">{COPY.eyebrow}</p>
@@ -102,10 +113,12 @@ function Overview({ pinned, total, venue }: { pinned: number; total: number; ven
           </span>
           {COPY.keyCluster}
         </li>
-        <li>
-          <span className="bd-atlas__key bd-atlas__key--venue" aria-hidden="true" />
-          {COPY.keyVenue}: {venue}
-        </li>
+        {venue ? (
+          <li>
+            <span className="bd-atlas__key bd-atlas__key--venue" aria-hidden="true" />
+            {COPY.keyVenue}: {venue}
+          </li>
+        ) : null}
       </ul>
     </div>
   );
@@ -162,24 +175,24 @@ function Postcard({ card, number }: { card: AdventureCard; number: string }) {
 }
 
 /** The wedding's own postcard: the diamond on the map opens it. */
-function VenuePostcard({ site }: { site: PageFrame['site'] }) {
+function VenuePostcard({ details }: { details: NonNullable<PageFrame['details']> }) {
   const titleId = 'postcard-venue';
   return (
     <article className="bd-postcard bd-postcard--venue" data-atlas-entry={VENUE.id} aria-labelledby={titleId}>
       <div className="bd-postcard__top">
         <p className="bd-eyebrow">
-          {COPY.venueEyebrow} · {site.date.motif}
+          {COPY.venueEyebrow} · {details.date.motif}
         </p>
-        <CloseButton title={site.venue.name} />
+        <CloseButton title={details.venue.name} />
       </div>
       <h2 id={titleId} className="bd-postcard__title" tabIndex={-1} data-atlas-focus>
-        {site.venue.name}
+        {details.venue.name}
       </h2>
-      <p className="bd-postcard__when">{site.date.long}</p>
-      <p className="bd-postcard__summary">{site.venue.address}</p>
+      <p className="bd-postcard__when">{details.date.long}</p>
+      <p className="bd-postcard__summary">{details.venue.address}</p>
       <div className="bd-postcard__actions">
-        <a className="bd-btn bd-btn--secondary bd-postcard__go" href={ROUTES.wedding}>
-          <span>The wedding</span>
+        <a className="bd-btn bd-btn--secondary bd-postcard__go" href={ROUTES.guestPortal}>
+          <span>Your dashboard</span>
           <Arrow />
         </a>
         <Link href={ROUTES.ourVenue} standalone>

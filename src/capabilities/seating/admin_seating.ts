@@ -262,7 +262,7 @@ const publishOutput = z.object({ publicationId: z.string(), publishedAt: z.strin
 export const adminPublishSeating = defineCapability<{ note?: string | null }, z.infer<typeof publishOutput>>({
   name: 'admin_publish_seating',
   title: 'Publish seating (admin)',
-  description: 'Freezes the current draft into the chart guests can see (Your Weekend, get_my_table). Re-publishing replaces the live chart. Audited; fresh admin session required.',
+  description: 'Freezes the current draft into the chart guests can see (the guest dashboard, get_my_table). Re-publishing replaces the live chart. Audited; fresh admin session required.',
   kind: 'action',
   auth: 'admin',
   requires: ['admin_guest_ops'],

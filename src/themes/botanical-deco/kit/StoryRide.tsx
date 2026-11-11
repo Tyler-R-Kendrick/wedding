@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { resolveStoryHash } from '@/themes/shared/story-anchors';
 
 /**
  * Our Story as a ride on the 'L' (docs/design/inspo/our-story-timeline.md).
@@ -495,7 +496,8 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     let target = -1;
     let until = 0;
     const jumpToHash = () => {
-      target = stops.findIndex((s) => `#${s.slug}` === window.location.hash);
+      const slug = resolveStoryHash(window.location.hash);
+      target = stops.findIndex((s) => s.slug === slug);
       if (target < 0) return;
       until = performance.now() + 1500;
       go(target, true);
@@ -507,7 +509,9 @@ export function StoryRide({ stops, cards, lineName, title }: { stops: RideStop[]
     const holdLanding = () => {
       // Not once the guest has chosen somewhere else: every ride they ask for rewrites the hash.
       if (target < 0 || performance.now() > until || userDriven.current || flight.current) return;
-      if (window.location.hash !== `#${stops[target]?.slug}`) return;
+      const slug = stops[target]?.slug;
+      const hash = window.location.hash.replace(/^#/, '');
+      if (hash !== slug && resolveStoryHash(hash) !== slug) return;
       const g = geo.current;
       if (!g) return;
       const p = trainPosition((window.scrollY + g.rideTop - g.railTop) / g.step, n);

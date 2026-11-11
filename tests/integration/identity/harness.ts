@@ -28,6 +28,8 @@ export interface Transport {
   logger?: unknown;
   /** The page path the proxy would stamp (`x-pathname`), for a request made from that page. */
   pathname?: string;
+  /** React Server Component flight request (exercises disableRefresh + preview cookies). */
+  rsc?: boolean;
 }
 
 /** Headers the way a browser would send them: same-origin by default. */
@@ -36,6 +38,7 @@ export function requestHeaders(t: Transport = {}): Headers {
   if (t.cookie) h.set('cookie', t.cookie);
   if (t.origin !== null) h.set('origin', t.origin ?? SITE);
   if (t.pathname) h.set('x-pathname', t.pathname);
+  if (t.rsc) h.set('rsc', '1');
   return h;
 }
 
@@ -43,7 +46,8 @@ export async function principalFor(t: Transport = {}): Promise<Principal> {
   // With `pathname`, the request a server component on that page would build: a placeholder URL and
   // the proxy's `x-pathname`. Without it, an /api capability call, whose URL is its real path.
   const url = t.pathname ? `http://wedding.local${t.pathname}` : `${SITE}/api/capabilities/x`;
-  return getPrincipal(new Request(url, { method: t.method ?? 'POST', headers: requestHeaders(t) }));
+  const method = t.method ?? (t.rsc ? 'GET' : 'POST');
+  return getPrincipal(new Request(url, { method, headers: requestHeaders(t) }));
 }
 
 /** Invokes a capability through the real pipeline with the identity transport attached. */
@@ -64,11 +68,11 @@ export const cookieFrom = (sink: CookieSink): string =>
     .filter((c) => c.includes('session_token') && !c.endsWith('='))
     .join('; ');
 
-/** The send is asynchronous (review S8): poll the dev inbox briefly for a message newer than `after`. */
-export async function latestCode(email: string, after?: string): Promise<string> {
+/** The send is asynchronous (review S8): poll the dev inbox briefly for a message whose id differs from `afterId`. */
+export async function latestCode(email: string, afterId?: string): Promise<string> {
   for (let i = 0; i < 40; i++) {
     const msg = devInbox.latestFor(email);
-    if (msg && (!after || msg.sentAt > after || msg.code !== after)) return msg.code;
+    if (msg && (!afterId || msg.id !== afterId)) return msg.code;
     await new Promise((r) => setTimeout(r, 50));
   }
   throw new Error(`no OTP in the dev inbox for ${email}`);
@@ -94,17 +98,19 @@ export async function seed(suffix: string): Promise<IdentityFixtures> {
 
 /** Full claim: request code for `guestId` via `token`, read the inbox, verify. Returns the session cookie. */
 export async function claim(token: string, guestId: string, inboxEmail: string, t: Transport = {}) {
+  const previousMessage = devInbox.latestFor(inboxEmail)?.id;
   const req = expectOk(await call<{ sent: boolean; challenge?: string; deliveredTo?: string; deliveredFor?: string | null }>('request_otp', { purpose: 'claim', token, guestId }, t));
   if (!req.data.sent) throw new Error('claim not sent');
-  const ver = await call<{ guestId: string | null; candidates: { guestId: string }[]; isAdmin: boolean }>('verify_otp', { challenge: req.data.challenge, code: await latestCode(inboxEmail) }, t);
+  const ver = await call<{ guestId: string | null; candidates: { guestId: string }[]; isAdmin: boolean }>('verify_otp', { challenge: req.data.challenge, code: await latestCode(inboxEmail, previousMessage) }, t);
   const out = expectOk(ver);
   return { cookie: cookieFrom(ver.sink), outcome: out.data, request: req.data };
 }
 
 export async function signIn(email: string, t: Transport = {}, purpose: 'sign_in' | 'admin_sign_in' = 'sign_in') {
+  const previousMessage = devInbox.latestFor(email)?.id;
   const req = expectOk(await call<{ sent: boolean; challenge?: string }>('request_otp', { purpose, email }, t));
   if (!req.data.sent) throw new Error('sign-in not sent');
-  const ver = await call<{ guestId: string | null; isAdmin: boolean; candidates: { guestId: string }[] }>('verify_otp', { challenge: req.data.challenge, code: await latestCode(email) }, t);
+  const ver = await call<{ guestId: string | null; isAdmin: boolean; candidates: { guestId: string }[] }>('verify_otp', { challenge: req.data.challenge, code: await latestCode(email, previousMessage) }, t);
   const out = expectOk(ver);
   return { cookie: cookieFrom(ver.sink), outcome: out.data };
 }

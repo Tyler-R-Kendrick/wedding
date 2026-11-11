@@ -37,6 +37,8 @@ export const RATE_LIMIT_POLICIES = {
   upload: { capacity: 30, refillPerSecond: 30 / 3600 },
   /** Concierge messages per principal. */
   concierge: { capacity: 20, refillPerSecond: 20 / 60 },
+  /** Inbound guest-mail forwards per sender address (loop / spray guard). */
+  inboundMailSender: { capacity: 10, refillPerSecond: 10 / 3600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export type RateLimitPolicyName = keyof typeof RATE_LIMIT_POLICIES;

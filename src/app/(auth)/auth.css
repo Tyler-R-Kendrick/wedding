@@ -118,12 +118,106 @@
   border-color: var(--auth-error);
 }
 
-.auth-input-code {
-  max-width: 12rem;
-  font-size: 1.625rem;
-  letter-spacing: 0.35em;
-  text-align: center;
+/*
+ * The code as six boxes. One real input lies over them, invisible but full size, so a tap anywhere
+ * on the boxes focuses it, the number pad opens, and autofill, paste and screen readers all work on
+ * a plain field. Each box shows its digit, or a dash until it is typed; the next one to fill is
+ * underlined. 17px or more on the input itself, so iOS never zooms into it.
+ */
+.auth-code {
+  position: relative;
+  max-width: 22rem;
+}
+
+.auth-code__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  font-size: 1.0625rem;
+  color: transparent;
+  caret-color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: transparent;
+  border: 0;
+  outline: none;
+  cursor: text;
+}
+
+.auth-code__input::selection {
+  background: transparent;
+}
+
+.auth-code__cells {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--spacing-sm, 8px);
+}
+
+.auth-code__cell {
+  display: grid;
+  place-items: center;
+  min-height: 3.5rem;
+  font-size: var(--type-numeral-size, 1.75rem);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  background: var(--color-surface, var(--color-neutral));
+  border: 1px solid var(--auth-outline);
+  border-radius: var(--auth-radius);
+}
+
+.auth-code__placeholder {
+  color: var(--auth-muted);
+}
+
+.auth-code__cell.is-filled {
+  border-color: var(--auth-accent);
+}
+
+/* The box the next digit goes into: a thicker line under it while the field has focus. */
+.auth-code__cell.is-active {
+  border-color: var(--auth-accent);
+  box-shadow: inset 0 -3px 0 var(--auth-accent);
+}
+
+.auth-code.is-focused .auth-code__cells {
+  outline: 3px solid var(--auth-accent);
+  outline-offset: 4px;
+  border-radius: var(--auth-radius);
+}
+
+.auth-code.is-invalid .auth-code__cell {
+  border-color: var(--auth-error);
+}
+
+/* Checking: the boxes hold still and dim a little while the code is on its way. */
+.auth-code.is-busy .auth-code__cell {
+  opacity: 0.7;
+}
+
+.auth-spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentcolor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-spinner {
+    animation: none;
+    border-inline-end-color: currentcolor;
+    opacity: 0.6;
+  }
 }
 
 .auth-choices {
@@ -174,6 +268,10 @@
  * `control-caps` step: caps a guest must operate, at 17px, in all three DESIGN.md files.
  */
 .auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
   min-height: 3rem;
   padding: 0.75rem 1.5rem;
   font: inherit;
@@ -197,15 +295,14 @@
   border-color: var(--auth-outline);
 }
 
+.auth-button.is-busy,
+.auth-button:disabled {
+  cursor: progress;
+}
+
 .auth-link {
   color: var(--auth-accent);
   text-underline-offset: 0.2em;
-}
-
-/* Inside muted hint text colour alone does not mark a link (WCAG 1.4.1): the admin sign-in link on
-   /sign-in sat in grey copy and read as plain text. */
-.auth-hint .auth-link {
-  text-decoration: underline;
 }
 
 .auth-input:focus-visible,
@@ -215,6 +312,29 @@
 .auth-choice:focus-within {
   outline: 3px solid var(--auth-accent);
   outline-offset: 2px;
+}
+
+/*
+ * Inline links (WCAG 1.4.1 / axe `link-in-text-block`). Colour alone does not
+ * mark a link, and `--auth-accent` (`--color-tertiary`) does not clear the 3:1
+ * the rule asks for against the sentence around it:
+ *
+ *   #75552d vs muted #59554d = 1.09:1, vs error #8a2c22 = 1.26:1
+ *
+ * No palette colour is both 4.5:1 on the ground and 3:1 from muted ink
+ * (primary vs muted is 2.01:1). The underline is the distinction that holds,
+ * drawn in the link's own ink so the stroke clears the same 4.5:1 as the
+ * words. A gold underline does not: gold is 2.63:1 on ivory.
+ *
+ * `.auth-hint` was the first sentence (the admin sign-in line). /claim/verify
+ * puts the same kind of link in the error notice and the footer, which are
+ * not hints. Standalone links in `.auth-actions` stay as they are: they are
+ * the whole control, and the rule does not apply to them.
+ */
+.auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .auth-notice {
@@ -260,20 +380,37 @@
   border-bottom: 1px solid var(--auth-outline);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .auth-card {
-    animation: auth-rise 200ms ease-out;
-  }
+/*
+ * No entrance fade. Axe composites an in-flight `opacity` with the page behind it, and the
+ * button-primary pair (`--color-on-gold-deep` on `--color-gold-deep`, 4.67:1 at rest) falls
+ * under 4.5:1 while the card is still translucent. Botanical Deco does not fade the first screen.
+ */
 
-  @keyframes auth-rise {
-    from {
-      opacity: 0;
-    }
+.auth-other {
+  margin-block-start: var(--spacing-xl, 32px);
+  padding-block-start: var(--spacing-lg, 24px);
+  border-block-start: 1px solid var(--color-border-subtle, rgb(0 0 0 / 12%));
+}
 
-    to {
-      opacity: 1;
-    }
-  }
+.auth-other__heading {
+  font-size: var(--type-body-sm-size, var(--text-body-sm, 1rem));
+  font-weight: 600;
+  margin-block-end: var(--spacing-sm, 8px);
+}
+
+.auth-other__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+}
+
+.auth-other__provider {
+  display: block;
+  text-align: center;
+  width: 100%;
 }
 
 /* Botanical–Deco's own controls on the sign-in journey: squared corners, the Deep Gold primary and
@@ -295,4 +432,53 @@
 [data-theme="botanical-deco"] .auth-input {
   background: var(--color-surface);
   border-block-end-color: var(--color-gold-deep);
+}
+
+/*
+ * Email or text: two equal tabs at the top of /sign-in, not a primary method and an "instead" link.
+ * Links (`?method=text`), so the choice survives an error and needs no script. The chosen one takes
+ * the primary pair, the same colours as "Send me a code"; the other stays full-strength ink, so
+ * neither reads as the lesser way in. 3rem tall: the 44px target floor with room to spare.
+ */
+.auth-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-block-end: var(--spacing-lg, 24px);
+  border: 1px solid var(--auth-outline);
+  border-radius: var(--auth-radius);
+  overflow: hidden;
+}
+
+.auth-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: var(--color-primary);
+  font-size: var(--type-control-caps-size, var(--text-control-caps, 1rem));
+  font-weight: var(--type-control-caps-weight, var(--font-weight-control-caps, 500));
+  letter-spacing: var(--type-control-caps-tracking, var(--tracking-control-caps, 0.14em));
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.auth-method + .auth-method {
+  border-inline-start: 1px solid var(--auth-outline);
+}
+
+.auth-method[aria-current="page"] {
+  color: var(--color-neutral);
+  background: var(--color-primary);
+}
+
+.auth-method:focus-visible {
+  outline: 3px solid var(--auth-accent);
+  outline-offset: -3px;
+}
+
+[data-theme="botanical-deco"] .auth-method[aria-current="page"] {
+  color: var(--color-on-gold-deep);
+  background: var(--color-gold-deep);
 }

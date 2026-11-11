@@ -15,6 +15,7 @@ import type { AdventureCard, AdventureDetail, HandoffView, ItineraryView, PlaceV
 import { filterVisible, isValidAt } from '@/domain/content/visibility';
 import { toOperationalFieldView } from '@/domain/venue/repo';
 import { ROUTES } from '@/domain/routes';
+import { thingsToDoDetailPath } from '@/domain/lifecycle/guest-portal';
 import { composeItinerary, totalMinutes, type ComposeOptions } from './itineraries';
 
 // ------------------------------------------------------------------------------------ places
@@ -29,6 +30,7 @@ export function toPlaceView(row: PlaceRow): PlaceView {
     ...(row.city ? { city: row.city } : {}),
     ...(row.region ? { region: row.region } : {}),
     ...(row.url && /^https:\/\//.test(row.url) ? { url: row.url } : {}),
+    ...(row.lat !== null && row.lng !== null ? { coordinates: { lat: row.lat, lng: row.lng } } : {}),
     insideVenue: row.insideVenue,
     placeholder: row.placeholder,
   };
@@ -111,7 +113,7 @@ export async function toRecommendationCard(row: RecommendationRow, ctx: ReadCont
   const place = row.placeId ? deps.places.get(row.placeId) : undefined;
   const memory = row.experienceId ? deps.memories.get(row.experienceId) : undefined;
   const operational = row.operationalKey ? deps.operational.get(row.operationalKey) : undefined;
-  const route = `${ROUTES.share}/${row.slug}`;
+  const route = thingsToDoDetailPath(row.slug);
   const handoffs: RecommendationCard['handoffs'] = {};
   if (place) {
     const directions = directionsHandoff(place, { mode: row.category === 'day-trip' ? 'driving' : 'transit' });
@@ -152,7 +154,7 @@ export function toRecommendationSummary(row: RecommendationRow, deps: Recommenda
   return {
     id: row.id,
     slug: row.slug,
-    href: `${ROUTES.share}/${row.slug}`,
+    href: thingsToDoDetailPath(row.slug),
     title: row.title,
     category: row.category,
     what: textBlock(row.what),
@@ -165,7 +167,7 @@ export function toRecommendationSummary(row: RecommendationRow, deps: Recommenda
 }
 
 export function recommendationCitation(row: RecommendationRow, ctx: ReadContext): Citation {
-  return toRecordCitation(row, { route: `${ROUTES.share}/${row.slug}`, title: `Share an Adventure › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
+  return toRecordCitation(row, { route: thingsToDoDetailPath(row.slug), title: `Your Trip › ${row.title}`, recordRef: { type: 'recommendations', id: row.id }, now: ctx.now });
 }
 
 export async function visibleRecommendations(ctx: ReadContext): Promise<RecommendationRow[]> {
@@ -224,6 +226,7 @@ export function memoryCitation(row: AdventureMemoryRow, ctx: ReadContext): Citat
 }
 
 function dateLabel(row: AdventureMemoryRow) {
+  if (row.dateExact && row.dateApprox) return textBlock(row.dateApprox);
   if (row.dateExact) return textBlock(row.dateExact);
   return optionalText(row.dateApprox);
 }
@@ -302,7 +305,7 @@ export async function listAdventures(ctx: ReadContext, opts: ListAdventuresOptio
   let filtered = visible;
   if (opts.tag) filtered = filtered.filter((r) => r.tags.includes(opts.tag!));
   if (opts.season) filtered = filtered.filter((r) => r.season === opts.season);
-  // One card per photo makes the list long; the AI surfaces get the newest dozen (and the total) so
+  // Same-day memories are one card with several photos; the AI surfaces get the newest dozen (and the total) so
   // the answer stays inside their output budget, as find_adventures does.
   const limit = ctx.surface === 'ui' ? (opts.limit ?? 100) : Math.min(opts.limit ?? AI_ADVENTURE_LIMIT, AI_ADVENTURE_LIMIT);
   const items = filtered.slice(0, limit).map((r) => toAdventureCard(r, ctx, placeMap));
@@ -358,7 +361,7 @@ export function toItineraryView(row: ItineraryTemplateRow, ctx: ReadContext, dep
     totalMinutes: totalMinutes(stops.map((s) => ({ minutes: s.minutes, durationMinutes: s.recommendation.durationMinutes }))),
     draft: row.draft,
     placeholder: row.placeholder,
-    provenance: toProvenanceView(row, { route: `${ROUTES.share}#${row.slug}`, sources: ctx.sources, now: ctx.now }),
+    provenance: toProvenanceView(row, { route: `${ROUTES.guestTravel}#plan`, sources: ctx.sources, now: ctx.now }),
   };
 }
 
@@ -370,7 +373,7 @@ export async function listItineraries(ctx: ReadContext, opts: { bucket?: Itinera
   visible.sort((a, b) => order.indexOf(a.bucket) - order.indexOf(b.bucket));
   const itineraries = visible.map((r) => toItineraryView(r, ctx, deps, recById));
   const sources = dedupeCitations(
-    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.share}#${r.slug}`, title: `Share an Adventure › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
+    visible.map((r) => toRecordCitation(r, { route: `${ROUTES.guestTravel}#plan`, title: `Your Trip › ${r.title}`, recordRef: { type: 'itinerary_templates', id: r.id }, now: ctx.now })),
   );
   return { itineraries, sources };
 }

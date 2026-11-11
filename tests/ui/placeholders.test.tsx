@@ -3,14 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { AdventureDetailPage } from '@/app/(public)/_recipes/AdventureDetailPage';
 import { OurVenuePage } from '@/app/(public)/_recipes/OurVenuePage';
 import { StoryPage } from '@/app/(public)/_recipes/StoryPage';
-import { WeddingPage } from '@/app/(public)/_recipes/WeddingPage';
 import { PLACEHOLDER_MARKER } from '@/content/schemas';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { ProvenanceViewData, TextBlockView } from '@/domain/content/views';
-import { weddingEventSkeleton } from '@/domain/venue/wedding-events';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 
 const prov = (over: Partial<ProvenanceViewData> = {}): ProvenanceViewData => ({
   sourceId: 'src', sourceType: 'authored', sourceTitle: "Tyler's brief", url: '/our-story#x', verifiedAt: '2026-09-04T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING',
@@ -62,24 +59,6 @@ describe('typed placeholders never render as facts', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Our Story');
   });
 
-  it('The Wedding renders times, rooms, and dress code only inside placeholder blocks', () => {
-    const provenance = prov();
-    const events = weddingEventSkeleton(provenance, '2027-07-17');
-    const data: WeddingPageData = {
-      route: '/the-wedding', coupleDisplayName: 'Sara + Tyler', dateIso: '2027-07-17', venueName: 'Chicago Athletic Association Hotel', venueAddress: '12 S Michigan Ave, Chicago, IL 60603', venueUrl: null,
-      directions: { provider: 'google-maps', label: 'Open directions in Google Maps', url: 'https://www.google.com/maps/dir/?api=1&destination=x', disclosure: 'You will leave our site.', opensNewTab: true },
-      events, dressCode: events[0]!.dressCode, roomsNote: todo('which room hosts what'), provenance, sources: [],
-    };
-    const { container } = render(<WeddingPage data={data} />);
-    // 1 dress code + per event (time + room + placeholder what-happens) + rooms note
-    const perEvent = events.reduce((n, e) => n + 2 + e.whatHappens.filter((w) => w.placeholder).length, 0);
-    assertPlaceholdersMarked(container, ['ceremony time', 'which room', 'dress code', 'which room hosts what'], 1 + perEvent + 1);
-    expect(container.textContent).toContain('Saturday, July 17, 2027');
-    expect(container.querySelector('a[href^="https://www.google.com/maps/dir/"]')?.getAttribute('rel')).toContain('noopener');
-    // Facts stay plain: the contracted coverage is not a placeholder.
-    expect(container.textContent).toContain('filmed and edited by Oakhouse Visuals');
-  });
-
   it('an adventure with placeholder memory marks Sara/Tyler remembers and the memory body', () => {
     const data: AdventureDetailData = {
       id: 'a', slug: 'starved-rock', href: '/our-adventures/starved-rock', title: 'Starved Rock', summary: fact('Where we first said "I love you."'), placeName: 'Starved Rock State Park',
@@ -89,7 +68,7 @@ describe('typed placeholders never render as facts', () => {
       durationMinutes: null, media: [],
       related: [
         {
-          id: 'r', slug: 'starved-rock-state-park', href: '/share-an-adventure/starved-rock-state-park', title: 'Starved Rock State Park', category: 'day-trip', interests: ['outdoors'], what: fact('A state park.'),
+          id: 'r', slug: 'starved-rock-state-park', href: '/guests/things-to-do/starved-rock-state-park', title: 'Starved Rock State Park', category: 'day-trip', interests: ['outdoors'], what: fact('A state park.'),
           durationMinutes: 300, kidFriendly: null, draft: true, placeholder: false,
           handoffs: { directions: { provider: 'google-maps', label: 'Open directions in Google Maps', url: 'https://www.google.com/maps/dir/?api=1', disclosure: 'You will leave our site.', opensNewTab: true } },
           why: { experienceId: 'a', experienceSlug: 'starved-rock', experienceHref: '/our-adventures/starved-rock', experienceTitle: 'Starved Rock', text: fact("It's where we first said I love you.") },
@@ -114,8 +93,12 @@ describe('typed placeholders never render as facts', () => {
       route: '/our-venue', venueName: 'Chicago Athletic Association Hotel',
       history: [{ id: 'h', slug: 'built-1893', category: 'history', statement: 'Built in 1893 for the private Chicago Athletic Association.', provenance: prov() }],
       lookForThis: [{ id: 'l', slug: 'look-brick', category: 'look-for-this', statement: 'Patterned brick.', provenance: prov() }],
-      spaces: [{ id: 's', slug: 'the-tank', href: '/our-venue/the-tank', name: 'The Tank', character: 'The former pool.', features: ['pool tile'], capacities: { ceremony: 175, dinnerDance: 130, reception: 225, note: 'Capacity note from the venue, unconfirmed.' }, lookForThis: ['tile'], provenance: prov({ sourceType: 'venue-document', external: true, trustClass: 'EXTERNAL_DATA' }) }],
-      outlets: [op('Cindy’s'), op('Milk Room', { expired: true, url: null, provenance: prov({ sourceType: 'venue-document', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'expired', validUntil: '2025-02-28T23:59:59.000Z', policy: 'venue-document' }) })],
+      spaces: [{ id: 's', slug: 'the-tank', href: '/our-venue/the-tank', name: 'The Tank', character: 'The former pool.', features: ['pool tile'], capacities: { ceremony: 175, dinnerDance: 130, reception: 225, note: 'Capacity note from the venue, unconfirmed.' }, lookForThis: ['tile'], provenance: prov({ sourceType: 'venue-document', sourceTitle: 'CAA Wedding Kit 2027', external: true, trustClass: 'EXTERNAL_DATA' }) }],
+      outlets: [
+        op('Cindy’s'),
+        op('Milk Room', { expired: true, url: null, provenance: prov({ sourceType: 'official-web', sourceTitle: 'chicagoathletichotel.com', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'expired', validUntil: '2025-02-28T23:59:59.000Z', policy: 'operational' }) }),
+        op('Cherry Circle Room', { expired: true, url: null, provenance: prov({ sourceType: 'venue-document', sourceTitle: 'CAA Wedding Kit 2027', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'expired', validUntil: '2024-04-30T23:59:59.000Z', policy: 'venue-document' }) }),
+      ],
       gettingHere: [op('valet.entrance', { kind: 'valet', label: 'Valet entrance', value: '71 E Madison', provenance: prov({ sourceType: 'official-web', trustClass: 'EXTERNAL_DATA', external: true, freshness: 'aging', url: 'https://www.chicagoathletichotel.com/about/faq/', policy: 'operational' }) })],
       roomsNotConfirmed: todo('which room hosts the ceremony'),
     };
@@ -125,6 +108,14 @@ describe('typed placeholders never render as facts', () => {
     expect(container.querySelector('[data-key="Milk Room"]')?.getAttribute('data-expired')).toBe('true');
     expect(container.querySelector('[data-key="Milk Room"] [data-freshness="expired"]')?.textContent).toMatch(/No longer current/);
     expect(container.querySelector('[data-key="Milk Room"] a[href^="https://"]')).toBeNull();
+    // A record that came from the venue's wedding kit is still marked expired and still not linked,
+    // and the kit itself is not named to a guest: it is a planning PDF nobody reading can open.
+    const kitRecord = container.querySelector('[data-key="Cherry Circle Room"]')!;
+    expect(kitRecord.getAttribute('data-expired')).toBe('true');
+    expect(kitRecord.querySelector('a[href^="https://"]')).toBeNull();
+    expect(container.textContent).not.toContain('CAA Wedding Kit');
+    // A source a guest can follow is still named.
+    expect(container.querySelector('[data-key="Cindy’s"]')?.textContent).toContain("Tyler's brief");
     const valet = container.querySelector('[data-key="valet.entrance"]')!;
     expect(valet.textContent).toContain('71 E Madison');
     expect(valet.textContent).toMatch(/Last checked/);

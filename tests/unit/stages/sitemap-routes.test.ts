@@ -30,8 +30,7 @@ function appRoutes(dir = APP, prefix = ''): string[] {
   return out;
 }
 
-/** `/` has no page of its own: the proxy rewrites it onto the statically rendered theme tree. */
-const served = (route: string, routes: string[]) => routes.includes(route) || (route === '/' && routes.includes('/t/[theme]'));
+const served = (route: string, routes: string[]) => routes.includes(route);
 
 describe('the real app serves the sitemap (pipeline stage 1 → stage 5)', () => {
   const routes = appRoutes();

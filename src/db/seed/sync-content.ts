@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 import type { Db } from '../client';
 import { seedContent } from './content';
 import { seedSources } from './seed';
+import { seedTravelHotels } from './travel';
 
 /**
  * Brings the site's content (src/content/seed/*.json: story, places, adventures, recommendations,
@@ -23,6 +24,8 @@ export async function syncContent(db: Db, now: Date = new Date()): Promise<void>
     const t = tx as unknown as Db;
     await seedSources(t, now);
     await seedContent(t, now);
+    // Venue room block: same contentVersion = 1 guard as seed(); not editable in /admin/content.
+    await seedTravelHotels(t, now);
   });
 }
 

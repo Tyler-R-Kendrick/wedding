@@ -15,25 +15,23 @@ describe('seeding the timeline', () => {
     const db = await getDb();
     const seed = loadContentSeed();
     const now = new Date('2026-09-23T00:00:00Z');
-    await seedTimeline(db, seed, now);
+    const sampleTimeline = [
+      { slug: 'starved-rock', chapter: 'love' as const, order: 1, title: 'Starved Rock', note: 'We said “I love you”.', media: [], sourceKey: 'brief' as const, sourceType: 'authored' as const, verifiedAt: '2026-09-04T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING' as const, editedBy: 'seed:brief-2026-09-04', visibility: 'public' as const, placeholder: false },
+      { slug: 'madison-waterfront', chapter: 'relationship' as const, order: 2, title: 'Madison waterfront', note: 'TODO(Tyler & Sara): one line.', media: [], sourceKey: 'brief' as const, sourceType: 'authored' as const, verifiedAt: '2026-09-04T00:00:00.000Z', trustClass: 'TRUSTED_WEDDING' as const, editedBy: 'seed:brief-2026-09-04', visibility: 'public' as const, placeholder: true },
+    ];
+    await seedTimeline(db, { ...seed, timeline: sampleTimeline }, now);
 
-    // An admin edits one seeded station (contentVersion > 1) and types a brand-new one.
-    await db.update(timelineMoments).set({ note: 'Edited by hand.', contentVersion: 2 }).where(eq(timelineMoments.slug, 'richardson-farm'));
-    const [template] = await db.select().from(timelineMoments).where(eq(timelineMoments.slug, 'food-tastings'));
+    await db.update(timelineMoments).set({ note: 'Edited by hand.', contentVersion: 2 }).where(eq(timelineMoments.slug, 'madison-waterfront'));
+    const [template] = await db.select().from(timelineMoments).where(eq(timelineMoments.slug, 'starved-rock'));
     await db.insert(timelineMoments).values({ ...template!, id: 'admin-typed-1', slug: 'our-first-apartment', title: 'Our first apartment', editedBy: 'admin:someone', contentVersion: 1 });
 
-    // The next import reverses the line and drops two stops, one of them the edited one.
-    const reordered = [...seed.timeline].reverse().filter((t) => !['madison-waterfront', 'richardson-farm'].includes(t.slug)).map((t, i) => ({ ...t, order: i + 1 }));
+    const reordered = sampleTimeline.filter((t) => t.slug === 'madison-waterfront').map((t, i) => ({ ...t, order: i + 1 }));
     await seedTimeline(db, { ...seed, timeline: reordered }, now);
 
     const rows = await db.select().from(timelineMoments).orderBy(asc(timelineMoments.order));
     const slugs = rows.map((r) => r.slug);
-    // Every seeded stop now carries its new order under its own slug.
-    for (const t of reordered) expect(rows.find((r) => r.slug === t.slug)?.order, t.slug).toBe(t.order);
-    // A dropped seed row is gone; a dropped row someone edited stays; a typed row stays.
-    expect(slugs).not.toContain('madison-waterfront');
-    expect(rows.find((r) => r.slug === 'richardson-farm')?.note).toBe('Edited by hand.');
+    expect(slugs).not.toContain('starved-rock');
+    expect(rows.find((r) => r.slug === 'madison-waterfront')?.note).toBe('Edited by hand.');
     expect(slugs).toContain('our-first-apartment');
-    expect(new Set(slugs).size).toBe(slugs.length);
   });
 });

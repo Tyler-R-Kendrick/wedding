@@ -18,7 +18,7 @@ export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
 export const BINDING_ROLES = ['self', 'household_manager', 'delegate'] as const;
 export type BindingRole = (typeof BINDING_ROLES)[number];
 
-export const CLAIM_METHODS = ['otp', 'passkey', 'admin'] as const;
+export const CLAIM_METHODS = ['otp', 'passkey', 'admin', 'pass', 'social'] as const;
 export type ClaimMethod = (typeof CLAIM_METHODS)[number];
 
 export const households = pgTable('households', {
@@ -46,6 +46,8 @@ export const guests = pgTable(
     lastName: text('last_name').notNull().default(''),
     /** Lower-cased, trimmed. Optional: children and some adults have none. */
     email: text('email'),
+    /** E.164 when set (e.g. +15551234567). Optional; drives SMS sign-in when enabled. */
+    phone: text('phone'),
     kind: text('kind').$type<GuestKind>().notNull().default('adult'),
     isMinor: boolean('is_minor').notNull().default(false),
     /** Unnamed plus-ones become named when the inviting guest RSVPs. */
@@ -56,12 +58,14 @@ export const guests = pgTable(
     managedByGuestId: text('managed_by_guest_id'),
     /** Set when an admin merged this duplicate into another guest; merged rows are inert. */
     mergedIntoGuestId: text('merged_into_guest_id'),
+    /** Alternate names the guest goes by (nicknames, maiden names). Used for social sign-in matching only. */
+    alternateNames: jsonb('alternate_names').$type<string[]>().notNull().default([]),
     /** Admin-only notes (never shown to guests, never in default exports). */
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [index('guests_household_idx').on(t.householdId), index('guests_email_idx').on(t.email), index('guests_managed_by_idx').on(t.managedByGuestId)],
+  (t) => [index('guests_household_idx').on(t.householdId), index('guests_email_idx').on(t.email), index('guests_phone_idx').on(t.phone), index('guests_managed_by_idx').on(t.managedByGuestId)],
 );
 
 export const invitations = pgTable(
@@ -81,6 +85,8 @@ export const invitations = pgTable(
     plusOneAllowance: integer('plus_one_allowance').notNull().default(0),
     childrenAllowance: integer('children_allowance').notNull().default(0),
     issuedAt: timestamp('issued_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    /** When Sara and Tyler marked the invitation as sent. Social sign-in requires this. */
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'date' }),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     claimedAt: timestamp('claimed_at', { withTimezone: true, mode: 'date' }),
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),

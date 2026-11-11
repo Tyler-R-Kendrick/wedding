@@ -30,8 +30,11 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: 'venmo.com', exact: true, pathPattern: /^\/[A-Za-z0-9_-]{5,30}$/ },
   { host: 'www.paypal.com', pathPrefix: '/paypalme/', exact: true },
   { host: 'cash.app', pathPrefix: '/$', exact: true },
-  // Maps only, on the pinned hosts: never google.com/search, docs.google.com, or apple.com/iphone.
+  // Google Maps and Google Travel (Flights / Hotels hand-offs only — not google.com/search).
   { host: 'www.google.com', pathPrefix: '/maps/', exact: true },
+  { host: 'www.google.com', pathPrefix: '/travel/', exact: true },
+  { host: 'kayak.com' },
+  { host: 'www.kayak.com', exact: true },
   { host: 'maps.google.com', exact: true },
   { host: 'www.apple.com', pathPrefix: '/maps/', exact: true },
   { host: 'maps.apple.com', exact: true },
@@ -41,6 +44,9 @@ export const ALLOWED_REDIRECT_HOSTS: readonly AllowedHost[] = [
   { host: /^(?:[a-z0-9-]+\.)*skyscanner\.(?:[a-z]{2,3}|[a-z]{2,3}\.[a-z]{2})$/ },
   { host: 'duffel.com' },
   { host: 'booking.com' },
+  // Aviasales / Travelpayouts affiliate flight booking links
+  { host: /^(?:www\.)?aviasales\.(?:com|us|ru)$/ },
+  { host: 'jetradar.com' },
 ];
 
 function hostMatches(hostname: string, entry: AllowedHost): boolean {

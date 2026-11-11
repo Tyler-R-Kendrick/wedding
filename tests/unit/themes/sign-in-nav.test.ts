@@ -18,7 +18,9 @@ describe('the way into a session is in every shell, in every state', () => {
     expect(nav.signedIn).toBe(true);
     expect(nav.account).toEqual(SIGN_IN);
     expect(allItems(nav).filter((i) => i.href === '/sign-in')).toHaveLength(1);
-    expect(nav.member?.map((i) => i.href)).toEqual(['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos']);
+    // RSVP is in the primary navigation while replies are open, so the menu holds what is left.
+    expect(nav.primary.map((i) => i.href)).toContain('/rsvp');
+    expect(nav.member?.map((i) => i.href)).toEqual(['/gifts']);
     // A prerendered page does not know, and says so by leaving it unset.
     expect('signedIn' in navFor('RSVP_OPEN')).toBe(false);
     expect(SIGN_OUT.href).toBe('/sign-out');
@@ -35,7 +37,8 @@ describe('the sign-in door to the household pages', () => {
     const { throughSignIn, destinationOf } = await import('@/domain/lifecycle/account');
     const { isSafeReturnPath } = await import('@/domain/identity/routes');
     const { iconForHref } = await import('@/themes/shared/icons');
-    for (const path of ['/rsvp', '/your-weekend', '/transportation', '/gifts', '/photos', '/photos/engagement']) {
+    // The guest pages, and the old addresses of the ones folded into the portal: a link already sent still comes back.
+    for (const path of ['/rsvp', '/transportation', '/trip', '/gifts', '/photos', '/photos/engagement', '/our-venue', '/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/your-weekend', '/the-wedding', '/travel', '/share-an-adventure', '/ask-us']) {
       const door = throughSignIn(path);
       expect(door.startsWith('/sign-in?next=')).toBe(true);
       expect(destinationOf(door)).toBe(path);

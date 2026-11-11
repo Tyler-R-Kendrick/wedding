@@ -17,11 +17,33 @@ describe('security headers', () => {
     expect(prod).toContain("base-uri 'self'");
     expect(prod).toContain("frame-ancestors 'none'");
     expect(prod).toContain("form-action 'self'");
-    // And no external script or connect origin, which is the shape most third-party compromise takes.
-    expect(prod).toContain("script-src 'self' 'unsafe-inline'");
-    expect(prod).toContain("connect-src 'self'");
+    // And no external script origin, which is the shape most third-party compromise takes.
+    expect(prod).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'");
     expect(prod).not.toMatch(/script-src[^;]*https:/);
-    expect(prod).not.toMatch(/connect-src[^;]*https:/);
+  });
+
+  it('lets fetches reach this origin and the model hub only, and nothing else off-site', () => {
+    // The on-device models download their weights from the Hugging Face Hub; every other
+    // connect origin stays blocked. Exactly these hosts, no scheme-wide `https:`.
+    const directive = (policy: string, name: string) => policy.split('; ').find((d) => d.startsWith(`${name} `));
+    expect(directive(prod, 'connect-src')).toBe("connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co");
+    expect(directive(dev, 'connect-src')).toBe("connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co ws: wss:");
+    expect(prod).not.toMatch(/connect-src[^;]*https:(?!\/\/)/);
+    // Scripts still come from this origin only; the models' wasm is served from /ort/ here.
+    expect(directive(prod, 'script-src')).not.toMatch(/huggingface|hf\.co/);
+  });
+
+  it('allows WebAssembly compilation without allowing eval in production', () => {
+    expect(prod).toMatch(/script-src[^;]*'wasm-unsafe-eval'/);
+    expect(prod).not.toMatch(/'unsafe-eval'/);
+  });
+
+  it('grants the microphone and on-device dictation to this origin only, and nothing else', () => {
+    const policy = securityHeaders({ production: true }).find((h) => h.key === 'Permissions-Policy')?.value;
+    expect(policy).toBe('camera=(), microphone=(self), geolocation=(), on-device-speech-recognition=(self)');
+    // No frame, no other origin, no wildcard.
+    expect(policy).not.toMatch(/\*|https?:/);
+    expect(securityHeaders({ production: false }).find((h) => h.key === 'Permissions-Policy')?.value).toBe(policy);
   });
 
   it('relaxes only what a dev server needs, and only there', () => {

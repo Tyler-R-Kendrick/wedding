@@ -1,4 +1,5 @@
 import { test, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
+import type { LifecycleState } from '../../../src/contracts/lifecycle';
 import { fixtureId, seedId } from '../../../src/db/seed/ids';
 
 /**
@@ -53,7 +54,8 @@ export type PrincipalName = keyof typeof PRINCIPALS;
  * needs its own principal mechanism to express these.
  */
 export function customPrincipalHeaders(spec: Record<string, unknown>, secret: string = TEST_AUTH_SECRET): Record<string, string> {
-  return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify(spec) };
+  const raw = JSON.stringify(spec);
+  return { 'x-test-auth': secret, 'x-test-principal-secret': secret, 'x-test-principal': raw };
 }
 
 /**
@@ -72,9 +74,16 @@ function testSession(): string {
 }
 let contexts = 0;
 
-export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET, sessionId: string = testSession()): Record<string, string> {
+/**
+ * `lifecycle` is the point in the timeline a guest is seen at, for that guest's requests only (the
+ * injector's `lifecycle` field). The server's published state is one row shared by every spec, so a
+ * journey through a page that opens later (photos on the wedding day, gifts with the RSVP) names its
+ * day here instead of moving that row under the specs running beside it.
+ */
+export function principalHeaders(name: PrincipalName | null, secret: string = TEST_AUTH_SECRET, sessionId: string = testSession(), lifecycle?: LifecycleState): Record<string, string> {
   if (!name) return {};
-  return { 'x-test-auth': secret, 'x-test-principal': JSON.stringify({ ...PRINCIPALS[name], sessionId }) };
+  const raw = JSON.stringify({ ...PRINCIPALS[name], sessionId, ...(lifecycle && PRINCIPALS[name].kind === 'guest' ? { lifecycle } : {}) });
+  return { 'x-test-auth': secret, 'x-test-principal-secret': secret, 'x-test-principal': raw };
 }
 
 /** Headers for POST /api/capabilities from a signed-in principal: same-origin JSON (CSRF rule). */
@@ -103,13 +112,32 @@ export function key(): string {
 export async function contextAs(
   browser: Browser,
   name: PrincipalName | null,
-  opts: { viewport?: { width: number; height: number }; javaScriptEnabled?: boolean } = {},
+  opts: {
+    viewport?: { width: number; height: number };
+    javaScriptEnabled?: boolean;
+    /** Merged after test-principal headers — never call setExtraHTTPHeaders alone or auth is dropped. */
+    extraHTTPHeaders?: Record<string, string>;
+    /** See `principalHeaders`: the day this guest's pages are rendered for. Default: the published state. */
+    lifecycle?: LifecycleState;
+  } = {},
 ): Promise<BrowserContext> {
   // `browser.newContext()` does not inherit the config's `use.baseURL`, so pass it: specs navigate
   // with relative paths and must land on the server Playwright actually started.
+  // A manually created context does not inherit the project's emulated device.
+  // Preserve it so a test named "mobile" actually exercises the mobile layout and inputs.
+  const device = test.info().project.use;
+  const sessionId = `browser-${process.pid}-${++contexts}`;
   return browser.newContext({
+    viewport: device.viewport,
+    userAgent: device.userAgent,
+    deviceScaleFactor: device.deviceScaleFactor,
+    isMobile: device.isMobile,
+    hasTouch: device.hasTouch,
     baseURL: BASE_URL,
-    extraHTTPHeaders: principalHeaders(name, TEST_AUTH_SECRET, `browser-${process.pid}-${++contexts}`),
+    extraHTTPHeaders: {
+      ...principalHeaders(name, TEST_AUTH_SECRET, sessionId, opts.lifecycle),
+      ...opts.extraHTTPHeaders,
+    },
     ...(opts.viewport ? { viewport: opts.viewport } : {}),
     ...(opts.javaScriptEnabled === undefined ? {} : { javaScriptEnabled: opts.javaScriptEnabled }),
   });

@@ -1,15 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { isInternalRoute } from '@/capabilities/routes';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
 import { errorCode, errorCopy, ERROR_COPY } from '@/app/(auth)/_lib/errors';
 
 describe('safe return paths (review S7/N4)', () => {
   it('accepts same-site public, auth and admin paths', () => {
-    for (const p of ['/', '/your-weekend', '/rsvp', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/explore-caa', '/explore-caa/white-city-ballroom', '/rsvp/attending', '/rsvp/meals', "/media/search?q=Sara's%20dress", '/media/search?q=(first)%20dance!']) {
+    for (const p of ['/', '/rsvp', '/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/guests/ask-us?q=dress', '/transportation', '/trip', '/gifts', '/photos', '/sign-in', '/sign-in/admin', '/step-up', '/claim/welcome', '/claim/welcome?contact=1', '/invite/AbC-_123', '/i/xyz', '/admin', '/admin/guests', '/admin/invitations?ok=1', '/our-adventures/starved-rock', '/our-venue', '/our-venue/white-city-ballroom', '/rsvp/attending', '/rsvp/meals', "/media/search?q=Sara's%20dress", '/media/search?q=(first)%20dance!']) {
       expect(isSafeReturnPath(p), p).toBe(true);
     }
   });
+  it('still honours the address a page had before it moved into the guest portal', () => {
+    // A sign-in link minted before the move carries the old path as `next`; next.config.ts redirects it.
+    for (const p of ['/your-weekend', '/the-wedding', '/travel', '/travel?from=home', '/share-an-adventure', '/share-an-adventure/starved-rock-state-park', '/ask-us', '/ask-us?q=dress']) {
+      expect(isSafeReturnPath(p), p).toBe(true);
+    }
+    // Only as return paths: they are not routes the app navigates to.
+    for (const p of ['/your-weekend', '/the-wedding', '/travel', '/share-an-adventure', '/ask-us']) expect(isInternalRoute(p), p).toBe(false);
+  });
   it('refuses off-site and malformed targets', () => {
-    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa-lookalike', '/explore-caa/<script>', '/step-up?next=https://evil', '/rsvp/<x>', '/rsvp/nope', '/rsvp/meals/extra', '/media/me', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
+    for (const p of ['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/sign-in/../admin', '/admin/../../x', '/invite/<script>', '/unknown', '/claim/verify#frag', '/explore-caa', '/explore-caa/white-city-ballroom', '/explore-caa/<script>', '/things-to-do', '/wedding-day', '/travel-lookalike', '/travel/<script>', '/ask-us/..', '/guests/nowhere', '/step-up?next=https://evil', '/rsvp/<x>', '/rsvp/nope', '/rsvp/meals/extra', '/media/me', ' /sign-in', '/sign-in\n', 'sign-in', '', null, undefined, 42, '/' + 'a'.repeat(600)]) {
       expect(isSafeReturnPath(p), String(p)).toBe(false);
     }
     expect(safeReturnPath('https://evil.example', '/sign-in')).toBe('/sign-in');

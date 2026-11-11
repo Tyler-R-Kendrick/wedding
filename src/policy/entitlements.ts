@@ -79,6 +79,8 @@ export function assertActsFor(principal: Principal, guestId: GuestId): Result<vo
         ? ok(undefined)
         : err(new CapabilityError('forbidden', FORBIDDEN_MESSAGE));
     case 'guest':
+      // View-role preview may read the synthetic guest (the trip, the table). `authorize` already
+      // refuses every change while `viewedBy.readOnly` is set, so this check stays ownership only.
       return principal.actsFor.includes(guestId)
         ? ok(undefined)
         : err(new CapabilityError('forbidden', 'You can only manage your own household.'));

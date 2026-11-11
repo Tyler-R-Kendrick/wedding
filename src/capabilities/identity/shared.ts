@@ -17,8 +17,10 @@ import type { RateLimitPolicy } from '@/providers/rate-limit/types';
  *  - requestHeaders: the inbound request headers (cookies, origin) for Better Auth calls
  *  - clientIp: from getClientIp() (never from the input)
  *  - cookieSink: where Set-Cookie headers from session creation land
- * Server actions under src/app/(auth) and the dev fixtures route wire these; the generic
- * capability route does not, so session-creating steps refuse there (see requireCookieTransport).
+ * Server actions under src/app/(auth), the dev fixtures route, and POST /api/capabilities
+ * for verify_otp / verify_phone_otp / verify_guest_sign_in_pass wire these. Session-creating
+ * steps refuse when neither is present, so a session is never minted and then lost (see
+ * requireCookieTransport).
  */
 export interface IdentityTransport {
   requestHeaders?: Headers;
@@ -69,6 +71,21 @@ export const OTP_LIMITS = {
   verifyPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
   lookupPerIp: { capacity: 120, refillPerSecond: 120 / 600, failMode: 'closed' },
 } as const satisfies Record<string, RateLimitPolicy>;
+
+/** Buckets for phone SMS send / verify (same shape as email OTP). */
+export function phoneBuckets(ctx: CapabilityContext, kind: 'send' | 'verify', phoneHash: string): { key: string; policy: RateLimitPolicy }[] {
+  const ip = ipHashOf(ctx);
+  return kind === 'send'
+    ? [
+        { key: `phone:send:${phoneHash}:${ip}`, policy: OTP_LIMITS.sendPerEmailIp },
+        { key: `phone:send:phone:${phoneHash}`, policy: OTP_LIMITS.sendPerEmail },
+        { key: `phone:send:ip:${ip}`, policy: OTP_LIMITS.sendPerIp },
+      ]
+    : [
+        { key: `phone:verify:${phoneHash}:${ip}`, policy: OTP_LIMITS.verifyPerEmailIp },
+        { key: `phone:verify:ip:${ip}`, policy: OTP_LIMITS.verifyPerIp },
+      ];
+}
 
 /** Buckets for a send or verify attempt on `emailHash` from this client. */
 export function otpBuckets(ctx: CapabilityContext, kind: 'send' | 'verify', emailHash: string): { key: string; policy: RateLimitPolicy }[] {

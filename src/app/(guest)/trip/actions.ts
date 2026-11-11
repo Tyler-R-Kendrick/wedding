@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { field, noticeForError, runAsUi, toFormError, type FormError } from '@/app/(public)/travel/_shared/server';
+import { field, noticeForError, runAsUi, toFormError, type FormError } from '@/app/(guest)/guests/travel/_shared/server';
 import { addTripItemCapability, deleteMyTravelProfile, openBookingLink, removeTripItemCapability, updateMyTravelProfile, updateTripItemCapability } from '@/capabilities/travel';
 import type { TravelProfile } from '@/domain/travel';
 
@@ -35,7 +35,7 @@ export async function saveProfileAction(_prev: ProfileFormState, fd: FormData): 
   const r = await runAsUi(updateMyTravelProfile, input, { idempotencyKey: field.idempotencyKey(fd) });
   if (!r.ok) return { status: 'error', error: toFormError(r.error), values };
   revalidatePath('/trip');
-  revalidatePath('/travel');
+  revalidatePath('/guests/travel');
   return { status: 'saved', values, profile: r.value.data };
 }
 
@@ -48,12 +48,12 @@ export async function deleteProfileAction(fd: FormData): Promise<void> {
 export async function addItemAction(_prev: AddItemFormState, fd: FormData): Promise<AddItemFormState> {
   const values = field.values(fd, ITEM_FIELDS);
   const details = compact({
-    origin: field.str(fd, 'origin'),
-    destination: field.str(fd, 'destination'),
-    carrier: field.str(fd, 'carrier'),
-    flightNumber: field.str(fd, 'flightNumber'),
-    hotelName: field.str(fd, 'hotelName'),
-    address: field.str(fd, 'address'),
+    origin: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'origin') : undefined,
+    destination: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'destination') : undefined,
+    carrier: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'carrier') : undefined,
+    flightNumber: field.str(fd, 'kind') === 'flight' ? field.str(fd, 'flightNumber') : undefined,
+    hotelName: field.str(fd, 'kind') === 'hotel' ? field.str(fd, 'hotelName') : undefined,
+    address: field.str(fd, 'kind') === 'hotel' ? field.str(fd, 'address') : undefined,
     note: field.str(fd, 'note'),
   });
   const input = compact({

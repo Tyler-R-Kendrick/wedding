@@ -66,8 +66,8 @@ capabilities, and renders `recipes.<Page>` from `src/app/(public)/_recipes/index
 placeholder recipes there are token-only server components; Swarm B's integrator points
 `recipes` at the theme kit's recipes (typed by `PageRecipes`) and deletes the placeholder files.
 
-The Wedding page composes `site_status` facts with `weddingEventSkeleton` (times, rooms,
-dress code as typed placeholders, backlog P-01/P-02/C-01). Ask Us keeps an empty
+The Wedding page is gone: the guest dashboard (`/guests`) shows the events on the guest's own
+invitation instead. Ask Us keeps an empty
 `#concierge-slot[data-slot="concierge"]` for Swarm J.
 
 ## Admin editors (`src/app/(admin)/admin/content`)

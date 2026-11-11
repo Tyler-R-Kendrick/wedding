@@ -85,17 +85,18 @@ const ROOM_SLUGS: [RegExp, string][] = [
 
 const ROUTE_WORDS: [RegExp, string][] = [
   [/rsvp/i, '/rsvp'],
-  [/travel|stay|hotel|airport|flight/i, '/travel'],
-  [/transport|shuttle|ride|uber|parking|valet/i, '/transportation'],
+  [/travel|stay|hotel|airport|flight/i, '/guests/travel'],
+  // Getting around is a section of Your Trip; /transportation is one guest's ride benefit.
+  [/transport|shuttle|ride|uber|parking|valet/i, '/guests/travel'],
   [/gift|registry/i, '/gifts'],
   [/photo|video|gallery/i, '/photos'],
   [/story|met|meet/i, '/our-story'],
   [/adventure|memor/i, '/our-adventures'],
-  [/recommend|itinerar|things to do|share an adventure/i, '/share-an-adventure'],
+  [/recommend|itinerar|things to do|share an adventure/i, '/guests/travel'],
   [/caa|athletic|venue|building|hotel/i, '/our-venue'],
-  [/wedding|ceremony|reception|schedule|when|where/i, '/the-wedding'],
-  [/weekend|my weekend/i, '/your-weekend'],
-  [/faq|question|ask/i, '/ask-us'],
+  [/wedding|ceremony|reception|schedule|when|where/i, '/guests'],
+  [/weekend|my weekend/i, '/guests'],
+  [/faq|question|ask/i, '/guests/ask-us'],
 ];
 
 /** CAA outlets by name — the food questions that are answerable from the hotel's own dated records. */
@@ -122,7 +123,7 @@ const PROTECTED: [RegExp, ProtectedFact][] = [
  */
 export const PROTECTED_FACT_WORDS: Record<ProtectedFact, RegExp> = {
   room: /\broom\b|\bballroom\b|\bspace\b|\bvenue\b|\bhall\b|\bcourt\b|not yet decided/i,
-  time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|not yet decided/i,
+  time: /\btime\b|\bstarts?\b|\bbegins?\b|\bschedule\b|\btimeline\b|\ba\.?m\.?\b|\bp\.?m\.?\b|\bo'?clock\b|\bdate\b|\barriv|\bceremony\b|\bminute|not yet decided/i,
   dress: /\bdress\b|\battire\b|\bwear\b|black[- ]tie|\bformal\b|\bsuit\b|\bgown\b|not yet decided/i,
   menu: /\bmenu\b|\bfood\b|\bdinner\b|\bdietar|\ballerg|\bmeal\b|\bcater|not yet decided/i,
   music: /\bmusic\b|\bband\b|\bdj\b|\bplaylist\b|\bdance\b|\bsong\b|not yet decided/i,

@@ -1,8 +1,9 @@
 # Documentation
 
-Start here. Every document below is current; documents that record a moment
-(pull-request self-reviews, design critiques, inspiration boards) live in their
-own directories and are deliberately **not** updated as the code moves.
+Start here. Every document below is current. Records of a moment (pull-request
+self-reviews, design critiques, demo recordings, validation evidence) are not kept
+in the repository: they went stale with the next commit and had grown to most of
+its size. A review written for a change stays with that change's pull request.
 
 `npm run docs:check` fails the build if anything on this page points at
 something that does not exist, if `.env.example` drifts from what the app reads,
@@ -38,6 +39,7 @@ or if the activation matrix drifts from the code that switches things on.
 | [Content model](architecture/content-model.md) and [provenance](architecture/provenance.md) | Where a fact comes from and how the site says it is uncertain. |
 | [Theme engine](architecture/theme-engine.md) | Two completely different designs over one domain. |
 | [SDLC process](sdlc/PROCESS.md) | How a change gets from an idea to a merged pull request. |
+| [Site audit](ops/site-audit-report.md) | The inventory of every endpoint, the public sitemap, and what the crawler checks. |
 | [ADRs](adr/README.md) | The twelve decisions everything else follows from. |
 
 Domain notes, one per area:
@@ -55,10 +57,7 @@ Domain notes, one per area:
 
 | Where | What |
 |---|---|
-| [`docs/evidence/final-validation.md`](evidence/final-validation.md) | What was measured, with the command that produced each number. |
-| `docs/reviews/` | One adversarial self-review per pull request, written before it opened. |
 | [`docs/design/brief.md`](design/brief.md), [`design-doc.md`](design/design-doc.md) | What was asked for, and the design that answers it. |
-| `docs/design/critiques/` | Every design review round, scored. |
 | `docs/sdlc/swarms/` | What each parallel agent was told to build. |
 | [`plan.md`](../plan.md) | The build plan and the status of every level. |
 

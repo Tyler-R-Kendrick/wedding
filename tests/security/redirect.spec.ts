@@ -59,11 +59,26 @@ test.describe('redirect allowlist', () => {
       expect([404, 422], linkId).toContain(res.status());
       expect(await res.text()).not.toContain('evil');
     }
-    const unavailable = await request.post('/api/capabilities/open_reservation_link', { data: { input: { venueId: 'placeholder-restaurant' } } });
+    const unavailable = await request.post('/api/capabilities/open_reservation_link', { headers: headers('A1'), data: { input: { venueId: 'placeholder-restaurant' } } });
     expect(unavailable.status()).toBe(200);
     const body = await unavailable.json();
     expect(body.handoffUrl).toBeUndefined();
     expect(body.data.rung).toBe('unavailable');
+    // Reservation hand-offs are a guest's. Signed out, neither the options nor a link is given:
+    // the caller is refused before any venue id is looked at, known or not.
+    for (const [name, input] of [
+      ['get_reservation_options', {}],
+      ['open_reservation_link', { venueId: 'placeholder-restaurant' }],
+      ['open_reservation_link', { venueId: 'nope' }],
+      ['open_booking_link', {}],
+    ] as const) {
+      const res = await request.post(`/api/capabilities/${name}`, { headers: headers(), data: { input } });
+      expect(res.status(), name).toBe(401);
+      const refused = await res.json();
+      expect(refused.error.code, name).toBe('unauthenticated');
+      expect(refused.handoffUrl, name).toBeUndefined();
+      expect(JSON.stringify(refused), name).not.toMatch(/https?:\/\//);
+    }
   });
 
   test('the capability route never redirects', async ({ request }) => {

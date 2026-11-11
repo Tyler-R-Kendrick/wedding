@@ -8,7 +8,6 @@ Do not edit between the markers; edit the code and regenerate.
 | Flag | Default | Readiness switch also required | To change it |
 |---|---|---|---|
 | `AI_CONCIERGE` | on | no | `FLAG_AI_CONCIERGE=off` |
-| `DESIGN_SWITCHER` | **off** | no | `FLAG_DESIGN_SWITCHER=on` |
 | `GUEST_UPLOADS` | on | no | `FLAG_GUEST_UPLOADS=off` |
 | `MEDIA_SEMANTIC_SEARCH` | on | no | `FLAG_MEDIA_SEMANTIC_SEARCH=off` |
 | `PRO_MEDIA_AI_PROCESSING` | **off** | yes — legal gate | `FLAG_PRO_MEDIA_AI_PROCESSING=on` **and** the readiness switch on `/admin/flags` |
@@ -35,8 +34,8 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `auth-email` | mock | mock | `EMAIL_FROM`<br>`FORCE_MOCK_PROVIDERS`<br>`RESEND_CONNECT_USER_ID` | sendOtp, sendMessage |  |
 | `cash-fund` | mock | mock | — | describeLinks |  |
 | `embeddings` | mock | mock | — | embed |  |
-| `flights` | mock | mock | `DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY` | search, deepLink |  |
-| `hotels` | mock | mock | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER` | search, deepLink |  |
+| `flights` | google-travel-flights | live | `BRIGHT_DATA_API_URL`<br>`BRIGHT_DATA_SERP_ZONE`<br>`DUFFEL_API_KEY`<br>`DUFFEL_WEBHOOK_SECRET`<br>`FLIGHTS_PROVIDER`<br>`FORCE_MOCK_PROVIDERS`<br>`SKYSCANNER_API_KEY`<br>`TRAVELPAYOUTS_MARKER`<br>`TRAVELPAYOUTS_TOKEN` | search, deepLink |  |
+| `hotels` | google-travel-hotels | live | `BOOKING_AFFILIATE_ID`<br>`BOOKING_DEMAND_API_KEY`<br>`DUFFEL_API_KEY`<br>`FORCE_MOCK_PROVIDERS`<br>`HOTELS_PROVIDER`<br>`SERPAPI_API_KEY` | search, deepLink |  |
 | `jobs` | unavailable | unavailable | — | — | jobs provider requires a database; call getProvider("jobs", { db }) |
 | `maps` | deep-link | deep-link | — | directionsUrl, staticMapUrl |  |
 | `media-ai` | mock | mock | `FORCE_MOCK_PROVIDERS` | caption, describeScenes, tags, annotate |  |
@@ -45,6 +44,7 @@ than failing, and `FORCE_MOCK_PROVIDERS=1` pins every one of them there regardle
 | `reservations` | mock | deep-link | — | deepLink, url |  |
 | `storage` | local-fs | mock | `AWS_LAMBDA_FUNCTION_NAME`<br>`DEV_STORAGE_SECRET`<br>`FORCE_MOCK_PROVIDERS`<br>`S3_ACCESS_KEY_ID`<br>`S3_BUCKET`<br>`S3_ENDPOINT`<br>`S3_FORCE_PATH_STYLE`<br>`S3_REGION`<br>`S3_SECRET_ACCESS_KEY`<br>`STORAGE_DATA_DIR`<br>`STORAGE_SIGNING_SECRET`<br>`VERCEL` | putObject, getObject, deleteObject, head, signedUpload, signedRead, multipart | local-fs storage is for development only |
 | `transport-benefit` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`TRANSPORT_BENEFIT_MODE`<br>`TRANSPORT_MANUAL_CODES`<br>`UBER_API_BASE_URL`<br>`UBER_CLIENT_ID`<br>`UBER_CLIENT_SECRET`<br>`UBER_ORG_ID`<br>`UBER_VOUCHER_PROGRAM_ID` | createVoucherClaim, getRedemptionLink |  |
+| `twilio-verify` | mock | mock | `FORCE_MOCK_PROVIDERS`<br>`RESEND_CONNECT_USER_ID`<br>`TWILIO_ACCOUNT_SID`<br>`TWILIO_AUTH_TOKEN`<br>`TWILIO_CONNECTOR`<br>`TWILIO_CONNECT_USER_ID`<br>`TWILIO_VERIFY_SERVICE_SID`<br>`VERCEL_OIDC_TOKEN`<br>`VERCEL_PROJECT_ID` | start, check | Twilio Verify mock: SMS codes are not sent; use 000000 in tests. |
 | `vector-index` | memory | mock | — | upsert, query, delete, count |  |
 | `video` | mock | mock | `CLOUDFLARE_ACCOUNT_ID`<br>`CLOUDFLARE_STREAM_API_TOKEN`<br>`CLOUDFLARE_STREAM_CUSTOMER_CODE`<br>`FFMPEG_PATH`<br>`FORCE_MOCK_PROVIDERS`<br>`PATH` | createAsset, getPlayback |  |
 

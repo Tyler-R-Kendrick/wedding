@@ -59,8 +59,26 @@ test.describe('voucher security', () => {
   });
 
   test('no payment fields on any guest page', async ({ request }) => {
-    for (const route of ['/gifts', '/transportation', '/']) {
-      const html = await (await request.get(route)).text();
+    // Signed out, `/gifts` and `/transportation` answer with the sign-in door, so the pages
+    // themselves are read as a guest too: the registry, the dashboard, and the ride page. The ride
+    // page is read without following its redirect — a guest with no benefit is sent on to Travel &
+    // Stay, whose flight and hotel search asks for a head count, which is not a payment field.
+    // Seen with the RSVP open, when the registry page is: before then `/gifts` is the dashboard.
+    const guest = principalHeaders('B1', undefined, undefined, 'RSVP_OPEN');
+    const reads: { route: string; as: 'anonymous' | 'guest' }[] = [
+      { route: '/gifts', as: 'anonymous' },
+      { route: '/transportation', as: 'anonymous' },
+      { route: '/', as: 'anonymous' },
+      { route: '/gifts', as: 'guest' },
+      { route: '/guests', as: 'guest' },
+      { route: '/transportation', as: 'guest' },
+    ];
+    for (const { route: path, as } of reads) {
+      const route = `${path} (${as})`;
+      const res = as === 'guest' ? await request.get(path, { headers: guest, maxRedirects: path === '/transportation' ? 0 : 20 }) : await request.get(path);
+      expect(res.status(), route).toBeLessThan(400);
+      if (as === 'guest' && path !== '/transportation') expect(res.url(), route).not.toMatch(/\/sign-in/);
+      const html = await res.text();
       // Match against the DOCUMENT, with script and style contents removed. Matching raw HTML made
       // this security assertion randomly false: it fired on `self.__next_r="4H-O3ACvVcldM9As2v-F9"`,
       // a framework-generated React root id that happened to contain `CvV`. Turbopack chunk hashes
@@ -74,8 +92,12 @@ test.describe('voucher security', () => {
       // make the site a merchant is a processor's checkout running in the page, so that is the check —
       // against the raw HTML, where a script tag would be, by URLs no framework nonce can spell.
       expect(html, route).not.toMatch(/js\.stripe\.com|checkout\.stripe\.com|paypal\.com\/sdk\/js|paypalobjects\.com\/api\/checkout|venmo\.com\/[^"']*sdk/i);
-      // Form controls are never inside a script, so this one keeps the whole document.
-      expect(html, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
+      // Form controls are never inside a script, so this one keeps the whole document. Signed out,
+      // `/gifts` is the sign-in door, which opens on its text tab: the one telephone field there is the
+      // guest's mobile number for a sign-in code (name="phone", autocomplete="tel"), not a payment
+      // field, and only that field is set aside. Any other tel or number input still fails.
+      const controls = html.replace(/<input(?=[^>]*\bname="phone")(?=[^>]*\bautocomplete="tel")[^>]*>/gi, '');
+      expect(controls, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
     }
   });
 

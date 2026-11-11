@@ -1,0 +1,62 @@
+-- Owner-confirmed CAA room block (Sara Travel & Accommodations email, Tyler confirmed).
+-- Applies even when an admin edit bumped content_version (production must show confirmed block).
+
+INSERT INTO hotel_recommendations (
+  id,
+  name,
+  address,
+  is_venue,
+  sort_order,
+  reasons,
+  price_band,
+  walk_minutes_to_venue,
+  website_url,
+  booking_url,
+  block,
+  placeholder,
+  active,
+  source_id,
+  verified_at,
+  content_version,
+  updated_by,
+  created_at,
+  updated_at
+)
+VALUES (
+  '01SEED00000000000000000801',
+  'Chicago Athletic Association Hotel',
+  '12 S. Michigan Avenue, Chicago, IL 60603',
+  true,
+  0,
+  '[{"kind":"walk_minutes","text":"The wedding is here: no travel on the day.","value":0}]'::jsonb,
+  NULL,
+  0,
+  'https://www.chicagoathletichotel.com/',
+  NULL,
+  '{"url":"https://www.hyatt.com/events/en-US/group-booking/CHIUB/G-FIKE","code":"G-FIKE","rateText":"$331–371 per night","checkIn":"2027-07-16","checkOut":"2027-07-18","cutoff":"2027-06-15","note":"Call 844-312-2221 and reference \"Fitzgerald - Kendrick Wedding Room Block\" (group code G-FIKE).","pending":null,"placeholder":false}'::jsonb,
+  false,
+  true,
+  '01SEED00000000000000000102',
+  '2026-11-01T00:00:00.000Z'::timestamptz,
+  1,
+  '{"kind":"system","component":"migration:0021"}'::jsonb,
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  address = EXCLUDED.address,
+  is_venue = EXCLUDED.is_venue,
+  sort_order = EXCLUDED.sort_order,
+  reasons = EXCLUDED.reasons,
+  walk_minutes_to_venue = EXCLUDED.walk_minutes_to_venue,
+  website_url = EXCLUDED.website_url,
+  booking_url = EXCLUDED.booking_url,
+  block = EXCLUDED.block,
+  placeholder = EXCLUDED.placeholder,
+  active = EXCLUDED.active,
+  source_id = EXCLUDED.source_id,
+  verified_at = EXCLUDED.verified_at,
+  updated_by = EXCLUDED.updated_by,
+  updated_at = NOW(),
+  content_version = hotel_recommendations.content_version + 1;

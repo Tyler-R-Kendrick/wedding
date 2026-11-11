@@ -3,10 +3,13 @@ import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 import { preload } from 'react-dom';
 import { getPrincipal } from '@/lib/principal';
+import { GuestModelKeeper } from '@/components/local-models/GuestModelKeeper';
 import { getTheme } from '@/themes';
 import { getThemeMeta } from '@/themes/registry';
 import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
 import { buildPageFrame, getRequestTheme } from '@/themes/server';
+import { navFor } from '@/domain/lifecycle';
+import { isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
 import '@/components/rsvp/recipes.css';
 import '@/themes/botanical-deco/guest.css';
 
@@ -32,12 +35,16 @@ export async function generateMetadata(): Promise<Metadata> {
  * directions. It cost Conservatory more than Gilded Hour, because Conservatory's identity is
  * ornament: the sheet, the fern rules, the kraft tags and the pressed-card footer all live in
  * `Shell`, so a guest who followed a link from Home into /transportation arrived at what looked
- * like a different site. Now `/rsvp`, `/your-weekend`, `/transportation`, `/trip` and the media
- * pages are inside the same `Shell` as `/`, `/travel` and `/gifts`, and the design switcher, the
- * elevator panel and the print URLs come with it.
+ * like a different site. Now `/rsvp`, `/guests`, `/transportation`, `/trip` and the media
+ * pages are inside the same `Shell` as `/`, `/guests/travel` and `/gifts`, and the action bar and
+ * the print URLs come with it.
  *
  * `Shell` renders `<main id="main">`, so the pages under it render a plain `<div className="page">`
- * — one `main` per document, which `tests/e2e` and axe both check.
+ * — one `main` per document, which `tests/e2e` and axe both check. The guest-portal content
+ * pages (`/guests/travel`, `/guests/things-to-do/[slug]`, `/guests/ask-us`)
+ * are the public recipes re-exported, and those recipes already render that Shell. Wrapping them
+ * again produced a second header, a second `main`, and a second view-as band. `/guests` itself
+ * does not bring a Shell, so it still gets this one.
  *
  * The principal is resolved here so the frame knows whether the reader is signed in: the account
  * menu then opens on the household's pages at first paint, rather than showing "Sign in" to a
@@ -47,6 +54,9 @@ export default async function GuestLayout({ children }: { children: ReactNode })
   const theme = await getRequestTheme();
   const h = await headers();
   const currentPath = h.get(PATHNAME_HEADER) ?? '/';
+  for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
+  // These routes render the public page recipe, which already includes the theme Shell.
+  if (isSelfShelledPortalPage(currentPath)) return children;
   const preview = h.get(PREVIEW_HEADER);
   const principal = await getPrincipal(new Request('http://wedding.local/', { headers: h }));
   const frame = await buildPageFrame({
@@ -54,7 +64,21 @@ export default async function GuestLayout({ children }: { children: ReactNode })
     currentPath,
     lifecycle: { principal, ...(preview ? { preview: { value: preview, source: 'query' as const } } : {}) },
   });
-  for (const font of getThemeMeta(theme).fonts) preload(font.url, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
+  const nav =
+    principal.kind === 'guest'
+      ? { ...navFor(frame.lifecycle.state, { signedIn: true, currentPath, ...(frame.details ? { venue: frame.details.venue } : {}), ...(principal.viewedBy ? { viewing: true } : {}) }), portals: frame.nav.portals }
+      : frame.nav;
   const Shell = getTheme(theme).kit.Shell;
-  return <Shell frame={frame}>{children}</Shell>;
+  return (
+    <Shell frame={{ ...frame, nav }}>
+      {children}
+      <GuestModelKeeper principal={principal} />
+    </Shell>
+  );
+}
+
+/** Portal content pages whose recipe already renders `Shell`. `/guests` does not. */
+function isSelfShelledPortalPage(pathname: string): boolean {
+  if (!isGuestPortalRoute(pathname) || pathname === '/guests') return false;
+  return /^\/guests\/(?:travel|ask-us|things-to-do)(?:\/|$)/.test(pathname);
 }

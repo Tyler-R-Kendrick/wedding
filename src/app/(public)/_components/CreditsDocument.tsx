@@ -1,0 +1,112 @@
+import { generatedImageCredits, licensedPhotoCredits, PROFESSIONAL_MEDIA_NOTE } from '@/domain/media/credits';
+import { publicPageContext, type Reader } from '@/domain/content/page-context';
+import { mayKnowVenue, mentionsVenue } from '@/domain/content/venue-guard';
+import { ROUTES } from '@/domain/routes';
+import { ANONYMOUS } from '@/lib/principal';
+import rights from '@/content/photo-rights.json';
+import { getTheme } from '@/themes';
+import { DEFAULT_THEME } from '@/themes/registry';
+import { buildPageFrame, getRequestTheme } from '@/themes/server';
+
+/**
+ * The credits every licensed photograph on the site asks for, and a plain account of the generated
+ * imagery. Linked from the footer of every page, so a credit is always one step from the picture.
+ */
+export async function CreditsDocument({ reader }: { reader: Reader }) {
+  const theme = reader === 'anonymous' ? DEFAULT_THEME : await getRequestTheme();
+  const principal = reader === 'anonymous' ? ANONYMOUS : (await publicPageContext()).principal;
+  const frame = await buildPageFrame({ theme, currentPath: '/credits', lifecycle: { principal } });
+  const Shell = getTheme(theme).kit.Shell;
+  // A credit sits one step from its picture, and the pictures of the building are on the guests'
+  // pages. A signed-out reader is shown none of them, so their list carries none of those credits
+  // either: the file names alone say which building it is.
+  const signedIn = mayKnowVenue(principal);
+  const photos = licensedPhotoCredits().filter((p) => signedIn || !mentionsVenue(`${p.title} ${p.id.replace(/-/g, ' ')}`));
+  const generated = generatedImageCredits();
+  return (
+    <Shell frame={frame}>
+      <article className="credits" aria-labelledby="page-title">
+        <header className="credits__head">
+          <p className="credits__eyebrow">With thanks</p>
+          <h1 id="page-title" className="credits__title">
+            Photo credits
+          </h1>
+          <p className="credits__lede">
+            {signedIn ? 'The building and the city are shown' : 'Some of the places in these pages are shown'} in photographs their photographers share under open licences. Each is credited here, with its licence and a link to the original.
+          </p>
+        </header>
+
+        {/* The page each photo's embedded rights statement links to (src/content/photo-rights.json). */}
+        <section id="rights" className="credits__section" aria-labelledby="credits-ours">
+          <h2 id="credits-ours" className="credits__h2">
+            Our own photographs
+          </h2>
+          <p>
+            The photographs of Sara and Tyler, and the portraits of them, are ours. {rights.notice} They are here for our guests to enjoy, and they are not licensed to anyone for anything else. Please don’t copy, repost or sell them, and don’t use them to train or prompt an AI model.
+          </p>
+        </section>
+
+        <section className="credits__section" aria-labelledby="credits-photos">
+          <h2 id="credits-photos" className="credits__h2">
+            {signedIn ? 'Photographs of the building and the city' : 'Photographs of places'}
+          </h2>
+          <ul className="credits__list">
+            {photos.map((p) => (
+              <li key={p.id} className="credits__item">
+                <p className="credits__name">{p.title}</p>
+                <p>
+                  By{' '}
+                  {p.authorUrl ? (
+                    <a href={p.authorUrl} rel="noopener noreferrer" target="_blank">
+                      {p.author}
+                    </a>
+                  ) : (
+                    p.author
+                  )}
+                  , via{' '}
+                  <a href={p.sourcePageUrl} rel="noopener noreferrer" target="_blank">
+                    {p.sourceName}
+                  </a>
+                  ,{' '}
+                  {p.licenceUrl ? (
+                    <a href={p.licenceUrl} rel="noopener noreferrer license" target="_blank">
+                      {p.licence}
+                    </a>
+                  ) : (
+                    p.licence
+                  )}
+                  . Resized and cropped for this site.
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="credits__section" aria-labelledby="credits-generated">
+          <h2 id="credits-generated" className="credits__h2">
+            Portraits and flowers
+          </h2>
+          <ul className="credits__list">
+            {generated.map((g) => (
+              <li key={g.kind} className="credits__item">
+                <p className="credits__name">{g.kind === 'portrait' ? 'Portraits of Sara and Tyler' : 'Flowers and leaves'}</p>
+                <p>{g.note}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {signedIn ? (
+          <section className="credits__section" aria-labelledby="credits-pro">
+            <h2 id="credits-pro" className="credits__h2">
+              The wedding photographs and films
+            </h2>
+            <p>
+              {PROFESSIONAL_MEDIA_NOTE} They will be on <a href={ROUTES.photos}>Photos &amp; Video</a>.
+            </p>
+          </section>
+        ) : null}
+      </article>
+    </Shell>
+  );
+}

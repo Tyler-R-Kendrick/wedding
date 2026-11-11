@@ -1,5 +1,6 @@
 import { Placeholder } from '@/components/provenance';
 import type { ReactNode } from 'react';
+import { CodeCells } from './CodeCells';
 
 /**
  * Recipe-style primitives for the auth journeys. Structure and a11y live here; every color,
@@ -73,22 +74,7 @@ export function Actions({ children }: { children: ReactNode }) {
  * did this, so the two are consistent.
  */
 export function CodeInput({ id = 'code', error, hasHint = true }: { id?: string; error?: string | null; hasHint?: boolean }) {
-  return (
-    <input
-      id={id}
-      name="code"
-      className="auth-input auth-input-code"
-      inputMode="numeric"
-      pattern="[0-9]*"
-      autoComplete="one-time-code"
-      maxLength={6}
-      minLength={6}
-      required
-      aria-invalid={error ? true : undefined}
-      aria-describedby={[error ? `${id}-error` : null, hasHint ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined}
-      autoFocus
-    />
-  );
+  return <CodeCells id={id} error={error} hasHint={hasHint} />;
 }
 
 /**

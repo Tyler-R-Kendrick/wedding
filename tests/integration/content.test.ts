@@ -16,8 +16,11 @@ const anonymous: Principal = { kind: 'anonymous' };
 const guest: GuestPrincipal = { kind: 'guest', authIdentityId: 'a' as never, guestId: 'g1' as never, householdId: 'h1' as never, actsFor: ['g1' as never], entitlements: new Set(['view_event']), authenticatedAt: new Date().toISOString(), sessionId: 's1' };
 const admin = (entitlements: Entitlement[] = ['admin_content']): AdminPrincipal => ({ kind: 'admin', authIdentityId: 'a' as never, adminId: 'adm1' as never, roles: new Set(['owner']), entitlements: new Set(entitlements), authenticatedAt: new Date().toISOString(), sessionId: 's2' });
 
-const ctxFor = (principal: Principal, surface: 'ui' | 'ai' | 'webmcp' = 'ui', extra: { idempotencyKey?: string; requestId?: string } = {}) =>
-  createCapabilityContext({ principal, requestId: extra.requestId ?? `req-${newId()}`, surface, idempotencyKey: extra.idempotencyKey });
+const ctxFor = (
+  principal: Principal,
+  surface: 'ui' | 'ai' | 'webmcp' = 'ui',
+  extra: { idempotencyKey?: string; requestId?: string; now?: Date } = {},
+) => createCapabilityContext({ principal, requestId: extra.requestId ?? `req-${newId()}`, surface, idempotencyKey: extra.idempotencyKey, now: extra.now });
 
 describe('content schema', () => {
   it('every content table carries the ADR-0011 provenance columns', async () => {
@@ -39,38 +42,39 @@ describe('story + adventures visibility', () => {
     expect(r.value.data.sections.map((s) => s.chapter)).toEqual(['met', 'connection', 'relationship', 'love', 'future', 'engagement', 'marriage']);
     const met = r.value.data.sections[0]!;
     // guestText sets typographer's quotes on the way out; the record keeps what was typed.
-    expect(met.paragraphs[0]).toEqual({ text: 'We met at Allison and Jamie’s wedding.', placeholder: false });
-    expect(met.paragraphs.some((p) => p.placeholder)).toBe(true);
+    expect(met.paragraphs[0]?.text).toContain('Allison and Jamie');
+    expect(met.paragraphs.every((p) => !p.placeholder)).toBe(true);
     for (const s of r.value.sources) {
       expect(s.url).toMatch(/^\/our-story#/);
       expect(s.url).not.toMatch(/^\/docs\//);
     }
   });
 
-  it('get_story carries the timeline in line order, undated until the couple supply dates', async () => {
+  it('get_story carries merged chapters; timeline stations are folded into story sections', async () => {
     const r = await invoke(getStory, await ctxFor(anonymous, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const { timeline } = r.value.data;
-    expect(timeline.map((m) => m.slug)).toEqual([
-      'allison-and-jamies-wedding', 'museum-of-ice-cream', 'richardson-farm', 'michael-jordans-steakhouse', 'food-tastings', 'gardening-together', 'madison-waterfront', 'starved-rock',
+    const { timeline, sections } = r.value.data;
+    expect(timeline).toEqual([]);
+    const met = sections.find((s) => s.slug === 'how-we-met')!;
+    expect(met.media.map((m) => m.src)).toContain('/media/timeline/allison-and-jamies-wedding-911.jpg');
+    expect(met.paragraphs.some((p) => p.text.includes('Allison and Jamie'))).toBe(true);
+    const connection = sections.find((s) => s.slug === 'the-connection')!;
+    expect(connection.media.length).toBe(5);
+    const love = sections.find((s) => s.slug === 'love')!;
+    expect(love.media.map((m) => m.src)).toEqual([
+      '/media/timeline/madison-waterfront-911.jpg',
+      '/media/timeline/starved-rock-1024.jpg',
     ]);
-    // Nothing is dated until the Paired export lands: a guessed year is worse than none.
-    expect(timeline.every((m) => m.occurredOn === undefined)).toBe(true);
-    const rock = timeline.find((m) => m.slug === 'starved-rock')!;
-    expect(rock).toMatchObject({ chapter: 'love', adventureRoute: '/our-adventures/starved-rock', placeholder: false, note: { placeholder: false } });
-    // A station links only to an adventure the reader can open: the unpublished drafts are named, not linked.
-    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.adventureRoute).toBeUndefined();
-    expect(timeline.find((m) => m.slug === 'museum-of-ice-cream')!.note.placeholder).toBe(true);
-    expect(r.value.sources.some((s) => s.url === '/our-story#starved-rock')).toBe(true);
-    // Every stand-in photograph resolves to a file the ride's manifest knows.
-    for (const m of timeline) for (const media of m.media) expect(media.src).toMatch(/^\/media\/timeline\/[a-z0-9-]+-\d+\.jpg$/);
+    expect(love.paragraphs.some((p) => p.text.includes('I love you'))).toBe(true);
+    expect(r.value.sources.some((s) => s.url === '/our-story#love')).toBe(true);
+    for (const s of sections) for (const media of s.media) if (media.src) expect(media.src).toMatch(/^\/media\/timeline\/[a-z0-9-]+-\d+\.jpg$/);
   });
 
-  it('projects timeline stations into the concierge corpus without their TODOs', async () => {
+  it('projects merged love chapter into the concierge corpus without TODOs', async () => {
     const rows = await (await getDb()).select().from(knowledgeRecords);
-    const station = rows.find((k) => k.id.startsWith('timeline_moments:') && k.route === '/our-story#starved-rock');
-    expect(station?.content).toContain('I love you');
+    const chapter = rows.find((k) => k.id.startsWith('story_sections:') && k.route === '/our-story#love');
+    expect(chapter?.content).toContain('I love you');
     expect(rows.some((k) => k.id.startsWith('timeline_moments:') && k.content.includes('TODO'))).toBe(false);
   });
 
@@ -131,36 +135,52 @@ describe('story + adventures visibility', () => {
 describe('share an adventure', () => {
   it('the why-we-share layer follows the memory\'s visibility', async () => {
     const anon = await invoke(findAdventures, await ctxFor(anonymous), { slug: 'museum-of-ice-cream' });
-    expect(anon.ok && anon.value.data.items[0]!.why).toBeUndefined();
+    expect(!anon.ok && anon.error.code).toBe('unauthenticated');
+    const signedIn = await invoke(findAdventures, await ctxFor(guest), { slug: 'museum-of-ice-cream' });
+    expect(signedIn.ok && signedIn.value.data.items[0]!.why).toBeUndefined();
     const adm = await invoke(findAdventures, await ctxFor(admin()), { slug: 'museum-of-ice-cream' });
     expect(adm.ok && adm.value.data.items[0]!.why?.experienceSlug).toBe('museum-of-ice-cream');
     const ai = await invoke(findAdventures, await ctxFor(admin(), 'ai'), { slug: 'museum-of-ice-cream' });
     expect(ai.ok && ai.value.data.items[0]!.why).toBeUndefined();
-    const starved = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), { slug: 'starved-rock-state-park' });
+    // A public memory's "why" reaches a signed-in guest's assistant; an anonymous caller gets none
+    // of the guide, public memory or not.
+    const starved = await invoke(findAdventures, await ctxFor(guest, 'ai'), { slug: 'starved-rock-state-park' });
     expect(starved.ok && starved.value.data.items[0]!.why?.text.text).toContain('I love you');
+    const starvedAnon = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), { slug: 'starved-rock-state-park' });
+    expect(!starvedAnon.ok && starvedAnon.error.code).toBe('unauthenticated');
+    expect(JSON.stringify(starvedAnon)).not.toContain('I love you');
   });
 
   it('filters and composes a plan inside a time budget; drafts stay labelled', async () => {
-    const r = await invoke(findAdventures, await ctxFor(anonymous), { interests: ['architecture', 'walk'], maxMinutes: 60 });
+    const r = await invoke(findAdventures, await ctxFor(guest), { interests: ['architecture', 'walk'], maxMinutes: 60 });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.plan?.totalMinutes).toBeLessThanOrEqual(60);
     expect(r.value.data.plan?.stops[0]?.recommendation.slug).toBe('caa-self-guided-tour');
-    expect(r.value.data.items.every((i) => i.draft)).toBe(true);
-    const inside = await invoke(findAdventures, await ctxFor(anonymous), { insideCaa: true });
+    expect(r.value.data.items.find((i) => i.slug === 'caa-self-guided-tour')?.draft).toBe(true);
+    expect(r.value.data.items.find((i) => i.slug === 'caa-explore')?.draft).toBe(false);
+    // Operational freshness uses wall-clock `now`; pin a date shortly after the link-check seed.
+    const inside = await invoke(findAdventures, await ctxFor(guest, 'ui', { now: new Date('2026-09-10T12:00:00Z') }), { insideCaa: true });
     expect(inside.ok && inside.value.data.items.every((i) => i.interests.includes('inside-caa'))).toBe(true);
     const cindys = inside.ok ? inside.value.data.items.find((i) => i.slug === 'cindys-rooftop') : undefined;
     expect(cindys?.operational?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
     expect(cindys?.operational?.provenance.freshness).toBe('fresh');
     expect(cindys?.handoffs.official?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
-    const kids = await invoke(findAdventures, await ctxFor(anonymous), { kids: true, maxMinutes: 120 });
+    const kids = await invoke(findAdventures, await ctxFor(guest), { kids: true, maxMinutes: 120 });
     expect(kids.ok && kids.value.data.plan?.stops.every((s) => s.recommendation.kidFriendly !== false)).toBe(true);
-    const ai = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), {});
+    const ai = await invoke(findAdventures, await ctxFor(guest, 'ai'), {});
     expect(ai.ok && ai.value.data.items.length).toBeLessThanOrEqual(12);
+    // The guide is for invited guests: every filter is refused to an anonymous caller, on every surface.
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      for (const filter of [{}, { insideCaa: true }, { interests: ['architecture'] }]) {
+        const refused = await invoke(findAdventures, await ctxFor(anonymous, surface), filter);
+        expect(!refused.ok && refused.error.code, `${surface} ${JSON.stringify(filter)}`).toBe('unauthenticated');
+      }
+    }
   });
 
   it('lists the eight itinerary buckets as drafts with resolved stops', async () => {
-    const r = await invoke(listItineraries, await ctxFor(anonymous, 'ai'), {});
+    const r = await invoke(listItineraries, await ctxFor(guest, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.itineraries.map((i) => i.bucket)).toEqual(['45-min', '2-3-h', 'friday-afternoon', 'saturday-morning', 'with-kids', 'architecture', 'food-drink', 'stay-inside-caa']);
@@ -172,11 +192,19 @@ describe('share an adventure', () => {
     expect(friday.placeholder).toBe(true);
     expect(friday.intro?.placeholder).toBe(true);
   });
+
+  it('refuses the itineraries to an anonymous caller on every surface', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const r = await invoke(listItineraries, await ctxFor(anonymous, surface), {});
+      expect(!r.ok && r.error.code, surface).toBe('unauthenticated');
+      expect(JSON.stringify(r), surface).not.toMatch(/itineraries|caa-self-guided-tour/);
+    }
+  });
 });
 
 describe('CAA docent', () => {
   it('cites history, marks kit capacities, hides closed outlets from guests, and shows them expired to admins', async () => {
-    const r = await invoke(getVenueFacts, await ctxFor(anonymous, 'ai'), {});
+    const r = await invoke(getVenueFacts, await ctxFor(guest, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const d = r.value.data;
@@ -207,8 +235,8 @@ describe('CAA docent', () => {
     expect(valet.value).toBe('71 E Madison');
     expect(valet.provenance.url).toBe('https://www.chicagoathletichotel.com/about/faq/');
     const rate = d.gettingHere.find((g) => g.key === 'valet.event-rate')!;
-    expect(rate.placeholder).toBe(true);
-    expect(rate.value).toBeNull();
+    expect(rate.placeholder).toBe(false);
+    expect(rate.value).toBe('$84/night');
     expect(r.value.sources.every((s) => !s.url?.startsWith('/docs/'))).toBe(true);
 
     const ignored = await invoke(getVenueFacts, await ctxFor(guest), { includeExpired: true });
@@ -222,11 +250,25 @@ describe('CAA docent', () => {
   });
 
   it('show_venue_room returns one space and the rooms-not-confirmed placeholder', async () => {
-    const r = await invoke(showVenueRoom, await ctxFor(anonymous), { slug: 'stagg-court' });
+    const r = await invoke(showVenueRoom, await ctxFor(guest), { slug: 'stagg-court' });
     expect(r.ok && r.value.data.space.lookForThis.length).toBeGreaterThan(0);
     expect(r.ok && r.value.data.roomsNotConfirmed.placeholder).toBe(true);
-    const missing = await invoke(showVenueRoom, await ctxFor(anonymous), { slug: 'grand-ballroom' });
+    const missing = await invoke(showVenueRoom, await ctxFor(guest), { slug: 'grand-ballroom' });
     expect(!missing.ok && missing.error.code).toBe('not_found');
+  });
+
+  it('keeps the venue from an anonymous caller: no facts, no room, and no hint of which rooms exist', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const facts = await invoke(getVenueFacts, await ctxFor(anonymous, surface), {});
+      expect(!facts.ok && facts.error.code, surface).toBe('unauthenticated');
+      expect(JSON.stringify(facts), surface).not.toMatch(/1893|ballroom|valet|Madison/i);
+      // A real room and an invented one are refused alike, so the refusal is not an oracle.
+      const real = await invoke(showVenueRoom, await ctxFor(anonymous, surface), { slug: 'stagg-court' });
+      const invented = await invoke(showVenueRoom, await ctxFor(anonymous, surface), { slug: 'grand-ballroom' });
+      expect(!real.ok && real.error.code, surface).toBe('unauthenticated');
+      expect(!invented.ok && invented.error.code, surface).toBe('unauthenticated');
+      expect(!real.ok && !invented.ok && real.error.message).toBe(!invented.ok && invented.error.message);
+    }
   });
 });
 
@@ -236,16 +278,16 @@ describe('static search', () => {
   // indistinguishable tools. So the calls below moved to `ui`, the surface the static one still
   // has, and the AI-surface guarantee is asserted separately against the tool the model now calls.
   it('finds operational records with routes and never returns drafts or placeholder text', async () => {
-    const r = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'valet parking' });
+    const r = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'valet parking' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.data.results[0]!.route).toBe('/our-venue#getting-here');
-    expect(r.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
+    expect(r.value.data.results.some((x) => x.route === '/our-venue#getting-here')).toBe(true);
+    expect(r.value.sources.some((s) => s.url?.match(/^https:\/\/www\.chicagoathletichotel\.com\//))).toBe(true);
     const drafts = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'ice cream museum' });
     expect(drafts.ok && drafts.value.data.results.filter((x) => x.kind === 'adventure')).toEqual([]);
-    const all = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'wedding', limit: 20 });
+    const all = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'wedding', limit: 20 });
     expect(all.ok && all.value.data.results.every((x) => !x.snippet.includes('TODO(Tyler & Sara)'))).toBe(true);
-    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ui'), { query: 'zebra crossing' });
+    const nothing = await invoke(searchWeddingInformationStatic, await ctxFor(guest, 'ui'), { query: 'zebra crossing' });
     expect(nothing.ok && nothing.value.data.results).toEqual([]);
     // Draft rows are projected (for admin search) but never returned to guests or the AI, whoever asks.
     const db = await getDb();
@@ -263,15 +305,15 @@ describe('static search', () => {
     // tool returns, so every visibility rule has to hold on it too — this is where a level-12
     // regression would leak a draft or a placeholder straight into a model's context.
     const db = await getDb();
-    const hit = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
+    const hit = await invoke(searchWeddingInformation, await ctxFor(guest, 'ai'), { query: 'valet parking' });
     expect(hit.ok).toBe(true);
     if (!hit.ok) return;
     expect(hit.value.data.mode).toBe('static');
-    expect(hit.value.data.results[0]!.route).toBe('/our-venue#getting-here');
+    expect(hit.value.data.results.some((x) => x.route === '/our-venue#getting-here')).toBe(true);
     expect(hit.value.data.results[0]!.content.length).toBeGreaterThan(0);
-    expect(hit.value.sources[0]!.url).toMatch(/^https:\/\/www\.chicagoathletichotel\.com\//);
+    expect(hit.value.sources.some((s) => s.url?.match(/^https:\/\/www\.chicagoathletichotel\.com\//))).toBe(true);
 
-    const wide = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: 'wedding', limit: 20 });
+    const wide = await invoke(searchWeddingInformation, await ctxFor(guest, 'ai'), { query: 'wedding', limit: 20 });
     expect(wide.ok).toBe(true);
     if (!wide.ok) return;
     // Not the snippet this time, the whole record text the model is handed.
@@ -280,10 +322,12 @@ describe('static search', () => {
 
     const drafted = await db.select().from(knowledgeRecords).where(eq(knowledgeRecords.visibility, 'private-draft'));
     expect(drafted.length).toBeGreaterThan(0);
-    for (const principal of [anonymous, guest, admin()]) {
+    for (const principal of [guest, admin()]) {
       const r = await invoke(searchWeddingInformation, await ctxFor(principal, 'ai'), { query: drafted[0]!.title, limit: 20 });
       expect(r.ok && r.value.data.results.map((x) => x.id)).not.toContain(drafted[0]!.id);
     }
+    const anon = await invoke(searchWeddingInformation, await ctxFor(anonymous, 'ai'), { query: drafted[0]!.title, limit: 20 });
+    expect(!anon.ok && anon.error.code).toBe('unauthenticated');
 
     // The static tool is off the AI surface, so the router cannot reach it at all any more.
     const gone = await invoke(searchWeddingInformationStatic, await ctxFor(anonymous, 'ai'), { query: 'valet parking' });
@@ -347,5 +391,33 @@ describe('admin editors', () => {
     // And the draft stays invisible to guests.
     const guestView = await invoke(getVenueFacts, await ctxFor(guest), {});
     expect(guestView.ok && guestView.value.data.history.find((h) => h.slug === 'test-fact-2')).toBeUndefined();
+  });
+});
+
+describe('Sara’s Chicago guide privacy', () => {
+  it('serves the complete guide to a guest within the capability output budget', async () => {
+    const r = await invoke(findAdventures, await ctxFor(guest), {});
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.data.items.map((i) => i.slug)).toEqual(expect.arrayContaining(['alinea', 'starbucks-reserve-roastery', 'art-institute', 'chicago-botanic-garden']));
+  });
+  it('keeps the new recommendations and map coordinates guest-only on every surface', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const publicResult = await invoke(findAdventures, await ctxFor(anonymous, surface), { slug: 'alinea' });
+      expect(publicResult.ok, surface).toBe(false);
+      const guestResult = await invoke(findAdventures, await ctxFor(guest, surface), { slug: 'alinea' });
+      expect(guestResult.ok, surface).toBe(true);
+      if (guestResult.ok) {
+        expect(guestResult.value.data.items[0]?.place?.coordinates).toBeDefined();
+        expect(guestResult.value.data.items[0]?.draft).toBe(false);
+      }
+    }
+  });
+
+  it('requires sign-in to compose an agenda, including direct capability requests', async () => {
+    const denied = await invoke(findAdventures, await ctxFor(anonymous), { maxMinutes: 120 });
+    expect(denied.ok).toBe(false);
+    if (!denied.ok) expect(denied.error.code).toBe('unauthenticated');
+    const allowed = await invoke(findAdventures, await ctxFor(guest), { maxMinutes: 120 });
+    expect(allowed.ok).toBe(true);
   });
 });

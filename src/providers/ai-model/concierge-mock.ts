@@ -1,6 +1,6 @@
 import type { LanguageModelV4CallOptions, LanguageModelV4GenerateResult, LanguageModelV4Prompt, LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
 import { MockLanguageModelV4 } from 'ai/test';
-import { SYNONYMS } from '@/ai/text';
+import { SITE_WORDS, splitSentences, SYNONYMS } from '@/ai/text';
 
 /**
  * Deterministic, extractive stand-in for the concierge model (CI, previews, evals).
@@ -21,6 +21,8 @@ const STOP = new Set(
 );
 
 const stem = (t: string) => t.replace(/(ations?|ings?|ers?|ies|ed|es|s)$/u, (m) => (t.length - m.length >= 3 ? '' : m));
+const SITE_TOKENS = new Set([...SITE_WORDS].flatMap((word) => [word, stem(word)]));
+const weightedOverlap = (values: Set<string>, question: Set<string>) => [...values].reduce((n, t) => n + (question.has(t) ? SITE_TOKENS.has(t) ? 0.1 : 1 : 0), 0);
 
 /**
  * A real grounded model knows that "kids" and "children" are the same question and that "met" is
@@ -77,7 +79,10 @@ export function parseBlocks(text: string): { question: string; blocks: Block[] }
     const lines = (m[3] ?? '')
       .split('\n')
       .map((l) => l.trim())
-      .filter((l) => l && !PREFACE.test(l));
+      .filter((l) => l && !PREFACE.test(l))
+      // Cite each sentence: a paragraph with one trailing citation loses its earlier facts
+      // when the verifier correctly drops uncited sentences.
+      .flatMap(splitSentences);
     blocks.push({ id, trust, title, lines, order: order++ });
   }
   return { question, blocks };
@@ -124,7 +129,9 @@ export function extractiveAnswer(prompt: LanguageModelV4Prompt, maxSentences = 3
       for (const t of lt) if (q.has(t)) hits++;
       if (hits === 0 && titleHits === 0) return;
       const undecidedBoost = /not yet decided/.test(line) ? 0.25 : 0;
-      const score = (hits + titleHits * 0.5 + undecidedBoost) * (TRUST_WEIGHT[block.trust] ?? 0.4);
+      // Keep generic site words for matching FAQ headings, but do not let repeated
+      // couple names outweigh the actual subject of a narrative question.
+      const score = (weightedOverlap(lt, q) + weightedOverlap(titleTokens, q) * 0.5 + undecidedBoost) * (TRUST_WEIGHT[block.trust] ?? 0.4);
       // A block whose TITLE accounts for every content word of the question is the block the guest
       // asked for, and an answer rarely repeats its own question: "How do I RSVP?" is answered by
       // "you pick your name and confirm with a one-time code", which shares no word with it. Without

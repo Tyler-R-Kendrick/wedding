@@ -20,8 +20,9 @@ only two standing between the site and being live:
 | **C-08** | Which of your adventures are public, and what you want each to say | Admin → **Content** |
 
 We know you met at Allison and Jamie's wedding, and that Starved Rock is
-where the first "I love you" happened. We deliberately did **not** write the
-proposal story for you, or decide the trail, the date, or the wording.
+where the first "I love you" happened. Sara’s supplied proposal story is now integrated. Proposal photos and their
+permissions remain outstanding; we have not invented the Starved Rock trail,
+date, or wording.
 
 ## Then, in the order the site needs them
 

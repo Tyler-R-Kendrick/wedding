@@ -67,7 +67,7 @@ export const askConcierge = defineCapability<z.infer<typeof input>, AskConcierge
     "Answers a guest's question about the wedding from the site's own content and the caller's own data, with a citation for every sentence. " +
     'Says when something is not yet decided or not on the site. Never books, submits, or changes anything: consequential requests come back as confirmation cards for the website.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   flag: 'AI_CONCIERGE',
   annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },

@@ -49,9 +49,9 @@ export const APPROVED = {
  */
 const COUPLE = [
   { id: 'couple.hero.formal', ref: 'REF-HOME', box: [520, 118, 1265, 525], scales: [1.25, 2], focal: [0.46, 0.4],
-    alt: 'Generated portrait of Sara and Tyler cheek to cheek on a bridge over the Chicago River, the towers of downtown glowing behind them.' },
+    alt: 'Generated portrait of Sara and Tyler cheek to cheek on a bridge at dusk, city lights glowing behind them.' },
   { id: 'couple.hero.formal.mobile', ref: 'REF-HOME', box: [620, 118, 1120, 525], scales: [1.3, 2.3], focal: [0.5, 0.36],
-    alt: 'Generated portrait of Sara and Tyler cheek to cheek on a bridge over the Chicago River.' },
+    alt: 'Generated portrait of Sara and Tyler cheek to cheek on a bridge at dusk.' },
   { id: 'couple.hero.story', ref: 'REF-STORY', box: [545, 110, 1288, 390], scales: [1.25, 2], focal: [0.4, 0.42],
     alt: 'Generated portrait of Sara laughing up at Tyler as he smiles back, the Chicago skyline soft behind them.' },
   { id: 'couple.hero.story.mobile', ref: 'REF-STORY', box: [590, 110, 1060, 390], scales: [1.3, 2.3], focal: [0.45, 0.4],

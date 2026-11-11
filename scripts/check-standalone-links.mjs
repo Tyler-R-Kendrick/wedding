@@ -5,7 +5,7 @@
  *
  * CSS cannot find them on its own. `p > a:only-child` counts ELEMENT children, so it matches an
  * anchor sitting in a sentence just as readily, and giving those block geometry would break the
- * line. That is why both kits carry a `standalone` prop for the call site to declare the case —
+ * line. That is why the kit carries a `standalone` prop for the call site to declare the case —
  * and why a call site can forget. Six did in one commit, two of them four lines from a link that
  * had been marked correctly.
  *
@@ -28,8 +28,8 @@
  *
  *   onSelf      A rule whose selector is ONE compound — `.link-block { min-height: 44px }`. The
  *               class carries the geometry wherever it appears, so the anchor wearing it is done.
- *   onAncestor  A rule with a combinator — `.wp-brand a`, `.gh-back .gh-link`,
- *               `.gh-why p > .gh-link`. The LEADING classes are what make the rule apply; the
+ *   onAncestor  A rule with a combinator — `.wp-brand a`, `.bd-back .bd-link`,
+ *               `.bd-why p > .bd-link`. The LEADING classes are what make the rule apply; the
  *               anchor is sized only inside them, and only if it IS the thing the rule sizes.
  *               So onAncestor maps each leading class to the rule's final compound, and a scope
  *               accepts a link only when that compound could match it. `.wp-why summary` sizes a
@@ -38,9 +38,9 @@
  *               of the thirteen this very change had to fix.
  *
  * Reading a scoped rule as if its last compound covered on its own is how the first version of
- * this gate let every kit link through. `.gh-entry__title .gh-link` and nine rules like it put
- * `gh-link` in onSelf — and `<Link>` in both kits always emits `gh-link` or `cv-link` — so a bare
- * `<p><a className="gh-link">…</a></p>` anywhere outside those scopes would have been accepted at
+ * this gate let every kit link through. `.bd-entry__title .bd-link` and nine rules like it put
+ * `bd-link` in onSelf — and the kit's `<Link>` always emits `bd-link` — so a bare
+ * `<p><a className="bd-link">…</a></p>` anywhere outside those scopes would have been accepted at
  * whatever height the line box gave it. Nothing in the tree had that shape, so the gate was green
  * and wrong rather than red and wrong; the hole is closed before something grows into it.
  *
@@ -81,16 +81,16 @@ function splitOutside(text, at) {
   return parts.map((part) => part.trim()).filter(Boolean);
 }
 
-/** Split a selector on its combinators: `.gh-why p > .gh-link` -> ['.gh-why', 'p', '.gh-link']. */
+/** Split a selector on its combinators: `.bd-why p > .bd-link` -> ['.bd-why', 'p', '.bd-link']. */
 const compoundsOf = (selector) => splitOutside(selector, /[\s>+~]/);
 
 /** A compound without its pseudo-class arguments, so `:not(.bar)` cannot donate `bar`. */
 const bare = (compound) => compound.replace(/\([^()]*\)/g, '');
 
-/** The element name a compound names, if it names one: `.gh-link` -> null, `a:hover` -> 'a'. */
+/** The element name a compound names, if it names one: `.bd-link` -> null, `a:hover` -> 'a'. */
 const elementOf = (compound) => /^([a-zA-Z][\w-]*)/.exec(bare(compound))?.[1] ?? null;
 
-/** `a`, `a:hover` and `.gh-link` can all be an anchor; `summary` and `input` cannot. */
+/** `a`, `a:hover` and `.bd-link` can all be an anchor; `summary` and `input` cannot. */
 const subjectCouldBeAnchor = (compound) => {
   const element = elementOf(compound);
   return element === null || element === 'a';
@@ -105,7 +105,7 @@ const subjectMatches = (compound, classes) => {
 
 export function coverage(cwd = '.') {
   const onSelf = new Set();
-  /** class -> the final compounds of the rules it scopes, e.g. 'gh-back' -> Set{'.gh-link'}. */
+  /** class -> the final compounds of the rules it scopes, e.g. 'bd-back' -> Set{'.bd-link'}. */
   const onAncestor = new Map();
   for (const file of globSync('src/**/*.css', { cwd })) {
     // Comments first: a rule preceded by `/* … scripts/x.mjs … */` otherwise donates `mjs`.

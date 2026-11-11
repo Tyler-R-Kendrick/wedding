@@ -74,9 +74,9 @@ describe('guest handoffs', () => {
 });
 
 describe('transportation content', () => {
-  it('builds only allowlisted map and official links, and marks unknowns as placeholders', () => {
+  it('builds only allowlisted map and official links, and promises nothing that is not decided', () => {
     const topics = transportationTopics(new DeepLinkMaps());
-    expect(topics.map((t) => t.id)).toEqual(['arriving', 'do-i-need-a-car', 'getting-around', 'getting-home']);
+    expect(topics.map((t) => t.id)).toEqual(['arriving', 'do-i-need-a-car', 'getting-around']);
     for (const t of topics) {
       if (t.directions) {
         expect(isAllowedRedirect(t.directions.google.url)).toBe(true);
@@ -85,12 +85,16 @@ describe('transportation content', () => {
       if (t.official) expect(t.official.host).toBe('www.chicagoathletichotel.com');
       for (const p of t.paragraphs) if (p.startsWith('TODO(')) expect(t.placeholder).toBe(true);
     }
-    // No invented operational facts: valet rate, airport recommendation and voucher terms are TODOs.
+    // No invented operational facts: the airport recommendation and valet are decided and stated.
     const text = TRANSPORTATION_TOPICS.flatMap((t) => t.paragraphs).join('\n');
-    expect(text).toMatch(/TODO\(Tyler & Sara\): which airport/);
-    expect(text).toMatch(/TODO\(Tyler & Sara\): the special event valet rate/);
-    expect(text).toMatch(/TODO\(Tyler & Sara\): ride benefit amount/);
-    expect(text).not.toMatch(/\$\d/);
+    expect(text).toMatch(/O’Hare \(ORD\)/);
+    expect(text).toMatch(/\$84\/night/);
+    expect(text).toContain('Taxis and rideshares serve downtown and the hotel.');
+    // What is not decided is left out until it is: no placeholder topic, no marker, and no promise
+    // of a ride benefit or a pickup point that nobody has arranged.
+    expect(TRANSPORTATION_TOPICS.some((t) => t.placeholder)).toBe(false);
+    expect(text).not.toContain('TODO(');
+    expect(text).not.toMatch(/coming soon|ride benefit|Uber can take you|pickup details/i);
   });
 });
 

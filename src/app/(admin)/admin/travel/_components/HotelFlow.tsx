@@ -291,7 +291,7 @@ export function HotelFlow({
       submit={{
         label: hotel ? 'Save hotel' : 'Add a hotel',
         capability: 'admin_save_hotel',
-        success: hotel ? `${hotel.name} saved.` : 'Hotel added. Guests see it on Travel & Stay.',
+        success: hotel ? `${hotel.name} saved.` : 'Hotel added. Guests see it on Your Trip.',
         input: (v) => ({
           id: hotel?.id,
           name: v.name.trim(),
@@ -342,7 +342,7 @@ export function DeleteHotelFlow({ hotel }: { hotel: HotelSummary }) {
             <>
               <Consequences>
                 <p>
-                  {hotel.name} comes off Travel &amp; Stay, with its reasons and links.
+                  {hotel.name} comes off Your Trip, with its reasons and links.
                   {hotel.isVenue ? ' Guests see the placeholder room block from the brief again until you set the venue hotel up.' : ''}
                 </p>
                 <p>This cannot be undone; adding it again starts from nothing. To take it off the page for a while, use Hide instead.</p>

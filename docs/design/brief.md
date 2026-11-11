@@ -38,6 +38,10 @@ clearly, then get out of the way of the celebration.
 | Video | Oakhouse Visuals: up to 10 h, one videographer; edited full ceremony, first dances, toasts; raw footage delivered | video contract |
 | Hair & makeup | Rare Bird Beauties: Courtney (bride's Elite makeup), Laura L (Signature hair); previews; +4 makeup, +4 hair services | HMUA contract |
 | How they met | At Allison and Jamie's wedding; "flirty glances", immediate connection | brief |
+| First date | Mini golf, a riverside walk, and shared plates at The Cheesecake Factory | Sara’s page copy, October 12, 2026; supplied by Tyler October 18 |
+| Fourth date | Tyler’s Chicago tour included CAA and ended at Michael Jordan’s Steak House | Sara’s supplied page copy |
+| Proposal | A summer revisiting meaningful places, followed by an indoor picnic with photos and mementos; no date supplied | Sara’s supplied page copy |
+| Ceremony photography | Unplugged ceremony: put away phones and cameras while the photographer captures it; no reception policy inferred | Sara’s supplied page copy |
 | Memory places | Museum of Ice Cream, Richardson Farm, Michael Jordan's Steakhouse, food tastings, gardening together, Madison waterfront, Starved Rock | brief |
 | Starved Rock | Associated with the couple's first "I love you" (trail, date, wording unknown) | brief |
 | Relationship themes (Tyler's own writing) | best friendship, peace, becoming better together, mutual support, being each other's rock, home, gratitude, deliberate partnership, "greater together than alone" | brief |

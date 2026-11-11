@@ -58,7 +58,7 @@ export const openBookingLink = defineCapability<z.infer<typeof input>, z.infer<t
     'Builds the explicit hand-off to a booking partner for one target: a flight search (Skyscanner), a hotel search (Booking.com or Hyatt), the venue room block, a recommended hotel, an admin-configured partner link, ' +
     'or a hosted flight checkout (Duffel Links, signed-in guests only). It returns the labelled link and disclosure; it never books, pays, or marks anything confirmed. Every link is checked against the trusted-partner list.',
   kind: 'external',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   confirmation: 'inline',
   idempotent: false,
@@ -85,6 +85,7 @@ export const openBookingLink = defineCapability<z.infer<typeof input>, z.infer<t
         break;
       }
       case 'venue_block': {
+        if (ctx.principal.kind === 'anonymous') return err(new CapabilityError('unauthenticated', 'Sign in for your wedding room-block booking link.'));
         const venue = await getVenueHotel(s.db, now);
         if (venue.block?.url) {
           handoff = { provider: providerFromUrl(venue.block.url), label: `Book in the ${venue.name} block`, url: venue.block.url, opensNewTab: true, disclosure: 'You will leave our site to book with the hotel at the group rate. We never see your payment details.' };
@@ -98,6 +99,7 @@ export const openBookingLink = defineCapability<z.infer<typeof input>, z.infer<t
       case 'hotel': {
         const hotel = await getHotel(s.db, i.hotelId, now);
         if (!hotel || !hotel.active) return err(new CapabilityError('not_found', 'That hotel is not on our list.'));
+        if ((hotel.isVenue || hotel.block) && ctx.principal.kind === 'anonymous') return err(new CapabilityError('unauthenticated', 'Sign in for your wedding hotel booking details.'));
         if (hotel.bookingUrl) {
           handoff = { provider: providerFromUrl(hotel.bookingUrl), label: `Book ${hotel.name}`, url: hotel.bookingUrl, opensNewTab: true, disclosure: `You will leave our site to book ${hotel.name}. We never see your payment details.` };
         } else if (i.checkIn && i.checkOut && i.checkOut > i.checkIn) {

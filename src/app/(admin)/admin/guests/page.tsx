@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
@@ -9,7 +10,8 @@ import { FilterBar, RecordList, RecordRow } from '@/components/admin/flow/record
 import { adminInvoke, adminPrincipal } from '../_lib/invoke';
 import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
-import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, type GuestSummary } from './_components/GuestFlows';
+import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, SignInPassFlow, type GuestSummary } from './_components/GuestFlows';
+import { HouseholdFlow } from '../households/_components/HouseholdFlows';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -56,6 +58,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
   const truncated = (list.ok && list.value.data.truncated) || (hh.ok && hh.value.data.truncated);
   const household = sp.householdId ? households.find((h) => h.value === sp.householdId) : undefined;
   const mergeTargets = rows.filter((g) => !g.mergedIntoGuestId).map((g) => ({ value: g.id, label: `${g.displayName} (${g.householdName})` }));
+  const noGuestData = households.length === 0 && rows.length === 0;
   // Browsing as anyone but yourself is for owners (`admin_browse_as_guest` re-checks it). It sets a
   // cookie and opens the site, so it stays a plain form action rather than a flow.
   const canBrowseAs = isOwner;
@@ -67,11 +70,17 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       notice={{ ok: sp.ok, error: sp.error ?? (!list.ok ? list.error.message : undefined) }}
       actions={
         <>
-          <GuestFlow households={households} defaultHouseholdId={sp.householdId} label="Add a guest" />
+          <GuestFlow households={households} defaultHouseholdId={sp.householdId} label={noGuestData ? 'Add your first guest' : 'Add a guest'} />
+          {noGuestData ? <HouseholdFlow label="Add a household only" variant="ghost" /> : null}
           <ImportGuestsFlow />
         </>
       }
     >
+      {noGuestData ? (
+        <Note>
+          No guests or households yet. Add your first guest here — the flow creates the household for you — or add a household on its own, then come back to add people.
+        </Note>
+      ) : null}
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
       <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
@@ -90,7 +99,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
           <Checkbox id="merged" label="Show merged duplicates" name="merged" defaultChecked={showMerged} />
         </FilterBar>
         <ListsProvider lists={{ households, guests: mergeTargets }}>
-          <RecordList label="Guests" empty={rows.length === 0 ? 'No guest matches this search.' : null}>
+          <RecordList label="Guests" empty={rows.length === 0 ? (sp.q || sp.householdId ? 'No guest matches this search.' : 'No guests yet. Add one with the button above.') : null}>
             {shown.rows.map((g) => (
               <RecordRow
                 key={g.id}
@@ -121,6 +130,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   g.mergedIntoGuestId ? null : (
                     <>
                       <GuestFlow guest={g} label="Edit" variant="quiet" />
+                      <SignInPassFlow guest={g} />
                       {g.claimed ? <RebindFlow guest={g} /> : null}
                       <MergeFlow guest={g} />
                       {canBrowseAs && g.kind !== 'child' && !g.isMinor ? (
@@ -158,14 +168,15 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
  */
 function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string | null; isOwner: boolean; ownRecords: { guestId: string; displayName: string }[] }) {
   return (
-    <Section title="Browse the site as a guest" id="browse-as">
+    <Section title="Inspect a guest profile" id="inspect-guest">
       <p className="con-note">
-        See the site the way one guest does: their account menu, their weekend, their RSVP and table, in this browser only. Anyone else’s view is read-only: nothing you do there is saved or sent in their
-        name, and their ride credit and the concierge stay closed. A band on every page says whose view it is, with the way to stop.
+        See the site exactly as one guest on the list does — their RSVP answers, table, and uploads. Anyone else’s view is read-only. Prefer <Link href="/admin#view-as">View as role</Link> when you only need to preview entitlements and pages without touching a real person’s record.
       </p>
       {browsingName ? (
-        // A <div>, not a paragraph: a form cannot sit inside one.
+        // A <div>, not a paragraph: a form cannot sit inside one. "Open the site" is a plain link on
+        // purpose: `/` renders for its reader, and a full navigation asks for it as the guest.
         <div className="con-note">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself. <a href="/">Open the site</a>{' '}
           <form action={stopGuestView} className="flow-inline-form">
             <button type="submit" className="ops-button ops-button-ghost">

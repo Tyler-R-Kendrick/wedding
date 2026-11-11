@@ -2,12 +2,16 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('smoke', () => {
-  test('home renders the names and date without blocking axe violations', async ({ page }) => {
+  test('home renders the names and the door, and no date or venue, without blocking axe violations', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sara + Tyler');
-    // The date appears more than once (hero, the day's schedule, the footer); the first is the hero's.
-    await expect(page.locator('time[datetime="2027-07-17"]').first()).toBeVisible();
-    await expect(page.getByRole('main')).toContainText('Chicago');
+    // Signed out, Home is the two of us and the way in. The date, the venue and the city are the
+    // invited guests', behind sign-in: none of them is on the page, in the hero, a schedule or the footer.
+    await expect(page.locator('time[datetime^="2027-07-17"]')).toHaveCount(0);
+    const text = await page.locator('body').innerText();
+    for (const detail of ['July 17', 'Chicago Athletic', 'Michigan Ave', 'Chicago, IL']) expect(text, `home shows "${detail}" to a signed-out reader`).not.toContain(detail);
+    await expect(page.getByRole('main').locator('a[href^="/sign-in?next="]').first()).toBeVisible();
+    await expect(page.getByRole('main').getByRole('link', { name: 'Our Story', exact: true }).first()).toHaveAttribute('href', '/our-story');
 
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
@@ -36,13 +40,23 @@ test.describe('smoke', () => {
     }
   });
 
-  test('capability route answers site_status and rejects unknown names', async ({ request }) => {
-    const ok = await request.post('/api/capabilities/site_status', { data: { input: {} } });
+  test('capability route answers a public read, refuses site_status to a signed-out caller, and rejects unknown names', async ({ request }) => {
+    const ok = await request.post('/api/capabilities/show_adventure', { data: { input: { slug: 'starved-rock' } } });
     expect(ok.status()).toBe(200);
     const body = await ok.json();
     expect(body.ok).toBe(true);
-    expect(body.data.wedding.date).toBe('2027-07-17');
+    expect(body.data).toBeTruthy();
     expect(Array.isArray(body.sources)).toBe(true);
+
+    // `site_status` carries the date and the venue, so it is a guest's: signed out it is refused,
+    // and the refusal says neither. (A guest's answer is asserted in webmcp.spec.ts.)
+    const status = await request.post('/api/capabilities/site_status', { data: { input: {} } });
+    expect(status.status()).toBe(401);
+    const refused = await status.json();
+    expect(refused.ok).toBe(false);
+    expect(refused.error.code).toBe('unauthenticated');
+    expect(refused.data).toBeUndefined();
+    expect(JSON.stringify(refused)).not.toMatch(/2027-07-17|Chicago Athletic|Michigan/);
 
     const missing = await request.post('/api/capabilities/does_not_exist', { data: { input: {} } });
     expect(missing.status()).toBe(404);

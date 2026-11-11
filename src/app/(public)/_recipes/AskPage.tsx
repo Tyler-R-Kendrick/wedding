@@ -15,11 +15,11 @@ export interface AskRecipeProps {
 
 export function AskPage({ faq, search, concierge }: AskRecipeProps) {
   return (
-    <Shell current={ROUTES.ask}>
+    <Shell current={ROUTES.guestAsk}>
       <PageIntro eyebrow="Ask Us" title="Questions, answered" lede="The essentials first. Anything we have not decided yet says so, instead of guessing." />
 
       <Section id="search" number="01" title="Search the site">
-        <form className="wp-form" method="get" action={ROUTES.ask} role="search">
+        <form className="wp-form" method="get" action={ROUTES.guestAsk} role="search">
           <div className="wp-field">
             <label htmlFor="ask-q">What are you looking for?</label>
             <input id="ask-q" name="q" type="search" defaultValue={search?.query ?? ''} minLength={2} maxLength={200} placeholder="valet, kids, Cindy's, dress code" />
@@ -85,10 +85,10 @@ export function AskPage({ faq, search, concierge }: AskRecipeProps) {
 function labelFor(route: string): string {
   const base = route.split('#')[0] ?? route;
   const known: Record<string, string> = {
-    [ROUTES.wedding]: 'The Wedding',
+    [ROUTES.guestPortal]: 'your dashboard',
     [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
-    [ROUTES.travel]: 'Travel & Stay',
+    [ROUTES.guestTravel]: 'Your Trip',
     [ROUTES.gifts]: 'Gifts',
     '/rsvp': 'RSVP',
   };

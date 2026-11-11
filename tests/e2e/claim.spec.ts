@@ -21,7 +21,7 @@ test.describe('claim journey', () => {
     expect(await codeInput.evaluate((el) => getComputedStyle(el).fontSize)).not.toBe('16px');
     expect(Number.parseFloat(await codeInput.evaluate((el) => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(17);
     await codeInput.fill(await readOtp(request, f.emails.ana!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ana');
     await expect(page.locator('body')).toContainText('you manage the RSVP');
@@ -55,11 +55,9 @@ test.describe('claim journey', () => {
     // hardcoded origin here used to do on every port but one.
     expect((await cap(request, 'register_passkey', { step: 'list' }, { cookie: `${rotated.name}=${rotated.value}` })).status()).toBe(422);
 
-    // Every header's "Sign in" reaches signed-in guests too: they are told so, still offered the
-    // console's own sign-in (the couple may have claimed their invitation), and a `next` is honoured.
+    // Every header's "Sign in" sends signed-in guests to the portal (or honours `next`).
     await page.goto('/sign-in');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('You’re already signed in');
-    await expect(page.getByRole('link', { name: 'Sign in to manage the site' })).toHaveAttribute('href', '/sign-in/admin');
+    await expect(page).toHaveURL(/\/guests(\/|$)/);
     await page.goto('/sign-in?next=%2Frsvp');
     await expect(page).toHaveURL(/\/rsvp(\/|$)/);
 
@@ -74,12 +72,12 @@ test.describe('claim journey', () => {
     // The fixture admin holds the owner role and has no guest record — the couple on production.
     // The guest form used to answer "we sent a code" and send nothing to such an address.
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/admin(\/|$)/);
   });
 
@@ -89,7 +87,7 @@ test.describe('claim journey', () => {
     // cleared the challenge; the second found no challenge and redirected to ?error=expired — and,
     // running after the first, its redirect was the one the browser kept.
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
@@ -114,7 +112,7 @@ test.describe('claim journey', () => {
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page.locator('body')).toContainText('Sara Fitzgerald’s email');
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.shared!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     // This asserted 'Welcome, Sara' — the manager whose inbox took the code — after the reader had
     // just picked Ruth one screen earlier. That is the defect this branch fixes, so the assertion
     // changes deliberately: the heading names the person who was picked, and the lede has to say

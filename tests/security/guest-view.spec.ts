@@ -19,14 +19,22 @@ test.describe('browse as a guest', () => {
     const browse = page.getByRole('button', { name: /^Browse as/ }).first();
     await expect(browse).toBeVisible();
     await browse.click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/guests\/?$/);
 
     // Every page says whose view it is, and the account menu is Ana's household's, plus the way back.
-    const band = page.getByRole('status').filter({ hasText: 'Browsing as' });
+    const band = page.getByRole('status').filter({ hasText: 'Inspecting as' });
     await expect(band).toContainText('Read-only');
-    await page.goto('/your-weekend');
+    // Her dashboard is what opens, not the sign-in door and not the administrator's "guests only" gate.
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/^Welcome/);
     await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
-    await expect(page.getByRole('status').filter({ hasText: 'Browsing as' })).toBeVisible();
+    // The old address leads to the same page, still as her.
+    await page.goto('/your-weekend');
+    await expect(page).toHaveURL(/\/guests\/?$/);
+    await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
+    await expect(page.getByRole('status').filter({ hasText: 'Inspecting as' })).toBeVisible();
+    await page.goto('/rsvp');
+    await expect(page.getByRole('heading', { level: 1 })).not.toContainText('is for invited guests');
+    await expect(page.getByRole('status').filter({ hasText: 'Inspecting as' })).toBeVisible();
 
     // Nothing can be done in her name, whichever door the write comes through.
     const cookie = (await page.context().cookies()).map((c) => `${c.name}=${c.value}`).join('; ');
@@ -40,9 +48,9 @@ test.describe('browse as a guest', () => {
 
     // And the band's way back ends the view.
     await page.goto('/');
-    await page.getByRole('button', { name: /^Stop browsing as/ }).click();
+    await page.getByRole('button', { name: /^Stop inspecting as/ }).click();
     await expect(page).toHaveURL(/\/admin\/guests/);
     await page.goto('/');
-    await expect(page.getByRole('status').filter({ hasText: 'Browsing as' })).toHaveCount(0);
+    await expect(page.getByRole('status').filter({ hasText: 'Inspecting as' })).toHaveCount(0);
   });
 });

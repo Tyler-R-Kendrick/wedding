@@ -11,6 +11,15 @@ describe('server env', () => {
     expect(e.PGLITE_MEMORY).toBe(false);
   });
 
+  it('parses comma-separated planner forward inboxes', () => {
+    const e = parseServerEnv({
+      NODE_ENV: 'test',
+      PLANNER_FORWARD_EMAIL: ' BustleAndLace@gmail.com , saraandtyler27@gmail.com ',
+    });
+    expect(e.PLANNER_FORWARD_EMAIL).toEqual(['bustleandlace@gmail.com', 'saraandtyler27@gmail.com']);
+    expect(parseServerEnv({ NODE_ENV: 'test' }).PLANNER_FORWARD_EMAIL).toEqual([]);
+  });
+
   it('fails fast on malformed values without echoing them', () => {
     expect(() => parseServerEnv({ NODE_ENV: 'test', DATABASE_URL: 'not a url' })).toThrow(/DATABASE_URL/);
     expect(() => parseServerEnv({ NODE_ENV: 'test', CONFIRMATION_SECRET: 'short' })).toThrow(/CONFIRMATION_SECRET/);

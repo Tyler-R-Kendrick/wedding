@@ -6,6 +6,8 @@ import { ROUTES } from '@/domain/routes';
 import type { ContentRecipe, StoryProps } from '@/themes/content-types';
 import { formatPartialDate } from '@/themes/shared/format';
 import { PreviewBanner } from '@/themes/shared/PreviewBanner';
+import { legacyAnchorsForSection } from '@/themes/shared/story-anchors';
+import { StorySectionMedia } from '@/themes/shared/StorySectionMedia';
 import { timelineAnchors } from '@/themes/shared/timeline';
 import { kit, More, PageHero } from '../kit';
 import { StoryRide, type LineKey, type RideStop } from '../kit/StoryRide';
@@ -44,10 +46,15 @@ const LINES: Record<StoryChapter, LineKey> = {
 const CHAPTER_ORDER = Object.keys(LINES) as StoryChapter[];
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 
+/**
+ * `guestHref` is where a tile leads for a signed-in guest (the venue's city notes, the Chicago
+ * guide). Those pages are behind sign-in, so a signed-out reader's tile leads to the atlas instead:
+ * a public page never links somewhere it would only be turned away from.
+ */
 const PLACES = [
-  { ids: ['city.river', 'city.riverwalk', 'venue.exterior-green'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: `${ROUTES.ourVenue}#city` },
-  { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.', href: `${ROUTES.adventures}/starved-rock` },
-  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.share },
+  { ids: ['city.river', 'city.riverwalk'], name: 'Chicago', line: 'The river, the bridges, the lake.', href: ROUTES.adventures, guestHref: `${ROUTES.ourVenue}#city` },
+  { ids: ['place.starved-rock'], name: 'Starved Rock', line: 'Where “I love you” was said first.', href: `${ROUTES.adventures}/starved-rock`, guestHref: `${ROUTES.adventures}/starved-rock` },
+  { ids: ['city.north-pond', 'city.lakefront-adler'], name: 'Places ahead', line: 'More to explore together.', href: ROUTES.adventures, guestHref: `${ROUTES.guestTravel}#plan` },
 ] as const;
 
 /** The "Details to come" pill, only where the prose does not already say it is unfinished. */
@@ -67,9 +74,12 @@ function Meta({ children }: { children: ReactNode }) {
 }
 
 function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; stop: RideStop; ordinal: number }) {
-  const photo = section.media.find((m) => m.src);
+  const photos = section.media.filter((m) => m.src);
   return (
     <article className="bd-stopcard bd-stopcard--chapter" aria-labelledby={`${stop.slug}-title`}>
+      {legacyAnchorsForSection(section.slug).map((legacy) => (
+        <span key={legacy} id={legacy} className="sr-only" aria-hidden="true" />
+      ))}
       <div className="bd-stopcard__text">
         <Meta>Chapter {ORDINALS[ordinal] ?? ordinal + 1}</Meta>
         <h3 id={`${stop.slug}-title`} className="bd-stopcard__title">
@@ -79,8 +89,12 @@ function ChapterCard({ section, stop, ordinal }: { section: StorySectionView; st
         <ProseBlock blocks={section.paragraphs} />
         <Provenance provenance={section.provenance} />
       </div>
-      {photo?.src ? (
-        <TimelinePhoto src={photo.src} alt={photo.alt} sizes={PHOTO_SIZES} />
+      {photos.length ? (
+        <StorySectionMedia
+          section={section}
+          className="bd-stopcard__carousel"
+          renderSlide={(m) => <TimelinePhoto key={m.src} src={m.src!} alt={m.alt} sizes={PHOTO_SIZES} />}
+        />
       ) : (
         // Where a chapter has no picture, the Deco numeral holds its place; the words already say it.
         <span className="bd-stopcard__numeral" aria-hidden="true">
@@ -144,33 +158,39 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
     }
   });
 
-  stops.push({ slug: 'the-loop', kind: 'terminal', line: 'gold', name: 'The Loop', when: frame.site.date.motif });
-  cards.push(
-    <article key="the-loop" className="bd-stopcard bd-stopcard--terminal" aria-labelledby="the-loop-title">
-      <div className="bd-stopcard__text">
-        <Meta>End of the line · The Loop</Meta>
-        <h3 id="the-loop-title" className="bd-stopcard__title">
-          <time dateTime={frame.site.date.iso.slice(0, 10)}>{frame.site.date.long}</time>
-        </h3>
-        <p className="bd-stopcard__where">
-          {frame.site.venue.name},{' '}
-          <a className="bd-stopcard__map" href={frame.site.venue.mapsUrl} rel="noopener">
-            {frame.site.venue.address}
-            <span className="bd-stopcard__map-provider"> · directions in {frame.site.venue.mapsProvider}</span>
-          </a>
-        </p>
-        <p className="bd-stopcard__note">Everyone off here. The next chapter starts with all of you in the room.</p>
-        <p className="bd-stopcard__actions">
-          <Button variant="primary" href={ROUTES.wedding}>
-            The wedding day
-          </Button>
-        </p>
-      </div>
-      <figure className="bd-stopcard__media">
-        <Photo id="venue.exterior" sizes={PHOTO_SIZES} />
-      </figure>
-    </article>,
-  );
+  // The last stop is the wedding itself: its date and its address. Those are the invited guests',
+  // so the line ends there only for a signed-in reader; for anyone else it ends at the last chapter.
+  const details = frame.details;
+  if (details) {
+    stops.push({ slug: 'the-loop', kind: 'terminal', line: 'gold', name: 'The Loop', when: details.date.motif });
+    cards.push(
+      <article key="the-loop" className="bd-stopcard bd-stopcard--terminal" aria-labelledby="the-loop-title">
+        <div className="bd-stopcard__text">
+          <Meta>End of the line · The Loop</Meta>
+          <h3 id="the-loop-title" className="bd-stopcard__title">
+            <time dateTime={details.date.iso.slice(0, 10)}>{details.date.long}</time>
+          </h3>
+          <p className="bd-stopcard__where">
+            {details.venue.name},{' '}
+            <a className="bd-stopcard__map" href={details.venue.mapsUrl} target="_blank" rel="noopener noreferrer">
+              {details.venue.address}
+              <span className="bd-stopcard__map-provider"> · directions in {details.venue.mapsProvider}</span>
+              <span className="sr-only">, opens in a new tab</span>
+            </a>
+          </p>
+          <p className="bd-stopcard__note">Everyone off here. The next chapter starts with all of you in the room.</p>
+          <p className="bd-stopcard__actions">
+            <Button variant="primary" href={ROUTES.guestPortal}>
+              Your dashboard
+            </Button>
+          </p>
+        </div>
+        <figure className="bd-stopcard__media">
+          <Photo id="venue.exterior" sizes={PHOTO_SIZES} />
+        </figure>
+      </article>,
+    );
+  }
 
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
@@ -211,7 +231,7 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
         <ul className="bd-places__tiles">
           {PLACES.filter((p) => firstMedia(p.ids)).map((p) => (
             <li key={p.name} className="bd-places__tile">
-              <Link className="bd-places__link" href={p.href}>
+              <Link className="bd-places__link" href={details ? p.guestHref : p.href}>
                 <Photo id={p.ids} sizes="(min-width: 1100px) 21vw, (min-width: 768px) 33vw, 100vw" alt="" className="bd-places__photo" />
                 <span className="bd-places__caption">
                   <span className="bd-places__name">{p.name}</span>
@@ -228,9 +248,11 @@ export const BotanicalStoryPage: ContentRecipe<StoryProps> = ({ data, frame }) =
         </p>
         <Botanical id="botanical.vine-right" className="bd-bloom--places" />
       </section>
-      <p className="bd-sr-more">
-        <More href={ROUTES.share}>Borrow a few for your own weekend</More>
-      </p>
+      {details ? (
+        <p className="bd-sr-more">
+          <More href={`${ROUTES.guestTravel}#plan`}>Borrow a few for your own weekend</More>
+        </p>
+      ) : null}
     </Shell>
   );
 };

@@ -2,7 +2,9 @@ import { eq, inArray } from 'drizzle-orm';
 import type { AdminId, AuthIdentityId, GuestId, HouseholdId } from '@/contracts/ids';
 import type { AdminPrincipal, Entitlement, GuestPrincipal } from '@/contracts/principal';
 import type { Db } from '@/db/client';
-import { eventEntitlements, events, guests, households, mealOptions } from '@/db/schema';
+import { eventEntitlements, events, guestSignInPasses, guests, households, mealOptions } from '@/db/schema';
+import { defaultGuestPassExpiry, GUEST_PASS_SLUG_PATTERN } from '@/domain/identity/guest-pass';
+import { getGuestPassVault } from '@/domain/identity/guest-pass-vault';
 import { SEED_EVENT_IDS } from '@/domain/events/seed';
 import { fixtureId } from './ids';
 
@@ -15,6 +17,10 @@ import { fixtureId } from './ids';
  *  Household B (manager B1): B1 (reception plus-one: named), B2 (NOT invited to the ceremony).
  *  Household C (solo C1): reception plus-one: unnamed.
  */
+/** Stable slug for stages capture and docs (`npm run stages:capture -- --only guest-sign-in-pass`). */
+export const BASELINE_GUEST_PASS_SLUG = 'fixtureslug01';
+if (!GUEST_PASS_SLUG_PATTERN.test(BASELINE_GUEST_PASS_SLUG)) throw new Error('BASELINE_GUEST_PASS_SLUG must match guest pass slug shape');
+
 export const FX = {
   householdA: fixtureId<HouseholdId>('HHA'),
   householdB: fixtureId<HouseholdId>('HHB'),
@@ -34,14 +40,19 @@ export const FX = {
 export const FIXTURE_GUESTS = [
   { id: FX.guestA1, householdId: FX.householdA, firstName: 'Ada', lastName: 'Testhouse', email: 'ada.testhouse@example.test', isMinor: false },
   { id: FX.guestA2, householdId: FX.householdA, firstName: 'Ben', lastName: 'Testhouse', email: null, isMinor: false },
-  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', email: null, isMinor: true },
+  { id: FX.guestA3, householdId: FX.householdA, firstName: 'Cleo', lastName: 'Testhouse', email: null, kind: 'child' as const, isMinor: true },
   { id: FX.guestB1, householdId: FX.householdB, firstName: 'Dev', lastName: 'Fixture', email: 'dev.fixture@example.test', isMinor: false },
   { id: FX.guestB2, householdId: FX.householdB, firstName: 'Eve', lastName: 'Fixture', email: null, isMinor: false },
   { id: FX.guestC1, householdId: FX.householdC, firstName: 'Fin', lastName: 'Solo', email: 'fin.solo@example.test', isMinor: false },
 ] as const;
 
 export const FIXTURE_HOUSEHOLDS = [
-  { id: FX.householdA, name: 'Testhouse household', managerGuestId: FX.guestA1 },
+  {
+    id: FX.householdA,
+    name: 'Testhouse household',
+    managerGuestId: FX.guestA1,
+    mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+  },
   { id: FX.householdB, name: 'Fixture household', managerGuestId: FX.guestB1 },
   { id: FX.householdC, name: 'Solo household', managerGuestId: FX.guestC1 },
 ] as const;
@@ -73,7 +84,15 @@ export const FIXTURE_MEALS = [
  */
 export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<void> {
   for (const h of FIXTURE_HOUSEHOLDS) await db.insert(households).values({ ...h, createdAt: now }).onConflictDoNothing({ target: households.id });
+  await db
+    .update(households)
+    .set({
+      mailingAddress: { city: 'Los Angeles', region: 'CA', postalCode: '90045', country: 'US' },
+      updatedAt: now,
+    })
+    .where(eq(households.id, FX.householdA));
   for (const g of FIXTURE_GUESTS) await db.insert(guests).values({ ...g, createdAt: now }).onConflictDoNothing({ target: guests.id });
+  await db.update(guests).set({ kind: 'child', isMinor: true, updatedAt: now }).where(eq(guests.id, FX.guestA3));
   const present = new Set((await db.select({ id: events.id }).from(events).where(inArray(events.id, Object.values(E)))).map((r) => r.id));
   for (const [idx, en] of FIXTURE_ENTITLEMENTS.entries()) {
     if (!present.has(en.eventId)) continue;
@@ -82,6 +101,23 @@ export async function seedTestFixtures(db: Db, now: Date = new Date()): Promise<
   if (!present.has(E.reception)) return;
   for (const m of FIXTURE_MEALS) await db.insert(mealOptions).values({ ...m, eventId: E.reception, version: 1, createdAt: now }).onConflictDoNothing({ target: mealOptions.id });
   await db.update(events).set({ mealOptionsVersion: 1, hasMeal: true }).where(eq(events.id, E.reception));
+
+  const vault = await getGuestPassVault();
+  const captureCode = '123456';
+  await db
+    .insert(guestSignInPasses)
+    .values({
+      id: fixtureId('PASSBASE01'),
+      slug: BASELINE_GUEST_PASS_SLUG,
+      guestId: FX.guestA1,
+      codeCiphertext: vault.seal(captureCode),
+      codeKeyId: vault.keyId,
+      codeHash: vault.fingerprint(captureCode),
+      expiresAt: defaultGuestPassExpiry(now, 365),
+      issuedBy: { kind: 'system', component: 'seed' },
+      createdAt: now,
+    })
+    .onConflictDoNothing({ target: guestSignInPasses.slug });
 }
 
 const ENT = (list: Entitlement[]) => new Set<Entitlement>(list);

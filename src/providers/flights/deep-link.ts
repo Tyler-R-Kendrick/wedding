@@ -47,3 +47,32 @@ export function flightsHandoff(req: FlightSearchRequest): ExternalHandoff {
     disclosure: 'You will leave our site to compare and book flights with Skyscanner. We never see your payment details.',
   };
 }
+
+/** Kayak flight search deep link (on the redirect allowlist). */
+export function kayakFlightsUrl(req: FlightSearchRequest): string {
+  assertFlightSearchRequest(req);
+  const from = req.origin.toUpperCase();
+  const to = (req.destination ?? 'ORD').toUpperCase();
+  const path = req.returnDate
+    ? `${from}-${to}/${req.departDate}/${req.returnDate}`
+    : `${from}-${to}/${req.departDate}`;
+  const params = new URLSearchParams({ sort: 'bestflight_a', adults: String(req.adults) });
+  if (req.children) params.set('children', String(req.children));
+  if (req.nonstopOnly) params.set('stops', '0');
+  return `https://www.kayak.com/flights/${path}?${params.toString()}`;
+}
+
+export function kayakFlightsHandoff(req: FlightSearchRequest): ExternalHandoff {
+  return {
+    provider: 'kayak',
+    label: 'Continue on Kayak',
+    url: kayakFlightsUrl(req),
+    opensNewTab: true,
+    disclosure: 'You will leave our site to compare and book flights with Kayak. We never see your payment details.',
+  };
+}
+
+/** Partner OTAs shown beside live search and on fallback (Google Flights comes from the active provider deep link). */
+export function partnerFlightHandoffs(req: FlightSearchRequest): ExternalHandoff[] {
+  return [flightsHandoff(req), kayakFlightsHandoff(req)];
+}

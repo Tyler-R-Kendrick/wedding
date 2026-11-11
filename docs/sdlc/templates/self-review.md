@@ -1,6 +1,6 @@
 # Self-review — PR NN `<slug>`
 
-> Copy to `docs/reviews/PR-NN-self-review.md`. Written by someone other than
+> Paste into the pull request (not committed). Written by someone other than
 > the builder where possible. Every section is filled; "n/a" needs a reason.
 > Process: [`docs/sdlc/PROCESS.md`](../PROCESS.md) Stage 7.
 
@@ -69,8 +69,8 @@ Tick each ADR whose threat model this PR touches and say how.
 
 | Theme | Critique file | Design | Usability | Creativity | Content | Verdict |
 |---|---|---|---|---|---|---|
-| Gilded Hour | `docs/design/critiques/…` | | | | | |
-| Conservatory | `docs/design/critiques/…` | | | | | |
+| Gilded Hour | (critique in the PR) | | | | | |
+| Conservatory | (critique in the PR) | | | | | |
 
 `impeccable-finish-reviewer` material fixes remaining: none / list.
 

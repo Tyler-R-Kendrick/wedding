@@ -2,45 +2,40 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 /**
- * Level 05: every content page rendered through both theme kits. Each page × theme is checked for
- * the landmarks a guest navigates by, the structural signature of its theme (the two must not
- * converge), the page's primary action inside the first screen of a 390 phone, and axe-clean
- * WCAG 2.2 AA at 390 / 768 / 1440.
+ * Every public content page, rendered through the theme kit. Each page is checked for the landmarks
+ * a guest navigates by, the design's own structure, the page's primary action inside the first
+ * screen of a 390 phone, and axe-clean WCAG 2.2 AA at 390 / 768 / 1440.
+ *
+ * This file runs signed out, against the production build, so its pages are the public ones: Our
+ * Story and Our Adventures. Everything that says when or where the wedding is sits behind sign-in,
+ * and the last block here asserts exactly that.
  */
 
-/** The approved design, then the two proposals it superseded (still reachable by `?theme=`). */
-const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-type Theme = (typeof THEMES)[number];
-
-/** Reserved by the fixed bottom chrome (elevator panel / two-action bar), so it is not "in the fold". */
+/** A phone. The fixed bottom action bar takes its share, so that part is not "in the fold". */
 const PHONE = { width: 390, height: 844 };
 
 interface PageCase {
   key: string;
   path: string;
-  /** One H1 for every design, or per design where the approved composition titles the page itself. */
-  h1: string | RegExp | Record<Theme, string | RegExp>;
+  h1: string | RegExp;
   /**
    * What the page exists to deliver first. `control: true` targets are tapped, so the whole
    * control must sit in the first screen; reading targets only have to start there.
    */
   primary: (page: Page) => Locator;
-  /** Where the approved design leads with something else in the first screen. */
-  primaryFor?: Partial<Record<Theme, (page: Page) => Locator>>;
   control?: boolean;
-  /** Markup only the correct theme kit produces, asserted per theme. */
-  signature: Record<Theme, string>;
+  /** Markup only the design's own recipe for this page produces. */
+  signature: string;
 }
 
 const PAGES: PageCase[] = [
   {
     key: 'our-story',
     path: '/our-story',
-    h1: { 'botanical-deco': 'How we found our way to forever', 'gilded-hour': 'Our Story', conservatory: 'Our Story' },
-    primary: (p) => p.getByRole('heading', { name: 'How we met', level: 2 }),
-    // The approved opening leads into the ride; its boarding sign is the first thing to reach.
-    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: /^Ride the .+ Line$/, level: 2 }) },
-    signature: { 'botanical-deco': '.bd-ride-map .bd-ride-map__dot', 'gilded-hour': '.gh-spine .gh-plaque--act', conservatory: '.cv-stem .cv-stem__leaf' },
+    h1: 'How we found our way to forever',
+    // The opening leads into the ride; its boarding sign is the first thing to reach.
+    primary: (p) => p.getByRole('heading', { name: /^Ride the .+ Line$/, level: 2 }),
+    signature: '.bd-ride-map .bd-ride-map__dot',
   },
   {
     key: 'our-adventures',
@@ -48,64 +43,20 @@ const PAGES: PageCase[] = [
     h1: 'The places that shaped us',
     primary: (p) => p.locator('main').getByRole('link', { name: 'All', exact: true }),
     control: true,
-    signature: { 'botanical-deco': '.bd-ledger .bd-entry[data-adventure]', 'gilded-hour': '.gh-ledger .gh-entry__num', conservatory: '.cv-mount .cv-pressed[data-flower]' },
+    signature: '.bd-ledger .bd-entry[data-adventure]',
   },
   {
     key: 'adventure-detail',
     path: '/our-adventures/starved-rock',
     h1: 'Starved Rock',
     primary: (p) => p.getByRole('heading', { name: 'The memory', level: 2 }),
-    signature: { 'botanical-deco': '.bd-diptych .bd-diptych__leaf', 'gilded-hour': '.gh-diptych .gh-diptych__leaf', conservatory: '.cv-voices .cv-voice' },
+    signature: '.bd-diptych .bd-diptych__leaf',
   },
-  {
-    key: 'share-an-adventure',
-    path: '/share-an-adventure',
-    h1: 'Borrow a few of ours',
-    // 22,600 px at 390: the page's first action is the jump list, not the itinerary filter below it
-    primary: (p) => p.locator('main nav[aria-label="On this page"] a').first(),
-    control: true,
-    signature: { 'botanical-deco': '.bd-stops .bd-stops__num', 'gilded-hour': '.gh-stops .gh-stops__num', conservatory: '.cv-vine--stops .cv-leaf' },
-  },
-  {
-    key: 'recommendation',
-    path: '/share-an-adventure/starved-rock-state-park',
-    h1: 'Starved Rock State Park',
-    primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-rec .bd-rec__inner', 'gilded-hour': '.gh-rec .gh-rec__inner', conservatory: '.cv-rec .cv-specimen' },
-  },
-  {
-    key: 'our-venue',
-    path: '/our-venue',
-    h1: { 'botanical-deco': 'Our Venue', 'gilded-hour': 'Chicago Athletic Association Hotel', conservatory: 'Chicago Athletic Association Hotel' },
-    primary: (p) => p.locator('[id^="fact-"]').first(),
-    // The approved page opens on the couple, then the venue: its introduction starts in the first screen.
-    primaryFor: { 'botanical-deco': (p) => p.getByRole('heading', { name: 'Chicago Athletic Association', level: 2 }) },
-    signature: { 'botanical-deco': '.bd-place__frames .bd-place__frame', 'gilded-hour': '.gh-floorplan .gh-room__num', conservatory: '.cv-mount--rooms .cv-room' },
-  },
-  {
-    key: 'venue-space',
-    path: '/our-venue/white-city-ballroom',
-    h1: 'White City Ballroom',
-    primary: (p) => p.locator('#look li').first(),
-    signature: { 'botanical-deco': '.bd-docent .bd-docent__num', 'gilded-hour': '.gh-docent .gh-docent__num', conservatory: '.cv-lookfor .cv-lookfor__leaf' },
-  },
-  {
-    key: 'the-wedding',
-    path: '/the-wedding',
-    h1: 'The Wedding',
-    primary: (p) => p.getByRole('link', { name: 'Open directions in Google Maps' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-programme .bd-date', 'gilded-hour': '.gh-programme .gh-plaque--act', conservatory: '.cv-programme .cv-leaf' },
-  },
-  {
-    key: 'ask-us',
-    path: '/ask-us',
-    h1: 'Questions, answered',
-    primary: (p) => p.locator('main form[role="search"]').getByRole('button', { name: 'Search' }),
-    control: true,
-    signature: { 'botanical-deco': '.bd-faq .bd-faq__entry', 'gilded-hour': '.gh-faq .gh-faq__entry', conservatory: '.cv-faq .cv-faq__entry' },
-  },
+  // Our Venue and its rooms say where the wedding is, so they are behind sign-in (asserted below,
+  // signed out) and their coverage — heading, the design's own structure, axe — runs with a
+  // session on the test server (guest-portal.spec.ts). The Wedding page is gone: what it said is on
+  // the guest dashboard. Ask Us is guest-gated (#86) and lives under /guests/ask-us; its themed
+  // coverage also runs on the test server (quality-sweep.spec.ts).
 ];
 
 async function axeClean(page: Page, label: string) {
@@ -127,178 +78,169 @@ async function foldHeight(page: Page): Promise<number> {
   });
 }
 
-for (const theme of THEMES) {
-  for (const c of PAGES) {
-    test.describe(`${c.key} (${theme})`, () => {
-      test('landmarks, heading and the theme\'s own structure', async ({ page }) => {
-        await page.goto(`${c.path}?theme=${theme}`);
-        await expect(page.locator(`.site[data-theme="${theme}"]`)).toBeAttached();
-        const h1 = typeof c.h1 === 'string' || c.h1 instanceof RegExp ? c.h1 : c.h1[theme];
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1);
-        await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
-        await expect(page.locator('main#main')).toBeAttached();
-        await expect(page.getByRole('contentinfo')).toBeAttached();
-        // exactly one H1, and the theme's own markup — the two kits never converge on one structure
-        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-        await expect(page.locator(c.signature[theme]).first()).toBeAttached();
-        for (const other of THEMES.filter((t) => t !== theme)) await expect(page.locator(c.signature[other])).toHaveCount(0);
-        // placeholders stay visibly marked and the raw marker never reaches a guest
-        const text = await page.locator('main').innerText();
-        expect(text).not.toContain('TODO(Tyler & Sara)');
-        // BL-1: internal ticket references live in the content record, never on a guest page
-        expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key} (${theme}): internal backlog identifiers are visible to guests`).toEqual([]);
-        // every placeholder says who is writing it, visibly, and that text is its accessible name
-        for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
-          await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
-          await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
-        }
-      });
-
-      test('the primary action is in the first screen at 390', async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
-        await page.setViewportSize(PHONE);
-        await page.goto(`${c.path}?theme=${theme}`);
-        const target = (c.primaryFor?.[theme] ?? c.primary)(page).first();
-        await expect(target).toBeVisible();
-        const box = (await target.boundingBox())!;
-        const fold = await foldHeight(page);
-        expect(box.y, `${c.key} (${theme}): primary target starts below the first screen`).toBeLessThan(fold);
-        if (c.control) {
-          expect(box.y + box.height, `${c.key} (${theme}): primary action is not fully tappable in the first screen`).toBeLessThanOrEqual(fold);
-          await target.focus();
-          await expect(target).toBeFocused();
-        }
-      });
-
-      test('axe clean at 390, 768 and 1440', async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'desktop', 'the three widths are set explicitly, so this runs once');
-        for (const [w, h] of [
-          [390, 844],
-          [768, 1024],
-          [1440, 900],
-        ] as const) {
-          await page.setViewportSize({ width: w, height: h });
-          await page.goto(`${c.path}?theme=${theme}`);
-          await axeClean(page, `${c.key} (${theme}) at ${w}×${h}`);
-        }
-      });
+for (const c of PAGES) {
+  test.describe(c.key, () => {
+    test('landmarks, heading and the design\'s own structure', async ({ page }) => {
+      await page.goto(c.path);
+      await expect(page.locator('.site[data-theme="botanical-deco"]')).toBeAttached();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(c.h1);
+      await expect(page.getByRole('navigation', { name: 'Site' })).toBeAttached();
+      await expect(page.locator('main#main')).toBeAttached();
+      await expect(page.getByRole('contentinfo')).toBeAttached();
+      // exactly one H1, and the design's own markup for this page
+      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+      await expect(page.locator(c.signature).first()).toBeAttached();
+      // placeholders stay visibly marked and the raw marker never reaches a guest
+      const text = await page.locator('main').innerText();
+      expect(text).not.toContain('TODO(Tyler & Sara)');
+      // BL-1: internal ticket references live in the content record, never on a guest page
+      expect(text.match(/\((?:[^()]*\s)?backlog[^()]*\)|\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/gi) ?? [], `${c.key}: internal backlog identifiers are visible to guests`).toEqual([]);
+      // every placeholder says who is writing it, visibly, and that text is its accessible name
+      for (const stamp of await page.locator('[data-placeholder="true"] .placeholder__label').all()) {
+        await expect(stamp).toHaveText(/Sara \+ Tyler are still writing this/i);
+        await expect(stamp).not.toHaveAttribute('aria-hidden', 'true');
+      }
     });
-  }
+
+    test('the primary action is in the first screen at 390', async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
+      await page.setViewportSize(PHONE);
+      await page.goto(c.path);
+      const target = c.primary(page).first();
+      await expect(target).toBeVisible();
+      const box = (await target.boundingBox())!;
+      const fold = await foldHeight(page);
+      expect(box.y, `${c.key}: primary target starts below the first screen`).toBeLessThan(fold);
+      if (c.control) {
+        expect(box.y + box.height, `${c.key}: primary action is not fully tappable in the first screen`).toBeLessThanOrEqual(fold);
+        await target.focus();
+        await expect(target).toBeFocused();
+      }
+    });
+
+    test('axe clean at 390, 768 and 1440', async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the three widths are set explicitly, so this runs once');
+      for (const [w, h] of [
+        [390, 844],
+        [768, 1024],
+        [1440, 900],
+      ] as const) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto(c.path);
+        await axeClean(page, `${c.key} at ${w}×${h}`);
+      }
+    });
+  });
 }
 
-test.describe('content pages keep their structure across a design switch', () => {
-  test('the same route answers in any design and never mixes them', async ({ request }) => {
-    for (const c of PAGES) {
-      const approved = await request.get(`${c.path}?theme=botanical-deco`);
-      expect(approved.headers()['x-theme'], c.key).toBe('botanical-deco');
-      const bd = await approved.text();
-      expect(bd, c.key).toContain('data-theme="botanical-deco"');
-      expect(bd, c.key).not.toMatch(/data-theme="(gilded-hour|conservatory)"/);
-      const gilded = await request.get(`${c.path}?theme=gilded-hour`);
-      expect(gilded.headers()['x-theme'], c.key).toBe('gilded-hour');
-      expect(await gilded.text(), c.key).toContain('data-theme="gilded-hour"');
-      const conservatory = await request.get(`${c.path}?theme=conservatory`);
-      expect(conservatory.headers()['x-theme'], c.key).toBe('conservatory');
-      const html = await conservatory.text();
-      expect(html, c.key).toContain('data-theme="conservatory"');
-      expect(html, c.key).not.toContain('data-theme="gilded-hour"');
-    }
+/**
+ * BL-2 · Fixed bottom chrome must be paid for in layout: the design declares what it pins to the
+ * bottom of a phone and `main` reserves its height, so the bar never lands on the end of the page.
+ */
+test.describe('bottom chrome is reserved', () => {
+  test('main reserves at least the height of its fixed bottom control', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'phone chrome only');
+    await page.setViewportSize(PHONE);
+    await page.goto('/our-story');
+    const r = await page.evaluate(() => {
+      const main = document.querySelector('main')!;
+      const pad = parseFloat(getComputedStyle(main).paddingBlockEnd);
+      const bottom = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((el) => {
+        const cs = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return cs.position === 'fixed' && cs.display !== 'none' && cs.visibility !== 'hidden' && rect.height > 0 && rect.bottom >= window.innerHeight - 32;
+      });
+      // the control's height plus whatever it floats above the viewport edge
+      const needed = bottom.reduce((h, el) => Math.max(h, el.getBoundingClientRect().height + (window.innerHeight - el.getBoundingClientRect().bottom)), 0);
+      return { pad, needed, names: bottom.map((el) => el.className) };
+    });
+    expect(r.names.length, 'no fixed bottom control found — the probe needs updating').toBeGreaterThan(0);
+    expect(r.pad, `main reserves ${r.pad}px for ${r.needed}px of fixed chrome (${r.names.join(', ')})`).toBeGreaterThanOrEqual(r.needed);
   });
 });
 
-
 /**
- * BL-2 · Fixed bottom chrome must be paid for in layout. Gilded Hour reserved 72.25 px for its
- * elevator panel and Conservatory reserved nothing for its floating Menu tag, so the tag landed on
- * the line-ends of the measure. Both designs now declare what they pin and reserve its height.
+ * Signed out, the site is the two of us and the door. When the wedding is and where — the date, the
+ * venue, its address — are the invited guests': Home and Our Story say none of it,
+ * and the pages that do answer with the way to sign in.
  */
-test.describe('bottom chrome is reserved in every design', () => {
-  for (const theme of THEMES) {
-    test(`${theme}: main reserves at least the height of its fixed bottom control`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'mobile', 'phone chrome only');
-      await page.setViewportSize(PHONE);
-      await page.goto(`/our-story?theme=${theme}`);
-      const r = await page.evaluate(() => {
-        const main = document.querySelector('main')!;
-        const pad = parseFloat(getComputedStyle(main).paddingBlockEnd);
-        const bottom = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((el) => {
-          const cs = getComputedStyle(el);
-          const rect = el.getBoundingClientRect();
-          return cs.position === 'fixed' && cs.display !== 'none' && cs.visibility !== 'hidden' && rect.height > 0 && rect.bottom >= window.innerHeight - 32;
-        });
-        // the control's height plus whatever it floats above the viewport edge
-        const needed = bottom.reduce((h, el) => Math.max(h, el.getBoundingClientRect().height + (window.innerHeight - el.getBoundingClientRect().bottom)), 0);
-        return { pad, needed, names: bottom.map((el) => el.className) };
-      });
-      expect(r.names.length, `${theme}: no fixed bottom control found — the probe needs updating`).toBeGreaterThan(0);
-      expect(r.pad, `${theme}: main reserves ${r.pad}px for ${r.needed}px of fixed chrome (${r.names.join(', ')})`).toBeGreaterThanOrEqual(r.needed);
-    });
-  }
-});
+const WEDDING_DETAILS = ['July 17', 'Chicago Athletic', 'Michigan Ave'] as const;
 
-/**
- * BL-3 · The longest page on the site (≈22,600 px at 390) has to be navigable by heading and by
- * jump link: a category sits one level above the places it groups, and no two headings share a name.
- */
-test.describe('the guide is navigable', () => {
-  for (const theme of THEMES) {
-    test(`${theme}: heading outline is valid and the jump list reaches every group`, async ({ page }) => {
-      await page.goto(`/share-an-adventure?theme=${theme}`);
-      const r = await page.evaluate(() => {
-        const hs = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => ({ lvl: Number(h.tagName[1]), txt: (h.textContent ?? '').replace(/\s+/g, ' ').trim() }));
-        const names = hs.map((h) => h.txt);
-        const jump = Array.from(document.querySelectorAll('main nav[aria-label="On this page"] a')).map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '');
-        const categories = Array.from(document.querySelectorAll('main section[id^="category-"]')).map((sec) => ({
-          id: sec.id,
-          headingLevel: Number((sec.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1]),
-          placeLevels: Array.from(sec.querySelectorAll('[data-recommendation]')).map((a) => Number((a.querySelector('h2, h3, h4')?.tagName ?? 'H0')[1])),
-        }));
-        return {
-          skips: hs.slice(1).filter((h, i) => h.lvl - (hs[i]?.lvl ?? h.lvl) > 1).length,
-          duplicates: [...new Set(names.filter((n, i) => names.indexOf(n) !== i))],
-          jump,
-          categories,
-          h1: hs.filter((h) => h.lvl === 1).length,
-        };
-      });
-      expect(r.h1).toBe(1);
-      expect(r.skips, `${theme}: the outline skips a heading level`).toBe(0);
-      expect(r.duplicates, `${theme}: two headings share a name, so heading navigation cannot tell them apart`).toEqual([]);
-      expect(r.categories.length).toBeGreaterThan(0);
-      for (const cat of r.categories) {
-        expect(cat.placeLevels.length, `${cat.id} has no places`).toBeGreaterThan(0);
-        for (const lvl of cat.placeLevels) expect(lvl, `${cat.id}: a place is not one level below its category`).toBe(cat.headingLevel + 1);
-        expect(r.jump, `${cat.id} is not reachable from the jump list`).toContain(`#${cat.id}`);
+test.describe('a signed-out reader is told nothing about the wedding', () => {
+  for (const path of ['/', '/our-story'] as const) {
+    test(`${path} names no date, venue or address`, async ({ page }) => {
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBeLessThan(400);
+      await expect(page.locator('.site[data-theme="botanical-deco"]')).toBeAttached();
+      await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('');
+      // The whole document a reader is given: header, page, footer and anything visually hidden.
+      const text = await page.locator('body').innerText();
+      const html = await page.content();
+      for (const detail of WEDDING_DETAILS) {
+        expect(text, `${path} shows "${detail}" to a signed-out reader`).not.toContain(detail);
+        expect(html, `${path} ships "${detail}" to a signed-out reader in its markup`).not.toContain(detail);
       }
-      // every jump target exists
-      for (const href of r.jump) await expect(page.locator(href)).toHaveCount(1);
+      // No countdown and no schedule either: both say when.
+      await expect(page.locator('main time[datetime^="2027-07-17"]')).toHaveCount(0);
+      expect(text).not.toMatch(/\bdays? to go\b/i);
     });
   }
-});
 
-/**
- * BL-6 · The Wedding's first screen used to end on ornament: a bare octagonal "01" under a
- * three-line centred address. It now carries the question a guest actually has and the start of
- * its answer, above the fixed chrome.
- */
-test.describe('The Wedding opens with content, not ornament', () => {
-  for (const theme of THEMES) {
-    test(`${theme}: "What to wear" and the start of its answer are in the first screen at 390`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'mobile', 'phone-fold check runs once, at an exact 390 × 844');
-      await page.setViewportSize(PHONE);
-      await page.goto(`/the-wedding?theme=${theme}`);
-      const fold = await foldHeight(page);
-      const heading = page.locator('#dress-title');
-      await expect(heading).toBeVisible();
-      const hb = (await heading.boundingBox())!;
-      expect(hb.y + hb.height, `${theme}: the dress-code heading is below the first screen`).toBeLessThanOrEqual(fold);
-      const answer = page.locator('#dress-code').locator('.placeholder, p').first();
-      const ab = (await answer.boundingBox())!;
-      expect(ab.y, `${theme}: the answer does not start in the first screen`).toBeLessThan(fold);
-      // and the directions handoff — the page's one action — is still fully tappable up there
-      const directions = page.getByRole('link', { name: 'Open directions in Google Maps' });
-      const db = (await directions.boundingBox())!;
-      expect(db.y + db.height, `${theme}: the directions handoff is not fully in the first screen`).toBeLessThanOrEqual(fold);
+  test('home offers the door and the story, and the two public pages', async ({ page }) => {
+    await page.goto('/');
+    const main = page.locator('main#main');
+    // The secondary action is always the story; the primary one leads through sign-in.
+    await expect(main.getByRole('link', { name: 'Our Story', exact: true }).first()).toHaveAttribute('href', '/our-story');
+    const throughDoor = await main.locator('a[href^="/sign-in?next="]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+    expect(throughDoor.length, 'home offers no way in').toBeGreaterThan(0);
+    // Nothing on Home links a guest page directly: every such link goes through the door.
+    const direct = await main.locator('a[href^="/guests"], a[href="/rsvp"], a[href="/our-venue"], a[href="/gifts"], a[href="/photos"], a[href="/trip"], a[href="/transportation"]').count();
+    expect(direct, 'home links a guest page without going through sign-in').toBe(0);
+    // The navigation is the two of us and the door. Read from the markup, not from what is on
+    // screen: on a phone the list is in the Menu sheet, and a link hidden there is still offered.
+    const chrome = await page.locator('header a[href], nav a[href], dialog a[href], [role="dialog"] a[href], footer a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+    expect(chrome, 'the signed-out navigation has no Our Story').toContain('/our-story');
+    expect(chrome, 'the signed-out navigation has no Our Adventures').toContain('/our-adventures');
+    expect(chrome, 'the signed-out navigation has no sign-in').toContain('/sign-in');
+    for (const href of chrome) {
+      expect(href, 'the signed-out chrome links a guest page').not.toMatch(/^\/(?:guests|our-venue|rsvp|gifts|photos|media|trip|transportation|travel|the-wedding|your-weekend|ask-us|share-an-adventure)(?:[/?#]|$)/);
+      // Directions name the venue: no map link for a reader who has not signed in.
+      expect(href, 'the signed-out chrome links directions').not.toMatch(/maps\.(?:google|apple)\.|google\.[a-z.]+\/maps/);
+    }
+  });
+
+  for (const path of ['/our-venue', '/our-venue/white-city-ballroom'] as const) {
+    test(`${path} sends a signed-out reader to sign in`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(path)}$`));
+      const text = await page.locator('body').innerText();
+      for (const detail of WEDDING_DETAILS) expect(text, `the door shows "${detail}"`).not.toContain(detail);
+      await expect(page.locator('[data-space], [id^="fact-"]')).toHaveCount(0);
     });
   }
+
+  test('the old addresses lead to sign-in, and the removed ones are gone', async ({ request, page }) => {
+    test.setTimeout(90_000);
+    for (const [source, destination] of [
+      ['/the-wedding', '/guests'],
+      ['/your-weekend', '/guests'],
+      ['/travel', '/guests/travel'],
+      ['/guests/things-to-do', '/guests/travel'],
+      ['/share-an-adventure', '/guests/travel'],
+      ['/share-an-adventure/starved-rock-state-park', '/guests/things-to-do/starved-rock-state-park'],
+      ['/ask-us', '/guests/ask-us'],
+      ['/faq', '/guests/ask-us'],
+      ['/registry', '/gifts'],
+    ] as const) {
+      const moved = await request.get(source, { maxRedirects: 0 });
+      expect(moved.status(), source).toBe(308);
+      // The Things to Do list's addresses land on the planner's section of Your Trip.
+      expect(moved.headers().location, source).toMatch(new RegExp(`${destination}${destination === '/guests/travel' && source !== '/travel' ? '#plan' : ''}$`));
+      await page.goto(source);
+      await expect(page, source).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(destination)}(?:#plan)?$`));
+    }
+    for (const gone of ['/explore-caa', '/explore-caa/white-city-ballroom', '/wedding-day', '/things-to-do']) {
+      expect((await request.get(gone, { maxRedirects: 0 })).status(), gone).toBe(404);
+    }
+  });
 });

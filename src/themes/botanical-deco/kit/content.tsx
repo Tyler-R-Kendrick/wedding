@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, ProvenanceLine, Text as Block, placeholderHint } from '@/components/provenance';
+import { FreshnessBadge, Paragraphs, Placeholder as PlaceholderBlock, ProvenanceLine, Text as Block, isNamedForGuests, placeholderHint } from '@/components/provenance';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { formatDate, humanize } from '@/domain/content/format';
 import { guestText } from '@/domain/content/text';
-import type { HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
-import type { ContentKit, StopItem } from '@/themes/content-types';
+import { FaqAnswerBody, faqQuestionText } from '@/themes/shared/faq-answer';
+import type { HandoffView, OperationalFieldView, ProvenanceViewData, RecommendationCard as RecommendationCardData, TextBlockView } from '@/domain/content/views';
+import type { ContentKit } from '@/themes/content-types';
 import { Botanical } from '../media';
-import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel, stopMeta } from '@/themes/shared/content';
+import { CONTENT_COPY, OFFICIAL_LINK_ATTRS, chapterLabel, destinationLabel, handoffAttrs, handoffList, providerLabel } from '@/themes/shared/content';
 
 /*
  * Botanical–Deco content primitives. Ivory sheets with a hairline edge, fine gold rules under
@@ -55,7 +56,7 @@ const ExternalMark = ({ opens }: { opens?: string }) => (
     <svg className="bd-external" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d="M14 4h6v6M20 4l-9 9M18 13v7H4V6h7" />
     </svg>
-    <span className="sr-only">{`, opens ${opens ?? 'in a new tab'}`}</span>
+    <span className="sr-only">{`, opens ${opens ? `${opens} ` : ''}in a new tab`}</span>
   </>
 );
 
@@ -130,6 +131,7 @@ function Provenance({ provenance, freshness = false }: { provenance: ProvenanceV
   if (provenance.trustClass === 'TRUSTED_WEDDING' && !provenance.external && !provenance.url?.startsWith('https://')) {
     return <p className="bd-prov bd-prov--own">From Sara + Tyler</p>;
   }
+  if (!isNamedForGuests(provenance) && !freshness) return null;
   return (
     <div className="bd-prov">
       <ProvenanceLine provenance={provenance}>{freshness ? <FreshnessBadge provenance={provenance} /> : null}</ProvenanceLine>
@@ -381,52 +383,6 @@ function RecommendationCard({ card, headingLevel = 3 }: { card: RecommendationCa
   );
 }
 
-function StopList({ stops, label }: { stops: StopItem[]; label: string }) {
-  return (
-    <ol className="bd-stops" aria-label={label}>
-      {stops.map((s, i) => (
-        <li key={`${s.recommendation.id}-${i}`} className="bd-stops__stop">
-          <span className="bd-stops__num" aria-hidden="true">
-            {pad(i + 1)}
-          </span>
-          <span className="bd-stops__body">
-            <a className="bd-link" href={s.recommendation.href}>
-              {s.recommendation.title}
-            </a>
-            {stopMeta(s).map((m) => (
-              <span key={m} className="bd-stops__meta">
-                {' · '}
-                {m}
-              </span>
-            ))}
-            {s.recommendation.placeholder ? <span className="bd-badge bd-badge--info">{CONTENT_COPY.flags.placeholder}</span> : null}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ItineraryCard({ itinerary: it }: { itinerary: ItineraryView; index: number }) {
-  return (
-    <article className="bd-card bd-itinerary" data-itinerary={it.slug} id={it.slug}>
-      <div className="bd-card__inner">
-        <p className="bd-card__label">{humanize(it.bucket)}</p>
-        <h3 className="bd-card__title">{it.title}</h3>
-        <StatusFlags draft={it.draft} placeholder={it.placeholder} />
-        {it.intro ? (
-          <p>
-            <Block block={it.intro} inline />
-          </p>
-        ) : null}
-        {it.stops.length ? <StopList stops={it.stops} label={`${it.title}: stops`} /> : null}
-        {it.stops.length ? <p className="bd-muted">About {formatMinutes(it.totalMinutes)} in total.</p> : null}
-        <ProvenanceLine provenance={it.provenance} />
-      </div>
-    </article>
-  );
-}
-
 function LookForList({ items, label }: Parameters<ContentKit['LookForList']>[0]) {
   return (
     <ol className="bd-docent" aria-label={label}>
@@ -549,75 +505,17 @@ function FactList({ facts, label }: Parameters<ContentKit['FactList']>[0]) {
   );
 }
 
-function Programme({ events, venueName, startNumber }: Parameters<ContentKit['Programme']>[0]) {
-  return (
-    <ol className="bd-programme" aria-label="Order of the day">
-      {events.map((e, i) => (
-        <li key={e.id} id={e.id} className="bd-programme__act">
-          <DateTile iso={e.dateIso} />
-          <span className="sr-only">Part {startNumber + i}.</span>
-          <div className="bd-programme__body">
-          <h2 className="bd-h bd-h--2">{e.name}</h2>
-          <MetaList
-            items={[
-              {
-                /*
-                 * One fact per line when the other half is a placeholder, never joined by a middot.
-                 * `Chicago Athletic Association Hotel · Sara + Tyler are still writing this: which
-                 * room` reads as one run-on claim, and at 390 the separator lands alone on a line
-                 * between them. `WeekendPage` fixed the same defect at level 09; this is the themed
-                 * copy of it, on the page that carries the wedding's own facts.
-                 */
-                label: 'When',
-                value: e.timeLabel.placeholder ? (
-                  <>
-                    <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
-                    <Block block={e.timeLabel} />
-                  </>
-                ) : (
-                  <>
-                    <time dateTime={e.dateIso}>{e.weekdayLabel}</time>
-                    {' · '}
-                    <Block block={e.timeLabel} inline />
-                  </>
-                ),
-              },
-              {
-                label: 'Where',
-                value: e.room.placeholder ? (
-                  <>
-                    {venueName}
-                    <Block block={e.room} />
-                  </>
-                ) : (
-                  <>
-                    {venueName}
-                    {' · '}
-                    <Block block={e.room} inline />
-                  </>
-                ),
-              },
-            ]}
-          />
-          <ProseBlock blocks={e.whatHappens} />
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 function FaqList({ entries, labelFor }: Parameters<ContentKit['FaqList']>[0]) {
   return (
     <div className="bd-faq">
       {entries.map((e) => (
         <article key={e.id} id={e.slug} className="bd-faq__entry" aria-labelledby={`faq-${e.slug}`}>
           <h3 id={`faq-${e.slug}`} className="bd-faq__q">
-            {guestText(e.question)}
+            {faqQuestionText(e.question)}
           </h3>
           <StatusFlags placeholder={e.placeholder} />
           <div className="bd-prose bd-faq__a">
-            <Block block={e.answer} />
+            <FaqAnswerBody entry={e} />
             {e.route ? (
               <p>
                 <a className="bd-link bd-link--standalone" href={e.route}>
@@ -686,14 +584,11 @@ export const content: ContentKit = {
   AdventureList,
   RecommendationCard,
   Handoffs,
-  StopList,
-  ItineraryCard,
   LookForList,
   RoomGrid,
   CapacityTable,
   OutletList,
   FactList,
-  Programme,
   FaqList,
   SearchResults,
   Provenance,

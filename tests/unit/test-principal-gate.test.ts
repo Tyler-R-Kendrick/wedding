@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTestPrincipalResolver, isTestPrincipalEnabled, principalFromSpec, sessionScopedLimiter } from '@/domain/testing/testPrincipal';
+import { createTestPrincipalResolver, isTestPrincipalEnabled, principalFromSpec, sessionScopedLimiter, testLifecycleOf } from '@/domain/testing/testPrincipal';
 import type { Principal } from '@/contracts/principal';
 import type { PrincipalResolver } from '@/lib/principal';
 
@@ -126,5 +126,38 @@ describe('an injected principal is metered per session, everyone else per person
     const lookalike = principalFromSpec({ ...guest, sessionId: 'browser-1' });
     expect(sessionScopedLimiter(limiter, lookalike)).toBe(limiter);
     expect(sessionScopedLimiter(limiter, anonymous)).toBe(limiter);
+  });
+});
+
+describe('an injected guest can name the day it is seen on', () => {
+  const guestSpec = { kind: 'guest' as const, guestId: '1'.repeat(26), householdId: '2'.repeat(26) };
+  const as = (body: Record<string, unknown>) => ({ 'x-test-auth': SECRET, 'x-test-principal': JSON.stringify(body) });
+  const enabled = createTestPrincipalResolver(fallback, { isTest: true, secret: SECRET });
+
+  it('carries the state for that principal only, and nothing when none was asked for', async () => {
+    const onTheDay = await enabled.resolve(req(as({ ...guestSpec, lifecycle: 'WEDDING_DAY' })));
+    const today = await enabled.resolve(req(as(guestSpec)));
+    expect(onTheDay.kind).toBe('guest');
+    expect(testLifecycleOf(onTheDay)).toBe('WEDDING_DAY');
+    expect(testLifecycleOf(today)).toBeUndefined();
+    expect(testLifecycleOf(undefined)).toBeUndefined();
+  });
+
+  it('is never read from a principal this resolver did not make', async () => {
+    // A real session's principal, shaped exactly like an injected one.
+    const real = principalFromSpec({ ...guestSpec });
+    expect(testLifecycleOf(real)).toBeUndefined();
+    expect(testLifecycleOf(anonymous)).toBeUndefined();
+  });
+
+  it('refuses a state that is not one, rather than guessing', async () => {
+    expect(await enabled.resolve(req(as({ ...guestSpec, lifecycle: 'TOMORROW' })))).toEqual(anonymous);
+  });
+
+  it('does nothing outside the test environment', async () => {
+    const off = createTestPrincipalResolver(fallback, { isTest: false, secret: SECRET });
+    const p = await off.resolve(req(as({ ...guestSpec, lifecycle: 'WEDDING_DAY' })));
+    expect(p).toEqual(anonymous);
+    expect(testLifecycleOf(p)).toBeUndefined();
   });
 });

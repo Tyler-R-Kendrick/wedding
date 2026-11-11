@@ -4,12 +4,14 @@ import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import type { RegisterPasskeyResult } from '@/capabilities/register_passkey';
 import type { RequestOtpResult } from '@/capabilities/request_otp';
+import type { RequestPhoneOtpResult } from '@/capabilities/request_phone_otp';
 import type { StepUpResult } from '@/capabilities/step_up';
 import type { SignInOutcome } from '@/capabilities/identity/signin';
 import type { ClaimIdentityResult } from '@/capabilities/claim_identity';
 import type { UpdateMyContactResult } from '@/capabilities/update_my_contact';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { isSafeReturnPath, safeReturnPath } from '@/domain/identity/routes';
+import { guestSignInLandingPath } from '@/domain/lifecycle/guest-portal';
 import { getAuth } from '@/lib/auth';
 import { clearChallengeCookie, readChallengeCookie, readVerified, rememberVerified, setChallengeCookie } from './challenge-cookie';
 import { errorCode } from './errors';
@@ -31,9 +33,14 @@ const str = (fd: FormData, key: string): string => {
  * near that limit would push it over and lose the invite; then `next` is left off instead.
  */
 const withNext = (path: string, next: string) => {
-  const carried = next ? `${path}?next=${encodeURIComponent(next)}` : path;
+  const carried = next ? `${path}${path.includes('?') ? '&' : '?'}next=${encodeURIComponent(next)}` : path;
   return isSafeReturnPath(carried) ? carried : path;
 };
+
+/** Sign-in with the Text tab open: phone sign-in is a tab of /sign-in (its default), never a page of its own. */
+const TEXT_TAB = '/sign-in?method=text';
+/** Sign-in with the Email tab open: a mistake on the email form comes back to that form, not to the default Text tab. */
+const EMAIL_TAB = '/sign-in?method=email';
 
 const withError = (path: string, code: string) => `${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`;
 
@@ -52,11 +59,21 @@ export async function startClaim(formData: FormData): Promise<void> {
   redirect('/claim/verify');
 }
 
+export async function sendPhoneSignInCode(formData: FormData): Promise<void> {
+  const phone = str(formData, 'phone');
+  const next = safeReturnPath(str(formData, 'next'), '');
+  const back = withNext(TEXT_TAB, next);
+  const r = await invokeFromRequest<RequestPhoneOtpResult>('request_phone_otp', { phone, next: next || undefined });
+  if (!r.ok) redirect(withError(back, errorCode(r.error)));
+  await setChallengeCookie({ c: r.value.data.challenge, to: r.value.data.deliveredTo, back, kind: 'phone_sign_in', lockedUntil: r.value.data.lockedUntil ?? undefined });
+  redirect('/claim/verify?channel=sms');
+}
+
 export async function sendSignInCode(formData: FormData): Promise<void> {
   const email = str(formData, 'email');
   const admin = str(formData, 'admin') === '1';
   const next = safeReturnPath(str(formData, 'next'), '');
-  const back = withNext(admin ? '/sign-in/admin' : '/sign-in', next);
+  const back = withNext(admin ? '/sign-in/admin' : EMAIL_TAB, next);
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: admin ? 'admin_sign_in' : 'sign_in', email, next: next || undefined });
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
@@ -67,22 +84,32 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
 export async function verifyCode(formData: FormData): Promise<void> {
   const code = str(formData, 'code').replace(/\s+/g, '');
   const cookie = await readChallengeCookie();
-  if (!cookie || !['claim', 'sign_in', 'admin_sign_in'].includes(cookie.kind)) {
+  if (!cookie || !['claim', 'sign_in', 'admin_sign_in', 'phone_sign_in'].includes(cookie.kind)) {
     await followVerified();
     redirect(withError('/claim/verify', 'expired'));
   }
-  const r = await invokeFromRequest<SignInOutcome>('verify_otp', { challenge: cookie.c, code });
+  const capability = cookie.kind === 'phone_sign_in' ? 'verify_phone_otp' : 'verify_otp';
+  const r = await invokeFromRequest<SignInOutcome>(capability, { challenge: cookie.c, code });
   if (!r.ok) redirect(withError('/claim/verify', errorCode(r.error)));
   const d = r.value.data;
   if (!d.guestId && !d.isAdmin) {
     await clearChallengeCookie();
-    redirect(withError('/sign-in', 'unlinked'));
+    redirect(withError(cookie.kind === 'phone_sign_in' ? TEXT_TAB : cookie.kind === 'admin_sign_in' ? '/sign-in/admin' : EMAIL_TAB, 'unlinked'));
   }
   // Who they said they were, when the session is about to be somebody else. Read before the cookie
   // is cleared, and carried only when the claim went through a household manager — the welcome page
   // has to reconcile the two names or it greets a no-email guest by the manager's and tells her she
   // manages the RSVP.
-  const target = d.isAdmin && !d.guestId ? safeReturnPath(d.next, '/admin') : safeReturnPath(d.next, '/claim/welcome');
+  const defaultGuest =
+    cookie.kind === 'claim'
+      ? '/claim/welcome'
+      : (cookie.kind === 'sign_in' || cookie.kind === 'phone_sign_in') && d.guestId
+        ? '/guests'
+        : '/claim/welcome';
+  const target =
+    d.isAdmin && !d.guestId
+      ? safeReturnPath(d.next, '/admin')
+      : guestSignInLandingPath(d.next, d.guestId ? defaultGuest : '/claim/welcome');
   await finishVerified(cookie.picked && target === '/claim/welcome' ? `/claim/welcome?picked=${encodeURIComponent(cookie.picked)}` : target);
 }
 

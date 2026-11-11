@@ -1,7 +1,11 @@
 import type { NextConfig } from 'next';
+import adventureSlugRedirects from './src/content/adventure-slug-redirects.json';
+import { REDIRECTS } from './src/lib/site-redirects';
 import { rightsHeaders } from './src/lib/rights';
 import { securityHeaders, stageFramingHeaders } from './src/lib/security-headers';
-import { stageHeaders, stageRewrites } from './src/lib/stage-hosting';
+import { STAGE_OR_HUB_HOST_VALUE, stageHeaders, stageRewrites } from './src/lib/stage-hosting';
+import { DEFAULT_THEME } from './src/themes/registry';
+import { STATIC_PUBLIC_ROUTES, STATIC_UNLESS, staticTreePath } from './src/themes/routes';
 
 // CSP and HSTS live here rather than in `src/proxy.ts`: the proxy's matcher skips `api/`, `_next/`,
 // `t/`, `fonts/`, `assets/` and any path with a dot, and `/t/<theme>` is the statically rendered
@@ -30,14 +34,55 @@ const deploymentSiteUrl = (() => {
   return host ? `https://${host}` : null;
 })();
 
+/**
+ * Build inputs that happen to live under `public/` and so would be served to anyone who asked.
+ *
+ * The media manifest and the photo licence ledger are read at build time (the picture markup, the
+ * credits page). Both list the photographs of the venue by name, which is exactly what a signed-out
+ * reader is not told. Nothing in the browser fetches either file, so the request is sent nowhere and
+ * answers 404; the credits a licence asks for are on `/credits`, where the signed-in reader who can
+ * see those photographs finds them.
+ */
+const UNSERVED_DATA_FILES = ['/media/botanical-deco/manifest.json', '/assets/attributions.json'].map((source) => ({ source, destination: '/_data-not-served' }));
+
+/**
+ * A request with no session, for a public page that has a prerendered copy, is answered from that
+ * copy (src/themes/routes.ts). Decided here, on the request alone and before the proxy's matcher
+ * would have let it in, so on Vercel the cached page is served without running a function; a
+ * request that carries any of `STATIC_UNLESS` falls through to the page that renders for its reader.
+ */
+const STATIC_PUBLIC_REWRITES = STATIC_PUBLIC_ROUTES.map((source) => ({ source, missing: [...STATIC_UNLESS], destination: staticTreePath(DEFAULT_THEME, source) }));
+
+/** `missing` for a header rule that must not apply on a design-stage host (src/lib/stage-hosting.ts). */
+const NOT_A_STAGE_HOST = [{ type: 'host' as const, value: STAGE_OR_HUB_HOST_VALUE }];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The browser suites run against `next dev` with NODE_ENV=test and compile every route in one
+  // burst. Nothing in that run reads a source map, and building them was a third of the compiler's
+  // memory (8.9 GB -> 5.9 GB over the same 34 routes, measured cold). A developer's own `next dev`
+  // keeps them.
+  ...(process.env.NODE_ENV === 'test' ? { experimental: { turbopackSourceMaps: false, turbopackInputSourceMaps: false, serverSourceMaps: false } } : {}),
   reactStrictMode: true,
   ...(deploymentSiteUrl ? { env: { NEXT_PUBLIC_SITE_URL: deploymentSiteUrl } } : {}),
-  // Native / wasm / worker-based packages must stay outside the server bundle.
-  serverExternalPackages: ['@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm'],
+  // Loaded by Node at run time, not compiled into the server bundle. The first list has to be
+  // (native, wasm or worker-based packages). The second is there for the dev and test servers'
+  // memory only: every route reaches these libraries, and compiling them again for each route and
+  // layer was another third of the compiler's footprint (5.9 GB -> 4.2 GB over the same 34
+  // routes). A production build bundles them instead, because a cold server start has to read every
+  // file it loads: left external, the startup hook alone read some 2,000 small files from
+  // node_modules. Server-side only: the browser bundle is unaffected.
+  serverExternalPackages: [
+    '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'pino-pretty', 'postgres', 'sharp', 'drizzle-orm',
+    ...(process.env.NODE_ENV === 'production'
+      ? []
+      : ['better-auth', '@better-auth/passkey', '@better-auth/drizzle-adapter', 'ai', 'zod', 'heic-convert', 'exifr', 'file-type', '@vercel/connect', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner']),
+  ],
   // Migrations are read from disk at runtime (db:migrate, dev auto-migrate).
   outputFileTracingIncludes: { '/**': ['./src/db/migrations/**'] },
+  // The on-device models (src/lib/ai/local) run only in the browser's worker. No server code loads
+  // them, and a server function must never carry them: onnxruntime-node alone is hundreds of MB.
+  outputFileTracingExcludes: { '/**': ['node_modules/@huggingface/transformers/**', 'node_modules/onnxruntime-node/**', 'node_modules/onnxruntime-web/**'] },
   async headers() {
     // Everything EXCEPT the routes that serve user-uploaded bytes. Those set their own
     // `Content-Security-Policy: sandbox`, which is strictly stronger for a document the site did
@@ -51,26 +96,34 @@ const nextConfig: NextConfig = {
       { source: '/((?!api/dev/storage/|api/uploads/).*)', headers: securityHeaders(headerOptions) },
       ...rightsHeaders(),
       ...stageHeaders(stageFramingHeaders(headerOptions)),
-      // The atlas files are addressed by content hash (src/themes/shared/atlas/files.ts), so a
-      // returning guest never re-downloads the map. Only the hashed address is immutable: a request
-      // without `?v=` (a stage's captured page) revalidates as before. Photos keep their names: a
-      // day, then revalidate.
-      { source: '/assets/atlas/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
-      { source: '/assets/photos/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }] },
+      // Files under public/. Next's default for them is `max-age=0`: a returning guest's browser
+      // asked about every picture and font on every visit. Pictures and icons keep their names when
+      // they are replaced, so a day, then revalidate in the background for a month. Only real file
+      // types: `/media/mine` and its neighbours are guests' pages, and stay `no-store`. Never on a
+      // stage host: what a stage serves is for a signed-in admin, and is not marked `public`.
+      { source: '/:dir(media|icons|assets)/:file(.+\\.(?:avif|jpe?g|png|svg|webp))', missing: NOT_A_STAGE_HOST, headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=2592000' }] },
+      // The fonts and the atlas are addressed by content hash (`?v=`: scripts/fonts/subset.py,
+      // src/themes/shared/atlas/files.ts), so they are never asked about again, and a regenerated
+      // file arrives under a new URL. Only the hashed address is immutable: a request without `?v=`
+      // revalidates as before.
+      { source: '/:dir(fonts|assets/atlas)/:path*', has: [{ type: 'query', key: 'v' }], missing: NOT_A_STAGE_HOST, headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
     ];
   },
-  // The venue page was "Explore CAA" at /explore-caa until it became Our Venue. Links already shared
-  // and citations already stored keep working; the browser carries the #fragment across.
+  // Pages folded into the guest portal keep their old addresses as permanent redirects, so a link
+  // already shared still arrives. Named aliases live in src/lib/site-redirects.ts, which the
+  // inventory and the crawler read too. Retired adventure URLs (same-day merges) stay in
+  // src/content/adventure-slug-redirects.json.
   async redirects() {
     return [
-      { source: '/explore-caa', destination: '/our-venue', permanent: true },
-      { source: '/explore-caa/:slug', destination: '/our-venue/:slug', permanent: true },
+      ...REDIRECTS.map((r) => ({ source: r.source, destination: r.destination, permanent: r.permanent })),
+      ...adventureSlugRedirects,
     ];
   },
   // The design pipeline's stages, served from public/_stages/ at <stage>.dev.<domain> (and by path
   // outside production). Before the app's own routes and files: see src/lib/stage-hosting.ts.
+  // The prerendered public pages come last: a stage host's `/` has already been rewritten by then.
   async rewrites() {
-    return { beforeFiles: stageRewrites({ production: process.env.VERCEL_ENV === 'production' }), afterFiles: [], fallback: [] };
+    return { beforeFiles: [...UNSERVED_DATA_FILES, ...stageRewrites({ production: process.env.VERCEL_ENV === 'production' }), ...STATIC_PUBLIC_REWRITES], afterFiles: [], fallback: [] };
   },
   // Sandboxes with parallel worktrees symlink node_modules outside the project; Turbopack needs its
   // filesystem root to contain the link target. Unset in normal checkouts and CI.

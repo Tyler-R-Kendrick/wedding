@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
-import { AdminFlow, type FlowStep } from '@/components/admin/flow/AdminFlow';
+import { useMemo, useState } from 'react';
+import { AdminFlow, type FieldErrors, type FlowStep } from '@/components/admin/flow/AdminFlow';
 import { useList } from '@/components/admin/flow/lists';
 import { CheckField, ChoiceField, Consequences, ReviewList, SelectField, TextField } from '@/components/admin/flow/fields';
 import { callCapability, newIdempotencyKey } from '@/components/handoff/client';
+import { formatDay } from '@/components/admin/flow/dates';
 
 export interface GuestSummary {
   id: string;
@@ -14,6 +15,7 @@ export interface GuestSummary {
   lastName: string;
   displayName: string;
   email: string | null;
+  phone: string | null;
   kind: string;
   isMinor: boolean;
   managedByGuestId: string | null;
@@ -33,11 +35,14 @@ const kindLabel = (k: string) => KINDS.find((x) => x.value === k)?.label ?? k;
 
 interface GuestValues extends Record<string, unknown> {
   householdId: string;
+  /** When there are no households yet, the flow creates one from this name before saving the guest. */
+  newHouseholdName: string;
   firstName: string;
   lastName: string;
   kind: string;
   isMinor: boolean;
   email: string;
+  phone: string;
   managedByGuestId: string;
   notes: string;
   /** The chosen household's members, fetched on step 1, for the "managed by" choice. */
@@ -53,50 +58,79 @@ interface GuestValues extends Record<string, unknown> {
 export function GuestFlow({ guest, households: given, defaultHouseholdId, label, variant = 'primary' }: { guest?: GuestSummary; households?: Option[]; defaultHouseholdId?: string; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
   // One list for the page (`ListsProvider`), unless the caller passes its own.
   const households = useList('households', given);
+  const bootstrapHousehold = !guest && households.length === 0;
   const initial: GuestValues = {
     householdId: guest?.householdId ?? defaultHouseholdId ?? '',
+    newHouseholdName: '',
     firstName: guest?.firstName ?? '',
     lastName: guest?.lastName ?? '',
     kind: guest?.kind ?? 'adult',
     isMinor: guest?.isMinor ?? false,
     email: guest?.email ?? '',
+    phone: guest?.phone ?? '',
     managedByGuestId: guest?.managedByGuestId ?? '',
     notes: guest?.notes ?? '',
     members: [],
   };
-  const householdName = (id: string) => households.find((h) => h.value === id)?.label ?? '';
+  const householdName = (id: string, v: GuestValues) => households.find((h) => h.value === id)?.label ?? v.newHouseholdName.trim();
 
   const steps: FlowStep<GuestValues>[] = [
     {
-      title: 'Who',
-      lede: 'Their name as it is printed on the invitation.',
-      fields: ['householdId', 'firstName', 'lastName', 'kind', 'isMinor'],
+      title: bootstrapHousehold ? 'Household and who' : 'Who',
+      lede: bootstrapHousehold
+        ? 'Start with the household name as it goes on the envelope, then the first guest in it.'
+        : 'Their name as it is printed on the invitation.',
+      fields: bootstrapHousehold ? ['newHouseholdName', 'firstName', 'lastName', 'kind', 'isMinor'] : ['householdId', 'firstName', 'lastName', 'kind', 'isMinor'],
       render: (ctx) => (
         <>
-          <SelectField ctx={ctx} name="householdId" label="Household" options={households} placeholder={households.length ? 'Choose a household' : 'Add a household first'} />
+          {bootstrapHousehold ? (
+            <TextField ctx={ctx} name="newHouseholdName" label="Household name as printed" hint='As on the envelope: “The Lovelace family”.' />
+          ) : (
+            <SelectField ctx={ctx} name="householdId" label="Household" options={households} placeholder="Choose a household" />
+          )}
           <TextField ctx={ctx} name="firstName" label="First name" autoComplete="off" />
           <TextField ctx={ctx} name="lastName" label="Last name" optional />
           <ChoiceField ctx={ctx} name="kind" legend="Kind" choices={KINDS} />
           <CheckField ctx={ctx} name="isMinor" label="A minor" hint="A minor never signs in; the household manager answers for them." />
         </>
       ),
-      ready: (v) => Boolean(v.householdId && v.firstName.trim()),
-      readyHint: { field: 'firstName', message: 'Choose a household and enter a first name.' },
-      next: async (v) => {
-        const res = await callCapability<{ members: { id: string; displayName: string; kind: string; isMinor: boolean }[] }>('admin_get_household', { input: { householdId: v.householdId } });
-        if (!res.ok || !res.data) return { errors: { householdId: res.error?.message ?? 'That household could not be read.' } };
+      ready: (v) => Boolean((v.householdId || v.newHouseholdName.trim()) && v.firstName.trim()),
+      readyHint: {
+        field: bootstrapHousehold ? 'newHouseholdName' : 'firstName',
+        message: bootstrapHousehold ? 'Give the household a name and enter a first name.' : 'Choose a household and enter a first name.',
+      },
+      next: async (v): Promise<{ errors?: FieldErrors; patch?: Partial<GuestValues> } | void> => {
+        let householdId = v.householdId;
+        if (!householdId && v.newHouseholdName.trim()) {
+          const created = await callCapability<{ household: { id: string; name: string } }>('admin_upsert_household', {
+            input: { name: v.newHouseholdName.trim() },
+            idempotencyKey: newIdempotencyKey(),
+          });
+          if (!created.ok || !created.data) {
+            return { errors: { newHouseholdName: created.error?.message ?? 'That household could not be saved.' } satisfies FieldErrors };
+          }
+          householdId = created.data.household.id;
+        }
+        if (!householdId) {
+          return { errors: { householdId: 'Choose a household first.' } satisfies FieldErrors };
+        }
+        const res = await callCapability<{ household: { name: string; managerGuestId: string | null }; members: { id: string; displayName: string; kind: string; isMinor: boolean }[] }>('admin_get_household', { input: { householdId } });
+        if (!res.ok || !res.data) {
+          return { errors: { householdId: res.error?.message ?? 'That household could not be read.' } satisfies FieldErrors };
+        }
         const members = res.data.members.filter((m) => m.id !== guest?.id && m.kind !== 'child' && !m.isMinor).map((m) => ({ value: m.id, label: m.displayName }));
         // A manager from another household is not a manager of this one.
         const keep = members.some((m) => m.value === v.managedByGuestId) ? v.managedByGuestId : '';
-        return { patch: { members, managedByGuestId: keep } };
+        return { patch: { householdId, newHouseholdName: res.data.household.name, members, managedByGuestId: keep } };
       },
     },
     {
       title: 'How to reach them',
-      fields: ['email', 'managedByGuestId', 'notes'],
+      fields: ['email', 'phone', 'managedByGuestId', 'notes'],
       render: (ctx) => (
         <>
           <TextField ctx={ctx} name="email" label="Email" type="email" inputMode="email" optional spellCheck={false} hint="Sign-in codes go here. Leave empty for someone the household manager answers for." />
+          <TextField ctx={ctx} name="phone" label="Mobile phone" type="tel" inputMode="tel" optional spellCheck={false} hint="US mobile for SMS sign-in when that is turned on. E.164 is stored." />
           <SelectField
             ctx={ctx}
             name="managedByGuestId"
@@ -117,9 +151,10 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
           <ReviewList
             items={[
               { label: 'Name', value: `${v.firstName} ${v.lastName}`.trim() },
-              { label: 'Household', value: householdName(v.householdId) },
+              { label: 'Household', value: householdName(v.householdId, v) },
               { label: 'Kind', value: `${kindLabel(v.kind)}${v.isMinor ? ', a minor' : ''}` },
               { label: 'Email', value: v.email },
+              { label: 'Phone', value: v.phone },
               { label: 'Answered for by', value: v.members.find((m) => m.value === v.managedByGuestId)?.label ?? (v.managedByGuestId ? '' : 'The household manager') },
               { label: 'Notes', value: v.notes },
             ]}
@@ -138,19 +173,53 @@ export function GuestFlow({ guest, households: given, defaultHouseholdId, label,
       steps={steps}
       submit={{
         label: guest ? 'Save guest' : 'Add a guest',
-        capability: 'admin_upsert_guest',
         success: guest ? 'Guest saved.' : 'Guest added.',
-        input: (v) => ({
-          id: guest?.id,
-          householdId: v.householdId,
-          firstName: v.firstName.trim(),
-          lastName: v.lastName.trim(),
-          email: v.email.trim() || null,
-          kind: v.kind,
-          isMinor: v.isMinor,
-          managedByGuestId: v.managedByGuestId || null,
-          notes: v.notes.trim() || null,
-        }),
+        ...(guest
+          ? {
+              capability: 'admin_upsert_guest',
+              input: (v: GuestValues) => ({
+                id: guest.id,
+                householdId: v.householdId,
+                firstName: v.firstName.trim(),
+                lastName: v.lastName.trim(),
+                email: v.email.trim() || null,
+                phone: v.phone.trim() || null,
+                kind: v.kind,
+                isMinor: v.isMinor,
+                managedByGuestId: v.managedByGuestId || null,
+                notes: v.notes.trim() || null,
+              }),
+            }
+          : {
+              run: async (v: GuestValues) => {
+                const guestRes = await callCapability<{ guest: GuestSummary & { email: string | null } }>('admin_upsert_guest', {
+                  input: {
+                    householdId: v.householdId,
+                    firstName: v.firstName.trim(),
+                    lastName: v.lastName.trim(),
+                    email: v.email.trim() || null,
+                phone: v.phone.trim() || null,
+                    kind: v.kind,
+                    isMinor: v.isMinor,
+                    managedByGuestId: v.managedByGuestId || null,
+                    notes: v.notes.trim() || null,
+                  },
+                  idempotencyKey: newIdempotencyKey(),
+                });
+                if (!guestRes.ok || !guestRes.data) return guestRes;
+                const g = guestRes.data.guest;
+                if (g.kind !== 'child' && !g.isMinor && g.email) {
+                  const hh = await callCapability<{ household: { name: string; managerGuestId: string | null } }>('admin_get_household', { input: { householdId: v.householdId } });
+                  if (hh.ok && hh.data && !hh.data.household.managerGuestId) {
+                    await callCapability('admin_upsert_household', {
+                      input: { id: v.householdId, name: hh.data.household.name, managerGuestId: g.id },
+                      idempotencyKey: newIdempotencyKey(),
+                    });
+                  }
+                }
+                return guestRes;
+              },
+            }),
       }}
     />
   );
@@ -261,6 +330,137 @@ export function RebindFlow({ guest }: { guest: GuestSummary }) {
         },
       ]}
       submit={{ label: `Move ${guest.displayName}’s access`, capability: 'admin_rebind_identity', success: 'Access moved to the new email.', input: (v) => ({ guestId: guest.id, email: v.email.trim(), reason: v.reason.trim() }) }}
+    />
+  );
+}
+
+interface IssuedPass {
+  url: string;
+  code: string;
+  qrSvg: string;
+  pass: { id: string; expiresAt: string };
+}
+
+const passTtlOk = (s: string, max: number) => s.trim() === '' || (/^\d+$/.test(s.trim()) && Number(s) <= max);
+
+function PassLinkPanel({ issued, guestName }: { issued: IssuedPass; guestName: string }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(issued.url);
+      setCopied('Copied.');
+    } catch {
+      setCopied('Select the link and copy it.');
+    }
+  };
+  const downloadSvg = () => {
+    const blob = new Blob([issued.qrSvg], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${guestName.replace(/\s+/g, '-').toLowerCase()}-sign-in-qr.svg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  return (
+    <div className="flow-found" data-testid="issued-pass">
+      <p>
+        <strong>Sign-in link for {guestName}, shown only this once.</strong> Put the link or QR on their invitation. The six-digit code is for your records only — never email or print the code itself.
+      </p>
+      <p className="flow-found__url">{issued.url}</p>
+      <p>
+        Code for your records: <strong>{issued.code}</strong> (do not share separately)
+      </p>
+      <p>
+        <button type="button" className="ops-button ops-button-ghost flow-inline-button" onClick={copy}>
+          Copy the link
+        </button>{' '}
+        <button type="button" className="ops-button ops-button-ghost flow-inline-button" onClick={downloadSvg}>
+          Download QR (SVG)
+        </button>{' '}
+        <span role="status">{copied}</span>
+      </p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- generated data URI */}
+      <img className="ops-qr" alt={`QR code to sign in as ${guestName}`} src={`data:image/svg+xml;utf8,${encodeURIComponent(issued.qrSvg)}`} />
+      <p className="flow-hint">It works until {formatDay(issued.pass.expiresAt)}.</p>
+    </div>
+  );
+}
+
+function EmailPassButton({ passId, guestName }: { passId: string; guestName: string }) {
+  const [status, setStatus] = useState<string | null>(null);
+  const send = async () => {
+    setStatus('Sending…');
+    const res = await callCapability<{ sent: boolean; deliveredTo: string }>('admin_email_guest_sign_in_pass', {
+      input: { passId },
+      idempotencyKey: newIdempotencyKey(),
+    });
+    if (!res.ok || !res.data) {
+      setStatus(res.error?.message ?? 'Could not send.');
+      return;
+    }
+    setStatus(`Sent to ${res.data.deliveredTo}.`);
+  };
+  return (
+    <p>
+      <button type="button" className="ops-button ops-button-ghost" onClick={send}>
+        Email {guestName} the link
+      </button>{' '}
+      <span role="status">{status}</span>
+    </p>
+  );
+}
+
+interface PassValues extends Record<string, unknown> {
+  ttlDays: string;
+  emailNow: boolean;
+}
+
+/** Temporary sign-in link + QR for one guest (printed invitations, older guests). */
+export function SignInPassFlow({ guest }: { guest: GuestSummary }) {
+  if (guest.kind === 'child' || guest.isMinor) return null;
+  const steps: FlowStep<PassValues>[] = [
+    {
+      title: 'How long it lasts',
+      fields: ['ttlDays'],
+      render: (ctx) => (
+        <TextField ctx={ctx} name="ttlDays" label="Days until it expires" inputMode="numeric" hint="Default is 30 days. They can use the link until then unless you revoke it." />
+      ),
+      ready: (v) => passTtlOk(v.ttlDays, 365),
+      readyHint: { field: 'ttlDays', message: 'Enter a number of days up to 365, or leave blank for 30.' },
+    },
+    {
+      title: 'Email the link?',
+      fields: ['emailNow'],
+      render: (ctx) => (
+        <>
+          <CheckField ctx={ctx} name="emailNow" label="Email the short link after it is created" hint={guest.email ? 'The message contains the link only, never the code.' : 'Add an email to this guest first.'} />
+          {!guest.email ? <p className="flow-hint">No email on file — copy the link or QR on the next screen.</p> : null}
+        </>
+      ),
+    },
+  ];
+  return (
+    <AdminFlow<PassValues>
+      id={`guests:pass:${guest.id}`}
+      title={`Sign-in link for ${guest.displayName}`}
+      trigger={{ label: 'Sign-in link', variant: 'quiet', accessibleName: `Create a sign-in link for ${guest.displayName}` }}
+      initial={{ ttlDays: '30', emailNow: false }}
+      steps={steps}
+      submit={{
+        label: 'Create sign-in link',
+        capability: 'admin_issue_guest_sign_in_pass',
+        success: 'Sign-in link created.',
+        input: (v) => ({ guestId: guest.id, ttlDays: v.ttlDays.trim() ? Number(v.ttlDays) : undefined }),
+        result: (data, values) => {
+          const issued = data as IssuedPass;
+          return (
+            <>
+              <PassLinkPanel issued={issued} guestName={guest.displayName} />
+              {values.emailNow && guest.email ? <EmailPassButton passId={issued.pass.id} guestName={guest.displayName} /> : null}
+            </>
+          );
+        },
+      }}
     />
   );
 }

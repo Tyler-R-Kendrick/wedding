@@ -2,17 +2,25 @@ import { navLabel, page as sitemapPage } from '@wedding/sitemap';
 import type { LifecycleState } from '@/contracts/lifecycle';
 import { isBuiltRoute } from '@/domain/routes';
 import { SIGN_IN, SIGN_OUT } from './account';
+import { GUEST_PORTAL } from './guest-portal';
 import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
 
 /**
- * Navigation by lifecycle state (design-doc §3, ADR-0012 §4). Mobile shows `primary` (≤5) and a
- * "More" sheet; desktop shows primary + more in state order. The household's own pages (RSVP, Your
- * Weekend, Transportation, Gifts, Photos & Video) are `member`: reachable only from the signed-in
- * account menu. Hidden UI is never authorization: every route re-checks entitlements server-side.
+ * Navigation by lifecycle state (design-doc §3, ADR-0012 §4).
+ *
+ * Two navigations, and which one a reader gets is decided by whether they are signed in:
+ *
+ * - **Signed out**: the two of us and nothing else — Our Story, Our Adventures, Sign in. The date,
+ *   the venue and the city are the invited guests'; no link here leads to a page that names them.
+ * - **Signed in**: the guest portal — the dashboard, Your Trip, the venue, Ask Us, and
+ *   the RSVP while replies are open. The account menu holds what is left (`member`), and only what
+ *   a guest can use in this state: no photos before the day, no gifts before the RSVP.
+ *
+ * Hidden UI is never authorization: every route re-checks the session server-side.
  */
-type PageKey = 'home' | 'story' | 'adventures' | 'share' | 'wedding' | 'caa' | 'weekend' | 'travel' | 'transport' | 'gifts' | 'photos' | 'ask' | 'rsvp';
+type PageKey = 'home' | 'story' | 'adventures' | 'caa' | 'transport' | 'gifts' | 'photos' | 'rsvp';
 
-const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'share', 'wedding', 'caa', 'weekend', 'travel', 'transport', 'gifts', 'photos', 'ask', 'rsvp'];
+const PAGE_KEYS: readonly PageKey[] = ['home', 'story', 'adventures', 'caa', 'transport', 'gifts', 'photos', 'rsvp'];
 
 /**
  * Labels and paths come from the sitemap (stages/01-sitemap/lib/sitemap.ts), the first stage of
@@ -27,48 +35,53 @@ const PAGES = Object.fromEntries(
   }),
 ) as Record<PageKey, NavItem>;
 
+const PORTAL_NAV: Record<'portal' | 'travel' | 'ask', NavItem> = {
+  portal: { label: navLabel(sitemapPage('portal')), href: GUEST_PORTAL.root },
+  travel: { label: navLabel(sitemapPage('guest-travel')), href: GUEST_PORTAL.travel },
+  ask: { label: navLabel(sitemapPage('guest-ask')), href: GUEST_PORTAL.askUs },
+};
+
 /** The account menu's pages: only ever listed for a signed-in reader, never in `primary`/`more`/`sticky`. */
-type MemberKey = 'weekend' | 'rsvp' | 'transport' | 'gifts' | 'photos';
-type PublicKey = Exclude<PageKey, MemberKey>;
+type MemberKey = 'rsvp' | 'gifts' | 'photos';
+type PublicKey = 'home' | 'story' | 'adventures';
 
 interface StateNav {
   primary: PublicKey[];
   more: PublicKey[];
-  sticky: ('directions' | 'ask' | 'now')[];
+  /** Quick actions for a signed-in guest. A signed-out reader gets none: both name the venue. */
+  sticky: ('directions' | 'now')[];
 }
 
 const NAV_BY_STATE: Record<LifecycleState, StateNav> = {
-  TEASER: { primary: ['story', 'adventures', 'caa'], more: ['ask'], sticky: [] },
-  // No 'wedding' yet: the sitemap opens The Wedding at INVITATIONS_OPEN, when there is a ceremony to describe.
-  SAVE_THE_DATE: { primary: ['story', 'travel', 'adventures'], more: ['share', 'caa', 'ask'], sticky: [] },
-  INVITATIONS_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: [] },
-  RSVP_OPEN: { primary: ['wedding', 'travel', 'story'], more: ['adventures', 'share', 'caa', 'ask'], sticky: ['directions'] },
-  RSVP_CLOSED: { primary: ['wedding', 'travel', 'adventures'], more: ['story', 'share', 'caa', 'ask'], sticky: ['directions'] },
-  WEDDING_WEEK: { primary: ['wedding', 'ask', 'share'], more: ['story', 'adventures', 'caa', 'travel'], sticky: ['directions', 'ask'] },
-  WEDDING_DAY: { primary: ['home', 'ask', 'wedding'], more: ['caa', 'share', 'story', 'adventures'], sticky: ['now', 'ask'] },
-  POST_WEDDING: { primary: ['adventures', 'story', 'share'], more: ['caa', 'wedding', 'ask'], sticky: [] },
-  ARCHIVE: { primary: ['story', 'adventures', 'caa'], more: ['share', 'wedding', 'ask'], sticky: [] },
+  TEASER: { primary: ['story', 'adventures'], more: [], sticky: [] },
+  SAVE_THE_DATE: { primary: ['story', 'adventures'], more: [], sticky: [] },
+  INVITATIONS_OPEN: { primary: ['story', 'adventures'], more: [], sticky: [] },
+  RSVP_OPEN: { primary: ['story', 'adventures'], more: [], sticky: ['directions'] },
+  RSVP_CLOSED: { primary: ['story', 'adventures'], more: [], sticky: ['directions'] },
+  WEDDING_WEEK: { primary: ['story', 'adventures'], more: [], sticky: ['directions'] },
+  WEDDING_DAY: { primary: ['story', 'adventures'], more: [], sticky: ['now'] },
+  POST_WEDDING: { primary: ['story', 'adventures'], more: [], sticky: [] },
+  ARCHIVE: { primary: ['story', 'adventures'], more: [], sticky: [] },
 };
 
 /**
- * What a signed-in reader finds under the account menu, and nowhere else: their weekend, the RSVP,
- * transportation, the gift registry and the photos and video. These are the invited household's
- * pages, so they are not in the public navigation, the Menu sheet or the quick-action bar in any
- * state — an anonymous visitor sees "Sign in" and nothing behind it. The pages refuse an anonymous
- * request on their own as well; hiding a link is never the authorization.
+ * What a signed-in reader finds under the account menu, and nowhere else. Only what they can use
+ * now: the gift registry from the moment the RSVP opens, photos and video from the day itself.
+ * Before that there is nothing to look at or do on those pages, so there is no link to them. (The
+ * pages themselves still answer a typed address for a signed-in guest, with their own empty state.)
  *
- * RSVP is listed only while replies are open (after that `/your-weekend` shows what is on file),
- * and gifts from the moment the RSVP opens, as the public tables had them.
+ * RSVP is listed only while replies are open; the dashboard carries the reply whenever the window
+ * is open, whatever the state, and who is attending under each event afterwards.
  */
 const MEMBER_BY_STATE: Record<LifecycleState, MemberKey[]> = {
-  TEASER: ['photos'],
-  SAVE_THE_DATE: ['photos'],
-  INVITATIONS_OPEN: ['weekend', 'transport', 'photos'],
-  RSVP_OPEN: ['rsvp', 'weekend', 'transport', 'gifts', 'photos'],
-  RSVP_CLOSED: ['weekend', 'transport', 'gifts', 'photos'],
-  WEDDING_WEEK: ['weekend', 'transport', 'gifts', 'photos'],
-  WEDDING_DAY: ['weekend', 'photos', 'transport', 'gifts'],
-  POST_WEDDING: ['photos', 'weekend', 'gifts'],
+  TEASER: [],
+  SAVE_THE_DATE: [],
+  INVITATIONS_OPEN: [],
+  RSVP_OPEN: ['rsvp', 'gifts'],
+  RSVP_CLOSED: ['gifts'],
+  WEDDING_WEEK: ['gifts'],
+  WEDDING_DAY: ['photos', 'gifts'],
+  POST_WEDDING: ['photos', 'gifts'],
   ARCHIVE: ['photos'],
 };
 
@@ -101,32 +114,52 @@ export function memberNavFor(state: LifecycleState): NavItem[] {
   return MEMBER_BY_STATE[state].filter((k) => isBuiltRoute(PAGES[k].href)).map((k) => ({ ...PAGES[k] }));
 }
 
-export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
+function stickyForState(state: LifecycleState, opts: NavOptions): NavItem[] {
+  // Directions and "Now" both name the venue, so they are a signed-in guest's and nobody else's.
+  if (opts.signedIn !== true || opts.admin === true) return [];
   const spec = NAV_BY_STATE[state];
-  const item = (key: PublicKey): NavItem => {
-    const base = PAGES[key];
-    if (key === 'home' && state === 'WEDDING_DAY') return { ...base, label: 'Today' };
-    return { ...base };
-  };
   const sticky: NavItem[] = spec.sticky.map((s) => {
     switch (s) {
-      case 'ask':
-        return PAGES.ask;
       case 'now':
-        return { label: 'Now', href: '/#now' };
+        return { label: 'Now', href: `${GUEST_PORTAL.root}#now` };
       case 'directions':
-        // Without a maps link the public page that says where the rooms are, not Transportation:
-        // that is the household's page and lives under the account menu.
         return opts.venue
           ? { label: 'Directions', href: opts.venue.mapsUrl, external: true, provider: opts.venue.mapsProvider }
-          : { label: 'Directions', href: PAGES.wedding.href };
+          : { label: 'Directions', href: `${GUEST_PORTAL.travel}#getting-around` };
     }
   });
+  return sticky.filter((i) => i.external || isBuiltRoute(i.href.split('#')[0] ?? i.href));
+}
+
+/** Signed-in guests (and admins previewing as a guest) centre the chrome on `/guests`. */
+function guestPortalNav(state: LifecycleState, opts: NavOptions): NavModel {
+  const primary: NavItem[] = [PORTAL_NAV.portal, PORTAL_NAV.travel, { ...PAGES.caa }, PORTAL_NAV.ask];
+  if (MEMBER_BY_STATE[state].includes('rsvp') && isBuiltRoute(PAGES.rsvp.href)) primary.push({ ...PAGES.rsvp });
+  const member = memberNavFor(state).filter((i) => i.href !== PAGES.rsvp.href);
+  return {
+    primary: primary.filter((i) => isBuiltRoute(i.href.split('#')[0] ?? i.href)),
+    more: [],
+    sticky: stickyForState(state, { ...opts, signedIn: true }),
+    currentPath: opts.currentPath ?? GUEST_PORTAL.root,
+    homeHref: GUEST_PORTAL.root,
+    homeLabel: PORTAL_NAV.portal.label,
+    account: SIGN_IN,
+    member,
+    signedIn: true,
+    ...(opts.viewing ? { viewing: true } : {}),
+  };
+}
+
+export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
+  if (opts.signedIn === true && opts.admin !== true) return guestPortalNav(state, opts);
+
+  const spec = NAV_BY_STATE[state];
+  const item = (key: PublicKey): NavItem => ({ ...PAGES[key] });
   const shipped = (keys: readonly PublicKey[]) => keys.filter((k) => isBuiltRoute(PAGES[k].href));
   return {
     primary: shipped(spec.primary).map(item),
     more: shipped(spec.more).map(item),
-    sticky: sticky.filter((i) => i.external || isBuiltRoute(i.href)),
+    sticky: stickyForState(state, opts),
     currentPath: opts.currentPath ?? '/',
     account: SIGN_IN,
     member: memberNavFor(state),
@@ -136,6 +169,7 @@ export function navFor(state: LifecycleState, opts: NavOptions = {}): NavModel {
   };
 }
 
-export function homeLabelFor(state: LifecycleState): string {
-  return state === 'WEDDING_DAY' ? 'Today' : 'Home';
+export function homeLabelFor(_state: LifecycleState, opts: Pick<NavOptions, 'signedIn' | 'admin'> = {}): string {
+  if (opts.signedIn === true && opts.admin !== true) return navLabel(sitemapPage('portal'));
+  return 'Home';
 }

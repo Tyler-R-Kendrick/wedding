@@ -135,9 +135,16 @@ describe('ride benefit claims', () => {
     expect(manager.ok && manager.value.data.benefits).toEqual([]); // individuals own benefits, even inside a household
     const other = await run(getMyTransportationOptions, guest(G4, H2), {});
     expect(other.ok && other.value.data.benefits.map((b) => b.entitlementId)).toEqual([E4]);
-    const anon = await run(getMyTransportationOptions, { kind: 'anonymous' }, {});
-    expect(anon.ok && anon.value.data).toMatchObject({ signedIn: false, benefits: [] });
-    expect(anon.ok && anon.value.data.topics.length).toBeGreaterThan(2);
+    // Getting to the venue is for invited guests: an anonymous caller is refused outright (it used
+    // to get the topics with `signedIn: false`), on every surface, and the refusal carries nothing.
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const anon = await run(getMyTransportationOptions, { kind: 'anonymous' }, {}, { surface });
+      expect(!anon.ok && anon.error.code, surface).toBe('unauthenticated');
+      expect(JSON.stringify(anon)).not.toMatch(/topics|benefits|entitlementId/);
+    }
+    // The signed-in guest still gets the general topics beside their own benefit.
+    expect(mine.ok && mine.value.data.topics.length).toBeGreaterThan(2);
+    expect(other.ok && other.value.data.topics.length).toBeGreaterThan(2);
   });
 
   it('drafts a payload-bound confirmation, claims once, and never returns the secret from the transaction', async () => {

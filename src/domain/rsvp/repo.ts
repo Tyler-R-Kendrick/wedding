@@ -6,6 +6,7 @@ import type { Db } from '@/db/client';
 import { getLifecycle } from '@/db/repos/site';
 import { guestNeeds, guests, households, rsvpResponses, rsvpSettings, type EventEntitlementRow, type EventRow, type GuestNeedsRow, type GuestRow, type HouseholdRow, type MealOptionRow, type RsvpResponseRow, type RsvpWindowMode } from '@/db/schema';
 import { computeRsvpWindow, getRsvpSettings, listEntitlementsForGuests, listEvents, listMealOptionsForEvents } from '@/domain/events';
+import { isPreviewPersonaGuestId, isPreviewPersonaHouseholdId } from '@/domain/identity/preview-personas';
 import type { RsvpWindow } from '@/domain/events/window';
 import type { RsvpPart } from './parts';
 import type { HouseholdRsvpInput, RsvpOnFile } from './types';
@@ -31,11 +32,13 @@ export async function listGuestsByIds(db: Db, ids: readonly string[]): Promise<G
 }
 
 export async function listAllGuests(db: Db): Promise<GuestRow[]> {
-  return db.select().from(guests).orderBy(asc(guests.householdId), asc(guests.createdAt));
+  const rows = await db.select().from(guests).orderBy(asc(guests.householdId), asc(guests.createdAt));
+  return rows.filter((g) => !isPreviewPersonaGuestId(g.id));
 }
 
 export async function listHouseholds(db: Db): Promise<HouseholdRow[]> {
-  return db.select().from(households);
+  const rows = await db.select().from(households);
+  return rows.filter((h) => !isPreviewPersonaHouseholdId(h.id));
 }
 
 export async function loadHouseholdRsvpContext(db: Db, input: { guestIds: readonly string[]; householdId?: string; now: Date }): Promise<HouseholdRsvpContext> {

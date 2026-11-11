@@ -1,7 +1,7 @@
 import type { ProviderErrorClass } from '@/contracts/providers';
 import { err, ok } from '@/contracts/result';
 import { failure, okConfig, seededRandom, upHealth } from '../base';
-import { flightsHandoff } from './deep-link';
+import { flightsHandoff, partnerFlightHandoffs } from './deep-link';
 import { GUEST_MESSAGES } from './http';
 import type { FlightResult, FlightSearchRequest, FlightSegment, FlightsProvider, TransferKind } from './types';
 
@@ -37,6 +37,9 @@ export class MockFlights implements FlightsProvider {
   }
   deepLink(req: FlightSearchRequest) {
     return flightsHandoff(req);
+  }
+  extraHandoffs(req: FlightSearchRequest) {
+    return partnerFlightHandoffs(req);
   }
   async search(req: FlightSearchRequest) {
     this.calls.push(req);
@@ -112,6 +115,9 @@ export class DeepLinkOnlyFlights implements FlightsProvider {
   }
   deepLink(req: FlightSearchRequest) {
     return flightsHandoff(req);
+  }
+  extraHandoffs(req: FlightSearchRequest) {
+    return partnerFlightHandoffs(req);
   }
   async search(_request: FlightSearchRequest) {
     return err(failure(this.name, 'unconfigured', 'Live flight search is not available; use the link to search directly.'));

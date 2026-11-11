@@ -101,8 +101,8 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
       {error ? <Notice tone="error">{error}</Notice> : null}
 
       <Actions>
-        <a className="auth-button auth-button-primary" href="/your-weekend">
-          Go to Your Weekend
+        <a className="auth-button auth-button-primary" href="/guests">
+          Go to your dashboard
         </a>
       </Actions>
 

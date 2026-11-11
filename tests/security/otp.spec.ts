@@ -49,12 +49,16 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     const box = page.getByRole('textbox', { name: 'Six-digit code' });
     const attempt = async (value: string) => {
       await box.fill(value);
-      await page.getByRole('button', { name: 'Continue' }).click();
+      // VerifyCodeForm auto-submits at six digits; wait for the server round-trip to clear the field.
       await expect(box).toHaveValue('', { timeout: 15_000 });
     };
     for (let i = 0; i < 5; i++) {
       await attempt(String(900000 + i));
-      await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work/);
+      if (i < 4) {
+        await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work/);
+      } else {
+        await expect(page.locator('p[role="alert"]')).toContainText(/didn’t work|Too many incorrect codes/);
+      }
     }
     await attempt(code);
     await expect(page.locator('[role="alert"]').filter({ hasText: /Too many incorrect codes/ })).toBeVisible();
@@ -83,7 +87,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     // bucket and this second address was already denied.
     const otherClient = await cap(request, 'request_otp', { purpose: 'sign_in', email: f.emails.chidi }, { origin: SITE_ORIGIN, client: 'otp-limit-client-b' });
     expect(otherClient.status(), 'a second client keeps its own allowance for the same address').toBe(200);
-    const verify = await cap(request, 'verify_otp', { challenge: 'x'.repeat(40), code: '123456' });
+    const verify = await cap(request, 'verify_otp', { challenge: 'x'.repeat(40), code: '123456' }, { origin: SITE_ORIGIN });
     expect([422]).toContain(verify.status());
     expect(verify.headers()['set-cookie'] ?? '').not.toContain('session_token');
   });
@@ -95,7 +99,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.locator(`input[name="guestId"][value="${f.guests.ana}"]`).check();
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.ana!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await context.cookies()).find((k) => k.name === 'wedding.session_token')!;
     expect(c.value).not.toBe('attacker-chosen.value');
@@ -109,7 +113,7 @@ test.describe('OTP: enumeration, brute force, limits, session fixation, CSRF', (
     await page.locator(`input[name="guestId"][value="${f.guests.amara}"]`).check();
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.amara!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/claim\/welcome/);
     const c = (await page.context().cookies()).find((k) => k.name.endsWith('session_token'))!;
     const cookie = `${c.name}=${c.value}`;
