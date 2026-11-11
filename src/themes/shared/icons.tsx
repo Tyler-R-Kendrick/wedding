@@ -11,6 +11,7 @@ const PATHS: Record<string, string> = {
   chat: 'M4 5h16v11H9l-5 4z',
   camera: 'M4 8h4l2-3h4l2 3h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   car: 'M5 16l1.5-5h11L19 16M3 16h18v3H3zM7 19v2M17 19v2',
+  walk: 'M13 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM12 8l-1.5 7 3 2.5V21M10.5 15L8.5 21M8 11.5l4-3.5 2.5 3 2.5 1',
   menu: 'M4 7h16M4 12h16M4 17h16',
   book: 'M4 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z',
   compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-2 6-4 2 2-6z',

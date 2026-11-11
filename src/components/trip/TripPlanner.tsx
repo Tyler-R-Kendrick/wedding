@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { downloadIcs, TripPlannerProvider, TripRenderer, type TripAction, type TripHotel } from '@/components/trip/openui';
 import {
+  aboutHowLong,
   blockDateLines,
   blockEntries,
   buildIcs,
@@ -14,6 +15,9 @@ import {
   draftPlan,
   isWeddingTime,
   itineraryStarter,
+  legBetween,
+  PART_LENGTH,
+  planRoute,
   mergeWritten,
   PARTS,
   planEntries,
@@ -21,6 +25,7 @@ import {
   scheduleOf,
   stayFacts,
   staysInBlock,
+  stopMinutes,
   timeText,
   tripEntries,
   weddingEntries,
@@ -132,7 +137,6 @@ export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: 
 
 const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun', evening: 'moon' };
-const SLOTS = DAYS.flatMap((day) => PARTS.filter((part) => !isWeddingTime(day, part)).map((part) => ({ day, part, value: `${day}-${part}`, label: `${DAY_NAME[day]} ${part}` })));
 const CONFIRMED_KEY = 'your-trip:weekend-set';
 const ENOUGH = 3;
 /** How long a request waits for the matcher to install before answering without it. */
@@ -279,8 +283,8 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   }, [events, bookings, byId, block]);
 
   const composeFor = useCallback(
-    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
-    [byId, events, calendarEntries],
+    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, hotel, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
+    [byId, events, hotel, calendarEntries],
   );
 
   /** The better answer, while the guest has not started using the first one. */
@@ -639,7 +643,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         </div>
 
         <div id="trip-panel-weekend" role="tabpanel" aria-labelledby="trip-tab-weekend" hidden={tab !== 'weekend'} className="trip-panel">
-          <Board saved={saved} byId={byId} events={events} stay={block} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
+          <Board saved={saved} byId={byId} events={events} stay={block} hotel={hotel} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
         </div>
 
         <div className="trip-toast trip-toast--float" role="status" aria-live="polite">
@@ -687,12 +691,16 @@ function Toast({
   );
 }
 
+const isDayKey = (v: unknown): v is Day => v === 'fri' || v === 'sat' || v === 'sun';
+const isPartKey = (v: unknown): v is Part => v === 'morning' || v === 'afternoon' || v === 'evening';
+
 /** The three days, each in parts; Saturday afternoon and evening belong to the wedding, and list its events. */
 function Board({
   saved,
   byId,
   events,
   stay,
+  hotel,
   confirmed,
   onMove,
   onRemove,
@@ -704,6 +712,7 @@ function Board({
   byId: ReadonlyMap<string, PlannerPlace>;
   events: readonly WeddingEventInput[];
   stay: StayFacts;
+  hotel: TripHotel | null;
   confirmed: boolean;
   onMove: (id: string, day: Day, part: Part) => void;
   onRemove: (id: string) => void;
@@ -713,9 +722,13 @@ function Board({
 }) {
   const [over, setOver] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  // A place picked up by a tap (or Enter) on its handle: every other time then offers "Move here".
+  // Dragging is never the only way to move one (WCAG 2.2, 2.5.7).
+  const [picked, setPicked] = useState<string | null>(null);
+  const drag = useRef<{ id: string; pointer: number; x: number; y: number; moved: boolean; card: HTMLElement | null } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   // A moved card is drawn again in its new slot, and a removed one is gone: keyboard focus follows
-  // to the moved card's Move list, or to the next card that day (else the day's heading).
+  // to the moved card's handle, or to the next card that day (else the day's heading).
   const focusNext = useRef<{ kind: 'move'; id: string } | { kind: 'remove'; day: Day; next: string | null } | null>(null);
   useEffect(() => {
     const want = focusNext.current;
@@ -723,24 +736,101 @@ function Board({
     const root = boardRef.current;
     if (!want || !root) return;
     const card = (id: string) => root.querySelector<HTMLElement>(`[data-saved-id="${id}"]`);
-    if (want.kind === 'move') card(want.id)?.querySelector<HTMLElement>('.trip-saved__select')?.focus();
+    if (want.kind === 'move') card(want.id)?.querySelector<HTMLElement>('.trip-saved__grip')?.focus();
     else ((want.next ? card(want.next)?.querySelector<HTMLElement>('.trip-saved__remove') : null) ?? document.getElementById(`trip-day-${want.day}`))?.focus();
   }, [saved]);
-  const moveFrom = (s: PlannerSaved, day: Day, part: Part) => {
-    if (s.day !== day || s.part !== part) focusNext.current = { kind: 'move', id: s.id };
-    onMove(s.id, day, part);
+  useEffect(() => {
+    if (!picked) return;
+    const cancel = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      focusNext.current = { kind: 'move', id: picked };
+      setPicked(null);
+      boardRef.current?.querySelector<HTMLElement>(`[data-saved-id="${picked}"] .trip-saved__grip`)?.focus();
+    };
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, [picked]);
+  const moveTo = (id: string, day: Day, part: Part) => {
+    const s = saved.find((x) => x.id === id);
+    if (!s) return;
+    if (s.day !== day || s.part !== part) focusNext.current = { kind: 'move', id };
+    setPicked(null);
+    onMove(id, day, part);
   };
   const removeFrom = (s: PlannerSaved) => {
     const thatDay = PARTS.flatMap((part) => saved.filter((x) => x.day === s.day && x.part === part));
     focusNext.current = { kind: 'remove', day: s.day, next: thatDay[thatDay.indexOf(s) + 1]?.id ?? null };
     onRemove(s.id);
   };
-  const drop = (e: DragEvent, day: Day, part: Part) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain') || dragging;
-    if (id) onMove(id, day, part);
-    setOver(null);
+  /** The time under the pointer, ignoring the card being dragged (it follows the pointer). */
+  const slotAt = (x: number, y: number, card: HTMLElement | null): HTMLElement | null => {
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (card?.contains(el)) continue;
+      const slot = (el as HTMLElement).closest<HTMLElement>('[data-slot]');
+      if (slot) return slot;
+    }
+    return null;
+  };
+  // Dragging with a mouse, a finger or a pen alike (pointer events): the handle is held, the card
+  // follows, and the time under it lights up; letting go there moves it.
+  const onGripDown = (e: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if (e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { id, pointer: e.pointerId, x: e.clientX, y: e.clientY, moved: false, card: e.currentTarget.closest('article') };
+  };
+  const onGripMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || d.pointer !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 6) return;
+    if (!d.moved) {
+      d.moved = true;
+      setDragging(d.id);
+      setPicked(null);
+    }
+    if (d.card) d.card.style.translate = `${dx}px ${dy}px`;
+    setOver(slotAt(e.clientX, e.clientY, d.card)?.dataset.slot ?? null);
+  };
+  const onGripUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || d.pointer !== e.pointerId) return;
+    if (d.card) d.card.style.translate = '';
+    if (d.moved) {
+      const key = slotAt(e.clientX, e.clientY, d.card)?.dataset.slot;
+      const slot = key ? key.split('-') : null;
+      if (slot && isDayKey(slot[0]) && isPartKey(slot[1])) moveTo(d.id, slot[0], slot[1]);
+    }
     setDragging(null);
+    setOver(null);
+    // A drag ends without the click that a tap would bring; a tap's click picks the card up.
+    if (!d.moved) drag.current = null;
+    else setTimeout(() => (drag.current = null), 0);
+  };
+  const onGripClick = (id: string) => {
+    if (drag.current?.moved) return;
+    drag.current = null;
+    setPicked((p) => (p === id ? null : id));
+  };
+  const pickedPlace = picked ? (byId.get(picked)?.name ?? saved.find((x) => x.id === picked)?.name ?? '') : '';
+  // Each day's places in the order of the day, with how long each takes and the way from the one before.
+  const dayOrder = (day: Day) => PARTS.flatMap((part) => saved.filter((x) => x.day === day && x.part === part));
+  const wayTo = (s: PlannerSaved): string | null => {
+    const order = dayOrder(s.day);
+    const i = order.indexOf(s);
+    const here = byId.get(s.id);
+    if (!here || typeof here.lat !== 'number' || typeof here.lng !== 'number') return null;
+    const prev = i > 0 ? byId.get(order[i - 1]!.id) : null;
+    const from = prev && typeof prev.lat === 'number' && typeof prev.lng === 'number' ? { name: prev.name, at: { lat: prev.lat, lng: prev.lng } } : i === 0 && hotel ? { name: 'our hotel', at: hotel } : null;
+    if (!from) return null;
+    const leg = legBetween(from.at, { lat: here.lat, lng: here.lng });
+    if (leg.mode === 'same') return from.name === 'our hotel' ? 'In our hotel' : `Same building as ${from.name}`;
+    return `From ${from.name}: ${leg.text[0]!.toLowerCase()}${leg.text.slice(1)}`;
+  };
+  /** How long a part of the day's places take, with the way from one to the next. */
+  const slotMinutes = (items: PlannerSaved[]): number => {
+    const places = items.map((x) => byId.get(x.id)).filter((p): p is PlannerPlace => !!p);
+    return places.length ? planRoute({ stops: places.map((place) => ({ place })) }).totalMinutes : 0;
   };
   const enough = saved.length >= ENOUGH;
   const schedule = useMemo(() => scheduleOf(events), [events]);
@@ -750,7 +840,9 @@ function Board({
       <div className="trip-board__bar">
         <p className="trip-text trip-text--md">
           {saved.length
-            ? `Move a place to another part of the weekend by dragging it, or choose a new time from its list.${persist ? '' : ' This weekend is kept on this page only.'}`
+            ? picked
+              ? `Choose a new time for ${pickedPlace}.`
+              : `Drag a place by its handle to another time, or tap the handle and then the time you want.${persist ? '' : ' This weekend is kept on this page only.'}`
             : 'Nothing saved yet. Ask us for ideas, then tap the heart on anything you like.'}
         </p>
         <div className="trip-board__actions">
@@ -826,68 +918,72 @@ function Board({
               }
               const here = saved.filter((s) => s.day === day && s.part === part);
               return (
-                <div
-                  key={key}
-                  className={`trip-slot${over === key ? ' is-over' : ''}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setOver(key);
-                  }}
-                  onDragLeave={() => setOver((o) => (o === key ? null : o))}
-                  onDrop={(e) => drop(e, day, part)}
-                >
+                <div key={key} className={`trip-slot${over === key ? ' is-over' : ''}${picked ? ' is-choosing' : ''}`} data-slot={key}>
                   <p className="trip-slot__label">
                     <Icon name={PART_ICON[part]} className="trip-icon trip-icon--caps trip-icon--accent" />
                     {PART_LABEL[part]}
                   </p>
-                  {here.length === 0 ? <p className="trip-slot__empty">Free</p> : null}
+                  {here.length === 0 && !picked ? <p className="trip-slot__empty">Free</p> : null}
                   {here.map((s) => {
                     const place = byId.get(s.id);
                     const name = place?.name ?? s.name;
+                    const howLong = place ? aboutHowLong(stopMinutes(place).minutes) : null;
+                    const way = wayTo(s);
+                    const isPicked = picked === s.id;
                     return (
-                      <article
-                        key={s.id}
-                        data-saved-id={s.id}
-                        className={`trip-saved${dragging === s.id ? ' is-dragging' : ''}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', s.id);
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDragging(s.id);
-                        }}
-                        onDragEnd={() => {
-                          setDragging(null);
-                          setOver(null);
-                        }}
-                      >
-                        <Icon name="grip" className="trip-saved__grip" strokeWidth="3" />
+                      <article key={s.id} data-saved-id={s.id} className={`trip-saved${dragging === s.id ? ' is-dragging' : ''}${isPicked ? ' is-picked' : ''}`}>
+                        <button
+                          type="button"
+                          className="trip-saved__grip"
+                          aria-label={isPicked ? `Keep ${name} where it is` : `Move ${name}`}
+                          aria-pressed={isPicked}
+                          title={isPicked ? 'Keep it here' : 'Drag, or tap and then choose a time'}
+                          onPointerDown={(e) => onGripDown(e, s.id)}
+                          onPointerMove={onGripMove}
+                          onPointerUp={onGripUp}
+                          onPointerCancel={onGripUp}
+                          onClick={() => onGripClick(s.id)}
+                        >
+                          <Icon name="grip" className="trip-icon" strokeWidth="3" />
+                        </button>
                         <h4 className="trip-saved__name">{place ? <a className="bd-link" href={place.href}>{name}</a> : name}</h4>
+                        {howLong || way ? (
+                          <div className="trip-saved__facts">
+                            {howLong ? (
+                              <p className="trip-saved__fact">
+                                <Icon name="clock" className="trip-icon trip-icon--sm trip-icon--accent" />
+                                {howLong}
+                              </p>
+                            ) : null}
+                            {way ? (
+                              <p className="trip-saved__fact">
+                                <Icon name={/ride|drive/i.test(way) ? 'car' : /building|hotel$/i.test(way) ? 'pin' : 'walk'} className="trip-icon trip-icon--sm trip-icon--accent" />
+                                {way}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
                         <button type="button" className="trip-round trip-saved__remove" aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => removeFrom(s)}>
                           <Icon name="trash" className="trip-icon" />
                         </button>
-                        <div className="trip-saved__tools">
-                          <label className="trip-saved__move" title="Move to another time">
-                            <Icon name="calendar" className="trip-icon" />
-                            <select
-                              className="trip-saved__select"
-                              aria-label={`Move ${name} to`}
-                              value={`${s.day}-${s.part}`}
-                              onChange={(e) => {
-                                const slot = SLOTS.find((x) => x.value === e.target.value);
-                                if (slot) moveFrom(s, slot.day, slot.part);
-                              }}
-                            >
-                              {SLOTS.map((x) => (
-                                <option key={x.value} value={x.value}>
-                                  {x.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
                       </article>
                     );
                   })}
+                  {(() => {
+                    const full = slotMinutes(here);
+                    return full > PART_LENGTH[part] + 15 ? (
+                      <p className="trip-slot__full">
+                        <Icon name="clock" className="trip-icon trip-icon--sm" />
+                        {`${aboutHowLong(full)} with the travel: more than one ${part} holds. Move one to another time?`}
+                      </p>
+                    ) : null;
+                  })()}
+                  {picked && !here.some((s) => s.id === picked) ? (
+                    <button type="button" className="trip-slot__here" onClick={() => moveTo(picked, day, part)}>
+                      <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
+                      Move here<span className="sr-only">{`: ${pickedPlace} to ${DAY_NAME[day]} ${part}`}</span>
+                    </button>
+                  ) : null}
                 </div>
               );
             })}

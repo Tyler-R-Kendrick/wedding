@@ -72,7 +72,7 @@ test.describe('claim journey', () => {
     // The fixture admin holds the owner role and has no guest record — the couple on production.
     // The guest form used to answer "we sent a code" and send nothing to such an address.
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
@@ -87,7 +87,7 @@ test.describe('claim journey', () => {
     // cleared the challenge; the second found no challenge and redirected to ?error=expired — and,
     // running after the first, its redirect was the one the browser kept.
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.admin!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);

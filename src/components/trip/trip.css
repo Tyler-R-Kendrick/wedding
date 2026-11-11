@@ -336,58 +336,309 @@
 }
 
 /* ---------- a place ---------- */
+
+/* Six rows: picture, name, what, facts, note and reason, links. The picture is always the same
+   size and drawn at once (a placeholder until a photo arrives, else the place on our own map, else
+   the mark for its kind), so a card has its whole shape before anything loads. On its own a card
+   stacks the rows; in a grid each card spans six of the grid's rows and shares them (subgrid), so
+   in a row of cards the names, the text, the facts and the links each start on one line. */
 .trip-place {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto auto 1fr auto;
+  row-gap: var(--spacing-sm);
   overflow: clip;
   border: 1px solid var(--color-outline);
   border-radius: var(--rounded-md);
   background: var(--color-surface);
 }
 
-.trip-place__photo,
-.trip-place__ground {
-  display: block;
-  inline-size: 100%;
+.trip-grid > .trip-place {
+  grid-row: span 6;
+  grid-template-rows: subgrid;
+  row-gap: var(--spacing-sm);
+}
+
+.trip-place > :not(.trip-place__media) {
+  min-inline-size: 0;
+  margin: 0;
+  padding-inline: var(--spacing-md);
+}
+
+.trip-place__media {
+  position: relative;
+  margin: 0;
+  overflow: clip;
   aspect-ratio: 4 / 3;
+  border-block-end: 2px solid var(--color-gold);
+  background: var(--color-neutral-variant);
+}
+
+/* Until the photo arrives, a soft light passes over the placeholder; still, for reduced motion. */
+.trip-place__media:not(.is-loaded)::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--color-surface) 50%, transparent 70%);
+  background-size: 200% 100%;
+  opacity: 0.6;
+  animation: trip-placeholder 1.4s var(--ease-standard) infinite;
+  content: "";
+}
+
+@keyframes trip-placeholder {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
 }
 
 .trip-place__photo {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.trip-place__figure {
-  margin: 0;
+.trip-place__media.is-loaded .trip-place__photo {
+  opacity: 1;
 }
 
-/* A CC BY photo's credit, small and under the picture, as the licence asks. */
+/* A CC BY photo's credit, on the photo's foot, as the licence asks; it takes no row of its own. */
 .trip-place__credit {
-  padding: var(--spacing-xs) var(--spacing-md) 0;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.trip-place__credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.trip-place__credit a:focus-visible {
+  outline: 2px solid var(--color-on-primary);
+  outline-offset: 2px;
+}
+
+/* No photograph: where the place is, on the site's own drawn map. */
+.trip-place__atlas {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.trip-place__spot,
+.trip-place__hotel {
+  position: absolute;
+  translate: -50% -50%;
+}
+
+.trip-place__spot {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  translate: -50% -85%;
+  color: var(--color-primary);
+}
+
+.trip-place__spot > .trip-icon {
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  color: var(--color-primary);
+  fill: var(--color-surface);
+}
+
+.trip-place__hotel {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  rotate: 45deg;
+  border: 2px solid var(--color-surface);
+  background: var(--color-gold-deep);
+}
+
+/* No photograph and no position: the mark for its kind of place. */
+.trip-place__media--mark {
+  display: grid;
+  place-items: center;
+}
+
+.trip-place__mark {
+  inline-size: 3rem;
+  block-size: 3rem;
+  color: var(--color-gold-deep);
+}
+
+.trip-place__extra {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-sm);
+}
+
+.trip-place__facts:empty,
+.trip-place__extra:empty {
+  display: none;
+}
+
+.trip-grid > .trip-place > .trip-place__facts:empty,
+.trip-grid > .trip-place > .trip-place__extra:empty {
+  display: block;
+  margin-block-start: calc(-1 * var(--spacing-sm));
+}
+
+/* ---------- a day's route: numbered stops on a rail, the way between them in small type ---------- */
+.trip-route {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  container-type: inline-size;
+}
+
+.trip-route__item {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+/* The way from one stop to the next: an icon on the rail, a line of small type beside it. */
+.trip-route__way {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--spacing-sm);
+}
+
+.trip-route__rail {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-block-size: 2.75rem;
+  color: var(--color-gold-deep);
+}
+
+/* The dotted rule the route travels along, behind the icon. */
+.trip-route__rail::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  border-inline-start: 2px dotted var(--color-gold);
+  content: "";
+}
+
+.trip-route__rail > .trip-icon {
+  position: relative;
+  box-sizing: content-box;
+  padding: var(--spacing-xs);
+  border-radius: var(--rounded-pill);
+  background: var(--color-neutral);
+}
+
+.trip-route__way-text {
+  margin: 0;
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
 }
 
-.trip-place__credit .bd-link {
-  color: inherit;
-}
-
-/* No photograph we may publish: a plain ground, never a stand-in picture. None of our places has
-   one yet, so the ground is a thin band: a 4:3 empty box above every card read as a missing image
-   and pushed the answer off a phone's screen. */
-.trip-place__ground {
-  aspect-ratio: auto;
-  block-size: var(--spacing-sm);
-  border-block-end: 2px solid var(--color-gold);
-  background: var(--color-neutral-variant);
-}
-
-.trip-place__body {
+.trip-route__stop {
   display: grid;
-  align-content: start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  column-gap: var(--spacing-sm);
+  align-items: start;
+}
+
+/* The stop's number, as on the map's pins. */
+.trip-route__n {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--rounded-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+}
+
+.trip-route__body {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+}
+
+/* "1:00–1:45 PM · about 45 minutes": the time strong, the length beside it with its clock. */
+.trip-route__when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-md);
+  min-block-size: 2.75rem;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-route__time {
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.trip-route__long {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* In a route on a phone the picture is a band, not a 4:3 block, so a stop and the way to the next
+   fit together on one screen. Where there is room the card lies beside its picture. */
+.trip-place--route > .trip-place__media {
+  aspect-ratio: 16 / 9;
+}
+
+@container (min-inline-size: 34rem) {
+  .trip-place--route {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: auto auto auto auto 1fr;
+  }
+
+  .trip-place--route > .trip-place__media {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    min-block-size: 10rem;
+    aspect-ratio: auto;
+    border-block-end: 0;
+    border-inline-end: 2px solid var(--color-gold);
+  }
+
+  .trip-place--route > :not(.trip-place__media) {
+    grid-column: 2;
+  }
+
+  .trip-place--route > .trip-place__head {
+    padding-block-start: var(--spacing-md);
+  }
+
+  .trip-place--route > .trip-place__actions {
+    align-self: end;
+  }
 }
 
 .trip-place__head {
@@ -466,6 +717,7 @@
 .trip-place__actions {
   display: flex;
   flex-wrap: wrap;
+  padding-block-end: var(--spacing-xs);
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-xs) var(--spacing-md);
@@ -1433,30 +1685,77 @@
 }
 
 .trip-saved {
+  position: relative;
   display: grid;
+  grid-template-areas:
+    "grip name remove"
+    "grip facts facts";
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) var(--spacing-xs);
+  gap: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-xs);
   border: 1px solid var(--color-gold);
   border-radius: var(--rounded-sm);
   background: var(--color-neutral);
-  cursor: grab;
 }
 
+/* Held by its handle: it follows the pointer above the board, and the place it left shows through. */
 .trip-saved.is-dragging {
-  opacity: 0.6;
+  z-index: 2;
+  border-color: var(--color-gold-deep);
+  background: var(--color-surface);
+  pointer-events: none;
 }
 
-/* Six dots at the card's edge: it can be picked up and dragged. */
+/* Picked up by a tap: its own border says so until a time is chosen. */
+.trip-saved.is-picked {
+  border: 2px solid var(--color-gold-deep);
+  background: var(--color-surface);
+}
+
+/* Six dots at the card's edge, a 44px handle: drag it, or tap it and then choose a time. */
 .trip-saved__grip {
-  grid-row: 1 / span 2;
-  align-self: center;
+  display: grid;
+  grid-area: grip;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: none;
   color: var(--color-gold-deep);
+  cursor: grab;
+  touch-action: none;
+}
+
+.trip-saved__grip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trip-saved__grip[aria-pressed="true"] {
+  background: var(--color-neutral-variant);
+}
+
+.trip-saved.is-dragging .trip-saved__grip {
+  cursor: grabbing;
+}
+
+/* How long it takes and the way to it run the card's width, under the remove button too. */
+.trip-saved__facts {
+  display: grid;
+  grid-area: facts;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+}
+
+.trip-saved__remove {
+  grid-area: remove;
 }
 
 .trip-saved__name {
-  grid-column: 2;
+  grid-area: name;
   align-self: center;
   margin: 0;
   font-family: var(--font-display);
@@ -1465,41 +1764,62 @@
   overflow-wrap: anywhere;
 }
 
-.trip-saved__remove {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-.trip-saved__tools {
+/* How long it takes, and the way to it from the place before (or from the hotel). */
+.trip-saved__fact {
   display: flex;
-  grid-column: 2 / span 2;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.trip-saved__move {
-  display: inline-flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: var(--spacing-sm);
-  min-inline-size: 0;
-  color: var(--color-tertiary);
-}
-
-
-.trip-saved__select {
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  min-block-size: 44px;
-  max-inline-size: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-outline);
-  border-radius: var(--rounded-sm);
-  background: var(--color-surface);
-  color: var(--color-on-surface);
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: 0;
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-saved__fact > .trip-icon {
+  block-size: 1lh;
+}
+
+/* While a place is picked up, every other free time offers itself. */
+.trip-slot.is-choosing {
+  border-style: dashed;
+  border-color: var(--color-gold-deep);
+}
+
+/* A part of the day holding more than fits it, said plainly with a way out. */
+.trip-slot__full {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-tertiary);
+}
+
+.trip-slot__full > .trip-icon {
+  block-size: 1lh;
+}
+
+.trip-slot__here {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-gold-deep);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  cursor: pointer;
+}
+
+.trip-slot__here:hover {
+  background: var(--color-neutral-variant);
 }
 
 /* ---------- the toast, and the dot that flies to "My weekend" ---------- */
@@ -1622,7 +1942,7 @@
 .trip-starter:focus-visible,
 .trip-ask__input:focus-visible,
 .trip-reset:focus-visible,
-.trip-saved__select:focus-visible,
+.trip-slot__here:focus-visible,
 .trip-toast__open:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -1646,5 +1966,13 @@
 
   .trip-fly {
     display: none;
+  }
+
+  .trip-place__media:not(.is-loaded)::after {
+    animation: none;
+  }
+
+  .trip-place__photo {
+    transition: none;
   }
 }

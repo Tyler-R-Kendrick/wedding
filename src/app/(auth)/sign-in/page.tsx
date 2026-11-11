@@ -16,12 +16,13 @@ export const metadata: Metadata = { title: 'Sign in', robots: { index: false, fo
 type Method = 'email' | 'text';
 
 /**
- * Returning guests: a six-digit code by email or by text, as two equal tabs. Text is a tab of this
- * page, never a page of its own, and it is shown only where a text can be sent
- * (src/lib/phone-sign-in.ts). Identical response whether or not the address or number is known.
+ * Returning guests: a six-digit code by text or by email, as two tabs. Text is the default wherever
+ * a text can be sent (src/lib/phone-sign-in.ts); email is the other tab, and the only form where no
+ * text can be sent. Identical response whether or not the address or number is known.
  *
- * The tabs are links (`?method=text`), so they work without JavaScript, keep the choice in the
- * address after an error, and need nothing from the keyboard but Tab and Enter.
+ * The tabs are links (`?method=email`, and `?method=text` for links that ask for text by name), so
+ * they work without JavaScript, keep the choice in the address after an error, and need nothing
+ * from the keyboard but Tab and Enter.
  */
 export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
@@ -40,10 +41,10 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   }
   const next = isSafeReturnPath(sp.next) ? sp.next : undefined;
   const texting = await isPhoneSignInAvailable();
-  const method: Method = texting && sp.method === 'text' ? 'text' : 'email';
+  const method: Method = texting && sp.method !== 'email' ? 'text' : 'email';
   const tabHref = (m: Method) => {
     const q = new URLSearchParams();
-    if (m === 'text') q.set('method', 'text');
+    if (m === 'email') q.set('method', 'email');
     if (next) q.set('next', next);
     const s = q.toString();
     return s ? `/sign-in?${s}` : '/sign-in';
@@ -53,15 +54,15 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <AuthShell
       eyebrow="Welcome back"
       title="Sign in"
-      lede={<p>{texting ? 'We’ll send you a six-digit code by email or by text. No password needed.' : 'Enter the email Sara and Tyler have for you and we’ll send a six-digit code. No password needed.'}</p>}
+      lede={<p>{texting ? 'We’ll text you a six-digit code, or email it if you prefer. No password needed.' : 'Enter the email Sara and Tyler have for you and we’ll send a six-digit code. No password needed.'}</p>}
     >
       {texting ? (
         <nav className="auth-methods" aria-label="How to get your code">
-          <Link className="auth-method" href={tabHref('email')} aria-current={method === 'email' ? 'page' : undefined} replace scroll={false}>
-            Email
-          </Link>
           <Link className="auth-method" href={tabHref('text')} aria-current={method === 'text' ? 'page' : undefined} replace scroll={false}>
             Text
+          </Link>
+          <Link className="auth-method" href={tabHref('email')} aria-current={method === 'email' ? 'page' : undefined} replace scroll={false}>
+            Email
           </Link>
         </nav>
       ) : null}

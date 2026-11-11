@@ -92,8 +92,12 @@ test.describe('voucher security', () => {
       // make the site a merchant is a processor's checkout running in the page, so that is the check —
       // against the raw HTML, where a script tag would be, by URLs no framework nonce can spell.
       expect(html, route).not.toMatch(/js\.stripe\.com|checkout\.stripe\.com|paypal\.com\/sdk\/js|paypalobjects\.com\/api\/checkout|venmo\.com\/[^"']*sdk/i);
-      // Form controls are never inside a script, so this one keeps the whole document.
-      expect(html, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
+      // Form controls are never inside a script, so this one keeps the whole document. Signed out,
+      // `/gifts` is the sign-in door, which opens on its text tab: the one telephone field there is the
+      // guest's mobile number for a sign-in code (name="phone", autocomplete="tel"), not a payment
+      // field, and only that field is set aside. Any other tel or number input still fails.
+      const controls = html.replace(/<input(?=[^>]*\bname="phone")(?=[^>]*\bautocomplete="tel")[^>]*>/gi, '');
+      expect(controls, route).not.toMatch(/<input[^>]+type="(tel|number)"/i);
     }
   });
 

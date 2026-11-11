@@ -178,7 +178,8 @@ describe('compose', () => {
     const shown: string[] = [];
     let applied = '';
     walk(r.root, (n) => {
-      if (n.typeName === 'Place') shown.push(String(n.props.id));
+      // A weekend day is a route: each saved place is a numbered stop.
+      if (n.typeName === 'Place' || n.typeName === 'Stop') shown.push(String(n.props.id));
       if (n.typeName === 'Button' && n.props.label === 'Use this plan') applied = JSON.stringify(n.props.action);
     });
     for (const s of saved) {

@@ -37,8 +37,10 @@ const withNext = (path: string, next: string) => {
   return isSafeReturnPath(carried) ? carried : path;
 };
 
-/** Sign-in with the Text tab open: phone sign-in is a tab of /sign-in, never a page of its own. */
+/** Sign-in with the Text tab open: phone sign-in is a tab of /sign-in (its default), never a page of its own. */
 const TEXT_TAB = '/sign-in?method=text';
+/** Sign-in with the Email tab open: a mistake on the email form comes back to that form, not to the default Text tab. */
+const EMAIL_TAB = '/sign-in?method=email';
 
 const withError = (path: string, code: string) => `${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`;
 
@@ -71,7 +73,7 @@ export async function sendSignInCode(formData: FormData): Promise<void> {
   const email = str(formData, 'email');
   const admin = str(formData, 'admin') === '1';
   const next = safeReturnPath(str(formData, 'next'), '');
-  const back = withNext(admin ? '/sign-in/admin' : '/sign-in', next);
+  const back = withNext(admin ? '/sign-in/admin' : EMAIL_TAB, next);
   const r = await invokeFromRequest<RequestOtpResult>('request_otp', { purpose: admin ? 'admin_sign_in' : 'sign_in', email, next: next || undefined });
   if (!r.ok) redirect(withError(back, errorCode(r.error)));
   if (!r.value.data.sent) redirect(withError(back, 'no_email'));
@@ -92,7 +94,7 @@ export async function verifyCode(formData: FormData): Promise<void> {
   const d = r.value.data;
   if (!d.guestId && !d.isAdmin) {
     await clearChallengeCookie();
-    redirect(withError(cookie.kind === 'phone_sign_in' ? TEXT_TAB : '/sign-in', 'unlinked'));
+    redirect(withError(cookie.kind === 'phone_sign_in' ? TEXT_TAB : cookie.kind === 'admin_sign_in' ? '/sign-in/admin' : EMAIL_TAB, 'unlinked'));
   }
   // Who they said they were, when the session is about to be somebody else. Read before the cookie
   // is cleared, and carried only when the claim went through a household manager — the welcome page

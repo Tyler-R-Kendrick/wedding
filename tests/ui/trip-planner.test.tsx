@@ -161,24 +161,42 @@ describe('the Your Trip planner', () => {
     expect(screen.getByText(/kept on this page only/)).toBeTruthy();
   });
 
-  it('the board moves a place with its Move list and removes it, saving each change', async () => {
+  it('the board moves a place by picking it up and choosing a time, says how long it takes, and removes it', async () => {
     const { save, remove } = setup({ saved: [{ id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) }] });
     await act(async () => fireEvent.click(tab(/My weekend/)));
     const sunday = screen.getByRole('region', { name: /^Sunday/ });
     expect(within(sunday).queryByRole('link', { name: 'Bean House Coffee' })).toBeNull();
+    // No list to choose from: the card's handle picks it up (dragging it does the same).
+    expect(screen.queryByRole('combobox')).toBeNull();
+    const card = screen.getByRole('link', { name: 'Bean House Coffee' }).closest('article')!;
+    expect(card.textContent).toMatch(/About (\d+ minutes|an hour|[\d½]+ hours)/);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Bean House Coffee' })));
+    expect(screen.getByRole('button', { name: 'Keep Bean House Coffee where it is' }).getAttribute('aria-pressed')).toBe('true');
     // Saturday afternoon and evening belong to the wedding, and are never offered.
-    const move = screen.getByRole('combobox', { name: 'Move Bean House Coffee to' }) as HTMLSelectElement;
-    expect([...move.options].map((o) => o.value)).not.toContain('sat-afternoon');
+    const offered = screen.getAllByRole('button', { name: /^Move here/ }).map((b) => b.textContent);
+    expect(offered.some((t) => /Saturday (afternoon|evening)/.test(t ?? ''))).toBe(false);
+    expect(offered.some((t) => /Saturday morning/.test(t ?? ''))).toBe(false);
     // That slot lists the wedding's own events instead.
     const wedding = screen.getByRole('list', { name: 'The wedding' });
     expect(within(wedding).getByText('The Ceremony')).toBeTruthy();
     expect(within(wedding).getByText('Time to be announced')).toBeTruthy();
-    await act(async () => fireEvent.change(move, { target: { value: 'sun-afternoon' } }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move here: Bean House Coffee to Sunday afternoon' })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon' });
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('link', { name: 'Bean House Coffee' }).getAttribute('href')).toBe('/guests/things-to-do/bean-house');
+    expect(screen.queryByRole('button', { name: /^Move here/ })).toBeNull();
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Remove Bean House Coffee' })));
     expect(remove).toHaveBeenCalledWith({ placeId: 'bean-house' });
     expect(screen.queryByRole('button', { name: 'Remove Bean House Coffee' })).toBeNull();
+  });
+
+  it('a picked-up place is put back with Escape', async () => {
+    setup({ saved: [{ id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) }] });
+    await act(async () => fireEvent.click(tab(/My weekend/)));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Bean House Coffee' })));
+    expect(screen.getAllByRole('button', { name: /^Move here/ }).length).toBeGreaterThan(0);
+    await act(async () => fireEvent.keyDown(window, { key: 'Escape' }));
+    expect(screen.queryByRole('button', { name: /^Move here/ })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Move Bean House Coffee' }));
   });
 
   it('confirms only from three places, then shows the weekend as a calendar with the wedding in it', async () => {
@@ -380,7 +398,7 @@ describe('the Your Trip planner', () => {
     expect(within(bean).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })).toBeTruthy();
   });
 
-  it('keeps keyboard focus on the board: on the moved card’s Move list, then on the next card or the day', async () => {
+  it('keeps keyboard focus on the board: on the moved card’s handle, then on the next card or the day', async () => {
     setup({
       saved: [
         { id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) },
@@ -389,11 +407,11 @@ describe('the Your Trip planner', () => {
       ],
     });
     await act(async () => fireEvent.click(tab(/My weekend/)));
-    const move = screen.getByRole('combobox', { name: 'Move Bean House Coffee to' });
-    move.focus();
-    await act(async () => fireEvent.change(move, { target: { value: 'sun-afternoon' } }));
-    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Move Bean House Coffee to' }));
-    expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('combobox', { name: 'Move Bean House Coffee to' })).toBe(document.activeElement);
+    const grip = screen.getByRole('button', { name: 'Move Bean House Coffee' });
+    grip.focus();
+    await act(async () => fireEvent.click(grip));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move here: Bean House Coffee to Sunday afternoon' })));
+    expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('button', { name: 'Move Bean House Coffee' })).toBe(document.activeElement);
 
     const first = screen.getByRole('button', { name: 'Remove Art Museum' });
     first.focus();
