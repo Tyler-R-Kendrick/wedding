@@ -356,6 +356,23 @@
   object-fit: cover;
 }
 
+.trip-place__figure {
+  margin: 0;
+}
+
+/* A CC BY photo's credit, small and under the picture, as the licence asks. */
+.trip-place__credit {
+  padding: var(--spacing-xs) var(--spacing-md) 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-place__credit .bd-link {
+  color: inherit;
+}
+
 /* No photograph we may publish: a plain ground, never a stand-in picture. None of our places has
    one yet, so the ground is a thin band: a 4:3 empty box above every card read as a missing image
    and pushed the answer off a phone's screen. */

@@ -101,8 +101,25 @@ export const Place = defineComponent({
     return (
       <article className="trip-place">
         {place.image ? (
-          // eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline
-          <img className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" />
+          // A CC BY or BY-SA photograph carries its credit wherever it is shown (docs/ops/asset-licensing.md);
+          // the full record, licence link included, is on /credits.
+          <figure className="trip-place__figure">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline */}
+            <img className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" />
+            {place.image.credit ? (
+              <figcaption className="trip-place__credit">
+                <a className="bd-link" href={place.image.credit.href} target="_blank" rel="noopener noreferrer">
+                  {place.image.credit.text}
+                  <External />
+                </a>
+                {', '}
+                <a className="bd-link" href={place.image.credit.license.href} target="_blank" rel="license noopener noreferrer">
+                  {place.image.credit.license.name}
+                  <External />
+                </a>
+              </figcaption>
+            ) : null}
+          </figure>
         ) : (
           <div className="trip-place__ground" aria-hidden="true" />
         )}

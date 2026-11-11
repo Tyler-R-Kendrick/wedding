@@ -20,7 +20,11 @@ export type PlannerPlace = {
   lng?: number;
   /** The place's page on this site (same tab). */
   href: string;
-  image?: { src: string; alt: string };
+  /**
+   * A licensed photograph of the place (`src/domain/media/place-photos.ts`). `credit` is set when its
+   * licence (CC BY / BY-SA) asks for the author and licence to be shown beside the picture.
+   */
+  image?: { src: string; alt: string; credit?: { text: string; href: string; license: { name: string; href: string } } };
 };
 
 export const DAYS = ['fri', 'sat', 'sun'] as const;
