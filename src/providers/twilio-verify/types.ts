@@ -31,3 +31,12 @@ export function twilioVerifyConfigured(env: Pick<ServerEnv, 'TWILIO_ACCOUNT_SID'
 }
 
 export const TWILIO_VERIFY_POLICY = DEFAULT_CALL_POLICY;
+
+/**
+ * A verification check succeeds only when Twilio says `approved`. Twilio can answer 200 for a check
+ * that did not approve the code (the verification stays `pending`), so a 2xx alone proves nothing.
+ */
+export function codeApproved(provider: string, status: string): { ok: true } | { ok: false; error: ProviderFailure } {
+  if (status === 'approved') return { ok: true };
+  return { ok: false, error: { provider, class: 'bad_request', message: `The code was not approved (${status}).` } };
+}

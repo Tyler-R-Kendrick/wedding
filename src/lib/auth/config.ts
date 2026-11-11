@@ -7,13 +7,14 @@ import { newId } from '@/contracts/ids';
 import type { Db } from '@/db/client';
 import { authAccounts, authPasskeys, authSessions, authUsers, authVerifications } from '@/db/schema';
 import { OTP_POLICY } from '@/domain/identity/otp';
-import { phoneAuthEmail, normalizePhoneE164 } from '@/domain/identity/phone';
+import { phoneAuthEmail } from '@/domain/identity/phone';
 import { env, publicEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { OtpPurpose } from '@/providers/auth-email/types';
 import { getProvider } from '@/providers/registry';
 import { siteOriginsFor } from '@/lib/site-hosts';
 import { weddingCookies } from './cookies';
+import { phoneCodeApproved } from './phone-approval';
 
 export const DEV_AUTH_SECRET = 'dev-only-better-auth-secret-change-me';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -205,12 +206,9 @@ export function createAuth(db: Db) {
         otpLength: OTP_POLICY.digits,
         expiresIn: OTP_POLICY.expiresInSeconds,
         allowedAttempts: OTP_POLICY.attemptsPerCode,
-        verifyOTP: async ({ phoneNumber: to, code }) => {
-          if (env.isTest) return true;
-          const normalized = normalizePhoneE164(to) ?? to;
-          const provider = getProvider('twilio-verify');
-          return (await provider.checkVerification({ to: normalized, code })).ok;
-        },
+        // The code was checked with Twilio by phone sign-in just before this call; a second check
+        // would fail, because Twilio deletes an approved verification (see ./phone-approval).
+        verifyOTP: async ({ phoneNumber: to, code }) => phoneCodeApproved(to, code),
         sendOTP: async () => {
           /* SMS is started by the request_phone_otp capability via Twilio Verify. */
         },

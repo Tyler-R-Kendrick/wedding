@@ -14,6 +14,7 @@ import { resolveAdminRoles } from '@/domain/identity/principal';
 import { getAuthSession } from '@/lib/auth';
 import { env } from '@/lib/env';
 import type { CookieSink } from '@/lib/auth';
+import { withApprovedPhoneCode } from '@/lib/auth/phone-approval';
 import { actorOf, authOf, callAuth, consumeLimits, discardMintedSession, EXPIRED_CODE_MESSAGE, INVALID_CODE_MESSAGE, ipHashOf, LOCKED_MESSAGE, logOtp, otpBuckets, phoneBuckets } from './shared';
 
 export interface SignInOutcome {
@@ -187,12 +188,15 @@ export async function completePhoneSignIn(
     .where(eq(authUsers.id, ensured.value.id));
 
   const previous = await getAuthSession(transport.headers, { db, disableRefresh: true }).catch(() => null);
+  // Twilio approved the code above and has now deleted it, so Better Auth is told so rather than asking again.
   const signed = await callAuth(transport.sink, () =>
-    auth.api.verifyPhoneNumber({
-      body: { phoneNumber: phone, code, disableSession: false },
-      headers: transport.headers,
-      returnHeaders: true,
-    }),
+    withApprovedPhoneCode(phone, code, () =>
+      auth.api.verifyPhoneNumber({
+        body: { phoneNumber: phone, code, disableSession: false },
+        headers: transport.headers,
+        returnHeaders: true,
+      }),
+    ),
   );
   if (!signed.ok) {
     await logOtp(ctx, { emailHash: phoneHash, purpose: challenge.kind, kind: 'verify', outcome: 'failed' });
