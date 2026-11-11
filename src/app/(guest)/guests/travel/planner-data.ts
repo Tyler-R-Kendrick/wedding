@@ -80,10 +80,13 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   // The hotel on the map is the place our own records put the wedding venue at.
   const venue = cards.find((c) => c.place?.insideVenue && c.place.coordinates)?.place?.coordinates;
   const items = trip?.ok ? trip.value.data.items : [];
+  // One card per place: a place saved twice over (before saves were keyed on the place) shows once.
+  const seen = new Set<string>();
   const saved: PlannerSaved[] = items.flatMap((i) => {
     const d = i.details;
     if (i.provider !== 'planner' || i.status === 'cancelled' || !d.placeId || !d.day || !d.part) return [];
-    if (!DAYS.includes(d.day) || !PARTS.includes(d.part)) return [];
+    if (!DAYS.includes(d.day) || !PARTS.includes(d.part) || seen.has(d.placeId)) return [];
+    seen.add(d.placeId);
     return [{ id: d.placeId, day: d.day, part: d.part, name: i.title, itemId: i.id }];
   });
   const bookings: TripItemInput[] = items
