@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { stopGuestView } from '@/components/guest-view/actions';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { startGuestView } from '../_lib/guest-view-actions';
@@ -12,6 +13,8 @@ import { Checkbox, Input } from '../_components/ops';
 import { ConsoleGate, ConsolePage, Day, Note, Pill, Section } from '../_components/console';
 import { AdminRoleFlow, DeleteGuestFlow, GuestFlow, ImportGuestsFlow, MergeFlow, RebindFlow, ResetAccessFlow, SignInPassFlow, type GuestSummary } from './_components/GuestFlows';
 import { HouseholdFlow } from '../households/_components/HouseholdFlows';
+import type { GuestSheetView } from '@/capabilities/admin_guest_sheet';
+import { PlanningSheet } from './_components/PlanningSheet';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Guests', robots: { index: false, follow: false } };
@@ -46,11 +49,19 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
       </ConsolePage>
     );
   }
+  // "Refresh from the sheet" reads past the short cache once, then lands on the plain address, so a
+  // reload, a bookmark or a form on this page never keeps calling Google on every render.
+  if (sp.sheet === 'fresh') {
+    await adminInvoke<GuestSheetView>('admin_guest_sheet', { fresh: true }, { method: 'GET' });
+    redirect('/admin/guests#planning-sheet');
+  }
   // The checkbox submits `merged=on`; `1` is kept for links written by hand.
   const showMerged = sp.merged === 'on' || sp.merged === '1';
-  const [list, hh] = await Promise.all([
+  const [list, hh, sheet] = await Promise.all([
     adminInvoke<{ guests: Guest[]; truncated: boolean }>('admin_list_guests', { q: sp.q || undefined, householdId: sp.householdId || undefined, includeMerged: showMerged }, { method: 'GET' }),
     adminInvoke<{ households: { id: string; name: string }[]; truncated: boolean }>('admin_list_households', {}, { method: 'GET' }),
+    // The planning sheet (Google Sheets), read live through a short cache (just refreshed, above, on request).
+    adminInvoke<GuestSheetView>('admin_guest_sheet', {}, { method: 'GET' }),
   ]);
   const rows = list.ok ? list.value.data.guests : [];
   const shown = paged(rows, sp.page);
@@ -82,6 +93,8 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </Note>
       ) : null}
       {truncated ? <Note>There are more guests or households than this screen lists at once. Only the first {rows.length} guests and {households.length} households are shown; narrow the list with a search.</Note> : null}
+      <PlanningSheet sheet={sheet.ok ? sheet.value.data : null} error={sheet.ok ? null : sheet.error.message} />
+
       <BrowseAs browsingName={browsingName} isOwner={isOwner} ownRecords={ownRecords} />
 
       <Section title={household ? `Guests in ${household.label}` : 'All guests'} id="guests">

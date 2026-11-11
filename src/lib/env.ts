@@ -168,6 +168,18 @@ const serverSchema = z.object({
   TWILIO_CONNECTOR: optionalString,
   /** The user the Twilio connector was authorized by, when it is not an app-wide connector. */
   TWILIO_CONNECT_USER_ID: optionalString,
+  // --- the couple's planning sheet (admin-only, read-only; src/providers/guest-sheet) ---
+  /** Spreadsheet id from the sheet's address (between /d/ and /edit). */
+  GUEST_SHEET_ID: optionalString,
+  /** Tab name or A1 range holding the guest list. */
+  // Empty (as `.env.example` ships it) means the default tab, not an invalid value that stops the app.
+  GUEST_SHEET_RANGE: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().trim().min(1).default('Guests')),
+  /** Service account the sheet is shared with (Viewer). */
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.email().optional().or(z.literal('').transform(() => undefined)),
+  /** That account's PEM private key; literal \n sequences are accepted. */
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: optionalSecret(64),
+  /** How long a read of the sheet is reused before Google is asked again. */
+  GUEST_SHEET_CACHE_SECONDS: intish(120, 0),
 });
 
 type Parsed = z.infer<typeof serverSchema>;

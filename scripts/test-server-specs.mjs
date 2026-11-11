@@ -108,7 +108,7 @@ export const WARM_ROUTES = [
 export const DATABASE_URL_ALIASES = ['POSTGRES_URL', 'POSTGRES_PRISMA_URL'];
 
 /** A setting that reaches a real system: a database, a mailbox, a bucket, a paid API, an admin list. */
-export const CREDENTIAL = /^DATABASE_URL$|_KEY$|_SECRET$|_TOKEN$|_ID$|_CODES?$|^S3_ENDPOINT$|^S3_BUCKET$|^EMAIL_FROM$|^ADMIN_EMAILS$/;
+export const CREDENTIAL = /^DATABASE_URL$|_KEY$|_SECRET$|_TOKEN$|_ID$|_CODES?$|^S3_ENDPOINT$|^S3_BUCKET$|^EMAIL_FROM$|^ADMIN_EMAILS$|_ACCOUNT_EMAIL$/;
 
 /**
  * Every credential `.env.example` documents, and the database aliases, set to ''. Next never lets
