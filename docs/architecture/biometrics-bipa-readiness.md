@@ -8,7 +8,7 @@
 
 Every part of it, in one commit:
 
-- the guest surfaces — the "look for you in them" link on `/photos` in both designs, and the
+- the guest surfaces — the "look for you in them" link on `/photos`, and the
   `/media/me` page behind it;
 - the thirteen capabilities (consent draft/grant/revoke, enrolment, matching, deletion request,
   and the four admin ones), their HTTP route, and the WebMCP exposure that never included them;

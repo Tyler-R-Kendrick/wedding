@@ -58,7 +58,7 @@ export const openBookingLink = defineCapability<z.infer<typeof input>, z.infer<t
     'Builds the explicit hand-off to a booking partner for one target: a flight search (Skyscanner), a hotel search (Booking.com or Hyatt), the venue room block, a recommended hotel, an admin-configured partner link, ' +
     'or a hosted flight checkout (Duffel Links, signed-in guests only). It returns the labelled link and disclosure; it never books, pays, or marks anything confirmed. Every link is checked against the trusted-partner list.',
   kind: 'external',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   confirmation: 'inline',
   idempotent: false,

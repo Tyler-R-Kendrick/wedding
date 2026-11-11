@@ -1,22 +1,19 @@
 import type { ReactNode } from 'react';
-import type { FindAdventuresData } from '@/capabilities/find_adventures';
 import type { FaqPageData } from '@/capabilities/get_faq';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
-import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
 import type { GalleryPage } from '@/capabilities/media';
 import type { StaticSearchData } from '@/capabilities/search_wedding_information_static';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type {
-  AdventureCard, FaqView, HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary, StorySectionView, TextBlockView, VenueFactView,
-  VenueSpaceView, WeddingEventView,
+  AdventureCard, FaqView, HandoffView, OperationalFieldView, ProvenanceViewData, RecommendationCard, StorySectionView, TextBlockView, VenueFactView,
+  VenueSpaceView,
 } from '@/domain/content/views';
 import type { Citation } from '@/contracts/provenance';
 import type { HotelRecommendation } from '@/domain/travel';
-import type { WeddingPageData } from '@/domain/venue/wedding-page';
 import type { PageFrame } from './types';
 
 /*
@@ -36,15 +33,6 @@ export interface AdventuresProps {
 export interface AdventureDetailProps {
   data: AdventureDetailData;
 }
-export interface GuideProps {
-  itineraries: ItinerariesData;
-  recommendations: FindAdventuresData;
-  activeBucket?: string;
-  /** Server-authorized guest map and account links; never supplied to anonymous readers. */
-  guestTools?: import('react').ReactNode;
-  signedIn?: boolean;
-  plan?: { minutes: number; kids: boolean; interest?: string; result: FindAdventuresData['plan'] };
-}
 export interface RecommendationProps {
   card: RecommendationCard;
 }
@@ -53,9 +41,6 @@ export interface OurVenueProps {
 }
 export interface VenueSpaceProps {
   data: VenueRoomData;
-}
-export interface WeddingProps {
-  data: WeddingPageData;
 }
 export interface AskProps {
   faq: FaqPageData;
@@ -117,7 +102,8 @@ export interface TravelProps {
   };
   /** The capability's own citations, rendered as the page's source line. */
   sources: Citation[];
-  slots: { flightSearch: ReactNode; hotelSearch: ReactNode };
+  /** `planner`: the Your Trip planner, rendered as the page's last section when present. */
+  slots: { flightSearch: ReactNode; hotelSearch: ReactNode; planner?: ReactNode };
   tripHref: string;
 }
 
@@ -128,11 +114,9 @@ export interface ContentRecipes {
   story: ContentRecipe<StoryProps>;
   adventures: ContentRecipe<AdventuresProps>;
   adventureDetail: ContentRecipe<AdventureDetailProps>;
-  guide: ContentRecipe<GuideProps>;
   recommendation: ContentRecipe<RecommendationProps>;
   ourVenue: ContentRecipe<OurVenueProps>;
   venueSpace: ContentRecipe<VenueSpaceProps>;
-  wedding: ContentRecipe<WeddingProps>;
   ask: ContentRecipe<AskProps>;
   travel: ContentRecipe<TravelProps>;
   gifts: ContentRecipe<GiftsProps>;
@@ -142,21 +126,14 @@ export interface ContentRecipes {
 export type ContentRecipeKey = keyof ContentRecipes;
 
 /* ------------------------------------------------------------------------------------------------
- * Content kit: the primitives the content recipes compose. Same props, names and states in both
- * themes; markup and CSS differ (Gilded Hour: plaques, ledgers, diptychs, floor plans on one axis;
- * Conservatory: stems, pressed cards, kraft tags, jar labels on the sheet).
+ * Content kit: the primitives the content recipes compose. The props, names and states are the
+ * contract; the markup and CSS are the theme's own.
  * ---------------------------------------------------------------------------------------------- */
 
 export interface ChipItem {
   href: string;
   label: string;
   active?: boolean;
-}
-
-export interface StopItem {
-  recommendation: RecommendationSummary;
-  minutes?: number;
-  note?: string;
 }
 
 export interface ContentKit {
@@ -197,12 +174,10 @@ export interface ContentKit {
   /** Explicit external handoffs: provider named, new tab, disclosure printed. */
   Handoffs: (p: { handoffs: HandoffView[]; label: string }) => ReactNode;
   /** Stops of an itinerary or a composed plan, in order. */
-  StopList: (p: { stops: StopItem[]; label: string }) => ReactNode;
   /** One itinerary (`article[data-itinerary]`). */
-  ItineraryCard: (p: { itinerary: ItineraryView; index: number }) => ReactNode;
   /** Docent list: what to look for in the building or a room. */
   LookForList: (p: { items: { id: string; text: string }[]; label: string }) => ReactNode;
-  /** The four event spaces (`article[data-space]`): floor plan (Gilded Hour) / specimen sheets (Conservatory). */
+  /** The four event spaces (`article[data-space]`). */
   RoomGrid: (p: { spaces: VenueSpaceView[] }) => ReactNode;
   /** Kit capacity figures with the caption that says they are kit figures. */
   CapacityTable: (p: { capacities: VenueSpaceView['capacities'] }) => ReactNode;
@@ -210,8 +185,6 @@ export interface ContentKit {
   OutletList: (p: { fields: OperationalFieldView[]; label: string }) => ReactNode;
   /** Cited statements (`li#fact-<slug>`). */
   FactList: (p: { facts: VenueFactView[]; label: string }) => ReactNode;
-  /** The wedding-day skeleton: times and rooms only as placeholders. */
-  Programme: (p: { events: WeddingEventView[]; venueName: string; startNumber: number }) => ReactNode;
   /** FAQ entries; questions are headings under the section heading. */
   FaqList: (p: { entries: FaqView[]; labelFor: (route: string) => string }) => ReactNode;
   /** Static search results (`#search-results`, polite live region). */

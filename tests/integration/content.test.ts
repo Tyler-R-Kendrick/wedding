@@ -135,15 +135,20 @@ describe('story + adventures visibility', () => {
 describe('share an adventure', () => {
   it('the why-we-share layer follows the memory\'s visibility', async () => {
     const anon = await invoke(findAdventures, await ctxFor(anonymous), { slug: 'museum-of-ice-cream' });
-    expect(anon.ok).toBe(false);
+    expect(!anon.ok && anon.error.code).toBe('unauthenticated');
     const signedIn = await invoke(findAdventures, await ctxFor(guest), { slug: 'museum-of-ice-cream' });
     expect(signedIn.ok && signedIn.value.data.items[0]!.why).toBeUndefined();
     const adm = await invoke(findAdventures, await ctxFor(admin()), { slug: 'museum-of-ice-cream' });
     expect(adm.ok && adm.value.data.items[0]!.why?.experienceSlug).toBe('museum-of-ice-cream');
     const ai = await invoke(findAdventures, await ctxFor(admin(), 'ai'), { slug: 'museum-of-ice-cream' });
     expect(ai.ok && ai.value.data.items[0]!.why).toBeUndefined();
-    const starved = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), { slug: 'starved-rock-state-park' });
+    // A public memory's "why" reaches a signed-in guest's assistant; an anonymous caller gets none
+    // of the guide, public memory or not.
+    const starved = await invoke(findAdventures, await ctxFor(guest, 'ai'), { slug: 'starved-rock-state-park' });
     expect(starved.ok && starved.value.data.items[0]!.why?.text.text).toContain('I love you');
+    const starvedAnon = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), { slug: 'starved-rock-state-park' });
+    expect(!starvedAnon.ok && starvedAnon.error.code).toBe('unauthenticated');
+    expect(JSON.stringify(starvedAnon)).not.toContain('I love you');
   });
 
   it('filters and composes a plan inside a time budget; drafts stay labelled', async () => {
@@ -155,7 +160,7 @@ describe('share an adventure', () => {
     expect(r.value.data.items.find((i) => i.slug === 'caa-self-guided-tour')?.draft).toBe(true);
     expect(r.value.data.items.find((i) => i.slug === 'caa-explore')?.draft).toBe(false);
     // Operational freshness uses wall-clock `now`; pin a date shortly after the link-check seed.
-    const inside = await invoke(findAdventures, await ctxFor(anonymous, 'ui', { now: new Date('2026-09-10T12:00:00Z') }), { insideCaa: true });
+    const inside = await invoke(findAdventures, await ctxFor(guest, 'ui', { now: new Date('2026-09-10T12:00:00Z') }), { insideCaa: true });
     expect(inside.ok && inside.value.data.items.every((i) => i.interests.includes('inside-caa'))).toBe(true);
     const cindys = inside.ok ? inside.value.data.items.find((i) => i.slug === 'cindys-rooftop') : undefined;
     expect(cindys?.operational?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
@@ -163,12 +168,19 @@ describe('share an adventure', () => {
     expect(cindys?.handoffs.official?.url).toBe('https://www.chicagoathletichotel.com/restaurants/cindys/');
     const kids = await invoke(findAdventures, await ctxFor(guest), { kids: true, maxMinutes: 120 });
     expect(kids.ok && kids.value.data.plan?.stops.every((s) => s.recommendation.kidFriendly !== false)).toBe(true);
-    const ai = await invoke(findAdventures, await ctxFor(anonymous, 'ai'), {});
+    const ai = await invoke(findAdventures, await ctxFor(guest, 'ai'), {});
     expect(ai.ok && ai.value.data.items.length).toBeLessThanOrEqual(12);
+    // The guide is for invited guests: every filter is refused to an anonymous caller, on every surface.
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      for (const filter of [{}, { insideCaa: true }, { interests: ['architecture'] }]) {
+        const refused = await invoke(findAdventures, await ctxFor(anonymous, surface), filter);
+        expect(!refused.ok && refused.error.code, `${surface} ${JSON.stringify(filter)}`).toBe('unauthenticated');
+      }
+    }
   });
 
   it('lists the eight itinerary buckets as drafts with resolved stops', async () => {
-    const r = await invoke(listItineraries, await ctxFor(anonymous, 'ai'), {});
+    const r = await invoke(listItineraries, await ctxFor(guest, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data.itineraries.map((i) => i.bucket)).toEqual(['45-min', '2-3-h', 'friday-afternoon', 'saturday-morning', 'with-kids', 'architecture', 'food-drink', 'stay-inside-caa']);
@@ -180,11 +192,19 @@ describe('share an adventure', () => {
     expect(friday.placeholder).toBe(true);
     expect(friday.intro?.placeholder).toBe(true);
   });
+
+  it('refuses the itineraries to an anonymous caller on every surface', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const r = await invoke(listItineraries, await ctxFor(anonymous, surface), {});
+      expect(!r.ok && r.error.code, surface).toBe('unauthenticated');
+      expect(JSON.stringify(r), surface).not.toMatch(/itineraries|caa-self-guided-tour/);
+    }
+  });
 });
 
 describe('CAA docent', () => {
   it('cites history, marks kit capacities, hides closed outlets from guests, and shows them expired to admins', async () => {
-    const r = await invoke(getVenueFacts, await ctxFor(anonymous, 'ai'), {});
+    const r = await invoke(getVenueFacts, await ctxFor(guest, 'ai'), {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const d = r.value.data;
@@ -230,11 +250,25 @@ describe('CAA docent', () => {
   });
 
   it('show_venue_room returns one space and the rooms-not-confirmed placeholder', async () => {
-    const r = await invoke(showVenueRoom, await ctxFor(anonymous), { slug: 'stagg-court' });
+    const r = await invoke(showVenueRoom, await ctxFor(guest), { slug: 'stagg-court' });
     expect(r.ok && r.value.data.space.lookForThis.length).toBeGreaterThan(0);
     expect(r.ok && r.value.data.roomsNotConfirmed.placeholder).toBe(true);
-    const missing = await invoke(showVenueRoom, await ctxFor(anonymous), { slug: 'grand-ballroom' });
+    const missing = await invoke(showVenueRoom, await ctxFor(guest), { slug: 'grand-ballroom' });
     expect(!missing.ok && missing.error.code).toBe('not_found');
+  });
+
+  it('keeps the venue from an anonymous caller: no facts, no room, and no hint of which rooms exist', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const facts = await invoke(getVenueFacts, await ctxFor(anonymous, surface), {});
+      expect(!facts.ok && facts.error.code, surface).toBe('unauthenticated');
+      expect(JSON.stringify(facts), surface).not.toMatch(/1893|ballroom|valet|Madison/i);
+      // A real room and an invented one are refused alike, so the refusal is not an oracle.
+      const real = await invoke(showVenueRoom, await ctxFor(anonymous, surface), { slug: 'stagg-court' });
+      const invented = await invoke(showVenueRoom, await ctxFor(anonymous, surface), { slug: 'grand-ballroom' });
+      expect(!real.ok && real.error.code, surface).toBe('unauthenticated');
+      expect(!invented.ok && invented.error.code, surface).toBe('unauthenticated');
+      expect(!real.ok && !invented.ok && real.error.message).toBe(!invented.ok && invented.error.message);
+    }
   });
 });
 

@@ -1,28 +1,14 @@
 import { pathToFileURL } from 'node:url';
 import { READINESS_GATED } from '@/contracts/flags';
-import { WEDDING_DATE_ISO, WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { seedEventsAndPlans } from '@/domain/events/seed';
 import type { Db } from '../client';
 import { contentSources, featureFlags, lifecycleState, siteSettings } from '../schema';
 import { seedContent } from './content';
 import { seedTravelHotels } from './travel';
-import { BRIEF_SOURCE_ID, SEED_SITE_ID, SEED_SOURCES } from './sources';
+import { SEED_SITE } from './site';
+import { SEED_SOURCES } from './sources';
 
-/** Facts from docs/design/brief.md section 2. Anything else is a TODO(Tyler & Sara), never invented. */
-export const SEED_SITE = {
-  id: SEED_SITE_ID,
-  coupleDisplayName: 'Sara + Tyler',
-  partner1Name: 'Sara Fitzgerald',
-  partner2Name: 'Tyler Kendrick',
-  weddingDate: WEDDING_DATE_ISO,
-  timezone: WEDDING_TIMEZONE,
-  venueName: 'Chicago Athletic Association Hotel',
-  venueAddress: '12 S Michigan Ave, Chicago, IL 60603',
-  venueUrl: 'https://www.chicagoathletichotel.com/',
-  themes: ['botanical-deco', 'gilded-hour', 'conservatory'],
-  defaultTheme: 'botanical-deco',
-  sourceId: BRIEF_SOURCE_ID,
-} as const;
+export { SEED_SITE } from './site';
 
 /** The provenance rows every seeded record cites. Code-owned: always refreshed from SEED_SOURCES. */
 export async function seedSources(db: Db, now: Date = new Date()): Promise<void> {
@@ -87,9 +73,20 @@ export async function seed(db: Db): Promise<void> {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  const { getDb, resetDb } = await import('../client');
-  const db = await getDb();
-  await seed(db);
-  console.log('seed complete');
-  await resetDb();
+  // Not a bare top-level await, for the reason given in migrate.ts and one more: opening the
+  // database can itself seed (dev defaults), which imports this module, and a module that is still
+  // awaiting at its top level never finishes loading for whoever imports it. `npm run db:seed`
+  // exited 13 with "unsettled top-level await" and seeded nothing.
+  void (async () => {
+    try {
+      const { getDb, resetDb } = await import('../client');
+      const db = await getDb();
+      await seed(db);
+      console.log('seed complete');
+      await resetDb();
+    } catch (error) {
+      console.error('seed failed:', error);
+      process.exitCode = 1;
+    }
+  })();
 }

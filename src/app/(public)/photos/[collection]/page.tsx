@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { GalleryPage } from '@/capabilities/media';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 import { DEFAULT_COLLECTIONS } from '@/domain/media/collections';
 import { recipes } from '../../_recipes';
 
@@ -33,6 +34,7 @@ export default async function CollectionPage({ params, searchParams }: { params:
   const principal = await currentPrincipal();
   // Behind the account menu, like the index: sign in first, then straight back to this album.
   if (principal.kind === 'anonymous') redirect(throughSignIn(`/photos/${collection}`));
+  await requireOpenNow(principal, 'photo-collection');
   const gallery = await invokeForRequest<GalleryPage>('list_gallery', { collection, ...(cursor && /^[A-Za-z0-9_-]{1,256}$/.test(cursor) ? { cursor } : {}) }, principal);
   // A collection the caller may not see is indistinguishable from one that does not exist: no
   // enumeration of admin-only albums, which is the same answer `list_gallery` gives.

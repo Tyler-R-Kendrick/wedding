@@ -28,17 +28,14 @@ const ROOT = cwd();
  * `npx skills add … --copy`. Its links point at ITS repository layout. Fixing them would mean
  * editing a vendored bundle that `npm run skills:update` overwrites.
  *
- * ARCHIVAL — a self-review, a design critique, an inspiration board and a swarm's own handover
- * note are dated records of a moment. `docs/reviews/PR-03-self-review.md` says `src/app/page.tsx`
- * because that is where the file was in September at level 03. Rewriting the record to match
- * today's tree would falsify it. They are read as history, not as instructions.
+ * ARCHIVAL — an inspiration board and a swarm's own handover note are dated records of a moment:
+ * one says `src/app/page.tsx` because that is where the file was in September at level 03.
+ * Rewriting the record to match today's tree would falsify it. They are read as history, not as
+ * instructions.
  */
 const OUT_OF_SCOPE = [
   /^\.claude\/skills\//,
-  /^docs\/reviews\//,
-  /^docs\/design\/critiques\//,
   /^docs\/design\/inspo\//,
-  /^docs\/prototypes\//,
   /^docs\/research\//,
 ];
 

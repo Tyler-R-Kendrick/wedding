@@ -50,10 +50,29 @@ afterAll(() => setPrincipalResolver(anonymousResolver));
 
 describe('POST /api/capabilities/<name>', () => {
   it('ignores any client-claimed surface: browser POSTs are always ui', async () => {
-    const res = await post('site_status', json({ input: {} }, { 'x-capability-surface': 'ai', 'x-request-id': 'req-route-surface' }));
+    const res = await post('site_status', json({ input: {} }, { ...asGuest, 'sec-fetch-site': 'same-origin', 'x-capability-surface': 'ai', 'x-request-id': 'req-route-surface' }));
     expect(res.status).toBe(200);
     const rows = await listAuditEvents(await getDb(), { requestId: 'req-route-surface' });
     expect(rows[0]).toMatchObject({ action: 'capability.invoked', metadata: { surface: 'ui' } });
+    // The same holds for a read anyone may make.
+    const anon = await post('get_story', json({ input: {} }, { 'x-capability-surface': 'ai', 'x-request-id': 'req-route-surface-anon' }));
+    expect(anon.status).toBe(200);
+    const anonRows = await listAuditEvents(await getDb(), { requestId: 'req-route-surface-anon' });
+    expect(anonRows[0]).toMatchObject({ action: 'capability.invoked', metadata: { surface: 'ui' } });
+  });
+
+  it('answers 401 to an anonymous caller asking for the wedding details, and gives none of them away', async () => {
+    // The date, the venue, the hotel block, the things to do and the travel search are for invited
+    // guests. Each of these answered an anonymous POST until sign-in became required for them.
+    for (const name of ['site_status', 'get_venue_facts', 'show_venue_room', 'list_hotel_recommendations', 'search_travel_options', 'open_booking_link', 'find_adventures', 'list_itineraries', 'get_reservation_options', 'open_reservation_link', 'get_my_transportation_options']) {
+      const res = await post(name, json({ input: {} }));
+      expect(res.status, name).toBe(401);
+      const text = await res.text();
+      expect(JSON.parse(text), name).toMatchObject({ ok: false, error: { code: 'unauthenticated' } });
+      expect(text, name).not.toMatch(/2027|Chicago Athletic|Michigan Ave|hyatt/i);
+    }
+    const rows = await listAuditEvents(await getDb(), { action: 'capability.denied' });
+    expect(rows.map((r) => r.targetId)).toEqual(expect.arrayContaining(['site_status', 'get_venue_facts', 'list_hotel_recommendations']));
   });
 
   it('requires JSON from the site origin for signed-in principals (CSRF), not for anonymous reads', async () => {
@@ -69,7 +88,12 @@ describe('POST /api/capabilities/<name>', () => {
     expect((await post('site_status', json({ input: {} }, { ...asGuest, 'sec-fetch-site': 'same-origin' }))).status).toBe(200);
     expect((await post('site_status', json({ input: {} }, { ...asGuest, 'sec-fetch-site': 'none' }))).status).toBe(200);
     expect((await post('site_status', json({ input: {} }, { ...asGuest, origin: publicEnv.siteUrl }))).status).toBe(200);
-    expect((await post('site_status', json({ input: {} }, { origin: 'https://evil.example' }))).status).toBe(200);
+    // An anonymous read carries no session a foreign page could ride, so it is not origin-checked;
+    // `site_status` is no longer one of those reads, and is refused for the lack of a sign-in.
+    expect((await post('get_story', json({ input: {} }, { origin: 'https://evil.example' }))).status).toBe(200);
+    const anonymous = await post('site_status', json({ input: {} }, { origin: 'https://evil.example' }));
+    expect(anonymous.status).toBe(401);
+    expect((await anonymous.json()).error.code).toBe('unauthenticated');
   });
 
   it('caps the body while streaming, whatever Content-Length claims', async () => {

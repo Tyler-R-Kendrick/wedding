@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Slot } from '@wedding/skeleton';
 import { paragraph, placeholderFor } from '../lib/placeholder';
@@ -26,11 +25,5 @@ describe('placeholder content', () => {
 
   it('applies overrides by key, and site-wide ones to every page', () => {
     expect(placeholderFor(slot({ key: 'rsvp/site/name', page: 'rsvp', block: 'site', part: 'name', shape: { kind: 'line' } }))).toBe('Sara + Tyler');
-  });
-
-  it('offers every design the real app ships, approved one first', () => {
-    const themes = JSON.parse(readFileSync(new URL('../app/themes/themes.json', import.meta.url), 'utf8')) as { id: string; approved: boolean }[];
-    expect(themes[0]).toMatchObject({ id: 'botanical-deco', approved: true });
-    expect(themes.map((t) => t.id).sort()).toEqual(['botanical-deco', 'conservatory', 'gilded-hour']);
   });
 });

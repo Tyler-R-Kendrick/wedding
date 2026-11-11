@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { MediaEmpty, MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { UploadForm } from '@/components/media/UploadForm';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 import { currentPrincipal } from '@/components/media/server';
 import { hasEntitlement } from '@/contracts/principal';
 import { getFlags } from '@/lib/flags';
@@ -17,6 +18,8 @@ export const metadata: Metadata = { title: 'Add your photos', robots: { index: f
  */
 export default async function UploadPage() {
   const principal = await currentPrincipal();
+  // Uploads open on the wedding day. A signed-out reader still sees the sign-in prompt below.
+  await requireOpenNow(principal, 'media-upload');
   const flags = getFlags();
   const allowed = principal.kind !== 'anonymous' && hasEntitlement(principal, 'upload_media');
   return (

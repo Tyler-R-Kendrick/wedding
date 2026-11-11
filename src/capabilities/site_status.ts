@@ -12,7 +12,7 @@ import { toSiteFacts } from '@/domain/lifecycle/facts';
 import { navFor } from '@/domain/lifecycle/nav';
 import { getPreviewSecret } from '@/domain/lifecycle/secret';
 import { resolveLifecycle } from '@/domain/lifecycle/state';
-import { DEFAULT_THEME, isLegacyThemeId, isThemeId, listThemes, THEME_IDS } from '@/themes/registry';
+import { DEFAULT_THEME, isThemeId, listThemes, THEME_IDS } from '@/themes/registry';
 import { requireService } from './services';
 
 const input = z.object({}).optional();
@@ -47,7 +47,6 @@ const output = z.object({
   theme: z.object({
     active: z.enum(THEME_IDS),
     available: z.array(z.object({ id: z.enum(THEME_IDS), name: z.string(), tagline: z.string() })),
-    switcherEnabled: z.boolean(),
   }),
   themes: z.array(z.string()),
   defaultTheme: z.string(),
@@ -63,7 +62,7 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
     'the venue, the days remaining, the navigation for this stage, and the active and available visual designs. ' +
     'Use it to orient before answering questions about timing. It reads only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },
@@ -94,10 +93,10 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
     const signedIn = ctx.principal.kind === 'guest' || ctx.principal.kind === 'admin';
     const nav = navFor(lifecycle.state, { venue: facts.venue, signedIn });
     const requested = ctx.view?.theme?.toLowerCase();
-    // A persisted default naming one of the superseded proposals predates the couple's approval (the
-    // seed wrote `gilded-hour` until then) and is ignored, exactly as a pre-approval theme cookie is:
-    // an agent asking what the site looks like gets the design guests actually see.
-    const persisted = isThemeId(site.defaultTheme) && !isLegacyThemeId(site.defaultTheme) ? site.defaultTheme : null;
+    // A persisted default naming a retired design (the seed wrote `gilded-hour` once) is ignored,
+    // exactly as a stale theme cookie is: an agent asking what the site looks like gets the design
+    // guests actually see.
+    const persisted = isThemeId(site.defaultTheme) ? site.defaultTheme : null;
     const active = isThemeId(requested) ? requested : (persisted ?? DEFAULT_THEME);
     return ok({
       data: {
@@ -126,10 +125,9 @@ export const siteStatus = defineCapability<z.infer<typeof input>, SiteStatus>({
         theme: {
           active,
           available: listThemes().map((t) => ({ id: t.id, name: t.name, tagline: t.tagline })),
-          switcherEnabled: ctx.flags.DESIGN_SWITCHER,
         },
-        // What the site serves, not the row as a pre-approval seed left it: an existing database keeps
-        // `gilded-hour` and a list without `botanical-deco` (the seed never overwrites), and an agent
+        // What the site serves, not the row as an early seed left it: an existing database may keep
+        // `gilded-hour` and a list naming retired designs (the seed never overwrites), and an agent
         // reading those beside `theme.active` would be told two different things.
         themes: [...THEME_IDS],
         defaultTheme: persisted ?? DEFAULT_THEME,

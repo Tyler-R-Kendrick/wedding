@@ -4,10 +4,8 @@
  * `node scripts/probes/measure.mjs <theme|-> <principal|none> <route...>`   (VW=1440 recommended)
  *
  * Walks each block's text with a Range, groups characters by line-box top and reports the median
- * full line (the last line of a block is excluded, being short by definition). This is what
- * established that `--gh-prose: 42rem` rendered 82 characters where Gilded Hour's DESIGN.md asks
- * 60–70, and that `min(42rem, 68ch)` never bound in Conservatory: a `ch` is the advance of "0", and
- * both faces have an average letter narrower than their zero.
+ * full line (the last line of a block is excluded, being short by definition). A `ch` estimate
+ * misleads: a `ch` is the advance of "0", and a text face's average letter is narrower than that.
  */
 import { argv, withPage, BASE } from './lib.mjs';
 

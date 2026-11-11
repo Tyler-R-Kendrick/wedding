@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { adminSearchAudit } from '@/capabilities/ops';
 import { siteStatus } from '@/capabilities';
+import { getStory } from '@/capabilities/get_story';
 import type { AdminId, AuthIdentityId } from '@/contracts/ids';
 import type { AdminPrincipal } from '@/contracts/principal';
 import { getDb } from '@/db/client';
@@ -27,13 +28,22 @@ describe('admin_search_audit', () => {
   });
 
   it('finds the rows the pipeline itself writes, filtered by action, outcome and request id', async () => {
-    await run(siteStatus, { kind: 'anonymous' }, {}, { requestId: 'req-audit-seed' });
+    // A read anyone may make (Our Story), and one an anonymous caller is refused (`site_status`
+    // carries the date and venue, so it needs a signed-in guest): both leave a row.
+    expectOk(await run(getStory, { kind: 'anonymous' }, {}, { requestId: 'req-audit-seed' }));
     const byRequest = await search({ requestId: 'req-audit-seed' });
     expect(byRequest.rows).toHaveLength(1);
-    expect(byRequest.rows[0]).toMatchObject({ action: 'capability.invoked', targetType: 'capability', targetId: 'site_status', outcome: 'success' });
+    expect(byRequest.rows[0]).toMatchObject({ action: 'capability.invoked', targetType: 'capability', targetId: 'get_story', outcome: 'success' });
     expect(byRequest.rows[0]!.actor).toEqual({ kind: 'anonymous', ref: null });
 
+    expect(expectErr(await run(siteStatus, { kind: 'anonymous' }, {}, { requestId: 'req-audit-refused' })).code).toBe('unauthenticated');
+    const refused = await search({ requestId: 'req-audit-refused' });
+    expect(refused.rows).toHaveLength(1);
+    expect(refused.rows[0]).toMatchObject({ action: 'capability.denied', targetType: 'capability', targetId: 'site_status', outcome: 'denied' });
+    expect(refused.rows[0]!.actor).toEqual({ kind: 'anonymous', ref: null });
+
     const denied = await search({ outcome: 'denied' });
+    expect(denied.rows.map((r) => r.requestId)).toContain('req-audit-refused');
     expect(denied.rows.every((r) => r.outcome === 'denied')).toBe(true);
 
     const byAction = await search({ actions: ['capability.invoked'] });

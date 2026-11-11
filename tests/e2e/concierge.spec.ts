@@ -39,8 +39,17 @@ test.describe('concierge on Ask Us', () => {
   test('turns an anonymous visitor away to sign in, with a return path to Ask Us', async ({ browser }) => {
     const ctx = await contextAs(browser, null);
     const page = await ctx.newPage();
-    await page.goto('/ask-us');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fask-us/);
+    // Ask Us lives in the guest portal; the old address is a permanent redirect to it.
+    const moved = await page.request.get('/ask-us', { maxRedirects: 0 });
+    expect(moved.status()).toBe(308);
+    expect(moved.headers().location).toMatch(/\/guests\/ask-us$/);
+    for (const path of ['/ask-us', '/guests/ask-us']) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(/\/sign-in\?next=%2Fguests%2Fask-us/);
+      // The door says nothing the FAQ would have: no date, no venue, no concierge.
+      await expect(page.locator('body'), path).not.toContainText(/July 17|Chicago Athletic|Michigan Ave/);
+      await expect(page.getByTestId('concierge-open'), path).toHaveCount(0);
+    }
     await ctx.close();
   });
 
@@ -58,7 +67,9 @@ test.describe('concierge on Ask Us', () => {
 
   test('the FAQ and static search work without opening the concierge', async ({ browser }) => {
     const { ctx, page } = await guestPage(browser);
+    // A link a guest kept to the old address still arrives.
     await page.goto('/ask-us');
+    await expect(page).toHaveURL(/\/guests\/ask-us$/);
     await expect(page.getByRole('heading', { name: 'When and where is the wedding?' })).toBeVisible();
     await expect(page.locator('#concierge-slot[data-slot="concierge"]')).toBeVisible();
     await page.getByLabel('What are you looking for?').fill('valet');
@@ -225,105 +236,98 @@ test.describe('concierge on Ask Us', () => {
 });
 
 /**
- * The same island in BOTH designs. Everything above runs against whichever design is the default,
- * which is how a shared component ships wearing one design's answer to a question the other design
- * owns — the failure mode level 10 hit twice. Gilded Hour mounts the island on a `gh-slot` plaque
- * and Conservatory inside a kraft-tagged card in its narrower mount column, so the two get
- * measurably different widths for the same conversation; what must NOT differ is that a guest can
- * open it, ask, and be given a cited answer with no marker leaking through.
+ * The island inside the design's own Ask Us page: a guest can open it, ask, and be given a cited
+ * answer with no marker leaking through, and the panel fits the column the design mounts it in.
  */
-for (const theme of ['botanical-deco', 'gilded-hour', 'conservatory'] as const) {
-  const themeGuest: PrincipalName = theme === 'gilded-hour' ? 'B1' : theme === 'conservatory' ? 'C1' : 'A1';
-  test.describe(`concierge in ${theme}`, () => {
-    test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
-      const { ctx, page } = await guestPage(browser, themeGuest);
-      await page.goto(`/guests/ask-us?theme=${theme}`);
-      await expect(page.locator(`.site[data-theme="${theme}"]`).first()).toBeAttached();
+test.describe('concierge in the design', () => {
+  // A household of its own: questions are rate-limited per guest, and the tests above spend A1's.
+  test('opens, answers with citations, and shows the guest no authoring markers', async ({ browser }) => {
+    const { ctx, page } = await guestPage(browser, 'B1');
+    await page.goto('/guests/ask-us');
+    await expect(page.locator('.site[data-theme="botanical-deco"]').first()).toBeAttached();
 
-      const slot = page.locator('#concierge-slot');
-      await expect(slot).toBeAttached();
-      await page.getByTestId('concierge-open').click();
-      await page.getByTestId('concierge-input').fill('When is the wedding and where is it?');
-      await page.keyboard.press('Enter');
-      await expect(page.getByTestId('concierge')).toContainText('Based on:', { timeout: 30_000 });
+    const slot = page.locator('#concierge-slot');
+    await expect(slot).toBeAttached();
+    await page.getByTestId('concierge-open').click();
+    await page.getByTestId('concierge-input').fill('When is the wedding and where is it?');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('concierge')).toContainText('Based on:', { timeout: 30_000 });
 
-      const shown = (await slot.innerText()).replace(/\s+/g, ' ');
-      expect(shown).toContain('July 17, 2027');
-      // Authoring markers and internal ticket references are never a guest-facing answer. A string
-      // list was rendered by a bare join with no placeholder filter until level 12, which put
-      // "TODO(Tyler & Sara): … (backlog P-05)" into a real answer.
-      expect(shown, `${theme}: authoring marker in a concierge answer`).not.toMatch(/TODO\(/);
-      expect(shown, `${theme}: internal backlog reference in a concierge answer`).not.toMatch(/\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/i);
+    const shown = (await slot.innerText()).replace(/\s+/g, ' ');
+    expect(shown).toContain('July 17, 2027');
+    // Authoring markers and internal ticket references are never a guest-facing answer. A string
+    // list was rendered by a bare join with no placeholder filter until level 12, which put
+    // "TODO(Tyler & Sara): … (backlog P-05)" into a real answer.
+    expect(shown, 'authoring marker in a concierge answer').not.toMatch(/TODO\(/);
+    expect(shown, 'internal backlog reference in a concierge answer').not.toMatch(/\bbacklog\s+[A-Z]{1,2}-\d{1,3}\b/i);
 
-      // Every citation points at a page of this site or an official external source.
-      const hrefs = await slot.locator('.cq__sources a').evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? ''));
-      expect(hrefs.length).toBeGreaterThan(0);
-      for (const href of hrefs) {
-        expect(href.startsWith('/') || href.startsWith('https://'), `${theme}: ${href}`).toBe(true);
-        expect(href, `${theme}: ${href}`).not.toMatch(/\.md($|#)|^\/docs\/|^src\//);
-      }
-      await ctx.close();
-    });
-
-    test('the panel fits its column and every control clears 44px', async ({ browser }) => {
-      const { ctx, page } = await guestPage(browser, themeGuest);
-      await page.goto(`/guests/ask-us?theme=${theme}`);
-      await page.getByTestId('concierge-open').click();
-      await expect(page.getByTestId('concierge-input')).toBeVisible();
-      // Ask first. An EMPTY panel holds only the input and the Ask button, which were already large
-      // enough; the source links under an answer are what was 16px tall in Gilded Hour and 26px in
-      // Conservatory. Measuring before asking passed against the very regression it exists to catch.
-      await page.getByTestId('concierge-input').fill('When is the wedding?');
-      await page.keyboard.press('Enter');
-      await expect(page.getByTestId('concierge')).toContainText('Based on:', { timeout: 30_000 });
-      await expect(page.locator('#concierge-slot .cq__sources a').first()).toBeVisible();
-
-      // The island is laid out by the column each design mounts it in, never by the window: a
-      // component that asks the viewport how wide it is renders correctly in one design only.
-      const { slot, column } = await page.evaluate(() => {
-        const el = document.querySelector('#concierge-slot') as HTMLElement;
-        return { slot: Math.round(el.getBoundingClientRect().width), column: Math.round((el.parentElement as HTMLElement).getBoundingClientRect().width) };
-      });
-      expect(slot, `${theme}: island is wider than the column holding it`).toBeLessThanOrEqual(column + 1);
-      const page_ = await page.evaluate(() => ({ scroll: document.body.scrollWidth, client: document.body.clientWidth }));
-      expect(page_.scroll, `${theme}: the page scrolls sideways`).toBeLessThanOrEqual(page_.client);
-
-      // 44px targets: grandparents are a primary audience (PRODUCT.md).
-      //
-      // `.cq__sources a` is deliberately EXCLUDED, and getting that wrong is why this is spelled
-      // out. WCAG 2.2 SC 2.5.8 carries an explicit Inline exception for a link inside a line of
-      // text, which is what a citation is — "[S1] Site status · checked 2026-09-04". Forcing 44px
-      // on them made each entry 70px tall at 390 and pushed the date onto its own line, so the
-      // "fix" cost legibility to satisfy a rule that never applied. Everything a guest presses —
-      // the Ask button, the field, and the "Where to look next" pages — is a target and is checked.
-      const small = await page.locator('#concierge-slot button, #concierge-slot textarea, #concierge-slot .cq__links a, #concierge-slot .cq__card a').evaluateAll((els) =>
-        els
-          .map((e) => ({ tag: e.tagName, text: (e.textContent ?? '').trim().slice(0, 30), h: Math.round(e.getBoundingClientRect().height), w: Math.round(e.getBoundingClientRect().width) }))
-          .filter((b) => b.w > 0 && b.h < 44),
-      );
-      expect(small, `${theme}: controls under 44px`).toEqual([]);
-
-      // And the citations carry no artificial floor. This asserts the RULE, not a rendered height:
-      // a long source title genuinely wraps to two lines on a 390px phone, which is correct, so
-      // measuring the box would fail for the right reason at one width and pass at another. What
-      // must hold everywhere is that nothing stretches these beyond their own text — that is what
-      // `min-height: 44px` did here, turning every entry into a 70px stack with the checked-on date
-      // orphaned below it.
-      const cites = await page.locator('#concierge-slot .cq__sources a').evaluateAll((els) =>
-        els.map((e) => {
-          const cs = getComputedStyle(e);
-          return { minHeight: cs.minHeight, display: cs.display, lines: Math.round(e.getBoundingClientRect().height / parseFloat(cs.lineHeight || '0')) };
-        }),
-      );
-      expect(cites.length, `${theme}: the answer cites nothing`).toBeGreaterThan(0);
-      for (const c of cites) {
-        expect(['0px', 'auto'], `${theme}: a citation link carries a min-height (${c.minHeight})`).toContain(c.minHeight);
-        expect(c.lines, `${theme}: a citation link is taller than the text inside it`).toBeLessThanOrEqual(2);
-      }
-      await ctx.close();
-    });
+    // Every citation points at a page of this site or an official external source.
+    const hrefs = await slot.locator('.cq__sources a').evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? ''));
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(href.startsWith('/') || href.startsWith('https://'), `${href}`).toBe(true);
+      expect(href, `${href}`).not.toMatch(/\.md($|#)|^\/docs\/|^src\//);
+    }
+    await ctx.close();
   });
-}
+
+  test('the panel fits its column and every control clears 44px', async ({ browser }) => {
+    const { ctx, page } = await guestPage(browser, 'B1');
+    await page.goto('/guests/ask-us');
+    await page.getByTestId('concierge-open').click();
+    await expect(page.getByTestId('concierge-input')).toBeVisible();
+    // Ask first. An EMPTY panel holds only the input and the Ask button, which were already large
+    // enough; the source links under an answer are what was too short to tap. Measuring before
+    // asking passed against the very regression it exists to catch.
+    await page.getByTestId('concierge-input').fill('When is the wedding?');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('concierge')).toContainText('Based on:', { timeout: 30_000 });
+    await expect(page.locator('#concierge-slot .cq__sources a').first()).toBeVisible();
+
+    // The island is laid out by the column the design mounts it in, never by the window.
+    const { slot, column } = await page.evaluate(() => {
+      const el = document.querySelector('#concierge-slot') as HTMLElement;
+      return { slot: Math.round(el.getBoundingClientRect().width), column: Math.round((el.parentElement as HTMLElement).getBoundingClientRect().width) };
+    });
+    expect(slot, 'island is wider than the column holding it').toBeLessThanOrEqual(column + 1);
+    const page_ = await page.evaluate(() => ({ scroll: document.body.scrollWidth, client: document.body.clientWidth }));
+    expect(page_.scroll, 'the page scrolls sideways').toBeLessThanOrEqual(page_.client);
+
+    // 44px targets: grandparents are a primary audience (PRODUCT.md).
+    //
+    // `.cq__sources a` is deliberately EXCLUDED, and getting that wrong is why this is spelled
+    // out. WCAG 2.2 SC 2.5.8 carries an explicit Inline exception for a link inside a line of
+    // text, which is what a citation is — "[S1] Site status · checked 2026-09-04". Forcing 44px
+    // on them made each entry 70px tall at 390 and pushed the date onto its own line, so the
+    // "fix" cost legibility to satisfy a rule that never applied. Everything a guest presses —
+    // the Ask button, the field, and the "Where to look next" pages — is a target and is checked.
+    const small = await page.locator('#concierge-slot button, #concierge-slot textarea, #concierge-slot .cq__links a, #concierge-slot .cq__card a').evaluateAll((els) =>
+      els
+        .map((e) => ({ tag: e.tagName, text: (e.textContent ?? '').trim().slice(0, 30), h: Math.round(e.getBoundingClientRect().height), w: Math.round(e.getBoundingClientRect().width) }))
+        .filter((b) => b.w > 0 && b.h < 44),
+    );
+    expect(small, 'controls under 44px').toEqual([]);
+
+    // And the citations carry no artificial floor. This asserts the RULE, not a rendered height:
+    // a long source title genuinely wraps to two lines on a 390px phone, which is correct, so
+    // measuring the box would fail for the right reason at one width and pass at another. What
+    // must hold everywhere is that nothing stretches these beyond their own text — that is what
+    // `min-height: 44px` did here, turning every entry into a 70px stack with the checked-on date
+    // orphaned below it.
+    const cites = await page.locator('#concierge-slot .cq__sources a').evaluateAll((els) =>
+      els.map((e) => {
+        const cs = getComputedStyle(e);
+        return { minHeight: cs.minHeight, display: cs.display, lines: Math.round(e.getBoundingClientRect().height / parseFloat(cs.lineHeight || '0')) };
+      }),
+    );
+    expect(cites.length, 'the answer cites nothing').toBeGreaterThan(0);
+    for (const c of cites) {
+      expect(['0px', 'auto'], `a citation link carries a min-height (${c.minHeight})`).toContain(c.minHeight);
+      expect(c.lines, 'a citation link is taller than the text inside it').toBeLessThanOrEqual(2);
+    }
+    await ctx.close();
+  });
+});
 
 test.describe('the concierge is rate limited', () => {
   // Once, not once per viewport. A rate limit has nothing to do with screen size, and the three

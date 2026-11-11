@@ -1,0 +1,162 @@
+{
+ "_about": "Read by scripts/fonts/subset.py. How each value was found is in scripts/fonts/README.md.",
+ "chars": [
+  160,
+  167,
+  169,
+  173,
+  176,
+  177,
+  183,
+  201,
+  215,
+  233,
+  332,
+  333,
+  8208,
+  8209,
+  8211,
+  8212,
+  8216,
+  8217,
+  8220,
+  8221,
+  8226,
+  8230,
+  8249,
+  8250,
+  8592,
+  8594,
+  8595,
+  8599,
+  8722,
+  8776,
+  8804,
+  8805,
+  8984,
+  10003
+ ],
+ "fonts": [
+  {
+   "source": "botanical-deco/bodoni-moda-wght.woff2",
+   "name": "bodoni-moda",
+   "family": "\"Bodoni Moda\"",
+   "weight": "400 700",
+   "style": "normal",
+   "display": "swap",
+   "features": [
+    "ccmp",
+    "locl",
+    "mark",
+    "mkmk",
+    "rlig",
+    "calt",
+    "clig",
+    "liga",
+    "kern",
+    "rvrn",
+    "tnum"
+   ],
+   "axes": {
+    "wght": [
+     400,
+     700
+    ],
+    "opsz": [
+     13,
+     40
+    ]
+   }
+  },
+  {
+   "source": "botanical-deco/bodoni-moda-italic-wght.woff2",
+   "name": "bodoni-moda-italic",
+   "family": "\"Bodoni Moda\"",
+   "weight": "400 700",
+   "style": "italic",
+   "display": "swap",
+   "features": [
+    "ccmp",
+    "locl",
+    "mark",
+    "mkmk",
+    "rlig",
+    "calt",
+    "clig",
+    "liga",
+    "kern",
+    "rvrn"
+   ],
+   "axes": {
+    "wght": 400,
+    "opsz": [
+     18,
+     40
+    ]
+   }
+  },
+  {
+   "source": "botanical-deco/newsreader-text.woff2",
+   "name": "newsreader",
+   "family": "Newsreader",
+   "weight": "400 600",
+   "style": "normal",
+   "display": "swap",
+   "features": [
+    "ccmp",
+    "locl",
+    "mark",
+    "mkmk",
+    "rlig",
+    "calt",
+    "clig",
+    "liga",
+    "kern",
+    "rvrn",
+    "tnum"
+   ]
+  },
+  {
+   "source": "botanical-deco/newsreader-text-italic.woff2",
+   "name": "newsreader-italic",
+   "family": "Newsreader",
+   "weight": "400 600",
+   "style": "italic",
+   "display": "swap",
+   "features": [
+    "ccmp",
+    "locl",
+    "mark",
+    "mkmk",
+    "rlig",
+    "calt",
+    "clig",
+    "liga",
+    "kern",
+    "rvrn"
+   ]
+  },
+  {
+   "source": "botanical-deco/ms-madi-regular.woff2",
+   "name": "ms-madi",
+   "family": "\"Ms Madi\"",
+   "weight": "400",
+   "style": "normal",
+   "display": "swap",
+   "features": [
+    "ccmp",
+    "locl",
+    "mark",
+    "mkmk",
+    "rlig",
+    "calt",
+    "clig",
+    "liga",
+    "kern",
+    "rvrn"
+   ],
+   "hinting": "drop"
+  }
+ ],
+ "_chars_note": "Every non-ASCII character the pages render or the source names. One a font lacks is simply not in its files (U+014C/014D, the arrows and U+2318 fall to the system font, as before)."
+}

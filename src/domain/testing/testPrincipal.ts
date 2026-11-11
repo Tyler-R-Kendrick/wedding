@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ID_PATTERN, type AdminId, type AuthIdentityId, type GuestId, type HouseholdId } from '@/contracts/ids';
+import { LIFECYCLE_STATES, type LifecycleState } from '@/contracts/lifecycle';
 import { ADMIN_ROLES, ENTITLEMENTS, type Principal } from '@/contracts/principal';
 import { timingSafeEqualString } from '@/lib/crypto';
 import { env } from '@/lib/env';
@@ -35,6 +36,8 @@ export const testPrincipalSchema = z.discriminatedUnion('kind', [
     entitlements: z.array(entitlement).max(30).optional(),
     authenticatedAt: z.string().datetime().optional(),
     sessionId: z.string().max(80).optional(),
+    /** The point in the timeline this guest is seen at (`testLifecycleOf`). */
+    lifecycle: z.enum(LIFECYCLE_STATES).optional(),
   }),
   z.object({
     kind: z.literal('admin'),
@@ -133,6 +136,22 @@ const injected: WeakSet<Principal> = ((globalThis as { [INJECTED]?: WeakSet<Prin
  * devices would have. Real principals are never in `injected`, so production keeps one bucket per
  * person (`src/capabilities/invoke.ts`), and the pipeline's own tests still meter per principal.
  */
+/**
+ * The point in the timeline an injected guest asked to be seen at, if any.
+ *
+ * The suites share one server, and its published state is one row: a spec that moved it would move
+ * it for every spec running beside it. Photos open on the wedding day and gifts with the RSVP
+ * (`requireOpenNow`), so a journey through either says which day it is on, for its own requests
+ * only. The persisted state is untouched, and a real session can never carry this: it lives beside
+ * `injected`, which only this resolver fills, under the same three conditions.
+ */
+const LIFECYCLE_OF = Symbol.for('wedding.testPrincipal.lifecycle');
+const lifecycleOf: WeakMap<Principal, LifecycleState> = ((globalThis as { [LIFECYCLE_OF]?: WeakMap<Principal, LifecycleState> })[LIFECYCLE_OF] ??= new WeakMap<Principal, LifecycleState>());
+
+export function testLifecycleOf(principal: Principal | undefined): LifecycleState | undefined {
+  return principal && injected.has(principal) ? lifecycleOf.get(principal) : undefined;
+}
+
 export function sessionScopedLimiter<L extends { consume(key: string, budget: 'capability'): Promise<{ allowed: boolean; retryAfterMs?: number }> }>(limiter: L, principal: Principal) {
   if (!injected.has(principal) || principal.kind === 'anonymous' || principal.kind === 'system') return limiter;
   const session = principal.sessionId;
@@ -153,6 +172,7 @@ export function createTestPrincipalResolver(fallback: PrincipalResolver, e: Test
         if (!parsed.success) return fallback.resolve(request);
         const principal = principalFromSpec(parsed.data);
         injected.add(principal);
+        if (parsed.data.kind === 'guest' && parsed.data.lifecycle) lifecycleOf.set(principal, parsed.data.lifecycle);
         return principal;
       } catch {
         return fallback.resolve(request);

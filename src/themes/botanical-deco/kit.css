@@ -861,8 +861,19 @@
   margin-block-end: var(--spacing-md);
 }
 
+/* The welcome, and what to do now, at reading size: it is the hero's one sentence. */
 .bd-hero__lede {
-  max-width: 29rem;
+  max-width: 27rem;
+  margin-block: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--type-body-md-size);
+  line-height: 1.5;
+  color: var(--color-on-surface);
+  text-wrap: pretty;
+}
+
+/* How an invited guest gets in: quiet, under the buttons. */
+.bd-hero__note {
+  max-width: 27rem;
   margin-block-start: var(--spacing-md);
   font-size: var(--type-body-sm-size);
   color: var(--color-on-surface-muted);
@@ -885,51 +896,6 @@
   padding-inline: 18px;
   gap: 8px;
   letter-spacing: 0.06em;
-}
-
-/* The day count: a Sheet plate with a gold hairline and stepped corners, over the portrait's lower
-   right where there is only suit and railing. */
-.bd-hero__count {
-  position: absolute;
-  z-index: 3;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 14px 18px 12px;
-  background: var(--color-surface);
-  border: var(--bd-gold-hair);
-  box-shadow: 0 0 0 4px var(--color-surface), 0 0 0 5px color-mix(in oklab, var(--color-gold) 55%, transparent);
-  text-align: center;
-}
-
-.bd-countdown--hero {
-  display: grid;
-  justify-items: center;
-  margin: 0;
-}
-
-.bd-countdown--hero .bd-countdown__num {
-  --bd-shown: var(--bd-days);
-
-  font-family: var(--font-display);
-  font-size: clamp(var(--type-h1-size), 1.713rem + 2.275vw, var(--type-display-xl-size));
-  font-weight: 400;
-  line-height: 1;
-  font-variant-numeric: lining-nums tabular-nums;
-  color: var(--color-primary);
-}
-
-.bd-countdown__digits::after {
-  content: counter(bd-days);
-  counter-reset: bd-days var(--bd-shown);
-}
-
-.bd-countdown--hero .bd-countdown__label {
-  font-family: var(--font-text);
-  font-size: var(--type-control-caps-size);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-tertiary);
 }
 
 .bd-hero__theme {
@@ -984,18 +950,6 @@
     block-size: var(--bd-hero-photo);
   }
 
-  /* On the phone the plate sits on the photograph's lower corner, never over the invitation. */
-  .bd-hero__count {
-    inset-block-start: calc(var(--bd-hero-photo) - 12px);
-    inset-inline-end: var(--bd-gutter);
-    translate: 0 -100%;
-    padding: 8px 12px 6px;
-  }
-
-  .bd-countdown--hero .bd-countdown__num {
-    font-size: 2.25rem;
-  }
-
   .bd-hero .bd-head__rule {
     margin-block: 4px;
   }
@@ -1037,12 +991,6 @@
     grid-column: 1;
     padding-block: var(--spacing-xl) calc(var(--spacing-xl) * 1.5);
     padding-inline: clamp(24px, 6.4vw, 104px) var(--spacing-md);
-  }
-
-  .bd-hero__count {
-    inset-inline-end: clamp(20px, 3.5vw, 56px);
-    inset-block-end: clamp(20px, 3.5vw, 48px);
-    padding: 18px 26px 16px;
   }
 
 }
@@ -2142,26 +2090,6 @@
   background-image: linear-gradient(var(--color-gilt), var(--color-gilt));
 }
 
-.bd-decoframe {
-  position: absolute;
-  display: none;
-  place-items: center;
-  inline-size: 60px;
-  color: var(--color-gilt);
-}
-
-.bd-decoframe svg {
-  position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-.bd-decoframe .bd-monogram {
-  font-size: 1.25rem;
-  color: inherit;
-}
-
 .bd-schedule__intro {
   display: grid;
   justify-items: start;
@@ -2257,13 +2185,6 @@
 }
 
 /* The stepped frame stands in the margin, outside the reading column, where there is one. */
-@media (width >= 1360px) {
-  .bd-schedule .bd-decoframe {
-    display: grid;
-    inset-block: clamp(40px, 6vw, 80px);
-    inset-inline-start: calc(var(--bd-gutter) - 96px);
-  }
-}
 
 /* ---------- home: the closing invitation ---------- */
 .bd-closing {
@@ -3373,10 +3294,6 @@
   color: var(--color-on-surface-muted);
 }
 
-.bd-itinerary .bd-card__inner {
-  gap: var(--spacing-md);
-}
-
 .bd-docent {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
@@ -3589,29 +3506,6 @@
   color: var(--color-tertiary);
 }
 
-.bd-programme {
-  display: grid;
-  gap: var(--spacing-xl);
-  max-inline-size: 46rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bd-programme__act {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--spacing-lg);
-  align-items: start;
-  scroll-margin-block-start: 96px;
-}
-
-.bd-programme__body {
-  display: grid;
-  gap: var(--spacing-md);
-  min-width: 0;
-}
-
 .bd-faq {
   display: grid;
   gap: 0;
@@ -3630,6 +3524,25 @@
   font-family: var(--font-display);
   font-size: var(--type-title-size);
   font-weight: 400;
+}
+
+/* On a wide screen a question sits beside its answer, so the list reads across the page instead of
+   down one narrow column with the other half of the sheet empty. */
+@media (width >= 1000px) {
+  .bd-faq__entry {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--spacing-sm) var(--spacing-2xl);
+    align-items: start;
+  }
+
+  .bd-faq__entry > :not(.bd-faq__q) {
+    grid-column: 2;
+  }
+
+  .bd-faq__q {
+    grid-row: 1 / span 4;
+    text-wrap: balance;
+  }
 }
 
 .bd-results {
@@ -3723,19 +3636,217 @@
   gap: var(--spacing-md);
 }
 
-.bd-plan-result {
-  margin-block-start: var(--spacing-lg);
-}
-
 .bd-slot {
   display: grid;
   gap: var(--spacing-md);
 }
 
+/* ---------- split sections: a title rail and a body that uses the rest of the page ---------- */
+
+/* A section of words used to sit in one 33rem column down the left of a 1200px frame, with the
+   other half empty. From 1000px the heading takes a narrow rail and the content takes the rest. */
+@media (width >= 1000px) {
+  .bd-section--split > .bd-section__inner {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 10fr);
+    gap: 0 var(--spacing-2xl);
+    align-items: start;
+  }
+
+  /* The rail spans however many blocks the body has. Rows carry no gap (the spanned-but-unused
+     ones would each add one); the blocks space themselves instead. */
+  .bd-section--split > .bd-section__inner > .bd-head {
+    grid-column: 1;
+    grid-row: 1 / span 12;
+  }
+
+  .bd-section--split > .bd-section__inner > :not(.bd-head, .sr-only) {
+    grid-column: 2;
+  }
+
+  .bd-section--split > .bd-section__inner > :not(.bd-head, .sr-only) ~ :not(.bd-head, .sr-only) {
+    margin-block-start: var(--spacing-xl);
+  }
+}
+
+/* ---------- travel ---------- */
+
+/* Jump links under the page title: three places on one page, each a 44px target. */
+.bd-pagehead__facts .bd-chips {
+  margin-block-start: var(--spacing-sm);
+}
+
+/* The hotel's name, its terms and button, then the words. One column on a phone in that order; from
+   760px the words sit left and the terms right, under the name. */
+.bd-travel__stay {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.bd-travel__hotel {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+}
+
+.bd-travel__block {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-neutral);
+  border-block-start: 2px solid var(--color-gold);
+}
+
+.bd-travel__terms {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-md);
+  margin: 0;
+}
+
+.bd-travel__block .bd-btn {
+  inline-size: 100%;
+  justify-content: center;
+}
+
+/* The one action on the page, leaving the site: the gold fill of a primary with the external mark. */
+.bd-btn--solid {
+  background: var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+  box-shadow: none;
+}
+
+.bd-btn--solid:hover {
+  background: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+}
+
+/* A number a guest can tap to call, with room around it for a thumb. */
+.bd-travel__tel {
+  display: inline-block;
+  padding-block: var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.bd-travel__nearby {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.bd-travel__hotels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The airports beside the search: where to fly into, then the form that searches it. */
+.bd-travel__flights {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
 .bd-travel__airports {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-content: start;
   gap: var(--spacing-lg);
+}
+
+.bd-travel__airport {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-block-start: var(--spacing-md);
+  border-block-start: var(--bd-gold-hair);
+}
+
+.bd-travel__airport > p:not([class]) {
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-travel__search {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+/* Getting around: four ways, each a term and its answer, two across on a wide screen. */
+.bd-travel__ways {
+  display: grid;
+  gap: 0 var(--spacing-2xl);
+  margin: 0;
+}
+
+.bd-travel__way {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-xs);
+  padding-block: var(--spacing-md);
+  border-block-start: var(--bd-hair);
+}
+
+.bd-travel__way dt {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: 1.25;
+  color: var(--color-primary);
+}
+
+.bd-travel__way dd {
+  margin: 0;
+  color: var(--color-on-surface-muted);
+  text-wrap: pretty;
+}
+
+.bd-travel__more {
+  display: grid;
+  gap: 0 var(--spacing-2xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-travel__more li {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--spacing-md);
+  border-block-start: var(--bd-hair);
+}
+
+@media (width >= 760px) {
+  .bd-travel__stay {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 1fr);
+    gap: var(--spacing-md) var(--spacing-2xl);
+    align-items: start;
+  }
+
+  .bd-travel__name {
+    grid-column: 1 / -1;
+  }
+
+  .bd-travel__hotel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .bd-travel__block {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .bd-travel__flights {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--spacing-2xl);
+  }
+
+  .bd-travel__ways,
+  .bd-travel__more {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .bd-outlet__value {
@@ -3783,10 +3894,6 @@
   background: var(--color-gold);
 }
 
-.bd-footer__switcher {
-  grid-column: 1 / -1;
-}
-
 /* ---------- the invitation-access journey (sign-in, claim, verify, passkey, step-up) ---------- */
 .bd-authhead {
   position: relative;
@@ -3829,14 +3936,6 @@
 
 .bd-programme-band .bd-date :is(.bd-date__month, .bd-date__weekday) {
   color: var(--color-on-moss);
-}
-
-@media (width >= 1100px) {
-  .bd-programme-band .bd-decoframe {
-    display: grid;
-    inset-block: 24px;
-    inset-inline-start: 24px;
-  }
 }
 
 .bd-rooms-split {
@@ -3920,11 +4019,6 @@
 
   /* Only where @property is supported: unregistered, the count would sit at 0 for a second. No
      @supports test exists for it; allow-discrete shipped after it in every engine. */
-  @supports (transition-behavior: allow-discrete) {
-    .bd-countdown--hero .bd-countdown__num {
-      animation: bd-count 1.6s var(--ease-settle) 0.3s both;
-    }
-  }
 
   .bd [data-reveal-state="pending"] {
     opacity: 0;
@@ -4724,10 +4818,8 @@
 
   .bd::before,
   .bd-bloom,
-  .bd-decoframe,
   .bd-masthead__menu,
-  .bd-masthead__motto,
-  .bd-hero__count {
+  .bd-masthead__motto {
     display: none !important;
   }
 

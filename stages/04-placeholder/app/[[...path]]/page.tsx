@@ -5,8 +5,7 @@ import { StageBar } from '@wedding/sitemap/chrome';
 import { BaselinePage, NoBaselineNote } from '@wedding/wireframe/baseline-page';
 import { wireframeFor } from '@wedding/wireframe';
 import { PageView, SiteShell } from '@wedding/skeleton';
-import { PlaceholderProvider, ThemedSite, type ThemeOption } from '@wedding/placeholder';
-import themes from '../themes/themes.json';
+import { PlaceholderProvider, ThemedSite } from '@wedding/placeholder';
 
 type Params = Promise<{ path?: string[] }>;
 
@@ -22,7 +21,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: pageForUrl(urlOf((await params).path))?.title };
 }
 
-/** Stage 3's page, unchanged, with its slots filled and its tokens pointed at a design. */
+/** Stage 3's page, unchanged, with its slots filled and its tokens pointed at the design. */
 export default async function Page({ params }: { params: Params }) {
   const url = urlOf((await params).path);
   const p = pageForUrl(url);
@@ -34,7 +33,7 @@ export default async function Page({ params }: { params: Params }) {
     <>
       <StageBar current="placeholder" path={url} />
       <NoBaselineNote />
-      <ThemedSite themes={themes as ThemeOption[]}>
+      <ThemedSite>
         <PlaceholderProvider>
           <SiteShell current={p.id}>
             <PageView wireframe={wireframeFor(p.id)} />

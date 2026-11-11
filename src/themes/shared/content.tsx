@@ -1,12 +1,10 @@
-import type { FindAdventuresData } from '@/capabilities/find_adventures';
-import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
 import type { StoryChapter } from '@/db/schema/content';
 import { formatMinutes } from '@/domain/adventures/itineraries';
 import { humanize } from '@/domain/content/format';
-import type { AdventureDetail, HandoffView, RecommendationCard, RecommendationSummary } from '@/domain/content/views';
+import type { AdventureDetail, HandoffView, RecommendationCard } from '@/domain/content/views';
 import { ROUTES } from '@/domain/routes';
-import type { ChipItem, StopItem } from '@/themes/content-types';
+import type { ChipItem } from '@/themes/content-types';
 
 /*
  * Theme-agnostic helpers for the content recipes: copy, filter models, handoff attributes.
@@ -27,7 +25,7 @@ export const CONTENT_COPY = {
       eyebrow: 'The atlas',
       title: 'Everywhere it has taken us',
       pinned: (pinned: number, total: number) =>
-        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. It opens on Chicago around the venue; zoom out, or choose the globe, for everywhere else. Choose a pin to read about it, or find it in the list below.`,
+        pinned === 0 ? 'No adventures are pinned yet. The map fills in as we add them.' : `${pinned} of ${total} ${total === 1 ? 'adventure is' : 'adventures are'} on the map so far. It opens close to home; zoom out, or choose the globe, for everywhere else. Choose a pin to read about it, or find it in the list below.`,
       keyPin: 'An adventure, numbered as in the list',
       keyCluster: 'Several close together: choose it to zoom in',
       keyVenue: 'Where we are getting married',
@@ -50,22 +48,7 @@ export const CONTENT_COPY = {
   },
   guide: {
     eyebrow: 'Explore Chicago',
-    title: 'Things to Do in Chicago',
-    lede: 'We’re so excited to share one of our favorite cities with you! We’ve gathered places that are special to us and things we love doing together, from great food and beautiful parks to architecture and unique experiences.',
-    jump: 'On this page',
-    time: 'Pick your time',
-    filter: 'Itineraries by time and interest',
-    plan: 'Plan around the time you have',
-    minutes: 'How much time do you have?',
-    mood: 'What are you in the mood for?',
-    kids: 'We have kids with us',
-    suggest: 'Suggest a plan',
-    nothing: 'Nothing fits that combination yet. Try more time or a different mood.',
-    draftNote: 'Places without a listed visit length use a 45-minute planning estimate. Travel and waiting time are not included; check hours and reservations before heading out.',
-    all: 'All the places',
-    hours: 'Hours, menus, and reservation links for the hotel’s own places live on',
-    hoursTail: ', each with the day we last checked it.',
-    back: 'All recommendations and itineraries',
+    back: 'Back to Your Trip',
   },
   ourVenue: {
     eyebrow: 'Our Venue',
@@ -103,7 +86,7 @@ export const CONTENT_COPY = {
     // Shown only when AI_CONCIERGE is off. The live invitation copy lives with the island itself
     // (src/components/concierge/ConciergeSlot.tsx), which is what a guest reads when it is on.
     conciergeNote: 'The concierge is not switched on right now. The search above and the questions below cover the essentials.',
-    /** Conservatory's kraft tag on the concierge card: descriptive when live, 'Soon' when off. */
+    /** The tag on the concierge card: descriptive when live, 'Soon' when off. */
     conciergeTag: 'In your own words',
     conciergeTagOff: 'Soon',
   },
@@ -136,41 +119,14 @@ export function adventureChips(data: AdventuresPageData, active: { tag?: string;
   ];
 }
 
-export function itineraryChips(data: ItinerariesData, activeBucket?: string): ChipItem[] {
-  return [{ href: ROUTES.share, label: 'All', active: !activeBucket }, ...data.buckets.map((b) => ({ href: `${ROUTES.share}?bucket=${b}`, label: humanize(b), active: activeBucket === b }))];
-}
-
-export function groupByCategory(items: FindAdventuresData['items']): [string, RecommendationCard[]][] {
-  const by = new Map<string, RecommendationCard[]>();
-  for (const r of items) by.set(r.category, [...(by.get(r.category) ?? []), r]);
-  return [...by.entries()];
-}
-
-/**
- * Three recommendation categories share their wording with an itinerary title ("Food and drink",
- * "With kids", "Stay inside the CAA"), so a category heading carries its count. That makes every
- * heading on the page unique and tells a guest how much is in the group before they scroll into it.
- */
-export function categoryHeading(category: string, count: number): string {
-  return `${humanize(category)} · ${count} ${count === 1 ? 'place' : 'places'}`;
-}
-
-/** The in-page jump list for the guide: the long page's only way to reach a group without scrolling. */
-export function guideJumpItems(groups: [string, RecommendationCard[]][]): ChipItem[] {
-  return [
-    { href: '#itineraries', label: CONTENT_COPY.guide.time },
-    { href: '#plan', label: CONTENT_COPY.guide.plan },
-    ...groups.map(([category, items]) => ({ href: `#category-${category}`, label: categoryHeading(category, items.length) })),
-  ];
-}
-
 export function handoffList(handoffs: RecommendationCard['handoffs']): HandoffView[] {
   return [handoffs.directions, handoffs.booking, handoffs.official].filter((h): h is HandoffView => !!h);
 }
 
 /** Anchor attributes for an explicit external handoff (new tab, no referrer, marked external). */
-export function handoffAttrs(h: HandoffView): { href: string; target?: '_blank'; rel: string } {
-  return { href: h.url, target: h.opensNewTab ? '_blank' : undefined, rel: 'noopener noreferrer external' };
+export function handoffAttrs(h: HandoffView): { href: string; target: '_blank'; rel: string } {
+  // Always a new tab: every handoff is drawn with the external mark, and the mark promises one.
+  return { href: h.url, target: '_blank', rel: 'noopener noreferrer external' };
 }
 
 export const OFFICIAL_LINK_ATTRS = { rel: 'noopener noreferrer external', target: '_blank' } as const;
@@ -203,17 +159,6 @@ export function destinationLabel(url: string): string {
   }
 }
 
-/** Compact stop line text pieces: place · minutes · note. */
-export function stopMeta(stop: StopItem): string[] {
-  const r: RecommendationSummary = stop.recommendation;
-  const minutes = stop.minutes ?? r.durationMinutes;
-  return [r.placeName, minutes ? formatMinutes(minutes) : undefined, stop.note].filter((x): x is string => !!x);
-}
-
-export function planTitle(plan: { minutes: number; kids: boolean; interest?: string }): string {
-  return `A ${formatMinutes(plan.minutes)} plan${plan.interest ? ` for ${humanize(plan.interest).toLowerCase()}` : ''}${plan.kids ? ', with kids' : ''}`;
-}
-
 /** The facts under an adventure title (Where / When / Season / How long / Motifs). */
 export function adventureFacts(data: AdventureDetail): { label: string; value: string | { block: AdventureDetail['summary'] } }[] {
   const out: { label: string; value: string | { block: AdventureDetail['summary'] } }[] = [];
@@ -229,10 +174,10 @@ export function adventureFacts(data: AdventureDetail): { label: string; value: s
 export function labelForRoute(route: string): string {
   const base = route.split('#')[0] ?? route;
   const known: Record<string, string> = {
-    [ROUTES.wedding]: 'The Wedding',
+    [ROUTES.guestPortal]: 'your dashboard',
     [ROUTES.ourVenue]: 'Our Venue',
     [ROUTES.photos]: 'Photos & Video',
-    [ROUTES.travel]: 'Travel & Stay',
+    [ROUTES.guestTravel]: 'Your Trip',
     [ROUTES.gifts]: 'Gifts',
     '/rsvp': 'RSVP',
   };

@@ -80,6 +80,15 @@ export function Photo({ id, mobileId, sizes, priority, className, alt }: PhotoPr
   if (!img) return null;
   return (
     <picture className={className} data-media={item.id} data-interim={item.interim ? 'true' : undefined}>
+      {/*
+        The page's largest picture, fetched from the head rather than when the parser reaches it.
+        `fetchPriority` on the <img> is not enough: it sits in the body behind the stylesheets, and
+        the browser found it 0.7 to 1.9 s late (Lighthouse "load delay", phone profile). React hoists
+        these links into <head>. One per crop, with the same media query as its <source>, so a
+        phone fetches the phone crop only; `type` keeps a browser without AVIF from fetching it.
+      */}
+      {priority && mobile ? <link rel="preload" as="image" type="image/avif" media="(max-width: 767px)" imageSrcSet={srcset(mobile, 'avif')} imageSizes="100vw" fetchPriority="high" /> : null}
+      {priority ? <link rel="preload" as="image" type="image/avif" media={mobile ? '(min-width: 768px)' : undefined} imageSrcSet={srcset(item, 'avif')} imageSizes={sizes} fetchPriority="high" /> : null}
       {mobile ? <source media="(max-width: 767px)" type="image/avif" srcSet={srcset(mobile, 'avif')} sizes="100vw" /> : null}
       {mobile ? <source media="(max-width: 767px)" type="image/jpeg" srcSet={srcset(mobile, 'jpg')} sizes="100vw" /> : null}
       <source type="image/avif" srcSet={srcset(item, 'avif')} sizes={sizes} />

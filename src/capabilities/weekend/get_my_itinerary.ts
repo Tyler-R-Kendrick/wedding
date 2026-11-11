@@ -73,7 +73,7 @@ export type MyItinerary = z.infer<typeof output>;
 
 export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerary>({
   name: 'get_my_itinerary',
-  title: 'Your Weekend',
+  title: 'Your dashboard',
   description:
     "The guest's personal weekend: the events they are invited to with times in America/Chicago, the household's RSVP status, their table once seating is published, " +
     'ride and trip sections (placeholders until those tools are live), and any urgent notices from the couple. Read-only.',

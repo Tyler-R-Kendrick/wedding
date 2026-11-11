@@ -6,6 +6,7 @@ import { MediaPage, MediaSection } from '@/components/media/MediaShell';
 import { currentPrincipal, invokeForRequest } from '@/components/media/server';
 import { MediaSearch } from '@/components/mediaai/MediaSearch';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Search the photos', robots: { index: false, follow: false } };
@@ -22,6 +23,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     const back = typeof q === 'string' && q ? `/media/search?q=${encodeURIComponent(q.slice(0, 200))}` : '/media/search';
     redirect(throughSignIn(back));
   }
+  await requireOpenNow(principal, 'media-search');
   const gallery = await invokeForRequest<{ collections: CollectionSummary[] }>('list_gallery', {}, principal);
   const collections = gallery.ok ? gallery.data.collections : [];
   return (

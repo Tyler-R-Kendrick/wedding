@@ -7,16 +7,20 @@ import { test, expect } from '@playwright/test';
  * Two dead links reached this branch, both invisible to every other suite. `/photos` sat in the
  * lifecycle nav for every state and is a 404 until the media level ships — the themed shells hid it
  * behind a Menu dialog, so nothing clicked it. And `/claim`, the destination of "Find your
- * invitation" — the primary action on the signed-out RSVP and Your Weekend pages, the one an
+ * invitation" — the primary action on the signed-out RSVP and Your Weekend pages (the latter is
+ * now the dashboard at `/guests`, which sends a signed-out reader to sign in), the one an
  * invited guest most needs — had no page at all: only `/claim/verify`, `/claim/welcome` and
  * `/claim/passkey`, which you reach with a token.
  *
  * A unit test now walks `src/app` for the nav model (tests/unit/themes/lifecycle.test.ts); this is
- * the part it cannot see, because a link inside a page component is not in the nav model. Both
- * designs, because a theme kit can render links the other does not.
+ * the part it cannot see, because a link inside a page component is not in the nav model.
  */
-const THEMES = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
-const ROUTES = ['/', '/our-story', '/our-adventures', '/the-wedding', '/our-venue', '/privacy', '/terms', '/gifts', '/transportation', '/trip', '/rsvp', '/your-weekend'];
+// Anonymous on the production build, so this is the link graph a signed-out reader meets: the
+// public pages, and the door or gate each guest page answers with (`/guests`, `/our-venue`,
+// `/gifts` and `/transportation` send them to sign in; `/trip` and `/rsvp` render a gate). The
+// signed-in graph — the dashboard, Your Trip, the recommendation pages — is walked with a session by
+// site-crawler.spec.ts on the test server.
+const ROUTES = ['/', '/our-story', '/our-adventures', '/credits', '/privacy', '/terms', '/sign-in', '/guests', '/guests/travel', '/our-venue', '/gifts', '/transportation', '/trip', '/rsvp'];
 
 test.describe('no dead internal links', () => {
   // One viewport is enough: this is about hrefs, not layout. Chrome differs by viewport (the Menu
@@ -26,40 +30,39 @@ test.describe('no dead internal links', () => {
     test.skip(testInfo.project.name !== 'desktop', 'the link graph does not vary by viewport');
   });
 
-  for (const theme of THEMES) {
-    test(`every same-origin link on a guest-reachable page resolves (${theme})`, async ({ page, request }) => {
-      // Our Adventures links one page per photo (60-odd), and every one of them is requested.
-      test.slow();
-      const seen = new Map<string, string[]>();
-      for (const route of ROUTES) {
-        const res = await page.goto(`${route}?theme=${theme}`);
-        expect(res?.status(), `${route} itself`).toBeLessThan(400);
-        const hrefs = await page.locator('a[href]').evaluateAll((as) =>
-          as.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '').filter((h) => h.startsWith('/') && !h.startsWith('//')),
-        );
-        for (const href of hrefs) {
-          const path = href.split('#')[0] ?? '';
-          if (!path) continue;
-          if (!seen.has(path)) seen.set(path, []);
-          seen.get(path)!.push(route);
-        }
+  test('every same-origin link on a guest-reachable page resolves', async ({ page, request }) => {
+    // Our Adventures links one page per photo (60-odd), and every one of them is requested.
+    test.slow();
+    const seen = new Map<string, string[]>();
+    for (const route of ROUTES) {
+      const res = await page.goto(route);
+      expect(res?.status(), `${route} itself`).toBeLessThan(400);
+      const hrefs = await page.locator('a[href]').evaluateAll((as) =>
+        as.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? '').filter((h) => h.startsWith('/') && !h.startsWith('//')),
+      );
+      for (const href of hrefs) {
+        const path = href.split('#')[0] ?? '';
+        if (!path) continue;
+        if (!seen.has(path)) seen.set(path, []);
+        seen.get(path)!.push(route);
       }
-      expect(seen.size).toBeGreaterThan(8); // sanity: we actually collected a link graph
-      const dead: string[] = [];
-      for (const [path, from] of seen) {
-        const res = await request.get(path, { maxRedirects: 0 });
-        // 2xx or a redirect is fine; a 404 is a link to nowhere. 401/403 means the route exists and
-        // is gated, which is the correct answer for a personalized page seen anonymously.
-        if (res.status() === 404) dead.push(`${path} (linked from ${[...new Set(from)].join(', ')})`);
-      }
-      expect(dead, `dead internal links in ${theme}`).toEqual([]);
-    });
-  }
+    }
+    expect(seen.size).toBeGreaterThan(8); // sanity: we actually collected a link graph
+    const dead: string[] = [];
+    for (const [path, from] of seen) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      // 2xx or a redirect is fine; a 404 is a link to nowhere. 401/403 means the route exists and
+      // is gated, which is the correct answer for a personalized page seen anonymously.
+      if (res.status() === 404) dead.push(`${path} (linked from ${[...new Set(from)].join(', ')})`);
+    }
+    expect(dead, 'dead internal links').toEqual([]);
+  });
 
   /**
    * PRODUCT.md's surface table is the route table every agent on this project starts from, and
    * three of its rows 404ed: `/story`, `/adventures` and `/ask`, against an app that has served
-   * `/our-story`, `/our-adventures` and `/ask-us` since level 05. They were slug PROPOSALS at the
+   * `/our-story`, `/our-adventures` and `/ask-us` since level 05 (Ask Us has since moved to
+   * `/guests/ask-us`; the old address redirects, and a redirect is not a 404). They were slug PROPOSALS at the
    * scaffold level and were never updated when the routes landed. Nothing checked, because a
    * document is not a link graph — the spec above walks what the app links to, which by
    * construction can never include a route the app does not have.

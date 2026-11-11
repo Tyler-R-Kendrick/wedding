@@ -6,7 +6,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'Sara + Tyler', template: '%s | Sara + Tyler' },
-  description: 'Sara and Tyler are getting married in Chicago on Saturday, July 17, 2027.',
+  // Says who, never when or where: this is the line a link preview and a search result print.
+  description: 'Sara and Tyler’s wedding website, for their invited guests.',
   // noai/noimageai: the couple's photos and words are not for AI training (LICENSE, src/lib/rights.ts).
   robots: 'noindex, nofollow, noai, noimageai',
   // The default design's mark, for the trees whose layouts set none (auth, admin): without it every
@@ -30,9 +31,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {/* Persistent polite live region: the design switcher announces a change here, outside the
-            themed shell that unmounts and remounts when the design swaps. */}
-        <p id="design-announcer" className="sr-only" aria-live="polite" aria-atomic="true" />
         {children}
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}

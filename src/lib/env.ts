@@ -68,6 +68,12 @@ const serverSchema = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) : []),
     z.array(z.email()),
   ),
+  /**
+   * The administrators' own mobile numbers, `email=phone` pairs separated by commas, put on their
+   * guest records so they can sign in by text (src/domain/guests/admin-phones.ts). Private: never
+   * in the repository.
+   */
+  ADMIN_PHONES: optionalString,
   /** Bearer that unlocks the provider/driver details on /api/health (admins see them without it). */
   HEALTH_TOKEN: optionalSecret(16),
   /** Key for audit inputHash (HMAC). Unset -> derived from CONFIRMATION_SECRET. */
@@ -138,8 +144,6 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_SECRET: optionalSecret(16),
   FACEBOOK_CLIENT_ID: optionalString,
   FACEBOOK_CLIENT_SECRET: optionalSecret(16),
-  /** When on, show phone OTP sign-in (Twilio not wired yet). */
-  GUEST_PHONE_SIGN_IN: boolish(undefined),
 
   /*
    * --- jobs ---
@@ -160,6 +164,10 @@ const serverSchema = z.object({
   TWILIO_ACCOUNT_SID: optionalString,
   TWILIO_AUTH_TOKEN: optionalSecret(16),
   TWILIO_VERIFY_SERVICE_SID: optionalString,
+  /** The Vercel connector that holds the Twilio credential when the three above are unset. Default `twilio/wedding`. */
+  TWILIO_CONNECTOR: optionalString,
+  /** The user the Twilio connector was authorized by, when it is not an app-wide connector. */
+  TWILIO_CONNECT_USER_ID: optionalString,
   // --- the couple's planning sheet (admin-only, read-only; src/providers/guest-sheet) ---
   /** Spreadsheet id from the sheet's address (between /d/ and /edit). */
   GUEST_SHEET_ID: optionalString,

@@ -43,7 +43,6 @@ function data(theme: ThemeId, state: LifecycleState): HomeData {
     lifecycle: { state, mode: LIFECYCLE_MODE[state], persistedState: state, preview: null, suggested: 'RSVP_OPEN', publishedAt: null, note: null },
     countdown: countdownView(NOW),
     nav: navFor(state, { venue: site.venue, currentPath: '/' }),
-    switcherEnabled: true, // next/navigation is stubbed by scripts/harness-hooks.mjs
     content: homeContent(site, state),
   };
 }

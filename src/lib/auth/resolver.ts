@@ -8,7 +8,7 @@ import { env } from '@/lib/env';
 import { getFlags } from '@/lib/flags';
 import { ANONYMOUS, type PrincipalResolver } from '@/lib/principal';
 import { isTrustedMutationRequest } from './csrf';
-import { siteOrigin } from './config';
+import { siteOrigins } from './config';
 import { getAuthSession, toSessionFacts } from './session';
 import { readTestPrincipal } from './test-principal';
 import { PATHNAME_HEADER } from '@/themes/routes';
@@ -40,7 +40,7 @@ export const betterAuthPrincipalResolver: PrincipalResolver = {
     const injected = readTestPrincipal(request); // null outside NODE_ENV=test + TEST_AUTH_SECRET
     if (injected) return injected;
     if (!request.headers.get('cookie')) return ANONYMOUS;
-    if (!isTrustedMutationRequest(request, [siteOrigin()])) return ANONYMOUS;
+    if (!isTrustedMutationRequest(request, siteOrigins())) return ANONYMOUS;
     const isRsc = request.headers.get('rsc') === '1' && !request.headers.get('next-action');
     const cookieHeader = request.headers.get('cookie') ?? '';
     const previewCookie =

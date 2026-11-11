@@ -13,7 +13,7 @@ const AUTH_PREFIXES = ['/invite/', '/i/', '/claim/', '/admin/'] as const;
  * move still carries the old path as `next`, and refusing it would drop the guest on the fallback
  * page instead of where they were going.
  */
-const MOVED = ['/explore-caa'] as const;
+const MOVED = ['/the-wedding', '/your-weekend', '/travel', '/share-an-adventure', '/ask-us', '/guests/things-to-do'] as const;
 const SAFE_TAIL = /^[A-Za-z0-9_\-/]*$/;
 // Includes the characters encodeURIComponent leaves as-is (' ( ) * ! ~), so an encoded photo search survives sign-in.
 const SAFE_QUERY = /^[A-Za-z0-9_\-=&%.'()*!~]*$/;

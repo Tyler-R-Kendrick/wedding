@@ -33,6 +33,12 @@ const plan = (question: string, principal: Principal = anonymous, extra: readonl
 describe('capability-derived tool list', () => {
   it('offers only AI-exposed capabilities the principal may call', () => {
     const anonNames = toolsFor(anonymous, flags, registry).map((t) => t.descriptor.name);
+    // With no session the concierge can tell the couple's story and move between pages. Nothing it
+    // is offered knows the date, the venue, the hotel block or a recommendation.
+    expect([...anonNames].sort()).toEqual(['get_story', 'list_adventures', 'navigate_to', 'show_adventure']);
+    for (const name of ['site_status', 'get_venue_facts', 'show_venue_room', 'list_itineraries', 'find_adventures', 'get_reservation_options', 'open_reservation_link', 'list_hotel_recommendations', 'search_travel_options', 'open_booking_link', 'get_my_transportation_options']) {
+      expect(anonNames, name).not.toContain(name);
+    }
     expect(anonNames).not.toContain('search_wedding_information');
     expect(anonNames).not.toContain('get_faq');
     expect(anonNames).not.toContain('ask_concierge');
@@ -41,6 +47,7 @@ describe('capability-derived tool list', () => {
     const guestNames = toolsFor(guest, flags, registry).map((t) => t.descriptor.name);
     expect(guestNames).toContain('search_wedding_information');
     expect(guestNames).toContain('get_faq');
+    for (const name of ['site_status', 'get_venue_facts', 'show_venue_room', 'list_itineraries', 'find_adventures', 'list_hotel_recommendations', 'get_my_transportation_options']) expect(guestNames, name).toContain(name);
   });
 
   it('produces a JSON schema for every offered tool', () => {
@@ -51,9 +58,24 @@ describe('capability-derived tool list', () => {
 });
 
 describe('deterministic router', () => {
-  it('routes wedding facts to the structured capability, not to the model', () => {
-    expect(plan('When is the wedding?').calls.map((c) => c.name)).toContain('site_status');
-    expect(plan('Where is the wedding being held?').calls.map((c) => c.name)).toContain('site_status');
+  it('routes a guest\'s wedding facts to the structured capability, not to the model', () => {
+    expect(plan('When is the wedding?', guest).calls.map((c) => c.name)).toContain('site_status');
+    expect(plan('Where is the wedding being held?', guest).calls.map((c) => c.name)).toEqual(['site_status', 'get_venue_facts']);
+    expect(plan('When is the wedding?', guest).denied).toEqual([]);
+  });
+
+  it('plans no call that could say when or where the wedding is for an asker with no session', () => {
+    const when = plan('When is the wedding?');
+    expect(when.calls).toEqual([]);
+    expect(when.denied).toEqual(['site_status']);
+    const where = plan('Where is the wedding being held?');
+    expect(where.calls).toEqual([]);
+    expect(where.denied).toEqual(['site_status', 'get_venue_facts']);
+    // However the question is put, nothing planned for an anonymous asker reads a wedding detail.
+    const open = new Set(['get_story', 'list_adventures', 'show_adventure', 'navigate_to']);
+    for (const question of ['What date is it?', 'Which hotel should I book?', 'What is the venue address?', 'How do I get there from the airport?', 'What is there to do in Chicago?', 'Is there a room block?', 'Where can I park?', 'where is the venue and what time and what should I wear and what about kids and parking and gifts']) {
+      for (const call of plan(question).calls) expect(open.has(call.name), `${question}: ${call.name}`).toBe(true);
+    }
   });
 
   it('recognises the five facts the couple has not decided', () => {
@@ -123,9 +145,17 @@ describe('closed-world contract', () => {
   });
 
   it('offers pages, never repository paths, on a refusal', () => {
-    const links = refusalLinks(['/the-wedding', '/our-venue#history'], '/ask-us');
-    expect(links.map((l) => l.href)).toEqual(['/the-wedding', '/our-venue', CONTACT_LINK.href]);
+    const links = refusalLinks(['/guests', '/our-venue#history'], '/guests/ask-us');
+    expect(links.map((l) => l.href)).toEqual(['/guests', '/our-venue', CONTACT_LINK.href]);
+    expect(links.map((l) => l.label)).toEqual(['Your dashboard', 'Our Venue', 'Reach Sara and Tyler']);
     for (const link of links) expect(link.href.startsWith('/')).toBe(true);
+    // Ask Us is the page the guest is already on: the fallback is how to reach the couple, there.
+    expect(CONTACT_LINK.href).toBe('/guests/ask-us#contact');
+    expect(refusalLinks([], '/guests/ask-us')).toEqual([CONTACT_LINK]);
     expect(labelForRoute('/our-venue/white-city-ballroom')).toBe('Our Venue');
+    expect(labelForRoute('/guests/travel#stay')).toBe('Your Trip');
+    expect(labelForRoute('/guests/travel#plan')).toBe('Your Trip');
+    // The pages folded into the portal have no label of their own any more.
+    for (const gone of ['/the-wedding', '/your-weekend', '/travel', '/share-an-adventure', '/ask-us']) expect(labelForRoute(gone), gone).toBe('the page');
   });
 });

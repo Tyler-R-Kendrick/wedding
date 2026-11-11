@@ -6,17 +6,31 @@ import { getLifecycle, setLifecycle } from '@/db/repos/site';
 import { DbAuditSink, listAuditEvents } from '@/lib/audit';
 import { isEnabled, invalidateReadinessCache, setReadiness } from '@/lib/flags';
 import { readFlags } from '@/contracts/flags';
+import type { GuestPrincipal } from '@/contracts/principal';
+
+// The date, the venue and the stage's navigation are for invited guests: `site_status` is
+// `auth: 'guest'`, so a reader must be signed in. Nothing here needs a guest row, only the floor.
+const guest: GuestPrincipal = {
+  kind: 'guest',
+  authIdentityId: 'auth-site' as never,
+  guestId: 'g-site' as never,
+  householdId: 'h-site' as never,
+  actsFor: ['g-site' as never],
+  entitlements: new Set(['view_event']),
+  authenticatedAt: new Date().toISOString(),
+  sessionId: 's-site',
+};
 
 describe('site_status capability', () => {
   it('returns lifecycle, wedding facts, themes and a citation, and audits the read', async () => {
-    const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-site-1', surface: 'ai' });
+    const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-site-1', surface: 'ai' });
     const r = await invoke(siteStatus, ctx, {});
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.data).toMatchObject({
       lifecycle: { state: 'TEASER', mode: 'explore', suggested: expect.any(String) },
       wedding: { coupleDisplayName: 'Sara + Tyler', date: '2027-07-17', timezone: 'America/Chicago', venueName: 'Chicago Athletic Association Hotel' },
-      themes: ['botanical-deco', 'gilded-hour', 'conservatory'],
+      themes: ['botanical-deco'],
       defaultTheme: 'botanical-deco',
     });
     expect(r.value.sources[0]).toMatchObject({ title: "Tyler's brief 2026-09-04" });
@@ -26,23 +40,36 @@ describe('site_status capability', () => {
     expect(rows[0]!.metadata).not.toHaveProperty('inputHash'); // reads carry no input fingerprint
   });
 
-  it('reports the design guests see, not a default a pre-approval seed left in the database', async () => {
+  it('reports the design guests see, not a retired one an early seed left in the database', async () => {
     // Production was seeded before Sara and Tyler approved Botanical–Deco, and the seed never
-    // overwrites: its row still says gilded-hour and lists only the two proposals.
+    // overwrites: its row still says gilded-hour and lists only the two retired proposals.
     const db = await getDb();
     const [before] = await db.select().from(siteSettings);
     await db.update(siteSettings).set({ defaultTheme: 'gilded-hour', themes: ['gilded-hour', 'conservatory'] });
     try {
-      const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-site-legacy' });
+      const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-site-legacy' });
       const r = await invoke(siteStatus, ctx, {});
-      expect(r.ok && r.value.data).toMatchObject({ theme: { active: 'botanical-deco' }, defaultTheme: 'botanical-deco', themes: ['botanical-deco', 'gilded-hour', 'conservatory'] });
+      expect(r.ok && r.value.data).toMatchObject({ theme: { active: 'botanical-deco' }, defaultTheme: 'botanical-deco', themes: ['botanical-deco'] });
     } finally {
       await db.update(siteSettings).set({ defaultTheme: before!.defaultTheme, themes: before!.themes });
     }
   });
 
+  it('refuses an anonymous caller on every surface: the date and venue are for signed-in guests', async () => {
+    for (const surface of ['ui', 'ai', 'webmcp'] as const) {
+      const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: `req-site-anon-${surface}`, surface });
+      const direct = await invoke(siteStatus, ctx, {});
+      expect(!direct.ok && direct.error.code, surface).toBe('unauthenticated');
+      const byName = await invokeByName('site_status', ctx, undefined);
+      expect(!byName.ok && byName.error.code, surface).toBe('unauthenticated');
+      // The refusal carries none of what it guards.
+      expect(JSON.stringify(direct)).not.toMatch(/2027-07-17|Chicago Athletic|Michigan/);
+      expect(JSON.stringify(byName)).not.toMatch(/2027-07-17|Chicago Athletic|Michigan/);
+    }
+  });
+
   it('is reachable by name and unknown names are not found', async () => {
-    const ctx = await createCapabilityContext({ principal: { kind: 'anonymous' }, requestId: 'req-site-2' });
+    const ctx = await createCapabilityContext({ principal: guest, requestId: 'req-site-2' });
     expect((await invokeByName('site_status', ctx, undefined)).ok).toBe(true);
     const missing = await invokeByName('nope', ctx, {});
     expect(!missing.ok && missing.error.code).toBe('not_found');
@@ -74,9 +101,9 @@ describe('lifecycle + readiness', () => {
     await setReadiness(db, { flag: 'PRO_MEDIA_AI_PROCESSING', ready: true, actor: { kind: 'system', component: 'test' }, requestId: 'req-flag-1', audit: new DbAuditSink(db) });
     expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: flagsOn, db })).toBe(true);
     expect(await isEnabled('PRO_MEDIA_AI_PROCESSING', { flags: readFlags({}), db })).toBe(false);
-    // Env-only flags need no readiness row: off by default since the approval, on when asked for.
-    expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({}), db })).toBe(false);
-    expect(await isEnabled('DESIGN_SWITCHER', { flags: readFlags({ NEXT_PUBLIC_FLAG_DESIGN_SWITCHER: 'on' }), db })).toBe(true);
+    // Env-only flags need no readiness row: off by default, on when asked for.
+    expect(await isEnabled('RSVP_MEALS', { flags: readFlags({}), db })).toBe(false);
+    expect(await isEnabled('RSVP_MEALS', { flags: readFlags({ NEXT_PUBLIC_FLAG_RSVP_MEALS: 'on' }), db })).toBe(true);
     expect(await listAuditEvents(db, { action: 'flag.changed', targetId: 'PRO_MEDIA_AI_PROCESSING' })).toHaveLength(1);
   });
 });

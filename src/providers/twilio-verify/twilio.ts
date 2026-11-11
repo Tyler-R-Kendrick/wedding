@@ -1,6 +1,6 @@
 import type { ConfigValidation, ProviderFailure, ProviderHealth } from '@/contracts/providers';
 import type { TwilioVerifyCheckInput, TwilioVerifyProvider, TwilioVerifySendInput } from './types';
-import { TWILIO_VERIFY_POLICY } from './types';
+import { TWILIO_VERIFY_POLICY, codeApproved } from './types';
 
 const base = (sid: string) => `https://verify.twilio.com/v2/Services/${encodeURIComponent(sid)}`;
 
@@ -62,7 +62,7 @@ export class LiveTwilioVerify implements TwilioVerifyProvider {
     const body = new URLSearchParams({ To: input.to, Code: input.code });
     const res = await this.post(`${base(this.serviceSid)}/VerificationCheck`, body);
     if (!res.ok) return res;
-    return { ok: true as const };
+    return codeApproved(this.name, res.value.status);
   }
 
   private async post(url: string, body: URLSearchParams): Promise<{ ok: true; value: { sid: string; status: string } } | { ok: false; error: ProviderFailure }> {

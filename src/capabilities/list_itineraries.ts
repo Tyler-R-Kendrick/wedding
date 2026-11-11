@@ -20,7 +20,7 @@ export const listItineraries = defineCapability<z.infer<typeof input>, Itinerari
     'Lists curated itineraries by bucket: 45 minutes, 2-3 hours, Friday afternoon, Saturday morning, with kids, architecture, food and drink, and staying inside the CAA. ' +
     'Each stop is a recommendation with its practical layer and handoffs. Itineraries marked draft are not yet curated by the couple. Read only.',
   kind: 'read',
-  auth: 'anonymous',
+  auth: 'guest',
   requires: [],
   annotations: { readOnlyHint: true, untrustedContentHint: false, consequentialHint: false },
   exposure: { ui: true, ai: true, webmcp: true },
@@ -31,6 +31,6 @@ export const listItineraries = defineCapability<z.infer<typeof input>, Itinerari
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const { itineraries, sources } = await readItineraries(rctx, { bucket: i?.bucket });
-    return ok({ data: { route: ROUTES.share, buckets: [...ITINERARY_BUCKETS], itineraries }, sources });
+    return ok({ data: { route: ROUTES.guestTravel, buckets: [...ITINERARY_BUCKETS], itineraries }, sources });
   },
 });

@@ -11,6 +11,7 @@ import { listGiftLinksCapability } from '@/capabilities/list_gift_links';
 import { recipes } from '../_recipes';
 import { invokeForPage } from '@/components/handoff/server';
 import { throughSignIn } from '@/domain/lifecycle/account';
+import { requireOpenNow } from '@/app/(guest)/guests/_lib/gate';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ export default async function GiftsPage() {
   const { principal, result } = await invokeForPage(listGiftLinksCapability, {});
   // Behind the account menu: an anonymous visitor signs in first and comes straight back here.
   if (principal.kind === 'anonymous') redirect(throughSignIn('/gifts'));
+  // Gifts open with the RSVP: before then a typed address goes to the dashboard, like its link.
+  await requireOpenNow(principal, 'gifts');
   if (!result.ok) {
     return (
       <main id="main" className="mx-auto w-full max-w-[42rem] px-5 py-10">

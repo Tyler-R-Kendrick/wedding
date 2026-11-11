@@ -179,8 +179,10 @@ function BrowseAs({ browsingName, isOwner, ownRecords }: { browsingName: string 
         See the site exactly as one guest on the list does — their RSVP answers, table, and uploads. Anyone else’s view is read-only. Prefer <Link href="/admin#view-as">View as role</Link> when you only need to preview entitlements and pages without touching a real person’s record.
       </p>
       {browsingName ? (
-        // A <div>, not a paragraph: a form cannot sit inside one.
+        // A <div>, not a paragraph: a form cannot sit inside one. "Open the site" is a plain link on
+        // purpose: `/` renders for its reader, and a full navigation asks for it as the guest.
         <div className="con-note">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           You are browsing the site as <strong>{browsingName}</strong>. The console still shows you as yourself. <a href="/">Open the site</a>{' '}
           <form action={stopGuestView} className="flow-inline-form">
             <button type="submit" className="ops-button ops-button-ghost">

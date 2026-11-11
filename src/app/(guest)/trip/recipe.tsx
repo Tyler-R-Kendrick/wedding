@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { GuestCard, GuestSection } from '@/themes/guest';
 import type { ThemeId } from '@/themes/types';
 import Link from 'next/link';
-import type { PageRecipe } from '@/app/(public)/travel/_shared/recipe';
+import type { PageRecipe } from '@/app/(guest)/guests/travel/_shared/recipe';
 import { newId } from '@/contracts/ids';
 import { throughSignIn } from '@/domain/lifecycle/account';
 import { formatChicagoDateTime, formatChicagoTime, formatLongDate, type FreeTimeWindow, type LocationSuggestion, type RoomBlockInput, type TravelProfile, type TripItem } from '@/domain/travel';
@@ -80,12 +80,10 @@ function ItemCard({ item, highlighted, theme }: { item: TripItem; highlighted: b
   return (
     // The active design's card. The small-caps line is the item's kind and status and sits BELOW
     // the card heading, so it is a meta line, not a kicker — impeccable's craft floor bans the
-    // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`,
-    // which shouts `text-transform: uppercase`; Conservatory's DESIGN.md rejects that by name in
-    // favour of Spectral's real small capitals ("instead of shouting uppercase").
+    // latter. It uses the design's own caps style rather than `.eyebrow` from `shared/base.css`.
     <li id={`trip-item-${item.id}`} className="agenda-entry" data-status={item.status} aria-current={highlighted ? 'true' : undefined} data-highlighted={highlighted ? 'true' : undefined}>
       <GuestCard theme={theme} title={item.title} level={4}>
-        <p className={theme === 'conservatory' ? 'cv-eyebrow' : theme === 'botanical-deco' ? 'bd-eyebrow' : 'gh-eyebrow'}>
+        <p className="bd-eyebrow">
           {KIND_LABEL[item.kind]} · {STATUS_LABEL[item.status]}
           {item.confirmedVia ? ` (${item.confirmedVia === 'guest' ? 'by you' : 'by the booking partner'})` : ''}
         </p>
@@ -116,7 +114,7 @@ function ReturnedBanner({ returned }: { returned: NonNullable<TripPageData['retu
     returned.outcome === 'success'
       ? 'Welcome back. If the booking went through, press “I booked this” on that item and add the reference. We never mark a booking confirmed on our own.'
       : returned.outcome === 'failure'
-        ? 'The booking did not complete on the partner site. We took no payment. You can try again or use the search links on Travel & Stay.'
+        ? 'The booking did not complete on the partner site. We took no payment. You can try again or use the search links on Your Trip.'
         : 'No problem, your planned flights are still here whenever you are ready.';
   return (
     <p role="status" className="rounded-sm border border-primary p-4">
@@ -142,9 +140,9 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
     <div className="page">
       <header>
         {/* No kicker above the heading: `impeccable detect` bans a tracked uppercase label sitting
-            as its own block above an h1 outright, and "Your Weekend" adds nothing "Your trip" does
+            as its own block above an h1 outright, and "Your Weekend" adds nothing the title does
             not already say. The same clean-up commit c9d4ef5 made on the admin screens. */}
-        <h1 className="page__title">Your trip</h1>
+        <h1 className="page__title">Your flights and hotel</h1>
         {/* Trips are per-guest and read through `actsFor`, which is one-directional: whoever answers
             for you can see yours, and you cannot see theirs. "you and your household" was false for
             every household manager, and meaningless in a household of one. It reads as a privacy
@@ -152,7 +150,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
         <p className="page__lede">Flights, where you are staying, and the free time in between. Only you and whoever answers for you can see this.</p>
         <nav className="guest-next" aria-label="Plan your trip">
           <a className={`${BUTTON} bg-primary text-neutral`} href="#add">Add to your agenda</a>
-          <Link className="guest-text-link" href="/share-an-adventure">Explore Chicago →</Link>
+          <Link className="guest-text-link" href="/guests/travel#plan">Plan what to do →</Link>
         </nav>
       </header>
       {notice ? (
@@ -223,7 +221,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
                 <p className="mt-1">
                   {/* `Link` since level 05 merged: /share-an-adventure is a real route now, so this
                       is client-side navigation and gets prefetched, not a full document load. */}
-                  <Link className="inline-flex min-h-11 items-center underline underline-offset-4" href="/share-an-adventure">
+                  <Link className="inline-flex min-h-11 items-center underline underline-offset-4" href="/guests/travel#plan">
                     See what we suggest for this window
                   </Link>
                 </p>
@@ -252,11 +250,11 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
             </div>
           </dl>
         ) : (
-          <p>The block details (link, rate, dates, cutoff) are still coming from the planner. Travel &amp; Stay will update as soon as they are confirmed.</p>
+          <p>The block details (link, rate, dates, cutoff) are still coming from the planner. Your Trip will update as soon as they are confirmed.</p>
         )}
         <p>
-          <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/travel#stay">
-            All the details on Travel &amp; Stay
+          <a className="inline-flex min-h-11 items-center underline underline-offset-4" href="/guests/travel#stay">
+            All the details on Your Trip
           </a>
         </p>
       </Section>
@@ -272,7 +270,7 @@ export const TripPageRecipe: PageRecipe<TripPageData, TripPageSlots> = ({ data, 
 export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
   return (
     <div className="page">
-      <h1 className="page__title">Your trip</h1>
+      <h1 className="page__title">Your flights and hotel</h1>
       <p className="page__lede">
         {reason === 'anonymous' ? (
           <>
@@ -284,8 +282,8 @@ export function TripGate({ reason }: { reason: 'anonymous' | 'forbidden' }) {
         ) : (
           'This page is for invited guests. Everything about getting here is on '
         )}
-        <a className="underline underline-offset-4" href="/travel">
-          Travel &amp; Stay
+        <a className="underline underline-offset-4" href="/guests/travel">
+          Your Trip
         </a>
         .
       </p>

@@ -3,8 +3,7 @@
  *
  * These are measurement tools, not tests: a test says pass or fail, and a design review needs a
  * NUMBER — 82 characters a line, 15px of label drift, 122 elements under the floor — that can be
- * taken again after the change and compared. Every before/after figure in
- * `docs/reviews/PR-20-self-review.md` came from one of these, and the command is named beside it.
+ * taken again after the change and compared.
  *
  * Usage: start a server (see the file header of each probe for which one), then
  *   node scripts/probes/<probe>.mjs [args]

@@ -19,30 +19,30 @@ export const UNDECIDED = 'not yet decided by the couple';
 
 /** Where a capability's uncited facts live on the site, for citations without a URL. */
 export const HOME_ROUTE: Record<string, string> = {
-  site_status: ROUTES.wedding,
+  site_status: ROUTES.guestPortal,
   get_story: ROUTES.story,
   list_adventures: ROUTES.adventures,
   show_adventure: ROUTES.adventures,
-  find_adventures: ROUTES.share,
-  list_itineraries: ROUTES.share,
+  find_adventures: ROUTES.guestTravel,
+  list_itineraries: ROUTES.guestTravel,
   show_venue_room: ROUTES.ourVenue,
   get_venue_facts: ROUTES.ourVenue,
-  get_faq: ROUTES.ask,
+  get_faq: ROUTES.guestAsk,
   // Level 06 onwards. Without these every answer built from a personal or travel capability cited
-  // `/ask-us`, the page the guest is already reading, instead of the page that holds the fact.
-  get_my_table: '/your-weekend',
+  // Ask Us, the page the guest is already reading, instead of the page that holds the fact.
+  get_my_table: ROUTES.guestPortal,
   get_my_rsvp: '/rsvp',
   draft_rsvp: '/rsvp',
-  list_my_events: '/your-weekend',
-  get_my_invitation: '/your-weekend',
-  get_my_household: '/your-weekend',
+  list_my_events: ROUTES.guestPortal,
+  get_my_invitation: ROUTES.guestPortal,
+  get_my_household: ROUTES.guestPortal,
   get_my_itinerary: '/trip',
   get_my_trip: '/trip',
-  get_my_travel_profile: ROUTES.travel,
-  list_hotel_recommendations: ROUTES.travel,
-  search_travel_options: ROUTES.travel,
-  get_my_transportation_options: ROUTES.transportation,
-  get_reservation_options: ROUTES.transportation,
+  get_my_travel_profile: ROUTES.guestTravel,
+  list_hotel_recommendations: ROUTES.guestTravel,
+  search_travel_options: ROUTES.guestTravel,
+  get_my_transportation_options: ROUTES.guestTravel,
+  get_reservation_options: ROUTES.guestTravel,
   list_gift_links: ROUTES.gifts,
   list_gallery: ROUTES.photos,
   get_media_item: ROUTES.photos,
@@ -265,7 +265,7 @@ export function factsFromOutcome(descriptor: Pick<AnyCapability, 'name' | 'title
   // CAPABILITY's title: borrowing `sources[0].title` would put a specific record's name on a
   // sentence that record never said. The ROUTE is a different question, and taking the home route
   // for it was wrong. `HOME_ROUTE` covers level 05's nine content capabilities and nothing since, so
-  // everything from level 06 onwards fell through to `/ask-us` — the page the guest is already
+  // everything from level 06 onwards fell through to `/guests/ask-us` — the page the guest is already
   // reading. `get_my_table` answered "you are at Table 3" and cited Ask Us, when the fact came from
   // the published seating chart on Your Weekend. A wrong citation is worse than none: it invites the
   // guest to go and check a page that does not contain the fact. When the outcome names exactly one
@@ -274,9 +274,9 @@ export function factsFromOutcome(descriptor: Pick<AnyCapability, 'name' | 'title
   // records, so its sole source ("Built in 1893", /our-venue#history) is not where the leftovers
   // came from and its anchor would send the guest to the wrong section. Only when no route was
   // authored for this capability — every capability from level 06 on — is a single unambiguous
-  // source better than guessing `/ask-us`.
+  // source better than guessing `/guests/ask-us`.
   const soleSource = outcome.sources.length === 1 ? outcome.sources[0] : undefined;
-  const homeRoute = HOME_ROUTE[descriptor.name] ?? soleSource?.url ?? ROUTES.ask;
+  const homeRoute = HOME_ROUTE[descriptor.name] ?? soleSource?.url ?? ROUTES.guestAsk;
   const baseTrust = trustForCapability(descriptor, outcome);
   const fallbackCitation: Citation = {
     sourceId: `capability:${descriptor.name}` as ContentSourceId,

@@ -7,7 +7,7 @@
   margin-block: var(--spacing-lg);
 }
 
-.guest-next :is(a.bd-link--standalone, a.cv-link--standalone, a.gh-link--standalone) {
+.guest-next a.bd-link--standalone {
   box-sizing: border-box;
   padding-block: max(0px, calc((44px - 1lh) / 2));
 }
@@ -100,45 +100,6 @@
 .guest-choices__options label:has(input:focus-visible) {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
-}
-
-.guest-plan-builder {
-  display: grid;
-  gap: var(--spacing-lg);
-  max-width: 42rem;
-}
-
-.guest-plan-builder__kids {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  min-height: 44px;
-}
-
-.guest-plan-builder__kids input {
-  width: 1.15em;
-  height: 1.15em;
-  accent-color: var(--color-primary);
-}
-
-.guest-plan-builder__submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xl);
-  justify-self: start;
-  min-height: 48px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm, 2px);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  cursor: pointer;
-}
-
-.guest-plan-builder__submit:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 4px;
 }
 
 /* Native checked state works before hydration and without JavaScript. Server actions discard

@@ -2,15 +2,16 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { preload } from 'react-dom';
-import { DEFAULT_THEME, getThemeMeta, isThemeId, THEME_IDS } from '@/themes/registry';
+import { DEFAULT_THEME, getThemeMeta, isThemeId } from '@/themes/registry';
 
-export const dynamicParams = false;
-
-/** Both themes are real route trees (ADR-0009 §4): the proxy rewrites clean URLs here. */
-export function generateStaticParams() {
-  return THEME_IDS.map((theme) => ({ theme }));
-}
-
+/**
+ * The prerendered tree (ADR-0009 §4): the public pages as a signed-out reader sees them, built ahead
+ * and cached. `next.config.ts` rewrites a clean URL here when the request carries no session
+ * (src/themes/routes.ts). Nothing under this layout reads a request, and every page here says so
+ * with `dynamic = 'error'`: a `headers()` or `cookies()` that found its way in would fail the render
+ * rather than quietly make the page one reader's. Each page names the designs it is built for
+ * (`staticParams` in src/app/(public)/_views.tsx); an unknown one is a 404 below.
+ */
 type Params = { params: Promise<{ theme: string }> };
 
 const metaFor = async (params: Params['params']) => {

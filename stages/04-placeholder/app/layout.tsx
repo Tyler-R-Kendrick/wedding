@@ -7,7 +7,7 @@ import './designs.css';
 
 export const metadata: Metadata = {
   title: { default: 'Placeholder · Stage 4', template: '%s · Placeholder · Stage 4' },
-  description: 'Every page of Tyler & Sara\'s wedding site with stand-in content, in each design.',
+  description: 'Every page of Tyler & Sara\'s wedding site with stand-in content, in the real design.',
   robots: { index: false, follow: false },
 };
 

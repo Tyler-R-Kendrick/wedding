@@ -183,7 +183,7 @@ export function DeleteEventFlow({ event }: { event: { id: string; name: string; 
           render: (ctx) => (
             <>
               <Consequences>
-                <p>{name} comes off the schedule, the RSVP and Your Weekend, and off every invitation link that names it.</p>
+                <p>{name} comes off the schedule, the RSVP and the guest dashboard, and off every invitation link that names it.</p>
                 {invitedCount || event.mealOptionsVersion > 0 ? (
                   <p>
                     {invitedCount ? `The ${plural(invitedCount, 'guest', 'guests')} invited to it ${invitedCount === 1 ? 'is' : 'are'} no longer invited.` : ''}
@@ -588,7 +588,7 @@ export function DeleteNoticeFlow({ notice }: { notice: Pick<NoticeSummary, 'id' 
           render: (ctx) => (
             <>
               <Consequences>
-                <p>{notice.active ? `${title} comes off Your Weekend at once and is deleted.` : `${title} is hidden already; this deletes it.`}</p>
+                <p>{notice.active ? `${title} comes off the guest dashboard at once and is deleted.` : `${title} is hidden already; this deletes it.`}</p>
                 <p>This cannot be undone. To take a notice down for a while and keep it, use Hide instead.</p>
               </Consequences>
               <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${title}`} />
@@ -603,7 +603,7 @@ export function DeleteNoticeFlow({ notice }: { notice: Pick<NoticeSummary, 'id' 
   );
 }
 
-/** Post a notice on Your Weekend, or edit one: the message, when it shows, then how guests see it. */
+/** Post a notice on the guest dashboard, or edit one: the message, when it shows, then how guests see it. */
 export function NoticeFlow({ notice, label, variant = 'ghost' }: { notice?: NoticeSummary; label: string; variant?: 'primary' | 'ghost' | 'quiet' }) {
   const when = (v: NoticeValues) => {
     const s = chicagoLocalToIso(v.startsAt);
@@ -648,7 +648,7 @@ export function NoticeFlow({ notice, label, variant = 'ghost' }: { notice?: Noti
           title: 'Check and post',
           render: (ctx) => (
             <>
-              <GuestPreview label="What guests will see on Your Weekend">
+              <GuestPreview label="What guests will see on their dashboard">
                 <p>
                   {ctx.values.severity === 'urgent' ? <strong>Urgent: </strong> : null}
                   <strong>{ctx.values.title.trim()}</strong>

@@ -69,9 +69,10 @@ A rendered scan of 17 routes in all three designs at 390, 820, 1280 and 1440px (
 guest routes signed in as the e2e fixture household) found 45 + 15 + 6 + 5 findings. These were
 fixed at the source: a nowrap provenance badge that pushed `/share-an-adventure` off a phone
 screen, an ivory script line reading 2.6:1 on the weekend photograph, and line lengths of 89–102
-characters in the Gilded Hour ledger, the Botanical footer and the guest notices. Three remain,
+characters in the Gilded Hour ledger, the Botanical footer and the guest notices. Three remained,
 each waived for one rule on one page in `.impeccable/config.json` (`detector.ignoreValues`, with
-the reason in each entry):
+the reason in each entry); the third, `heading-rhythm` on Conservatory's `/gifts`, went when that
+design was retired:
 
 - **`text-occlusion` on `/your-weekend`, 820px.** The "covered" text is inside a collapsed
   `<details class="bd-event__details">` (`checkVisibility()` is false). Chromium keeps layout
@@ -85,11 +86,6 @@ the reason in each entry):
   under the masthead, unless it holds the form, so it travels with the reader instead of floating
   over empty paper. Rebalancing the three columns would change the approved layout, and that is
   Sara and Tyler's decision.
-- **`heading-rhythm` on `/gifts` (Conservatory), 1280px and up.** Each section heading sits in a
-  two-column head, with its content beside it rather than below. The 159px under the heading is
-  the gap to the next section, and a purely vertical measure reads that as the heading belonging
-  to the block above. Both sections are placeholders until the couple chooses where the registry
-  lives.
 
 ## `first-viewport-column-overflow` on `/our-venue`, 2026-09-24
 

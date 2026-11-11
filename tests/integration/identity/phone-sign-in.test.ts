@@ -10,7 +10,6 @@ describe('phone sign-in', () => {
     resetProviders();
     setProviderOverride('twilio-verify', new MockTwilioVerify());
     MockTwilioVerify.clearPending();
-    process.env.FLAG_PHONE_SIGN_IN = 'on';
   });
 
   it('returns the same shape for unknown and known numbers', async () => {
@@ -39,6 +38,46 @@ describe('phone sign-in', () => {
     const verified = expectOk(await call<SignInOutcome>('verify_phone_otp', { challenge: sent.data.challenge, code: '000000' }));
     expect(verified.data.status).toBe('signed_in');
     expect(verified.data.guestId).toBe(f.guests.chidi);
+  });
+
+  it('checks the code with Twilio once: a checked code is gone, as Twilio deletes an approved verification', async () => {
+    const f = await seed('ph3');
+    await grantAdmin(f.emails.admin, 'owner');
+    const admin = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    expectOk(
+      await call(
+        'admin_upsert_guest',
+        { id: f.guests.chidi, householdId: f.households.okafor, firstName: 'Chidi', lastName: 'Okafor', phone: '+15551230003', email: f.emails.chidi },
+        { cookie: admin.cookie },
+      ),
+    );
+    let checks = 0;
+    class CountingVerify extends MockTwilioVerify {
+      override async checkVerification(input: { to: string; code: string }) {
+        checks += 1;
+        return super.checkVerification(input);
+      }
+    }
+    setProviderOverride('twilio-verify', new CountingVerify());
+    const sent = expectOk(await call<RequestPhoneOtpResult>('request_phone_otp', { phone: '+15551230003' }));
+    const verified = expectOk(await call<SignInOutcome>('verify_phone_otp', { challenge: sent.data.challenge, code: '000000' }));
+    expect(verified.data.status).toBe('signed_in');
+    expect(checks).toBe(1);
+  });
+
+  it('refuses a wrong code', async () => {
+    const f = await seed('ph4');
+    await grantAdmin(f.emails.admin, 'owner');
+    const admin = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    expectOk(
+      await call(
+        'admin_upsert_guest',
+        { id: f.guests.chidi, householdId: f.households.okafor, firstName: 'Chidi', lastName: 'Okafor', phone: '+15551230004', email: f.emails.chidi },
+        { cookie: admin.cookie },
+      ),
+    );
+    const sent = expectOk(await call<RequestPhoneOtpResult>('request_phone_otp', { phone: '+15551230004' }));
+    expectErr(await call('verify_phone_otp', { challenge: sent.data.challenge, code: '123456' }), 'validation');
   });
 
   it('refuses verify when the number was not on file', async () => {

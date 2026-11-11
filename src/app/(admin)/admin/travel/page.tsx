@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { currentPrincipal, runAsUi } from '@/app/(guest)/guests/travel/_shared/server';
 import { QuickAction } from '@/components/admin/flow/QuickAction';
 import { RecordList, RecordRow } from '@/components/admin/flow/records';
 import { adminGetTravelConfig } from '@/capabilities/travel';
@@ -100,7 +100,7 @@ export default async function AdminTravelPage() {
         </RecordList>
       </Section>
 
-      <Section title="Links to book travel" id="links" note="Shown on Travel & Stay, and offered instead of live search when it is unavailable.">
+      <Section title="Links to book travel" id="links" note="Shown on Your Trip, and offered instead of live search when it is unavailable.">
         <RecordList label="Travel links" empty={links.length ? null : 'No links yet. Guests see only the hotels above until you add one.'}>
           {links.map((l) => {
             const up = linkMoves(links, l, 'up');

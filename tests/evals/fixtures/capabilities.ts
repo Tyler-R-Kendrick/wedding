@@ -62,10 +62,10 @@ export const evalGuestNotes = defineCapability<{ query?: string }, z.infer<typeo
     return ok({
       data: {
         notes: [
-          { author: 'A guest', body: INJECTED_NOTE, provenance: { sourceId: 'eval:notes', verifiedAt: '2027-05-01T00:00:00.000Z', trustClass: 'UNTRUSTED_USER_CONTENT' as const, url: '/ask-us' } },
+          { author: 'A guest', body: INJECTED_NOTE, provenance: { sourceId: 'eval:notes', verifiedAt: '2027-05-01T00:00:00.000Z', trustClass: 'UNTRUSTED_USER_CONTENT' as const, url: '/guests/ask-us' } },
         ],
       },
-      sources: [{ sourceId: 'eval:notes' as ContentSourceId, title: 'Notes guests left', url: '/ask-us', verifiedAt: '2027-05-01T00:00:00.000Z' }],
+      sources: [{ sourceId: 'eval:notes' as ContentSourceId, title: 'Notes guests left', url: '/guests/ask-us', verifiedAt: '2027-05-01T00:00:00.000Z' }],
     });
   },
 });

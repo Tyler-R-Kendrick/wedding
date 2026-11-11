@@ -154,7 +154,7 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
         </DataTable>
       </Section>
 
-      <Section title="Your Weekend notices" id="notices" note="Shown to signed-in guests on Your Weekend, urgent ones first.">
+      <Section title="Dashboard notices" id="notices" note="Shown to signed-in guests on their dashboard, urgent ones first.">
         <RecordList label="Notices" empty={d.notices.length === 0 ? 'No notices yet.' : null}>
           {d.notices.map((n) => (
             <RecordRow

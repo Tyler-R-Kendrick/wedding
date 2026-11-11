@@ -50,8 +50,8 @@ export function RsvpConfirmation({ result, theme, onAnother }: { result: SubmitR
         <Link className="btn btn--primary" href="/rsvp" onClick={backToRsvp}>
           Back to your RSVP
         </Link>
-        <Link className="btn btn--secondary" href="/your-weekend">
-          See your weekend
+        <Link className="btn btn--secondary" href="/guests">
+          Back to your dashboard
         </Link>
       </div>
     </div>

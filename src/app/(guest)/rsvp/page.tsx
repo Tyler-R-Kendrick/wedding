@@ -93,8 +93,8 @@ export default async function RsvpPage() {
             <RsvpForm data={data} action={rsvpAction} idempotencyKey={newId()} theme={theme} parts={data.next} />
           ) : (
             <p>
-              <Link className="btn btn--secondary" href="/your-weekend">
-                See your weekend
+              <Link className="btn btn--secondary" href="/guests">
+                Back to your dashboard
               </Link>
             </p>
           )}

@@ -3,7 +3,7 @@ import type { PageId } from '@wedding/sitemap';
 /**
  * Stage 2 — wireframes. A page is an ordered list of blocks; a block names WHAT goes there and
  * roughly how much of it, never how it looks. Stage 3 renders each kind as an interactive
- * skeleton, stage 4 fills it with placeholder copy in each design. Add a kind here and the type
+ * skeleton, stage 4 fills it with placeholder copy in the real design. Add a kind here and the type
  * checker walks you through every stage that must learn to draw it.
  *
  * Labels describe content ("Ceremony: room and time"); they are never the content. Facts belong to

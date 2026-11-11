@@ -15,13 +15,14 @@ test.beforeAll(async ({ request }) => {
   expect(open.status, JSON.stringify(open.body)).toBe(200);
 });
 
-test('unauthenticated and wrong-secret callers get 401 and see no household data; pages show the guests-only state', async ({ request }) => {
+test('unauthenticated and wrong-secret callers get 401 and see no household data; pages show the guests-only state or the sign-in door', async ({ request }) => {
   expect((await callCapability(request, 'get_my_rsvp', null, {})).status).toBe(401);
   expect((await callCapability(request, 'get_my_itinerary', null, {})).status).toBe(401);
   const wrong = await callCapability(request, 'get_my_rsvp', 'A1', {}, { secret: 'not-the-secret-0123456789' });
   expect(wrong.status).toBe(401);
-  for (const path of ['/rsvp', '/your-weekend']) {
-    const res = await request.get(`${BASE_URL}${path}`);
+  // /rsvp renders the guests-only state in place.
+  {
+    const res = await request.get(`${BASE_URL}/rsvp`);
     expect(res.status()).toBe(200);
     const html = await res.text();
     expect(html).toContain('is for invited guests');
@@ -29,6 +30,27 @@ test('unauthenticated and wrong-secret callers get 401 and see no household data
     // Dynamic (force-dynamic) responses: Next emits `private, no-cache, no-store, …` in production and `no-cache, must-revalidate` in dev; never cacheable.
     expect(res.headers()['cache-control']).toMatch(/no-store|no-cache/);
   }
+  // The dashboard (and its old address, /your-weekend) renders nothing for a signed-out caller: the
+  // request is sent to sign in, and neither the redirect nor the door says anything about a
+  // household, the date or the venue.
+  for (const path of ['/guests', '/your-weekend']) {
+    const first = await request.get(`${BASE_URL}${path}`, { maxRedirects: 0 });
+    expect([307, 308], path).toContain(first.status());
+    expect(await first.text(), path).not.toMatch(/Testhouse|Welcome, |Chicago Athletic|Michigan Ave|July 17/);
+    if (path === '/guests') {
+      expect(first.headers().location, path).toMatch(/\/sign-in\?next=%2Fguests$/);
+      expect(first.headers()['cache-control'] ?? '', path).toMatch(/no-store|no-cache/);
+    }
+    const res = await request.get(`${BASE_URL}${path}`);
+    expect(res.status(), path).toBe(200);
+    expect(res.url(), path).toMatch(/\/sign-in\?next=%2Fguests$/);
+    const html = await res.text();
+    expect(html, path).not.toMatch(/Testhouse|Welcome, |Chicago Athletic|Michigan Ave|July 17/);
+  }
+  // A wrong secret is no session either: the dashboard is not rendered for it.
+  const forged = await request.get(`${BASE_URL}/guests`, { headers: principalHeaders('A1', 'not-the-secret-0123456789') });
+  expect(forged.url()).toMatch(/\/sign-in\?next=%2Fguests$/);
+  expect(await forged.text()).not.toContain('Testhouse');
 });
 
 test('a household manager sees only their household; another household is never present (JSON + HTML)', async ({ request, browser }) => {

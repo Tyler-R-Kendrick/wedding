@@ -216,33 +216,22 @@
  * mark a link, and `--auth-accent` (`--color-tertiary`) does not clear the 3:1
  * the rule asks for against the sentence around it:
  *
- *   botanical-deco  #75552d vs muted #59554d = 1.09:1, vs error #8a2c22 = 1.26:1
- *   gilded-hour     #7a5a16 vs muted #5e5a52 = 1.08:1, vs error #8e2e22 = 1.29:1
- *   conservatory    pollen #d4b24a is 3.5:1 from muted ink but 1.77:1 on the
- *                   creme ground, so it cannot be the words or the underline
+ *   #75552d vs muted #59554d = 1.09:1, vs error #8a2c22 = 1.26:1
  *
  * No palette colour is both 4.5:1 on the ground and 3:1 from muted ink
- * (botanical primary vs muted is 2.01:1). The underline is the distinction
- * that holds on every theme, drawn in the link's own ink so the stroke clears
- * the same 4.5:1 as the words. A gold underline does not: botanical gold is
- * 2.63:1 on ivory, gilded gold 2.15:1.
+ * (primary vs muted is 2.01:1). The underline is the distinction that holds,
+ * drawn in the link's own ink so the stroke clears the same 4.5:1 as the
+ * words. A gold underline does not: gold is 2.63:1 on ivory.
  *
  * `.auth-hint` was the first sentence (the admin sign-in line). /claim/verify
  * puts the same kind of link in the error notice and the footer, which are
  * not hints. Standalone links in `.auth-actions` stay as they are: they are
  * the whole control, and the rule does not apply to them.
- *
- * Conservatory's tertiary is pollen and is never text (see `.cv-link`). Those
- * links take leaf-deep, 6.26:1 on creme, the same ink the kit uses.
  */
 .auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
-}
-
-[data-theme="conservatory"] .auth-shell :is(.auth-hint, .auth-footer, .auth-lede, .auth-notice, .auth-error) .auth-link {
-  color: var(--color-leaf-deep, var(--color-primary));
 }
 
 .auth-notice {
@@ -340,4 +329,53 @@
 [data-theme="botanical-deco"] .auth-input {
   background: var(--color-surface);
   border-block-end-color: var(--color-gold-deep);
+}
+
+/*
+ * Email or text: two equal tabs at the top of /sign-in, not a primary method and an "instead" link.
+ * Links (`?method=text`), so the choice survives an error and needs no script. The chosen one takes
+ * the primary pair, the same colours as "Send me a code"; the other stays full-strength ink, so
+ * neither reads as the lesser way in. 3rem tall: the 44px target floor with room to spare.
+ */
+.auth-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-block-end: var(--spacing-lg, 24px);
+  border: 1px solid var(--auth-outline);
+  border-radius: var(--auth-radius);
+  overflow: hidden;
+}
+
+.auth-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: var(--color-primary);
+  font-size: var(--type-control-caps-size, var(--text-control-caps, 1rem));
+  font-weight: var(--type-control-caps-weight, var(--font-weight-control-caps, 500));
+  letter-spacing: var(--type-control-caps-tracking, var(--tracking-control-caps, 0.14em));
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.auth-method + .auth-method {
+  border-inline-start: 1px solid var(--auth-outline);
+}
+
+.auth-method[aria-current="page"] {
+  color: var(--color-neutral);
+  background: var(--color-primary);
+}
+
+.auth-method:focus-visible {
+  outline: 3px solid var(--auth-accent);
+  outline-offset: -3px;
+}
+
+[data-theme="botanical-deco"] .auth-method[aria-current="page"] {
+  color: var(--color-on-gold-deep);
+  background: var(--color-gold-deep);
 }

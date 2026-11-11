@@ -34,7 +34,7 @@ export const verifyPhoneOtp = defineCapability<z.infer<typeof input>, SignInOutc
   input,
   output,
   async handler(ctx, i) {
-    if (!isPhoneSignInAvailable()) {
+    if (!(await isPhoneSignInAvailable())) {
       return err(new CapabilityError('forbidden', 'Phone sign-in is not available on this site yet.', { reason: 'phone_sign_in_disabled' }));
     }
     const transport = requireCookieTransport(ctx);

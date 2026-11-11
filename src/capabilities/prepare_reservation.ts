@@ -24,7 +24,7 @@ const output = z.object({
   canCommit: z.boolean(),
   nextStep: z.enum(['confirm', 'open_reservation_link', 'ask_us']),
   handoff: guestHandoffSchema.optional(),
-  unavailable: z.object({ message: z.string(), contactRoute: z.literal('/ask-us') }).optional(),
+  unavailable: z.object({ message: z.string(), contactRoute: z.literal('/guests/ask-us') }).optional(),
 });
 
 /**

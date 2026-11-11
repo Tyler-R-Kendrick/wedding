@@ -1,5 +1,6 @@
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { invokeByName, createCapabilityContext } from '@/capabilities';
+import { invokeByName, createCapabilityContext, registry } from '@/capabilities';
 import { CapabilityError, HTTP_STATUS_FOR_CODE } from '@/contracts/errors';
 import { getDb } from '@/db/client';
 import { applyCookieSink, type CookieSink } from '@/lib/auth/cookies';
@@ -109,6 +110,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
     if (mintSession) applyCookieSink(sink, res.headers);
     return res;
   }
+  // An administrator's change (a published lifecycle state, an edited story or adventure) is what
+  // the prerendered public pages are made of. Mark that tree stale now rather than leave it to the
+  // pages' five-minute timer; each is rebuilt on its next visit.
+  if (principal.kind === 'admin' && registry.get(name)?.kind === 'action') revalidatePath('/t/[theme]', 'layout');
   const { data, sources, confirmation, handoffUrl, retrievedAt } = result.value;
   const res = jsonResponse({ ok: true, data, sources, ...(confirmation ? { confirmation } : {}), ...(handoffUrl ? { handoffUrl } : {}), ...(retrievedAt ? { retrievedAt } : {}) }, { requestId });
   if (mintSession) applyCookieSink(sink, res.headers);

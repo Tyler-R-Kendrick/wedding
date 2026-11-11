@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { field, noticeForError, runAsUi, toFormError, type FormError } from '@/app/(public)/travel/_shared/server';
+import { field, noticeForError, runAsUi, toFormError, type FormError } from '@/app/(guest)/guests/travel/_shared/server';
 import { addTripItemCapability, deleteMyTravelProfile, openBookingLink, removeTripItemCapability, updateMyTravelProfile, updateTripItemCapability } from '@/capabilities/travel';
 import type { TravelProfile } from '@/domain/travel';
 
@@ -35,7 +35,7 @@ export async function saveProfileAction(_prev: ProfileFormState, fd: FormData): 
   const r = await runAsUi(updateMyTravelProfile, input, { idempotencyKey: field.idempotencyKey(fd) });
   if (!r.ok) return { status: 'error', error: toFormError(r.error), values };
   revalidatePath('/trip');
-  revalidatePath('/travel');
+  revalidatePath('/guests/travel');
   return { status: 'saved', values, profile: r.value.data };
 }
 

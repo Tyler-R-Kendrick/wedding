@@ -28,7 +28,7 @@ describe('sitemap', () => {
   });
 
   it('builds trails from the root', () => {
-    expect(trail('rsvp-step').map((p) => p.id)).toEqual(['weekend', 'rsvp', 'rsvp-step']);
+    expect(trail('rsvp-step').map((p) => p.id)).toEqual(['portal', 'rsvp', 'rsvp-step']);
   });
 
   it('catches the mistakes that would break a later stage', () => {

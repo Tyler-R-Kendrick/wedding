@@ -43,6 +43,8 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
       {theme === 'botanical-deco' ? (
         <div className="bd-authhead">
           <Botanical id="botanical.corner-tl" className="bd-bloom--auth" />
+          {/* A plain link, like every link in the site's chrome: Home is fetched as a document. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a className="bd-masthead__home" href="/">
             <Monogram />
             <span className="sr-only">Sara + Tyler: Home</span>

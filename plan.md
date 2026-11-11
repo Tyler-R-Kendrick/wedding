@@ -17,8 +17,9 @@ guest media pipeline, semantic media search, feature-gated biometrics,
 closed-world AI concierge, WebMCP progressive enhancement, admin, threat model,
 evals, and docs. Delivery model: **incremental commits, stacked PRs, adversarial
 self-review between levels, parallel subagent swarms integrated one level at a
-time** (ADR-0010). Two completely different, switchable designs: **Gilded
-Hour** (Art Deco) and **Conservatory** (botanical).
+time** (ADR-0010). It began with two switchable designs, **Gilded Hour**
+(Art Deco) and **Conservatory** (botanical); the couple approved a synthesis,
+**Botanical Deco**, which is now the only design.
 
 Facts come only from the brief; unknowns are typed `TODO(Tyler & Sara)`
 placeholders tracked in `docs/content/backlog.md`.
@@ -67,8 +68,7 @@ not exist, or describing the reader as somebody else.
 | #25 `3c43d80` | Greeted by the household manager's name; "Answered for everyone" after one person |
 | #26 | "Claim your invitation" — to a guest who had claimed; travel tools "not live" one tap from the live travel tools |
 
-This is the most transferable finding of the whole run and is written up in
-`docs/evidence/final-validation.md`.
+This is the most transferable finding of the whole run.
 
 ### What is left, and it is not code
 
@@ -86,7 +86,7 @@ planner or a vendor. Start at `docs/content/for-sara-and-tyler.md`.
 | Storage | S3-compatible adapter (Cloudflare R2 in production), local filesystem in dev; private originals, signed reads, EXIF/GPS stripped from derivatives |
 | AI | Vercel AI SDK 7 with `@browser-ai/core`: the guest's own browser model (Prompt API) writes each answer and the server verifies it; no hosted model anywhere (a browser without one gets an answer quoted from the site's pages); embeddings in-process |
 | Hosting | Vercel (project link attempted: the connector returned 403 "no permission to create the project"; needs Tyler to grant it or create the project once in the dashboard) + Supabase + R2 |
-| Themes | `gilded-hour` (default) and `conservatory`; switcher visible to everyone (`FLAG_DESIGN_SWITCHER`), `?theme=` links, cookie |
+| Themes | One: `botanical-deco` (approved). The two proposals and the design switcher were removed; `?theme=` and the cookie still resolve, to the one design |
 | Placeholders | Procedural SVG art (`scripts/art/*`) + Wikimedia Commons CC/PD photos with a hash-verified ledger; AI imagery never shipped as a "photo of the couple" |
 | Branching | Stacked PRs; squash-merge at the bottom of the stack; after each squash, rebase the next level with `git rebase --onto origin/main <old-base-head>` |
 | Secrets | Set in Vercel (Marketplace connectors or `vercel env add`) and, locally, `.env`; local development needs none. The Secret Drop was removed |
@@ -130,7 +130,7 @@ WebMCP tools ───────┘        validate → authorize → step-up 
 
 It is closed. The two blockers and eighteen should-fixes landed before PR 03
 opened; the nits deliberately deferred (N2, N8–N11, N15 CSP/HSTS, N17, N18, N20,
-N21) landed at level 15, and `docs/reviews/PR-19-self-review.md` records which.
+N21) landed at level 15.
 The current security posture — what is worth stealing, what stops it, and the
 test that fails if the control goes away — is
 `docs/architecture/threat-model.md`, not this section.

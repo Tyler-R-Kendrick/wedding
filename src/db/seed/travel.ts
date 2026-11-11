@@ -1,10 +1,25 @@
 import { sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { hotelRecommendations } from '../schema/travel';
+import { seedId } from './sources';
 import { CAA_KIT_SOURCE_ID, CAA_BOOKING_URL, CAA_GROUP_CODE, CAA_BLOCK_CHECK_IN, CAA_BLOCK_CHECK_OUT, VENUE, VENUE_HOTEL_ID, caaPhoneBookingSentence } from '@/domain/travel';
 
 const SEED_VERIFIED = '2026-11-01T00:00:00.000Z';
 const actor = { kind: 'system', component: 'seed' } as const;
+
+/**
+ * Hotels our planner, Michelle, suggested near the venue, by name only. Nothing else is known yet,
+ * so nothing else is said: no address, rate, distance or link, and the cards carry just the reason.
+ * They are not placeholders (there is nothing pending to show); an admin adds details in
+ * /admin/travel, and from then on this seed leaves the row alone (`contentVersion = 1`).
+ */
+export const PLANNER_SUGGESTED_HOTELS = [
+  { id: seedId(802), name: 'Renaissance Hotel Chicago' },
+  { id: seedId(803), name: 'The Hampton Inn (Majestic Chicago Theatre)' },
+  { id: seedId(804), name: 'Residence Inn by Marriott' },
+  { id: seedId(805), name: 'Hyatt Centric - The Loop' },
+] as const;
+const PLANNER_REASON = 'Suggested by our planner, Michelle.';
 
 /**
  * Venue hotel row with the wedding room block (guest-only via list_hotel_recommendations).
@@ -66,4 +81,36 @@ export async function seedTravelHotels(db: Db, now: Date): Promise<void> {
       },
       setWhere: sql`${hotelRecommendations.contentVersion} = 1`,
     });
+
+  for (const [i, h] of PLANNER_SUGGESTED_HOTELS.entries()) {
+    const row = {
+      id: h.id,
+      name: h.name,
+      address: null,
+      isVenue: false,
+      sortOrder: 10 + i * 10,
+      reasons: [{ kind: 'other' as const, text: PLANNER_REASON }],
+      priceBand: null,
+      walkMinutesToVenue: null,
+      websiteUrl: null,
+      bookingUrl: null,
+      block: null,
+      placeholder: false,
+      active: true,
+      sourceId: null,
+      verifiedAt: new Date(SEED_VERIFIED),
+      contentVersion: 1,
+      updatedBy: actor,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db
+      .insert(hotelRecommendations)
+      .values(row)
+      .onConflictDoUpdate({
+        target: hotelRecommendations.id,
+        set: { name: row.name, reasons: row.reasons, sortOrder: row.sortOrder, placeholder: row.placeholder, active: row.active, updatedBy: row.updatedBy, updatedAt: row.updatedAt },
+        setWhere: sql`${hotelRecommendations.contentVersion} = 1`,
+      });
+  }
 }

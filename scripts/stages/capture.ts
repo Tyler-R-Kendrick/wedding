@@ -2,9 +2,9 @@
  * Captures the real site into the design pipeline's baseline (stages/02-wireframe/baseline/), so
  * every stage redraws the pages production actually renders: the same markup, the same stylesheets,
  * the same layout at every width. Stage 2 greys it out, stage 3 turns its content into bones, stage 4
- * swaps its copy for stand-ins in each design.
+ * swaps its copy for stand-ins.
  *
- *   npm run stages:capture                          # every page, every design
+ *   npm run stages:capture                          # every page
  *   npm run stages:capture -- --only home,rsvp      # some pages
  *   npm run stages:capture -- --all-from-app        # everything from the app below (offline)
  *
@@ -13,10 +13,11 @@
  *                  with the link is served today.
  *   guest, admin   production cannot show these without a real account, so they come from the same
  *                  code run as the app's test server (--app, default http://localhost:3331), signed in
- *                  as the seeded fixture household or admin. Start it as docs/ops/demos.md does
- *                  ("the test server": NODE_ENV=test, SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET).
- * Each design is captured with `?theme=<id>` in a browser context of its own. A patterned page
- * (`/our-adventures/[slug]`) is captured at the first real instance its parent page links to.
+ *                  as the seeded fixture household or admin. Start it with the settings
+ *                  `testServerEnv` gives it in scripts/test-server-specs.mjs (NODE_ENV=test,
+ *                  SEED_TEST_FIXTURES=1, TEST_AUTH_SECRET).
+ * A patterned page (`/our-adventures/[slug]`) is captured at the first real instance its parent
+ * page links to.
  *
  * Every request goes through a retrying fetch: a stylesheet that fails to load would be captured as
  * an unstyled page. A page is read only once every stylesheet it links has loaded.
@@ -41,8 +42,8 @@ const APP = opt('app', 'http://localhost:3331').replace(/\/$/, '');
 const ALL_FROM_APP = args.includes('--all-from-app');
 const ONLY = opt('only', '').split(',').filter(Boolean);
 const TEST_AUTH_SECRET = process.env.TEST_AUTH_SECRET ?? 'ci-only-test-auth-secret-not-real';
-/** The designs a guest can be shown (src/themes/registry.ts). The first is production's default. */
-export const DESIGNS = ['botanical-deco', 'gilded-hour', 'conservatory'] as const;
+/** The site's one design (src/themes/registry.ts). It names each page's capture file. */
+const DESIGN = 'botanical-deco';
 const WIDTH = 1280;
 
 const PRINCIPALS = {
@@ -54,11 +55,22 @@ interface Source {
   name: 'production' | 'app';
   origin: string;
   principal: keyof typeof PRINCIPALS | null;
+  /** The day a guest page is captured on: see `openDay`. */
+  lifecycle?: string;
 }
+
+/**
+ * Photos, uploads and gifts are closed to guests until their day (`requireOpenNow` in the app): on
+ * the test server's own day a guest who asks for one is sent to the dashboard, and the capture would
+ * file the dashboard under that page's name. The fixture guest is therefore seen on the day the page
+ * opens (the test-principal injector's `lifecycle`), which is the sitemap's `visibleFrom`.
+ */
+const LATER_DAYS = ['RSVP_OPEN', 'RSVP_CLOSED', 'WEDDING_WEEK', 'WEDDING_DAY', 'POST_WEDDING', 'ARCHIVE'];
+const openDay = (p: SitemapPage): string | undefined => (p.audience === 'guest' && p.visibleFrom && LATER_DAYS.includes(p.visibleFrom) ? p.visibleFrom : undefined);
 function sourceFor(p: SitemapPage): Source {
   // The capture URL is a fixture pass row (see seedTestFixtures); production has no stable instance.
   if (p.id === 'guest-sign-in-pass') return { name: 'app', origin: APP, principal: null };
-  if (p.audience === 'guest' || p.audience === 'admin') return { name: 'app', origin: APP, principal: p.audience };
+  if (p.audience === 'guest' || p.audience === 'admin') return { name: 'app', origin: APP, principal: p.audience, ...(openDay(p) ? { lifecycle: openDay(p) } : {}) };
   return ALL_FROM_APP ? { name: 'app', origin: APP, principal: null } : { name: 'production', origin: PRODUCTION, principal: null };
 }
 
@@ -92,11 +104,11 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 6): P
 
 const contexts = new Map<string, BrowserContext>();
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
-async function contextFor(source: Source, design: string): Promise<BrowserContext> {
-  const key = `${source.name}|${source.principal}|${design}`;
+async function contextFor(source: Source): Promise<BrowserContext> {
+  const key = `${source.name}|${source.principal}|${source.lifecycle ?? ''}`;
   const known = contexts.get(key);
   if (known) return known;
-  const headers: Record<string, string> = source.principal ? { 'x-test-auth': TEST_AUTH_SECRET, 'x-test-principal': JSON.stringify(PRINCIPALS[source.principal]) } : {};
+  const headers: Record<string, string> = source.principal ? { 'x-test-auth': TEST_AUTH_SECRET, 'x-test-principal': JSON.stringify({ ...PRINCIPALS[source.principal], ...(source.lifecycle && source.principal === 'guest' ? { lifecycle: source.lifecycle } : {}) }) } : {};
   // The sandbox and CI reach production through proxies that re-sign TLS; the capture reads public pages.
   const ctx = await browser.newContext({ viewport: { width: WIDTH, height: 900 }, extraHTTPHeaders: headers, ignoreHTTPSErrors: true, serviceWorkers: 'block' });
   await ctx.route('**/*', async (route) => {
@@ -121,11 +133,11 @@ async function stylesLoaded(page: Page): Promise<boolean> {
   })())));
 }
 
-async function capturePage(source: Source, design: string, url: string): Promise<{ status: number; data: Captured; finalUrl: string }> {
-  const ctx = await contextFor(source, design);
+async function capturePage(source: Source, url: string): Promise<{ status: number; data: Captured; finalUrl: string }> {
+  const ctx = await contextFor(source);
   const page = await ctx.newPage();
   try {
-    const target = `${source.origin}${url}${design === DESIGNS[0] ? '' : `${url.includes('?') ? '&' : '?'}theme=${design}`}`;
+    const target = `${source.origin}${url}`;
     for (let attempt = 1; ; attempt++) {
       // The navigation itself goes through the same flaky proxy as every subresource.
       const res = await withRetry(target, () => page.goto(target, { waitUntil: 'load', timeout: 120_000 }), 4);
@@ -158,10 +170,10 @@ async function capturePage(source: Source, design: string, url: string): Promise
 
 /** Fetches a stylesheet through the same retrying route, and roots every url() it holds. */
 const sheets = new Map<string, { text: string; assets: string[] }>();
-async function stylesheet(source: Source, design: string, href: string, assets: Set<string>): Promise<string> {
+async function stylesheet(source: Source, href: string, assets: Set<string>): Promise<string> {
   let sheet = sheets.get(href);
   if (!sheet) {
-    const ctx = await contextFor(source, design);
+    const ctx = await contextFor(source);
     const raw = await withRetry(href, async () => {
       const r = await ctx.request.get(href, { timeout: 45_000 });
       if (!r.ok()) throw new Error(`HTTP ${r.status()}`);
@@ -217,7 +229,7 @@ async function instanceFor(p: SitemapPage, source: Source): Promise<string | nul
   if (rest && !rest.includes('[') && parentInstance && pageForUrl(parentInstance + rest)?.id === p.id) return parentInstance + rest;
   const parentUrl = parent && (resolved.get(parent.id) ?? (isPatterned(parent.path) ? null : (parent.example ?? parent.path)));
   if (!parentUrl) return null;
-  const { data } = await capturePage({ ...source, principal: source.principal ?? (parent!.audience === 'guest' || parent!.audience === 'admin' ? parent!.audience : null) }, DESIGNS[0], parentUrl);
+  const { data } = await capturePage({ ...source, principal: source.principal ?? (parent!.audience === 'guest' || parent!.audience === 'admin' ? parent!.audience : null) }, parentUrl);
   seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
   return find();
 }
@@ -237,74 +249,57 @@ for (const p of ordered) {
     if (instance) url = instance;
   }
   const pageDir = path.join(OUT, 'pages', p.id);
-  // The old capture goes only once the new one has succeeded in production's design.
-  let cleared = false;
-  const designs: Record<string, { status: number; file: string; same?: string }> = {};
-  const bodies = new Map<string, string>();
-  let meta: { title: string; url: string; finalUrl: string } | null = null;
-  for (const design of DESIGNS) {
-    try {
-      const { status, data, finalUrl } = await capturePage(source, design, url);
-      // An error page is not a baseline of anything: say so, and keep what was there before.
-      if (status >= 400) throw new Error(`${source.origin}${url} answered ${status}`);
-      if (design === DESIGNS[0]) {
-        seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
-        resolved.set(p.id, url);
-      }
-      // A design the source does not serve (or a page no design changes) is not stored twice.
-      const served = data.htmlAttrs['data-theme'] ?? design;
-      if (design !== DESIGNS[0] && served !== design) continue;
-      const same = [...bodies.entries()].find(([, b]) => b === data.body)?.[0];
-      if (same) {
-        designs[design] = { status, file: designs[same]!.file, same };
+  try {
+    const { status, data, finalUrl } = await capturePage(source, url);
+    // An error page is not a baseline of anything: say so, and keep what was there before.
+    if (status >= 400) throw new Error(`${source.origin}${url} answered ${status}`);
+    seenLinks.set(source.name, [...(seenLinks.get(source.name) ?? []), ...data.rawLinks]);
+    resolved.set(p.id, url);
+    const assets = new Set(data.assets);
+    const css: string[] = [];
+    for (const s of data.styles) {
+      const text = 'href' in s ? await stylesheet(source, s.href, assets) : rootUrls(s.text, finalUrl, assets);
+      const id = sha(text);
+      const file = path.join(OUT, 'css', `${id}.css`);
+      if (!existsSync(file)) writeFileSync(file, text);
+      css.push(id);
+    }
+    // Fonts and images the page uses that the repo's public/ does not hold (a build asset, a file
+    // production has that main does not) are kept with the baseline, so it stays self-contained.
+    for (const a of assets) {
+      const clean = a.split('?')[0]!;
+      if (existsSync(path.join(ROOT, 'public', clean)) || existsSync(path.join(OUT, 'assets', clean))) continue;
+      const ctx = await contextFor(source);
+      const bytes = await withRetry(`${source.origin}${a}`, async () => {
+        const r = await ctx.request.get(`${source.origin}${a}`, { timeout: 45_000 });
+        if (!r.ok()) throw new Error(`HTTP ${r.status()}`);
+        return r.body();
+      }).catch(() => null);
+      if (!bytes) {
+        console.warn(`  ! ${p.id}: could not fetch ${a}`);
         continue;
       }
-      const assets = new Set(data.assets);
-      const css: string[] = [];
-      for (const s of data.styles) {
-        const text = 'href' in s ? await stylesheet(source, design, s.href, assets) : rootUrls(s.text, finalUrl, assets);
-        const id = sha(text);
-        const file = path.join(OUT, 'css', `${id}.css`);
-        if (!existsSync(file)) writeFileSync(file, text);
-        css.push(id);
-      }
-      // Fonts and images the page uses that the repo's public/ does not hold (a build asset, a file
-      // production has that main does not) are kept with the baseline, so it stays self-contained.
-      for (const a of assets) {
-        const clean = a.split('?')[0]!;
-        if (existsSync(path.join(ROOT, 'public', clean)) || existsSync(path.join(OUT, 'assets', clean))) continue;
-        const ctx = await contextFor(source, design);
-        const bytes = await withRetry(`${source.origin}${a}`, async () => {
-          const r = await ctx.request.get(`${source.origin}${a}`, { timeout: 45_000 });
-          if (!r.ok()) throw new Error(`HTTP ${r.status()}`);
-          return r.body();
-        }).catch(() => null);
-        if (!bytes) {
-          console.warn(`  ! ${p.id}: could not fetch ${a}`);
-          continue;
-        }
-        mkdirSync(path.dirname(path.join(OUT, 'assets', clean)), { recursive: true });
-        writeFileSync(path.join(OUT, 'assets', clean), bytes);
-      }
-      const file = `${design}.json`;
-      if (!cleared) {
-        rmSync(pageDir, { recursive: true, force: true });
-        mkdirSync(pageDir, { recursive: true });
-        cleared = true;
-      }
-      writeFileSync(path.join(pageDir, file), JSON.stringify({ htmlAttrs: data.htmlAttrs, bodyAttrs: data.bodyAttrs, css, assets: [...assets].sort(), body: data.body }, null, 1));
-      bodies.set(design, data.body);
-      designs[design] = { status, file };
-      meta ??= { title: data.title, url, finalUrl: finalUrl.replace(source.origin, '') };
-      console.log(`✓ ${p.id.padEnd(24)} ${design.padEnd(15)} ${status} ${source.name}${source.principal ? ` as ${source.principal}` : ''} ${url}`);
-    } catch (err) {
-      failures.push(`${p.id} (${design}): ${err instanceof Error ? err.message : String(err)}`);
-      console.error(`✗ ${p.id} ${design}: ${err instanceof Error ? err.message : String(err)}`);
-      if (design === DESIGNS[0]) break;
+      mkdirSync(path.dirname(path.join(OUT, 'assets', clean)), { recursive: true });
+      writeFileSync(path.join(OUT, 'assets', clean), bytes);
     }
-  }
-  if (meta) {
-    index.pages[p.id] = { ...meta, source: source.name === 'production' ? PRODUCTION : 'app (test server, fixture data)', principal: source.principal, capturedAt: new Date().toISOString().slice(0, 10), designs };
+    // The old capture goes only once the new one has succeeded.
+    const file = `${DESIGN}.json`;
+    rmSync(pageDir, { recursive: true, force: true });
+    mkdirSync(pageDir, { recursive: true });
+    writeFileSync(path.join(pageDir, file), JSON.stringify({ htmlAttrs: data.htmlAttrs, bodyAttrs: data.bodyAttrs, css, assets: [...assets].sort(), body: data.body }, null, 1));
+    index.pages[p.id] = {
+      title: data.title,
+      url,
+      finalUrl: finalUrl.replace(source.origin, ''),
+      source: source.name === 'production' ? PRODUCTION : 'app (test server, fixture data)',
+      principal: source.principal,
+      capturedAt: new Date().toISOString().slice(0, 10),
+      designs: { [DESIGN]: { status, file } },
+    };
+    console.log(`✓ ${p.id.padEnd(24)} ${status} ${source.name}${source.principal ? ` as ${source.principal}` : ''} ${url}`);
+  } catch (err) {
+    failures.push(`${p.id}: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`✗ ${p.id}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

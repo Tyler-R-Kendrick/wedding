@@ -3,40 +3,21 @@ import type { LifecycleState } from '@/contracts/lifecycle';
 import type { ContentKit, ContentRecipes } from './content-types';
 
 /**
- * Theme engine contracts (ADR-0009). One domain, several themes: routes, data, capabilities and
- * copy are theme-agnostic; a theme owns expression only. Every kit component has the same
- * props, accessible name, focus order and states in every theme; markup and CSS may differ.
+ * Theme engine contracts (ADR-0009). Routes, data, capabilities and copy are theme-agnostic; a theme
+ * owns expression only (markup and CSS behind one kit contract).
  *
  * `botanical-deco` is the design Sara and Tyler approved (docs/design/approved-botanical-deco/) and
- * the default. `gilded-hour` and `conservatory` were the two proposals it superseded; they stay as
- * explicit-preview compatibility surfaces (`?theme=gilded-hour`), never the ordinary experience.
+ * the only one. The registry, the kit contract and the `/t/[theme]` tree keep their shape, so a
+ * second design would be an addition rather than a rewrite.
  */
-export type ThemeId = 'botanical-deco' | 'gilded-hour' | 'conservatory';
+export type ThemeId = 'botanical-deco';
 
 export interface ThemeFontFile {
   family: string;
-  /** Public URL of the woff2 file (preloaded only for the active theme). */
+  /** Public URL of the woff2 file (preloaded by the layouts). */
   url: string;
   weight: string;
   style: 'normal' | 'italic';
-}
-
-/** Motion vocabulary per theme (design-doc §7). Both collapse to opacity-only ≤200 ms under reduced motion. */
-export interface MotionSpec {
-  pageEnter: string;
-  sectionReveal: string;
-  interaction: string;
-  dialog: string;
-  reducedMotion: string;
-}
-
-/** Structural signature, asserted by tests so the two themes stay structurally different. */
-export interface ThemeStructure {
-  layout: 'centered-axis' | 'left-weighted-sheet' | 'portrait-led-editorial-split';
-  navDesktop: 'frieze' | 'tag-rail' | 'monogram-masthead';
-  navMobile: 'elevator-panel' | 'menu-tag-and-two-action-bar' | 'monogram-sheet-and-action-bar';
-  sections: 'numbered-acts' | 'washes-and-fern-dividers' | 'photo-strips-and-colour-bands';
-  ornament: 'gold-geometry' | 'line-art-foliage' | 'edge-botanicals-and-gold-rules';
 }
 
 export interface ThemeMeta {
@@ -49,8 +30,6 @@ export interface ThemeMeta {
   /** DESIGN.md `neutral`, read from the generated tokens JSON (never a literal in TS). */
   themeColor: string;
   icon: { svg: string; apple: string };
-  structure: ThemeStructure;
-  motion: MotionSpec;
 }
 
 /* ------------------------------------------------------------------------------------------------
@@ -147,10 +126,14 @@ export interface VenueFacts {
   mapsProvider: string;
 }
 
-export interface SiteFacts {
+/** What anyone may read: who we are. Nothing about when or where. */
+export interface PublicSiteFacts {
   coupleDisplayName: string;
   partner1: string;
   partner2: string;
+}
+
+export interface SiteFacts extends PublicSiteFacts {
   date: DateFacts;
   venue: VenueFacts;
 }
@@ -175,14 +158,25 @@ export interface LifecycleView {
 }
 
 /** Everything a page recipe needs besides its own content. */
+/**
+ * The wedding's own facts: when, where, and how long until. They are the invited guests', so a frame
+ * carries them only for a reader who is signed in (`PageFrame.details`); for everyone else the field
+ * is null, and because the date and the venue are not on `PageFrame.site` at all, a shell, hero or
+ * recipe cannot print them for a signed-out reader by forgetting to check.
+ */
+export interface WeddingDetails {
+  date: DateFacts;
+  venue: VenueFacts;
+  countdown: CountdownView;
+}
+
 export interface PageFrame {
   theme: ThemeId;
-  site: SiteFacts;
+  site: PublicSiteFacts;
+  /** Null for a signed-out reader, and on any render that did not resolve who is reading. */
+  details: WeddingDetails | null;
   lifecycle: LifecycleView;
-  countdown: CountdownView;
   nav: NavModel;
-  /** FLAG_DESIGN_SWITCHER: kits render the switcher in the shell (nav, Menu sheet, footer) when true. */
-  switcherEnabled: boolean;
 }
 
 export interface HomeData extends PageFrame {
@@ -194,30 +188,22 @@ export type HomeAct = 'adventure' | 'place' | 'memory' | 'hospitality' | 'future
 export interface HomeSection {
   id: string;
   act: HomeAct;
-  /** Eyebrow (Gilded Hour) / specimen label (Conservatory): the five motifs in explore mode, a functional word otherwise. */
+  /** Eyebrow: the five motifs in explore mode, a functional word otherwise. */
   label: string;
   title: string;
   body: Copy;
   link?: ActionLink;
-  /** Optional structured facts (e.g. venue) rendered as Stat / MapHandoff by the theme. */
-  facts?: StatProps[];
-  /** Timeline events for the "Today" / wedding-week acts. */
-  timeline?: TimelineEvent[];
-  map?: boolean;
 }
 
 export interface HomeContent {
-  /** "Today" on WEDDING_DAY; otherwise the couple's names. */
+  /** The couple's names. */
   title: string;
   eyebrow: string;
   lede: Copy;
   primary: ActionLink;
   secondary?: ActionLink;
-  /** RSVP deadline etc. shown beside the primary action. */
-  deadline?: Copy;
-  /** One quiet line under the actions (e.g. the travel heads-up in TEASER). */
+  /** One quiet line under the actions: how an invited guest gets in. */
   note?: Copy;
-  showCountdown: boolean;
   sections: HomeSection[];
 }
 
@@ -306,7 +292,6 @@ export interface ShellProps {
 export interface NavProps {
   nav: NavModel;
   siteName: string;
-  switcherEnabled: boolean;
   /** "Today" replaces "Home" on WEDDING_DAY; guest portal uses "Guest Portal". */
   homeLabel: string;
   /** Masthead monogram target; defaults to `/`. */
@@ -314,16 +299,16 @@ export interface NavProps {
 }
 
 export interface FooterProps {
-  site: SiteFacts;
-  switcher: ReactNode;
+  site: PublicSiteFacts;
+  /** The date and the venue, for a signed-in reader only; null prints neither. */
+  details: WeddingDetails | null;
   rightsNote: string;
   printUrls: { label: string; url: string }[];
 }
 
 export interface HeroProps {
   content: HomeContent;
-  site: SiteFacts;
-  countdown: CountdownView;
+  site: PublicSiteFacts;
   state: LifecycleState;
 }
 
@@ -334,6 +319,12 @@ export interface SectionProps {
   ground?: 'default' | 'alt' | 'inverse' | 'wash';
   children: ReactNode;
   labelledBy?: string;
+  /**
+   * `split`: on a wide screen the section's heading sits in a left rail and everything after it
+   * fills the rest, so a section of words uses the page's width instead of one column beside an
+   * empty half. A design that has no such layout ignores it. One column on a phone either way.
+   */
+  layout?: 'split';
 }
 
 export interface SectionHeadingProps {
@@ -360,7 +351,7 @@ export interface CardProps {
   children: ReactNode;
   media?: ReactNode;
   actions?: ReactNode;
-  /** Plaque numeral (Gilded Hour) or kraft specimen label (Conservatory). */
+  /** A short label above the title. */
   label?: string;
   featured?: boolean;
   index?: number;

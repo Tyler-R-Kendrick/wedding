@@ -14,7 +14,7 @@ describe('seed', () => {
     const db = await getDb();
     await seed(db); // second run
     const site = await getSiteSettings(db);
-    expect(site).toMatchObject({ coupleDisplayName: 'Sara + Tyler', weddingDate: '2027-07-17', timezone: 'America/Chicago', venueName: SEED_SITE.venueName, themes: ['botanical-deco', 'gilded-hour', 'conservatory'], defaultTheme: 'botanical-deco' });
+    expect(site).toMatchObject({ coupleDisplayName: 'Sara + Tyler', weddingDate: '2027-07-17', timezone: 'America/Chicago', venueName: SEED_SITE.venueName, themes: ['botanical-deco'], defaultTheme: 'botanical-deco' });
     expect((await getLifecycle(db))?.state).toBe('TEASER');
     const sources = await listContentSources(db);
     expect(sources).toHaveLength(SEED_SOURCES.length);
@@ -25,9 +25,10 @@ describe('seed', () => {
     const flags = await db.select().from(featureFlags);
     expect(flags.map((f) => f.name).sort()).toEqual(['PRO_MEDIA_AI_PROCESSING']);
     expect(flags.every((f) => f.readiness === false)).toBe(true);
-    // The brief citation points guests at a public route, not a repository path.
+    // The brief citation points guests at a page of the site (their dashboard, since The Wedding
+    // page was folded into it), not a repository path.
     const brief = sources.find((s) => s.id === SEED_SITE.sourceId)!;
-    expect(brief.canonicalUrl).toBe('/the-wedding');
+    expect(brief.canonicalUrl).toBe('/guests');
     expect(isInternalRoute(brief.canonicalUrl!)).toBe(true);
     expect(brief.canonicalUrl).not.toMatch(/^\/docs\//);
   });

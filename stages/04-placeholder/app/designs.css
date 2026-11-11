@@ -1,9 +1,7 @@
 /*
- * The whole of stage 4's styling: point the stage 3 kit's --st-* tokens at a design's own tokens.
- * Each design's variables come from its DESIGN.md (src/themes/<id>/theme.css, copied by
- * scripts/sync-themes.mjs) and are scoped by [data-theme], so one attribute switches the design.
- * A design that lacks a step falls back to its nearest one: Gilded Hour has no pill, so its
- * buttons stay square, which is the design, not a bug.
+ * The whole of stage 4's styling: point the stage 3 kit's --st-* tokens at the design's own tokens.
+ * The design's variables come from its DESIGN.md (src/themes/<id>/theme.css, copied by
+ * scripts/sync-themes.mjs) and are scoped by [data-theme].
  */
 .pl-site[data-theme] {
   --st-paper: var(--color-neutral);
@@ -45,37 +43,4 @@
   color: var(--st-ink);
   font-family: var(--st-font-text);
   font-size: var(--st-size-body);
-}
-
-
-.pl-picker {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--st-space-sm) var(--st-space-md);
-  max-width: var(--st-page);
-  margin: 0 auto;
-  padding: var(--st-space-sm) var(--st-space-md);
-  font-family: var(--st-font-note);
-  font-size: var(--st-size-small);
-}
-
-.pl-picker__label {
-  font-weight: 600;
-}
-
-.pl-picker__select {
-  min-block-size: 44px;
-  padding: 0 var(--st-space-md);
-  border: 1px solid var(--st-ink-muted);
-  border-radius: var(--st-radius);
-  background: var(--st-surface);
-  color: var(--st-ink);
-  font: inherit;
-}
-
-.pl-picker__about {
-  flex: 1 1 20rem;
-  margin: 0;
-  color: var(--st-ink-muted);
 }

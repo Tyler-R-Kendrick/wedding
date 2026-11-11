@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { noticeFor } from '@/app/(public)/travel/_shared/recipe';
-import { currentPrincipal, runAsUi } from '@/app/(public)/travel/_shared/server';
+import { noticeFor } from '@/app/(guest)/guests/travel/_shared/recipe';
+import { currentPrincipal, runAsUi } from '@/app/(guest)/guests/travel/_shared/server';
 import { getMyTravelProfile, getMyTrip } from '@/capabilities/travel';
 import { deleteProfileAction } from './actions';
 import { newId } from '@/contracts/ids';
@@ -9,7 +9,7 @@ import { getRequestTheme } from '@/themes/server';
 import { TripGate, TripPageRecipe, type TripPageData } from './recipe';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Your trip', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Your flights and hotel', robots: { index: false, follow: false } };
 
 /** Guest-only. Personalised: rendered per request, never cached across identities. */
 export default async function TripPage({ searchParams }: { searchParams: Promise<{ ref?: string; outcome?: string; notice?: string }> }) {
