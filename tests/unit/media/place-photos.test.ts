@@ -16,7 +16,7 @@ import recommendations from '../../../src/content/seed/recommendations.json';
  */
 const ROOT = process.cwd();
 const ALLOWED = new Set(['cc0', 'pd', 'cc-by', 'cc-by-sa']);
-type Asset = { id: string; file: string; sha256: string; downloaded: boolean; license: { key: string; shortName: string; url: string; attributionRequired: boolean } };
+type Asset = { id: string; author: string; file: string; sha256: string; downloaded: boolean; license: { key: string; shortName: string; url: string; attributionRequired: boolean } };
 const assets = new Map((ledger.assets as Asset[]).map((a) => [a.id, a]));
 const slugs = new Set((recommendations as { slug: string }[]).map((r) => r.slug));
 const sha = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -49,8 +49,12 @@ describe('place photos', () => {
     expect(entry!.license.shortName).not.toMatch(/\b(NC|ND)\b/);
     expect(entry!.license.url).toMatch(/^https:\/\//);
     if (entry!.license.attributionRequired) {
-      expect(item.credit).toContain(entry!.license.shortName);
+      // Author linked to the source, the licence named and linked to itself, and the crop said.
+      expect(item.credit).toContain(entry!.author);
+      expect(item.credit).toContain('cropped');
+      expect(item.license).toBe(entry!.license.shortName);
       expect(item.creditUrl).toMatch(/^https:\/\//);
+      expect(item.licenseUrl).toBe(entry!.license.url);
     }
     expect(licensedPhotoCredits().some((c) => c.id === entry!.id)).toBe(true);
   });
@@ -70,7 +74,7 @@ describe('place photos', () => {
       const place = toPlannerPlace(card(item.slug));
       expect(place?.image?.src).toBe(item.src);
       expect(place?.image?.alt).toBe(item.alt);
-      expect(place?.image?.credit).toEqual(item.credit ? { text: item.credit, href: item.creditUrl } : undefined);
+      expect(place?.image?.credit).toEqual(item.credit ? { text: item.credit, href: item.creditUrl, license: { name: item.license, href: item.licenseUrl } } : undefined);
     }
     expect(placePhoto('no-such-place')).toBeUndefined();
     expect(toPlannerPlace(card('no-such-place'))?.image).toBeUndefined();

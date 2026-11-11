@@ -112,6 +112,11 @@ export const Place = defineComponent({
                   {place.image.credit.text}
                   <External />
                 </a>
+                {', '}
+                <a className="bd-link" href={place.image.credit.license.href} target="_blank" rel="license noopener noreferrer">
+                  {place.image.credit.license.name}
+                  <External />
+                </a>
               </figcaption>
             ) : null}
           </figure>

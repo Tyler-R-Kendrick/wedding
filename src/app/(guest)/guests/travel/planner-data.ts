@@ -59,7 +59,9 @@ export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
           image: {
             src: photo.src,
             alt: photo.alt,
-            ...(photo.credit && photo.creditUrl ? { credit: { text: photo.credit, href: photo.creditUrl } } : {}),
+            ...(photo.credit && photo.creditUrl && photo.licenseUrl
+              ? { credit: { text: photo.credit, href: photo.creditUrl, license: { name: photo.license, href: photo.licenseUrl } } }
+              : {}),
           },
         }
       : {}),

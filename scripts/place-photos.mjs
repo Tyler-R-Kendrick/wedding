@@ -138,10 +138,11 @@ async function build() {
       ledger: { id: entry.id, file: entry.file, sha256: entry.sha256 },
       license: entry.license.shortName,
       // CC BY / BY-SA: the credit a visitor must be able to find next to the picture; always on /credits too.
-      credit: needsCredit
-        ? `Photo: ${entry.author}, ${entry.license.shortName}${entry.license.shareAlike ? ' (this crop is shared under the same licence)' : ''}`
-        : null,
+      // Title-author-source-licence: the author links to the source page, the licence name to the
+      // licence itself (CC BY 2.0 §4(a) asks for its URI with every copy), and the crop is said.
+      credit: needsCredit ? `Photo: ${entry.author}, cropped${entry.license.shareAlike ? ' and shared under the same licence' : ''}` : null,
       creditUrl: needsCredit ? entry.sourcePageUrl : null,
+      licenseUrl: needsCredit ? entry.license.url : null,
       changes: 'Cropped to 4:3 and resized; re-encoded as AVIF and WebP.',
     });
     console.log(`✓ place.${p.slug} ← ${entry.file}`);
@@ -167,6 +168,7 @@ function check() {
     if (!entry?.downloaded) problems.push(`${item.id}: no downloaded ledger entry`);
     else if (entry.sha256 !== item.ledger.sha256) problems.push(`${item.id}: ledger file changed since the derivatives were made — re-run the script`);
     if (entry?.license?.attributionRequired && !item.credit) problems.push(`${item.id}: ${entry.license.shortName} needs a credit line`);
+    if (entry?.license?.attributionRequired && item.licenseUrl !== entry.license.url) problems.push(`${item.id}: ${entry.license.shortName} needs its licence link`);
     if (!item.alt) problems.push(`${item.id}: alt text missing`);
   }
   for (const p of problems) console.error(`✗ ${p}`);

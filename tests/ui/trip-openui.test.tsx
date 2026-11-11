@@ -129,7 +129,7 @@ describe('trip OpenUI library', () => {
   });
 
   it('a CC BY photograph shows its credit under the picture, linked to its source in a new tab', async () => {
-    const credited = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps', credit: { text: 'Photo: someone, CC BY 2.0', href: 'https://example.org/photo' } } };
+    const credited = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps', credit: { text: 'Photo: someone, cropped', href: 'https://example.org/photo', license: { name: 'CC BY 2.0', href: 'https://creativecommons.org/licenses/by/2.0/' } } } };
     const plain = { ...BY_ID.get('park-walk')!, image: { src: '/media/places/y.webp', alt: 'The park path' } };
     const places = new Map(BY_ID);
     places.set(credited.id, credited);
@@ -139,9 +139,13 @@ describe('trip OpenUI library', () => {
         <TripRenderer response={'root = Col([a, b])\na = Place("art-museum")\nb = Place("park-walk")'} />
       </TripPlannerProvider>,
     );
-    const credit = await screen.findByRole('link', { name: /Photo: someone, CC BY 2\.0/ });
+    const credit = await screen.findByRole('link', { name: /Photo: someone, cropped/ });
     expect(credit.getAttribute('href')).toBe('https://example.org/photo');
     expect(credit.getAttribute('target')).toBe('_blank');
+    // The licence's name links to the licence itself, as CC BY asks.
+    const licence = screen.getByRole('link', { name: /CC BY 2\.0/ });
+    expect(licence.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/2.0/');
+    expect(licence.getAttribute('rel')).toContain('license');
     expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
     // A public-domain photo carries no credit line.
     expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();

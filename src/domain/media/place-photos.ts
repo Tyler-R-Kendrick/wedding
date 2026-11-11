@@ -31,6 +31,8 @@ export interface PlacePhoto {
   license: string;
   credit: string | null;
   creditUrl: string | null;
+  /** The licence's own page, linked from its name in the credit (CC BY / BY-SA only). */
+  licenseUrl: string | null;
 }
 
 const ITEMS = manifest.items as PlacePhoto[];
