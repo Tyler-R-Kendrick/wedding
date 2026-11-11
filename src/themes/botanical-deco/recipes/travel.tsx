@@ -143,7 +143,8 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
                 </li>
               ))}
             </ul>
-            <p className="bd-muted">We list why we picked each place. We do not rate safety; please use your own judgement.</p>
+            {/* Only where a hotel lists its reasons is there anything this sentence describes. */}
+            {alternatives.some((h) => h.reasons.length) ? <p className="bd-muted">We list why we picked each place. We do not rate safety; please use your own judgement.</p> : null}
           </div>
         ) : null}
 

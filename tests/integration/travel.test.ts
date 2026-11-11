@@ -287,9 +287,9 @@ describe('hotel recommendations, block, and admin configuration', () => {
     const payload = JSON.stringify(r.value);
     expect(payload).not.toContain('TODO(');
     expect(payload).not.toMatch(/backlog [A-Z]-\d/);
-    // The hotels our planner suggested, by name and her reason only: nothing invented, nothing pending.
+    // The nearby hotels, by name only: nothing invented, nothing pending, and no "suggested by" line.
     expect(r.value.data.alternatives.map((h: { name: string; reasons: { text: string }[]; address: string | null; walkMinutesToVenue: number | null; websiteUrl: string | null; bookingUrl: string | null; placeholder: boolean }) => [h.name, h.reasons.map((x) => x.text), h.address, h.walkMinutesToVenue, h.websiteUrl, h.bookingUrl, h.placeholder])).toEqual(
-      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, ['Suggested by our planner, Michelle.'], null, null, null, null, false]),
+      PLANNER_SUGGESTED_HOTELS.map((h) => [h.name, [], null, null, null, null, false]),
     );
     expect(r.value.data.facts.venue.valetEntrance).toBe('71 E. Madison St');
     expect(r.value.sources.map((s: { title: string }) => s.title)).toEqual(['Travel › Our room block', 'chicagoathletichotel.com', "Tyler's brief 2026-09-04"]);
