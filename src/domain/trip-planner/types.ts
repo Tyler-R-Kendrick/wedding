@@ -84,6 +84,11 @@ export type Plan = {
    * are its stops, in its order; the rest are extras from the wider list.
    */
   itinerary?: { slug: string; stops: number };
+  /**
+   * A route of the planner's own (not the couple's): `stops` is how many of the first picks are its
+   * stops, ordered and fitted to the part of the day; the rest are good too, for another time.
+   */
+  route?: { stops: number };
   /** Words the writer must leave alone: the couple's own, or an answer that must say exactly this. */
   fixed?: ('title' | 'intro')[];
 };
@@ -181,4 +186,6 @@ export type ComposeContext = {
   calendar?: readonly CalendarDayModel[];
   /** The `schedule` shape's events, as the guest's invitation carries them. */
   events?: readonly WeddingEventInput[];
+  /** The wedding hotel's position: a day's route starts from it and returns to it. */
+  hotel?: { lat: number; lng: number } | null;
 };

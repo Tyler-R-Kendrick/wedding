@@ -279,8 +279,8 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   }, [events, bookings, byId, block]);
 
   const composeFor = useCallback(
-    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
-    [byId, events, calendarEntries],
+    (plan: Plan) => compose(plan, { places: byId, saved: savedRef.current, events, hotel, ...(plan.shape === 'calendar' ? { calendar: calendarModel(calendarEntries()) } : {}) }),
+    [byId, events, hotel, calendarEntries],
   );
 
   /** The better answer, while the guest has not started using the first one. */

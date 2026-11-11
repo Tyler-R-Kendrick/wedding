@@ -203,8 +203,8 @@ describe('trip OpenUI library', () => {
     expect(licence.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/2.0/');
     expect(licence.getAttribute('rel')).toContain('license');
     expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
-    // A public-domain photo carries no credit line.
-    expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();
+    // A public-domain photo carries no credit line (its credit row is there, empty, so cards beside it line up).
+    expect(screen.getByRole('img', { name: 'The park path' }).closest('article')?.querySelector('.trip-place__credit')?.textContent).toBe('');
   });
 
   it("the map lists every stop in the plan's order, numbering a stop without coordinates without giving it a pin", async () => {
@@ -227,6 +227,26 @@ describe('trip OpenUI library', () => {
     // Pins keep the stop's own number, so the third stop is pin 3, not pin 2.
     expect(screen.getByRole('button', { name: '3. Bean House Coffee' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Somewhere Unmapped/ })).toBeNull();
+  });
+
+  it('a route lists numbered stops with their time and length, and the way to each from the stop before', async () => {
+    render(
+      <TripPlannerProvider places={BY_ID} saved={[]} hotel={null} onAction={() => {}}>
+        <TripRenderer
+          response={[
+            'root = Col([r])',
+            'r = Route([Stop(1, "lobby-tour", "1:00–1:45 PM", "About 45 minutes"), Stop(2, "park-walk", "2:00–2:45 PM", "About 45 minutes", "Walk about 5 minutes (0.3 mi) to Lakeside Park Walk.", "walk")], "From our hotel: walk about 2 minutes to Walk the Building.")',
+          ].join('\n')}
+        />
+      </TripPlannerProvider>,
+    );
+    const list = await screen.findByRole('list', { name: 'The stops, in order' });
+    expect(list.textContent).toMatch(/From our hotel: walk about 2 minutes/);
+    expect(list.textContent).toMatch(/Stop 1: 1:00–1:45 PMAbout 45 minutes/);
+    expect(list.textContent).toMatch(/Walk about 5 minutes \(0\.3 mi\) to Lakeside Park Walk\./);
+    expect(screen.getByRole('heading', { name: 'Walk the Building' })).toBeTruthy();
+    // How long it takes is said once, above the card, not again inside it.
+    expect(list.querySelectorAll('.trip-place__facts .trip-fact').length).toBe(0);
   });
 
   it('tripActionOf ignores malformed events', () => {

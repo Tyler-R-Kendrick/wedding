@@ -48,8 +48,8 @@ describe('the couple’s itineraries as the first answer', () => {
   it('located stops become a route on the map; the extras follow under their own heading', () => {
     const plan = draft('For the architecture people');
     expect(plan.shape).toBe('route');
-    expect(plan.picks[0]!.note).toBe('Start here.');
-    expect(plan.picks[1]!.note).toBe('End here.');
+    // The route numbers, times and joins the stops; a stop carries no "start here" note.
+    expect(plan.picks.every((p) => p.note === undefined)).toBe(true);
     const kids = compose(draft('Something to do with kids'), { places: BY_ID, saved: [] });
     // The map shows the itinerary's three stops only; the extra is a card under "One more from our list".
     expect(kids.match(/MapMarker\(/g)?.length).toBe(3);

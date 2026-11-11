@@ -3,7 +3,7 @@
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
 import { useState } from 'react';
 import { z } from 'zod/v4';
-import { blockDateLines, DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
+import { aboutHowLong, blockDateLines, DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
 
@@ -56,17 +56,6 @@ const AREA: Record<string, string> = {
 const isDay = (v: unknown): v is Day => v === 'fri' || v === 'sat' || v === 'sun';
 const isPart = (v: unknown): v is Part => v === 'morning' || v === 'afternoon' || v === 'evening';
 
-/** The couple's rough guide to how long a place takes, in words: "About 45 minutes", "About 1½ hours". */
-export function aboutHowLong(minutes: number | undefined): string | null {
-  if (!minutes || !Number.isFinite(minutes) || minutes <= 0) return null;
-  if (minutes < 60) return `About ${Math.round(minutes / 5) * 5 || 5} minutes`;
-  const halves = Math.round(minutes / 30);
-  const whole = Math.floor(halves / 2);
-  const half = halves % 2 === 1;
-  if (whole === 1 && !half) return 'About an hour';
-  return `About ${whole}${half ? '½' : ''} hours`;
-}
-
 /** A fact with the small mark that says what kind of fact it is. */
 function Fact({ icon, children }: { icon: IconName; children: string }) {
   return (
@@ -82,87 +71,94 @@ export const Place = defineComponent({
   name: 'Place',
   props: z.object({ id: z.string(), note: z.string().optional(), day: z.string().optional(), part: z.string().optional() }),
   description: "A place from the couple's list, by id, with a heart that saves it to the guest's weekend at day and part.",
-  component: function PlaceCard({ props }) {
-    const ctx = useTripPlanner();
-    const streaming = useIsStreaming();
-    const trigger = useTriggerAction();
-    const place = typeof props.id === 'string' ? ctx?.places.get(props.id) : undefined;
-    if (!ctx || !place) return null;
-    const saved = ctx.saved.some((s) => s.id === place.id);
-    const day = isDay(props.day) ? props.day : undefined;
-    const part = isPart(props.part) ? props.part : undefined;
-    const toggle = () => {
-      if (saved) void trigger(`Take ${place.name} out of my weekend`, undefined, custom(RemoveFromWeekend.name, { id: place.id }));
-      else void trigger(`Add ${place.name} to my weekend`, undefined, custom(AddToWeekend.name, { id: place.id, ...(day ? { day } : {}), ...(part ? { part } : {}) }));
-    };
-    const when = day && part ? `${DAY_NAME[day]} ${part}` : null;
-    const label = saved ? `Remove ${place.name} from my weekend` : `Add ${place.name} to my weekend`;
-    const howLong = aboutHowLong(place.minutes);
-    return (
-      <article className="trip-place">
-        {place.image ? (
-          // A CC BY or BY-SA photograph carries its credit wherever it is shown (docs/ops/asset-licensing.md);
-          // the full record, licence link included, is on /credits.
-          <figure className="trip-place__figure">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline */}
-            <img className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" />
-            {place.image.credit ? (
-              <figcaption className="trip-place__credit">
-                <a className="bd-link" href={place.image.credit.href} target="_blank" rel="noopener noreferrer">
-                  {place.image.credit.text}
-                  <External />
-                </a>
-                {', '}
-                <a className="bd-link" href={place.image.credit.license.href} target="_blank" rel="license noopener noreferrer">
-                  {place.image.credit.license.name}
-                  <External />
-                </a>
-              </figcaption>
-            ) : null}
-          </figure>
-        ) : (
-          <div className="trip-place__ground" aria-hidden="true" />
-        )}
-        <div className="trip-place__body">
-          <div className="trip-place__head">
-            <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
-            <h4 className="trip-place__name">{place.name}</h4>
-            <button type="button" className={`trip-round trip-heart${saved ? ' is-on' : ''}`} aria-pressed={saved} aria-label={label} title={label} disabled={streaming} onClick={toggle}>
-              <Icon name="heart" filled={saved} className="trip-icon" />
-            </button>
-          </div>
-          <p className="trip-place__what">{place.what}</p>
-          {howLong || place.address ? (
-            <ul className="trip-facts">
-              {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
-              {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
-            </ul>
-          ) : null}
-          {props.note ? <p className="trip-place__note">{props.note}</p> : null}
-          {place.why ? <p className="trip-place__why">{place.why}</p> : null}
-          <div className="trip-place__actions">
-            {saved ? (
-              <p className="trip-caption trip-place__when is-saved">
-                <Icon name="heart" filled className="trip-icon" />
-                In my weekend
-              </p>
-            ) : when ? (
-              <p className="trip-caption trip-place__when">
-                <Icon name="calendar" className="trip-icon trip-icon--accent" />
-                <span className="sr-only">Saves to </span>
-                {when[0]!.toUpperCase() + when.slice(1)}
-              </p>
-            ) : null}
-            <a className="bd-link trip-place__details" href={place.href}>
-              Details<span className="sr-only">{`: ${place.name}`}</span>
-              <Icon name="chevron" className="trip-icon trip-icon--sm" />
-            </a>
-          </div>
-        </div>
-      </article>
-    );
-  },
+  component: ({ props }) => <PlaceView id={props.id} note={props.note} day={props.day} part={props.part} />,
 });
+
+/**
+ * A place's card. `inRoute` leaves out how long it takes, which the route says above the card, and
+ * lets the route lay the card out beside its photo where there is room.
+ */
+function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: { id: unknown; note?: unknown; day?: unknown; part?: unknown; inRoute?: boolean }) {
+  const props = { id, note: typeof note === 'string' && note.trim() ? note : undefined, day: dayProp, part: partProp };
+  const ctx = useTripPlanner();
+  const streaming = useIsStreaming();
+  const trigger = useTriggerAction();
+  const place = typeof props.id === 'string' ? ctx?.places.get(props.id) : undefined;
+  if (!ctx || !place) return null;
+  const saved = ctx.saved.some((s) => s.id === place.id);
+  const day = isDay(props.day) ? props.day : undefined;
+  const part = isPart(props.part) ? props.part : undefined;
+  const toggle = () => {
+    if (saved) void trigger(`Take ${place.name} out of my weekend`, undefined, custom(RemoveFromWeekend.name, { id: place.id }));
+    else void trigger(`Add ${place.name} to my weekend`, undefined, custom(AddToWeekend.name, { id: place.id, ...(day ? { day } : {}), ...(part ? { part } : {}) }));
+  };
+  const when = day && part ? `${DAY_NAME[day]} ${part}` : null;
+  const label = saved ? `Remove ${place.name} from my weekend` : `Add ${place.name} to my weekend`;
+  const howLong = inRoute ? null : aboutHowLong(place.minutes);
+  return (
+    // Seven rows, always all seven (an empty one where a card has nothing to say), so a row of
+    // cards can share them through a subgrid and every card's name, text, facts and links line up.
+    <article className={`trip-place${inRoute ? ' trip-place--route' : ''}`}>
+      {place.image ? (
+        // A CC BY or BY-SA photograph carries its credit wherever it is shown (docs/ops/asset-licensing.md);
+        // the full record, licence link included, is on /credits.
+        // eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline
+        <img className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" />
+      ) : (
+        <div className="trip-place__ground" aria-hidden="true" />
+      )}
+      <p className="trip-place__credit">
+        {place.image?.credit ? (
+          <>
+            <a className="bd-link" href={place.image.credit.href} target="_blank" rel="noopener noreferrer">
+              {place.image.credit.text}
+              <External />
+            </a>
+            {', '}
+            <a className="bd-link" href={place.image.credit.license.href} target="_blank" rel="license noopener noreferrer">
+              {place.image.credit.license.name}
+              <External />
+            </a>
+          </>
+        ) : null}
+      </p>
+      <div className="trip-place__head">
+        <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
+        <h4 className="trip-place__name">{place.name}</h4>
+        <button type="button" className={`trip-round trip-heart${saved ? ' is-on' : ''}`} aria-pressed={saved} aria-label={label} title={label} disabled={streaming} onClick={toggle}>
+          <Icon name="heart" filled={saved} className="trip-icon" />
+        </button>
+      </div>
+      <p className="trip-place__what">{place.what}</p>
+      <ul className="trip-facts trip-place__facts">
+        {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
+        {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
+      </ul>
+      <div className="trip-place__extra">
+        {props.note ? <p className="trip-place__note">{props.note}</p> : null}
+        {place.why ? <p className="trip-place__why">{place.why}</p> : null}
+      </div>
+      <div className="trip-place__actions">
+        {saved ? (
+          <p className="trip-caption trip-place__when is-saved">
+            <Icon name="heart" filled className="trip-icon" />
+            In my weekend
+          </p>
+        ) : when ? (
+          <p className="trip-caption trip-place__when">
+            <Icon name="calendar" className="trip-icon trip-icon--accent" />
+            <span className="sr-only">Saves to </span>
+            {when[0]!.toUpperCase() + when.slice(1)}
+          </p>
+        ) : null}
+        <a className="bd-link trip-place__details" href={place.href}>
+          Details<span className="sr-only">{`: ${place.name}`}</span>
+          <Icon name="chevron" className="trip-icon trip-icon--sm" />
+        </a>
+      </div>
+    </article>
+  );
+}
 
 function External() {
   return (
@@ -482,4 +478,79 @@ export const Calendar = defineComponent({
   },
 });
 
-export const blocks = [Place, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];
+/** One stop of a Route: its number, the place, its time and how long it takes, and the way to it from the stop before. */
+export const Stop = defineComponent({
+  name: 'Stop',
+  props: z.object({
+    n: z.number(),
+    id: z.string(),
+    when: z.string().optional(),
+    long: z.string().optional(),
+    way: z.string().optional(),
+    mode: z.string().optional(),
+    note: z.string().optional(),
+    day: z.string().optional(),
+    part: z.string().optional(),
+  }),
+  description: 'A numbered stop: a place by id, its time (when) and length (long), and the way to it from the stop before (way, by mode walk, ride, drive or same).',
+  component: () => null,
+});
+
+const WAY_ICON: Record<string, IconName> = { walk: 'walk', ride: 'car', drive: 'car', same: 'pin' };
+
+function Way({ mode, as: Tag = 'li', children }: { mode: string; as?: 'li' | 'div'; children: string }) {
+  return (
+    <Tag className="trip-route__way">
+      <span className="trip-route__rail" aria-hidden="true">
+        <Icon name={WAY_ICON[mode] ?? 'route'} className="trip-icon trip-icon--sm" />
+      </span>
+      <p className="trip-route__way-text">{children}</p>
+    </Tag>
+  );
+}
+
+/**
+ * A day's stops in order, the way a good day plan reads: from the hotel, then each stop with its
+ * number, time and length, the way to the next one and how long that takes, and back.
+ */
+export const Route = defineComponent({
+  name: 'Route',
+  props: z.object({ stops: z.array(Stop.ref), from: z.string().optional(), back: z.string().optional(), fromMode: z.string().optional(), backMode: z.string().optional() }),
+  description: "A day's stops in order, from the hotel (from, by fromMode) and back to it (back, by backMode), with the way between each.",
+  component: function RouteList({ props }) {
+    const ctx = useTripPlanner();
+    const stops = (Array.isArray(props.stops) ? props.stops : []).flatMap((node) => {
+      const q = (node as Node)?.props;
+      const id = text(q?.id);
+      return q && id && ctx?.places.has(id) ? [{ n: typeof q.n === 'number' ? q.n : 0, id, when: text(q.when), long: text(q.long), way: text(q.way), mode: text(q.mode), note: text(q.note), day: text(q.day), part: text(q.part) }] : [];
+    });
+    if (!stops.length) return null;
+    return (
+      <ol className="trip-route" aria-label="The stops, in order">
+        {text(props.from) ? <Way mode={text(props.fromMode) || 'walk'}>{text(props.from)}</Way> : null}
+        {stops.map((s) => (
+          <li key={`${s.id}-${s.n}`} className="trip-route__item">
+            {s.way ? <Way mode={s.mode} as="div">{s.way}</Way> : null}
+            <div className="trip-route__stop">
+              <span className="trip-route__n" aria-hidden="true">{s.n}</span>
+              <div className="trip-route__body">
+                <p className="trip-route__when">
+                  <span className="sr-only">{`Stop ${s.n}: `}</span>
+                  {s.when ? <span className="trip-route__time">{s.when}</span> : null}
+                  {s.long ? <span className="trip-route__long">
+                    <Icon name="clock" className="trip-icon trip-icon--sm trip-icon--accent" />
+                    {s.long}
+                  </span> : null}
+                </p>
+                <PlaceView id={s.id} note={s.note} day={s.day} part={s.part} inRoute />
+              </div>
+            </div>
+          </li>
+        ))}
+        {text(props.back) ? <Way mode={text(props.backMode) || 'walk'}>{text(props.back)}</Way> : null}
+      </ol>
+    );
+  },
+});
+
+export const blocks = [Place, Route, Stop, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];

@@ -336,13 +336,31 @@
 }
 
 /* ---------- a place ---------- */
+
+/* Seven rows: photo, credit, name, what, facts, note and reason, links. On its own a card stacks
+   them; in a grid each card spans seven of the grid's rows and shares them (subgrid), so in a row
+   of cards the names, the text, the facts and the links each start on one line, whichever card has
+   a two-line credit, a longer name or one more fact. The links row is the last, at the foot. */
 .trip-place {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto auto auto 1fr auto;
+  row-gap: var(--spacing-sm);
   overflow: clip;
   border: 1px solid var(--color-outline);
   border-radius: var(--rounded-md);
   background: var(--color-surface);
+}
+
+.trip-grid > .trip-place {
+  grid-row: span 7;
+  grid-template-rows: subgrid;
+  row-gap: var(--spacing-sm);
+}
+
+.trip-place > :not(.trip-place__photo, .trip-place__ground) {
+  min-inline-size: 0;
+  margin: 0;
+  padding-inline: var(--spacing-md);
 }
 
 .trip-place__photo,
@@ -356,38 +374,230 @@
   object-fit: cover;
 }
 
-.trip-place__figure {
-  margin: 0;
-}
-
-/* A CC BY photo's credit, small and under the picture, as the licence asks. */
+/* A CC BY photo's credit, small and under the picture, as the licence asks. Empty when there is
+   nothing to credit; it still holds its row so the cards beside it line up. */
 .trip-place__credit {
-  padding: var(--spacing-xs) var(--spacing-md) 0;
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   color: var(--color-on-surface-muted);
 }
 
+.trip-place__credit:empty {
+  margin-block-start: calc(-1 * var(--spacing-sm));
+}
+
 .trip-place__credit .bd-link {
   color: inherit;
 }
 
-/* No photograph we may publish: a plain ground, never a stand-in picture. None of our places has
-   one yet, so the ground is a thin band: a 4:3 empty box above every card read as a missing image
-   and pushed the answer off a phone's screen. */
+/* No photograph we may publish: a plain ground, never a stand-in picture. On its own it is a thin
+   band (a 4:3 empty box read as a missing image); beside a card with a photo it fills the photo's
+   row, so its name starts level with its neighbour's. */
 .trip-place__ground {
   aspect-ratio: auto;
-  block-size: var(--spacing-sm);
+  min-block-size: var(--spacing-sm);
+  block-size: 100%;
   border-block-end: 2px solid var(--color-gold);
   background: var(--color-neutral-variant);
 }
 
-.trip-place__body {
+.trip-place__extra {
   display: grid;
   align-content: start;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+}
+
+.trip-place__facts:empty,
+.trip-place__extra:empty {
+  display: none;
+}
+
+.trip-grid > .trip-place > .trip-place__facts:empty,
+.trip-grid > .trip-place > .trip-place__extra:empty {
+  display: block;
+  margin-block-start: calc(-1 * var(--spacing-sm));
+}
+
+/* ---------- a day's route: numbered stops on a rail, the way between them in small type ---------- */
+.trip-route {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  container-type: inline-size;
+}
+
+.trip-route__item {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+/* The way from one stop to the next: an icon on the rail, a line of small type beside it. */
+.trip-route__way {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--spacing-sm);
+}
+
+.trip-route__rail {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-block-size: 2.75rem;
+  color: var(--color-gold-deep);
+}
+
+/* The dotted rule the route travels along, behind the icon. */
+.trip-route__rail::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  border-inline-start: 2px dotted var(--color-gold);
+  content: "";
+}
+
+.trip-route__rail > .trip-icon {
+  position: relative;
+  box-sizing: content-box;
+  padding: var(--spacing-xs);
+  border-radius: var(--rounded-pill);
+  background: var(--color-neutral);
+}
+
+.trip-route__way-text {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-route__stop {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  column-gap: var(--spacing-sm);
+  align-items: start;
+}
+
+/* The stop's number, as on the map's pins. */
+.trip-route__n {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--rounded-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+}
+
+.trip-route__body {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+}
+
+/* "1:00–1:45 PM · about 45 minutes": the time strong, the length beside it with its clock. */
+.trip-route__when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-md);
+  min-block-size: 2.75rem;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-route__time {
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.trip-route__long {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* In a route on a phone the photo is a band, not a 4:3 block, so a stop and the way to the next fit
+   together on one screen. Where there is room the card lies beside its photo. */
+.trip-place--route .trip-place__photo {
+  aspect-ratio: 16 / 9;
+}
+
+@container (min-inline-size: 34rem) {
+  .trip-place--route {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: auto auto auto auto 1fr auto;
+  }
+
+  .trip-place--route > .trip-place__photo {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    block-size: 100%;
+    min-block-size: 10rem;
+    aspect-ratio: auto;
+  }
+
+  .trip-place--route > :not(.trip-place__photo, .trip-place__ground) {
+    grid-column: 2;
+  }
+
+  .trip-place--route > .trip-place__head {
+    grid-row: 1;
+    padding-block-start: var(--spacing-md);
+  }
+
+  .trip-place--route > .trip-place__what {
+    grid-row: 2;
+  }
+
+  .trip-place--route > .trip-place__facts {
+    grid-row: 3;
+  }
+
+  .trip-place--route > .trip-place__extra {
+    grid-row: 4;
+  }
+
+  .trip-place--route > .trip-place__actions {
+    grid-row: 5;
+    align-self: end;
+  }
+
+  .trip-place--route > .trip-place__credit {
+    grid-row: 6;
+    padding-block-end: var(--spacing-sm);
+  }
+
+  /* No photograph: no empty box beside the card, only the thin band above it, as on a phone. */
+  .trip-place--route:has(> .trip-place__ground) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto auto 1fr auto;
+  }
+
+  .trip-place--route > .trip-place__ground {
+    grid-row: 1;
+    min-block-size: var(--spacing-sm);
+  }
+
+  .trip-place--route:has(> .trip-place__ground) > :not(.trip-place__photo, .trip-place__ground) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .trip-place--route:has(> .trip-place__ground) > .trip-place__head {
+    padding-block-start: 0;
+  }
 }
 
 .trip-place__head {
@@ -466,6 +676,7 @@
 .trip-place__actions {
   display: flex;
   flex-wrap: wrap;
+  padding-block-end: var(--spacing-xs);
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-xs) var(--spacing-md);

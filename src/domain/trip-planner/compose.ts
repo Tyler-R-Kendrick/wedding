@@ -1,7 +1,8 @@
 import { fitIn } from './draft';
 import { DAY_NAME, dateLabel, weekendDate } from './facts';
+import { aboutHowLong, clockSpan, planRoute, routeFacts, type Leg } from './route';
 import { scheduleOf } from './schedule';
-import { DAYS, type ComposeContext, type Day, type Part, type Plan, type PlanPick, type PlannerPlace } from './types';
+import { DAYS, PARTS, type ComposeContext, type Day, type Part, type Plan, type PlanPick, type PlannerPlace } from './types';
 
 /**
  * A plan as an OpenUI Lang program for the site's own component library (src/components/trip/openui).
@@ -75,34 +76,82 @@ function addMap(p: Program, picks: PlanPick[], ctx: ComposeContext, route: boole
   p.lines.push(`picked = Caption($stop == "" ? "Tap a numbered pin to see which place it is." : "Pin: " + $stop)`);
 }
 
-function slotLabel(pick: PlanPick | undefined): string | null {
-  if (!pick || !isDay(pick.day) || !pick.part) return null;
-  return `${DAY_NAME[pick.day]} ${PART_LABEL[pick.part]}`;
+const MORE = ['', 'One more from our list', 'Two more from our list', 'Three more from our list'];
+/** A route's places that did not fit its part of the day. */
+const LATER = ['', 'One more, for another time', 'Two more, for another time', 'Three more, for another time'];
+
+/** A leg as a sentence that ends at its destination: "Walk about 10–15 minutes (0.6 mi) to Shedd Aquarium." */
+function legLine(leg: Leg, to: string): string {
+  return leg.mode === 'same' ? `${to} is right there: same building or next door.` : `${leg.text} to ${to}.`;
 }
 
-const MORE = ['', 'One more from our list', 'Two more from our list', 'Three more from our list'];
+/** The part of the day every stop shares, if they share one. */
+function sharedPart(picks: PlanPick[]): PlanPick['part'] | null {
+  const [first] = picks;
+  return first?.part && picks.every((p) => p.part === first.part && p.day === first.day) ? first.part : null;
+}
+
+/**
+ * Stops as a day, the way a good day plan reads: when to start, how long it all takes and how much
+ * of it is on foot (chips), then each stop numbered with its time and how long it takes, and between
+ * stops how to get to the next one and how long that takes. From the hotel and back to it when the
+ * hotel's position is known. `labels` (a stop's part of the day) stands in for clock times when the
+ * stops do not share one part.
+ */
+function routeLines(p: Program, name: string, picks: PlanPick[], ctx: ComposeContext, opts: { facts: boolean; back: boolean; labels?: boolean; between?: () => void; inline?: boolean }): void {
+  const part = sharedPart(picks);
+  const route = planRoute({
+    stops: picks.map((x) => ({ place: ctx.places.get(x.id)!, ...(typeof x.minutes === 'number' ? { minutes: x.minutes } : {}), ...(opts.labels && x.part ? { part: x.part } : {}) })),
+    hotel: ctx.hotel ?? null,
+    part,
+  });
+  if (opts.facts) {
+    const day = part && isDay(picks[0]!.day) ? `${DAY_NAME[picks[0]!.day]} ${PART_LABEL[part]}` : null;
+    const facts = [...(day ? [day] : []), ...routeFacts(route), `${picks.length} ${picks.length === 1 ? 'stop' : 'stops'}`];
+    p.root.push(`${name}Facts`);
+    p.lines.push(`${name}Facts = Row(${list(facts.map((f) => `Badge(${str(f)}, "neutral")`))}, 2, true)`);
+  }
+  opts.between?.();
+  // Each stop carries the way to it from the stop before: Stop(n, id, when, long, way, mode, note, day, part).
+  const items = picks.map((x, i) => {
+    const pl = ctx.places.get(x.id)!;
+    const stop = route.stops[i]!;
+    const leg = i > 0 ? route.legs[i - 1] : null;
+    const when = stop.start !== null && stop.end !== null ? clockSpan(stop.start, stop.end) : opts.labels && x.part ? PART_LABEL[x.part][0]!.toUpperCase() + PART_LABEL[x.part].slice(1) : null;
+    const args = [num(i + 1), str(x.id), opt(when), opt(aboutHowLong(stop.minutes)), opt(leg ? legLine(leg, pl.name) : null), opt(leg?.mode), opt(x.note), opt(x.day), opt(x.part)];
+    while (args.length > 2 && args[args.length - 1] === 'null') args.pop();
+    return `Stop(${args.join(', ')})`;
+  });
+  const first = ctx.places.get(picks[0]!.id)!;
+  const from = route.fromHotel ? (route.fromHotel.mode === 'same' ? `${first.name} is in our hotel.` : `From our hotel: ${route.fromHotel.text[0]!.toLowerCase()}${route.fromHotel.text.slice(1)} to ${first.name}.`) : null;
+  const back = opts.back && route.toHotel && route.toHotel.mode !== 'same' ? `Back to our hotel: ${route.toHotel.text[0]!.toLowerCase()}${route.toHotel.text.slice(1)}.` : null;
+  if (!opts.inline) p.root.push(name);
+  const modes = [opt(from ? route.fromHotel!.mode : null), opt(back ? route.toHotel!.mode : null)];
+  p.lines.push(`${name} = Route(${[list(items), opt(from), opt(back), ...modes].join(', ').replace(/(, null)+$/, '')})`);
+}
 
 function picksProgram(plan: Plan, ctx: ComposeContext, route: boolean): string {
   const p = begin(plan);
   const all = knownPicks(plan, ctx);
   // An itinerary's own stops lead (map, route and cards); places from the wider list follow under their own heading.
-  const own = plan.itinerary ? all.filter((x) => plan.picks.findIndex((y) => y.id === x.id) < plan.itinerary!.stops) : all;
+  const lead = plan.itinerary?.stops ?? plan.route?.stops;
+  const own = lead !== undefined ? all.filter((x) => plan.picks.findIndex((y) => y.id === x.id) < lead) : all;
   const picks = own.length ? own : all;
   const extras = all.filter((x) => !picks.includes(x));
   if (route && picks.length) {
-    const when = slotLabel(picks[0]);
-    const badges = [when ? `Badge(${str(when)}, "neutral")` : null, `Badge(${str(`${picks.length} ${picks.length === 1 ? 'stop' : 'stops'}`)}, "info")`].filter(Boolean) as string[];
-    p.root.push('facts');
-    p.lines.push(`facts = Row(${list(badges)}, 2, true)`);
-  }
-  addMap(p, picks, ctx, route);
-  if (picks.length) {
-    p.root.push('stops');
-    p.lines.push(`stops = ${grid(picks)}`);
+    // The day's chips, then the map, then the stops in order with the way between them.
+    routeLines(p, 'stops', picks, ctx, { facts: true, back: true, between: () => addMap(p, picks, ctx, true) });
+  } else {
+    addMap(p, picks, ctx, route);
+    if (picks.length) {
+      p.root.push('stops');
+      p.lines.push(`stops = ${grid(picks)}`);
+    }
   }
   if (extras.length) {
     p.root.push('more');
-    p.lines.push(`more = Col([Title(${str(MORE[extras.length] ?? 'More from our list')}, "md"), ${grid(extras)}], 2)`);
+    const heading = plan.route && !plan.itinerary ? (LATER[extras.length] ?? 'More, for another time') : (MORE[extras.length] ?? 'More from our list');
+    p.lines.push(`more = Col([Title(${str(heading)}, "md"), ${grid(extras)}], 2)`);
   }
   return end(p, plan);
 }
@@ -193,7 +242,12 @@ function weekendProgram(plan: Plan, ctx: ComposeContext): string {
       const names = scheduleOf(ctx.events ?? []).filter((e) => e.dateIso === weekendDate('sat')).map((e) => e.name);
       parts.push(`Text(${str(names.length ? `The afternoon and evening are the wedding: ${names.join(', ')}.` : 'The afternoon and evening are the wedding.')}, "md", "muted")`);
     }
-    if (mine.length) parts.push(grid(mine));
+    if (mine.length) {
+      // The day's places in the order of the day, each with how long it takes and the way to the next.
+      const ordered = [...mine].sort((a, b) => PARTS.indexOf(a.part!) - PARTS.indexOf(b.part!));
+      routeLines(p, `${day}Route`, ordered, ctx, { facts: false, back: false, labels: true, inline: true });
+      parts.push(`${day}Route`);
+    }
     p.root.push(day);
     p.lines.push(`${day} = Col(${list(parts)}, 2)`);
   }
