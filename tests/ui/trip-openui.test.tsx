@@ -51,6 +51,22 @@ describe('trip OpenUI library', () => {
     expect(option.getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('a picked Choice keeps focus where it was: its options are aria-disabled, not disabled, and a second tap does nothing', async () => {
+    const { onAction } = show(programFor('What should I do?'));
+    const option = await screen.findByRole('button', { name: 'Food and drink' });
+    option.focus();
+    await act(async () => fireEvent.click(option));
+    for (const b of within(option.closest('fieldset')!).getAllByRole('button')) {
+      expect(b.hasAttribute('disabled'), b.textContent!).toBe(false);
+      expect(b.getAttribute('aria-disabled'), b.textContent!).toBe('true');
+    }
+    expect(document.activeElement).toBe(option);
+    expect(option.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Something for the kids' })));
+    await act(async () => fireEvent.click(option));
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
   it('a Next chip sends its request', async () => {
     const { onAction } = show(programFor('Somewhere for coffee'));
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Where should we get dinner?' })));

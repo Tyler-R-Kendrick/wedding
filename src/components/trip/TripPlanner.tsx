@@ -29,7 +29,7 @@ import {
   type TripItemInput,
   type WeddingEventInput,
 } from '@/domain/trip-planner';
-import { embed, ensureLocal, getLocalModels, writeLines } from '@/lib/ai/local';
+import { embed, ensureLocal, getLocalModels, holdLocal, writeLines } from '@/lib/ai/local';
 import { speechSupport, startDictation, type Dictation, type DictationError } from '@/lib/speech';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import './trip.css';
@@ -42,15 +42,17 @@ import './trip.css';
  *
  * "My weekend" is the guest's own trip items (one per saved place), changed optimistically here and
  * saved through the server actions the page passes in. Without them (an administrator previewing)
- * the weekend lives in memory only.
+ * the weekend lives in memory only. The server keys every save and remove on the place, and the
+ * changes to one place are sent one after another, so a quick heart and un-heart, or an add and a
+ * move, arrive in order and never leave a second row behind.
  */
 
-/** A saved place as the board holds it: the trip item it is stored as, once there is one. */
+/** A saved place as the board holds it (`itemId`: the trip item it was loaded from, for reference only). */
 export type PlannerSaved = SavedItem & { name: string; itemId?: string | null };
 
 export type PlannerActions = {
-  save(input: { placeId: string; day: Day; part: Part; itemId?: string | null }): Promise<{ ok: true; itemId: string } | { ok: false; message: string }>;
-  remove(input: { itemId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
+  save(input: { placeId: string; day: Day; part: Part }): Promise<{ ok: true; itemId: string } | { ok: false; message: string }>;
+  remove(input: { placeId: string }): Promise<{ ok: true } | { ok: false; message: string }>;
 };
 
 export type TripPlannerProps = {
@@ -85,6 +87,9 @@ const ENOUGH = 3;
 /** How long a request waits for the matcher to install before answering without it. */
 const MATCH_WAIT_MS = 6000;
 const NO_WORDS = new Set<Plan['shape']>(['calendar', 'stay', 'arrive']);
+const SAVE_FAILED = 'We could not save that just now. Please try again in a moment.';
+const REMOVE_FAILED = 'We could not take that out just now. Please try again in a moment.';
+const TOAST_MS = 5000;
 
 const SPEECH_ERROR: Record<DictationError, string> = {
   'not-allowed': 'We could not use your microphone. You can type instead.',
@@ -146,8 +151,9 @@ const wait = (ms: number, signal: AbortSignal) =>
 
 async function matchScores(request: string, places: PlannerPlace[], signal: AbortSignal): Promise<Map<string, number> | null> {
   const state = getLocalModels().matcher.state;
-  if (state === 'unsupported' || state === 'failed') return null;
-  // The guest's request is the first use, so it may start the install; the answer never waits long for it.
+  if (state === 'unsupported') return null;
+  // The guest's request is the first use, so it may start the install (or try again after a failed
+  // background one: once per request); the answer never waits long for it.
   const ready = state === 'ready' || (await Promise.race([ensureLocal('matcher', { userGesture: true }).catch(() => false), wait(MATCH_WAIT_MS, signal)]));
   if (!ready || signal.aborted) return null;
   const vectors = await placeVectors(places, signal);
@@ -165,12 +171,16 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   const [tab, setTab] = useState<'ask' | 'weekend'>('ask');
   const [draft, setDraft] = useState('');
   const [toast, setToast] = useState<{ text: string; key: number; open: boolean } | null>(null);
+  // Pointed at or focused: a message is never taken away from under the guest.
+  const [toastHeld, setToastHeld] = useState(false);
   const confirmed = useSyncExternalStore(confirmedStore.subscribe, confirmedStore.get, () => false);
   const [speech, setSpeech] = useState<'none' | 'ready' | 'listening'>('none');
   const [speechNote, setSpeechNote] = useState<string | null>(null);
   const ctl = useRef<AbortController | null>(null);
   const dictation = useRef<{ run: Dictation; abort: AbortController } | null>(null);
   const touched = useRef(new Set<number>());
+  /** Each place's changes, sent one after another. */
+  const chains = useRef(new Map<string, Promise<boolean>>());
   const nextId = useRef(1);
   const lastPress = useRef<DOMRect | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
@@ -187,13 +197,25 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     };
   }, []);
   useEffect(() => () => (ctl.current?.abort(), dictation.current?.abort.abort()), []);
+  // The matcher stays loaded while the planner is on the page; once it is gone, the idle timer decides.
+  useEffect(() => holdLocal('matcher'), []);
+  // A message with a button stays until it is closed or used (WCAG 2.2.1); a plain one goes after a
+  // while, but never while it is pointed at or focused.
+  const toastAction = !!toast?.open && tab !== 'weekend';
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5000);
+    if (!toast || toastAction || toastHeld) return;
+    const t = setTimeout(() => setToast(null), TOAST_MS);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [toast, toastAction, toastHeld]);
 
-  const say = useCallback((text: string, open = false) => setToast({ text, key: Date.now(), open }), []);
+  const say = useCallback((text: string, open = false) => {
+    setToastHeld(false);
+    setToast({ text, key: Date.now(), open });
+  }, []);
+  const closeToast = useCallback(() => {
+    setToastHeld(false);
+    setToast(null);
+  }, []);
   const patch = useCallback((id: number, next: Partial<Turn>) => setTurns((all) => all.map((t) => (t.id === id ? { ...t, ...next } : t))), []);
 
   const calendarEntries = useCallback((): CalendarEntry[] => {
@@ -278,50 +300,54 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     else dot.remove();
   }, []);
 
-  /** Optimistic: the board changes now; a failed save puts it back and says so. */
-  const commit = useCallback(
-    async (next: PlannerSaved[], work: (() => Promise<string | null>)[]) => {
-      const before = savedRef.current;
-      setSaved(next);
-      savedRef.current = next;
-      if (!actions) return true;
-      for (const step of work) {
-        const failed = await step();
-        if (failed) {
-          setSaved(before);
-          savedRef.current = before;
-          say(failed);
-          return false;
-        }
-      }
-      return true;
-    },
-    [actions, say],
-  );
+  /** Every write to the board: applied to the latest board, so handlers between renders see it too. */
+  const update = useCallback((change: (all: PlannerSaved[]) => PlannerSaved[]) => {
+    const next = change(savedRef.current);
+    if (next === savedRef.current) return;
+    savedRef.current = next;
+    setSaved(next);
+  }, []);
 
-  const persistSave = useCallback(
-    (placeId: string, day: Day, part: Part) => async () => {
-      if (!actions) return null;
-      const existing = savedRef.current.find((s) => s.id === placeId);
-      const r = await actions.save({ placeId, day, part, itemId: existing?.itemId ?? null }).catch(() => ({ ok: false as const, message: 'We could not save that just now. Please try again in a moment.' }));
-      if (!r.ok) return r.message;
-      setSaved((all) => {
-        const next = all.map((s) => (s.id === placeId ? { ...s, itemId: r.itemId } : s));
-        savedRef.current = next;
-        return next;
+  /**
+   * Optimistic, one place at a time: the board changes now, and the place's change is sent after any
+   * earlier one for the same place has settled. A failure puts back only this place, and only while
+   * the board still shows what this change made (a later change to it wins), and says so.
+   */
+  const change = useCallback(
+    (id: string, after: PlannerSaved | null, send: () => Promise<{ ok: boolean; message?: string }>): Promise<boolean> => {
+      const before = savedRef.current.find((s) => s.id === id) ?? null;
+      update((all) => (after ? (before ? all.map((s) => (s.id === id ? after : s)) : [...all, after]) : all.filter((s) => s.id !== id)));
+      if (!actions) return Promise.resolve(true);
+      const step = async () => {
+        const r = await send().catch(() => ({ ok: false, message: undefined }));
+        if (r.ok) return true;
+        update((all) => {
+          const now = all.find((s) => s.id === id) ?? null;
+          const same = now && after ? now.day === after.day && now.part === after.part : now === after;
+          if (!same) return all;
+          if (!before) return all.filter((s) => s.id !== id);
+          return now ? all.map((s) => (s.id === id ? before : s)) : [...all, before];
+        });
+        say(r.message || (after ? SAVE_FAILED : REMOVE_FAILED));
+        return false;
+      };
+      const earlier = chains.current.get(id);
+      const run = earlier ? earlier.then(step) : step();
+      chains.current.set(id, run);
+      void run.then(() => {
+        if (chains.current.get(id) === run) chains.current.delete(id);
       });
-      return null;
+      return run;
     },
-    [actions],
+    [actions, update, say],
   );
 
-  const persistRemove = useCallback(
-    (item: PlannerSaved | undefined) => async () => {
-      if (!actions || !item?.itemId) return null;
-      const r = await actions.remove({ itemId: item.itemId }).catch(() => ({ ok: false as const, message: 'We could not take that out just now. Please try again in a moment.' }));
-      return r.ok ? null : r.message;
+  const saveTo = useCallback(
+    (id: string, name: string, day: Day, part: Part) => {
+      const was = savedRef.current.find((s) => s.id === id);
+      return change(id, { ...(was ?? { name }), id, name: was?.name ?? name, day, part }, () => actions!.save({ placeId: id, day, part }));
     },
-    [actions],
+    [actions, change],
   );
 
   const add = useCallback(
@@ -329,13 +355,11 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const place = byId.get(id);
       if (!place) return;
       const slot = safeSlot(day ?? 'sat', part ?? 'morning');
-      const existing = savedRef.current.find((s) => s.id === id);
-      const next = existing ? savedRef.current.map((s) => (s.id === id ? { ...s, ...slot } : s)) : [...savedRef.current, { id, ...slot, name: place.name }];
       fly();
       say(`${place.name} is in your weekend, ${DAY_NAME[slot.day]} ${slot.part}.`, true);
-      void commit(next, [persistSave(id, slot.day, slot.part)]);
+      void saveTo(id, place.name, slot.day, slot.part);
     },
-    [byId, commit, persistSave, fly, say],
+    [byId, saveTo, fly, say],
   );
 
   const move = useCallback(
@@ -343,41 +367,32 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       if (isWeddingTime(day, part)) return;
       const item = savedRef.current.find((s) => s.id === id);
       if (!item || (item.day === day && item.part === part)) return;
-      void commit(
-        savedRef.current.map((s) => (s.id === id ? { ...s, day, part } : s)),
-        [persistSave(id, day, part)],
-      );
+      void saveTo(id, item.name, day, part);
     },
-    [commit, persistSave],
+    [saveTo],
   );
 
   const remove = useCallback(
     (id: string) => {
-      const item = savedRef.current.find((s) => s.id === id);
-      if (!item) return;
-      void commit(
-        savedRef.current.filter((s) => s.id !== id),
-        [persistRemove(item)],
-      );
+      if (!savedRef.current.some((s) => s.id === id)) return;
+      void change(id, null, () => actions!.remove({ placeId: id }));
     },
-    [commit, persistRemove],
+    [actions, change],
   );
 
+  /** A whole-weekend plan: adds what is new and moves what is elsewhere; never takes a place out. */
   const replaceWeekend = useCallback(
     (items: { id: string; day: Day; part: Part }[]) => {
       const wanted = items.filter((i) => byId.has(i.id)).map((i) => ({ ...i, ...safeSlot(i.day, i.part) }));
-      const current = savedRef.current;
-      const next: PlannerSaved[] = wanted.map((w) => ({ ...(current.find((s) => s.id === w.id) ?? { name: byId.get(w.id)!.name }), id: w.id, day: w.day, part: w.part }));
-      const work = [
-        ...current.filter((s) => !wanted.some((w) => w.id === s.id)).map((s) => persistRemove(s)),
-        ...wanted.filter((w) => {
-          const was = current.find((s) => s.id === w.id);
-          return !was || was.day !== w.day || was.part !== w.part || !was.itemId;
-        }).map((w) => persistSave(w.id, w.day, w.part)),
-      ];
-      void commit(next, work).then((ok) => ok && say('Your weekend is set out on the board.', true));
+      const work = wanted
+        .filter((w) => {
+          const was = savedRef.current.find((s) => s.id === w.id);
+          return !was || was.day !== w.day || was.part !== w.part;
+        })
+        .map((w) => saveTo(w.id, byId.get(w.id)!.name, w.day, w.part));
+      void Promise.all(work).then((done) => done.every(Boolean) && say('Your weekend is set out on the board.', true));
     },
-    [byId, commit, persistRemove, persistSave, say],
+    [byId, saveTo, say],
   );
 
   const exportCalendar = useCallback(() => {
@@ -423,6 +438,8 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     const before = draft.trim();
     const join = (words: string) => [before, words.trim()].filter(Boolean).join(' ');
     setSpeech('listening');
+    // The speech model (when this device records instead) stays loaded for as long as the guest dictates.
+    const release = holdLocal('speech');
     const run = startDictation({
       onInterim: (t) => setDraft(join(t)),
       onFinal: (t) => {
@@ -434,6 +451,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
     });
     dictation.current = { run, abort };
     void run.done.finally(() => {
+      release();
       if (dictation.current?.run === run) dictation.current = null;
       setSpeech((s) => (s === 'listening' ? 'ready' : s));
     });
@@ -453,7 +471,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
 
   const savedItems: SavedItem[] = saved;
   const listening = speech === 'listening';
-  const openWeekend = tab === 'weekend' ? undefined : () => (setTab('weekend'), setToast(null));
+  const openWeekend = tab === 'weekend' ? undefined : () => (setTab('weekend'), closeToast());
 
   return (
     <TripPlannerProvider places={byId} saved={savedItems} hotel={hotel} {...(stay ? { stay } : {})} onAction={onAction}>
@@ -513,7 +531,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
 
           <form className="trip-ask" onSubmit={submit}>
             <div className="trip-toast trip-toast--ask" role="status" aria-live="polite">
-              {toast && tab === 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={() => setToast(null)} /> : null}
+              {toast && tab === 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={closeToast} onHold={setToastHeld} /> : null}
             </div>
             <div className="trip-ask__row">
               <label className="sr-only" htmlFor="trip-ask-input">
@@ -570,7 +588,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         </div>
 
         <div className="trip-toast trip-toast--float" role="status" aria-live="polite">
-          {toast && tab !== 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={() => setToast(null)} /> : null}
+          {toast && tab !== 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={closeToast} onHold={setToastHeld} /> : null}
         </div>
       </div>
     </TripPlannerProvider>
@@ -578,9 +596,27 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
 }
 
 /** A short note after a change: what happened, where to see it, and a way to close it. */
-function Toast({ toast, onOpen, onClose }: { toast: { text: string; key: number; open: boolean }; onOpen: (() => void) | undefined; onClose: () => void }) {
+function Toast({
+  toast,
+  onOpen,
+  onClose,
+  onHold,
+}: {
+  toast: { text: string; key: number; open: boolean };
+  onOpen: (() => void) | undefined;
+  onClose: () => void;
+  /** Pointed at or focused: the message is not taken away from under the guest. */
+  onHold: (held: boolean) => void;
+}) {
   return (
-    <div className="trip-toast__box" key={toast.key}>
+    <div
+      className="trip-toast__box"
+      key={toast.key}
+      onMouseEnter={() => onHold(true)}
+      onMouseLeave={() => onHold(false)}
+      onFocus={() => onHold(true)}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && onHold(false)}
+    >
       <Icon name="check" className="trip-icon trip-toast__mark" />
       <span className="trip-toast__text">{toast.text}</span>
       {toast.open && onOpen ? (
@@ -618,6 +654,28 @@ function Board({
 }) {
   const [over, setOver] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  // A moved card is drawn again in its new slot, and a removed one is gone: keyboard focus follows
+  // to the moved card's Move list, or to the next card that day (else the day's heading).
+  const focusNext = useRef<{ kind: 'move'; id: string } | { kind: 'remove'; day: Day; next: string | null } | null>(null);
+  useEffect(() => {
+    const want = focusNext.current;
+    focusNext.current = null;
+    const root = boardRef.current;
+    if (!want || !root) return;
+    const card = (id: string) => root.querySelector<HTMLElement>(`[data-saved-id="${id}"]`);
+    if (want.kind === 'move') card(want.id)?.querySelector<HTMLElement>('.trip-saved__select')?.focus();
+    else ((want.next ? card(want.next)?.querySelector<HTMLElement>('.trip-saved__remove') : null) ?? document.getElementById(`trip-day-${want.day}`))?.focus();
+  }, [saved]);
+  const moveFrom = (s: PlannerSaved, day: Day, part: Part) => {
+    if (s.day !== day || s.part !== part) focusNext.current = { kind: 'move', id: s.id };
+    onMove(s.id, day, part);
+  };
+  const removeFrom = (s: PlannerSaved) => {
+    const thatDay = PARTS.flatMap((part) => saved.filter((x) => x.day === s.day && x.part === part));
+    focusNext.current = { kind: 'remove', day: s.day, next: thatDay[thatDay.indexOf(s) + 1]?.id ?? null };
+    onRemove(s.id);
+  };
   const drop = (e: DragEvent, day: Day, part: Part) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('text/plain') || dragging;
@@ -627,7 +685,7 @@ function Board({
   };
   const enough = saved.length >= ENOUGH;
   return (
-    <div className="trip-board">
+    <div className="trip-board" ref={boardRef}>
       <div className="trip-board__bar">
         <p className="trip-text trip-text--md">
           {saved.length
@@ -652,7 +710,7 @@ function Board({
       <div className="trip-days">
         {DAYS.map((day) => (
           <section key={day} className="trip-day" aria-labelledby={`trip-day-${day}`}>
-            <h3 id={`trip-day-${day}`} className="trip-title trip-title--md">
+            <h3 id={`trip-day-${day}`} className="trip-title trip-title--md" tabIndex={-1}>
               {dateLabel(weekendDate(day))}
             </h3>
             {PARTS.map((part) => {
@@ -691,6 +749,7 @@ function Board({
                     return (
                       <article
                         key={s.id}
+                        data-saved-id={s.id}
                         className={`trip-saved${dragging === s.id ? ' is-dragging' : ''}`}
                         draggable
                         onDragStart={(e) => {
@@ -705,7 +764,7 @@ function Board({
                       >
                         <Icon name="grip" className="trip-saved__grip" strokeWidth="3" />
                         <h4 className="trip-saved__name">{place ? <a className="bd-link" href={place.href}>{name}</a> : name}</h4>
-                        <button type="button" className="trip-round trip-saved__remove" aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => onRemove(s.id)}>
+                        <button type="button" className="trip-round trip-saved__remove" aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => removeFrom(s)}>
                           <Icon name="trash" className="trip-icon" />
                         </button>
                         <div className="trip-saved__tools">
@@ -717,7 +776,7 @@ function Board({
                               value={`${s.day}-${s.part}`}
                               onChange={(e) => {
                                 const slot = SLOTS.find((x) => x.value === e.target.value);
-                                if (slot) onMove(s.id, slot.day, slot.part);
+                                if (slot) moveFrom(s, slot.day, slot.part);
                               }}
                             >
                               {SLOTS.map((x) => (

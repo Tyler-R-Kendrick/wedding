@@ -15,7 +15,7 @@ import { probe, prepare, streamOnDevice } from '../browser-model';
 import { createLocalRuntime, INITIAL_STATUS, type WorkerLike } from './runtime';
 
 export type { LocalPart, LocalState, LocalStatus } from './spec';
-import type { LocalPart, LocalStatus } from './spec';
+import type { LocalPart, LocalStatus, WorkerPart } from './spec';
 
 function createWorker(): WorkerLike | null {
   if (typeof window === 'undefined' || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return null;
@@ -45,6 +45,14 @@ export function checkLocal(part: LocalPart) {
 /** Install the part if it is missing; resolves whether it is ready. The writer needs `userGesture`. */
 export function ensureLocal(part: LocalPart, opts?: { userGesture?: boolean }): Promise<boolean> {
   return runtime.ensureLocal(part, opts);
+}
+
+/**
+ * Keep a part's worker loaded while a page expects to use it again soon; call the returned function
+ * to let go (it is safe to call twice). Without a hold, the worker closes after a short idle time.
+ */
+export function holdLocal(part: WorkerPart): () => void {
+  return runtime.hold(part);
 }
 
 /** Unit-length vectors for each text (`query: true` for the guest's request). `null` = not ready. */

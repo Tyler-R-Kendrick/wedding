@@ -560,7 +560,7 @@
   background: var(--color-neutral-variant);
 }
 
-.trip-option[disabled]:not(.is-picked) {
+.trip-option[aria-disabled='true']:not(.is-picked) {
   opacity: 0.72;
   cursor: default;
 }

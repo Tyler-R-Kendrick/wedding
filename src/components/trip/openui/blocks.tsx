@@ -276,8 +276,10 @@ export const Choice = defineComponent({
               type="button"
               className={`trip-option${picked === o.label ? ' is-picked' : ''}`}
               aria-pressed={picked === o.label}
-              disabled={streaming || picked !== null}
+              // Not `disabled`: that would drop the guest's focus to the page. Further taps are ignored.
+              aria-disabled={streaming || picked !== null ? true : undefined}
               onClick={() => {
+                if (streaming || picked !== null) return;
                 setPicked(o.label);
                 void trigger(o.label, undefined, { steps: [{ type: 'continue_conversation', message: o.label, context: { answering: props.question } }] });
               }}

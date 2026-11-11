@@ -42,9 +42,9 @@ function placeCall(pick: PlanPick, note: boolean = true): string {
   return `Place(${args.join(', ')})`;
 }
 
-function knownPicks(plan: Plan, ctx: ComposeContext): PlanPick[] {
+function knownPicks(plan: Plan, ctx: ComposeContext, max = 6): PlanPick[] {
   const seen = new Set<string>();
-  return (plan.picks ?? []).filter((p) => p && typeof p.id === 'string' && ctx.places.has(p.id) && !seen.has(p.id) && seen.add(p.id)).slice(0, 6);
+  return (plan.picks ?? []).filter((p) => p && typeof p.id === 'string' && ctx.places.has(p.id) && !seen.has(p.id) && seen.add(p.id)).slice(0, max);
 }
 
 function grid(picks: PlanPick[], note = true): string {
@@ -154,7 +154,8 @@ function askProgram(plan: Plan, ctx: ComposeContext): string {
 
 function weekendProgram(plan: Plan, ctx: ComposeContext): string {
   const p = begin(plan);
-  const picks = knownPicks(plan, ctx).filter((x) => isDay(x.day) && x.part && !(x.day === 'sat' && x.part !== 'morning'));
+  // No cap: a weekend keeps every place the guest saved, and "Use this plan" applies all of them.
+  const picks = knownPicks(plan, ctx, Infinity).filter((x) => isDay(x.day) && x.part && !(x.day === 'sat' && x.part !== 'morning'));
   for (const day of DAYS) {
     const mine = picks.filter((x) => x.day === day);
     if (!mine.length && day !== 'sat') continue;

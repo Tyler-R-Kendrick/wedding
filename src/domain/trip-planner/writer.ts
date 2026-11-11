@@ -66,6 +66,8 @@ const LINE = /^\s*(?:[-*•>]+|\d+[.)])?\s*[*_`]*\s*(TITLE|INTRO|PICK|NEXT)\s*[*
 /** Words a guest must never read on this page, and the shapes of facts the planner cannot vouch for. */
 const OFF_LIMITS = /\b(ai|a\.i\.|model|language model|assistant|chatbot|openui|claude|gemini|gpt|prompt)\b/i;
 const UNVOUCHED = /\d|\$|£|€|\b(minutes?|mins?|hours?|hrs?|miles?|km|kilometers?|blocks? away|o'?clock|a\.?m\.?|p\.?m\.?|open(s|ing)? (at|until|daily|late)|closes?|closed|admission|tickets? (cost|are)|reservations? (are|is) required)\b/i;
+/** Saturday afternoon and evening are the wedding: a line that sends guests anywhere then is dropped. */
+const WEDDING_TIME = /\btonight\b|\bsat(?:urday)?(?:['’]s)?\s+(?:afternoon|evening|night)\b|\b(?:afternoon|evening|night)\s+(?:on|of)\s+sat(?:urday)?\b/i;
 const EMOJI = /\p{Extended_Pictographic}|\u{FE0F}/gu;
 
 /** A written value made safe to show, or null when it should be ignored. */
@@ -108,8 +110,8 @@ export function mergeWritten(draft: Plan, streamedText: string, places: PlannerP
     if (!m) continue;
     const key = m[1]!.toUpperCase();
     const value = m[2] ?? '';
-    if (key === 'TITLE' && title === null) title = UNVOUCHED.test(value) ? null : clean(value, 90);
-    else if (key === 'INTRO' && intro === null) intro = UNVOUCHED.test(value) ? null : clean(value, 280);
+    if (key === 'TITLE' && title === null) title = UNVOUCHED.test(value) || WEDDING_TIME.test(value) ? null : clean(value, 90);
+    else if (key === 'INTRO' && intro === null) intro = UNVOUCHED.test(value) || WEDDING_TIME.test(value) ? null : clean(value, 280);
     else if (key === 'NEXT' && next.length < 3) {
       const n = clean(value, 70);
       if (n && !next.some((x) => x.toLowerCase() === n.toLowerCase())) next.push(n);
@@ -118,7 +120,7 @@ export function mergeWritten(draft: Plan, streamedText: string, places: PlannerP
       const id = rawId.replace(/[`*_<>"'\s]/g, '');
       if (!allowed.has(id) || picks.some((p) => p.id === id)) continue;
       const noteRaw = rest.join(' ');
-      const note = noteRaw && !UNVOUCHED.test(noteRaw) ? clean(noteRaw, 140) : null;
+      const note = noteRaw && !UNVOUCHED.test(noteRaw) && !WEDDING_TIME.test(noteRaw) ? clean(noteRaw, 140) : null;
       picks.push(note ? { id, note } : { id });
     }
   }
