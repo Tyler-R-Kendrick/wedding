@@ -1,0 +1,806 @@
+{
+  "schema": 1,
+  "generator": "scripts/place-photos.mjs",
+  "items": [
+    {
+      "id": "place.architecture-river-cruise",
+      "slug": "architecture-river-cruise",
+      "src": "/media/places/architecture-river-cruise-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/architecture-river-cruise-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 29956,
+          "sha256": "87cb008bb617c06bb453bed2e1a0f1184e8c8917ed6abb9c710f7d56dd62f22c"
+        },
+        {
+          "src": "/media/places/architecture-river-cruise-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 49036,
+          "sha256": "46f9e050c782178cda97d64ce4f506f54f427065cdd95d17a0735b701fb18809"
+        },
+        {
+          "src": "/media/places/architecture-river-cruise-1017.avif",
+          "format": "avif",
+          "width": 1017,
+          "bytes": 72606,
+          "sha256": "7e028098bbfcc984e55d75a3128e5428c8e58d248d428b75a81725d49b8e2e9d"
+        },
+        {
+          "src": "/media/places/architecture-river-cruise-1017.webp",
+          "format": "webp",
+          "width": 1017,
+          "bytes": 120672,
+          "sha256": "c05f3653e5a67f9ea43666c42481eba716a33960b64f6d9b4b8e0e3f2965d96e"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The Chicago River seen from the water, running between downtown towers toward a bridge.",
+      "ledger": {
+        "id": "openverse-5ff39d49-5377-463d-bb7b-6063052b67e3",
+        "file": "public/assets/commons/openverse-5ff39d49-5377-463d-bb7b-6063052b67e3.jpg",
+        "sha256": "2d255ab5a4ac2b0ee7ecce1d68ae921165e3757adf41080a4fab39f6c0a7df51"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.architecture-walking-tours",
+      "slug": "architecture-walking-tours",
+      "src": "/media/places/architecture-walking-tours-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/architecture-walking-tours-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 25726,
+          "sha256": "f307066fddf93059dc76348843e9fa68741317ae038df78f6734a735e6f46a2d"
+        },
+        {
+          "src": "/media/places/architecture-walking-tours-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 37696,
+          "sha256": "e8e0616f999b1fbd05e0743032b3498148978abbb93deefd8ccc0c13150b1167"
+        },
+        {
+          "src": "/media/places/architecture-walking-tours-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 56168,
+          "sha256": "37a150abb70361cf2b72e706e2488de7089d16402ec8107be2dd3fa6e5171b35"
+        },
+        {
+          "src": "/media/places/architecture-walking-tours-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 83550,
+          "sha256": "134241d222e9535589ea990269cf7711387d6031bbc913296340b7f2f0d1a264"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The large white scale model of downtown Chicago inside the Chicago Architecture Center.",
+      "ledger": {
+        "id": "openverse-8c1a77de-d85a-4ddc-98ed-b8252aa73e10",
+        "file": "public/assets/commons/openverse-8c1a77de-d85a-4ddc-98ed-b8252aa73e10.jpg",
+        "sha256": "33d454ce0d469cced5a4ce8941bef899f249f3168824fb552439992a32a82fcb"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: davidwilson1949, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/32693718@N07/49957665096",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.art-institute",
+      "slug": "art-institute",
+      "src": "/media/places/art-institute-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/art-institute-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 41648,
+          "sha256": "ec52d90d7f904b2df039b0a0c9c0a13c53ed99ec4398c909af9bba9fe7810cb9"
+        },
+        {
+          "src": "/media/places/art-institute-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 67030,
+          "sha256": "c35cad2711ef1ca4ee660f26ba078d03b86b7615c89648a56f936b36cfbc1acf"
+        },
+        {
+          "src": "/media/places/art-institute-939.avif",
+          "format": "avif",
+          "width": 939,
+          "bytes": 82829,
+          "sha256": "2c3b90e85b1293b31562fc5abb441a593b29b01dfe00f6d14dfe0c0f8fde4d94"
+        },
+        {
+          "src": "/media/places/art-institute-939.webp",
+          "format": "webp",
+          "width": 939,
+          "bytes": 131398,
+          "sha256": "cc4521a5dc9ac7b99ffe759fe473fda8bab72942e8c9f0a55b8a3f28cf1ce47c"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "One of the bronze lions outside the Art Institute of Chicago on Michigan Avenue.",
+      "ledger": {
+        "id": "openverse-35651326-d5a2-40c7-910a-1504b4be9f13",
+        "file": "public/assets/commons/openverse-35651326-d5a2-40c7-910a-1504b4be9f13.webp",
+        "sha256": "ad1078ab603015daddd43195041f42cca6b68a0775a68da623a603647c57bd7c"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.caa-explore",
+      "slug": "caa-explore",
+      "src": "/media/places/caa-explore-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/caa-explore-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 25696,
+          "sha256": "7f1318260dd64f68486af9469d53e62ac35ff367e08f9a9b3e47f698d9fcc768"
+        },
+        {
+          "src": "/media/places/caa-explore-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 37152,
+          "sha256": "2977a932a6840728f4e34abb61a16be79c493f14b3809f15464ca8029ed88354"
+        },
+        {
+          "src": "/media/places/caa-explore-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 54278,
+          "sha256": "89b272b4f9112a37adb39d1e2a991c7af1b217eba731751f145c04d1a0a58a9a"
+        },
+        {
+          "src": "/media/places/caa-explore-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 73994,
+          "sha256": "4bdfd1e4218d86ed5cf59b33c0b126d96312361e7e2f839f66418508ffebe08e"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The marble grand staircase under a coffered ceiling and chandelier in the Chicago Athletic Association Hotel.",
+      "ledger": {
+        "id": "openverse-c71b807d-c3bf-47c9-b3ae-7739aabf78c2",
+        "file": "public/assets/commons/openverse-c71b807d-c3bf-47c9-b3ae-7739aabf78c2.jpg",
+        "sha256": "7771cf9df6fb027e8fb658665625df177177e84d8a2f28b9c1e7700ef3016d5b"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: loustejskal.com, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/63311602@N08/26062757064",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.chicago-botanic-garden",
+      "slug": "chicago-botanic-garden",
+      "src": "/media/places/chicago-botanic-garden-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/chicago-botanic-garden-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 54478,
+          "sha256": "6809665a40192aa53b345e907964a5dd5c29f46d0e9ffd946819844f6a8c8c50"
+        },
+        {
+          "src": "/media/places/chicago-botanic-garden-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 75482,
+          "sha256": "c99a642bcbf9f505ba92b0a1981a8a6feeea27720445b6bd3b7a9735abec62ad"
+        },
+        {
+          "src": "/media/places/chicago-botanic-garden-904.avif",
+          "format": "avif",
+          "width": 904,
+          "bytes": 112037,
+          "sha256": "4bd3e073976f800b6336a67efb2e833579a26225bd9895b26f01269d9a039c15"
+        },
+        {
+          "src": "/media/places/chicago-botanic-garden-904.webp",
+          "format": "webp",
+          "width": 904,
+          "bytes": 171488,
+          "sha256": "df503e61b76bbcd033dbce3ba68e8df96298773265a3b1fccbbe19e5fad8a5a3"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "A brick path beside a lawn and a row of yellow autumn trees at the Chicago Botanic Garden.",
+      "ledger": {
+        "id": "openverse-9f46ee13-51fe-41a9-a3e2-bb1dfd218173",
+        "file": "public/assets/commons/openverse-9f46ee13-51fe-41a9-a3e2-bb1dfd218173.jpg",
+        "sha256": "5aced48d4e6345f09609c2c50a594fcf1577831e172dcc7712148040b703a3a2"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: atramos, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/14818554@N05/6443004477",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.chicago-classics",
+      "slug": "chicago-classics",
+      "src": "/media/places/chicago-classics-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/chicago-classics-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 26338,
+          "sha256": "d99517b128466c051e5418ddf006c2280b717f4a21746939318fed3c960927e3"
+        },
+        {
+          "src": "/media/places/chicago-classics-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 36738,
+          "sha256": "532fb84c2abd0c49fbdcdb0c0e040b3e1e56535c6351b93c2b68b370e78f4b7f"
+        },
+        {
+          "src": "/media/places/chicago-classics-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 53274,
+          "sha256": "ee7ce5c5fa788ff1a56155aa932d2d5542bd9deea8d9ee086eac332fcd1db172"
+        },
+        {
+          "src": "/media/places/chicago-classics-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 71320,
+          "sha256": "fbc8a991c791b5e0e599c8a7199e5b1065067d346f0b2d462b2eeceb50ec5942"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "A slice of Chicago deep-dish pizza lifted from the pan, strings of melted cheese under a thick tomato top.",
+      "ledger": {
+        "id": "openverse-3f167762-1d0f-4d2a-862c-1d04bf7a203f",
+        "file": "public/assets/commons/openverse-3f167762-1d0f-4d2a-862c-1d04bf7a203f.jpg",
+        "sha256": "791025f996be1a7442fb8aba755183946c44b3511ac6bf0ed7ae569e59dc2ef3"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.chicago-riverwalk",
+      "slug": "chicago-riverwalk",
+      "src": "/media/places/chicago-riverwalk-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/chicago-riverwalk-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 43794,
+          "sha256": "e25223897eebe63356cd1d76932e2f43db0ad0c1772ad7cdc10fb92008c4c651"
+        },
+        {
+          "src": "/media/places/chicago-riverwalk-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 61848,
+          "sha256": "c071aefa045572a27c28e25e255c9ee141de9bd64e7b0d2a138f2f94ac8f7591"
+        },
+        {
+          "src": "/media/places/chicago-riverwalk-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 84523,
+          "sha256": "0b5dd291a16c0838acc1816acf7af104920c99072685b4ec1c4d2bc9c3a51b00"
+        },
+        {
+          "src": "/media/places/chicago-riverwalk-911.webp",
+          "format": "webp",
+          "width": 911,
+          "bytes": 121970,
+          "sha256": "63039e1b2856d4c5ce75863e9a4ead7fd59d00e4a63baa8ac979139232c9540b"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The Chicago Riverwalk at night: lit cafe terraces along the river, with bridges and towers beyond.",
+      "ledger": {
+        "id": "openverse-088a1b9a-2875-4fa3-819c-23a49ad8bc53",
+        "file": "public/assets/commons/openverse-088a1b9a-2875-4fa3-819c-23a49ad8bc53.jpg",
+        "sha256": "98d9761ad4f73f148513e337c2a717b2520ce700d3d14fda3250aa67a035d789"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.game-room",
+      "slug": "game-room",
+      "src": "/media/places/game-room-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/game-room-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 12335,
+          "sha256": "fb25ca1617ce9f3e16cde39a52d706093c6f7d0285c7f1e4c288484905782d55"
+        },
+        {
+          "src": "/media/places/game-room-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 12968,
+          "sha256": "dc22797cee6bb14d80a117d8fc306551e6f7cce3a80b0fe5c7b5f67fd7876f1b"
+        },
+        {
+          "src": "/media/places/game-room-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 24696,
+          "sha256": "f1b0bf9915efcc6609e3c9e27cadb74f036487cc54fe7b7f5620515b7bb62615"
+        },
+        {
+          "src": "/media/places/game-room-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 25646,
+          "sha256": "db22fa1c4354cca3473fb6914e67d091fecf6f6730d39c84729c602dd1660ba5"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "A long wooden shuffleboard table under globe lights in the Game Room at the Chicago Athletic Association.",
+      "ledger": {
+        "id": "openverse-a2b86634-1711-4c10-8c2f-d549fd09411a",
+        "file": "public/assets/commons/openverse-a2b86634-1711-4c10-8c2f-d549fd09411a.jpg",
+        "sha256": "cdde3f653b7aaf31cbcf6306a782a7ad595a09cad481f14724ced7026595e914"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: loustejskal.com, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/63311602@N08/26602900261",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.grant-park",
+      "slug": "grant-park",
+      "src": "/media/places/grant-park-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/grant-park-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 27170,
+          "sha256": "94a8be08107c7a5de4b864abb5a17741900c6c4a585918287733d228b9f440ca"
+        },
+        {
+          "src": "/media/places/grant-park-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 40684,
+          "sha256": "e2d96daddc1313e179716bc1144c37bc4f424fe93e3fd0eee75a7a86dcf80e61"
+        },
+        {
+          "src": "/media/places/grant-park-835.avif",
+          "format": "avif",
+          "width": 835,
+          "bytes": 47577,
+          "sha256": "bc84e7d209e77cf254f0d841430f76b3c5f2187d055d38d574f17f84793a1267"
+        },
+        {
+          "src": "/media/places/grant-park-835.webp",
+          "format": "webp",
+          "width": 835,
+          "bytes": 71982,
+          "sha256": "5ad922e9f25e1610c0c86f790e0db76c9c35263842955208360f90547b156d36"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "Buckingham Fountain in Grant Park spraying water, with the Chicago skyline behind it under a blue sky.",
+      "ledger": {
+        "id": "openverse-354c9721-3c07-4e18-af9b-ce28ea227752",
+        "file": "public/assets/commons/openverse-354c9721-3c07-4e18-af9b-ce28ea227752.jpg",
+        "sha256": "64d33b6ce1796a86ec0a67b51a67d57de31f01bc9c6bfc25c3bfed9abb7870d3"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.griffin-msi",
+      "slug": "griffin-msi",
+      "src": "/media/places/griffin-msi-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/griffin-msi-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 31632,
+          "sha256": "5c7b6168444ea940a5e88509b2a1e4d245886b1e0fc511624fb46fa314fd9ccc"
+        },
+        {
+          "src": "/media/places/griffin-msi-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 50044,
+          "sha256": "79493502827bfb84acffc681a943ed4809d50598f32aeb9bd98a4de1d6099311"
+        },
+        {
+          "src": "/media/places/griffin-msi-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 61879,
+          "sha256": "6f54cf9c188e22f4481f299c8be0ec66c3c1d63fc82751e8df9ec8f4c4548335"
+        },
+        {
+          "src": "/media/places/griffin-msi-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 97942,
+          "sha256": "6a2569245451e00f8b47ce15e56efdfe40003778abaada66a581ca726fa2fe76"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The model railroad at the Museum of Science and Industry: a train curving through a miniature city.",
+      "ledger": {
+        "id": "openverse-2882f558-a325-4650-b35a-c86b2fd50f3e",
+        "file": "public/assets/commons/openverse-2882f558-a325-4650-b35a-c86b2fd50f3e.jpg",
+        "sha256": "41f9a190925506f58fba5ff7b394bb5da995b459d1a23f58f11d4515ad58e614"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: roy.luck, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/21550937@N03/9432837488",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.lincoln-park-zoo",
+      "slug": "lincoln-park-zoo",
+      "src": "/media/places/lincoln-park-zoo-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/lincoln-park-zoo-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 34817,
+          "sha256": "13b6caccf7b679bb2cd1b90fc3ffdb76e1d5e130f0b68ed212457866a384ec97"
+        },
+        {
+          "src": "/media/places/lincoln-park-zoo-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 51378,
+          "sha256": "e74443bbd88471400b8d99e89f217cb510dff5c06566344f784d7b03d6de3fbb"
+        },
+        {
+          "src": "/media/places/lincoln-park-zoo-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 68615,
+          "sha256": "9003bd740a87ce1c47901fb496a9a31982ec4b0bb9b9587746b620e37bba7498"
+        },
+        {
+          "src": "/media/places/lincoln-park-zoo-911.webp",
+          "format": "webp",
+          "width": 911,
+          "bytes": 101594,
+          "sha256": "ca1f76dca6c1e5bbff94787499dcd639c4afd9f08582adf184d5973f94a09071"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "A lioness and two lion cubs standing on grass in their enclosure at Lincoln Park Zoo.",
+      "ledger": {
+        "id": "openverse-3ddc7fd2-8e96-4b70-8cb7-f0d2ac243f00",
+        "file": "public/assets/commons/openverse-3ddc7fd2-8e96-4b70-8cb7-f0d2ac243f00.jpg",
+        "sha256": "184f22e6ca7f88329579390ec2b568003fac0b0b2eda6b1f6f84dd09f8d96ce9"
+      },
+      "license": "CC0 1.0",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.maggie-daley-park",
+      "slug": "maggie-daley-park",
+      "src": "/media/places/maggie-daley-park-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/maggie-daley-park-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 40504,
+          "sha256": "2eee62fed7e5f39aceada25aecb23df254ef3e389d77e6223191f083d90d6601"
+        },
+        {
+          "src": "/media/places/maggie-daley-park-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 65890,
+          "sha256": "96eb0bf961c475ae67d721421fc0c3bd2a8ce5f9089339f6b5c09cd29704728c"
+        },
+        {
+          "src": "/media/places/maggie-daley-park-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 92385,
+          "sha256": "37f69ae26903f72911eb486fcccf43c5b56b657014dbe56eeec76ce82e178f94"
+        },
+        {
+          "src": "/media/places/maggie-daley-park-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 149478,
+          "sha256": "0f7d3b5febdb595bcda22bd35c009da22f46b5f0d9300d41931f2f39aec3ef57"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The faceted grey climbing wall at Maggie Daley Park, with downtown towers behind it.",
+      "ledger": {
+        "id": "openverse-8e9948bc-8100-407d-a2db-8cebced3e86a",
+        "file": "public/assets/commons/openverse-8e9948bc-8100-407d-a2db-8cebced3e86a.jpg",
+        "sha256": "c01d031864ded4b85800562ecccb4884dc68e771f02b5d308f287caa107fb8b0"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: davidwilson1949, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/32693718@N07/39158911392",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.millennium-park-walk",
+      "slug": "millennium-park-walk",
+      "src": "/media/places/millennium-park-walk-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/millennium-park-walk-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 33248,
+          "sha256": "a1333d55aa6d3890390e806e723be88f871f36dfb89ee47d9194583473c8519a"
+        },
+        {
+          "src": "/media/places/millennium-park-walk-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 52942,
+          "sha256": "972c2ce6a34ed360db027849b71be18ab14ef799e514f93f8c3b9d486b178e6b"
+        },
+        {
+          "src": "/media/places/millennium-park-walk-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 80968,
+          "sha256": "d3ec519ac359752c16107cccc6997bf4bbf4c62c22b6ce30f77048a79fc8c5cc"
+        },
+        {
+          "src": "/media/places/millennium-park-walk-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 126240,
+          "sha256": "e0e12edd8241278dce11754ddda8a6db2bbb956b65a3bd31be51b61b1b624a9d"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "Cloud Gate, the mirrored \"Bean\" sculpture in Millennium Park, reflecting the skyline and visitors.",
+      "ledger": {
+        "id": "openverse-a6a15924-e193-4c9c-98a0-2cabaa3a05ef",
+        "file": "public/assets/commons/openverse-a6a15924-e193-4c9c-98a0-2cabaa3a05ef.jpg",
+        "sha256": "722ad3873a7b7e66ebfff6e05dba6c058dffbfd5ca9c84b9c23fc94ff3dd6627"
+      },
+      "license": "Public domain",
+      "credit": null,
+      "creditUrl": null,
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.shedd-aquarium",
+      "slug": "shedd-aquarium",
+      "src": "/media/places/shedd-aquarium-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/shedd-aquarium-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 8062,
+          "sha256": "c2aac04bdb950f2d02ebba8c063807d7e10b79666b23cb04152d9ae057f362eb"
+        },
+        {
+          "src": "/media/places/shedd-aquarium-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 6468,
+          "sha256": "672b0e0109c14d0f9760864ba30648a2ed8f8b66844db8822933d357b52f9dde"
+        },
+        {
+          "src": "/media/places/shedd-aquarium-911.avif",
+          "format": "avif",
+          "width": 911,
+          "bytes": 14981,
+          "sha256": "bc01e042df9afec7e441b956b39eb1bbf69194e72ae9d513cf73bf772cad73fe"
+        },
+        {
+          "src": "/media/places/shedd-aquarium-911.webp",
+          "format": "webp",
+          "width": 911,
+          "bytes": 11596,
+          "sha256": "2a1236135ce69d982d0ec1c3e9e320832a5e2eecfd87411df98c2156f2557f20"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "A beluga whale swimming in blue-green water behind the glass at Shedd Aquarium.",
+      "ledger": {
+        "id": "openverse-8b0cb7bc-9f04-4824-b5c2-3468d9960766",
+        "file": "public/assets/commons/openverse-8b0cb7bc-9f04-4824-b5c2-3468d9960766.jpg",
+        "sha256": "86c03ae9a7996aaa3949e801feb1f5639561763be4e92e361b50f9c79942ce26"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: aquiamigo, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/77970107@N03/13489897833",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.starbucks-reserve-roastery",
+      "slug": "starbucks-reserve-roastery",
+      "src": "/media/places/starbucks-reserve-roastery-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/starbucks-reserve-roastery-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 39336,
+          "sha256": "a810ae8ef172576d050d23167900e8a858e527748a8d8a176f189dc937d9313b"
+        },
+        {
+          "src": "/media/places/starbucks-reserve-roastery-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 62430,
+          "sha256": "8b0f832ddff9fa4011b57ee0d2d248c56141e69e5dd1f476a6e24f3bd72f202e"
+        },
+        {
+          "src": "/media/places/starbucks-reserve-roastery-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 88777,
+          "sha256": "6d3aceb91bdf64d93e70659bbd157e7a9345d5b63e1ea2c8c5f13322eecf983e"
+        },
+        {
+          "src": "/media/places/starbucks-reserve-roastery-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 140846,
+          "sha256": "626a2516449427bf9c005abd5dd2fcfa0cf7c943b6962630b4694c32edf1c97f"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "The curved glass front of the Starbucks Reserve Roastery building on Michigan Avenue, behind a street tree.",
+      "ledger": {
+        "id": "openverse-f8b0a6d7-b229-4d88-9041-9955638ea9fa",
+        "file": "public/assets/commons/openverse-f8b0a6d7-b229-4d88-9041-9955638ea9fa.jpg",
+        "sha256": "841bfc7cc7465a083dbb7e1cee82406043cf3a659e947e56cdb865a349ee2823"
+      },
+      "license": "CC BY 2.0",
+      "credit": "Photo: olliemaster1, CC BY 2.0",
+      "creditUrl": "https://www.flickr.com/photos/188692387@N05/51411801845",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    },
+    {
+      "id": "place.starved-rock-state-park",
+      "slug": "starved-rock-state-park",
+      "src": "/media/places/starved-rock-state-park-640.webp",
+      "intrinsic": {
+        "width": 640,
+        "height": 480
+      },
+      "files": [
+        {
+          "src": "/media/places/starved-rock-state-park-640.avif",
+          "format": "avif",
+          "width": 640,
+          "bytes": 37127,
+          "sha256": "264aefe97a57162e5f9263e45a1842d5a8f58452270f13964e34a039361cadf1"
+        },
+        {
+          "src": "/media/places/starved-rock-state-park-640.webp",
+          "format": "webp",
+          "width": 640,
+          "bytes": 52092,
+          "sha256": "4242506b6279cda79cad210719f9c45adff39b2151896e53ba7c1b1e327efdaf"
+        },
+        {
+          "src": "/media/places/starved-rock-state-park-1024.avif",
+          "format": "avif",
+          "width": 1024,
+          "bytes": 94895,
+          "sha256": "b3f056bd67bd926cfc5baef3788906b617daa802d5426716249d34c4131c40e9"
+        },
+        {
+          "src": "/media/places/starved-rock-state-park-1024.webp",
+          "format": "webp",
+          "width": 1024,
+          "bytes": 132456,
+          "sha256": "ad2d96640f09e5f5e3832521ed5aae2b24beb51f3dda5505c3aef34bf8bd3eee"
+        }
+      ],
+      "sourceType": "licensed-photograph",
+      "alt": "French Canyon at Starved Rock State Park: sandstone walls and green trees around a narrow canyon.",
+      "ledger": {
+        "id": "french-canyon-starved-rock-panoramio",
+        "file": "public/assets/commons/french-canyon-starved-rock-panoramio.jpg",
+        "sha256": "476c3589aad593ab457c11a0ae4b1da2d3e8ce0cc1ffae62e623a6136b1c535b"
+      },
+      "license": "CC BY-SA 3.0",
+      "credit": "Photo: hakkun, CC BY-SA 3.0 (this crop is shared under the same licence)",
+      "creditUrl": "https://commons.wikimedia.org/wiki/File:French_Canyon_-_Starved_Rock_-_panoramio.jpg",
+      "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
+    }
+  ]
+}

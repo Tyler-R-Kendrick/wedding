@@ -4,6 +4,7 @@ import { listMyEvents } from '@/capabilities/rsvp';
 import { getMyTrip } from '@/capabilities/travel';
 import type { Principal } from '@/contracts/principal';
 import type { RecommendationCard } from '@/domain/content/views';
+import { placePhoto } from '@/domain/media/place-photos';
 import { VENUE } from '@/domain/travel/facts';
 import type { Day, Part, PlannerPlace, TripItemInput, WeddingEventInput } from '@/domain/trip-planner';
 import type { TripHotel } from '@/components/trip/openui';
@@ -37,6 +38,9 @@ export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
   const why = text(card.why?.text);
   const address = text(card.place?.address);
   const at = card.place?.coordinates;
+  // A licensed photograph of this place, if the ledger has one (keyed by the recommendation's slug).
+  // None is the honest default: no generic stand-in. The credit rides along for CC BY / BY-SA.
+  const photo = placePhoto(card.slug);
   return {
     id: card.slug,
     slug: card.slug,
@@ -50,6 +54,15 @@ export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
     ...(address ? { address } : {}),
     ...(at ? { lat: at.lat, lng: at.lng } : {}),
     href: card.href,
+    ...(photo
+      ? {
+          image: {
+            src: photo.src,
+            alt: photo.alt,
+            ...(photo.credit && photo.creditUrl ? { credit: { text: photo.credit, href: photo.creditUrl } } : {}),
+          },
+        }
+      : {}),
   };
 }
 

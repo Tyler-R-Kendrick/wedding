@@ -128,6 +128,25 @@ describe('trip OpenUI library', () => {
     expect(await screen.findByText('Parking at the hotel')).toBeTruthy();
   });
 
+  it('a CC BY photograph shows its credit under the picture, linked to its source in a new tab', async () => {
+    const credited = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps', credit: { text: 'Photo: someone, CC BY 2.0', href: 'https://example.org/photo' } } };
+    const plain = { ...BY_ID.get('park-walk')!, image: { src: '/media/places/y.webp', alt: 'The park path' } };
+    const places = new Map(BY_ID);
+    places.set(credited.id, credited);
+    places.set(plain.id, plain);
+    render(
+      <TripPlannerProvider places={places} saved={[]} hotel={null} onAction={() => {}}>
+        <TripRenderer response={'root = Col([a, b])\na = Place("art-museum")\nb = Place("park-walk")'} />
+      </TripPlannerProvider>,
+    );
+    const credit = await screen.findByRole('link', { name: /Photo: someone, CC BY 2\.0/ });
+    expect(credit.getAttribute('href')).toBe('https://example.org/photo');
+    expect(credit.getAttribute('target')).toBe('_blank');
+    expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
+    // A public-domain photo carries no credit line.
+    expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();
+  });
+
   it('tripActionOf ignores malformed events', () => {
     expect(tripActionOf({ type: 'AddToWeekend', params: {}, humanFriendlyMessage: '' })).toBeNull();
     expect(tripActionOf({ type: 'SetWeekend', params: { items: [{ id: 'x', day: 'mon', part: 'noon' }] }, humanFriendlyMessage: '' })).toBeNull();
