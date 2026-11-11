@@ -173,6 +173,26 @@ describe('the on-device concierge, through the AI SDK', () => {
       expect(opened.destroy).toHaveBeenCalledOnce();
     });
 
+    it('resolves null, and leaves nothing unhandled, when the model fails before writing a word', async () => {
+      // Seen in a real browser: the model reports itself ready, then the first prompt fails. The SDK
+      // rejects its result's other promises with "No output generated"; unheard, that is an
+      // unhandled rejection in the guest's console on every question.
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => unhandled.push(reason);
+      process.on('unhandledRejection', onUnhandled);
+      try {
+        const opened = streamingSession([], { fail: true });
+        stubLanguageModel({ availability: async () => 'available', create: async () => opened });
+        await expect(streamOnDevice('x', { onText: () => {} })).resolves.toBeNull();
+        // Unhandled rejections are reported after the microtask queue drains.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(unhandled).toEqual([]);
+        expect(opened.destroy).toHaveBeenCalledOnce();
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+    });
+
     it('resolves null when the caller aborts', async () => {
       stubLanguageModel({ availability: async () => 'available', create: async () => streamingSession(['TITLE'], { hang: true }) });
       await expect(streamOnDevice('x', { onText: () => {}, signal: AbortSignal.timeout(20) })).resolves.toBeNull();

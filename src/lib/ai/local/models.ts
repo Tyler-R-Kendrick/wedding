@@ -1,7 +1,12 @@
 /**
  * The model work itself, kept free of any Worker plumbing so it can be run (and was checked) in
- * Node against the real models. `local.worker.ts` is the only browser caller; nothing the page
- * bundle imports may import this file, because it loads `@huggingface/transformers`.
+ * Node against the real models. `local.worker.ts` is the only browser caller.
+ *
+ * The inference library is never imported by name here. In the browser the worker loads the
+ * prebuilt copy `scripts/copy-ort-wasm.mjs` puts in `public/ort/` (see `useLibrary`), so the bundler
+ * never compiles it: the library and the ONNX runtime are several megabytes of JavaScript, and
+ * compiling them into every page's graph is what pushed the dev test server past the heap level at
+ * which Next restarts it mid-run. Node callers pass the package import instead.
  *
  * Relative imports only: this file is also loaded outside the app's path aliases.
  */
@@ -10,13 +15,24 @@ import { MODELS, QUERY_PREFIX, type WorkerPart } from './spec';
 
 type Transformers = typeof import('@huggingface/transformers');
 
+let load: (() => Promise<Transformers>) | null = null;
 let library: Promise<Transformers> | null = null;
+
+/** Say where the library comes from. Called once, before anything else here is used. */
+export function useLibrary(loader: () => Promise<Transformers>): void {
+  load = loader;
+  library = null;
+}
 
 /** The library, loaded once, on first need. */
 export function transformers(): Promise<Transformers> {
-  library ??= import('@huggingface/transformers');
+  if (!load) return Promise.reject(new Error('useLibrary() was not called'));
+  library ??= load();
   return library;
 }
+
+/** Where the worker finds the prebuilt library, relative to the runtime's own folder. */
+export const LIBRARY_FILE = 'transformers.web.min.js';
 
 type WasmPaths = string | { mjs?: string | URL; wasm?: string | URL } | undefined;
 
