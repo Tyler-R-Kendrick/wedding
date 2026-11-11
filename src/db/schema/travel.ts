@@ -80,6 +80,8 @@ export interface ItineraryDetails {
   placeId?: string;
   day?: 'fri' | 'sat' | 'sun';
   part?: 'morning' | 'afternoon' | 'evening';
+  /** A day of the guest's stay before or after the weekend ("YYYY-MM-DD"); `day` is then the nearest. */
+  date?: string;
 }
 
 /** Opt-in, editable, deletable travel preferences. Never inferred from IP. One row per guest. */

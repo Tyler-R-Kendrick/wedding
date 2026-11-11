@@ -32,14 +32,14 @@ async function openTab(page: Page, name: RegExp | string) {
 
 /** Takes out whatever this guest saved from the planner, so the run leaves the fixture as it found it. */
 async function clearWeekend(page: Page) {
-  await openTab(page, /My weekend/);
+  await openTab(page, /My plans/);
   const removes = plan(page).getByRole('button', { name: /^Remove / });
   while ((await removes.count()) > 0) {
     const before = await removes.count();
     await removes.first().click();
     await expect(removes).toHaveCount(before - 1);
   }
-  await openTab(page, 'Ask us');
+  await openTab(page, 'Things to do');
 }
 
 test('the room block comes first, under the page title Your Trip, and the planner is last', async ({ browser }) => {
@@ -51,8 +51,8 @@ test('the room block comes first, under the page title Your Trip, and the planne
   const ids = await page.locator('main section[id]').evaluateAll((els) => els.map((e) => e.id));
   expect(ids[0]).toBe('stay');
   expect(ids.at(-1)).toBe('plan');
-  await expect(plan(page).getByRole('heading', { level: 2 })).toHaveText('What to do');
-  await expect(page.getByRole('list', { name: 'On this page' }).getByRole('link', { name: 'What to do' })).toHaveAttribute('href', '#plan');
+  await expect(plan(page).getByRole('heading', { level: 2 })).toHaveText('Itinerary');
+  await expect(page.getByRole('list', { name: 'On this page' }).getByRole('link', { name: 'Itinerary' })).toHaveAttribute('href', '#plan');
   // The nav names the page by its new name, and the old list is not offered anywhere.
   await expect(page.getByRole('navigation', { name: 'Site' }).getByRole('link', { name: 'Your Trip' }).first()).toHaveAttribute('href', '/guests/travel');
   expect(await page.locator('a[href="/guests/things-to-do"]').count()).toBe(0);
@@ -81,10 +81,10 @@ test('a starter answers with places from our list, and a saved place is still th
   await first.getByRole('button', { name: `Add ${name} to my weekend` }).click();
   await expect(first.getByRole('button', { name: `Remove ${name} from my weekend` })).toHaveAttribute('aria-pressed', 'true');
   expect((await saved).ok()).toBe(true);
-  await expect(plan(page).getByRole('tab', { name: /My weekend/ })).toContainText('1');
+  await expect(plan(page).getByRole('tab', { name: /My plans/ })).toContainText('1');
 
   await page.reload();
-  await openTab(page, /My weekend/);
+  await openTab(page, /My plans/);
   await expect(plan(page).getByRole('button', { name: `Remove ${name}` })).toBeVisible();
   // The same place is the guest's trip item, listed on their flights-and-hotel page as a plan.
   await page.goto('/trip');
@@ -98,7 +98,7 @@ test('the wedding day comes first: the guest\'s own events in order, their times
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();
   await page.goto('/guests/travel#plan');
-  await openTab(page, 'Ask us');
+  await openTab(page, 'Things to do');
   const starters = plan(page).getByRole('group', { name: 'Ideas to start with' }).getByRole('button');
   await expect(starters.first()).toContainText('The wedding day');
   await starters.first().click();
@@ -110,7 +110,7 @@ test('the wedding day comes first: the guest\'s own events in order, their times
   await expect(plan(page).getByRole('region', { name: 'Our room block' }).getByText(/^Our room block: check-in /)).toBeVisible();
   // The seed's hint ("what happens, and what to expect") is a note to the couple, not a fact.
   await expect(plan(page)).not.toContainText(/TODO|what to expect/);
-  await openTab(page, /My weekend/);
+  await openTab(page, /My plans/);
   await expect(plan(page).getByRole('list', { name: 'The wedding' }).getByRole('listitem')).toHaveCount(2);
   await expect(plan(page).getByRole('region', { name: /^Friday/ })).toContainText('Our room block: check-in');
   await expect(plan(page).getByRole('region', { name: /^Sunday/ })).toContainText('Our room block: check-out');
@@ -136,7 +136,7 @@ test('at a phone width the page does not scroll sideways, and axe finds nothing 
   const ctx = await contextAs(browser, 'C1', { viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   await page.goto('/guests/travel#plan');
-  await openTab(page, 'Ask us');
+  await openTab(page, 'Things to do');
   await plan(page).getByLabel('Ask us about the weekend').fill('Where should we get dinner?');
   await plan(page).getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(plan(page).locator('article.trip-place').first()).toBeVisible();
@@ -154,7 +154,7 @@ test('at a phone width the page does not scroll sideways, and axe finds nothing 
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(blocking, blocking.map((v) => `${v.id}: ${v.help}\n  ${v.nodes.map((n) => n.target.join(' ')).join('\n  ')}`).join('\n')).toEqual([]);
-  await openTab(page, /My weekend/);
+  await openTab(page, /My plans/);
   expect(await overflow()).toBeLessThanOrEqual(0);
   await ctx.close();
 });

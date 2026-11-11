@@ -50,8 +50,12 @@ export type Day = (typeof DAYS)[number];
 export const PARTS = ['morning', 'afternoon', 'evening'] as const;
 export type Part = (typeof PARTS)[number];
 
-/** A place the guest saved to "My weekend", and when. */
-export type SavedItem = { id: string; day: Day; part: Part; name?: string };
+/**
+ * A place the guest saved to their plans, and when. `day` is its day of the wedding weekend; a place
+ * on a day of the guest's stay outside Friday to Sunday carries that day's own `date` ("YYYY-MM-DD")
+ * too, and `day` is then the weekend day nearest it, never one the weekend planner plans around.
+ */
+export type SavedItem = { id: string; day: Day; part: Part; name?: string; date?: string };
 
 export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar' | 'schedule';
 

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { dateLabel, eventTime, stayFacts, weekendDate, type WeddingEventInput } from '@/domain/trip-planner';
+import { addDays, dateLabel, eventTime, stayFacts, weekendDate, type WeddingEventInput } from '@/domain/trip-planner';
 import { ITINERARIES, PLACES } from '../unit/trip-planner/fixtures';
 
 /**
@@ -44,6 +44,8 @@ function setup(over: Partial<Props> = {}) {
   const remove = vi.fn(async (_input: { placeId: string }) => ({ ok: true as const }));
   const props: Props = { places: PLACES, saved: [], bookings: [], events: EVENTS, hotel: null, actions: { save, remove }, ...over };
   const utils = render(<TripPlanner {...props} />);
+  // The planner opens on My plans; most of these tests are about Things to do, so they start there.
+  fireEvent.click(screen.getByRole('tab', { name: /Things to do/ }));
   return { ...utils, save, remove };
 }
 
@@ -129,15 +131,15 @@ describe('the Your Trip planner', () => {
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
     await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sat', part: 'morning' });
-    expect(tab(/My weekend/).textContent).toContain('1');
-    expect(document.body.textContent).toContain('Bean House Coffee is in your weekend, Saturday morning.');
+    expect(tab(/My plans/).textContent).toContain('1');
+    expect(document.body.textContent).toContain('Bean House Coffee is in your plans, Saturday morning.');
     expect(within(card).getByRole('button', { name: 'Remove Bean House Coffee from my weekend' }).getAttribute('aria-pressed')).toBe('true');
     // The note sits in the ask box rather than over it, and closes with its own button.
-    const note = screen.getByText(/is in your weekend/).closest('.trip-toast') as HTMLElement;
+    const note = screen.getByText(/is in your plans/).closest('.trip-toast') as HTMLElement;
     expect(note.closest('form')).toBeTruthy();
-    expect(within(note).getByRole('button', { name: /See my weekend/ })).toBeTruthy();
+    expect(within(note).getByRole('button', { name: /See my plans/ })).toBeTruthy();
     await act(async () => fireEvent.click(within(note).getByRole('button', { name: 'Close' })));
-    expect(document.body.textContent).not.toContain('is in your weekend');
+    expect(document.body.textContent).not.toContain('is in your plans');
   });
 
   it('puts the board back and says so in plain words when a save fails', async () => {
@@ -147,7 +149,7 @@ describe('the Your Trip planner', () => {
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
     await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     await waitFor(() => expect(document.body.textContent).toContain('We could not save that just now.'));
-    expect(tab(/My weekend/).textContent).not.toMatch(/\d/);
+    expect(tab(/My plans/).textContent).not.toMatch(/\d/);
     expect(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })).toBeTruthy();
   });
 
@@ -156,20 +158,20 @@ describe('the Your Trip planner', () => {
     await ask('Somewhere for coffee');
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
     await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
-    expect(tab(/My weekend/).textContent).toContain('1');
-    await act(async () => fireEvent.click(tab(/My weekend/)));
+    expect(tab(/My plans/).textContent).toContain('1');
+    await act(async () => fireEvent.click(tab(/My plans/)));
     expect(screen.getByText(/kept on this page only/)).toBeTruthy();
   });
 
   it('the board moves a place by picking it up and choosing a time, says how long it takes, and removes it', async () => {
     const { save, remove } = setup({ saved: [{ id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) }] });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
+    await act(async () => fireEvent.click(tab(/My plans/)));
     const sunday = screen.getByRole('region', { name: /^Sunday/ });
     expect(within(sunday).queryByRole('link', { name: 'Bean House Coffee' })).toBeNull();
     // No list to choose from: the card's handle picks it up (dragging it does the same).
     expect(screen.queryByRole('combobox')).toBeNull();
     const card = screen.getByRole('link', { name: 'Bean House Coffee' }).closest('article')!;
-    expect(card.textContent).toMatch(/About (\d+ minutes|an hour|[\d½]+ hours)/);
+    expect(card.textContent).toMatch(/Around \d+:\d\d.*(AM|PM), about (\d+ minutes|an hour|[\d½]+ hours)/);
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Bean House Coffee' })));
     expect(screen.getByRole('button', { name: 'Keep Bean House Coffee where it is' }).getAttribute('aria-pressed')).toBe('true');
     // Saturday afternoon and evening belong to the wedding, and are never offered.
@@ -180,7 +182,7 @@ describe('the Your Trip planner', () => {
     const wedding = screen.getByRole('list', { name: 'The wedding' });
     expect(within(wedding).getByText('The Ceremony')).toBeTruthy();
     expect(within(wedding).getByText('Time to be announced')).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move here: Bean House Coffee to Sunday afternoon' })));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Move here: Bean House Coffee to Sunday, .+ afternoon$/ })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon' });
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('link', { name: 'Bean House Coffee' }).getAttribute('href')).toBe('/guests/things-to-do/bean-house');
     expect(screen.queryByRole('button', { name: /^Move here/ })).toBeNull();
@@ -191,7 +193,7 @@ describe('the Your Trip planner', () => {
 
   it('a picked-up place is put back with Escape', async () => {
     setup({ saved: [{ id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) }] });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
+    await act(async () => fireEvent.click(tab(/My plans/)));
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Bean House Coffee' })));
     expect(screen.getAllByRole('button', { name: /^Move here/ }).length).toBeGreaterThan(0);
     await act(async () => fireEvent.keyDown(window, { key: 'Escape' }));
@@ -205,14 +207,14 @@ describe('the Your Trip planner', () => {
       { id: 'art-museum', day: 'fri' as const, part: 'afternoon' as const, name: 'Art Museum', itemId: ITEM(2) },
     ];
     const first = setup({ saved: two });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
-    expect((screen.getByRole('button', { name: 'Confirm my weekend' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText('Save 1 more place to see it as a calendar.')).toBeTruthy();
+    await act(async () => fireEvent.click(tab(/My plans/)));
+    expect((screen.getByRole('button', { name: 'Confirm my plans' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('Save 1 more place to see your plans as a calendar.')).toBeTruthy();
     first.unmount();
 
     setup({ saved: [...two, { id: 'aquarium', day: 'sun', part: 'morning', name: 'The Aquarium', itemId: ITEM(3) }] });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Confirm my weekend' })));
+    await act(async () => fireEvent.click(tab(/My plans/)));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Confirm my plans' })));
     const cal = await screen.findByRole('region', { name: 'Your weekend' });
     expect(within(cal).getByText('The Ceremony')).toBeTruthy();
     expect(within(cal).getByText('Time to be announced')).toBeTruthy();
@@ -236,8 +238,8 @@ describe('the Your Trip planner', () => {
       ],
       bookings: [{ id: 'f-1', kind: 'flight', status: 'planned', title: 'Flight home', startAt: `${weekendDate('sun')}T22:00:00.000Z`, endAt: null, provider: null }],
     });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Confirm my weekend' })));
+    await act(async () => fireEvent.click(tab(/My plans/)));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Confirm my plans' })));
     await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Add to my calendar' })));
     expect(created).toHaveBeenCalledTimes(1);
     expect(clicked).toHaveBeenCalledTimes(1);
@@ -255,10 +257,45 @@ describe('the Your Trip planner', () => {
     { id: 'ev-r', name: 'Reception', dateIso: sat, startsAt: `${sat}T23:30:00.000Z`, endsAt: null, room: 'Ballroom' },
   ];
 
+  it('opens on My plans: every day of the stay, flights and hotel at their times, a day more on request, and places saved to any day', async () => {
+    const thu = addDays(weekendDate('fri'), -1);
+    const wed = addDays(thu, -1);
+    // Local wedding-zone noon on Thursday, written as the instant it is (any offset works the same).
+    const landing = new Date(`${thu}T18:30:00.000Z`).toISOString();
+    const save = vi.fn(async (_input: { placeId: string; day: string; part: string; date?: string }) => ({ ok: true as const, itemId: ITEM(1) }));
+    render(
+      <TripPlanner
+        places={PLACES}
+        saved={[{ id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) }]}
+        bookings={[{ id: 'f-1', kind: 'flight', status: 'planned', title: 'Flight in', startAt: new Date(`${thu}T15:00:00.000Z`).toISOString(), endAt: landing, provider: null }]}
+        events={EVENTS}
+        hotel={null}
+        actions={{ save, remove: vi.fn(async () => ({ ok: true as const })) }}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: /My plans/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: /Things to do/ }).getAttribute('aria-selected')).toBe('false');
+    // The flight lands on Thursday, so the plans start then, with its times.
+    const days = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(days[0]).toBe(dateLabel(thu));
+    expect(days).toContain(dateLabel(weekendDate('sun')));
+    const thursday = screen.getByRole('region', { name: dateLabel(thu) });
+    expect(thursday.textContent).toMatch(/Flight in: departs \d+:\d\d (AM|PM)/);
+    expect(thursday.textContent).toMatch(/Flight in: lands \d+:\d\d (AM|PM)/);
+    // A day more before the stay, when the guest asks for it.
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Add ${dateLabel(wed)}`) })));
+    expect(screen.getAllByRole('heading', { level: 3 })[0]!.textContent).toBe(dateLabel(wed));
+    // A saved place moves to Thursday, and is saved with Thursday's date.
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move Bean House Coffee' })));
+    await act(async () => fireEvent.click(within(thursday).getByRole('button', { name: /^Move here: Bean House Coffee to .+ afternoon$/ })));
+    expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'fri', part: 'afternoon', date: thu });
+    expect(within(screen.getByRole('region', { name: dateLabel(thu) })).getByRole('link', { name: 'Bean House Coffee' })).toBeTruthy();
+  });
+
   it('the board lists the wedding\'s events in their slot, and the room block\'s check-in and check-out on Friday and Sunday', async () => {
     const stay = stayFacts();
     setup({ events: SET, stay });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
+    await act(async () => fireEvent.click(tab(/My plans/)));
     const wedding = screen.getByRole('list', { name: 'The wedding' });
     const rows = within(wedding).getAllByRole('listitem').map((li) => li.textContent);
     expect(rows).toEqual([
@@ -319,8 +356,8 @@ describe('the Your Trip planner', () => {
     const stay = stayFacts();
     const exportFile = async (bookings: Props['bookings']) => {
       const u = setup({ saved, events: SET, stay, bookings });
-      await act(async () => fireEvent.click(tab(/My weekend/)));
-      await act(async () => fireEvent.click(screen.getByRole('button', { name: /Confirm my weekend|Show my calendar/ })));
+      await act(async () => fireEvent.click(tab(/My plans/)));
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: /Confirm my plans|Show my calendar/ })));
       await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Add to my calendar' })));
       await waitFor(() => expect(files.length).toBeGreaterThan(0));
       u.unmount();
@@ -362,7 +399,7 @@ describe('the Your Trip planner', () => {
     await ask('Plan my whole weekend');
     await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Use this plan' })));
     expect(remove).not.toHaveBeenCalled();
-    expect(tab(/My weekend/).textContent).toContain(String(saved.length));
+    expect(tab(/My plans/).textContent).toContain(String(saved.length));
   });
 
   it('a heart and an un-heart before the save returns end with the place gone on the server too', async () => {
@@ -378,7 +415,7 @@ describe('the Your Trip planner', () => {
     await act(async () => finish({ ok: true, itemId: ITEM(1) }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith({ placeId: 'bean-house' }));
     expect(save).toHaveBeenCalledTimes(1);
-    expect(tab(/My weekend/).textContent).not.toMatch(/\d/);
+    expect(tab(/My plans/).textContent).not.toMatch(/\d/);
   });
 
   it('a failed save puts back only that place, not a place saved after it', async () => {
@@ -390,10 +427,10 @@ describe('the Your Trip planner', () => {
     const corner = screen.getByRole('heading', { level: 4, name: 'Corner Roastery' }).closest('article')!;
     await act(async () => fireEvent.click(within(bean).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     await act(async () => fireEvent.click(within(corner).getByRole('button', { name: 'Add Corner Roastery to my weekend' })));
-    expect(tab(/My weekend/).textContent).toContain('2');
+    expect(tab(/My plans/).textContent).toContain('2');
     await act(async () => finish({ ok: false, message: 'We could not save that just now. Please try again in a moment.' }));
     await waitFor(() => expect(document.body.textContent).toContain('We could not save that just now.'));
-    expect(tab(/My weekend/).textContent).toContain('1');
+    expect(tab(/My plans/).textContent).toContain('1');
     expect(within(corner).getByRole('button', { name: 'Remove Corner Roastery from my weekend' })).toBeTruthy();
     expect(within(bean).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })).toBeTruthy();
   });
@@ -406,11 +443,11 @@ describe('the Your Trip planner', () => {
         { id: 'aquarium', day: 'fri', part: 'evening', name: 'The Aquarium', itemId: ITEM(3) },
       ],
     });
-    await act(async () => fireEvent.click(tab(/My weekend/)));
+    await act(async () => fireEvent.click(tab(/My plans/)));
     const grip = screen.getByRole('button', { name: 'Move Bean House Coffee' });
     grip.focus();
     await act(async () => fireEvent.click(grip));
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Move here: Bean House Coffee to Sunday afternoon' })));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Move here: Bean House Coffee to Sunday, .+ afternoon$/ })));
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('button', { name: 'Move Bean House Coffee' })).toBe(document.activeElement);
 
     const first = screen.getByRole('button', { name: 'Remove Art Museum' });
@@ -427,11 +464,11 @@ describe('the Your Trip planner', () => {
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
-    expect(screen.getByRole('button', { name: 'See my weekend' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'See my plans' })).toBeTruthy();
     await act(async () => vi.advanceTimersByTime(60_000));
-    expect(screen.getByRole('button', { name: 'See my weekend' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'See my plans' })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Close/ })));
-    expect(screen.queryByRole('button', { name: 'See my weekend' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'See my plans' })).toBeNull();
 
     save.mockResolvedValueOnce({ ok: false, message: 'We could not save that just now. Please try again in a moment.' } as never);
     const other = screen.getByRole('heading', { level: 4, name: 'Corner Roastery' }).closest('article')!;

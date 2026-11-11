@@ -333,6 +333,8 @@ export const itineraryDetailsInput = z
     placeId: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80).optional(),
     day: z.enum(['fri', 'sat', 'sun']).optional(),
     part: z.enum(['morning', 'afternoon', 'evening']).optional(),
+    // A day of the guest's stay before or after the weekend ("YYYY-MM-DD"); `day` is then the nearest.
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   })
   .strict();
 

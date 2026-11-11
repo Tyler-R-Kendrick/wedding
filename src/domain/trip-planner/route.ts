@@ -192,7 +192,7 @@ export function planRoute(args: { stops: { place: PlannerPlace; minutes?: number
   const legs = args.stops.slice(0, -1).map((s, i) => legOf(at(s.place), at(args.stops[i + 1]!.place)));
   // A day whose stops each have a part of the day (a weekend) starts at the first stop's part, and a
   // stop never starts before its own part does: an evening place waits for the evening.
-  const ownParts = args.stops.every((st) => !!st.part);
+  const ownParts = args.stops.length > 0 && args.stops.every((st) => !!st.part);
   const dayPart = args.part ?? (ownParts ? args.stops[0]!.part! : null);
   const startAt = dayPart ? PART_START[dayPart] : null;
   let clock = startAt === null ? 0 : startAt + mid(fromHotel);

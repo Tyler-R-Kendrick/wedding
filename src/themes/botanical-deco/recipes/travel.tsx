@@ -50,7 +50,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
             { label: "Where to stay", href: "#stay" },
             { label: "Flights", href: "#flights" },
             { label: "Getting around", href: "#getting-around" },
-            ...(slots.planner ? [{ label: "What to do", href: "#plan" }] : []),
+            ...(slots.planner ? [{ label: "Itinerary", href: "#plan" }] : []),
           ]}
         />
       </PageHead>
@@ -220,12 +220,12 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
 
       {slots.planner ? (
         <Section id="plan" labelledBy="plan-title" layout="split">
-          <SectionHeading level={2} id="plan-title" title="What to do" />
+          <SectionHeading level={2} id="plan-title" title="Itinerary" />
           <div className="bd-travel__plan">
             <Prose>
               <p>
-                Tell us what you are in the mood for and we will suggest a few of our own favorite places. Save the ones you like to your weekend.
-                Your flights and hotel, kept on <Link href={tripHref}>Your flights and hotel</Link>, join it on your calendar.
+                Your flights, your hotel and the wedding, day by day, with the places you save from Things to do. Add or change a flight or
+                a hotel stay on <Link href={tripHref}>Your flights and hotel</Link>.
               </p>
             </Prose>
             {slots.planner}
