@@ -1556,10 +1556,19 @@
 }
 
 /* ---------- the board ---------- */
+
+/*
+ * My plans is one agenda: a day is a row, and every day has the same shape. Its date (and what has no
+ * time, like the room block's check-in) heads it; then morning, afternoon and evening, each a row with
+ * its name in a column of its own and, beside it, what happens then in time order. The board sizes
+ * itself to the width it is given (a container), not to the window, so it holds in the page's
+ * narrow column and full width alike.
+ */
 .trip-board {
   display: grid;
   gap: var(--spacing-lg);
   min-inline-size: 0;
+  container: trip-board / inline-size;
 }
 
 .trip-board__bar {
@@ -1567,26 +1576,65 @@
   gap: var(--spacing-md);
 }
 
+/* The calendar button and, with nothing saved yet, the way to start: side by side, the note under both. */
 .trip-board__actions {
-  display: grid;
-  justify-items: start;
-  gap: var(--spacing-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.trip-board__hint {
+  flex-basis: 100%;
+}
+
+/* Until there are enough places it cannot be used yet, and looks it: an outline, not a faded fill
+   (a faded gold button reads as broken, or as busy). */
+.trip-board__actions .bd-btn[disabled] {
+  border: 1px dashed var(--color-outline);
+  background: none;
+  color: var(--color-on-surface-muted);
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .trip-days {
   display: grid;
-  gap: var(--spacing-lg);
+  min-inline-size: 0;
+  border-block-end: 1px solid var(--color-outline);
+}
+
+.trip-day {
+  display: grid;
+  gap: var(--spacing-sm) var(--spacing-lg);
+  align-items: start;
+  min-inline-size: 0;
+  padding-block: var(--spacing-md) var(--spacing-lg);
+  border-block-start: 1px solid var(--color-outline);
+}
+
+.trip-day__head {
+  display: grid;
+  gap: var(--spacing-xs);
   min-inline-size: 0;
 }
 
-/* Three days side by side where there is room; a longer stay wraps onto more rows of three. */
-@media (width >= 60rem) {
-  .trip-days {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+/* "Thursday, July 15" on one line where the day is a stack; the weekday over the date in a column. */
+.trip-day__date {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-line);
+  color: var(--color-primary);
 }
 
-/* A day's fixed lines (flights, hotel times, the wedding's events), as a plain list. */
+.trip-day__date:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* A fact about the day with no time of its own: the room block's check-in or check-out. */
 .trip-day__facts {
   display: grid;
   gap: var(--spacing-xs);
@@ -1595,49 +1643,69 @@
   list-style: none;
 }
 
-/* "Add Thursday, July 15": a day more before or after the stay, for guests who are around longer. */
-.trip-days__add {
-  display: inline-flex;
-  align-items: center;
+.trip-day__fact {
+  display: flex;
+  align-items: flex-start;
   gap: var(--spacing-xs);
-  justify-self: start;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
 }
 
-.trip-day {
+.trip-day__fact .trip-icon {
+  block-size: 1lh;
+  color: var(--color-gold-deep);
+}
+
+/* The parts of the day reach a little past the day's edges, so what is in them lines up with the date
+   while the edge a part draws when a place is held still has room around it. */
+.trip-day__parts {
   display: grid;
-  align-content: start;
+  gap: var(--spacing-xs);
+  min-inline-size: 0;
+  margin-inline: calc(var(--spacing-sm) * -1);
+}
+
+/*
+ * A part of the day, and where a place is dropped. At rest it is a quiet row; while a place is held
+ * or picked up, every part it could go to draws its edge.
+ */
+.trip-slot {
+  display: grid;
+  gap: var(--spacing-xs) var(--spacing-md);
+  align-items: start;
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+
+.trip-slot__body {
+  display: grid;
   gap: var(--spacing-sm);
   min-inline-size: 0;
 }
 
-.trip-slot {
-  display: grid;
-  gap: var(--spacing-sm);
-  min-block-size: 5rem;
-  padding: var(--spacing-sm);
-  border: 1px dashed var(--color-outline);
-  border-radius: var(--rounded-sm);
-  background: var(--color-surface);
-  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
-}
-
 .trip-slot.is-over {
-  border-style: solid;
   border-color: var(--color-gold-deep);
   background: var(--color-neutral-variant);
 }
 
-.trip-slot.is-wedding {
-  border-style: solid;
-  border-color: var(--color-moss);
-  background: var(--color-moss);
-  color: var(--color-on-moss);
+/* While a place is picked up, every other part of the day offers itself. */
+.trip-slot.is-choosing {
+  border-style: dashed;
+  border-color: var(--color-gold-deep);
+  background: var(--color-surface);
 }
 
 /* Morning, afternoon, evening: words a guest reads to find their way around the day, so the
    control-caps step (17px), not the label-caps ornament (PRODUCT.md's floor; tests/e2e/typography). */
 .trip-slot__label {
   margin: 0;
+  min-block-size: 44px;
   font-family: var(--font-text);
   font-size: var(--type-control-caps-size);
   font-weight: var(--type-control-caps-weight);
@@ -1647,18 +1715,50 @@
   color: var(--color-on-surface-muted);
 }
 
-.trip-slot.is-wedding .trip-slot__label {
-  color: inherit;
+.trip-slot__empty {
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  font-style: italic;
+  color: var(--color-on-surface-muted);
 }
 
-.trip-slot__wedding {
+/* A part of the day with nothing in it says so in its label's own line, so it takes one row, not two. */
+.trip-slot.is-empty:not(.is-choosing) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.trip-slot.is-empty:not(.is-choosing) .trip-slot__empty {
+  justify-content: end;
+}
+
+/* The wedding holds Saturday's afternoon and evening: its own panel beside the label, in moss. */
+.trip-wedding {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--rounded-sm);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.trip-wedding__title {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--type-title-size);
   line-height: var(--type-title-line);
 }
 
-/* The wedding's own events in its slot on the board: name, then time, room and dress code. */
+.trip-wedding__note {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+/* The wedding's own events: name, then time, room and dress code. */
 .trip-slot__events {
   display: grid;
   gap: var(--spacing-sm);
@@ -1669,52 +1769,60 @@
 
 .trip-slot__event {
   display: grid;
+  gap: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.trip-slot__wedding {
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  font-weight: 600;
+  line-height: var(--type-body-md-line);
+}
+
+/* A booked time in the day (a flight, a hotel's check-in): icon, the time in a column, what happens. */
+.trip-fixed {
+  display: grid;
+  grid-template-columns: auto 5.25rem minmax(0, 1fr);
+  align-items: baseline;
   gap: var(--spacing-xs);
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-}
-
-.trip-slot__event .trip-slot__wedding {
-  font-size: var(--type-title-size);
-}
-
-/* A fact about the day the board cannot move: the room block's check-in or check-out. */
-.trip-day__fact {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
   margin: 0;
+  padding-inline: var(--spacing-sm);
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
-  color: var(--color-on-surface-muted);
+  color: var(--color-on-surface);
 }
 
-.trip-day__fact .trip-icon {
-  flex: none;
-  block-size: 1lh;
-  color: var(--color-gold-deep);
+/* On the line's baseline with its words, so the line's baseline is theirs (and lines up with the
+   part of the day's name beside it). */
+.trip-fixed > .trip-icon {
+  translate: 0 0.125em;
 }
 
-.trip-slot__empty {
-  margin: 0;
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-  color: var(--color-on-surface-muted);
+.trip-fixed__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
+.trip-fixed__text {
+  grid-column: 3;
+}
+
+/* A saved place: its name and its two tools on one line, how long and how to get there under both. */
 .trip-saved {
   position: relative;
   display: grid;
   grid-template-areas:
-    "grip name remove"
-    "grip facts facts";
-  grid-template-columns: auto minmax(0, 1fr) auto;
+    "name tools"
+    "facts facts";
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: var(--spacing-xs) var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
   border: 1px solid var(--color-gold);
   border-radius: var(--rounded-sm);
   background: var(--color-neutral);
@@ -1730,24 +1838,46 @@
 
 /* Picked up by a tap: its own border says so until a time is chosen. */
 .trip-saved.is-picked {
-  border: 2px solid var(--color-gold-deep);
+  border-color: var(--color-gold-deep);
   background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-gold-deep);
 }
 
-/* Six dots at the card's edge, a 44px handle: drag it, or tap it and then choose a time. */
+.trip-saved__name {
+  grid-area: name;
+  align-self: center;
+  margin: 0;
+  padding-block: var(--spacing-xs);
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  overflow-wrap: anywhere;
+}
+
+/* The handle and the remove button, together at the card's end, each 44px. */
+.trip-saved__tools {
+  display: flex;
+  grid-area: tools;
+  gap: var(--spacing-xs);
+}
+
+/* Six dots: drag the card by them, or tap them and then choose a time. */
 .trip-saved__grip {
   display: grid;
-  grid-area: grip;
   place-items: center;
   inline-size: 2.75rem;
   block-size: 2.75rem;
   padding: 0;
   border: 0;
-  border-radius: var(--rounded-sm);
+  border-radius: var(--rounded-pill);
   background: none;
   color: var(--color-gold-deep);
   cursor: grab;
   touch-action: none;
+}
+
+.trip-saved__grip:hover {
+  background: var(--color-neutral-variant);
 }
 
 .trip-saved__grip:focus-visible {
@@ -1763,26 +1893,11 @@
   cursor: grabbing;
 }
 
-/* How long it takes and the way to it run the card's width, under the remove button too. */
 .trip-saved__facts {
   display: grid;
   grid-area: facts;
   gap: var(--spacing-xs);
   min-inline-size: 0;
-}
-
-.trip-saved__remove {
-  grid-area: remove;
-}
-
-.trip-saved__name {
-  grid-area: name;
-  align-self: center;
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--type-title-size);
-  line-height: var(--type-title-line);
-  overflow-wrap: anywhere;
 }
 
 /* How long it takes, and the way to it from the place before (or from the hotel). */
@@ -1799,12 +1914,6 @@
 
 .trip-saved__fact > .trip-icon {
   block-size: 1lh;
-}
-
-/* While a place is picked up, every other free time offers itself. */
-.trip-slot.is-choosing {
-  border-style: dashed;
-  border-color: var(--color-gold-deep);
 }
 
 /* A part of the day holding more than fits it, said plainly with a way out. */
@@ -1827,6 +1936,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  justify-self: start;
   gap: var(--spacing-xs);
   min-block-size: 44px;
   padding: var(--spacing-xs) var(--spacing-md);
@@ -1841,6 +1951,80 @@
 
 .trip-slot__here:hover {
   background: var(--color-neutral-variant);
+}
+
+/* "Add Wednesday, July 14": a day more before or after the stay, a full-width row where that day would be. */
+.trip-days__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  margin-block: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px dashed var(--color-gold);
+  border-radius: var(--rounded-sm);
+  background: none;
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  cursor: pointer;
+}
+
+.trip-days__add:hover {
+  border-style: solid;
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+  color: var(--color-primary);
+}
+
+/* Room for the part of the day's name in a column of its own: every row then starts at one edge. */
+@container trip-board (width >= 30rem) {
+  .trip-slot,
+  .trip-slot.is-empty:not(.is-choosing) {
+    grid-template-columns: 10rem minmax(0, 1fr);
+    align-items: first baseline;
+  }
+
+  .trip-slot.is-empty:not(.is-choosing) .trip-slot__empty {
+    justify-content: start;
+  }
+
+  /* Beside its row the name needs no height of its own: it sits on the first line's baseline. The
+     icon sits on that baseline too, so the label's baseline is its words', not the icon's edge. */
+  .trip-slot__label {
+    align-items: baseline;
+    min-block-size: 0;
+  }
+
+  .trip-slot__label > .trip-icon {
+    translate: 0 0.125em;
+  }
+}
+
+/* Room for the date in a column too: every day then lines up under the one before. */
+@container trip-board (width >= 44rem) {
+  .trip-day {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+  }
+
+  .trip-day__weekday {
+    display: block;
+  }
+
+  /* The comma only joins the two on one line; it stays in the words a screen reader hears. */
+  .trip-day__comma {
+    visibility: hidden;
+  }
+
+  .trip-day__monthday {
+    color: var(--color-on-surface-muted);
+  }
+
+  .trip-day__head {
+    padding-block-start: var(--spacing-xs);
+  }
 }
 
 /* ---------- the toast, and the dot that flies to "My weekend" ---------- */
