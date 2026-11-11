@@ -44,6 +44,8 @@ export function isWeddingTime(day: Day, part: Part): boolean {
 
 export type StayFacts = {
   hotelName: string;
+  /** The hotel's street address, where the wedding is too. */
+  address: string;
   intro: string;
   rate: string | null;
   bookBy: string | null;
@@ -52,6 +54,9 @@ export type StayFacts = {
   bookUrl: string | null;
   phoneSentence: string;
   phoneHref: string;
+  /** The room block's own check-in and check-out days ("YYYY-MM-DD"), not any one guest's booking. */
+  checkIn: string | null;
+  checkOut: string | null;
 };
 
 /** The room block card's facts, from the admin's block when the page has it, else the brief's block. */
@@ -59,6 +64,7 @@ export function stayFacts(block: RoomBlock | null = DEFAULT_VENUE_BLOCK): StayFa
   const b = block && !block.placeholder ? block : DEFAULT_VENUE_BLOCK;
   return {
     hotelName: VENUE.name,
+    address: VENUE.address,
     intro: CAA_STAY_INTRO,
     rate: b.rateText,
     bookBy: b.cutoff ? LONG_DATE.format(new Date(`${b.cutoff}T12:00:00Z`)) : null,
@@ -67,6 +73,8 @@ export function stayFacts(block: RoomBlock | null = DEFAULT_VENUE_BLOCK): StayFa
     bookUrl: b.url ?? CAA_BOOKING_URL,
     phoneSentence: caaPhoneBookingSentence(),
     phoneHref: CAA_BOOKING_TEL,
+    checkIn: b.checkIn ?? null,
+    checkOut: b.checkOut ?? null,
   };
 }
 

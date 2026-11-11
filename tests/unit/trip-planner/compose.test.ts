@@ -2,7 +2,7 @@ import { createParser } from '@openuidev/react-lang';
 import { describe, expect, it } from 'vitest';
 import { tripLibrary } from '@/components/trip/openui/library';
 import { calendarModel, compose, draftPlan, mergeWritten, type CalendarEntry, type Plan, type SavedItem } from '@/domain/trip-planner';
-import { BY_ID, ITINERARIES, PLACES } from './fixtures';
+import { BY_ID, ITINERARIES, PLACES, SET_EVENTS, UNSET_EVENTS } from './fixtures';
 
 /** Every composed program goes through the real OpenUI parser for the site's library: zero errors. */
 const parser = createParser(tripLibrary.toJSONSchema(), 'Col');
@@ -43,6 +43,9 @@ const REQUESTS = [
   'Saturday evening drinks',
   'Put my weekend in my calendar',
   'golf',
+  'The wedding day',
+  'What time is the ceremony?',
+  'Is there a dress code?',
 ];
 
 function walk(node: unknown, visit: (n: { typeName: string; props: Record<string, unknown> }) => void) {
@@ -66,6 +69,11 @@ describe('compose', () => {
       it(`parses cleanly: "${request}" (${saved.length} saved)`, () => {
         const plan = draftPlan({ request, places: PLACES, saved });
         expectClean(compose(plan, { places: BY_ID, saved, calendar }));
+        // And with the wedding's events on the invitation, set or not yet set.
+        for (const events of [UNSET_EVENTS, SET_EVENTS]) {
+          const withEvents = draftPlan({ request, places: PLACES, saved, events });
+          expectClean(compose(withEvents, { places: BY_ID, saved, calendar, events }));
+        }
       });
     }
   }
@@ -103,7 +111,7 @@ describe('compose', () => {
 
   it('writes every shape the reference answers use', () => {
     const shapes = new Set(REQUESTS.map((request) => draftPlan({ request, places: PLACES, saved: SAVED }).shape));
-    expect([...shapes].sort()).toEqual(['arrive', 'ask', 'budget', 'calendar', 'picks', 'route', 'stay', 'switch', 'weekend']);
+    expect([...shapes].sort()).toEqual(['arrive', 'ask', 'budget', 'calendar', 'picks', 'route', 'schedule', 'stay', 'switch', 'weekend']);
   });
 
   it('escapes strings exactly: quotes, backslashes, newlines and other scripts survive the round trip', () => {
@@ -130,6 +138,7 @@ describe('compose', () => {
       { shape: 'ask', title: 'T', intro: 'I', picks: [], question: { text: 'Q', options: [] }, next: [] },
       { shape: 'weekend', title: 'T', intro: 'I', picks: [], next: [] },
       { shape: 'calendar', title: 'T', intro: 'I', picks: [], next: [] },
+      { shape: 'schedule', title: 'T', intro: '', picks: [], next: [] },
       { shape: 'stay', title: '', intro: '', picks: [], next: [] },
       { shape: 'picks', title: 'T', intro: 'I', picks: [{ id: 'bean-house' }, { id: 'bean-house' }], next: ['', 'ok'] },
       {} as Plan,

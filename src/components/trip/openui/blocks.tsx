@@ -3,7 +3,7 @@
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
 import { useState } from 'react';
 import { z } from 'zod/v4';
-import { DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
+import { blockDateLines, DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
 
@@ -170,15 +170,16 @@ function External() {
   );
 }
 
-/** Our room block, with the facts from the travel domain and the booking button. */
+/** Our room block, with the facts from the travel domain and the booking button. `dates` adds the block's check-in and check-out days. */
 export const Stay = defineComponent({
   name: 'Stay',
-  props: z.object({ note: z.string().optional() }),
-  description: "The couple's room block at the wedding hotel: rate, book-by date, nights, group code and the booking button.",
+  props: z.object({ note: z.string().optional(), dates: z.boolean().optional() }),
+  description: "The couple's room block at the wedding hotel: address, rate, book-by date, nights, group code and the booking button; dates shows the block's check-in and check-out days.",
   component: function StayCard({ props }) {
     const ctx = useTripPlanner();
     if (!ctx) return null;
     const s = ctx.stay;
+    const lines = props.dates ? blockDateLines(s) : { checkIn: null, checkOut: null };
     const terms: [string, string | null, IconName][] = [
       ['Group rate', s.rate, 'tag'],
       ['Book by', s.bookBy, 'calendar'],
@@ -192,6 +193,11 @@ export const Stay = defineComponent({
           Our room block
         </p>
         <h4 className="trip-place__name">{s.hotelName}</h4>
+        <ul className="trip-facts">
+          {s.address ? <Fact icon="pin">{s.address}</Fact> : null}
+          {lines.checkIn ? <Fact icon="calendar">{lines.checkIn}</Fact> : null}
+          {lines.checkOut ? <Fact icon="calendar">{lines.checkOut}</Fact> : null}
+        </ul>
         <p className="trip-text trip-text--md">{s.intro}</p>
         {props.note ? <p className="trip-place__note">{props.note}</p> : null}
         <dl className="trip-stay__terms">
@@ -326,6 +332,74 @@ export const Next = defineComponent({
   },
 });
 
+type Node = { props?: Record<string, unknown> } | null;
+const text = (v: unknown) => (typeof v === 'string' ? v : '');
+
+export const WeddingEvent = defineComponent({
+  name: 'WeddingEvent',
+  props: z.object({
+    name: z.string(),
+    day: z.string(),
+    time: z.string().optional(),
+    room: z.string().optional(),
+    dress: z.string().optional(),
+    access: z.string().optional(),
+    about: z.string().optional(),
+    note: z.string().optional(),
+  }),
+  description: "One of the wedding's own events. time is null while it is not announced; room, dress, access and about only when the couple have set them.",
+  component: () => null,
+});
+
+/** The wedding's events in order: each with its time or "Time to be announced", and what the couple have set about it. */
+export const Schedule = defineComponent({
+  name: 'Schedule',
+  props: z.object({ events: z.array(WeddingEvent.ref) }),
+  description: "The wedding's own events, in order.",
+  component: function ScheduleList({ props }) {
+    const events = (Array.isArray(props.events) ? props.events : []).flatMap((e) => {
+      const q = (e as Node)?.props;
+      if (!q || !text(q.name)) return [];
+      return [{ name: text(q.name), day: text(q.day), time: text(q.time), room: text(q.room), dress: text(q.dress), access: text(q.access), about: text(q.about), note: text(q.note) }];
+    });
+    if (!events.length) return null;
+    const days = [...new Set(events.map((e) => e.day))];
+    return (
+      <section className="trip-sched" aria-label="The wedding day">
+        {days.map((day) => (
+          <div key={day} className="trip-sched__day">
+            {days.length > 1 ? <h4 className="trip-title trip-title--md">{day}</h4> : null}
+            <ol className="trip-sched__events">
+              {events
+                .filter((e) => e.day === day)
+                .map((e, i) => (
+                  <li key={`${e.name}-${i}`} className="trip-sched__event">
+                    <span className="trip-sched__time">
+                      <Icon name="clock" className="trip-icon trip-icon--caps" />
+                      {e.time || TIME_TBA}
+                    </span>
+                    <span className="trip-sched__what">
+                      <span className="trip-sched__name">{e.name}</span>
+                      {e.room || e.dress || e.access || e.note ? (
+                        <ul className="trip-facts">
+                          {e.room ? <Fact icon="pin">{e.room}</Fact> : null}
+                          {e.dress ? <Fact icon="hanger">{`Dress code: ${e.dress}`}</Fact> : null}
+                          {e.access ? <Fact icon="check">{e.access}</Fact> : null}
+                          {e.note ? <Fact icon="calendar">{e.note}</Fact> : null}
+                        </ul>
+                      ) : null}
+                      {e.about ? <span className="trip-text trip-text--sm">{e.about}</span> : null}
+                    </span>
+                  </li>
+                ))}
+            </ol>
+          </div>
+        ))}
+      </section>
+    );
+  },
+});
+
 export const CalendarEvent = defineComponent({
   name: 'CalendarEvent',
   props: z.object({ title: z.string(), time: z.string().optional(), kind: z.enum(['wedding', 'plan', 'trip']).optional(), note: z.string().optional() }),
@@ -340,8 +414,6 @@ export const CalendarDay = defineComponent({
   component: () => null,
 });
 
-type Node = { props?: Record<string, unknown> } | null;
-const text = (v: unknown) => (typeof v === 'string' ? v : '');
 const KIND_LABEL: Record<string, string> = { wedding: 'Wedding', plan: 'Your plan', trip: 'Your travel' };
 const KIND_ICON: Record<string, IconName> = { wedding: 'rings', plan: 'heart', trip: 'suitcase' };
 
@@ -403,4 +475,4 @@ export const Calendar = defineComponent({
   },
 });
 
-export const blocks = [Place, Stay, Arrive, Option, Choice, Next, Calendar, CalendarDay, CalendarEvent];
+export const blocks = [Place, Stay, Arrive, Option, Choice, Next, Schedule, WeddingEvent, Calendar, CalendarDay, CalendarEvent];

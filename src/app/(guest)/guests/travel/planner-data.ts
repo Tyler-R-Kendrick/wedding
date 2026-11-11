@@ -7,8 +7,10 @@ import type { Principal } from '@/contracts/principal';
 import { withoutPlaceholders } from '@/domain/content/text';
 import type { ItineraryView, RecommendationCard } from '@/domain/content/views';
 import { placePhoto } from '@/domain/media/place-photos';
+import { VENUE_SPACES } from '@/domain/seating/plans';
 import { VENUE } from '@/domain/travel/facts';
 import type { Day, Part, PlannerItinerary, PlannerPlace, TripItemInput, WeddingEventInput } from '@/domain/trip-planner';
+import type { MyEvents } from '@/capabilities/rsvp/list_my_events';
 import type { TripHotel } from '@/components/trip/openui';
 import type { PlannerSaved } from '@/components/trip/TripPlanner';
 import { runAsUi } from './_shared/server';
@@ -95,6 +97,40 @@ export function toPlannerItinerary(view: ItineraryView, placeIds: ReadonlySet<st
   };
 }
 
+/** Settled sentences only: a sentence that still carries the authoring marker is a note to the couple, not a fact. */
+const settled = (v: string | null | undefined): string | null => withoutPlaceholders([v]).join(' ').trim() || null;
+
+/**
+ * One of the wedding's events as the planner reads it, from the guest's invitation. Times, room,
+ * dress code and access note are the couple's own fields and flow through as they set them.
+ *
+ * The description is the one free-text field `list_my_events` has already scrubbed of the marker
+ * (`toEventView` keeps the hint's words so an assistant can say what is still to come), which leaves
+ * a hint such as "what happens, and what to expect." looking like a fact. So it is offered only
+ * once the couple have marked the event's details as confirmed; while `placeholder` is set it is
+ * not shown, on the page or in the calendar file.
+ */
+export function toWeddingEvent(e: MyEvents['events'][number]): WeddingEventInput {
+  const room = e.venueSpaceRef ? (VENUE_SPACES.find((s) => s.ref === e.venueSpaceRef)?.name ?? e.venueSpaceRef.replace(/-/g, ' ')) : null;
+  const description = e.placeholder ? null : settled(e.description);
+  const dressCode = settled(e.dressCode);
+  const accessibilityNote = settled(e.accessibilityNote);
+  return {
+    id: e.id,
+    name: e.name,
+    dateIso: e.dateIso,
+    startsAt: e.startsAt,
+    endsAt: e.endsAt,
+    ...(description ? { description } : {}),
+    ...(room ? { room } : {}),
+    // The wedding is at the hotel (our venue); the room, once it is chosen, comes first.
+    location: [room, VENUE.name, VENUE.address].filter(Boolean).join(', '),
+    ...(dressCode ? { dressCode } : {}),
+    ...(accessibilityNote ? { accessibilityNote } : {}),
+    ...(e.placeholder ? { unconfirmed: true } : {}),
+  };
+}
+
 export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   const isGuest = principal.kind === 'guest';
   // Read beside the others, not after them.
@@ -119,10 +155,8 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   });
   const bookings: TripItemInput[] = items
     .filter((i) => i.provider !== 'planner' && i.status !== 'cancelled' && (i.kind === 'flight' || i.kind === 'hotel'))
-    .map((i) => ({ id: i.id, kind: i.kind, status: i.status, title: i.title, startAt: i.startAt, endAt: i.endAt, provider: i.provider }));
-  const events: WeddingEventInput[] = myEvents?.ok
-    ? myEvents.value.data.events.map((e) => ({ id: e.id, name: e.name, dateIso: e.dateIso, startsAt: e.startsAt, endsAt: e.endsAt, description: e.description }))
-    : [];
+    .map((i) => ({ id: i.id, kind: i.kind, status: i.status, title: i.title, startAt: i.startAt, endAt: i.endAt, provider: i.provider, providerRef: i.providerRef, hotelName: i.details.hotelName ?? null }));
+  const events: WeddingEventInput[] = myEvents?.ok ? myEvents.value.data.events.map(toWeddingEvent) : [];
   return {
     places,
     saved,

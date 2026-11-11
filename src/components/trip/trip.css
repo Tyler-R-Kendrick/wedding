@@ -902,7 +902,66 @@
 
 @media (width >= 40rem) {
   .trip-cal__event {
-    grid-template-columns: 11rem 1fr;
+    grid-template-columns: 13rem 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+/* ---------- the wedding day: the couple's own events, in order ---------- */
+.trip-sched {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.trip-sched__day {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.trip-sched__events {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-sched__event {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-md);
+  background: var(--color-neutral);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.trip-sched__time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  align-self: start;
+  color: var(--color-on-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-sched__what {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.trip-sched__name {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  color: var(--color-primary);
+}
+
+@media (width >= 40rem) {
+  .trip-sched__event {
+    grid-template-columns: 13rem 1fr;
     gap: var(--spacing-md);
   }
 }
@@ -1324,6 +1383,45 @@
   font-family: var(--font-display);
   font-size: var(--type-title-size);
   line-height: var(--type-title-line);
+}
+
+/* The wedding's own events in its slot on the board: name, then time, room and dress code. */
+.trip-slot__events {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-slot__event {
+  display: grid;
+  gap: var(--spacing-xs);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.trip-slot__event .trip-slot__wedding {
+  font-size: var(--type-title-size);
+}
+
+/* A fact about the day the board cannot move: the room block's check-in or check-out. */
+.trip-day__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-day__fact .trip-icon {
+  flex: none;
+  block-size: 1lh;
+  color: var(--color-gold-deep);
 }
 
 .trip-slot__empty {

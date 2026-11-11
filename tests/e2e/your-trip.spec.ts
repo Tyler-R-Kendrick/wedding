@@ -94,6 +94,29 @@ test('a starter answers with places from our list, and a saved place is still th
   await ctx.close();
 });
 
+test('the wedding day comes first: the guest\'s own events in order, their times when set, and never a placeholder', async ({ browser }) => {
+  const ctx = await contextAs(browser, 'C1');
+  const page = await ctx.newPage();
+  await page.goto('/guests/travel#plan');
+  await openTab(page, 'Ask us');
+  const starters = plan(page).getByRole('group', { name: 'Ideas to start with' }).getByRole('button');
+  await expect(starters.first()).toContainText('The wedding day');
+  await starters.first().click();
+  await expect(plan(page).getByRole('heading', { level: 3, name: 'The wedding day' })).toBeVisible();
+  // C1 is invited to the ceremony and the reception (the fixture), whose times are not set yet.
+  const day = plan(page).getByRole('region', { name: 'The wedding day' });
+  await expect(day.locator('.trip-sched__name')).toHaveText(['Ceremony', 'Reception']);
+  await expect(day.getByText('Time to be announced')).toHaveCount(2);
+  await expect(plan(page).getByRole('region', { name: 'Our room block' }).getByText(/^Our room block: check-in /)).toBeVisible();
+  // The seed's hint ("what happens, and what to expect") is a note to the couple, not a fact.
+  await expect(plan(page)).not.toContainText(/TODO|what to expect/);
+  await openTab(page, /My weekend/);
+  await expect(plan(page).getByRole('list', { name: 'The wedding' }).getByRole('listitem')).toHaveCount(2);
+  await expect(plan(page).getByRole('region', { name: /^Friday/ })).toContainText('Our room block: check-in');
+  await expect(plan(page).getByRole('region', { name: /^Sunday/ })).toContainText('Our room block: check-out');
+  await ctx.close();
+});
+
 test('the old Things to Do address lands on the planner', async ({ browser }) => {
   const ctx = await contextAs(browser, 'C1');
   const page = await ctx.newPage();

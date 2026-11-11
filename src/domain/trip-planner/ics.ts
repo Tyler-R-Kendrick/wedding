@@ -1,5 +1,5 @@
-import { PART_HOURS, PLANNER_TIMEZONE, dateLabel, isWeddingTime, weekendDate } from './facts';
-import { DAYS, type CalendarDayModel, type CalendarEntry, type PlannerPlace, type SavedItem } from './types';
+import { PART_HOURS, PLANNER_TIMEZONE, dateLabel, isWeddingTime, weekendDate, type StayFacts } from './facts';
+import { DAYS, type CalendarDayModel, type CalendarEntry, type PlannerPlace, type SavedItem, type WeddingEventInput } from './types';
 
 /**
  * The guest's weekend as calendar entries, and as an RFC 5545 file. Wedding events keep the times
@@ -11,16 +11,8 @@ import { DAYS, type CalendarDayModel, type CalendarEntry, type PlannerPlace, typ
 export const TIME_TBA = 'Time to be announced';
 const PLAN_NOTE = 'Your own plan from our wedding website. The time is the part of the day you chose, not a booking.';
 
-/** Wedding events as the site stores them (`events` rows, or the dashboard's event view). */
-export type WeddingEventInput = {
-  id: string;
-  name: string;
-  dateIso: string;
-  startsAt?: string | Date | null;
-  endsAt?: string | Date | null;
-  description?: string | null;
-  location?: string | null;
-};
+/** Wedding events as the site stores them (`events` rows, as the guest's invitation carries them). */
+export type { WeddingEventInput } from './types';
 
 /** The guest's own travel (`TripItem` from the travel domain): flights and hotel stays with real times. */
 export type TripItemInput = {
@@ -31,6 +23,9 @@ export type TripItemInput = {
   startAt: string;
   endAt?: string | null;
   provider?: string | null;
+  /** A hotel stay's own hotel, as the guest wrote it. */
+  hotelName?: string | null;
+  providerRef?: string | null;
 };
 
 const iso = (v: string | Date | null | undefined): string | null => {
@@ -39,33 +34,49 @@ const iso = (v: string | Date | null | undefined): string | null => {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
-/** Authoring markers never reach a guest's calendar. */
-const scrub = (s: string | null | undefined) => (s ?? '').replace(/TODO\([^)]*\):?[^.\n]*\.?/g, '').replace(/\s+/g, ' ').trim();
+/**
+ * Settled words only. The page hands the planner its events with unsettled copy already left out;
+ * this is the last check before a guest's own calendar, so a sentence that still carries the
+ * authoring marker is dropped whole rather than trimmed into a fragment.
+ */
+export function settledText(s: string | null | undefined): string {
+  return (s ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => sentence && !/TODO\(/.test(sentence))
+    .join(' ')
+    .trim();
+}
+
+const sentence = (s: string) => (/[.!?]$/.test(s) ? s : `${s}.`);
+
+/** What a calendar entry says about a wedding event: its time when unannounced, the couple's words, the dress code and the access note. */
+function weddingDescription(e: WeddingEventInput, timed: boolean): string {
+  const dress = settledText(e.dressCode);
+  return [
+    timed ? '' : TIME_TBA,
+    timed && e.unconfirmed ? DETAILS_TBC : '',
+    settledText(e.description),
+    dress ? `Dress code: ${dress}` : '',
+    settledText(e.accessibilityNote),
+  ]
+    .filter(Boolean)
+    .map(sentence)
+    .join(' ');
+}
+
+/** Said of an event whose time is set while the couple still mark its details as not confirmed. */
+export const DETAILS_TBC = 'Details still to be confirmed';
 
 export function weddingEntries(events: readonly WeddingEventInput[]): CalendarEntry[] {
-  return events.map((e) => {
+  return events.map((e): CalendarEntry => {
     const start = iso(e.startsAt);
     const end = iso(e.endsAt);
-    const description = scrub(e.description);
-    if (!start) {
-      return {
-        uid: `wedding-${e.id}`,
-        source: 'wedding',
-        title: e.name,
-        when: { kind: 'allDay', date: e.dateIso },
-        description: [TIME_TBA, description].filter(Boolean).join('. ').replace(/\.\./g, '.'),
-        ...(e.location ? { location: e.location } : {}),
-        tbd: true,
-      };
-    }
-    return {
-      uid: `wedding-${e.id}`,
-      source: 'wedding',
-      title: e.name,
-      when: { kind: 'instant', start, end },
-      ...(description ? { description } : {}),
-      ...(e.location ? { location: e.location } : {}),
-    };
+    const location = settledText(e.location) || settledText(e.room);
+    const description = weddingDescription(e, !!start);
+    const base = { uid: `wedding-${e.id}`, source: 'wedding' as const, title: e.name, ...(description ? { description } : {}), ...(location ? { location } : {}) };
+    return start ? { ...base, when: { kind: 'instant', start, end } } : { ...base, when: { kind: 'allDay', date: e.dateIso }, tbd: true };
   });
 }
 
@@ -102,6 +113,49 @@ export function tripEntries(items: readonly TripItemInput[]): CalendarEntry[] {
     });
 }
 
+/**
+ * The guest is staying in our room block: one of their own hotel stays is at the wedding hotel (by
+ * its name, the name without "Hotel", its initials, or the block's group code). A stay somewhere
+ * else, or no stay at all, says nothing about the block, so its dates stay off their calendar.
+ */
+export function staysInBlock(items: readonly TripItemInput[], stay: Pick<StayFacts, 'hotelName' | 'code'>): boolean {
+  const norm = (v: string | null | undefined) => ` ${(v ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()} `;
+  const name = norm(stay.hotelName).trim();
+  const core = norm(stay.hotelName.replace(/\b(the|hotel|inn|resort)\b/gi, ' ')).trim();
+  const words = core.split(' ').filter(Boolean);
+  const initials = words.length >= 3 ? words.map((w) => w[0]).join('') : '';
+  const code = (stay.code ?? '').toLowerCase();
+  return items.some((t) => {
+    if (t.kind !== 'hotel' || t.status === 'cancelled') return false;
+    const text = norm(`${t.title} ${t.hotelName ?? ''} ${t.provider ?? ''}`);
+    return (
+      (!!name && text.includes(` ${name} `)) ||
+      (!!core && text.includes(` ${core} `)) ||
+      (!!initials && text.includes(` ${initials} `)) ||
+      (!!code && (t.providerRef ?? '').toLowerCase() === code)
+    );
+  });
+}
+
+/** The room block's check-in and check-out days, as all-day entries. Only for a guest staying in it (`staysInBlock`). */
+export function blockEntries(stay: Pick<StayFacts, 'hotelName' | 'address' | 'checkIn' | 'checkOut'>): CalendarEntry[] {
+  const location = [stay.hotelName, stay.address].filter(Boolean).join(', ');
+  const day = (which: 'in' | 'out', date: string | null): CalendarEntry[] =>
+    date
+      ? [
+          {
+            uid: `block-check-${which}`,
+            source: 'trip',
+            title: `Check-${which} at the ${stay.hotelName}`,
+            when: { kind: 'allDay', date },
+            description: `Our room block's check-${which} day. Your booking with the hotel has the time.`,
+            ...(location ? { location } : {}),
+          },
+        ]
+      : [];
+  return [...day('in', stay.checkIn), ...day('out', stay.checkOut)];
+}
+
 // ---------- local time helpers (the wedding's zone) ----------
 
 type Wall = { date: string; time: string };
@@ -126,6 +180,16 @@ function clock(hhmm: string): string {
   const suffix = h < 12 ? 'am' : 'pm';
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+/** An event's time in the wedding's zone ("4:30 pm – 10:00 pm", "4:30 pm"), or null while it is not announced. */
+export function eventTime(startsAt: string | Date | null | undefined, endsAt?: string | Date | null): string | null {
+  const start = iso(startsAt);
+  if (!start) return null;
+  const end = iso(endsAt ?? null);
+  const a = wallTime(start);
+  const b = end ? wallTime(end) : null;
+  return b && b.date === a.date ? `${clock(a.time)} – ${clock(b.time)}` : clock(a.time);
 }
 
 /** The day an entry is on and its time label in the wedding's zone (null: time to be announced). */

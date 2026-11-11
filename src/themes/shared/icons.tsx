@@ -45,6 +45,7 @@ const PATHS: Record<string, string> = {
   parking: 'M4 4h16v16H4zM10 16.5v-9h3a2.5 2.5 0 0 1 0 5h-3',
   tag: 'M3 12.5V4h8.5l9.5 9.5-8 8zM7.5 8.5h.01',
   key: 'M16 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM13.2 10.8L4 20M6.5 17.5l2 2M9 15l2 2',
+  hanger: 'M10 6.5a2 2 0 1 1 3 1.7c-.6.4-1 .9-1 1.6V11M12 11l-8.5 5.5a1 1 0 0 0 .5 1.8h16a1 1 0 0 0 .5-1.8z',
 };
 
 export type IconName = keyof typeof PATHS;
