@@ -48,3 +48,42 @@ describe('the worker-side helpers', () => {
     expect(QUERY_PREFIX).toBe('Represent this sentence for searching relevant passages: ');
   });
 });
+
+describe('where the inference library comes from', () => {
+  it('is never loaded until the caller says where from', async () => {
+    const { transformers, useLibrary } = await import('@/lib/ai/local/models');
+    await expect(transformers()).rejects.toThrow(/useLibrary/);
+    const fake = { env: {} } as unknown as Awaited<ReturnType<typeof transformers>>;
+    let loads = 0;
+    useLibrary(async () => {
+      loads++;
+      return fake;
+    });
+    expect(await transformers()).toBe(fake);
+    expect(await transformers()).toBe(fake);
+    expect(loads, 'loaded once, then kept').toBe(1);
+  });
+
+  it('is not imported by name anywhere the bundler reads: the worker loads the prebuilt copy in /ort/', async () => {
+    // Compiling the library and the ONNX runtime into every page's graph pushed the dev test
+    // server past the heap level at which Next restarts it, which reset requests mid-run.
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const path = await import('node:path');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = path.join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(ts|tsx|mjs|js)$/.test(name)) files.push(full);
+      }
+    };
+    walk(path.join(process.cwd(), 'src'));
+    const valueImport = /(?:^|[^\w])(?:import\s*\(\s*['"]|from\s+['"]|require\s*\(\s*['"])(@huggingface\/transformers|onnxruntime-(?:web|node|common))/;
+    const offenders = files.filter((f) =>
+      readFileSync(f, 'utf8')
+        .split('\n')
+        .some((line) => !/^\s*import\s+type\b/.test(line) && !/typeof import\(/.test(line) && valueImport.test(line)),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
