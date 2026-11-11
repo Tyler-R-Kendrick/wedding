@@ -38,6 +38,11 @@ describe('parseGuestSheet', () => {
     expect(parsed.rows.map((r) => [r.name, r.sheetRow])).toEqual([['Named', 3]]);
   });
 
+  it('counts a plus-one ticked as "Yes", "x" or a tick as one person', () => {
+    const r = parseGuestSheet([HEADER, ['A', '1', '0', 'Yes'], ['B', '1', '0', 'x'], ['C', '1', '0', '\u2713'], ['D', '1', '0', 'No']]);
+    expect(r.rows.map((x) => x.plusOnes)).toEqual([1, 1, 1, 0]);
+  });
+
   it('treats blanks and junk as zero heads and no priority', () => {
     const [row] = parseGuestSheet([HEADER, ['Odd', 'two', '', '1', '', '', 'high']]).rows;
     expect(row).toMatchObject({ adults: 0, kids: 0, plusOnes: 1, priority: null, guestOf: null });
@@ -152,6 +157,48 @@ describe('GoogleSheetsGuestSheet', () => {
     const r = await p.read();
     expect(r.ok && r.value.data.stale).toBe(true);
     expect(r.ok && r.value.data.rows[0]!.name).toBe('Kept');
+  });
+
+  it('leaves Google alone for a while after a failure, and a refresh still asks', async () => {
+    let now = 1_000_000;
+    let status = 200;
+    let sheetCalls = 0;
+    const fetchImpl = (async (url: string | URL | Request) => {
+      if (String(url).includes('oauth2')) return Response.json({ access_token: 'tok', expires_in: 3600 });
+      sheetCalls++;
+      return status === 200 ? Response.json({ values: [HEADER, ['Kept', '2']] }) : new Response('limited', { status });
+    }) as typeof fetch;
+    const p = new GoogleSheetsGuestSheet(config(0), { fetch: fetchImpl, now: () => now });
+    await p.read();
+    status = 429;
+    expect((await p.read()).ok).toBe(true); // stale, after one failed call
+    expect(sheetCalls).toBe(2);
+    // Google asked for a minute: page views inside it are served the last read without calling.
+    now += 30_000;
+    const r = await p.read();
+    expect(r.ok && r.value.data.stale).toBe(true);
+    expect(sheetCalls).toBe(2);
+    await p.read({ fresh: true });
+    expect(sheetCalls).toBe(3);
+    status = 200;
+    now += 61_000;
+    const back = await p.read();
+    expect(back.ok && back.value.data.stale).toBe(false);
+    expect(sheetCalls).toBe(4);
+  });
+
+  it('gets a new token after Google refuses the one it has', async () => {
+    let refuse = true;
+    let tokens = 0;
+    const fetchImpl = (async (url: string | URL | Request) => {
+      if (String(url).includes('oauth2')) return Response.json({ access_token: `tok${++tokens}`, expires_in: 3600 });
+      return refuse ? new Response('{}', { status: 401 }) : Response.json({ values: [HEADER, ['A', '1']] });
+    }) as typeof fetch;
+    const p = new GoogleSheetsGuestSheet(config(0), { fetch: fetchImpl });
+    expect((await p.read()).ok).toBe(false);
+    refuse = false;
+    expect((await p.read({ fresh: true })).ok).toBe(true);
+    expect(tokens).toBe(2);
   });
 
   it('reports a key it cannot use without calling Google', async () => {

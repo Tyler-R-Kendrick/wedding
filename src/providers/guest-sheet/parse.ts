@@ -42,6 +42,8 @@ const count = (s: string) => {
   const n = Number(s.replace(/,/g, ''));
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 };
+/** A plus-one column is often ticked rather than counted: "Yes", "Y", "x" or a tick is one person. */
+const countOrYes = (s: string) => (/^(y|yes|x|true|\u2713|\u2714)$/i.test(s) ? 1 : count(s));
 const tier = (s: string) => {
   const n = Number(s);
   return s && Number.isInteger(n) ? n : null;
@@ -76,7 +78,7 @@ export function parseGuestSheet(values: readonly (readonly unknown[])[]): Omit<G
       name,
       adults: count(cell(row, index.adults)),
       kids: count(cell(row, index.kids)),
-      plusOnes: count(cell(row, index.plusOnes)),
+      plusOnes: countOrYes(cell(row, index.plusOnes)),
       guestOf: text(cell(row, index.guestOf)),
       group: text(cell(row, index.group)),
       priority: tier(cell(row, index.priority)),

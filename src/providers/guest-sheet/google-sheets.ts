@@ -19,6 +19,9 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
 const NAME = 'google-sheets';
 
+/** How long a failed read keeps the site from asking Google again, unless Google names a longer wait. */
+const BACKOFF_MS = 30_000;
+
 const b64url = (s: string | Buffer) => Buffer.from(s).toString('base64url');
 
 /**
@@ -39,6 +42,8 @@ export class GoogleSheetsGuestSheet implements GuestSheetProvider {
   private token: { value: string; expiresAt: number } | null = null;
   private last: { at: number; snapshot: GuestSheetSnapshot } | null = null;
   private inflight: Promise<Result<GuestSheetSnapshot, ProviderFailure>> | null = null;
+  /** After a failed read, Google is left alone until then (its Retry-After, or BACKOFF_MS). */
+  private failed: { until: number; error: ProviderFailure } | null = null;
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
 
@@ -62,14 +67,21 @@ export class GoogleSheetsGuestSheet implements GuestSheetProvider {
   async read(opts: { fresh?: boolean } = {}): Promise<Result<GuestSheetSnapshot, ProviderFailure>> {
     const age = this.last ? this.now() - this.last.at : Infinity;
     if (!opts.fresh && this.last && age < this.config.cacheSeconds * 1000) return ok(this.last.snapshot);
+    // Just after a failure (Google down, or limiting reads) every page view would wait on Google
+    // again and fail again: serve what there is until the wait is over. A deliberate refresh asks.
+    const stale = () => (this.last ? ok({ ...this.last.snapshot, data: { ...this.last.snapshot.data, stale: true } }) : null);
+    if (!opts.fresh && this.failed && this.now() < this.failed.until) return stale() ?? err(this.failed.error);
     // One request at a time: a burst of page views shares the read instead of each calling Google.
     this.inflight ??= this.load().finally(() => {
       this.inflight = null;
     });
     const result = await this.inflight;
-    if (result.ok) return result;
-    if (this.last) return ok({ ...this.last.snapshot, data: { ...this.last.snapshot.data, stale: true } });
-    return result;
+    if (result.ok) {
+      this.failed = null;
+      return result;
+    }
+    this.failed = { until: this.now() + Math.max(result.error.retryAfterMs ?? 0, BACKOFF_MS), error: result.error };
+    return stale() ?? result;
   }
 
   private async load(): Promise<Result<GuestSheetSnapshot, ProviderFailure>> {
@@ -77,7 +89,11 @@ export class GoogleSheetsGuestSheet implements GuestSheetProvider {
     if (!token.ok) return token;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(this.config.sheetId)}/values/${encodeURIComponent(this.config.range)}?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE`;
     const res = await this.call(url, { headers: { authorization: `Bearer ${token.value}` } });
-    if (!res.ok) return res;
+    if (!res.ok) {
+      // A token Google refused (revoked, or the key rotated) is not tried again on the next read.
+      if (res.error.class === 'auth') this.token = null;
+      return res;
+    }
     const body = res.value as { values?: unknown };
     if (body.values !== undefined && !Array.isArray(body.values)) return err(failure(NAME, 'malformed_response', 'The guest sheet answered in an unexpected shape.'));
     const parsed = parseGuestSheet((body.values as unknown[][] | undefined) ?? []);

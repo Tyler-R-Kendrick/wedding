@@ -11,6 +11,11 @@ describe('server env', () => {
     expect(e.PGLITE_MEMORY).toBe(false);
   });
 
+  it('reads an empty GUEST_SHEET_RANGE, as .env.example ships it, as the default tab', () => {
+    expect(parseServerEnv({ NODE_ENV: 'test', GUEST_SHEET_RANGE: '' }).GUEST_SHEET_RANGE).toBe('Guests');
+    expect(parseServerEnv({ NODE_ENV: 'test', GUEST_SHEET_RANGE: ' Sheet2!A1:Z ' }).GUEST_SHEET_RANGE).toBe('Sheet2!A1:Z');
+  });
+
   it('parses comma-separated planner forward inboxes', () => {
     const e = parseServerEnv({
       NODE_ENV: 'test',

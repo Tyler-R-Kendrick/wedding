@@ -172,7 +172,8 @@ const serverSchema = z.object({
   /** Spreadsheet id from the sheet's address (between /d/ and /edit). */
   GUEST_SHEET_ID: optionalString,
   /** Tab name or A1 range holding the guest list. */
-  GUEST_SHEET_RANGE: z.string().trim().min(1).default('Guests'),
+  // Empty (as `.env.example` ships it) means the default tab, not an invalid value that stops the app.
+  GUEST_SHEET_RANGE: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().trim().min(1).default('Guests')),
   /** Service account the sheet is shared with (Viewer). */
   GOOGLE_SERVICE_ACCOUNT_EMAIL: z.email().optional().or(z.literal('').transform(() => undefined)),
   /** That account's PEM private key; literal \n sequences are accepted. */
