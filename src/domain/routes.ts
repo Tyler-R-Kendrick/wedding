@@ -8,7 +8,6 @@ export const ROUTES = {
   ourVenue: '/our-venue',
   guestPortal: '/guests',
   guestTravel: '/guests/travel',
-  guestThings: '/guests/things-to-do',
   guestAsk: '/guests/ask-us',
   transportation: '/transportation',
   gifts: '/gifts',

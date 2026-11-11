@@ -41,11 +41,13 @@ describe('guest portal routes', () => {
     expect(to('/your-weekend')).toMatchObject({ destination: GUEST_PORTAL.root, permanent: true });
     expect(to('/the-wedding')).toMatchObject({ destination: GUEST_PORTAL.root, permanent: true });
     expect(to('/travel')).toMatchObject({ destination: GUEST_PORTAL.travel, permanent: true });
-    expect(to('/share-an-adventure')).toMatchObject({ destination: GUEST_PORTAL.thingsToDo, permanent: true });
-    expect(to('/share-an-adventure/:slug')).toMatchObject({ destination: `${GUEST_PORTAL.thingsToDo}/:slug`, permanent: true });
+    // The Things to Do list became the planner on Your Trip: its address and its older alias lead there.
+    expect(to('/guests/things-to-do')).toMatchObject({ destination: `${GUEST_PORTAL.travel}#plan`, permanent: true });
+    expect(to('/share-an-adventure')).toMatchObject({ destination: `${GUEST_PORTAL.travel}#plan`, permanent: true });
+    expect(to('/share-an-adventure/:slug')).toMatchObject({ destination: thingsToDoDetailPath(':slug'), permanent: true });
     expect(to('/ask-us')).toMatchObject({ destination: GUEST_PORTAL.askUs, permanent: true });
     // Every one of them lands on a portal route, which asks a signed-out reader to sign in.
-    for (const source of ['/your-weekend', '/the-wedding', '/travel', '/share-an-adventure', '/ask-us']) expect(isGuestPortalRoute(to(source)!.destination), source).toBe(true);
+    for (const source of ['/your-weekend', '/the-wedding', '/travel', '/share-an-adventure', '/ask-us', '/guests/things-to-do']) expect(isGuestPortalRoute(to(source)!.destination.split('#')[0]!), source).toBe(true);
     // The per-reader mapping that kept a public copy of each page is gone with the copies.
     for (const gone of ['guestPortalRedirectFor', 'isGuestPortalExperience', 'isGuestPortalPrincipal']) expect(gone in guestPortal, gone).toBe(false);
   });
@@ -54,7 +56,9 @@ describe('guest portal routes', () => {
     expect(thingsToDoDetailPath('starved-rock-state-park')).toBe('/guests/things-to-do/starved-rock-state-park');
     expect(isGuestPortalInternalRoute(thingsToDoDetailPath('starved-rock-state-park'))).toBe(true);
     expect(isGuestPortalInternalRoute('/guests/things-to-do/../admin')).toBe(false);
-    expect(isGuestPortalInternalRoute('/guests/things-to-do/')).toBe(true); // the list itself, trailing slash
+    // The list itself is gone (it redirects to Your Trip); only the detail pages live under it.
+    expect(isGuestPortalInternalRoute('/guests/things-to-do/')).toBe(false);
+    expect(isGuestPortalInternalRoute('/guests/things-to-do')).toBe(false);
     expect(isGuestPortalInternalRoute('/guests/nowhere')).toBe(false);
   });
 
@@ -86,7 +90,7 @@ describe('guest portal routes', () => {
 });
 
 describe('the door on every page about the wedding', () => {
-  const WEDDING_PAGES = ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation'];
+  const WEDDING_PAGES = ['/guests', '/guests/travel', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation'];
 
   it('sends a signed-out reader to sign in, and back to the page they asked for', async () => {
     for (const path of WEDDING_PAGES) {
@@ -95,7 +99,7 @@ describe('the door on every page about the wedding', () => {
     }
     // The query is carried through sign-in, first value of each key, blanks dropped.
     expect(await destination(() => requireSignedIn(anonymous, '/guests/ask-us', { q: 'dress code', empty: '', tag: ['a', 'b'] }))).toBe(`/sign-in?next=${encodeURIComponent('/guests/ask-us?q=dress+code&tag=a')}`);
-    expect(await destination(() => requireSignedIn(anonymous, '/guests/things-to-do', Promise.resolve({ category: 'food' })))).toBe(`/sign-in?next=${encodeURIComponent('/guests/things-to-do?category=food')}`);
+    expect(await destination(() => requireSignedIn(anonymous, '/guests/travel', Promise.resolve({ category: 'food' })))).toBe(`/sign-in?next=${encodeURIComponent('/guests/travel?category=food')}`);
   });
 
   it('lets a signed-in guest or administrator through', async () => {
@@ -127,11 +131,11 @@ describe('the door on every page about the wedding', () => {
 });
 
 describe('signed-in navigation centres on the guest portal', () => {
-  it('lists the dashboard, travel, things to do, the venue, Ask Us, and RSVP during RSVP_OPEN', () => {
+  it('lists the dashboard, Your Trip, the venue, Ask Us, and RSVP during RSVP_OPEN', () => {
     const nav = navFor('RSVP_OPEN', { signedIn: true, currentPath: GUEST_PORTAL.root });
     expect(nav.homeHref).toBe(GUEST_PORTAL.root);
-    expect(nav.primary.map((i) => i.href)).toEqual([GUEST_PORTAL.root, GUEST_PORTAL.travel, GUEST_PORTAL.thingsToDo, '/our-venue', GUEST_PORTAL.askUs, '/rsvp']);
-    expect(nav.primary.map((i) => i.label)).toEqual(['Home', 'Travel', 'Things to Do', 'Venue', 'Ask Us', 'RSVP']);
+    expect(nav.primary.map((i) => i.href)).toEqual([GUEST_PORTAL.root, GUEST_PORTAL.travel, '/our-venue', GUEST_PORTAL.askUs, '/rsvp']);
+    expect(nav.primary.map((i) => i.label)).toEqual(['Home', 'Your Trip', 'Venue', 'Ask Us', 'RSVP']);
     expect(nav.more).toEqual([]);
     expect(nav.member?.map((i) => i.href)).toEqual(['/gifts']);
   });

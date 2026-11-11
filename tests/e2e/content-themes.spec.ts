@@ -225,7 +225,8 @@ test.describe('a signed-out reader is told nothing about the wedding', () => {
       ['/the-wedding', '/guests'],
       ['/your-weekend', '/guests'],
       ['/travel', '/guests/travel'],
-      ['/share-an-adventure', '/guests/things-to-do'],
+      ['/guests/things-to-do', '/guests/travel'],
+      ['/share-an-adventure', '/guests/travel'],
       ['/share-an-adventure/starved-rock-state-park', '/guests/things-to-do/starved-rock-state-park'],
       ['/ask-us', '/guests/ask-us'],
       ['/faq', '/guests/ask-us'],
@@ -233,9 +234,10 @@ test.describe('a signed-out reader is told nothing about the wedding', () => {
     ] as const) {
       const moved = await request.get(source, { maxRedirects: 0 });
       expect(moved.status(), source).toBe(308);
-      expect(moved.headers().location, source).toMatch(new RegExp(`${destination}$`));
+      // The Things to Do list's addresses land on the planner's section of Your Trip.
+      expect(moved.headers().location, source).toMatch(new RegExp(`${destination}${destination === '/guests/travel' && source !== '/travel' ? '#plan' : ''}$`));
       await page.goto(source);
-      await expect(page, source).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(destination)}$`));
+      await expect(page, source).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(destination)}(?:#plan)?$`));
     }
     for (const gone of ['/explore-caa', '/explore-caa/white-city-ballroom', '/wedding-day', '/things-to-do']) {
       expect((await request.get(gone, { maxRedirects: 0 })).status(), gone).toBe(404);

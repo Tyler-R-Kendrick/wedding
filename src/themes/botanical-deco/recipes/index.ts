@@ -8,7 +8,6 @@ import { BotanicalAskPage } from './ask';
 import { BotanicalOurVenuePage } from './our-venue';
 import { BotanicalGiftsPage } from './gifts';
 import { BotanicalPhotoAlbumPage, BotanicalPhotosPage } from './photos';
-import { BotanicalGuidePage } from './guide';
 import { BotanicalHomePage } from './home';
 import { BotanicalRecommendationPage } from './recommendation';
 import { BotanicalStoryPage } from './story';
@@ -25,7 +24,6 @@ export const content: ContentRecipes = {
   story: BotanicalStoryPage,
   adventures: BotanicalAdventuresPage,
   adventureDetail: BotanicalAdventureDetailPage,
-  guide: BotanicalGuidePage,
   recommendation: BotanicalRecommendationPage,
   ourVenue: BotanicalOurVenuePage,
   venueSpace: BotanicalVenueSpacePage,

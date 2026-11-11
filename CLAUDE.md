@@ -133,7 +133,11 @@ needs no account at all (dev defaults, Better Auth, PGlite, local-fs storage, th
   site's own pages. The site never calls a hosted model — no Anthropic, no Vercel AI Gateway, no
   OpenAI-compatible vendor, whatever keys are set — and embeddings and photo captions run
   in-process. Never add a hosted AI adapter or an `@ai-sdk/<vendor>` package;
-  `tests/unit/ai-model-provider.test.ts` fails if one appears.
+  `tests/unit/ai-model-provider.test.ts` fails if one appears. The trip planner's matching model
+  (`Xenova/bge-small-en-v1.5`) and speech model (`onnx-community/whisper-tiny.en`) also run in the
+  guest's browser, in a worker (`src/lib/ai/local`, installed from every page by
+  `<LocalModelKeeper />`); their weights download from the Hugging Face Hub into the browser's cache
+  and the ONNX runtime is served from `/ort/` (`scripts/copy-ort-wasm.mjs`).
 - **Gift links are not a credential.** Registry and "next adventures" links live in the
   `gift_links` table and are edited in `/admin/gifts`, which validates every URL against the
   redirect allowlist at write time and again at read time. `REGISTRY_LINKS_JSON` and

@@ -205,12 +205,14 @@ function isGuestOnly(path: string): boolean {
 
 /**
  * Where a permanent alias finishes in the browser. The 308 itself is checked before the browser
- * follows it. Every alias now leads to a guest page (the dashboard, Travel & Stay, Things to Do,
+ * follows it. Every alias now leads to a guest page (the dashboard, Your Trip, a recommendation,
  * Ask Us, gifts), so a signed-out visitor is sent on to sign-in with `next` set to that page, and
  * never lands on the page itself. Anyone signed in stays on the destination.
  */
 function redirectLanded(destination: string, kind: CrawlPersonaKind): RegExp {
-  if (kind === 'anonymous' && isGuestOnly(destination)) return new RegExp(`\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(destination))}(?:$|&)`);
+  // A fragment (`/guests/travel#plan`) never reaches the server, so the door's `next` is the page.
+  const page = destination.split('#')[0]!;
+  if (kind === 'anonymous' && isGuestOnly(page)) return new RegExp(`\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(page))}(?:$|&|#)`);
   return new RegExp(`${escapeRegExp(destination)}(?:$|[?#])`);
 }
 
@@ -326,7 +328,7 @@ test('a signed-out visitor can open every public, gate and alias route', async (
   // Every guest page answers a signed-out GET with a redirect to sign-in that carries the way back,
   // and nothing of the page. (`/rsvp`, `/trip` and the upload pages render a gate in place instead;
   // they are opened by the guest walk.)
-  for (const path of ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation', '/gifts', '/photos', '/photos/guest-uploads']) {
+  for (const path of ['/guests', '/guests/travel', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation', '/gifts', '/photos', '/photos/guest-uploads']) {
     const res = await request.get(path, { maxRedirects: 0 });
     expect(res.status(), `${path} signed out`).toBe(307);
     expect(res.headers().location, `${path} signed out`).toMatch(new RegExp(`\\/sign-in\\?next=${escapeRegExp(encodeURIComponent(path))}$`));

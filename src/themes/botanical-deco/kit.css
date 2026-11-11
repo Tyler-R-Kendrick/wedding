@@ -3294,10 +3294,6 @@
   color: var(--color-on-surface-muted);
 }
 
-.bd-itinerary .bd-card__inner {
-  gap: var(--spacing-md);
-}
-
 .bd-docent {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
@@ -3638,10 +3634,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-md);
-}
-
-.bd-plan-result {
-  margin-block-start: var(--spacing-lg);
 }
 
 .bd-slot {

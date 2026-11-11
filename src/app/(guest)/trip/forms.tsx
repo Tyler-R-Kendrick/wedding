@@ -87,7 +87,7 @@ export function ProfileForm({ profile, suggestion, deleteAction }: { profile: Tr
       ) : null}
       {state.status === 'saved' ? (
         <p role="status" className="rounded-sm border border-primary/30 p-3">
-          Saved. Your searches on Travel &amp; Stay now start from these preferences.
+          Saved. Your searches on Your Trip now start from these preferences.
         </p>
       ) : null}
       <Summary state={state} />

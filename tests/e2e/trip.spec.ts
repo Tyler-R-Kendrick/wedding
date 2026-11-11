@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { contextAs } from './helpers/principal';
 
 /**
- * Your trip, as a signed-in guest.
+ * Your flights and hotel (/trip), as a signed-in guest.
  *
  * This page had NO authenticated coverage at all until now. `tests/e2e/travel.spec.ts` visits
  * `/trip` and asserts the signed-out state, and it passed — but a seeded test principal could not
@@ -12,13 +12,13 @@ import { contextAs } from './helpers/principal';
  * drifted from the real one, so the spec was quietly asserting the same page in both roles.
  */
 
-test.describe('Your trip (signed in)', () => {
+test.describe('Your flights and hotel (signed in)', () => {
   test(`renders the guest's own trip, with axe clean`, async ({ browser }) => {
     const ctx = await contextAs(browser, 'A1');
     const page = await ctx.newPage();
     await page.goto('/trip');
 
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your trip');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your flights and hotel');
     // The signed-out prompt must be gone: reaching it would mean the entitlement regressed and
     // this spec had silently gone back to testing the anonymous page.
     await expect(page.getByText(/Open the link from your invitation/)).toHaveCount(0);

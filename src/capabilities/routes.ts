@@ -12,7 +12,6 @@ export const INTERNAL_ROUTES = [
   '/photos',
   '/guests',
   '/guests/travel',
-  '/guests/things-to-do',
   '/guests/ask-us',
   '/rsvp',
   // One part of the RSVP each (`PART_STEP` in components/rsvp/RsvpTaskList.tsx; a unit test keeps

@@ -80,6 +80,9 @@ const nextConfig: NextConfig = {
   ],
   // Migrations are read from disk at runtime (db:migrate, dev auto-migrate).
   outputFileTracingIncludes: { '/**': ['./src/db/migrations/**'] },
+  // The on-device models (src/lib/ai/local) run only in the browser's worker. No server code loads
+  // them, and a server function must never carry them: onnxruntime-node alone is hundreds of MB.
+  outputFileTracingExcludes: { '/**': ['node_modules/@huggingface/transformers/**', 'node_modules/onnxruntime-node/**', 'node_modules/onnxruntime-web/**'] },
   async headers() {
     // Everything EXCEPT the routes that serve user-uploaded bytes. Those set their own
     // `Content-Security-Policy: sandbox`, which is strictly stronger for a document the site did

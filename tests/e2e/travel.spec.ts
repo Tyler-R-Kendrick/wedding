@@ -74,7 +74,7 @@ test.describe("Travel & Stay", () => {
   }) => {
     await page.goto("/trip");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Your trip",
+      "Your flights and hotel",
     );
     await expect(
       page.getByText(/with the email on your invitation to see and plan your trip/),

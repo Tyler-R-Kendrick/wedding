@@ -11,13 +11,14 @@ const data: TravelPageData = {
   viewer: { kind: 'anonymous', hasProfile: false },
 };
 
-describe('Travel & Stay recipe', () => {
+describe('Your Trip recipe (fallback)', () => {
   it('renders landmarks, the block first with honest placeholders, both airports, and no live search on load', () => {
-    render(<TravelPageRecipe theme="botanical-deco" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p> }} />);
+    render(<TravelPageRecipe theme="botanical-deco" data={data} slots={{ flightSearch: <p>flight-search-slot</p>, hotelSearch: <p>hotel-search-slot</p>, planner: <p>planner-slot</p> }} />);
     expect(screen.getByRole('main')).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Getting to Chicago');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your Trip');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'Your trip']);
+    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'What to do']);
+    expect(screen.getByText('planner-slot')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Chicago Athletic Association Hotel' })).toBeTruthy();
     expect(screen.getByText('ORD')).toBeTruthy();
     expect(screen.getByText('MDW')).toBeTruthy();

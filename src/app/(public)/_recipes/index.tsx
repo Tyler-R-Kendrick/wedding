@@ -6,7 +6,7 @@ import type { StoryPageData } from '@/capabilities/get_story';
 import type { GiftsProps, PhotoAlbumProps, PhotosProps, TravelProps } from '@/themes/content-types';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type { RecommendationCard } from '@/domain/content/views';
-import { GUEST_PORTAL, isGuestPortalRoute } from '@/domain/lifecycle/guest-portal';
+import { GUEST_PORTAL, isGuestPortalRoute, isPlaceDetailPath } from '@/domain/lifecycle/guest-portal';
 import { ROUTES } from '@/domain/routes';
 import type { Reader } from '@/domain/content/page-context';
 import { ANONYMOUS, getPrincipal } from '@/lib/principal';
@@ -20,7 +20,6 @@ import { AdventureDetailPage } from './AdventureDetailPage';
 import { AdventuresPage, type AdventuresRecipeProps } from './AdventuresPage';
 import { AskPage, type AskRecipeProps } from './AskPage';
 import { OurVenuePage } from './OurVenuePage';
-import { GuidePage, type GuideRecipeProps } from './GuidePage';
 import { RecommendationPage } from './RecommendationPage';
 import { StoryPage } from './StoryPage';
 import { VenueSpacePage } from './VenueSpacePage';
@@ -38,7 +37,6 @@ export interface PageRecipes {
   StoryPage: ComponentType<{ data: StoryPageData }>;
   AdventuresPage: ComponentType<AdventuresRecipeProps>;
   AdventureDetailPage: ComponentType<{ data: AdventureDetailData }>;
-  GuidePage: ComponentType<GuideRecipeProps>;
   RecommendationPage: ComponentType<{ card: RecommendationCard }>;
   OurVenuePage: ComponentType<{ data: OurVenuePageData }>;
   VenueSpacePage: ComponentType<{ data: VenueSpaceData }>;
@@ -57,7 +55,6 @@ export const placeholderRecipes: PageRecipes = {
   StoryPage,
   AdventuresPage,
   AdventureDetailPage,
-  GuidePage,
   RecommendationPage,
   OurVenuePage,
   VenueSpacePage,
@@ -78,10 +75,10 @@ async function requestFrame(theme: ThemeId, currentPath: string, within: boolean
   const onPortal = isGuestPortalRoute(requestPath);
   // Guest layout does not wrap these routes (the recipe already has a Shell). Use the portal
   // URL so that Shell's nav is the guest portal, with the section path on a detail page so the
-  // parent item stays current.
+  // parent item stays current: a recommendation's page belongs to Your Trip.
   const pathForFrame =
-    onPortal && within && requestPath.startsWith(`${GUEST_PORTAL.thingsToDo}/`)
-      ? GUEST_PORTAL.thingsToDo
+    onPortal && within && isPlaceDetailPath(requestPath)
+      ? GUEST_PORTAL.travel
       : onPortal
         ? requestPath
         : currentPath;
@@ -120,8 +117,7 @@ export const themedRecipes: PageRecipes = {
   StoryPage: themed('story', ROUTES.story, StoryPage),
   AdventuresPage: themed('adventures', ROUTES.adventures, AdventuresPage),
   AdventureDetailPage: themed('adventureDetail', ROUTES.adventures, AdventureDetailPage, { within: true }),
-  GuidePage: themed('guide', ROUTES.guestThings, GuidePage, { signedIn: true }),
-  RecommendationPage: themed('recommendation', ROUTES.guestThings, RecommendationPage, { signedIn: true, within: true }),
+  RecommendationPage: themed('recommendation', ROUTES.guestTravel, RecommendationPage, { signedIn: true, within: true }),
   OurVenuePage: themed('ourVenue', ROUTES.ourVenue, OurVenuePage),
   VenueSpacePage: themed('venueSpace', ROUTES.ourVenue, VenueSpacePage, { within: true }),
   AskPage: themed('ask', ROUTES.guestAsk, AskPage),
@@ -143,4 +139,4 @@ const anonymousRecipes = {
 
 export const publicRecipes = (reader: Reader): typeof anonymousRecipes => (reader === 'anonymous' ? anonymousRecipes : recipes);
 
-export type { AdventuresRecipeProps, AskRecipeProps, GuideRecipeProps };
+export type { AdventuresRecipeProps, AskRecipeProps };

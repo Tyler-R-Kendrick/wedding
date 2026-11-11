@@ -16,7 +16,7 @@ const { Shell, Section, SectionHeading, Prose, Link, Button, Card, Stat, Placeho
 const { PageHead, Chips } = content;
 
 /**
- * Travel & Stay, Botanical Hour: one page for the whole trip, in the order a guest books it.
+ * Your Trip, Botanical Hour: one page for the whole trip, in the order a guest books it.
  *
  * **Stay, then flights, then getting around.** The room block is first because it is the first thing
  * to do and the only one with a deadline. Each fact is said once: the earlier page told a guest to
@@ -31,6 +31,9 @@ const { PageHead, Chips } = content;
  *
  * Nothing here promises what is not decided: there is no line about ride pickup points or ride
  * benefits. If one is settled it is added to "Getting around" then.
+ *
+ * **Then what to do.** The last section is the planner (`slots.planner`): it took the place of the
+ * Things to Do list, so a guest plans the free time on the same page as the room and the flights.
  */
 export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alternatives, facts, slots, tripHref, frame }) => {
   const block = venue.block && !venue.block.placeholder ? venue.block : null;
@@ -38,9 +41,8 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
   return (
     <Shell frame={frame} banner={<PreviewBanner lifecycle={frame.lifecycle} />}>
       <PageHead
-        eyebrow="Travel & Stay"
-        title="Plan your trip"
-        lede="We’re grateful you’re making the trip. Here is where to stay, how to get here, and how to get around once you land."
+        title="Your Trip"
+        lede="We’re grateful you’re making the trip. Book your room first. Then here is how to get here, how to get around, and what to do while you are here."
       >
         <Chips
           label="On this page"
@@ -48,6 +50,7 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
             { label: "Where to stay", href: "#stay" },
             { label: "Flights", href: "#flights" },
             { label: "Getting around", href: "#getting-around" },
+            ...(slots.planner ? [{ label: "What to do", href: "#plan" }] : []),
           ]}
         />
       </PageHead>
@@ -214,23 +217,20 @@ export const BotanicalTravelPage: ContentRecipe<TravelProps> = ({ venue, alterna
         </dl>
       </Section>
 
-      <Section id="make-a-trip" labelledBy="make-a-trip-title" layout="split">
-        <SectionHeading level={2} id="make-a-trip-title" title="Make a trip of it" />
-        <ul className="bd-travel__more">
-          <li>
-            <Link standalone href="/guests/things-to-do">
-              Our Chicago guide and map
-            </Link>
-            <span className="bd-muted">Our favorite places, and a plan for a free afternoon.</span>
-          </li>
-          <li>
-            <Link standalone href={tripHref}>
-              Keep your plans in one place
-            </Link>
-            <span className="bd-muted">Add your flights and hotel so we can help if plans change.</span>
-          </li>
-        </ul>
-      </Section>
+      {slots.planner ? (
+        <Section id="plan" labelledBy="plan-title" layout="split">
+          <SectionHeading level={2} id="plan-title" title="What to do" />
+          <div className="bd-travel__plan">
+            <Prose>
+              <p>
+                Tell us what you are in the mood for and we will suggest a few of our own favorite places. Save the ones you like to your weekend.
+                Your flights and hotel, kept on <Link href={tripHref}>Your flights and hotel</Link>, join it on your calendar.
+              </p>
+            </Prose>
+            {slots.planner}
+          </div>
+        </Section>
+      ) : null}
     </Shell>
   );
 };

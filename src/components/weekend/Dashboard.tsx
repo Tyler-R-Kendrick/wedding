@@ -314,7 +314,7 @@ function taskCard(card: TaskCard, data: DashboardData): CardContent | null {
 }
 
 const EXPLORE: Record<ExploreCard, { title: string; line: string; href: string }> = {
-  things: { title: 'Things to do', line: 'Our favorite places, a map, and a plan for a free afternoon.', href: GUEST_PATHS.things },
+  things: { title: 'What to do', line: 'Our favorite places, and help planning your free time.', href: GUEST_PATHS.things },
   venue: { title: 'Our venue', line: 'The building, its rooms, and what to look for.', href: GUEST_PATHS.venue },
   story: { title: 'Our story', line: 'How we met and how we got here.', href: GUEST_PATHS.story },
   ask: { title: 'Ask us', line: 'Answers to the questions we hear most.', href: GUEST_PATHS.ask },

@@ -86,13 +86,13 @@ const ROOM_SLUGS: [RegExp, string][] = [
 const ROUTE_WORDS: [RegExp, string][] = [
   [/rsvp/i, '/rsvp'],
   [/travel|stay|hotel|airport|flight/i, '/guests/travel'],
-  // Getting around is a section of Travel & Stay; /transportation is one guest's ride benefit.
+  // Getting around is a section of Your Trip; /transportation is one guest's ride benefit.
   [/transport|shuttle|ride|uber|parking|valet/i, '/guests/travel'],
   [/gift|registry/i, '/gifts'],
   [/photo|video|gallery/i, '/photos'],
   [/story|met|meet/i, '/our-story'],
   [/adventure|memor/i, '/our-adventures'],
-  [/recommend|itinerar|things to do|share an adventure/i, '/guests/things-to-do'],
+  [/recommend|itinerar|things to do|share an adventure/i, '/guests/travel'],
   [/caa|athletic|venue|building|hotel/i, '/our-venue'],
   [/wedding|ceremony|reception|schedule|when|where/i, '/guests'],
   [/weekend|my weekend/i, '/guests'],

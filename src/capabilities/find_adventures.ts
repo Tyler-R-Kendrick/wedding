@@ -64,14 +64,14 @@ export const findAdventures = defineCapability<z.infer<typeof input>, FindAdvent
     if (i?.slug) {
       const one = await getRecommendation(rctx, i.slug);
       if (!one) return err(new CapabilityError('not_found', "We don't have a recommendation by that name."));
-      return ok({ data: { route: ROUTES.guestThings, items: [one.card] }, sources: one.sources });
+      return ok({ data: { route: ROUTES.guestTravel, items: [one.card] }, sources: one.sources });
     }
     const { items, plan, sources } = await findRecommendations(rctx, {
       query: i?.query, category: i?.category, interests: i?.interests, maxMinutes: i?.maxMinutes, kids: i?.kids, insideCaa: i?.insideCaa, limit: i?.limit,
     });
     return ok({
       data: {
-        route: ROUTES.guestThings,
+        route: ROUTES.guestTravel,
         items,
         ...(plan ? { plan: { stops: plan.stops.map(({ item: { interests: _i, ...recommendation }, minutes }) => ({ recommendation, minutes })), totalMinutes: plan.totalMinutes, skippedForTime: plan.skippedForTime } } : {}),
       },

@@ -187,14 +187,14 @@ test.describe('explore journey', () => {
     }
   });
 
-  test('legacy things-to-do URLs require sign-in before the guide loads', async ({ page }) => {
+  test('legacy things-to-do URLs require sign-in before the planner on Your Trip loads', async ({ page }) => {
+    // The Things to Do list became the planner on Your Trip; its old addresses go there, through sign-in.
+    await page.goto('/guests/things-to-do');
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel(?:#plan)?$/);
     await page.goto('/share-an-adventure?minutes=45&interest=architecture');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fthings-to-do/);
-    // The question a guest was asking travels with them through the door.
-    const next = new URL(page.url()).searchParams.get('next') ?? '';
-    expect(next).toMatch(/^\/guests\/things-to-do\?/);
-    expect(next).toContain('minutes=45');
-    expect(next).toContain('interest=architecture');
+    // The list's "plan by minutes and interest" form went with the list; its query has no reader on
+    // Your Trip, where a guest asks the planner in their own words instead.
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel(?:#plan)?$/);
     await page.goto('/guests/things-to-do/starved-rock-state-park');
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fthings-to-do%2Fstarved-rock-state-park$/);
     // `/things-to-do` was an alias once; it is not a page now.

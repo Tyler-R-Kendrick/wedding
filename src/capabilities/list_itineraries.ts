@@ -31,6 +31,6 @@ export const listItineraries = defineCapability<z.infer<typeof input>, Itinerari
     const db = requireService<Db>(ctx, 'db');
     const rctx = await createReadContext(db, ctx.principal, ctx.surface ?? 'ui', ctx.now);
     const { itineraries, sources } = await readItineraries(rctx, { bucket: i?.bucket });
-    return ok({ data: { route: ROUTES.guestThings, buckets: [...ITINERARY_BUCKETS], itineraries }, sources });
+    return ok({ data: { route: ROUTES.guestTravel, buckets: [...ITINERARY_BUCKETS], itineraries }, sources });
   },
 });

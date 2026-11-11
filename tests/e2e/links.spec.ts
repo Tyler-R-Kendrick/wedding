@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test';
 // Anonymous on the production build, so this is the link graph a signed-out reader meets: the
 // public pages, and the door or gate each guest page answers with (`/guests`, `/our-venue`,
 // `/gifts` and `/transportation` send them to sign in; `/trip` and `/rsvp` render a gate). The
-// signed-in graph — the dashboard, Travel & Stay, Things to Do — is walked with a session by
+// signed-in graph — the dashboard, Your Trip, the recommendation pages — is walked with a session by
 // site-crawler.spec.ts on the test server.
 const ROUTES = ['/', '/our-story', '/our-adventures', '/credits', '/privacy', '/terms', '/sign-in', '/guests', '/guests/travel', '/our-venue', '/gifts', '/transportation', '/trip', '/rsvp'];
 

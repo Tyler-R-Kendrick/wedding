@@ -1,17 +1,15 @@
 import type { ReactNode } from 'react';
-import type { FindAdventuresData } from '@/capabilities/find_adventures';
 import type { FaqPageData } from '@/capabilities/get_faq';
 import type { StoryPageData } from '@/capabilities/get_story';
 import type { OurVenuePageData } from '@/capabilities/get_venue_facts';
 import type { AdventuresPageData } from '@/capabilities/list_adventures';
-import type { ItinerariesData } from '@/capabilities/list_itineraries';
 import type { GiftLinks } from '@/capabilities/list_gift_links';
 import type { GalleryPage } from '@/capabilities/media';
 import type { StaticSearchData } from '@/capabilities/search_wedding_information_static';
 import type { AdventureDetailData } from '@/capabilities/show_adventure';
 import type { VenueRoomData } from '@/capabilities/show_venue_room';
 import type {
-  AdventureCard, FaqView, HandoffView, ItineraryView, OperationalFieldView, ProvenanceViewData, RecommendationCard, RecommendationSummary, StorySectionView, TextBlockView, VenueFactView,
+  AdventureCard, FaqView, HandoffView, OperationalFieldView, ProvenanceViewData, RecommendationCard, StorySectionView, TextBlockView, VenueFactView,
   VenueSpaceView,
 } from '@/domain/content/views';
 import type { Citation } from '@/contracts/provenance';
@@ -34,15 +32,6 @@ export interface AdventuresProps {
 }
 export interface AdventureDetailProps {
   data: AdventureDetailData;
-}
-export interface GuideProps {
-  itineraries: ItinerariesData;
-  recommendations: FindAdventuresData;
-  activeBucket?: string;
-  /** Server-authorized guest map and account links; never supplied to anonymous readers. */
-  guestTools?: import('react').ReactNode;
-  signedIn?: boolean;
-  plan?: { minutes: number; kids: boolean; interest?: string; result: FindAdventuresData['plan'] };
 }
 export interface RecommendationProps {
   card: RecommendationCard;
@@ -113,7 +102,8 @@ export interface TravelProps {
   };
   /** The capability's own citations, rendered as the page's source line. */
   sources: Citation[];
-  slots: { flightSearch: ReactNode; hotelSearch: ReactNode };
+  /** `planner`: the Your Trip planner, rendered as the page's last section when present. */
+  slots: { flightSearch: ReactNode; hotelSearch: ReactNode; planner?: ReactNode };
   tripHref: string;
 }
 
@@ -124,7 +114,6 @@ export interface ContentRecipes {
   story: ContentRecipe<StoryProps>;
   adventures: ContentRecipe<AdventuresProps>;
   adventureDetail: ContentRecipe<AdventureDetailProps>;
-  guide: ContentRecipe<GuideProps>;
   recommendation: ContentRecipe<RecommendationProps>;
   ourVenue: ContentRecipe<OurVenueProps>;
   venueSpace: ContentRecipe<VenueSpaceProps>;
@@ -145,12 +134,6 @@ export interface ChipItem {
   href: string;
   label: string;
   active?: boolean;
-}
-
-export interface StopItem {
-  recommendation: RecommendationSummary;
-  minutes?: number;
-  note?: string;
 }
 
 export interface ContentKit {
@@ -191,9 +174,7 @@ export interface ContentKit {
   /** Explicit external handoffs: provider named, new tab, disclosure printed. */
   Handoffs: (p: { handoffs: HandoffView[]; label: string }) => ReactNode;
   /** Stops of an itinerary or a composed plan, in order. */
-  StopList: (p: { stops: StopItem[]; label: string }) => ReactNode;
   /** One itinerary (`article[data-itinerary]`). */
-  ItineraryCard: (p: { itinerary: ItineraryView; index: number }) => ReactNode;
   /** Docent list: what to look for in the building or a room. */
   LookForList: (p: { items: { id: string; text: string }[]; label: string }) => ReactNode;
   /** The four event spaces (`article[data-space]`). */

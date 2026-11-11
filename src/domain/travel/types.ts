@@ -328,6 +328,11 @@ export const itineraryDetailsInput = z
     hotelName: z.string().trim().max(120).optional(),
     address: z.string().trim().max(200).optional(),
     note: z.string().trim().max(500).optional(),
+    // A place saved from the planner on Your Trip: which of our recommendations, and the part of
+    // the weekend the guest put it in. The item's own times are that part's planning block.
+    placeId: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80).optional(),
+    day: z.enum(['fri', 'sat', 'sun']).optional(),
+    part: z.enum(['morning', 'afternoon', 'evening']).optional(),
   })
   .strict();
 

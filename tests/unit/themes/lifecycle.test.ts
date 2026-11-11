@@ -57,13 +57,12 @@ describe('navigation by lifecycle state', () => {
   ];
   const PORTAL_PRIMARY = [
     { label: 'Home', href: '/guests' },
-    { label: 'Travel', href: '/guests/travel' },
-    { label: 'Things to Do', href: '/guests/things-to-do' },
+    { label: 'Your Trip', href: '/guests/travel' },
     { label: 'Venue', href: '/our-venue' },
     { label: 'Ask Us', href: '/guests/ask-us' },
   ];
   /** Every page that says when or where the wedding is, or is a household's own. None is offered signed out. */
-  const WEDDING_PAGES = ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/our-venue', '/rsvp', '/transportation', '/trip', '/gifts', '/photos'];
+  const WEDDING_PAGES = ['/guests', '/guests/travel', '/guests/ask-us', '/our-venue', '/rsvp', '/transportation', '/trip', '/gifts', '/photos'];
   /** The account menu, by state: only what a guest can use now. */
   const MEMBER: Record<LifecycleState, string[]> = {
     TEASER: [],

@@ -20,7 +20,7 @@ export const GUEST_PATHS = {
   stay: '/guests/travel#stay',
   flights: '/guests/travel#flights',
   around: '/guests/travel#getting-around',
-  things: '/guests/things-to-do',
+  things: '/guests/travel#plan',
   ask: '/guests/ask-us',
   venue: '/our-venue',
   rsvp: '/rsvp',

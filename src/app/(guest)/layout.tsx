@@ -40,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
  *
  * `Shell` renders `<main id="main">`, so the pages under it render a plain `<div className="page">`
  * — one `main` per document, which `tests/e2e` and axe both check. The guest-portal content
- * pages (`/guests/travel`, `/guests/things-to-do`, `/guests/things-to-do/[slug]`, `/guests/ask-us`)
+ * pages (`/guests/travel`, `/guests/things-to-do/[slug]`, `/guests/ask-us`)
  * are the public recipes re-exported, and those recipes already render that Shell. Wrapping them
  * again produced a second header, a second `main`, and a second view-as band. `/guests` itself
  * does not bring a Shell, so it still gets this one.

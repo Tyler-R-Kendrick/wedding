@@ -28,6 +28,8 @@ export interface TravelPageData {
 export interface TravelPageSlots {
   flightSearch: ReactNode;
   hotelSearch: ReactNode;
+  /** The Your Trip planner; the page's last section when present. */
+  planner?: ReactNode;
 }
 
 /*
@@ -171,8 +173,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
   return (
     <main id="main" className="mx-auto max-w-[46rem] px-4 pb-16 pt-10">
       <header>
-        <p className="uppercase tracking-wide text-primary">Travel &amp; Stay</p>
-        <h1 className="mt-1 text-4xl font-semibold">Getting to Chicago</h1>
+        <h1 className="mt-1 text-4xl font-semibold">Your Trip</h1>
         <p className="mt-3 max-w-prose">
           We are getting married on {formatLongDate(WEDDING_DATE_ISO)} at the {facts.venue.name}. Here is how to get here and where to sleep, with links that always take you to the airline or hotel to book. We never handle payments.
         </p>
@@ -183,6 +184,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
             <li><a className="underline underline-offset-4" href="#flights">Flights</a></li>
             <li><a className="underline underline-offset-4" href="#hotel-rates">Hotel rates</a></li>
             <li><a className="underline underline-offset-4" href="#getting-around">Getting around</a></li>
+            {slots.planner ? <li><a className="underline underline-offset-4" href="#plan">What to do</a></li> : null}
           </ul>
         </nav>
       </header>
@@ -241,19 +243,23 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
         </p>
       </Section>
 
-      <Section id="your-trip" eyebrow="Keep track" title="Your trip">
-        {viewer.kind === 'guest' ? (
+      {slots.planner ? (
+        <Section id="plan" eyebrow="Your free time" title="What to do">
           <p>
-            Keep your flights and hotel in one place on{' '}
-            <a className="underline underline-offset-4" href="/trip">
-              your trip page
-            </a>
-            {viewer.hasProfile ? ', which already knows your preferred airport.' : '.'}
+            Tell us what you are in the mood for and we will suggest a few of our own favorite places. Save the ones you like to your weekend.
+            {viewer.kind === 'guest' ? (
+              <>
+                {' '}Your flights and hotel, kept on{' '}
+                <a className="underline underline-offset-4" href="/trip">
+                  Your flights and hotel
+                </a>
+                , join it on your calendar.
+              </>
+            ) : null}
           </p>
-        ) : (
-          <p>Once you have claimed your invitation, you can keep your flights and hotel on a trip page and we will suggest things to do in your free time.</p>
-        )}
-      </Section>
+          {slots.planner}
+        </Section>
+      ) : null}
 
     </main>
   );

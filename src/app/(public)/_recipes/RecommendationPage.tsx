@@ -5,11 +5,11 @@ import { PageIntro, RecommendationCardView, Shell } from './kit';
 
 export function RecommendationPage({ card }: { card: RecommendationCard }) {
   return (
-    <Shell current={ROUTES.guestThings}>
-      <PageIntro eyebrow="Things to Do" title={card.title} />
+    <Shell current={ROUTES.guestTravel}>
+      <PageIntro eyebrow="Your Trip" title={card.title} />
       <RecommendationCardView card={card} headingLevel={2} />
       <p className="wp-prose">
-        <Link className="link-block" href={ROUTES.guestThings}>← All recommendations and itineraries</Link>
+        <Link className="link-block" href={`${ROUTES.guestTravel}#plan`}>← Back to Your Trip</Link>
       </p>
     </Shell>
   );

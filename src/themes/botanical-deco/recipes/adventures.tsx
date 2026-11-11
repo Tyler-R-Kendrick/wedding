@@ -80,7 +80,7 @@ export const BotanicalAdventuresPage: ContentRecipe<AdventuresProps> = ({ data, 
               {details ? (
                 <>
                   {' '}
-                  {CONTENT_COPY.adventures.borrow} <Link href={ROUTES.guestThings}>Things to Do</Link>.
+                  {CONTENT_COPY.adventures.borrow} <Link href={`${ROUTES.guestTravel}#plan`}>Your Trip</Link>.
                 </>
               ) : null}
             </p>

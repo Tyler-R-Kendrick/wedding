@@ -12,7 +12,7 @@ import type { NavItem, NavModel, VenueFacts } from '@/themes/types';
  *
  * - **Signed out**: the two of us and nothing else — Our Story, Our Adventures, Sign in. The date,
  *   the venue and the city are the invited guests'; no link here leads to a page that names them.
- * - **Signed in**: the guest portal — the dashboard, Travel, Things to Do, the venue, Ask Us, and
+ * - **Signed in**: the guest portal — the dashboard, Your Trip, the venue, Ask Us, and
  *   the RSVP while replies are open. The account menu holds what is left (`member`), and only what
  *   a guest can use in this state: no photos before the day, no gifts before the RSVP.
  *
@@ -35,10 +35,9 @@ const PAGES = Object.fromEntries(
   }),
 ) as Record<PageKey, NavItem>;
 
-const PORTAL_NAV: Record<'portal' | 'travel' | 'things' | 'ask', NavItem> = {
+const PORTAL_NAV: Record<'portal' | 'travel' | 'ask', NavItem> = {
   portal: { label: navLabel(sitemapPage('portal')), href: GUEST_PORTAL.root },
   travel: { label: navLabel(sitemapPage('guest-travel')), href: GUEST_PORTAL.travel },
-  things: { label: navLabel(sitemapPage('guest-things')), href: GUEST_PORTAL.thingsToDo },
   ask: { label: navLabel(sitemapPage('guest-ask')), href: GUEST_PORTAL.askUs },
 };
 
@@ -134,7 +133,7 @@ function stickyForState(state: LifecycleState, opts: NavOptions): NavItem[] {
 
 /** Signed-in guests (and admins previewing as a guest) centre the chrome on `/guests`. */
 function guestPortalNav(state: LifecycleState, opts: NavOptions): NavModel {
-  const primary: NavItem[] = [PORTAL_NAV.portal, PORTAL_NAV.travel, PORTAL_NAV.things, { ...PAGES.caa }, PORTAL_NAV.ask];
+  const primary: NavItem[] = [PORTAL_NAV.portal, PORTAL_NAV.travel, { ...PAGES.caa }, PORTAL_NAV.ask];
   if (MEMBER_BY_STATE[state].includes('rsvp') && isBuiltRoute(PAGES.rsvp.href)) primary.push({ ...PAGES.rsvp });
   const member = memberNavFor(state).filter((i) => i.href !== PAGES.rsvp.href);
   return {

@@ -2,7 +2,7 @@
   "name": "wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "Tyler & Sara's wedding website \u2014 design tooling, skills, and quality gates",
+  "description": "Tyler & Sara's wedding website — design tooling, skills, and quality gates",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -11,11 +11,14 @@
     "stages/*"
   ],
   "scripts": {
+    "predev": "node scripts/copy-ort-wasm.mjs",
     "dev": "next dev",
     "clean": "node scripts/clean.mjs",
+    "prebuild": "node scripts/copy-ort-wasm.mjs",
     "build": "next build",
     "start": "next start",
     "prepare": "node scripts/install-git-hooks.mjs",
+    "postinstall": "node scripts/copy-ort-wasm.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run --project unit --project ui --project \"stage:*\"",
@@ -117,6 +120,9 @@
     "@browser-ai/core": "^3.0.3",
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
+    "@huggingface/transformers": "^4.3.2",
+    "@openuidev/lang-core": "^1.1.0",
+    "@openuidev/react-lang": "^1.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@vercel/connect": "^2.3.2",
     "@wedding/sitemap": "*",

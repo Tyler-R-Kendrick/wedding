@@ -46,11 +46,10 @@ async function accountMenuHrefs(page: Page): Promise<string[]> {
   return page.getByRole('group', { name: 'Your account' }).getByRole('link').evaluateAll((nodes) => nodes.map((a) => a.getAttribute('href')).filter(Boolean) as string[]);
 }
 
-/** The portal's own navigation, in order: the dashboard, the trip, the city, the building, questions. */
+/** The portal's own navigation, in order: the dashboard, the trip (and what to do), the building, questions. */
 const GUEST_NAV = [
   ['Home', '/guests'],
-  ['Travel', '/guests/travel'],
-  ['Things to Do', '/guests/things-to-do'],
+  ['Your Trip', '/guests/travel'],
   ['Venue', '/our-venue'],
   ['Ask Us', '/guests/ask-us'],
 ] as const;
@@ -69,10 +68,10 @@ async function expectGuestPortalNav(page: Page) {
   }
   // No page that was folded into the portal is still linked.
   for (const l of links) {
-    expect(l.href, `the guest navigation links a removed page (${l.label})`).not.toMatch(/^\/(?:your-weekend|the-wedding|travel|ask-us|share-an-adventure)(?:[/?#]|$)/);
+    expect(l.href, `the guest navigation links a removed page (${l.label})`).not.toMatch(/^\/(?:your-weekend|the-wedding|travel|ask-us|share-an-adventure)(?:[/?#]|$)|^\/guests\/things-to-do(?:[?#]|$)/);
   }
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/^Welcome/);
-  await followGuestNav(page, 'Travel');
+  await followGuestNav(page, 'Your Trip');
   await expect(page).toHaveURL(/\/guests\/travel/);
 }
 
@@ -117,9 +116,7 @@ test.describe('guest portal navigation', () => {
     await page.goto('/guests');
     await expect(page).toHaveURL(/\/guests\/?$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome, Ada');
-    await Promise.all([page.waitForURL(/\/guests\/travel/), followGuestNav(page, 'Travel')]);
-    await page.goto('/guests');
-    await Promise.all([page.waitForURL(/\/guests\/things-to-do/), followGuestNav(page, /Things/i)]);
+    await Promise.all([page.waitForURL(/\/guests\/travel/), followGuestNav(page, 'Your Trip')]);
     await page.goto('/guests');
     await Promise.all([page.waitForURL(/\/our-venue$/), followGuestNav(page, 'Venue')]);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Our Venue');
@@ -208,7 +205,7 @@ test.describe('guest portal navigation', () => {
         await expect(dash.locator('section.dash-lead#stay')).toHaveCount(0);
       }
       const more = page.getByRole('navigation', { name: 'More to read' });
-      expect(await more.getByRole('link').evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual(['/guests/things-to-do', '/our-venue', '/our-story', '/guests/ask-us']);
+      expect(await more.getByRole('link').evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual(['/guests/travel#plan', '/our-venue', '/our-story', '/guests/ask-us']);
     }
 
     // Headings never skip a level (h1 → h2 → h3), whatever the plan put on the page.
@@ -257,7 +254,8 @@ test.describe('guest portal navigation', () => {
       ['/travel', '/guests/travel'],
       ['/your-weekend', '/guests'],
       ['/the-wedding', '/guests'],
-      ['/share-an-adventure', '/guests/things-to-do'],
+      ['/guests/things-to-do', '/guests/travel#plan'],
+      ['/share-an-adventure', '/guests/travel#plan'],
       ['/share-an-adventure/starved-rock-state-park', '/guests/things-to-do/starved-rock-state-park'],
       ['/ask-us', '/guests/ask-us'],
       ['/faq', '/guests/ask-us'],
@@ -326,7 +324,7 @@ test.describe('guest portal navigation', () => {
 
   test('every page about the wedding sends a signed-out reader to sign in, with the way back', async ({ page }) => {
     test.setTimeout(90_000);
-    for (const path of ['/guests', '/guests/travel', '/guests/things-to-do', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation', '/gifts', '/photos']) {
+    for (const path of ['/guests', '/guests/travel', '/guests/things-to-do/starved-rock-state-park', '/guests/ask-us', '/our-venue', '/our-venue/white-city-ballroom', '/transportation', '/gifts', '/photos']) {
       await page.goto(path);
       await expect(page, path).toHaveURL(new RegExp(`/sign-in\\?next=${encodeURIComponent(path)}$`));
       const text = await page.locator('body').innerText();

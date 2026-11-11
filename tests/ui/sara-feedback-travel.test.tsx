@@ -9,7 +9,7 @@ import { getTheme } from '@/themes';
 import { THEME_IDS } from '@/themes/registry';
 import type { PageFrame, ThemeId } from '@/themes/types';
 
-/** Travel & Stay is a guest page: its frame is always a signed-in reader's, on the portal address. */
+/** Your Trip is a guest page: its frame is always a signed-in reader's, on the portal address. */
 function frame(theme: ThemeId): PageFrame {
   const full = toSiteFacts({ ...SEED_SITE });
   return {
@@ -26,7 +26,7 @@ const props = {
   alternatives: [],
   facts: { venue: { ...VENUE }, airports: AIRPORTS.map((a) => ({ ...a })) },
   sources: [BRIEF_CITATION],
-  slots: { flightSearch: <p>Flights</p>, hotelSearch: <p>Hotels</p> },
+  slots: { flightSearch: <p>Flights</p>, hotelSearch: <p>Hotels</p>, planner: <p>Planner</p> },
 };
 
 describe.each(THEME_IDS)('Travel identity and pending bookings (%s)', (theme) => {
@@ -64,7 +64,7 @@ describe.each(THEME_IDS)('Travel identity and pending bookings (%s)', (theme) =>
     expect(screen.getByText(/Room-block details are being confirmed/)).toBeTruthy();
     expect(screen.queryByRole('link', { name: /Sign in for/ })).toBeNull();
     expect([...document.querySelectorAll('main a')].some((a) => (a.getAttribute('href') ?? '').startsWith('/sign-in'))).toBe(false);
-    const trip = theme === 'botanical-deco' ? 'Keep your plans in one place' : 'Your guest travel details and weekend plans →';
+    const trip = theme === 'botanical-deco' ? 'Your flights and hotel' : 'Your guest travel details and weekend plans →';
     expect(screen.getByRole('link', { name: trip }).getAttribute('href')).toBe('/trip');
   });
 
@@ -79,14 +79,14 @@ describe.each(THEME_IDS)('Travel identity and pending bookings (%s)', (theme) =>
   });
 });
 
-describe('Travel & Stay in the approved design', () => {
-  it('is one page in four parts: where to stay, flights, getting around, and making a trip of it', () => {
+describe('Your Trip in the approved design', () => {
+  it('is one page in four parts: where to stay, flights, getting around, and what to do', () => {
     const Recipe = getTheme('botanical-deco').content!.travel!;
     const { container } = render(<Recipe {...props} frame={frame('botanical-deco')} signedIn tripHref="/trip" />);
-    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Plan your trip']);
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Your Trip']);
     const main = screen.getByRole('main');
-    expect([...main.querySelectorAll('section[id]')].map((el) => el.id)).toEqual(['stay', 'flights', 'getting-around', 'make-a-trip']);
-    expect([...main.querySelectorAll('section[id] h2')].map((h) => h.textContent)).toEqual(['Where to stay', 'Flights', 'Getting around', 'Make a trip of it']);
+    expect([...main.querySelectorAll('section[id]')].map((el) => el.id)).toEqual(['stay', 'flights', 'getting-around', 'plan']);
+    expect([...main.querySelectorAll('section[id] h2')].map((h) => h.textContent)).toEqual(['Where to stay', 'Flights', 'Getting around', 'What to do']);
     // The airports, arriving and hotel-rates sections are folded into those four.
     for (const gone of ['airports', 'arriving', 'hotel-rates']) expect(container.querySelector(`#${gone}`), gone).toBeNull();
     // The hotel rate search is still here, closed until asked for, inside Where to stay.
@@ -98,7 +98,10 @@ describe('Travel & Stay in the approved design', () => {
     // No "Based on: …" sources line under the page.
     expect(main.textContent).not.toMatch(/Based on:/);
     expect(main.textContent).not.toContain(BRIEF_CITATION.title);
-    // The "On this page" chips name the first three parts.
-    expect(['#stay', '#flights', '#getting-around'].every((hash) => main.querySelector(`a[href="${hash}"]`) !== null)).toBe(true);
+    // The "On this page" chips name all four parts; the planner is the last, in its own section.
+    expect(['#stay', '#flights', '#getting-around', '#plan'].every((hash) => main.querySelector(`a[href="${hash}"]`) !== null)).toBe(true);
+    expect(main.querySelector('#plan')!.textContent).toContain('Planner');
+    // The room block is still the first thing on the page.
+    expect(main.querySelector('section[id]')!.id).toBe('stay');
   });
 });

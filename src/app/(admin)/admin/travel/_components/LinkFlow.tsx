@@ -100,7 +100,7 @@ export function LinkFlow({ link, allowedHosts, nextSort = 100, label, variant = 
       submit={{
         label: link ? 'Save link' : 'Add a link',
         capability: 'admin_save_travel_link',
-        success: link ? 'Link saved.' : 'Link added. Guests see it on Travel & Stay.',
+        success: link ? 'Link saved.' : 'Link added. Guests see it on Your Trip.',
         input: (v) => ({
           id: link?.id,
           category: v.category,
@@ -132,7 +132,7 @@ export function DeleteLinkFlow({ link }: { link: TravelLink }) {
           render: (ctx) => (
             <>
               <Consequences>
-                <p>The link to {link.provider} comes off Travel &amp; Stay, and is no longer offered when live search is unavailable. This cannot be undone; to take it off for a while, use Hide instead.</p>
+                <p>The link to {link.provider} comes off Your Trip, and is no longer offered when live search is unavailable. This cannot be undone; to take it off for a while, use Hide instead.</p>
               </Consequences>
               <CheckField ctx={ctx} name="confirmed" label={`Yes, delete ${link.label}`} />
             </>

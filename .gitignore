@@ -75,3 +75,6 @@ next-env.d.ts
 
 # The design pipeline's stages, assembled into the app by `npm run stages:assemble` (src/lib/stage-hosting.ts)
 public/_stages/
+
+# The ONNX runtime's wasm for the on-device models, copied from node_modules by scripts/copy-ort-wasm.mjs
+public/ort/

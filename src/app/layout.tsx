@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { LocalModelKeeper } from '@/components/local-models/LocalModelKeeper';
 import { WebMcpBridge } from '@/webmcp/WebMcpBridge';
 import { isWebMcpEnabled } from '@/webmcp/flag';
 import './globals.css';
@@ -34,6 +35,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         {/* Renders nothing; registers WebMCP tools when the browser has document.modelContext. */}
         {isWebMcpEnabled() && <WebMcpBridge />}
+        {/* Renders nothing; looks for (and when allowed installs) the on-device models: src/lib/ai/local. */}
+        <LocalModelKeeper />
       </body>
     </html>
   );

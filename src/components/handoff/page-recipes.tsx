@@ -95,7 +95,7 @@ export const TransportationPageRecipe: ThemedPageRecipe<TransportationPageData> 
         <p className="hint">
           Trains, taxis and parking are on{' '}
           <Link className="underline underline-offset-4" href="/guests/travel#getting-around">
-            Travel &amp; Stay
+            Your Trip
           </Link>
           . Questions?{' '}
           <Link className="underline underline-offset-4" href="/guests/ask-us">
