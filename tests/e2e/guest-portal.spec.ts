@@ -380,7 +380,7 @@ test.describe('guest sign-in landing paths', () => {
 
   test('email OTP sign-in without next lands on /guests', async ({ page, request }) => {
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.ana!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
@@ -393,7 +393,7 @@ test.describe('guest sign-in landing paths', () => {
 
   test('email OTP sign-in with next=/ still lands on /guests', async ({ page, request }) => {
     const f = await seedFixtures(request);
-    await page.goto('/sign-in?next=%2F');
+    await page.goto('/sign-in?method=email&next=%2F');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.chidi!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
