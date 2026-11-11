@@ -181,7 +181,9 @@ describe('the Your Trip planner', () => {
     // That slot lists the wedding's own events instead.
     const wedding = screen.getByRole('list', { name: 'The wedding' });
     expect(within(wedding).getByText('The Ceremony')).toBeTruthy();
-    expect(within(wedding).getByText('Time to be announced')).toBeTruthy();
+    // No time is set for any of them yet: said once for all, not under each.
+    expect(within(wedding).queryByText('Time to be announced')).toBeNull();
+    expect(screen.getByText('Times to be announced')).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Move here: Bean House Coffee to Sunday, .+ afternoon$/ })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon' });
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('link', { name: 'Bean House Coffee' }).getAttribute('href')).toBe('/guests/things-to-do/bean-house');
@@ -280,8 +282,10 @@ describe('the Your Trip planner', () => {
     expect(days[0]).toBe(dateLabel(thu));
     expect(days).toContain(dateLabel(weekendDate('sun')));
     const thursday = screen.getByRole('region', { name: dateLabel(thu) });
-    expect(thursday.textContent).toMatch(/Flight in: departs \d+:\d\d (AM|PM)/);
-    expect(thursday.textContent).toMatch(/Flight in: lands \d+:\d\d (AM|PM)/);
+    // Each time in the part of the day it falls in, the time first: 10:00 AM is morning, 1:30 PM afternoon.
+    const part = (p: string) => thursday.querySelector(`[data-slot="${thu}-${p}"]`)!.textContent;
+    expect(part('morning')).toMatch(/\D10:00 AMFlight in departs/);
+    expect(part('afternoon')).toMatch(/\D1:30 PMFlight in lands/);
     // A day more before the stay, when the guest asks for it.
     await act(async () => fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Add ${dateLabel(wed)}`) })));
     expect(screen.getAllByRole('heading', { level: 3 })[0]!.textContent).toBe(dateLabel(wed));
@@ -290,6 +294,24 @@ describe('the Your Trip planner', () => {
     await act(async () => fireEvent.click(within(thursday).getByRole('button', { name: /^Move here: Bean House Coffee to .+ afternoon$/ })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'fri', part: 'afternoon', date: thu });
     expect(within(screen.getByRole('region', { name: dateLabel(thu) })).getByRole('link', { name: 'Bean House Coffee' })).toBeTruthy();
+  });
+
+  it('a guest who arrives on the wedding day still sees their own check-in beside the wedding', async () => {
+    const sat = weekendDate('sat');
+    // 3:00 PM in the wedding's zone (Chicago, UTC-5 in July).
+    render(
+      <TripPlanner
+        places={PLACES}
+        saved={[]}
+        bookings={[{ id: 'h-1', kind: 'hotel', status: 'planned', title: 'Hotel', hotelName: 'The Palmer', startAt: new Date(`${sat}T20:00:00.000Z`).toISOString(), endAt: null, provider: null }]}
+        events={SET}
+        hotel={null}
+        actions={{ save: vi.fn(async () => ({ ok: true as const, itemId: ITEM(1) })), remove: vi.fn(async () => ({ ok: true as const })) }}
+      />,
+    );
+    const saturday = screen.getByRole('region', { name: /^Saturday/ });
+    const wedding = within(saturday).getByRole('list', { name: 'The wedding' }).closest('.trip-slot')!;
+    expect(wedding.textContent).toMatch(/\D3:00 PMCheck in at The Palmer/);
   });
 
   it('the board lists the wedding\'s events in their slot, and the room block\'s check-in and check-out on Friday and Sunday', async () => {
@@ -307,8 +329,9 @@ describe('the Your Trip planner', () => {
     const friday = screen.getByRole('region', { name: /^Friday/ });
     const sunday = screen.getByRole('region', { name: /^Sunday/ });
     expect(stay.checkIn).toBe(weekendDate('fri'));
-    expect(within(friday).getByText(`Our room block: check-in ${dateLabel(stay.checkIn!)}`)).toBeTruthy();
-    expect(within(sunday).getByText(`Our room block: check-out ${dateLabel(stay.checkOut!)}`)).toBeTruthy();
+    // The day's own heading already says which day it is.
+    expect(within(friday).getByText('Our room block: check-in')).toBeTruthy();
+    expect(within(sunday).getByText('Our room block: check-out')).toBeTruthy();
     expect(within(friday).queryByText(/check-out/)).toBeNull();
   });
 
