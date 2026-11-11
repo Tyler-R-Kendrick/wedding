@@ -1,6 +1,7 @@
 import { DAY_NAME, isWeddingTime, stayFacts } from './facts';
 import { understand } from './intent';
-import type { Day, Intent, Part, Plan, PlanPick, PlannerPlace, SavedItem, Theme } from './types';
+import { matchItinerary } from './itineraries';
+import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme } from './types';
 
 /**
  * The deterministic planner: intent rules, then keyword and tag scoring over the couple's own
@@ -15,6 +16,22 @@ const SIMILARITY_BAND = 0.05;
 const MOST_PICKS = 5;
 /** How many places the writer may choose from. */
 export const MAX_CANDIDATES = 12;
+/** How many places from the wider list may follow an itinerary's own stops. */
+const ITINERARY_EXTRAS = 2;
+/**
+ * How far the matcher's best similarity must stand above the median of the whole list before a
+ * request nothing else understands counts as one of ours. Measured with the installed matcher over
+ * the couple's live list (28 places), best minus median:
+ *   misses  "somewhere to buy a suit" 0.083, "where can I get my hair done" 0.080, "a place to buy
+ *           shoes" 0.076, "a pharmacy" 0.072, "a dentist" 0.071, "a gym to work out" 0.064, "live
+ *           jazz" 0.061 (their best sits 0.01 to 0.03 above the 2nd to 5th: a near tie);
+ *   hits    "somewhere to see animals" 0.094 (aquarium, zoo and garden all near the top), "I want
+ *           to see fish" 0.111, "something with whales" 0.152, "flowers and plants" 0.157,
+ *           "somewhere to see paintings" 0.181, "dinosaurs and science" 0.196, "fancy cocktails" 0.204.
+ * 0.09 sits between the two groups. The median, not the runner-up, is the yardstick: a real hit
+ * often has close neighbours (the aquarium and the zoo), a miss is level with the whole list.
+ */
+export const CLEAR_HIT_MARGIN = 0.09;
 
 const lower = (s: string | undefined) => (s ?? '').toLowerCase();
 const textOf = (p: PlannerPlace) => lower(`${p.name} ${p.what} ${p.why ?? ''} ${p.interests.join(' ')} ${p.category}`);
@@ -77,8 +94,27 @@ function themeScore(theme: Theme, p: PlannerPlace): number {
 export type Scored = { place: PlannerPlace; score: number; keyword: number };
 
 /** Every place scored for this request; zero means it does not fit. */
+/** About forty minutes on foot: further than this from the hotel is not "on foot", whatever its tags say. */
+export const WALK_KM = 3;
+
+/** Great-circle distance in km. The places carry their real coordinates; nothing here is estimated. */
+export function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Where the hotel is: the places inside it carry its coordinates. Null when none is located. */
+export function hotelOf(places: readonly PlannerPlace[]): { lat: number; lng: number } | null {
+  const inside = places.find((p) => p.category === 'stay-inside-caa' && typeof p.lat === 'number' && typeof p.lng === 'number');
+  return inside ? { lat: inside.lat!, lng: inside.lng! } : null;
+}
+
 export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], scores?: ReadonlyMap<string, number>): Scored[] {
   const reqWords = new Set(intent.words);
+  const hotel = intent.onFoot ? hotelOf(places) : null;
   const raw = places.map((place) => {
     const t = textOf(place);
     // A request that names no kind of thing ("two hours on Friday") starts every place level.
@@ -102,6 +138,9 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
     if (intent.parts.length === 1 && intent.parts[0] === 'evening' && (isCoffee(place) || has(place, 'morning'))) kw *= 0.2;
     if (intent.parts.length === 1 && intent.parts[0] === 'morning' && (has(place, 'dinner') || ADULT.test(t))) kw *= 0.2;
     if (intent.minutes !== null && (place.minutes === undefined || place.minutes > intent.minutes)) kw = 0;
+    // Last, so no bonus above can undo it: on foot means walking distance from the hotel, measured
+    // from the place's own coordinates, not guessed from a "walk" tag.
+    if (hotel && typeof place.lat === 'number' && typeof place.lng === 'number' && kmBetween(hotel, { lat: place.lat, lng: place.lng }) > WALK_KM) kw = 0;
     return { place, keyword: Math.max(0, kw) };
   });
 
@@ -317,8 +356,146 @@ export function fitIn(minutes: number, ids: readonly string[], places: ReadonlyM
   return out;
 }
 
-export function draftPlan(args: { request: string; places: PlannerPlace[]; saved: SavedItem[]; scores?: Map<string, number> }): Plan {
-  const { request, places, saved, scores } = args;
+const wholeWord = (w: string) => new RegExp(`\\b${w}(s|es)?\\b`);
+
+/** Places whose own copy uses one of the request's words (whole words only), most shared first. */
+function wordHits(intent: Intent, places: readonly PlannerPlace[]): PlannerPlace[] {
+  const ws = [...new Set(intent.words.filter((w) => w.length >= 4))].map(wholeWord);
+  if (!ws.length) return [];
+  return places
+    .map((place) => ({ place, n: ws.filter((re) => re.test(textOf(place))).length }))
+    .filter((r) => r.n > 0)
+    .sort((a, b) => b.n - a.n || a.place.name.localeCompare(b.place.name))
+    .map((r) => r.place);
+}
+
+/** The matcher's best similarity stands clearly above the list as a whole (see CLEAR_HIT_MARGIN). */
+export function clearHit(scores: ReadonlyMap<string, number>, places: readonly PlannerPlace[]): boolean {
+  const vals = places
+    .map((p) => scores.get(p.id))
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+    .sort((a, b) => a - b);
+  if (vals.length < 3) return vals.length > 0;
+  const mid = vals.length / 2;
+  const median = vals.length % 2 ? vals[Math.floor(mid)]! : (vals[mid - 1]! + vals[mid]!) / 2;
+  return vals[vals.length - 1]! - median >= CLEAR_HIT_MARGIN;
+}
+
+/**
+ * A request for something we do not have: no rule reads it (no kind of thing, time, day, kids or
+ * weather), none of our places uses its words, and the matcher's best is only level with the rest.
+ * Without the matcher there is no way to tell, so the gentler "tell us more" answer stays.
+ */
+function notOurs(intent: Intent, places: readonly PlannerPlace[], scores: ReadonlyMap<string, number> | undefined): boolean {
+  if (intent.kind !== 'open' || !intent.words.length || !scores || !scores.size) return false;
+  if (wordHits(intent, places).length) return false;
+  return !clearHit(scores, places);
+}
+
+/** The kinds of time our list does cover, as follow-up requests the rules understand. */
+const KINDS: [string, (p: PlannerPlace) => boolean][] = [
+  ['Food and drink', (p) => isFood(p) && !isCoffee(p)],
+  ['Something for the kids', isKid],
+  ['Architecture', (p) => has(p, 'architecture')],
+  ['Museums and art', (p) => has(p, 'museum') || p.category === 'culture'],
+  ['Time outside', (p) => has(p, 'outdoors')],
+  ['Coffee nearby', isCoffee],
+  ['Something to play', (p) => has(p, 'play')],
+];
+
+function notOnOurList(places: readonly PlannerPlace[]): Plan {
+  const options = KINDS.filter(([, fits]) => places.some(fits))
+    .slice(0, 4)
+    .map(([label]) => ({ label }));
+  return {
+    shape: 'ask',
+    title: 'That one is not on our list',
+    intro: 'We only suggest places we know, and none of them fits that. Here is what we can help with.',
+    picks: [],
+    question: { text: 'What sort of time are you after?', options: options.length ? options : [{ label: 'Plan my whole weekend' }] },
+    next: [],
+    candidates: [],
+    fixed: ['title', 'intro'],
+  };
+}
+
+/**
+ * The couple's itinerary as the answer: their title and intro, their stops in their order, then at
+ * most two more places from the wider list that fit the same request (the matcher's scores, when
+ * there are any, decide which). A request about time gets the time tool with the stops ticked and
+ * their own minutes; stops with places on the map become a route. Null when none of its stops is a
+ * place we can offer.
+ */
+function itineraryPlan(intent: Intent, it: PlannerItinerary, places: readonly PlannerPlace[], saved: readonly SavedItem[], ranked: Scored[]): Plan | null {
+  const byId = new Map(places.map((p) => [p.id, p]));
+  const seen = new Set<string>();
+  const stops = it.stops.filter((s) => byId.has(s.placeId) && !seen.has(s.placeId) && seen.add(s.placeId));
+  if (!stops.length) return null;
+  const top = ranked.find((r) => r.score > 0)?.score ?? 0;
+  const extras = ranked
+    .filter((r) => r.score > 0 && r.score >= top * 0.45 && !seen.has(r.place.id))
+    .slice(0, ITINERARY_EXTRAS)
+    .map((r) => r.place);
+  const own = it.intro.trim();
+  const moved = intent.weddingTime ? 'Saturday afternoon and evening are for the wedding, so we planned around them.' : '';
+  const base = { title: it.title.trim(), itinerary: { slug: it.slug, stops: stops.length }, fixed: ['title', 'intro'] as ('title' | 'intro')[], next: [] as string[] };
+  const minutesOf = (s: { placeId: string; minutes?: number }) => s.minutes ?? byId.get(s.placeId)!.minutes;
+
+  if (intent.minutes !== null) {
+    const timed = stops.filter((s) => typeof minutesOf(s) === 'number');
+    if (timed.length) {
+      const picks: PlanPick[] = [
+        ...timed.map((s) => {
+          const m = minutesOf(s)!;
+          return { id: s.placeId, minutes: m, note: `About ${m} minutes, by our rough guide.`, ...slotFor(byId.get(s.placeId)!, intent) };
+        }),
+        ...extras.filter((p) => typeof p.minutes === 'number').map((p) => ({ id: p.id, note: `About ${p.minutes} minutes, by our rough guide.`, ...slotFor(p, intent) })),
+      ];
+      return {
+        ...base,
+        shape: 'budget',
+        itinerary: { slug: it.slug, stops: timed.length },
+        intro: [own, moved, 'Our stops are ticked; tick or untick anything and the total follows. The times are our own rough guide.'].filter(Boolean).join(' '),
+        picks,
+        minutes: intent.minutes,
+        next: nextFor(intent, saved, 'budget'),
+        candidates: candidatesOf(ranked, picks),
+      };
+    }
+  }
+
+  const located = stops.filter((s) => {
+    const p = byId.get(s.placeId)!;
+    return typeof p.lat === 'number' && typeof p.lng === 'number';
+  });
+  const route = located.length >= 2 && stops.length >= 2;
+  const picks: PlanPick[] = [
+    ...stops.map((s, i) => ({
+      id: s.placeId,
+      ...slotFor(byId.get(s.placeId)!, intent),
+      ...(route ? { note: i === 0 ? 'Start here.' : i === stops.length - 1 ? 'End here.' : 'Then this.' } : {}),
+    })),
+    ...extras.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
+  ];
+  return {
+    ...base,
+    shape: route ? 'route' : 'picks',
+    intro: [own, moved, own ? '' : 'In the order we would do them.', 'Tap the heart to add one to your weekend.'].filter(Boolean).join(' '),
+    picks,
+    next: nextFor(intent, saved, route ? 'route' : 'picks'),
+    candidates: candidatesOf(ranked, picks),
+  };
+}
+
+export function draftPlan(args: {
+  request: string;
+  places: PlannerPlace[];
+  saved: SavedItem[];
+  scores?: Map<string, number>;
+  /** The couple's own itineraries a guest may see; a request one of them answers is answered from it. */
+  itineraries?: readonly PlannerItinerary[];
+}): Plan {
+  const { request, places, saved, scores, itineraries = [] } = args;
   const intent = understand(request);
 
   if (intent.kind === 'stay') {
@@ -361,6 +538,34 @@ export function draftPlan(args: { request: string; places: PlannerPlace[]; saved
   if (intent.kind === 'weekend') return weekendPlan(intent, places, saved, scores);
 
   const ranked = scorePlaces(intent, places, scores);
+  const itinerary = matchItinerary(intent, itineraries, new Set(places.map((p) => p.id)));
+  if (itinerary) {
+    const plan = itineraryPlan(intent, itinerary, places, saved, ranked);
+    if (plan) return plan;
+  }
+  if (notOurs(intent, places, scores)) return notOnOurList(places);
+  const plan = placesPlan(intent, places, saved, scores, ranked);
+  // An itinerary with no stops yet still lends the couple's own words to the answer.
+  if (itinerary && itinerary.intro.trim() && plan.shape !== 'ask') return { ...plan, intro: `${itinerary.intro.trim()} ${plan.intro}`, fixed: ['intro'] };
+  return plan;
+}
+
+/** The answer from the couple's places, by the rules and the matcher's scores. */
+function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: readonly SavedItem[], scores: ReadonlyMap<string, number> | undefined, ranked: Scored[]): Plan {
+  const hits = wordHits(intent, places);
+  if (intent.kind === 'open' && !(scores && scores.size) && hits.length) {
+    // No kind of thing the rules know, but the request names something in our own words ("bocce"):
+    // only the places that say it, never the rest of the list.
+    const chosen = hits.slice(0, MOST_PICKS);
+    return {
+      shape: 'picks',
+      title: headline(intent),
+      intro: `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
+      picks: chosen.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
+      next: nextFor(intent, saved, 'picks'),
+      candidates: candidatesOf(ranked, chosen.map((p) => ({ id: p.id }))),
+    };
+  }
   if (intent.kind === 'open' && !(scores && scores.size)) {
     const ours = places.filter((p) => p.why).slice(0, 2);
     return {
@@ -455,4 +660,3 @@ export function draftPlan(args: { request: string; places: PlannerPlace[]; saved
     candidates: candidatesOf(ranked, picks),
   };
 }
-

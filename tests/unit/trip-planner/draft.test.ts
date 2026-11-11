@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { draftPlan, MAX_PICKS, stayFacts, type Plan, type SavedItem } from '@/domain/trip-planner';
+import { kmBetween, scorePlaces, WALK_KM } from '@/domain/trip-planner/draft';
+import { understand } from '@/domain/trip-planner';
 import { BY_ID, PLACES } from './fixtures';
 
 const draft = (request: string, saved: SavedItem[] = [], scores?: Map<string, number>) => draftPlan({ request, places: PLACES, saved, scores });
@@ -147,6 +149,19 @@ describe('draftPlan', () => {
     expect(ids(draft('zzz qqq', [], one))).toEqual(['garden']);
     const two = new Map(PLACES.map((p) => [p.id, p.id === 'garden' ? 0.56 : p.id === 'park-walk' ? 0.53 : 0.4]));
     expect(ids(draft('zzz qqq', [], two)).sort()).toEqual(['garden', 'park-walk']);
+  });
+
+  it("on foot means within a walk of the hotel, measured from the places' own coordinates", () => {
+    const far = { ...BY_ID.get('park-walk')!, id: 'far-garden', name: 'Far Garden Walk', lat: 10.3, lng: 20.001 };
+    const places = [...PLACES, far];
+    const plan = draftPlan({ request: 'A walk on Friday afternoon, on foot', places, saved: [] });
+    expect(plan.picks.map((p) => p.id)).not.toContain('far-garden');
+    expect(kmBetween({ lat: 10.001, lng: 20.001 }, { lat: 10.3, lng: 20.001 })).toBeGreaterThan(WALK_KM);
+    // Distance is a bar only on foot ("a walk" counts): asked for the outdoors, the same place still scores.
+    const score = (request: string) => scorePlaces(understand(request), places).find((r) => r.place.id === 'far-garden')!.score;
+    expect(score('A walk on Friday afternoon, on foot')).toBe(0);
+    expect(understand('Somewhere outdoors').onFoot).toBe(false);
+    expect(score('Somewhere outdoors')).toBeGreaterThan(0);
   });
 
   it('every pick carries a day and a part so a heart knows where to save it', () => {

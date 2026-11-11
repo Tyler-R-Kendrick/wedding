@@ -80,6 +80,7 @@ export default async function TravelPage() {
             bookings={planner.bookings}
             events={planner.events}
             hotel={planner.hotel}
+            itineraries={planner.itineraries}
             stay={stayFacts(hotels.value.data.venue.block)}
             // A guest's weekend is saved as their trip items; an administrator previewing keeps it in memory.
             actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace } : undefined}
