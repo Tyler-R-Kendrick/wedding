@@ -56,7 +56,7 @@ const ExternalMark = ({ opens }: { opens?: string }) => (
     <svg className="bd-external" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d="M14 4h6v6M20 4l-9 9M18 13v7H4V6h7" />
     </svg>
-    <span className="sr-only">{`, opens ${opens ?? 'in a new tab'}`}</span>
+    <span className="sr-only">{`, opens ${opens ? `${opens} ` : ''}in a new tab`}</span>
   </>
 );
 
