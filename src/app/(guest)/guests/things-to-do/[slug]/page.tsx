@@ -7,6 +7,7 @@ import { findAdventures } from '@/capabilities/find_adventures';
 import { publicPageContext } from '@/domain/content/page-context';
 import { requireSignedIn } from '@/app/(guest)/guests/_lib/gate';
 import { recipes } from '@/app/(public)/_recipes';
+import { GuestModelKeeper } from '@/components/local-models/GuestModelKeeper';
 import { PATHNAME_HEADER } from '@/themes/routes';
 
 export const dynamic = 'force-dynamic';
@@ -43,5 +44,10 @@ export default async function RecommendationDetailPage({ params }: { params: Par
   }
   const card = r.value.data.items[0];
   if (!card) notFound();
-  return <recipes.RecommendationPage card={card} />;
+  return (
+    <>
+      <recipes.RecommendationPage card={card} />
+      <GuestModelKeeper principal={principal} />
+    </>
+  );
 }

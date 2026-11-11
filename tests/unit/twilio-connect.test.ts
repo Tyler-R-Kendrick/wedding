@@ -21,7 +21,12 @@ function twilio(accepts: string, services: { sid: string }[] = [{ sid: VA }]) {
     if (url.endsWith('/Services?PageSize=20')) return json(200, { services });
     if (url.endsWith('/Services') && init?.method === 'POST') return json(201, { sid: VA });
     if (url.endsWith('/Verifications')) return json(201, { sid: 'VE1', status: 'pending' });
-    if (url.endsWith('/VerificationCheck')) return body.includes('Code=123456') ? json(200, { sid: 'VE1', status: 'approved' }) : json(404, { message: 'not found' });
+    if (url.endsWith('/VerificationCheck')) {
+      if (body.includes('Code=123456')) return json(200, { sid: 'VE1', status: 'approved', valid: true });
+      // A wrong code against a live verification: a 200 that is still pending, not an approval.
+      if (body.includes('Code=111111')) return json(200, { sid: 'VE1', status: 'pending', valid: false });
+      return json(404, { message: 'not found' });
+    }
     return json(404, {});
   }) as typeof fetch;
   return { fetchImpl, calls };
@@ -53,6 +58,7 @@ describe('Twilio Verify through the Vercel connector', () => {
 
     expect(await provider.checkVerification({ to: '+13125550100', code: '123456' })).toEqual({ ok: true });
     expect(await provider.checkVerification({ to: '+13125550100', code: '000000' })).toMatchObject({ ok: false, error: { class: 'not_found' } });
+    expect(await provider.checkVerification({ to: '+13125550100', code: '111111' })).toMatchObject({ ok: false, error: { class: 'bad_request' } });
     // The service was looked up once, and nothing was refused after the first accepted header.
     expect(calls.filter((c) => c.url.includes('PageSize'))).toHaveLength(1);
     expect(calls.every((c) => c.authorization === basic(AC, 'secret'))).toBe(true);

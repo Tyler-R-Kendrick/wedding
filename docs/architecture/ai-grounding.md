@@ -221,8 +221,10 @@ server never loads either library. Dictation (`src/lib/speech`) uses the browser
 only with `processLocally` (never the server-based kind), and otherwise records the microphone and
 transcribes it with the speech model.
 
-`<LocalModelKeeper />` in the root layout looks for all three parts (these two and the Prompt API
-model of 8a) on every page once it is idle. It installs the matcher, and the speech model where the
+`<LocalModelKeeper />` looks for all three parts (these two and the Prompt API model of 8a) once
+the page is idle, on signed-in guests' pages only: `<GuestModelKeeper />` mounts it from the guest
+layout and the guest pages that bring their own Shell, for a guest principal and nobody else. Public
+pages are static and never mount it, so a visitor who is not signed in downloads no weights. It installs the matcher, and the speech model where the
 browser has no on-device dictation, unless the guest has Save-Data on, is on a cellular connection,
 or has less than 300 MB of storage free; then the planner installs on first use. A Prompt API model
 the browser reports as `downloadable` is started on the guest's first tap or key press, because the

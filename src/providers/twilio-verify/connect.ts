@@ -1,6 +1,6 @@
 import type { ConfigValidation, ProviderFailure, ProviderHealth } from '@/contracts/providers';
 import type { TwilioVerifyCheckInput, TwilioVerifyProvider, TwilioVerifySendInput } from './types';
-import { TWILIO_VERIFY_POLICY } from './types';
+import { TWILIO_VERIFY_POLICY, codeApproved } from './types';
 
 /**
  * Twilio Verify through Vercel Connect: the Twilio credential lives in the Vercel connector, as the
@@ -165,7 +165,8 @@ export class ConnectTwilioVerify implements TwilioVerifyProvider {
 
   async checkVerification(input: TwilioVerifyCheckInput): Promise<{ ok: true } | { ok: false; error: ProviderFailure }> {
     const res = await this.post('VerificationCheck', new URLSearchParams({ To: input.to, Code: input.code }));
-    return res.ok ? { ok: true } : res;
+    if (!res.ok) return res;
+    return codeApproved(this.name, res.value.status);
   }
 
   private async post(path: string, body: URLSearchParams): Promise<PostResult> {

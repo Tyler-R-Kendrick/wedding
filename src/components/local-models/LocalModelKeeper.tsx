@@ -5,9 +5,10 @@ import { checkLocal, ensureLocal, getLocalModels } from '@/lib/ai/local';
 import { keepLocalModels } from '@/lib/ai/local/keeper';
 
 /**
- * Looks for the on-device models on every page and installs what is missing (src/lib/ai/local/
- * keeper.ts has the rules). Mounted once, in the root layout. Renders nothing, and waits until the
- * browser is idle, so it never competes with the page the guest came for.
+ * Looks for the on-device models and installs what is missing (src/lib/ai/local/keeper.ts has the
+ * rules). Signed-in guests' pages mount it, through GuestModelKeeper; nobody else downloads them.
+ * Renders nothing, and waits until the browser is idle, so it never competes with the page the
+ * guest came for.
  */
 export function LocalModelKeeper() {
   useEffect(() => {
