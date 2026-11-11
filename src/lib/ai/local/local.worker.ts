@@ -7,7 +7,7 @@
  * worker when nothing needs it (index.ts), which is what gives the memory back.
  */
 import type { AutomaticSpeechRecognitionPipeline, FeatureExtractionPipeline } from '@huggingface/transformers';
-import { configureForBrowser, embedWith, isInstalled, LIBRARY_FILE, loadPart, transcribeWith, useLibrary } from './models';
+import { configureForBrowser, embedWith, isInstalled, LIBRARY_FILE, loadPart, transcribeWith, setLibraryLoader } from './models';
 import type { WorkerReply, WorkerRequest } from './protocol';
 import { ORT_WASM_BASE, type WorkerPart } from './spec';
 
@@ -21,7 +21,7 @@ const scope = self as unknown as {
 const runtimeBase = new URL(ORT_WASM_BASE, scope.location.origin).href;
 // The prebuilt library, served beside the runtime it imports. The comments keep the bundler from
 // following the import: the file is loaded as it is, at run time, from this origin.
-useLibrary(() => import(/* turbopackIgnore: true */ /* webpackIgnore: true */ runtimeBase + LIBRARY_FILE));
+setLibraryLoader(() => import(/* turbopackIgnore: true */ /* webpackIgnore: true */ runtimeBase + LIBRARY_FILE));
 const ready = configureForBrowser(runtimeBase);
 
 const pipelines: { matcher?: Promise<FeatureExtractionPipeline>; speech?: Promise<AutomaticSpeechRecognitionPipeline> } = {};
