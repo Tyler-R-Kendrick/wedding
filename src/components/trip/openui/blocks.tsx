@@ -1,11 +1,13 @@
 'use client';
 
 import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type ActionPlan } from '@openuidev/react-lang';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod/v4';
-import { aboutHowLong, blockDateLines, DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
+import { aboutHowLong, blockDateLines, DAY_NAME, stopMinutes, TIME_TBA, type Day, type Part, type PlannerPlace } from '@/domain/trip-planner';
+import { ATLAS_W, MAX_ZOOM, fitView, project, unitsPerKm, viewBox } from '@/themes/shared/atlas/projection';
 import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
+import { AtlasGround } from './map';
 
 /**
  * The wedding's own blocks: a place from the couple's list with the heart that saves it, the room
@@ -94,34 +96,13 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
   };
   const when = day && part ? `${DAY_NAME[day]} ${part}` : null;
   const label = saved ? `Remove ${place.name} from my weekend` : `Add ${place.name} to my weekend`;
-  const howLong = inRoute ? null : aboutHowLong(place.minutes);
+  // How long it takes, always: the couple's own minutes, else a guess from the kind of place (./route).
+  const howLong = inRoute ? null : aboutHowLong(stopMinutes(place).minutes);
   return (
     // Seven rows, always all seven (an empty one where a card has nothing to say), so a row of
     // cards can share them through a subgrid and every card's name, text, facts and links line up.
     <article className={`trip-place${inRoute ? ' trip-place--route' : ''}`}>
-      {place.image ? (
-        // A CC BY or BY-SA photograph carries its credit wherever it is shown (docs/ops/asset-licensing.md);
-        // the full record, licence link included, is on /credits.
-        // eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline
-        <img className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" />
-      ) : (
-        <div className="trip-place__ground" aria-hidden="true" />
-      )}
-      <p className="trip-place__credit">
-        {place.image?.credit ? (
-          <>
-            <a className="bd-link" href={place.image.credit.href} target="_blank" rel="noopener noreferrer">
-              {place.image.credit.text}
-              <External />
-            </a>
-            {', '}
-            <a className="bd-link" href={place.image.credit.license.href} target="_blank" rel="license noopener noreferrer">
-              {place.image.credit.license.name}
-              <External />
-            </a>
-          </>
-        ) : null}
-      </p>
+      <PlaceMedia place={place} />
       <div className="trip-place__head">
         <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
         <h4 className="trip-place__name">{place.name}</h4>
@@ -157,6 +138,85 @@ function PlaceView({ id, note, day: dayProp, part: partProp, inRoute = false }: 
         </a>
       </div>
     </article>
+  );
+}
+
+/** What kind of place it is, as a mark: for a place we have neither a photograph nor a position for. */
+const AREA_ICON: Record<string, IconName> = {
+  'stay-inside-caa': 'building',
+  architecture: 'landmark',
+  'food-drink': 'dinner',
+  outdoors: 'sun',
+  culture: 'book',
+  'with-kids': 'balloon',
+  'day-trip': 'car',
+  neighborhood: 'compass',
+};
+
+const MEDIA_ASPECT = 4 / 3;
+/** A place's own map shows about this much of the city across, so a street or two and the lakefront read. */
+const PLACE_MAP_KM = 2.5;
+
+/**
+ * The card's picture, always the same size so a row of cards lines up before anything has loaded:
+ * a licensed photograph, faded in over a plain placeholder as it arrives; else where the place is,
+ * on the site's own drawn map with the hotel when it is near; else the mark for its kind. Never a
+ * blank box. A CC BY or BY-SA photograph carries its credit on it (docs/ops/asset-licensing.md).
+ */
+function PlaceMedia({ place }: { place: PlannerPlace }) {
+  const ctx = useTripPlanner();
+  const img = useRef<HTMLImageElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  // A photo already in the browser's cache can finish before React listens for it.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth > 0) setLoaded(true);
+  }, [place.image?.src]);
+  if (place.image) {
+    const credit = place.image.credit;
+    return (
+      <figure className={`trip-place__media${loaded ? ' is-loaded' : ''}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- a place's own photo, already sized by the site's media pipeline */}
+        <img ref={img} className="trip-place__photo" src={place.image.src} alt={place.image.alt} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
+        {credit ? (
+          <figcaption className="trip-place__credit">
+            <a href={credit.href} target="_blank" rel="noopener noreferrer">
+              {credit.text}
+              <External />
+            </a>
+            {', '}
+            <a href={credit.license.href} target="_blank" rel="license noopener noreferrer">
+              {credit.license.name}
+              <External />
+            </a>
+          </figcaption>
+        ) : null}
+      </figure>
+    );
+  }
+  if (typeof place.lat === 'number' && typeof place.lng === 'number') {
+    const at = project(place.lat, place.lng);
+    const hotel = ctx?.hotel ?? null;
+    const hotelAt = hotel ? project(hotel.lat, hotel.lng) : null;
+    const span = unitsPerKm(place.lat) * PLACE_MAP_KM;
+    const view = fitView([at], MEDIA_ASPECT, { pad: 0.3, maxK: Math.min(MAX_ZOOM, ATLAS_W / span) });
+    const vb = viewBox(view, MEDIA_ASPECT);
+    const inView = (q: { x: number; y: number }) => q.x > vb.x && q.x < vb.x + vb.w && q.y > vb.y && q.y < vb.y + vb.h;
+    const pos = (q: { x: number; y: number }) => ({ left: `${((q.x - vb.x) / vb.w) * 100}%`, top: `${((q.y - vb.y) / vb.h) * 100}%` });
+    const showHotel = hotelAt && inView(hotelAt) && Math.hypot(hotelAt.x - at.x, hotelAt.y - at.y) > span * 0.04;
+    return (
+      <div className="trip-place__media trip-place__media--map is-loaded" aria-hidden="true">
+        <AtlasGround view={view} vb={vb} className="trip-place__atlas" />
+        {showHotel ? <span className="trip-place__hotel" style={pos(hotelAt)} /> : null}
+        <span className="trip-place__spot" style={pos(at)}>
+          <Icon name="pin" filled className="trip-icon" />
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="trip-place__media trip-place__media--mark is-loaded" aria-hidden="true">
+      <Icon name={AREA_ICON[place.category] ?? 'compass'} className="trip-place__mark" />
+    </div>
   );
 }
 

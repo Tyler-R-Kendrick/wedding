@@ -203,8 +203,8 @@ describe('trip OpenUI library', () => {
     expect(licence.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/2.0/');
     expect(licence.getAttribute('rel')).toContain('license');
     expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
-    // A public-domain photo carries no credit line (its credit row is there, empty, so cards beside it line up).
-    expect(screen.getByRole('img', { name: 'The park path' }).closest('article')?.querySelector('.trip-place__credit')?.textContent).toBe('');
+    // A public-domain photo carries no credit line.
+    expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();
   });
 
   it("the map lists every stop in the plan's order, numbering a stop without coordinates without giving it a pin", async () => {
@@ -246,7 +246,31 @@ describe('trip OpenUI library', () => {
     expect(list.textContent).toMatch(/Walk about 5 minutes \(0\.3 mi\) to Lakeside Park Walk\./);
     expect(screen.getByRole('heading', { name: 'Walk the Building' })).toBeTruthy();
     // How long it takes is said once, above the card, not again inside it.
-    expect(list.querySelectorAll('.trip-place__facts .trip-fact').length).toBe(0);
+    expect(list.textContent?.match(/About 45 minutes/g)).toHaveLength(2);
+  });
+
+  it('every card has its picture: a photo, else the place on our map, else the mark for its kind; and how long it takes', async () => {
+    const photo = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps' } };
+    const mapped = { ...BY_ID.get('park-walk')!, image: undefined };
+    const nowhere = { ...BY_ID.get('steakhouse')!, image: undefined, lat: undefined, lng: undefined };
+    const places = new Map(BY_ID);
+    for (const p of [photo, mapped, nowhere]) places.set(p.id, p);
+    render(
+      <TripPlannerProvider places={places} saved={[]} hotel={null} onAction={() => {}}>
+        <TripRenderer response={'root = Col([g])\ng = Grid([Place("art-museum"), Place("park-walk"), Place("steakhouse")])'} />
+      </TripPlannerProvider>,
+    );
+    await screen.findByRole('img', { name: 'The museum steps' });
+    const cards = Array.from(document.querySelectorAll('article.trip-place'));
+    expect(cards.map((c) => c.firstElementChild?.className)).toEqual([
+      expect.stringContaining('trip-place__media'),
+      expect.stringContaining('trip-place__media--map'),
+      expect.stringContaining('trip-place__media--mark'),
+    ]);
+    // Until it arrives, the photo's slot is a placeholder of the same size.
+    expect(cards[0]!.querySelector('.trip-place__media')!.classList.contains('is-loaded')).toBe(false);
+    // Each card says about how long it takes, the couple's own minutes or a guess from its kind.
+    for (const c of cards) expect(c.textContent).toMatch(/About (\d+ minutes|an hour|[\d½]+ hours)/);
   });
 
   it('tripActionOf ignores malformed events', () => {

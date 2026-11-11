@@ -72,9 +72,13 @@ export function kmBetween(a: Point, b: Point): number {
 const DETOUR = 1.3;
 /** An easy walking pace: 4.8 km/h, in metres a minute. */
 const WALK_M_PER_MIN = 80;
-/** Downtown traffic, door to door, in km/h; and the few minutes waiting for a car. */
+/** Downtown traffic, door to door, in km/h, for the first few kilometres; past them a longer ride
+ * takes the faster roads (the lakefront drive, the expressways). And the few minutes waiting for a car. */
 const CITY_KMH = 20;
+const CITY_KM = 5;
+const ARTERIAL_KMH = 45;
 const PICKUP_MIN = 5;
+const rideMinutes = (road: number) => (Math.min(road, CITY_KM) / CITY_KMH) * 60 + (Math.max(0, road - CITY_KM) / ARTERIAL_KMH) * 60 + PICKUP_MIN;
 /** Out of town, on the highway. */
 const HIGHWAY_KMH = 70;
 /** Closer than this, two places are in one building or next door. */
@@ -129,14 +133,14 @@ export function legBetween(a: Point, b: Point): Leg {
   }
   if (walk <= WALK_OR_RIDE_MAX) {
     const minutes = estimate(walk);
-    const ride = estimate((road / CITY_KMH) * 60 + PICKUP_MIN);
+    const ride = estimate(rideMinutes(road));
     return { mode: 'walk', km, minutes, text: `Walk about ${minutesRange(minutes)} (${miles(road)}), or a ride of about ${minutesRange(ride)}` };
   }
   if (km > OUT_OF_TOWN_KM) {
     const minutes = estimate((road / HIGHWAY_KMH) * 60 + 10);
     return { mode: 'drive', km, minutes, text: `Drive about ${minutesRange(minutes)} (${miles(road)})` };
   }
-  const minutes = estimate((road / CITY_KMH) * 60 + PICKUP_MIN);
+  const minutes = estimate(rideMinutes(road));
   return { mode: 'ride', km, minutes, text: `A ride of about ${minutesRange(minutes)} (${miles(road)})` };
 }
 
@@ -275,7 +279,10 @@ export function routeFacts(route: RoutePlan): string[] {
   if (route.startAt !== null) facts.push(`Start around ${clockTime(route.startAt).replace(':00', '')}`);
   const long = aboutHowLong(route.totalMinutes);
   if (long) facts.push(long);
-  if (route.walkKm >= 0.3) facts.push(`About ${(route.walkKm * 0.621371).toFixed(1)} miles on foot`);
+  if (route.walkKm >= 0.3) {
+    const mi = Number((route.walkKm * 0.621371).toFixed(1));
+    facts.push(`About ${mi} ${mi === 1 ? 'mile' : 'miles'} on foot`);
+  }
   const legs = [route.fromHotel, ...route.legs, route.toHotel];
   const walks = legs.some((l) => l?.mode === 'walk');
   const rides = legs.some((l) => l?.mode === 'ride' || l?.mode === 'drive');

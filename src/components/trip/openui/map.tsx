@@ -87,6 +87,33 @@ export function spreadPins(points: { x: number; y: number }[], taken: { x: numbe
   return placed;
 }
 
+/**
+ * The site's own drawn atlas for a view: the sky, the world outside the close-up's rectangle and the
+ * Midwest close-up inside it, each layer only at the zooms it reads at. Decorative: whatever it
+ * shows is said in words beside it.
+ */
+export function AtlasGround({ view, vb, className }: { view: { k: number }; vb: { x: number; y: number; w: number; h: number }; className: string }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const R = REGION;
+  const layer = (l: Layer, i: number) => (layerOn(l, view.k, vb) ? <use key={`${l.file}-${l.id}-${i}`} href={`${ATLAS_FILES[l.file]}#${l.id}`} className={cls(l)} /> : null);
+  return (
+    <svg className={className} viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        {/* As on the atlas: the world everywhere but the close-up's rectangle, the close-up only inside it. */}
+        <clipPath id={`${uid}-world`}>
+          <path clipRule="evenodd" d={`M0 0H${ATLAS_W}V${ATLAS_H}H0Z M${R.x} ${R.y}h${R.w}v${R.h}h${-R.w}Z`} />
+        </clipPath>
+        <clipPath id={`${uid}-region`}>
+          <rect x={R.x} y={R.y} width={R.w} height={R.h} />
+        </clipPath>
+      </defs>
+      {SKY.map(layer)}
+      <g clipPath={`url(#${uid}-world)`}>{WORLD.map(layer)}</g>
+      {regionInView(vb) ? <g clipPath={`url(#${uid}-region)`}>{MIDWEST.map(layer)}</g> : null}
+    </svg>
+  );
+}
+
 export const MapView = defineComponent({
   name: 'Map',
   props: z.object({ markers: z.array(MapMarker.ref), route: z.boolean().optional(), selected: reactive(z.string().optional()) }),
@@ -130,27 +157,12 @@ export const MapView = defineComponent({
     const placed = spreadPins(truth, hotelXY ? [hotelXY] : [], W, H);
     const route = props.route && placed.length > 1 ? placed.map(({ x, y }, i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') : null;
     const hotelLeft = hotelXY ? hotelXY.x > W * 0.6 : false;
-    const R = REGION;
 
-    const layer = (l: Layer, i: number) => (layerOn(l, view.k, vb) ? <use key={`${l.file}-${l.id}-${i}`} href={`${ATLAS_FILES[l.file]}#${l.id}`} className={cls(l)} /> : null);
 
     return (
       <figure className="trip-map">
         <div className="trip-map__frame" ref={frame} data-size={wide ? 'wide' : 'phone'} data-zoom={view.k >= 1000 ? 'city' : 'region'}>
-          <svg className="trip-map__ground" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-            <defs>
-              {/* As on the atlas: the world everywhere but the close-up's rectangle, the close-up only inside it. */}
-              <clipPath id={`${uid}-world`}>
-                <path clipRule="evenodd" d={`M0 0H${ATLAS_W}V${ATLAS_H}H0Z M${R.x} ${R.y}h${R.w}v${R.h}h${-R.w}Z`} />
-              </clipPath>
-              <clipPath id={`${uid}-region`}>
-                <rect x={R.x} y={R.y} width={R.w} height={R.h} />
-              </clipPath>
-            </defs>
-            {SKY.map(layer)}
-            <g clipPath={`url(#${uid}-world)`}>{WORLD.map(layer)}</g>
-            {regionInView(vb) ? <g clipPath={`url(#${uid}-region)`}>{MIDWEST.map(layer)}</g> : null}
-          </svg>
+          <AtlasGround view={view} vb={vb} className="trip-map__ground" />
           <svg viewBox={`0 0 ${W} ${H}`} className="trip-map__drawing" role="img" aria-label={`Map with ${pins.length} ${pins.length === 1 ? 'place' : 'places'}${hotel ? ' and the hotel' : ''}`}>
             {route ? <path d={route} className="trip-map__route" /> : null}
             {placed.map((q, i) => {
