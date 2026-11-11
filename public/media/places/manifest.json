@@ -50,6 +50,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -98,8 +99,9 @@
         "sha256": "33d454ce0d469cced5a4ce8941bef899f249f3168824fb552439992a32a82fcb"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: davidwilson1949, CC BY 2.0",
+      "credit": "Photo: davidwilson1949, cropped",
       "creditUrl": "https://www.flickr.com/photos/32693718@N07/49957665096",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -150,6 +152,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -198,8 +201,9 @@
         "sha256": "7771cf9df6fb027e8fb658665625df177177e84d8a2f28b9c1e7700ef3016d5b"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: loustejskal.com, CC BY 2.0",
+      "credit": "Photo: loustejskal.com, cropped",
       "creditUrl": "https://www.flickr.com/photos/63311602@N08/26062757064",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -248,8 +252,9 @@
         "sha256": "5aced48d4e6345f09609c2c50a594fcf1577831e172dcc7712148040b703a3a2"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: atramos, CC BY 2.0",
+      "credit": "Photo: atramos, cropped",
       "creditUrl": "https://www.flickr.com/photos/14818554@N05/6443004477",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -300,6 +305,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -350,6 +356,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -398,8 +405,9 @@
         "sha256": "cdde3f653b7aaf31cbcf6306a782a7ad595a09cad481f14724ced7026595e914"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: loustejskal.com, CC BY 2.0",
+      "credit": "Photo: loustejskal.com, cropped",
       "creditUrl": "https://www.flickr.com/photos/63311602@N08/26602900261",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -450,6 +458,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -498,8 +507,9 @@
         "sha256": "41f9a190925506f58fba5ff7b394bb5da995b459d1a23f58f11d4515ad58e614"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: roy.luck, CC BY 2.0",
+      "credit": "Photo: roy.luck, cropped",
       "creditUrl": "https://www.flickr.com/photos/21550937@N03/9432837488",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -550,6 +560,7 @@
       "license": "CC0 1.0",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -598,8 +609,9 @@
         "sha256": "c01d031864ded4b85800562ecccb4884dc68e771f02b5d308f287caa107fb8b0"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: davidwilson1949, CC BY 2.0",
+      "credit": "Photo: davidwilson1949, cropped",
       "creditUrl": "https://www.flickr.com/photos/32693718@N07/39158911392",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -650,6 +662,7 @@
       "license": "Public domain",
       "credit": null,
       "creditUrl": null,
+      "licenseUrl": null,
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -698,8 +711,9 @@
         "sha256": "86c03ae9a7996aaa3949e801feb1f5639561763be4e92e361b50f9c79942ce26"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: aquiamigo, CC BY 2.0",
+      "credit": "Photo: aquiamigo, cropped",
       "creditUrl": "https://www.flickr.com/photos/77970107@N03/13489897833",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -748,8 +762,9 @@
         "sha256": "841bfc7cc7465a083dbb7e1cee82406043cf3a659e947e56cdb865a349ee2823"
       },
       "license": "CC BY 2.0",
-      "credit": "Photo: olliemaster1, CC BY 2.0",
+      "credit": "Photo: olliemaster1, cropped",
       "creditUrl": "https://www.flickr.com/photos/188692387@N05/51411801845",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     },
     {
@@ -798,8 +813,9 @@
         "sha256": "476c3589aad593ab457c11a0ae4b1da2d3e8ce0cc1ffae62e623a6136b1c535b"
       },
       "license": "CC BY-SA 3.0",
-      "credit": "Photo: hakkun, CC BY-SA 3.0 (this crop is shared under the same licence)",
+      "credit": "Photo: hakkun, cropped and shared under the same licence",
       "creditUrl": "https://commons.wikimedia.org/wiki/File:French_Canyon_-_Starved_Rock_-_panoramio.jpg",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
       "changes": "Cropped to 4:3 and resized; re-encoded as AVIF and WebP."
     }
   ]

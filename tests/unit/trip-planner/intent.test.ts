@@ -65,5 +65,9 @@ describe('understand', () => {
   it('flags a request for the wedding itself', () => {
     expect(understand('Saturday evening drinks').weddingTime).toBe(true);
     expect(understand('Saturday morning coffee').weddingTime).toBe(false);
+    // Saturday afternoon or evening named beside another day is still the wedding's time.
+    expect(understand('Dinner on Saturday or Sunday evening').weddingTime).toBe(true);
+    expect(understand('Friday or Saturday night, somewhere for a drink').weddingTime).toBe(true);
+    expect(understand('Coffee on Saturday or Sunday morning').weddingTime).toBe(false);
   });
 });

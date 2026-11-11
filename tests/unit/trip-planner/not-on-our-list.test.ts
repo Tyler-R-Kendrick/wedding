@@ -57,6 +57,15 @@ describe('a request our list does not cover', () => {
     expect(draftPlan({ request: 'Somewhere with bocce', places: PLACES, saved: [], scores: NEAR_TIE }).title).not.toBe('That one is not on our list');
   });
 
+  it('the browser model cannot swap out the only place that matches the word', () => {
+    const plan = draftPlan({ request: 'billiards and bocce', places: PLACES, saved: [] });
+    expect(plan.picks.map((p) => p.id)).toEqual(['game-room']);
+    // The writer may only word the places that say it: no others are offered to it.
+    expect(plan.candidates).toEqual(['game-room']);
+    const merged = mergeWritten(plan, 'PICK: art-museum | Quiet galleries.\nPICK: bean-house | Good coffee.\n', PLACES, { complete: true });
+    expect(merged.picks.map((p) => p.id)).toEqual(['game-room']);
+  });
+
   it('a request a rule reads is never "not on our list", whatever the scores', () => {
     for (const request of ['Somewhere for coffee', 'Something with the kids', 'I have two hours', 'Saturday morning'])
       expect(draftPlan({ request, places: PLACES, saved: [], scores: NEAR_TIE }).title, request).not.toBe('That one is not on our list');

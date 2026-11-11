@@ -172,3 +172,45 @@ describe('on-device Web Speech (route 1)', () => {
     expect(onError).toHaveBeenCalledWith('not-allowed');
   });
 });
+
+describe('cancelling before the microphone is open', () => {
+  it('an abort during the permission prompt closes the microphone as soon as it opens, and records nothing', async () => {
+    let grant: (stream: unknown) => void = () => undefined;
+    const tracks = [{ stop: vi.fn() }, { stop: vi.fn() }];
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { mediaDevices: { getUserMedia: () => new Promise((r) => (grant = r)) } } });
+    const recorder = vi.fn();
+    g.MediaRecorder = recorder;
+    g.AudioContext = function AudioContext() {};
+    g.Worker = function Worker() {};
+    local.state = 'absent';
+    const controller = new AbortController();
+    const onFinal = vi.fn();
+    const onError = vi.fn();
+    const dictation = startDictation({ onFinal, onError, signal: controller.signal });
+    await tick();
+    controller.abort();
+    grant({ getTracks: () => tracks });
+    await dictation.done;
+    for (const t of tracks) expect(t.stop).toHaveBeenCalled();
+    expect(recorder).not.toHaveBeenCalled();
+    expect(local.ensureLocal, 'no model fetched for a cancelled dictation').not.toHaveBeenCalled();
+    expect(onFinal).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('an abort during a slow language-pack install starts no recogniser', async () => {
+    let installed: (ok: boolean) => void = () => undefined;
+    const { ctor, instances } = installRecognition('downloadable');
+    ctor.install.mockImplementationOnce(() => new Promise<boolean>((r) => (installed = r)));
+    const controller = new AbortController();
+    const onError = vi.fn();
+    const dictation = startDictation({ onFinal: vi.fn(), onError, signal: controller.signal });
+    await tick();
+    expect(ctor.install).toHaveBeenCalled();
+    controller.abort();
+    installed(true);
+    await dictation.done;
+    expect(instances).toHaveLength(0);
+    expect(onError).not.toHaveBeenCalled();
+  });
+});

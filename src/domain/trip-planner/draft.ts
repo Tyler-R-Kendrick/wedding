@@ -211,7 +211,8 @@ function partFor(place: PlannerPlace, intent: Intent): Part {
 }
 
 function dayFor(place: PlannerPlace, part: Part, intent: Intent): Day {
-  if (intent.days.length) return intent.days[0]!;
+  // "Saturday or Sunday evening": the named day that is free at that time, before moving off the wedding.
+  if (intent.days.length) return intent.days.find((d) => !isWeddingTime(d, part)) ?? intent.days[0]!;
   if (isDayTrip(place)) return 'sun';
   if (part === 'morning') return 'sat';
   return 'fri';
@@ -250,22 +251,25 @@ const THEME_PHRASE: Record<Theme, string> = {
 
 const PART_PHRASE: Record<Part, string> = { morning: 'morning', afternoon: 'afternoon', evening: 'evening' };
 
-function whenPhrase(intent: Intent, slot?: { day: Day; part: Part }): string {
-  const day = intent.days[0] ?? (intent.parts.length ? slot?.day : undefined);
-  const part = intent.parts[0];
-  if (intent.weddingTime && slot) return `on ${DAY_NAME[slot.day]} ${PART_PHRASE[slot.part]}`;
+/** When the answer is, read from the slots its picks actually use (never only from the words asked). */
+function whenPhrase(intent: Intent, slots: readonly { day: Day; part: Part }[]): string {
+  const days = [...new Set(slots.map((s) => s.day))];
+  const parts = [...new Set(slots.map((s) => s.part))];
+  // A day is said when the guest named a day or a part and every pick shares it; a part, when they named one.
+  const day = (intent.days.length || intent.parts.length) && days.length === 1 ? days[0] : undefined;
+  const part = intent.parts.length && parts.length === 1 ? parts[0] : undefined;
   if (day && part) return `on ${DAY_NAME[day]} ${PART_PHRASE[part]}`;
   if (day) return `on ${DAY_NAME[day]}`;
   if (part) return `in the ${PART_PHRASE[part]}`;
   return '';
 }
 
-function headline(intent: Intent, slot?: { day: Day; part: Part }): string {
+function headline(intent: Intent, slots: readonly { day: Day; part: Part }[]): string {
   const lead = intent.themes.find((t) => t !== 'kids' && t !== 'walk' && t !== 'hotel') ?? intent.themes[0];
   let phrase = lead ? THEME_PHRASE[lead] : intent.indoors ? 'Somewhere out of the rain' : intent.onFoot ? 'Something on foot' : 'Our picks';
   if (intent.kids && lead && lead !== 'kids') phrase += ', with the kids';
   if (intent.indoors && lead) phrase += ', out of the rain';
-  const when = whenPhrase(intent, slot);
+  const when = whenPhrase(intent, slots);
   return when ? `${phrase} ${when}` : phrase === 'Our picks' ? 'Our picks for you' : `${phrase}, from our list`;
 }
 
@@ -316,13 +320,15 @@ const WEEKEND_SLOTS: { day: Day; part: Part; themes: Theme[] }[] = [
 ];
 
 function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: readonly SavedItem[], scores?: ReadonlyMap<string, number>): Plan {
-  const known = new Map(places.map((p) => [p.id, p]));
   const picks: PlanPick[] = [];
+  // Every saved place stays, however many there are (and even one no longer on our list): "Use
+  // this plan" applies these picks, so a place left out here would read as one the plan dropped.
   for (const s of saved) {
-    if (!known.has(s.id) || picks.some((p) => p.id === s.id)) continue;
+    if (picks.some((p) => p.id === s.id)) continue;
     const slot = safeSlot(s.day, s.part);
     picks.push({ id: s.id, day: slot.day, part: slot.part, note: 'Already in your weekend.' });
   }
+  // Only the fill-ins are capped.
   for (const slot of WEEKEND_SLOTS) {
     if (picks.length >= MAX_PICKS) break;
     if (picks.some((p) => p.day === slot.day && p.part === slot.part)) continue;
@@ -339,7 +345,7 @@ function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: rea
     intro: saved.length
       ? 'We kept what you saved and filled the gaps from our own list. Saturday afternoon and evening are for the wedding.'
       : 'One idea for each free part of the weekend, from our own list. Saturday afternoon and evening are for the wedding.',
-    picks: picks.slice(0, MAX_PICKS),
+    picks,
     next: nextFor(intent, saved, 'weekend'),
     candidates: candidatesOf(ranked, picks),
   };
@@ -566,11 +572,12 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     const chosen = hits.slice(0, MOST_PICKS);
     return {
       shape: 'picks',
-      title: headline(intent),
+      title: headline(intent, chosen.map((p) => slotFor(p, intent))),
       intro: `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
       picks: chosen.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
       next: nextFor(intent, saved, 'picks'),
-      candidates: candidatesOf(ranked, chosen.map((p) => ({ id: p.id }))),
+      // The writer may word and reorder these, never trade them for places that do not say it.
+      candidates: chosen.map((p) => p.id),
     };
   }
   if (intent.kind === 'open' && !(scores && scores.size)) {
@@ -608,8 +615,8 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
       next: [],
     };
   }
-  const firstSlot = slotFor(chosen[0]!, intent);
-  const title = headline(intent, firstSlot);
+  const titleFor = (shown: readonly PlannerPlace[]) => headline(intent, shown.map((p) => slotFor(p, intent)));
+  const title = titleFor(chosen);
   const moved = intent.weddingTime ? 'Saturday afternoon and evening are for the wedding, so we planned around them. ' : '';
 
   // A time budget: rows that tick in and out against the minutes the guest has.
@@ -618,7 +625,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     if (rows.length >= MIN_PICKS) {
       return {
         shape: 'budget',
-        title: `${duration(intent.minutes)}${title === 'Our picks for you' ? ', well spent' : `: ${title.charAt(0).toLowerCase()}${title.slice(1)}`}`,
+        title: ((t) => `${duration(intent.minutes!)}${t === 'Our picks for you' ? ', well spent' : `: ${t.charAt(0).toLowerCase()}${t.slice(1)}`}`)(titleFor(rows)),
         intro: `${moved}Tick what you want to do and the total follows. The times are our own rough guide.`,
         picks: rows.map((p) => ({ id: p.id, note: `About ${p.minutes} minutes, by our rough guide.`, ...slotFor(p, intent) })),
         minutes: intent.minutes,
@@ -638,7 +645,7 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
       const ids = [...inside, ...out];
       return {
         shape: 'switch',
-        title,
+        title: titleFor(ids),
         intro: `${moved}Choose whether to stay in the hotel or go out.`,
         picks: ids.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
         groups: [
