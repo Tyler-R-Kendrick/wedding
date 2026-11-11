@@ -1,0 +1,694 @@
+/*
+ * Your Trip: the planner's answers (src/components/trip/openui) in the Botanical–Deco look. Tokens
+ * only, from theme.css; buttons, badges, links and eyebrows reuse the kit's own classes. Phone first:
+ * one column at 390px, every control at least 44px, a visible focus ring, and no movement for
+ * guests who ask for less.
+ */
+
+/* ---------- layout ---------- */
+.trip-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-inline-size: 0;
+}
+
+.trip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-inline-size: 0;
+}
+
+.trip-row--wrap {
+  flex-wrap: wrap;
+}
+
+.trip-gap-0 {
+  gap: 0;
+}
+
+.trip-gap-1 {
+  gap: var(--spacing-xs);
+}
+
+.trip-gap-2 {
+  gap: var(--spacing-sm);
+}
+
+.trip-gap-3 {
+  gap: var(--spacing-md);
+}
+
+.trip-gap-4 {
+  gap: var(--spacing-lg);
+}
+
+.trip-gap-5 {
+  gap: var(--spacing-xl);
+}
+
+.trip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--spacing-lg);
+}
+
+.trip-card {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface);
+}
+
+/* A tool or a summary: the room-block panel's ivory ground and gold rule. */
+.trip-card--soft {
+  border: 0;
+  border-block-start: 2px solid var(--color-gold);
+  border-radius: 0;
+  background: var(--color-neutral);
+}
+
+.trip-spacer {
+  flex: 1 1 auto;
+}
+
+/* ---------- text ---------- */
+.trip-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--type-title-weight);
+  color: var(--color-primary);
+  text-wrap: balance;
+}
+
+.trip-title--xl {
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-line);
+}
+
+.trip-title--lg,
+.trip-title--md {
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+}
+
+.trip-text {
+  margin: 0;
+  font-family: var(--font-text);
+  color: var(--color-on-surface);
+  text-wrap: pretty;
+}
+
+.trip-text--sm {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+.trip-text--md {
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+}
+
+.trip-text--lg {
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line);
+}
+
+.trip-text--muted {
+  color: var(--color-on-surface-muted);
+}
+
+.trip-text--strong {
+  font-weight: 600;
+}
+
+.trip-caption {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-badge {
+  white-space: nowrap;
+}
+
+/* ---------- controls ---------- */
+.trip-button {
+  inline-size: 100%;
+}
+
+@media (width >= 40rem) {
+  .trip-button {
+    inline-size: auto;
+  }
+}
+
+.trip-pressable,
+.trip-segmented__option,
+.trip-heart,
+.trip-option,
+.trip-chip,
+.trip-map__pin {
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+/* A row of the time tool: the whole row ticks in and out. */
+.trip-pressable {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-block-size: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.trip-pressable:hover {
+  border-color: var(--color-gold);
+}
+
+.trip-pressable.is-selected {
+  border-color: var(--color-moss);
+  background: var(--color-neutral-variant);
+}
+
+.trip-pressable[aria-disabled="true"] {
+  cursor: progress;
+}
+
+.trip-pressable__body {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.trip-pressable__tick {
+  position: relative;
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: 1px solid var(--color-gold-deep);
+  border-radius: var(--rounded-sm);
+  background: var(--color-surface);
+}
+
+.trip-pressable.is-selected .trip-pressable__tick {
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+}
+
+/* The tick: two borders of a turned box, in the moss button's light ink. */
+.trip-pressable.is-selected .trip-pressable__tick::after {
+  position: absolute;
+  inset-block-start: 15%;
+  inset-inline-start: 32%;
+  inline-size: 30%;
+  block-size: 55%;
+  border: solid var(--color-on-moss);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  content: "";
+}
+
+.trip-slider {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.trip-slider__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  color: var(--color-primary);
+}
+
+.trip-slider__head output {
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-slider__range {
+  inline-size: 100%;
+  min-block-size: 44px;
+  accent-color: var(--color-gold-deep);
+}
+
+.trip-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.trip-segmented__option {
+  flex: 1 1 auto;
+  min-block-size: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  cursor: pointer;
+}
+
+.trip-segmented__option.is-selected {
+  border-color: var(--color-secondary);
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+
+/* ---------- a place ---------- */
+.trip-place {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: clip;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface);
+}
+
+.trip-place__photo,
+.trip-place__ground {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+}
+
+.trip-place__photo {
+  object-fit: cover;
+}
+
+/* No photograph we may publish: a plain ground, never a stand-in picture. */
+.trip-place__ground {
+  border-block-end: 2px solid var(--color-gold);
+  background: var(--color-neutral-variant);
+}
+
+.trip-place__body {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.trip-place__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-line);
+  color: var(--color-primary);
+}
+
+.trip-place__what,
+.trip-place__note,
+.trip-place__why {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface);
+}
+
+.trip-place__note {
+  font-style: italic;
+  color: var(--color-tertiary);
+}
+
+/* The couple's own reason, under a fine gold rule. */
+.trip-place__why {
+  padding-block-start: var(--spacing-sm);
+  border-block-start: 1px solid var(--color-gold);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-place__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin-block-start: var(--spacing-xs);
+}
+
+.trip-place__details {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-size: var(--type-body-sm-size);
+}
+
+.trip-heart {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  cursor: pointer;
+}
+
+.trip-heart:hover {
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+}
+
+.trip-heart.is-on {
+  border-color: var(--color-moss);
+  background: var(--color-moss);
+  color: var(--color-on-moss);
+}
+
+.trip-heart[disabled] {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.trip-heart__icon {
+  flex: none;
+}
+
+/* ---------- the room block and getting here ---------- */
+.trip-stay {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-block-start: 2px solid var(--color-gold);
+  background: var(--color-neutral);
+}
+
+.trip-stay__terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--spacing-md);
+  margin: 0;
+}
+
+.trip-stay__terms dd {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--type-body-md-size);
+  color: var(--color-primary);
+}
+
+.trip-arrive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* ---------- a question, and what to ask next ---------- */
+.trip-choice {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.trip-choice > legend {
+  margin-block-end: var(--spacing-md);
+  padding: 0;
+}
+
+.trip-choice__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--spacing-sm);
+}
+
+.trip-option {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-block-size: 44px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.trip-option:hover {
+  border-color: var(--color-gold);
+}
+
+.trip-option.is-picked {
+  border-color: var(--color-secondary);
+  background: var(--color-neutral-variant);
+}
+
+.trip-option[disabled]:not(.is-picked) {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.trip-option__label {
+  font-size: var(--type-body-md-size);
+}
+
+.trip-option__note {
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.trip-chip {
+  min-block-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-tertiary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  text-align: start;
+  cursor: pointer;
+}
+
+.trip-chip:hover {
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+  color: var(--color-primary);
+}
+
+/* ---------- the drawn map ---------- */
+.trip-map {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.trip-map__frame {
+  position: relative;
+  overflow: clip;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--rounded-md);
+  block-size: 300px;
+}
+
+.trip-map__frame[data-size="wide"] {
+  block-size: 360px;
+}
+
+.trip-map__drawing {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.trip-map__ground {
+  fill: var(--color-neutral);
+}
+
+.trip-map__grid {
+  stroke: var(--color-outline);
+  stroke-width: 1;
+}
+
+.trip-map__route {
+  fill: none;
+  stroke: var(--color-gold-deep);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+
+.trip-map__hotel {
+  fill: var(--color-moss);
+}
+
+.trip-map__hotel-label {
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  fill: var(--color-moss);
+}
+
+.trip-map__pin {
+  position: absolute;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 2px solid var(--color-surface);
+  border-radius: var(--rounded-pill);
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.trip-map__pin.is-selected {
+  background: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+}
+
+.trip-map__caption {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.trip-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-lg);
+  margin: 0;
+  padding-inline-start: var(--spacing-lg);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  color: var(--color-on-surface);
+}
+
+.trip-map__legend .is-selected {
+  color: var(--color-tertiary);
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+}
+
+/* ---------- the calendar ---------- */
+.trip-cal {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.trip-cal__days {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-cal__day {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.trip-cal__events {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-cal__event {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid transparent;
+  border-block-end-color: var(--color-outline);
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+}
+
+/* The wedding's own events: framed in gold on the ivory ground, with the title in the display face. */
+.trip-cal__event--wedding {
+  border-color: var(--color-gold);
+  border-radius: var(--rounded-md);
+  background: var(--color-neutral);
+}
+
+.trip-cal__time {
+  color: var(--color-on-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-cal__what {
+  display: grid;
+}
+
+.trip-cal__kind {
+  font-size: var(--type-label-caps-size);
+  font-weight: var(--type-label-caps-weight);
+  letter-spacing: var(--type-label-caps-tracking);
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.trip-cal__title {
+  font-size: var(--type-body-md-size);
+  color: var(--color-primary);
+}
+
+.trip-cal__event--wedding .trip-cal__title {
+  font-family: var(--font-display);
+  font-size: var(--type-title-size);
+}
+
+@media (width >= 40rem) {
+  .trip-cal__event {
+    grid-template-columns: 11rem 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+/* One focus ring for every control the answers draw. */
+.trip-pressable:focus-visible,
+.trip-segmented__option:focus-visible,
+.trip-heart:focus-visible,
+.trip-option:focus-visible,
+.trip-chip:focus-visible,
+.trip-map__pin:focus-visible,
+.trip-slider__range:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-pressable,
+  .trip-segmented__option,
+  .trip-heart,
+  .trip-option,
+  .trip-chip,
+  .trip-map__pin {
+    transition: none;
+  }
+}
