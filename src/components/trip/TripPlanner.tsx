@@ -986,7 +986,8 @@ function Board({
     if (dayOfDate(date) !== 'sat') {
       for (const e of schedule.filter((x) => x.dateIso === date)) {
         const wall = startOf.get(e.id);
-        all.push({ key: e.id, at: wall && wall.date === date ? wall.time : null, icon: 'rings', text: wall ? e.name : `${e.name}: ${timeText(e)}` });
+        const at = wall && wall.date === date ? wall.time : null;
+        all.push({ key: e.id, at, icon: 'rings', text: at ? e.name : `${e.name}: ${timeText(e)}` });
       }
     }
     const byPart: Record<Part, DayLine[]> = { morning: [], afternoon: [], evening: [] };
@@ -1119,21 +1120,27 @@ function Board({
                           <Icon name="rings" className="trip-icon trip-icon--caps trip-icon--accent" />
                           Afternoon and evening
                         </p>
-                        <div className="trip-slot__body trip-wedding">
-                          <p className="trip-wedding__title">The wedding</p>
-                          {ours.length ? (
-                            <ol className="trip-slot__events" aria-label="The wedding">
-                              {ours.map((e) => (
-                                <li key={e.id} className="trip-slot__event">
-                                  <span className="trip-slot__wedding">{e.name}</span>
-                                  {timed ? <span>{timeText(e)}</span> : null}
-                                  {e.room ? <span>{e.room}</span> : null}
-                                  {e.dressCode ? <span>{`Dress code: ${e.dressCode}`}</span> : null}
-                                </li>
-                              ))}
-                            </ol>
-                          ) : null}
-                          {ours.length && !timed ? <p className="trip-wedding__note">Times to be announced</p> : null}
+                        <div className="trip-slot__body">
+                          {/* A guest who arrives that day still sees their own times: a 3 PM check-in, a flight in. */}
+                          {[...fixed.byPart.afternoon, ...fixed.byPart.evening].map((l) => (
+                            <FixedLine key={l.key} line={l} />
+                          ))}
+                          <div className="trip-wedding">
+                            <p className="trip-wedding__title">The wedding</p>
+                            {ours.length ? (
+                              <ol className="trip-slot__events" aria-label="The wedding">
+                                {ours.map((e) => (
+                                  <li key={e.id} className="trip-slot__event">
+                                    <span className="trip-slot__wedding">{e.name}</span>
+                                    {timed ? <span>{timeText(e)}</span> : null}
+                                    {e.room ? <span>{e.room}</span> : null}
+                                    {e.dressCode ? <span>{`Dress code: ${e.dressCode}`}</span> : null}
+                                  </li>
+                                ))}
+                              </ol>
+                            ) : null}
+                            {ours.length && !timed ? <p className="trip-wedding__note">Times to be announced</p> : null}
+                          </div>
                         </div>
                       </div>
                     );

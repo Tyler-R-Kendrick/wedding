@@ -296,6 +296,24 @@ describe('the Your Trip planner', () => {
     expect(within(screen.getByRole('region', { name: dateLabel(thu) })).getByRole('link', { name: 'Bean House Coffee' })).toBeTruthy();
   });
 
+  it('a guest who arrives on the wedding day still sees their own check-in beside the wedding', async () => {
+    const sat = weekendDate('sat');
+    // 3:00 PM in the wedding's zone (Chicago, UTC-5 in July).
+    render(
+      <TripPlanner
+        places={PLACES}
+        saved={[]}
+        bookings={[{ id: 'h-1', kind: 'hotel', status: 'planned', title: 'Hotel', hotelName: 'The Palmer', startAt: new Date(`${sat}T20:00:00.000Z`).toISOString(), endAt: null, provider: null }]}
+        events={SET}
+        hotel={null}
+        actions={{ save: vi.fn(async () => ({ ok: true as const, itemId: ITEM(1) })), remove: vi.fn(async () => ({ ok: true as const })) }}
+      />,
+    );
+    const saturday = screen.getByRole('region', { name: /^Saturday/ });
+    const wedding = within(saturday).getByRole('list', { name: 'The wedding' }).closest('.trip-slot')!;
+    expect(wedding.textContent).toMatch(/\D3:00 PMCheck in at The Palmer/);
+  });
+
   it('the board lists the wedding\'s events in their slot, and the room block\'s check-in and check-out on Friday and Sunday', async () => {
     const stay = stayFacts();
     setup({ events: SET, stay });
