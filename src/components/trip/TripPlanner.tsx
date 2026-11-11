@@ -31,6 +31,7 @@ import {
 } from '@/domain/trip-planner';
 import { embed, ensureLocal, getLocalModels, writeLines } from '@/lib/ai/local';
 import { speechSupport, startDictation, type Dictation, type DictationError } from '@/lib/speech';
+import { Icon, type IconName } from '@/themes/shared/icons';
 import './trip.css';
 
 /**
@@ -67,16 +68,17 @@ export type TripPlannerProps = {
 
 type Turn = { id: number; request: string; program: string; waiting: boolean; streaming: boolean };
 
-export const STARTERS: { label: string; hint: string; request: string }[] = [
-  { label: 'A free Saturday morning', hint: 'Before the wedding', request: 'A free Saturday morning before the wedding' },
-  { label: 'I have two hours', hint: 'Fit it to the time', request: 'I have two hours' },
-  { label: 'For the architecture people', hint: 'Buildings worth the walk', request: 'For the architecture people' },
-  { label: 'With kids', hint: 'Things they will love', request: 'Something to do with kids' },
-  { label: 'Where should we get dinner?', hint: 'In the hotel or out', request: 'Where should we get dinner?' },
-  { label: 'Plan my whole weekend', hint: 'Friday to Sunday', request: 'Plan my whole weekend' },
+export const STARTERS: { label: string; hint: string; request: string; icon: IconName }[] = [
+  { label: 'A free Saturday morning', hint: 'Before the wedding', request: 'A free Saturday morning before the wedding', icon: 'sunrise' },
+  { label: 'I have two hours', hint: 'Fit it to the time', request: 'I have two hours', icon: 'clock' },
+  { label: 'For the architecture people', hint: 'Buildings worth the walk', request: 'For the architecture people', icon: 'landmark' },
+  { label: 'With kids', hint: 'Things they will love', request: 'Something to do with kids', icon: 'balloon' },
+  { label: 'Where should we get dinner?', hint: 'In the hotel or out', request: 'Where should we get dinner?', icon: 'dinner' },
+  { label: 'Plan my whole weekend', hint: 'Friday to Sunday', request: 'Plan my whole weekend', icon: 'calendar' },
 ];
 
 const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
+const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun', evening: 'moon' };
 const SLOTS = DAYS.flatMap((day) => PARTS.filter((part) => !isWeddingTime(day, part)).map((part) => ({ day, part, value: `${day}-${part}`, label: `${DAY_NAME[day]} ${part}` })));
 const CONFIRMED_KEY = 'your-trip:weekend-set';
 const ENOUGH = 3;
@@ -450,15 +452,19 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
   };
 
   const savedItems: SavedItem[] = saved;
+  const listening = speech === 'listening';
+  const openWeekend = tab === 'weekend' ? undefined : () => (setTab('weekend'), setToast(null));
 
   return (
     <TripPlannerProvider places={byId} saved={savedItems} hotel={hotel} {...(stay ? { stay } : {})} onAction={onAction}>
       <div className="trip-planner" onPointerDownCapture={(e) => (lastPress.current = (e.target as Element).closest?.('button')?.getBoundingClientRect() ?? null)}>
         <div className="trip-tabs" role="tablist" aria-label="Planner">
           <button type="button" role="tab" id="trip-tab-ask" aria-selected={tab === 'ask'} aria-controls="trip-panel-ask" tabIndex={tab === 'ask' ? 0 : -1} className="trip-tab" onClick={() => setTab('ask')} onKeyDown={(e) => e.key === 'ArrowRight' && (setTab('weekend'), tabRef.current?.focus())}>
+            <Icon name="chat" className="trip-icon trip-tab__icon" />
             Ask us
           </button>
           <button ref={tabRef} type="button" role="tab" id="trip-tab-weekend" aria-selected={tab === 'weekend'} aria-controls="trip-panel-weekend" tabIndex={tab === 'weekend' ? 0 : -1} className="trip-tab" onClick={() => setTab('weekend')} onKeyDown={(e) => e.key === 'ArrowLeft' && (setTab('ask'), document.getElementById('trip-tab-ask')?.focus())}>
+            <Icon name="heart" filled={saved.length > 0} className="trip-icon trip-tab__icon" />
             My weekend
             {saved.length ? (
               <span className="trip-tab__count" key={saved.length}>
@@ -474,6 +480,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
             <div className="trip-starters" role="group" aria-label="Ideas to start with">
               {STARTERS.map((s) => (
                 <button key={s.label} type="button" className="trip-starter" onClick={() => send(s.request)}>
+                  <Icon name={s.icon} className="trip-starter__icon" />
                   <span className="trip-starter__label">{s.label}</span>
                   <span className="trip-starter__hint">{s.hint}</span>
                 </button>
@@ -488,8 +495,11 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
                     {t.request}
                   </p>
                   {t.waiting ? (
-                    <p className="trip-turn__status" role="status">
-                      writing back…
+                    <p className="trip-typing" role="status">
+                      <span className="sr-only">Writing back</span>
+                      <span className="trip-typing__dot" aria-hidden="true" />
+                      <span className="trip-typing__dot" aria-hidden="true" />
+                      <span className="trip-typing__dot" aria-hidden="true" />
                     </p>
                   ) : null}
                   <div className="trip-turn__answer" onPointerDown={() => touched.current.add(t.id)} onKeyDown={() => touched.current.add(t.id)} onFocusCapture={() => touched.current.add(t.id)}>
@@ -502,29 +512,45 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           <div ref={threadEnd} className="trip-thread__end" aria-hidden="true" />
 
           <form className="trip-ask" onSubmit={submit}>
-            <label className="sr-only" htmlFor="trip-ask-input">
-              Ask us about the weekend
-            </label>
-            <textarea
-              ref={askRef}
-              id="trip-ask-input"
-              className="trip-ask__input"
-              rows={1}
-              value={draft}
-              placeholder="Ask us about the weekend…"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={onAskKey}
-            />
-            <div className="trip-ask__tools">
+            <div className="trip-toast trip-toast--ask" role="status" aria-live="polite">
+              {toast && tab === 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={() => setToast(null)} /> : null}
+            </div>
+            <div className="trip-ask__row">
+              <label className="sr-only" htmlFor="trip-ask-input">
+                Ask us about the weekend
+              </label>
+              <textarea
+                ref={askRef}
+                id="trip-ask-input"
+                className="trip-ask__input"
+                rows={1}
+                value={draft}
+                placeholder="Ask about the weekend…"
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={onAskKey}
+              />
               {speech !== 'none' ? (
-                <button type="button" className={`trip-ask__mic${speech === 'listening' ? ' is-on' : ''}`} aria-pressed={speech === 'listening'} onClick={toggleSpeech}>
-                  {speech === 'listening' ? 'Stop' : 'Speak instead'}
+                <button
+                  type="button"
+                  className={`trip-round trip-ask__mic${listening ? ' is-on' : ''}`}
+                  aria-pressed={listening}
+                  aria-label={listening ? 'Stop listening' : 'Speak instead'}
+                  title={listening ? 'Stop listening' : 'Speak instead'}
+                  onClick={toggleSpeech}
+                >
+                  {listening ? <Icon name="stop" filled className="trip-icon trip-icon--sm" /> : <Icon name="mic" className="trip-icon" />}
                 </button>
               ) : null}
-              <button type="submit" className="bd-btn bd-btn--primary trip-ask__send" disabled={!draft.trim()}>
-                Ask
+              <button type="submit" className="trip-round trip-ask__send" aria-label="Ask" title="Ask" disabled={!draft.trim()}>
+                <Icon name="send" className="trip-icon" strokeWidth="2" />
               </button>
             </div>
+            {listening ? (
+              <p className="trip-caption trip-ask__listening">
+                <span className="trip-ask__dot" aria-hidden="true" />
+                Listening. Tap the square when you are done.
+              </p>
+            ) : null}
             {speechNote ? (
               <p className="trip-caption trip-ask__note" role="status">
                 {speechNote}
@@ -533,6 +559,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           </form>
           {turns.length ? (
             <button type="button" className="trip-reset" onClick={startOver}>
+              <Icon name="restart" className="trip-icon" />
               Start over
             </button>
           ) : null}
@@ -542,27 +569,30 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
           <Board saved={saved} byId={byId} confirmed={confirmed} onMove={move} onRemove={remove} onConfirm={confirm} onAsk={send} persist={!!actions} />
         </div>
 
-        <div className="trip-toast" role="status" aria-live="polite">
-          {toast ? (
-            <div className="trip-toast__box" key={toast.key}>
-              <span>{toast.text}</span>
-              {toast.open && tab !== 'weekend' ? (
-                <button
-                  type="button"
-                  className="trip-toast__open"
-                  onClick={() => {
-                    setTab('weekend');
-                    setToast(null);
-                  }}
-                >
-                  See my weekend
-                </button>
-              ) : null}
-            </div>
-          ) : null}
+        <div className="trip-toast trip-toast--float" role="status" aria-live="polite">
+          {toast && tab !== 'ask' ? <Toast toast={toast} onOpen={openWeekend} onClose={() => setToast(null)} /> : null}
         </div>
       </div>
     </TripPlannerProvider>
+  );
+}
+
+/** A short note after a change: what happened, where to see it, and a way to close it. */
+function Toast({ toast, onOpen, onClose }: { toast: { text: string; key: number; open: boolean }; onOpen: (() => void) | undefined; onClose: () => void }) {
+  return (
+    <div className="trip-toast__box" key={toast.key}>
+      <Icon name="check" className="trip-icon trip-toast__mark" />
+      <span className="trip-toast__text">{toast.text}</span>
+      {toast.open && onOpen ? (
+        <button type="button" className="trip-toast__open" onClick={onOpen}>
+          See my weekend
+          <Icon name="arrow-right" className="trip-icon trip-icon--sm" />
+        </button>
+      ) : null}
+      <button type="button" className="trip-round trip-toast__close" aria-label="Close" title="Close" onClick={onClose}>
+        <Icon name="close" className="trip-icon" />
+      </button>
+    </div>
   );
 }
 
@@ -601,12 +631,13 @@ function Board({
       <div className="trip-board__bar">
         <p className="trip-text trip-text--md">
           {saved.length
-            ? `Move a place to another part of the weekend by dragging it or with its Move list.${persist ? '' : ' This weekend is kept on this page only.'}`
-            : 'Nothing saved yet. Ask us for ideas, then tap “Add to my weekend” on anything you like.'}
+            ? `Move a place to another part of the weekend by dragging it, or choose a new time from its list.${persist ? '' : ' This weekend is kept on this page only.'}`
+            : 'Nothing saved yet. Ask us for ideas, then tap the heart on anything you like.'}
         </p>
         <div className="trip-board__actions">
-          <button type="button" className="bd-btn bd-btn--primary trip-button" disabled={!enough} onClick={onConfirm} aria-describedby="trip-confirm-hint">
-            {confirmed ? 'Show my calendar' : 'Confirm my weekend'}
+          <button type="button" className="bd-btn bd-btn--primary trip-button trip-button--icon" disabled={!enough} onClick={onConfirm} aria-describedby="trip-confirm-hint">
+            <Icon name={confirmed ? 'calendar' : 'check'} className="trip-icon" />
+            <span>{confirmed ? 'Show my calendar' : 'Confirm my weekend'}</span>
           </button>
           <p id="trip-confirm-hint" className="trip-caption">
             {enough ? (confirmed ? 'Your weekend is set. You can still change it here.' : 'We will show it as a calendar you can save.') : `Save ${ENOUGH - saved.length} more ${ENOUGH - saved.length === 1 ? 'place' : 'places'} to see it as a calendar.`}
@@ -629,7 +660,10 @@ function Board({
               if (isWeddingTime(day, part)) {
                 return part === 'afternoon' ? (
                   <div key={key} className="trip-slot is-wedding">
-                    <p className="trip-slot__label">Afternoon and evening</p>
+                    <p className="trip-slot__label">
+                      <Icon name="rings" className="trip-icon trip-icon--caps" />
+                      Afternoon and evening
+                    </p>
                     <p className="trip-slot__wedding">The wedding</p>
                   </div>
                 ) : null;
@@ -646,7 +680,10 @@ function Board({
                   onDragLeave={() => setOver((o) => (o === key ? null : o))}
                   onDrop={(e) => drop(e, day, part)}
                 >
-                  <p className="trip-slot__label">{PART_LABEL[part]}</p>
+                  <p className="trip-slot__label">
+                    <Icon name={PART_ICON[part]} className="trip-icon trip-icon--caps trip-icon--accent" />
+                    {PART_LABEL[part]}
+                  </p>
                   {here.length === 0 ? <p className="trip-slot__empty">Free</p> : null}
                   {here.map((s) => {
                     const place = byId.get(s.id);
@@ -666,10 +703,14 @@ function Board({
                           setOver(null);
                         }}
                       >
+                        <Icon name="grip" className="trip-saved__grip" strokeWidth="3" />
                         <h4 className="trip-saved__name">{place ? <a className="bd-link" href={place.href}>{name}</a> : name}</h4>
+                        <button type="button" className="trip-round trip-saved__remove" aria-label={`Remove ${name}`} title={`Remove ${name}`} onClick={() => onRemove(s.id)}>
+                          <Icon name="trash" className="trip-icon" />
+                        </button>
                         <div className="trip-saved__tools">
-                          <label className="trip-saved__move">
-                            <span className="trip-caption">Move</span>
+                          <label className="trip-saved__move" title="Move to another time">
+                            <Icon name="calendar" className="trip-icon" />
                             <select
                               className="trip-saved__select"
                               aria-label={`Move ${name} to`}
@@ -686,9 +727,6 @@ function Board({
                               ))}
                             </select>
                           </label>
-                          <button type="button" className="trip-saved__remove" aria-label={`Remove ${name}`} onClick={() => onRemove(s.id)}>
-                            Remove
-                          </button>
                         </div>
                       </article>
                     );

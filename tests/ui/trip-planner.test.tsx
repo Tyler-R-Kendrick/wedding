@@ -78,7 +78,7 @@ describe('the Your Trip planner', () => {
     expect((screen.getByLabelText('Ask us about the weekend') as HTMLTextAreaElement).value).toBe('');
     // Nothing on the page names how the answer was made.
     expect(document.body.textContent).not.toMatch(/\b(model|AI|download|device|OpenUI)\b/);
-    await waitFor(() => expect(screen.queryByText('writing back…')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Writing back')).toBeNull());
   });
 
   it('rewords the answer as the written lines arrive, until the guest starts using it', async () => {
@@ -96,11 +96,17 @@ describe('the Your Trip planner', () => {
     const { save } = setup();
     await ask('Somewhere for coffee');
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
-    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add to my weekend' })));
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sat', part: 'morning', itemId: null });
     expect(tab(/My weekend/).textContent).toContain('1');
     expect(document.body.textContent).toContain('Bean House Coffee is in your weekend, Saturday morning.');
-    expect(within(card).getByRole('button', { name: 'In my weekend' }).getAttribute('aria-pressed')).toBe('true');
+    expect(within(card).getByRole('button', { name: 'Remove Bean House Coffee from my weekend' }).getAttribute('aria-pressed')).toBe('true');
+    // The note sits in the ask box rather than over it, and closes with its own button.
+    const note = screen.getByText(/is in your weekend/).closest('.trip-toast') as HTMLElement;
+    expect(note.closest('form')).toBeTruthy();
+    expect(within(note).getByRole('button', { name: /See my weekend/ })).toBeTruthy();
+    await act(async () => fireEvent.click(within(note).getByRole('button', { name: 'Close' })));
+    expect(document.body.textContent).not.toContain('is in your weekend');
   });
 
   it('puts the board back and says so in plain words when a save fails', async () => {
@@ -108,17 +114,17 @@ describe('the Your Trip planner', () => {
     save.mockResolvedValueOnce({ ok: false, message: 'We could not save that just now. Please try again in a moment.' } as never);
     await ask('Somewhere for coffee');
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
-    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add to my weekend' })));
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     await waitFor(() => expect(document.body.textContent).toContain('We could not save that just now.'));
     expect(tab(/My weekend/).textContent).not.toMatch(/\d/);
-    expect(within(card).getByRole('button', { name: 'Add to my weekend' })).toBeTruthy();
+    expect(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })).toBeTruthy();
   });
 
   it('keeps an admin preview in memory: the heart works and nothing is sent', async () => {
     setup({ actions: undefined });
     await ask('Somewhere for coffee');
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
-    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add to my weekend' })));
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
     expect(tab(/My weekend/).textContent).toContain('1');
     await act(async () => fireEvent.click(tab(/My weekend/)));
     expect(screen.getByText(/kept on this page only/)).toBeTruthy();
@@ -216,10 +222,10 @@ describe('the Your Trip planner', () => {
     const mic = await screen.findByRole('button', { name: 'Speak instead' });
     await act(async () => fireEvent.click(mic));
     expect(speech.start).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Stop' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Stop listening' }).getAttribute('aria-pressed')).toBe('true');
     await act(async () => opts!.onInterim?.('a quiet'));
     expect((screen.getByLabelText('Ask us about the weekend') as HTMLTextAreaElement).value).toBe('a quiet');
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Stop' })));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Stop listening' })));
     expect(stop).toHaveBeenCalledTimes(1);
     await act(async () => opts!.onFinal('a quiet morning'));
     expect((screen.getByLabelText('Ask us about the weekend') as HTMLTextAreaElement).value).toBe('a quiet morning');

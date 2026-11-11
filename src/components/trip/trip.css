@@ -138,9 +138,75 @@
   white-space: nowrap;
 }
 
+/* ---------- icons (src/themes/shared/icons.tsx), and the round icon button ---------- */
+.trip-icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* Icons beside small capitals (eyebrows, slot labels, calendar kinds) sit a step smaller. */
+.trip-eyebrow,
+.trip-slot__label,
+.trip-cal__kind {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.trip-icon--caps {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.trip-icon--sm {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.trip-icon--accent {
+  color: var(--color-gold-deep);
+}
+
+/* A 44px circle holding one icon: mic, send, heart, trash, close. Each has an accessible name and a title. */
+.trip-round {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 1px solid var(--color-gold);
+  border-radius: var(--rounded-pill);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.trip-round:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trip-round:hover:not(:disabled) {
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+}
+
 /* ---------- controls ---------- */
 .trip-button {
   inline-size: 100%;
+}
+
+.trip-button--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 }
 
 @media (width >= 40rem) {
@@ -307,6 +373,48 @@
   padding: var(--spacing-md);
 }
 
+.trip-place__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  align-items: start;
+}
+
+.trip-place__head > .bd-eyebrow {
+  grid-column: 1;
+  margin: 0;
+}
+
+/* The heart sits in the card's top corner, beside the category and the name. */
+.trip-place__head > .trip-heart {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.trip-facts {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-text);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-on-surface-muted);
+}
+
+.trip-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+/* One line tall, so the mark sits on the first line of an address that wraps. */
+.trip-fact__icon {
+  block-size: 1lh;
+  color: var(--color-gold-deep);
+}
+
 .trip-place__name {
   margin: 0;
   font-family: var(--font-display);
@@ -342,50 +450,38 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-sm) var(--spacing-md);
-  margin-block-start: var(--spacing-xs);
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-md);
+}
+
+.trip-place__when {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.trip-place__when.is-saved {
+  color: var(--color-tertiary);
 }
 
 .trip-place__details {
   display: inline-flex;
   align-items: center;
+  gap: var(--spacing-xs);
   min-block-size: 44px;
+  margin-inline-start: auto;
   font-size: var(--type-body-sm-size);
-}
-
-.trip-heart {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  min-block-size: 44px;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: 1px solid var(--color-gold);
-  border-radius: var(--rounded-pill);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  cursor: pointer;
-}
-
-.trip-heart:hover {
-  border-color: var(--color-gold-deep);
-  background: var(--color-neutral-variant);
 }
 
 .trip-heart.is-on {
-  border-color: var(--color-moss);
-  background: var(--color-moss);
-  color: var(--color-on-moss);
+  border-color: var(--color-gold-deep);
+  background: var(--color-neutral-variant);
+  color: var(--color-gold-deep);
 }
 
 .trip-heart[disabled] {
   cursor: progress;
   opacity: 0.72;
-}
-
-.trip-heart__icon {
-  flex: none;
 }
 
 /* ---------- the room block and getting here ---------- */
@@ -402,6 +498,10 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: var(--spacing-md);
   margin: 0;
+}
+
+.trip-stay__terms dt {
+  margin-block-end: var(--spacing-xs);
 }
 
 .trip-stay__terms dd {
@@ -648,9 +748,14 @@
 }
 
 .trip-cal__time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  align-self: start;
   color: var(--color-on-surface-muted);
   font-variant-numeric: tabular-nums;
 }
+
 
 .trip-cal__what {
   display: grid;
@@ -761,6 +866,10 @@
   font-weight: 600;
 }
 
+.trip-tab[aria-selected="true"] .trip-tab__icon {
+  color: var(--color-gold-deep);
+}
+
 .trip-tab__count {
   display: inline-grid;
   place-items: center;
@@ -783,7 +892,10 @@
 
 .trip-starter {
   display: grid;
-  gap: var(--spacing-xs);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  gap: var(--spacing-xs) var(--spacing-md);
   min-block-size: 44px;
   padding: var(--spacing-md);
   border: 1px solid var(--color-outline);
@@ -797,6 +909,13 @@
 .trip-starter:hover {
   border-color: var(--color-gold-deep);
   background: var(--color-neutral-variant);
+}
+
+.trip-starter__icon {
+  grid-row: 1 / span 2;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--color-gold-deep);
 }
 
 .trip-starter__label {
@@ -843,13 +962,44 @@
   overflow-wrap: anywhere;
 }
 
-.trip-turn__status {
+/* "Writing back": three dots in a bubble, the way every messaging app shows it. */
+.trip-typing {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--spacing-xs);
   margin: 0;
-  font-family: var(--font-text);
-  font-size: var(--type-body-sm-size);
-  line-height: var(--type-body-sm-line);
-  font-style: italic;
-  color: var(--color-on-surface-muted);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--rounded-md);
+  background: var(--color-neutral-variant);
+}
+
+.trip-typing__dot {
+  inline-size: var(--spacing-sm);
+  block-size: var(--spacing-sm);
+  border-radius: var(--rounded-pill);
+  background: var(--color-on-surface-muted);
+  animation: trip-typing 1.2s var(--ease-standard) infinite;
+}
+
+.trip-typing__dot:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.trip-typing__dot:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes trip-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+
+  30% {
+    opacity: 1;
+  }
 }
 
 .trip-turn__answer {
@@ -881,7 +1031,15 @@
   background: var(--color-surface);
 }
 
+.trip-ask__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+}
+
 .trip-ask__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
   inline-size: 100%;
   min-block-size: 44px;
   max-block-size: 10rem;
@@ -897,21 +1055,9 @@
   resize: vertical;
 }
 
-.trip-ask__tools {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-}
-
 .trip-reset {
-  justify-self: start;
-}
-
-.trip-ask__mic,
-.trip-reset,
-.trip-saved__remove {
   display: inline-flex;
+  justify-self: start;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
@@ -928,21 +1074,53 @@
   cursor: pointer;
 }
 
-.trip-ask__mic:hover,
-.trip-reset:hover,
-.trip-saved__remove:hover {
+.trip-reset:hover {
   border-color: var(--color-gold-deep);
   background: var(--color-neutral-variant);
 }
 
-.trip-ask__mic.is-on {
-  border-color: var(--color-moss);
-  background: var(--color-moss);
-  color: var(--color-on-moss);
+/* Listening: the mic becomes a stop square on a red ground, ringed, with a steady red dot below. */
+.trip-ask__mic.is-on,
+.trip-ask__mic.is-on:hover {
+  border-color: var(--color-error);
+  background: var(--color-error);
+  color: var(--color-on-error);
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
 }
 
 .trip-ask__send {
-  min-block-size: 44px;
+  border-color: var(--color-gold-deep);
+  background: var(--color-gold-deep);
+  color: var(--color-on-gold-deep);
+}
+
+.trip-ask__send:disabled {
+  border-color: var(--color-outline);
+  background: var(--color-neutral-variant);
+  color: var(--color-on-surface-muted);
+  cursor: not-allowed;
+}
+
+.trip-ask__send:hover:not(:disabled) {
+  border-color: var(--color-tertiary);
+  background: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+}
+
+.trip-ask__listening {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-error);
+}
+
+.trip-ask__dot {
+  flex: none;
+  inline-size: var(--spacing-sm);
+  block-size: var(--spacing-sm);
+  border-radius: var(--rounded-pill);
+  background: var(--color-error);
 }
 
 /* ---------- the board ---------- */
@@ -1037,8 +1215,10 @@
 
 .trip-saved {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) var(--spacing-xs);
   border: 1px solid var(--color-gold);
   border-radius: var(--rounded-sm);
   background: var(--color-neutral);
@@ -1049,7 +1229,16 @@
   opacity: 0.6;
 }
 
+/* Six dots at the card's edge: it can be picked up and dragged. */
+.trip-saved__grip {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--color-gold-deep);
+}
+
 .trip-saved__name {
+  grid-column: 2;
+  align-self: center;
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--type-title-size);
@@ -1057,21 +1246,31 @@
   overflow-wrap: anywhere;
 }
 
+.trip-saved__remove {
+  grid-column: 3;
+  grid-row: 1;
+}
+
 .trip-saved__tools {
   display: flex;
-  flex-wrap: wrap;
+  grid-column: 2 / span 2;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
 .trip-saved__move {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   min-inline-size: 0;
+  color: var(--color-tertiary);
 }
 
+
 .trip-saved__select {
+  flex: 1 1 auto;
+  min-inline-size: 0;
   min-block-size: 44px;
   max-inline-size: 100%;
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -1085,7 +1284,18 @@
 }
 
 /* ---------- the toast, and the dot that flies to "My weekend" ---------- */
-.trip-toast {
+
+/* On the Ask tab the note sits at the top of the pinned ask box, so it never covers the field. */
+.trip-toast--ask {
+  display: grid;
+}
+
+.trip-toast--ask:empty {
+  margin-block-end: calc(var(--spacing-sm) * -1);
+}
+
+/* On the weekend there is no ask box: the note floats above the bottom of the screen. */
+.trip-toast--float {
   position: fixed;
   z-index: 40;
   inset-inline: var(--spacing-md);
@@ -1095,33 +1305,87 @@
   pointer-events: none;
 }
 
+/* Phone: check, words and close on the first line, "See my weekend" under the words. Wider: one line. */
 .trip-toast__box {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--spacing-sm) var(--spacing-md);
-  max-inline-size: 34rem;
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: 0 var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) var(--spacing-md);
   border-radius: var(--rounded-sm);
   background: var(--color-primary);
   color: var(--color-on-primary);
-  box-shadow: var(--shadow-lift);
   font-family: var(--font-text);
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   pointer-events: auto;
 }
 
+.trip-toast--float .trip-toast__box {
+  max-inline-size: 34rem;
+  box-shadow: var(--shadow-lift);
+}
+
+.trip-toast__mark {
+  grid-row: 1;
+  color: var(--color-gilt);
+}
+
+.trip-toast__text {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
+  padding-block: var(--spacing-xs);
+}
+
 .trip-toast__open {
+  display: inline-flex;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  align-items: center;
+  gap: var(--spacing-xs);
   min-block-size: 44px;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-gold);
-  border-radius: var(--rounded-pill);
+  padding: 0 var(--spacing-xs);
+  border: 0;
   background: none;
-  color: inherit;
+  color: var(--color-gilt);
   font: inherit;
   text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.trip-toast__close {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+@media (width >= 40rem) {
+  .trip-toast__box {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .trip-toast__open {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .trip-toast__close {
+    grid-column: 4;
+  }
+}
+
+.trip-toast__close,
+.trip-toast__close:hover:not(:disabled) {
+  border-color: transparent;
+  background: none;
+  color: var(--color-on-primary);
+}
+
+.trip-toast__close:hover:not(:disabled) {
+  border-color: var(--color-gilt);
 }
 
 .trip-fly {
@@ -1138,18 +1402,27 @@
 .trip-tab:focus-visible,
 .trip-starter:focus-visible,
 .trip-ask__input:focus-visible,
-.trip-ask__mic:focus-visible,
 .trip-reset:focus-visible,
-.trip-saved__remove:focus-visible,
 .trip-saved__select:focus-visible,
 .trip-toast__open:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
 
+/* Focused while listening: the focus ring and the red ring both show. */
+.trip-ask__mic.is-on:focus-visible {
+  outline: 2px solid var(--color-error);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .trip-slot {
+  .trip-slot,
+  .trip-round {
     transition: none;
+  }
+
+  .trip-typing__dot {
+    animation: none;
+    opacity: 0.6;
   }
 
   .trip-fly {

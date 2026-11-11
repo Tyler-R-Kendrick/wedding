@@ -28,16 +28,16 @@ describe('trip OpenUI library', () => {
     expect(details.getAttribute('target')).toBeNull();
   });
 
-  it('the heart fires AddToWeekend with the day and part, and reads "In my weekend" once saved', async () => {
+  it('the heart fires AddToWeekend with the day and part, and offers to take the place out once saved', async () => {
     const { onAction } = show(programFor('Somewhere for coffee'));
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
-    const heart = within(card).getByRole('button', { name: 'Add to my weekend' });
+    const heart = within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' });
     expect(heart.getAttribute('aria-pressed')).toBe('false');
     await act(async () => fireEvent.click(heart));
     expect(onAction).toHaveBeenCalledWith({ type: 'AddToWeekend', id: 'bean-house', day: 'sat', part: 'morning' });
 
     const { onAction: again } = show(programFor('Somewhere for coffee'), [{ id: 'bean-house', day: 'sat', part: 'morning' }]);
-    const saved = screen.getAllByRole('button', { name: 'In my weekend' })[0]!;
+    const saved = screen.getAllByRole('button', { name: 'Remove Bean House Coffee from my weekend' })[0]!;
     expect(saved.getAttribute('aria-pressed')).toBe('true');
     await act(async () => fireEvent.click(saved));
     expect(again).toHaveBeenCalledWith({ type: 'RemoveFromWeekend', id: 'bean-house' });
