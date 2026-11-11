@@ -89,7 +89,10 @@ test.describe('security headers', () => {
     // No conditional skip: this spec is registered in PRODUCTION_SPECS, so it always runs against
     // `next start`. Run against a dev server it fails loudly, which is the right answer — the
     // relaxed dev policy is not the thing being asserted.
-    expect(csp).not.toContain('unsafe-eval');
+    // Quoted, because 'wasm-unsafe-eval' (WebAssembly only, for the on-device models) is allowed
+    // and contains the same letters. Script eval() stays forbidden.
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain("'wasm-unsafe-eval'");
     expect(csp).toContain('upgrade-insecure-requests');
     // Same-origin plus the model hub the on-device models download from; nothing else off-site.
     expect(csp).toContain("connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co;");
