@@ -569,7 +569,8 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
       intro: `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
       picks: chosen.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
       next: nextFor(intent, saved, 'picks'),
-      candidates: candidatesOf(ranked, chosen.map((p) => ({ id: p.id }))),
+      // The writer may word and reorder these, never trade them for places that do not say it.
+      candidates: chosen.map((p) => p.id),
     };
   }
   if (intent.kind === 'open' && !(scores && scores.size)) {
