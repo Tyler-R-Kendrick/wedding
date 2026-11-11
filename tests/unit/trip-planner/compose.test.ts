@@ -154,6 +154,30 @@ describe('compose', () => {
     });
   });
 
+  it('a whole-weekend answer shows and applies every saved place, not only the first six', () => {
+    const saved: SavedItem[] = [
+      { id: 'lobby-tour', day: 'fri', part: 'morning' },
+      { id: 'park-walk', day: 'fri', part: 'afternoon' },
+      { id: 'steakhouse', day: 'fri', part: 'evening' },
+      { id: 'hotel-cafe', day: 'sat', part: 'morning' },
+      { id: 'art-museum', day: 'sun', part: 'morning' },
+      { id: 'aquarium', day: 'sun', part: 'afternoon' },
+      { id: 'rooftop', day: 'sun', part: 'evening' },
+    ];
+    const plan = draftPlan({ request: 'Plan my whole weekend', places: PLACES, saved });
+    const r = expectClean(compose(plan, { places: BY_ID, saved }));
+    const shown: string[] = [];
+    let applied = '';
+    walk(r.root, (n) => {
+      if (n.typeName === 'Place') shown.push(String(n.props.id));
+      if (n.typeName === 'Button' && n.props.label === 'Use this plan') applied = JSON.stringify(n.props.action);
+    });
+    for (const s of saved) {
+      expect(shown, s.id).toContain(s.id);
+      expect(applied, s.id).toContain(`"v":"${s.id}"`);
+    }
+  });
+
   it('binds the time tool, the switch and the map to $variables', () => {
     const budget = parse(compose(draftPlan({ request: 'I have two hours', places: PLACES, saved: [] }), { places: BY_ID, saved: [] }));
     expect(Object.keys(budget.stateDeclarations).sort()).toEqual(['$have', '$picked']);

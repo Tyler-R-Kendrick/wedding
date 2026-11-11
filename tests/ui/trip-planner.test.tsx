@@ -12,12 +12,15 @@ const local = vi.hoisted(() => ({
   embed: vi.fn(async () => null as number[][] | null),
   ensureLocal: vi.fn(async () => false),
   writeLines: vi.fn(async (_args: { onText(text: string): void }) => null as string | null),
+  release: vi.fn(),
+  holdLocal: vi.fn((_part: string) => () => undefined),
   matcher: 'unsupported' as string,
 }));
 vi.mock('@/lib/ai/local', () => ({
   embed: local.embed,
   ensureLocal: local.ensureLocal,
   writeLines: local.writeLines,
+  holdLocal: local.holdLocal,
   getLocalModels: () => ({ matcher: { state: local.matcher, progress: 0 }, speech: { state: 'unsupported', progress: 0 }, writer: { state: 'unsupported', progress: 0 } }),
 }));
 const speech = vi.hoisted(() => ({
@@ -37,8 +40,8 @@ const ITEM = (n: number) => `01ITEM${String(n).padStart(20, '0')}`;
 
 function setup(over: Partial<Props> = {}) {
   // Like the capability: an edit keeps the item's id, an add gets a new one.
-  const save = vi.fn(async (input: { placeId: string; itemId?: string | null }) => ({ ok: true as const, itemId: input.itemId ?? ITEM(input.placeId.length) }));
-  const remove = vi.fn(async () => ({ ok: true as const }));
+  const save = vi.fn(async (input: { placeId: string; day: string; part: string }) => ({ ok: true as const, itemId: ITEM(input.placeId.length) }));
+  const remove = vi.fn(async (_input: { placeId: string }) => ({ ok: true as const }));
   const props: Props = { places: PLACES, saved: [], bookings: [], events: EVENTS, hotel: null, actions: { save, remove }, ...over };
   const utils = render(<TripPlanner {...props} />);
   return { ...utils, save, remove };
@@ -55,6 +58,9 @@ beforeEach(() => {
   local.matcher = 'unsupported';
   local.writeLines.mockReset().mockResolvedValue(null);
   local.embed.mockReset().mockResolvedValue(null);
+  local.ensureLocal.mockReset().mockResolvedValue(false);
+  local.release.mockReset();
+  local.holdLocal.mockReset().mockImplementation(() => local.release);
   speech.route = 'none';
   speech.start.mockReset();
   try {
@@ -63,7 +69,10 @@ beforeEach(() => {
     // jsdom always has it; the component tolerates its absence.
   }
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe('the Your Trip planner', () => {
   it('offers starters, and a request answers at once with places from our list, echoing the words', async () => {
@@ -118,7 +127,7 @@ describe('the Your Trip planner', () => {
     await ask('Somewhere for coffee');
     const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
     await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
-    expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sat', part: 'morning', itemId: null });
+    expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sat', part: 'morning' });
     expect(tab(/My weekend/).textContent).toContain('1');
     expect(document.body.textContent).toContain('Bean House Coffee is in your weekend, Saturday morning.');
     expect(within(card).getByRole('button', { name: 'Remove Bean House Coffee from my weekend' }).getAttribute('aria-pressed')).toBe('true');
@@ -161,10 +170,10 @@ describe('the Your Trip planner', () => {
     expect([...move.options].map((o) => o.value)).not.toContain('sat-afternoon');
     expect(screen.getByText('The wedding')).toBeTruthy();
     await act(async () => fireEvent.change(move, { target: { value: 'sun-afternoon' } }));
-    expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon', itemId: ITEM(1) });
+    expect(save).toHaveBeenCalledWith({ placeId: 'bean-house', day: 'sun', part: 'afternoon' });
     expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('link', { name: 'Bean House Coffee' }).getAttribute('href')).toBe('/guests/things-to-do/bean-house');
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Remove Bean House Coffee' })));
-    expect(remove).toHaveBeenCalledWith({ itemId: ITEM(1) });
+    expect(remove).toHaveBeenCalledWith({ placeId: 'bean-house' });
     expect(screen.queryByRole('button', { name: 'Remove Bean House Coffee' })).toBeNull();
   });
 
@@ -223,6 +232,136 @@ describe('the Your Trip planner', () => {
     expect(screen.getAllByText('Where should we get dinner?').length).toBeGreaterThan(0);
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Start over' })));
     expect(screen.getByRole('button', { name: /A free Saturday morning/ })).toBeTruthy();
+  });
+
+  it('“Use this plan” adds and moves, and never takes out a saved place the plan did not list', async () => {
+    const saved = [
+      { id: 'lobby-tour', day: 'fri' as const, part: 'morning' as const, name: 'Walk the Building', itemId: ITEM(1) },
+      { id: 'park-walk', day: 'fri' as const, part: 'afternoon' as const, name: 'Lakeside Park Walk', itemId: ITEM(2) },
+      { id: 'steakhouse', day: 'fri' as const, part: 'evening' as const, name: 'The Steakhouse', itemId: ITEM(3) },
+      { id: 'hotel-cafe', day: 'sat' as const, part: 'morning' as const, name: 'Hotel Cafe', itemId: ITEM(4) },
+      { id: 'art-museum', day: 'sun' as const, part: 'morning' as const, name: 'Art Museum', itemId: ITEM(5) },
+      { id: 'aquarium', day: 'sun' as const, part: 'afternoon' as const, name: 'The Aquarium', itemId: ITEM(6) },
+      { id: 'rooftop', day: 'sun' as const, part: 'evening' as const, name: 'The Rooftop', itemId: ITEM(7) },
+      // No longer on our list, but still the guest's.
+      { id: 'old-favourite', day: 'sun' as const, part: 'evening' as const, name: 'An Old Favourite', itemId: ITEM(8) },
+    ];
+    const { remove } = setup({ saved });
+    await ask('Plan my whole weekend');
+    await act(async () => fireEvent.click(await screen.findByRole('button', { name: 'Use this plan' })));
+    expect(remove).not.toHaveBeenCalled();
+    expect(tab(/My weekend/).textContent).toContain(String(saved.length));
+  });
+
+  it('a heart and an un-heart before the save returns end with the place gone on the server too', async () => {
+    const { save, remove } = setup();
+    let finish: (v: { ok: true; itemId: string }) => void = () => undefined;
+    save.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    await ask('Somewhere for coffee');
+    const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Remove Bean House Coffee from my weekend' })));
+    // The remove waits for the save of the same place, so it cannot run first.
+    expect(remove).not.toHaveBeenCalled();
+    await act(async () => finish({ ok: true, itemId: ITEM(1) }));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith({ placeId: 'bean-house' }));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(tab(/My weekend/).textContent).not.toMatch(/\d/);
+  });
+
+  it('a failed save puts back only that place, not a place saved after it', async () => {
+    const { save } = setup();
+    let finish: (v: { ok: false; message: string }) => void = () => undefined;
+    save.mockImplementationOnce(() => new Promise((r) => (finish = r as never)));
+    await ask('Somewhere for coffee');
+    const bean = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
+    const corner = screen.getByRole('heading', { level: 4, name: 'Corner Roastery' }).closest('article')!;
+    await act(async () => fireEvent.click(within(bean).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
+    await act(async () => fireEvent.click(within(corner).getByRole('button', { name: 'Add Corner Roastery to my weekend' })));
+    expect(tab(/My weekend/).textContent).toContain('2');
+    await act(async () => finish({ ok: false, message: 'We could not save that just now. Please try again in a moment.' }));
+    await waitFor(() => expect(document.body.textContent).toContain('We could not save that just now.'));
+    expect(tab(/My weekend/).textContent).toContain('1');
+    expect(within(corner).getByRole('button', { name: 'Remove Corner Roastery from my weekend' })).toBeTruthy();
+    expect(within(bean).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })).toBeTruthy();
+  });
+
+  it('keeps keyboard focus on the board: on the moved card’s Move list, then on the next card or the day', async () => {
+    setup({
+      saved: [
+        { id: 'bean-house', day: 'sat', part: 'morning', name: 'Bean House Coffee', itemId: ITEM(1) },
+        { id: 'art-museum', day: 'fri', part: 'afternoon', name: 'Art Museum', itemId: ITEM(2) },
+        { id: 'aquarium', day: 'fri', part: 'evening', name: 'The Aquarium', itemId: ITEM(3) },
+      ],
+    });
+    await act(async () => fireEvent.click(tab(/My weekend/)));
+    const move = screen.getByRole('combobox', { name: 'Move Bean House Coffee to' });
+    move.focus();
+    await act(async () => fireEvent.change(move, { target: { value: 'sun-afternoon' } }));
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Move Bean House Coffee to' }));
+    expect(within(screen.getByRole('region', { name: /^Sunday/ })).getByRole('combobox', { name: 'Move Bean House Coffee to' })).toBe(document.activeElement);
+
+    const first = screen.getByRole('button', { name: 'Remove Art Museum' });
+    first.focus();
+    await act(async () => fireEvent.click(first));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Remove The Aquarium' }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Remove The Aquarium' })));
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 3, name: /^Friday/ }));
+  });
+
+  it('a message with a button stays until it is closed or used; a plain one waits while it is pointed at', async () => {
+    const { save } = setup();
+    await ask('Somewhere for coffee');
+    const card = (await screen.findByRole('heading', { level: 4, name: 'Bean House Coffee' })).closest('article')!;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    await act(async () => fireEvent.click(within(card).getByRole('button', { name: 'Add Bean House Coffee to my weekend' })));
+    expect(screen.getByRole('button', { name: 'See my weekend' })).toBeTruthy();
+    await act(async () => vi.advanceTimersByTime(60_000));
+    expect(screen.getByRole('button', { name: 'See my weekend' })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Close/ })));
+    expect(screen.queryByRole('button', { name: 'See my weekend' })).toBeNull();
+
+    save.mockResolvedValueOnce({ ok: false, message: 'We could not save that just now. Please try again in a moment.' } as never);
+    const other = screen.getByRole('heading', { level: 4, name: 'Corner Roastery' }).closest('article')!;
+    await act(async () => fireEvent.click(within(other).getByRole('button', { name: 'Add Corner Roastery to my weekend' })));
+    const message = () => screen.queryByText('We could not save that just now. Please try again in a moment.');
+    expect(message()).toBeTruthy();
+    fireEvent.mouseEnter(message()!.parentElement!);
+    await act(async () => vi.advanceTimersByTime(10_000));
+    expect(message(), 'kept while pointed at').toBeTruthy();
+    fireEvent.mouseLeave(message()!.parentElement!);
+    await act(async () => vi.advanceTimersByTime(5_001));
+    expect(message(), 'gone once left alone').toBeNull();
+  });
+
+  it('tries the matcher again on a request after a failed background install', async () => {
+    local.matcher = 'failed';
+    setup();
+    await ask('somewhere green and peaceful');
+    await waitFor(() => expect(local.ensureLocal).toHaveBeenCalledTimes(1));
+    expect(local.ensureLocal).toHaveBeenCalledWith('matcher', { userGesture: true });
+  });
+
+  it('holds the matcher while the planner is open, and lets it go when it closes', async () => {
+    const { unmount } = setup();
+    expect(local.holdLocal).toHaveBeenCalledWith('matcher');
+    expect(local.release).not.toHaveBeenCalled();
+    unmount();
+    expect(local.release).toHaveBeenCalled();
+  });
+
+  it('holds the speech model while dictating, and only then', async () => {
+    speech.route = 'recorder';
+    let end: () => void = () => undefined;
+    speech.start.mockImplementation(() => ({ stop: vi.fn(), done: new Promise<void>((r) => (end = r)) }));
+    setup();
+    const mic = await screen.findByRole('button', { name: 'Speak instead' });
+    expect(local.holdLocal).not.toHaveBeenCalledWith('speech');
+    await act(async () => fireEvent.click(mic));
+    expect(local.holdLocal).toHaveBeenCalledWith('speech');
+    const releases = local.release.mock.calls.length;
+    await act(async () => end());
+    expect(local.release.mock.calls.length).toBe(releases + 1);
   });
 
   it('offers no microphone where the browser cannot listen', async () => {

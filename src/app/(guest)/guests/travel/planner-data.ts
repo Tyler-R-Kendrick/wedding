@@ -63,7 +63,9 @@ export function toPlannerPlace(card: RecommendationCard): PlannerPlace | null {
           image: {
             src: photo.src,
             alt: photo.alt,
-            ...(photo.credit && photo.creditUrl ? { credit: { text: photo.credit, href: photo.creditUrl } } : {}),
+            ...(photo.credit && photo.creditUrl && photo.licenseUrl
+              ? { credit: { text: photo.credit, href: photo.creditUrl, license: { name: photo.license, href: photo.licenseUrl } } }
+              : {}),
           },
         }
       : {}),
@@ -111,10 +113,13 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
   // (The seed marks the hotel itself as the `venue` place; places inside it carry `insideVenue`.)
   const venue = cards.find((c) => (c.place?.insideVenue || c.place?.kind === 'venue') && c.place.coordinates)?.place?.coordinates;
   const items = trip?.ok ? trip.value.data.items : [];
+  // One card per place: a place saved twice over (before saves were keyed on the place) shows once.
+  const seen = new Set<string>();
   const saved: PlannerSaved[] = items.flatMap((i) => {
     const d = i.details;
     if (i.provider !== 'planner' || i.status === 'cancelled' || !d.placeId || !d.day || !d.part) return [];
-    if (!DAYS.includes(d.day) || !PARTS.includes(d.part)) return [];
+    if (!DAYS.includes(d.day) || !PARTS.includes(d.part) || seen.has(d.placeId)) return [];
+    seen.add(d.placeId);
     return [{ id: d.placeId, day: d.day, part: d.part, name: i.title, itemId: i.id }];
   });
   const bookings: TripItemInput[] = items

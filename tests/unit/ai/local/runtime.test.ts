@@ -178,7 +178,7 @@ describe('embed and transcribe', () => {
     expect(() => release()).not.toThrow();
   });
 
-  it('closes an idle worker that nothing is using, and keeps one that a page is using', async () => {
+  it('closes an idle worker that nothing is using, and keeps one only while a page holds it', async () => {
     vi.useFakeTimers();
     const fake = new FakeWorker(workerFor(new Set(['matcher'])));
     const rt = make({ createWorker: () => fake, writer: writer(), idleMs: 1000 });
@@ -186,12 +186,30 @@ describe('embed and transcribe', () => {
     await vi.advanceTimersByTimeAsync(1001);
     expect(fake.terminated, 'only looked: closed').toBe(true);
 
+    // Using a part no longer pins the worker for the life of the tab: after one question it idles out.
     const second = new FakeWorker(workerFor(new Set(['matcher'])));
     const rt2 = make({ createWorker: () => second, writer: writer(), idleMs: 1000 });
     await rt2.check('matcher');
     await rt2.embed(['x']);
+    await vi.advanceTimersByTimeAsync(1001);
+    expect(second.terminated, 'used once, then left: closed').toBe(true);
+
+    // A page that holds the part keeps it loaded until it lets go; then the idle timer decides.
+    const third = new FakeWorker(workerFor(new Set(['matcher'])));
+    const rt3 = make({ createWorker: () => third, writer: writer(), idleMs: 1000 });
+    await rt3.check('matcher');
+    const release = rt3.hold('matcher');
+    const other = rt3.hold('matcher');
+    await rt3.embed(['x']);
     await vi.advanceTimersByTimeAsync(5000);
-    expect(second.terminated, 'the matcher is loaded and in use').toBe(false);
+    expect(third.terminated, 'held').toBe(false);
+    release();
+    release();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(third.terminated, 'still held by the other holder').toBe(false);
+    other();
+    await vi.advanceTimersByTimeAsync(1001);
+    expect(third.terminated, 'released: closed after the idle time').toBe(true);
   });
 });
 

@@ -73,6 +73,8 @@ export function startDictation(options: DictationOptions): Dictation {
       if (route === 'web-speech') {
         const local = await webSpeechLocalAvailability();
         const installed = local === 'available' || (await installWebSpeech());
+        // Cancelled while the language pack installed: start nothing.
+        if (options.signal?.aborted) return;
         if (installed) {
           await recognise(options, (stop) => (stopNow = stop), () => stopRequested);
           return;
@@ -172,6 +174,11 @@ async function record(options: DictationOptions, setStop: (stop: () => void) => 
     stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   } catch (error) {
     options.onError?.((error as { name?: string })?.name === 'NotAllowedError' ? 'not-allowed' : 'unavailable');
+    return;
+  }
+  // Cancelled while the browser asked for the microphone: close it at once and record nothing.
+  if (options.signal?.aborted) {
+    for (const track of stream.getTracks()) track.stop();
     return;
   }
   // Fetch the speech model while the guest talks, if this device does not have it yet.
