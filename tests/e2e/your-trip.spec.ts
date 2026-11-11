@@ -78,8 +78,8 @@ test('a starter answers with places from our list, and a saved place is still th
   const first = cards.first();
   const name = (await first.locator('h4').innerText()).trim();
   const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/guests/travel'));
-  await first.getByRole('button', { name: 'Add to my weekend' }).click();
-  await expect(first.getByRole('button', { name: 'In my weekend' })).toHaveAttribute('aria-pressed', 'true');
+  await first.getByRole('button', { name: `Add ${name} to my weekend` }).click();
+  await expect(first.getByRole('button', { name: `Remove ${name} from my weekend` })).toHaveAttribute('aria-pressed', 'true');
   expect((await saved).ok()).toBe(true);
   await expect(plan(page).getByRole('tab', { name: /My weekend/ })).toContainText('1');
 

@@ -4,6 +4,7 @@ import { defineAction, defineComponent, useIsStreaming, useTriggerAction, type A
 import { useState } from 'react';
 import { z } from 'zod/v4';
 import { DAY_NAME, TIME_TBA, type Day, type Part } from '@/domain/trip-planner';
+import { Icon, type IconName } from '@/themes/shared/icons';
 import { useTripPlanner } from './context';
 
 /**
@@ -55,11 +56,24 @@ const AREA: Record<string, string> = {
 const isDay = (v: unknown): v is Day => v === 'fri' || v === 'sat' || v === 'sun';
 const isPart = (v: unknown): v is Part => v === 'morning' || v === 'afternoon' || v === 'evening';
 
-function HeartIcon({ on }: { on: boolean }) {
+/** The couple's rough guide to how long a place takes, in words: "About 45 minutes", "About 1½ hours". */
+export function aboutHowLong(minutes: number | undefined): string | null {
+  if (!minutes || !Number.isFinite(minutes) || minutes <= 0) return null;
+  if (minutes < 60) return `About ${Math.round(minutes / 5) * 5 || 5} minutes`;
+  const halves = Math.round(minutes / 30);
+  const whole = Math.floor(halves / 2);
+  const half = halves % 2 === 1;
+  if (whole === 1 && !half) return 'About an hour';
+  return `About ${whole}${half ? '½' : ''} hours`;
+}
+
+/** A fact with the small mark that says what kind of fact it is. */
+function Fact({ icon, children }: { icon: IconName; children: string }) {
   return (
-    <svg className="trip-heart__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-      <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
+    <li className="trip-fact">
+      <Icon name={icon} className="trip-icon trip-fact__icon" />
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -82,6 +96,8 @@ export const Place = defineComponent({
       else void trigger(`Add ${place.name} to my weekend`, undefined, custom(AddToWeekend.name, { id: place.id, ...(day ? { day } : {}), ...(part ? { part } : {}) }));
     };
     const when = day && part ? `${DAY_NAME[day]} ${part}` : null;
+    const label = saved ? `Remove ${place.name} from my weekend` : `Add ${place.name} to my weekend`;
+    const howLong = aboutHowLong(place.minutes);
     return (
       <article className="trip-place">
         {place.image ? (
@@ -91,21 +107,40 @@ export const Place = defineComponent({
           <div className="trip-place__ground" aria-hidden="true" />
         )}
         <div className="trip-place__body">
-          <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
-          <h4 className="trip-place__name">{place.name}</h4>
+          <div className="trip-place__head">
+            <p className="bd-eyebrow">{AREA[place.category] ?? place.category}</p>
+            <h4 className="trip-place__name">{place.name}</h4>
+            <button type="button" className={`trip-round trip-heart${saved ? ' is-on' : ''}`} aria-pressed={saved} aria-label={label} title={label} disabled={streaming} onClick={toggle}>
+              <Icon name="heart" filled={saved} className="trip-icon" />
+            </button>
+          </div>
           <p className="trip-place__what">{place.what}</p>
+          {howLong || place.address ? (
+            <ul className="trip-facts">
+              {howLong ? <Fact icon="clock">{howLong}</Fact> : null}
+              {place.address ? <Fact icon="pin">{place.address}</Fact> : null}
+            </ul>
+          ) : null}
           {props.note ? <p className="trip-place__note">{props.note}</p> : null}
           {place.why ? <p className="trip-place__why">{place.why}</p> : null}
           <div className="trip-place__actions">
-            <button type="button" className={`trip-heart${saved ? ' is-on' : ''}`} aria-pressed={saved} disabled={streaming} onClick={toggle}>
-              <HeartIcon on={saved} />
-              <span>{saved ? 'In my weekend' : 'Add to my weekend'}</span>
-            </button>
+            {saved ? (
+              <p className="trip-caption trip-place__when is-saved">
+                <Icon name="heart" filled className="trip-icon" />
+                In my weekend
+              </p>
+            ) : when ? (
+              <p className="trip-caption trip-place__when">
+                <Icon name="calendar" className="trip-icon trip-icon--accent" />
+                <span className="sr-only">Saves to </span>
+                {when[0]!.toUpperCase() + when.slice(1)}
+              </p>
+            ) : null}
             <a className="bd-link trip-place__details" href={place.href}>
               Details<span className="sr-only">{`: ${place.name}`}</span>
+              <Icon name="chevron" className="trip-icon trip-icon--sm" />
             </a>
           </div>
-          {when && !saved ? <p className="trip-caption">{`Saves to ${when}.`}</p> : null}
         </div>
       </article>
     );
@@ -132,24 +167,30 @@ export const Stay = defineComponent({
     const ctx = useTripPlanner();
     if (!ctx) return null;
     const s = ctx.stay;
-    const terms: [string, string | null][] = [
-      ['Group rate', s.rate],
-      ['Book by', s.bookBy],
-      ['Nights', s.nights],
-      ['Group code', s.code],
+    const terms: [string, string | null, IconName][] = [
+      ['Group rate', s.rate, 'tag'],
+      ['Book by', s.bookBy, 'calendar'],
+      ['Nights', s.nights, 'moon'],
+      ['Group code', s.code, 'key'],
     ];
     return (
       <section className="trip-stay" aria-label="Our room block">
-        <p className="bd-eyebrow">Our room block</p>
+        <p className="bd-eyebrow trip-eyebrow">
+          <Icon name="bed" className="trip-icon trip-icon--caps trip-icon--accent" />
+          Our room block
+        </p>
         <h4 className="trip-place__name">{s.hotelName}</h4>
         <p className="trip-text trip-text--md">{s.intro}</p>
         {props.note ? <p className="trip-place__note">{props.note}</p> : null}
         <dl className="trip-stay__terms">
           {terms
             .filter(([, v]) => v)
-            .map(([k, v]) => (
+            .map(([k, v, icon]) => (
               <div key={k}>
-                <dt className="bd-eyebrow">{k}</dt>
+                <dt className="bd-eyebrow trip-eyebrow">
+                  <Icon name={icon} className="trip-icon trip-icon--caps trip-icon--accent" />
+                  {k}
+                </dt>
                 <dd>{v}</dd>
               </div>
             ))}
@@ -181,13 +222,19 @@ export const Arrive = defineComponent({
       <div className="trip-arrive">
         {a.airports.map((ap, i) => (
           <section key={ap.code} className="trip-card">
-            <p className="bd-eyebrow">{i === 0 ? 'We recommend' : 'Also works'}</p>
+            <p className="bd-eyebrow trip-eyebrow">
+              <Icon name="plane" className="trip-icon trip-icon--caps trip-icon--accent" />
+              {i === 0 ? 'We recommend' : 'Also works'}
+            </p>
             <h4 className="trip-title trip-title--md">{`${ap.name} (${ap.code})`}</h4>
             <p className="trip-text trip-text--md">{ap.note}</p>
           </section>
         ))}
         <section className="trip-card">
-          <p className="bd-eyebrow">Driving</p>
+          <p className="bd-eyebrow trip-eyebrow">
+            <Icon name="parking" className="trip-icon trip-icon--caps trip-icon--accent" />
+            Driving
+          </p>
           <h4 className="trip-title trip-title--md">Parking at the hotel</h4>
           <p className="trip-text trip-text--md">{a.parking}</p>
         </section>
@@ -286,6 +333,7 @@ export const CalendarDay = defineComponent({
 type Node = { props?: Record<string, unknown> } | null;
 const text = (v: unknown) => (typeof v === 'string' ? v : '');
 const KIND_LABEL: Record<string, string> = { wedding: 'Wedding', plan: 'Your plan', trip: 'Your travel' };
+const KIND_ICON: Record<string, IconName> = { wedding: 'rings', plan: 'heart', trip: 'suitcase' };
 
 /** The weekend day by day, the wedding's own events set apart, and the button that saves it all as a calendar file. */
 export const Calendar = defineComponent({
@@ -316,9 +364,15 @@ export const Calendar = defineComponent({
                 <ul className="trip-cal__events">
                   {d.events.map((e, i) => (
                     <li key={`${e.title}-${i}`} className={`trip-cal__event trip-cal__event--${e.kind}`}>
-                      <span className="trip-cal__time">{e.time ?? TIME_TBA}</span>
+                      <span className="trip-cal__time">
+                        {e.time ? <Icon name="clock" className="trip-icon trip-icon--caps" /> : null}
+                        {e.time ?? TIME_TBA}
+                      </span>
                       <span className="trip-cal__what">
-                        <span className="trip-cal__kind">{KIND_LABEL[e.kind] ?? KIND_LABEL.plan}</span>
+                        <span className="trip-cal__kind">
+                          <Icon name={KIND_ICON[e.kind] ?? 'heart'} className="trip-icon trip-icon--caps trip-icon--accent" />
+                          {KIND_LABEL[e.kind] ?? KIND_LABEL.plan}
+                        </span>
                         <span className="trip-cal__title">{e.title}</span>
                       </span>
                     </li>
@@ -330,7 +384,8 @@ export const Calendar = defineComponent({
             </li>
           ))}
         </ol>
-        <button type="button" className="bd-btn bd-btn--primary trip-button" disabled={streaming} onClick={() => void trigger('Add my weekend to my calendar', undefined, custom(ExportCalendar.name))}>
+        <button type="button" className="bd-btn bd-btn--primary trip-button trip-button--icon" disabled={streaming} onClick={() => void trigger('Add my weekend to my calendar', undefined, custom(ExportCalendar.name))}>
+          <Icon name="calendar-plus" className="trip-icon" />
           <span>Add to my calendar</span>
         </button>
       </section>
