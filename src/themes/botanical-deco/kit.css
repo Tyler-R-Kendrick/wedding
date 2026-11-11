@@ -3743,6 +3743,15 @@
   list-style: none;
 }
 
+/* Each hotel's card fills its cell, so cards side by side are one height whatever their names wrap to. */
+.bd-travel__hotels > li {
+  display: grid;
+}
+
+.bd-travel__hotels > li > * {
+  block-size: 100%;
+}
+
 /* The airports beside the search: where to fly into, then the form that searches it. */
 .bd-travel__flights {
   display: grid;

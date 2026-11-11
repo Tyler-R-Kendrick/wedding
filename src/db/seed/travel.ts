@@ -8,8 +8,8 @@ const SEED_VERIFIED = '2026-11-01T00:00:00.000Z';
 const actor = { kind: 'system', component: 'seed' } as const;
 
 /**
- * Hotels our planner, Michelle, suggested near the venue, by name only. Nothing else is known yet,
- * so nothing else is said: no address, rate, distance or link, and the cards carry just the reason.
+ * Hotels near the venue, by name only. Nothing else is known yet, so nothing else is said: no
+ * address, rate, distance or link, and no reason (who suggested them is no help to a guest).
  * They are not placeholders (there is nothing pending to show); an admin adds details in
  * /admin/travel, and from then on this seed leaves the row alone (`contentVersion = 1`).
  */
@@ -19,7 +19,6 @@ export const PLANNER_SUGGESTED_HOTELS = [
   { id: seedId(804), name: 'Residence Inn by Marriott' },
   { id: seedId(805), name: 'Hyatt Centric - The Loop' },
 ] as const;
-const PLANNER_REASON = 'Suggested by our planner, Michelle.';
 
 /**
  * Venue hotel row with the wedding room block (guest-only via list_hotel_recommendations).
@@ -89,7 +88,7 @@ export async function seedTravelHotels(db: Db, now: Date): Promise<void> {
       address: null,
       isVenue: false,
       sortOrder: 10 + i * 10,
-      reasons: [{ kind: 'other' as const, text: PLANNER_REASON }],
+      reasons: [] as { kind: 'other'; text: string }[],
       priceBand: null,
       walkMinutesToVenue: null,
       websiteUrl: null,

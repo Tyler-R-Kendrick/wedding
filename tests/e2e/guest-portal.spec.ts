@@ -380,12 +380,12 @@ test.describe('guest sign-in landing paths', () => {
 
   test('email OTP sign-in without next lands on /guests', async ({ page, request }) => {
     const f = await seedFixtures(request);
-    await page.goto('/sign-in');
+    await page.goto('/sign-in?method=email');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.ana!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.ana!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/guests\/?$/, { timeout: 20_000 });
     // A real session, through the real resolver: the dashboard is what opens.
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/^Welcome/);
@@ -393,12 +393,12 @@ test.describe('guest sign-in landing paths', () => {
 
   test('email OTP sign-in with next=/ still lands on /guests', async ({ page, request }) => {
     const f = await seedFixtures(request);
-    await page.goto('/sign-in?next=%2F');
+    await page.goto('/sign-in?method=email&next=%2F');
     await page.getByRole('textbox', { name: 'Email address' }).fill(f.emails.chidi!);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.chidi!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/guests\/?$/, { timeout: 20_000 });
   });
 
@@ -409,7 +409,7 @@ test.describe('guest sign-in landing paths', () => {
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await expect(page).toHaveURL(/\/claim\/verify/);
     await page.getByRole('textbox', { name: 'Six-digit code' }).fill(await readOtp(request, f.emails.admin!));
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(page).toHaveURL(/\/admin(\/|$)/, { timeout: 20_000 });
   });
 });

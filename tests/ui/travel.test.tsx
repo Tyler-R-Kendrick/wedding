@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TravelPageRecipe, type TravelPageData } from '@/app/(guest)/guests/travel/recipe';
 import { AIRPORTS, BRIEF_CITATION, synthesizedVenueHotel, VENUE } from '@/domain/travel';
@@ -17,7 +17,7 @@ describe('Your Trip recipe (fallback)', () => {
     expect(screen.getByRole('main')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your Trip');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'What to do']);
+    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'Itinerary']);
     expect(screen.getByText('planner-slot')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Chicago Athletic Association Hotel' })).toBeTruthy();
     expect(screen.getByText('ORD')).toBeTruthy();
@@ -47,11 +47,15 @@ describe('Your Trip recipe (fallback)', () => {
     expect(text).not.toContain('We list why we picked each place');
   });
 
-  it('describes the criteria only once there are hotels to describe', () => {
+  it('describes the criteria only once there are hotels that list them', () => {
     // Built from the real recommendation the page already renders, not by hand: a hand-made view
     // object missed `verifiedAt` and threw inside the card, which proved nothing about the copy.
     const hotel = { ...data.venue, id: 'alt-1', name: 'A Nearby Hotel', placeholder: false };
     render(<TravelPageRecipe theme="botanical-deco" data={{ ...data, alternatives: [hotel] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
     expect(document.body.textContent ?? '').toContain('We list why we picked each place');
+    cleanup();
+    // A hotel known by name only lists no reasons, so there is nothing for the sentence to describe.
+    render(<TravelPageRecipe theme="botanical-deco" data={{ ...data, alternatives: [{ ...hotel, reasons: [] }] }} slots={{ flightSearch: <p>f</p>, hotelSearch: <p>h</p> }} />);
+    expect(document.body.textContent ?? '').not.toContain('We list why we picked each place');
   });
 });

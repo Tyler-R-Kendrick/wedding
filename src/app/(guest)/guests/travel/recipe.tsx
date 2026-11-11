@@ -184,7 +184,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
             <li><a className="underline underline-offset-4" href="#flights">Flights</a></li>
             <li><a className="underline underline-offset-4" href="#hotel-rates">Hotel rates</a></li>
             <li><a className="underline underline-offset-4" href="#getting-around">Getting around</a></li>
-            {slots.planner ? <li><a className="underline underline-offset-4" href="#plan">What to do</a></li> : null}
+            {slots.planner ? <li><a className="underline underline-offset-4" href="#plan">Itinerary</a></li> : null}
           </ul>
         </nav>
       </header>
@@ -219,7 +219,7 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
         )}
         {/* Outside the ternary this described a list that does not exist, directly under "we are
             still confirming a few nearby options". It belongs with the list it describes. */}
-        {alternatives.length ? <p className="hint">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p> : null}
+        {alternatives.some((h) => h.reasons.length) ? <p className="hint">We list why we picked each place (walk time, staffed desk, family suites, price, step-free route, transit). We do not rate safety; please use your own judgement.</p> : null}
       </Section>
 
       <Section id="flights" eyebrow="Compare" title="Search flights">
@@ -244,16 +244,16 @@ export const TravelPageRecipe: PageRecipe<TravelPageData, TravelPageSlots> = ({ 
       </Section>
 
       {slots.planner ? (
-        <Section id="plan" eyebrow="Your free time" title="What to do">
+        <Section id="plan" eyebrow="Your stay" title="Itinerary">
           <p>
-            Tell us what you are in the mood for and we will suggest a few of our own favorite places. Save the ones you like to your weekend.
+            Your flights, your hotel and the wedding, day by day, with the places you save from Things to do.
             {viewer.kind === 'guest' ? (
               <>
-                {' '}Your flights and hotel, kept on{' '}
+                {' '}Add or change a flight or a hotel stay on{' '}
                 <a className="underline underline-offset-4" href="/trip">
                   Your flights and hotel
                 </a>
-                , join it on your calendar.
+                .
               </>
             ) : null}
           </p>

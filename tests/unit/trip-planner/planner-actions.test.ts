@@ -64,6 +64,8 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
   }),
 }));
 
+import { addDays, weekendDate } from '@/domain/trip-planner';
+
 const { savePlannerPlace, removePlannerPlace } = await import('@/app/(guest)/guests/travel/planner-actions');
 const { loadPlanner } = await import('@/app/(guest)/guests/travel/planner-data');
 
@@ -93,6 +95,21 @@ describe('planner actions, keyed on the place', () => {
     expect(await savePlannerPlace({ placeId: 'bean-house', day: 'sun', part: 'afternoon' })).toMatchObject({ ok: true });
     expect(plannerRows('bean-house')).toHaveLength(1);
     expect(plannerRows('bean-house')[0]!.details).toMatchObject({ day: 'sun', part: 'afternoon' });
+  });
+
+  it('a place saved for a day before or after the weekend is kept on that day; a day outside the stay is refused', async () => {
+    const thu = addDays(weekendDate('fri'), -1);
+    expect(await savePlannerPlace({ placeId: 'bean-house', day: 'fri', part: 'evening', date: thu })).toMatchObject({ ok: true });
+    const row = plannerRows('bean-house')[0]!;
+    expect(row.details).toMatchObject({ day: 'fri', part: 'evening', date: thu });
+    expect(row.startAt.startsWith(thu)).toBe(true);
+    // Back onto the weekend: the date of its own goes.
+    expect(await savePlannerPlace({ placeId: 'bean-house', day: 'sun', part: 'morning' })).toMatchObject({ ok: true });
+    expect(plannerRows('bean-house')[0]!.details.date).toBeUndefined();
+    // A Saturday evening by date is still the wedding.
+    expect(await savePlannerPlace({ placeId: 'bean-house', day: 'sat', part: 'evening', date: weekendDate('sat') })).toMatchObject({ ok: false });
+    // Weeks away is not part of anyone's stay.
+    expect(await savePlannerPlace({ placeId: 'bean-house', day: 'fri', part: 'morning', date: addDays(weekendDate('fri'), -30) })).toMatchObject({ ok: false });
   });
 
   it('a save tidies up duplicate planner rows for the same place', async () => {

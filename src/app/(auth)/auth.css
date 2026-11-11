@@ -118,12 +118,106 @@
   border-color: var(--auth-error);
 }
 
-.auth-input-code {
-  max-width: 12rem;
-  font-size: 1.625rem;
-  letter-spacing: 0.35em;
-  text-align: center;
+/*
+ * The code as six boxes. One real input lies over them, invisible but full size, so a tap anywhere
+ * on the boxes focuses it, the number pad opens, and autofill, paste and screen readers all work on
+ * a plain field. Each box shows its digit, or a dash until it is typed; the next one to fill is
+ * underlined. 17px or more on the input itself, so iOS never zooms into it.
+ */
+.auth-code {
+  position: relative;
+  max-width: 22rem;
+}
+
+.auth-code__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  font-size: 1.0625rem;
+  color: transparent;
+  caret-color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: transparent;
+  border: 0;
+  outline: none;
+  cursor: text;
+}
+
+.auth-code__input::selection {
+  background: transparent;
+}
+
+.auth-code__cells {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--spacing-sm, 8px);
+}
+
+.auth-code__cell {
+  display: grid;
+  place-items: center;
+  min-height: 3.5rem;
+  font-size: var(--type-numeral-size, 1.75rem);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  background: var(--color-surface, var(--color-neutral));
+  border: 1px solid var(--auth-outline);
+  border-radius: var(--auth-radius);
+}
+
+.auth-code__placeholder {
+  color: var(--auth-muted);
+}
+
+.auth-code__cell.is-filled {
+  border-color: var(--auth-accent);
+}
+
+/* The box the next digit goes into: a thicker line under it while the field has focus. */
+.auth-code__cell.is-active {
+  border-color: var(--auth-accent);
+  box-shadow: inset 0 -3px 0 var(--auth-accent);
+}
+
+.auth-code.is-focused .auth-code__cells {
+  outline: 3px solid var(--auth-accent);
+  outline-offset: 4px;
+  border-radius: var(--auth-radius);
+}
+
+.auth-code.is-invalid .auth-code__cell {
+  border-color: var(--auth-error);
+}
+
+/* Checking: the boxes hold still and dim a little while the code is on its way. */
+.auth-code.is-busy .auth-code__cell {
+  opacity: 0.7;
+}
+
+.auth-spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentcolor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-spinner {
+    animation: none;
+    border-inline-end-color: currentcolor;
+    opacity: 0.6;
+  }
 }
 
 .auth-choices {
@@ -174,6 +268,10 @@
  * `control-caps` step: caps a guest must operate, at 17px, in all three DESIGN.md files.
  */
 .auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
   min-height: 3rem;
   padding: 0.75rem 1.5rem;
   font: inherit;
@@ -195,6 +293,11 @@
   color: var(--color-primary);
   background: transparent;
   border-color: var(--auth-outline);
+}
+
+.auth-button.is-busy,
+.auth-button:disabled {
+  cursor: progress;
 }
 
 .auth-link {

@@ -79,7 +79,7 @@ test('guest travel page keeps airports visible and axe-clean', async ({ page }) 
   await expect(page.locator('#stay').getByRole('heading', { level: 2 })).toHaveText('Where to stay');
   await expect(page.locator('#flights').getByRole('heading', { level: 2 })).toHaveText('Flights');
   await expect(page.locator('#getting-around').getByRole('heading', { level: 2 })).toHaveText('Getting around');
-  await expect(page.locator('#plan').getByRole('heading', { level: 2 })).toHaveText('What to do');
+  await expect(page.locator('#plan').getByRole('heading', { level: 2 })).toHaveText('Itinerary');
   // Hotel rates are a disclosure inside "Where to stay", closed until asked for.
   const compare = page.locator('#stay details').filter({ has: page.locator('summary', { hasText: 'Compare rates at other hotels nearby' }) });
   await expect(compare).toHaveCount(1);

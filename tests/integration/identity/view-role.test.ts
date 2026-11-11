@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { getDb } from '@/db/client';
-import { auditEvents } from '@/db/schema';
+import { auditEvents, authUsers } from '@/db/schema';
 import { GUEST_VIEW_COOKIE } from '@/domain/identity/guest-view';
 import { VIEW_ROLE_COOKIE } from '@/domain/identity/view-role';
 import { seedPreviewPersonas } from '@/domain/identity/preview-personas';
@@ -36,6 +36,23 @@ describe('admin view-role preview', () => {
 
     const rows = await db.select().from(auditEvents).where(and(eq(auditEvents.action, 'view_role.started'), eq(auditEvents.targetId, 'guest')));
     expect(rows.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('a role preview greets the administrator by their own name, never the stand-in "Preview"', async () => {
+    const f = await seed('vr1b');
+    const db = await getDb();
+    await seedPreviewPersonas(db);
+    // The administrator is known: their account name (no guest record of their own in this fixture).
+    const owner = await signIn(f.emails.admin, {}, 'admin_sign_in');
+    await db.update(authUsers).set({ name: 'Tess Example' }).where(eq(authUsers.email, f.emails.admin!));
+    const minted = expectOk(await call<Minted>('admin_set_view_role', { role: 'household_manager' }, { cookie: owner.cookie })).data;
+    const cookie = withRole(owner.cookie, minted.token);
+    const itinerary = expectOk(await call<{ greeting: { firstName: string } }>('get_my_itinerary', {}, { cookie, method: 'GET' }));
+    expect(itinerary.data.greeting.firstName).toBe('Tess');
+    expect(itinerary.data.greeting.firstName).not.toBe('Preview');
+    // A real guest still sees their own name.
+    const ana = await claim(f.invitations.ruiz.token, f.guests.ana, f.emails.ana);
+    expect(expectOk(await call<{ greeting: { firstName: string } }>('get_my_itinerary', {}, { cookie: ana.cookie, method: 'GET' })).data.greeting.firstName).toBe('Ana');
   });
 
   it('view-role and guest-view cookies are exclusive; view-role wins when both present', async () => {

@@ -41,7 +41,7 @@ test.describe('invitation tokens', () => {
     await expect(apage).toHaveURL(/\/claim\/verify/);
     await expect(apage.locator('body')).toContainText('c•••@e•••.test');
     await apage.getByRole('textbox', { name: 'Six-digit code' }).fill('123456');
-    await apage.getByRole('button', { name: 'Continue' }).click();
+    // The form sends itself at the sixth digit; its button is locked while the code is checked.
     await expect(apage.locator('p[role="alert"]')).toContainText(/didn’t work/);
     expect((await attacker.cookies()).some((c) => c.name.endsWith('session_token'))).toBe(false);
     await attacker.close();

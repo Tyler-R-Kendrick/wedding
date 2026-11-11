@@ -86,7 +86,7 @@ describe('Your Trip in the approved design', () => {
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Your Trip']);
     const main = screen.getByRole('main');
     expect([...main.querySelectorAll('section[id]')].map((el) => el.id)).toEqual(['stay', 'flights', 'getting-around', 'plan']);
-    expect([...main.querySelectorAll('section[id] h2')].map((h) => h.textContent)).toEqual(['Where to stay', 'Flights', 'Getting around', 'What to do']);
+    expect([...main.querySelectorAll('section[id] h2')].map((h) => h.textContent)).toEqual(['Where to stay', 'Flights', 'Getting around', 'Itinerary']);
     // The airports, arriving and hotel-rates sections are folded into those four.
     for (const gone of ['airports', 'arriving', 'hotel-rates']) expect(container.querySelector(`#${gone}`), gone).toBeNull();
     // The hotel rate search is still here, closed until asked for, inside Where to stay.

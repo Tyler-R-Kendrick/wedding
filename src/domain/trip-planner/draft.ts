@@ -1,7 +1,8 @@
-import { DAY_NAME, dateLabel, isWeddingTime, stayFacts, weekendDate } from './facts';
+import { DAY_NAME, dateLabel, isWeddingTime, onWeekend, stayFacts, weekendDate } from './facts';
 import { understand } from './intent';
 import { matchItinerary } from './itineraries';
 import { scheduleOf, type ScheduleItem } from './schedule';
+import { fitToPart, orderByNearest } from './route';
 import type { Day, Intent, Part, Plan, PlanPick, PlannerItinerary, PlannerPlace, SavedItem, Theme, WeddingEventInput } from './types';
 
 /**
@@ -323,8 +324,9 @@ function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: rea
   const picks: PlanPick[] = [];
   // Every saved place stays, however many there are (and even one no longer on our list): "Use
   // this plan" applies these picks, so a place left out here would read as one the plan dropped.
+  // A place saved for a day before or after the weekend is part of the guest's plans, not this plan.
   for (const s of saved) {
-    if (picks.some((p) => p.id === s.id)) continue;
+    if (!onWeekend(s) || picks.some((p) => p.id === s.id)) continue;
     const slot = safeSlot(s.day, s.part);
     picks.push({ id: s.id, day: slot.day, part: slot.part, note: 'Already in your weekend.' });
   }
@@ -334,7 +336,8 @@ function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: rea
     if (picks.some((p) => p.day === slot.day && p.part === slot.part)) continue;
     const slotIntent: Intent = { ...intent, themes: [...new Set([...slot.themes, ...intent.themes])], days: [slot.day], parts: [slot.part], minutes: null };
     const best = scorePlaces(slotIntent, places, scores).find((r) => r.score > 0 && !picks.some((p) => p.id === r.place.id));
-    if (best) picks.push({ id: best.place.id, day: slot.day, part: slot.part, note: `${DAY_NAME[slot.day]} ${PART_PHRASE[slot.part]}.` });
+    // The day and its time say when; a note that only repeated them is left off.
+    if (best) picks.push({ id: best.place.id, day: slot.day, part: slot.part });
   }
   const order = (p: PlanPick) => ['fri', 'sat', 'sun'].indexOf(p.day ?? 'fri') * 3 + ['morning', 'afternoon', 'evening'].indexOf(p.part ?? 'morning');
   picks.sort((a, b) => order(a) - order(b));
@@ -473,16 +476,15 @@ function itineraryPlan(intent: Intent, it: PlannerItinerary, places: readonly Pl
     }
   }
 
-  const located = stops.filter((s) => {
-    const p = byId.get(s.placeId)!;
-    return typeof p.lat === 'number' && typeof p.lng === 'number';
-  });
-  const route = located.length >= 2 && stops.length >= 2;
+  // Two or more stops are a day in the couple's order, timed even where a stop has no position.
+  const route = stops.length >= 2;
   const picks: PlanPick[] = [
-    ...stops.map((s, i) => ({
+    // The order is the route's (numbered, timed and joined by its legs: ./route.ts), so a stop needs no
+    // "start here" note; it carries the couple's own minutes for it, which the route reads first.
+    ...stops.map((s) => ({
       id: s.placeId,
       ...slotFor(byId.get(s.placeId)!, intent),
-      ...(route ? { note: i === 0 ? 'Start here.' : i === stops.length - 1 ? 'End here.' : 'Then this.' } : {}),
+      ...(typeof s.minutes === 'number' && s.minutes > 0 ? { minutes: s.minutes } : {}),
     })),
     ...extras.map((p) => ({ id: p.id, ...slotFor(p, intent) })),
   ];
@@ -658,19 +660,35 @@ function placesPlan(intent: Intent, places: readonly PlannerPlace[], saved: read
     }
   }
 
-  const located = chosen.filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number');
-  const route = located.length >= 2 && (intent.onFoot || intent.themes.includes('walk') || ((intent.parts.length > 0 || intent.days.length > 0) && !eating));
-  const picks: PlanPick[] = chosen.map((p, i) => ({
-    id: p.id,
-    ...slotFor(p, intent),
-    ...(route ? { note: i === 0 ? 'Start here.' : i === chosen.length - 1 ? 'End here.' : 'Then this.' } : {}),
-  }));
+  // Places to do one after another (not a choice of coffees or dinners) are a day: ordered from the
+  // hotel so the least time goes on getting between them, and as many as fit the part of the day,
+  // counting how long each takes and the way between. The rest are offered for another time.
+  // A place without a position still has a time and a length; it only has no way to it drawn.
+  const route = chosen.length >= 2 && !eating && !intent.themes.includes('coffee');
+  if (route) {
+    const hotel = hotelOf(places);
+    const ordered = orderByNearest(chosen, hotel);
+    const slot = slotFor(ordered[0]!, intent);
+    const fits = fitToPart(ordered.map((place) => ({ place })), slot.part, hotel);
+    const picks: PlanPick[] = ordered.map((p) => ({ id: p.id, ...slotFor(p, intent) }));
+    const later = ordered.length - fits;
+    return {
+      shape: 'route',
+      title: titleFor(ordered.slice(0, fits)),
+      intro: `${moved}In the order we would do them${later ? `, as much as fits one ${slot.part}` : ''}. Tap the heart to add one to your weekend.`,
+      picks,
+      route: { stops: fits },
+      next: nextFor(intent, saved, 'route'),
+      candidates: candidatesOf(ranked, picks),
+    };
+  }
+  const picks: PlanPick[] = chosen.map((p) => ({ id: p.id, ...slotFor(p, intent) }));
   return {
-    shape: route ? 'route' : 'picks',
+    shape: 'picks',
     title,
-    intro: `${moved}${route ? 'In the order we would do them.' : `${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}.`} Tap the heart to add one to your weekend.`,
+    intro: `${moved}${COUNT_WORD[chosen.length] ?? 'A few'} ${chosen.length === 1 ? 'place' : 'places'} from our own list that ${chosen.length === 1 ? 'fits' : 'fit'}. Tap the heart to add one to your weekend.`,
     picks,
-    next: nextFor(intent, saved, route ? 'route' : 'picks'),
+    next: nextFor(intent, saved, 'picks'),
     candidates: candidatesOf(ranked, picks),
   };
 }

@@ -229,6 +229,50 @@ describe('trip OpenUI library', () => {
     expect(screen.queryByRole('button', { name: /Somewhere Unmapped/ })).toBeNull();
   });
 
+  it('a route lists numbered stops with their time and length, and the way to each from the stop before', async () => {
+    render(
+      <TripPlannerProvider places={BY_ID} saved={[]} hotel={null} onAction={() => {}}>
+        <TripRenderer
+          response={[
+            'root = Col([r])',
+            'r = Route([Stop(1, "lobby-tour", "1:00–1:45 PM", "About 45 minutes"), Stop(2, "park-walk", "2:00–2:45 PM", "About 45 minutes", "Walk about 5 minutes (0.3 mi) to Lakeside Park Walk.", "walk")], "From our hotel: walk about 2 minutes to Walk the Building.")',
+          ].join('\n')}
+        />
+      </TripPlannerProvider>,
+    );
+    const list = await screen.findByRole('list', { name: 'The stops, in order' });
+    expect(list.textContent).toMatch(/From our hotel: walk about 2 minutes/);
+    expect(list.textContent).toMatch(/Stop 1: 1:00–1:45 PMAbout 45 minutes/);
+    expect(list.textContent).toMatch(/Walk about 5 minutes \(0\.3 mi\) to Lakeside Park Walk\./);
+    expect(screen.getByRole('heading', { name: 'Walk the Building' })).toBeTruthy();
+    // How long it takes is said once, above the card, not again inside it.
+    expect(list.textContent?.match(/About 45 minutes/g)).toHaveLength(2);
+  });
+
+  it('every card has its picture: a photo, else the place on our map, else the mark for its kind; and how long it takes', async () => {
+    const photo = { ...BY_ID.get('art-museum')!, image: { src: '/media/places/x.webp', alt: 'The museum steps' } };
+    const mapped = { ...BY_ID.get('park-walk')!, image: undefined };
+    const nowhere = { ...BY_ID.get('steakhouse')!, image: undefined, lat: undefined, lng: undefined };
+    const places = new Map(BY_ID);
+    for (const p of [photo, mapped, nowhere]) places.set(p.id, p);
+    render(
+      <TripPlannerProvider places={places} saved={[]} hotel={null} onAction={() => {}}>
+        <TripRenderer response={'root = Col([g])\ng = Grid([Place("art-museum"), Place("park-walk"), Place("steakhouse")])'} />
+      </TripPlannerProvider>,
+    );
+    await screen.findByRole('img', { name: 'The museum steps' });
+    const cards = Array.from(document.querySelectorAll('article.trip-place'));
+    expect(cards.map((c) => c.firstElementChild?.className)).toEqual([
+      expect.stringContaining('trip-place__media'),
+      expect.stringContaining('trip-place__media--map'),
+      expect.stringContaining('trip-place__media--mark'),
+    ]);
+    // Until it arrives, the photo's slot is a placeholder of the same size.
+    expect(cards[0]!.querySelector('.trip-place__media')!.classList.contains('is-loaded')).toBe(false);
+    // Each card says about how long it takes, the couple's own minutes or a guess from its kind.
+    for (const c of cards) expect(c.textContent).toMatch(/About (\d+ minutes|an hour|[\d½]+ hours)/);
+  });
+
   it('tripActionOf ignores malformed events', () => {
     expect(tripActionOf({ type: 'AddToWeekend', params: {}, humanFriendlyMessage: '' })).toBeNull();
     expect(tripActionOf({ type: 'SetWeekend', params: { items: [{ id: 'x', day: 'mon', part: 'noon' }] }, humanFriendlyMessage: '' })).toBeNull();

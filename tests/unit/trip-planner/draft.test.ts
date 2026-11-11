@@ -84,11 +84,11 @@ describe('draftPlan', () => {
     expect(draft('I only have 30 minutes').picks.every((p) => (place(p.id).minutes ?? 999) <= 30)).toBe(true);
   });
 
-  it('architecture on foot → a route through architecture, ordered with notes', () => {
+  it('architecture on foot → a route through architecture, in order', () => {
     const plan = draft('We love architecture. Plan a Friday afternoon on foot.');
     expect(plan.shape).toBe('route');
     expect(ids(plan).every((id) => place(id).interests.includes('architecture'))).toBe(true);
-    expect(plan.picks[0]!.note).toBe('Start here.');
+    expect(plan.picks.every((p) => p.note === undefined)).toBe(true);
   });
 
   it('a whole weekend keeps what is saved, fills the free slots, and skips the wedding', () => {

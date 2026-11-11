@@ -156,7 +156,9 @@ export async function loadPlanner(principal: Principal): Promise<PlannerData> {
     if (i.provider !== 'planner' || i.status === 'cancelled' || !d.placeId || !d.day || !d.part) return [];
     if (!DAYS.includes(d.day) || !PARTS.includes(d.part) || seen.has(d.placeId)) return [];
     seen.add(d.placeId);
-    return [{ id: d.placeId, day: d.day, part: d.part, name: i.title, itemId: i.id }];
+    // A place saved for a day before or after the weekend keeps that day's own date.
+    const date = typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : undefined;
+    return [{ id: d.placeId, day: d.day, part: d.part, ...(date ? { date } : {}), name: i.title, itemId: i.id }];
   });
   const bookings: TripItemInput[] = items
     .filter((i) => i.provider !== 'planner' && i.status !== 'cancelled' && (i.kind === 'flight' || i.kind === 'hotel'))

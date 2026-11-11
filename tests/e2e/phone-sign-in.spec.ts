@@ -14,11 +14,14 @@ test.describe('phone sign-in', () => {
     expect(upsert.status).toBe(200);
     expect(upsert.body.ok).toBe(true);
 
-    // Email and text are two equal tabs on /sign-in; there is no separate phone page.
+    // Text is the default tab of /sign-in, email the other; there is no separate phone page.
     await page.goto('/sign-in');
-    await expect(page.getByRole('navigation', { name: 'How to get your code' }).getByRole('link', { name: 'Email', exact: true })).toHaveAttribute('aria-current', 'page');
-    await page.getByRole('link', { name: 'Text', exact: true }).click();
-    await expect(page).toHaveURL(/\/sign-in\?method=text/);
+    const tabs = page.getByRole('navigation', { name: 'How to get your code' });
+    await expect(tabs.getByRole('link', { name: 'Text', exact: true })).toHaveAttribute('aria-current', 'page');
+    await tabs.getByRole('link', { name: 'Email', exact: true }).click();
+    await expect(page).toHaveURL(/\/sign-in\?method=email/);
+    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+    await tabs.getByRole('link', { name: 'Text', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Text', exact: true })).toHaveAttribute('aria-current', 'page');
     await page.getByLabel('Mobile number').fill('5551234001');
     await page.getByRole('button', { name: 'Text me a code' }).click();
