@@ -98,6 +98,24 @@ describe('mergeWritten', () => {
     expect(merged.title).toBe('Our room block, first');
   });
 
+  it('drops any line that sends guests to the wedding: Saturday afternoon, evening or night, or tonight', () => {
+    const lines = [
+      'TITLE: Dinner after the ceremony on Saturday night',
+      'TITLE: Book a table for Saturday evening',
+      'TITLE: Something for tonight',
+      "INTRO: Saturday's evening is free for a long dinner.",
+      'INTRO: Go on Saturday afternoon, before anything else.',
+      'PICK: bean-house | Perfect for Saturday evening.',
+      'PICK: corner-roastery | Stop by tonight.',
+    ].join('\n');
+    const merged = mergeWritten(coffee, `${lines}\n`, PLACES);
+    expect(merged.title).toBe(coffee.title);
+    expect(merged.intro).toBe(coffee.intro);
+    for (const p of merged.picks) expect(p.note ?? '').not.toMatch(/saturday|tonight/i);
+    // A line that keeps to the morning is still taken.
+    expect(mergeWritten(coffee, 'TITLE: Coffee on Saturday morning\n', PLACES).title).toBe('Coffee on Saturday morning');
+  });
+
   it('tolerates non-string input', () => {
     expect(mergeWritten(coffee, undefined as unknown as string, PLACES)).toEqual({ ...coffee });
   });

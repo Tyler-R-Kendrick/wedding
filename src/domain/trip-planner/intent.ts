@@ -108,6 +108,7 @@ export function understand(request: string): Intent {
   else if (STAY.test(asStay) && !themes.some((t) => t !== 'hotel' && t !== 'quiet')) kind = 'stay';
   else if (!themes.length && !days.length && !parts.length && minutes === null && !kids && !indoors && !onFoot) kind = 'open';
 
-  const weddingTime = days.includes('sat') && !days.includes('fri') && !days.includes('sun') && parts.some((p) => p !== 'morning');
+  // Saturday afternoon or evening named at all, even beside another day ("Saturday or Sunday evening").
+  const weddingTime = days.includes('sat') && parts.some((p) => p !== 'morning');
   return { kind, days, parts, minutes, kids, indoors, onFoot, themes, words: words(text), weddingTime };
 }

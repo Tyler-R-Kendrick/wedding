@@ -460,7 +460,7 @@
   background: var(--color-neutral-variant);
 }
 
-.trip-option[disabled]:not(.is-picked) {
+.trip-option[aria-disabled='true']:not(.is-picked) {
   opacity: 0.72;
   cursor: default;
 }
@@ -1124,6 +1124,18 @@
   cursor: pointer;
 }
 
+.trip-toast__close {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 0;
+  border-radius: var(--rounded-pill);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .trip-fly {
   position: fixed;
   z-index: 50;
@@ -1142,7 +1154,8 @@
 .trip-reset:focus-visible,
 .trip-saved__remove:focus-visible,
 .trip-saved__select:focus-visible,
-.trip-toast__open:focus-visible {
+.trip-toast__open:focus-visible,
+.trip-toast__close:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }

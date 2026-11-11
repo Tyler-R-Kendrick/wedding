@@ -79,8 +79,9 @@ export function createLocalRuntime(deps: RuntimeDeps) {
   let workerMissing = false;
   let nextId = 1;
   const pending = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
-  /** Parts a caller has used, which keep the worker (and their loaded pipeline) alive. */
-  const inUse = new Set<WorkerPart>();
+  /** Open holds per part (`hold`): while any is open the worker (and its loaded pipelines) stays. */
+  const holds = new Map<WorkerPart, number>();
+  const held = () => [...holds.values()].some((n) => n > 0);
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   function closeWorker() {
@@ -95,7 +96,7 @@ export function createLocalRuntime(deps: RuntimeDeps) {
   function scheduleIdle() {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = null;
-    if (pending.size > 0 || inUse.size > 0 || !worker) return;
+    if (pending.size > 0 || held() || !worker) return;
     idleTimer = setTimeout(closeWorker, deps.idleMs ?? 15_000);
   }
 
@@ -266,10 +267,27 @@ export function createLocalRuntime(deps: RuntimeDeps) {
     return run;
   }
 
+  /**
+   * Keep a part's worker loaded until the returned function is called (a page that will ask again
+   * soon: the planner while it is open, dictation while it listens). Calling it twice is harmless.
+   * Without a hold, the worker closes once it has been idle for `idleMs`.
+   */
+  function hold(part: WorkerPart): () => void {
+    holds.set(part, (holds.get(part) ?? 0) + 1);
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = null;
+    let open = true;
+    return () => {
+      if (!open) return;
+      open = false;
+      holds.set(part, Math.max(0, (holds.get(part) ?? 1) - 1));
+      scheduleIdle();
+    };
+  }
+
   // ---- using them ----
   async function embed(texts: string[], opts: { query?: boolean; signal?: AbortSignal } = {}): Promise<number[][] | null> {
     if (status.matcher.state !== 'ready') return null;
-    inUse.add('matcher');
     try {
       return await request<number[][]>({ type: 'embed', texts, query: !!opts.query }, opts.signal);
     } catch {
@@ -279,7 +297,6 @@ export function createLocalRuntime(deps: RuntimeDeps) {
 
   async function transcribe(pcm16k: Float32Array, opts: { signal?: AbortSignal } = {}): Promise<string | null> {
     if (status.speech.state !== 'ready') return null;
-    inUse.add('speech');
     // A copy is transferred, so the caller's samples stay usable.
     const copy = pcm16k.slice();
     try {
@@ -306,12 +323,13 @@ export function createLocalRuntime(deps: RuntimeDeps) {
     getStatus,
     check,
     ensureLocal,
+    hold,
     embed,
     transcribe,
     writeLines,
     /** Close the worker now (tests, and a page that knows it is done). */
     dispose: () => {
-      inUse.clear();
+      holds.clear();
       closeWorker();
     },
   };

@@ -105,6 +105,47 @@ describe('draftPlan', () => {
     expect(ids(plan)).toContain('rooftop');
   });
 
+  it('a whole weekend never drops a saved place, however many there are (only the fill-ins are capped)', () => {
+    // Every free part of the weekend taken, one place twice over, and one place no longer on our list.
+    const saved: SavedItem[] = [
+      { id: 'lobby-tour', day: 'fri', part: 'morning' },
+      { id: 'park-walk', day: 'fri', part: 'afternoon' },
+      { id: 'steakhouse', day: 'fri', part: 'evening' },
+      { id: 'tasting-room', day: 'fri', part: 'evening' },
+      { id: 'hotel-cafe', day: 'sat', part: 'morning' },
+      { id: 'art-museum', day: 'sun', part: 'morning' },
+      { id: 'aquarium', day: 'sun', part: 'afternoon' },
+      { id: 'rooftop', day: 'sun', part: 'evening' },
+      { id: 'gone-place', day: 'sun', part: 'morning' },
+    ];
+    const plan = draft('Plan my whole weekend', saved);
+    for (const s of saved) expect(ids(plan), s.id).toContain(s.id);
+    expect(onWedding(plan)).toBe(false);
+    // Nothing on the board is free, so nothing was added.
+    expect(plan.picks).toHaveLength(saved.length);
+  });
+
+  it('the headline names the time the picks actually use, and says when a named Saturday afternoon or evening moved', () => {
+    const dinner = draft('Dinner on Saturday or Sunday evening');
+    const slots = new Set(dinner.picks.map((p) => `${p.day}-${p.part}`));
+    expect(slots.size).toBe(1);
+    const [day, part] = [...slots][0]!.split('-') as [string, string];
+    const name = { fri: 'Friday', sat: 'Saturday', sun: 'Sunday' }[day]!;
+    expect(onWedding(dinner)).toBe(false);
+    expect(dinner.title).toContain(`${name} ${part}`);
+    expect(dinner.title).not.toMatch(/Saturday (afternoon|evening)/);
+    expect(dinner.intro).toMatch(/Saturday afternoon and evening are for the wedding/);
+
+    const budget = draft('I have two hours on Saturday afternoon or Sunday');
+    expect(budget.shape).toBe('budget');
+    expect(onWedding(budget)).toBe(false);
+    const first = budget.picks[0]!;
+    expect(budget.title).not.toMatch(/Saturday afternoon/);
+    expect(budget.title).toContain({ fri: 'Friday', sat: 'Saturday', sun: 'Sunday' }[first.day!]!);
+    for (const p of budget.picks) expect(`${p.day}-${p.part}`).toBe(`${first.day}-${first.part}`);
+    expect(budget.intro).toMatch(/Saturday afternoon and evening are for the wedding/);
+  });
+
   it('stay and arrival answers carry no picks and use the travel domain for the hotel', () => {
     const stay = draft('Where should I stay?');
     expect(stay.shape).toBe('stay');
