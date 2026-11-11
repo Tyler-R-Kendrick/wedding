@@ -3,7 +3,7 @@
  * Node against the real models. `local.worker.ts` is the only browser caller.
  *
  * The inference library is never imported by name here. In the browser the worker loads the
- * prebuilt copy `scripts/copy-ort-wasm.mjs` puts in `public/ort/` (see `useLibrary`), so the bundler
+ * prebuilt copy `scripts/copy-ort-wasm.mjs` puts in `public/ort/` (see `setLibraryLoader`), so the bundler
  * never compiles it: the library and the ONNX runtime are several megabytes of JavaScript, and
  * compiling them into every page's graph is what pushed the dev test server past the heap level at
  * which Next restarts it mid-run. Node callers pass the package import instead.
@@ -19,14 +19,14 @@ let load: (() => Promise<Transformers>) | null = null;
 let library: Promise<Transformers> | null = null;
 
 /** Say where the library comes from. Called once, before anything else here is used. */
-export function useLibrary(loader: () => Promise<Transformers>): void {
+export function setLibraryLoader(loader: () => Promise<Transformers>): void {
   load = loader;
   library = null;
 }
 
 /** The library, loaded once, on first need. */
 export function transformers(): Promise<Transformers> {
-  if (!load) return Promise.reject(new Error('useLibrary() was not called'));
+  if (!load) return Promise.reject(new Error('setLibraryLoader() was not called'));
   library ??= load();
   return library;
 }

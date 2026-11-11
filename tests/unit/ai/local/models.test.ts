@@ -51,11 +51,11 @@ describe('the worker-side helpers', () => {
 
 describe('where the inference library comes from', () => {
   it('is never loaded until the caller says where from', async () => {
-    const { transformers, useLibrary } = await import('@/lib/ai/local/models');
-    await expect(transformers()).rejects.toThrow(/useLibrary/);
+    const { transformers, setLibraryLoader } = await import('@/lib/ai/local/models');
+    await expect(transformers()).rejects.toThrow(/setLibraryLoader/);
     const fake = { env: {} } as unknown as Awaited<ReturnType<typeof transformers>>;
     let loads = 0;
-    useLibrary(async () => {
+    setLibraryLoader(async () => {
       loads++;
       return fake;
     });
