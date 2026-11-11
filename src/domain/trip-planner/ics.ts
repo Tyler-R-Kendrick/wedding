@@ -1,4 +1,4 @@
-import { PART_HOURS, PLANNER_TIMEZONE, dateLabel, isWeddingTime, weekendDate, type StayFacts } from './facts';
+import { PART_HOURS, PLANNER_TIMEZONE, dateLabel, isWeddingTime, onWeekend, savedDate, weekendDate, type StayFacts } from './facts';
 import { DAYS, type CalendarDayModel, type CalendarEntry, type PlannerPlace, type SavedItem, type WeddingEventInput } from './types';
 
 /**
@@ -84,17 +84,17 @@ export function weddingEntries(events: readonly WeddingEventInput[]): CalendarEn
 export function planEntries(saved: readonly SavedItem[], places: ReadonlyMap<string, PlannerPlace>, opts: { origin?: string } = {}): CalendarEntry[] {
   const out: CalendarEntry[] = [];
   for (const s of saved) {
-    if (isWeddingTime(s.day, s.part)) continue;
+    if (onWeekend(s) && isWeddingTime(s.day, s.part)) continue;
     const place = places.get(s.id);
     const title = place?.name ?? s.name;
     if (!title) continue;
     const hours = PART_HOURS[s.part];
     const url = place?.href && opts.origin ? new URL(place.href, opts.origin).toString() : undefined;
     out.push({
-      uid: `plan-${s.id}-${s.day}-${s.part}`,
+      uid: `plan-${s.id}-${savedDate(s)}-${s.part}`,
       source: 'plan',
       title,
-      when: { kind: 'local', date: weekendDate(s.day), start: hours.start, end: hours.end },
+      when: { kind: 'local', date: savedDate(s), start: hours.start, end: hours.end },
       description: [PLAN_NOTE, place?.what].filter(Boolean).join('\n\n'),
       ...(place?.address ? { location: place.address } : {}),
       ...(url ? { url } : {}),
@@ -170,7 +170,8 @@ function formatterFor(timeZone: string): Intl.DateTimeFormat {
   return f;
 }
 
-function wallTime(instant: string, timeZone = PLANNER_TIMEZONE): Wall {
+/** An instant as the wedding's local date and "HH:MM" time. */
+export function wallTime(instant: string, timeZone = PLANNER_TIMEZONE): Wall {
   const parts = Object.fromEntries(formatterFor(timeZone).formatToParts(new Date(instant)).map((p) => [p.type, p.value]));
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${String(Number(parts.hour) % 24).padStart(2, '0')}:${parts.minute}` };
 }

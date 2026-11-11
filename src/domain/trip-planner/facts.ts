@@ -19,6 +19,57 @@ export function weekendDate(day: Day, weddingDateIso: string = WEDDING_DATE_ISO)
   return new Date(base + DAY_OFFSET[day] * 86_400_000).toISOString().slice(0, 10);
 }
 
+/** A date `n` days from another ("YYYY-MM-DD" in, the same out). */
+export function addDays(dateIso: string, n: number): string {
+  return new Date(Date.parse(`${dateIso}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** The weekend day a date is, or null for a day before or after the weekend. */
+export function dayOfDate(dateIso: string, weddingDateIso: string = WEDDING_DATE_ISO): Day | null {
+  return (['fri', 'sat', 'sun'] as const).find((d) => weekendDate(d, weddingDateIso) === dateIso) ?? null;
+}
+
+/** Where a saved place falls: its own date, else its weekend day's. */
+export function savedDate(s: { day: Day; date?: string }, weddingDateIso: string = WEDDING_DATE_ISO): string {
+  return s.date ?? weekendDate(s.day, weddingDateIso);
+}
+
+/** True for a saved place on Friday, Saturday or Sunday: the days the weekend planner plans. */
+export function onWeekend(s: { day: Day; date?: string }, weddingDateIso: string = WEDDING_DATE_ISO): boolean {
+  return !s.date || s.date === weekendDate(s.day, weddingDateIso);
+}
+
+/**
+ * Where a place saved for a date goes: on the weekend, that day with no date of its own; before or
+ * after it, the date, with the nearest weekend day beside it.
+ */
+export function slotForDate(dateIso: string, weddingDateIso: string = WEDDING_DATE_ISO): { day: Day; date?: string } {
+  const day = dayOfDate(dateIso, weddingDateIso);
+  if (day) return { day };
+  return { day: dateIso < weekendDate('fri', weddingDateIso) ? 'fri' : 'sun', date: dateIso };
+}
+
+/** The most days a stay is shown for, either side of the weekend together. */
+export const STAY_MAX_DAYS = 14;
+
+/**
+ * The days of a guest's stay, in order: always Friday to Sunday, widened to the earliest and latest
+ * day anything of theirs falls on (a flight, a hotel stay, a saved place, a day they added), never
+ * more than STAY_MAX_DAYS in all, and never further than a week either side of the wedding.
+ */
+export function stayDays(dates: readonly (string | null | undefined)[], weddingDateIso: string = WEDDING_DATE_ISO): string[] {
+  const fri = weekendDate('fri', weddingDateIso);
+  const sun = weekendDate('sun', weddingDateIso);
+  const lo = addDays(weddingDateIso, -7);
+  const hi = addDays(weddingDateIso, 7);
+  const known = dates.filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= lo && d <= hi);
+  const first = [fri, ...known].sort()[0]!;
+  const last = [sun, ...known].sort().at(-1)!;
+  const out: string[] = [];
+  for (let d = first; d <= last && out.length < STAY_MAX_DAYS; d = addDays(d, 1)) out.push(d);
+  return out;
+}
+
 const DAY_LABEL = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
 const LONG_DATE = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 

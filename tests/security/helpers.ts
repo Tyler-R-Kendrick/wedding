@@ -52,7 +52,7 @@ export async function claimViaUi(page: Page, request: APIRequestContext, token: 
   await expect(page).toHaveURL(/\/claim\/verify/);
   const code = await readOtp(request, inboxEmail);
   await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
-  await page.getByRole('button', { name: 'Continue' }).click();
+  // The form sends itself at the sixth digit; its button is locked while the code is checked.
   await expect(page).toHaveURL(/\/claim\/welcome/);
   return sessionCookie(page);
 }
@@ -64,7 +64,7 @@ export async function signInViaUi(page: Page, request: APIRequestContext, email:
   await expect(page).toHaveURL(/\/claim\/verify/);
   const code = await readOtp(request, email);
   await page.getByRole('textbox', { name: 'Six-digit code' }).fill(code);
-  await page.getByRole('button', { name: 'Continue' }).click();
+  // The form sends itself at the sixth digit; its button is locked while the code is checked.
   await expect(page).toHaveURL(admin ? /\/admin/ : /\/guests(\/|$)/);
   return sessionCookie(page);
 }

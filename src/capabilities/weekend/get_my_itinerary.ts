@@ -1,4 +1,5 @@
 import { guestDisplayName } from '@/domain/guests/repo';
+import { previewViewerFirstName } from '@/domain/identity/viewer-name';
 import { z } from 'zod';
 import { defineCapability } from '@/contracts/capability';
 import { LIFECYCLE_STATES } from '@/contracts/lifecycle';
@@ -91,12 +92,14 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
     const p = requireGuestPrincipal(ctx);
     if (!p.ok) return err(p.error);
     const db = await eDb(ctx);
-    const [hc, lifecycleRow, notices, slots, table] = await Promise.all([
+    const [hc, lifecycleRow, notices, slots, table, viewer] = await Promise.all([
       loadForPrincipal(ctx, p.value),
       getLifecycle(db),
       listActiveNotices(db, ctx.now),
       resolveWeekendSlots({ principal: ctx.principal, guestId: p.value.guestId, db, now: ctx.now }),
       p.value.entitlements.has('view_table_assignment') ? readPublishedTable(ctx, p.value.guestId) : Promise.resolve(null),
+      // An administrator previewing a guest role is greeted by their own name, never the stand-in's.
+      previewViewerFirstName(db, ctx.principal),
     ]);
     const seatingState: SeatingState = !p.value.entitlements.has('view_table_assignment')
       ? 'not_entitled'
@@ -112,7 +115,7 @@ export const getMyItinerary = defineCapability<z.infer<typeof input>, MyItinerar
     const parts = progressFor(ctx.flags, hc);
     return ok({
       data: {
-        greeting: { firstName: self?.firstName ?? 'there', householdName: hc.household?.name ?? 'Your household' },
+        greeting: { firstName: viewer ?? self?.firstName ?? 'there', householdName: hc.household?.name ?? 'Your household' },
         lifecycle: lifecycleRow?.state ?? 'TEASER',
         rsvp: {
           window: hc.window,

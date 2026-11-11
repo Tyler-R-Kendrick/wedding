@@ -17,7 +17,7 @@ describe('Your Trip recipe (fallback)', () => {
     expect(screen.getByRole('main')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your Trip');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'What to do']);
+    expect(headings).toEqual(['Two airports serve Chicago', 'Where to stay', 'Search flights', 'Check hotel rates', 'Getting around', 'Itinerary']);
     expect(screen.getByText('planner-slot')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Chicago Athletic Association Hotel' })).toBeTruthy();
     expect(screen.getByText('ORD')).toBeTruthy();

@@ -1,4 +1,4 @@
-import { DAY_NAME, dateLabel, isWeddingTime, stayFacts, weekendDate } from './facts';
+import { DAY_NAME, dateLabel, isWeddingTime, onWeekend, stayFacts, weekendDate } from './facts';
 import { understand } from './intent';
 import { matchItinerary } from './itineraries';
 import { scheduleOf, type ScheduleItem } from './schedule';
@@ -324,8 +324,9 @@ function weekendPlan(intent: Intent, places: readonly PlannerPlace[], saved: rea
   const picks: PlanPick[] = [];
   // Every saved place stays, however many there are (and even one no longer on our list): "Use
   // this plan" applies these picks, so a place left out here would read as one the plan dropped.
+  // A place saved for a day before or after the weekend is part of the guest's plans, not this plan.
   for (const s of saved) {
-    if (picks.some((p) => p.id === s.id)) continue;
+    if (!onWeekend(s) || picks.some((p) => p.id === s.id)) continue;
     const slot = safeSlot(s.day, s.part);
     picks.push({ id: s.id, day: slot.day, part: slot.part, note: 'Already in your weekend.' });
   }

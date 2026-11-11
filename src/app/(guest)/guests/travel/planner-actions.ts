@@ -4,7 +4,8 @@ import { findAdventures } from '@/capabilities/find_adventures';
 import { addTripItemCapability, getMyTrip, removeTripItemCapability, updateTripItemCapability } from '@/capabilities/travel';
 import { WEDDING_TIMEZONE } from '@/contracts/lifecycle';
 import { newId } from '@/contracts/ids';
-import { isWeddingTime, PART_HOURS, weekendDate, type Day, type Part } from '@/domain/trip-planner';
+import { WEDDING_DATE_ISO } from '@/contracts/lifecycle';
+import { addDays, isWeddingTime, PART_HOURS, slotForDate, weekendDate, type Day, type Part } from '@/domain/trip-planner';
 import { runAsUi } from './_shared/server';
 
 /**
@@ -49,19 +50,29 @@ const removeRow = async (itemId: string) => {
   return r.ok || r.error.code === 'not_found';
 };
 
-export async function savePlannerPlace(input: { placeId: string; day: Day; part: Part }): Promise<PlannerSaveResult> {
+/** A day of a guest's stay: within a week either side of the wedding. */
+const stayDate = (v: unknown): string | null => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  return v >= addDays(WEDDING_DATE_ISO, -7) && v <= addDays(WEDDING_DATE_ISO, 7) ? v : null;
+};
+
+export async function savePlannerPlace(input: { placeId: string; day: Day; part: Part; date?: string }): Promise<PlannerSaveResult> {
   const placeId = placeIdOf(input);
-  const day = DAYS.includes(input?.day) ? input.day : null;
+  // A date before or after the weekend wins over the day; a weekend date is that day.
+  const dated = input?.date === undefined ? null : stayDate(input.date);
+  if (input?.date !== undefined && !dated) return { ok: false, message: FAILED };
+  const slot = dated ? slotForDate(dated) : null;
+  const day = slot ? slot.day : DAYS.includes(input?.day) ? input.day : null;
   const part = PARTS.includes(input?.part) ? input.part : null;
   if (!placeId || !day || !part) return { ok: false, message: FAILED };
-  if (isWeddingTime(day, part)) return { ok: false, message: 'Saturday afternoon and evening are the wedding. Pick another time.' };
+  if (!slot?.date && isWeddingTime(day, part)) return { ok: false, message: 'Saturday afternoon and evening are the wedding. Pick another time.' };
 
   // The title is the place's own, read back through the capability, never what the browser sent.
   const place = await runAsUi(findAdventures, { slug: placeId });
   const title = place.ok ? place.value.data.items[0]?.title : undefined;
   if (!title) return { ok: false, message: 'We could not find that place any more.' };
 
-  const date = weekendDate(day);
+  const date = slot?.date ?? weekendDate(day);
   const hours = PART_HOURS[part];
   const item = {
     kind: 'other' as const,
@@ -70,7 +81,7 @@ export async function savePlannerPlace(input: { placeId: string; day: Day; part:
     endAt: `${date}T${hours.end}`,
     timezone: WEDDING_TIMEZONE,
     provider: 'planner',
-    details: { placeId, day, part, note: PLAN_NOTE },
+    details: { placeId, day, part, ...(slot?.date ? { date: slot.date } : {}), note: PLAN_NOTE },
   };
   const rows = await plannerRows(placeId);
   if (!rows.ok) return { ok: false, message: rows.code === 'unauthenticated' ? SIGN_IN : FAILED };
