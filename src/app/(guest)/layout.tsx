@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 import { preload } from 'react-dom';
 import { getPrincipal } from '@/lib/principal';
+import { GuestModelKeeper } from '@/components/local-models/GuestModelKeeper';
 import { getTheme } from '@/themes';
 import { getThemeMeta } from '@/themes/registry';
 import { PATHNAME_HEADER, PREVIEW_HEADER } from '@/themes/routes';
@@ -68,7 +69,12 @@ export default async function GuestLayout({ children }: { children: ReactNode })
       ? { ...navFor(frame.lifecycle.state, { signedIn: true, currentPath, ...(frame.details ? { venue: frame.details.venue } : {}), ...(principal.viewedBy ? { viewing: true } : {}) }), portals: frame.nav.portals }
       : frame.nav;
   const Shell = getTheme(theme).kit.Shell;
-  return <Shell frame={{ ...frame, nav }}>{children}</Shell>;
+  return (
+    <Shell frame={{ ...frame, nav }}>
+      {children}
+      <GuestModelKeeper principal={principal} />
+    </Shell>
+  );
 }
 
 /** Portal content pages whose recipe already renders `Shell`. `/guests` does not. */

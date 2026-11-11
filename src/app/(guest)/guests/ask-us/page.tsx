@@ -12,6 +12,7 @@ import { getFlags } from '@/lib/flags';
 import { pageForUrl, visibleIn } from '@wedding/sitemap';
 import { PATHNAME_HEADER } from '@/themes/routes';
 import { recipes } from '@/app/(public)/_recipes';
+import { GuestModelKeeper } from '@/components/local-models/GuestModelKeeper';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,5 +46,10 @@ export default async function AskUsPage({ searchParams }: { searchParams: Params
   // the flag off the prop is undefined and each design falls back to its own note, so the page is
   // complete either way — the FAQ and the no-JavaScript search form above it are the product.
   const concierge = getFlags().AI_CONCIERGE ? <ConciergeSlot /> : undefined;
-  return <recipes.AskPage faq={{ ...faq.value.data, entries }} search={search && search.ok ? search.value.data : q ? { query: q, results: [] } : undefined} concierge={concierge} />;
+  return (
+    <>
+      <recipes.AskPage faq={{ ...faq.value.data, entries }} search={search && search.ok ? search.value.data : q ? { query: q, results: [] } : undefined} concierge={concierge} />
+      <GuestModelKeeper principal={principal} />
+    </>
+  );
 }

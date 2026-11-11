@@ -17,6 +17,7 @@ import { requireSignedIn } from '@/app/(guest)/guests/_lib/gate';
 import { currentPrincipal, runAsUi } from './_shared/server';
 import { PATHNAME_HEADER } from '@/themes/routes';
 import { recipes } from '@/app/(public)/_recipes';
+import { GuestModelKeeper } from '@/components/local-models/GuestModelKeeper';
 import { FlightSearchForm, HotelSearchForm } from './search-form';
 import { TripPlanner } from '@/components/trip/TripPlanner';
 import { stayFacts } from '@/domain/trip-planner';
@@ -62,31 +63,34 @@ export default async function TravelPage() {
   // what left this page wearing neither design, and what let its raw Tailwind widths resolve
   // against the DESIGN.md spacing scale.
   return (
-    <recipes.TravelPage
-      signedIn={principal.kind !== 'anonymous'}
-      venue={hotels.value.data.venue}
-      alternatives={hotels.value.data.alternatives}
-      facts={hotels.value.data.facts}
-      sources={hotels.value.sources}
-      // Signed out, "Your trip" goes through sign-in and comes back; a direct /trip link was a dead end.
-      tripHref={principal.kind === 'guest' ? '/trip' : throughSignIn('/trip')}
-      slots={{
-        flightSearch: <FlightSearchForm defaults={flightDefaults} originSuggestions={searchDefaults.originSuggestions} />,
-        hotelSearch: <HotelSearchForm defaults={hotelDefaults} />,
-        planner: (
-          <TripPlanner
-            places={planner.places}
-            saved={planner.saved}
-            bookings={planner.bookings}
-            events={planner.events}
-            hotel={planner.hotel}
-            itineraries={planner.itineraries}
-            stay={stayFacts(hotels.value.data.venue.block)}
-            // A guest's weekend is saved as their trip items; an administrator previewing keeps it in memory.
-            actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace } : undefined}
-          />
-        ),
-      }}
-    />
+    <>
+      <recipes.TravelPage
+        signedIn={principal.kind !== 'anonymous'}
+        venue={hotels.value.data.venue}
+        alternatives={hotels.value.data.alternatives}
+        facts={hotels.value.data.facts}
+        sources={hotels.value.sources}
+        // Signed out, "Your trip" goes through sign-in and comes back; a direct /trip link was a dead end.
+        tripHref={principal.kind === 'guest' ? '/trip' : throughSignIn('/trip')}
+        slots={{
+          flightSearch: <FlightSearchForm defaults={flightDefaults} originSuggestions={searchDefaults.originSuggestions} />,
+          hotelSearch: <HotelSearchForm defaults={hotelDefaults} />,
+          planner: (
+            <TripPlanner
+              places={planner.places}
+              saved={planner.saved}
+              bookings={planner.bookings}
+              events={planner.events}
+              hotel={planner.hotel}
+              itineraries={planner.itineraries}
+              stay={stayFacts(hotels.value.data.venue.block)}
+              // A guest's weekend is saved as their trip items; an administrator previewing keeps it in memory.
+              actions={planner.persist ? { save: savePlannerPlace, remove: removePlannerPlace } : undefined}
+            />
+          ),
+        }}
+      />
+      <GuestModelKeeper principal={principal} />
+    </>
   );
 }
