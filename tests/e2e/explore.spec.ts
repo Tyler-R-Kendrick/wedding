@@ -192,12 +192,9 @@ test.describe('explore journey', () => {
     await page.goto('/guests/things-to-do');
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel(?:#plan)?$/);
     await page.goto('/share-an-adventure?minutes=45&interest=architecture');
-    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel/);
-    // The question a guest was asking travels with them through the door.
-    const next = new URL(page.url()).searchParams.get('next') ?? '';
-    expect(next).toMatch(/^\/guests\/travel\?/);
-    expect(next).toContain('minutes=45');
-    expect(next).toContain('interest=architecture');
+    // The list's "plan by minutes and interest" form went with the list; its query has no reader on
+    // Your Trip, where a guest asks the planner in their own words instead.
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Ftravel(?:#plan)?$/);
     await page.goto('/guests/things-to-do/starved-rock-state-park');
     await expect(page).toHaveURL(/\/sign-in\?next=%2Fguests%2Fthings-to-do%2Fstarved-rock-state-park$/);
     // `/things-to-do` was an alias once; it is not a page now.

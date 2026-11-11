@@ -10,6 +10,8 @@ import type { Day, Intent, Part, Plan, PlanPick, PlannerPlace, SavedItem, Theme 
 
 export const MAX_PICKS = 6;
 const MIN_PICKS = 2;
+/** How far below the best cosine similarity a place may sit and still be an answer (model-only ranking). */
+const SIMILARITY_BAND = 0.05;
 const MOST_PICKS = 5;
 /** How many places the writer may choose from. */
 export const MAX_CANDIDATES = 12;
@@ -107,6 +109,9 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
   const sims = scores ? places.map((p) => scores.get(p.id)).filter((v): v is number => typeof v === 'number' && Number.isFinite(v)) : [];
   const lo = sims.length ? Math.min(...sims) : 0;
   const hi = sims.length ? Math.max(...sims) : 0;
+  // A request that names no kind of thing the rules know ("I want to see fish") and sets no time
+  // budget leaves every place level: there the matching model, when it is installed, decides.
+  const modelLed = sims.length > 0 && intent.themes.length === 0 && intent.minutes === null;
   const sim = (id: string) => {
     const v = scores?.get(id);
     if (typeof v !== 'number' || !Number.isFinite(v) || hi <= lo) return 0;
@@ -118,8 +123,15 @@ export function scorePlaces(intent: Intent, places: readonly PlannerPlace[], sco
       const kwNorm = maxKw > 0 ? keyword / maxKw : 0;
       let score: number;
       if (!sims.length) score = kwNorm;
-      else if (maxKw > 0) score = keyword > 0 ? 0.6 * kwNorm + 0.4 * sim(place.id) : 0;
-      else score = sim(place.id) * (intent.minutes !== null && (place.minutes === undefined || place.minutes > intent.minutes) ? 0 : 1);
+      else if (modelLed) {
+        // Its similarities sit in a narrow band, so a place counts only when it is close to the best
+        // one: the aquarium, not the aquarium and four runners-up that merely scored above the rest.
+        // The request's circumstances (kids, rain) and any shared words still shape the order.
+        const value = scores?.get(place.id);
+        const close = typeof value === 'number' && value >= hi - SIMILARITY_BAND;
+        score = close && keyword > 0 ? sim(place.id) * kwNorm : 0;
+      } else if (maxKw > 0) score = keyword > 0 ? 0.6 * kwNorm + 0.4 * sim(place.id) : 0;
+      else score = 0;
       return { place, score, keyword };
     })
     .sort((a, b) => b.score - a.score || a.place.name.localeCompare(b.place.name));

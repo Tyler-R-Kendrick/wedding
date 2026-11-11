@@ -141,6 +141,14 @@ describe('draftPlan', () => {
     expect(ids(plan).slice(0, 2).sort()).toEqual(['garden', 'park-walk']);
   });
 
+  it('when only the matcher understands the request, it answers with the places close to the best match, not five runners-up', () => {
+    // Similarities sit in a narrow band, as the real model's do: one clear answer, the rest merely above the floor.
+    const one = new Map(PLACES.map((p) => [p.id, p.id === 'garden' ? 0.56 : p.id === 'park-walk' ? 0.49 : 0.4]));
+    expect(ids(draft('zzz qqq', [], one))).toEqual(['garden']);
+    const two = new Map(PLACES.map((p) => [p.id, p.id === 'garden' ? 0.56 : p.id === 'park-walk' ? 0.53 : 0.4]));
+    expect(ids(draft('zzz qqq', [], two)).sort()).toEqual(['garden', 'park-walk']);
+  });
+
   it('every pick carries a day and a part so a heart knows where to save it', () => {
     for (const request of REQUESTS) for (const p of draft(request).picks) expect(p.day && p.part, request).toBeTruthy();
   });
