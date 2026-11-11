@@ -51,13 +51,25 @@ function grid(picks: PlanPick[], note = true): string {
   return `Grid(${list(picks.map((p) => placeCall(p, note)))})`;
 }
 
+/** About 40 m: closer than this, two places are in the same building. */
+const SAME_SPOT = 0.0004;
+
 /** A map for two or more located places, bound to `$stop` with a caption that reads it. */
 function addMap(p: Program, picks: PlanPick[], ctx: ComposeContext, route: boolean) {
   const located = picks.map((x) => ctx.places.get(x.id)!).filter((pl) => typeof pl.lat === 'number' && typeof pl.lng === 'number');
   if (located.length < 2) return;
+  // Places that all share one spot (everything inside the hotel) make a map that says nothing.
+  const [first] = located;
+  if (located.every((pl) => Math.abs(pl.lat! - first!.lat!) < SAME_SPOT && Math.abs(pl.lng! - first!.lng!) < SAME_SPOT)) return;
   p.state.push('$stop = ""');
   p.root.push('map', 'picked');
-  const markers = located.map((pl) => `MapMarker(${str(pl.name)}, ${num(pl.lat!)}, ${num(pl.lng!)}, ${str(pl.id)})`);
+  // Every stop, in the plan's order, so the map's numbers are the cards' order. A stop without
+  // coordinates is listed under the map with its number but gets no pin.
+  const markers = picks.map((x) => {
+    const pl = ctx.places.get(x.id)!;
+    const hasSpot = typeof pl.lat === 'number' && typeof pl.lng === 'number';
+    return hasSpot ? `MapMarker(${str(pl.name)}, ${num(pl.lat!)}, ${num(pl.lng!)}, ${str(pl.id)})` : `MapMarker(${str(pl.name)}, null, null, ${str(pl.id)})`;
+  });
   p.lines.push(`map = Map(${list(markers)}, ${route ? 'true' : 'false'}, $stop)`);
   p.lines.push(`picked = Caption($stop == "" ? "Tap a numbered pin to see which place it is." : "Pin: " + $stop)`);
 }
@@ -67,9 +79,15 @@ function slotLabel(pick: PlanPick | undefined): string | null {
   return `${DAY_NAME[pick.day]} ${PART_LABEL[pick.part]}`;
 }
 
+const MORE = ['', 'One more from our list', 'Two more from our list', 'Three more from our list'];
+
 function picksProgram(plan: Plan, ctx: ComposeContext, route: boolean): string {
   const p = begin(plan);
-  const picks = knownPicks(plan, ctx);
+  const all = knownPicks(plan, ctx);
+  // An itinerary's own stops lead (map, route and cards); places from the wider list follow under their own heading.
+  const own = plan.itinerary ? all.filter((x) => plan.picks.findIndex((y) => y.id === x.id) < plan.itinerary!.stops) : all;
+  const picks = own.length ? own : all;
+  const extras = all.filter((x) => !picks.includes(x));
   if (route && picks.length) {
     const when = slotLabel(picks[0]);
     const badges = [when ? `Badge(${str(when)}, "neutral")` : null, `Badge(${str(`${picks.length} ${picks.length === 1 ? 'stop' : 'stops'}`)}, "info")`].filter(Boolean) as string[];
@@ -81,20 +99,29 @@ function picksProgram(plan: Plan, ctx: ComposeContext, route: boolean): string {
     p.root.push('stops');
     p.lines.push(`stops = ${grid(picks)}`);
   }
+  if (extras.length) {
+    p.root.push('more');
+    p.lines.push(`more = Col([Title(${str(MORE[extras.length] ?? 'More from our list')}, "md"), ${grid(extras)}], 2)`);
+  }
   return end(p, plan);
 }
 
 function budgetProgram(plan: Plan, ctx: ComposeContext): string {
   const p = begin(plan);
-  const rows = knownPicks(plan, ctx).filter((x) => typeof ctx.places.get(x.id)?.minutes === 'number');
+  // An itinerary's stop carries the couple's own minutes for it; anything else, the place's own.
+  const minutesOf = (x: PlanPick) => (typeof x.minutes === 'number' && x.minutes > 0 ? x.minutes : ctx.places.get(x.id)?.minutes);
+  const rows = knownPicks(plan, ctx).filter((x) => typeof minutesOf(x) === 'number');
   const have = Math.min(600, Math.max(15, Math.round((plan.minutes ?? 120) / 15) * 15));
   const max = Math.max(240, Math.ceil(have / 60) * 60);
   if (!rows.length) return end(p, plan);
-  const picked = fitIn(have, rows.map((r) => r.id), ctx.places);
+  const timed = new Map(rows.map((r) => [r.id, { ...ctx.places.get(r.id)!, minutes: minutesOf(r)! }]));
+  // An itinerary's stops start ticked (those that fit); otherwise the best rows that fit.
+  const offered = plan.itinerary ? rows.slice(0, plan.itinerary.stops) : rows;
+  const picked = fitIn(have, offered.map((r) => r.id), timed);
   p.state.push(`$have = ${have}`, `$picked = ${list(picked.map(str))}`);
   p.root.push('tool');
   const all = rows.map((r) => {
-    const pl = ctx.places.get(r.id)!;
+    const pl = timed.get(r.id)!;
     return `{id: ${str(pl.id)}, name: ${str(pl.name)}, min: ${num(pl.minutes!)}}`;
   });
   p.lines.push(

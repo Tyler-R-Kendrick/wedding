@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { TripPlannerProvider, TripRenderer, tripActionOf, type TripAction } from '@/components/trip/openui';
 import { calendarModel, compose, draftPlan, planEntries, weddingEntries, weekendDate, type SavedItem } from '@/domain/trip-planner';
-import { BY_ID, PLACES } from '../unit/trip-planner/fixtures';
+import { BY_ID, ITINERARIES, PLACES } from '../unit/trip-planner/fixtures';
 
 /** Composed programs rendered through the real OpenUI <Renderer>, inside the planner's provider. */
 function show(program: string, saved: SavedItem[] = []) {
@@ -111,6 +111,46 @@ describe('trip OpenUI library', () => {
     expect(screen.getByText(/^Pin: /)).toBeTruthy();
   });
 
+  it('draws the pins over the site’s atlas, numbered in plan order, and a chosen pin updates the bound caption', async () => {
+    const plan = draftPlan({ request: 'For the architecture people', places: PLACES, saved: [], itineraries: ITINERARIES });
+    const { container } = show(compose(plan, { places: BY_ID, saved: [] }));
+    const figure = (await screen.findByRole('img', { name: 'Map with 2 places and the hotel' })).closest('figure')!;
+    // The ground is the atlas's own files and layers, not a blank rectangle.
+    const ground = figure.querySelector('svg.trip-map__ground')!;
+    const layers = [...ground.querySelectorAll('use')].map((u) => u.getAttribute('href') ?? '');
+    expect(layers.some((h) => /^\/assets\/atlas\/world\.svg\?v=\w+#land$/.test(h))).toBe(true);
+    expect(ground.getAttribute('viewBox')).toMatch(/^[\d.]+ [\d.]+ [\d.]+ [\d.]+$/);
+    // Numbered in the itinerary's order, with the route between them.
+    const pins = within(figure).getAllByRole('button', { name: /^\d\. / });
+    expect(pins.map((b) => b.getAttribute('aria-label'))).toEqual(['1. Walk the Building', '2. River Boat Tour']);
+    expect(container.querySelector('.trip-map__route')).toBeTruthy();
+    expect(screen.getByText('Tap a numbered pin to see which place it is.')).toBeTruthy();
+    await act(async () => fireEvent.click(pins[1]!));
+    expect(pins[1]!.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Pin: River Boat Tour')).toBeTruthy();
+    await act(async () => fireEvent.click(pins[1]!));
+    expect(screen.getByText('Tap a numbered pin to see which place it is.')).toBeTruthy();
+  });
+
+  it('moves pins that would cover each other apart, each still a full-size target with a line back to its spot', async () => {
+    const program = [
+      'root = Col([map])',
+      '$stop = ""',
+      'map = Map([MapMarker("Walk the Building", 10.001, 20.001, "lobby-tour"), MapMarker("Game Room", 10.001, 20.001, "game-room"), MapMarker("Lakeside Park Walk", 10.004, 20.003, "park-walk")], false, $stop)',
+    ].join('\n');
+    show(program);
+    await screen.findByRole('img', { name: 'Map with 3 places and the hotel' });
+    const at = screen.getAllByRole('button', { name: /^\d\. / }).map((b) => `${b.style.left} ${b.style.top}`);
+    expect(new Set(at).size).toBe(3);
+    expect(document.querySelectorAll('.trip-map__leader').length).toBeGreaterThan(0);
+  });
+
+  it('draws no map when every place is under one roof', async () => {
+    show(compose(draftPlan({ request: 'A day without leaving the hotel', places: PLACES, saved: [], itineraries: ITINERARIES }), { places: BY_ID, saved: [] }));
+    expect(await screen.findByRole('heading', { level: 3, name: 'Stay inside the hotel' })).toBeTruthy();
+    expect(screen.queryByRole('img', { name: /^Map with/ })).toBeNull();
+  });
+
   it('the calendar lists a wedding event as to be announced, and the button fires ExportCalendar', async () => {
     const saved: SavedItem[] = [
       { id: 'park-walk', day: 'sat', part: 'morning' },
@@ -165,6 +205,28 @@ describe('trip OpenUI library', () => {
     expect(screen.getByRole('img', { name: 'The museum steps' })).toBeTruthy();
     // A public-domain photo carries no credit line.
     expect(screen.getByRole('img', { name: 'The park path' }).closest('figure')?.querySelector('figcaption')).toBeNull();
+  });
+
+  it("the map lists every stop in the plan's order, numbering a stop without coordinates without giving it a pin", async () => {
+    const unlocated = { ...BY_ID.get('lobby-tour')!, id: 'no-spot', name: 'Somewhere Unmapped', lat: undefined, lng: undefined };
+    const places = new Map(BY_ID);
+    places.set(unlocated.id, unlocated);
+    const program = 'root = Col([map])\n$stop = ""\nmap = Map([MapMarker("Art Museum", 10.0, 20.004, "art-museum"), MapMarker("Somewhere Unmapped", null, null, "no-spot"), MapMarker("Bean House Coffee", 10.006, 20.004, "bean-house")], false, $stop)';
+    render(
+      <TripPlannerProvider places={places} saved={[]} hotel={{ name: 'Our hotel', lat: 10.001, lng: 20.001 }} onAction={() => {}}>
+        <TripRenderer response={program} />
+      </TripPlannerProvider>,
+    );
+    const items = await screen.findAllByRole('listitem');
+    const legend = items.filter((li) => li.closest('.trip-map__legend'));
+    expect(legend.map((li) => [li.getAttribute('value'), li.textContent])).toEqual([
+      ['1', 'Art Museum'],
+      ['2', 'Somewhere Unmapped (not on the map)'],
+      ['3', 'Bean House Coffee'],
+    ]);
+    // Pins keep the stop's own number, so the third stop is pin 3, not pin 2.
+    expect(screen.getByRole('button', { name: '3. Bean House Coffee' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Somewhere Unmapped/ })).toBeNull();
   });
 
   it('tripActionOf ignores malformed events', () => {

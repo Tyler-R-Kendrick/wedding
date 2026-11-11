@@ -27,6 +27,24 @@ export type PlannerPlace = {
   image?: { src: string; alt: string; credit?: { text: string; href: string; license: { name: string; href: string } } };
 };
 
+/**
+ * One of the couple's own itineraries, as the planner reads it: their title and intro (their words,
+ * which the planner never rewrites), the kind of time it is for, and its stops in their order. Only
+ * places the planner can offer appear as stops; an itinerary with none still lends its intro.
+ */
+export type PlannerItinerary = {
+  slug: string;
+  title: string;
+  /** The couple's own words; empty when they have not written it yet. */
+  intro: string;
+  /** What kind of time it is for: a stretch of time, a day and part, who is coming, or a kind of thing. */
+  bucket: string;
+  minMinutes?: number;
+  maxMinutes?: number;
+  interests: string[];
+  stops: { placeId: string; minutes?: number }[];
+};
+
 export const DAYS = ['fri', 'sat', 'sun'] as const;
 export type Day = (typeof DAYS)[number];
 export const PARTS = ['morning', 'afternoon', 'evening'] as const;
@@ -37,7 +55,14 @@ export type SavedItem = { id: string; day: Day; part: Part; name?: string };
 
 export type PlanShape = 'picks' | 'route' | 'budget' | 'switch' | 'stay' | 'arrive' | 'ask' | 'weekend' | 'calendar';
 
-export type PlanPick = { id: string; note?: string; day?: Day; part?: Part };
+export type PlanPick = {
+  id: string;
+  note?: string;
+  day?: Day;
+  part?: Part;
+  /** The couple's own minutes for this stop of an itinerary (the time tool reads it before the place's). */
+  minutes?: number;
+};
 
 export type Plan = {
   shape: PlanShape;
@@ -54,6 +79,13 @@ export type Plan = {
   next: string[];
   /** Ids the writer may choose from (the draft's candidates, best first). Not rendered. */
   candidates?: string[];
+  /**
+   * The answer comes from one of the couple's itineraries: `stops` is how many of the first picks
+   * are its stops, in its order; the rest are extras from the wider list.
+   */
+  itinerary?: { slug: string; stops: number };
+  /** Words the writer must leave alone: the couple's own, or an answer that must say exactly this. */
+  fixed?: ('title' | 'intro')[];
 };
 
 export type Theme =

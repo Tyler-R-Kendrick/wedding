@@ -1,4 +1,4 @@
-import type { PlannerPlace } from '@/domain/trip-planner';
+import type { PlannerItinerary, PlannerPlace } from '@/domain/trip-planner';
 
 /** Neutral places: invented names and coordinates, shaped like the couple's real list. */
 const P = (p: Omit<PlannerPlace, 'slug' | 'href'> & { slug?: string }): PlannerPlace => ({ slug: p.id, href: `/guests/things-to-do/${p.id}`, ...p });
@@ -24,3 +24,84 @@ export const PLACES: PlannerPlace[] = [
 ];
 
 export const BY_ID = new Map(PLACES.map((p) => [p.id, p]));
+
+/** Neutral itineraries shaped like the couple's: a time, who is coming, a kind of thing, and one with words but no stops yet. */
+export const ITINERARIES: PlannerItinerary[] = [
+  {
+    slug: 'short-visit',
+    title: 'Forty-five minutes: the building and the park',
+    intro: 'Between things? Walk the building, then step out to the park.',
+    bucket: '45-min',
+    minMinutes: 30,
+    maxMinutes: 60,
+    interests: ['architecture', 'walk', 'outdoors'],
+    stops: [
+      { placeId: 'lobby-tour', minutes: 25 },
+      { placeId: 'park-walk', minutes: 20 },
+    ],
+  },
+  {
+    slug: 'few-hours',
+    title: 'Two to three hours',
+    intro: 'The building, the park, and a drink up on the roof.',
+    bucket: '2-3-h',
+    minMinutes: 120,
+    maxMinutes: 180,
+    interests: ['architecture', 'walk', 'drink', 'view'],
+    stops: [
+      { placeId: 'lobby-tour', minutes: 45 },
+      { placeId: 'park-walk', minutes: 45 },
+      { placeId: 'rooftop', minutes: 60 },
+    ],
+  },
+  { slug: 'evening-free', title: 'Friday afternoon', intro: '', bucket: 'friday-afternoon', minMinutes: 180, maxMinutes: 300, interests: [], stops: [] },
+  { slug: 'calm-start', title: 'Saturday morning', intro: 'A calm start, with plenty of time to get ready.', bucket: 'saturday-morning', minMinutes: 60, maxMinutes: 180, interests: [], stops: [] },
+  {
+    slug: 'little-ones',
+    title: 'With kids',
+    intro: 'Short legs, short stops.',
+    bucket: 'with-kids',
+    minMinutes: 90,
+    maxMinutes: 180,
+    interests: ['kids', 'outdoors', 'quick'],
+    stops: [{ placeId: 'burger-counter', minutes: 45 }, { placeId: 'park-walk', minutes: 45 }, { placeId: 'aquarium' }],
+  },
+  {
+    slug: 'buildings',
+    title: 'For the architecture people',
+    intro: 'Start with the building you are standing in.',
+    bucket: 'architecture',
+    minMinutes: 60,
+    maxMinutes: 240,
+    interests: ['architecture', 'history', 'walk'],
+    stops: [{ placeId: 'lobby-tour', minutes: 60 }, { placeId: 'river-boat' }],
+  },
+  {
+    slug: 'eat-drink',
+    title: 'Food and drink',
+    intro: 'The hotel’s own places first.',
+    bucket: 'food-drink',
+    minMinutes: 60,
+    maxMinutes: 240,
+    interests: ['food', 'drink'],
+    stops: [
+      { placeId: 'hotel-cafe', minutes: 30 },
+      { placeId: 'rooftop', minutes: 60 },
+    ],
+  },
+  {
+    slug: 'under-one-roof',
+    title: 'Stay inside the hotel',
+    intro: 'A whole day without leaving the building.',
+    bucket: 'stay-inside-caa',
+    minMinutes: 120,
+    maxMinutes: 480,
+    interests: ['inside-caa', 'food', 'drink', 'play'],
+    stops: [
+      { placeId: 'hotel-cafe', minutes: 30 },
+      { placeId: 'lobby-tour', minutes: 45 },
+      { placeId: 'game-room', minutes: 60 },
+      { placeId: 'rooftop', minutes: 90 },
+    ],
+  },
+];

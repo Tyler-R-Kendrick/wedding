@@ -11,6 +11,7 @@ import {
   DAYS,
   draftPlan,
   isWeddingTime,
+  itineraryStarter,
   mergeWritten,
   PARTS,
   planEntries,
@@ -23,6 +24,7 @@ import {
   type Day,
   type Part,
   type Plan,
+  type PlannerItinerary,
   type PlannerPlace,
   type SavedItem,
   type StayFacts,
@@ -64,20 +66,59 @@ export type TripPlannerProps = {
   events: WeddingEventInput[];
   hotel: TripHotel | null;
   stay?: StayFacts;
+  /** The couple's own itineraries (none: the planner answers from the places alone). */
+  itineraries?: PlannerItinerary[];
   /** Absent: the weekend is kept in memory only. */
   actions?: PlannerActions;
 };
 
 type Turn = { id: number; request: string; program: string; waiting: boolean; streaming: boolean };
 
-export const STARTERS: { label: string; hint: string; request: string; icon: IconName }[] = [
-  { label: 'A free Saturday morning', hint: 'Before the wedding', request: 'A free Saturday morning before the wedding', icon: 'sunrise' },
-  { label: 'I have two hours', hint: 'Fit it to the time', request: 'I have two hours', icon: 'clock' },
-  { label: 'For the architecture people', hint: 'Buildings worth the walk', request: 'For the architecture people', icon: 'landmark' },
-  { label: 'With kids', hint: 'Things they will love', request: 'Something to do with kids', icon: 'balloon' },
-  { label: 'Where should we get dinner?', hint: 'In the hotel or out', request: 'Where should we get dinner?', icon: 'dinner' },
-  { label: 'Plan my whole weekend', hint: 'Friday to Sunday', request: 'Plan my whole weekend', icon: 'calendar' },
+type Starter = { label: string; hint: string; request: string; icon: IconName };
+
+/** The starters when the couple have no itinerary for them; `key` is the kind of itinerary each stands in for. */
+export const STARTERS: (Starter & { key: string })[] = [
+  { key: 'saturday-morning', label: 'A free Saturday morning', hint: 'Before the wedding', request: 'A free Saturday morning before the wedding', icon: 'sunrise' },
+  { key: '2-3-h', label: 'I have two hours', hint: 'Fit it to the time', request: 'I have two hours', icon: 'clock' },
+  { key: 'architecture', label: 'For the architecture people', hint: 'Buildings worth the walk', request: 'For the architecture people', icon: 'landmark' },
+  { key: 'with-kids', label: 'With kids', hint: 'Things they will love', request: 'Something to do with kids', icon: 'balloon' },
+  { key: 'dinner', label: 'Where should we get dinner?', hint: 'In the hotel or out', request: 'Where should we get dinner?', icon: 'dinner' },
+  { key: 'weekend', label: 'Plan my whole weekend', hint: 'Friday to Sunday', request: 'Plan my whole weekend', icon: 'calendar' },
 ];
+
+const BUCKET_LOOK: Record<string, { hint: string; icon: IconName }> = {
+  '45-min': { hint: 'Between other things', icon: 'clock' },
+  '2-3-h': { hint: 'Fit it to the time', icon: 'clock' },
+  'friday-afternoon': { hint: 'If you arrive early', icon: 'sun' },
+  'saturday-morning': { hint: 'Before the wedding', icon: 'sunrise' },
+  'with-kids': { hint: 'Things they will love', icon: 'balloon' },
+  architecture: { hint: 'Buildings worth the walk', icon: 'landmark' },
+  'food-drink': { hint: 'Where we would eat', icon: 'dinner' },
+  'stay-inside-caa': { hint: 'All under one roof', icon: 'building' },
+};
+const MOST_STARTERS = 6;
+const NO_ITINERARIES: PlannerItinerary[] = [];
+
+/**
+ * The starters: one for each of the couple's own itineraries a guest can use (each sends a request
+ * that lands on it), then the plain ones for what no itinerary covers, and "Plan my whole weekend" last.
+ */
+export function startersFor(itineraries: readonly PlannerItinerary[], placeIds: ReadonlySet<string>): Starter[] {
+  const own: (Starter & { key: string })[] = [];
+  for (const it of itineraries) {
+    if (!it.stops.some((s) => placeIds.has(s.placeId))) continue;
+    const s = itineraryStarter(it);
+    const look = BUCKET_LOOK[it.bucket];
+    if (!s || !look || own.some((o) => o.key === it.bucket)) continue;
+    own.push({ key: it.bucket, label: s.label, request: s.request, ...look });
+  }
+  const covered = new Set(own.map((o) => o.key));
+  // A time itinerary stands in for "I have two hours".
+  if (own.some((o) => o.key === '45-min' || o.key === '2-3-h')) covered.add('2-3-h');
+  const weekend = STARTERS.find((s) => s.key === 'weekend')!;
+  const plain = STARTERS.filter((s) => s.key !== 'weekend' && !covered.has(s.key));
+  return [...own, ...plain].slice(0, MOST_STARTERS - 1).concat(weekend).map(({ label, hint, request, icon }) => ({ label, hint, request, icon }));
+}
 
 const PART_LABEL: Record<Part, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 const PART_ICON: Record<Part, IconName> = { morning: 'sunrise', afternoon: 'sun', evening: 'moon' };
@@ -162,8 +203,9 @@ async function matchScores(request: string, places: PlannerPlace[], signal: Abor
   return new Map(places.map((p, i) => [p.id, vectors[i]!.reduce((sum, v, k) => sum + v * (query[k] ?? 0), 0)]));
 }
 
-export function TripPlanner({ places, saved: initialSaved, bookings, events, hotel, stay, actions }: TripPlannerProps) {
+export function TripPlanner({ places, saved: initialSaved, bookings, events, hotel, stay, itineraries = NO_ITINERARIES, actions }: TripPlannerProps) {
   const byId = useMemo(() => new Map(places.map((p) => [p.id, p])), [places]);
+  const starters = useMemo(() => startersFor(itineraries, new Set(byId.keys())), [itineraries, byId]);
   const [saved, setSaved] = useState<PlannerSaved[]>(() => initialSaved.filter((s) => byId.has(s.id) || s.name));
   // The weekend as of the last change, for handlers that run between renders; every write updates both.
   const savedRef = useRef(saved);
@@ -239,7 +281,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       let current = first;
       const scores = await matchScores(request, places, signal).catch(() => null);
       if (scores && !signal.aborted && !touched.current.has(id)) {
-        const better = draftPlan({ request, places, saved: savedRef.current, scores });
+        const better = draftPlan({ request, places, saved: savedRef.current, scores, itineraries });
         if (apply(better, false)) current = better;
       }
       if (signal.aborted || touched.current.has(id) || NO_WORDS.has(current.shape)) return;
@@ -248,7 +290,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const text = await writeLines({ system, prompt, signal, onText: (t) => void apply(mergeWritten(base, t, places), true) }).catch(() => null);
       if (text) apply(mergeWritten(base, text, places, { complete: true }), false);
     },
-    [places, composeFor, patch],
+    [places, itineraries, composeFor, patch],
   );
 
   const send = useCallback(
@@ -259,7 +301,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
       const ac = new AbortController();
       ctl.current = ac;
       const id = nextId.current++;
-      const plan = draftPlan({ request, places, saved: savedRef.current });
+      const plan = draftPlan({ request, places, saved: savedRef.current, itineraries });
       const quiet = NO_WORDS.has(plan.shape);
       setTurns((all) => [...all.map((t) => (t.waiting || t.streaming ? { ...t, waiting: false, streaming: false } : t)), { id, request, program: composeFor(plan), waiting: !quiet, streaming: false }]);
       setDraft('');
@@ -270,7 +312,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         if (ctl.current === ac) patch(id, { waiting: false, streaming: false });
       });
     },
-    [places, composeFor, upgrade, patch],
+    [places, itineraries, composeFor, upgrade, patch],
   );
 
   const startOver = useCallback(() => {
@@ -496,7 +538,7 @@ export function TripPlanner({ places, saved: initialSaved, bookings, events, hot
         <div id="trip-panel-ask" role="tabpanel" aria-labelledby="trip-tab-ask" hidden={tab !== 'ask'} className="trip-panel">
           {turns.length === 0 ? (
             <div className="trip-starters" role="group" aria-label="Ideas to start with">
-              {STARTERS.map((s) => (
+              {starters.map((s) => (
                 <button key={s.label} type="button" className="trip-starter" onClick={() => send(s.request)}>
                   <Icon name={s.icon} className="trip-starter__icon" />
                   <span className="trip-starter__label">{s.label}</span>

@@ -4,7 +4,8 @@
  */
 export * from './types';
 export { understand } from './intent';
-export { draftPlan, scorePlaces, safeSlot, fitIn, MAX_PICKS, MAX_CANDIDATES } from './draft';
+export { draftPlan, scorePlaces, safeSlot, fitIn, clearHit, MAX_PICKS, MAX_CANDIDATES, CLEAR_HIT_MARGIN } from './draft';
+export { matchItinerary, itineraryScore, itineraryStarter, usableItinerary } from './itineraries';
 export { writerPrompt, mergeWritten } from './writer';
 export { compose, placesIn, str as openuiString } from './compose';
 export { buildIcs, calendarModel, weddingEntries, planEntries, tripEntries, escapeText, foldLine, vtimezone, TIME_TBA, type WeddingEventInput, type TripItemInput } from './ics';

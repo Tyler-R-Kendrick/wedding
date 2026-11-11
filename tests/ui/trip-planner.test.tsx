@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { weekendDate, type WeddingEventInput } from '@/domain/trip-planner';
-import { PLACES } from '../unit/trip-planner/fixtures';
+import { ITINERARIES, PLACES } from '../unit/trip-planner/fixtures';
 
 /**
  * The Your Trip planner, end to end inside the browser half: the local models and dictation are
@@ -88,6 +88,27 @@ describe('the Your Trip planner', () => {
     // Nothing on the page names how the answer was made.
     expect(document.body.textContent).not.toMatch(/\b(model|AI|download|device|OpenUI)\b/);
     await waitFor(() => expect(screen.queryByText('Writing back')).toBeNull());
+  });
+
+  it('lines the starters up with the couple’s own itineraries, and a starter lands on that itinerary', async () => {
+    setup({ itineraries: ITINERARIES });
+    const starters = within(screen.getByRole('group', { name: 'Ideas to start with' }))
+      .getAllByRole('button')
+      .map((b) => b.querySelector('.trip-starter__label')?.textContent);
+    // One per itinerary with stops (the couple's title where it reads as a phrase), at most six, the whole weekend last.
+    expect(starters).toEqual(['I have 45 minutes', 'Two to three hours', 'With kids', 'For the architecture people', 'Food and drink', 'Plan my whole weekend']);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /With kids/ })));
+    expect(await screen.findByRole('heading', { level: 3, name: 'With kids' })).toBeTruthy();
+    expect(screen.getByText(/^Short legs, short stops\./)).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Burger Counter' })).toBeTruthy();
+  });
+
+  it('keeps the plain starters where the couple have no itinerary for them', () => {
+    setup({ itineraries: ITINERARIES.filter((i) => i.bucket === 'architecture') });
+    const labels = within(screen.getByRole('group', { name: 'Ideas to start with' }))
+      .getAllByRole('button')
+      .map((b) => b.querySelector('.trip-starter__label')?.textContent);
+    expect(labels).toEqual(['For the architecture people', 'A free Saturday morning', 'I have two hours', 'With kids', 'Where should we get dinner?', 'Plan my whole weekend']);
   });
 
   it('rewords the answer as the written lines arrive, until the guest starts using it', async () => {

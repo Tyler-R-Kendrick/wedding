@@ -38,6 +38,8 @@ vi.mock('@/app/(guest)/guests/travel/_shared/server', () => ({
         return ok({ items: i?.slug ? [{ slug: i.slug, title: `Title of ${i.slug}` }] : [] });
       case 'list_my_events':
         return ok({ events: [] });
+      case 'list_itineraries':
+        return ok({ route: '/guests/travel', buckets: [], itineraries: [] });
       case 'get_my_trip':
         return ok({ items: store.rows.map((r) => ({ ...r, details: { ...r.details } })) });
       case 'add_trip_item': {

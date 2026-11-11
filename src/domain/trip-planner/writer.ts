@@ -126,13 +126,16 @@ export function mergeWritten(draft: Plan, streamedText: string, places: PlannerP
   }
 
   const merged: Plan = { ...draft, picks: draft.picks.map((p) => ({ ...p })), next: [...draft.next] };
-  if (title) merged.title = title;
-  if (intro) merged.intro = intro;
+  // An itinerary's title and intro are the couple's own words, and "not on our list" must say exactly that.
+  const fixed = new Set(draft.fixed ?? []);
+  if (title && !fixed.has('title')) merged.title = title;
+  if (intro && !fixed.has('intro')) merged.intro = intro;
   if (next.length && draft.next.length) {
     merged.next = [...next, ...draft.next.filter((d) => !next.some((n) => n.toLowerCase() === d.toLowerCase()))].slice(0, 3);
   }
 
-  const reorderable = draft.shape === 'picks' || draft.shape === 'route';
+  // An itinerary's stops keep the couple's order, and its extras stay after them.
+  const reorderable = (draft.shape === 'picks' || draft.shape === 'route') && !draft.itinerary;
   if (reorderable && picks.length >= 2) {
     const anchor = draft.picks[0];
     merged.picks = picks.slice(0, MAX_PICKS).map((w) => {

@@ -2,7 +2,7 @@ import { createParser } from '@openuidev/react-lang';
 import { describe, expect, it } from 'vitest';
 import { tripLibrary } from '@/components/trip/openui/library';
 import { calendarModel, compose, draftPlan, mergeWritten, type CalendarEntry, type Plan, type SavedItem } from '@/domain/trip-planner';
-import { BY_ID, PLACES } from './fixtures';
+import { BY_ID, ITINERARIES, PLACES } from './fixtures';
 
 /** Every composed program goes through the real OpenUI parser for the site's library: zero errors. */
 const parser = createParser(tripLibrary.toJSONSchema(), 'Col');
@@ -69,6 +69,37 @@ describe('compose', () => {
       });
     }
   }
+
+  const ITINERARY_REQUESTS = [
+    'Something to do with kids',
+    'For the architecture people',
+    'Food and drink',
+    'I have 45 minutes',
+    'We have two to three hours',
+    'A day without leaving the hotel',
+    'A free Saturday morning before the wedding',
+  ];
+  for (const request of ITINERARY_REQUESTS) {
+    it(`parses cleanly from the couple's itinerary: "${request}"`, () => {
+      const plan = draftPlan({ request, places: PLACES, saved: SAVED, itineraries: ITINERARIES });
+      const r = expectClean(compose(plan, { places: BY_ID, saved: SAVED, calendar }));
+      let title = '';
+      walk(r.root, (n) => {
+        if (n.typeName === 'Title' && !title) title = String(n.props.text);
+      });
+      expect(title).toBe(plan.title);
+    });
+  }
+
+  it('parses cleanly while the writer streams over an itinerary, and the "not on our list" answer too', () => {
+    const plan = draftPlan({ request: 'For the architecture people', places: PLACES, saved: [], itineraries: ITINERARIES });
+    const stream = 'TITLE: Buildings\nINTRO: Look up.\nPICK: river-boat | From the water.\nPICK: lobby-tour | Start inside.\nNEXT: Add dinner\n';
+    for (let i = 0; i <= stream.length; i += 9) expectClean(compose(mergeWritten(plan, stream.slice(0, i), PLACES), { places: BY_ID, saved: [] }));
+    const level = new Map(PLACES.map((p, i) => [p.id, 0.42 + i * 0.002]));
+    const miss = draftPlan({ request: 'Somewhere to buy a suit', places: PLACES, saved: [], scores: level });
+    expect(miss.title).toBe('That one is not on our list');
+    expectClean(compose(miss, { places: BY_ID, saved: [] }));
+  });
 
   it('writes every shape the reference answers use', () => {
     const shapes = new Set(REQUESTS.map((request) => draftPlan({ request, places: PLACES, saved: SAVED }).shape));
