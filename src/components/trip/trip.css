@@ -1634,12 +1634,15 @@
   color: var(--color-on-moss);
 }
 
+/* Morning, afternoon, evening: words a guest reads to find their way around the day, so the
+   control-caps step (17px), not the label-caps ornament (PRODUCT.md's floor; tests/e2e/typography). */
 .trip-slot__label {
   margin: 0;
   font-family: var(--font-text);
-  font-size: var(--type-label-caps-size);
-  line-height: var(--type-label-caps-line);
-  letter-spacing: var(--type-label-caps-tracking);
+  font-size: var(--type-control-caps-size);
+  font-weight: var(--type-control-caps-weight);
+  line-height: var(--type-control-caps-line);
+  letter-spacing: var(--type-control-caps-tracking);
   text-transform: uppercase;
   color: var(--color-on-surface-muted);
 }
